@@ -1329,7 +1329,7 @@ void GPUContextVulkan::SetState(GPUPipelineState* state)
     }
 }
 
-void GPUContextVulkan::ClearState()
+void GPUContextVulkan::ResetState()
 {
     ResetRenderTarget();
     ResetSR();

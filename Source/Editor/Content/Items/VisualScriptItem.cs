@@ -281,6 +281,13 @@ namespace FlaxEditor.Content
 
         private void CacheData()
         {
+            if (!_asset)
+            {
+                _parameters = Utils.GetEmptyArray<ScriptMemberInfo>();
+                _methods = Utils.GetEmptyArray<ScriptMemberInfo>();
+                _attributes = Utils.GetEmptyArray<Attribute>();
+                return;
+            }
             if (_parameters != null)
                 return;
             if (_asset.WaitForLoaded())
@@ -344,13 +351,13 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public string Name => Path.GetFileNameWithoutExtension(_asset.Path);
+        public string Name => _asset ? Path.GetFileNameWithoutExtension(_asset.Path) : null;
 
         /// <inheritdoc />
         public string Namespace => string.Empty;
 
         /// <inheritdoc />
-        public string TypeName => JsonSerializer.GetStringID(_asset.ID);
+        public string TypeName => _asset ? JsonSerializer.GetStringID(_asset.ID) : null;
 
         /// <inheritdoc />
         public bool IsPublic => true;

@@ -406,6 +406,8 @@ namespace FlaxEngine.Utilities
         {
             if (type == ScriptType.Null)
                 return null;
+            if (type.BaseType == null)
+                return type.Type;
             while (type.Type == null)
                 type = type.BaseType;
             return type.Type;

@@ -116,17 +116,6 @@ PACK_STRUCT(struct NetworkMessageObjectRpc
 
 struct NetworkReplicatedObject
 {
-    ScriptingObjectReference<ScriptingObject> Object;
-    Guid ObjectId;
-    Guid ParentId;
-    uint32 OwnerClientId;
-    uint32 LastOwnerFrame = 0;
-    NetworkObjectRole Role;
-    uint8 Spawned : 1;
-    uint8 Synced : 1;
-    DataContainer<uint32> TargetClientIds;
-    INetworkObject* AsNetworkObject;
-
     struct
     {
         NetworkClientsMask Mask;
@@ -138,6 +127,17 @@ struct NetworkReplicatedObject
             Data.Release();
         }
     } RepCache;
+
+    ScriptingObjectReference<ScriptingObject> Object;
+    Guid ObjectId;
+    Guid ParentId;
+    DataContainer<uint32> TargetClientIds;
+    INetworkObject* AsNetworkObject;
+    uint32 OwnerClientId;
+    uint32 LastOwnerFrame = 0;
+    NetworkObjectRole Role;
+    uint8 Spawned : 1;
+    uint8 Synced : 1;
 
     NetworkReplicatedObject()
     {

@@ -158,7 +158,7 @@ public:
     void SetScissor(const Rectangle& scissorRect) override;
     GPUPipelineState* GetState() const override;
     void SetState(GPUPipelineState* state) override;
-    void ClearState() override;
+    void ResetState() override;
     void FlushState() override;
     void Flush() override;
     void UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 size, uint32 offset) override;

@@ -27,6 +27,19 @@ void CheckBitArray(const BitArray<AllocationType>& array)
 
 TEST_CASE("Array")
 {
+    SECTION("Test Capacity")
+    {
+        // Ensure correct collections capacity growing to meet proper memory usage vs safe slack
+        CHECK(AllocationUtils::CalculateCapacityGrow(1, 0) == 8);
+        CHECK(AllocationUtils::CalculateCapacityGrow(7, 0) == 8);
+        CHECK(AllocationUtils::CalculateCapacityGrow(1, 16) == 16);
+        CHECK(AllocationUtils::CalculateCapacityGrow(31, 0) == 32);
+        CHECK(AllocationUtils::CalculateCapacityGrow(32, 0) == 32);
+        CHECK(AllocationUtils::CalculateCapacityGrow(1000, 0) == 1024);
+        CHECK(AllocationUtils::CalculateCapacityGrow(1024, 0) == 1024);
+        CHECK(AllocationUtils::CalculateCapacityGrow(1025, 0) == 2048);
+    }
+
     SECTION("Test Allocators")
     {
         Array<int32> a1;

@@ -146,6 +146,8 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         Box* b2 = node->GetBox(1);
         Value v1 = tryGetValue(b1, 0, Value::Zero);
         Value v2 = tryGetValue(b2, 1, Value::Zero);
+        if (SanitizeMathValue(v1, node, b1, &value))
+            break;
         if (b1->HasConnection())
             v2 = v2.Cast(v1.Type);
         else
@@ -251,7 +253,10 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
     // Lerp
     case 25:
     {
-        Value a = tryGetValue(node->GetBox(0), 0, Value::Zero);
+        auto boxA = node->GetBox(0);
+        Value a = tryGetValue(boxA, 0, Value::Zero);
+        if (SanitizeMathValue(a, node, boxA, &value))
+            break;
         Value b = tryGetValue(node->GetBox(1), 1, Value::One).Cast(a.Type);
         Value alpha = tryGetValue(node->GetBox(2), 2, Value::Zero).Cast(ValueType::Float);
         String text = String::Format(TEXT("lerp({0}, {1}, {2})"), a.Value, b.Value, alpha.Value);
@@ -1362,6 +1367,20 @@ SerializedMaterialParam& ShaderGenerator::findOrAddGlobalSDF()
     param.ShaderName = getParamName(_parameters.Count());
     param.ID = Guid(_parameters.Count(), 0, 0, 3); // Assign temporary id
     return param;
+}
+
+bool ShaderGenerator::SanitizeMathValue(Value& value, Node* node, Box* box, Value* resultOnInvalid)
+{
+    bool invalid = value.Type == VariantType::Object;
+    if (invalid)
+    {
+        OnError(node, box, TEXT("Invalid input type for math operation"));
+        if (resultOnInvalid)
+            *resultOnInvalid = Value::Zero;
+        else
+            value = Value::Zero;
+    }
+    return invalid;
 }
 
 String ShaderGenerator::getLocalName(int32 index)

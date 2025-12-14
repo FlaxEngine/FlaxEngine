@@ -1304,7 +1304,7 @@ void GPUContextDX12::SetState(GPUPipelineState* state)
     }
 }
 
-void GPUContextDX12::ClearState()
+void GPUContextDX12::ResetState()
 {
     if (!_commandList)
         return;
