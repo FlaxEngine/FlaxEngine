@@ -554,20 +554,7 @@ void AnimatedModel::StopSlotAnimation(const StringView& slotName, Animation* ani
 {
     for (auto& slot : GraphInstance.Slots)
     {
-        if (slot.Animation == anim && slot.Name == slotName)
-        {
-            //slot.Animation = nullptr; // TODO: make an immediate version of this method and set the animation to nullptr.
-            slot.Reset = true;
-            break;
-        }
-    }
-}
-
-void AnimatedModel::StopSlotAnimation(const StringView& slotName)
-{
-    for (auto& slot : GraphInstance.Slots)
-    {
-        if (slot.Name == slotName)
+        if ((slot.Animation == anim || anim == nullptr) && slot.Name == slotName)
         {
             //slot.Animation = nullptr; // TODO: make an immediate version of this method and set the animation to nullptr.
             if (slot.Animation != nullptr)
@@ -609,17 +596,7 @@ bool AnimatedModel::IsPlayingSlotAnimation(const StringView& slotName, Animation
 {
     for (auto& slot : GraphInstance.Slots)
     {
-        if (slot.Animation == anim && slot.Name == slotName && !slot.Pause)
-            return true;
-    }
-    return false;
-}
-
-bool AnimatedModel::IsPlayingSlotAnimation(const StringView& slotName)
-{
-    for (auto& slot : GraphInstance.Slots)
-    {
-        if (slot.Name == slotName && !slot.Pause)
+        if ((slot.Animation == anim || anim == nullptr) && slot.Name == slotName && !slot.Pause)
             return true;
     }
     return false;
