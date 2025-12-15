@@ -49,9 +49,36 @@
 #include <SDL3/SDL_platform_defines.h>
 
 #include <stdarg.h>
-#include <stdint.h>
 #include <string.h>
 #include <wchar.h>
+
+/* Most everything except Visual Studio 2008 and earlier has stdint.h now */
+#if defined(_MSC_VER) && (_MSC_VER < 1600)
+typedef signed __int8 int8_t;
+typedef unsigned __int8 uint8_t;
+typedef signed __int16 int16_t;
+typedef unsigned __int16 uint16_t;
+typedef signed __int32 int32_t;
+typedef unsigned __int32 uint32_t;
+typedef signed __int64 int64_t;
+typedef unsigned __int64 uint64_t;
+#ifndef _INTPTR_T_DEFINED
+#ifdef _WIN64
+typedef __int64 intptr_t;
+#else
+typedef int intptr_t;
+#endif
+#endif
+#ifndef _UINTPTR_T_DEFINED
+#ifdef _WIN64
+typedef unsigned __int64 uintptr_t;
+#else
+typedef unsigned int uintptr_t;
+#endif
+#endif
+#else
+#include <stdint.h>
+#endif
 
 #if (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L) || \
     defined(SDL_INCLUDE_INTTYPES_H)
@@ -492,7 +519,7 @@ typedef uint64_t Uint64;
  * and SDL_SECONDS_TO_NS(), and between Windows FILETIME values with
  * SDL_TimeToWindows() and SDL_TimeFromWindows().
  *
- * \since This macro is available since SDL 3.2.0.
+ * \since This datatype is available since SDL 3.2.0.
  *
  * \sa SDL_MAX_SINT64
  * \sa SDL_MIN_SINT64
@@ -1164,7 +1191,7 @@ typedef struct SDL_alignment_test
     void *b;
 } SDL_alignment_test;
 SDL_COMPILE_TIME_ASSERT(struct_alignment, sizeof(SDL_alignment_test) == (2 * sizeof(void *)));
-SDL_COMPILE_TIME_ASSERT(two_s_complement, (int)~(int)0 == (int)(-1));
+SDL_COMPILE_TIME_ASSERT(two_s_complement, SDL_static_cast(int, ~SDL_static_cast(int, 0)) == SDL_static_cast(int, -1));
 #endif /* DOXYGEN_SHOULD_IGNORE_THIS */
 /** \endcond */
 
@@ -2119,7 +2146,7 @@ extern SDL_DECLSPEC int SDLCALL SDL_abs(int x);
  *
  * \param x the first value to compare.
  * \param y the second value to compare.
- * \returns the lesser of `x` and `y`.
+ * \returns the greater of `x` and `y`.
  *
  * \threadsafety It is safe to call this macro from any thread.
  *
@@ -2640,7 +2667,7 @@ extern SDL_DECLSPEC void * SDLCALL SDL_memset4(void *dst, Uint32 val, size_t dwo
  * \since This macro is available since SDL 3.2.0.
  *
  * \sa SDL_zero
- * \sa SDL_zeroa
+ * \sa SDL_zerop
  */
 #define SDL_zeroa(x) SDL_memset((x), 0, sizeof((x)))
 
@@ -4722,7 +4749,7 @@ extern SDL_DECLSPEC float SDLCALL SDL_atan2f(float y, float x);
 /**
  * Compute the ceiling of `x`.
  *
- * The ceiling of `x` is the smallest integer `y` such that `y > x`, i.e `x`
+ * The ceiling of `x` is the smallest integer `y` such that `y >= x`, i.e `x`
  * rounded up to the nearest integer.
  *
  * Domain: `-INF <= x <= INF`
@@ -4750,7 +4777,7 @@ extern SDL_DECLSPEC double SDLCALL SDL_ceil(double x);
 /**
  * Compute the ceiling of `x`.
  *
- * The ceiling of `x` is the smallest integer `y` such that `y > x`, i.e `x`
+ * The ceiling of `x` is the smallest integer `y` such that `y >= x`, i.e `x`
  * rounded up to the nearest integer.
  *
  * Domain: `-INF <= x <= INF`
@@ -4992,7 +5019,7 @@ extern SDL_DECLSPEC float SDLCALL SDL_fabsf(float x);
 /**
  * Compute the floor of `x`.
  *
- * The floor of `x` is the largest integer `y` such that `y > x`, i.e `x`
+ * The floor of `x` is the largest integer `y` such that `y <= x`, i.e `x`
  * rounded down to the nearest integer.
  *
  * Domain: `-INF <= x <= INF`
@@ -5020,7 +5047,7 @@ extern SDL_DECLSPEC double SDLCALL SDL_floor(double x);
 /**
  * Compute the floor of `x`.
  *
- * The floor of `x` is the largest integer `y` such that `y > x`, i.e `x`
+ * The floor of `x` is the largest integer `y` such that `y <= x`, i.e `x`
  * rounded down to the nearest integer.
  *
  * Domain: `-INF <= x <= INF`
@@ -5921,7 +5948,7 @@ extern SDL_DECLSPEC char * SDLCALL SDL_iconv_string(const char *tocode,
  *
  * \since This macro is available since SDL 3.2.0.
  */
-#define SDL_iconv_utf8_ucs2(S)      (Uint16 *)SDL_iconv_string("UCS-2", "UTF-8", S, SDL_strlen(S)+1)
+#define SDL_iconv_utf8_ucs2(S)      SDL_reinterpret_cast(Uint16 *, SDL_iconv_string("UCS-2", "UTF-8", S, SDL_strlen(S)+1))
 
 /**
  * Convert a UTF-8 string to UCS-4.
@@ -5935,7 +5962,7 @@ extern SDL_DECLSPEC char * SDLCALL SDL_iconv_string(const char *tocode,
  *
  * \since This macro is available since SDL 3.2.0.
  */
-#define SDL_iconv_utf8_ucs4(S)      (Uint32 *)SDL_iconv_string("UCS-4", "UTF-8", S, SDL_strlen(S)+1)
+#define SDL_iconv_utf8_ucs4(S)      SDL_reinterpret_cast(Uint32 *, SDL_iconv_string("UCS-4", "UTF-8", S, SDL_strlen(S)+1))
 
 /**
  * Convert a wchar_t string to UTF-8.
@@ -5949,7 +5976,7 @@ extern SDL_DECLSPEC char * SDLCALL SDL_iconv_string(const char *tocode,
  *
  * \since This macro is available since SDL 3.2.0.
  */
-#define SDL_iconv_wchar_utf8(S)     SDL_iconv_string("UTF-8", "WCHAR_T", (char *)S, (SDL_wcslen(S)+1)*sizeof(wchar_t))
+#define SDL_iconv_wchar_utf8(S)     SDL_iconv_string("UTF-8", "WCHAR_T", SDL_reinterpret_cast(const char *, S), (SDL_wcslen(S)+1)*sizeof(wchar_t))
 
 
 /* force builds using Clang's static analysis tools to use literal C runtime
@@ -5972,6 +5999,10 @@ size_t wcslcpy(wchar_t *dst, const wchar_t *src, size_t size);
 
 #if !defined(HAVE_WCSLCAT) && !defined(wcslcat)
 size_t wcslcat(wchar_t *dst, const wchar_t *src, size_t size);
+#endif
+
+#if !defined(HAVE_STRTOK_R) && !defined(strtok_r)
+char *strtok_r(char *str, const char *delim, char **saveptr);
 #endif
 
 #ifndef _WIN32

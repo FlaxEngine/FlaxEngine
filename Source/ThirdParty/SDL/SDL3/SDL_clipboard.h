@@ -198,11 +198,10 @@ extern SDL_DECLSPEC bool SDLCALL SDL_HasPrimarySelectionText(void);
  * \param mime_type the requested mime-type.
  * \param size a pointer filled in with the length of the returned data.
  * \returns a pointer to the data for the provided mime-type. Returning NULL
- *          or setting the length to 0 will cause no data to be sent to the
- *          "receiver". It is up to the receiver to handle this. Essentially
- *          returning no data is more or less undefined behavior and may cause
- *          breakage in receiving applications. The returned data will not be
- *          freed, so it needs to be retained and dealt with internally.
+ *          or setting the length to 0 will cause zero length data to be sent
+ *          to the "receiver", which should be able to handle this. The
+ *          returned data will not be freed, so it needs to be retained and
+ *          dealt with internally.
  *
  * \since This function is available since SDL 3.2.0.
  *
@@ -211,8 +210,8 @@ extern SDL_DECLSPEC bool SDLCALL SDL_HasPrimarySelectionText(void);
 typedef const void *(SDLCALL *SDL_ClipboardDataCallback)(void *userdata, const char *mime_type, size_t *size);
 
 /**
- * Callback function that will be called when the clipboard is cleared, or when new
- * data is set.
+ * Callback function that will be called when the clipboard is cleared, or
+ * when new data is set.
  *
  * \param userdata a pointer to the provided user data.
  *
@@ -239,7 +238,8 @@ typedef void (SDLCALL *SDL_ClipboardCleanupCallback)(void *userdata);
  * \param cleanup a function pointer to the function that cleans up the
  *                clipboard data.
  * \param userdata an opaque pointer that will be forwarded to the callbacks.
- * \param mime_types a list of mime-types that are being offered. SDL copies the given list.
+ * \param mime_types a list of mime-types that are being offered. SDL copies
+ *                   the given list.
  * \param num_mime_types the number of mime-types in the mime_types list.
  * \returns true on success or false on failure; call SDL_GetError() for more
  *          information.

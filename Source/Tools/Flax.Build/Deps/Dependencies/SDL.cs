@@ -51,6 +51,7 @@ namespace Flax.Deps.Dependencies
             bool buildStatic = true;
             var configs = new string[]
             {
+                "-DSDL_TESTS=OFF",
                 "-DSDL_TEST_LIBRARY=OFF",
                 "-DSDL_CAMERA=OFF",
                 "-DSDL_DIALOG=OFF",
@@ -90,7 +91,7 @@ namespace Flax.Deps.Dependencies
 
             CloneGitRepo(root, "https://github.com/libsdl-org/SDL");
             GitFetch(root);
-            GitResetToCommit(root, "a8589a84226a6202831a3d49ff4edda4acab9acd");  // 3.2.24
+            GitResetToCommit(root, "f173fd28f04cb64ae054d6a97edb5d33925f539b");  // 3.3.4 preview
 
             foreach (var platform in options.Platforms)
             {
