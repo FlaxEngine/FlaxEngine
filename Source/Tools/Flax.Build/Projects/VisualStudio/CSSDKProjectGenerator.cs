@@ -311,6 +311,7 @@ namespace Flax.Build.Projects.VisualStudio
             }
             csProjectFileContent.AppendLine(string.Format("    <DocumentationFile>{0}\\{1}.CSharp.xml</DocumentationFile>", outputPath, project.BaseName));
             csProjectFileContent.AppendLine("    <UseVSHostingProcess>true</UseVSHostingProcess>");
+            csProjectFileContent.AppendLine(string.Format("    <FlaxConfiguration>{0}</FlaxConfiguration>", configuration.ConfigurationName));
 
             csProjectFileContent.AppendLine("  </PropertyGroup>");
 
