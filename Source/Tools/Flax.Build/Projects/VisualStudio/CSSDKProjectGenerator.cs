@@ -132,6 +132,8 @@ namespace Flax.Build.Projects.VisualStudio
             // Configurations
             foreach (var configuration in project.Configurations)
             {
+                if (configuration.Equals(defaultConfiguration))
+                    continue;
                 WriteConfiguration(project, csProjectFileContent, projectDirectory, configuration);
             }
 
