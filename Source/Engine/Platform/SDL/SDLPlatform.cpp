@@ -8,18 +8,19 @@
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
 #include "Engine/Platform/BatteryInfo.h"
+#include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Platform/WindowsManager.h"
 #include "Engine/Platform/SDL/SDLInput.h"
-#include "Engine/Engine/Engine.h"
 
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_init.h>
+#include <SDL3/SDL_locale.h>
 #include <SDL3/SDL_misc.h>
 #include <SDL3/SDL_power.h>
+#include <SDL3/SDL_process.h>
 #include <SDL3/SDL_revision.h>
 #include <SDL3/SDL_system.h>
 #include <SDL3/SDL_version.h>
-#include <SDL3/SDL_locale.h>
 
 #if PLATFORM_LINUX
 #include "Engine/Engine/CommandLine.h"
@@ -314,6 +315,154 @@ Rectangle SDLPlatform::GetVirtualDesktopBounds()
 Window* SDLPlatform::CreateWindow(const CreateWindowSettings& settings)
 {
     return New<SDLWindow>(settings);
+}
+
+bool ReadStream(SDL_IOStream*& stream, char* buffer, int32 bufferLength, int32& bufferPosition, LogType logType, CreateProcessSettings& settings)
+{
+    bool flushBuffer = false;
+    bool success = true;
+    int32 read = SDL_ReadIO(stream, buffer + bufferPosition, bufferLength - bufferPosition - 1);
+    if (read == 0)
+    {
+        SDL_IOStatus status = SDL_GetIOStatus(stream);
+        if (status != SDL_IO_STATUS_NOT_READY && status != SDL_IO_STATUS_EOF)
+            success = false;
+        if (status != SDL_IO_STATUS_NOT_READY)
+        {
+            stream = nullptr;
+            flushBuffer = true;
+        }
+    }
+    else
+    {
+        int32 startPosition = bufferPosition;
+        bufferPosition += read;
+        if (bufferPosition == bufferLength - 1)
+        {
+            flushBuffer = true;
+            buffer[bufferPosition++] = '\n'; // Make sure to flush fully filled buffer
+        }
+        else
+        {
+            for (int i = startPosition; i < bufferPosition; ++i)
+            {
+                if (buffer[i] == '\n')
+                {
+                    flushBuffer = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (flushBuffer)
+    {
+        int32 start = 0;
+        for (int i = 0; i < bufferPosition; ++i)
+        {
+            if (buffer[i] != '\n')
+                continue;
+
+            String str(&buffer[start], i - start + 1);
+#if LOG_ENABLE
+            if (settings.LogOutput)
+                Log::Logger::Write(logType, StringView(str.Get(), str.Length() - 1));
+#endif
+            if (settings.SaveOutput)
+                settings.Output.Add(str.Get(), str.Length());
+            start = i + 1;
+        }
+        int32 length = bufferPosition - start;
+        if (length > 0)
+        {
+            // TODO: Use memmove here? Overlapped memory regions with memcpy is undefined behaviour
+            char temp[2048];
+            Platform::MemoryCopy(temp, buffer + start, length);
+            Platform::MemoryCopy(buffer, temp, length);
+            bufferPosition = length;
+        }
+        else
+            bufferPosition = 0;
+    }
+    return success;
+}
+
+int32 SDLPlatform::CreateProcess(CreateProcessSettings& settings)
+{
+    LOG(Info, "Command: {0} {1}", settings.FileName, settings.Arguments);
+    if (settings.WorkingDirectory.HasChars())
+        LOG(Info, "Working directory: {0}", settings.WorkingDirectory);
+
+    int32 result = 0;
+    const bool captureStdOut = settings.LogOutput || settings.SaveOutput;
+    const StringAnsi cmdLine = StringAnsi::Format("\"{0}\" {1}", StringAnsi(settings.FileName), StringAnsi(settings.Arguments));
+    const char* cmd[] = { "sh", "-c", cmdLine.Get(), (char *)0 };
+    StringAnsi workingDirectory(settings.WorkingDirectory);
+#if PLATFORM_WINDOWS
+    bool background = !settings.WaitForEnd || settings.HiddenWindow; // This also hides the window on Windows
+#else
+    bool background = !settings.WaitForEnd;
+#endif
+
+    // Populate environment with current values from parent environment.
+    // SDL does not populate the environment with the latest values but with a snapshot captured during initialization.
+    Dictionary<String, String> envDictionary;
+    GetEnvironmentVariables(envDictionary);
+    SDL_Environment* env = SDL_CreateEnvironment(false);
+    for (auto iter = envDictionary.Begin(); iter != envDictionary.End(); ++iter)
+        SDL_SetEnvironmentVariable(env, StringAnsi(iter->Key).Get(), StringAnsi(iter->Value).Get(), true);
+    for (auto iter = settings.Environment.Begin(); iter != settings.Environment.End(); ++iter)
+        SDL_SetEnvironmentVariable(env, StringAnsi(iter->Key).Get(), StringAnsi(iter->Value).Get(), true);
+
+    SDL_PropertiesID props = SDL_CreateProperties();
+    SDL_SetPointerProperty(props, SDL_PROP_PROCESS_CREATE_ARGS_POINTER, cmd);
+    SDL_SetPointerProperty(props, SDL_PROP_PROCESS_CREATE_ENVIRONMENT_POINTER, env);
+    SDL_SetBooleanProperty(props, SDL_PROP_PROCESS_CREATE_BACKGROUND_BOOLEAN, background);
+    if (workingDirectory.HasChars())
+        SDL_SetStringProperty(props, SDL_PROP_PROCESS_CREATE_WORKING_DIRECTORY_STRING, workingDirectory.Get());
+    if (captureStdOut)
+    {
+        SDL_SetNumberProperty(props, SDL_PROP_PROCESS_CREATE_STDOUT_NUMBER, SDL_PROCESS_STDIO_APP);
+        SDL_SetNumberProperty(props, SDL_PROP_PROCESS_CREATE_STDERR_NUMBER, SDL_PROCESS_STDIO_APP);
+    }
+    SDL_Process* process = SDL_CreateProcessWithProperties(props);
+    SDL_DestroyProperties(props);
+    SDL_DestroyEnvironment(env);
+    if (process == nullptr)
+    {
+        LOG(Error, "Failed to run process {}: {}", String(settings.FileName).Get(), String(SDL_GetError()));
+        return -1;
+    }
+
+    props = SDL_GetProcessProperties(process);
+    int32 pid = SDL_GetNumberProperty(props, SDL_PROP_PROCESS_PID_NUMBER, 0);
+    SDL_IOStream* stdoutStream = nullptr;
+    SDL_IOStream* stderrStream = nullptr;
+    if (captureStdOut)
+    {
+        stdoutStream = static_cast<SDL_IOStream*>(SDL_GetPointerProperty(props, SDL_PROP_PROCESS_STDOUT_POINTER, nullptr));
+        stderrStream = static_cast<SDL_IOStream*>(SDL_GetPointerProperty(props, SDL_PROP_PROCESS_STDERR_POINTER, nullptr));
+    }
+
+    // Handle process output in realtime
+    char stdoutBuffer[2049];
+    int32 stdoutPosition = 0;
+    char stderrBuffer[2049];
+    int32 stderrPosition = 0;
+    while (stdoutStream != nullptr && stderrStream != nullptr)
+    {
+        if (stdoutStream != nullptr && !ReadStream(stdoutStream, stdoutBuffer, sizeof(stdoutBuffer), stdoutPosition, LogType::Info, settings))
+            LOG(Warning, "Failed to read process {} stdout: {}", pid, String(SDL_GetError()));
+        if (stderrStream != nullptr && !ReadStream(stderrStream, stderrBuffer, sizeof(stderrBuffer), stderrPosition, LogType::Error, settings))
+            LOG(Warning, "Failed to read process {} stderr: {}", pid, String(SDL_GetError()));
+        Sleep(1);
+    }
+
+    if (settings.WaitForEnd)
+        SDL_WaitProcess(process, true, &result);
+
+    SDL_DestroyProcess(process);
+    return result;
 }
 
 #endif

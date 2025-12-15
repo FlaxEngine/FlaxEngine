@@ -1121,6 +1121,7 @@ bool IsProcRunning(HANDLE handle)
     return WaitForSingleObject(handle, 0) == WAIT_TIMEOUT;
 }
 
+#if !PLATFORM_SDL
 void ReadPipe(HANDLE pipe, Array<char>& rawData, Array<Char>& logData, LogType logType, CreateProcessSettings& settings)
 {
     // Check if any data is ready to read
@@ -1329,7 +1330,6 @@ int32 WindowsPlatform::CreateProcess(CreateProcessSettings& settings)
     return result;
 }
 
-#if !PLATFORM_SDL
 Window* WindowsPlatform::CreateWindow(const CreateWindowSettings& settings)
 {
     return New<WindowsWindow>(settings);

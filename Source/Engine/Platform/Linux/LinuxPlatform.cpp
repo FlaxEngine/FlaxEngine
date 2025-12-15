@@ -2993,6 +2993,7 @@ bool LinuxPlatform::SetEnvironmentVariable(const String& name, const String& val
     return setenv(StringAsANSI<>(*name).Get(), StringAsANSI<>(*value).Get(), true) != 0;
 }
 
+#if !PLATFORM_SDL
 int32 LinuxPlatform::CreateProcess(CreateProcessSettings& settings)
 {
     LOG(Info, "Command: {0} {1}", settings.FileName, settings.Arguments);
@@ -3106,6 +3107,7 @@ int32 LinuxPlatform::CreateProcess(CreateProcessSettings& settings)
 
 	return returnCode;
 }
+#endif
 
 void* LinuxPlatform::LoadLibrary(const Char* filename)
 {

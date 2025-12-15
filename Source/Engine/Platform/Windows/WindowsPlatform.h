@@ -81,8 +81,8 @@ public:
     static void GetEnvironmentVariables(Dictionary<String, String, HeapAllocation>& result);
     static bool GetEnvironmentVariable(const String& name, String& value);
     static bool SetEnvironmentVariable(const String& name, const String& value);
-    static int32 CreateProcess(CreateProcessSettings& settings);
 #if !PLATFORM_SDL
+    static int32 CreateProcess(CreateProcessSettings& settings);
     static Window* CreateWindow(const CreateWindowSettings& settings);
 #endif
     static void* LoadLibrary(const Char* filename);
