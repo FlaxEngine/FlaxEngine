@@ -237,7 +237,7 @@ namespace Flax.Build.BuildSystem.Graph
                         CreateNoWindow = true,
                     };
                     process.OutputDataReceived += ProcessDebugOutput;
-                    process.ErrorDataReceived += ProcessDebugOutput;
+                    process.ErrorDataReceived += ProcessDebugError;
                     process.Start();
 
                     process.BeginOutputReadLine();
@@ -271,6 +271,15 @@ namespace Flax.Build.BuildSystem.Graph
             if (output != null)
             {
                 Log.Info(output);
+            }
+        }
+
+        private static void ProcessDebugError(object sender, DataReceivedEventArgs e)
+        {
+            string output = e.Data;
+            if (output != null)
+            {
+                Log.Error(output);
             }
         }
     }
