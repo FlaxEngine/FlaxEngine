@@ -18,6 +18,7 @@
 #include "Engine/Graphics/PixelFormatSampler.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "IncludeX11.h"
+#include "ThirdParty/X11/Xutil.h"
 
 // ICCCM
 #define WM_NormalState 1L // window normal state
@@ -177,6 +178,20 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	{
 		X11::XSetTransientForHint(display, window, (X11::Window)((LinuxWindow*)settings.Parent)->GetNativePtr());
 	}
+
+    // Provides class hint for WMs like Hyprland to hook onto and apply window rules
+    X11::XClassHint* classHint = X11::XAllocClassHint();
+    if (classHint)
+    {
+        const char* className = settings.IsRegularWindow ? "FlexEditor" : "FlaxPopup";
+
+        classHint->res_name = const_cast<char*>(className);
+        classHint->res_class = const_cast<char*>(className);
+
+        X11::XSetClassHint(display, window, classHint);
+
+        XFree(classHint);
+    }
 
     _dpi = Platform::GetDpi();
     _dpiScale = (float)_dpi / (float)DefaultDPI;

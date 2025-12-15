@@ -724,7 +724,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
     }
 }
 
-void GPUContextDX11::ClearState()
+void GPUContextDX11::ResetState()
 {
     if (!_context)
         return;

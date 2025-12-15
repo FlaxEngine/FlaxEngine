@@ -255,6 +255,8 @@ protected:
     SerializedMaterialParam& findOrAddTextureGroupSampler(int32 index);
     SerializedMaterialParam& findOrAddGlobalSDF();
 
+    bool SanitizeMathValue(Value& value, Node* node, Box* box, Value* resultOnInvalid = nullptr);
+
     static String getLocalName(int32 index);
     static String getParamName(int32 index);
 };

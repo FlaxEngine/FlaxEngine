@@ -2441,10 +2441,14 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         {
             if (bucket.LoopsLeft == 0)
             {
-                // End playing animation
+                // End playing animation and reset bucket params
                 value = tryGetValue(node->GetBox(1), Value::Null);
                 bucket.Index = -1;
                 slot.Animation = nullptr;
+                bucket.TimePosition = 0.0f;
+                bucket.BlendInPosition = 0.0f;
+                bucket.BlendOutPosition = 0.0f;
+                bucket.LoopsDone = 0;
                 return;
             }
 
@@ -2553,9 +2557,15 @@ void AnimGraphExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value& va
     // Function Input
     case 1:
     {
+        // Skip when graph is too small (eg. preview) and fallback with default value from the function graph
+        if (context.GraphStack.Count() < 2)
+        {
+            value = tryGetValue(node->TryGetBox(1), Value::Zero);
+            break;
+        }
+
         // Find the function call
         AnimGraphNode* functionCallNode = nullptr;
-        ASSERT(context.GraphStack.Count() >= 2);
         Graph* graph;
         for (int32 i = context.CallStack.Count() - 1; i >= 0; i--)
         {

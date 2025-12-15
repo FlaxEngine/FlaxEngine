@@ -200,7 +200,7 @@ void Renderer::Render(SceneRenderTask* task)
 
     // Prepare GPU context
     auto context = GPUDevice::Instance->GetMainContext();
-    context->ClearState();
+    context->ResetState();
     context->FlushState();
     const Viewport viewport = task->GetViewport();
     context->SetViewportAndScissors(viewport);

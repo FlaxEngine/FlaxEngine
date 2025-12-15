@@ -15,6 +15,7 @@ private:
     Array<char> _funcNameDefineBuffer;
     void* _compiler;
     void* _library;
+    void* _builder;
     void* _containerReflection;
 
 public:

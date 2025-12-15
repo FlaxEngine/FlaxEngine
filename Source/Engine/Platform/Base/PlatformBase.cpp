@@ -52,6 +52,7 @@ Array<User*, FixedAllocation<8>> PlatformBase::Users;
 Delegate<User*> PlatformBase::UserAdded;
 Delegate<User*> PlatformBase::UserRemoved;
 void* OutOfMemoryBuffer = nullptr;
+volatile int64 FatalReporting = 0;
 
 const Char* ToString(NetworkConnectionType value)
 {
@@ -330,11 +331,20 @@ int32 PlatformBase::GetCacheLineSize()
 
 void PlatformBase::Fatal(const StringView& msg, void* context, FatalErrorType error)
 {
+    // Let only one thread to report the error (and wait for it to end to have valid log before crash)
+RETRY:
+    if (Platform::InterlockedCompareExchange(&FatalReporting, 1, 0) != 0)
+    {
+        Platform::Sleep(1);
+        goto RETRY;
+    }
+
     // Check if is already during fatal state
     if (Engine::FatalError != FatalErrorType::None)
     {
         // Just send one more error to the log and back
         LOG(Error, "Error after fatal error: {0}", msg);
+        Platform::AtomicStore(&FatalReporting, 0);
         return;
     }
 
@@ -452,6 +462,8 @@ void PlatformBase::Fatal(const StringView& msg, void* context, FatalErrorType er
         LOG_FLOOR();
     }
 #endif
+
+    Platform::AtomicStore(&FatalReporting, 0);
 
     // Show error message
     if (Engine::ReportCrash.IsBinded())

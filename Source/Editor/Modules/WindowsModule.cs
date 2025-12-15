@@ -897,9 +897,11 @@ namespace FlaxEditor.Modules
 
                     if (type.IsAssignableTo(typeof(AssetEditorWindow)))
                     {
-                        var ctor = type.GetConstructor(new Type[] { typeof(Editor), typeof(AssetItem) });
                         var assetItem = Editor.ContentDatabase.FindAsset(winData.AssetItemID);
+                        var assetType = assetItem.GetType();
+                        var ctor = type.GetConstructor(new Type[] { typeof(Editor), assetType });
                         var win = (AssetEditorWindow)ctor.Invoke(new object[] { Editor.Instance, assetItem });
+
                         win.Show(winData.DockState, winData.DockState != DockState.Float ? winData.DockedTo : null, winData.SelectOnShow, winData.SplitterValue);
                         if (winData.DockState == DockState.Float)
                         {
