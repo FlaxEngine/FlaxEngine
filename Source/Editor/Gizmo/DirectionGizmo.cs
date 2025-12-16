@@ -6,7 +6,7 @@ using FlaxEngine.GUI;
 
 namespace FlaxEditor.Gizmo;
 
-public class DirectionGizmo
+public class DirectionGizmo : ContainerControl
 {
     private IGizmoOwner _owner;
     private ViewportProjection _viewportProjection;
@@ -33,7 +33,7 @@ public class DirectionGizmo
 
     // Store sprite positions for hover detection
     private List<(Float2 position, AxisDirection direction)> _spritePositions = new List<(Float2, AxisDirection)>();
-    
+
     private struct ViewportProjection
     {
         private Matrix _viewProjection;
@@ -112,33 +112,40 @@ public class DirectionGizmo
         return distanceSq <= radiusSq;
     }
 
-    /// <summary>
-    /// Updates the gizmo for mouse interactions (hover and click detection).
-    /// </summary>
-    public void Update(Float2 mousePos)
+    /// <inheritdoc />
+    public override void OnMouseMove(Float2 location)
     {
         _hoveredAxisIndex = -1;
+
+        // Convert local control space to screen space
+        Float2 viewportLocation = PointToParent(ref location);
 
         // Check which axis is being hovered - check from end (closest) to start (farthest) for proper layering
         for (int i = _spritePositions.Count - 1; i >= 0; i--)
         {
-            if (IsPointInSprite(mousePos, _spritePositions[i].position))
+            if (IsPointInSprite(viewportLocation, _spritePositions[i].position))
             {
                 _hoveredAxisIndex = i;
                 break;
             }
         }
+        
+        base.OnMouseMove(location);
     }
-    
-    /// <summary>
-    /// Handles mouse click on direction gizmo sprites.
-    /// </summary>
-    public bool OnMouseDown(Float2 mousePos)
+
+    /// <inheritdoc />
+    public override bool OnMouseDown(Float2 location, MouseButton button)
     {
+        if (base.OnMouseDown(location, button))
+            return true;
+
+        // Convert local control space to screen space
+        Float2 viewportLocation = PointToParent(ref location);
+
         // Check which axis is being clicked - check from end (closest) to start (farthest) for proper layering
         for (int i = _spritePositions.Count - 1; i >= 0; i--)
         {
-            if (IsPointInSprite(mousePos, _spritePositions[i].position))
+            if (IsPointInSprite(viewportLocation, _spritePositions[i].position))
             {
                 OrientViewToAxis(_spritePositions[i].direction);
                 return true;
@@ -167,14 +174,16 @@ public class DirectionGizmo
     /// <summary>
     /// Used to Draw the gizmo.
     /// </summary>
-    public void Draw()
+    public override void DrawSelf()
     {
+        base.DrawSelf();
+ 
         _viewportProjection.Init(_owner.Viewport);
         _gizmoCenter = _viewport.Task.View.WorldPosition + _viewport.Task.View.Direction * 1500;
         _viewportProjection.ProjectPoint(_gizmoCenter, out var gizmoCenterScreen);
-        var bounds = _viewport.Bounds;
-        var screenLocation = bounds.Location - new Float2(-bounds.Width * 0.5f + 50, bounds.Height * 0.5f - 50);
-        var relativeCenter = gizmoCenterScreen - screenLocation;
+            
+        // Use the settable bounds instead of hardcoded positioning
+        var relativeCenter = Bounds.Location + Bounds.Size * 0.5f;
 
         // Project unit vectors
         _viewportProjection.ProjectPoint(_gizmoCenter + Vector3.Right, out var xProjected);
