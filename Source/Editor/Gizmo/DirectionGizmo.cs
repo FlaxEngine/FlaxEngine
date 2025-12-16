@@ -120,7 +120,7 @@ public class DirectionGizmo : ContainerControl
         // Convert local control space to screen space
         Float2 viewportLocation = PointToParent(ref location);
 
-        // Check which axis is being hovered - check from end (closest) to start (farthest) for proper layering
+        // Check which axis is being hovered - check from closest to farthest for proper layering
         for (int i = _spritePositions.Count - 1; i >= 0; i--)
         {
             if (IsPointInSprite(viewportLocation, _spritePositions[i].position))
@@ -142,7 +142,7 @@ public class DirectionGizmo : ContainerControl
         // Convert local control space to screen space
         Float2 viewportLocation = PointToParent(ref location);
 
-        // Check which axis is being clicked - check from end (closest) to start (farthest) for proper layering
+        // Check which axis is being clicked - check from closest to farthest for proper layering
         for (int i = _spritePositions.Count - 1; i >= 0; i--)
         {
             if (IsPointInSprite(viewportLocation, _spritePositions[i].position))
@@ -247,7 +247,7 @@ public class DirectionGizmo : ContainerControl
             if (!axis.Negative)
             {
                 Render2D.DrawLine(relativeCenter, tipScreen, axis.AxisColor, 2.0f);
-                Render2D.DrawSprite(_posHandle, new Rectangle(tipTextScreen - new Float2(12, 12), new Float2(24, 24)), axis.AxisColor);
+                Render2D.DrawSprite(_posHandle, new Rectangle(tipTextScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axis.AxisColor);
                 
                 var font = _fontReference.GetFont();
                 Color textColor = isHovered ? Color.White : Color.Black;
@@ -255,8 +255,8 @@ public class DirectionGizmo : ContainerControl
             }
             else
             {
-                Render2D.DrawSprite(_posHandle, new Rectangle(tipTextScreen - new Float2(12, 12), new Float2(24, 24)), axis.AxisColor.RGBMultiplied(0.65f));
-                Render2D.DrawSprite(_negHandle, new Rectangle(tipTextScreen - new Float2(12, 12), new Float2(24, 24)), axis.AxisColor);
+                Render2D.DrawSprite(_posHandle, new Rectangle(tipTextScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axis.AxisColor.RGBMultiplied(0.65f));
+                Render2D.DrawSprite(_negHandle, new Rectangle(tipTextScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axis.AxisColor);
                 
                 // Draw white label text on hover for negative axes
                 if (isHovered)
