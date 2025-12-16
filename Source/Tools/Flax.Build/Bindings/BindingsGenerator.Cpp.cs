@@ -3005,18 +3005,21 @@ namespace Flax.Build.Bindings
 
                         // Generate MConverter for a structure
                         header.Append("template<>").AppendLine();
-                        header.AppendFormat("struct DLLEXPORT MConverter<{0}>", fullName).AppendLine();
+                        header.AppendFormat("struct MConverter<{0}>", fullName).AppendLine();
                         header.Append('{').AppendLine();
-                        header.AppendFormat("    MObject* Box(const {0}& data, const MClass* klass)", fullName).AppendLine();
+
+                        header.AppendFormat("    DLLEXPORT USED MObject* Box(const {0}& data, const MClass* klass)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.Append("        auto managed = ToManaged(data);").AppendLine();
                         header.Append("        return MCore::Object::Box((void*)&managed, klass);").AppendLine();
                         header.Append("    }").AppendLine();
-                        header.AppendFormat("    void Unbox({0}& result, MObject* data)", fullName).AppendLine();
+
+                        header.AppendFormat("    DLLEXPORT USED void Unbox({0}& result, MObject* data)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.AppendFormat("        result = ToNative(*reinterpret_cast<{0}*>(MCore::Object::Unbox(data)));", wrapperName).AppendLine();
                         header.Append("    }").AppendLine();
-                        header.AppendFormat("    void ToManagedArray(MArray* result, const Span<{0}>& data)", fullName).AppendLine();
+
+                        header.AppendFormat("    DLLEXPORT USED void ToManagedArray(MArray* result, const Span<{0}>& data)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.AppendFormat("        MClass* klass = {0}::TypeInitializer.GetClass();", fullName).AppendLine();
                         header.AppendFormat("        {0}* resultPtr = ({0}*)MCore::Array::GetAddress(result);", wrapperName).AppendLine();
@@ -3026,7 +3029,8 @@ namespace Flax.Build.Bindings
                         header.Append("        	MCore::GC::WriteValue(&resultPtr[i], &managed, 1, klass);").AppendLine();
                         header.Append("        }").AppendLine();
                         header.Append("    }").AppendLine();
-                        header.AppendFormat("    void ToNativeArray(Span<{0}>& result, const MArray* data)", fullName).AppendLine();
+
+                        header.AppendFormat("    DLLEXPORT USED void ToNativeArray(Span<{0}>& result, const MArray* data)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.AppendFormat("        {0}* dataPtr = ({0}*)MCore::Array::GetAddress(data);", wrapperName).AppendLine();
                         header.Append("        for (int32 i = 0; i < result.Length(); i++)").AppendLine();
@@ -3115,10 +3119,10 @@ namespace Flax.Build.Bindings
                     {
                         // Generate MConverter for a class
                         header.Append("template<>").AppendLine();
-                        header.AppendFormat("struct DLLEXPORT MConverter<{0}>", fullName).AppendLine();
+                        header.AppendFormat("struct MConverter<{0}>", fullName).AppendLine();
                         header.Append('{').AppendLine();
 
-                        header.AppendFormat("    static MObject* Box(const {0}& data, const MClass* klass)", fullName).AppendLine();
+                        header.AppendFormat("    DLLEXPORT USED static MObject* Box(const {0}& data, const MClass* klass)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.Append("        MObject* obj = MCore::Object::New(klass);").AppendLine();
                         for (var i = 0; i < fields.Count; i++)
@@ -3138,13 +3142,13 @@ namespace Flax.Build.Bindings
                         header.Append("        return obj;").AppendLine();
                         header.Append("    }").AppendLine();
 
-                        header.AppendFormat("    static MObject* Box(const {0}& data)", fullName).AppendLine();
+                        header.AppendFormat("    DLLEXPORT USED static MObject* Box(const {0}& data)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.AppendFormat("        MClass* klass = {0}::TypeInitializer.GetClass();", fullName).AppendLine();
                         header.Append("        return Box(data, klass);").AppendLine();
                         header.Append("    }").AppendLine();
 
-                        header.AppendFormat("    static void Unbox({0}& result, MObject* obj)", fullName).AppendLine();
+                        header.AppendFormat("    DLLEXPORT USED static void Unbox({0}& result, MObject* obj)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.Append("        MClass* klass = MCore::Object::GetClass(obj);").AppendLine();
                         header.Append("        void* v = nullptr;").AppendLine();
@@ -3166,20 +3170,20 @@ namespace Flax.Build.Bindings
                         }
                         header.Append("    }").AppendLine();
 
-                        header.AppendFormat("    static {0} Unbox(MObject* data)", fullName).AppendLine();
+                        header.AppendFormat("    DLLEXPORT USED static {0} Unbox(MObject* data)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.AppendFormat("        {0} result;", fullName).AppendLine();
                         header.Append("        Unbox(result, data);").AppendLine();
                         header.Append("        return result;").AppendLine();
                         header.Append("    }").AppendLine();
 
-                        header.AppendFormat("    void ToManagedArray(MArray* result, const Span<{0}>& data)", fullName).AppendLine();
+                        header.AppendFormat("    DLLEXPORT USED void ToManagedArray(MArray* result, const Span<{0}>& data)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.Append("        for (int32 i = 0; i < data.Length(); i++)").AppendLine();
                         header.Append("            MCore::GC::WriteArrayRef(result, Box(data[i]), i);").AppendLine();
                         header.Append("    }").AppendLine();
 
-                        header.AppendFormat("    void ToNativeArray(Span<{0}>& result, const MArray* data)", fullName).AppendLine();
+                        header.AppendFormat("    DLLEXPORT USED void ToNativeArray(Span<{0}>& result, const MArray* data)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.Append("        MObject** dataPtr = (MObject**)MCore::Array::GetAddress(data);").AppendLine();
                         header.Append("        for (int32 i = 0; i < result.Length(); i++)").AppendLine();
