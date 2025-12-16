@@ -3005,7 +3005,7 @@ namespace Flax.Build.Bindings
 
                         // Generate MConverter for a structure
                         header.Append("template<>").AppendLine();
-                        header.AppendFormat("struct MConverter<{0}>", fullName).AppendLine();
+                        header.AppendFormat("struct DLLEXPORT MConverter<{0}>", fullName).AppendLine();
                         header.Append('{').AppendLine();
                         header.AppendFormat("    MObject* Box(const {0}& data, const MClass* klass)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
@@ -3115,7 +3115,7 @@ namespace Flax.Build.Bindings
                     {
                         // Generate MConverter for a class
                         header.Append("template<>").AppendLine();
-                        header.AppendFormat("struct MConverter<{0}>", fullName).AppendLine();
+                        header.AppendFormat("struct DLLEXPORT MConverter<{0}>", fullName).AppendLine();
                         header.Append('{').AppendLine();
 
                         header.AppendFormat("    static MObject* Box(const {0}& data, const MClass* klass)", fullName).AppendLine();
