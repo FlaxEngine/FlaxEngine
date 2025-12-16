@@ -96,6 +96,7 @@ public class DirectionGizmo : ContainerControl
         _negYAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "-Y", AxisColor = new Color(0.239215f, 1.0f, 0.047058f, 1.0f), Negative = true, Direction = AxisDirection.NegY };
         _negZAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "-Z", AxisColor = new Color(0.0f, 0.0235294f, 1.0f, 1.0f), Negative = true, Direction = AxisDirection.NegZ };
         _axisData.EnsureCapacity(6);
+        _spritePositions.EnsureCapacity(6);
 
         _posHandle = Editor.Instance.Icons.VisjectBoxClosed32;
         _negHandle = Editor.Instance.Icons.VisjectBoxOpen32;
