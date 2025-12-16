@@ -297,7 +297,7 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<snorm float> 
             float maxDistanceTex = data.CascadeMaxDistanceTex[cascade];
             float maxDistanceMip = data.CascadeMaxDistanceMip[cascade];
             LOOP
-            for (; step < 250 && stepTime < intersections.y && hit.HitTime < 0.0f; step++)
+            for (; step < 100 && stepTime < intersections.y && hit.HitTime < 0.0f; step++)
             {
                 float3 stepPosition = trace.WorldPosition + trace.WorldDirection * stepTime;
 
