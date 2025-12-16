@@ -77,8 +77,8 @@ void GetGlobalSDFCascadeUV(const GlobalSDFData data, uint cascade, float3 worldP
 void ClampGlobalSDFTextureGradientUV(const GlobalSDFData data, uint cascade, float texelOffset, inout float3 textureUV)
 {
     float cascadeSizeUV = 1.0f / data.CascadesCount;
-    float cascadeUVStart = cascadeSizeUV * cascade + texelOffset;
-    float cascadeUVEnd = cascadeUVStart + cascadeSizeUV - texelOffset * 3;
+    float cascadeUVStart = cascadeSizeUV * cascade + texelOffset * 2;
+    float cascadeUVEnd = cascadeUVStart + cascadeSizeUV - texelOffset * 4;
     textureUV.x = clamp(textureUV.x, cascadeUVStart, cascadeUVEnd);
 }
 
