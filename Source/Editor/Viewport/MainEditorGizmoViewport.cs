@@ -107,6 +107,7 @@ namespace FlaxEditor.Viewport
         private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
         private EditorSpritesRenderer _editorSpritesRenderer;
         private ViewportRubberBandSelector _rubberBandSelector;
+        private DirectionGizmo _directionGizmo;
 
         /// <summary>
         /// Drag and drop handlers
@@ -216,6 +217,7 @@ namespace FlaxEditor.Viewport
 
             // Add rubber band selector
             _rubberBandSelector = new ViewportRubberBandSelector(this);
+            _directionGizmo = new DirectionGizmo(this);
 
             // Add grid
             Grid = new GridGizmo(this);
@@ -593,6 +595,7 @@ namespace FlaxEditor.Viewport
 
             // Draw rubber band for rectangle selection
             _rubberBandSelector.Draw();
+            _directionGizmo.Draw();
         }
 
         /// <inheritdoc />
