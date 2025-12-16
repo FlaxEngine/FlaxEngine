@@ -33,7 +33,6 @@ struct GlobalSDFTrace
     float3 WorldDirection;
     float MaxDistance;
     float StepScale;
-    bool NeedsHitNormal;
 
     void Init(float3 worldPosition, float3 worldDirection, float minDistance, float maxDistance, float stepScale = 1.0f)
     {
@@ -42,7 +41,6 @@ struct GlobalSDFTrace
         MinDistance = minDistance;
         MaxDistance = maxDistance;
         StepScale = stepScale;
-        NeedsHitNormal = false;
     }
 };
 
@@ -326,19 +324,6 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<snorm float> 
                     hit.HitTime = max(stepTime + stepDistance - minSurfaceThickness, 0.0f);
                     hit.HitCascade = cascade;
                     hit.HitSDF = stepDistance;
-                    if (trace.NeedsHitNormal)
-                    {
-                        // Calculate hit normal from SDF gradient
-                        float texelOffset = 1.0f / data.Resolution;
-                        ClampGlobalSDFTextureGradientUV(data, cascade, texelOffset, textureUV);
-                        float xp = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x + texelOffset, textureUV.y, textureUV.z), 0).x;
-                        float xn = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x - texelOffset, textureUV.y, textureUV.z), 0).x;
-                        float yp = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x, textureUV.y + texelOffset, textureUV.z), 0).x;
-                        float yn = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x, textureUV.y - texelOffset, textureUV.z), 0).x;
-                        float zp = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x, textureUV.y, textureUV.z + texelOffset), 0).x;
-                        float zn = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x, textureUV.y, textureUV.z - texelOffset), 0).x;
-                        hit.HitNormal = normalize(float3(xp - xn, yp - yn, zp - zn));
-                    }
                 }
 
                 // Move forward
