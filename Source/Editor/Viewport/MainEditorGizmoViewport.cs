@@ -612,6 +612,8 @@ namespace FlaxEditor.Viewport
         {
             base.OnMouseMove(location);
 
+            _directionGizmo.Update(location);
+
             // Don't allow rubber band selection when gizmo is controlling mouse, vertex painting mode, or cloth painting is enabled
             bool canStart = !(IsControllingMouse || IsRightMouseButtonDown || IsAltKeyDown) &&
                             Gizmos?.Active is TransformGizmo && !Gizmos.Active.IsControllingMouse;
@@ -622,6 +624,9 @@ namespace FlaxEditor.Viewport
         protected override void OnLeftMouseButtonDown()
         {
             base.OnLeftMouseButtonDown();
+            
+            if (_directionGizmo.OnMouseDown(_viewMousePos))
+                return;
 
             _rubberBandSelector.TryStartingRubberBandSelection();
         }

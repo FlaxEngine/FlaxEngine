@@ -12,8 +12,9 @@ public class DirectionGizmo
     private ViewportProjection _viewportProjection;
     private EditorViewport _viewport;
     private Vector3 _gizmoCenter;
-    private float _axisLength = 70.0f;
-    private float _textAxisLength = 85.0f;
+    private float _axisLength = 75.0f;
+    private float _textAxisLength = 95.0f;
+    private float _spriteRadius = 12.0f;
 
     private AxisData _xAxisData;
     private AxisData _yAxisData;
@@ -23,11 +24,15 @@ public class DirectionGizmo
     private AxisData _negZAxisData;
 
     private List<AxisData> _axisData = new List<AxisData>();
+    private int _hoveredAxisIndex = -1;
 
     private SpriteHandle _posHandle;
     private SpriteHandle _negHandle;
 
     private FontReference _fontReference;
+
+    // Store sprite positions for hover detection
+    private List<(Float2 position, AxisDirection direction)> _spritePositions = new List<(Float2, AxisDirection)>();
     
     private struct ViewportProjection
     {
@@ -60,6 +65,17 @@ public class DirectionGizmo
         public string Label;
         public Color AxisColor;
         public bool Negative;
+        public AxisDirection Direction;
+    }
+
+    private enum AxisDirection
+    {
+        PosX,
+        PosY,
+        PosZ,
+        NegX,
+        NegY,
+        NegZ
     }
 
     /// <summary>
@@ -72,13 +88,13 @@ public class DirectionGizmo
         _viewport = owner.Viewport;
         _viewportProjection.Init(owner.Viewport);
         
-        _xAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "X", AxisColor = new Color(1.0f, 0.0f, 0.02745f, 1.0f), Negative = false };
-        _yAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "Y", AxisColor = new Color(0.239215f, 1.0f, 0.047058f, 1.0f), Negative = false };
-        _zAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "Z", AxisColor = new Color(0.0f, 0.0235294f, 1.0f, 1.0f), Negative = false };
+        _xAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "X", AxisColor = new Color(1.0f, 0.0f, 0.02745f, 1.0f), Negative = false, Direction = AxisDirection.PosX };
+        _yAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "Y", AxisColor = new Color(0.239215f, 1.0f, 0.047058f, 1.0f), Negative = false, Direction = AxisDirection.PosY };
+        _zAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "Z", AxisColor = new Color(0.0f, 0.0235294f, 1.0f, 1.0f), Negative = false, Direction = AxisDirection.PosZ };
         
-        _negXAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "-X", AxisColor = new Color(1.0f, 0.0f, 0.02745f, 1.0f), Negative = true };
-        _negYAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "-Y", AxisColor = new Color(0.239215f, 1.0f, 0.047058f, 1.0f), Negative = true };
-        _negZAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "-Z", AxisColor = new Color(0.0f, 0.0235294f, 1.0f, 1.0f), Negative = true };
+        _negXAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "-X", AxisColor = new Color(1.0f, 0.0f, 0.02745f, 1.0f), Negative = true, Direction = AxisDirection.NegX };
+        _negYAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "-Y", AxisColor = new Color(0.239215f, 1.0f, 0.047058f, 1.0f), Negative = true, Direction = AxisDirection.NegY };
+        _negZAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "-Z", AxisColor = new Color(0.0f, 0.0235294f, 1.0f, 1.0f), Negative = true, Direction = AxisDirection.NegZ };
         _axisData.EnsureCapacity(6);
 
         _posHandle = Editor.Instance.Icons.VisjectBoxClosed32;
@@ -86,6 +102,66 @@ public class DirectionGizmo
         
         _fontReference = new FontReference(Style.Current.FontSmall);
         _fontReference.Size = 8;
+    }
+
+    private bool IsPointInSprite(Float2 point, Float2 spriteCenter)
+    {
+        Float2 delta = point - spriteCenter;
+        float distanceSq = delta.LengthSquared;
+        float radiusSq = _spriteRadius * _spriteRadius;
+        return distanceSq <= radiusSq;
+    }
+
+    /// <summary>
+    /// Updates the gizmo for mouse interactions (hover and click detection).
+    /// </summary>
+    public void Update(Float2 mousePos)
+    {
+        _hoveredAxisIndex = -1;
+
+        // Check which axis is being hovered - check from end (closest) to start (farthest) for proper layering
+        for (int i = _spritePositions.Count - 1; i >= 0; i--)
+        {
+            if (IsPointInSprite(mousePos, _spritePositions[i].position))
+            {
+                _hoveredAxisIndex = i;
+                break;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Handles mouse click on direction gizmo sprites.
+    /// </summary>
+    public bool OnMouseDown(Float2 mousePos)
+    {
+        // Check which axis is being clicked - check from end (closest) to start (farthest) for proper layering
+        for (int i = _spritePositions.Count - 1; i >= 0; i--)
+        {
+            if (IsPointInSprite(mousePos, _spritePositions[i].position))
+            {
+                OrientViewToAxis(_spritePositions[i].direction);
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    private void OrientViewToAxis(AxisDirection direction)
+    {
+        Quaternion orientation = direction switch
+        {
+            AxisDirection.PosX => Quaternion.Euler(0, 90, 0),
+            AxisDirection.NegX => Quaternion.Euler(0, -90, 0),
+            AxisDirection.PosY => Quaternion.Euler(-90, 0, 0),
+            AxisDirection.NegY => Quaternion.Euler(90, 0, 0),
+            AxisDirection.PosZ => Quaternion.Euler(0, 0, 0),
+            AxisDirection.NegZ => Quaternion.Euler(0, 180, 0),
+            _ => Quaternion.Identity
+        };
+
+        _viewport.ViewOrientation = orientation;
     }
     
     /// <summary>
@@ -144,24 +220,41 @@ public class DirectionGizmo
         _axisData.Clear();
         _axisData.AddRange([_xAxisData, _yAxisData, _zAxisData, _negXAxisData, _negYAxisData, _negZAxisData]);
         _axisData.Sort( (a, b) => -a.Distance.CompareTo(b.Distance));
+
+        // Rebuild sprite positions list for hover detection
+        _spritePositions.Clear();
         
         // Draw in order from farthest to closest
-        foreach (var axis in _axisData)
+        for (int i = 0; i < _axisData.Count; i++)
         {
+            var axis = _axisData[i];
             Float2 tipScreen = relativeCenter + axis.Delta * _axisLength;
             Float2 tipTextScreen = relativeCenter + axis.Delta * _textAxisLength;
+            bool isHovered = _hoveredAxisIndex == i;
+
+            // Store sprite position for hover detection
+            _spritePositions.Add((tipTextScreen, axis.Direction));
 
             if (!axis.Negative)
             {
                 Render2D.DrawLine(relativeCenter, tipScreen, axis.AxisColor, 2.0f);
                 Render2D.DrawSprite(_posHandle, new Rectangle(tipTextScreen - new Float2(12, 12), new Float2(24, 24)), axis.AxisColor);
+                
                 var font = _fontReference.GetFont();
-                Render2D.DrawText(font, axis.Label, Color.Black, tipTextScreen - font.MeasureText(axis.Label) * 0.5f);
+                Color textColor = isHovered ? Color.White : Color.Black;
+                Render2D.DrawText(font, axis.Label, textColor, tipTextScreen - font.MeasureText(axis.Label) * 0.5f);
             }
             else
             {
                 Render2D.DrawSprite(_posHandle, new Rectangle(tipTextScreen - new Float2(12, 12), new Float2(24, 24)), axis.AxisColor.RGBMultiplied(0.65f));
                 Render2D.DrawSprite(_negHandle, new Rectangle(tipTextScreen - new Float2(12, 12), new Float2(24, 24)), axis.AxisColor);
+                
+                // Draw white label text on hover for negative axes
+                if (isHovered)
+                {
+                    var font = _fontReference.GetFont();
+                    Render2D.DrawText(font, axis.Label, Color.White, tipTextScreen - font.MeasureText(axis.Label) * 0.5f);
+                }
             }
         }
     }
