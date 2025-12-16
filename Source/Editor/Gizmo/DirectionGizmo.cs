@@ -118,13 +118,10 @@ public class DirectionGizmo : ContainerControl
     {
         _hoveredAxisIndex = -1;
 
-        // Convert local control space to screen space
-        Float2 viewportLocation = PointToParent(ref location);
-
         // Check which axis is being hovered - check from closest to farthest for proper layering
         for (int i = _spritePositions.Count - 1; i >= 0; i--)
         {
-            if (IsPointInSprite(viewportLocation, _spritePositions[i].position))
+            if (IsPointInSprite(location, _spritePositions[i].position))
             {
                 _hoveredAxisIndex = i;
                 break;
@@ -140,13 +137,10 @@ public class DirectionGizmo : ContainerControl
         if (base.OnMouseDown(location, button))
             return true;
 
-        // Convert local control space to screen space
-        Float2 viewportLocation = PointToParent(ref location);
-
         // Check which axis is being clicked - check from closest to farthest for proper layering
         for (int i = _spritePositions.Count - 1; i >= 0; i--)
         {
-            if (IsPointInSprite(viewportLocation, _spritePositions[i].position))
+            if (IsPointInSprite(location, _spritePositions[i].position))
             {
                 OrientViewToAxis(_spritePositions[i].direction);
                 return true;
@@ -182,9 +176,8 @@ public class DirectionGizmo : ContainerControl
         _viewportProjection.Init(_owner.Viewport);
         _gizmoCenter = _viewport.Task.View.WorldPosition + _viewport.Task.View.Direction * 1500;
         _viewportProjection.ProjectPoint(_gizmoCenter, out var gizmoCenterScreen);
-            
-        // Use the settable bounds instead of hardcoded positioning
-        var relativeCenter = Bounds.Location + Bounds.Size * 0.5f;
+
+        var relativeCenter = Size * 0.5f;
 
         // Project unit vectors
         _viewportProjection.ProjectPoint(_gizmoCenter + Vector3.Right, out var xProjected);
@@ -233,7 +226,9 @@ public class DirectionGizmo : ContainerControl
 
         // Rebuild sprite positions list for hover detection
         _spritePositions.Clear();
-        
+
+        Render2D.DrawSprite(_posHandle, new Rectangle(0, 0, Size), Color.Black.AlphaMultiplied(0.1f));
+
         // Draw in order from farthest to closest
         for (int i = 0; i < _axisData.Count; i++)
         {
@@ -258,8 +253,7 @@ public class DirectionGizmo : ContainerControl
             {
                 Render2D.DrawSprite(_posHandle, new Rectangle(tipTextScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axis.AxisColor.RGBMultiplied(0.65f));
                 Render2D.DrawSprite(_negHandle, new Rectangle(tipTextScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axis.AxisColor);
-                
-                // Draw white label text on hover for negative axes
+
                 if (isHovered)
                 {
                     var font = _fontReference.GetFont();

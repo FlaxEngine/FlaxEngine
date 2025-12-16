@@ -218,11 +218,11 @@ namespace FlaxEditor.Viewport
             // Add rubber band selector
             _rubberBandSelector = new ViewportRubberBandSelector(this);
             _directionGizmo = new DirectionGizmo(this);
-            _directionGizmo.Parent = this;
             _directionGizmo.AnchorPreset = AnchorPresets.TopRight;
-            _directionGizmo.LocalY += 30;
-            _directionGizmo.LocalX -= 10;
-            _directionGizmo.Size = new Float2(100, 100);
+            _directionGizmo.Parent = this;
+            _directionGizmo.LocalY += 25;
+            _directionGizmo.LocalX -= 150;
+            _directionGizmo.Size = new Float2(150, 150);
 
             // Add grid
             Grid = new GridGizmo(this);
@@ -600,7 +600,6 @@ namespace FlaxEditor.Viewport
 
             // Draw rubber band for rectangle selection
             _rubberBandSelector.Draw();
-            _directionGizmo.Draw();
         }
 
         /// <inheritdoc />
