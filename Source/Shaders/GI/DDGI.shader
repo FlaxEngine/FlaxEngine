@@ -13,6 +13,7 @@
 #include "./Flax/Math.hlsl"
 #include "./Flax/Noise.hlsl"
 #include "./Flax/Quaternion.hlsl"
+#include "./Flax/MonteCarlo.hlsl"
 #include "./Flax/GlobalSignDistanceField.hlsl"
 #include "./Flax/GI/GlobalSurfaceAtlas.hlsl"
 #include "./Flax/GI/DDGI.hlsl"
@@ -42,6 +43,8 @@ float TemporalTime;
 int4 ProbeScrollClears[4];
 float3 ViewDir;
 float Padding1;
+float3 QuantizationError;
+uint FrameIndexMod8;
 META_CB_END
 
 META_CB_BEGIN(1, Data1)
@@ -704,6 +707,9 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     result = float4(lerp(result.rg, previous.rg, historyWeight), 0.0f, 1.0f);
 #endif
 
+    // Write output irradiance (apply quantization error to reduce yellowish artifacts due to R11G11B10 format)
+    float noise = InterleavedGradientNoise(octahedralCoords, FrameIndexMod8);
+    result.rgb = QuantizeColor(result.rgb, noise, QuantizationError);
     RWOutput[outputCoords] = result;
 
     GroupMemoryBarrierWithGroupSync();
