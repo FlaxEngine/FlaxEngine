@@ -537,6 +537,13 @@ int32 Editor::LoadProduct()
     if (FileSystem::FileExists(lastProjectSettingPath))
         File::ReadAllText(lastProjectSettingPath, lastProjectPath);
 
+    // Try to open the last project when requested
+    if (projectPath.IsEmpty() && CommandLine::Options.LastProject.IsTrue())
+    {
+        if (!lastProjectPath.IsEmpty() && FileSystem::DirectoryExists(lastProjectPath))
+            projectPath = lastProjectPath;
+    }
+
     // Missing project case
     if (projectPath.IsEmpty())
     {
