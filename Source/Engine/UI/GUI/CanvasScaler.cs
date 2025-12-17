@@ -443,6 +443,7 @@ namespace FlaxEngine.GUI
         {
             if (precise) // Ignore as utility-only element
                 return false;
+            location *= _scale;
             return base.ContainsPoint(ref location, precise);
         }
 
