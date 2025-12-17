@@ -56,6 +56,11 @@ namespace FlaxEditor.Surface
         protected Rectangle _headerRect;
 
         /// <summary>
+        /// The header text rectangle (local space).
+        /// </summary>
+        protected Rectangle _headerTextRect;
+
+        /// <summary>
         /// The close button rectangle (local space).
         /// </summary>
         protected Rectangle _closeButtonRect;
@@ -132,7 +137,7 @@ namespace FlaxEditor.Surface
             AutoFocus = false;
             TooltipText = GetTooltip();
             CullChildren = false;
-            BackgroundColor = Style.Current.BackgroundNormal;
+            BackgroundColor = Color.Lerp(Style.Current.Background, Style.Current.BackgroundHighlighted, 0.55f);
 
             if (Archetype.DefaultValues != null)
             {
@@ -149,7 +154,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Gets the color of the footer of the node.
         /// </summary>
-        protected virtual Color FooterColor => GroupArchetype.Color;
+        protected virtual Color ArchetypeColor => GroupArchetype.Color;
 
         private Float2 mouseDownMousePosition;
 
@@ -1032,6 +1037,7 @@ namespace FlaxEditor.Surface
             const float closeButtonMargin = Constants.NodeCloseButtonMargin;
             const float closeButtonSize = Constants.NodeCloseButtonSize;
             _headerRect = new Rectangle(0, 0, Width, headerSize);
+            _headerTextRect = _headerRect with { Width = _headerRect.Width - 5f, X = _headerRect.X + 5f }; 
             _closeButtonRect = new Rectangle(Width - closeButtonSize - closeButtonMargin, closeButtonMargin, closeButtonSize, closeButtonSize);
             _footerRect = new Rectangle(0, Height - footerSize, Width, footerSize);
         }
@@ -1058,8 +1064,8 @@ namespace FlaxEditor.Surface
             var headerColor = style.BackgroundHighlighted;
             if (_headerRect.Contains(ref _mousePosition) && !Surface.IsConnecting && !Surface.IsSelecting)
                 headerColor *= 1.07f;
-            Render2D.FillRectangle(_headerRect, headerColor);
-            Render2D.DrawText(style.FontLarge, Title, _headerRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
+            Render2D.FillRectangle(_headerRect, ArchetypeColor);
+            Render2D.DrawText(style.FontLarge, Title, _headerTextRect, style.Foreground, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1f, Constants.NodeHeaderTextScale);
 
             // Close button
             if ((Archetype.Flags & NodeFlags.NoCloseButton) == 0 && Surface.CanEdit)
@@ -1069,7 +1075,7 @@ namespace FlaxEditor.Surface
             }
 
             // Footer
-            Render2D.FillRectangle(_footerRect, FooterColor);
+            Render2D.FillRectangle(_footerRect, ArchetypeColor);
 
             DrawChildren();
 

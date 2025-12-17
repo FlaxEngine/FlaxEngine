@@ -415,8 +415,8 @@ namespace FlaxEditor.Surface.Archetypes
                 // Setup boxes
                 _input = (InputBox)GetBox(0);
                 _output = (OutputBox)GetBox(1);
-                _input.ConnectionOffset = new Float2(0, FlaxEditor.Surface.Constants.BoxSize * -0.5f);
-                _output.ConnectionOffset = new Float2(0, FlaxEditor.Surface.Constants.BoxSize * 0.5f);
+                _input.ConnectionOffset = new Float2(0, FlaxEditor.Surface.Constants.BoxRowHeight * -0.5f);
+                _output.ConnectionOffset = new Float2(0, FlaxEditor.Surface.Constants.BoxRowHeight * 0.5f);
 
                 // Setup node type and data
                 var flagsRoot = NodeFlags.NoRemove | NodeFlags.NoCloseButton | NodeFlags.NoSpawnViaPaste;
@@ -667,7 +667,7 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             }
 
-            protected override Color FooterColor => Color.Transparent;
+            protected override Color ArchetypeColor => Color.Transparent;
 
             protected override Float2 CalculateNodeSize(float width, float height)
             {

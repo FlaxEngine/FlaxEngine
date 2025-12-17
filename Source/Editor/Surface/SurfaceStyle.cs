@@ -141,6 +141,11 @@ namespace FlaxEditor.Surface
         public Texture Background;
 
         /// <summary>
+        /// The color used as a surface background.
+        /// </summary>
+        public Color BackgroundColor;
+
+        /// <summary>
         /// Boxes drawing callback.
         /// </summary>
         public Action<Elements.Box> DrawBox = DefaultDrawBox;
@@ -216,7 +221,7 @@ namespace FlaxEditor.Surface
 
         private static void DefaultDrawBox(Elements.Box box)
         {
-            var rect = new Rectangle(Float2.Zero, box.Size);
+            var rect = new Rectangle(0.0f, box.Height * 0.5f - Constants.BoxSize * 0.5f, new Float2(Constants.BoxSize));
 
             // Size culling
             const float minBoxSize = 5.0f;
@@ -293,6 +298,7 @@ namespace FlaxEditor.Surface
                     ArrowClose = editor.Icons.VisjectArrowClosed32,
                 },
                 Background = editor.UI.VisjectSurfaceBackground,
+                BackgroundColor = new Color(31, 31, 31),
             };
         }
 

@@ -65,7 +65,7 @@ namespace FlaxEditor.Surface
         /// </summary>
         protected virtual void DrawBackground()
         {
-            DrawBackgroundDefault(Style.Background, Width, Height);
+            DrawBackgroundSolidColor(Style.BackgroundColor, Width, Height);
         }
 
         internal static void DrawBackgroundDefault(Texture background, float width, float height)
@@ -93,6 +93,12 @@ namespace FlaxEditor.Surface
                     }
                 }
             }
+        }
+
+        internal static void DrawBackgroundSolidColor(Color color, float width, float height)
+        {
+            Rectangle backgroundRect = new Rectangle(0f, 0f, width, height);
+            Render2D.FillRectangle(backgroundRect, color);
         }
 
         /// <summary>

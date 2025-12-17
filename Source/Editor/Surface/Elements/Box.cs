@@ -196,7 +196,7 @@ namespace FlaxEditor.Surface.Elements
 
         /// <inheritdoc />
         protected Box(SurfaceNode parentNode, NodeElementArchetype archetype, Float2 location)
-        : base(parentNode, archetype, location, new Float2(Constants.BoxSize), false)
+        : base(parentNode, archetype, location, new Float2(Constants.BoxRowHeight), false)
         {
             _currentType = DefaultType;
             _isSingle = Archetype.Single;

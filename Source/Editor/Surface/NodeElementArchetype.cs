@@ -157,7 +157,7 @@ namespace FlaxEditor.Surface
                 {
                     Type = NodeElementType.Output,
                     Position = new Float2(
-                                          Constants.NodeMarginX - Constants.BoxSize + Constants.BoxOffsetX,
+                                          Constants.NodeMarginX - Constants.BoxRowHeight + Constants.BoxOffsetX,
                                           Constants.NodeMarginY + Constants.NodeHeaderSize + yLevel * Constants.LayoutOffsetY),
                     Text = text,
                     Single = single,
@@ -182,7 +182,7 @@ namespace FlaxEditor.Surface
                 {
                     Type = NodeElementType.Output,
                     Position = new Float2(
-                                          Constants.NodeMarginX - Constants.BoxSize + Constants.BoxOffsetX,
+                                          Constants.NodeMarginX - Constants.BoxRowHeight + Constants.BoxOffsetX,
                                           Constants.NodeMarginY + Constants.NodeHeaderSize + yLevel * Constants.LayoutOffsetY),
                     Text = text,
                     Single = single,

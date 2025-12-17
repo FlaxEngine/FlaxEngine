@@ -1058,7 +1058,7 @@ namespace FlaxEditor.Surface.Archetypes
 
         internal class RerouteNode : SurfaceNode, IConnectionInstigator
         {
-            internal static readonly Float2 DefaultSize = new Float2(FlaxEditor.Surface.Constants.BoxSize);
+            internal static readonly Float2 DefaultSize = new Float2(FlaxEditor.Surface.Constants.BoxRowHeight);
             private Rectangle _localBounds;
             private InputBox _input;
             private OutputBox _output;
