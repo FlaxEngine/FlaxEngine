@@ -199,12 +199,12 @@ public class DirectionGizmo : ContainerControl
 
         // Calculate distances from camera to determine draw order
         Vector3 cameraPosition = _viewport.Task.View.Position;
-        float xDistance = Vector3.Distance(cameraPosition, _gizmoCenter + Vector3.Right);
-        float yDistance = Vector3.Distance(cameraPosition, _gizmoCenter + Vector3.Up);
-        float zDistance = Vector3.Distance(cameraPosition, _gizmoCenter + Vector3.Forward);
-        float negXDistance = Vector3.Distance(cameraPosition, _gizmoCenter - Vector3.Right);
-        float negYDistance = Vector3.Distance(cameraPosition, _gizmoCenter - Vector3.Up);
-        float negZDistance = Vector3.Distance(cameraPosition, _gizmoCenter - Vector3.Forward);
+        float xDistance = (float)Vector3.Distance(cameraPosition, _gizmoCenter + Vector3.Right);
+        float yDistance = (float)Vector3.Distance(cameraPosition, _gizmoCenter + Vector3.Up);
+        float zDistance = (float)Vector3.Distance(cameraPosition, _gizmoCenter + Vector3.Forward);
+        float negXDistance = (float)Vector3.Distance(cameraPosition, _gizmoCenter - Vector3.Right);
+        float negYDistance = (float)Vector3.Distance(cameraPosition, _gizmoCenter - Vector3.Up);
+        float negZDistance = (float)Vector3.Distance(cameraPosition, _gizmoCenter - Vector3.Forward);
 
         _xAxisData.Delta = xDelta;
         _xAxisData.Distance = xDistance;
