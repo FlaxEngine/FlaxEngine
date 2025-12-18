@@ -703,16 +703,17 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
         //result.rgb = previous + (irradianceDelta * 0.25f);
     }
     result = float4(lerp(result.rgb, previous.rgb, historyWeight), 1.0f);
+
+    // Apply quantization error to reduce yellowish artifacts due to R11G11B10 format
+    float noise = InterleavedGradientNoise(octahedralCoords, FrameIndexMod8);
+    result.rgb = QuantizeColor(result.rgb, noise, QuantizationError);
 #else
     result = float4(lerp(result.rg, previous.rg, historyWeight), 0.0f, 1.0f);
 #endif
 
-    // Write output irradiance (apply quantization error to reduce yellowish artifacts due to R11G11B10 format)
-    float noise = InterleavedGradientNoise(octahedralCoords, FrameIndexMod8);
-    result.rgb = QuantizeColor(result.rgb, noise, QuantizationError);
     RWOutput[outputCoords] = result;
-
     GroupMemoryBarrierWithGroupSync();
+
     uint2 baseCoords = GetDDGIProbeTexelCoords(DDGI, CascadeIndex, probeIndex) * (DDGI_PROBE_RESOLUTION + 2);
 
 #if DDGI_PROBE_UPDATE_MODE == 0

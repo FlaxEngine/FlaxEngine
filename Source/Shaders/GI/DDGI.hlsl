@@ -168,7 +168,7 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
 
     // Loop over the closest probes to accumulate their contributions
     float4 irradiance = float4(0, 0, 0, 0);
-    const int3 SearchAxisMasks[3] = { int3(1, 0, 0), int3(0, 1, 0), int3(0, 0, 1) };
+    const int3 SearchAxes[3] = { int3(1, 0, 0), int3(0, 1, 0), int3(0, 0, 1) };
     for (uint i = 0; i < 8; i++)
     {
         uint3 probeCoordsOffset = uint3(i, i >> 1, i >> 2) & 1;
@@ -182,10 +182,11 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
         {
             // Search nearby probes to find any nearby GI sample
             for (int searchDistance = 1; searchDistance < 3 && probeState == DDGI_PROBE_STATE_INACTIVE; searchDistance++)
+            {
                 for (uint searchAxis = 0; searchAxis < 3; searchAxis++)
                 {
-                    int searchAxisDir = probeCoordsOffset[searchAxis] ? 1 : -1;
-                    int3 searchCoordsOffset = SearchAxisMasks[searchAxis] * searchAxisDir * searchDistance;
+                    int searchAxisSign = probeCoordsOffset[searchAxis] ? 1 : -1;
+                    int3 searchCoordsOffset = SearchAxes[searchAxis] * (searchAxisSign * searchDistance);
                     uint3 searchCoords = clamp((int3)probeCoords + searchCoordsOffset, int3(0, 0, 0), (int3)probeCoordsEnd);
                     uint searchIndex = GetDDGIScrollingProbeIndex(data, cascadeIndex, searchCoords);
                     float4 searchData = LoadDDGIProbeData(data, probesData, cascadeIndex, searchIndex);
@@ -200,6 +201,7 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
                         break;
                     }
                 }
+            }
             if (probeState == DDGI_PROBE_STATE_INACTIVE)
                 continue;
         }
@@ -232,8 +234,7 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
 
         // Adjust weight curve to inject a small portion of light
         const float minWeightThreshold = 0.2f;
-        if (weight < minWeightThreshold)
-            weight *= Square(weight) / Square(minWeightThreshold);
+        if (weight < minWeightThreshold) weight *= (weight * weight) * (1.0f / (minWeightThreshold * minWeightThreshold));
 
         // Calculate trilinear weights based on the distance to each probe to smoothly transition between grid of 8 probes
         float3 trilinear = lerp(1.0f - biasAlpha, biasAlpha, (float3)probeCoordsOffset);
