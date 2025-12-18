@@ -109,7 +109,7 @@ public:
     /// <summary>
     /// Gets the name of the editor.
     /// </summary>
-    /// <returns>The name</returns>
+    /// <returns>The name.</returns>
     virtual String GetName() const = 0;
 
     /// <summary>
@@ -168,6 +168,13 @@ public:
     /// <param name="editorType">Type of the editor.</param>
     /// <returns>The editor object or null if not found.</returns>
     static CodeEditor* GetCodeEditor(CodeEditorTypes editorType);
+
+    /// <summary>
+    /// Gets the name of the editor.
+    /// </summary>
+    /// <param name="editorType">The code editor type.</param>
+    /// <returns>The name.</returns>
+    API_FUNCTION() static String GetName(CodeEditorTypes editorType);
 
     /// <summary>
     /// Opens the file. Handles async opening.

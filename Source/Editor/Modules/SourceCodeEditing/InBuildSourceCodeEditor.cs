@@ -22,52 +22,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         public InBuildSourceCodeEditor(CodeEditorTypes type)
         {
             Type = type;
-            switch (type)
-            {
-            case CodeEditorTypes.Custom:
-                Name = "Custom";
-                break;
-            case CodeEditorTypes.SystemDefault:
-                Name = "System Default";
-                break;
-            case CodeEditorTypes.VS2008:
-                Name = "Visual Studio 2008";
-                break;
-            case CodeEditorTypes.VS2010:
-                Name = "Visual Studio 2010";
-                break;
-            case CodeEditorTypes.VS2012:
-                Name = "Visual Studio 2012";
-                break;
-            case CodeEditorTypes.VS2013:
-                Name = "Visual Studio 2013";
-                break;
-            case CodeEditorTypes.VS2015:
-                Name = "Visual Studio 2015";
-                break;
-            case CodeEditorTypes.VS2017:
-                Name = "Visual Studio 2017";
-                break;
-            case CodeEditorTypes.VS2019:
-                Name = "Visual Studio 2019";
-                break;
-            case CodeEditorTypes.VS2022:
-                Name = "Visual Studio 2022";
-                break;
-            case CodeEditorTypes.VS2026:
-                Name = "Visual Studio 2026";
-                break;
-            case CodeEditorTypes.VSCode:
-                Name = "Visual Studio Code";
-                break;
-            case CodeEditorTypes.VSCodeInsiders:
-                Name = "Visual Studio Code - Insiders";
-                break;
-            case CodeEditorTypes.Rider:
-                Name = "Rider";
-                break;
-            default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
-            }
+            Name = CodeEditingManager.GetName(type);
         }
 
         /// <inheritdoc />

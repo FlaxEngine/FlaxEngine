@@ -139,6 +139,19 @@ CodeEditor* CodeEditingManager::GetCodeEditor(CodeEditorTypes editorType)
     return nullptr;
 }
 
+String CodeEditingManager::GetName(CodeEditorTypes editorType)
+{
+    const auto editor = GetCodeEditor(editorType);
+    if (editor)
+    {
+        return editor->GetName();
+    }
+    else
+    {
+        LOG(Warning, "Missing code editor type {0}", (int32)editorType);
+        return String::Empty;
+    }
+}
 void CodeEditingManager::OpenFile(CodeEditorTypes editorType, const String& path, int32 line)
 {
     const auto editor = GetCodeEditor(editorType);
