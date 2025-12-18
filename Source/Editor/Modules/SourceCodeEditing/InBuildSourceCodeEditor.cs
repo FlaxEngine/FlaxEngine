@@ -29,19 +29,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         public string Name { get; set; }
 
         /// <inheritdoc />
-        public string GenerateProjectCustomArgs
-        {
-            get
-            {
-                switch (Type)
-                {
-                case CodeEditorTypes.VSCodeInsiders:
-                case CodeEditorTypes.VSCode: return "-vscode -vs2022";
-                case CodeEditorTypes.Rider: return "-vs2022";
-                default: return null;
-                }
-            }
-        }
+        public string GenerateProjectCustomArgs => CodeEditingManager.GetGenerateProjectCustomArgs(Type);
 
         /// <inheritdoc />
         public void OpenSolution()

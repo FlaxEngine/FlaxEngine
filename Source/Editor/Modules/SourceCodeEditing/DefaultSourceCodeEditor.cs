@@ -74,7 +74,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         public string Name => "Default";
 
         /// <inheritdoc />
-        public string GenerateProjectCustomArgs => null;
+        public string GenerateProjectCustomArgs => _currentEditor?.GenerateProjectCustomArgs;
 
         /// <inheritdoc />
         public void OpenSolution()
