@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/Nullable.h"
+#include "Engine/Core/Collections/Array.h"
 
 /// <summary>
 /// Command line options helper.
@@ -214,4 +215,12 @@ public:
     /// <param name="cmdLine">The command line.</param>
     /// <returns>True if failed, otherwise false.</returns>
     static bool Parse(const Char* cmdLine);
+
+    /// <summary>
+    /// Parses the command line arguments string into string list of arguments.
+    /// </summary>
+    /// <param name="cmdLine">The command line.</param>
+    /// <param name="arguments">The parsed arguments</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    static bool ParseArguments(const StringView& cmdLine, Array<StringAnsi>& arguments);
 };

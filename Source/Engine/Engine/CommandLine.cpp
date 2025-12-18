@@ -3,6 +3,7 @@
 #include "CommandLine.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Utilities.h"
+#include "Engine/Core/Types/StringView.h"
 #include <iostream>
 
 CommandLine::OptionsData CommandLine::Options;
@@ -166,6 +167,66 @@ bool CommandLine::Parse(const Char* cmdLine)
 #if USE_EDITOR || !BUILD_RELEASE
     PARSE_BOOL_SWITCH("-shaderprofile ", ShaderProfile);
 #endif
+
+    return false;
+}
+
+bool CommandLine::ParseArguments(const StringView& cmdLine, Array<StringAnsi>& arguments)
+{
+    int32 start = 0;
+    int32 quotesStart = -1;
+    int32 length = cmdLine.Length();
+    for (int32 i = 0; i < length; i++)
+    {
+        if (cmdLine[i] == ' ' && quotesStart == -1)
+        {
+            int32 count = i - start;
+            if (count > 0)
+                arguments.Add(StringAnsi(cmdLine.Substring(start, count)));
+            start = i + 1;
+        }
+        else if (cmdLine[i] == '\"')
+        {
+            if (quotesStart >= 0)
+            {
+                if (i + 1 < length && cmdLine[i + 1] != ' ')
+                {
+                    // End quotes are in the middle of the current word,
+                    // continue until the end of the current word.
+                }
+                else
+                {
+                    int32 offset = 1;
+                    if (quotesStart == start && cmdLine[start] == '\"')
+                    {
+                        // Word starts and ends with quotes, only include the quoted content.
+                        quotesStart++;
+                        offset--;
+                    }
+                    else if (quotesStart != start)
+                    {
+                        // Start quotes in the middle of the word, include the whole word.
+                        quotesStart = start;
+                    }
+
+                    int32 count = i - quotesStart + offset; 
+                    if (count > 0)
+                        arguments.Add(StringAnsi(cmdLine.Substring(quotesStart, count)));
+                    start = i + 1;
+                }
+                quotesStart = -1;
+            }
+            else
+            {
+                quotesStart = i;
+            }
+        }
+    }
+    const int32 count = length - start;
+    if (count > 0)
+        arguments.Add(StringAnsi(cmdLine.Substring(start, count)));
+    if (quotesStart >= 0)
+        return true; // Missing last closing quote
 
     return false;
 }
