@@ -52,6 +52,7 @@ namespace FlaxEditor.CustomEditors.Elements
         public Image AddHeaderButton(string tooltipText, float xOffset, SpriteHandle sprite)
         {
             var style = Style.Current;
+            const float padding = 2.0f;
             var settingsButtonSize = Panel.HeaderHeight;
             return new Image
             {
@@ -59,7 +60,7 @@ namespace FlaxEditor.CustomEditors.Elements
                 AutoFocus = true,
                 AnchorPreset = AnchorPresets.TopRight,
                 Parent = Panel,
-                Bounds = new Rectangle(Panel.Width - settingsButtonSize - xOffset, 0, settingsButtonSize, settingsButtonSize),
+                Bounds = new Rectangle(Panel.Width - settingsButtonSize - xOffset, padding * 0.5f, settingsButtonSize - padding, settingsButtonSize - padding),
                 IsScrollable = false,
                 Color = style.ForegroundGrey,
                 Margin = new Margin(1),

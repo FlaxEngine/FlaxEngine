@@ -852,7 +852,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 var title = Utilities.Utils.GetPropertyNameUI(scriptType.Name);
                 var group = layout.Group(title, editor);
                 if (!hasAllRequirements)
-                    group.Panel.HeaderTextColor = FlaxEngine.GUI.Style.Current.Statusbar.Failed;
+                    group.Panel.HeaderTextColor = _style.Statusbar.Failed;
                 if ((Presenter.Features & FeatureFlags.CacheExpandedGroups) != 0)
                 {
                     if (Editor.Instance.ProjectCache.IsGroupToggled(title))
@@ -865,9 +865,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     group.Panel.Open();
 
                 // Customize
+                float totalHeaderButtonsOffset = 0f;
                 group.Panel.TooltipText = Editor.Instance.CodeDocs.GetTooltip(scriptType);
                 if (script.HasPrefabLink)
-                    group.Panel.HeaderTextColor = FlaxEngine.GUI.Style.Current.ProgressNormal;
+                    group.Panel.HeaderTextColor = _style.ProgressNormal;
 
                 // Add toggle button to the group
                 var headerHeight = group.Panel.HeaderHeight;
@@ -891,7 +892,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     TooltipText = "Script reference.",
                     AutoFocus = true,
                     IsScrollable = false,
-                    Color = FlaxEngine.GUI.Style.Current.ForegroundGrey,
+                    Color = _style.ForegroundGrey,
                     Parent = group.Panel,
                     Bounds = new Rectangle(scriptToggle.Right, 0.5f, headerHeight, headerHeight),
                     Margin = new Margin(1),
@@ -910,6 +911,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 var settingsButton = group.AddSettingsButton();
                 settingsButton.Tag = script;
                 settingsButton.Clicked += OnSettingsButtonClicked;
+                totalHeaderButtonsOffset += settingsButton.Width + FlaxEditor.Utilities.Constants.UIMargin;
 
                 // Add script obsolete icon to the group
                 if (scriptType.HasAttribute(typeof(ObsoleteAttribute), false))
@@ -919,9 +921,20 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     string tooltip = "Script marked as obsolete." +
                         (string.IsNullOrEmpty(attribute.Message) ? "" : $"\n{attribute.Message}") +
                         (string.IsNullOrEmpty(attribute.DiagnosticId) ? "" : $"\n{attribute.DiagnosticId}");
-                    var obsoleteButton = group.AddHeaderButton(tooltip, settingsButton.Width + FlaxEditor.Utilities.Constants.UIMargin, Editor.Instance.Icons.Info32);
+                    var obsoleteButton = group.AddHeaderButton(tooltip, totalHeaderButtonsOffset, Editor.Instance.Icons.Info32);
                     obsoleteButton.Color = Color.Orange;
                     obsoleteButton.MouseOverColor = Color.DarkOrange;
+                    totalHeaderButtonsOffset += obsoleteButton.Width;
+                }
+
+                // Show visual indicator if script only exists in prefab instance and is not part of the prefab
+                bool isPrefabActor = scripts.Any(s => s.Actor.HasPrefabLink);
+                if (isPrefabActor && script.PrefabID == Guid.Empty)
+                {
+                    var prefabInstanceButton = group.AddHeaderButton("Script only exists in this prefab instance.", totalHeaderButtonsOffset, Editor.Instance.Icons.Add32);
+                    prefabInstanceButton.Color = _style.ProgressNormal;
+                    prefabInstanceButton.MouseOverColor = _style.ProgressNormal * 0.9f;
+                    totalHeaderButtonsOffset += prefabInstanceButton.Width;
                 }
 
                 group.Panel.HeaderTextMargin = new Margin(scriptDrag.Right - 12, 35, 2, 2);
