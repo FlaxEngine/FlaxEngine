@@ -921,6 +921,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         (string.IsNullOrEmpty(attribute.DiagnosticId) ? "" : $"\n{attribute.DiagnosticId}");
                     var obsoleteButton = group.AddHeaderButton(tooltip, settingsButton.Width + FlaxEditor.Utilities.Constants.UIMargin, Editor.Instance.Icons.Info32);
                     obsoleteButton.Color = Color.Orange;
+                    obsoleteButton.MouseOverColor = Color.DarkOrange;
                 }
 
                 group.Panel.HeaderTextMargin = new Margin(scriptDrag.Right - 12, 35, 2, 2);
