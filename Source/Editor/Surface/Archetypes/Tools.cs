@@ -1059,7 +1059,10 @@ namespace FlaxEditor.Surface.Archetypes
         internal class RerouteNode : SurfaceNode, IConnectionInstigator
         {
             internal static readonly Float2 DefaultSize = new Float2(FlaxEditor.Surface.Constants.BoxRowHeight);
+            
+            internal bool DrawDisabled => _input.AllConnectionsDisabled || _output.AllConnectionsDisabled;
             internal override bool DrawBasicShadow => false;
+
             private Rectangle _localBounds;
             private InputBox _input;
             private OutputBox _output;
@@ -1165,6 +1168,9 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public override void Draw()
             {
+                // Update active state of input
+                _input.IsActive = !_output.AllConnectionsDisabled;
+
                 var style = Surface.Style;
                 var connectionColor = style.Colors.Default;
                 var type = ScriptType.Null;
@@ -1177,6 +1183,10 @@ namespace FlaxEditor.Surface.Archetypes
                     var hints = _input.Connections[0].ParentNode.Archetype.ConnectionsHints;
                     Surface.Style.GetConnectionColor(type, hints, out connectionColor);
                 }
+
+                // Draw the box as disabled if needed
+                if (DrawDisabled)
+                    connectionColor = connectionColor * 0.6f;
 
                 if (!_input.HasAnyConnection)
                     Render2D.FillRectangle(new Rectangle(-barHorizontalOffset - barHeight * 2, (DefaultSize.Y - barHeight) / 2, barHeight * 2, barHeight), connectionColor);
