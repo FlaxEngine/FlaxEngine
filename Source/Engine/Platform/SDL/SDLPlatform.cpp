@@ -11,6 +11,7 @@
 #include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Platform/WindowsManager.h"
 #include "Engine/Platform/SDL/SDLInput.h"
+#include "Engine/Engine/CommandLine.h"
 
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_init.h>
@@ -396,13 +397,7 @@ int32 SDLPlatform::CreateProcess(CreateProcessSettings& settings)
     int32 result = 0;
     const bool captureStdOut = settings.LogOutput || settings.SaveOutput;
     const StringAnsi cmdLine = StringAnsi::Format("\"{0}\" {1}", StringAnsi(settings.FileName), StringAnsi(settings.Arguments));
-    const char* cmd[] = { "sh", "-c", cmdLine.Get(), (char *)0 };
     StringAnsi workingDirectory(settings.WorkingDirectory);
-#if PLATFORM_WINDOWS
-    bool background = !settings.WaitForEnd || settings.HiddenWindow; // This also hides the window on Windows
-#else
-    bool background = !settings.WaitForEnd;
-#endif
 
     // Populate environment with current values from parent environment.
     // SDL does not populate the environment with the latest values but with a snapshot captured during initialization.
@@ -414,8 +409,27 @@ int32 SDLPlatform::CreateProcess(CreateProcessSettings& settings)
     for (auto iter = settings.Environment.Begin(); iter != settings.Environment.End(); ++iter)
         SDL_SetEnvironmentVariable(env, StringAnsi(iter->Key).Get(), StringAnsi(iter->Value).Get(), true);
 
+    // Parse argument list with possible quotes included
+    Array<StringAnsi> arguments;
+    arguments.Add(StringAnsi(settings.FileName));
+    if (CommandLine::ParseArguments(settings.Arguments, arguments))
+    {
+        LOG(Error, "Failed to parse arguments for process {}: '{}'", settings.FileName.Get(), settings.Arguments.Get());
+        return -1;
+    }
+    Array<const char*> cmd;
+    for (const StringAnsi& str : arguments)
+        cmd.Add(str.Get());
+    cmd.Add((const char*)0);
+
+#if PLATFORM_WINDOWS
+    bool background = !settings.WaitForEnd || settings.HiddenWindow; // This also hides the window on Windows
+#else
+    bool background = !settings.WaitForEnd;
+#endif
+
     SDL_PropertiesID props = SDL_CreateProperties();
-    SDL_SetPointerProperty(props, SDL_PROP_PROCESS_CREATE_ARGS_POINTER, cmd);
+    SDL_SetPointerProperty(props, SDL_PROP_PROCESS_CREATE_ARGS_POINTER, cmd.Get());
     SDL_SetPointerProperty(props, SDL_PROP_PROCESS_CREATE_ENVIRONMENT_POINTER, env);
     SDL_SetBooleanProperty(props, SDL_PROP_PROCESS_CREATE_BACKGROUND_BOOLEAN, background);
     if (workingDirectory.HasChars())
