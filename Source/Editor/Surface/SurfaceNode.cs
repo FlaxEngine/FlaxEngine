@@ -40,6 +40,13 @@ namespace FlaxEditor.Surface
     [HideInEditor]
     public class SurfaceNode : SurfaceControl
     {
+        internal const float ShadowOffset = 2.25f;
+
+        /// <summary>
+        /// If true, draws a basic rectangle shadow behind the node. Disable to hide shadow or if the node is drawing a custom shadow.
+        /// </summary>
+        internal virtual bool DrawBasicShadow => true;
+
         /// <summary>
         /// The box to draw a highlight around. Drawing will be skipped if null.
         /// </summary>
@@ -1047,8 +1054,16 @@ namespace FlaxEditor.Surface
         {
             var style = Style.Current;
 
-            // Background
             var backgroundRect = new Rectangle(Float2.Zero, Size);
+
+            // Shadow
+            if (DrawBasicShadow)
+            {
+                var shadowRect = backgroundRect.MakeOffsetted(ShadowOffset);
+                Render2D.FillRectangle(shadowRect, Color.Black.AlphaMultiplied(0.125f));
+            }
+
+            // Background
             Render2D.FillRectangle(backgroundRect, BackgroundColor);
 
             // Breakpoint hit
@@ -1085,6 +1100,7 @@ namespace FlaxEditor.Surface
                 var colorTop = Color.Orange;
                 var colorBottom = Color.OrangeRed;
                 Render2D.DrawRectangle(backgroundRect, colorTop, colorTop, colorBottom, colorBottom);
+                Render2D.DrawRectangle(backgroundRect, colorTop, colorTop, colorBottom, colorBottom, 2.5f);
             }
 
             // Breakpoint dot

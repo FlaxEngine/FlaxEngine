@@ -1059,6 +1059,7 @@ namespace FlaxEditor.Surface.Archetypes
         internal class RerouteNode : SurfaceNode, IConnectionInstigator
         {
             internal static readonly Float2 DefaultSize = new Float2(FlaxEditor.Surface.Constants.BoxRowHeight);
+            internal override bool DrawBasicShadow => false;
             private Rectangle _localBounds;
             private InputBox _input;
             private OutputBox _output;
@@ -1187,6 +1188,11 @@ namespace FlaxEditor.Surface.Archetypes
                     icon = type.IsVoid ? style.Icons.ArrowClose : style.Icons.BoxClose;
                 else
                     icon = type.IsVoid ? style.Icons.ArrowOpen : style.Icons.BoxOpen;
+
+                // Shadow
+                var shadowRect = _localBounds.MakeOffsetted(ShadowOffset);
+                Render2D.DrawSprite(icon, shadowRect, Color.Black.AlphaMultiplied(0.125f));
+
                 Render2D.DrawSprite(icon, _localBounds, connectionColor);
 
                 base.Draw();
