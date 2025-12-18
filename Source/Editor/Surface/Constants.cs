@@ -55,7 +55,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// The box size (with and height).
         /// </summary>
-        public const float BoxSize = 12.0f;
+        public const float BoxSize = 13.0f;
 
         /// <summary>
         /// The node layout offset on the y axis (height of the boxes rows, etc.). It's used to make the design more consistent.
