@@ -1099,7 +1099,6 @@ namespace FlaxEditor.Surface
             {
                 var colorTop = Color.Orange;
                 var colorBottom = Color.OrangeRed;
-                Render2D.DrawRectangle(backgroundRect, colorTop, colorTop, colorBottom, colorBottom);
                 Render2D.DrawRectangle(backgroundRect, colorTop, colorTop, colorBottom, colorBottom, 2.5f);
             }
 
