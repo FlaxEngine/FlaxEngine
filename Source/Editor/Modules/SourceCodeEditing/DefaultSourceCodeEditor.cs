@@ -41,9 +41,9 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             var vsCode = codeEditing.GetInBuildEditor(CodeEditorTypes.VSCode);
             var rider = codeEditing.GetInBuildEditor(CodeEditorTypes.Rider);
 
-#if PLATFORM_WINDOW
+#if PLATFORM_WINDOWS
             // Favor the newest Visual Studio
-            for (int i = (int)CodeEditorTypes.VS2019; i >= (int)CodeEditorTypes.VS2008; i--)
+            for (int i = (int)CodeEditorTypes.VS2026; i >= (int)CodeEditorTypes.VS2008; i--)
             {
                 var visualStudio = codeEditing.GetInBuildEditor((CodeEditorTypes)i);
                 if (visualStudio != null)
@@ -74,7 +74,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         public string Name => "Default";
 
         /// <inheritdoc />
-        public string GenerateProjectCustomArgs => null;
+        public string GenerateProjectCustomArgs => _currentEditor?.GenerateProjectCustomArgs;
 
         /// <inheritdoc />
         public void OpenSolution()
