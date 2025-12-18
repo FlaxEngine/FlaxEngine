@@ -284,7 +284,7 @@ namespace FlaxEditor.Windows.Assets
                         var setupGroup = layout.Group(Path.GetFileNameWithoutExtension(sourceAsset.Path));
                         setupGroup.Panel.Tag = sourceAsset;
                         setupGroup.Panel.MouseButtonRightClicked += OnPanelHeaderRightClicked;
-                        var settingsButton = setupGroup.AddHeaderButton("Settings.", 0.0f, FlaxEngine.GUI.Style.Current.Settings);
+                        var settingsButton = setupGroup.AddSettingsButton();
                         settingsButton.Tag = sourceAsset;
                         settingsButton.Clicked += OnShowSetupSettings;
 

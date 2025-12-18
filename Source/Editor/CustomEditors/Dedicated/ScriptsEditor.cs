@@ -640,7 +640,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var group = layout.Group("Missing script");
 
             // Add settings button to the group
-            var settingsButton = group.AddHeaderButton("Settings.", 0.0f, FlaxEngine.GUI.Style.Current.Settings);
+            var settingsButton = group.AddSettingsButton();
             settingsButton.Tag = index;
             settingsButton.Clicked += MissingSettingsButtonOnClicked;
         }
@@ -907,21 +907,14 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 };
 
                 // Add settings button to the group
-                var settingsButton = group.AddHeaderButton("Settings.", 0.0f, _style.Settings);
+                var settingsButton = group.AddSettingsButton();
                 settingsButton.Tag = script;
                 settingsButton.Clicked += OnSettingsButtonClicked;
 
                 // Add script obsolete icon to the group
                 if (scriptType.HasAttribute(typeof(ObsoleteAttribute), false))
                 {
-                    ObsoleteAttribute attribute = null;
-                    foreach (var e in scriptType.GetAttributes(false))
-                    {
-                        if (e is not ObsoleteAttribute obsoleteAttribute)
-                            continue;
-                        attribute = obsoleteAttribute;
-                        break;
-                    }
+                    ObsoleteAttribute attribute = (ObsoleteAttribute)scriptType.GetAttributes(false).First(x => x is ObsoleteAttribute);
 
                     string tooltip = "Script marked as obsolete." +
                         (string.IsNullOrEmpty(attribute.Message) ? "" : $"\n{attribute.Message}") +

@@ -37,7 +37,16 @@ namespace FlaxEditor.CustomEditors.Elements
         public override ContainerControl ContainerControl => Panel;
 
         /// <summary>
-        /// Adds utility settings button to the group header.
+        /// Add utility settings button to the group header.
+        /// </summary>
+        /// <returns>The created control.</returns>
+        public Image AddSettingsButton()
+        {
+            return AddHeaderButton("Settings", 0, Style.Current.Settings);
+        }
+
+        /// <summary>
+        /// Adds a button to the group header.
         /// </summary>
         /// <returns>The created control.</returns>
         public Image AddHeaderButton(string tooltipText, float xOffset, SpriteHandle sprite)

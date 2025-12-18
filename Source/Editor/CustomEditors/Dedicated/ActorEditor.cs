@@ -115,7 +115,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 {
                     if (actor != null)
                         group.Panel.TooltipText = Surface.SurfaceUtils.GetVisualScriptTypeDescription(TypeUtils.GetObjectType(actor));
-                    var settingsButton = group.AddHeaderButton("Settings.", 0.0f, FlaxEngine.GUI.Style.Current.Settings);
+                    var settingsButton = group.AddSettingsButton();
                     settingsButton.Clicked += OnSettingsButtonClicked;
                     break;
                 }
