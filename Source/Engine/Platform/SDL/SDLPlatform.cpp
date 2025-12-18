@@ -318,11 +318,11 @@ Window* SDLPlatform::CreateWindow(const CreateWindowSettings& settings)
     return New<SDLWindow>(settings);
 }
 
-bool ReadStream(SDL_IOStream*& stream, char* buffer, int32 bufferLength, int32& bufferPosition, LogType logType, CreateProcessSettings& settings)
+bool ReadStream(SDL_IOStream*& stream, char* buffer, int64 bufferLength, int64& bufferPosition, LogType logType, CreateProcessSettings& settings)
 {
     bool flushBuffer = false;
     bool success = true;
-    int32 read = SDL_ReadIO(stream, buffer + bufferPosition, bufferLength - bufferPosition - 1);
+    auto read = SDL_ReadIO(stream, buffer + bufferPosition, bufferLength - bufferPosition - 1);
     if (read == 0)
     {
         SDL_IOStatus status = SDL_GetIOStatus(stream);
@@ -336,8 +336,8 @@ bool ReadStream(SDL_IOStream*& stream, char* buffer, int32 bufferLength, int32& 
     }
     else
     {
-        int32 startPosition = bufferPosition;
-        bufferPosition += read;
+        int64 startPosition = bufferPosition;
+        bufferPosition += (int64)read;
         if (bufferPosition == bufferLength - 1)
         {
             flushBuffer = true;
@@ -345,7 +345,7 @@ bool ReadStream(SDL_IOStream*& stream, char* buffer, int32 bufferLength, int32& 
         }
         else
         {
-            for (int i = startPosition; i < bufferPosition; ++i)
+            for (int64 i = startPosition; i < bufferPosition; ++i)
             {
                 if (buffer[i] == '\n')
                 {
@@ -358,13 +358,13 @@ bool ReadStream(SDL_IOStream*& stream, char* buffer, int32 bufferLength, int32& 
 
     if (flushBuffer)
     {
-        int32 start = 0;
-        for (int i = 0; i < bufferPosition; ++i)
+        int64 start = 0;
+        for (int64 i = 0; i < bufferPosition; ++i)
         {
             if (buffer[i] != '\n')
                 continue;
 
-            String str(&buffer[start], i - start + 1);
+            String str(&buffer[start], (int32)(i - start + 1));
 #if LOG_ENABLE
             if (settings.LogOutput)
                 Log::Logger::Write(logType, StringView(str.Get(), str.Length() - 1));
@@ -373,7 +373,7 @@ bool ReadStream(SDL_IOStream*& stream, char* buffer, int32 bufferLength, int32& 
                 settings.Output.Add(str.Get(), str.Length());
             start = i + 1;
         }
-        int32 length = bufferPosition - start;
+        int64 length = bufferPosition - start;
         if (length > 0)
         {
             // TODO: Use memmove here? Overlapped memory regions with memcpy is undefined behaviour
@@ -444,12 +444,12 @@ int32 SDLPlatform::CreateProcess(CreateProcessSettings& settings)
     SDL_DestroyEnvironment(env);
     if (process == nullptr)
     {
-        LOG(Error, "Failed to run process {}: {}", String(settings.FileName).Get(), String(SDL_GetError()));
+        LOG(Error, "Failed to run process {}: {}", settings.FileName.Get(), String(SDL_GetError()));
         return -1;
     }
 
     props = SDL_GetProcessProperties(process);
-    int32 pid = SDL_GetNumberProperty(props, SDL_PROP_PROCESS_PID_NUMBER, 0);
+    int64 pid = SDL_GetNumberProperty(props, SDL_PROP_PROCESS_PID_NUMBER, 0);
     SDL_IOStream* stdoutStream = nullptr;
     SDL_IOStream* stderrStream = nullptr;
     if (captureStdOut)
@@ -460,9 +460,9 @@ int32 SDLPlatform::CreateProcess(CreateProcessSettings& settings)
 
     // Handle process output in realtime
     char stdoutBuffer[2049];
-    int32 stdoutPosition = 0;
+    int64 stdoutPosition = 0;
     char stderrBuffer[2049];
-    int32 stderrPosition = 0;
+    int64 stderrPosition = 0;
     while (stdoutStream != nullptr && stderrStream != nullptr)
     {
         if (stdoutStream != nullptr && !ReadStream(stdoutStream, stdoutBuffer, sizeof(stdoutBuffer), stdoutPosition, LogType::Info, settings))
