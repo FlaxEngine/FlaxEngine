@@ -135,7 +135,7 @@ namespace FlaxEditor.Surface
         /// <param name="nodeArch">The node archetype.</param>
         /// <param name="groupArch">The group archetype.</param>
         public SurfaceNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
-        : base(context, nodeArch.Size.X + Constants.NodeMarginX * 2, nodeArch.Size.Y + Constants.NodeMarginY * 2 + Constants.NodeHeaderSize + Constants.NodeFooterSize)
+        : base(context, nodeArch.Size.X + Constants.NodeMarginX * 2, nodeArch.Size.Y + Constants.NodeMarginY * 2 + Constants.NodeHeaderHeight + Constants.NodeFooterSize)
         {
             Title = nodeArch.Title;
             ID = id;
@@ -173,7 +173,7 @@ namespace FlaxEditor.Surface
         /// <returns>The node control total size.</returns>
         protected virtual Float2 CalculateNodeSize(float width, float height)
         {
-            return new Float2(width + Constants.NodeMarginX * 2, height + Constants.NodeMarginY * 2 + Constants.NodeHeaderSize + Constants.NodeFooterSize);
+            return new Float2(width + Constants.NodeMarginX * 2, height + Constants.NodeMarginY * 2 + Constants.NodeHeaderHeight + Constants.NodeFooterSize);
         }
 
         /// <summary>
@@ -227,25 +227,28 @@ namespace FlaxEditor.Surface
                 var child = Children[i];
                 if (!child.Visible)
                     continue;
+                // Input boxes
                 if (child is InputBox inputBox)
                 {
                     var boxWidth = boxLabelFont.MeasureText(inputBox.Text).X + 20;
                     if (inputBox.DefaultValueEditor != null)
                         boxWidth += inputBox.DefaultValueEditor.Width + 4;
                     leftWidth = Mathf.Max(leftWidth, boxWidth);
-                    leftHeight = Mathf.Max(leftHeight, inputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderSize + 20.0f);
+                    leftHeight = Mathf.Max(leftHeight, inputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderHeight + 20.0f);
                 }
+                // Output boxes
                 else if (child is OutputBox outputBox)
                 {
                     rightWidth = Mathf.Max(rightWidth, boxLabelFont.MeasureText(outputBox.Text).X + 20);
-                    rightHeight = Mathf.Max(rightHeight, outputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderSize + 20.0f);
+                    rightHeight = Mathf.Max(rightHeight, outputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderHeight + 20.0f);
                 }
+                // Other controls in the node
                 else if (child is Control control)
                 {
                     if (control.AnchorPreset == AnchorPresets.TopLeft)
                     {
                         width = Mathf.Max(width, control.Right + 4 - Constants.NodeMarginX);
-                        height = Mathf.Max(height, control.Bottom + 4 - Constants.NodeMarginY - Constants.NodeHeaderSize);
+                        height = Mathf.Max(height, control.Bottom + 4 - Constants.NodeMarginY - Constants.NodeHeaderHeight);
                     }
                     else if (!_headerRect.Intersects(control.Bounds))
                     {
@@ -337,6 +340,10 @@ namespace FlaxEditor.Surface
             Elements.Add(element);
             if (element is Control control)
                 AddChild(control);
+
+            // TODO: Perform this at a better time instead of every time an element gets added.
+            if (!Archetype.UseFixedSize)
+                ResizeAuto();
         }
 
         /// <summary>
@@ -377,7 +384,7 @@ namespace FlaxEditor.Surface
                 // Sync properties for exiting box
                 box.Text = text;
                 box.CurrentType = type;
-                box.Y = Constants.NodeMarginY + Constants.NodeHeaderSize + yLevel * Constants.LayoutOffsetY;
+                box.Y = Constants.NodeMarginY + Constants.NodeHeaderHeight + yLevel * Constants.LayoutOffsetY;
             }
 
             // Update box
@@ -1040,7 +1047,7 @@ namespace FlaxEditor.Surface
         protected override void UpdateRectangles()
         {
             const float footerSize = Constants.NodeFooterSize;
-            const float headerSize = Constants.NodeHeaderSize;
+            const float headerSize = Constants.NodeHeaderHeight;
             const float closeButtonMargin = Constants.NodeCloseButtonMargin;
             const float closeButtonSize = Constants.NodeCloseButtonSize;
             _headerRect = new Rectangle(0, 0, Width, headerSize);

@@ -467,6 +467,7 @@ namespace FlaxEditor.Surface.Archetypes
                     Create = (id, context, arch, groupArch) => new CurveNode<T>(id, context, arch, groupArch),
                     Description = "An animation spline represented by a set of keyframes, each representing an endpoint of a Bezier curve.",
                     Flags = NodeFlags.AllGraphs,
+                    UseFixedSize = true,
                     Size = new Float2(400, 180.0f),
                     DefaultValues = new object[]
                     {
@@ -828,7 +829,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _picker = new TypePickerControl
                 {
                     Type = ScriptType.FlaxObject,
-                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX + 20, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize, 160, 16),
+                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX + 20, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight, 160, 16),
                     Parent = this,
                 };
                 _picker.ValueChanged += () => SetValue(0, _picker.ValueTypeName);
@@ -897,7 +898,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _picker = new TypePickerControl
                 {
                     Type = ScriptType.Object,
-                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize, 140, 16),
+                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight, 140, 16),
                     Parent = this,
                 };
                 _picker.ValueChanged += () => SetValue(0, _picker.ValueTypeName);
@@ -948,7 +949,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _picker = new TypePickerControl
                 {
                     Type = ScriptType.FlaxObject,
-                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX + 20, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize, 160, 16),
+                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX + 20, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight, 160, 16),
                     Parent = this,
                 };
                 _picker.ValueChanged += () => SetValue(0, _picker.ValueTypeName);
@@ -999,7 +1000,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _picker = new TypePickerControl
                 {
                     Type = type,
-                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX + 20, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize, 160, 16),
+                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX + 20, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight, 160, 16),
                     Parent = this,
                 };
                 _picker.ValueChanged += () => SetValue(0, _picker.ValueTypeName);
@@ -1510,6 +1511,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Linear color gradient sampler",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(400, 150.0f),
+                UseFixedSize = true,
                 DefaultValues = new object[]
                 {
                     // Stops count
@@ -1829,6 +1831,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Reroute a connection.",
                 Flags = NodeFlags.NoCloseButton | NodeFlags.NoSpawnViaGUI | NodeFlags.AllGraphs,
                 Size = RerouteNode.DefaultSize,
+                UseFixedSize = true,
                 ConnectionsHints = ConnectionsHint.All,
                 IndependentBoxes = new int[] { 0 },
                 DependentBoxes = new int[] { 1 },

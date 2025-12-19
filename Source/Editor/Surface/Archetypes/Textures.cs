@@ -54,7 +54,7 @@ namespace FlaxEditor.Surface.Archetypes
                     {
                         _textureGroupPicker = new ComboBox
                         {
-                            Location = new Float2(FlaxEditor.Surface.Constants.NodeMarginX + 50, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize + FlaxEditor.Surface.Constants.LayoutOffsetY * 5),
+                            Location = new Float2(FlaxEditor.Surface.Constants.NodeMarginX + 50, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight + FlaxEditor.Surface.Constants.LayoutOffsetY * 5),
                             Width = 100,
                             Parent = this,
                         };

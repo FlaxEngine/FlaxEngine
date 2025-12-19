@@ -74,7 +74,7 @@ namespace FlaxEditor.Surface.Archetypes
                 /// <summary>
                 /// The header height.
                 /// </summary>
-                public const float HeaderHeight = FlaxEditor.Surface.Constants.NodeHeaderSize;
+                public const float HeaderHeight = FlaxEditor.Surface.Constants.NodeHeaderHeight;
 
                 /// <summary>
                 /// Gets the type of the module.
@@ -199,7 +199,7 @@ namespace FlaxEditor.Surface.Archetypes
                 DrawChildren();
 
                 // Options border
-                var optionsAreaStart = FlaxEditor.Surface.Constants.NodeHeaderSize + 3.0f;
+                var optionsAreaStart = FlaxEditor.Surface.Constants.NodeHeaderHeight + 3.0f;
                 var optionsAreaHeight = 7 * FlaxEditor.Surface.Constants.LayoutOffsetY + 6.0f;
                 Render2D.DrawRectangle(new Rectangle(1, optionsAreaStart, Width - 2, optionsAreaHeight), style.BackgroundSelected);
 
