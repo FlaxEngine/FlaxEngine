@@ -8,6 +8,97 @@ using FlaxEngine.GUI;
 namespace FlaxEditor.Viewport.Widgets
 {
     /// <summary>
+    /// Otrhographic view toggle viewport Widget Button class.
+    /// Will draw a custom camera frustum to represent an orthographic or perspective camera.
+    /// </summary>
+    /// <seealso cref="ViewportWidgetButton" />
+    [HideInEditor]
+    public class OrthoCamToggleViewportWidgetButton : ViewportWidgetButton
+    {
+        private const int iconPointCount = 4;
+        private const float iconRenderScale = 4.0f;
+
+        private readonly Float2 iconDrawOffset = new Float2(3.0f, 3.0f);
+
+        private readonly Float2[] iconPointsPerspective = new[]
+        {
+            new Float2(0.0f, 1.0f), // Top left
+            new Float2(4.0f, 0.0f), // Top right
+            new Float2(4.0f, 3.0f), // Bottom right
+            new Float2(0.0f, 2.0f), // Bottom left
+        };
+
+        private readonly Float2[] iconPointsOrtho = new[]
+        {
+            new Float2(0.0f, 0.0f), // Top left
+            new Float2(4.0f, 0.0f), // Top right
+            new Float2(4.0f, 3.0f), // Bottom right
+            new Float2(0.0f, 3.0f), // Bottom left
+        };
+
+        private bool wasChecked;
+        private float lerpWeight;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="OrthoCamToggleViewportWidgetButton"/> class.
+        /// </summary>
+        public OrthoCamToggleViewportWidgetButton(float speedTextWidth)
+        : base("00.0", SpriteHandle.Invalid, null, true, 20.0f + speedTextWidth)
+        {
+            wasChecked = Checked;
+        }
+
+        /// <inheritdoc />
+        public override void Update(float deltaTime)
+        {
+            if (wasChecked != Checked)
+            {
+                lerpWeight = 0.0f;
+                wasChecked = Checked;
+            }
+
+            if (lerpWeight <= 1.0f)
+                lerpWeight += deltaTime * 4.2f;
+
+            base.Update(deltaTime);
+        }
+
+        /// <inheritdoc />
+        public override void Draw()
+        {
+            // Cache data
+            var style = Style.Current;
+            var textRect = new Rectangle(0.0f, 0.0f, Width - 2.0f, Height);
+            var backgroundRect = textRect with { Width = Width - 1.0f };
+
+            // Check if is checked or mouse is over
+            if (Checked)
+                Render2D.FillRectangle(backgroundRect, style.BackgroundSelected * (IsMouseOver ? 0.9f : 0.6f));
+            else if (IsMouseOver)
+                Render2D.FillRectangle(backgroundRect, style.BackgroundHighlighted);
+
+            // Draw text
+            Render2D.DrawText(style.FontMedium, Text, textRect, style.ForegroundViewport * (IsMouseOver ? 1.0f : 0.9f), TextAlignment.Far, TextAlignment.Center);
+
+            // Draw camera frustum icon
+            Float2[] currentStart = Checked ? iconPointsOrtho : iconPointsPerspective;
+            Float2[] currentTarget = Checked ? iconPointsPerspective : iconPointsOrtho;
+
+            for (int i = 1; i < iconPointCount + 1; i++)
+            {
+                int endPointIndex = Mathf.Wrap(i, 0, iconPointCount - 1);
+                Float2 lineStart = Float2.Lerp(currentStart[i - 1], currentTarget[i - 1], lerpWeight);
+                Float2 lineEnd = Float2.Lerp(currentStart[endPointIndex], currentTarget[endPointIndex], lerpWeight);
+
+                lineStart = lineStart * iconRenderScale + iconDrawOffset;
+                lineEnd = lineEnd * iconRenderScale + iconDrawOffset;
+
+                Render2D.DrawLine(lineStart, lineEnd, Color.White);
+            }
+        }
+    }
+
+    /// <summary>
     /// Viewport Widget Button class.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.Control" />
