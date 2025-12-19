@@ -387,17 +387,7 @@ namespace Flax.Build.Bindings
 
             // Find namespace for this type to build a fullname
             if (apiType != null)
-            {
-                var e = apiType.Parent;
-                while (!(e is FileInfo))
-                {
-                    e = e.Parent;
-                }
-                if (e is FileInfo fileInfo && !managedType.StartsWith(fileInfo.Namespace))
-                {
-                    managedType = fileInfo.Namespace + '.' + managedType.Replace(".", "+");
-                }
-            }
+                managedType = apiType.Namespace + '.' + managedType.Replace(".", "+");
 
             // Use runtime lookup from fullname of the C# class
             return "Scripting::FindClass(\"" + managedType + "\")";
