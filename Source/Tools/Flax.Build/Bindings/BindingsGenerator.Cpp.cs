@@ -925,7 +925,7 @@ namespace Flax.Build.Bindings
 
             // BytesContainer
             if (typeInfo.Type == "BytesContainer" && typeInfo.GenericArgs == null)
-                return "MUtils::ToArray({0})";
+                return $"MUtils::ToArray({value})";
 
             // Construct native typename for MUtils template argument
             var nativeType = new StringBuilder(64);
