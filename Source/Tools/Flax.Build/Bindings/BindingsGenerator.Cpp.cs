@@ -770,6 +770,11 @@ namespace Flax.Build.Bindings
                             genericArgs += ", " + typeInfo.GenericArgs[1];
                         result = $"Array<{genericArgs}>({result})";
                     }
+                    else if (arrayApiType?.Name == "bool")
+                    {
+                        type = "bool*";
+                        result = "Array<bool>({0}, {1})";
+                    }
                     return result;
                 }
 
@@ -925,7 +930,7 @@ namespace Flax.Build.Bindings
 
             // BytesContainer
             if (typeInfo.Type == "BytesContainer" && typeInfo.GenericArgs == null)
-                return "MUtils::ToArray({0})";
+                return $"MUtils::ToArray({value})";
 
             // Construct native typename for MUtils template argument
             var nativeType = new StringBuilder(64);
@@ -1244,8 +1249,12 @@ namespace Flax.Build.Bindings
                     callParams += ", ";
                 separator = true;
                 var name = parameterInfo.Name;
+                var countParamName = $"__{parameterInfo.Name}Count";
                 if (CppParamsThatNeedConversion[i] && (!FindApiTypeInfo(buildData, parameterInfo.Type, caller)?.IsStruct ?? false))
+                {
                     name = '*' + name;
+                    countParamName = '*' + countParamName;
+                }
 
                 string param = string.Empty;
                 if (string.IsNullOrWhiteSpace(CppParamsWrappersCache[i]))
@@ -1258,7 +1267,7 @@ namespace Flax.Build.Bindings
                 else
                 {
                     // Convert value
-                    param += string.Format(CppParamsWrappersCache[i], name);
+                    param += string.Format(CppParamsWrappersCache[i], name, countParamName);
                 }
 
                 // Special case for output result parameters that needs additional converting from native to managed format (such as non-POD structures or output array parameter)
