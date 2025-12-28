@@ -37,6 +37,7 @@ namespace FlaxEditor.Windows
 
         private readonly ToolStrip _toolStrip;
         private readonly ToolStripButton _importButton;
+        private readonly ToolStripButton _createNewButton;
         private readonly ToolStripButton _navigateBackwardButton;
         private readonly ToolStripButton _navigateForwardButton;
         private readonly ToolStripButton _navigateUpButton;
@@ -154,11 +155,12 @@ namespace FlaxEditor.Windows
             {
                 Parent = this,
             };
-            _importButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Import64, () => Editor.ContentImporting.ShowImportFileDialog(CurrentViewFolder)).LinkTooltip("Import content");
+            _importButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Import64, () => Editor.ContentImporting.ShowImportFileDialog(CurrentViewFolder)).LinkTooltip("Import content.");
+            _createNewButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Add64, OnCreateNewItemButtonClicked).LinkTooltip("Create a new asset. Shift + left click to create a new folder.");
             _toolStrip.AddSeparator();
-            _navigateBackwardButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Left64, NavigateBackward).LinkTooltip("Navigate backward");
-            _navigateForwardButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Right64, NavigateForward).LinkTooltip("Navigate forward");
-            _navigateUpButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Up64, NavigateUp).LinkTooltip("Navigate up");
+            _navigateBackwardButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Left64, NavigateBackward).LinkTooltip("Navigate backward.");
+            _navigateForwardButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Right64, NavigateForward).LinkTooltip("Navigate forward.");
+            _navigateUpButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Up64, NavigateUp).LinkTooltip("Navigate up.");
             _toolStrip.AddSeparator();
 
             // Navigation bar
@@ -269,6 +271,42 @@ namespace FlaxEditor.Windows
 
             _view.InputActions.Add(options => options.Search, () => _itemsSearchBox.Focus());
             InputActions.Add(options => options.Search, () => _itemsSearchBox.Focus());
+        }
+
+        private void OnCreateNewItemButtonClicked()
+        {
+            if (Input.GetKey(KeyboardKeys.Shift) && CanCreateFolder())
+            {
+                NewFolder();
+                return;
+            }
+
+            var menu = new ContextMenu();
+            
+            InterfaceOptions interfaceOptions = Editor.Instance.Options.Options.Interface;
+            bool disableUnavaliable = interfaceOptions.UnavaliableContentCreateOptions == InterfaceOptions.DisabledHidden.Disabled;
+
+            CreateNewFolderMenu(menu, CurrentViewFolder, disableUnavaliable);
+            CreateNewModuleMenu(menu, CurrentViewFolder, disableUnavaliable);
+            menu.AddSeparator();
+            CreateNewContentItemMenu(menu, CurrentViewFolder, false, disableUnavaliable);
+            // Hack: Show the menu once to get the direction, then show it above or below the button depending on the direction.
+            menu.Show(this, _createNewButton.UpperLeft);
+            var direction = menu.Direction;
+            menu.Hide();
+            bool below = false;
+            switch (direction)
+            {
+                case ContextMenuDirection.RightDown:
+                case ContextMenuDirection.LeftDown:
+                    below = true;
+                    break;
+                case ContextMenuDirection.RightUp:
+                case ContextMenuDirection.LeftUp:
+                    below = false;
+                    break;
+            }
+            menu.Show(this, below ? _createNewButton.BottomLeft : _createNewButton.UpperLeft, direction);
         }
 
         private ContextMenu OnViewDropdownPopupCreate(ComboBox comboBox)
