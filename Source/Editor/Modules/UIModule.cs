@@ -125,6 +125,7 @@ namespace FlaxEditor.Modules
         private ContextMenuButton _menuToolsProfilerWindow;
         private ContextMenuButton _menuToolsSetTheCurrentSceneViewAsDefault;
         private ContextMenuButton _menuToolsTakeScreenshot;
+        private ContextMenuButton _menuToolsOpenLocalFolder;
         private ContextMenuChildMenu _menuWindowApplyWindowLayout;
 
         private ToolStripButton _toolStripSaveAll;
@@ -725,6 +726,13 @@ namespace FlaxEditor.Modules
             _menuToolsTakeScreenshot = cm.AddButton("Take screenshot", inputOptions.TakeScreenshot, Editor.Windows.TakeScreenshot);
             cm.AddSeparator();
             cm.AddButton("Plugins", () => Editor.Windows.PluginsWin.Show());
+            cm.AddSeparator();
+            var childMenu = cm.AddChildMenu("Open product local folder");
+            childMenu.ContextMenu.AddButton("Editor", () => FileSystem.ShowFileExplorer(Globals.ProductLocalFolder));
+            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            GameSettings settings = GameSettings.Load<GameSettings>();
+            string path = Path.Combine(localAppData, settings.CompanyName, settings.ProductName);
+            _menuToolsOpenLocalFolder = childMenu.ContextMenu.AddButton("Cooked game", () => FileSystem.ShowFileExplorer(path));
 
             // Window
             MenuWindow = MainMenu.AddButton("Window");
@@ -1062,6 +1070,10 @@ namespace FlaxEditor.Modules
             _menuToolsBuildNavMesh.Enabled = canEdit;
             _menuToolsCancelBuilding.Enabled = GameCooker.IsRunning;
             _menuToolsSetTheCurrentSceneViewAsDefault.Enabled = Level.ScenesCount > 0;
+            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            GameSettings settings = GameSettings.Load<GameSettings>();
+            string path = Path.Combine(localAppData, settings.CompanyName, settings.ProductName);
+            _menuToolsOpenLocalFolder.Enabled = Directory.Exists(path);
 
             c.PerformLayout();
         }
