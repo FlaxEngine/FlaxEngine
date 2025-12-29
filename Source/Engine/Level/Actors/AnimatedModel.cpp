@@ -668,7 +668,11 @@ void AnimatedModel::RunBlendShapeDeformer(const MeshBase* mesh, MeshDeformationD
         {
             if (q.First == blendShape.Name)
             {
-                const float weight = q.Second * blendShape.Weight;
+                float weight = q.Second;
+                if (!Math::IsZero(blendShape.Weight))
+                    weight *= blendShape.Weight;
+                if (Math::IsZero(weight))
+                    break;
                 blendShapes.Add(Pair<const BlendShape&, const float>(blendShape, weight));
                 minVertexIndex = Math::Min(minVertexIndex, blendShape.MinVertexIndex);
                 maxVertexIndex = Math::Max(maxVertexIndex, blendShape.MaxVertexIndex);
