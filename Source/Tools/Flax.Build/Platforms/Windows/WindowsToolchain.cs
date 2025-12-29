@@ -137,7 +137,7 @@ namespace Flax.Build.Platforms
                 foreach (var definition in options.CompileEnv.PreprocessorDefinitions)
                     args.Add(string.Format("/D \"{0}\"", definition));
                 args.Add(string.Format("/D \"ORIGINAL_FILENAME=\\\"{0}\\\"\"", Path.GetFileName(outputFilePath)));
-                args.Add(string.Format("/D \"PRODUCT_NAME=\\\"{0}\\\"\"", options.Target.ProjectName + " " + options.Target.ConfigurationName));
+                args.Add(string.Format("/D \"PRODUCT_NAME=\\\"{0}\\\"\"", options.Target.ProjectName));
                 args.Add(string.Format("/D \"PRODUCT_NAME_INTERNAL=\\\"{0}\\\"\"", options.Target.Name));
 
                 // Add include paths
