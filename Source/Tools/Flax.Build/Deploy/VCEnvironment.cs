@@ -241,7 +241,11 @@ namespace Flax.Deploy
 
             if (!File.Exists(solutionFile))
             {
-                throw new Exception(string.Format("Unable to build solution {0}. Solution file not found.", solutionFile));
+                // CMake VS2026 generator prefers .slnx solution files, just swap the extension for CMake dependencies
+                if (File.Exists(Path.ChangeExtension(solutionFile, "slnx")))
+                    solutionFile = Path.ChangeExtension(solutionFile, "slnx");
+                else
+                    throw new Exception(string.Format("Unable to build solution {0}. Solution file not found.", solutionFile));
             }
 
             string cmdLine = string.Format("\"{0}\" /m /t:Restore,Build /p:Configuration=\"{1}\" /p:Platform=\"{2}\" {3} /nologo", solutionFile, buildConfig, buildPlatform, Verbosity);
