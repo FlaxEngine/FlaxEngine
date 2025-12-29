@@ -633,6 +633,7 @@ namespace Flax.Build.Projects.VisualStudio
                 var configuration = "$(FlaxConfiguration)";
                 var editorPath = Utilities.NormalizePath(Path.Combine(Globals.EngineRoot, Platform.GetEditorBinaryDirectory(), configuration, $"FlaxEditor{Utilities.GetPlatformExecutableExt()}")).Replace('\\', '/');
                 var workspacePath = Utilities.NormalizePath(solutionDirectory).Replace('\\', '/');
+                var args = Globals.Project.Name == "Flax" ? "" : $"-project \\\"{workspacePath}\\\"";
                 foreach (var project in projects)
                 {
                     if (project.Type == TargetType.DotNetCore)
@@ -645,7 +646,7 @@ namespace Flax.Build.Projects.VisualStudio
                         profile.AppendLine("      \"commandName\": \"Executable\",");
                         profile.AppendLine($"      \"workingDirectory\": \"{workspacePath}\",");
                         profile.AppendLine($"      \"executablePath\": \"{editorPath}\",");
-                        profile.AppendLine($"      \"commandLineArgs\": \"-project \\\"{workspacePath}\\\"\",");
+                        profile.AppendLine($"      \"commandLineArgs\": \"{args}\",");
                         profile.AppendLine("      \"nativeDebugging\": false");
                         profile.Append("    }");
                         if (profiles.ContainsKey(path))
