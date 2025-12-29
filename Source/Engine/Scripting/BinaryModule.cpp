@@ -477,8 +477,8 @@ void ScriptingType::SetupScriptObjectVTable(void* object, ScriptingTypeHandle ba
     }
 
     // Duplicate vtable
-    Script.VTable = (void**)((byte*)Platform::Allocate(totalSize, 16) + prefixSize);
-    Utilities::UnsafeMemoryCopy((byte*)Script.VTable - prefixSize, (byte*)vtable - prefixSize, prefixSize + size);
+    void** scriptVTable = (void**)((byte*)Platform::Allocate(totalSize, 16) + prefixSize);
+    Utilities::UnsafeMemoryCopy((byte*)scriptVTable - prefixSize, (byte*)vtable - prefixSize, prefixSize + size);
 
     // Override vtable entries
     if (interfacesCount)
@@ -492,7 +492,7 @@ void ScriptingType::SetupScriptObjectVTable(void* object, ScriptingTypeHandle ba
         if (eType.Script.SetupScriptObjectVTable)
         {
             // Override vtable entries for this class
-            eType.Script.SetupScriptObjectVTable(Script.ScriptVTable, Script.ScriptVTableBase, Script.VTable, entriesCount, wrapperIndex);
+            eType.Script.SetupScriptObjectVTable(Script.ScriptVTable, Script.ScriptVTableBase, scriptVTable, entriesCount, wrapperIndex);
         }
 
         auto interfaces = eType.Interfaces;
@@ -511,13 +511,13 @@ void ScriptingType::SetupScriptObjectVTable(void* object, ScriptingTypeHandle ba
                     const int32 interfaceSize = interfaceCount * sizeof(void*);
 
                     // Duplicate interface vtable
-                    Utilities::UnsafeMemoryCopy((byte*)Script.VTable + interfaceOffset, (byte*)vtableInterface - prefixSize, prefixSize + interfaceSize);
+                    Utilities::UnsafeMemoryCopy((byte*)scriptVTable + interfaceOffset, (byte*)vtableInterface - prefixSize, prefixSize + interfaceSize);
 
                     // Override interface vtable entries
                     const auto scriptOffset = interfaces->ScriptVTableOffset;
                     const auto nativeOffset = interfaceOffset + prefixSize;
                     void** interfaceVTable = (void**)((byte*)Script.VTable + nativeOffset);
-                    interfaceType.Interface.SetupScriptObjectVTable(Script.ScriptVTable + scriptOffset, Script.ScriptVTableBase + scriptOffset, interfaceVTable, interfaceCount, wrapperIndex);
+                    interfaceType.Interface.SetupScriptObjectVTable(scriptVTable + scriptOffset, Script.ScriptVTableBase + scriptOffset, interfaceVTable, interfaceCount, wrapperIndex);
 
                     Script.InterfacesOffsets[interfacesCount++] = (uint16)nativeOffset;
                     interfaceOffset += prefixSize + interfaceSize;
@@ -527,6 +527,9 @@ void ScriptingType::SetupScriptObjectVTable(void* object, ScriptingTypeHandle ba
         }
         e = eType.GetBaseType();
     }
+
+    // Assign once it's ready
+    Script.VTable = scriptVTable;
 }
 
 void ScriptingType::HackObjectVTable(void* object, ScriptingTypeHandle baseTypeHandle, int32 wrapperIndex)
