@@ -467,6 +467,7 @@ namespace FlaxEditor.Surface.Archetypes
                     Create = (id, context, arch, groupArch) => new CurveNode<T>(id, context, arch, groupArch),
                     Description = "An animation spline represented by a set of keyframes, each representing an endpoint of a Bezier curve.",
                     Flags = NodeFlags.AllGraphs,
+                    UseFixedSize = true,
                     Size = new Float2(400, 180.0f),
                     DefaultValues = new object[]
                     {
@@ -828,7 +829,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _picker = new TypePickerControl
                 {
                     Type = ScriptType.FlaxObject,
-                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX + 20, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize, 160, 16),
+                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX + 20, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight, 160, 16),
                     Parent = this,
                 };
                 _picker.ValueChanged += () => SetValue(0, _picker.ValueTypeName);
@@ -897,7 +898,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _picker = new TypePickerControl
                 {
                     Type = ScriptType.Object,
-                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize, 140, 16),
+                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight, 140, 16),
                     Parent = this,
                 };
                 _picker.ValueChanged += () => SetValue(0, _picker.ValueTypeName);
@@ -948,7 +949,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _picker = new TypePickerControl
                 {
                     Type = ScriptType.FlaxObject,
-                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX + 20, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize, 160, 16),
+                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX + 20, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight, 160, 16),
                     Parent = this,
                 };
                 _picker.ValueChanged += () => SetValue(0, _picker.ValueTypeName);
@@ -999,7 +1000,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _picker = new TypePickerControl
                 {
                     Type = type,
-                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX + 20, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize, 160, 16),
+                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX + 20, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight, 160, 16),
                     Parent = this,
                 };
                 _picker.ValueChanged += () => SetValue(0, _picker.ValueTypeName);
@@ -1058,7 +1059,11 @@ namespace FlaxEditor.Surface.Archetypes
 
         internal class RerouteNode : SurfaceNode, IConnectionInstigator
         {
-            internal static readonly Float2 DefaultSize = new Float2(FlaxEditor.Surface.Constants.BoxSize);
+            internal static readonly Float2 DefaultSize = new Float2(FlaxEditor.Surface.Constants.BoxRowHeight);
+            
+            internal bool DrawDisabled => _input.AllConnectionsDisabled || _output.AllConnectionsDisabled;
+            internal override bool DrawBasicShadow => false;
+
             private Rectangle _localBounds;
             private InputBox _input;
             private OutputBox _output;
@@ -1164,6 +1169,9 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public override void Draw()
             {
+                // Update active state of input
+                _input.IsActive = !_output.AllConnectionsDisabled;
+
                 var style = Surface.Style;
                 var connectionColor = style.Colors.Default;
                 var type = ScriptType.Null;
@@ -1177,6 +1185,10 @@ namespace FlaxEditor.Surface.Archetypes
                     Surface.Style.GetConnectionColor(type, hints, out connectionColor);
                 }
 
+                // Draw the box as disabled if needed
+                if (DrawDisabled)
+                    connectionColor = connectionColor * 0.6f;
+
                 if (!_input.HasAnyConnection)
                     Render2D.FillRectangle(new Rectangle(-barHorizontalOffset - barHeight * 2, (DefaultSize.Y - barHeight) / 2, barHeight * 2, barHeight), connectionColor);
                 if (!_output.HasAnyConnection)
@@ -1187,6 +1199,11 @@ namespace FlaxEditor.Surface.Archetypes
                     icon = type.IsVoid ? style.Icons.ArrowClose : style.Icons.BoxClose;
                 else
                     icon = type.IsVoid ? style.Icons.ArrowOpen : style.Icons.BoxOpen;
+
+                // Shadow
+                var shadowRect = _localBounds.MakeOffsetted(ShadowOffset);
+                Render2D.DrawSprite(icon, shadowRect, Color.Black.AlphaMultiplied(0.125f));
+
                 Render2D.DrawSprite(icon, _localBounds, connectionColor);
 
                 base.Draw();
@@ -1494,6 +1511,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Linear color gradient sampler",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(400, 150.0f),
+                UseFixedSize = true,
                 DefaultValues = new object[]
                 {
                     // Stops count
@@ -1813,6 +1831,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Reroute a connection.",
                 Flags = NodeFlags.NoCloseButton | NodeFlags.NoSpawnViaGUI | NodeFlags.AllGraphs,
                 Size = RerouteNode.DefaultSize,
+                UseFixedSize = true,
                 ConnectionsHints = ConnectionsHint.All,
                 IndependentBoxes = new int[] { 0 },
                 DependentBoxes = new int[] { 1 },

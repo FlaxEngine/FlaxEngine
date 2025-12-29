@@ -631,7 +631,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            protected override Color FooterColor => new Color(200, 11, 112);
+            protected override Color ArchetypeColor => new Color(200, 11, 112);
 
             /// <inheritdoc />
             public override void OnLoaded(SurfaceNodeActions action)

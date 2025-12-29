@@ -190,7 +190,7 @@ namespace FlaxEditor.Surface.Elements
                 Box targetBox = Connections[i];
                 var endPos = targetBox.ConnectionOrigin;
                 var highlight = DefaultConnectionThickness + Mathf.Max(startHighlight, targetBox.ConnectionsHighlightIntensity);
-                var alpha = targetBox.Enabled && targetBox.IsActive ? 1.0f : 0.6f;
+                var alpha = targetBox.IsDisabled ? 0.6f : 1.0f;
 
                 // We have to calculate an offset here to preserve the original color for when the default connection thickness is larger than 1
                 var highlightOffset = (highlight - (DefaultConnectionThickness - 1));
@@ -216,7 +216,7 @@ namespace FlaxEditor.Surface.Elements
             // Draw all the connections
             var startPos = ConnectionOrigin;
             var endPos = targetBox.ConnectionOrigin;
-            var alpha = targetBox.Enabled && targetBox.IsActive ? 1.0f : 0.6f;
+            var alpha = targetBox.IsDisabled ? 0.6f : 1.0f;
             var color = _currentTypeColor * alpha;
             DrawConnection(Surface.Style, ref startPos, ref endPos, ref color, SelectedConnectionThickness);
         }
@@ -234,8 +234,8 @@ namespace FlaxEditor.Surface.Elements
 
             // Draw text
             var style = Style.Current;
-            var rect = new Rectangle(-100, 0, 100 - 2, Height);
-            Render2D.DrawText(style.FontSmall, Text, rect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Far, TextAlignment.Center);
+            var rect = new Rectangle(-Constants.BoxTextRectWidth - Constants.BoxTextOffset, 0, Constants.BoxTextRectWidth, Height);
+            Render2D.DrawText(style.FontMedium, Text, rect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Far, TextAlignment.Center, TextWrapping.NoWrap, 1f, Constants.BoxTextScale);
         }
     }
 }

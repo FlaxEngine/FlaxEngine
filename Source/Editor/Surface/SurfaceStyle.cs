@@ -2,6 +2,7 @@
 
 using System;
 using FlaxEditor.Scripting;
+using FlaxEditor.Surface.Elements;
 using FlaxEngine;
 using FlaxEngine.Utilities;
 
@@ -141,6 +142,11 @@ namespace FlaxEditor.Surface
         public Texture Background;
 
         /// <summary>
+        /// The color used as a surface background.
+        /// </summary>
+        public Color BackgroundColor;
+
+        /// <summary>
         /// Boxes drawing callback.
         /// </summary>
         public Action<Elements.Box> DrawBox = DefaultDrawBox;
@@ -216,19 +222,20 @@ namespace FlaxEditor.Surface
 
         private static void DefaultDrawBox(Elements.Box box)
         {
-            var rect = new Rectangle(Float2.Zero, box.Size);
+            var rect = new Rectangle(0.0f, box.Height * 0.5f - Constants.BoxSize * 0.5f, new Float2(Constants.BoxSize));
 
             // Size culling
             const float minBoxSize = 5.0f;
             if (rect.Size.LengthSquared < minBoxSize * minBoxSize)
                 return;
 
-            // Debugging boxes size
+            // Debugging boxes size and bounds
             //Render2D.DrawRectangle(rect, Color.Orange); return;
+            //Render2D.DrawRectangle(box.Bounds, Color.Green);
 
             // Draw icon
             bool hasConnections = box.HasAnyConnection;
-            float alpha = box.Enabled && box.IsActive ? 1.0f : 0.6f;
+            float alpha = box.IsDisabled ? 0.6f : 1.0f;
             Color color = box.CurrentTypeColor * alpha;
             var style = box.Surface.Style;
             SpriteHandle icon;
@@ -239,13 +246,23 @@ namespace FlaxEditor.Surface
             color *= box.ConnectionsHighlightIntensity + 1;
             Render2D.DrawSprite(icon, rect, color);
 
+            // Draw connected hint with color from connected output box
+            if (hasConnections && box.Connections[0] is OutputBox connectedOutputBox)
+            {
+                bool connectedSameColor = connectedOutputBox.CurrentTypeColor == box.CurrentTypeColor;
+                Color innerColor = connectedSameColor ? color.RGBMultiplied(0.4f) : connectedOutputBox.CurrentTypeColor;
+                innerColor = innerColor * alpha;
+                Render2D.DrawSprite(icon, rect.MakeExpanded(-5.0f), innerColor);
+            }
+
             // Draw selection hint
             if (box.IsSelected)
             {
                 float outlineAlpha = Mathf.Sin(Time.TimeSinceStartup * 4.0f) * 0.5f + 0.5f;
                 float outlineWidth = Mathf.Lerp(1.5f, 4.0f, outlineAlpha);
                 var outlineRect = new Rectangle(rect.X - outlineWidth, rect.Y - outlineWidth, rect.Width + outlineWidth * 2, rect.Height + outlineWidth * 2);
-                Render2D.DrawSprite(icon, outlineRect, FlaxEngine.GUI.Style.Current.BorderSelected.RGBMultiplied(1.0f + outlineAlpha * 0.4f));
+                Color selectionColor = FlaxEngine.GUI.Style.Current.BorderSelected.RGBMultiplied(1.0f + outlineAlpha * 0.4f);
+                Render2D.DrawSprite(icon, outlineRect, selectionColor.AlphaMultiplied(0.4f));
             }
         }
 
@@ -293,6 +310,7 @@ namespace FlaxEditor.Surface
                     ArrowClose = editor.Icons.VisjectArrowClosed32,
                 },
                 Background = editor.UI.VisjectSurfaceBackground,
+                BackgroundColor = new Color(31, 31, 31),
             };
         }
 

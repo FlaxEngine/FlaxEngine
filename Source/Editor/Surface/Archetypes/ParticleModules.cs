@@ -461,7 +461,7 @@ namespace FlaxEditor.Surface.Archetypes
         /// <summary>
         /// The particle module node elements offset applied to controls to reduce default surface node header thickness.
         /// </summary>
-        private const float NodeElementsOffset = 16.0f - Surface.Constants.NodeHeaderSize;
+        private const float NodeElementsOffset = 16.0f - Surface.Constants.NodeHeaderHeight;
 
         private const NodeFlags DefaultModuleFlags = NodeFlags.ParticleEmitterGraph | NodeFlags.NoSpawnViaGUI | NodeFlags.NoMove;
 

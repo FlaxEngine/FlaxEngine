@@ -79,7 +79,7 @@ namespace FlaxEditor.Surface.Archetypes
             : base(id, context, nodeArch, groupArch)
             {
                 var marginX = FlaxEditor.Surface.Constants.NodeMarginX;
-                var uiStartPosY = FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize;
+                var uiStartPosY = FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight;
 
                 var editButton = new Button(marginX, uiStartPosY, 246, 20)
                 {

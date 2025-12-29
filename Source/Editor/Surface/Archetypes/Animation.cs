@@ -244,7 +244,7 @@ namespace FlaxEditor.Surface.Archetypes
                         Type = NodeElementType.Input,
                         Position = new Float2(
                                               FlaxEditor.Surface.Constants.NodeMarginX - FlaxEditor.Surface.Constants.BoxOffsetX,
-                                              FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize + ylevel * FlaxEditor.Surface.Constants.LayoutOffsetY),
+                                              FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight + ylevel * FlaxEditor.Surface.Constants.LayoutOffsetY),
                         Text = "Pose " + _blendPoses.Count,
                         Single = true,
                         ValueIndex = -1,
@@ -263,7 +263,7 @@ namespace FlaxEditor.Surface.Archetypes
             private void UpdateHeight()
             {
                 float nodeHeight = 10 + (Mathf.Max(_blendPoses.Count, 1) + 3) * FlaxEditor.Surface.Constants.LayoutOffsetY;
-                Height = nodeHeight + FlaxEditor.Surface.Constants.NodeMarginY * 2 + FlaxEditor.Surface.Constants.NodeHeaderSize + FlaxEditor.Surface.Constants.NodeFooterSize;
+                Height = nodeHeight + FlaxEditor.Surface.Constants.NodeMarginY * 2 + FlaxEditor.Surface.Constants.NodeHeaderHeight + FlaxEditor.Surface.Constants.NodeFooterSize;
             }
 
             /// <inheritdoc />
