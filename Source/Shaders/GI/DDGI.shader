@@ -395,6 +395,8 @@ void CS_TraceRays(uint3 DispatchThreadId : SV_DispatchThreadID)
 
             // Add some bias to prevent self occlusion artifacts in Chebyshev due to Global SDF being very incorrect in small scale
             radiance.w = max(radiance.w + GlobalSDF.CascadeVoxelSize[hit.HitCascade] * 0.5f, 0);
+            float probesSpacing = DDGI.ProbesOriginAndSpacing[CascadeIndex].w;
+            radiance.w += probesSpacing * 0.05f;
         }
     }
     else
@@ -793,10 +795,9 @@ void PS_IndirectLighting(Quad_VS2PS input, out float4 output : SV_Target0)
     }
 
     // Sample irradiance
-    float bias = 0.2f;
     float dither = RandN2(input.TexCoord + TemporalTime).x;
-    float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesData, ProbesDistance, ProbesIrradiance, gBuffer.WorldPos, gBuffer.Normal, bias, dither);
-    
+    float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesData, ProbesDistance, ProbesIrradiance, gBuffer.WorldPos, gBuffer.Normal, DDGI_DEFAULT_BIAS, dither);
+
     // Calculate lighting
     float3 diffuseColor = GetDiffuseColor(gBuffer);
     float3 diffuse = Diffuse_Lambert(diffuseColor);
