@@ -11,6 +11,7 @@
 #include "Engine/Core/Math/Quaternion.h"
 #include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Engine/Units.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Debug/DebugDraw.h"
 #include "Engine/Graphics/GPUContext.h"
@@ -371,6 +372,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         const float viewOriginSnapping = cascadeProbesSpacing;
         viewOrigin = Float3::Floor(viewOrigin / viewOriginSnapping) * viewOriginSnapping;
         //viewOrigin = Float3::Zero;
+        viewOrigin -= UNITS_TO_METERS(0.5f); // Bias to avoid precision issues (eg. if floor mesh is exactly at Y=0)
         viewOrigins[cascadeIndex] = viewOrigin;
     }
 
