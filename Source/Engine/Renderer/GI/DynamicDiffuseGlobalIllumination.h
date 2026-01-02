@@ -15,7 +15,8 @@ public:
     // Constant buffer data for DDGI access on a GPU.
     GPU_CB_STRUCT(ConstantsData {
         Float4 ProbesOriginAndSpacing[4];
-        Int4 ProbesScrollOffsets[4];
+        Float4 BlendOrigin[4]; // w is unused
+        Int4 ProbesScrollOffsets[4]; // w is unused
         uint32 ProbesCounts[3];
         uint32 CascadesCount;
         float IrradianceGamma;

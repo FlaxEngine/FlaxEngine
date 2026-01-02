@@ -20,7 +20,7 @@
 #define DDGI_PROBE_ATTENTION_MAX 0.98f // Maximum probe attention value that still makes it active (but not activated which is 1.0f).
 #define DDGI_PROBE_RESOLUTION_IRRADIANCE 6 // Resolution (in texels) for probe irradiance data (excluding 1px padding on each side)
 #define DDGI_PROBE_RESOLUTION_DISTANCE 14 // Resolution (in texels) for probe distance data (excluding 1px padding on each side)
-#define DDGI_CASCADE_BLEND_SIZE 2.5f // Distance in probes over which cascades blending happens
+#define DDGI_CASCADE_BLEND_SIZE 2.0f // Distance in probes over which cascades blending happens
 #ifndef DDGI_CASCADE_BLEND_SMOOTH
 #define DDGI_CASCADE_BLEND_SMOOTH 0 // Enables smooth cascade blending, otherwise dithering will be used
 #endif
@@ -31,7 +31,8 @@
 struct DDGIData
 {
     float4 ProbesOriginAndSpacing[4];
-    int4 ProbesScrollOffsets[4]; // w unused
+    float4 BlendOrigin[4]; // w is unused
+    int4 ProbesScrollOffsets[4]; // w is unused
     uint3 ProbesCounts;
     uint CascadesCount;
     float IrradianceGamma;
@@ -290,6 +291,13 @@ float3 GetDDGISurfaceBias(float3 viewDir, float probesSpacing, float3 worldNorma
     return (worldNormal * 0.2f + viewDir * 0.8f) * (0.6f * probesSpacing * bias);
 }
 
+// [Inigo Quilez, https://iquilezles.org/articles/distfunctions/]
+float sdRoundBox(float3 p, float3 b, float r)
+{
+    float3 q = abs(p) - b + r;
+    return length(max(q, 0.0f)) + min(max(q.x, max(q.y, q.z)), 0.0f) - r;
+}
+
 // Samples DDGI probes volume at the given world-space position and returns the irradiance.
 // bias - scales the bias vector to the initial sample point to reduce self-shading artifacts
 // dither - randomized per-pixel value in range 0-1, used to smooth dithering for cascades blending
@@ -312,13 +320,10 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
         biasedWorldPosition = worldPosition + GetDDGISurfaceBias(viewDir, probesSpacing, worldNormal, bias);
 
         // Calculate cascade blending weight (use input bias to smooth transition)
-        float cascadeBlendSmooth = frac(max(distance(data.ViewPos, worldPosition) - probesExtent.x, 0) / probesSpacing) * 0.1f;
-        float3 cascadeBlendPoint = worldPosition - probesOrigin - cascadeBlendSmooth * probesSpacing;
         float fadeDistance = probesSpacing * DDGI_CASCADE_BLEND_SIZE;
-#if DDGI_CASCADE_BLEND_SMOOTH
-        fadeDistance *= 2.0f; // Make it even smoother when using linear blending
-#endif
-        cascadeWeight = saturate(Min3(probesExtent - abs(cascadeBlendPoint)) / fadeDistance);
+        float3 blendPos = worldPosition - data.BlendOrigin[cascadeIndex].xyz;
+        cascadeWeight = sdRoundBox(blendPos, probesExtent - probesSpacing, probesSpacing * 2) + fadeDistance;
+        cascadeWeight = 1 - saturate(cascadeWeight / fadeDistance);
         if (cascadeWeight > dither)
             break;
     }
