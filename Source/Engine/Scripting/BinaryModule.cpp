@@ -516,7 +516,7 @@ void ScriptingType::SetupScriptObjectVTable(void* object, ScriptingTypeHandle ba
                     // Override interface vtable entries
                     const auto scriptOffset = interfaces->ScriptVTableOffset;
                     const auto nativeOffset = interfaceOffset + prefixSize;
-                    void** interfaceVTable = (void**)((byte*)Script.VTable + nativeOffset);
+                    void** interfaceVTable = (void**)((byte*)scriptVTable + nativeOffset);
                     interfaceType.Interface.SetupScriptObjectVTable(scriptVTable + scriptOffset, Script.ScriptVTableBase + scriptOffset, interfaceVTable, interfaceCount, wrapperIndex);
 
                     Script.InterfacesOffsets[interfacesCount++] = (uint16)nativeOffset;
