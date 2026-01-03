@@ -365,10 +365,10 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         // Calculate view origin for cascade by shifting it towards the view direction to account for better view frustum coverage
         Float3 viewOrigin = renderContext.View.Position;
         Float3 viewDirection = renderContext.View.Direction;
-        const Float3 probesDistance = Float3(probesCounts) * cascadeProbesSpacing;
+        const Float3 probesDistance = Float3(probesCounts - 1) * cascadeProbesSpacing;
         const float probesDistanceMax = probesDistance.MaxValue();
         const Float3 viewRayHit = CollisionsHelper::LineHitsBox(viewOrigin, viewOrigin + viewDirection * (probesDistanceMax * 2.0f), viewOrigin - probesDistance, viewOrigin + probesDistance);
-        const float viewOriginOffset = viewRayHit.Y * probesDistanceMax * 0.4f;
+        const float viewOriginOffset = viewRayHit.Y * probesDistanceMax * 0.6f;
         viewOrigin += viewDirection * viewOriginOffset;
         //viewOrigin = Float3::Zero;
         blendOrigins[cascadeIndex] = viewOrigin;
