@@ -17,7 +17,7 @@ public:
     /// <summary>
     /// Mesh data stream.
     /// </summary>
-    struct Stream
+    struct FLAXENGINE_API Stream
     {
         friend MeshAccessor;
 
