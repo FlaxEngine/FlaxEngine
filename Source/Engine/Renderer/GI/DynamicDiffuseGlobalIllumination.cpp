@@ -595,7 +595,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
             {
                 PROFILE_GPU_CPU_NAMED("Update Inactive Probes");
                 context->BindUA(0, ddgiData.Result.ProbesData);
-                int32 iterations = Math::Min(probesCounts.MaxValue() - 1, DDGI_PROBE_EMPTY_AREA_DENSITY) * 10;
+                int32 iterations = Math::Min(probesCounts.MaxValue() - 1, DDGI_PROBE_EMPTY_AREA_DENSITY);
                 for (int32 i = 0; i < iterations; i++)
                     context->Dispatch(_csUpdateInactiveProbes, threadGroupsX, 1, 1);
                 context->ResetUA();
