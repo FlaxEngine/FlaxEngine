@@ -42,7 +42,7 @@
 #define DDGI_PROBE_RESOLUTION_DISTANCE 14 // Resolution (in texels) for probe distance data (excluding 1px padding on each side)
 #define DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE 8
 #define DDGI_PROBE_CLASSIFY_GROUP_SIZE 32
-#define DDGI_PROBE_EMPTY_AREA_DENSITY 10 // Spacing (in probe grid) between fallback probes placed into empty areas to provide valid GI for nearby dynamic objects or transparency
+#define DDGI_PROBE_EMPTY_AREA_DENSITY 8 // Spacing (in probe grid) between fallback probes placed into empty areas to provide valid GI for nearby dynamic objects or transparency
 #define DDGI_DEBUG_STATS 0 // Enables additional GPU-driven stats for probe/rays count
 #define DDGI_DEBUG_INSTABILITY 0 // Enables additional probe irradiance instability debugging
 
@@ -76,7 +76,8 @@ GPU_CB_STRUCT(Data0 {
 
 GPU_CB_STRUCT(Data1 {
     // TODO: use push constants on Vulkan or root signature data on DX12 to reduce overhead of changing single DWORD
-    Float2 Padding2;
+    float Padding2;
+    int32 StepSize;
     uint32 CascadeIndex;
     uint32 ProbeIndexOffset;
     });
@@ -594,10 +595,17 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
             // For inactive probes, search nearby ones to find the closest valid for quick fallback when sampling irradiance
             {
                 PROFILE_GPU_CPU_NAMED("Update Inactive Probes");
+                // TODO: this could run within GPUComputePass during Trace Rays or Update Probes to overlap compute works
                 context->BindUA(0, ddgiData.Result.ProbesData);
-                int32 iterations = Math::Min(probesCounts.MaxValue() - 1, DDGI_PROBE_EMPTY_AREA_DENSITY);
-                for (int32 i = 0; i < iterations; i++)
+                Data1 data;
+                data.CascadeIndex = cascadeIndex;
+                int32 iterations = Math::CeilToInt(Math::Log2((float)Math::Min(probesCounts.MaxValue(), DDGI_PROBE_EMPTY_AREA_DENSITY) + 1.0f));
+                for (int32 i = iterations - 1; i >= 0; i--)
+                {
+                    data.StepSize = Math::FloorToInt(Math::Pow(2, (float)i) + 0.5f); // Jump Flood step size
+                    context->UpdateCB(_cb1, &data);
                     context->Dispatch(_csUpdateInactiveProbes, threadGroupsX, 1, 1);
+                }
                 context->ResetUA();
             }
 

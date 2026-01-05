@@ -26,8 +26,9 @@
 #endif
 #define DDGI_SRGB_BLENDING 1 // Enables blending in sRGB color space, otherwise irradiance blending is done in linear space
 #define DDGI_DEFAULT_BIAS 0.2f // Default value for DDGI sampling bias
-#define DDGI_FALLBACK_COORDS_ENCODE(coord) ((float3)coord / 128.0f)
-#define DDGI_FALLBACK_COORDS_DECODE(data) (uint3)(data.xyz * 128.0f)
+#define DDGI_FALLBACK_COORDS_ENCODE(coord) ((float3)(coord + 1) / 128.0f)
+#define DDGI_FALLBACK_COORDS_DECODE(data) (uint3)(data.xyz * 128.0f - 1)
+#define DDGI_FALLBACK_COORDS_VALID(data) (length(data.xyz) > 0)
 //#define DDGI_DEBUG_CASCADE 0 // Forces a specific cascade to be only in use (for debugging)
 
 // DDGI data for a constant buffer

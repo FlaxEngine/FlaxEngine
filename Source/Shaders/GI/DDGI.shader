@@ -27,7 +27,7 @@
 #define DDGI_PROBE_CLASSIFY_GROUP_SIZE 32
 #define DDGI_PROBE_RELOCATE_ITERATIVE 1 // If true, probes relocation algorithm tries to move them in additive way, otherwise all nearby locations are checked to find the best position
 #define DDGI_PROBE_RELOCATE_FIND_BEST 1 // If true, probes relocation algorithm tries to move to the best matching location within nearby area
-#define DDGI_PROBE_EMPTY_AREA_DENSITY 10 // Spacing (in probe grid) between fallback probes placed into empty areas to provide valid GI for nearby dynamic objects or transparency
+#define DDGI_PROBE_EMPTY_AREA_DENSITY 8 // Spacing (in probe grid) between fallback probes placed into empty areas to provide valid GI for nearby dynamic objects or transparency
 #define DDGI_DEBUG_STATS 0 // Enables additional GPU-driven stats for probe/rays count
 #define DDGI_DEBUG_INSTABILITY 0 // Enables additional probe irradiance instability debugging
 
@@ -49,7 +49,8 @@ uint FrameIndexMod8;
 META_CB_END
 
 META_CB_BEGIN(1, Data1)
-float2 Padding2;
+float Padding2;
+int StepSize;
 uint CascadeIndex;
 uint ProbeIndexOffset;
 META_CB_END
@@ -364,38 +365,35 @@ void CS_UpdateProbesInitArgs()
 
 #ifdef _CS_UpdateInactiveProbes
 
-globallycoherent RWTexture2D<snorm float4> RWProbesData : register(u0);
+RWTexture2D<snorm float4> RWProbesData : register(u0);
 
-void CheckNearbyProbe(inout uint3 fallbackCoords, inout uint probeState, uint3 probeCoords, int3 probeCoordsEnd, int3 offset)
+void CheckNearbyProbe(inout uint3 fallbackCoords, inout uint probeState, inout float minDistance, uint3 probeCoords, int3 probeCoordsEnd, int3 offset)
 {
     uint3 nearbyCoords = (uint3)clamp(((int3)probeCoords + offset), int3(0, 0, 0), probeCoordsEnd);
     uint nearbyIndex = GetDDGIScrollingProbeIndex(DDGI, CascadeIndex, nearbyCoords);
     float4 nearbyData = RWProbesData[GetDDGIProbeTexelCoords(DDGI, CascadeIndex, nearbyIndex)];
-    uint nearbyState = DecodeDDGIProbeState(nearbyData);
-    uint3 nearbyFallbackCoords = DDGI_FALLBACK_COORDS_DECODE(nearbyData);
-    if (nearbyState != DDGI_PROBE_STATE_INACTIVE)
+    float nearbyDist = distance((float3)nearbyCoords, (float3)probeCoords);
+    if (DecodeDDGIProbeState(nearbyData) != DDGI_PROBE_STATE_INACTIVE && nearbyDist < minDistance)
     {
         // Use nearby probe
         fallbackCoords = nearbyCoords;
-        probeState = nearbyState;
+        probeState = DDGI_PROBE_STATE_ACTIVE;
+        minDistance = nearbyDist;
+        return;
     }
-    // TODO: optimize distance check with squared dst comparision
-    else if (distance((float3)nearbyFallbackCoords, (float3)probeCoords) < distance((float3)fallbackCoords, (float3)probeCoords))
+    nearbyCoords = DDGI_FALLBACK_COORDS_DECODE(nearbyData);
+    nearbyDist = distance((float3)nearbyCoords, (float3)probeCoords);
+    if (DDGI_FALLBACK_COORDS_VALID(nearbyData) && nearbyDist < minDistance)
     {
-        // Check if fallback probe is actually active (not some leftover memory)
-        nearbyIndex = GetDDGIScrollingProbeIndex(DDGI, CascadeIndex, nearbyFallbackCoords);
-        nearbyData = RWProbesData[GetDDGIProbeTexelCoords(DDGI, CascadeIndex, nearbyIndex)];
-        nearbyState = DecodeDDGIProbeState(nearbyData);
-        if (nearbyState != DDGI_PROBE_STATE_INACTIVE)
-        {
-            // Use fallback of the nearby probe
-            fallbackCoords = nearbyFallbackCoords;
-            probeState = DDGI_PROBE_STATE_ACTIVE;
-        }
+        // Use fallback probe
+        fallbackCoords = nearbyCoords;
+        probeState = DDGI_PROBE_STATE_ACTIVE;
+        minDistance = nearbyDist;
     }
 }
 
 // Compute shader to store closest valid probe coords inside inactive probes data for quick fallback lookup when sampling irradiance.
+// Uses Jump Flood algorithm.
 META_CS(true, FEATURE_LEVEL_SM5)
 [numthreads(DDGI_PROBE_CLASSIFY_GROUP_SIZE, 1, 1)]
 void CS_UpdateInactiveProbes(uint3 DispatchThreadId : SV_DispatchThreadID)
@@ -409,32 +407,26 @@ void CS_UpdateInactiveProbes(uint3 DispatchThreadId : SV_DispatchThreadID)
     int2 probeDataCoords = GetDDGIProbeTexelCoords(DDGI, CascadeIndex, probeIndex);
     float4 probeData = RWProbesData[probeDataCoords];
     uint probeState = DecodeDDGIProbeState(probeData);
+    BRANCH
     if (probeState == DDGI_PROBE_STATE_INACTIVE)
     {
-        // Find the closest active probe (flood fill)
+        // Find the closest active probe (Jump Flood)
         int3 probeCoordsEnd = (int3)DDGI.ProbesCounts - int3(1, 1, 1);
-        // Corners
-        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(1, 1, 1));
-        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(-1, 1, 1));
-        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(1, -1, 1));
-        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(-1, -1, 1));
-        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(1, 1, -1));
-        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(-1, 1, -1));
-        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(1, -1, -1));
-        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(-1, -1, -1));
-        // Sides
-        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(1, 0, 0));
-        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(0, 1, 0));
-        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(0, 0, 1));
-        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(-1, 0, 0));
-        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(0, -1, 0));
-        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(0, 0, -1));
+        float minDistance = 1e27f;
+        UNROLL for (int z = -1; z <= 1; z++)
+        UNROLL for (int y = -1; y <= 1; y++)
+        UNROLL for (int x = -1; x <= 1; x++)
+        {
+            int3 offset = int3(x, y, z) * StepSize;
+            CheckNearbyProbe(fallbackCoords, probeState, minDistance, probeCoords, probeCoordsEnd, offset);
+        }
     }
 
-    // Ensure all threads (within dispatch) got proepr data before writing back to the same memory
-    DeviceMemoryBarrierWithGroupSync();
+    // Ensure all threads (within dispatch) got proper data before writing back to the same memory
+    AllMemoryBarrierWithGroupSync();
 
     // Write modified probe data back (remain inactive)
+    BRANCH
     if (probeState != DDGI_PROBE_STATE_INACTIVE && DispatchThreadId.x < ProbesCount && fallbackCoords.x != 1000)
     {
         RWProbesData[probeDataCoords] = EncodeDDGIProbeData(DDGI_FALLBACK_COORDS_ENCODE(fallbackCoords), DDGI_PROBE_STATE_INACTIVE, 0.0f);
