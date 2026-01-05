@@ -87,7 +87,8 @@ jobs:
         git ${{ env.GIT_LFS_PULL_OPTIONS }} lfs pull
     - name: Install dependencies
       run: |
-        sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
+        sudo apt-get update
+        sudo apt-get install -y --fix-missing libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
     - name: Setup .NET
@@ -118,7 +119,8 @@ jobs:
         git ${{ env.GIT_LFS_PULL_OPTIONS }} lfs pull
     - name: Install dependencies
       run: |
-        sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
+        sudo apt-get update
+        sudo apt-get install -y --fix-missing libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
     - name: Setup .NET
