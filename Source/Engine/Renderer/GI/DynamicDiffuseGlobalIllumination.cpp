@@ -42,6 +42,7 @@
 #define DDGI_PROBE_RESOLUTION_DISTANCE 14 // Resolution (in texels) for probe distance data (excluding 1px padding on each side)
 #define DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE 8
 #define DDGI_PROBE_CLASSIFY_GROUP_SIZE 32
+#define DDGI_PROBE_EMPTY_AREA_DENSITY 10 // Spacing (in probe grid) between fallback probes placed into empty areas to provide valid GI for nearby dynamic objects or transparency
 #define DDGI_DEBUG_STATS 0 // Enables additional GPU-driven stats for probe/rays count
 #define DDGI_DEBUG_INSTABILITY 0 // Enables additional probe irradiance instability debugging
 
@@ -217,6 +218,7 @@ bool DynamicDiffuseGlobalIlluminationPass::setupResources()
         return true;
     _csClassify = shader->GetCS("CS_Classify");
     _csUpdateProbesInitArgs = shader->GetCS("CS_UpdateProbesInitArgs");
+    _csUpdateInactiveProbes = shader->GetCS("CS_UpdateInactiveProbes");
     _csTraceRays[0] = shader->GetCS("CS_TraceRays", 0);
     _csTraceRays[1] = shader->GetCS("CS_TraceRays", 1);
     _csTraceRays[2] = shader->GetCS("CS_TraceRays", 2);
@@ -248,6 +250,7 @@ void DynamicDiffuseGlobalIlluminationPass::OnShaderReloading(Asset* obj)
     LastFrameShaderReload = Engine::FrameCount;
     _csClassify = nullptr;
     _csUpdateProbesInitArgs = nullptr;
+    _csUpdateInactiveProbes = nullptr;
     _csTraceRays[0] = nullptr;
     _csTraceRays[1] = nullptr;
     _csTraceRays[2] = nullptr;
@@ -587,6 +590,16 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
                 context->BindSR(0, ddgiData.ActiveProbes->View());
                 context->BindUA(0, ddgiData.UpdateProbesInitArgs->View());
                 context->Dispatch(_csUpdateProbesInitArgs, 1, 1, 1);
+                context->ResetUA();
+            }
+
+            // For inactive probes, search nearby ones to find the closest valid for quick fallback when sampling irradiance
+            {
+                PROFILE_GPU_CPU_NAMED("Update Inactive Probes");
+                context->BindUA(0, ddgiData.Result.ProbesData);
+                int32 iterations = Math::Min(probesCounts.MaxValue() - 1, DDGI_PROBE_EMPTY_AREA_DENSITY) * 10;
+                for (int32 i = 0; i < iterations; i++)
+                    context->Dispatch(_csUpdateInactiveProbes, threadGroupsX, 1, 1);
                 context->ResetUA();
             }
 

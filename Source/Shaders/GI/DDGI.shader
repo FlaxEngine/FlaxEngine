@@ -27,6 +27,7 @@
 #define DDGI_PROBE_CLASSIFY_GROUP_SIZE 32
 #define DDGI_PROBE_RELOCATE_ITERATIVE 1 // If true, probes relocation algorithm tries to move them in additive way, otherwise all nearby locations are checked to find the best position
 #define DDGI_PROBE_RELOCATE_FIND_BEST 1 // If true, probes relocation algorithm tries to move to the best matching location within nearby area
+#define DDGI_PROBE_EMPTY_AREA_DENSITY 10 // Spacing (in probe grid) between fallback probes placed into empty areas to provide valid GI for nearby dynamic objects or transparency
 #define DDGI_DEBUG_STATS 0 // Enables additional GPU-driven stats for probe/rays count
 #define DDGI_DEBUG_INSTABILITY 0 // Enables additional probe irradiance instability debugging
 
@@ -115,6 +116,14 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
     float probesSpacing = DDGI.ProbesOriginAndSpacing[CascadeIndex].w;
     float3 probeBasePosition = GetDDGIProbeWorldPosition(DDGI, CascadeIndex, probeCoords);
 
+#ifdef DDGI_DEBUG_CASCADE
+    // Single cascade-only debugging
+    if (CascadeIndex != DDGI_DEBUG_CASCADE)
+    {
+        RWProbesData[probeDataCoords] = EncodeDDGIProbeData(float3(0, 0, 0), DDGI_PROBE_STATE_INACTIVE, 0.0f);
+        return;
+    }
+#else
     // Disable probes that are is in the range of higher-quality cascade
     if (CascadeIndex > 0)
     {
@@ -126,11 +135,11 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
         float prevCascadeWeight = Min3(prevProbesExtent - abs(probeBasePosition - prevProbesOrigin));
         if (prevCascadeWeight > 0.1f)
         {
-            // Disable probe
             RWProbesData[probeDataCoords] = EncodeDDGIProbeData(float3(0, 0, 0), DDGI_PROBE_STATE_INACTIVE, 0.0f);
             return;
         }
     }
+#endif
 
     // Check if probe was scrolled
     int3 probeScrollClears = ProbeScrollClears[CascadeIndex].xyz;
@@ -174,9 +183,18 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
     float voxelLimit = GlobalSDF.CascadeVoxelSize[CascadeIndex] * 0.8f;
     float distanceLimit = probesSpacing * ProbesDistanceLimits[CascadeIndex];
     float relocateLimit = probesSpacing * ProbesRelocateLimits[CascadeIndex];
-    if (sdfDst > distanceLimit + length(probeOffset)) // Probe is too far from geometry (or deep inside)
+    uint3 probeCoordsStable = GetDDGIProbeCoords(DDGI, probeIndex);
+    if (sdf > probesSpacing * DDGI.ProbesCounts.x * 0.3f && 
+        probeCoordsStable.x % DDGI_PROBE_EMPTY_AREA_DENSITY == 0 && probeCoordsStable.y % DDGI_PROBE_EMPTY_AREA_DENSITY == 0 && probeCoordsStable.z % DDGI_PROBE_EMPTY_AREA_DENSITY == 0)
     {
-        // Disable it
+        // Addd some fallback probes in empty areas to provide valid GI for nearby dynamic objects or transparency
+        probeOffset = float3(0, 0, 0);
+        probeState = wasScrolled || probeStateOld == DDGI_PROBE_STATE_INACTIVE ? DDGI_PROBE_STATE_ACTIVATED : DDGI_PROBE_STATE_ACTIVE;
+        probeAttention = DDGI_PROBE_ATTENTION_MIN;
+    }
+    else if (sdfDst > distanceLimit + length(probeOffset))
+    {
+        // Probe is too far from geometry (or deep inside) so disable it
         probeOffset = float3(0, 0, 0);
         probeState = DDGI_PROBE_STATE_INACTIVE;
         probeAttention = 0.0f;
@@ -197,6 +215,7 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
         probeAttention = clamp(probeAttention, DDGI_PROBE_ATTENTION_MIN, DDGI_PROBE_ATTENTION_MAX);
 
         // Relocate only if probe location is not good enough
+        BRANCH
         if (sdf <= voxelLimit)
         {
 #if DDGI_PROBE_RELOCATE_ITERATIVE
@@ -268,6 +287,7 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
         bool wasActivated = probeStateOld == DDGI_PROBE_STATE_INACTIVE;
         bool wasRelocated = distance(probeOffset, probeOffsetOld) > 2.0f;
 #if DDGI_PROBE_RELOCATE_FIND_BEST || DDGI_PROBE_RELOCATE_ITERATIVE
+        BRANCH
         if (wasRelocated && !wasActivated)
         {
             // If probe was relocated but the previous location is visible from the new one, then don't re-activate it for smoother blend
@@ -321,6 +341,87 @@ void CS_UpdateProbesInitArgs()
         UpdateProbesInitArgs[arg++] = probesBatchSize;
         UpdateProbesInitArgs[arg++] = 1;
         UpdateProbesInitArgs[arg++] = 1;
+    }
+}
+
+#endif
+
+#ifdef _CS_UpdateInactiveProbes
+
+globallycoherent RWTexture2D<snorm float4> RWProbesData : register(u0);
+
+void CheckNearbyProbe(inout uint3 fallbackCoords, inout uint probeState, uint3 probeCoords, int3 probeCoordsEnd, int3 offset)
+{
+    uint3 nearbyCoords = (uint3)clamp(((int3)probeCoords + offset), int3(0, 0, 0), probeCoordsEnd);
+    uint nearbyIndex = GetDDGIScrollingProbeIndex(DDGI, CascadeIndex, nearbyCoords);
+    float4 nearbyData = RWProbesData[GetDDGIProbeTexelCoords(DDGI, CascadeIndex, nearbyIndex)];
+    uint nearbyState = DecodeDDGIProbeState(nearbyData);
+    uint3 nearbyFallbackCoords = DDGI_FALLBACK_COORDS_DECODE(nearbyData);
+    if (nearbyState != DDGI_PROBE_STATE_INACTIVE)
+    {
+        // Use nearby probe
+        fallbackCoords = nearbyCoords;
+        probeState = nearbyState;
+    }
+    // TODO: optimize distance check with squared dst comparision
+    else if (distance((float3)nearbyFallbackCoords, (float3)probeCoords) < distance((float3)fallbackCoords, (float3)probeCoords))
+    {
+        // Check if fallback probe is actually active (not some leftover memory)
+        nearbyIndex = GetDDGIScrollingProbeIndex(DDGI, CascadeIndex, nearbyFallbackCoords);
+        nearbyData = RWProbesData[GetDDGIProbeTexelCoords(DDGI, CascadeIndex, nearbyIndex)];
+        nearbyState = DecodeDDGIProbeState(nearbyData);
+        if (nearbyState != DDGI_PROBE_STATE_INACTIVE)
+        {
+            // Use fallback of the nearby probe
+            fallbackCoords = nearbyFallbackCoords;
+            probeState = DDGI_PROBE_STATE_ACTIVE;
+        }
+    }
+}
+
+// Compute shader to store closest valid probe coords inside inactive probes data for quick fallback lookup when sampling irradiance.
+META_CS(true, FEATURE_LEVEL_SM5)
+[numthreads(DDGI_PROBE_CLASSIFY_GROUP_SIZE, 1, 1)]
+void CS_UpdateInactiveProbes(uint3 DispatchThreadId : SV_DispatchThreadID)
+{
+    uint probeIndex = min(DispatchThreadId.x, ProbesCount - 1);
+    uint3 fallbackCoords = uint3(1000, 1000, 1000);
+
+    // Load probe data for the current thread
+    uint3 probeCoords = GetDDGIProbeCoords(DDGI, probeIndex);
+    probeIndex = GetDDGIScrollingProbeIndex(DDGI, CascadeIndex, probeCoords);
+    int2 probeDataCoords = GetDDGIProbeTexelCoords(DDGI, CascadeIndex, probeIndex);
+    float4 probeData = RWProbesData[probeDataCoords];
+    uint probeState = DecodeDDGIProbeState(probeData);
+    if (probeState == DDGI_PROBE_STATE_INACTIVE)
+    {
+        // Find the closest active probe (flood fill)
+        int3 probeCoordsEnd = (int3)DDGI.ProbesCounts - int3(1, 1, 1);
+        // Corners
+        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(1, 1, 1));
+        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(-1, 1, 1));
+        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(1, -1, 1));
+        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(-1, -1, 1));
+        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(1, 1, -1));
+        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(-1, 1, -1));
+        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(1, -1, -1));
+        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(-1, -1, -1));
+        // Sides
+        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(1, 0, 0));
+        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(0, 1, 0));
+        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(0, 0, 1));
+        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(-1, 0, 0));
+        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(0, -1, 0));
+        CheckNearbyProbe(fallbackCoords, probeState, probeCoords, probeCoordsEnd, int3(0, 0, -1));
+    }
+
+    // Ensure all threads (within dispatch) got proepr data before writing back to the same memory
+    DeviceMemoryBarrierWithGroupSync();
+
+    // Write modified probe data back (remain inactive)
+    if (probeState != DDGI_PROBE_STATE_INACTIVE && DispatchThreadId.x < ProbesCount && fallbackCoords.x != 1000)
+    {
+        RWProbesData[probeDataCoords] = EncodeDDGIProbeData(DDGI_FALLBACK_COORDS_ENCODE(fallbackCoords), DDGI_PROBE_STATE_INACTIVE, 0.0f);
     }
 }
 
@@ -644,7 +745,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
 
         // Add distance (R), distance^2 (G) and weight (A)
         float rayDistance = CachedProbesTraceDistance[rayIndex];
-        result += float4(rayDistance * rayWeight, (rayDistance * rayDistance) * rayWeight, 0.0f, rayWeight);
+        result += float4(rayDistance, rayDistance * rayDistance, 0.0f, 1.0f) * rayWeight;
 #endif
     }
 

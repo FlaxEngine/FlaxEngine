@@ -45,6 +45,7 @@ private:
     GPUConstantBuffer* _cb1 = nullptr;
     GPUShaderProgramCS* _csClassify;
     GPUShaderProgramCS* _csUpdateProbesInitArgs;
+    GPUShaderProgramCS* _csUpdateInactiveProbes;
     GPUShaderProgramCS* _csTraceRays[4];
     GPUShaderProgramCS* _csUpdateProbesIrradiance;
     GPUShaderProgramCS* _csUpdateProbesDistance;
