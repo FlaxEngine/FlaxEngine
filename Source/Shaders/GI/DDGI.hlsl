@@ -44,8 +44,7 @@ struct DDGIData
     float IndirectLightingIntensity;
     float3 ViewPos;
     uint RaysCount;
-    float3 FallbackIrradiance;
-    float Padding0;
+    float4 FallbackIrradiance;
 };
 
 uint GetDDGIProbeIndex(DDGIData data, uint3 probeCoords)
@@ -164,6 +163,8 @@ float2 GetDDGIProbeUV(DDGIData data, uint cascadeIndex, uint probeIndex, float2 
 
 float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probesData, Texture2D<float4> probesDistance, Texture2D<float4> probesIrradiance, float3 worldPosition, float3 worldNormal, uint cascadeIndex, float3 probesOrigin, float3 probesExtent, float probesSpacing, float3 biasedWorldPosition)
 {
+    bool invalidCascade = cascadeIndex >= data.CascadesCount;
+    cascadeIndex = min(cascadeIndex, data.CascadesCount - 1);
     uint3 probeCoordsEnd = data.ProbesCounts - uint3(1, 1, 1);
     uint3 baseProbeCoords = clamp(uint3((worldPosition - probesOrigin + probesExtent) / probesSpacing), uint3(0, 0, 0), probeCoordsEnd);
 
@@ -190,11 +191,11 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
             uint3 fallbackCoords = DDGI_FALLBACK_COORDS_DECODE(probeData);
             float fallbackToProbeDist = length((float3)probeCoords - (float3)fallbackCoords);
             useVisibility = fallbackToProbeDist <= 1.0f; // Skip visibility test that blocks too far probes due to limiting max distance to 1.5 of probe spacing
-            if (fallbackToProbeDist > 2.0f)
-                minWight = 1.0f;
+            if (fallbackToProbeDist > 2.0f) minWight = 1.0f;
             probeCoords = fallbackCoords;
             probeIndex = GetDDGIScrollingProbeIndex(data, cascadeIndex, fallbackCoords);
             probeData = LoadDDGIProbeData(data, probesData, cascadeIndex, probeIndex);
+            //if (DecodeDDGIProbeState(probeData) == DDGI_PROBE_STATE_INACTIVE) continue;
         }
 
         // Calculate probe position
@@ -264,7 +265,8 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
     {
         // Normalize irradiance
         //irradiance.rgb /= irradiance.a;
-        irradiance.rgb /= lerp(1, irradiance.a, saturate(irradiance.a * irradiance.a + 0.9f));
+        //irradiance.rgb /= lerp(1, irradiance.a, saturate(irradiance.a * irradiance.a + 0.9f));
+        irradiance.rgb /= invalidCascade ? irradiance.a : lerp(1, irradiance.a, saturate(irradiance.a * irradiance.a + 0.9f));
 #if DDGI_SRGB_BLENDING
         irradiance.rgb *= irradiance.rgb;
 #endif
@@ -319,16 +321,13 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
             break;
     }
 #endif
-    if (cascadeIndex == data.CascadesCount)
-        return data.FallbackIrradiance;
 
     // Sample cascade
     float3 result = SampleDDGIIrradianceCascade(data, probesData, probesDistance, probesIrradiance, worldPosition, worldNormal, cascadeIndex, probesOrigin, probesExtent, probesSpacing, biasedWorldPosition);
 
     // Blend with the next cascade (or fallback irradiance outside the volume)
-    cascadeIndex++;
 #if DDGI_CASCADE_BLEND_SMOOTH && !defined(DDGI_DEBUG_CASCADE)
-    result *= cascadeWeight;
+    cascadeIndex++;
     if (cascadeIndex < data.CascadesCount && cascadeWeight < 0.99f)
     {
         probesSpacing = data.ProbesOriginAndSpacing[cascadeIndex].w;
@@ -336,18 +335,16 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
         probesExtent = (data.ProbesCounts - 1) * (probesSpacing * 0.5f);
         biasedWorldPosition = worldPosition + GetDDGISurfaceBias(viewDir, probesSpacing, worldNormal, bias);
         float3 resultNext = SampleDDGIIrradianceCascade(data, probesData, probesDistance, probesIrradiance, worldPosition, worldNormal, cascadeIndex, probesOrigin, probesExtent, probesSpacing, biasedWorldPosition);
+        result *= cascadeWeight;
         result += resultNext * (1 - cascadeWeight);
     }
-    else
-    {
-        result += data.FallbackIrradiance * (1 - cascadeWeight);
-    }
-#else
-    if (cascadeIndex == data.CascadesCount)
-    {
-        result += data.FallbackIrradiance * (1 - cascadeWeight);
-    }
 #endif
+    if (cascadeIndex >= data.CascadesCount)
+    {
+        // Blend between the last cascade and the fallback irradiance
+        float fallbackWeight = (1 - cascadeWeight) * data.FallbackIrradiance.a;
+        result = lerp(result, data.FallbackIrradiance.rgb, fallbackWeight);
+    }
 
     return result;
 }

@@ -25,8 +25,7 @@ public:
         float IndirectLightingIntensity;
         Float3 ViewPos;
         uint32 RaysCount;
-        Float3 FallbackIrradiance;
-        float Padding0;
+        Float4 FallbackIrradiance;
         });
 
     // Binding data for the GPU.

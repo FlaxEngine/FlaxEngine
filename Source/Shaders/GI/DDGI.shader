@@ -102,6 +102,11 @@ float3 Remap(float3 value, float3 fromMin, float3 fromMax, float3 toMin, float3 
     return (value - fromMin) / (fromMax - fromMin) * (toMax - toMin) + toMin;
 }
 
+bool IsProbeAtBorder(uint3 probeCoords)
+{
+    return min(probeCoords.x, min(probeCoords.y, probeCoords.z)) == 0 || probeCoords.x == DDGI.ProbesCounts.x - 1 || probeCoords.y == DDGI.ProbesCounts.y - 1 || probeCoords.z == DDGI.ProbesCounts.z - 1;
+}
+
 // Compute shader for updating probes state between active and inactive and performing probes relocation.
 META_CS(true, FEATURE_LEVEL_SM5)
 [numthreads(DDGI_PROBE_CLASSIFY_GROUP_SIZE, 1, 1)]
@@ -183,16 +188,27 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
     float voxelLimit = GlobalSDF.CascadeVoxelSize[CascadeIndex] * 0.8f;
     float distanceLimit = probesSpacing * ProbesDistanceLimits[CascadeIndex];
     float relocateLimit = probesSpacing * ProbesRelocateLimits[CascadeIndex];
+#ifdef DDGI_PROBE_EMPTY_AREA_DENSITY
     uint3 probeCoordsStable = GetDDGIProbeCoords(DDGI, probeIndex);
-    if (sdf > probesSpacing * DDGI.ProbesCounts.x * 0.3f && 
-        probeCoordsStable.x % DDGI_PROBE_EMPTY_AREA_DENSITY == 0 && probeCoordsStable.y % DDGI_PROBE_EMPTY_AREA_DENSITY == 0 && probeCoordsStable.z % DDGI_PROBE_EMPTY_AREA_DENSITY == 0)
+    if (sdf > probesSpacing * DDGI.ProbesCounts.x * 0.3f
+#if DDGI_PROBE_EMPTY_AREA_DENSITY > 1
+        && (
+            // Low-density grid grid
+            (probeCoordsStable.x % DDGI_PROBE_EMPTY_AREA_DENSITY == 0 && probeCoordsStable.y % DDGI_PROBE_EMPTY_AREA_DENSITY == 0 && probeCoordsStable.z % DDGI_PROBE_EMPTY_AREA_DENSITY == 0)
+            // Edge probes at the last cascade (for good fallback irradiance outside the GI distance)
+            //|| (CascadeIndex + 1 == DDGI.CascadesCount && IsProbeAtBorder(probeCoords))
+        )
+#endif
+    )
     {
         // Addd some fallback probes in empty areas to provide valid GI for nearby dynamic objects or transparency
         probeOffset = float3(0, 0, 0);
         probeState = wasScrolled || probeStateOld == DDGI_PROBE_STATE_INACTIVE ? DDGI_PROBE_STATE_ACTIVATED : DDGI_PROBE_STATE_ACTIVE;
         probeAttention = DDGI_PROBE_ATTENTION_MIN;
     }
-    else if (sdfDst > distanceLimit + length(probeOffset))
+    else 
+#endif
+    if (sdfDst > distanceLimit + length(probeOffset))
     {
         // Probe is too far from geometry (or deep inside) so disable it
         probeOffset = float3(0, 0, 0);
