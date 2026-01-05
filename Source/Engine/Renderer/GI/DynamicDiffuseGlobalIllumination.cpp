@@ -376,7 +376,6 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         blendOrigins[cascadeIndex] = viewOrigin;
         const float viewOriginSnapping = cascadeProbesSpacing;
         viewOrigin = Float3::Floor(viewOrigin / viewOriginSnapping) * viewOriginSnapping;
-        viewOrigin -= UNITS_TO_METERS(0.5f); // Bias to avoid precision issues (eg. if floor mesh is exactly at Y=0)
         viewOrigins[cascadeIndex] = viewOrigin;
     }
 

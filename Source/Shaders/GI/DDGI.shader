@@ -913,7 +913,8 @@ void PS_IndirectLighting(Quad_VS2PS input, out float4 output : SV_Target0)
 
     // Sample irradiance
     float dither = RandN2(input.TexCoord + TemporalTime).x;
-    float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesData, ProbesDistance, ProbesIrradiance, gBuffer.WorldPos, gBuffer.Normal, DDGI_DEFAULT_BIAS, dither);
+    float3 samplePos = gBuffer.WorldPos + gBuffer.Normal * (dither * 0.1f + 0.1f);
+    float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesData, ProbesDistance, ProbesIrradiance, samplePos, gBuffer.Normal, DDGI_DEFAULT_BIAS, dither);
 
     // Calculate lighting
     float3 diffuseColor = GetDiffuseColor(gBuffer);
