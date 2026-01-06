@@ -387,17 +387,7 @@ namespace Flax.Build.Bindings
 
             // Find namespace for this type to build a fullname
             if (apiType != null)
-            {
-                var e = apiType.Parent;
-                while (!(e is FileInfo))
-                {
-                    e = e.Parent;
-                }
-                if (e is FileInfo fileInfo && !managedType.StartsWith(fileInfo.Namespace))
-                {
-                    managedType = fileInfo.Namespace + '.' + managedType.Replace(".", "+");
-                }
-            }
+                managedType = apiType.Namespace + '.' + managedType.Replace(".", "+");
 
             // Use runtime lookup from fullname of the C# class
             return "Scripting::FindClass(\"" + managedType + "\")";
@@ -770,6 +760,11 @@ namespace Flax.Build.Bindings
                             genericArgs += ", " + typeInfo.GenericArgs[1];
                         result = $"Array<{genericArgs}>({result})";
                     }
+                    else if (arrayApiType?.Name == "bool")
+                    {
+                        type = "bool*";
+                        result = "Array<bool>({0}, {1})";
+                    }
                     return result;
                 }
 
@@ -925,7 +920,7 @@ namespace Flax.Build.Bindings
 
             // BytesContainer
             if (typeInfo.Type == "BytesContainer" && typeInfo.GenericArgs == null)
-                return "MUtils::ToArray({0})";
+                return $"MUtils::ToArray({value})";
 
             // Construct native typename for MUtils template argument
             var nativeType = new StringBuilder(64);
@@ -1244,8 +1239,12 @@ namespace Flax.Build.Bindings
                     callParams += ", ";
                 separator = true;
                 var name = parameterInfo.Name;
+                var countParamName = $"__{parameterInfo.Name}Count";
                 if (CppParamsThatNeedConversion[i] && (!FindApiTypeInfo(buildData, parameterInfo.Type, caller)?.IsStruct ?? false))
+                {
                     name = '*' + name;
+                    countParamName = '*' + countParamName;
+                }
 
                 string param = string.Empty;
                 if (string.IsNullOrWhiteSpace(CppParamsWrappersCache[i]))
@@ -1258,7 +1257,7 @@ namespace Flax.Build.Bindings
                 else
                 {
                     // Convert value
-                    param += string.Format(CppParamsWrappersCache[i], name);
+                    param += string.Format(CppParamsWrappersCache[i], name, countParamName);
                 }
 
                 // Special case for output result parameters that needs additional converting from native to managed format (such as non-POD structures or output array parameter)
@@ -1293,10 +1292,20 @@ namespace Flax.Build.Bindings
                     callParams += parameterInfo.Name;
                     callParams += "Temp";
                 }
-                // Instruct for more optoimized value move operation
+                // Instruct for more optimized value move operation
                 else if (parameterInfo.Type.IsMoveRef)
                 {
                     callParams += $"MoveTemp({param})";
+                }
+                else if (parameterInfo.Type.IsRef && !parameterInfo.Type.IsConst)
+                {
+                    // Non-const lvalue reference parameters needs to be passed via temporary value
+                    if (parameterInfo.IsOut || parameterInfo.IsRef)
+                        contents.Append(indent).AppendFormat("{2}& {0}Temp = {1};", parameterInfo.Name, param, parameterInfo.Type.ToString(false)).AppendLine();
+                    else
+                        contents.Append(indent).AppendFormat("{2} {0}Temp = {1};", parameterInfo.Name, param, parameterInfo.Type.ToString(false)).AppendLine();
+                    callParams += parameterInfo.Name;
+                    callParams += "Temp";
                 }
                 else
                 {
@@ -2997,16 +3006,19 @@ namespace Flax.Build.Bindings
                         header.Append("template<>").AppendLine();
                         header.AppendFormat("struct MConverter<{0}>", fullName).AppendLine();
                         header.Append('{').AppendLine();
-                        header.AppendFormat("    MObject* Box(const {0}& data, const MClass* klass)", fullName).AppendLine();
+
+                        header.AppendFormat("    DLLEXPORT USED MObject* Box(const {0}& data, const MClass* klass)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.Append("        auto managed = ToManaged(data);").AppendLine();
                         header.Append("        return MCore::Object::Box((void*)&managed, klass);").AppendLine();
                         header.Append("    }").AppendLine();
-                        header.AppendFormat("    void Unbox({0}& result, MObject* data)", fullName).AppendLine();
+
+                        header.AppendFormat("    DLLEXPORT USED void Unbox({0}& result, MObject* data)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.AppendFormat("        result = ToNative(*reinterpret_cast<{0}*>(MCore::Object::Unbox(data)));", wrapperName).AppendLine();
                         header.Append("    }").AppendLine();
-                        header.AppendFormat("    void ToManagedArray(MArray* result, const Span<{0}>& data)", fullName).AppendLine();
+
+                        header.AppendFormat("    DLLEXPORT USED void ToManagedArray(MArray* result, const Span<{0}>& data)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.AppendFormat("        MClass* klass = {0}::TypeInitializer.GetClass();", fullName).AppendLine();
                         header.AppendFormat("        {0}* resultPtr = ({0}*)MCore::Array::GetAddress(result);", wrapperName).AppendLine();
@@ -3016,7 +3028,8 @@ namespace Flax.Build.Bindings
                         header.Append("        	MCore::GC::WriteValue(&resultPtr[i], &managed, 1, klass);").AppendLine();
                         header.Append("        }").AppendLine();
                         header.Append("    }").AppendLine();
-                        header.AppendFormat("    void ToNativeArray(Span<{0}>& result, const MArray* data)", fullName).AppendLine();
+
+                        header.AppendFormat("    DLLEXPORT USED void ToNativeArray(Span<{0}>& result, const MArray* data)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.AppendFormat("        {0}* dataPtr = ({0}*)MCore::Array::GetAddress(data);", wrapperName).AppendLine();
                         header.Append("        for (int32 i = 0; i < result.Length(); i++)").AppendLine();
@@ -3108,7 +3121,7 @@ namespace Flax.Build.Bindings
                         header.AppendFormat("struct MConverter<{0}>", fullName).AppendLine();
                         header.Append('{').AppendLine();
 
-                        header.AppendFormat("    static MObject* Box(const {0}& data, const MClass* klass)", fullName).AppendLine();
+                        header.AppendFormat("    DLLEXPORT USED static MObject* Box(const {0}& data, const MClass* klass)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.Append("        MObject* obj = MCore::Object::New(klass);").AppendLine();
                         for (var i = 0; i < fields.Count; i++)
@@ -3128,13 +3141,13 @@ namespace Flax.Build.Bindings
                         header.Append("        return obj;").AppendLine();
                         header.Append("    }").AppendLine();
 
-                        header.AppendFormat("    static MObject* Box(const {0}& data)", fullName).AppendLine();
+                        header.AppendFormat("    DLLEXPORT USED static MObject* Box(const {0}& data)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.AppendFormat("        MClass* klass = {0}::TypeInitializer.GetClass();", fullName).AppendLine();
                         header.Append("        return Box(data, klass);").AppendLine();
                         header.Append("    }").AppendLine();
 
-                        header.AppendFormat("    static void Unbox({0}& result, MObject* obj)", fullName).AppendLine();
+                        header.AppendFormat("    DLLEXPORT USED static void Unbox({0}& result, MObject* obj)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.Append("        MClass* klass = MCore::Object::GetClass(obj);").AppendLine();
                         header.Append("        void* v = nullptr;").AppendLine();
@@ -3156,20 +3169,20 @@ namespace Flax.Build.Bindings
                         }
                         header.Append("    }").AppendLine();
 
-                        header.AppendFormat("    static {0} Unbox(MObject* data)", fullName).AppendLine();
+                        header.AppendFormat("    DLLEXPORT USED static {0} Unbox(MObject* data)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.AppendFormat("        {0} result;", fullName).AppendLine();
                         header.Append("        Unbox(result, data);").AppendLine();
                         header.Append("        return result;").AppendLine();
                         header.Append("    }").AppendLine();
 
-                        header.AppendFormat("    void ToManagedArray(MArray* result, const Span<{0}>& data)", fullName).AppendLine();
+                        header.AppendFormat("    DLLEXPORT USED void ToManagedArray(MArray* result, const Span<{0}>& data)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.Append("        for (int32 i = 0; i < data.Length(); i++)").AppendLine();
                         header.Append("            MCore::GC::WriteArrayRef(result, Box(data[i]), i);").AppendLine();
                         header.Append("    }").AppendLine();
 
-                        header.AppendFormat("    void ToNativeArray(Span<{0}>& result, const MArray* data)", fullName).AppendLine();
+                        header.AppendFormat("    DLLEXPORT USED void ToNativeArray(Span<{0}>& result, const MArray* data)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.Append("        MObject** dataPtr = (MObject**)MCore::Array::GetAddress(data);").AppendLine();
                         header.Append("        for (int32 i = 0; i < result.Length(); i++)").AppendLine();
