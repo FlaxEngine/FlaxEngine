@@ -380,6 +380,10 @@ namespace Flax.Build.Projects.VisualStudio
 
             if (platforms.Any(x => x.Target == TargetPlatform.Linux || x.Target == TargetPlatform.Mac))
             {
+                var editorPath = Utilities.NormalizePath(Path.Combine(Globals.EngineRoot, Platform.GetEditorBinaryDirectory(), "$(Configuration.Split('.')[2])", $"FlaxEditor{Utilities.GetPlatformExecutableExt()}")).Replace('\\', '/');
+                var debuggerProjectPath = Globals.Project.Name == "Flax" ? "" : Globals.Project.ProjectFolderPath;
+                var debuggerWorkingDirectory = Globals.Project.ProjectFolderPath;
+
                 // Override MSBuild .targets file with one that runs NMake commands (workaround for Rider not finding "Microsoft.Cpp.Default.props" file)
                 var cppTargetsFileContent = new StringBuilder();
                 cppTargetsFileContent.AppendLine("<Project xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\" TreatAsLocalProperty=\"Platform\">");
@@ -396,6 +400,12 @@ namespace Flax.Build.Projects.VisualStudio
                 cppTargetsFileContent.AppendLine("    <TargetExt></TargetExt>");
                 cppTargetsFileContent.AppendLine("    <TargetName>$(RootNamespace)$(Configuration.Split('.')[0])</TargetName>");
                 cppTargetsFileContent.AppendLine("    <TargetPath>$(OutDir)/$(TargetName)$(TargetExt)</TargetPath>");
+                if (!string.IsNullOrEmpty(debuggerProjectPath))
+                    cppTargetsFileContent.AppendLine(string.Format("    <LocalDebuggerCommandArguments>-project \"{0}\"</LocalDebuggerCommandArguments>", debuggerProjectPath));
+                else
+                    cppTargetsFileContent.AppendLine("    <LocalDebuggerCommandArguments></LocalDebuggerCommandArguments>");
+                cppTargetsFileContent.AppendLine(string.Format("    <LocalDebuggerCommand>{0}</LocalDebuggerCommand>", editorPath));
+                cppTargetsFileContent.AppendLine(string.Format("    <LocalDebuggerWorkingDirectory>{0}</LocalDebuggerWorkingDirectory>", debuggerWorkingDirectory));
                 cppTargetsFileContent.AppendLine("  </PropertyGroup>");
                 cppTargetsFileContent.AppendLine("</Project>");
 

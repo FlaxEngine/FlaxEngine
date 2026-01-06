@@ -47,6 +47,24 @@ namespace Flax.Deps
         /// </summary>
         protected static TargetPlatform BuildPlatform => Platform.BuildPlatform.Target;
 
+
+        private static Version? _cmakeVersion;
+        protected static Version CMakeVersion
+        {
+            get
+            {
+                if (_cmakeVersion == null)
+                {
+                    var versionOutput = Utilities.ReadProcessOutput("cmake", "--version");
+                    var versionStart = versionOutput.IndexOf("cmake version ") + "cmake version ".Length;
+                    var versionEnd = versionOutput.IndexOfAny(['-', '\n', '\r'], versionStart); // End of line or dash before Git hash
+                    var versionString = versionOutput.Substring(versionStart, versionEnd - versionStart);
+                    _cmakeVersion = new Version(versionString);
+                }
+                return _cmakeVersion;
+            }
+        }
+
         /// <summary>
         /// Gets the platforms list supported by this dependency to build on the current build platform (based on <see cref="Platform.BuildPlatform"/>).
         /// </summary>
@@ -351,7 +369,13 @@ namespace Flax.Deps
                     break;
                 default: throw new InvalidArchitectureException(architecture);
                 }
-                cmdLine = string.Format("CMakeLists.txt -G \"Visual Studio 17 2022\" -A {0}", arch);
+                if (CMakeVersion.Major > 4 || (CMakeVersion.Major == 4 && CMakeVersion.Minor >= 2))
+                {
+                    // This generates both .sln and .slnx solution files
+                    cmdLine = string.Format("CMakeLists.txt -G \"Visual Studio 17 2022\" -G \"Visual Studio 18 2026\" -A {0}", arch);
+                }
+                else
+                    cmdLine = string.Format("CMakeLists.txt -G \"Visual Studio 17 2022\" -A {0}", arch);
                 break;
             }
             case TargetPlatform.PS4:
