@@ -1,5 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
 using System.IO;
 using Flax.Build;
 using Flax.Build.NativeCpp;
@@ -18,6 +19,16 @@ public class FlaxGame : EngineTarget
         ConfigurationName = "Game";
         IsPreBuilt = false;
         IsMonolithicExecutable = false;
+        
+        // Load project in workspace and set project name for meta data purposes on Windows
+        var projectFiles = Directory.GetFiles(Globals.Root, "*.flaxproj", SearchOption.TopDirectoryOnly);
+        if (projectFiles.Length == 0)
+            throw new Exception("Missing project file. Folder: " + Globals.Root);
+        else if (projectFiles.Length > 1)
+            throw new Exception("Too many project files. Don't know which to pick. Folder: " + Globals.Root);
+        var project = ProjectInfo.Load(projectFiles[0]);
+        
+        ProjectName = project.Name;
     }
 
     /// <inheritdoc />
