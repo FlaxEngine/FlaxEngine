@@ -2361,7 +2361,7 @@ extern SDL_DECLSPEC SDL_GPUDevice * SDLCALL SDL_CreateGPUDeviceWithProperties(
  * When no such structure is provided, SDL will use Vulkan API version 1.0 and
  * a minimal set of features. The requested API version influences how the
  * feature_list is processed by SDL. When requesting API version 1.0, the
- * feature_list is ignored. Only the vulkan_10_phyisical_device_features and
+ * feature_list is ignored. Only the vulkan_10_physical_device_features and
  * the extension lists are used. When requesting API version 1.1, the
  * feature_list is scanned for feature structures introduced in Vulkan 1.1.
  * When requesting Vulkan 1.2 or higher, the feature_list is additionally
@@ -3139,7 +3139,7 @@ extern SDL_DECLSPEC SDL_GPUCommandBuffer * SDLCALL SDL_AcquireGPUCommandBuffer(
 /**
  * Pushes data to a vertex uniform slot on the command buffer.
  *
- * Subsequent draw calls will use this uniform data.
+ * Subsequent draw calls in this command buffer will use this uniform data.
  *
  * The data being pushed must respect std140 layout conventions. In practical
  * terms this means you must ensure that vec3 and vec4 fields are 16-byte
@@ -3164,7 +3164,7 @@ extern SDL_DECLSPEC void SDLCALL SDL_PushGPUVertexUniformData(
 /**
  * Pushes data to a fragment uniform slot on the command buffer.
  *
- * Subsequent draw calls will use this uniform data.
+ * Subsequent draw calls in this command buffer will use this uniform data.
  *
  * The data being pushed must respect std140 layout conventions. In practical
  * terms this means you must ensure that vec3 and vec4 fields are 16-byte
@@ -3186,7 +3186,7 @@ extern SDL_DECLSPEC void SDLCALL SDL_PushGPUFragmentUniformData(
 /**
  * Pushes data to a uniform slot on the command buffer.
  *
- * Subsequent draw calls will use this uniform data.
+ * Subsequent draw calls in this command buffer will use this uniform data.
  *
  * The data being pushed must respect std140 layout conventions. In practical
  * terms this means you must ensure that vec3 and vec4 fields are 16-byte
@@ -3672,7 +3672,7 @@ extern SDL_DECLSPEC void SDLCALL SDL_BindGPUComputePipeline(
  * The textures must have been created with SDL_GPU_TEXTUREUSAGE_SAMPLER.
  *
  * Be sure your shader is set up according to the requirements documented in
- * SDL_CreateGPUShader().
+ * SDL_CreateGPUComputePipeline().
  *
  * \param compute_pass a compute pass handle.
  * \param first_slot the compute sampler slot to begin binding from.
@@ -3683,7 +3683,7 @@ extern SDL_DECLSPEC void SDLCALL SDL_BindGPUComputePipeline(
  *
  * \since This function is available since SDL 3.2.0.
  *
- * \sa SDL_CreateGPUShader
+ * \sa SDL_CreateGPUComputePipeline
  */
 extern SDL_DECLSPEC void SDLCALL SDL_BindGPUComputeSamplers(
     SDL_GPUComputePass *compute_pass,
@@ -3698,7 +3698,7 @@ extern SDL_DECLSPEC void SDLCALL SDL_BindGPUComputeSamplers(
  * SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_READ.
  *
  * Be sure your shader is set up according to the requirements documented in
- * SDL_CreateGPUShader().
+ * SDL_CreateGPUComputePipeline().
  *
  * \param compute_pass a compute pass handle.
  * \param first_slot the compute storage texture slot to begin binding from.
@@ -3707,7 +3707,7 @@ extern SDL_DECLSPEC void SDLCALL SDL_BindGPUComputeSamplers(
  *
  * \since This function is available since SDL 3.2.0.
  *
- * \sa SDL_CreateGPUShader
+ * \sa SDL_CreateGPUComputePipeline
  */
 extern SDL_DECLSPEC void SDLCALL SDL_BindGPUComputeStorageTextures(
     SDL_GPUComputePass *compute_pass,
@@ -3722,7 +3722,7 @@ extern SDL_DECLSPEC void SDLCALL SDL_BindGPUComputeStorageTextures(
  * SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_READ.
  *
  * Be sure your shader is set up according to the requirements documented in
- * SDL_CreateGPUShader().
+ * SDL_CreateGPUComputePipeline().
  *
  * \param compute_pass a compute pass handle.
  * \param first_slot the compute storage buffer slot to begin binding from.
@@ -3731,7 +3731,7 @@ extern SDL_DECLSPEC void SDLCALL SDL_BindGPUComputeStorageTextures(
  *
  * \since This function is available since SDL 3.2.0.
  *
- * \sa SDL_CreateGPUShader
+ * \sa SDL_CreateGPUComputePipeline
  */
 extern SDL_DECLSPEC void SDLCALL SDL_BindGPUComputeStorageBuffers(
     SDL_GPUComputePass *compute_pass,
@@ -3902,6 +3902,10 @@ extern SDL_DECLSPEC void SDLCALL SDL_UploadToGPUBuffer(
  *
  * This copy occurs on the GPU timeline. You may assume the copy has finished
  * in subsequent commands.
+ *
+ * This function does not support copying between depth and color textures.
+ * For those, copy the texture to a buffer and then to the destination
+ * texture.
  *
  * \param copy_pass a copy pass handle.
  * \param source a source texture region.
