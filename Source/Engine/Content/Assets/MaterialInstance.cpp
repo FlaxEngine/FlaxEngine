@@ -218,10 +218,14 @@ Asset::LoadResult MaterialInstance::load()
     Guid baseMaterialId;
     headerStream.Read(baseMaterialId);
     auto baseMaterial = Content::LoadAsync<MaterialBase>(baseMaterialId);
+    if (baseMaterial)
+        baseMaterial->AddReference();
 
     // Load parameters
     if (Params.Load(&headerStream))
     {
+        if (baseMaterial)
+            baseMaterial->RemoveReference();
         LOG(Warning, "Cannot load material parameters.");
         return LoadResult::CannotLoadData;
     }
@@ -239,6 +243,8 @@ Asset::LoadResult MaterialInstance::load()
         ParamsChanged();
     }
 
+    if (baseMaterial)
+        baseMaterial->RemoveReference();
     return LoadResult::Ok;
 }
 

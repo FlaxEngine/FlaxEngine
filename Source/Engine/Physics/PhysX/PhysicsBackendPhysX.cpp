@@ -1969,6 +1969,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         scenePhysX->EventsCallback.SendTriggerEvents();
         scenePhysX->EventsCallback.SendCollisionEvents();
         scenePhysX->EventsCallback.SendJointEvents();
+        scenePhysX->EventsCallback.Clear();
     }
 
     // Clear delta after simulation ended
@@ -2786,7 +2787,8 @@ float PhysicsBackend::ComputeShapeSqrDistanceToPoint(void* shape, const Vector3&
 #if USE_LARGE_WORLDS
     PxVec3 closestPointPx;
     float result = PxGeometryQuery::pointDistance(C2P(point), shapePhysX->getGeometry(), trans, &closestPointPx);
-    *closestPoint = P2C(closestPointPx);
+    if (closestPoint)
+        *closestPoint = P2C(closestPointPx);
     return result;
 #else
     return PxGeometryQuery::pointDistance(C2P(point), shapePhysX->getGeometry(), trans, (PxVec3*)closestPoint);
@@ -4466,14 +4468,14 @@ void PhysicsBackend::FlushRequests(void* scene)
     }
     if (scenePhysX->RemoveColliders.HasItems())
     {
-        for (int32 i = 0; i < scenePhysX->RemoveColliders.Count(); i++)
-            scenePhysX->EventsCallback.OnColliderRemoved(scenePhysX->RemoveColliders[i]);
+        for (PhysicsColliderActor* e : scenePhysX->RemoveColliders)
+            scenePhysX->EventsCallback.OnColliderRemoved(e);
         scenePhysX->RemoveColliders.Clear();
     }
     if (scenePhysX->RemoveJoints.HasItems())
     {
-        for (int32 i = 0; i < scenePhysX->RemoveJoints.Count(); i++)
-            scenePhysX->EventsCallback.OnJointRemoved(scenePhysX->RemoveJoints[i]);
+        for (Joint* e : scenePhysX->RemoveJoints)
+            scenePhysX->EventsCallback.OnJointRemoved(e);
         scenePhysX->RemoveJoints.Clear();
     }
 

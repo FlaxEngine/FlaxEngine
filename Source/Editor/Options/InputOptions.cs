@@ -650,6 +650,10 @@ namespace FlaxEditor.Options
         [EditorDisplay("Windows"), EditorOrder(4020)]
         public InputBinding VisualScriptDebuggerWindow = new InputBinding(KeyboardKeys.None);
 
+        [DefaultValue(typeof(InputBinding), "Control+Comma")]
+        [EditorDisplay("Windows"), EditorOrder(4030)]
+        public InputBinding EditorOptionsWindow = new InputBinding(KeyboardKeys.Comma, KeyboardKeys.Control);
+
         #endregion
 
         #region Node Editors

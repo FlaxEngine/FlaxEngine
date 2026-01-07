@@ -159,7 +159,7 @@ bool GPUTextureDX12::OnInit()
         initialState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 
     // Create texture
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS && 0
     D3D12_HEAP_FLAGS heapFlags = useRTV || useDSV ? D3D12_HEAP_FLAG_CREATE_NOT_ZEROED : D3D12_HEAP_FLAG_NONE;
 #else
     D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_NONE;
@@ -732,7 +732,7 @@ void GPUTextureDX12::initHandles()
     if (useDSV && useSRV && PixelFormatExtensions::HasStencil(format))
     {
         PixelFormat stencilFormat;
-        switch (_dxgiFormatDSV)
+        switch (static_cast<PixelFormat>(_dxgiFormatDSV))
         {
         case PixelFormat::D24_UNorm_S8_UInt:
             srDesc.Format = DXGI_FORMAT_X24_TYPELESS_G8_UINT;

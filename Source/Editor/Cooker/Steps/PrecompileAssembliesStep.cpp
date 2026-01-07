@@ -59,6 +59,7 @@ bool PrecompileAssembliesStep::Perform(CookingData& data)
     data.StepProgress(infoMsg, 0);
 
     // Override Newtonsoft.Json with AOT-version (one that doesn't use System.Reflection.Emit)
+    // TODO: remove it since EngineModule does properly reference AOT lib now
     EditorUtilities::CopyFileIfNewer(data.ManagedCodeOutputPath / TEXT("Newtonsoft.Json.dll"), Globals::StartupFolder / TEXT("Source/Platforms/DotNet/AOT/Newtonsoft.Json.dll"));
     FileSystem::DeleteFile(data.ManagedCodeOutputPath / TEXT("Newtonsoft.Json.xml"));
     FileSystem::DeleteFile(data.ManagedCodeOutputPath / TEXT("Newtonsoft.Json.pdb"));

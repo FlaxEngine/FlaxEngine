@@ -63,6 +63,8 @@ public class ShadersCompilation : EngineModule
             options.PrivateDependencies.Add("ShaderCompilerPS4");
         if (Sdk.HasValid("PS5Sdk"))
             options.PrivateDependencies.Add("ShaderCompilerPS5");
+        if (Flax.Build.Platform.GetPlatform(TargetPlatform.XboxScarlett, true) != null)
+            options.PrivateDependencies.Add("ShaderCompilerXboxScarlett");
     }
 
     /// <inheritdoc />

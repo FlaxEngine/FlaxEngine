@@ -100,6 +100,35 @@ API_STRUCT(NoDefault, Namespace="FlaxEngine.Networking") struct FLAXENGINE_API N
         return Word0 + Word1 != 0;
     }
 
+    NetworkClientsMask operator&(const NetworkClientsMask& other) const
+    {
+        return { Word0 & other.Word0, Word1 & other.Word1 };
+    }
+
+    NetworkClientsMask operator|(const NetworkClientsMask& other) const
+    {
+        return { Word0 | other.Word0, Word1 | other.Word1 };
+    }
+
+    NetworkClientsMask operator~() const
+    {
+        return { ~Word0, ~Word1 };
+    }
+
+    NetworkClientsMask& operator|=(const NetworkClientsMask& other)
+    {
+        Word0 |= other.Word0;
+        Word1 |= other.Word1;
+        return *this;
+    }
+
+    NetworkClientsMask& operator&=(const NetworkClientsMask& other)
+    {
+        Word0 &= other.Word0;
+        Word1 &= other.Word1;
+        return *this;
+    }
+
     bool operator==(const NetworkClientsMask& other) const
     {
         return Word0 == other.Word0 && Word1 == other.Word1;

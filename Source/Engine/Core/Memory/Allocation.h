@@ -18,9 +18,7 @@ namespace AllocationUtils
         capacity |= capacity >> 8;
         capacity |= capacity >> 16;
         uint64 capacity64 = (uint64)(capacity + 1) * 2;
-        if (capacity64 > MAX_int32)
-            capacity64 = MAX_int32;
-        return (int32)capacity64;
+        return capacity64 >= MAX_int32 ? MAX_int32 : (int32)capacity64 / 2;
     }
 
     // Aligns the input value to the next power of 2 to be used as bigger memory allocation block.
@@ -208,7 +206,7 @@ public:
         typedef typename FallbackAllocation::template Data<T> FallbackData;
 
         bool _useFallback = false;
-        byte _data[Capacity * sizeof(T)];
+        alignas(sizeof(void*)) byte _data[Capacity * sizeof(T)];
         FallbackData _fallback;
 
     public:

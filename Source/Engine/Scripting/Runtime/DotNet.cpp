@@ -316,7 +316,8 @@ bool MCore::LoadEngine()
 
     char* buildInfo = CallStaticMethod<char*>(GetStaticMethodPointer(TEXT("GetRuntimeInformation")));
     LOG(Info, ".NET runtime version: {0}", ::String(buildInfo));
-    MCore::GC::FreeMemory(buildInfo);
+    GC::FreeMemory(buildInfo);
+    Ready = true;
 
     return false;
 }
@@ -327,6 +328,7 @@ void MCore::UnloadEngine()
         return;
     PROFILE_CPU();
     CallStaticMethod<void>(GetStaticMethodPointer(TEXT("Exit")));
+    Ready = false;
     MDomains.ClearDelete();
     MRootDomain = nullptr;
     ShutdownHostfxr();
@@ -1798,6 +1800,33 @@ bool InitHostfxr()
         get_hostfxr_params.dotnet_root = dotnetRoot.Get();
     }
 #endif
+    String platformStr;
+    switch (PLATFORM_TYPE)
+    {
+    case PlatformType::Windows:
+    case PlatformType::UWP:
+        if (PLATFORM_ARCH == ArchitectureType::x64)
+            platformStr = "Windows x64";
+        else if (PLATFORM_ARCH == ArchitectureType::ARM64)
+            platformStr = "Windows ARM64";
+        else
+            platformStr = "Windows x86";
+        break;
+    case PlatformType::Linux:
+        platformStr = PLATFORM_ARCH_ARM64 ? "Linux ARM64" : PLATFORM_ARCH_ARM ? "Linux Arm32" : PLATFORM_64BITS ? "Linux x64" : "Linux x86";
+        break;
+    case PlatformType::Mac:
+        platformStr = PLATFORM_ARCH_ARM || PLATFORM_ARCH_ARM64 ? "macOS ARM64" : PLATFORM_64BITS ? "macOS x64" : "macOS x86";
+        break;
+    default:
+        if (PLATFORM_ARCH == ArchitectureType::x64)
+            platformStr = "x64";
+        else if (PLATFORM_ARCH == ArchitectureType::ARM64)
+            platformStr = "ARM64";
+        else
+            platformStr = "x86";
+    }
+
     char_t hostfxrPath[1024];
     size_t hostfxrPathSize = sizeof(hostfxrPath) / sizeof(char_t);
     int rc = get_hostfxr_path(hostfxrPath, &hostfxrPathSize, &get_hostfxr_params);
@@ -1810,9 +1839,9 @@ bool InitHostfxr()
         Platform::OpenUrl(TEXT("https://dotnet.microsoft.com/en-us/download/dotnet"));
 #endif
 #if USE_EDITOR
-        LOG(Fatal, "Missing .NET 8 or later SDK installation required to run Flax Editor.");
+        LOG(Fatal, "Missing .NET 8 or later SDK installation for {0} is required to run Flax Editor.", platformStr);
 #else
-        LOG(Fatal, "Missing .NET 8 or later Runtime installation required to run this application.");
+        LOG(Fatal, "Missing .NET 8 or later Runtime installation for {0} is required to run this application.", platformStr);
 #endif
         return true;
     }
@@ -1870,27 +1899,6 @@ bool InitHostfxr()
         hostfxr_close(handle);
         if (rc == 0x80008096) // FrameworkMissingFailure
         {
-            String platformStr;
-            switch (PLATFORM_TYPE)
-            {
-            case PlatformType::Windows:
-            case PlatformType::UWP:
-                if (PLATFORM_ARCH == ArchitectureType::x64)
-                    platformStr = "Windows x64";
-                else if (PLATFORM_ARCH == ArchitectureType::ARM64)
-                    platformStr = "Windows ARM64";
-                else
-                    platformStr = "Windows x86";
-                break;
-            case PlatformType::Linux:
-                platformStr = PLATFORM_ARCH_ARM64 ? "Linux ARM64" : PLATFORM_ARCH_ARM ? "Linux Arm32" : PLATFORM_64BITS ? "Linux x64" : "Linux x86";
-                break;
-            case PlatformType::Mac:
-                platformStr = PLATFORM_ARCH_ARM || PLATFORM_ARCH_ARM64 ? "macOS ARM64" : PLATFORM_64BITS ? "macOS x64" : "macOS x86";
-                break;
-            default:;
-                platformStr = "";
-            }
             LOG(Fatal, "Failed to resolve compatible .NET runtime version in '{0}'. Make sure the correct platform version for runtime is installed ({1})", platformStr, String(init_params.dotnet_root));
         }
         else
@@ -2022,13 +2030,13 @@ static MonoAssembly* OnMonoAssemblyLoad(const char* aname)
     String fileName = name;
     if (!name.EndsWith(TEXT(".dll")) && !name.EndsWith(TEXT(".exe")))
         fileName += TEXT(".dll");
-    String path = fileName;
+    String path = Globals::ProjectFolder / String(TEXT("/Dotnet/")) / fileName;
     if (!FileSystem::FileExists(path))
     {
         path = Globals::ProjectFolder / String(TEXT("/Dotnet/shared/Microsoft.NETCore.App/")) / fileName;
         if (!FileSystem::FileExists(path))
         {
-            path = Globals::ProjectFolder / String(TEXT("/Dotnet/")) / fileName;
+            path = fileName;
         }
     }
 
@@ -2129,6 +2137,53 @@ static void* OnMonoDlFallbackClose(void* handle, void* user_data)
 
 #endif
 
+#ifdef USE_MONO_AOT_MODULE
+
+#include "Engine/Threading/ThreadPoolTask.h"
+#include "Engine/Engine/EngineService.h"
+
+class MonoAotPreloadTask : public ThreadPoolTask
+{
+public:
+    bool Run() override;
+};
+
+// Preloads in-build AOT dynamic module in async 
+class MonoAotPreloadService : public EngineService
+{
+public:
+    volatile int64 Ready = 0;
+    void* Library = nullptr;
+
+    MonoAotPreloadService()
+        : EngineService(TEXT("AOT Preload"), -800)
+    {
+    }
+
+    bool Init() override
+    {
+        New<MonoAotPreloadTask>()->Start();
+        return false;
+    }
+};
+
+MonoAotPreloadService MonoAotPreloadServiceInstance;
+
+bool MonoAotPreloadTask::Run()
+{
+    // Load AOT module
+    Stopwatch aotModuleLoadStopwatch;
+    //LOG(Info, "Loading Mono AOT module...");
+    MonoAotPreloadServiceInstance.Library = Platform::LoadLibrary(TEXT(USE_MONO_AOT_MODULE));
+    aotModuleLoadStopwatch.Stop();
+    LOG(Info, "Mono AOT module loaded in {0}ms", aotModuleLoadStopwatch.GetMilliseconds());
+
+    Platform::AtomicStore(&MonoAotPreloadServiceInstance.Ready, 1);
+    return false;
+}
+
+#endif
+
 bool InitHostfxr()
 {
 #if DOTNET_HOST_MONO_DEBUG
@@ -2139,7 +2194,13 @@ bool InitHostfxr()
 #endif
 
     // Adjust GC threads suspending mode to not block attached native threads (eg. Job System)
+    // https://www.mono-project.com/docs/advanced/runtime/docs/coop-suspend/
+#if USE_MONO_AOT_COOP
+    Platform::SetEnvironmentVariable(TEXT("MONO_THREADS_SUSPEND"), TEXT("coop"));
+    Platform::SetEnvironmentVariable(TEXT("MONO_SLEEP_ABORT_LIMIT"), TEXT("5000")); // in ms
+#else
     Platform::SetEnvironmentVariable(TEXT("MONO_THREADS_SUSPEND"), TEXT("preemptive"));
+#endif
 
 #if defined(USE_MONO_AOT_MODE)
     // Enable AOT mode (per-platform)
@@ -2147,16 +2208,18 @@ bool InitHostfxr()
 #endif
     
     // Platform-specific setup
-#if PLATFORM_IOS || PLATFORM_SWITCH
-    setenv("MONO_AOT_MODE", "aot", 1);
-    setenv("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", 1);
+#if PLATFORM_IOS || PLATFORM_SWITCH || PLATFORM_PS4 || PLATFORM_PS5
+    Platform::SetEnvironmentVariable(TEXT("MONO_AOT_MODE"), TEXT("aot"));
+    Platform::SetEnvironmentVariable(TEXT("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"), TEXT("1"));
 #endif
 
 #ifdef USE_MONO_AOT_MODULE
-    // Load AOT module
-    Stopwatch aotModuleLoadStopwatch;
-    LOG(Info, "Loading Mono AOT module...");
-    void* libAotModule = Platform::LoadLibrary(TEXT(USE_MONO_AOT_MODULE));
+    // Wait for AOT module preloading
+    while (Platform::AtomicRead(&MonoAotPreloadServiceInstance.Ready) == 0)
+        Platform::Yield();
+
+    // Initialize AOT module
+    void* libAotModule = MonoAotPreloadServiceInstance.Library;
     if (libAotModule == nullptr)
     {
         LOG(Error, "Failed to laod Mono AOT module (" TEXT(USE_MONO_AOT_MODULE) ")");
@@ -2179,8 +2242,6 @@ bool InitHostfxr()
         mono_aot_register_module((void**)modules[i]);
     }
     Allocator::Free(modules);
-    aotModuleLoadStopwatch.Stop();
-    LOG(Info, "Mono AOT module loaded in {0}ms", aotModuleLoadStopwatch.GetMilliseconds());
 #endif
 
     // Setup debugger

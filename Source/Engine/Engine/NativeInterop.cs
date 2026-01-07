@@ -79,10 +79,11 @@ namespace FlaxEngine.Interop
             NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), NativeLibraryImportResolver);
 
             // Change default culture to match with Mono runtime default culture
-            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
-            CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
-            System.Threading.Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
-            System.Threading.Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
+            var culture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentCulture = culture;
+            CultureInfo.DefaultThreadCurrentUICulture = culture;
+            System.Threading.Thread.CurrentThread.CurrentCulture = culture;
+            System.Threading.Thread.CurrentThread.CurrentUICulture = culture;
 
         }
 
@@ -425,6 +426,8 @@ namespace FlaxEngine.Interop
                 var fieldOffsetPtr = (IntPtr*)field.FieldHandle.Value; // Pointer to MonoClassField
                 fieldOffsetPtr += 3; // Skip three pointers (type, name, parent_and_flags)
                 return *(int*)fieldOffsetPtr - IntPtr.Size * 2; // Load the value of a pointer (4 bytes, int32), then subtracting 16 bytes from it (2 pointers for vtable and threadsync)
+#else
+                throw new NotImplementedException();
 #endif
             }
 

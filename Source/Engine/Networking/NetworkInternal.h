@@ -8,7 +8,7 @@
 #endif
 
 // Internal version number of networking implementation. Updated once engine changes serialization or connection rules.
-#define NETWORK_PROTOCOL_VERSION 4
+#define NETWORK_PROTOCOL_VERSION 5
 
 // Enables encoding object ids and typenames via uint32 keys rather than full data send.
 #define USE_NETWORK_KEYS 1
@@ -29,6 +29,7 @@ enum class NetworkMessageIDs : uint8
     ObjectDespawn,
     ObjectRole,
     ObjectRpc,
+    ObjectRpcPart,
 
     MAX,
 };
@@ -48,6 +49,7 @@ public:
     static void OnNetworkMessageObjectDespawn(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer);
     static void OnNetworkMessageObjectRole(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer);
     static void OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer);
+    static void OnNetworkMessageObjectRpcPart(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer);
 
 #if COMPILE_WITH_PROFILER
 

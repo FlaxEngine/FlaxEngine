@@ -10,17 +10,117 @@ using FlaxEditor.Modules;
 using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using FlaxEngine.Json;
 
 namespace FlaxEditor.Windows
 {
+    /// <summary>
+    /// Render output control with content scaling support.
+    /// </summary>
+    public class ScaledRenderOutputControl : RenderOutputControl
+    {
+        /// <summary>
+        /// Custom scale.
+        /// </summary>
+        public float ContentScale = 1.0f;
+
+        /// <summary>
+        /// Actual bounds size for content (incl. scale).
+        /// </summary>
+        public Float2 ContentSize => Size / ContentScale;
+
+        /// <inheritdoc />
+        public ScaledRenderOutputControl(SceneRenderTask task)
+        : base(task)
+        {
+        }
+
+        /// <inheritdoc />
+        public override void Draw()
+        {
+            DrawSelf();
+
+            // Draw children with scale
+            var scaling = new Float3(ContentScale, ContentScale, 1);
+            Matrix3x3.Scaling(ref scaling, out Matrix3x3 scale);
+            Render2D.PushTransform(scale);
+            if (ClipChildren)
+            {
+                GetDesireClientArea(out var clientArea);
+                Render2D.PushClip(ref clientArea);
+                DrawChildren();
+                Render2D.PopClip();
+            }
+            else
+            {
+                DrawChildren();
+            }
+
+            Render2D.PopTransform();
+        }
+
+        /// <inheritdoc />
+        public override void GetDesireClientArea(out Rectangle rect)
+        {
+            // Scale the area for the client controls
+            rect = new Rectangle(Float2.Zero, Size / ContentScale);
+        }
+
+        /// <inheritdoc />
+        public override bool IntersectsContent(ref Float2 locationParent, out Float2 location)
+        {
+            // Skip local PointFromParent but use base code
+            location = base.PointFromParent(ref locationParent);
+            return ContainsPoint(ref location);
+        }
+
+        /// <inheritdoc />
+        public override bool IntersectsChildContent(Control child, Float2 location, out Float2 childSpaceLocation)
+        {
+            location /= ContentScale;
+            return base.IntersectsChildContent(child, location, out childSpaceLocation);
+        }
+
+        /// <inheritdoc />
+        public override bool ContainsPoint(ref Float2 location, bool precise = false)
+        {
+            if (precise) // Ignore as utility-only element
+                return false;
+            return base.ContainsPoint(ref location, precise);
+        }
+
+        /// <inheritdoc />
+        public override bool RayCast(ref Float2 location, out Control hit)
+        {
+            var p = location / ContentScale;
+            if (RayCastChildren(ref p, out hit))
+                return true;
+            return base.RayCast(ref location, out hit);
+        }
+
+        /// <inheritdoc />
+        public override Float2 PointToParent(ref Float2 location)
+        {
+            var result = base.PointToParent(ref location);
+            result *= ContentScale;
+            return result;
+        }
+
+        /// <inheritdoc />
+        public override Float2 PointFromParent(ref Float2 location)
+        {
+            var result = base.PointFromParent(ref location);
+            result /= ContentScale;
+            return result;
+        }
+    }
+
     /// <summary>
     /// Provides in-editor play mode simulation.
     /// </summary>
     /// <seealso cref="FlaxEditor.Windows.EditorWindow" />
     public class GameWindow : EditorWindow
     {
-        private readonly RenderOutputControl _viewport;
+        private readonly ScaledRenderOutputControl _viewport;
         private readonly GameRoot _guiRoot;
         private bool _showGUI = true, _editGUI = true;
         private bool _showDebugDraw = false;
@@ -77,7 +177,7 @@ namespace FlaxEditor.Windows
         /// <summary>
         /// Gets the viewport.
         /// </summary>
-        public RenderOutputControl Viewport => _viewport;
+        public ScaledRenderOutputControl Viewport => _viewport;
 
         /// <summary>
         /// Gets or sets a value indicating whether show game GUI in the view or keep it hidden.
@@ -295,7 +395,7 @@ namespace FlaxEditor.Windows
             var task = MainRenderTask.Instance;
 
             // Setup viewport
-            _viewport = new RenderOutputControl(task)
+            _viewport = new ScaledRenderOutputControl(task)
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
@@ -396,11 +496,8 @@ namespace FlaxEditor.Windows
         {
             if (v == null)
                 return;
-
             if (v.Size.Y <= 0 || v.Size.X <= 0)
-            {
                 return;
-            }
 
             if (string.Equals(v.Label, "Free Aspect", StringComparison.Ordinal) && v.Size == new Int2(1, 1))
             {
@@ -448,15 +545,7 @@ namespace FlaxEditor.Windows
 
         private void ResizeViewport()
         {
-            if (!_freeAspect)
-            {
-                _windowAspectRatio = Width / Height;
-            }
-            else
-            {
-                _windowAspectRatio = 1;
-            }
-
+            _windowAspectRatio = _freeAspect ? 1 : Width / Height;
             var scaleWidth = _viewportAspectRatio / _windowAspectRatio;
             var scaleHeight = _windowAspectRatio / _viewportAspectRatio;
 
@@ -468,6 +557,24 @@ namespace FlaxEditor.Windows
             {
                 _viewport.Bounds = new Rectangle(Width * (1 - scaleWidth) / 2, 0, Width * scaleWidth, Height);
             }
+
+            if (_viewport.KeepAspectRatio)
+            {
+                var resolution = _viewport.CustomResolution.HasValue ? (Float2)_viewport.CustomResolution.Value : Size;
+                if (scaleHeight < 1)
+                {
+                    _viewport.ContentScale = _viewport.Width / resolution.X;
+                }
+                else
+                {
+                    _viewport.ContentScale = _viewport.Height / resolution.Y;
+                }
+            }
+            else
+            {
+                _viewport.ContentScale = 1;
+            }
+
             _viewport.SyncBackbufferSize();
             PerformLayout();
         }
@@ -907,6 +1014,7 @@ namespace FlaxEditor.Windows
                         return child.OnNavigate(direction, Float2.Zero, this, visited);
                 }
             }
+
             return null;
         }
 
@@ -957,7 +1065,7 @@ namespace FlaxEditor.Windows
                 else
                     _defaultScaleActiveIndex = 0;
             }
-            
+
             if (_customScaleActiveIndex != -1)
             {
                 var options = Editor.UI.CustomViewportScaleOptions;

@@ -93,6 +93,15 @@
 
 #endif
 
+// Compiler support for HLSL 2021 that is stricter (need to use or/and/select for vector-based logical operators)
+#if !defined(__DXC_VERSION_MAJOR) || (__DXC_VERSION_MAJOR <= 1 && __DXC_VERSION_MINOR < 7)
+
+#define and(a, b) (a) && (b)
+#define or(a, b) (a) || (b)
+#define select(c, a, b) (c) ? (a) : (b)
+
+#endif
+
 // Compiler attribute fallback
 #ifndef UNROLL
 #define UNROLL

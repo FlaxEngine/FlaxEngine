@@ -180,7 +180,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void Draw()
+        public override void DrawSelf()
         {
             var bounds = new Rectangle(Float2.Zero, Size);
 
@@ -205,21 +205,6 @@ namespace FlaxEngine.GUI
                 Render2D.DrawTexture(buffer, bounds, color);
             else
                 Render2D.FillRectangle(bounds, Color.Black);
-
-            // Push clipping mask
-            if (ClipChildren)
-            {
-                GetDesireClientArea(out var clientArea);
-                Render2D.PushClip(ref clientArea);
-            }
-
-            DrawChildren();
-
-            // Pop clipping mask
-            if (ClipChildren)
-            {
-                Render2D.PopClip();
-            }
         }
 
         /// <summary>

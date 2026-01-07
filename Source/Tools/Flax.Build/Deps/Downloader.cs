@@ -14,6 +14,7 @@ namespace Flax.Deps
     /// </summary>
     static class Downloader
     {
+        private static bool NoSSL = false;
         private const string GoogleDriveDomain = "drive.google.com";
         private const string GoogleDriveDomain2 = "https://drive.google.com";
 
@@ -210,7 +211,7 @@ namespace Flax.Deps
 
         private static HttpClient GetHttpClient(bool noSSL)
         {
-            if (noSSL)
+            if (noSSL || NoSSL)
             {
                 var handler = new HttpClientHandler();
                 handler.ClientCertificateOptions = ClientCertificateOption.Manual;

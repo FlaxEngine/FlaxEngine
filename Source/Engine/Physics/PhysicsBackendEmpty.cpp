@@ -3,6 +3,7 @@
 #if COMPILE_WITH_EMPTY_PHYSICS
 
 #include "Engine/Core/Log.h"
+#include "Engine/Physics/PhysicsBackend.h"
 #include "Engine/Physics/CollisionData.h"
 #include "Engine/Physics/PhysicalMaterial.h"
 #include "Engine/Physics/PhysicsScene.h"
@@ -226,26 +227,6 @@ bool PhysicsBackend::CheckConvex(void* scene, const Vector3& center, const Colli
     return false;
 }
 
-bool PhysicsBackend::OverlapBox(void* scene, const Vector3& center, const Vector3& halfExtents, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
-{
-    return false;
-}
-
-bool PhysicsBackend::OverlapSphere(void* scene, const Vector3& center, const float radius, Array<Collider*>& results, uint32 layerMask, bool hitTriggers)
-{
-    return false;
-}
-
-bool PhysicsBackend::OverlapCapsule(void* scene, const Vector3& center, const float radius, const float height, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
-{
-    return false;
-}
-
-bool PhysicsBackend::OverlapConvex(void* scene, const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
-{
-    return false;
-}
-
 bool PhysicsBackend::OverlapBox(void* scene, const Vector3& center, const Vector3& halfExtents, Array<PhysicsColliderActor*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
     return false;
@@ -353,7 +334,7 @@ Vector3 PhysicsBackend::GetRigidDynamicActorCenterOfMass(void* actor)
     return Vector3::Zero;
 }
 
-void PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(void* actor, const Float3& value)
+void PhysicsBackend::AddRigidDynamicActorCenterOfMassOffset(void* actor, const Float3& value)
 {
 }
 
@@ -695,6 +676,15 @@ void PhysicsBackend::SetControllerNonWalkableMode(void* controller, int32 value)
 }
 
 void PhysicsBackend::SetControllerStepOffset(void* controller, float value)
+{
+}
+
+Vector3 PhysicsBackend::GetControllerBasePosition(void* controller)
+{
+    return Vector3::Zero;
+}
+
+void PhysicsBackend::SetControllerBasePosition(void* controller, const Vector3& value)
 {
 }
 

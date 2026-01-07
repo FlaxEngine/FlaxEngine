@@ -37,7 +37,44 @@ GPU_CB_STRUCT(Data {
 
     Float3 Dummy;
     float LutWeight;
+
+    void Init(const PostProcessSettings& settings, GPUTexture*& lut)
+    {
+        Dummy = Float2::Zero;
+        auto& toneMapping = settings.ToneMapping;
+        auto& colorGrading = settings.ColorGrading;
+        // White Balance
+        WhiteTemp = toneMapping.WhiteTemperature;
+        WhiteTint = toneMapping.WhiteTint;
+        // Shadows
+        ColorSaturationShadows = colorGrading.ColorSaturationShadows * colorGrading.ColorSaturation;
+        ColorContrastShadows = colorGrading.ColorContrastShadows * colorGrading.ColorContrast;
+        ColorGammaShadows = colorGrading.ColorGammaShadows * colorGrading.ColorGamma;
+        ColorGainShadows = colorGrading.ColorGainShadows * colorGrading.ColorGain;
+        ColorOffsetShadows = colorGrading.ColorOffsetShadows + colorGrading.ColorOffset;
+        ColorCorrectionShadowsMax = colorGrading.ShadowsMax;
+        // Midtones
+        ColorSaturationMidtones = colorGrading.ColorSaturationMidtones * colorGrading.ColorSaturation;
+        ColorContrastMidtones = colorGrading.ColorContrastMidtones * colorGrading.ColorContrast;
+        ColorGammaMidtones = colorGrading.ColorGammaMidtones * colorGrading.ColorGamma;
+        ColorGainMidtones = colorGrading.ColorGainMidtones * colorGrading.ColorGain;
+        ColorOffsetMidtones = colorGrading.ColorOffsetMidtones + colorGrading.ColorOffset;
+        // Highlights
+        ColorSaturationHighlights = colorGrading.ColorSaturationHighlights * colorGrading.ColorSaturation;
+        ColorContrastHighlights = colorGrading.ColorContrastHighlights * colorGrading.ColorContrast;
+        ColorGammaHighlights = colorGrading.ColorGammaHighlights * colorGrading.ColorGamma;
+        ColorGainHighlights = colorGrading.ColorGainHighlights * colorGrading.ColorGain;
+        ColorOffsetHighlights = colorGrading.ColorOffsetHighlights + colorGrading.ColorOffset;
+        ColorCorrectionHighlightsMin = colorGrading.HighlightsMin;
+        //
+        Texture* lutTexture = colorGrading.LutTexture.Get();
+        const bool useLut = lutTexture && lutTexture->IsLoaded() && lutTexture->GetResidentMipLevels() > 0 && colorGrading.LutWeight > ZeroTolerance;
+        LutWeight = useLut ? colorGrading.LutWeight : 0.0f;
+        lut = useLut ? lutTexture->GetTexture() : nullptr;
+    }
     });
+
+Data DefaultData;
 
 // Custom render buffer for caching Color Grading LUT.
 class ColorGradingCustomBuffer : public RenderBuffers::CustomBuffer
@@ -46,13 +83,27 @@ public:
     GPUTexture* LUT = nullptr;
     Data CachedData;
     ToneMappingMode Mode = ToneMappingMode::None;
-    Texture* LutTexture = nullptr;
+    GPUTexture* LutTexture = nullptr;
+#if COMPILE_WITH_DEV_ENV
+    uint64 FrameRendered = 0;
+#endif
 
     ~ColorGradingCustomBuffer()
     {
         RenderTargetPool::Release(LUT);
     }
 };
+
+#if COMPILE_WITH_DEV_ENV
+
+void ColorGradingPass::OnShaderReloading(Asset* obj)
+{
+    _psLut.Release();
+    invalidateResources();
+    _reloadedFrame = Engine::FrameCount;
+}
+
+#endif
 
 String ColorGradingPass::ToString() const
 {
@@ -68,6 +119,9 @@ bool ColorGradingPass::Init()
 #if COMPILE_WITH_DEV_ENV
     _shader.Get()->OnReloading.Bind<ColorGradingPass, &ColorGradingPass::OnShaderReloading>(this);
 #endif
+    PostProcessSettings defaultSettings;
+    GPUTexture* defaultLut;
+    DefaultData.Init(defaultSettings, defaultLut);
     return false;
 }
 
@@ -110,6 +164,18 @@ void ColorGradingPass::Dispose()
 GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
 {
     PROFILE_CPU();
+
+    // Prepare the parameters
+    Data data;
+    GPUTexture* lutTexture;
+    auto& toneMapping = renderContext.List->Settings.ToneMapping;
+    data.Init(renderContext.List->Settings, lutTexture);
+
+    // Skip if color grading is unsued
+    if (Platform::MemoryCompare(&DefaultData, &data, sizeof(Data)) == 0 && 
+        lutTexture == nullptr && 
+        toneMapping.Mode == ToneMappingMode::None)
+        return nullptr;
 
     // Check if can use volume texture (3D) for a LUT (faster on modern platforms, requires geometry shader)
     const auto device = GPUDevice::Instance;
@@ -158,42 +224,12 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
         RENDER_TARGET_POOL_SET_NAME(colorGradingBuffer.LUT, "ColorGrading.LUT");
     }
 
-    // Prepare the parameters
-    Data data;
-    data.Dummy = Float2::Zero;
-    auto& toneMapping = renderContext.List->Settings.ToneMapping;
-    auto& colorGrading = renderContext.List->Settings.ColorGrading;
-    // White Balance
-    data.WhiteTemp = toneMapping.WhiteTemperature;
-    data.WhiteTint = toneMapping.WhiteTint;
-    // Shadows
-    data.ColorSaturationShadows = colorGrading.ColorSaturationShadows * colorGrading.ColorSaturation;
-    data.ColorContrastShadows = colorGrading.ColorContrastShadows * colorGrading.ColorContrast;
-    data.ColorGammaShadows = colorGrading.ColorGammaShadows * colorGrading.ColorGamma;
-    data.ColorGainShadows = colorGrading.ColorGainShadows * colorGrading.ColorGain;
-    data.ColorOffsetShadows = colorGrading.ColorOffsetShadows + colorGrading.ColorOffset;
-    data.ColorCorrectionShadowsMax = colorGrading.ShadowsMax;
-    // Midtones
-    data.ColorSaturationMidtones = colorGrading.ColorSaturationMidtones * colorGrading.ColorSaturation;
-    data.ColorContrastMidtones = colorGrading.ColorContrastMidtones * colorGrading.ColorContrast;
-    data.ColorGammaMidtones = colorGrading.ColorGammaMidtones * colorGrading.ColorGamma;
-    data.ColorGainMidtones = colorGrading.ColorGainMidtones * colorGrading.ColorGain;
-    data.ColorOffsetMidtones = colorGrading.ColorOffsetMidtones + colorGrading.ColorOffset;
-    // Highlights
-    data.ColorSaturationHighlights = colorGrading.ColorSaturationHighlights * colorGrading.ColorSaturation;
-    data.ColorContrastHighlights = colorGrading.ColorContrastHighlights * colorGrading.ColorContrast;
-    data.ColorGammaHighlights = colorGrading.ColorGammaHighlights * colorGrading.ColorGamma;
-    data.ColorGainHighlights = colorGrading.ColorGainHighlights * colorGrading.ColorGain;
-    data.ColorOffsetHighlights = colorGrading.ColorOffsetHighlights + colorGrading.ColorOffset;
-    data.ColorCorrectionHighlightsMin = colorGrading.HighlightsMin;
-    //
-    Texture* lutTexture = colorGrading.LutTexture.Get();
-    const bool useLut = lutTexture && lutTexture->IsLoaded() && lutTexture->GetResidentMipLevels() > 0 && colorGrading.LutWeight > ZeroTolerance;
-    data.LutWeight = useLut ? colorGrading.LutWeight : 0.0f;
-
     // Check if LUT parameter hasn't been changed since the last time
-    if (Platform::MemoryCompare(&colorGradingBuffer.CachedData , &data, sizeof(Data)) == 0 &&
+    if (Platform::MemoryCompare(&colorGradingBuffer.CachedData, &data, sizeof(Data)) == 0 &&
         colorGradingBuffer.Mode == toneMapping.Mode &&
+#if COMPILE_WITH_DEV_ENV
+        colorGradingBuffer.FrameRendered > _reloadedFrame &&
+#endif
         Engine::FrameCount > 30 && // Skip caching when engine is starting TODO: find why this hack is needed
         colorGradingBuffer.LutTexture == lutTexture)
     {
@@ -203,6 +239,9 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
     colorGradingBuffer.CachedData = data;
     colorGradingBuffer.Mode = toneMapping.Mode;
     colorGradingBuffer.LutTexture = lutTexture;
+#if COMPILE_WITH_DEV_ENV
+    colorGradingBuffer.FrameRendered = Engine::FrameCount;
+#endif
 
     // Render LUT
     PROFILE_GPU("Color Grading LUT");
@@ -212,7 +251,7 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
     context->BindCB(0, cb);
     context->SetViewportAndScissors((float)lutDesc.Width, (float)lutDesc.Height);
     context->SetState(_psLut.Get((int32)toneMapping.Mode));
-    context->BindSR(0, useLut ? lutTexture->GetTexture() : nullptr);
+    context->BindSR(0, lutTexture);
 #if GPU_ALLOW_GEOMETRY_SHADERS
     if (use3D)
     {

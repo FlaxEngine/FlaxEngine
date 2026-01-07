@@ -142,7 +142,7 @@ namespace Flax.Build
         }
 
         /// <summary>
-        /// Returns true if this build target should use separate (aka main-only) executable file and separate runtime (in shared library). Used on platforms that don't support linking again executable file but only shared library (see HasExecutableFileReferenceSupport).
+        /// Returns true if this build target should use separate (aka main-only) executable file and separate runtime (in shared library). Used on platforms that don't support linking (or symbol lookup) against executable file but only shared library (see HasExecutableFileReferenceSupport).
         /// </summary>
         public virtual bool UseSeparateMainExecutable(BuildOptions buildOptions)
         {
@@ -217,7 +217,8 @@ namespace Flax.Build
             var engineLibraryType = LinkerOutput.SharedLibrary;
             if (buildOptions.Toolchain?.Compiler == TargetCompiler.MSVC)
                 engineLibraryType = LinkerOutput.ImportLibrary; // MSVC links DLL against import library
-            exeBuildOptions.LinkEnv.InputLibraries.Add(Path.Combine(buildOptions.OutputFolder, buildOptions.Platform.GetLinkOutputFileName(LibraryName, engineLibraryType)));
+            var engineLibraryPath = Utilities.NormalizePath(Path.Combine(buildOptions.OutputFolder, buildOptions.Platform.GetLinkOutputFileName(LibraryName, engineLibraryType)));
+            exeBuildOptions.LinkEnv.InputLibraries.Add(engineLibraryPath);
             exeBuildOptions.LinkEnv.InputFiles.AddRange(mainModuleOptions.OutputFiles);
             exeBuildOptions.DependencyFiles.AddRange(mainModuleOptions.DependencyFiles);
             exeBuildOptions.NugetPackageReferences.AddRange(mainModuleOptions.NugetPackageReferences);
