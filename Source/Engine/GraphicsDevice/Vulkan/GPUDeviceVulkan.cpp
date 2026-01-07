@@ -1187,6 +1187,10 @@ GPUDevice* GPUDeviceVulkan::Create()
         return nullptr;
     }
     uint32 vendorId = 0;
+#if PLATFORM_MAC && PLATFORM_ARCH_X64
+    // Intel-based macs have artifacts on MoltenVK when using dedicated AMD GPU so fallback to integrated Intel GPU
+    vendorId = GPU_VENDOR_ID_INTEL;
+#endif
     if (CommandLine::Options.NVIDIA.IsTrue())
         vendorId = GPU_VENDOR_ID_NVIDIA;
     else if (CommandLine::Options.AMD.IsTrue())

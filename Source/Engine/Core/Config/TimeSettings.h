@@ -43,6 +43,18 @@ public:
     API_FIELD(Attributes="EditorOrder(20), Limit(0.1f, 1000.0f, 0.01f), EditorDisplay(\"General\")")
     float MaxUpdateDeltaTime = 0.1f;
 
+    /// <summary>
+    /// Limits maximum game framerate when application window loses focus. Use 0 to disable this feature.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(100), EditorDisplay(\"Unfocused\")")
+    float UnfocusedMaxFPS = 30;
+
+    /// <summary>
+    /// Enables pausing game when application window loses focus.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(110), EditorDisplay(\"Unfocused\")")
+    bool UnfocusedPause = false;
+
 public:
     /// <summary>
     /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
