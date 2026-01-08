@@ -166,7 +166,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _picker = new EnumComboBox(type)
                 {
                     EnumTypeValue = Values[0],
-                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize, 160, 16),
+                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight, 160, 16),
                     Parent = this,
                 };
                 _picker.ValueChanged += () => SetValue(0, _picker.EnumTypeValue);
@@ -218,7 +218,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _output = (OutputBox)Elements[0];
                 _typePicker = new TypePickerControl
                 {
-                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize, 160, 16),
+                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight, 160, 16),
                     Parent = this,
                 };
                 _typePicker.ValueChanged += () => Set(3);
@@ -362,7 +362,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _output = (OutputBox)Elements[0];
                 _keyTypePicker = new TypePickerControl
                 {
-                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize, 160, 16),
+                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight, 160, 16),
                     Parent = this,
                 };
                 _keyTypePicker.ValueChanged += OnKeyTypeChanged;

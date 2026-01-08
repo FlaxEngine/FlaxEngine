@@ -60,56 +60,56 @@ namespace FlaxEditor.Surface
             {
                 GroupID = 1,
                 Name = "Material",
-                Color = new Color(231, 76, 60),
+                Color = new Color(181, 89, 49),
                 Archetypes = Archetypes.Material.Nodes
             },
             new GroupArchetype
             {
                 GroupID = 2,
                 Name = "Constants",
-                Color = new Color(243, 156, 18),
+                Color = new Color(163, 106, 21),
                 Archetypes = Archetypes.Constants.Nodes
             },
             new GroupArchetype
             {
                 GroupID = 3,
                 Name = "Math",
-                Color = new Color(52, 152, 219),
+                Color = new Color(45, 126, 181),
                 Archetypes = Archetypes.Math.Nodes
             },
             new GroupArchetype
             {
                 GroupID = 4,
                 Name = "Packing",
-                Color = new Color(155, 89, 182),
+                Color = new Color(124, 66, 143),
                 Archetypes = Archetypes.Packing.Nodes
             },
             new GroupArchetype
             {
                 GroupID = 5,
                 Name = "Textures",
-                Color = new Color(46, 204, 113),
+                Color = new Color(43, 130, 83),
                 Archetypes = Archetypes.Textures.Nodes
             },
             new GroupArchetype
             {
                 GroupID = 6,
                 Name = "Parameters",
-                Color = new Color(52, 73, 94),
+                Color = new Color(55, 78, 99),
                 Archetypes = Archetypes.Parameters.Nodes
             },
             new GroupArchetype
             {
                 GroupID = 7,
                 Name = "Tools",
-                Color = new Color(149, 165, 166),
+                Color = new Color(88, 96, 97),
                 Archetypes = Archetypes.Tools.Nodes
             },
             new GroupArchetype
             {
                 GroupID = 8,
                 Name = "Layers",
-                Color = new Color(249, 105, 116),
+                Color = new Color(189, 75, 81),
                 Archetypes = Archetypes.Layers.Nodes
             },
             new GroupArchetype
@@ -123,21 +123,21 @@ namespace FlaxEditor.Surface
             {
                 GroupID = 10,
                 Name = "Boolean",
-                Color = new Color(237, 28, 36),
+                Color = new Color(166, 27, 32),
                 Archetypes = Archetypes.Boolean.Nodes
             },
             new GroupArchetype
             {
                 GroupID = 11,
                 Name = "Bitwise",
-                Color = new Color(181, 230, 29),
+                Color = new Color(96, 125, 34),
                 Archetypes = Archetypes.Bitwise.Nodes
             },
             new GroupArchetype
             {
                 GroupID = 12,
                 Name = "Comparisons",
-                Color = new Color(148, 30, 34),
+                Color = new Color(166, 33, 57),
                 Archetypes = Archetypes.Comparisons.Nodes
             },
             // GroupID = 13 -> Custom Nodes provided externally

@@ -70,7 +70,7 @@ namespace FlaxEditor.Surface
         {
             _renameTextBox = new TextBox(false, 0, 0, Width)
             {
-                Height = Constants.NodeHeaderSize,
+                Height = Constants.NodeHeaderHeight,
                 Visible = false,
                 Parent = this,
                 EndEditOnClick = false, // We have to handle this ourselves, otherwise the textbox instantly loses focus when double-clicking the header
@@ -158,7 +158,7 @@ namespace FlaxEditor.Surface
         /// <inheritdoc />
         protected override void UpdateRectangles()
         {
-            const float headerSize = Constants.NodeHeaderSize;
+            const float headerSize = Constants.NodeHeaderHeight;
             const float buttonMargin = Constants.NodeCloseButtonMargin;
             const float buttonSize = Constants.NodeCloseButtonSize;
             _headerRect = new Rectangle(0, 0, Width, headerSize);

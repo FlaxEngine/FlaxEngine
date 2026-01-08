@@ -65,7 +65,48 @@ namespace FlaxEditor.Surface
         /// </summary>
         protected virtual void DrawBackground()
         {
-            DrawBackgroundDefault(Style.Background, Width, Height);
+            DrawBackgroundSolidColor(Style.BackgroundColor, Width, Height);
+            DrawGridBackground(Width, Height);
+        }
+
+        // TODO: Rename (and get rid of old texture based draw background?)
+        internal static void DrawBackgroundSolidColor(Color color, float width, float height)
+        {
+            Rectangle backgroundRect = new Rectangle(0f, 0f, width, height);
+            Render2D.FillRectangle(backgroundRect, color);
+        }
+
+        internal void DrawGridBackground(float width, float height)
+        {
+            var viewRect = GetClientArea();
+            var upperLeft = _rootControl.PointFromParent(viewRect.Location);
+            var bottomRight = _rootControl.PointFromParent(viewRect.Size);
+            var min = Float2.Min(upperLeft, bottomRight);
+            var max = Float2.Max(upperLeft, bottomRight);
+            var pixelRange = (max - min) * ViewScale * 2.75f;
+            Render2D.PushClip(ref viewRect);
+            DrawAxis(Float2.UnitX, viewRect, min.X, max.X, pixelRange.X);
+            DrawAxis(Float2.UnitY, viewRect, min.Y, max.Y, pixelRange.Y);
+            Render2D.PopClip();
+        }
+
+        private void DrawAxis(Float2 axis, Rectangle viewRect, float min, float max, float pixelRange)
+        {
+            var linesColor = Style.BackgroundColor.RGBMultiplied(1.2f);
+            float[] _gridTickStrengths = { 0f };
+            Utilities.Utils.DrawCurveTicks((decimal tick, double step, float strength) =>
+            {
+                var p = _rootControl.PointToParent(axis * (float)tick); ;
+
+                // Draw line
+                var lineRect = new Rectangle
+                (
+                 viewRect.Location + (p - 0.5f) * axis,
+                 Float2.Lerp(viewRect.Size, Float2.One, axis)
+                );
+                Render2D.FillRectangle(lineRect, linesColor.AlphaMultiplied(strength));
+
+            }, Utilities.Utils.CurveTickSteps, ref _gridTickStrengths, min, max, pixelRange);
         }
 
         internal static void DrawBackgroundDefault(Texture background, float width, float height)
