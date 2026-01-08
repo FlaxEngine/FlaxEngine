@@ -450,6 +450,7 @@ namespace FlaxEditor.CustomEditors.Editors
         protected bool NotNullItems;
 
         private IntValueBox _sizeBox;
+        private Label _label;
         private Color _background;
         private int _elementsCount, _minCount, _maxCount;
         private bool _readOnly;
@@ -566,7 +567,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     Parent = dropPanel,
                 };
 
-                var label = new Label
+                _label = new Label
                 {
                     Text = "Size",
                     AnchorPreset = AnchorPresets.TopRight,
@@ -672,8 +673,10 @@ namespace FlaxEditor.CustomEditors.Editors
                     Resize(Count + 1);
                 };
             }
-        }
 
+            Layout.ContainerControl.SizeChanged += OnLayoutSizeChanged;
+        }
+        
         private void OnSetupContextMenu(ContextMenu menu, DropPanel panel)
         {
             if (menu.Items.Any(x => x is ContextMenuButton b && b.Text.Equals("Open All", StringComparison.Ordinal)))
@@ -696,10 +699,24 @@ namespace FlaxEditor.CustomEditors.Editors
             });
         }
 
+        private void OnLayoutSizeChanged(Control control)
+        {
+            if (Layout.ContainerControl is DropPanel dropPanel)
+            {
+                // Hide "Size" text when array editor title overlaps
+                var headerTextSize = dropPanel.HeaderTextFont.GetFont().MeasureText(dropPanel.HeaderText);
+                if (headerTextSize.X + DropPanel.DropDownIconSize >= _label.Left)
+                    _label.TextColor = _label.TextColorHighlighted = Color.Transparent;
+                else
+                    _label.TextColor = _label.TextColorHighlighted = FlaxEngine.GUI.Style.Current.Foreground;
+            }
+        }
+
         /// <inheritdoc />
         protected override void Deinitialize()
         {
             _sizeBox = null;
+            Layout.ContainerControl.SizeChanged -= OnLayoutSizeChanged;
 
             base.Deinitialize();
         }
