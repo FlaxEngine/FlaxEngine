@@ -131,6 +131,9 @@ namespace FlaxEditor.Windows
 #if USE_NETCORE
                 ".NET - www.dotnet.microsoft.com",
 #endif
+#if PLATFORM_SDL
+                "Simple DirectMedia Layer - www.libsdl.org",
+#endif
                 "FreeType Project - www.freetype.org",
                 "Assimp - www.assimp.sourceforge.net",
                 "DirectXMesh - Copyright (c) Microsoft Corporation. All rights reserved.",

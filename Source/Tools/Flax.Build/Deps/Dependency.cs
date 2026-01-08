@@ -151,6 +151,18 @@ namespace Flax.Deps
         }
 
         /// <summary>
+        /// Checks if git repository exists at given path.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        public static bool GitRepositoryExists(string path)
+        {
+            Console.WriteLine(path);
+            string dotGitPath = Path.Combine(path, ".git");
+            return Directory.Exists(dotGitPath) ||
+                File.Exists(dotGitPath); // Worktree repository
+        }
+
+        /// <summary>
         /// Clones the git repository from the remote url (full repository).
         /// </summary>
         /// <param name="path">The local path for close.</param>
@@ -160,7 +172,7 @@ namespace Flax.Deps
         /// <param name="submodules">True if initialize submodules of the repository (recursive).</param>
         public static void CloneGitRepo(string path, string url, string commit = null, string args = null, bool submodules = false)
         {
-            if (!Directory.Exists(Path.Combine(path, ".git")))
+            if (!GitRepositoryExists(path))
             {
                 string cmdLine = string.Format("clone \"{0}\" \"{1}\"", url, path);
                 if (args != null)
@@ -177,7 +189,7 @@ namespace Flax.Deps
         }
 
         /// <summary>
-        /// Clones the git repository from the remote url.
+        /// Clones the git repository from the remote url (shallow clone).
         /// </summary>
         /// <param name="path">The local path for close.</param>
         /// <param name="url">The remote url.</param>
@@ -185,7 +197,7 @@ namespace Flax.Deps
         /// <param name="submodules">True if initialize submodules of the repository (recursive).</param>
         public static void CloneGitRepoFast(string path, string url, string args = null, bool submodules = false)
         {
-            if (!Directory.Exists(Path.Combine(path, ".git")))
+            if (!GitRepositoryExists(path))
             {
                 string cmdLine = string.Format("clone \"{0}\" \"{1}\" --depth 1", url, path);
                 if (args != null)
@@ -200,6 +212,19 @@ namespace Flax.Deps
         }
 
         /// <summary>
+        /// Fetches the git repository from remote url.
+        /// </summary>
+        /// <param name="path">The git repository path</param>
+        /// <param name="url">The remote url</param>
+        public static void GitFetch(string path)
+        {
+            if (GitRepositoryExists(path))
+            {
+                Utilities.Run("git", $"fetch \"{path}\"", null, path, Utilities.RunOptions.DefaultTool);
+            }
+        }
+
+        /// <summary>
         /// Clones the git repository from the remote url (clones a single branch).
         /// </summary>
         /// <param name="path">The local path for close.</param>
@@ -210,7 +235,7 @@ namespace Flax.Deps
         /// <param name="submodules">True if initialize submodules of the repository (recursive).</param>
         public static void CloneGitRepoSingleBranch(string path, string url, string branch, string commit = null, string args = null, bool submodules = false)
         {
-            if (!Directory.Exists(Path.Combine(path, ".git")))
+            if (!GitRepositoryExists(path))
             {
                 string cmdLine = string.Format("clone --single-branch --branch {2} \"{0}\" \"{1}\"", url, path, branch);
                 if (commit == null)
@@ -264,6 +289,23 @@ namespace Flax.Deps
         public static void GitResetLocalChanges(string path)
         {
             Utilities.Run("git", "reset --hard", null, path, Utilities.RunOptions.DefaultTool);
+        }
+
+        /// <summary>
+        /// Resets to the specific commit, optionally fetching the commit from remote.
+        /// Note: Fetching requires server-side support, may not work with all servers.
+        /// </summary>
+        /// <param name="path">The local path that contains git repository.</param>
+        /// <param name="commit">The full hash of the commit.</param>
+        /// <param name="fetch">Fetch the commit from remote.</param>
+        public static void GitResetToCommit(string path, string commit, bool fetch = false)
+        {
+            if (fetch)
+            {
+                // This requires server-side configuration uploadpack.allowReachableSHA1InWant to be enabled
+                Utilities.Run("git", $"fetch --depth=1 \"{path}\" {commit}", null, path, Utilities.RunOptions.ConsoleLogOutput);
+            }
+            Utilities.Run("git", $"reset --hard {commit}", null, path, Utilities.RunOptions.DefaultTool);
         }
 
         /// <summary>
