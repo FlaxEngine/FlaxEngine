@@ -62,6 +62,15 @@ namespace Flax.Build.Bindings
             return $"{context.File.Name}({context.Tokenizer.CurrentLine}): {msg}";
         }
 
+        private static string GetBuildErrorLocation(ApiTypeInfo typeInfo, string msg)
+        {
+            // Make it a link clickable in Visual Studio build output
+            var file = typeInfo.File;
+            if (file != null)
+                return $"{file.Name}(0): {msg}";
+            return msg;
+        }
+
         private static string[] ParseComment(ref ParsingContext context)
         {
             if (context.StringCache == null)
