@@ -727,12 +727,15 @@ namespace FlaxEditor.Modules
             cm.AddSeparator();
             cm.AddButton("Plugins", () => Editor.Windows.PluginsWin.Show());
             cm.AddSeparator();
-            var childMenu = cm.AddChildMenu("Open product local folder");
+            var childMenu = cm.AddChildMenu("Open Product Local folder");
             childMenu.ContextMenu.AddButton("Editor", () => FileSystem.ShowFileExplorer(Globals.ProductLocalFolder));
-            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            GameSettings settings = GameSettings.Load<GameSettings>();
-            string path = Path.Combine(localAppData, settings.CompanyName, settings.ProductName);
-            _menuToolsOpenLocalFolder = childMenu.ContextMenu.AddButton("Cooked game", () => FileSystem.ShowFileExplorer(path));
+            _menuToolsOpenLocalFolder = childMenu.ContextMenu.AddButton("Game", () =>
+            {
+                string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                GameSettings settings = GameSettings.Load<GameSettings>();
+                string path = Path.Combine(localAppData, settings.CompanyName, settings.ProductName);
+                FileSystem.ShowFileExplorer(path);
+            });
 
             // Window
             MenuWindow = MainMenu.AddButton("Window");
