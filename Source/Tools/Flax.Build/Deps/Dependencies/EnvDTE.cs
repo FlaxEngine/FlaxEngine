@@ -1,15 +1,16 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.IO;
+using System.IO.Compression;
 using Flax.Build;
 
 namespace Flax.Deps.Dependencies
 {
     /// <summary>
-    /// DirectXMesh geometry processing library https://walbourn.github.io/directxmesh/
+    /// Visual Studio EnvDTE COM library. https://learn.microsoft.com/en-us/dotnet/api/envdte?view=visualstudiosdk-2022
     /// </summary>
     /// <seealso cref="Flax.Deps.Dependency" />
-    class DirectXMesh : Dependency
+    class EnvDTE : Dependency
     {
         /// <inheritdoc />
         public override TargetPlatform[] Platforms
@@ -49,18 +50,22 @@ namespace Flax.Deps.Dependencies
         /// <inheritdoc />
         public override void Build(BuildOptions options)
         {
-            var root = options.IntermediateFolder;
-            var solutionPath = Path.Combine(root, "DirectXMesh_Desktop_2022_Win10.sln");
-            var configuration = "Release";
-            var outputFileNames = new[]
-            {
-                "DirectXMesh.lib",
-                "DirectXMesh.pdb",
-            };
-            var binFolder = Path.Combine(root, "DirectXMesh", "Bin", "Desktop_2022_Win10");
+            options.IntermediateFolder.Replace("/" + GetType().Name, "/Microsoft.VisualStudio.Setup.Configuration.Native");
 
             // Get the source
-            CloneGitRepoFast(root, "https://github.com/Microsoft/DirectXMesh.git");
+            var root = options.IntermediateFolder;
+            var packagePath = Path.Combine(root, $"package.zip");
+            if (!File.Exists(packagePath))
+            {
+                Downloader.DownloadFileFromUrlToPath("https://www.nuget.org/api/v2/package/Microsoft.VisualStudio.Setup.Configuration.Native/3.14.2075", packagePath);
+            }
+            var extractedPath = Path.Combine(root, "extracted");
+            if (!Directory.Exists(extractedPath))
+            {
+                using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
+                    archive.ExtractToDirectory(extractedPath);
+            }
+            root = extractedPath;
 
             foreach (var platform in options.Platforms)
             {
@@ -71,28 +76,16 @@ namespace Flax.Deps.Dependencies
                     {
                     case TargetPlatform.Windows:
                     {
-                        Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, architecture.ToString());
-                        var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Windows, architecture);
-                        foreach (var file in outputFileNames)
-                        {
-                            Utilities.FileCopy(Path.Combine(binFolder, architecture.ToString(), "Release", file), Path.Combine(depsFolder, file));
-                        }
+                        var bin = Path.Combine(root, "lib", "native", "v141", architecture.ToString().ToLower());
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        Utilities.FileCopy(Path.Combine(bin, "Microsoft.VisualStudio.Setup.Configuration.Native.lib"), Path.Combine(depsFolder, "Microsoft.VisualStudio.Setup.Configuration.Native.lib"));
+
+                        var include = Path.Combine(root, "lib", "native", "include");
+                        Utilities.FileCopy(Path.Combine(include, "Setup.Configuration.h"), Path.Combine(options.ThirdPartyFolder, "Microsoft.VisualStudio.Setup.Configuration.Native", "Setup.Configuration.h"));
+                        break;
                     }
-                    break;
                     }
                 }
-            }
-
-            // Deploy header files and license file
-            var dstIncludePath = Path.Combine(options.ThirdPartyFolder, "DirectXMesh");
-            foreach (var file in new[]
-            {
-                "DirectXMesh/DirectXMesh.h",
-                "DirectXMesh/DirectXMesh.inl",
-                "LICENSE",
-            })
-            {
-                Utilities.FileCopy(Path.Combine(root, file), Path.Combine(dstIncludePath, Path.GetFileName(file)));
             }
         }
     }
