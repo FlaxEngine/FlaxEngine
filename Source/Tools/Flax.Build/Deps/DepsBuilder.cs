@@ -38,20 +38,21 @@ namespace Flax.Deps
             var platforms = Globals.AllPlatforms;
             if (Configuration.BuildPlatforms != null && Configuration.BuildPlatforms.Length != 0)
                 platforms = Configuration.BuildPlatforms;
-            platforms = platforms.Where(x => buildPlatform.CanBuildPlatform(x)).ToArray();
-            Log.Verbose("Building deps for platforms:");
+            platforms = platforms.Where(buildPlatform.CanBuildPlatform).ToArray();
+            var architectures = Globals.AllArchitectures;
+            if (Configuration.BuildArchitectures != null && Configuration.BuildArchitectures.Length != 0)
+                architectures = Configuration.BuildArchitectures;
+            architectures = architectures.Where(buildPlatform.CanBuildArchitecture).ToArray();
+            Log.Verbose($"Building deps for platforms {string.Join(',', platforms)}, {string.Join(',', architectures)}:");
             foreach (var platform in platforms)
             {
-                Log.Verbose(" - " + platform);
+                foreach (var architecture in architectures)
+                {
+                    Log.Verbose($" - {platform} ({architecture})");
 
-                if (Platform.IsPlatformSupported(platform, TargetArchitecture.x64))
-                    SetupDepsOutputFolder(options, platform, TargetArchitecture.x64);
-                if (Platform.IsPlatformSupported(platform, TargetArchitecture.x86))
-                    SetupDepsOutputFolder(options, platform, TargetArchitecture.x86);
-                if (Platform.IsPlatformSupported(platform, TargetArchitecture.ARM))
-                    SetupDepsOutputFolder(options, platform, TargetArchitecture.ARM);
-                if (Platform.IsPlatformSupported(platform, TargetArchitecture.ARM64))
-                    SetupDepsOutputFolder(options, platform, TargetArchitecture.ARM64);
+                    if (Platform.IsPlatformSupported(platform, architecture))
+                        SetupDepsOutputFolder(options, platform, architecture);
+                }
             }
 
             // Get all deps
@@ -77,6 +78,14 @@ namespace Flax.Deps
                 {
                     Log.Info(string.Format("Skipping {0} ({1}/{2})", name, i + 1, dependencies.Length));
                     Log.Verbose("Not used on any of the build platforms.");
+                    continue;
+                }
+
+                options.Architectures = architectures.Intersect(dependency.Architectures).ToArray();
+                if (options.Architectures.Length == 0)
+                {
+                    Log.Info(string.Format("Skipping {0} ({1}/{2})", name, i + 1, dependencies.Length));
+                    Log.Verbose("Architecture not used on any of the build platforms.");
                     continue;
                 }
 
