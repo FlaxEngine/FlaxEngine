@@ -43,6 +43,12 @@ namespace Flax.Deps.Dependencies
                         TargetArchitecture.x64,
                         TargetArchitecture.ARM64,
                     };
+                case TargetPlatform.XboxOne:
+                case TargetPlatform.XboxScarlett:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                    };
                 default: return new TargetArchitecture[0];
                 }
             }

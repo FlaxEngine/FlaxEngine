@@ -1,11 +1,8 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using Flax.Build;
-using Flax.Build.Platforms;
 
 namespace Flax.Deps.Dependencies
 {
@@ -23,8 +20,8 @@ namespace Flax.Deps.Dependencies
                 switch (BuildPlatform)
                 {
                 case TargetPlatform.Windows:
-                return new[]
-                {
+                    return new[]
+                    {
                         TargetPlatform.Windows,
                     };
                 default: return new TargetPlatform[0];
@@ -40,8 +37,8 @@ namespace Flax.Deps.Dependencies
                 switch (BuildPlatform)
                 {
                 case TargetPlatform.Windows:
-                return new[]
-                {
+                    return new[]
+                    {
                         TargetArchitecture.x64,
                         TargetArchitecture.ARM64,
                     };

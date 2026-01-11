@@ -42,18 +42,6 @@ namespace Flax.Deps.Dependencies
                         TargetArchitecture.x64,
                         TargetArchitecture.ARM64,
                     };
-                case TargetPlatform.Linux:
-                    return new[]
-                    {
-                        TargetArchitecture.x64,
-                        //TargetArchitecture.ARM64,
-                    };
-                case TargetPlatform.Mac:
-                    return new[]
-                    {
-                        TargetArchitecture.x64,
-                        TargetArchitecture.ARM64,
-                    };
                 default: return new TargetArchitecture[0];
                 }
             }

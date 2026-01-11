@@ -44,36 +44,6 @@ namespace Flax.Deps.Dependencies
         }
 
         /// <inheritdoc />
-        public override TargetArchitecture[] Architectures
-        {
-            get
-            {
-                switch (BuildPlatform)
-                {
-                case TargetPlatform.Windows:
-                    return new[]
-                    {
-                        TargetArchitecture.x64,
-                        TargetArchitecture.ARM64,
-                    };
-                case TargetPlatform.Linux:
-                    return new[]
-                    {
-                        TargetArchitecture.x64,
-                        //TargetArchitecture.ARM64,
-                    };
-                case TargetPlatform.Mac:
-                    return new[]
-                    {
-                        TargetArchitecture.x64,
-                        TargetArchitecture.ARM64,
-                    };
-                default: return new TargetArchitecture[0];
-                }
-            }
-        }
-
-        /// <inheritdoc />
         public override bool BuildByDefault => false;
 
         private string root;

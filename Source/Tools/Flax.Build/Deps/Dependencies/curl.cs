@@ -107,7 +107,7 @@ namespace Flax.Deps.Dependencies
                     case TargetPlatform.Windows:
                     {
                         // Build for Windows
-                        var buildDir = Path.Combine(root, "build-" + architecture.ToString());
+                        var buildDir = Path.Combine(root, "build-" + architecture);
                         var solutionPath = Path.Combine(buildDir, "CURL.sln");
 
                         RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -DBUILD_CURL_EXE=OFF -DBUILD_SHARED_LIBS=OFF -DCURL_STATIC_CRT=OFF");

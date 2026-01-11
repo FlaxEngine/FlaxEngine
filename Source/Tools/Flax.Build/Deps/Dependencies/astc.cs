@@ -1,6 +1,5 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System.Collections.Generic;
 using System.IO;
 using Flax.Build;
 
@@ -76,7 +75,7 @@ namespace Flax.Deps.Dependencies
                     {
                     case TargetPlatform.Windows:
                     {
-                        string buildDir = Path.Combine(root, "build-" + architecture.ToString());
+                        string buildDir = Path.Combine(root, "build-" + architecture);
                         var isa = architecture == TargetArchitecture.ARM64 ? "-DASTCENC_ISA_NEON=ON" : "-DASTCENC_ISA_SSE2=ON";
                         var lib = architecture == TargetArchitecture.ARM64 ? "astcenc-neon-static.lib" : "astcenc-sse2-static.lib";
                         SetupDirectory(buildDir, true);
@@ -84,11 +83,11 @@ namespace Flax.Deps.Dependencies
                         BuildCmake(buildDir);
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         Utilities.FileCopy(Path.Combine(buildDir, "Source/Release", lib), Path.Combine(depsFolder, "astcenc.lib"));
-                    }
-                    break;
+                        break;
+                        }
                     case TargetPlatform.Mac:
                     {
-                        string buildDir = Path.Combine(root, "build-" + architecture.ToString());
+                        string buildDir = Path.Combine(root, "build-" + architecture);
                         var isa = architecture == TargetArchitecture.ARM64 ? "-DASTCENC_ISA_NEON=ON" : "-DASTCENC_ISA_SSE2=ON";
                         var lib = architecture == TargetArchitecture.ARM64 ? "libastcenc-neon-static.a" : "libastcenc-sse2-static.a";
                         SetupDirectory(buildDir, true);
@@ -96,8 +95,8 @@ namespace Flax.Deps.Dependencies
                         BuildCmake(buildDir);
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         Utilities.FileCopy(Path.Combine(buildDir, "Source", lib), Path.Combine(depsFolder, "libastcenc.a"));
+                        break;
                     }
-                    break;
                     }
                 }
             }

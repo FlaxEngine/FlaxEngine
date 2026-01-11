@@ -70,6 +70,16 @@ namespace Flax.Deps.Dependencies
                         TargetArchitecture.x64,
                         TargetArchitecture.ARM64,
                     };
+                case TargetPlatform.iOS:
+                    return new[]
+                    {
+                        TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Android:
+                    return new[]
+                    {
+                        TargetArchitecture.ARM64,
+                    };
                 default: return new TargetArchitecture[0];
                 }
             }

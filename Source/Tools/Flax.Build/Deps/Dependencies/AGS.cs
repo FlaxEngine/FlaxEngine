@@ -29,7 +29,6 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetArchitecture.x64,
-                        TargetArchitecture.ARM64,
                     };
                 default: return new TargetArchitecture[0];
                 }
