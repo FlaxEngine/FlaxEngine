@@ -198,14 +198,14 @@ Color Color::Lerp(const Color& start, const Color& end, float amount)
 Color Color::LinearToSrgb(const Color& linear)
 {
 #define LINEAR_TO_SRGB(value) value < 0.00313067f ? value * 12.92f : Math::Pow(value, (1.0f / 2.4f)) * 1.055f - 0.055f
-    return Color(LINEAR_TO_SRGB(linear.R), LINEAR_TO_SRGB(linear.G), LINEAR_TO_SRGB(linear.B), LINEAR_TO_SRGB(linear.A));
+    return Color(LINEAR_TO_SRGB(linear.R), LINEAR_TO_SRGB(linear.G), LINEAR_TO_SRGB(linear.B), linear.A);
 #undef LINEAR_TO_SRGB
 }
 
 Color Color::SrgbToLinear(const Color& srgb)
 {
 #define SRGB_TO_LINEAR(value) value < 0.04045f ? value / 12.92f : Math::Pow((value + 0.055f) / 1.055f, 2.4f)
-    return Color(SRGB_TO_LINEAR(srgb.R), SRGB_TO_LINEAR(srgb.G), SRGB_TO_LINEAR(srgb.B), SRGB_TO_LINEAR(srgb.A));
+    return Color(SRGB_TO_LINEAR(srgb.R), SRGB_TO_LINEAR(srgb.G), SRGB_TO_LINEAR(srgb.B), srgb.A);
 #undef LINEAR_TO_SRGB
 }
 
