@@ -27,6 +27,7 @@ Quality Graphics::GlobalSDFQuality = Quality::High;
 Quality Graphics::GIQuality = Quality::High;
 bool Graphics::GICascadesBlending = false;
 PostProcessSettings Graphics::PostProcessSettings;
+bool Graphics::GammaColorSpace = true;
 bool Graphics::SpreadWorkload = true;
 bool Graphics::PostProcessing::ColorGradingVolumeLUT = true;
 
@@ -73,6 +74,7 @@ void GraphicsSettings::Apply()
     Graphics::GICascadesBlending = GICascadesBlending;
     Graphics::PostProcessSettings = ::PostProcessSettings();
     Graphics::PostProcessSettings.BlendWith(PostProcessSettings, 1.0f);
+    Graphics::GammaColorSpace = GammaColorSpace;
 #if !USE_EDITOR // OptionsModule handles fallback fonts in Editor
     Font::FallbackFonts = FallbackFonts;
 #endif

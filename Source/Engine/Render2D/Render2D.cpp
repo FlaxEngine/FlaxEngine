@@ -7,11 +7,11 @@
 #include "RotatedRectangle.h"
 #include "SpriteAtlas.h"
 #include "Engine/Core/Math/Matrix3x3.h"
-#include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Assets/MaterialBase.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Profiler/Profiler.h"
+#include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUPipelineState.h"
@@ -689,7 +689,7 @@ void Render2D::Begin(GPUContext* context, GPUTextureView* output, GPUTextureView
     View = viewport;
     ViewProjection = viewProjection;
     DrawCalls.Clear();
-    IsRemoveGammaEnabled = GraphicsSettings::Get()->GammaColorSpace == false;
+    IsRemoveGammaEnabled = Graphics::GammaColorSpace == false;
 
     // Initialize default transform
     const Matrix3x3 defaultTransform = Matrix3x3::Identity;

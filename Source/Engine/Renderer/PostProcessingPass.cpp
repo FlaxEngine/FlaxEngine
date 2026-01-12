@@ -2,9 +2,9 @@
 
 #include "PostProcessingPass.h"
 #include "RenderList.h"
-#include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTargetPool.h"
@@ -363,7 +363,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     data.InputSize = Float2(static_cast<float>(w1), static_cast<float>(h1));
     data.InvInputSize = Float2(1.0f / static_cast<float>(w1), 1.0f / static_cast<float>(h1));
     data.InputAspect = static_cast<float>(w1) / h1;
-    if (GraphicsSettings::Get()->GammaColorSpace)
+    if (Graphics::GammaColorSpace)
     {
         // Gamma-space colors always present image 'as-is'
         data.OutputColorSpace = OUTPUT_LINEAR;
