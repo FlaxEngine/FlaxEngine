@@ -23,15 +23,15 @@ void BoxCollider::SetSize(const Float3& value)
 void BoxCollider::AutoResize(bool globalOrientation = true)
 {
     Actor* parent = GetParent();
-    if (Cast<Scene>(parent))
+    if (parent == nullptr || Cast<Scene>(parent))
         return;
 
     // Get bounds of all siblings (excluding itself)
     const Vector3 parentScale = parent->GetScale();
     if (parentScale.IsAnyZero())
-        return; // Avoid division by zero
+        return;
 
-    // Hacky way to get unrotated bounded box of parent.
+    // Hacky way to get unrotated bounded box of parent
     const Quaternion parentOrientation = parent->GetOrientation();
     parent->SetOrientation(Quaternion::Identity);
     BoundingBox parentBox = parent->GetBox();

@@ -571,6 +571,10 @@ namespace FlaxEditor.Options
         [EditorDisplay("View Flags"), EditorOrder(3260)]
         public InputBinding DebugDraw = new InputBinding(KeyboardKeys.Alpha4, KeyboardKeys.Control, KeyboardKeys.Shift);
 
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3270)]
+        public InputBinding Particles = new InputBinding(KeyboardKeys.None);
+
         #endregion
 
         #region Interface

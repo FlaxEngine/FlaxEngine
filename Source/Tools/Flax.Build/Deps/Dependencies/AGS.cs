@@ -19,6 +19,23 @@ namespace Flax.Deps.Dependencies
         }
 
         /// <inheritdoc />
+        public override TargetArchitecture[] Architectures
+        {
+            get
+            {
+                switch (BuildPlatform)
+                {
+                case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                    };
+                default: return new TargetArchitecture[0];
+                }
+            }
+        }
+
+        /// <inheritdoc />
         public override void Build(BuildOptions options)
         {
             var root = options.IntermediateFolder;
@@ -30,7 +47,7 @@ namespace Flax.Deps.Dependencies
             // Copy files
             foreach (var platform in options.Platforms)
             {
-                BuildStarted(platform);
+                BuildStarted(platform, TargetArchitecture.x64);
                 var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                 Utilities.FileCopy(Path.Combine(root, "ags_lib/lib/amd_ags_x64.lib"), Path.Combine(depsFolder, "amd_ags_x64.lib"));
                 Utilities.FileCopy(Path.Combine(root, "ags_lib/lib/amd_ags_x64.dll"), Path.Combine(depsFolder, "amd_ags_x64.dll"));

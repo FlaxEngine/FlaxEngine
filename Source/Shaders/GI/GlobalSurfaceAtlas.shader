@@ -328,7 +328,6 @@ float4 PS_Debug(Quad_VS2PS input) : SV_Target
 	float3 viewRay = lerp(lerp(ViewFrustumWorldRays[3], ViewFrustumWorldRays[0], input.TexCoord.x), lerp(ViewFrustumWorldRays[2], ViewFrustumWorldRays[1], input.TexCoord.x), 1 - input.TexCoord.y).xyz;
 	viewRay = normalize(viewRay - ViewWorldPos);
 	trace.Init(ViewWorldPos, viewRay, ViewNearPlane, ViewFarPlane);
-	trace.NeedsHitNormal = true;
 	GlobalSDFHit hit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, trace);
 
     float3 color;
@@ -337,7 +336,6 @@ float4 PS_Debug(Quad_VS2PS input) : SV_Target
         // Sample Global Surface Atlas at the hit location
         float surfaceThreshold = GetGlobalSurfaceAtlasThreshold(GlobalSDF, hit);
         color = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasChunks, GlobalSurfaceAtlasCulledObjects, GlobalSurfaceAtlasObjects, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hit.GetHitPosition(trace), -viewRay, surfaceThreshold).rgb;
-	    //color = hit.HitNormal * 0.5f + 0.5f;
     }
     else
     {
