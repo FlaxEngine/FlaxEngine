@@ -28,7 +28,7 @@ VS2PS VS(Render2DVertex input)
 	VS2PS output;
 
 	// Render2D::RenderingFeatures::VertexSnapping
-	if ((int)input.CustomDataAndClipOrigin.y & 1)
+	if ((int)input.CustomDataAndClipOrigin.y & RENDER2D_FEATURE_VERTEX_SNAPPING)
 		input.Position = (float2)(int2)input.Position;
 
 	output.Position = mul(float4(input.Position, 0, 1), ViewProjection);
@@ -45,23 +45,20 @@ META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_Image(VS2PS input) : SV_Target0
 {
 	PerformClipping(input);
-
-	return Image.Sample(SamplerLinearClamp, input.TexCoord) * input.Color;
+	return GetImageColor(Image.Sample(SamplerLinearClamp, input.TexCoord), input.CustomData) * input.Color;
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_ImagePoint(VS2PS input) : SV_Target0
 {
 	PerformClipping(input);
-
-	return Image.Sample(SamplerPointClamp, input.TexCoord) * input.Color;
+	return GetImageColor(Image.Sample(SamplerPointClamp, input.TexCoord), input.CustomData) * input.Color;
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_Color(VS2PS input) : SV_Target0
 {
 	PerformClipping(input);
-
 	return input.Color;
 }
 

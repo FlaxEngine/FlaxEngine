@@ -6,6 +6,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Core/Math/Vector2.h"
+#include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Serialization/FileWriteStream.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Textures/TextureData.h"
@@ -107,7 +108,6 @@ static TextureData const* stbDecompress(const TextureData& textureData, TextureD
     decompressedData->Data.Allocate(decompressedData->DepthPitch);
     byte* decompressedBytes = decompressedData->Data.Get();
 
-    Color32 colors[16];
     int32 blocksWidth = textureData.Width / 4;
     int32 blocksHeight = textureData.Height / 4;
     const TextureMipData* blocksData = textureData.GetData(0, 0);
@@ -503,8 +503,7 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
     if (sourceWidth != width || sourceHeight != height)
     {
         // During resizing we need to keep texture aspect ratio
-        const bool keepAspectRatio = options.KeepAspectRatio; // TODO: expose as import option
-        if (keepAspectRatio)
+        if (options.KeepAspectRatio)
         {
             const float aspectRatio = static_cast<float>(sourceWidth) / sourceHeight;
             if (width >= height)
@@ -524,7 +523,6 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
     }
 
     // Cache data
-    float alphaThreshold = 0.3f;
     bool isPowerOfTwo = Math::IsPowerOfTwo(width) && Math::IsPowerOfTwo(height);
     PixelFormat targetFormat = ToPixelFormat(options.Type, width, height, options.Compress);
     if (options.sRGB)
@@ -550,6 +548,12 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
         // TODO: implement texture decompression
         errorMsg = String::Format(TEXT("Imported texture used compressed format {0}. Not supported for importing on this platform.."), (int32)textureDataSrc->Format);
         return true;
+    }
+
+    // Import as sRGB data for Linear color space
+    if (options.sRGB && !GraphicsSettings::Get()->GammaColorSpace)
+    {
+        textureData.Format = PixelFormatExtensions::TosRGB(textureData.Format);
     }
 
     if (options.FlipX)

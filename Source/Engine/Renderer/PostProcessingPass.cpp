@@ -2,6 +2,7 @@
 
 #include "PostProcessingPass.h"
 #include "RenderList.h"
+#include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUContext.h"
@@ -11,6 +12,8 @@
 
 #define GB_RADIUS 6
 #define GB_KERNEL_SIZE (GB_RADIUS * 2 + 1)
+#define OUTPUT_LINEAR 0 // Copies scene color directly to the output
+#define OUTPUT_SRGB 1 // Converts scene color from linear to sRGB
 
 GPU_CB_STRUCT(Data{
     float BloomIntensity; // Overall bloom strength multiplier
@@ -48,7 +51,7 @@ GPU_CB_STRUCT(Data{
     float ChromaticDistortion;
     float Time;
 
-    float Dummy1;
+    uint32 OutputColorSpace;
     float PostExposure;
     float VignetteIntensity;
     float LensDirtIntensity;
@@ -360,6 +363,16 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     data.InputSize = Float2(static_cast<float>(w1), static_cast<float>(h1));
     data.InvInputSize = Float2(1.0f / static_cast<float>(w1), 1.0f / static_cast<float>(h1));
     data.InputAspect = static_cast<float>(w1) / h1;
+    if (GraphicsSettings::Get()->GammaColorSpace)
+    {
+        // Gamma-space colors always present image 'as-is'
+        data.OutputColorSpace = OUTPUT_LINEAR;
+    }
+    else
+    {
+        // Convert linear scene color into the display's sRGB curve
+        data.OutputColorSpace = OUTPUT_SRGB;
+    }
     context->UpdateCB(cb0, &data);
     context->BindCB(0, cb0);
 

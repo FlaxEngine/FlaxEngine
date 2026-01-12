@@ -38,6 +38,7 @@ struct VertexOutput
 #endif
 	float4 ClipExtents       : TEXCOORD3;
 	float2 ClipOrigin        : TEXCOORD4;
+    float2 CustomData        : TEXCOORD5; // x-per-geometry type, y-features mask
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
 	float4 CustomVSToPS[CUSTOM_VERTEX_INTERPOLATORS_COUNT] : TEXCOORD9;
 #endif
@@ -55,6 +56,7 @@ struct PixelInput
 #endif
 	float4 ClipExtents       : TEXCOORD3;
 	float2 ClipOrigin        : TEXCOORD4;
+    float2 CustomData        : TEXCOORD5; // x-per-geometry type, y-features mask
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
 	float4 CustomVSToPS[CUSTOM_VERTEX_INTERPOLATORS_COUNT] : TEXCOORD9;
 #endif
@@ -67,6 +69,7 @@ struct MaterialInput
 	float3 WorldPosition;
 	float TwoSidedSign;
 	float2 TexCoord;
+    float2 CustomData; // x-per-geometry type, y-features mask
 #if USE_VERTEX_COLOR
 	half4 VertexColor;
 #endif
@@ -84,6 +87,7 @@ MaterialInput GetMaterialInput(Render2DVertex input, VertexOutput output)
 	MaterialInput result;
 	result.WorldPosition = output.WorldPosition;
 	result.TexCoord = output.TexCoord;
+	result.CustomData = input.CustomDataAndClipOrigin.xy;
 #if USE_VERTEX_COLOR
 	result.VertexColor = output.VertexColor;
 #endif
@@ -103,6 +107,7 @@ MaterialInput GetMaterialInput(PixelInput input)
 	MaterialInput result;
 	result.WorldPosition = input.WorldPosition;
 	result.TexCoord = input.TexCoord;
+	result.CustomData = input.CustomData;
 #if USE_VERTEX_COLOR
 	result.VertexColor = input.VertexColor;
 #endif
@@ -229,6 +234,7 @@ VertexOutput VS_GUI(Render2DVertex input)
 #if USE_VERTEX_COLOR
 	output.VertexColor = input.Color;
 #endif
+	output.CustomData = input.CustomDataAndClipOrigin.xy;
 	output.ClipOrigin = input.CustomDataAndClipOrigin.zw;
 	output.ClipExtents = input.ClipExtents;
 

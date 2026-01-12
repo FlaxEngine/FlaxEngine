@@ -50,6 +50,17 @@ void GraphicsSettings::SetUeeHDRProbes(bool value)
     UseHDRProbes = value;
 }
 
+void GraphicsSettings::OnDeserializing(const CallbackContext& context)
+{
+    // [Deprecated on 9.01.2026, expires on 9.01.2028]
+    if (context.Modifier && context.Modifier->EngineBuild < 6901)
+    {
+        // Old projects were made in Gamma color space
+        GammaColorSpace = true;
+        MARK_CONTENT_DEPRECATED();
+    }
+}
+
 IMPLEMENT_ENGINE_SETTINGS_GETTER(GraphicsSettings, Graphics);
 IMPLEMENT_ENGINE_SETTINGS_GETTER(NetworkSettings, Network);
 IMPLEMENT_ENGINE_SETTINGS_GETTER(LayersAndTagsSettings, LayersAndTags);

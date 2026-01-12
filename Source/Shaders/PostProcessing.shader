@@ -26,6 +26,8 @@
 
 #define GB_RADIUS 6
 #define GB_KERNEL_SIZE (GB_RADIUS * 2 + 1)
+#define OUTPUT_LINEAR 0 // Copies scene color directly to the output
+#define OUTPUT_SRGB 1 // Converts scene color from linear to sRGB
 
 #ifndef NO_GRADING_LUT
 #define NO_GRADING_LUT 0
@@ -71,7 +73,7 @@ float2 InvInputSize;
 float ChromaticDistortion;
 float Time;
 
-float Dummy1;
+uint OutputColorSpace;
 float PostExposure;
 float VignetteIntensity;
 float LensDirtIntensity;
@@ -694,6 +696,12 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 #if !NO_GRADING_LUT
 	color.rgb = ColorLookupTable(color.rgb);
 #endif
+
+    if (OutputColorSpace == OUTPUT_SRGB)
+    {
+        // Convert into output display color space (sRGB)
+        color.rgb = LinearToSrgb(color.rgb);
+    }
 
 	// Film Grain
 	BRANCH

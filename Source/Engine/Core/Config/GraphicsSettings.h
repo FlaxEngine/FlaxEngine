@@ -127,12 +127,22 @@ public:
     API_FIELD(Attributes="EditorOrder(2130), Limit(256, 8192), EditorDisplay(\"Global Illumination\")")
     int32 GlobalSurfaceAtlasResolution = 2048;
 
+public:
+    /// <summary>
+    /// If checked, color space workflow will use Gamma instead of Linear. Gamma color space defines colors with an applied a gamma curve (sRGB) so they are perceptually linear.
+    /// This makes sense when the output of the rendering represent final color values that will be presented to a non-HDR screen.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(3000), EditorDisplay(\"Colors\")")
+    bool GammaColorSpace = false;
+
+public:
     /// <summary>
     /// The default Post Process settings. Can be overriden by PostFxVolume on a level locally, per camera or for a whole map.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(10000), EditorDisplay(\"Post Process Settings\", EditorDisplayAttribute.InlineStyle)")
     PostProcessSettings PostProcessSettings;
 
+public:
     /// <summary>
     /// The list of fallback fonts used for text rendering. Ignored if empty.
     /// </summary>
@@ -144,12 +154,9 @@ private:
     /// Renamed UeeHDRProbes into UseHDRProbes
     /// [Deprecated on 12.10.2022, expires on 12.10.2024]
     /// </summary>
-    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") DEPRECATED("Use UseHDRProbes instead.") bool GetUeeHDRProbes() const
-    {
-        return UseHDRProbes;
-    }
-
+    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") DEPRECATED("Use UseHDRProbes instead.") bool GetUeeHDRProbes() const { return UseHDRProbes; }
     API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") DEPRECATED("Use UseHDRProbes instead.") void SetUeeHDRProbes(bool value);
+    API_FUNCTION(Attributes="OnDeserializing", Hidden) void OnDeserializing(const CallbackContext& context);
 
 public:
     /// <summary>

@@ -5,6 +5,7 @@
 #include "TextureTool.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Platform/ConditionVariable.h"
@@ -665,8 +666,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     if (sourceWidth != width || sourceHeight != height)
     {
         // During resizing we need to keep texture aspect ratio
-        const bool keepAspectRatio = options.KeepAspectRatio;
-        if (keepAspectRatio)
+        if (options.KeepAspectRatio)
         {
             const float aspectRatio = static_cast<float>(sourceWidth) / sourceHeight;
             if (width >= height)
@@ -772,6 +772,14 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     if (!keepAsIs && DirectX::IsSRGB(sourceDxgiFormat))
     {
         sourceDxgiFormat = ToDxgiFormat(PixelFormatExtensions::ToNonsRGB(::ToPixelFormat(sourceDxgiFormat)));
+        ((DirectX::TexMetadata&)currentImage->GetMetadata()).format = sourceDxgiFormat;
+        for (size_t i = 0; i < currentImage->GetImageCount(); i++)
+            ((DirectX::Image*)currentImage->GetImages())[i].format = sourceDxgiFormat;
+    }
+    // Import as sRGB data for Linear color space
+    else if (options.sRGB && !GraphicsSettings::Get()->GammaColorSpace)
+    {
+        sourceDxgiFormat = ToDxgiFormat(PixelFormatExtensions::TosRGB(::ToPixelFormat(sourceDxgiFormat)));
         ((DirectX::TexMetadata&)currentImage->GetMetadata()).format = sourceDxgiFormat;
         for (size_t i = 0; i < currentImage->GetImageCount(); i++)
             ((DirectX::Image*)currentImage->GetImages())[i].format = sourceDxgiFormat;

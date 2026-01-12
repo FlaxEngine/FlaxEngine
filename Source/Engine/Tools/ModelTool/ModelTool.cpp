@@ -1334,6 +1334,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         String assetPath = GetAdditionalImportPath(autoImportOutput, importedFileNames, StringUtils::GetFileNameWithoutExtension(texture.FilePath));
 #if COMPILE_WITH_ASSETS_IMPORTER
         TextureTool::Options textureOptions;
+        textureOptions.sRGB = texture.sRGB;
         switch (texture.Type)
         {
         case TextureEntry::TypeHint::ColorRGB:
@@ -1344,6 +1345,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             break;
         case TextureEntry::TypeHint::Normals:
             textureOptions.Type = TextureFormatType::NormalMap;
+            textureOptions.sRGB = false;
             break;
         }
         AssetsImportingManager::ImportIfEdited(texture.FilePath, assetPath, texture.AssetID, &textureOptions);

@@ -4,8 +4,14 @@
 #define __GUI_COMMON__
 
 #include "./Flax/Common.hlsl"
+#include "./Flax/GammaCorrectionCommon.hlsl"
 
 #define CLIPPING_ENABLE 1
+
+// Render2D::RenderingFeatures
+#define RENDER2D_FEATURE_VERTEX_SNAPPING 1
+#define RENDER2D_FEATURE_FALLBACK_FONTS 2
+#define RENDER2D_FEATURE_REMOVE_GAMMA 4
 
 struct Render2DVertex
 {
@@ -21,7 +27,7 @@ struct VS2PS
     float4 Position : SV_Position;
     float4 Color : COLOR0;
     float2 TexCoord : TEXCOORD0;
-    float2 CustomData : TEXCOORD1;
+    float2 CustomData : TEXCOORD1; // x-per-geometry type, y-features mask
     float4 ClipExtents : TEXCOORD2;
     float4 ClipOriginAndPos : TEXCOORD3;
 };
@@ -52,6 +58,15 @@ void PerformClipping(float2 clipOrigin, float2 windowPos, float4 clipExtents)
 void PerformClipping(VS2PS input)
 {
     PerformClipping(input.ClipOriginAndPos.xy, input.ClipOriginAndPos.zw, input.ClipExtents);
+}
+
+float4 GetImageColor(float4 color, float2 customData)
+{
+    if ((int)customData.y & RENDER2D_FEATURE_REMOVE_GAMMA)
+    {
+        color.rgb = LinearToSrgb(color.rgb);
+    }
+    return color;
 }
 
 #endif

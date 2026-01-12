@@ -49,6 +49,11 @@ API_CLASS(Static) class FLAXENGINE_API Render2D
         /// Enables automatic characters usage from fallback fonts.
         /// </summary>
         FallbackFonts = 2,
+
+        /// <summary>
+        /// Enables additional sRGB to linear color space conversion when drawing sRGB textures. This ensures that images imported with sRGB enabled in Linear workflow will be properly rendered into screen.
+        /// </summary>
+        RemoveGamma = 4,
     };
 
     struct CustomData
