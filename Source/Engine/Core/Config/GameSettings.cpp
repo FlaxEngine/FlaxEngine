@@ -52,6 +52,7 @@ void GraphicsSettings::SetUeeHDRProbes(bool value)
 
 void GraphicsSettings::OnDeserializing(const CallbackContext& context)
 {
+#if 0 // TODO: move to Linear color space as default once it's ready for production
     // [Deprecated on 9.01.2026, expires on 9.01.2028]
     if (context.Modifier && context.Modifier->EngineBuild < 6901)
     {
@@ -59,6 +60,7 @@ void GraphicsSettings::OnDeserializing(const CallbackContext& context)
         GammaColorSpace = true;
         MARK_CONTENT_DEPRECATED();
     }
+#endif
 }
 
 IMPLEMENT_ENGINE_SETTINGS_GETTER(GraphicsSettings, Graphics);

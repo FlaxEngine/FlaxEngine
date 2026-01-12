@@ -133,7 +133,7 @@ public:
     /// This makes sense when the output of the rendering represent final color values that will be presented to a non-HDR screen.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(3000), EditorDisplay(\"Colors\")")
-    bool GammaColorSpace = false;
+    bool GammaColorSpace = true;
 
 public:
     /// <summary>
