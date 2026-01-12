@@ -115,18 +115,20 @@ static const float LUTSize = 32;
 half3 ColorLookupTable(half3 linearColor)
 {
 	// Move from linear color to encoded LUT color space
-	//float3 encodedColor = linearColor; // Default
+#if COLOR_GRADING_LUT_LOG
 	float3 encodedColor = LinearToLog(linearColor + LogToLinear(0)); // Log
+#else
+	float3 encodedColor = linearColor; // Default
+#endif
 
 	float3 uvw = encodedColor * ((LUTSize - 1) / LUTSize) + (0.5f / LUTSize);
-
 #if USE_VOLUME_LUT
 	half3 color = ColorGradingLUT.Sample(SamplerLinearClamp, uvw).rgb;
 #else
 	half3 color = SampleUnwrappedTexture3D(ColorGradingLUT, SamplerLinearClamp, uvw, LUTSize).rgb;
 #endif
 
-	return color;
+	return color * COLOR_GRADING_LUT_SCALE;
 }
 
 // A random texture generator
