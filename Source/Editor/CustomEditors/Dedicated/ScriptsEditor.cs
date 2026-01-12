@@ -909,7 +909,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 settingsButton.Tag = script;
                 settingsButton.Clicked += OnSettingsButtonClicked;
 
-                group.Panel.HeaderTextMargin = new Margin(scriptDrag.Right - 12, 15, 2, 2);
+                // Adjust margin to not overlap with other ui elements in the header
+                group.Panel.HeaderTextMargin = group.Panel.HeaderTextMargin with { Left = scriptDrag.Right - 12, Right = settingsButton.Width + Utilities.Constants.UIMargin };
                 group.Object(values, editor);
                 // Remove drop down arrows and containment lines if no objects in the group
                 if (group.Children.Count == 0)
