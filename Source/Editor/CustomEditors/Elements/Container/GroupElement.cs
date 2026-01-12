@@ -37,24 +37,34 @@ namespace FlaxEditor.CustomEditors.Elements
         public override ContainerControl ContainerControl => Panel;
 
         /// <summary>
-        /// Adds utility settings button to the group header.
+        /// Add utility settings button to the group header.
         /// </summary>
         /// <returns>The created control.</returns>
         public Image AddSettingsButton()
         {
+            return AddHeaderButton("Settings", 0, Style.Current.Settings);
+        }
+
+        /// <summary>
+        /// Adds a button to the group header.
+        /// </summary>
+        /// <returns>The created control.</returns>
+        public Image AddHeaderButton(string tooltipText, float xOffset, SpriteHandle sprite)
+        {
             var style = Style.Current;
+            const float padding = 2.0f;
             var settingsButtonSize = Panel.HeaderHeight;
             return new Image
             {
-                TooltipText = "Settings",
+                TooltipText = tooltipText,
                 AutoFocus = true,
                 AnchorPreset = AnchorPresets.TopRight,
                 Parent = Panel,
-                Bounds = new Rectangle(Panel.Width - settingsButtonSize, 0, settingsButtonSize, settingsButtonSize),
+                Bounds = new Rectangle(Panel.Width - settingsButtonSize - xOffset, padding * 0.5f, settingsButtonSize - padding, settingsButtonSize - padding),
                 IsScrollable = false,
                 Color = style.ForegroundGrey,
                 Margin = new Margin(1),
-                Brush = new SpriteBrush(style.Settings),
+                Brush = new SpriteBrush(sprite),
             };
         }
     }
