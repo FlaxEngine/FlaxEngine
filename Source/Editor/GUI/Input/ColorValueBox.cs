@@ -15,6 +15,7 @@ namespace FlaxEditor.GUI.Input
     public class ColorValueBox : Control
     {
         private bool _isMouseDown;
+        private bool _linear;
 
         /// <summary>
         /// Delegate function used for the color picker events handling.
@@ -101,6 +102,7 @@ namespace FlaxEditor.GUI.Input
         public ColorValueBox()
         : base(0, 0, 32, 18)
         {
+            _linear = !Graphics.GammaColorSpace;
         }
 
         /// <summary>
@@ -113,6 +115,7 @@ namespace FlaxEditor.GUI.Input
         : base(x, y, 32, 18)
         {
             _value = value;
+            _linear = !Graphics.GammaColorSpace;
         }
 
         /// <summary>
@@ -129,8 +132,10 @@ namespace FlaxEditor.GUI.Input
         {
             base.Draw();
 
-            bool isTransparent = _value.A < 1;
-
+            var value = _value;
+            if (_linear)
+                value = value.ToSRgb();
+            var isTransparent = value.A < 1;
             var style = Style.Current;
             var fullRect = new Rectangle(0, 0, Width, Height);
             var colorRect = new Rectangle(0, 0, isTransparent ? Width * 0.7f : Width, Height);
@@ -157,10 +162,10 @@ namespace FlaxEditor.GUI.Input
                         }
                     }
                 }
-                Render2D.FillRectangle(alphaRect, _value);
+                Render2D.FillRectangle(alphaRect, value);
             }
 
-            Render2D.FillRectangle(colorRect, _value with { A = 1 });
+            Render2D.FillRectangle(colorRect, value with { A = 1 });
             Render2D.DrawRectangle(fullRect, IsMouseOver || IsNavFocused ? style.BackgroundSelected : Color.Black);
         }
 
