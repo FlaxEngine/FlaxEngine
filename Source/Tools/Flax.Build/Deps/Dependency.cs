@@ -40,13 +40,17 @@ namespace Flax.Deps
             /// The target platforms to build dependency for (contains only platforms supported by the dependency itself).
             /// </summary>
             public TargetPlatform[] Platforms;
+
+            /// <summary>
+            /// The target architectures to build dependency for (contains only platforms supported by the dependency itself).
+            /// </summary>
+            public TargetArchitecture[] Architectures;
         }
 
         /// <summary>
         /// Gets the build platform.
         /// </summary>
         protected static TargetPlatform BuildPlatform => Platform.BuildPlatform.Target;
-
 
         private static Version? _cmakeVersion;
         protected static Version CMakeVersion
@@ -55,11 +59,19 @@ namespace Flax.Deps
             {
                 if (_cmakeVersion == null)
                 {
-                    var versionOutput = Utilities.ReadProcessOutput("cmake", "--version");
-                    var versionStart = versionOutput.IndexOf("cmake version ") + "cmake version ".Length;
-                    var versionEnd = versionOutput.IndexOfAny(['-', '\n', '\r'], versionStart); // End of line or dash before Git hash
-                    var versionString = versionOutput.Substring(versionStart, versionEnd - versionStart);
-                    _cmakeVersion = new Version(versionString);
+                    try
+                    {
+                        var versionOutput = Utilities.ReadProcessOutput("cmake", "--version");
+                        var versionStart = versionOutput.IndexOf("cmake version ") + "cmake version ".Length;
+                        var versionEnd = versionOutput.IndexOfAny(['-', '\n', '\r'], versionStart); // End of line or dash before Git hash
+                        var versionString = versionOutput.Substring(versionStart, versionEnd - versionStart);
+                        _cmakeVersion = new Version(versionString);
+                    }
+                    catch (Exception)
+                    {
+                        // Assume old version by default (in case of errors)
+                        _cmakeVersion = new Version(3, 0);
+                    }
                 }
                 return _cmakeVersion;
             }
@@ -68,7 +80,95 @@ namespace Flax.Deps
         /// <summary>
         /// Gets the platforms list supported by this dependency to build on the current build platform (based on <see cref="Platform.BuildPlatform"/>).
         /// </summary>
-        public abstract TargetPlatform[] Platforms { get; }
+        public virtual TargetPlatform[] Platforms
+        {
+            get
+            {
+                // The most common build setup
+                switch (BuildPlatform)
+                {
+                case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetPlatform.Windows,
+                        TargetPlatform.XboxOne,
+                        TargetPlatform.XboxScarlett,
+                        TargetPlatform.PS4,
+                        TargetPlatform.PS5,
+                        TargetPlatform.Android,
+                        TargetPlatform.Switch,
+                    };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetPlatform.Linux,
+                    };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetPlatform.Mac,
+                        TargetPlatform.iOS,
+                    };
+                default: return new TargetPlatform[0];
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the architectures list supported by this dependency to build on the current build platform (based on <see cref="Platform.BuildPlatform"/>).
+        /// </summary>
+        public virtual TargetArchitecture[] Architectures
+        {
+            get
+            {
+                // Default value returns all supported architectures for all supported platforms
+                switch (BuildPlatform)
+                {
+                case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        //TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.XboxOne:
+                case TargetPlatform.XboxScarlett:
+                case TargetPlatform.PS4:
+                case TargetPlatform.PS5:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                    };
+                case TargetPlatform.Switch:
+                    return new[]
+                    {
+                        TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Android:
+                    return new[]
+                    {
+                        TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.iOS:
+                    return new[]
+                    {
+                        TargetArchitecture.ARM64,
+                    };
+                default: return new TargetArchitecture[0];
+                }
+            }
+        }
 
         /// <summary>
         /// True if build dependency by default, otherwise only when explicitly specified via command line.
@@ -85,9 +185,9 @@ namespace Flax.Deps
         /// Logs build process start.
         /// </summary>
         /// <param name="platform">Target platform.</param>
-        protected void BuildStarted(TargetPlatform platform)
+        protected void BuildStarted(TargetPlatform platform, TargetArchitecture architecture)
         {
-            Log.Info($"Building {GetType().Name} for {platform}");
+            Log.Info($"Building {GetType().Name} for {platform}{(architecture != TargetArchitecture.AnyCPU ? $" ({architecture})" : "")}");
         }
 
         /// <summary>
