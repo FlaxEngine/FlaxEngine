@@ -48,14 +48,17 @@ namespace FlaxEditor.CustomEditors.Editors
                         // Fill new entries with the last value
                         var lastValue = array.GetValue(oldSize - 1);
                         for (int i = oldSize; i < newSize; i++)
-                            newValues.SetValue(Utilities.Utils.CloneValue(lastValue), i);
+                        {
+                            var newValue = Utilities.Utils.CloneValue(lastValue);
+                            newValues.SetValue(PostProcessNewValue(newValue, i - oldSize, oldSize), i);
+                        }
                     }
                     else
                     {
                         // Initialize new entries with default values
                         var defaultValue = TypeUtils.GetDefaultValue(elementType);
                         for (int i = oldSize; i < newSize; i++)
-                            newValues.SetValue(defaultValue, i);
+                            newValues.SetValue(PostProcessNewValue(defaultValue, i - oldSize, oldSize), i);
                     }
                 }
                 else if (newSize > 0)
@@ -63,11 +66,23 @@ namespace FlaxEditor.CustomEditors.Editors
                     // Initialize new entries with default values
                     var defaultValue = TypeUtils.GetDefaultValue(elementType);
                     for (int i = 0; i < newSize; i++)
-                        newValues.SetValue(defaultValue, i);
+                        newValues.SetValue(PostProcessNewValue(defaultValue, i - oldSize, oldSize), i);
                 }
 
                 SetValue(newValues);
             }
+        }
+
+        /// <summary>
+        /// Can be used to manipulate a new value before it gets added to the array.
+        /// </summary>
+        /// <param name="value">The new value.</param>
+        /// <param name="elementCount">The count of elements that have already been added before this.</param>
+        /// <param name="oldSize">The old size of the array before size changed.</param>
+        /// <returns>The manipulated value.</returns>
+        protected virtual object PostProcessNewValue(object value, int elementCount, int oldSize)
+        {
+            return value;
         }
 
         /// <inheritdoc />

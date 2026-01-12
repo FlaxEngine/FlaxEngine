@@ -1,7 +1,10 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
-using System.Runtime.InteropServices;
+#if FLAX_EDITOR
+using FlaxEditor.CustomEditors;
+using FlaxEditor.CustomEditors.Dedicated;
+#endif
 
 namespace FlaxEngine
 {
@@ -15,6 +18,9 @@ namespace FlaxEngine
         [Unmanaged]
         [Tooltip("Spline keyframes collection.")]
         [EditorOrder(10), EditorDisplay("Spline"), Collection(CanReorderItems = false)]
+#if FLAX_EDITOR
+        [CustomEditor(typeof(SplineEditor.SplineElementEditor))]
+#endif
         public BezierCurve<Transform>.Keyframe[] SplineKeyframes
         {
             get
