@@ -1,10 +1,11 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "RenderBuffers.h"
+#include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Graphics/GPUDevice.h"
-#include "Engine/Renderer/Utils/MultiScaler.h"
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/RenderTargetPool.h"
+#include "Engine/Renderer/Utils/MultiScaler.h"
 #include "Engine/Engine/Engine.h"
 
 // How many frames keep cached buffers for temporal or optional effects?
@@ -113,8 +114,29 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
 
 PixelFormat RenderBuffers::GetOutputFormat() const
 {
+    auto colorFormat = GraphicsSettings::Get()->RenderColorFormat;
     // TODO: fix incorrect alpha leaking into reflections on PS5 with R11G11B10_Float
-    return _useAlpha || PLATFORM_PS5 ? PixelFormat::R16G16B16A16_Float : PixelFormat::R11G11B10_Float;
+    if (_useAlpha || PLATFORM_PS5)
+    {
+        // Promote to format when alpha when needed
+        switch (colorFormat)
+        {
+        case GraphicsSettings::RenderColorFormats::R11G11B10:
+            colorFormat = GraphicsSettings::RenderColorFormats::R16G16B16A16;
+            break;
+        }
+    }
+    switch (colorFormat)
+    {
+    case GraphicsSettings::RenderColorFormats::R11G11B10:
+        return PixelFormat::R11G11B10_Float;
+    case GraphicsSettings::RenderColorFormats::R8G8B8A8:
+        return PixelFormat::R8G8B8A8_UNorm;
+    case GraphicsSettings::RenderColorFormats::R16G16B16A16:
+        return PixelFormat::R16G16B16A16_Float;
+    default:
+        return PixelFormat::R32G32B32A32_Float;
+    }
 }
 
 bool RenderBuffers::GetUseAlpha() const

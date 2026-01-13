@@ -18,6 +18,21 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings", NoConstructor) class 
 
 public:
     /// <summary>
+    /// List of pixel formats that can be used by the rendering pipeline (for light buffer and post-processing).
+    /// </summary>
+    API_ENUM(Attributes="EnumDisplay(EnumDisplayAttribute.FormatMode.None)")
+    enum class RenderColorFormats
+    {
+        // HDR 32-bit buffer without alpha channel support. Offers good performance but might result in colors banding or shift towards yellowish colors due to low data precision.
+        R11G11B10,
+        // LDR 32-bit buffer with alpha channel support. Offers good performance but doesn't support High Dynamic Range rendering.
+        R8G8B8A8,
+        // HDR 64-bit buffer with alpha channel support. Offers very good quality for wide range of colors but requires more memory.
+        R16G16B16A16,
+    };
+
+public:
+    /// <summary>
     /// Enables rendering synchronization with the refresh rate of the display device to avoid "tearing" artifacts.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(20), DefaultValue(false), EditorDisplay(\"General\", \"Use V-Sync\")")
@@ -134,6 +149,12 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorOrder(3000), EditorDisplay(\"Colors\")")
     bool GammaColorSpace = true;
+
+    /// <summary>
+    /// Pixel format used by the rendering pipeline (for light buffer and post-processing).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(3010), EditorDisplay(\"Colors\")")
+    RenderColorFormats RenderColorFormat = RenderColorFormats::R11G11B10;
 
 public:
     /// <summary>
