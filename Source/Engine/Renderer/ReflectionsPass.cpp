@@ -199,7 +199,7 @@ bool ReflectionsPass::setupResources()
         psDesc.DepthEnable = true;
         if (_psProbe->Init(psDesc))
             return true;
-        psDesc.DepthFunc = ComparisonFunc::Greater;
+        psDesc.DepthFunc = ComparisonFunc::Always;
         psDesc.CullMode = CullMode::Inverted;
         if (_psProbeInside->Init(psDesc))
             return true;
@@ -279,10 +279,14 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     GBufferPass::SetInputs(view, data.GBuffer);
 
     // Bind GBuffer inputs
+    GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
+    const bool depthBufferReadOnly = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView);
+    GPUTextureView* depthBufferRTV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : nullptr;
+    GPUTextureView* depthBufferSRV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
     context->BindSR(0, renderContext.Buffers->GBuffer0);
     context->BindSR(1, renderContext.Buffers->GBuffer1);
     context->BindSR(2, renderContext.Buffers->GBuffer2);
-    context->BindSR(3, renderContext.Buffers->DepthBuffer);
+    context->BindSR(3, depthBufferSRV);
 
     auto tempDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), PixelFormat::R11G11B10_Float);
     auto reflectionsBuffer = RenderTargetPool::Get(tempDesc);
@@ -294,7 +298,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     {
         PROFILE_GPU_CPU("Env Probes");
 
-        context->SetRenderTarget(*reflectionsBuffer);
+        context->SetRenderTarget(depthBufferRTV, *reflectionsBuffer);
 
         // Sort probes by the radius
         Sorting::QuickSort(renderContext.List->EnvironmentProbes.Get(), renderContext.List->EnvironmentProbes.Count(), &SortProbes);
