@@ -6,7 +6,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GPUContext.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Engine/Time.h"
 
@@ -57,6 +57,9 @@ GPU_CB_STRUCT(Data{
     float LensDirtIntensity;
 
     Color ScreenFadeColor;
+
+    Float3 QuantizationError;
+    float Dummy2;
 
     Matrix LensFlareStarMat;
     });
@@ -359,6 +362,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
         data.LensFlareIntensity = 0;
         data.LensDirtIntensity = 0;
     }
+    data.QuantizationError = RenderTools::GetColorQuantizationError(output->Format());
     data.PostExposure = Math::Exp2(settings.EyeAdaptation.PostExposure);
     data.InputSize = Float2(static_cast<float>(w1), static_cast<float>(h1));
     data.InvInputSize = Float2(1.0f / static_cast<float>(w1), 1.0f / static_cast<float>(h1));

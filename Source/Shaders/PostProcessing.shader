@@ -22,6 +22,7 @@
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/Random.hlsl"
+#include "./Flax/Noise.hlsl"
 #include "./Flax/GammaCorrectionCommon.hlsl"
 
 #define GB_RADIUS 6
@@ -79,6 +80,9 @@ float VignetteIntensity;
 float LensDirtIntensity;
 
 float4 ScreenFadeColor;
+
+float3 QuantizationError;
+float Dummy2;
 
 float4x4 LensFlareStarMat;
 
@@ -737,6 +741,10 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 
 	// Saturate color since it will be rendered to the screen
 	color.rgb = saturate(color.rgb);
+
+    // Apply quantization error to reduce yellowish artifacts due to R11G11B10 format
+    float noise = rand2dTo1d(input.TexCoord);
+    color.rgb = QuantizeColor(color.rgb, noise, QuantizationError);
 
 	// Return final pixel color (preserve input alpha)
 	return color;

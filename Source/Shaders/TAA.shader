@@ -5,6 +5,7 @@
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/GBuffer.hlsl"
+#include "./Flax/Noise.hlsl"
 
 META_CB_BEGIN(0, Data)
 float2 ScreenSizeInv;
@@ -13,6 +14,8 @@ float Sharpness;
 float StationaryBlending;
 float MotionBlending;
 float Dummy0;
+float3 QuantizationError;
+float Dummy1;
 GBufferData GBuffer;
 META_CB_END
 
@@ -104,5 +107,10 @@ float4 PS(Quad_VS2PS input) : SV_Target0
 	color = lerp(color, neighborhoodSharp, saturate(miss));
 
 	color = clamp(color, 0, HDR_CLAMP_MAX);
+
+    // Apply quantization error to reduce yellowish artifacts due to R11G11B10 format
+    float noise = rand2dTo1d(input.TexCoord);
+    color.rgb = QuantizeColor(color.rgb, noise, QuantizationError);
+
 	return color;
 }
