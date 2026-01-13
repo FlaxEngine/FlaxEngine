@@ -44,6 +44,12 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public void Draw(Rectangle rect, Color color)
         {
+            if (Texture && Texture.Dimensions != TextureDimensions.Texture)
+            {
+                // TODO: add cube and volume texture preview
+                Render2D.FillRectangle(rect, color);
+                return;
+            }
             if (Filter == BrushFilter.Point)
                 Render2D.DrawTexturePoint(Texture, rect, color);
             else
