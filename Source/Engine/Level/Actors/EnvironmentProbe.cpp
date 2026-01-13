@@ -218,6 +218,12 @@ void EnvironmentProbe::OnDebugDrawSelected()
     // Draw influence range
     DEBUG_DRAW_WIRE_SPHERE(_sphere, Color::CornflowerBlue, 0, true);
 
+    // Draw capture point (if offset)
+    if (!CaptureOffset.IsZero())
+    {
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(_transform.LocalToWorld(CaptureOffset), 10.0f), Color::Blue, 0, false);
+    }
+
     // Base
     Actor::OnDebugDrawSelected();
 }
@@ -243,6 +249,7 @@ void EnvironmentProbe::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(SortOrder);
     SERIALIZE(UpdateMode);
     SERIALIZE(CaptureNearPlane);
+    SERIALIZE(CaptureOffset);
     SERIALIZE_MEMBER(IsCustomProbe, _isUsingCustomProbe);
     SERIALIZE_MEMBER(ProbeID, _probe);
 }
@@ -258,6 +265,7 @@ void EnvironmentProbe::Deserialize(DeserializeStream& stream, ISerializeModifier
     DESERIALIZE(SortOrder);
     DESERIALIZE(UpdateMode);
     DESERIALIZE(CaptureNearPlane);
+    DESERIALIZE(CaptureOffset);
     DESERIALIZE_MEMBER(IsCustomProbe, _isUsingCustomProbe);
     DESERIALIZE_MEMBER(ProbeID, _probe);
 

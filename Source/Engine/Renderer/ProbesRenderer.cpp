@@ -448,7 +448,7 @@ void ProbesRendererService::OnRender(RenderTask* task, GPUContext* context)
         if (_current.Type == ProbeEntry::Types::EnvProbe)
         {
             auto envProbe = (EnvironmentProbe*)_current.Actor.Get();
-            Vector3 position = envProbe->GetPosition();
+            Vector3 position = envProbe->GetTransform().LocalToWorld(envProbe->CaptureOffset);
             float radius = envProbe->GetScaledRadius();
             float nearPlane = Math::Max(0.1f, envProbe->CaptureNearPlane);
 

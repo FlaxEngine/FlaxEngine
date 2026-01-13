@@ -69,6 +69,12 @@ public:
     API_FIELD(Attributes="EditorOrder(25), Limit(0, float.MaxValue, 0.01f), EditorDisplay(\"Probe\")")
     float CaptureNearPlane = 10.0f;
 
+    /// <summary>
+    /// Probe position offset to apply before capturing which can be used to adjust reflections.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(40), EditorDisplay(\"Probe\")")
+    Float3 CaptureOffset = Float3(0, 0, 0);
+
 public:
     /// <summary>
     /// Gets the probe radius.
