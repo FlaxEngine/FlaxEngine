@@ -4,6 +4,7 @@
 #include "./Flax/MaterialCommon.hlsl"
 #include "./Flax/BRDF.hlsl"
 #include "./Flax/Random.hlsl"
+#include "./Flax/Noise.hlsl"
 #include "./Flax/MonteCarlo.hlsl"
 #include "./Flax/LightingCommon.hlsl"
 #include "./Flax/GBuffer.hlsl"
@@ -55,7 +56,12 @@ float4 PS_EnvProbe(Model_VS2PS input) : SV_Target0
 	}
 
 	// Sample probe
-	return SampleReflectionProbe(gBufferData.ViewPos, Probe, PData, gBuffer.WorldPos, gBuffer.Normal, gBuffer.Roughness);
+	float4 color = SampleReflectionProbe(gBufferData.ViewPos, Probe, PData, gBuffer.WorldPos, gBuffer.Normal, gBuffer.Roughness);
+
+    // Apply dithering to hide banding artifacts
+    color.rgb += rand2dTo1d(uv) * 0.02f * Luminance(saturate(color.rgb));
+
+    return color;
 }
 
 // Pixel Shader for reflections combine pass (additive rendering to the light buffer)

@@ -24,7 +24,7 @@ GPU_CB_STRUCT(Data {
     Matrix WorldViewProjection;
     Matrix InvViewProjection;
     Float3 ViewOffset;
-    float Padding;
+    float NoiseScale;
     ShaderGBufferData GBuffer;
     ShaderAtmosphericFogData Fog;
     });
@@ -184,6 +184,7 @@ void Sky::ApplySky(GPUContext* context, RenderContext& renderContext, const Matr
     Matrix::Transpose(renderContext.View.IVP, data.InvViewProjection);
     GBufferPass::SetInputs(renderContext.View, data.GBuffer);
     data.ViewOffset = renderContext.View.Origin + GetPosition();
+    data.NoiseScale = renderContext.View.IsSingleFrame ? 0.01f : 0.03f;
     InitConfig(data.Fog);
     //data.Fog.AtmosphericFogSunPower *= SunLight ? SunLight->Brightness : 1.0f;
     if (EnumHasNoneFlags(renderContext.View.Flags, ViewFlags::SpecularLight))
