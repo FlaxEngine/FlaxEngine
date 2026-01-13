@@ -125,6 +125,9 @@ Quad_VS2GS VS_WriteToSlice(float2 TexCoord : TEXCOORD0, uint LayerIndex : SV_Ins
 		float radius = sqrt(ViewSpaceBoundingSphere.w * ViewSpaceBoundingSphere.w - depthOffset * depthOffset);
 		float3 positionVS = float3(ViewSpaceBoundingSphere.xy + (TexCoord * 2 - 1) * radius, depth);
 		output.Vertex.Position = mul(float4(positionVS, 1), ViewToVolumeClip);
+#if VULKAN
+        output.Vertex.Position.y *= -1;
+#endif
 	}
 	else
 	{
