@@ -58,6 +58,11 @@ GPUTexture* EnvironmentProbe::GetProbe() const
     return _probe ? _probe->GetTexture() : _probeTexture;
 }
 
+CubeTexture* EnvironmentProbe::GetProbeAsset() const
+{
+    return _probe;
+}
+
 bool EnvironmentProbe::IsUsingCustomProbe() const
 {
     return _isUsingCustomProbe;

@@ -92,6 +92,11 @@ public:
     API_PROPERTY() GPUTexture* GetProbe() const;
 
     /// <summary>
+    /// Gets the probe texture asset used during rendering (baked or custom one). Returns null when using virtual probe with realtime generation.
+    /// </summary>
+    API_PROPERTY() CubeTexture* GetProbeAsset() const;
+
+    /// <summary>
     /// True if probe is using custom cube texture (not baked).
     /// </summary>
     API_PROPERTY() bool IsUsingCustomProbe() const;
