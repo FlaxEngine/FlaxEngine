@@ -305,6 +305,8 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
     uint cascadeIndex = DDGI_DEBUG_CASCADE;
 #else
     uint cascadeIndex = 0;
+    if (data.CascadesCount == 0)
+        return float3(0, 0, 0);
     for (; cascadeIndex < data.CascadesCount; cascadeIndex++)
     {
         // Get cascade data
