@@ -5,6 +5,7 @@
 #include "./Flax/ReflectionsCommon.hlsl"
 #include "./Flax/SSR.hlsl"
 #include "./Flax/GBuffer.hlsl"
+#include "./Flax/Temporal.hlsl"
 #include "./Flax/GlobalSignDistanceField.hlsl"
 #include "./Flax/GI/GlobalSurfaceAtlas.hlsl"
 
@@ -15,34 +16,26 @@
 #define SSR_MIX_BLUR 1
 
 META_CB_BEGIN(0, Data)
-
 GBufferData GBuffer;
-
 float MaxColorMiplevel;
 float TraceSizeMax;
 float MaxTraceSamples;
 float RoughnessFade;
-
 float2 SSRtexelSize;
 float TemporalTime;
 float BRDFBias;
-
 float WorldAntiSelfOcclusionBias;
 float EdgeFadeFactor;
 float TemporalResponse;
 float TemporalScale;
-
 float RayTraceStep;
 float TemporalEffect;
 float Intensity;
 float FadeOutDistance;
-
 float4x4 ViewMatrix;
 float4x4 ViewProjectionMatrix;
-
 GlobalSDFData GlobalSDF;
 GlobalSurfaceAtlasData GlobalSurfaceAtlas;
-
 META_CB_END
 
 DECLARE_GBUFFERDATA_ACCESS(GBuffer)
@@ -227,15 +220,11 @@ float4 PS_TemporalPass(Quad_VS2PS input) : SV_Target0
 	// Texture1 - prev frame temporal SSR buffer
 	// Texture2 - motion vectors
 
+	// Sample inputss
 	float2 uv = input.TexCoord;
-
-	// Sample velocity
 	float2 velocity = Texture2.SampleLevel(SamplerLinearClamp, uv, 0).xy;
-
-	// Prepare
 	float2 prevUV = uv - velocity;
 	float4 current = Texture0.SampleLevel(SamplerLinearClamp, uv, 0);
-	float4 previous = Texture1.SampleLevel(SamplerLinearClamp, prevUV, 0);
 	float2 du = float2(SSRtexelSize.x, 0.0);
 	float2 dv = float2(0.0, SSRtexelSize.y);
 
@@ -252,18 +241,23 @@ float4 PS_TemporalPass(Quad_VS2PS input) : SV_Target0
 
 	float4 currentMin = min(currentTopLeft, min(currentTopCenter, min(currentTopRight, min(currentMiddleLeft, min(currentMiddleCenter, min(currentMiddleRight, min(currentBottomLeft, min(currentBottomCenter, currentBottomRight))))))));
 	float4 currentMax = max(currentTopLeft, max(currentTopCenter, max(currentTopRight, max(currentMiddleLeft, max(currentMiddleCenter, max(currentMiddleRight, max(currentBottomLeft, max(currentBottomCenter, currentBottomRight))))))));
+	float4 currentSum = currentTopLeft + currentTopCenter + currentTopRight + currentMiddleLeft + currentMiddleCenter + currentMiddleRight + currentBottomLeft + currentBottomCenter + currentBottomRight;
+	float4 currentAvg = currentSum / 9.0;
 
-	float scale = TemporalScale;
+	// Sample history by clamp it to the nearby colors range to reduce artifacts
+	float lumaOffset = abs(Luminance(currentAvg.rgb) - Luminance(current.rgb));
+	float velocityLength = length(velocity);
+	float aabbMargin = lerp(4.0, 0.25, saturate(velocityLength * 100.0)) * lumaOffset;
+	float4 previous = Texture1.SampleLevel(SamplerLinearClamp, prevUV, 0);
+	previous = ClipToAABB(previous, currentMin - aabbMargin, currentMax + aabbMargin);
+	//previous = clamp(previous, currentMin, currentMax);
 
-	float4 center = (currentMin + currentMax) * 0.5f;
-	currentMin = (currentMin - center) * scale + center;
-	currentMax = (currentMax - center) * scale + center;
-
-	previous = clamp(previous, currentMin, currentMax);
+    // Blend with history sample
+	float response = TemporalResponse * (1 - velocityLength * 8);
+	current = lerp(current, previous, saturate(response));
 	current = clamp(current, 0, HDR_CLAMP_MAX);
 
-	float response = TemporalResponse * (1 - length(velocity) * 8);
-	return lerp(current, previous, saturate(response));
+    return current;
 }
 
 // Pixel Shader for screen space reflections rendering - mix pass

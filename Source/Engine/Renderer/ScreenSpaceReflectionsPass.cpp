@@ -24,29 +24,23 @@
 
 GPU_CB_STRUCT(Data {
     ShaderGBufferData GBuffer;
-
     float MaxColorMiplevel;
     float TraceSizeMax;
     float MaxTraceSamples;
     float RoughnessFade;
-
     Float2 SSRtexelSize;
     float TemporalTime;
     float BRDFBias;
-
     float WorldAntiSelfOcclusionBias;
     float EdgeFadeFactor;
     float TemporalResponse;
     float TemporalScale;
-
     float RayTraceStep;
     float TemporalEffect;
     float Intensity;
     float FadeOutDistance;
-
     Matrix ViewMatrix;
     Matrix ViewProjectionMatrix;
-
     GlobalSignDistanceFieldPass::ConstantsData GlobalSDF;
     GlobalSurfaceAtlasPass::ConstantsData GlobalSurfaceAtlas;
     });
