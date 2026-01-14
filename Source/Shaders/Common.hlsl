@@ -170,18 +170,6 @@ struct AtmosphericFogData
     float AtmosphericFogDensityOffset;
 };
 
-// Packed env probe data
-struct ProbeData
-{
-    float4 Data0; // x - Position.x,  y - Position.y,  z - Position.z,  w - unused
-    float4 Data1; // x - Radius    ,  y - 1 / Radius,  z - Brightness,  w - unused
-};
-
-#define ProbePos Data0.xyz
-#define ProbeRadius Data1.x
-#define ProbeInvRadius Data1.y
-#define ProbeBrightness Data1.z
-
 struct Quad_VS2PS
 {
     float4 Position : SV_Position;

@@ -4,8 +4,8 @@
 #define MAX_LOCAL_LIGHTS 4
 @1// Forward Shading: Includes
 #include "./Flax/LightingCommon.hlsl"
-#if USE_REFLECTIONS
 #include "./Flax/ReflectionsCommon.hlsl"
+#if USE_REFLECTIONS
 #define MATERIAL_REFLECTIONS_SSR 1
 #if MATERIAL_REFLECTIONS == MATERIAL_REFLECTIONS_SSR
 #include "./Flax/SSR.hlsl"
@@ -17,7 +17,7 @@
 @2// Forward Shading: Constants
 LightData DirectionalLight;
 LightData SkyLight;
-ProbeData EnvironmentProbe;
+EnvProbeData EnvironmentProbe;
 ExponentialHeightFogData ExponentialHeightFog;
 float3 Dummy2;
 uint LocalLightsCount;
@@ -32,7 +32,7 @@ Texture3D VolumetricFogTexture : register(t__SRV__);
 // Public accessors for lighting data, use them as data binding might change but those methods will remain.
 LightData GetDirectionalLight() { return DirectionalLight; }
 LightData GetSkyLight() { return SkyLight; }
-ProbeData GetEnvironmentProbe() { return EnvironmentProbe; }
+EnvProbeData GetEnvironmentProbe() { return EnvironmentProbe; }
 ExponentialHeightFogData GetExponentialHeightFog() { return ExponentialHeightFog; }
 uint GetLocalLightsCount() { return LocalLightsCount; }
 LightData GetLocalLight(uint i) { return LocalLights[i]; }

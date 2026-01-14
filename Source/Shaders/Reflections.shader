@@ -1,22 +1,16 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "./Flax/Common.hlsl"
-#include "./Flax/MaterialCommon.hlsl"
 #include "./Flax/BRDF.hlsl"
-#include "./Flax/Random.hlsl"
 #include "./Flax/Noise.hlsl"
-#include "./Flax/MonteCarlo.hlsl"
-#include "./Flax/LightingCommon.hlsl"
 #include "./Flax/GBuffer.hlsl"
+#include "./Flax/MaterialCommon.hlsl"
 #include "./Flax/ReflectionsCommon.hlsl"
-#include "./Flax/BRDF.hlsl"
 
 META_CB_BEGIN(0, Data)
-
-ProbeData PData;
+EnvProbeData PData;
 float4x4 WVP;
 GBufferData GBuffer;
-
 META_CB_END
 
 DECLARE_GBUFFERDATA_ACCESS(GBuffer)
@@ -25,7 +19,7 @@ TextureCube Probe : register(t4);
 Texture2D Reflections : register(t5);
 Texture2D PreIntegratedGF : register(t6);
 
-// Vertex Shader for models rendering
+// Vertex Shader for probe shape rendering
 META_VS(true, FEATURE_LEVEL_ES2)
 META_VS_IN_ELEMENT(POSITION, 0, R32G32B32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
 Model_VS2PS VS_Model(ModelInput_PosOnly input)

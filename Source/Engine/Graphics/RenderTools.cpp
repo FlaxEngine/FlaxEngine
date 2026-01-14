@@ -11,6 +11,7 @@
 #include "Engine/Content/Assets/SkinnedModel.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Packed.h"
+#include "Engine/Core/Math/OrientedBoundingBox.h"
 #include "Engine/Engine/Time.h"
 
 const Char* ToString(RendererType value)
@@ -618,6 +619,15 @@ void RenderTools::ComputeSphereModelDrawMatrix(const RenderView& view, const Flo
 
     // Check if view is inside the sphere
     resultIsViewInside = Float3::DistanceSquared(view.Position, position) < Math::Square(radius * 1.1f); // Manually tweaked bias
+}
+
+void RenderTools::ComputeBoxModelDrawMatrix(const RenderView& view, const OrientedBoundingBox& box, Matrix& resultWorld, bool& resultIsViewInside)
+{
+    // Construct world matrix
+    Matrix::Transformation(box.Transformation.Scale * box.Extents * 2.0f, box.Transformation.Orientation, box.Transformation.Translation, resultWorld);
+
+    // Check if view is inside the sphere
+    resultIsViewInside = box.Contains(view.Position) == ContainmentType::Contains;
 }
 
 Float3 RenderTools::GetColorQuantizationError(PixelFormat format)

@@ -140,6 +140,7 @@ public:
     static void CalculateTangentFrame(Float3& resultNormal, Float4& resultTangent, const Float3& normal, const Float3& tangent);
 
     static void ComputeSphereModelDrawMatrix(const RenderView& view, const Float3& position, float radius, Matrix& resultWorld, bool& resultIsViewInside);
+    static void ComputeBoxModelDrawMatrix(const RenderView& view, const OrientedBoundingBox& box, Matrix& resultWorld, bool& resultIsViewInside);
 
     // Calculates error for a given render target format to reduce floating-point precision artifacts via QuantizeColor (from Noise.hlsl).
     static Float3 GetColorQuantizationError(PixelFormat format);

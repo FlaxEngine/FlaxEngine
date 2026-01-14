@@ -42,20 +42,32 @@ public:
     /// <summary>
     /// The reflections texture resolution.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"Quality\")")
+    API_FIELD(Attributes="EditorOrder(110), EditorDisplay(\"Quality\")")
     ProbeCubemapResolution CubemapResolution = ProbeCubemapResolution::UseGraphicsSettings;
 
     /// <summary>
     /// The probe update mode.
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(10), EditorDisplay(\"Quality\")")
+    API_FIELD(Attributes = "EditorOrder(100), EditorDisplay(\"Quality\")")
     ProbeUpdateMode UpdateMode = ProbeUpdateMode::Manual;
+
+    /// <summary>
+    /// If checked, probe will use box-projection for mapping reelections onto the object surfaces. This method suits better for indoor areas.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(10), EditorDisplay(\"Probe\")")
+    bool BoxProjection;
 
     /// <summary>
     /// The reflections brightness.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(0), Limit(0, 1000, 0.01f), EditorDisplay(\"Probe\")")
+    API_FIELD(Attributes="EditorOrder(10), Limit(0, 1000, 0.01f), EditorDisplay(\"Probe\")")
     float Brightness = 1.0f;
+
+    /// <summary>
+    /// The probe shape inner margin over which blend happens to smooth borders.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(15), Limit(0, 1000, 0.1f), EditorDisplay(\"Probe\"), VisibleIf(nameof(BoxProjection))")
+    float BlendDistance = 100.0f;
 
     /// <summary>
     /// The probe rendering order. The higher values are render later (on top).
@@ -86,11 +98,6 @@ public:
     /// Sets the probe radius.
     /// </summary>
     API_PROPERTY() void SetRadius(float value);
-
-    /// <summary>
-    /// Gets probe scaled radius.
-    /// </summary>
-    API_PROPERTY() float GetScaledRadius() const;
 
     /// <summary>
     /// Gets the probe texture used during rendering (baked or custom one).

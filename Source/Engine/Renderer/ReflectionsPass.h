@@ -22,6 +22,7 @@ private:
     GPUPipelineState* _psCombinePass = nullptr;
 
     AssetReference<Model> _sphereModel;
+    AssetReference<Model> _boxModel;
     AssetReference<Texture> _preIntegratedGF;
 
 public:

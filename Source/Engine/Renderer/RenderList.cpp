@@ -163,8 +163,20 @@ void RenderSkyLightData::SetShaderData(ShaderLightData& data, bool useShadow) co
 
 void RenderEnvironmentProbeData::SetShaderData(ShaderEnvProbeData& data) const
 {
-    data.Data0 = Float4(Position, 0);
-    data.Data1 = Float4(Radius, 1.0f / Radius, Brightness, 0);
+    data.Data0 = Float4(Position, Brightness);
+    if (BoxProjection)
+    {
+        data.Data0.W *= -1;
+        data.Data1 = Float4(Scale * Radius, BlendDistance);
+        Quaternion invQuat;
+        Quaternion::Invert(Orientation, invQuat);
+        data.Data2 = *(Float4*)&invQuat;
+    }
+    else
+    {
+        data.Data1 = Float4(Radius, 0, 0, 0);
+        data.Data2 = Float4::Zero;
+    }
 }
 
 void* RendererAllocation::Allocate(uintptr size)

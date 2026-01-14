@@ -6,6 +6,7 @@
 #include "ScreenSpaceReflectionsPass.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Core/Math/OrientedBoundingBox.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTools.h"
@@ -169,8 +170,9 @@ bool ReflectionsPass::Init()
     // Load assets
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Reflections"));
     _sphereModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/Sphere"));
+    _boxModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/Box"));
     _preIntegratedGF = Content::LoadAsyncInternal<Texture>(PRE_INTEGRATED_GF_ASSET_NAME);
-    if (_shader == nullptr || _sphereModel == nullptr || _preIntegratedGF == nullptr)
+    if (_shader == nullptr || _sphereModel == nullptr || _boxModel == nullptr || _preIntegratedGF == nullptr)
         return true;
 #if COMPILE_WITH_DEV_ENV
     _shader.Get()->OnReloading.Bind<ReflectionsPass, &ReflectionsPass::OnShaderReloading>(this);
@@ -182,7 +184,7 @@ bool ReflectionsPass::Init()
 bool ReflectionsPass::setupResources()
 {
     // Wait for the assets
-    if (!_sphereModel->CanBeRendered() || !_preIntegratedGF->IsLoaded() || !_shader->IsLoaded())
+    if (!_sphereModel->CanBeRendered() || !_boxModel->CanBeRendered() || !_preIntegratedGF->IsLoaded() || !_shader->IsLoaded())
         return true;
     const auto shader = _shader->GetShader();
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
@@ -219,7 +221,6 @@ bool ReflectionsPass::setupResources()
 
 void ReflectionsPass::Dispose()
 {
-    // Base
     RendererPass::Dispose();
 
     // Cleanup
@@ -227,6 +228,7 @@ void ReflectionsPass::Dispose()
     SAFE_DELETE_GPU_RESOURCE(_psProbeInside);
     SAFE_DELETE_GPU_RESOURCE(_psCombinePass);
     _shader = nullptr;
+    _boxModel = nullptr;
     _sphereModel = nullptr;
     _preIntegratedGF = nullptr;
 }
@@ -305,14 +307,18 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
 
         // Render all env probes
         auto& sphereMesh = _sphereModel->LODs.Get()[0].Meshes.Get()[0];
+        auto& boxMesh = _boxModel->LODs.Get()[0].Meshes.Get()[0];
         for (int32 i = 0; i < probesCount; i++)
         {
             const RenderEnvironmentProbeData& probe = renderContext.List->EnvironmentProbes.Get()[i];
 
-            // Calculate world view projection matrix for the light sphere
+            // Calculate world*view*projection matrix
             Matrix world, wvp;
             bool isViewInside;
-            RenderTools::ComputeSphereModelDrawMatrix(renderContext.View, probe.Position, probe.Radius, world, isViewInside);
+            if (probe.BoxProjection)
+                RenderTools::ComputeBoxModelDrawMatrix(renderContext.View, OrientedBoundingBox(probe.Radius, Transform(probe.Position, probe.Orientation, probe.Scale)), world, isViewInside);
+            else
+                RenderTools::ComputeSphereModelDrawMatrix(renderContext.View, probe.Position, probe.Radius, world, isViewInside);
             Matrix::Multiply(world, view.ViewProjection(), wvp);
 
             // Pack probe properties buffer
@@ -324,7 +330,10 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
             context->BindCB(0, cb);
             context->BindSR(4, probe.Texture);
             context->SetState(isViewInside ? _psProbeInside : _psProbe);
-            sphereMesh.Render(context);
+            if (probe.BoxProjection)
+                boxMesh.Render(context);
+            else
+                sphereMesh.Render(context);
         }
 
         context->UnBindSR(4);
