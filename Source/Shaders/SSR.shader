@@ -285,5 +285,6 @@ float4 PS_MixPass(Quad_VS2PS input) : SV_Target0
 
 #endif
 
+    ssr.a = saturate(ssr.a);
 	return ssr;
 }
