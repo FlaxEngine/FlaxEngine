@@ -583,7 +583,7 @@ uint64 GPUContextDX11::BeginQuery(GPUQueryType type)
         auto& query = _device->_queries.AddOne();
         query.Type = type;
         D3D11_QUERY_DESC queryDesc;
-        queryDesc.Query = D3D11_QUERY_TIMESTAMP;
+        queryDesc.Query = type == GPUQueryType::Occlusion ? D3D11_QUERY_OCCLUSION : D3D11_QUERY_TIMESTAMP;
         queryDesc.MiscFlags = 0;
         HRESULT hr = _device->GetDevice()->CreateQuery(&queryDesc, &query.Query);
         LOG_DIRECTX_RESULT_WITH_RETURN(hr, 0);
@@ -608,7 +608,7 @@ uint64 GPUContextDX11::BeginQuery(GPUQueryType type)
         auto& query = _device->_queries[queryIndex];
         ASSERT_LOW_LAYER(query.State == GPUQueryDataDX11::Ready);
         ASSERT_LOW_LAYER(query.Type == type);
-        query.State = GPUQueryDataDX11::Active;
+        query.State = GPUQueryDataDX11::Begin;
         auto context = _device->GetIM();
         if (type == GPUQueryType::Timer)
         {
@@ -633,6 +633,8 @@ void GPUContextDX11::EndQuery(uint64 queryID)
     GPUQueryDX11 q;
     q.Raw = queryID;
     auto& query = _device->_queries[q.Index];
+    ASSERT_LOW_LAYER(query.State == GPUQueryDataDX11::Begin);
+    query.State = GPUQueryDataDX11::End;
     auto context = _device->GetIM();
     context->End(query.Query);
     if (q.Type == (uint16)GPUQueryType::Timer)

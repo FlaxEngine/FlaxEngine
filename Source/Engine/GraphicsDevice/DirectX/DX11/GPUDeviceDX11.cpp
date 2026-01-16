@@ -921,6 +921,7 @@ bool GPUDeviceDX11::GetQueryResult(uint64 queryID, uint64& result, bool wait)
         result = query.Result;
         return true;
     }
+    ASSERT_LOW_LAYER(query.State == GPUQueryDataDX11::End);
     auto context = GetIM();
 
 RETRY:
@@ -935,7 +936,7 @@ RETRY:
             context->GetData(query.TimerBeginQuery, &timeBegin, sizeof(timeBegin), 0);
             context->GetData(query.Query, &timeEnd, sizeof(timeEnd), 0);
 
-            if (disjointData.Disjoint == FALSE)
+            if (disjointData.Disjoint == FALSE && disjointData.Frequency > 0)
             {
                 result = timeEnd > timeBegin ? (timeEnd - timeBegin) * 1000000ull / disjointData.Frequency : 0;
             }
