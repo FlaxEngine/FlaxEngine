@@ -18,6 +18,7 @@ namespace Flax.Build.Bindings
             public Stack<ApiTypeInfo> ScopeTypeStack;
             public Stack<AccessLevel> ScopeAccessStack;
             public Dictionary<string, string> PreprocessorDefines;
+            public bool PreprocessorWaitForElse;
             public List<string> StringCache;
 
             public ApiTypeInfo ValidScopeInfoFromStack
