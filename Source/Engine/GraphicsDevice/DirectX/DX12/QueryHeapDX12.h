@@ -10,6 +10,31 @@ class GPUContextDX12;
 class GPUBuffer;
 
 #include "CommandQueueDX12.h"
+#include "Engine/Graphics/Enums.h"
+
+/// <summary>
+/// GPU query ID packed into 64-bits.
+/// </summary>
+struct GPUQueryDX12
+{
+    union
+    {
+        struct
+        {
+            uint16 Type;
+            uint16 Heap;
+            uint16 Element;
+            uint16 SecondaryElement;
+        };
+        uint64 Raw;
+    };
+
+    static int32 GetQueriesCount(GPUQueryType type)
+    {
+        // Timer queries need to know duration via GPU timer queries difference
+        return type == GPUQueryType::Timer ? 2 : 1;
+    }
+};
 
 /// <summary>
 /// GPU queries heap for DirectX 12 backend.
@@ -17,14 +42,12 @@ class GPUBuffer;
 class QueryHeapDX12
 {
 public:
-
     /// <summary>
     /// The query element handle.
     /// </summary>
-    typedef int32 ElementHandle;
+    typedef uint16 ElementHandle;
 
 private:
-
     struct QueryBatch
     {
         /// <summary>
@@ -35,12 +58,17 @@ private:
         /// <summary>
         /// The first element in the batch (inclusive).
         /// </summary>
-        int32 Start = 0;
+        uint32 Start = 0;
 
         /// <summary>
         /// The amount of elements added to this batch.
         /// </summary>
-        int32 Count = 0;
+        uint32 Count = 0;
+
+        /// <summary>
+        /// The GPU clock frequency for timer queries.
+        /// </summary>
+        uint64 TimestampFrequency = 0;
 
         /// <summary>
         /// Is the batch still open for more begin/end queries.
@@ -48,58 +76,36 @@ private:
         bool Open = false;
 
         /// <summary>
-        /// Clears this batch.
-        /// </summary>
-        inline void Clear()
-        {
-            Sync = SyncPointDX12();
-            Start = 0;
-            Count = 0;
-            Open = false;
-        }
-
-        /// <summary>
         /// Checks if this query batch contains a given element contains the element.
         /// </summary>
         /// <param name="elementIndex">The index of the element.</param>
         /// <returns>True if element is in this query, otherwise false.</returns>
-        bool ContainsElement(int32 elementIndex) const
+        bool ContainsElement(uint32 elementIndex) const
         {
             return elementIndex >= Start && elementIndex < Start + Count;
         }
     };
 
 private:
-
-    GPUDeviceDX12* _device;
-    ID3D12QueryHeap* _queryHeap;
-    ID3D12Resource* _resultBuffer;
-    D3D12_QUERY_TYPE _queryType;
-    D3D12_QUERY_HEAP_TYPE _queryHeapType;
-    int32 _currentIndex;
-    int32 _resultSize;
-    int32 _queryHeapCount;
+    GPUDeviceDX12* _device = nullptr;
+    ID3D12Resource* _resultBuffer = nullptr;
+    uint32 _currentIndex = 0;
+    uint32 _resultSize = 0;
+    uint32 _queryHeapCount = 0;
     QueryBatch _currentBatch;
     Array<QueryBatch> _batches;
     Array<byte> _resultData;
+    uint64 _timestampFrequency;
 
 public:
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="QueryHeapDX12"/> class.
-    /// </summary>
-    /// <param name="device">The device.</param>
-    /// <param name="queryHeapType">Type of the query heap.</param>
-    /// <param name="queryHeapCount">The query heap count.</param>
-    QueryHeapDX12(GPUDeviceDX12* device, const D3D12_QUERY_HEAP_TYPE& queryHeapType, int32 queryHeapCount);
-
-public:
-
     /// <summary>
     /// Initializes this instance.
     /// </summary>
+    /// <param name="device">The device.</param>
+    /// <param name="type">Type of the query heap.</param>
+    /// <param name="size">The size of the heap.</param>
     ///	<returns>True if failed, otherwise false.</returns>
-    bool Init();
+    bool Init(GPUDeviceDX12* device, GPUQueryType type, uint32 size);
 
     /// <summary>
     /// Destroys this instance.
@@ -107,12 +113,14 @@ public:
     void Destroy();
 
 public:
+    GPUQueryType Type;
+    ID3D12QueryHeap* QueryHeap = nullptr;
+    D3D12_QUERY_TYPE QueryType = D3D12_QUERY_TYPE_OCCLUSION;
 
     /// <summary>
     /// Gets the query heap capacity.
     /// </summary>
-    /// <returns>The queries count.</returns>
-    FORCE_INLINE int32 GetQueryHeapCount() const
+    FORCE_INLINE uint32 GetQueryHeapCount() const
     {
         return _queryHeapCount;
     }
@@ -120,8 +128,7 @@ public:
     /// <summary>
     /// Gets the size of the result value (in bytes).
     /// </summary>
-    /// <returns>The size of the query result value (in bytes).</returns>
-    FORCE_INLINE int32 GetResultSize() const
+    FORCE_INLINE uint32 GetResultSize() const
     {
         return _resultSize;
     }
@@ -129,14 +136,12 @@ public:
     /// <summary>
     /// Gets the result buffer (CPU readable via Map/Unmap).
     /// </summary>
-    /// <returns>The query results buffer.</returns>
     FORCE_INLINE ID3D12Resource* GetResultBuffer() const
     {
         return _resultBuffer;
     }
 
 public:
-
     /// <summary>
     /// Stops tracking the current batch of begin/end query calls that will be resolved together. This implicitly starts a new batch.
     /// </summary>
@@ -144,25 +149,17 @@ public:
     void EndQueryBatchAndResolveQueryData(GPUContextDX12* context);
 
     /// <summary>
+    /// Checks if can alloc a new query (without rolling the existing batch).
+    /// </summary>
+    /// <param name="count">How many elements to allocate?</param>
+    /// <returns>True if can alloc new query within the same batch.</returns>
+    bool CanAlloc(int32 count = 1) const;
+
+    /// <summary>
     /// Allocates the query heap element.
     /// </summary>
-    /// <param name="context">The context.</param>
     /// <param name="handle">The result handle.</param>
-    void AllocQuery(GPUContextDX12* context, ElementHandle& handle);
-
-    /// <summary>
-    /// Calls BeginQuery on command list for the given query heap slot.
-    /// </summary>
-    /// <param name="context">The context.</param>
-    /// <param name="handle">The query handle.</param>
-    void BeginQuery(GPUContextDX12* context, ElementHandle& handle);
-
-    /// <summary>
-    /// Calls EndQuery on command list for the given query heap slot.
-    /// </summary>
-    /// <param name="context">The context.</param>
-    /// <param name="handle">The query handle.</param>
-    void EndQuery(GPUContextDX12* context, ElementHandle& handle);
+    void Alloc(ElementHandle& handle);
 
     /// <summary>
     /// Determines whether the specified query handle is ready to read data (command list has been executed by the GPU).
@@ -175,11 +172,11 @@ public:
     /// Resolves the query (or skips if already resolved).
     /// </summary>
     /// <param name="handle">The result handle.</param>
+    /// <param name="timestampFrequency">The optional pointer to GPU timestamps frequency value to store.</param>
     ///	<returns>The pointer to the resolved query data.</returns>
-    void* ResolveQuery(ElementHandle& handle);
+    void* Resolve(ElementHandle& handle, uint64* timestampFrequency = nullptr);
 
 private:
-
     /// <summary>
     /// Starts tracking a new batch of begin/end query calls that will be resolved together
     /// </summary>

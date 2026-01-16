@@ -175,6 +175,15 @@ GPUVertexLayoutDX11::GPUVertexLayoutDX11(GPUDeviceDX11* device, const Elements& 
     }
 }
 
+void GPUQueryDataDX11::Release()
+{
+    SAFE_RELEASE(Query);
+    SAFE_RELEASE(TimerBeginQuery);
+    SAFE_RELEASE(DisjointQuery);
+    Result = 0;
+    State = Ready;
+}
+
 GPUDevice* GPUDeviceDX11::Create()
 {
     // Configuration
@@ -801,6 +810,11 @@ void GPUDeviceDX11::Dispose()
     {
         SAFE_RELEASE(RasterizerStates[i]);
     }
+    for (auto& query : _queries)
+        query.Release();
+    _queries.Clear();
+    for (auto& e : _readyQueries)
+        e.Clear();
 
     // Clear DirectX stuff
     SAFE_DELETE(_mainContext);
@@ -877,6 +891,88 @@ void GPUDeviceDX11::DrawEnd()
         infoQueue->ClearStoredMessages();
     }
 #endif
+
+    // Auto-return finished queries back to the pool
+    auto* queries = _queries.Get();
+    int32 queriesCount = _queries.Count();
+    for (int32 i = 0; i < queriesCount; i++)
+    {
+        auto& query = queries[i];
+        if (query.State == GPUQueryDataDX11::Finished)
+        {
+            query.State = GPUQueryDataDX11::Ready;
+            query.Result = 0;
+            _readyQueries[(int32)query.Type].Push(i);
+        }
+    }
+}
+
+bool GPUDeviceDX11::GetQueryResult(uint64 queryID, uint64& result, bool wait)
+{
+    if (!queryID)
+        return false;
+
+    GPUQueryDX11 q;
+    q.Raw = queryID;
+    auto& query = _queries[q.Index];
+    if (query.State == GPUQueryDataDX11::Finished)
+    {
+        // Use resolved result
+        result = query.Result;
+        return true;
+    }
+    auto context = GetIM();
+
+RETRY:
+    bool hasData;
+    if (q.Type == (uint16)GPUQueryType::Timer)
+    {
+        D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjointData;
+        hasData = context->GetData(query.DisjointQuery, &disjointData, sizeof(disjointData), 0) == S_OK;
+        if (hasData)
+        {
+            UINT64 timeBegin = 0, timeEnd = 0;
+            context->GetData(query.TimerBeginQuery, &timeBegin, sizeof(timeBegin), 0);
+            context->GetData(query.Query, &timeEnd, sizeof(timeEnd), 0);
+
+            if (disjointData.Disjoint == FALSE)
+            {
+                result = timeEnd > timeBegin ? (timeEnd - timeBegin) * 1000000ull / disjointData.Frequency : 0;
+            }
+            else
+            {
+                result = 0;
+#if !BUILD_RELEASE
+                static bool LogOnce = true;
+                if (LogOnce)
+                {
+                    LogOnce = false;
+                    LOG(Warning, "Unreliable GPU timer query detected.");
+                }
+#endif
+            }
+        }
+    }
+    else
+    {
+        hasData = context->GetData(query.Query, &result, sizeof(uint64), 0) == S_OK;
+    }
+
+    if (!hasData && wait)
+    {
+        // Wait until data is ready
+        Platform::Yield();
+        goto RETRY;
+    }
+
+    if (hasData)
+    {
+        // Query has valid data now (until auto-recycle back to pool)
+        query.State = GPUQueryDataDX11::Finished;
+        query.Result = result;
+    }
+
+    return hasData;
 }
 
 GPUTexture* GPUDeviceDX11::CreateTexture(const StringView& name)

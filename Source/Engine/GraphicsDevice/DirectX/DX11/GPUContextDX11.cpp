@@ -566,6 +566,81 @@ void GPUContextDX11::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint
     RENDER_STAT_DRAW_CALL(0, 0);
 }
 
+uint64 GPUContextDX11::BeginQuery(GPUQueryType type)
+{
+    // Allocate a pooled query
+    uint16 queryIndex;
+    static_assert(ARRAY_COUNT(_device->_readyQueries) == (int32)GPUQueryType::MAX, "Invalid query types count");
+    if (_device->_readyQueries[(int32)type].HasItems())
+    {
+        // Use query from cached list
+        queryIndex = _device->_readyQueries[(int32)type].Pop();
+    }
+    else
+    {
+        // Add a new query
+        queryIndex = _device->_queries.Count();
+        auto& query = _device->_queries.AddOne();
+        query.Type = type;
+        D3D11_QUERY_DESC queryDesc;
+        queryDesc.Query = D3D11_QUERY_TIMESTAMP;
+        queryDesc.MiscFlags = 0;
+        HRESULT hr = _device->GetDevice()->CreateQuery(&queryDesc, &query.Query);
+        LOG_DIRECTX_RESULT_WITH_RETURN(hr, 0);
+        if (type == GPUQueryType::Timer)
+        {
+            // Timer queries need additional one for begin and end disjoint
+            hr = _device->GetDevice()->CreateQuery(&queryDesc, &query.TimerBeginQuery);
+            LOG_DIRECTX_RESULT_WITH_RETURN(hr, 0);
+            queryDesc.Query = D3D11_QUERY_TIMESTAMP_DISJOINT;
+            hr = _device->GetDevice()->CreateQuery(&queryDesc, &query.DisjointQuery);
+            LOG_DIRECTX_RESULT_WITH_RETURN(hr, 0);
+        }
+    }
+    static_assert(sizeof(GPUQueryDX11) == sizeof(uint64), "Invalid query size.");
+    GPUQueryDX11 q = {};
+    q.Type = (uint16)type;
+    q.Index = queryIndex;
+    q.Padding = 1; // Ensure Raw is never 0, even for the first query
+
+    // Begin query
+    {
+        auto& query = _device->_queries[queryIndex];
+        ASSERT_LOW_LAYER(query.State == GPUQueryDataDX11::Ready);
+        ASSERT_LOW_LAYER(query.Type == type);
+        query.State = GPUQueryDataDX11::Active;
+        auto context = _device->GetIM();
+        if (type == GPUQueryType::Timer)
+        {
+            context->Begin(query.DisjointQuery);
+            context->End(query.TimerBeginQuery);
+        }
+        else
+        {
+            context->Begin(query.Query);
+        }
+    }
+
+    return q.Raw;
+}
+
+void GPUContextDX11::EndQuery(uint64 queryID)
+{
+    if (!queryID)
+        return;
+
+    // End query
+    GPUQueryDX11 q;
+    q.Raw = queryID;
+    auto& query = _device->_queries[q.Index];
+    auto context = _device->GetIM();
+    context->End(query.Query);
+    if (q.Type == (uint16)GPUQueryType::Timer)
+    {
+        context->End(query.DisjointQuery);
+    }
+}
+
 void GPUContextDX11::SetViewport(const Viewport& viewport)
 {
     _context->RSSetViewports(1, (D3D11_VIEWPORT*)&viewport);

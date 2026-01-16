@@ -1275,6 +1275,31 @@ void GPUContextDX12::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint
     RENDER_STAT_DRAW_CALL(0, 0);
 }
 
+uint64 GPUContextDX12::BeginQuery(GPUQueryType type)
+{
+    auto query = _device->AllocQuery(type);
+    if (query.Raw)
+    {
+        auto heap = _device->QueryHeaps[query.Heap];
+        if (type == GPUQueryType::Timer) // Timer queries call End twice on different queries to calculate duration between GPU time clocks
+            _commandList->EndQuery(heap->QueryHeap, heap->QueryType, query.SecondaryElement);
+        else
+            _commandList->BeginQuery(heap->QueryHeap, heap->QueryType, query.Element);
+    }
+    return query.Raw;
+}
+
+void GPUContextDX12::EndQuery(uint64 queryID)
+{
+    if (queryID)
+    {
+        GPUQueryDX12 query;
+        query.Raw = queryID;
+        auto heap = _device->QueryHeaps[query.Heap];
+        _commandList->EndQuery(heap->QueryHeap, heap->QueryType, query.Element);
+    }
+}
+
 void GPUContextDX12::SetViewport(const Viewport& viewport)
 {
     _commandList->RSSetViewports(1, (D3D12_VIEWPORT*)&viewport);

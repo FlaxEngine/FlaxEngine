@@ -160,6 +160,15 @@ public:
     {
     }
 
+    uint64 BeginQuery(GPUQueryType type) override
+    {
+        return 0;
+    }
+
+    void EndQuery(uint64 queryID) override
+    {
+    }
+
     void SetViewport(const Viewport& viewport) override
     {
     }

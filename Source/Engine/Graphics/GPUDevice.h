@@ -370,6 +370,16 @@ public:
     /// </summary>
     virtual void WaitForGPU() = 0;
 
+    /// <summary>
+    /// Reads the query result from the GPU.
+    /// </summary>
+    /// <remarks>GPU query results are short-lived, meaning that in the frame that results are ready, they won't be available in the next frame, as queries are reused.</remarks>
+    /// <param name="queryID">Query identifier returned by GPUContext::BeginQuery.</param>
+    /// <param name="result">The output result data of the query. Valid only when function returns true.</param>
+    /// <param name="wait">True if wait for the GPU to end processing commands for sync data ready. Otherwise, if query is incomplete then function will return value of false without result.</param>
+    /// <returns>True if got valid query result, otherwise false. If called with wait enabled then device failed to readback the query data.</returns>
+    virtual bool GetQueryResult(uint64 queryID, uint64& result, bool wait = false) = 0;
+
 public:
     void AddResource(GPUResource* resource);
     void RemoveResource(GPUResource* resource);

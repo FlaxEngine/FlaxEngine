@@ -197,6 +197,8 @@ public:
     void DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex) override;
     void DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
     void DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
+    uint64 BeginQuery(GPUQueryType type) override;
+    void EndQuery(uint64 queryID) override;
     void SetViewport(const Viewport& viewport) override;
     void SetScissor(const Rectangle& scissorRect) override;
     GPUPipelineState* GetState() const override;

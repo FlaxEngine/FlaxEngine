@@ -28,6 +28,24 @@ class GPUDeviceVulkan;
 class UniformBufferUploaderVulkan;
 class DescriptorPoolsManagerVulkan;
 
+/// <summary>
+/// GPU query ID packed into 64-bits.
+/// </summary>
+struct GPUQueryVulkan
+{
+    union
+    {
+        struct
+        {
+            uint16 PoolIndex;
+            uint16 QueryIndex;
+            uint16 SecondQueryIndex;
+            uint16 Dummy;
+        };
+        uint64 Raw;
+    };
+};
+
 class SemaphoreVulkan
 {
 private:
@@ -261,16 +279,17 @@ protected:
     GPUDeviceVulkan* _device;
     VkQueryPool _handle;
 
-    const VkQueryType _type;
 #if VULKAN_RESET_QUERY_POOLS
     Array<Range> _resetRanges;
 #endif
 
 public:
-    QueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, VkQueryType type);
+    QueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, GPUQueryType type);
     ~QueryPoolVulkan();
 
 public:
+    const GPUQueryType Type;
+
     inline VkQueryPool GetHandle() const
     {
         return _handle;
@@ -294,11 +313,11 @@ private:
     int32 _lastBeginIndex;
 
 public:
-    BufferedQueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, VkQueryType type);
+    BufferedQueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, GPUQueryType type);
     bool AcquireQuery(CmdBufferVulkan* cmdBuffer, uint32& resultIndex);
     void ReleaseQuery(uint32 queryIndex);
     void MarkQueryAsStarted(uint32 queryIndex);
-    bool GetResults(GPUContextVulkan* context, uint32 index, uint64& result);
+    bool GetResults(uint32 index, uint64& result);
     bool HasRoom() const;
 };
 
@@ -498,14 +517,13 @@ public:
     VkPhysicalDeviceFeatures PhysicalDeviceFeatures;
     VkPhysicalDeviceVulkan12Features PhysicalDeviceFeatures12;
 
-    Array<BufferedQueryPoolVulkan*> TimestampQueryPools;
-    Array<BufferedQueryPoolVulkan*> OcclusionQueryPools;
-
+    Array<BufferedQueryPoolVulkan*> QueryPools;
+    Array<GPUQueryVulkan> QueriesToRelease;
 #if VULKAN_RESET_QUERY_POOLS
     Array<QueryPoolVulkan*> QueriesToReset;
 #endif
 
-    BufferedQueryPoolVulkan* FindAvailableQueryPool(VkQueryType queryType);
+    int32 GetOrCreateQueryPool(GPUQueryType type);
     RenderPassVulkan* GetOrCreateRenderPass(RenderTargetLayoutVulkan& layout);
     FramebufferVulkan* GetOrCreateFramebuffer(FramebufferVulkan::Key& key, VkExtent2D& extent, uint32 layers);
     PipelineLayoutVulkan* GetOrCreateLayout(DescriptorSetLayoutInfoVulkan& key);
@@ -553,6 +571,7 @@ public:
     void DrawBegin() override;
     void Dispose() override;
     void WaitForGPU() override;
+    bool GetQueryResult(uint64 queryID, uint64& result, bool wait = false) override;
     GPUTexture* CreateTexture(const StringView& name) override;
     GPUShader* CreateShader(const StringView& name) override;
     GPUPipelineState* CreatePipelineState() override;

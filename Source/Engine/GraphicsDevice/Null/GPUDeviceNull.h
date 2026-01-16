@@ -20,18 +20,15 @@ class GPUDeviceNull : public GPUDevice
     friend GPUSwapChainNull;
 
 private:
-
     GPUContextNull* _mainContext;
     GPUAdapterNull* _adapter;
 
 public:
-
     static GPUDevice* Create();
     GPUDeviceNull();
     ~GPUDeviceNull();
 
 public:
-
     // [GPUDevice]
     GPUContext* GetMainContext() override;
     GPUAdapter* GetAdapter() const override;
@@ -41,6 +38,7 @@ public:
     void Draw() override;
     void Dispose() override;
     void WaitForGPU() override;
+    bool GetQueryResult(uint64 queryID, uint64& result, bool wait = false) override;
     GPUTexture* CreateTexture(const StringView& name) override;
     GPUShader* CreateShader(const StringView& name) override;
     GPUPipelineState* CreatePipelineState() override;

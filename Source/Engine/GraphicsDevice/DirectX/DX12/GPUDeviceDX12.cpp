@@ -555,7 +555,6 @@ GPUDeviceDX12::GPUDeviceDX12(IDXGIFactory4* dxgiFactory, GPUAdapterDX* adapter)
     , _commandQueue(nullptr)
     , _mainContext(nullptr)
     , UploadBuffer(this)
-    , TimestampQueryHeap(this, D3D12_QUERY_HEAP_TYPE_TIMESTAMP, DX12_BACK_BUFFER_COUNT * 1024)
     , Heap_CBV_SRV_UAV(this, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 4 * 1024, false)
     , Heap_RTV(this, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1 * 1024, false)
     , Heap_DSV(this, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 64, false)
@@ -883,9 +882,6 @@ bool GPUDeviceDX12::Init()
         VALIDATE_DIRECTX_CALL(_device->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(&_rootSignature)));
     }
 
-    if (TimestampQueryHeap.Init())
-        return true;
-
     // Cached command signatures
     {
         DrawIndirectCommandSignature = New<CommandSignatureDX12>(this, 1);
@@ -927,8 +923,9 @@ void GPUDeviceDX12::RenderEnd()
     // Base
     GPUDeviceDX::RenderEnd();
 
-    // Resolve the timestamp queries
-    TimestampQueryHeap.EndQueryBatchAndResolveQueryData(_mainContext);
+    // Resolve the queries
+    for (auto heap : QueryHeaps)
+        heap->EndQueryBatchAndResolveQueryData(_mainContext);
 }
 
 GPUDeviceDX12::~GPUDeviceDX12()
@@ -957,11 +954,47 @@ ID3D12CommandQueue* GPUDeviceDX12::GetCommandQueueDX12() const
     return _commandQueue->GetCommandQueue();
 }
 
+GPUQueryDX12 GPUDeviceDX12::AllocQuery(GPUQueryType type)
+{
+    // Get query heap with free space
+    int32 heapIndex = 0;
+    int32 count = GPUQueryDX12::GetQueriesCount(type);
+    for (; heapIndex < QueryHeaps.Count(); heapIndex++)
+    {
+        auto heap = QueryHeaps[heapIndex];
+        if (heap->Type == type && heap->CanAlloc(count))
+            break;
+    }
+    if (heapIndex == QueryHeaps.Count())
+    {
+        // Allocate a new query heap
+        auto heap = New<QueryHeapDX12>();
+        int32 size = type == GPUQueryType::Occlusion ? 4096 : 1024;
+        if (heap->Init(this, type, size))
+        {
+            Delete(heap);
+            return {};
+        }
+        QueryHeaps.Add(heap);
+    }
+
+    // Alloc query from the heap
+    GPUQueryDX12 query = {};
+    {
+        static_assert(sizeof(GPUQueryDX12) == sizeof(uint64), "Invalid DX12 query size.");
+        query.Type = (uint16)type;
+        query.Heap = heapIndex;
+        auto heap = QueryHeaps[heapIndex];
+        heap->Alloc(query.Element);
+        if (count == 2)
+            heap->Alloc(query.SecondaryElement);
+    }
+    return query;
+}
+
 void GPUDeviceDX12::Dispose()
 {
     GPUDeviceLock lock(this);
-
-    // Check if has been disposed already
     if (_state == DeviceState::Disposed)
         return;
 
@@ -982,7 +1015,12 @@ void GPUDeviceDX12::Dispose()
     for (auto& srv : _nullSrv)
         srv.Release();
     _nullUav.Release();
-    TimestampQueryHeap.Destroy();
+    for (auto* heap : QueryHeaps)
+    {
+        heap->Destroy();
+        Delete(heap);
+    }
+    QueryHeaps.Clear();
     DX_SAFE_RELEASE_CHECK(_rootSignature, 0);
     Heap_CBV_SRV_UAV.ReleaseGPU();
     Heap_RTV.ReleaseGPU();
@@ -1010,6 +1048,28 @@ void GPUDeviceDX12::Dispose()
 void GPUDeviceDX12::WaitForGPU()
 {
     _commandQueue->WaitForGPU();
+}
+
+bool GPUDeviceDX12::GetQueryResult(uint64 queryID, uint64& result, bool wait)
+{
+    GPUQueryDX12 query;
+    query.Raw = queryID;
+    auto heap = QueryHeaps[query.Heap];
+    int32 count = GPUQueryDX12::GetQueriesCount((GPUQueryType)query.Type);
+    if (!wait && (!heap->IsReady(query.Element) || (count != 2 || !heap->IsReady(query.SecondaryElement))))
+        return false;
+    if (query.Type == (uint16)GPUQueryType::Timer)
+    {
+        uint64 timestampFrequency = 1;
+        const uint64 timeBegin = *(uint64*)heap->Resolve(query.SecondaryElement);
+        const uint64 timeEnd = *(uint64*)heap->Resolve(query.Element, &timestampFrequency);
+        result = timeEnd > timeBegin ? (timeEnd - timeBegin) * 1000000ull / timestampFrequency : 0;
+    }
+    else
+    {
+        result = *(uint64*)heap->Resolve(query.Element);
+    }
+    return true;
 }
 
 GPUTexture* GPUDeviceDX12::CreateTexture(const StringView& name)

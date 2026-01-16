@@ -65,21 +65,13 @@ public:
     ~GPUDeviceDX12();
 
 public:
-    /// <summary>
-    /// Data uploading utility via pages.
-    /// </summary>
     UploadBufferDX12 UploadBuffer;
-
-    /// <summary>
-    /// The timestamp queries heap.
-    /// </summary>
-    QueryHeapDX12 TimestampQueryHeap;
-
     bool AllowTearing = false;
     CommandSignatureDX12* DispatchIndirectCommandSignature = nullptr;
     CommandSignatureDX12* DrawIndexedIndirectCommandSignature = nullptr;
     CommandSignatureDX12* DrawIndirectCommandSignature = nullptr;
     GPUBuffer* DummyVB = nullptr;
+    Array<QueryHeapDX12*, InlinedAllocation<8>> QueryHeaps;
 
     D3D12_CPU_DESCRIPTOR_HANDLE NullSRV(D3D12_SRV_DIMENSION dimension) const;
     D3D12_CPU_DESCRIPTOR_HANDLE NullUAV() const;
@@ -136,6 +128,8 @@ public:
         return _mainContext;
     }
 
+    GPUQueryDX12 AllocQuery(GPUQueryType type);
+
 public:
 
     DescriptorHeapPoolDX12 Heap_CBV_SRV_UAV;
@@ -185,6 +179,7 @@ public:
     void RenderEnd() override;
     void Dispose() final override;
     void WaitForGPU() override;
+    bool GetQueryResult(uint64 queryID, uint64& result, bool wait = false) override;
     GPUTexture* CreateTexture(const StringView& name) override;
     GPUShader* CreateShader(const StringView& name) override;
     GPUPipelineState* CreatePipelineState() override;

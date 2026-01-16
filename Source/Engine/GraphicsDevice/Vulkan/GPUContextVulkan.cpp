@@ -1300,6 +1300,72 @@ void GPUContextVulkan::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, ui
     RENDER_STAT_DRAW_CALL(0, 0);
 }
 
+uint64 GPUContextVulkan::BeginQuery(GPUQueryType type)
+{
+    // Check if timer queries are supported
+    if (type == GPUQueryType::Timer && _device->PhysicalDeviceLimits.timestampComputeAndGraphics != VK_TRUE)
+        return 0;
+
+    // Allocate query
+    auto poolIndex = _device->GetOrCreateQueryPool(type);
+    auto pool = _device->QueryPools[poolIndex];
+    uint32 index = 0;
+    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+    if (!pool->AcquireQuery(cmdBuffer, index))
+        return 0;
+    GPUQueryVulkan query;
+    query.PoolIndex = (uint16)poolIndex;
+    query.QueryIndex = (uint16)index;
+    query.SecondQueryIndex = 0;
+    query.Dummy = 1; // Ensure Raw is never 0, even for the first query
+
+    // Begin query
+    switch (type)
+    {
+    case GPUQueryType::Timer:
+        // Timer queries need 2 slots (begin + end)
+        pool->AcquireQuery(cmdBuffer, index);
+        query.SecondQueryIndex = (uint16)index;
+
+        vkCmdWriteTimestamp(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, pool->GetHandle(), query.QueryIndex);
+#if GPU_VULKAN_PAUSE_QUERIES
+        _cmdBufferManager->OnTimerQueryBegin(query.Raw);
+#endif
+        break;
+    case GPUQueryType::Occlusion:
+        vkCmdBeginQuery(cmdBuffer->GetHandle(), pool->GetHandle(), query.QueryIndex, 0);
+        break;
+    }
+    pool->MarkQueryAsStarted(query.QueryIndex);
+
+    return query.Raw;
+}
+
+void GPUContextVulkan::EndQuery(uint64 queryID)
+{
+    if (!queryID)
+        return;
+    GPUQueryVulkan query;
+    query.Raw = queryID;
+    auto pool = _device->QueryPools[query.PoolIndex];
+
+    // End query
+    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+    switch (pool->Type)
+    {
+    case GPUQueryType::Timer:
+        vkCmdWriteTimestamp(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool->GetHandle(), query.SecondQueryIndex);
+        pool->MarkQueryAsStarted(query.SecondQueryIndex);
+#if GPU_VULKAN_PAUSE_QUERIES
+        _cmdBufferManager->OnTimerQueryEnd(query.Raw);
+#endif
+        break;
+    case GPUQueryType::Occlusion:
+        vkCmdEndQuery(cmdBuffer->GetHandle(), pool->GetHandle(), query.QueryIndex);
+        break;
+    }
+}
+
 void GPUContextVulkan::SetViewport(const Viewport& viewport)
 {
     vkCmdSetViewport(_cmdBufferManager->GetCmdBuffer()->GetHandle(), 0, 1, (VkViewport*)&viewport);

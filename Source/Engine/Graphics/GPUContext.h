@@ -28,6 +28,7 @@ class GPUBufferView;
 class GPUVertexLayout;
 struct GPUPass;
 enum class GPUResourceAccess;
+enum class GPUQueryType;
 
 // Gets the GPU texture view. Checks if pointer is not null and texture has one or more mip levels loaded.
 #define GET_TEXTURE_VIEW_SAFE(t) (t && t->ResidentMipLevels() > 0 ? t->View() : nullptr)
@@ -553,6 +554,20 @@ public:
     /// <param name="bufferForArgs">The buffer with drawing arguments.</param>
     /// <param name="offsetForArgs">The aligned byte offset for arguments.</param>
     API_FUNCTION() virtual void DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) = 0;
+
+public:
+    /// <summary>
+    /// Begins the GPU query that will measure commands until EndQuery.
+    /// </summary>
+    /// <param name="type">Query type.</param>
+    /// <returns>Unique identifier of the query used to EndQuery and then GetQueryResult to read the query result data.</returns>
+    virtual uint64 BeginQuery(GPUQueryType type) = 0;
+
+    /// <summary>
+    /// Ends the GPU query. Use GPUDevice::GetQueryResult to read the results back.
+    /// </summary>
+    /// <param name="queryID">Query identifier returned by BeginQuery.</param>
+    virtual void EndQuery(uint64 queryID) = 0;
 
 public:
     /// <summary>
