@@ -29,6 +29,9 @@ bool Graphics::GICascadesBlending = false;
 PostProcessSettings Graphics::PostProcessSettings;
 bool Graphics::GammaColorSpace = true;
 bool Graphics::SpreadWorkload = true;
+#if !BUILD_RELEASE && !USE_EDITOR
+float Graphics::TestValue = 0.0f;
+#endif
 bool Graphics::PostProcessing::ColorGradingVolumeLUT = true;
 
 #if GRAPHICS_API_NULL

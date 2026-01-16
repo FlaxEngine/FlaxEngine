@@ -90,6 +90,16 @@ public:
     /// </summary>
     API_FIELD() static bool SpreadWorkload;
 
+#if BUILD_RELEASE && !USE_EDITOR
+    /// <summary>Unused.</summary>
+    API_FIELD() static constexpr float TestValue = 0.0f;
+#else
+    /// <summary>
+    /// Debug utility to control visual or rendering features during development. For example, can be used to branch different code paths in shaders for A/B testing (perf or quality).
+    /// </summary>
+    API_FIELD() static float TestValue;
+#endif
+
 public:
     // Post Processing effects rendering configuration.
     API_CLASS(Static, Attributes = "DebugCommand") class FLAXENGINE_API PostProcessing
