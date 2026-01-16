@@ -92,7 +92,7 @@ class GPUModelSDFTask : public GPUTask
     GPUTexture* _sdfResult;
     Float3 _xyzToLocalMul, _xyzToLocalAdd;
 #if GPU_ALLOW_PROFILE_EVENTS
-    GPUTimerQuery* _timerQuery;
+    uint64 _timerQuery = 0;
 #endif
 
     const uint32 ThreadGroupSize = 64;
@@ -124,17 +124,11 @@ public:
         , _sdfResult(sdfResult)
         , _xyzToLocalMul(xyzToLocalMul)
         , _xyzToLocalAdd(xyzToLocalAdd)
-#if GPU_ALLOW_PROFILE_EVENTS
-        , _timerQuery(GPUDevice::Instance->CreateTimerQuery())
-#endif
     {
     }
 
     ~GPUModelSDFTask()
     {
-#if GPU_ALLOW_PROFILE_EVENTS
-        SAFE_DELETE_GPU_RESOURCE(_timerQuery);
-#endif
     }
 
     Result run(GPUTasksContext* tasksContext) override
@@ -142,7 +136,7 @@ public:
         PROFILE_GPU_CPU("GPUModelSDFTask");
         GPUContext* context = tasksContext->GPU;
 #if GPU_ALLOW_PROFILE_EVENTS
-        _timerQuery->Begin();
+        _timerQuery = context->BeginQuery(GPUQueryType::Timer);
 #endif
 
         // Allocate resources
@@ -216,7 +210,7 @@ public:
         SAFE_DELETE_GPU_RESOURCE(sdfTexture);
 
 #if GPU_ALLOW_PROFILE_EVENTS
-        _timerQuery->End();
+        context->EndQuery(_timerQuery);
 #endif
         return Result::Ok;
     }
@@ -226,8 +220,9 @@ public:
         GPUTask::OnSync();
         _signal->NotifyOne();
 #if GPU_ALLOW_PROFILE_EVENTS
-        if (_timerQuery->HasResult())
-            LOG(Info, "GPU SDF generation took {} ms", Utilities::RoundTo1DecimalPlace(_timerQuery->GetResult()));
+        uint64 time;
+        if (GPUDevice::Instance->GetQueryResult(_timerQuery, time, true))
+            LOG(Info, "GPU SDF generation took {} ms", Utilities::RoundTo1DecimalPlace(time * 0.001f));
 #endif
     }
 

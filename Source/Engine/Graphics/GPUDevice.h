@@ -371,7 +371,7 @@ public:
     virtual void WaitForGPU() = 0;
 
     /// <summary>
-    /// Reads the query result from the GPU.
+    /// Reads the query result from the GPU. Timer queries return time in microseconds (1/1000 ms).
     /// </summary>
     /// <remarks>GPU query results are short-lived, meaning that in the frame that results are ready, they won't be available in the next frame, as queries are reused.</remarks>
     /// <param name="queryID">Query identifier returned by GPUContext::BeginQuery.</param>
@@ -435,9 +435,10 @@ public:
 
     /// <summary>
     /// Creates the timer query object.
+    /// [Deprecated in v1.12]
     /// </summary>
     /// <returns>The timer query.</returns>
-    virtual GPUTimerQuery* CreateTimerQuery() = 0;
+    virtual DEPRECATED("Use new BeginQuery/EndQuery on GPUContext to insert queries and GetQueryResult on GPUDevice to read the results.") GPUTimerQuery* CreateTimerQuery() = 0;
 
     /// <summary>
     /// Creates the buffer.

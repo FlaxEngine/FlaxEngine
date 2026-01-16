@@ -7,6 +7,7 @@
 /// <summary>
 /// Represents a GPU query that measures execution time of GPU operations.
 /// The query will measure any GPU operations that take place between its Begin() and End() calls.
+/// [Deprecated in v1.12]
 /// </summary>
 /// <seealso cref="GPUResource" />
 class FLAXENGINE_API GPUTimerQuery : public GPUResource
