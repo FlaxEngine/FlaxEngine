@@ -27,7 +27,7 @@ float BRDFBias;
 float WorldAntiSelfOcclusionBias;
 float EdgeFadeFactor;
 float TemporalResponse;
-float TemporalScale;
+float Dummy0;
 float RayTraceStep;
 float TemporalEffect;
 float Intensity;
@@ -243,6 +243,9 @@ float4 PS_TemporalPass(Quad_VS2PS input) : SV_Target0
 	float4 currentMax = max(currentTopLeft, max(currentTopCenter, max(currentTopRight, max(currentMiddleLeft, max(currentMiddleCenter, max(currentMiddleRight, max(currentBottomLeft, max(currentBottomCenter, currentBottomRight))))))));
 	float4 currentSum = currentTopLeft + currentTopCenter + currentTopRight + currentMiddleLeft + currentMiddleCenter + currentMiddleRight + currentBottomLeft + currentBottomCenter + currentBottomRight;
 	float4 currentAvg = currentSum / 9.0;
+
+	// Apply sharpening
+	current += (current - currentAvg) * 0.1f;
 
 	// Sample history by clamp it to the nearby colors range to reduce artifacts
 	float lumaOffset = abs(Luminance(currentAvg.rgb) - Luminance(current.rgb));

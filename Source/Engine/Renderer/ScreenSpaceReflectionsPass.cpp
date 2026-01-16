@@ -34,7 +34,7 @@ GPU_CB_STRUCT(Data {
     float WorldAntiSelfOcclusionBias;
     float EdgeFadeFactor;
     float TemporalResponse;
-    float TemporalScale;
+    float Dummy0;
     float RayTraceStep;
     float TemporalEffect;
     float Intensity;
@@ -226,7 +226,6 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     data.RayTraceStep = static_cast<float>(settings.DepthResolution) / (float)width;
     data.Intensity = settings.Intensity;
     data.FadeOutDistance = Math::Max(settings.FadeOutDistance, 100.0f);
-    data.TemporalScale = settings.TemporalScale;
     data.TemporalResponse = settings.TemporalResponse;
     data.TemporalEffect = useTemporal ? 1.0f : 0.0f;
     if (useTemporal)

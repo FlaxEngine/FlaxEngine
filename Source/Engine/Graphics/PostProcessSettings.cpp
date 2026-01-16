@@ -187,7 +187,9 @@ void ScreenSpaceReflectionsSettings::BlendWith(ScreenSpaceReflectionsSettings& o
     BLEND_FLOAT(FadeDistance);
     BLEND_BOOL(UseColorBufferMips);
     BLEND_BOOL(TemporalEffect);
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
     BLEND_FLOAT(TemporalScale);
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
     BLEND_FLOAT(TemporalResponse);
 }
 
