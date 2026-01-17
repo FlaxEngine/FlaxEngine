@@ -133,6 +133,54 @@ namespace Flax.Build.Platforms
                 // Language
                 args.Add("/l 0x0409");
 
+                string targetName = options.Target.ProjectName;
+                if (options.Target.ProjectName == "Flax" && options.Target.ConfigurationName == "Game")
+                {
+                    
+                    // Load project in workspace and set project name for meta data purposes on Windows
+                    var projectFiles = Directory.GetFiles(Globals.Root, "*.flaxproj", SearchOption.TopDirectoryOnly);
+                    if (projectFiles.Length == 0)
+                        throw new Exception("Missing project file. Folder: " + Globals.Root);
+                    else if (projectFiles.Length > 1)
+                        throw new Exception("Too many project files. Don't know which to pick. Folder: " + Globals.Root);
+                    var project = ProjectInfo.Load(projectFiles[0]);
+                    
+                    // Default values
+                    string productName = project.Name;
+                    string companyName = string.IsNullOrEmpty(project.Company) ? "MyCompany" : project.Company;
+                    string outputNameTemplate = "${PROJECT_NAME}";
+
+                    // Parse GameSettings.json
+                    var gameSettingsPath = Path.Combine(Globals.Root, "Content", "GameSettings.json");
+                    var jsonProductName = GetJsonValue(gameSettingsPath, "ProductName");
+                    if (!string.IsNullOrEmpty(jsonProductName))
+                        productName = jsonProductName;
+                    var jsonCompanyName = GetJsonValue(gameSettingsPath, "CompanyName");
+                    if (!string.IsNullOrEmpty(jsonCompanyName))
+                        companyName = jsonCompanyName;
+
+                    // Parse Build Settings.json
+                    var buildSettingsPath = Path.Combine(Globals.Root, "Content", "Settings", "Build Settings.json");
+                    var jsonOutputName = GetJsonValue(buildSettingsPath, "OutputName");
+                    if (!string.IsNullOrEmpty(jsonOutputName))
+                        outputNameTemplate = jsonOutputName;
+
+                    if (string.IsNullOrEmpty(outputNameTemplate))
+                        outputNameTemplate = "FlaxGame";
+
+                    // Token replacement matching EditorUtilities.cpp behavior
+                    string finalName = outputNameTemplate.Replace("${PROJECT_NAME}", productName, StringComparison.OrdinalIgnoreCase).Replace("${COMPANY_NAME}", companyName, StringComparison.OrdinalIgnoreCase);
+
+                    // Strip invalid filename characters
+                    foreach (char c in Path.GetInvalidFileNameChars())
+                    {
+                        finalName = finalName.Replace(c.ToString(), "");
+                    }
+
+                    targetName = finalName;
+                }
+                Log.Warning("ProjectName: " + targetName);
+
                 // Add preprocessor definitions
                 foreach (var definition in options.CompileEnv.PreprocessorDefinitions)
                     args.Add(string.Format("/D \"{0}\"", definition));
@@ -164,6 +212,33 @@ namespace Flax.Build.Platforms
             }
 
             base.LinkFiles(graph, options, outputFilePath);
+        }
+        
+        private static string GetJsonValue(string path, string propertyName)
+        {
+            if (!File.Exists(path))
+                return null;
+            var content = File.ReadAllText(path);
+            
+            // Search for "PropertyName": "Value" or "PropertyName":"Value"
+            var search = $"\"{propertyName}\"";
+            int keyIdx = content.IndexOf(search, StringComparison.Ordinal);
+            if (keyIdx == -1)
+                return null;
+
+            int colonIdx = content.IndexOf(':', keyIdx + search.Length);
+            if (colonIdx == -1)
+                return null;
+
+            int quoteStart = content.IndexOf('"', colonIdx + 1);
+            if (quoteStart == -1)
+                return null;
+            
+            int quoteEnd = content.IndexOf('"', quoteStart + 1);
+            if (quoteEnd == -1)
+                return null;
+
+            return content.Substring(quoteStart + 1, quoteEnd - quoteStart - 1);
         }
     }
 }
