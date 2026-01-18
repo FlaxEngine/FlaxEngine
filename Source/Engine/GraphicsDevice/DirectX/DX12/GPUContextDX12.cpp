@@ -1246,7 +1246,7 @@ void GPUContextDX12::DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCo
 {
     OnDrawCall();
     _commandList->DrawIndexedInstanced(indicesCount, instanceCount, startIndex, startVertex, startInstance);
-    RENDER_STAT_DRAW_CALL(0, indicesCount / 3 * instanceCount);
+    RENDER_STAT_DRAW_CALL(indicesCount * instanceCount, indicesCount / 3 * instanceCount);
 }
 
 void GPUContextDX12::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)

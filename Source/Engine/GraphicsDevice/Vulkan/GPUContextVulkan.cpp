@@ -1277,7 +1277,7 @@ void GPUContextVulkan::DrawIndexedInstanced(uint32 indicesCount, uint32 instance
     OnDrawCall();
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
     vkCmdDrawIndexed(cmdBuffer->GetHandle(), indicesCount, instanceCount, startIndex, startVertex, startInstance);
-    RENDER_STAT_DRAW_CALL(0, indicesCount / 3 * instanceCount);
+    RENDER_STAT_DRAW_CALL(indicesCount * instanceCount, indicesCount / 3 * instanceCount);
 }
 
 void GPUContextVulkan::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
