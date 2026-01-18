@@ -170,6 +170,12 @@ public:
     /// <returns>True if got the data, otherwise false.</returns>
     API_FUNCTION() static bool GetLastFrameData(float& drawTimeMs, float& presentTimeMs, RenderStatsData& statsData);
 
+    /// <summary>
+    /// Profiles next frame(s) rendering performance and dumps the results to the log (as a hierarchy structure). When using more than 1 frame, the results are averaged for more accurate profiling (especially for A/B testing).
+    /// </summary>
+    /// <param name="frames">Amount of frames to profile for more stable results (event durations are averaged). Value 0 uses default of 4 frames.</param>
+    API_FUNCTION(Attributes = "DebugCommand") static void Dump(int32 frames = 4);
+
 private:
     static void BeginFrame();
     static void OnPresent();
