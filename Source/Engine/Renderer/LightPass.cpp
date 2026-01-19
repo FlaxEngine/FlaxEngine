@@ -425,6 +425,8 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
     RenderTargetPool::Release(shadowMask);
 
     // Restore state
+    if (_depthBounds)
+        context->SetDepthBounds(0, 1);
     context->ResetRenderTarget();
     context->ResetSR();
     context->ResetCB();

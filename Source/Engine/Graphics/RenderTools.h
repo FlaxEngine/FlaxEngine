@@ -148,6 +148,7 @@ public:
     static Float2 GetDepthBounds(const RenderView& view, const Span<Float3>& points);
     static Float2 GetDepthBounds(const RenderView& view, const BoundingBox& bounds);
     static Float2 GetDepthBounds(const RenderView& view, const OrientedBoundingBox& bounds);
+    static float GetDepthBounds(const RenderView& view, const Float3& point);
     static constexpr float DepthBoundMaxBackground = 1.0f - 0.0000001f; // Skip background/sky pixels from shading
 
     // Calculates error for a given render target format to reduce floating-point precision artifacts via QuantizeColor (from Noise.hlsl).

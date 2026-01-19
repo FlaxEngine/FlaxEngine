@@ -218,9 +218,14 @@ API_ENUM(Attributes="Flags") enum class AmbientOcclusionSettingsOverride : int32
     FadeDistance = 1 << 5,
 
     /// <summary>
+    /// Overrides <see cref="AmbientOcclusionSettings.DepthResolution"/> property.
+    /// </summary>
+    DepthResolution = 1 << 6,
+
+    /// <summary>
     /// All properties.
     /// </summary>
-    All = Enabled | Intensity | Power | Radius | FadeOutDistance | FadeDistance,
+    All = Enabled | Intensity | Power | Radius | FadeOutDistance | FadeDistance | DepthResolution,
 };
 
 /// <summary>
@@ -273,6 +278,12 @@ API_STRUCT() struct FLAXENGINE_API AmbientOcclusionSettings : ISerializable
     /// </summary>
     API_FIELD(Attributes="Limit(0.0f), EditorOrder(5), PostProcessSetting((int)AmbientOcclusionSettingsOverride.FadeDistance)")
     float FadeDistance = 500.0f;
+
+    /// <summary>
+    /// The depth buffer downscale option to optimize rendering performance. Full gives better quality, but half improves performance.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(6), PostProcessSetting((int)AmbientOcclusionSettingsOverride.DepthResolution)")
+    ResolutionMode DepthResolution = ResolutionMode::Half;
 
 public:
     /// <summary>

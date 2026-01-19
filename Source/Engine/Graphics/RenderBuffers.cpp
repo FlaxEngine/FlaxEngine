@@ -83,16 +83,17 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
     if (LastFrameHalfResDepth == currentFrame)
         return HalfResDepth;
 
-    const int32 halfDepthWidth = _width / 2;
-    const int32 halfDepthHeight = _height / 2;
+    const int32 halfDepthWidth = (_width + 1) / 2;
+    const int32 halfDepthHeight = (_height + 1) / 2;
     const PixelFormat halfDepthFormat = GPU_DEPTH_BUFFER_PIXEL_FORMAT;
+    auto tempDesc = GPUTextureDescription::New2D(halfDepthWidth, halfDepthHeight, halfDepthFormat);
+    if (EnumHasAnyFlags(DepthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView))
+        tempDesc.Flags = GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil | GPUTextureFlags::ReadOnlyDepthView;
 
     LastFrameHalfResDepth = currentFrame;
     if (HalfResDepth == nullptr)
     {
         // Missing buffer
-        auto tempDesc = GPUTextureDescription::New2D(halfDepthWidth, halfDepthHeight, halfDepthFormat);
-        tempDesc.Flags = GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil;
         HalfResDepth = RenderTargetPool::Get(tempDesc);
         RENDER_TARGET_POOL_SET_NAME(HalfResDepth, "HalfResDepth");
     }
@@ -100,8 +101,6 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
     {
         // Wrong size buffer
         RenderTargetPool::Release(HalfResDepth);
-        auto tempDesc = GPUTextureDescription::New2D(halfDepthWidth, halfDepthHeight, halfDepthFormat);
-        tempDesc.Flags = GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil;
         HalfResDepth = RenderTargetPool::Get(tempDesc);
         RENDER_TARGET_POOL_SET_NAME(HalfResDepth, "HalfResDepth");
     }

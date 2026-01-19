@@ -100,6 +100,7 @@ private:
     float m_halfSizeY;
     ASSAOConstants _constantsBufferData;
     ASSAO_Settings settings;
+    bool _depthBounds;
 
 public:
 
@@ -121,8 +122,8 @@ private:
     void InitRTs(const RenderContext& renderContext);
     void ReleaseRTs(const RenderContext& renderContext);
     void UpdateCB(const RenderContext& renderContext, GPUContext* context, const int32 passIndex);
-    void PrepareDepths(const RenderContext& renderContext);
-    void GenerateSSAO(const RenderContext& renderContext);
+    void PrepareDepths(const RenderContext& renderContext, GPUTextureView* depthBufferRTV, GPUTextureView* depthBufferSRV);
+    void GenerateSSAO(const RenderContext& renderContext, GPUTextureView* depthBufferRTV);
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {

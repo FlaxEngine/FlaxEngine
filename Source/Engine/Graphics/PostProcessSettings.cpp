@@ -22,6 +22,7 @@ void AmbientOcclusionSettings::BlendWith(AmbientOcclusionSettings& other, float 
     BLEND_FLOAT(Radius);
     BLEND_FLOAT(FadeOutDistance);
     BLEND_FLOAT(FadeDistance);
+    BLEND_ENUM(DepthResolution);
 }
 
 void GlobalIlluminationSettings::BlendWith(GlobalIlluminationSettings& other, float weight)

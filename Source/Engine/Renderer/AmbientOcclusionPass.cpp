@@ -10,6 +10,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Utilities/StringConverter.h"
@@ -75,6 +76,7 @@ bool AmbientOcclusionPass::Init()
     _psNonSmartBlur = GPUDevice::Instance->CreatePipelineState();
     _psApply = GPUDevice::Instance->CreatePipelineState();
     _psApplyHalf = GPUDevice::Instance->CreatePipelineState();
+    _depthBounds = GPUDevice::Instance->Limits.HasDepthBounds && GPUDevice::Instance->Limits.HasReadOnlyDepth;
 
     // Load shader
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/SSAO"));
@@ -96,8 +98,12 @@ bool AmbientOcclusionPass::setupResources()
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, ASSAOConstants);
 
     // Create pipeline states
-    GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
-    // Prepare Depths
+    auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+    if (_depthBounds)
+    {
+        psDesc.DepthEnable = psDesc.DepthBoundsEnable = true;
+        psDesc.DepthWriteEnable = false;
+    }
     if (!_psPrepareDepths->IsValid())
     {
         psDesc.PS = shader->GetPS("PS_PrepareDepths");
@@ -110,7 +116,6 @@ bool AmbientOcclusionPass::setupResources()
         if (_psPrepareDepthsHalf->Init(psDesc))
             return true;
     }
-    // Prepare Depth Mips
     for (int32 i = 0; i < ARRAY_COUNT(_psPrepareDepthMip); i++)
     {
         if (!_psPrepareDepthMip[i]->IsValid())
@@ -122,7 +127,6 @@ bool AmbientOcclusionPass::setupResources()
                 return true;
         }
     }
-    // AO Generate
     for (int32 i = 0; i < ARRAY_COUNT(_psGenerate); i++)
     {
         if (!_psGenerate[i]->IsValid())
@@ -134,7 +138,6 @@ bool AmbientOcclusionPass::setupResources()
                 return true;
         }
     }
-    // Blur
     if (!_psSmartBlur->IsValid())
     {
         psDesc.PS = shader->GetPS("PS_SmartBlur");
@@ -153,7 +156,6 @@ bool AmbientOcclusionPass::setupResources()
         if (_psNonSmartBlur->Init(psDesc))
             return true;
     }
-    // Apply AO
     psDesc.BlendMode = BlendingMode::Multiply;
     psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::Alpha;
     if (!_psApply->IsValid())
@@ -257,6 +259,12 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
     m_sizeY = (float)renderContext.Buffers->GetHeight();
     m_halfSizeX = (m_sizeX + 1) / 2;
     m_halfSizeY = (m_sizeY + 1) / 2;
+    GPUTexture* depthBuffer = aoSettings.DepthResolution == ResolutionMode::Full ? renderContext.Buffers->DepthBuffer : renderContext.Buffers->RequestHalfResDepth(context);
+    const bool depthBufferReadOnly = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView) && _depthBounds;
+    GPUTextureView* depthBufferRTV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : nullptr;
+    GPUTextureView* depthBufferSRV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
+    Float3 depthBoundPoint = renderContext.View.Position + renderContext.View.Direction * (aoSettings.FadeOutDistance * 2.0f);
+    context->SetDepthBounds(0.0f, RenderTools::GetDepthBounds(renderContext.View, depthBoundPoint));
 
     // Request temporary buffers
     InitRTs(renderContext);
@@ -266,20 +274,22 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
     context->BindCB(SSAO_CONSTANTS_BUFFER_SLOT, _shader->GetShader()->GetCB(SSAO_CONSTANTS_BUFFER_SLOT));
 
     // Generate depths
-    PrepareDepths(renderContext);
+    PrepareDepths(renderContext, depthBufferRTV, depthBufferSRV);
 
     // Generate SSAO
-    GenerateSSAO(renderContext);
+    GenerateSSAO(renderContext, depthBufferRTV);
 
     // Apply
     context->BindSR(SSAO_TEXTURE_SLOT0, m_finalResults->ViewArray());
     context->SetViewportAndScissors(m_sizeX, m_sizeY);
     context->SetState(settings.SkipHalfPixels ? _psApplyHalf : _psApply);
-    context->SetRenderTarget(renderContext.Buffers->GBuffer0->View());
+    context->SetRenderTarget(depthBufferReadOnly ? renderContext.Buffers->DepthBuffer->ViewReadOnlyDepth() : nullptr, renderContext.Buffers->GBuffer0->View());
     context->DrawFullscreenTriangle();
 
     // Release and cleanup
     ReleaseRTs(renderContext);
+    if (_depthBounds)
+        context->SetDepthBounds(0, 1);
     context->ResetRenderTarget();
     context->ResetSR();
 }
@@ -405,14 +415,14 @@ void AmbientOcclusionPass::UpdateCB(const RenderContext& renderContext, GPUConte
     context->BindCB(SSAO_CONSTANTS_BUFFER_SLOT, cb);
 }
 
-void AmbientOcclusionPass::PrepareDepths(const RenderContext& renderContext)
+void AmbientOcclusionPass::PrepareDepths(const RenderContext& renderContext, GPUTextureView* depthBufferRTV, GPUTextureView* depthBufferSRV)
 {
     // Cache data
     auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
 
     // Bind scene depth buffer and set proper viewport
-    context->BindSR(SSAO_TEXTURE_SLOT0, renderContext.Buffers->DepthBuffer);
+    context->BindSR(SSAO_TEXTURE_SLOT0, depthBufferSRV);
     context->SetViewportAndScissors(m_halfSizeX, m_halfSizeY);
 
     // Prepare depth in half resolution
@@ -424,7 +434,7 @@ void AmbientOcclusionPass::PrepareDepths(const RenderContext& renderContext)
                 m_halfDepths[0]->View(),
                 m_halfDepths[3]->View()
             };
-            context->SetRenderTarget(nullptr, ToSpan(twoDepths, ARRAY_COUNT(twoDepths)));
+            context->SetRenderTarget(depthBufferRTV, ToSpan(twoDepths, ARRAY_COUNT(twoDepths)));
             context->SetState(_psPrepareDepthsHalf);
         }
         else
@@ -436,7 +446,7 @@ void AmbientOcclusionPass::PrepareDepths(const RenderContext& renderContext)
                 m_halfDepths[2]->View(),
                 m_halfDepths[3]->View()
             };
-            context->SetRenderTarget(nullptr, ToSpan(fourDepths, ARRAY_COUNT(fourDepths)));
+            context->SetRenderTarget(depthBufferRTV, ToSpan(fourDepths, ARRAY_COUNT(fourDepths)));
             context->SetState(_psPrepareDepths);
         }
         context->DrawFullscreenTriangle();
@@ -455,7 +465,7 @@ void AmbientOcclusionPass::PrepareDepths(const RenderContext& renderContext)
                 m_halfDepths[2]->View(0, i),
                 m_halfDepths[3]->View(0, i)
             };
-            context->SetRenderTarget(nullptr, ToSpan(fourDepthMips, ARRAY_COUNT(fourDepthMips)));
+            context->SetRenderTarget(depthBufferRTV, ToSpan(fourDepthMips, ARRAY_COUNT(fourDepthMips)));
 
             int32 mipWidth, mipHeight;
             m_halfDepths[0]->GetMipSize(i, mipWidth, mipHeight);
@@ -473,7 +483,7 @@ void AmbientOcclusionPass::PrepareDepths(const RenderContext& renderContext)
     }
 }
 
-void AmbientOcclusionPass::GenerateSSAO(const RenderContext& renderContext)
+void AmbientOcclusionPass::GenerateSSAO(const RenderContext& renderContext, GPUTextureView* depthBufferRTV)
 {
     // Cache data
     auto device = GPUDevice::Instance;
@@ -516,7 +526,7 @@ void AmbientOcclusionPass::GenerateSSAO(const RenderContext& renderContext)
             if (blurPasses == 0)
                 rts = m_finalResults->View(pass);
 
-            context->SetRenderTarget(rts);
+            context->SetRenderTarget(depthBufferRTV, rts);
             context->BindSR(SSAO_TEXTURE_SLOT0, m_halfDepths[pass]);
             context->BindSR(SSAO_TEXTURE_SLOT1, normalMapSRV);
             context->SetState(_psGenerate[settings.QualityLevel]);
@@ -537,7 +547,7 @@ void AmbientOcclusionPass::GenerateSSAO(const RenderContext& renderContext)
                 if (i == (blurPasses - 1))
                     rts = m_finalResults->View(pass);
 
-                context->SetRenderTarget(rts);
+                context->SetRenderTarget(depthBufferRTV, rts);
                 context->BindSR(SSAO_TEXTURE_SLOT0, pPingRT);
 
                 if (settings.QualityLevel == 0)
