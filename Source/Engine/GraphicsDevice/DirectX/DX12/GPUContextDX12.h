@@ -38,6 +38,9 @@ private:
 
     GPUDeviceDX12* _device;
     ID3D12GraphicsCommandList* _commandList;
+#ifdef __ID3D12GraphicsCommandList1_FWD_DEFINED__
+    ID3D12GraphicsCommandList1* _commandList1;
+#endif
     ID3D12CommandAllocator* _currentAllocator;
     GPUPipelineStateDX12* _currentState;
     GPUShaderProgramCS* _currentCompute;
@@ -201,6 +204,7 @@ public:
     void EndQuery(uint64 queryID) override;
     void SetViewport(const Viewport& viewport) override;
     void SetScissor(const Rectangle& scissorRect) override;
+    void SetDepthBounds(float minDepth, float maxDepth) override;
     GPUPipelineState* GetState() const override;
     void SetState(GPUPipelineState* state) override;
     void ResetState() override;

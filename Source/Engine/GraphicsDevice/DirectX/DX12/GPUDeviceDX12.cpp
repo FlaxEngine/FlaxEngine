@@ -548,7 +548,6 @@ static MSAALevel GetMaximumMultisampleCount(ID3D12Device* device, DXGI_FORMAT dx
 
 GPUDeviceDX12::GPUDeviceDX12(IDXGIFactory4* dxgiFactory, GPUAdapterDX* adapter)
     : GPUDeviceDX(RendererType::DirectX12, ShaderProfile::DirectX_SM6, adapter)
-    , _device(nullptr)
     , _factoryDXGI(dxgiFactory)
     , _res2Dispose(256)
     , _rootSignature(nullptr)
@@ -735,6 +734,14 @@ bool GPUDeviceDX12::Init()
 #endif
 #endif
 
+    // Get newer device interfaces
+#ifdef __ID3D12Device1_FWD_DEFINED__
+    _device->QueryInterface(IID_PPV_ARGS(&_device1));
+#endif
+#ifdef __ID3D12Device2_FWD_DEFINED__
+    _device->QueryInterface(IID_PPV_ARGS(&_device2));
+#endif
+
     // Change state
     _state = DeviceState::Created;
 
@@ -781,6 +788,11 @@ bool GPUDeviceDX12::Init()
             const MSAALevel maximumMultisampleCount = GetMaximumMultisampleCount(_device, dxgiFormat);
             FeaturesPerFormat[i] = FormatFeatures(format, maximumMultisampleCount, (FormatSupport)formatInfo.Support1);
         }
+
+        D3D12_FEATURE_DATA_D3D12_OPTIONS2 options2 = {};
+        if (SUCCEEDED(_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS2, &options2, sizeof(options2))))
+            limits.HasDepthBounds = !!options2.DepthBoundsTestSupported;
+
     }
 
 #if !BUILD_RELEASE

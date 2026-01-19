@@ -78,6 +78,7 @@ private:
     int32 _psDirtyFlag : 1;
     int32 _rtDirtyFlag : 1;
     int32 _cbDirtyFlag : 1;
+    int32 _depthBoundsEnable : 1;
 
     int32 _rtCount;
     int32 _vbCount;
@@ -193,6 +194,7 @@ public:
     void EndQuery(uint64 queryID) override;
     void SetViewport(const Viewport& viewport) override;
     void SetScissor(const Rectangle& scissorRect) override;
+    void SetDepthBounds(float minDepth, float maxDepth) override;
     GPUPipelineState* GetState() const override;
     void SetState(GPUPipelineState* state) override;
     void ResetState() override;

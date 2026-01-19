@@ -177,6 +177,10 @@ public:
     {
     }
 
+    void SetDepthBounds(float minDepth, float maxDepth) override
+    {
+    }
+
     GPUPipelineState* GetState() const override
     {
         return nullptr;

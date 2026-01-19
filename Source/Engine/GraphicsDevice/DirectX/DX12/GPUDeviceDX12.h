@@ -44,7 +44,13 @@ private:
 private:
 
     // Private Stuff
-    ID3D12Device* _device;
+    ID3D12Device* _device = nullptr;
+#ifdef __ID3D12Device1_FWD_DEFINED__
+    ID3D12Device1* _device1 = nullptr;
+#endif
+#ifdef __ID3D12Device2_FWD_DEFINED__
+    ID3D12Device2* _device2 = nullptr;
+#endif
     IDXGIFactory4* _factoryDXGI;
     CriticalSection _res2DisposeLock;
     Array<DisposeResourceEntry> _res2Dispose;
@@ -85,6 +91,12 @@ public:
     {
         return _device;
     }
+#ifdef __ID3D12Device1_FWD_DEFINED__
+    FORCE_INLINE ID3D12Device1* GetDevice1() const { return _device1; }
+#endif
+#ifdef __ID3D12Device2_FWD_DEFINED__
+    FORCE_INLINE ID3D12Device2* GetDevice2() const { return _device2; }
+#endif
 
     /// <summary>
     /// Gets DXGI factory.

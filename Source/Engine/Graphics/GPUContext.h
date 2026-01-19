@@ -617,6 +617,13 @@ public:
     /// <param name="scissorRect">The scissor rectangle (in pixels).</param>
     API_FUNCTION() virtual void SetScissor(API_PARAM(Ref) const Rectangle& scissorRect) = 0;
 
+    /// <summary>
+    /// Sets the minimum and maximum depth values for depth bounds test.
+    /// </summary>
+    /// <param name="minDepth">The minimum value for depth bound test.</param>
+    /// <param name="maxDepth">The maximum value for depth bound test.</param>
+    API_FUNCTION() virtual void SetDepthBounds(float minDepth, float maxDepth) = 0;
+
 public:
     /// <summary>
     /// Sets the graphics pipeline state.

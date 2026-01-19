@@ -140,6 +140,9 @@ GPUContextDX12::GPUContextDX12(GPUDeviceDX12* device, D3D12_COMMAND_LIST_TYPE ty
     FrameFenceValues[1] = 0;
     _currentAllocator = _device->GetCommandQueue()->RequestAllocator();
     VALIDATE_DIRECTX_CALL(device->GetDevice()->CreateCommandList(0, type, _currentAllocator, nullptr, IID_PPV_ARGS(&_commandList)));
+#ifdef __ID3D12GraphicsCommandList1_FWD_DEFINED__
+    _commandList->QueryInterface(IID_PPV_ARGS(&_commandList1));
+#endif
 #if GPU_ENABLE_RESOURCE_NAMING
     _commandList->SetName(TEXT("GPUContextDX12::CommandList"));
 #endif
@@ -1313,6 +1316,14 @@ void GPUContextDX12::SetScissor(const Rectangle& scissorRect)
     rect.top = (LONG)scissorRect.GetTop();
     rect.bottom = (LONG)scissorRect.GetBottom();
     _commandList->RSSetScissorRects(1, &rect);
+}
+
+void GPUContextDX12::SetDepthBounds(float minDepth, float maxDepth)
+{
+#ifdef __ID3D12GraphicsCommandList1_FWD_DEFINED__
+    if (_commandList1)
+        _commandList1->OMSetDepthBounds(minDepth, maxDepth);
+#endif
 }
 
 GPUPipelineState* GPUContextDX12::GetState() const

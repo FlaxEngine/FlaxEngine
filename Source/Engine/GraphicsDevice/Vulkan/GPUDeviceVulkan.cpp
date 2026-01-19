@@ -1748,6 +1748,7 @@ bool GPUDeviceVulkan::Init()
         limits.HasAppendConsumeBuffers = false; // TODO: add Append Consume buffers support for Vulkan
         limits.HasSeparateRenderTargetBlendState = true;
         limits.HasDepthClip = PhysicalDeviceFeatures.depthClamp;
+        limits.HasDepthBounds = PhysicalDeviceFeatures.depthBounds;
         limits.HasDepthAsSRV = true;
         limits.HasReadOnlyDepth = true;
         limits.HasMultisampleDepthAsSRV = !!PhysicalDeviceFeatures.sampleRateShading;

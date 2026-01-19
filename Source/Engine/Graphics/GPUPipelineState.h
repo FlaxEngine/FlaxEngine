@@ -65,6 +65,11 @@ public:
         API_FIELD() bool DepthClipEnable;
 
         /// <summary>
+        /// Enable/disable depth bounds testing (min/max values provided via GPUContext::SetDepthBounds)
+        /// </summary>
+        API_FIELD() bool DepthBoundsEnable;
+
+        /// <summary>
         /// A function that compares depth data against existing depth data
         /// </summary>
         API_FIELD() ComparisonFunc DepthFunc;

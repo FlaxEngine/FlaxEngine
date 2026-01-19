@@ -713,10 +713,16 @@ void GPUContextVulkan::OnDrawCall()
     if (_psDirtyFlag && pipelineState && (_rtDepth || _rtCount))
     {
         _psDirtyFlag = false;
-        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer()->GetHandle();
         const auto pipeline = pipelineState->GetState(_renderPass, _vertexLayout);
-        vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+        vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
         RENDER_STAT_PS_STATE_CHANGE();
+        if (_depthBoundsEnable && (!_currentState || !_currentState->DepthBoundsEnable))
+        {
+            // Auto-disable depth bounds
+            _depthBoundsEnable = false;
+            //vkCmdSetDepthBoundsTestEnable(cmdBuffer, false);
+        }
     }
 
     // Bind descriptors sets to the graphics pipeline
@@ -1379,6 +1385,17 @@ void GPUContextVulkan::SetScissor(const Rectangle& scissorRect)
     rect.extent.width = (uint32_t)scissorRect.Size.X;
     rect.extent.height = (uint32_t)scissorRect.Size.Y;
     vkCmdSetScissor(_cmdBufferManager->GetCmdBuffer()->GetHandle(), 0, 1, &rect);
+}
+
+void GPUContextVulkan::SetDepthBounds(float minDepth, float maxDepth)
+{
+    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer()->GetHandle();
+    if (!_depthBoundsEnable)
+    {
+        _depthBoundsEnable = true;
+        //vkCmdSetDepthBoundsTestEnable(cmdBuffer, true);
+    }
+    vkCmdSetDepthBounds(cmdBuffer, minDepth, maxDepth);
 }
 
 GPUPipelineState* GPUContextVulkan::GetState() const

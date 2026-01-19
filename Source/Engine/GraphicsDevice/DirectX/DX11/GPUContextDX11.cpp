@@ -97,6 +97,7 @@ void GPUContextDX11::FrameBegin()
 
     // Setup
     _flushOnDispatch = false;
+    _depthBounds = false;
     _omDirtyFlag = false;
     _uaDirtyFlag = false;
     _cbDirtyFlag = false;
@@ -658,6 +659,28 @@ void GPUContextDX11::SetScissor(const Rectangle& scissorRect)
     _context->RSSetScissorRects(1, &rect);
 }
 
+void GPUContextDX11::SetDepthBounds(float minDepth, float maxDepth)
+{
+    SetDepthBounds(true, minDepth, maxDepth);
+}
+
+void GPUContextDX11::SetDepthBounds(bool enable, float minDepth, float maxDepth)
+{
+    _depthBounds = true;
+#if COMPILE_WITH_NVAPI
+    if (EnableNvapi)
+    {
+        NvAPI_D3D11_SetDepthBoundsTest(_context, enable, minDepth, maxDepth);
+    }
+#endif
+#if COMPILE_WITH_AGS
+    if (AgsContext)
+    {
+        agsDriverExtensionsDX11_SetDepthBounds(AgsContext, _context, enable, minDepth, maxDepth);
+    }
+#endif
+}
+
 GPUPipelineState* GPUContextDX11::GetState() const
 {
     return _currentState;
@@ -1099,6 +1122,12 @@ void GPUContextDX11::flushIA()
 
 void GPUContextDX11::onDrawCall()
 {
+    if (_depthBounds && (!_currentState || !_currentState->DepthBounds))
+    {
+        // Auto-disable depth bounds
+        SetDepthBounds(false, 0.0f, 1.0f);
+    }
+
     _flushOnDispatch = false;
     flushCBs();
     flushSRVs();
