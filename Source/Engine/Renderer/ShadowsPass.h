@@ -25,6 +25,7 @@ private:
     GPUPipelineStatePermutationsPs<int32(Quality::MAX) * 2> _psShadowSpot;
     GPUPipelineStatePermutationsPs<int32(Quality::MAX) * 2> _psShadowSpotInside;
     PixelFormat _shadowMapFormat; // Cached on initialization
+    bool _depthBounds = false;
 
 public:
     /// <summary>

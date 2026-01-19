@@ -24,6 +24,7 @@ private:
     AssetReference<Model> _sphereModel;
     AssetReference<Model> _boxModel;
     AssetReference<Texture> _preIntegratedGF;
+    bool _depthBounds = false;
 
 public:
     /// <summary>

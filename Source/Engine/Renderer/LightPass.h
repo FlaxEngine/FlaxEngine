@@ -25,6 +25,7 @@ private:
     GPUPipelineState* _psClearDiffuse = nullptr;
     AssetReference<Model> _sphereModel;
     PixelFormat _shadowMaskFormat;
+    bool _depthBounds = false;
 
 public:
     /// <summary>

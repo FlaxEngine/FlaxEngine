@@ -630,6 +630,71 @@ void RenderTools::ComputeBoxModelDrawMatrix(const RenderView& view, const Orient
     resultIsViewInside = box.Contains(view.Position) == ContainmentType::Contains;
 }
 
+Float2 RenderTools::GetDepthBounds(const RenderView& view, const Float3& nearPoint, const Float3& farPoint)
+{
+    // Point closest the view
+    const Float4 nearPointClip = Matrix::TransformPosition(view.ViewProjection(), Float4(nearPoint, 1.0));
+    float nearDepth = nearPointClip.Z / nearPointClip.W;
+    if (nearDepth >= 1.0f)
+        nearDepth = 0.0f; // Near point is behind the view
+
+    // Point furthest away the view
+    const Float4 farPointClip = Matrix::TransformPosition(view.ViewProjection(), Float4(farPoint, 1.0f));
+    float farDepth = farPointClip.Z / farPointClip.W;
+    if (farDepth >= 1.0f)
+        farDepth = 1.0f; // Far point is behind the view
+
+    // Clamp within valid depth range
+    nearDepth = Math::Clamp(nearDepth, 0.0f, 1.0f);
+    farDepth = Math::Clamp(farDepth, nearDepth, 1.0f);
+
+    // TODO: swap depths when using reversed depth buffer
+    return Float2(nearDepth, farDepth);
+}
+
+Float2 RenderTools::GetDepthBounds(const RenderView& view, const BoundingSphere& bounds)
+{
+    const Float3 nearPoint = bounds.Center - bounds.Radius * view.Direction;
+    const Float3 farPoint = bounds.Center + bounds.Radius * view.Direction;
+    return GetDepthBounds(view, nearPoint, farPoint);
+}
+
+Float2 RenderTools::GetDepthBounds(const RenderView& view, const Span<Float3>& points)
+{
+    // Find min and max depth range for list of points
+    float nearDepth = 1.0f, farDepth = 0.0f;
+    for (int32 i = 0; i < points.Length(); i++)
+    {
+        const Float4 pointClip = Matrix::TransformPosition(view.ViewProjection(), Float4(points[i], 1.0));
+        float depth = pointClip.Z / pointClip.W;
+        if (depth >= 1.0f)
+            depth = 0.0f; // Point is behind the view
+        nearDepth = Math::Min(nearDepth, depth);
+        farDepth = Math::Max(farDepth, depth);
+    }
+
+    // Clamp within valid depth range
+    nearDepth = Math::Clamp(nearDepth, 0.0f, 1.0f);
+    farDepth = Math::Clamp(farDepth, nearDepth, 1.0f);
+
+    // TODO: swap depths when using reversed depth buffer
+    return Float2(nearDepth, farDepth);
+}
+
+Float2 RenderTools::GetDepthBounds(const RenderView& view, const BoundingBox& bounds)
+{
+    Float3 corners[8];
+    bounds.GetCorners(corners);
+    return GetDepthBounds(view, Span<Float3>(corners, 8));
+}
+
+Float2 RenderTools::GetDepthBounds(const RenderView& view, const OrientedBoundingBox& bounds)
+{
+    Float3 corners[8];
+    bounds.GetCorners(corners);
+    return GetDepthBounds(view, Span<Float3>(corners, 8));
+}
+
 Float3 RenderTools::GetColorQuantizationError(PixelFormat format)
 {
     Float3 mantissaBits;

@@ -473,6 +473,7 @@ bool ShadowsPass::Init()
     _psShadowPointInside.CreatePipelineStates();
     _psShadowSpot.CreatePipelineStates();
     _psShadowSpotInside.CreatePipelineStates();
+    _depthBounds = GPUDevice::Instance->Limits.HasDepthBounds && GPUDevice::Instance->Limits.HasReadOnlyDepth;
 
     // Load assets
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Shadows"));
@@ -518,6 +519,11 @@ bool ShadowsPass::setupResources()
     {
         psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
         psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RG;
+        if (_depthBounds)
+        {
+            psDesc.DepthEnable = psDesc.DepthBoundsEnable = true;
+            psDesc.DepthWriteEnable = false;
+        }
         if (_psShadowDir.Create(psDesc, shader, "PS_DirLight"))
             return true;
     }
@@ -527,6 +533,7 @@ bool ShadowsPass::setupResources()
         psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RG;
         psDesc.VS = shader->GetVS("VS_Model");
         psDesc.DepthEnable = true;
+        psDesc.DepthBoundsEnable = _depthBounds;
         psDesc.CullMode = CullMode::Normal;
         if (_psShadowPoint.Create(psDesc, shader, "PS_PointLight"))
             return true;
@@ -541,6 +548,7 @@ bool ShadowsPass::setupResources()
         psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RG;
         psDesc.VS = shader->GetVS("VS_Model");
         psDesc.DepthEnable = true;
+        psDesc.DepthBoundsEnable = _depthBounds;
         psDesc.CullMode = CullMode::Normal;
         if (_psShadowSpot.Create(psDesc, shader, "PS_SpotLight"))
             return true;
@@ -1649,7 +1657,18 @@ void ShadowsPass::RenderShadowMask(RenderContextBatch& renderContextBatch, Rende
     context->BindSR(5, shadows.ShadowsBufferView);
     context->BindSR(6, shadows.ShadowMapAtlas);
     const int32 permutationIndex = shadowQuality + (sperLight.ContactShadowsLength > ZeroTolerance ? 4 : 0);
-    context->SetRenderTarget(shadowMask);
+    GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
+    const bool depthBufferReadOnly = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView);
+    context->SetRenderTarget(depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : nullptr, shadowMask);
+    if (_depthBounds)
+    {
+        Float2 minMaxDepth;
+        if (light.IsPointLight || light.IsSpotLight)
+            minMaxDepth = RenderTools::GetDepthBounds(view, BoundingSphere(light.Position, ((RenderLocalLightData&)light).Radius));
+        else //if (light.IsDirectionalLight)
+            minMaxDepth = Float2(0.0f, RenderTools::DepthBoundMaxBackground);
+        context->SetDepthBounds(minMaxDepth.X, minMaxDepth.Y);
+    }
     if (light.IsPointLight)
     {
         context->SetState((isViewInside ? _psShadowPointInside : _psShadowPoint).Get(permutationIndex));

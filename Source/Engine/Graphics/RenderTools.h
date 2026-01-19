@@ -142,6 +142,14 @@ public:
     static void ComputeSphereModelDrawMatrix(const RenderView& view, const Float3& position, float radius, Matrix& resultWorld, bool& resultIsViewInside);
     static void ComputeBoxModelDrawMatrix(const RenderView& view, const OrientedBoundingBox& box, Matrix& resultWorld, bool& resultIsViewInside);
 
+    // Calculates depth bounds to optimize drawing with depth buffer to cover only specific range of depth. Returns min and max depth (as Float2) to pass into GPUContext::SetDepthBounds.
+    static Float2 GetDepthBounds(const RenderView& view, const Float3& nearPoint, const Float3& farPoint);
+    static Float2 GetDepthBounds(const RenderView& view, const BoundingSphere& bounds);
+    static Float2 GetDepthBounds(const RenderView& view, const Span<Float3>& points);
+    static Float2 GetDepthBounds(const RenderView& view, const BoundingBox& bounds);
+    static Float2 GetDepthBounds(const RenderView& view, const OrientedBoundingBox& bounds);
+    static constexpr float DepthBoundMaxBackground = 1.0f - 0.0000001f; // Skip background/sky pixels from shading
+
     // Calculates error for a given render target format to reduce floating-point precision artifacts via QuantizeColor (from Noise.hlsl).
     static Float3 GetColorQuantizationError(PixelFormat format);
 };

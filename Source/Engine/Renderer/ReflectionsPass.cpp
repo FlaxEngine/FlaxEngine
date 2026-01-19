@@ -166,6 +166,7 @@ bool ReflectionsPass::Init()
     _psProbe = GPUDevice::Instance->CreatePipelineState();
     _psProbeInside = GPUDevice::Instance->CreatePipelineState();
     _psCombinePass = GPUDevice::Instance->CreatePipelineState();
+    _depthBounds = GPUDevice::Instance->Limits.HasDepthBounds && GPUDevice::Instance->Limits.HasReadOnlyDepth;
 
     // Load assets
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Reflections"));
@@ -199,6 +200,7 @@ bool ReflectionsPass::setupResources()
         psDesc.PS = shader->GetPS("PS_EnvProbe");
         psDesc.CullMode = CullMode::Normal;
         psDesc.DepthEnable = true;
+        psDesc.DepthBoundsEnable = _depthBounds;
         if (_psProbe->Init(psDesc))
             return true;
         psDesc.DepthFunc = ComparisonFunc::Always;
@@ -315,11 +317,23 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
             // Calculate world*view*projection matrix
             Matrix world, wvp;
             bool isViewInside;
+            Float2 minMaxDepth;
             if (probe.BoxProjection)
-                RenderTools::ComputeBoxModelDrawMatrix(renderContext.View, OrientedBoundingBox(probe.Radius, Transform(probe.Position, probe.Orientation, probe.Scale)), world, isViewInside);
+            {
+                OrientedBoundingBox bounds(probe.Radius, Transform(probe.Position, probe.Orientation, probe.Scale));
+                minMaxDepth = RenderTools::GetDepthBounds(view, bounds);
+                RenderTools::ComputeBoxModelDrawMatrix(renderContext.View, bounds, world, isViewInside);
+            }
             else
+            {
+                minMaxDepth = RenderTools::GetDepthBounds(view, BoundingSphere(probe.Position, probe.Radius));
                 RenderTools::ComputeSphereModelDrawMatrix(renderContext.View, probe.Position, probe.Radius, world, isViewInside);
+            }
             Matrix::Multiply(world, view.ViewProjection(), wvp);
+
+            // Setup depth bounds (if device supports it)
+            if (_depthBounds)
+                context->SetDepthBounds(minMaxDepth.X, minMaxDepth.Y);
 
             // Pack probe properties buffer
             probe.SetShaderData(data.PData);
