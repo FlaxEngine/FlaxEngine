@@ -438,7 +438,7 @@ public:
     /// [Deprecated in v1.12]
     /// </summary>
     /// <returns>The timer query.</returns>
-    virtual DEPRECATED("Use new BeginQuery/EndQuery on GPUContext to insert queries and GetQueryResult on GPUDevice to read the results.") GPUTimerQuery* CreateTimerQuery() = 0;
+    DEPRECATED("Use new BeginQuery/EndQuery on GPUContext to insert queries and GetQueryResult on GPUDevice to read the results.") virtual GPUTimerQuery* CreateTimerQuery() = 0;
 
     /// <summary>
     /// Creates the buffer.
