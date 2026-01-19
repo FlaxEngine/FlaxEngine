@@ -253,6 +253,7 @@ bool ParticleMaterialShader::Load()
     psDesc = GPUPipelineState::Description::Default;
     psDesc.CullMode = CullMode::TwoSided;
     psDesc.DepthClipEnable = false;
+    psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::None;
     psDesc.PS = _shader->GetPS("PS_Depth");
     psDesc.VS = vsSprite;
     _cacheSprite.Depth.Init(psDesc);
