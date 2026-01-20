@@ -14,9 +14,6 @@
 // Enable/disable luminance filter to reduce reflections highlights
 #define SSR_REDUCE_HIGHLIGHTS 1
 
-// Enable/disable blurring SSR during sampling results and mixing with reflections buffer
-#define SSR_MIX_BLUR (!defined(PLATFORM_ANDROID) && !defined(PLATFORM_IOS) && !defined(PLATFORM_SWITCH))
-
 META_CB_BEGIN(0, Data)
 GBufferData GBuffer;
 float MaxColorMiplevel;
@@ -263,25 +260,4 @@ float4 PS_TemporalPass(Quad_VS2PS input) : SV_Target0
 	current = clamp(current, 0, HDR_CLAMP_MAX);
 
     return current;
-}
-
-// Pixel Shader for screen space reflections rendering - mix pass
-META_PS(true, FEATURE_LEVEL_ES2)
-float4 PS_MixPass(Quad_VS2PS input) : SV_Target0
-{
-	// Inputs:
-	// Texture0 - final SSR reflections buffer
-
-	float4 ssr = Texture0.SampleLevel(SamplerLinearClamp, input.TexCoord, 0);
-
-#if SSR_MIX_BLUR
-	ssr += Texture0.SampleLevel(SamplerLinearClamp, input.TexCoord + float2(0, SSRtexelSize.y), 0);
-	ssr += Texture0.SampleLevel(SamplerLinearClamp, input.TexCoord - float2(0, SSRtexelSize.y), 0);
-	ssr += Texture0.SampleLevel(SamplerLinearClamp, input.TexCoord + float2(SSRtexelSize.x, 0), 0);
-	ssr += Texture0.SampleLevel(SamplerLinearClamp, input.TexCoord - float2(SSRtexelSize.x, 0), 0);
-	ssr *= (1.0f / 5.0f);
-#endif
-
-    ssr.a = saturate(ssr.a);
-	return ssr;
 }

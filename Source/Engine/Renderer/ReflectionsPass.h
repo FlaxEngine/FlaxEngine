@@ -20,6 +20,7 @@ private:
     GPUPipelineState* _psProbe = nullptr;
     GPUPipelineState* _psProbeInside = nullptr;
     GPUPipelineState* _psCombinePass = nullptr;
+    GPUPipelineState* _psDrawSSR = nullptr;
 
     AssetReference<Model> _sphereModel;
     AssetReference<Model> _boxModel;

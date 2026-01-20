@@ -7,10 +7,15 @@
 #include "./Flax/MaterialCommon.hlsl"
 #include "./Flax/ReflectionsCommon.hlsl"
 
+// Enable/disable blurring SSR during sampling results and mixing with reflections buffer
+#define SSR_MIX_BLUR (!defined(PLATFORM_ANDROID) && !defined(PLATFORM_IOS) && !defined(PLATFORM_SWITCH))
+
 META_CB_BEGIN(0, Data)
 EnvProbeData PData;
 float4x4 WVP;
 GBufferData GBuffer;
+float2 SSRTexelSize;
+float2 Dummy0;
 META_CB_END
 
 DECLARE_GBUFFERDATA_ACCESS(GBuffer)
@@ -18,6 +23,7 @@ DECLARE_GBUFFERDATA_ACCESS(GBuffer)
 TextureCube Probe : register(t4);
 Texture2D Reflections : register(t5);
 Texture2D PreIntegratedGF : register(t6);
+Texture2D SSR : register(t7);
 
 // Vertex Shader for probe shape rendering
 META_VS(true, FEATURE_LEVEL_ES2)
@@ -75,6 +81,17 @@ float4 PS_CombinePass(Quad_VS2PS input) : SV_Target0
 
 	// Sample reflections buffer
 	float3 reflections = SAMPLE_RT(Reflections, input.TexCoord).rgb;
+
+    // Blend with Screen Space Reflections
+    float4 ssr = SSR.SampleLevel(SamplerLinearClamp, input.TexCoord, 0);
+#if SSR_MIX_BLUR
+    ssr += SSR.SampleLevel(SamplerLinearClamp, input.TexCoord + float2(0, SSRTexelSize.y), 0);
+    ssr += SSR.SampleLevel(SamplerLinearClamp, input.TexCoord - float2(0, SSRTexelSize.y), 0);
+    ssr += SSR.SampleLevel(SamplerLinearClamp, input.TexCoord + float2(SSRTexelSize.x, 0), 0);
+    ssr += SSR.SampleLevel(SamplerLinearClamp, input.TexCoord - float2(SSRTexelSize.x, 0), 0);
+    ssr *= (1.0f / 5.0f);
+#endif
+    reflections = lerp(reflections, ssr.rgb, saturate(ssr.a));
 
 	// Calculate specular color
 	float3 specularColor = GetSpecularColor(gBuffer);

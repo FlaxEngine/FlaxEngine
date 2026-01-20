@@ -30,8 +30,6 @@ private:
     GPUPipelineStatePermutationsPs<4> _psResolvePass;
     GPUPipelineState* _psCombinePass = nullptr;
     GPUPipelineState* _psTemporalPass = nullptr;
-    GPUPipelineState* _psMixPass = nullptr;
-
     AssetReference<Shader> _shader;
     AssetReference<Texture> _preIntegratedGF;
 
@@ -42,7 +40,8 @@ public:
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="reflectionsRT">Temporary buffer to use for the reflections pass</param>
     /// <param name="lightBuffer">Light buffer</param>
-    void Render(RenderContext& renderContext, GPUTextureView* reflectionsRT, GPUTextureView* lightBuffer);
+    /// <remarks>Result buffer with SSR contents to mix (null if not rendered). Free via RenderTargetPool after use.</remarks>
+    GPUTexture* Render(RenderContext& renderContext, GPUTextureView* reflectionsRT, GPUTextureView* lightBuffer);
 
 private:
 #if COMPILE_WITH_DEV_ENV

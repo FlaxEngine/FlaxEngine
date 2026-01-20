@@ -18,6 +18,8 @@ GPU_CB_STRUCT(Data {
     ShaderEnvProbeData PData;
     Matrix WVP;
     ShaderGBufferData GBuffer;
+    Float2 SSRTexelSize;
+    Float2 Dummy0;
     });
 
 #if GENERATE_GF_CACHE
@@ -229,6 +231,7 @@ void ReflectionsPass::Dispose()
     SAFE_DELETE_GPU_RESOURCE(_psProbe);
     SAFE_DELETE_GPU_RESOURCE(_psProbeInside);
     SAFE_DELETE_GPU_RESOURCE(_psCombinePass);
+    SAFE_DELETE_GPU_RESOURCE(_psDrawSSR);
     _shader = nullptr;
     _boxModel = nullptr;
     _sphereModel = nullptr;
@@ -279,8 +282,12 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     PROFILE_GPU_CPU("Reflections");
 
     // Setup data
+    const int32 width = renderContext.Buffers->GetWidth();
+    const int32 height = renderContext.Buffers->GetHeight();
     Data data;
     GBufferPass::SetInputs(view, data.GBuffer);
+    auto& ssrSettings = renderContext.List->Settings.ScreenSpaceReflections;
+    data.SSRTexelSize = Float2(1.0f / (float)RenderTools::GetResolution(width, ssrSettings.ResolvePassResolution), 1.0f / (float)RenderTools::GetResolution(height, ssrSettings.ResolvePassResolution));
 
     // Bind GBuffer inputs
     GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
@@ -358,14 +365,40 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     }
 
     // Screen Space Reflections pass
+    GPUTexture* ssrBuffer = nullptr;
     if (useSSR)
     {
-        ScreenSpaceReflectionsPass::Instance()->Render(renderContext, *reflectionsBuffer, lightBuffer);
+        ssrBuffer = ScreenSpaceReflectionsPass::Instance()->Render(renderContext, *reflectionsBuffer, lightBuffer);
+
+        // Restore
+        context->BindSR(0, renderContext.Buffers->GBuffer0);
+        context->BindSR(1, renderContext.Buffers->GBuffer1);
+        context->BindSR(2, renderContext.Buffers->GBuffer2);
+        context->BindSR(3, renderContext.Buffers->DepthBuffer);
         context->SetViewportAndScissors(renderContext.Task->GetViewport());
     }
 
     if (renderContext.View.Mode == ViewMode::Reflections)
     {
+        // If SSR is in use, then draw it with alpha blending into reflections buffer
+        if (ssrBuffer)
+        {
+            if (!_psDrawSSR)
+            {
+                _psDrawSSR = GPUDevice::Instance->CreatePipelineState();
+                auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+                psDesc.BlendMode = BlendingMode::AlphaBlend;
+                psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
+                psDesc.PS = GPUDevice::Instance->QuadShader->GetPS("PS_CopyLinear");
+                _psDrawSSR->Init(psDesc);
+            }
+            context->SetRenderTarget(*reflectionsBuffer);
+            context->BindSR(0, ssrBuffer);
+            context->SetState(_psDrawSSR);
+            context->DrawFullscreenTriangle();
+            context->ResetRenderTarget();
+        }
+
         // Override light buffer with the reflections buffer
         context->SetRenderTarget(lightBuffer);
         context->Draw(reflectionsBuffer);
@@ -376,21 +409,14 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
         context->SetRenderTarget(lightBuffer);
         context->BindCB(0, cb);
         if (probesCount == 0 || !renderProbes)
-        {
             context->UpdateCB(cb, &data);
-        }
-        if (useSSR)
-        {
-            context->BindSR(0, renderContext.Buffers->GBuffer0);
-            context->BindSR(1, renderContext.Buffers->GBuffer1);
-            context->BindSR(2, renderContext.Buffers->GBuffer2);
-            context->BindSR(3, renderContext.Buffers->DepthBuffer);
-        }
         context->BindSR(5, reflectionsBuffer);
         context->BindSR(6, _preIntegratedGF->GetTexture());
+        context->BindSR(7, ssrBuffer);
         context->SetState(_psCombinePass);
         context->DrawFullscreenTriangle();
     }
 
+    RenderTargetPool::Release(ssrBuffer);
     RenderTargetPool::Release(reflectionsBuffer);
 }
