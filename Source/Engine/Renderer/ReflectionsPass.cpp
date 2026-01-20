@@ -215,6 +215,11 @@ bool ReflectionsPass::setupResources()
     {
         psDesc.BlendMode = BlendingMode::Add;
         psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
+        if (_depthBounds)
+        {
+            psDesc.DepthEnable = psDesc.DepthBoundsEnable = true;
+            psDesc.DepthWriteEnable = false;
+        }
         psDesc.PS = shader->GetPS("PS_CombinePass");
         if (_psCombinePass->Init(psDesc))
             return true;
@@ -374,7 +379,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
         context->BindSR(0, renderContext.Buffers->GBuffer0);
         context->BindSR(1, renderContext.Buffers->GBuffer1);
         context->BindSR(2, renderContext.Buffers->GBuffer2);
-        context->BindSR(3, renderContext.Buffers->DepthBuffer);
+        context->BindSR(3, depthBufferSRV);
         context->SetViewportAndScissors(renderContext.Task->GetViewport());
     }
 
@@ -406,7 +411,13 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     else
     {
         // Combine reflections and light buffer (additive mode)
-        context->SetRenderTarget(lightBuffer);
+        if (_depthBounds)
+        {
+            context->SetRenderTarget(depthBufferRTV, lightBuffer);
+            context->SetDepthBounds(0, RenderTools::DepthBoundMaxBackground);
+        }
+        else
+            context->SetRenderTarget(lightBuffer);
         context->BindCB(0, cb);
         if (probesCount == 0 || !renderProbes)
             context->UpdateCB(cb, &data);
@@ -415,6 +426,8 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
         context->BindSR(7, ssrBuffer);
         context->SetState(_psCombinePass);
         context->DrawFullscreenTriangle();
+        if (_depthBounds)
+            context->SetDepthBounds(0, 1);
     }
 
     RenderTargetPool::Release(ssrBuffer);

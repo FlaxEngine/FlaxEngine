@@ -62,9 +62,7 @@ bool ScreenSpaceReflectionsPass::Init()
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/SSR"));
     _preIntegratedGF = Content::LoadAsyncInternal<Texture>(PRE_INTEGRATED_GF_ASSET_NAME);
     if (_shader == nullptr || _preIntegratedGF == nullptr)
-    {
         return true;
-    }
 #if COMPILE_WITH_DEV_ENV
     _shader.Get()->OnReloading.Bind<ScreenSpaceReflectionsPass, &ScreenSpaceReflectionsPass::OnShaderReloading>(this);
 #endif
@@ -248,13 +246,7 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
     }
 
     // Check if resize depth
-    GPUTexture* originalDepthBuffer = buffers->DepthBuffer;
-    GPUTexture* smallerDepthBuffer = originalDepthBuffer;
-    if (settings.DepthResolution != ResolutionMode::Full)
-    {
-        // Smaller depth buffer improves ray tracing performance
-        smallerDepthBuffer = buffers->RequestHalfResDepth(context);
-    }
+    GPUTexture* depthBufferTrace = settings.DepthResolution == ResolutionMode::Half ? buffers->RequestHalfResDepth(context) : buffers->DepthBuffer;
 
     // Prepare constants
     context->UpdateCB(cb, &data);
@@ -264,7 +256,7 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
     context->BindSR(0, buffers->GBuffer0);
     context->BindSR(1, buffers->GBuffer1);
     context->BindSR(2, buffers->GBuffer2);
-    context->BindSR(3, smallerDepthBuffer);
+    context->BindSR(3, depthBufferTrace);
 
     // Combine pass
     context->BindSR(TEXTURE0, lightBuffer);
