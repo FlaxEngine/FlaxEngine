@@ -265,6 +265,7 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
         settings.SkipHalfPixels = false;
         break;
     }
+    settings.SkipHalfPixels = true;
 
     // Cache data
     auto device = GPUDevice::Instance;
