@@ -162,10 +162,10 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     const int32 height = buffers->GetHeight();
     if (width < 4 || height < 4)
         return;
-    const int32 traceWidth = width / static_cast<int32>(settings.RayTracePassResolution);
-    const int32 traceHeight = height / static_cast<int32>(settings.RayTracePassResolution);
-    const int32 resolveWidth = width / static_cast<int32>(settings.RayTracePassResolution);
-    const int32 resolveHeight = height / static_cast<int32>(settings.RayTracePassResolution);
+    const int32 traceWidth = RenderTools::GetResolution(width, settings.RayTracePassResolution);
+    const int32 traceHeight = RenderTools::GetResolution(height, settings.RayTracePassResolution);
+    const int32 resolveWidth = RenderTools::GetResolution(width, settings.ResolvePassResolution);
+    const int32 resolveHeight = RenderTools::GetResolution(height, settings.ResolvePassResolution);
     const int32 colorBufferWidth = width / 2;
     const int32 colorBufferHeight = height / 2;
     const int32 temporalWidth = width;
@@ -352,6 +352,7 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     context->ResetRenderTarget();
 
     // Resolve Pass
+    context->SetViewportAndScissors((float)resolveWidth, (float)resolveHeight);
     context->SetRenderTarget(resolveBuffer->View());
     context->BindSR(TEXTURE0, traceBuffer->View());
     context->SetState(_psResolvePass.Get(resolvePassIndex));

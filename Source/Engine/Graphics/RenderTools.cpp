@@ -695,12 +695,12 @@ Float2 RenderTools::GetDepthBounds(const RenderView& view, const OrientedBoundin
     return GetDepthBounds(view, Span<Float3>(corners, 8));
 }
 
-float RenderTools::GetDepthBounds(const RenderView& view, const Float3& point)
+float RenderTools::GetDepthBounds(const RenderView& view, const Float3& point, bool near)
 {
     const Float4 pointClip = Matrix::TransformPosition(view.ViewProjection(), Float4(point, 1.0));
     float depth = pointClip.Z / pointClip.W;
     if (depth >= 1.0f)
-        depth = 0.0f; // Point is behind the view
+        depth = near ? 0.0f : 1.0f; // Point is behind the view
     return Math::Clamp(depth, 0.0f, 1.0f);
 }
 

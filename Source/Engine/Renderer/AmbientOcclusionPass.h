@@ -52,6 +52,8 @@ private:
         Float4 PatternRotScaleMatrices[5];
 
         Matrix ViewMatrix;
+
+        void SetPass(int32 passIndex);
         });
 
     // Effect visual settings
@@ -73,10 +75,7 @@ private:
     };
 
 private:
-
     AssetReference<Shader> _shader;
-
-    // All shader programs
     GPUPipelineState* _psPrepareDepths;
     GPUPipelineState* _psPrepareDepthsHalf;
     GPUPipelineState* _psPrepareDepthMip[SSAO_DEPTH_MIP_LEVELS - 1];
@@ -87,18 +86,7 @@ private:
     GPUPipelineState* _psApply;
     GPUPipelineState* _psApplyHalf;
 
-    // Temporary render targets used by the effect
-    GPUTexture* m_halfDepths[4];
-    GPUTexture* m_pingPongHalfResultA;
-    GPUTexture* m_pingPongHalfResultB;
-    GPUTexture* m_finalResults;
-
     // Cached data
-    float m_sizeX;
-    float m_sizeY;
-    float m_halfSizeX;
-    float m_halfSizeY;
-    ASSAOConstants _constantsBufferData;
     ASSAO_Settings settings;
     bool _depthBounds;
 
@@ -119,11 +107,7 @@ public:
 
 private:
 
-    void InitRTs(const RenderContext& renderContext);
     void ReleaseRTs(const RenderContext& renderContext);
-    void UpdateCB(const RenderContext& renderContext, GPUContext* context, const int32 passIndex);
-    void PrepareDepths(const RenderContext& renderContext, GPUTextureView* depthBufferRTV, GPUTextureView* depthBufferSRV);
-    void GenerateSSAO(const RenderContext& renderContext, GPUTextureView* depthBufferRTV);
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {

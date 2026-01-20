@@ -34,6 +34,12 @@ public:
         return Math::FloatSelect(worldMatrix.RotDeterminant(), 1, -1);
     }
 
+    template<typename ResolutionMode>
+    FORCE_INLINE static int32 GetResolution(int32 base, ResolutionMode mode)
+    {
+        return Math::DivideAndRoundUp(base, (int32)mode);
+    }
+
     /// <summary>
     /// Computes the feature level for the given shader profile.
     /// </summary>
@@ -148,7 +154,7 @@ public:
     static Float2 GetDepthBounds(const RenderView& view, const Span<Float3>& points);
     static Float2 GetDepthBounds(const RenderView& view, const BoundingBox& bounds);
     static Float2 GetDepthBounds(const RenderView& view, const OrientedBoundingBox& bounds);
-    static float GetDepthBounds(const RenderView& view, const Float3& point);
+    static float GetDepthBounds(const RenderView& view, const Float3& point, bool near);
     static constexpr float DepthBoundMaxBackground = 1.0f - 0.0000001f; // Skip background/sky pixels from shading
 
     // Calculates error for a given render target format to reduce floating-point precision artifacts via QuantizeColor (from Noise.hlsl).

@@ -15,6 +15,28 @@
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Utilities/StringConverter.h"
 
+void AmbientOcclusionPass::ASSAOConstants::SetPass(int32 passIndex)
+{
+    PassIndex = passIndex;
+    PerPassFullResCoordOffsetX = passIndex % 2;
+    PerPassFullResCoordOffsetY = passIndex / 2;
+    const int32 subPassCount = 5;
+    const float spmap[5]{ 0.0f, 1.0f, 4.0f, 3.0f, 2.0f };
+    const float a = static_cast<float>(passIndex);
+
+    for (int32 subPass = 0; subPass < subPassCount; subPass++)
+    {
+        const float b = spmap[subPass];
+
+        const float angle0 = (a + b / subPassCount) * PI * 0.5f;
+        const float ca = Math::Cos(angle0);
+        const float sa = Math::Sin(angle0);
+
+        const float scale = 1.0f + (a - 1.5f + (b - (subPassCount - 1.0f) * 0.5f) / static_cast<float>(subPassCount)) * 0.07f;
+        PatternRotScaleMatrices[subPass] = Float4(scale * ca, scale * -sa, -scale * sa, -scale * ca);
+    }
+}
+
 AmbientOcclusionPass::ASSAO_Settings::ASSAO_Settings()
 {
     Radius = 1.2f;
@@ -76,7 +98,7 @@ bool AmbientOcclusionPass::Init()
     _psNonSmartBlur = GPUDevice::Instance->CreatePipelineState();
     _psApply = GPUDevice::Instance->CreatePipelineState();
     _psApplyHalf = GPUDevice::Instance->CreatePipelineState();
-    _depthBounds = GPUDevice::Instance->Limits.HasDepthBounds && GPUDevice::Instance->Limits.HasReadOnlyDepth;
+    _depthBounds = GPUDevice::Instance->Limits.HasDepthBounds;
 
     // Load shader
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/SSAO"));
@@ -99,11 +121,6 @@ bool AmbientOcclusionPass::setupResources()
 
     // Create pipeline states
     auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
-    if (_depthBounds)
-    {
-        psDesc.DepthEnable = psDesc.DepthBoundsEnable = true;
-        psDesc.DepthWriteEnable = false;
-    }
     if (!_psPrepareDepths->IsValid())
     {
         psDesc.PS = shader->GetPS("PS_PrepareDepths");
@@ -158,6 +175,11 @@ bool AmbientOcclusionPass::setupResources()
     }
     psDesc.BlendMode = BlendingMode::Multiply;
     psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::Alpha;
+    if (_depthBounds)
+    {
+        psDesc.DepthEnable = psDesc.DepthBoundsEnable = true;
+        psDesc.DepthWriteEnable = false;
+    }
     if (!_psApply->IsValid())
     {
         psDesc.PS = shader->GetPS("PS_Apply");
@@ -223,354 +245,300 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
     switch (Graphics::SSAOQuality)
     {
     case Quality::Low:
-    {
         settings.QualityLevel = 1;
         settings.BlurPassCount = 2;
         settings.SkipHalfPixels = true;
         break;
-    }
     case Quality::Medium:
-    {
         settings.QualityLevel = 2;
         settings.BlurPassCount = 2;
         settings.SkipHalfPixels = false;
         break;
-    }
     case Quality::High:
-    {
         settings.QualityLevel = 2;
         settings.BlurPassCount = 3;
         settings.SkipHalfPixels = false;
         break;
-    }
     case Quality::Ultra:
-    {
         settings.QualityLevel = 3;
         settings.BlurPassCount = 3;
         settings.SkipHalfPixels = false;
         break;
     }
-    }
 
     // Cache data
     auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
-    m_sizeX = (float)renderContext.Buffers->GetWidth();
-    m_sizeY = (float)renderContext.Buffers->GetHeight();
-    m_halfSizeX = (m_sizeX + 1) / 2;
-    m_halfSizeY = (m_sizeY + 1) / 2;
+    float m_sizeX = (float)renderContext.Buffers->GetWidth();
+    float m_sizeY = (float)renderContext.Buffers->GetHeight();
+    float m_halfSizeX = (m_sizeX + 1) / 2;
+    float m_halfSizeY = (m_sizeY + 1) / 2;
     GPUTexture* depthBuffer = aoSettings.DepthResolution == ResolutionMode::Full ? renderContext.Buffers->DepthBuffer : renderContext.Buffers->RequestHalfResDepth(context);
-    const bool depthBufferReadOnly = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView) && _depthBounds;
-    GPUTextureView* depthBufferRTV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : nullptr;
-    GPUTextureView* depthBufferSRV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
-    Float3 depthBoundPoint = renderContext.View.Position + renderContext.View.Direction * (aoSettings.FadeOutDistance * 2.0f);
-    context->SetDepthBounds(0.0f, RenderTools::GetDepthBounds(renderContext.View, depthBoundPoint));
+    GPUTextureView* depthBufferApply = _depthBounds ? renderContext.Buffers->DepthBuffer ->ViewReadOnlyDepth() : nullptr;
 
     // Request temporary buffers
-    InitRTs(renderContext);
+    GPUTexture* m_halfDepths[4];
+    GPUTexture* m_pingPongHalfResultA;
+    GPUTexture* m_pingPongHalfResultB;
+    GPUTexture* m_finalResults;
+    {
+        GPUTextureDescription tempDesc;
+        for (int i = 0; i < 4; i++)
+        {
+#if SSAO_DEPTH_MIPS_ENABLE_AT_QUALITY_PRESET < 99
+            tempDesc = GPUTextureDescription::New2D((int32)m_halfSizeX, (int32)m_halfSizeY, 0, SSAO_DEPTH_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews);
+#else
+            tempDesc = GPUTextureDescription::New2D((int32)m_halfSizeX, (int32)m_halfSizeY, SSAO_DEPTH_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
+#endif
+            m_halfDepths[i] = RenderTargetPool::Get(tempDesc);
+            RENDER_TARGET_POOL_SET_NAME(m_halfDepths[i], "SSAO.HalfDepth");
+        }
+        tempDesc = GPUTextureDescription::New2D((int32)m_halfSizeX, (int32)m_halfSizeY, SSAO_AO_RESULT_FORMAT);
+        m_pingPongHalfResultA = RenderTargetPool::Get(tempDesc);
+        RENDER_TARGET_POOL_SET_NAME(m_pingPongHalfResultA, "SSAO.ResultsHalfA");
+        tempDesc = GPUTextureDescription::New2D((int32)m_halfSizeX, (int32)m_halfSizeY, SSAO_AO_RESULT_FORMAT);
+        m_pingPongHalfResultB = RenderTargetPool::Get(tempDesc);
+        RENDER_TARGET_POOL_SET_NAME(m_pingPongHalfResultA, "SSAO.ResultsHalfB");
+        tempDesc = GPUTextureDescription::New2D((int32)m_halfSizeX, (int32)m_halfSizeY, SSAO_AO_RESULT_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget, 4);
+        m_finalResults = RenderTargetPool::Get(tempDesc);
+        RENDER_TARGET_POOL_SET_NAME(m_finalResults, "SSAO.Results");
+    }
 
     // Update and bind constant buffer
-    UpdateCB(renderContext, context, 0);
-    context->BindCB(SSAO_CONSTANTS_BUFFER_SLOT, _shader->GetShader()->GetCB(SSAO_CONSTANTS_BUFFER_SLOT));
+    const auto cb = _shader->GetShader()->GetCB(SSAO_CONSTANTS_BUFFER_SLOT);
+    ASSAOConstants _constantsBufferData;
+    {
+        const auto& view = renderContext.View;
+        const float nearPlane = view.Near;
+        const float farPlane = view.Far;
+        const Matrix& proj = view.Projection;
+
+        Platform::MemoryClear(&_constantsBufferData, sizeof(_constantsBufferData));
+        GBufferPass::SetInputs(view, _constantsBufferData.GBuffer);
+        Matrix::Transpose(view.View, _constantsBufferData.ViewMatrix);
+
+        _constantsBufferData.ViewportPixelSize = Float2(1.0f / m_sizeX, 1.0f / m_sizeY);
+        _constantsBufferData.HalfViewportPixelSize = Float2(1.0f / m_halfSizeX, 1.0f / m_halfSizeY);
+
+        _constantsBufferData.Viewport2xPixelSize = Float2(_constantsBufferData.ViewportPixelSize.X * 2.0f, _constantsBufferData.ViewportPixelSize.Y * 2.0f);
+        _constantsBufferData.Viewport2xPixelSize_x_025 = Float2(_constantsBufferData.Viewport2xPixelSize.X * 0.25f, _constantsBufferData.Viewport2xPixelSize.Y * 0.25f);
+
+        const float tanHalfFOVY = 1.0f / proj.Values[1][1];
+
+        _constantsBufferData.EffectRadius = Math::Clamp(settings.Radius / farPlane * 10000.0f, 0.0f, 100000.0f);
+        _constantsBufferData.EffectShadowStrength = Math::Clamp(settings.ShadowMultiplier * 4.3f, 0.0f, 10.0f);
+        _constantsBufferData.EffectShadowPow = Math::Clamp(settings.ShadowPower, 0.0f, 10.0f);
+        _constantsBufferData.EffectHorizonAngleThreshold = Math::Clamp(settings.HorizonAngleThreshold, 0.0f, 1.0f);
+
+        // Effect fade params
+        const float fadeOutFrom = Math::Min(settings.FadeOutFrom, farPlane - 200);
+        const float fadeOutTo = Math::Min(settings.FadeOutTo, farPlane - 50);
+        _constantsBufferData.EffectMaxDistance = fadeOutTo / farPlane;
+        _constantsBufferData.EffectFadeOutMul = 1.0f / ((fadeOutTo - fadeOutFrom) / farPlane);
+        _constantsBufferData.EffectFadeOutAdd = (-fadeOutFrom / farPlane) * _constantsBufferData.EffectFadeOutMul;
+        _constantsBufferData.EffectNearFadeMul = farPlane / (settings.Radius * 2400.0f);
+
+        // 1.2 seems to be around the best trade off - 1.0 means on-screen radius will stop/slow growing when the camera is at 1.0 distance, so, depending on FOV, basically filling up most of the screen
+        // This setting is viewspace-dependent and not screen size dependent intentionally, so that when you change FOV the effect stays (relatively) similar.
+        float effectSamplingRadiusNearLimit = (settings.Radius * 1.2f);
+
+        // if the depth precision is switched to 32bit float, this can be set to something closer to 1 (0.9999 is fine)
+        _constantsBufferData.DepthPrecisionOffsetMod = 0.9992f;
+
+        // Special settings for lowest quality level - just nerf the effect a tiny bit
+        if (settings.QualityLevel == 0)
+        {
+            //_constantsBufferData.EffectShadowStrength *= 0.9f;
+            effectSamplingRadiusNearLimit *= 1.50f;
+        }
+        effectSamplingRadiusNearLimit /= tanHalfFOVY; // to keep the effect same regardless of FOV
+        if (settings.SkipHalfPixels)
+            _constantsBufferData.EffectRadius *= 0.8f;
+
+        _constantsBufferData.EffectSamplingRadiusNearLimitRec = 1.0f / effectSamplingRadiusNearLimit;
+
+        _constantsBufferData.NegRecEffectRadius = -1.0f / _constantsBufferData.EffectRadius;
+
+        _constantsBufferData.SetPass(0);
+
+        _constantsBufferData.DetailAOStrength = settings.DetailShadowStrength;
+        _constantsBufferData.InvSharpness = Math::Clamp(1.0f - settings.Sharpness, 0.0f, 1.0f);
+
+        context->UpdateCB(cb, &_constantsBufferData);
+        context->BindCB(SSAO_CONSTANTS_BUFFER_SLOT, cb);
+    }
 
     // Generate depths
-    PrepareDepths(renderContext, depthBufferRTV, depthBufferSRV);
-
-    // Generate SSAO
-    GenerateSSAO(renderContext, depthBufferRTV);
-
-    // Apply
-    context->BindSR(SSAO_TEXTURE_SLOT0, m_finalResults->ViewArray());
-    context->SetViewportAndScissors(m_sizeX, m_sizeY);
-    context->SetState(settings.SkipHalfPixels ? _psApplyHalf : _psApply);
-    context->SetRenderTarget(depthBufferReadOnly ? renderContext.Buffers->DepthBuffer->ViewReadOnlyDepth() : nullptr, renderContext.Buffers->GBuffer0->View());
-    context->DrawFullscreenTriangle();
-
-    // Release and cleanup
-    ReleaseRTs(renderContext);
-    if (_depthBounds)
-        context->SetDepthBounds(0, 1);
-    context->ResetRenderTarget();
-    context->ResetSR();
-}
-
-void AmbientOcclusionPass::InitRTs(const RenderContext& renderContext)
-{
-    GPUTextureDescription tempDesc;
-    for (int i = 0; i < 4; i++)
     {
-#if SSAO_DEPTH_MIPS_ENABLE_AT_QUALITY_PRESET < 99
-        tempDesc = GPUTextureDescription::New2D((int32)m_halfSizeX, (int32)m_halfSizeY, 0, SSAO_DEPTH_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews);
-#else
-        tempDesc = GPUTextureDescription::New2D((int32)m_halfSizeX, (int32)m_halfSizeY, SSAO_DEPTH_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
-#endif
-        m_halfDepths[i] = RenderTargetPool::Get(tempDesc);
-        RENDER_TARGET_POOL_SET_NAME(m_halfDepths[i], "SSAO.HalfDepth");
-    }
-    tempDesc = GPUTextureDescription::New2D((int32)m_halfSizeX, (int32)m_halfSizeY, SSAO_AO_RESULT_FORMAT);
-    m_pingPongHalfResultA = RenderTargetPool::Get(tempDesc);
-    RENDER_TARGET_POOL_SET_NAME(m_pingPongHalfResultA, "SSAO.ResultsHalfA");
-    tempDesc = GPUTextureDescription::New2D((int32)m_halfSizeX, (int32)m_halfSizeY, SSAO_AO_RESULT_FORMAT);
-    m_pingPongHalfResultB = RenderTargetPool::Get(tempDesc);
-    RENDER_TARGET_POOL_SET_NAME(m_pingPongHalfResultA, "SSAO.ResultsHalfB");
-    tempDesc = GPUTextureDescription::New2D((int32)m_halfSizeX, (int32)m_halfSizeY, SSAO_AO_RESULT_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget, 4);
-    m_finalResults = RenderTargetPool::Get(tempDesc);
-    RENDER_TARGET_POOL_SET_NAME(m_finalResults, "SSAO.Results");
-}
+        PROFILE_GPU("Depths");
 
-void AmbientOcclusionPass::ReleaseRTs(const RenderContext& renderContext)
-{
-    for (int i = 0; i < 4; i++)
-        RenderTargetPool::Release(m_halfDepths[i]);
-    for (int i = 0; i < 4; i++)
-        m_halfDepths[i] = nullptr;
-    RenderTargetPool::Release(m_pingPongHalfResultA);
-    m_pingPongHalfResultA = nullptr;
-    RenderTargetPool::Release(m_pingPongHalfResultB);
-    m_pingPongHalfResultB = nullptr;
-    RenderTargetPool::Release(m_finalResults);
-    m_finalResults = nullptr;
-}
+        // Bind scene depth buffer and set proper viewport
+        context->BindSR(SSAO_TEXTURE_SLOT0, depthBuffer);
+        context->SetViewportAndScissors(m_halfSizeX, m_halfSizeY);
 
-void AmbientOcclusionPass::UpdateCB(const RenderContext& renderContext, GPUContext* context, const int32 passIndex)
-{
-    // Cache data
-    const auto& view = renderContext.View;
-    const float nearPlane = view.Near;
-    const float farPlane = view.Far;
-    const Matrix& proj = view.Projection;
-
-    Platform::MemoryClear(&_constantsBufferData, sizeof(_constantsBufferData));
-    GBufferPass::SetInputs(view, _constantsBufferData.GBuffer);
-    Matrix::Transpose(view.View, _constantsBufferData.ViewMatrix);
-
-    _constantsBufferData.ViewportPixelSize = Float2(1.0f / m_sizeX, 1.0f / m_sizeY);
-    _constantsBufferData.HalfViewportPixelSize = Float2(1.0f / m_halfSizeX, 1.0f / m_halfSizeY);
-
-    _constantsBufferData.Viewport2xPixelSize = Float2(_constantsBufferData.ViewportPixelSize.X * 2.0f, _constantsBufferData.ViewportPixelSize.Y * 2.0f);
-    _constantsBufferData.Viewport2xPixelSize_x_025 = Float2(_constantsBufferData.Viewport2xPixelSize.X * 0.25f, _constantsBufferData.Viewport2xPixelSize.Y * 0.25f);
-
-    const float tanHalfFOVY = 1.0f / proj.Values[1][1];
-
-    _constantsBufferData.EffectRadius = Math::Clamp(settings.Radius / farPlane * 10000.0f, 0.0f, 100000.0f);
-    _constantsBufferData.EffectShadowStrength = Math::Clamp(settings.ShadowMultiplier * 4.3f, 0.0f, 10.0f);
-    _constantsBufferData.EffectShadowPow = Math::Clamp(settings.ShadowPower, 0.0f, 10.0f);
-    _constantsBufferData.EffectHorizonAngleThreshold = Math::Clamp(settings.HorizonAngleThreshold, 0.0f, 1.0f);
-
-    // Effect fade params
-    const float fadeOutFrom = Math::Min(settings.FadeOutFrom, farPlane - 200);
-    const float fadeOutTo = Math::Min(settings.FadeOutTo, farPlane - 50);
-    _constantsBufferData.EffectMaxDistance = fadeOutTo / farPlane;
-    _constantsBufferData.EffectFadeOutMul = 1.0f / ((fadeOutTo - fadeOutFrom) / farPlane);
-    _constantsBufferData.EffectFadeOutAdd = (-fadeOutFrom / farPlane) * _constantsBufferData.EffectFadeOutMul;
-    _constantsBufferData.EffectNearFadeMul = farPlane / (settings.Radius * 2400.0f);
-
-    // 1.2 seems to be around the best trade off - 1.0 means on-screen radius will stop/slow growing when the camera is at 1.0 distance, so, depending on FOV, basically filling up most of the screen
-    // This setting is viewspace-dependent and not screen size dependent intentionally, so that when you change FOV the effect stays (relatively) similar.
-    float effectSamplingRadiusNearLimit = (settings.Radius * 1.2f);
-
-    // if the depth precision is switched to 32bit float, this can be set to something closer to 1 (0.9999 is fine)
-    _constantsBufferData.DepthPrecisionOffsetMod = 0.9992f;
-
-    // Special settings for lowest quality level - just nerf the effect a tiny bit
-    if (settings.QualityLevel == 0)
-    {
-        //_constantsBufferData.EffectShadowStrength *= 0.9f;
-        effectSamplingRadiusNearLimit *= 1.50f;
-    }
-    effectSamplingRadiusNearLimit /= tanHalfFOVY; // to keep the effect same regardless of FOV
-    if (settings.SkipHalfPixels)
-        _constantsBufferData.EffectRadius *= 0.8f;
-
-    _constantsBufferData.EffectSamplingRadiusNearLimitRec = 1.0f / effectSamplingRadiusNearLimit;
-
-    _constantsBufferData.NegRecEffectRadius = -1.0f / _constantsBufferData.EffectRadius;
-
-    _constantsBufferData.PerPassFullResCoordOffsetX = passIndex % 2;
-    _constantsBufferData.PerPassFullResCoordOffsetY = passIndex / 2;
-
-    _constantsBufferData.DetailAOStrength = settings.DetailShadowStrength;
-    _constantsBufferData.InvSharpness = Math::Clamp(1.0f - settings.Sharpness, 0.0f, 1.0f);
-    _constantsBufferData.PassIndex = passIndex;
-
-    const int32 subPassCount = 5;
-    const float spmap[5]{ 0.0f, 1.0f, 4.0f, 3.0f, 2.0f };
-    const float a = static_cast<float>(passIndex);
-
-    for (int32 subPass = 0; subPass < subPassCount; subPass++)
-    {
-        const float b = spmap[subPass];
-
-        const float angle0 = (a + b / subPassCount) * PI * 0.5f;
-        const float ca = Math::Cos(angle0);
-        const float sa = Math::Sin(angle0);
-
-        const float scale = 1.0f + (a - 1.5f + (b - (subPassCount - 1.0f) * 0.5f) / static_cast<float>(subPassCount)) * 0.07f;
-        _constantsBufferData.PatternRotScaleMatrices[subPass] = Float4(scale * ca, scale * -sa, -scale * sa, -scale * ca);
-    }
-
-    // Update buffer
-    const auto cb = _shader->GetShader()->GetCB(SSAO_CONSTANTS_BUFFER_SLOT);
-    context->UpdateCB(cb, &_constantsBufferData);
-    context->BindCB(SSAO_CONSTANTS_BUFFER_SLOT, cb);
-}
-
-void AmbientOcclusionPass::PrepareDepths(const RenderContext& renderContext, GPUTextureView* depthBufferRTV, GPUTextureView* depthBufferSRV)
-{
-    // Cache data
-    auto device = GPUDevice::Instance;
-    auto context = device->GetMainContext();
-
-    // Bind scene depth buffer and set proper viewport
-    context->BindSR(SSAO_TEXTURE_SLOT0, depthBufferSRV);
-    context->SetViewportAndScissors(m_halfSizeX, m_halfSizeY);
-
-    // Prepare depth in half resolution
-    {
-        if (settings.SkipHalfPixels)
+        // Prepare depth in half resolution
         {
-            GPUTextureView* twoDepths[] =
+            if (settings.SkipHalfPixels)
             {
-                m_halfDepths[0]->View(),
-                m_halfDepths[3]->View()
-            };
-            context->SetRenderTarget(depthBufferRTV, ToSpan(twoDepths, ARRAY_COUNT(twoDepths)));
-            context->SetState(_psPrepareDepthsHalf);
-        }
-        else
-        {
-            GPUTextureView* fourDepths[] =
+                GPUTextureView* twoDepths[] =
+                {
+                    m_halfDepths[0]->View(),
+                    m_halfDepths[3]->View()
+                };
+                context->SetRenderTarget(nullptr, ToSpan(twoDepths, ARRAY_COUNT(twoDepths)));
+                context->SetState(_psPrepareDepthsHalf);
+            }
+            else
             {
-                m_halfDepths[0]->View(),
-                m_halfDepths[1]->View(),
-                m_halfDepths[2]->View(),
-                m_halfDepths[3]->View()
-            };
-            context->SetRenderTarget(depthBufferRTV, ToSpan(fourDepths, ARRAY_COUNT(fourDepths)));
-            context->SetState(_psPrepareDepths);
-        }
-        context->DrawFullscreenTriangle();
-        context->ResetRenderTarget();
-    }
-
-    // Only do mipmaps for higher quality levels (not beneficial on quality level 1, and detrimental on quality level 0)
-    if (settings.QualityLevel > 1 && SSAO_DEPTH_MIPS_ENABLE_AT_QUALITY_PRESET < 99)
-    {
-        for (int i = 1; i < SSAO_DEPTH_MIP_LEVELS; i++)
-        {
-            GPUTextureView* fourDepthMips[] =
-            {
-                m_halfDepths[0]->View(0, i),
-                m_halfDepths[1]->View(0, i),
-                m_halfDepths[2]->View(0, i),
-                m_halfDepths[3]->View(0, i)
-            };
-            context->SetRenderTarget(depthBufferRTV, ToSpan(fourDepthMips, ARRAY_COUNT(fourDepthMips)));
-
-            int32 mipWidth, mipHeight;
-            m_halfDepths[0]->GetMipSize(i, mipWidth, mipHeight);
-            context->SetViewportAndScissors((float)mipWidth, (float)mipHeight);
-
-            context->BindSR(SSAO_TEXTURE_SLOT0, m_halfDepths[0]->View(0, i - 1));
-            context->BindSR(SSAO_TEXTURE_SLOT1, m_halfDepths[1]->View(0, i - 1));
-            context->BindSR(SSAO_TEXTURE_SLOT2, m_halfDepths[2]->View(0, i - 1));
-            context->BindSR(SSAO_TEXTURE_SLOT3, m_halfDepths[3]->View(0, i - 1));
-
-            context->SetState(_psPrepareDepthMip[i - 1]);
-            context->DrawFullscreenTriangle();
-            context->ResetRenderTarget();
-        }
-    }
-}
-
-void AmbientOcclusionPass::GenerateSSAO(const RenderContext& renderContext, GPUTextureView* depthBufferRTV)
-{
-    // Cache data
-    auto device = GPUDevice::Instance;
-    auto context = device->GetMainContext();
-    const auto normalMapSRV = renderContext.Buffers->GBuffer1;
-
-    // Prepare
-    context->SetViewportAndScissors(m_halfSizeX, m_halfSizeY);
-
-    // Render AO interleaved in checkerboard pattern
-    for (int32 pass = 0; pass < 4; pass++)
-    {
-        if (settings.SkipHalfPixels && ((pass == 1) || (pass == 2)))
-            continue;
-
-        int32 blurPasses = settings.BlurPassCount;
-        blurPasses = Math::Min(blurPasses, SSAO_MAX_BLUR_PASS_COUNT);
-
-        if (settings.QualityLevel == 3)
-        {
-            blurPasses = Math::Max(1, blurPasses);
-        }
-        else if (settings.QualityLevel == 0)
-        {
-            // just one blur pass allowed for minimum quality 
-            blurPasses = Math::Min(1, settings.BlurPassCount);
-        }
-
-        if (pass > 0)
-            UpdateCB(renderContext, context, pass);
-
-        auto pPingRT = m_pingPongHalfResultA->View();
-        auto pPongRT = m_pingPongHalfResultB->View();
-
-        // Generate Pass
-        {
-            auto rts = pPingRT;
-
-            // no blur?
-            if (blurPasses == 0)
-                rts = m_finalResults->View(pass);
-
-            context->SetRenderTarget(depthBufferRTV, rts);
-            context->BindSR(SSAO_TEXTURE_SLOT0, m_halfDepths[pass]);
-            context->BindSR(SSAO_TEXTURE_SLOT1, normalMapSRV);
-            context->SetState(_psGenerate[settings.QualityLevel]);
+                GPUTextureView* fourDepths[] =
+                {
+                    m_halfDepths[0]->View(),
+                    m_halfDepths[1]->View(),
+                    m_halfDepths[2]->View(),
+                    m_halfDepths[3]->View()
+                };
+                context->SetRenderTarget(nullptr, ToSpan(fourDepths, ARRAY_COUNT(fourDepths)));
+                context->SetState(_psPrepareDepths);
+            }
             context->DrawFullscreenTriangle();
             context->ResetRenderTarget();
         }
 
-        // Blur Pass
-        if (blurPasses > 0)
+        // Only do mipmaps for higher quality levels (not beneficial on quality level 1, and detrimental on quality level 0)
+        if (settings.QualityLevel > 1 && SSAO_DEPTH_MIPS_ENABLE_AT_QUALITY_PRESET < 99)
         {
-            int wideBlursRemaining = Math::Max(0, blurPasses - 2);
-
-            for (int i = 0; i < blurPasses; i++)
+            for (int i = 1; i < SSAO_DEPTH_MIP_LEVELS; i++)
             {
-                auto rts = pPongRT;
-
-                // Last pass?
-                if (i == (blurPasses - 1))
-                    rts = m_finalResults->View(pass);
-
-                context->SetRenderTarget(depthBufferRTV, rts);
-                context->BindSR(SSAO_TEXTURE_SLOT0, pPingRT);
-
-                if (settings.QualityLevel == 0)
+                GPUTextureView* fourDepthMips[] =
                 {
-                    context->SetState(_psNonSmartBlur);
-                }
-                else
-                {
-                    if (wideBlursRemaining > 0)
-                    {
-                        context->SetState(_psSmartBlurWide);
-                        wideBlursRemaining--;
-                    }
-                    else
-                    {
-                        context->SetState(_psSmartBlur);
-                    }
-                }
+                    m_halfDepths[0]->View(0, i),
+                    m_halfDepths[1]->View(0, i),
+                    m_halfDepths[2]->View(0, i),
+                    m_halfDepths[3]->View(0, i)
+                };
+                context->SetRenderTarget(nullptr, ToSpan(fourDepthMips, ARRAY_COUNT(fourDepthMips)));
+
+                int32 mipWidth, mipHeight;
+                m_halfDepths[0]->GetMipSize(i, mipWidth, mipHeight);
+                context->SetViewportAndScissors((float)mipWidth, (float)mipHeight);
+
+                context->BindSR(SSAO_TEXTURE_SLOT0, m_halfDepths[0]->View(0, i - 1));
+                context->BindSR(SSAO_TEXTURE_SLOT1, m_halfDepths[1]->View(0, i - 1));
+                context->BindSR(SSAO_TEXTURE_SLOT2, m_halfDepths[2]->View(0, i - 1));
+                context->BindSR(SSAO_TEXTURE_SLOT3, m_halfDepths[3]->View(0, i - 1));
+
+                context->SetState(_psPrepareDepthMip[i - 1]);
                 context->DrawFullscreenTriangle();
                 context->ResetRenderTarget();
-
-                Swap(pPingRT, pPongRT);
             }
         }
     }
+
+    // Generate SSAO (interleaved in checkerboard pattern)
+    {
+        context->SetViewportAndScissors(m_halfSizeX, m_halfSizeY);
+        for (int32 pass = 0; pass < 4; pass++)
+        {
+            if (settings.SkipHalfPixels && ((pass == 1) || (pass == 2)))
+                continue;
+
+            int32 blurPasses = settings.BlurPassCount;
+            blurPasses = Math::Min(blurPasses, SSAO_MAX_BLUR_PASS_COUNT);
+
+            if (settings.QualityLevel == 3)
+            {
+                blurPasses = Math::Max(1, blurPasses);
+            }
+            else if (settings.QualityLevel == 0)
+            {
+                // just one blur pass allowed for minimum quality 
+                blurPasses = Math::Min(1, settings.BlurPassCount);
+            }
+
+            if (pass > 0)
+            {
+                // Update constants
+                _constantsBufferData.SetPass(pass);
+                context->UpdateCB(cb, &_constantsBufferData);
+            }
+
+            auto pPingRT = m_pingPongHalfResultA->View();
+            auto pPongRT = m_pingPongHalfResultB->View();
+
+            // Generate Pass
+            {
+                PROFILE_GPU("Generate");
+                auto rts = pPingRT;
+
+                // no blur?
+                if (blurPasses == 0)
+                    rts = m_finalResults->View(pass);
+
+                context->SetRenderTarget(nullptr, rts);
+                context->BindSR(SSAO_TEXTURE_SLOT0, m_halfDepths[pass]);
+                context->BindSR(SSAO_TEXTURE_SLOT1, renderContext.Buffers->GBuffer1);
+                context->SetState(_psGenerate[settings.QualityLevel]);
+                context->DrawFullscreenTriangle();
+                context->ResetRenderTarget();
+            }
+
+            // Blur Pass
+            if (blurPasses > 0)
+            {
+                PROFILE_GPU("Blur");
+                int wideBlursRemaining = Math::Max(0, blurPasses - 2);
+
+                for (int i = 0; i < blurPasses; i++)
+                {
+                    auto rts = pPongRT;
+
+                    // Last pass?
+                    if (i == (blurPasses - 1))
+                        rts = m_finalResults->View(pass);
+
+                    context->SetRenderTarget(nullptr, rts);
+                    context->BindSR(SSAO_TEXTURE_SLOT0, pPingRT);
+
+                    if (settings.QualityLevel == 0)
+                    {
+                        context->SetState(_psNonSmartBlur);
+                    }
+                    else
+                    {
+                        if (wideBlursRemaining > 0)
+                        {
+                            context->SetState(_psSmartBlurWide);
+                            wideBlursRemaining--;
+                        }
+                        else
+                        {
+                            context->SetState(_psSmartBlur);
+                        }
+                    }
+                    context->DrawFullscreenTriangle();
+                    context->ResetRenderTarget();
+
+                    Swap(pPingRT, pPongRT);
+                }
+            }
+        }
+    }
+
+    // Apply
+    Float3 depthBoundPoint = renderContext.View.Position + renderContext.View.Direction * (aoSettings.FadeOutDistance * 2.0f);
+    context->SetDepthBounds(0.0f, RenderTools::GetDepthBounds(renderContext.View, depthBoundPoint, false));
+    context->BindSR(SSAO_TEXTURE_SLOT0, m_finalResults->ViewArray());
+    context->SetViewportAndScissors(m_sizeX, m_sizeY);
+    context->SetState(settings.SkipHalfPixels ? _psApplyHalf : _psApply);
+    context->SetRenderTarget(depthBufferApply, renderContext.Buffers->GBuffer0->View());
+    context->DrawFullscreenTriangle();
+
+    // Release and cleanup
+    for (int i = 0; i < 4; i++)
+        RenderTargetPool::Release(m_halfDepths[i]);
+    RenderTargetPool::Release(m_pingPongHalfResultA);
+    RenderTargetPool::Release(m_pingPongHalfResultB);
+    RenderTargetPool::Release(m_finalResults);
+    context->ResetRenderTarget();
+    context->ResetSR();
 }

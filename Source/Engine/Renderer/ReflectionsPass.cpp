@@ -350,8 +350,11 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
                 sphereMesh.Render(context);
         }
 
+        // Cleanup
         context->UnBindSR(4);
         context->ResetRenderTarget();
+        if (_depthBounds)
+            context->SetDepthBounds(0, 1);
     }
 
     // Screen Space Reflections pass

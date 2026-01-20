@@ -1802,7 +1802,7 @@ API_STRUCT() struct FLAXENGINE_API ScreenSpaceReflectionsSettings : ISerializabl
     /// The raycast resolution. Full gives better quality, but half improves performance.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(25), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.ResolvePassResolution)")
-    ResolutionMode ResolvePassResolution = ResolutionMode::Full;
+    ResolutionMode ResolvePassResolution = ResolutionMode::Half;
 
     /// <summary>
     /// The number of rays used to resolve the reflection color. Higher values provide better quality but reduce effect performance. Use value of 1 for the best performance at cost of quality.

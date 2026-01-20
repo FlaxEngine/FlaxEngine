@@ -2,6 +2,7 @@
 
 #include "RenderBuffers.h"
 #include "Engine/Core/Config/GraphicsSettings.h"
+#include "RenderTools.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/RenderTargetPool.h"
@@ -83,8 +84,8 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
     if (LastFrameHalfResDepth == currentFrame)
         return HalfResDepth;
 
-    const int32 halfDepthWidth = (_width + 1) / 2;
-    const int32 halfDepthHeight = (_height + 1) / 2;
+    const int32 halfDepthWidth = RenderTools::GetResolution(_width, ResolutionMode::Half);
+    const int32 halfDepthHeight = RenderTools::GetResolution(_height, ResolutionMode::Half);
     const PixelFormat halfDepthFormat = GPU_DEPTH_BUFFER_PIXEL_FORMAT;
     auto tempDesc = GPUTextureDescription::New2D(halfDepthWidth, halfDepthHeight, halfDepthFormat);
     if (EnumHasAnyFlags(DepthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView))
