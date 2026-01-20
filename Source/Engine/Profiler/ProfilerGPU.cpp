@@ -408,7 +408,7 @@ void GraphicsDumping::Print()
 
         // Timing and percentage of the frame
         const float percentage = item.Time * 100.0f / draw.Time;
-        sb.AppendFormat(TEXT("{:>4}%  {:>5}ms "), Utilities::RoundTo1DecimalPlace(percentage), Utilities::RoundTo2DecimalPlaces(item.Time));
+        sb.AppendFormat(TEXT("{:>5.2f}%  {:>5.2f}ms "), Utilities::RoundTo1DecimalPlace(percentage), Utilities::RoundTo2DecimalPlaces(item.Time));
 
         // Indent based on depth
         for (int32 depth = 1; depth < item.Depth; depth++)
