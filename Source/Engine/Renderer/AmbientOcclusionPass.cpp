@@ -270,12 +270,12 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
     // Cache data
     auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
-    float m_sizeX = (float)renderContext.Buffers->GetWidth();
-    float m_sizeY = (float)renderContext.Buffers->GetHeight();
-    float m_halfSizeX = (m_sizeX + 1) / 2;
-    float m_halfSizeY = (m_sizeY + 1) / 2;
+    int32 m_sizeX = renderContext.Buffers->GetWidth();
+    int32 m_sizeY = renderContext.Buffers->GetHeight();
+    int32 m_halfSizeX = (m_sizeX + 1) / 2;
+    int32 m_halfSizeY = (m_sizeY + 1) / 2;
     GPUTexture* depthBuffer = aoSettings.DepthResolution == ResolutionMode::Full ? renderContext.Buffers->DepthBuffer : renderContext.Buffers->RequestHalfResDepth(context);
-    GPUTextureView* depthBufferApply = _depthBounds ? renderContext.Buffers->DepthBuffer ->ViewReadOnlyDepth() : nullptr;
+    GPUTextureView* depthBufferApply = _depthBounds ? renderContext.Buffers->DepthBuffer->ViewReadOnlyDepth() : nullptr;
 
     // Request temporary buffers
     GPUTexture* m_halfDepths[4];
@@ -287,20 +287,20 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
         for (int i = 0; i < 4; i++)
         {
 #if SSAO_DEPTH_MIPS_ENABLE_AT_QUALITY_PRESET < 99
-            tempDesc = GPUTextureDescription::New2D((int32)m_halfSizeX, (int32)m_halfSizeY, 0, SSAO_DEPTH_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews);
+            tempDesc = GPUTextureDescription::New2D(m_halfSizeX, m_halfSizeY, 0, SSAO_DEPTH_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews);
 #else
-            tempDesc = GPUTextureDescription::New2D((int32)m_halfSizeX, (int32)m_halfSizeY, SSAO_DEPTH_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
+            tempDesc = GPUTextureDescription::New2D(m_halfSizeX, m_halfSizeY, SSAO_DEPTH_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
 #endif
             m_halfDepths[i] = RenderTargetPool::Get(tempDesc);
             RENDER_TARGET_POOL_SET_NAME(m_halfDepths[i], "SSAO.HalfDepth");
         }
-        tempDesc = GPUTextureDescription::New2D((int32)m_halfSizeX, (int32)m_halfSizeY, SSAO_AO_RESULT_FORMAT);
+        tempDesc = GPUTextureDescription::New2D(m_halfSizeX, m_halfSizeY, SSAO_AO_RESULT_FORMAT);
         m_pingPongHalfResultA = RenderTargetPool::Get(tempDesc);
         RENDER_TARGET_POOL_SET_NAME(m_pingPongHalfResultA, "SSAO.ResultsHalfA");
-        tempDesc = GPUTextureDescription::New2D((int32)m_halfSizeX, (int32)m_halfSizeY, SSAO_AO_RESULT_FORMAT);
+        tempDesc = GPUTextureDescription::New2D(m_halfSizeX, m_halfSizeY, SSAO_AO_RESULT_FORMAT);
         m_pingPongHalfResultB = RenderTargetPool::Get(tempDesc);
         RENDER_TARGET_POOL_SET_NAME(m_pingPongHalfResultA, "SSAO.ResultsHalfB");
-        tempDesc = GPUTextureDescription::New2D((int32)m_halfSizeX, (int32)m_halfSizeY, SSAO_AO_RESULT_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget, 4);
+        tempDesc = GPUTextureDescription::New2D(m_halfSizeX, m_halfSizeY, SSAO_AO_RESULT_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget, 4);
         m_finalResults = RenderTargetPool::Get(tempDesc);
         RENDER_TARGET_POOL_SET_NAME(m_finalResults, "SSAO.Results");
     }
@@ -318,11 +318,12 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
         GBufferPass::SetInputs(view, _constantsBufferData.GBuffer);
         Matrix::Transpose(view.View, _constantsBufferData.ViewMatrix);
 
-        _constantsBufferData.ViewportPixelSize = Float2(1.0f / m_sizeX, 1.0f / m_sizeY);
-        _constantsBufferData.HalfViewportPixelSize = Float2(1.0f / m_halfSizeX, 1.0f / m_halfSizeY);
+        _constantsBufferData.ViewportPixelSize = Float2(1.0f / (float)m_sizeX, 1.0f / (float)m_sizeY);
+        _constantsBufferData.HalfViewportPixelSize = Float2(1.0f / (float)m_halfSizeX, 1.0f / (float)m_halfSizeY);
 
         _constantsBufferData.Viewport2xPixelSize = Float2(_constantsBufferData.ViewportPixelSize.X * 2.0f, _constantsBufferData.ViewportPixelSize.Y * 2.0f);
         _constantsBufferData.Viewport2xPixelSize_x_025 = Float2(_constantsBufferData.Viewport2xPixelSize.X * 0.25f, _constantsBufferData.Viewport2xPixelSize.Y * 0.25f);
+        _constantsBufferData.InputDepthScale = aoSettings.DepthResolution == ResolutionMode::Full ? 2 : 1;
 
         const float tanHalfFOVY = 1.0f / proj.Values[1][1];
 
@@ -375,7 +376,7 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
 
         // Bind scene depth buffer and set proper viewport
         context->BindSR(SSAO_TEXTURE_SLOT0, depthBuffer);
-        context->SetViewportAndScissors(m_halfSizeX, m_halfSizeY);
+        context->SetViewportAndScissors((float)m_halfSizeX, (float)m_halfSizeY);
 
         // Prepare depth in half resolution
         {
@@ -437,7 +438,7 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
 
     // Generate SSAO (interleaved in checkerboard pattern)
     {
-        context->SetViewportAndScissors(m_halfSizeX, m_halfSizeY);
+        context->SetViewportAndScissors((float)m_halfSizeX, (float)m_halfSizeY);
         for (int32 pass = 0; pass < 4; pass++)
         {
             if (settings.SkipHalfPixels && ((pass == 1) || (pass == 2)))
@@ -526,10 +527,9 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
     }
 
     // Apply
-    Float3 depthBoundPoint = renderContext.View.Position + renderContext.View.Direction * (aoSettings.FadeOutDistance * 2.0f);
-    context->SetDepthBounds(0.0f, RenderTools::GetDepthBounds(renderContext.View, depthBoundPoint, false));
+    context->SetDepthBounds(0.0f, RenderTools::GetDepthBounds(renderContext.View, aoSettings.FadeOutDistance, false));
     context->BindSR(SSAO_TEXTURE_SLOT0, m_finalResults->ViewArray());
-    context->SetViewportAndScissors(m_sizeX, m_sizeY);
+    context->SetViewportAndScissors((float)m_sizeX, (float)m_sizeY);
     context->SetState(settings.SkipHalfPixels ? _psApplyHalf : _psApply);
     context->SetRenderTarget(depthBufferApply, renderContext.Buffers->GBuffer0->View());
     context->DrawFullscreenTriangle();

@@ -1,5 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+#define SSR_SKIP_INVALID_CHECK 1
+
 #include "./Flax/Common.hlsl"
 #include "./Flax/LightingCommon.hlsl"
 #include "./Flax/ReflectionsCommon.hlsl"
@@ -13,7 +15,7 @@
 #define SSR_REDUCE_HIGHLIGHTS 1
 
 // Enable/disable blurring SSR during sampling results and mixing with reflections buffer
-#define SSR_MIX_BLUR 1
+#define SSR_MIX_BLUR (!defined(PLATFORM_ANDROID) && !defined(PLATFORM_IOS) && !defined(PLATFORM_SWITCH))
 
 META_CB_BEGIN(0, Data)
 GBufferData GBuffer;
@@ -273,13 +275,11 @@ float4 PS_MixPass(Quad_VS2PS input) : SV_Target0
 	float4 ssr = Texture0.SampleLevel(SamplerLinearClamp, input.TexCoord, 0);
 
 #if SSR_MIX_BLUR
-
 	ssr += Texture0.SampleLevel(SamplerLinearClamp, input.TexCoord + float2(0, SSRtexelSize.y), 0);
 	ssr += Texture0.SampleLevel(SamplerLinearClamp, input.TexCoord - float2(0, SSRtexelSize.y), 0);
 	ssr += Texture0.SampleLevel(SamplerLinearClamp, input.TexCoord + float2(SSRtexelSize.x, 0), 0);
 	ssr += Texture0.SampleLevel(SamplerLinearClamp, input.TexCoord - float2(SSRtexelSize.x, 0), 0);
 	ssr *= (1.0f / 5.0f);
-
 #endif
 
     ssr.a = saturate(ssr.a);

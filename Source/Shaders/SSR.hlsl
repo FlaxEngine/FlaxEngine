@@ -58,9 +58,11 @@ float3 ScreenSpaceReflectionDirection(float2 uv, GBufferSample gBuffer, float3 v
 // Returns: xy: hitUV, z: hitMask, where hitUV is the result UV of hit pixel, hitMask is the normalized sample weight (0 if no hit).
 float3 TraceScreenSpaceReflection(float2 uv, GBufferSample gBuffer, Texture2D depthBuffer, float3 viewPos, float4x4 viewMatrix, float4x4 viewProjectionMatrix, float stepSize, float maxSamples = 20, bool temporal = false, float temporalTime = 0.0f, float worldAntiSelfOcclusionBias = 0.1f, float brdfBias = 0.82f, float drawDistance = 5000.0f, float roughnessThreshold = 0.4f, float edgeFade = 0.1f)
 {
+#ifndef SSR_SKIP_INVALID_CHECK
     // Reject invalid pixels
     if (gBuffer.ShadingModel == SHADING_MODEL_UNLIT || gBuffer.Roughness > roughnessThreshold || gBuffer.ViewPos.z > drawDistance)
         return 0;
+#endif
 
     // Calculate view space normal vector
     float3 normalVS = mul(gBuffer.Normal, (float3x3)viewMatrix);

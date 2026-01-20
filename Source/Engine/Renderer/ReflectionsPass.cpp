@@ -362,15 +362,6 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     {
         ScreenSpaceReflectionsPass::Instance()->Render(renderContext, *reflectionsBuffer, lightBuffer);
         context->SetViewportAndScissors(renderContext.Task->GetViewport());
-
-        /*
-        // DEBUG_CODE
-        context->RestoreViewport();
-        context->SetRenderTarget(output);
-        context->Draw(reflectionsRT);
-        return;
-        // DEBUG_CODE
-        */
     }
 
     if (renderContext.View.Mode == ViewMode::Reflections)

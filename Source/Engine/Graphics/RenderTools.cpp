@@ -704,6 +704,12 @@ float RenderTools::GetDepthBounds(const RenderView& view, const Float3& point, b
     return Math::Clamp(depth, 0.0f, 1.0f);
 }
 
+float RenderTools::GetDepthBounds(const RenderView& view, float viewDistance, bool near)
+{
+    Float3 point = view.Position + view.Direction * (viewDistance * 2.0f);
+    return GetDepthBounds(view, point, near);
+}
+
 Float3 RenderTools::GetColorQuantizationError(PixelFormat format)
 {
     Float3 mantissaBits;

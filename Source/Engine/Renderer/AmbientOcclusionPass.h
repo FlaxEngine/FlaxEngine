@@ -31,6 +31,9 @@ private:
         int32 PassIndex;
         float EffectMaxDistance;
 
+        Float3 Padding0;
+        uint32 InputDepthScale;
+
         Float2 Viewport2xPixelSize;
         Float2 Viewport2xPixelSize_x_025;
 

@@ -166,14 +166,14 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     const int32 traceHeight = RenderTools::GetResolution(height, settings.RayTracePassResolution);
     const int32 resolveWidth = RenderTools::GetResolution(width, settings.ResolvePassResolution);
     const int32 resolveHeight = RenderTools::GetResolution(height, settings.ResolvePassResolution);
-    const int32 colorBufferWidth = width / 2;
-    const int32 colorBufferHeight = height / 2;
-    const int32 temporalWidth = width;
-    const int32 temporalHeight = height;
+    const int32 colorBufferWidth = RenderTools::GetResolution(width, ResolutionMode::Half);
+    const int32 colorBufferHeight = RenderTools::GetResolution(height, ResolutionMode::Half);
+    const int32 temporalWidth = resolveWidth;
+    const int32 temporalHeight = resolveHeight;
     const auto colorBufferMips = MipLevelsCount(colorBufferWidth, colorBufferHeight);
 
     // Prepare buffers
-    auto tempDesc = GPUTextureDescription::New2D(width / 2, height / 2, 0, PixelFormat::R11G11B10_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews);
+    auto tempDesc = GPUTextureDescription::New2D(colorBufferWidth, colorBufferHeight, 0, PixelFormat::R11G11B10_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews);
     auto colorBuffer0 = RenderTargetPool::Get(tempDesc);
     RENDER_TARGET_POOL_SET_NAME(colorBuffer0, "SSR.ColorBuffer0");
     // TODO: maybe allocate colorBuffer1 smaller because mip0 is not used (the same as PostProcessingPass for Bloom), keep in sync to use the same buffer in frame
@@ -305,9 +305,8 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
         // and improves resolve pass performance (faster color texture lookups, less cache misses)
         // Also for high surface roughness values it adds more blur to the reflection tail which looks more realistic.
 
-        const auto filterMode = MultiScaler::FilterMode::GaussianBlur9;
-
         // Downscale with gaussian blur
+        auto filterMode = PLATFORM_ANDROID || PLATFORM_IOS || PLATFORM_SWITCH ? MultiScaler::FilterMode::GaussianBlur5 : MultiScaler::FilterMode::GaussianBlur9;
         for (int32 mipLevel = 1; mipLevel < colorBufferMips; mipLevel++)
         {
             const int32 mipWidth = Math::Max(colorBufferWidth >> mipLevel, 1);
