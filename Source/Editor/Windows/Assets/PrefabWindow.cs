@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Xml;
 using FlaxEditor.Content;
 using FlaxEditor.CustomEditors;
@@ -42,6 +43,7 @@ namespace FlaxEditor.Windows.Assets
         private bool _focusCamera;
         private bool _liveReload = false;
         private bool _isUpdatingSelection, _isScriptsReloading;
+        private Guid[] _restoreSelection = [];
         private DateTime _modifiedTime = DateTime.MinValue;
         private bool _isDropping = false;
 
@@ -73,7 +75,7 @@ namespace FlaxEditor.Windows.Assets
         /// <summary>
         /// The local scene nodes graph used by the prefab editor.
         /// </summary>
-        public readonly LocalSceneGraph Graph;
+        public LocalSceneGraph Graph;
 
         /// <summary>
         /// Indication of if the prefab window selection is locked on specific objects.
@@ -307,10 +309,8 @@ namespace FlaxEditor.Windows.Assets
             return false;
         }
 
-        /// <inheritdoc />
-        protected override void OnScriptsReloadBegin()
+        private void OnScriptsReloadBegin()
         {
-            base.OnScriptsReloadBegin();
             _isScriptsReloading = true;
 
             if (_asset == null || !_asset.IsLoaded)
@@ -333,11 +333,52 @@ namespace FlaxEditor.Windows.Assets
                 }
             }
 
+            // Restore current selection after scripts reload
+            _restoreSelection = Selection.OfType<ActorNode>().Select(x => x.Actor.PrefabObjectID).ToArray();
+
             // Cleanup
             Deselect();
-            Graph.MainActor = null;
+            _tree.RemoveChild(Graph.Root.TreeNode);
+            Graph.Dispose();
+            Graph = null;
             _viewport.Prefab = null;
             _undo?.Clear(); // TODO: maybe don't clear undo?
+        }
+
+        /// <inheritdoc />
+        protected override void OnScriptsReloadEnd()
+        {
+            base.OnScriptsReloadEnd();
+
+            // Flush the old nodes from cache
+            Graph = new LocalSceneGraph(new CustomRootNode(this));
+            Graph.Root.TreeNode.Expand(true);
+            _tree.AddChild(Graph.Root.TreeNode);
+
+            // Restore graph and previous selections
+            _viewport.Prefab = _asset;
+            Graph.MainActor = _viewport.Instance;
+            var nodes = Graph.Root.GetAllChildActorNodes().ToDictionary(x => x.Actor.PrefabObjectID, y => y);
+            foreach (var id in _restoreSelection)
+            {
+                if (nodes.TryGetValue(id, out var node) && node != null)
+                    Selection.Add(node);
+            }
+            if (Selection.Any())
+                OnSelectionChanged([]);
+        }
+
+        /// <inheritdoc />
+        public override void OnItemDispose(ContentItem item)
+        {
+            if (item != _item)
+                return;
+
+            if (_viewport.Prefab == null)
+            {
+                // When hot-reload is in progress, keep the window open
+                return;
+            }
 
             Close();
         }
@@ -370,6 +411,7 @@ namespace FlaxEditor.Windows.Assets
                 _viewport.SetInitialUIMode(value);
             else
                 _viewport.SetInitialUIMode(_viewport._hasUILinked);
+            _viewport.UIModeToggled -= OnUIModeToggled;
             _viewport.UIModeToggled += OnUIModeToggled;
             _viewport.CreateViewScalingOptions();
             Graph.MainActor = _viewport.Instance;
@@ -456,7 +498,7 @@ namespace FlaxEditor.Windows.Assets
 
             OnPrefabOpened();
             _focusCamera = true;
-            _undo.Clear();
+            _undo?.Clear();
             ClearEditedFlag();
 
             base.OnAssetLoaded();
@@ -466,7 +508,8 @@ namespace FlaxEditor.Windows.Assets
         protected override void UnlinkItem()
         {
             Deselect();
-            Graph.MainActor = null;
+            if (Graph != null)
+                Graph.MainActor = null;
             _viewport.Prefab = null;
             _undo?.Clear();
 
