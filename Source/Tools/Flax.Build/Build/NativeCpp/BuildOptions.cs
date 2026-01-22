@@ -105,7 +105,34 @@ namespace Flax.Build.NativeCpp
 
         internal string GetLibFolder(string nugetPath)
         {
-            return Path.Combine(nugetPath, Name, Version, "lib", Framework);
+            var libFolder = Path.Combine(nugetPath, Name, Version, "lib", Framework);
+            if (Directory.Exists(libFolder))
+                return libFolder;
+
+            // Try to find nearest framework folder
+            if (Framework.StartsWith("net"))
+            {
+                var baseVersion = int.Parse(Framework.Substring(3, Framework.IndexOf('.') - 3));
+                for (int version = baseVersion - 1; version >= 5; version--)
+                {
+                    var framework = $"net{version}.0";
+                    libFolder = Path.Combine(nugetPath, Name, Version, "lib", framework);
+                    if (Directory.Exists(libFolder))
+                    {
+                        Framework = framework;
+                        return libFolder;
+                    }
+                }
+            }
+
+            Log.Error($"Missing NuGet package \"{Name}, {Version}, {Framework}\" (nuget: {nugetPath})");
+            return string.Empty;
+        }
+
+        internal string GetNuspecPath(string nugetPath)
+        {
+            var files = Directory.GetFiles(Path.Combine(nugetPath, Name, Version), "*.nuspec", SearchOption.TopDirectoryOnly);
+            return files[0];
         }
 
         internal string GetLibPath(string nugetPath, string libFolder = null)

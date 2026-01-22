@@ -440,6 +440,7 @@ namespace Flax.Build
                 {
                     // Find all packages to deploy (incl. dependencies) and restore if needed
                     var nugetPath = Utilities.GetNugetPackagesPath();
+                    Log.Verbose($"Deploying NuGet packages from {nugetPath}");
                     var restoreOnce = true;
                     var nugetFiles = new HashSet<string>();
                     foreach (var reference in targetBuildOptions.NugetPackageReferences)
@@ -452,17 +453,7 @@ namespace Flax.Build
                             restoreOnce = false;
                         }
 
-                        // Deploy library
-                        var path = reference.GetLibPath(nugetPath, folder);
-                        nugetFiles.Add(path);
-
-                        // Copy additional files (if included)
-                        path = Path.ChangeExtension(path, "xml");
-                        if (File.Exists(path))
-                            nugetFiles.Add(path);
-                        path = Path.ChangeExtension(path, "pdb");
-                        if (targetBuildOptions.Configuration != TargetConfiguration.Release && File.Exists(path))
-                            nugetFiles.Add(path);
+                        DeployNuGetPackage(nugetPath, targetBuildOptions, nugetFiles, reference, folder);
                     }
 
                     // Copy libraries from all referenced packages to the output folder
@@ -504,6 +495,50 @@ namespace Flax.Build
             // Restore packages using dotnet CLI (synchronous to prevent task ordering issues on C# library building)
             Log.Info($"Restoring NuGet packages for target {target.Name}");
             Utilities.Run(Utilities.GetDotNetPath(), $"restore \"{csprojPath}\"", null, null, Utilities.RunOptions.DefaultTool);
+        }
+
+        private static void DeployNuGetPackage(string nugetPath, BuildOptions targetBuildOptions, HashSet<string> nugetFiles, NugetPackage package, string folder = null)
+        {
+            // Deploy library
+            var path = package.GetLibPath(nugetPath, folder);
+            if (!File.Exists(path))
+                return;
+            Log.Verbose($"Deploying NuGet package {package.Name}, {package.Version}, {package.Framework}");
+            nugetFiles.Add(path);
+
+            // Copy additional files (if included)
+            path = Path.ChangeExtension(path, "xml");
+            if (File.Exists(path))
+                nugetFiles.Add(path);
+            path = Path.ChangeExtension(path, "pdb");
+            if (targetBuildOptions.Configuration != TargetConfiguration.Release && File.Exists(path))
+                nugetFiles.Add(path);
+
+            // Read package dependencies
+            var nuspecFile = package.GetNuspecPath(nugetPath);
+            if (File.Exists(nuspecFile))
+            {
+                var doc = System.Xml.Linq.XDocument.Load(nuspecFile);
+                var root = (System.Xml.Linq.XElement)doc.FirstNode;
+                var metadataNode = root.Descendants().First(x => x.Name.LocalName== "metadata");
+                var dependenciesNode = metadataNode.Descendants().First(x => x.Name.LocalName == "dependencies");
+                var groupNode = dependenciesNode.Descendants().FirstOrDefault(x => x.Attribute("targetFramework")?.Value == package.Framework);
+                if (groupNode == null)
+                {
+                    Log.Warning($"Cannot find framework {package.Framework} inside NuGet package {package.Name}, {package.Version}");
+                    return;
+                }
+                foreach (var dependency in groupNode.Descendants())
+                {
+                    if (dependency.Name.LocalName != "dependency")
+                        continue;
+
+                    // Deploy dependency package
+                    var dependencyId = dependency.Attribute("id").Value;
+                    var dependencyVersion = dependency.Attribute("version").Value;
+                    DeployNuGetPackage(nugetPath, targetBuildOptions, nugetFiles, new NugetPackage { Name = dependencyId, Version = dependencyVersion, Framework = package.Framework } );
+                }
+            }
         }
     }
 }
