@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
 
@@ -423,6 +424,66 @@ namespace Flax.Build
             }
 
             return failed;
+        }
+
+        private static void DeployFiles(TaskGraph graph, Target target, BuildOptions targetBuildOptions, string outputPath)
+        {
+            using (new ProfileEventScope("DeployFiles"))
+            {
+                foreach (var srcFile in targetBuildOptions.OptionalDependencyFiles.Where(File.Exists).Union(targetBuildOptions.DependencyFiles))
+                {
+                    var dstFile = Path.Combine(outputPath, Path.GetFileName(srcFile));
+                    graph.AddCopyFile(dstFile, srcFile);
+                }
+
+                if (targetBuildOptions.NugetPackageReferences.Any())
+                {
+                    var nugetPath = Utilities.GetNugetPackagesPath();
+                    var restore = true;
+                    foreach (var reference in targetBuildOptions.NugetPackageReferences)
+                    {
+                        var path = reference.GetLibPath(nugetPath);
+                        if (!File.Exists(path) && restore)
+                        {
+                            RestoreNugetPackages(graph, target, targetBuildOptions);
+                            restore = false;
+                        }
+                        var dstFile = Path.Combine(outputPath, Path.GetFileName(path));
+                        graph.AddCopyFile(dstFile, path);
+                    }
+                }
+            }
+        }
+
+        private static void RestoreNugetPackages(TaskGraph graph, Target target, BuildOptions targetBuildOptions)
+        {
+            // Generate a dummy csproj file to restore package from it
+            var csprojPath = Path.Combine(targetBuildOptions.IntermediateFolder, "nuget.restore.csproj");
+            var dotnetSdk = DotNetSdk.Instance;
+            var csProjectFileContent = new StringBuilder();
+            csProjectFileContent.AppendLine("<Project Sdk=\"Microsoft.NET.Sdk\">");
+            csProjectFileContent.AppendLine("  <PropertyGroup>");
+            csProjectFileContent.AppendLine($"    <TargetFramework>net{dotnetSdk.Version.Major}.{dotnetSdk.Version.Minor}</TargetFramework>");
+            csProjectFileContent.AppendLine("    <IsPackable>false</IsPackable>");
+            csProjectFileContent.AppendLine("    <EnableDefaultItems>false</EnableDefaultItems>");
+            csProjectFileContent.AppendLine("    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>");
+            csProjectFileContent.AppendLine("    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>");
+            csProjectFileContent.AppendLine("    <EnableBaseIntermediateOutputPathMismatchWarning>false</EnableBaseIntermediateOutputPathMismatchWarning>");
+            csProjectFileContent.AppendLine("    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>");
+            csProjectFileContent.AppendLine($"    <LangVersion>{dotnetSdk.CSharpLanguageVersion}</LangVersion>");
+            csProjectFileContent.AppendLine("    <FileAlignment>512</FileAlignment>");
+            csProjectFileContent.AppendLine("    <RestorePackages>true</RestorePackages>");
+            csProjectFileContent.AppendLine("  </PropertyGroup>");
+            csProjectFileContent.AppendLine("  <ItemGroup>");
+            foreach (var reference in targetBuildOptions.NugetPackageReferences)
+                csProjectFileContent.AppendLine($"    <PackageReference Include=\"{reference.Name}\" Version=\"{reference.Version}\" />");
+            csProjectFileContent.AppendLine("  </ItemGroup>");
+            csProjectFileContent.AppendLine("</Project>");
+            Utilities.WriteFileIfChanged(csprojPath, csProjectFileContent.ToString());
+
+            // Restore packages using dotnet CLI (synchronous to prevent task ordering issues on C# library building)
+            Log.Info($"Restoring NuGet packages for target {target.Name}");
+            Utilities.Run(Utilities.GetDotNetPath(), $"restore \"{csprojPath}\"", null, null, Utilities.RunOptions.DefaultTool);
         }
     }
 }

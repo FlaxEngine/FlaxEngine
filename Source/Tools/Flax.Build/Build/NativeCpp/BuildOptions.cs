@@ -102,6 +102,11 @@ namespace Flax.Build.NativeCpp
             Version = version;
             Framework = framework;
         }
+
+        internal string GetLibPath(string nugetPath)
+        {
+            return Path.Combine(nugetPath, Name, Version, "lib", Framework, $"{Name}.dll");
+        }
     }
 
     /// <summary>
@@ -167,7 +172,7 @@ namespace Flax.Build.NativeCpp
         /// <summary>
         /// The nuget package references.
         /// </summary>
-        public List<NugetPackage> NugetPackageReferences = new List<NugetPackage>();
+        public HashSet<NugetPackage> NugetPackageReferences = new HashSet<NugetPackage>();
 
         /// <summary>
         /// The collection of defines with preprocessing symbol for a source files of this module. Inherited by the modules that include it.
