@@ -438,18 +438,38 @@ namespace Flax.Build
 
                 if (targetBuildOptions.NugetPackageReferences.Any())
                 {
+                    // Find all packages to deploy (incl. dependencies) and restore if needed
                     var nugetPath = Utilities.GetNugetPackagesPath();
-                    var restore = true;
+                    var restoreOnce = true;
+                    var nugetFiles = new HashSet<string>();
                     foreach (var reference in targetBuildOptions.NugetPackageReferences)
                     {
-                        var path = reference.GetLibPath(nugetPath);
-                        if (!File.Exists(path) && restore)
+                        var folder = reference.GetLibFolder(nugetPath);
+                        if (!Directory.Exists(folder) && restoreOnce)
                         {
+                            // Package binaries folder is missing so restore packages (incl. dependency packages)
                             RestoreNugetPackages(graph, target, targetBuildOptions);
-                            restore = false;
+                            restoreOnce = false;
                         }
-                        var dstFile = Path.Combine(outputPath, Path.GetFileName(path));
-                        graph.AddCopyFile(dstFile, path);
+
+                        // Deploy library
+                        var path = reference.GetLibPath(nugetPath, folder);
+                        nugetFiles.Add(path);
+
+                        // Copy additional files (if included)
+                        path = Path.ChangeExtension(path, "xml");
+                        if (File.Exists(path))
+                            nugetFiles.Add(path);
+                        path = Path.ChangeExtension(path, "pdb");
+                        if (targetBuildOptions.Configuration != TargetConfiguration.Release && File.Exists(path))
+                            nugetFiles.Add(path);
+                    }
+
+                    // Copy libraries from all referenced packages to the output folder
+                    foreach (var file in nugetFiles)
+                    {
+                        var dstFile = Path.Combine(outputPath, Path.GetFileName(file));
+                        graph.AddCopyFile(dstFile, file);
                     }
                 }
             }

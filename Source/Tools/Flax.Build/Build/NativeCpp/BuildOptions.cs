@@ -103,9 +103,22 @@ namespace Flax.Build.NativeCpp
             Framework = framework;
         }
 
-        internal string GetLibPath(string nugetPath)
+        internal string GetLibFolder(string nugetPath)
         {
-            return Path.Combine(nugetPath, Name, Version, "lib", Framework, $"{Name}.dll");
+            return Path.Combine(nugetPath, Name, Version, "lib", Framework);
+        }
+
+        internal string GetLibPath(string nugetPath, string libFolder = null)
+        {
+            if (libFolder == null)
+                libFolder = GetLibFolder(nugetPath);
+            var dlls = Directory.GetFiles(libFolder, "*.dll", SearchOption.TopDirectoryOnly);
+            if (dlls.Length == 0)
+            {
+                Log.Error($"Missing NuGet package \"{Name}, {Version}, {Framework}\" binaries (folder: {libFolder})");
+                return string.Empty;
+            }
+            return dlls[0];
         }
     }
 
