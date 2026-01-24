@@ -42,21 +42,14 @@ namespace Flax.Build
         }
 
         /// <summary>
-        /// Restores a targets nuget packages.
+        /// Gets the NuGet packages cache folder path.
         /// </summary>
-        /// <param name="graph">The task graph.</param>
-        /// <param name="target">The target.</param>
-        /// <param name="dotNetPath">The dotnet path.</param>
-        public static void RestoreNugetPackages(Graph.TaskGraph graph, Target target)
+        /// <returns>The path.</returns>
+        public static string GetNugetPackagesPath()
         {
-            var dotNetPath = GetDotNetPath();
-            var task = graph.Add<Graph.Task>();
-            task.WorkingDirectory = target.FolderPath;
-            task.InfoMessage = $"Restoring Nuget Packages for {target.Name}";
-            task.CommandPath = dotNetPath;
-            task.CommandArguments = $"restore";
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
         }
-        
+
         /// <summary>
         /// Gets the hash code for the string (the same for all platforms). Matches Engine algorithm for string hashing.
         /// </summary>
