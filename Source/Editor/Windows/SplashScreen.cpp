@@ -140,6 +140,16 @@ const Char* SplashScreenQuotes[] =
     TEXT("We do this not because it is easy,\nbut because we thought it would be easy"),
 };
 
+const Char* ChristmasSplashScreenQuotes[] =
+{
+    //Use these if the month is December
+    //TODO: More flexible system for specific holidays or special events
+    TEXT("All I want for Christmas... is $USER_FNAME"), 
+    TEXT("Entering '; DROP TABLE into the Nice List..."),
+    TEXT("Checking PearTree.Partridge!=null... OK")
+
+};
+
 SplashScreen::~SplashScreen()
 {
     // Ensure to be closed
@@ -199,7 +209,11 @@ void SplashScreen::Show()
     str.Replace('\\', '/');
 #endif
     _infoText = String::Format(TEXT("Flax Editor {0}\n{1}\nProject: {2}"), TEXT(FLAXENGINE_VERSION_TEXT), TEXT(FLAXENGINE_COPYRIGHT), str);
-    _quote = SplashScreenQuotes[rand() % ARRAY_COUNT(SplashScreenQuotes)];
+    //Check for special occasion; only December/holiday season supported for now
+    SplashScreen::HolidayStatus _splashScreenHolidayStatus = GetHolidayStatus(_startTime);
+    const bool _useHolidayQuote = _splashScreenHolidayStatus!=None;
+    
+    _quote = _useHolidayQuote ? ChristmasSplashScreenQuotes[rand() % ARRAY_COUNT(ChristmasSplashScreenQuotes)] : SplashScreenQuotes[rand() % ARRAY_COUNT(SplashScreenQuotes)];
 
     // Load font
     auto font = Content::LoadAsyncInternal<FontAsset>(TEXT("Editor/Fonts/Roboto-Regular"));
@@ -224,6 +238,14 @@ void SplashScreen::Show()
     _window->Show();
 }
 
+SplashScreen::HolidayStatus SplashScreen::GetHolidayStatus(DateTime CurrentDate)
+{
+    //Simple function that checks the current Date/Time to see if it crosses any holidays.  
+    //Could affect splash screen text and possibly bg image in the future
+    if (CurrentDate.GetMonth() == 12) return Christmas;
+
+    return None;
+}
 void SplashScreen::Close()
 {
     if (!IsVisible())
