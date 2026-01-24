@@ -60,6 +60,7 @@ using System;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Reflection;
 
 namespace FlaxEngine
 {
@@ -875,6 +876,34 @@ namespace FlaxEngine
         public static Vector4 Lerp(Vector4 start, Vector4 end, Real amount)
         {
             Lerp(ref start, ref end, amount, out Vector4 result);
+            return result;
+        }
+
+        /// <summary>
+        /// Performs a spherical linear interpolation between two vectors.
+        /// </summary>
+        /// <param name="start">Start vector.</param>
+        /// <param name="end">End vector.</param>
+        /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
+        /// <param name="result">When the method completes, contains the linear interpolation of the two vectors.</param>
+        public static void Slerp(ref Vector4 start, ref Vector4 end, Real amount, out Vector4 result)
+        {
+            var dot = Mathr.Clamp(Dot(start, end), -1.0f, 1.0f);
+            var theta = Mathr.Acos(dot) * amount;
+            Vector4 RelativeVector = (end - start * dot);
+            RelativeVector.Normalize();
+            result = ((start * Mathr.Cos(theta)) + (end * Mathr.Sin(theta)));
+        }
+
+        /// <summary>
+        /// Performs a spherical linear interpolation between two vectors.
+        /// </summary>
+        /// <param name="start">Start vector.</param>
+        /// <param name="end">End vector.</param>
+        /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
+        public static Vector4 Slerp(Vector4 start, Vector4 end, Real amount)
+        {
+            Slerp(ref start, ref end, amount, out var result);
             return result;
         }
 
