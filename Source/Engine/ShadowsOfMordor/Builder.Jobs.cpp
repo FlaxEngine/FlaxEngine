@@ -376,7 +376,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
             EnableLightmapsUsage = _giBounceRunningIndex != 0;
             //
             Renderer::Render(_task);
-            context->ClearState();
+            context->ResetState();
             //
             IsRunningRadiancePass = false;
             EnableLightmapsUsage = true;
@@ -515,7 +515,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
     }
 
     // Cleanup after rendering
-    context->ClearState();
+    context->ResetState();
 
     // Mark job as done
     Platform::AtomicStore(&_wasJobDone, 1);

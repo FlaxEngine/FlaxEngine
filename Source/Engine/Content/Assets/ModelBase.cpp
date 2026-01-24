@@ -61,7 +61,7 @@ public:
         model->GetLODData(_lodIndex, data);
         if (data.IsInvalid())
         {
-            LOG(Warning, "Missing data chunk");
+            LOG(Warning, "Missing data chunk with LOD{} for model '{}'", _lodIndex, model->ToString());
             return true;
         }
         MemoryReadStream stream(data.Get(), data.Length());
@@ -234,6 +234,7 @@ bool ModelBase::Save(bool withMeshDataFromGpu, const StringView& path)
         LOG(Error, "To save virtual model asset you need to specify 'withMeshDataFromGpu' (it has no other storage container to get data).");
         return true;
     }
+    auto chunkLocks = Storage ? Storage->Lock() : FlaxStorage::LockData();
     ScopeLock lock(Locker);
 
     // Use a temporary chunks for data storage for virtual assets

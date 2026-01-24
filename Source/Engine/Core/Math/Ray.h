@@ -79,7 +79,10 @@ public:
     /// </summary>
     /// <param name="distance">The distance from ray origin.</param>
     /// <returns>The calculated point.</returns>
-    Vector3 GetPoint(Real distance) const;
+    FORCE_INLINE Vector3 GetPoint(Real distance) const
+    {
+        return Position + Direction * distance;
+    }
 
     /// <summary>
     /// Determines if there is an intersection between ray and a point.

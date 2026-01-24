@@ -490,6 +490,18 @@ FORCE_INLINE DebugTriangle* AppendTriangles(int32 count, float duration, bool de
     return list->Get() + startIndex;
 }
 
+FORCE_INLINE DebugTriangle* AppendWireTriangles(int32 count, float duration, bool depthTest)
+{
+    Array<DebugTriangle>* list;
+    if (depthTest)
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultWireTriangles : &Context->DebugDrawDepthTest.OneFrameWireTriangles;
+    else
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultWireTriangles : &Context->DebugDrawDefault.OneFrameWireTriangles;
+    const int32 startIndex = list->Count();
+    list->AddUninitialized(count);
+    return list->Get() + startIndex;
+}
+
 inline void DrawText3D(const DebugText3D& t, const RenderContext& renderContext, const Float3& viewUp, const Matrix& f, const Matrix& vp, const Viewport& viewport, GPUContext* context, GPUTextureView* target, GPUTextureView* depthBuffer)
 {
     Matrix w, fw, m;
@@ -1714,7 +1726,7 @@ void DebugDraw::DrawWireTriangles(const Span<Float3>& vertices, const Color& col
     DebugTriangle t;
     t.Color = Color32(color);
     t.TimeLeft = duration;
-    auto dst = AppendTriangles(vertices.Length() / 3, duration, depthTest);
+    auto dst = AppendWireTriangles(vertices.Length() / 3, duration, depthTest);
     const Float3 origin = Context->Origin;
     for (int32 i = 0; i < vertices.Length();)
     {
@@ -1736,7 +1748,7 @@ void DebugDraw::DrawWireTriangles(const Span<Float3>& vertices, const Span<int32
     DebugTriangle t;
     t.Color = Color32(color);
     t.TimeLeft = duration;
-    auto dst = AppendTriangles(indices.Length() / 3, duration, depthTest);
+    auto dst = AppendWireTriangles(indices.Length() / 3, duration, depthTest);
     const Float3 origin = Context->Origin;
     for (int32 i = 0; i < indices.Length();)
     {
@@ -1758,7 +1770,7 @@ void DebugDraw::DrawWireTriangles(const Span<Double3>& vertices, const Color& co
     DebugTriangle t;
     t.Color = Color32(color);
     t.TimeLeft = duration;
-    auto dst = AppendTriangles(vertices.Length() / 3, duration, depthTest);
+    auto dst = AppendWireTriangles(vertices.Length() / 3, duration, depthTest);
     const Double3 origin = Context->Origin;
     for (int32 i = 0; i < vertices.Length();)
     {
@@ -1780,7 +1792,7 @@ void DebugDraw::DrawWireTriangles(const Span<Double3>& vertices, const Span<int3
     DebugTriangle t;
     t.Color = Color32(color);
     t.TimeLeft = duration;
-    auto dst = AppendTriangles(indices.Length() / 3, duration, depthTest);
+    auto dst = AppendWireTriangles(indices.Length() / 3, duration, depthTest);
     const Double3 origin = Context->Origin;
     for (int32 i = 0; i < indices.Length();)
     {

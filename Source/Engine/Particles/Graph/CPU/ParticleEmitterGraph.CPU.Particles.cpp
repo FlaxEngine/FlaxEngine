@@ -482,9 +482,15 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupFunction(Box* box, Node* node,
     // Function Input
     case 1:
     {
+        // Skip when graph is too small (eg. preview) and fallback with default value from the function graph
+        if (context.GraphStack.Count() < 2)
+        {
+            value = tryGetValue(node->TryGetBox(1), Value::Zero);
+            break;
+        }
+
         // Find the function call
         Node* functionCallNode = nullptr;
-        ASSERT(context.GraphStack.Count() >= 2);
         ParticleEmitterGraphCPU* graph;
         for (int32 i = context.CallStackSize - 1; i >= 0; i--)
         {

@@ -226,6 +226,27 @@ void Task::OnEnd()
 {
     ASSERT(!IsRunning());
 
-    // Add to delete
-    DeleteObject(30.0f, false);
+    if (_continueWith && !_continueWith->IsEnded())
+    {
+        // Let next task do the cleanup (to ensure whole tasks chain shares the lifetime)
+        _continueWith->_rootForRemoval = _rootForRemoval ? _rootForRemoval : this;
+    }
+    else
+    {
+        constexpr float timeToLive = 30.0f;
+
+        // Remove task chain starting from the root
+        if (_rootForRemoval)
+        {
+            auto task = _rootForRemoval;
+            while (task != this)
+            {
+                task->DeleteObject(timeToLive, false);
+                task = task->_continueWith;
+            }
+        }
+
+        // Add to delete
+        DeleteObject(timeToLive, false);
+    }
 }

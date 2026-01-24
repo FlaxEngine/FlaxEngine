@@ -88,6 +88,10 @@ public:
     double LastAccessTime = 0.0;
 
     /// <summary>
+    /// Flag set to indicate that chunk is during loading (atomic access to sync multiple reading threads).
+    /// </summary>
+    int64 IsLoading = 0;
+    /// <summary>
     /// The chunk data.
     /// </summary>
     BytesContainer Data;
@@ -146,7 +150,7 @@ public:
     /// </summary>
     FORCE_INLINE bool IsLoaded() const
     {
-        return Data.IsValid();
+        return Data.IsValid() && Platform::AtomicRead(&IsLoading) == 0;
     }
 
     /// <summary>
@@ -154,7 +158,7 @@ public:
     /// </summary>
     FORCE_INLINE bool IsMissing() const
     {
-        return Data.IsInvalid();
+        return !IsLoaded();
     }
 
     /// <summary>

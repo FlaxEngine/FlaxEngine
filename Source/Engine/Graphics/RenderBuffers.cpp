@@ -113,7 +113,8 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
 
 PixelFormat RenderBuffers::GetOutputFormat() const
 {
-    return _useAlpha ? PixelFormat::R16G16B16A16_Float : PixelFormat::R11G11B10_Float;
+    // TODO: fix incorrect alpha leaking into reflections on PS5 with R11G11B10_Float
+    return _useAlpha || PLATFORM_PS5 ? PixelFormat::R16G16B16A16_Float : PixelFormat::R11G11B10_Float;
 }
 
 bool RenderBuffers::GetUseAlpha() const

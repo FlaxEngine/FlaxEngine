@@ -278,6 +278,17 @@ bool ShaderCompiler::WriteShaderFunctionPermutation(ShaderCompilationContext* co
     return false;
 }
 
+bool ShaderCompiler::WriteShaderFunctionPermutation(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const ShaderBindings& bindings, const void* header, int32 headerSize, const void* cache1, int32 cache1Size, const void* cache2, int32 cache2Size)
+{
+    auto output = context->Output;
+    output->Write((uint32)(cache1Size + cache2Size + headerSize));
+    output->WriteBytes(header, headerSize);
+    output->WriteBytes(cache1, cache1Size);
+    output->WriteBytes(cache2, cache2Size);
+    output->Write(bindings);
+    return false;
+}
+
 bool ShaderCompiler::WriteShaderFunctionPermutation(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const ShaderBindings& bindings, const void* cache, int32 cacheSize)
 {
     auto output = context->Output;

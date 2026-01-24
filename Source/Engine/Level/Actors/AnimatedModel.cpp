@@ -554,10 +554,11 @@ void AnimatedModel::StopSlotAnimation(const StringView& slotName, Animation* ani
 {
     for (auto& slot : GraphInstance.Slots)
     {
-        if (slot.Animation == anim && slot.Name == slotName)
+        if ((slot.Animation == anim || anim == nullptr) && slot.Name == slotName)
         {
             //slot.Animation = nullptr; // TODO: make an immediate version of this method and set the animation to nullptr.
-            slot.Reset = true;
+            if (slot.Animation != nullptr)
+                slot.Reset = true;
             break;
         }
     }
@@ -573,7 +574,7 @@ void AnimatedModel::PauseSlotAnimation(const StringView& slotName, Animation* an
 {
     for (auto& slot : GraphInstance.Slots)
     {
-        if (slot.Animation == anim && slot.Name == slotName)
+        if ((slot.Animation == anim || anim == nullptr) && slot.Name == slotName)
         {
             slot.Pause = true;
             break;
@@ -595,7 +596,7 @@ bool AnimatedModel::IsPlayingSlotAnimation(const StringView& slotName, Animation
 {
     for (auto& slot : GraphInstance.Slots)
     {
-        if (slot.Animation == anim && slot.Name == slotName && !slot.Pause)
+        if ((slot.Animation == anim || anim == nullptr) && slot.Name == slotName && !slot.Pause)
             return true;
     }
     return false;
@@ -667,7 +668,11 @@ void AnimatedModel::RunBlendShapeDeformer(const MeshBase* mesh, MeshDeformationD
         {
             if (q.First == blendShape.Name)
             {
-                const float weight = q.Second * blendShape.Weight;
+                float weight = q.Second;
+                if (!Math::IsZero(blendShape.Weight))
+                    weight *= blendShape.Weight;
+                if (Math::IsZero(weight))
+                    break;
                 blendShapes.Add(Pair<const BlendShape&, const float>(blendShape, weight));
                 minVertexIndex = Math::Min(minVertexIndex, blendShape.MinVertexIndex);
                 maxVertexIndex = Math::Max(maxVertexIndex, blendShape.MaxVertexIndex);

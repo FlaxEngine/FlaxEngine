@@ -265,7 +265,7 @@ bool DeployDataStep::Perform(CookingData& data)
                         }
                         if (version.IsEmpty())
                         {
-                            data.Error(String::Format(TEXT("Failed to find supported .NET {} version (min {}) for the current host platform."), maxVer, minVer));
+                            data.Error(String::Format(TEXT("Failed to find supported .NET {} version (min {}) for {} platform."), maxVer, minVer, platformName));
                             return true;
                         }
                     }

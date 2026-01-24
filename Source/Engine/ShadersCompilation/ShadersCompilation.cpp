@@ -48,6 +48,9 @@
 #if COMPILE_WITH_PS5_SHADER_COMPILER
 #include "Platforms/PS5/Engine/ShaderCompilerPS5/ShaderCompilerPS5.h"
 #endif
+#if COMPILE_WITH_XBOX_SCARLETT_SHADER_COMPILER
+#include "Platforms/XboxScarlett/Engine/ShaderCompilerXboxScarlett/ShaderCompilerXboxScarlett.h"
+#endif
 
 namespace ShadersCompilationImpl
 {
@@ -165,20 +168,16 @@ bool ShadersCompilation::Compile(ShaderCompilationOptions& options)
     bool result;
     {
         ShaderCompilationContext context(&options, &meta);
-
-        // Request shaders compiler
-        auto compiler = RequestCompiler(options.Profile);
+        auto compiler = RequestCompiler(options.Profile, options.Platform);
         if (compiler == nullptr)
         {
             LOG(Error, "Shader compiler request failed.");
             return true;
         }
-        ASSERT(compiler->GetProfile() == options.Profile);
+        ASSERT_LOW_LAYER(compiler->GetProfile() == options.Profile);
 
         // Call compilation process
         result = compiler->Compile(&context);
-
-        // Dismiss compiler
         FreeCompiler(compiler);
 
 #if GPU_USE_SHADERS_DEBUG_LAYER
@@ -210,65 +209,65 @@ bool ShadersCompilation::Compile(ShaderCompilationOptions& options)
     return result;
 }
 
-ShaderCompiler* ShadersCompilation::CreateCompiler(ShaderProfile profile)
+ShaderCompiler* ShadersCompilation::RequestCompiler(ShaderProfile profile, PlatformType platform)
 {
-    ShaderCompiler* result = nullptr;
-
-    switch (profile)
-    {
-#if COMPILE_WITH_D3D_SHADER_COMPILER
-    case ShaderProfile::DirectX_SM4:
-    case ShaderProfile::DirectX_SM5:
-        result = New<ShaderCompilerD3D>(profile);
-        break;
-#endif
-#if COMPILE_WITH_DX_SHADER_COMPILER
-    case ShaderProfile::DirectX_SM6:
-        result = New<ShaderCompilerDX>(profile);
-        break;
-#endif
-#if COMPILE_WITH_VK_SHADER_COMPILER
-    case ShaderProfile::Vulkan_SM5:
-        result = New<ShaderCompilerVulkan>(profile);
-        break;
-#endif
-#if COMPILE_WITH_PS4_SHADER_COMPILER
-    case ShaderProfile::PS4:
-        result = New<ShaderCompilerPS4>();
-        break;
-#endif
-#if COMPILE_WITH_PS5_SHADER_COMPILER
-    case ShaderProfile::PS5:
-        result = New<ShaderCompilerPS5>();
-        break;
-#endif
-    default:
-        break;
-    }
-    ASSERT_LOW_LAYER(result == nullptr || result->GetProfile() == profile);
-
-    return result;
-}
-
-ShaderCompiler* ShadersCompilation::RequestCompiler(ShaderProfile profile)
-{
-    ShaderCompiler* compiler;
     ScopeLock lock(Locker);
 
     // Try to find ready compiler
+    ShaderCompiler* compiler = nullptr;
     for (int32 i = 0; i < ReadyCompilers.Count(); i++)
     {
-        compiler = ReadyCompilers[i];
-        if (compiler->GetProfile() == profile)
+        compiler = ReadyCompilers.Get()[i];
+        if (compiler->GetProfile() == profile && 
+            (compiler->GetPlatform() == platform || (int32)compiler->GetPlatform() == 0))
         {
-            // Use it
             ReadyCompilers.RemoveAt(i);
             return compiler;
         }
     }
 
     // Create new compiler for a target profile
-    compiler = CreateCompiler(profile);
+    switch (profile)
+    {
+#if COMPILE_WITH_D3D_SHADER_COMPILER
+    case ShaderProfile::DirectX_SM4:
+    case ShaderProfile::DirectX_SM5:
+        compiler = New<ShaderCompilerD3D>(profile);
+        break;
+#endif
+#if COMPILE_WITH_DX_SHADER_COMPILER
+    case ShaderProfile::DirectX_SM6:
+        switch (platform)
+        {
+        case PlatformType::XboxScarlett:
+#if COMPILE_WITH_XBOX_SCARLETT_SHADER_COMPILER
+            compiler = New<ShaderCompilerXboxScarlett>();
+#endif
+            break;
+        default:
+            compiler = New<ShaderCompilerDX>(profile);
+            break;
+        }
+        break;
+#endif
+#if COMPILE_WITH_VK_SHADER_COMPILER
+    case ShaderProfile::Vulkan_SM5:
+        compiler = New<ShaderCompilerVulkan>(profile);
+        break;
+#endif
+#if COMPILE_WITH_PS4_SHADER_COMPILER
+    case ShaderProfile::PS4:
+        compiler = New<ShaderCompilerPS4>();
+        break;
+#endif
+#if COMPILE_WITH_PS5_SHADER_COMPILER
+    case ShaderProfile::PS5:
+        compiler = New<ShaderCompilerPS5>();
+        break;
+#endif
+    default:
+        break;
+    }
     if (compiler == nullptr)
     {
         LOG(Error, "Cannot create Shader Compiler for profile {0}", ::ToString(profile));
@@ -414,7 +413,8 @@ String ShadersCompilation::ResolveShaderPath(StringView path)
     // Skip to the last root start './' but preserve the leading one
     for (int32 i = path.Length() - 2; i >= 2; i--)
     {
-        if (StringUtils::Compare(path.Get() + i, TEXT("./"), 2) == 0)
+        const Char* pos = path.Get() + i;
+        if (pos[0] == '.' && pos[1] == '/')
         {
             path = path.Substring(i);
             break;

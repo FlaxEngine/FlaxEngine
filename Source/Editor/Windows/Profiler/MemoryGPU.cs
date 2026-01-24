@@ -296,13 +296,15 @@ namespace FlaxEditor.Windows.Profiler
             var resources = _resources.Get(_memoryUsageChart.SelectedSampleIndex);
             if (resources == null || resources.Length == 0)
                 return;
-            var resourcesOrdered = resources.OrderByDescending(x => x.MemoryUsage);
+            var resourcesOrdered = resources.OrderByDescending(x => x?.MemoryUsage ?? 0);
 
             // Add rows
             var rowColor2 = Style.Current.Background * 1.4f;
             int rowIndex = 0;
             foreach (var e in resourcesOrdered)
             {
+                if (e == null)
+                    continue;
                 ClickableRow row;
                 if (_tableRowsCache.Count != 0)
                 {

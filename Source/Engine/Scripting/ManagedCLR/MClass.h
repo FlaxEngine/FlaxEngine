@@ -23,6 +23,10 @@ private:
     StringAnsiView _fullname;
     uint32 _types = 0;
     mutable uint32 _size = 0;
+#else
+    StringAnsiView _name;
+    StringAnsiView _namespace;
+    StringAnsiView _fullname;
 #endif
     MAssembly* _assembly;
 

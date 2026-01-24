@@ -125,6 +125,7 @@ namespace FlaxEditor.Modules
         private ContextMenuButton _menuToolsProfilerWindow;
         private ContextMenuButton _menuToolsSetTheCurrentSceneViewAsDefault;
         private ContextMenuButton _menuToolsTakeScreenshot;
+        private ContextMenuButton _menuToolsOpenLocalFolder;
         private ContextMenuChildMenu _menuWindowApplyWindowLayout;
 
         private ToolStripButton _toolStripSaveAll;
@@ -714,6 +715,7 @@ namespace FlaxEditor.Modules
             _menuToolsBuildCSGMesh = cm.AddButton("Build CSG mesh", inputOptions.BuildCSG, Editor.BuildCSG);
             _menuToolsBuildNavMesh = cm.AddButton("Build Nav Mesh", inputOptions.BuildNav, Editor.BuildNavMesh);
             _menuToolsBuildAllMeshesSDF = cm.AddButton("Build all meshes SDF", inputOptions.BuildSDF, Editor.BuildAllMeshesSDF);
+            _menuToolsBuildAllMeshesSDF.LinkTooltip("Generates Sign Distance Field texture for all meshes used in loaded scenes. Use with 'F' key pressed to force rebuild SDF for meshes with existing one.");
             cm.AddSeparator();
             cm.AddButton("Game Cooker", Editor.Windows.GameCookerWin.FocusOrShow);
             _menuToolsCancelBuilding = cm.AddButton("Cancel building game", () => GameCooker.Cancel());
@@ -724,6 +726,16 @@ namespace FlaxEditor.Modules
             _menuToolsTakeScreenshot = cm.AddButton("Take screenshot", inputOptions.TakeScreenshot, Editor.Windows.TakeScreenshot);
             cm.AddSeparator();
             cm.AddButton("Plugins", () => Editor.Windows.PluginsWin.Show());
+            cm.AddSeparator();
+            var childMenu = cm.AddChildMenu("Open Product Local folder");
+            childMenu.ContextMenu.AddButton("Editor", () => FileSystem.ShowFileExplorer(Globals.ProductLocalFolder));
+            _menuToolsOpenLocalFolder = childMenu.ContextMenu.AddButton("Game", () =>
+            {
+                string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                GameSettings settings = GameSettings.Load<GameSettings>();
+                string path = Path.Combine(localAppData, settings.CompanyName, settings.ProductName);
+                FileSystem.ShowFileExplorer(path);
+            });
 
             // Window
             MenuWindow = MainMenu.AddButton("Window");
@@ -1061,6 +1073,10 @@ namespace FlaxEditor.Modules
             _menuToolsBuildNavMesh.Enabled = canEdit;
             _menuToolsCancelBuilding.Enabled = GameCooker.IsRunning;
             _menuToolsSetTheCurrentSceneViewAsDefault.Enabled = Level.ScenesCount > 0;
+            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            GameSettings settings = GameSettings.Load<GameSettings>();
+            string path = Path.Combine(localAppData, settings.CompanyName, settings.ProductName);
+            _menuToolsOpenLocalFolder.Enabled = Directory.Exists(path);
 
             c.PerformLayout();
         }

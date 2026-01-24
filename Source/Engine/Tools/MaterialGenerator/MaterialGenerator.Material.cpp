@@ -285,8 +285,8 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     case 24:
     {
         // Load function asset
-        const auto function = Assets.LoadAsync<MaterialFunction>((Guid)node->Values[0]);
-        if (!function || function->WaitForLoaded())
+        const auto function = Assets.Load<MaterialFunction>((Guid)node->Values[0]);
+        if (!function)
         {
             OnError(node, box, TEXT("Missing or invalid function."));
             value = Value::Zero;
@@ -299,7 +299,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         {
             if (_callStack[i]->Type == GRAPH_NODE_MAKE_TYPE(1, 24))
             {
-                const auto callFunc = Assets.LoadAsync<MaterialFunction>((Guid)_callStack[i]->Values[0]);
+                const auto callFunc = Assets.Load<MaterialFunction>((Guid)_callStack[i]->Values[0]);
                 if (callFunc == function)
                 {
                     OnError(node, box, String::Format(TEXT("Recursive call to function '{0}'!"), function->ToString()));
@@ -790,9 +790,18 @@ void MaterialGenerator::ProcessGroupFunction(Box* box, Node* node, Value& value)
     // Function Input
     case 1:
     {
+        // Check the stack count. If only 1 graph is present,
+        // we are processing the graph in isolation (e.g., in the Editor Preview).
+        // In this case, we skip the caller-finding logic and use the node's default value.
+        if (_graphStack.Count() < 2)
+        {
+            // Use the default value from the function input node's box (usually box 1)
+            value = tryGetValue(node->TryGetBox(1), Value::Zero);
+            break;
+        }
+
         // Find the function call
         Node* functionCallNode = nullptr;
-        ASSERT(_graphStack.Count() >= 2);
         Graph* graph;
         for (int32 i = _callStack.Count() - 1; i >= 0; i--)
         {
@@ -808,7 +817,7 @@ void MaterialGenerator::ProcessGroupFunction(Box* box, Node* node, Value& value)
             value = Value::Zero;
             break;
         }
-        const auto function = Assets.LoadAsync<MaterialFunction>((Guid)functionCallNode->Values[0]);
+        const auto function = Assets.Load<MaterialFunction>((Guid)functionCallNode->Values[0]);
         if (!_functions.TryGet(functionCallNode, graph) || !function)
         {
             OnError(node, box, TEXT("Missing calling function graph."));

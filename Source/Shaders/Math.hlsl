@@ -8,7 +8,7 @@
 
 uint NextPow2(uint value)
 {
-    uint mask = (1 << firstbithigh(value)) - 1;
+    uint mask = (1u << firstbithigh(value)) - 1u;
     return (value + mask) & ~mask;
 }
 

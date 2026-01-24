@@ -227,7 +227,8 @@ ShadowSample SampleDirectionalLightShadowCascade(LightData light, Buffer<float4>
     // Increase the sharpness for higher cascades to match the filter radius
     const float SharpnessScale[MaxNumCascades] = { 1.0f, 1.5f, 3.0f, 3.5f };
     shadow.Sharpness *= SharpnessScale[cascadeIndex];
-    
+
+    result.TransmissionShadow = 1;
 #if defined(USE_GBUFFER_CUSTOM_DATA)
 	// Subsurface shadowing
 	BRANCH
@@ -239,8 +240,6 @@ ShadowSample SampleDirectionalLightShadowCascade(LightData light, Buffer<float4>
 		result.TransmissionShadow = CalculateSubsurfaceOcclusion(opacity, shadowPosition.z, shadowMapDepth);
         result.TransmissionShadow = PostProcessShadow(shadow, result.TransmissionShadow);
 	}
-#else
-    result.TransmissionShadow = 1;
 #endif
 
     result.SurfaceShadow = PostProcessShadow(shadow, result.SurfaceShadow);

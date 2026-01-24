@@ -726,7 +726,7 @@ namespace FlaxEditor.Surface.Archetypes
 
             private void OnSurfaceMouseUp(ref Float2 mouse, MouseButton buttons, ref bool handled)
             {
-                if (handled)
+                if (handled || Surface.Context != Context)
                     return;
 
                 // Check click over the connection
@@ -751,7 +751,7 @@ namespace FlaxEditor.Surface.Archetypes
 
             private void OnSurfaceMouseDoubleClick(ref Float2 mouse, MouseButton buttons, ref bool handled)
             {
-                if (handled)
+                if (handled || Surface.Context != Context)
                     return;
 
                 // Check double click over the connection

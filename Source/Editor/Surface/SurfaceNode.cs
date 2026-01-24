@@ -431,27 +431,6 @@ namespace FlaxEditor.Surface
         /// </summary>
         public bool HasIndependentBoxes => Archetype.IndependentBoxes != null;
 
-        /// <summary>
-        /// Gets a value indicating whether this node has dependent boxes with assigned valid types. Otherwise any box has no dependent type assigned.
-        /// </summary>
-        public bool HasDependentBoxesSetup
-        {
-            get
-            {
-                if (Archetype.DependentBoxes == null || Archetype.IndependentBoxes == null)
-                    return true;
-
-                for (int i = 0; i < Archetype.DependentBoxes.Length; i++)
-                {
-                    var b = GetBox(Archetype.DependentBoxes[i]);
-                    if (b != null && b.CurrentType == b.DefaultType)
-                        return false;
-                }
-
-                return true;
-            }
-        }
-
         private static readonly List<SurfaceNode> UpdateStack = new List<SurfaceNode>();
 
         /// <summary>

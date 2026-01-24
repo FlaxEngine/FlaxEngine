@@ -273,7 +273,7 @@ struct DrawCallsList
     /// <summary>
     /// True if draw calls batches list can be rendered using hardware instancing, otherwise false.
     /// </summary>
-    bool CanUseInstancing;
+    bool CanUseInstancing = true;
 
     void Clear();
     bool IsEmpty() const;

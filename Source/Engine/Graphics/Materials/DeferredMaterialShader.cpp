@@ -201,6 +201,7 @@ bool DeferredMaterialShader::Load()
     psDesc.DepthWriteEnable = true;
     psDesc.DepthEnable = true;
     psDesc.DepthFunc = ComparisonFunc::Less;
+    psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::None;
     psDesc.HS = nullptr;
     psDesc.DS = nullptr;
     GPUShaderProgramVS* instancedDepthPassVS;

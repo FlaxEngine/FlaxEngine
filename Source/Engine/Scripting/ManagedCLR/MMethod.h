@@ -30,6 +30,8 @@ protected:
     mutable void* _returnType;
     mutable Array<void*, InlinedAllocation<8>> _parameterTypes;
     void CacheSignature() const;
+#else
+    StringAnsiView _name;
 #endif
     MClass* _parentClass;
     MVisibility _visibility;

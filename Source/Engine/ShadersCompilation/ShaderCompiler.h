@@ -23,10 +23,11 @@ public:
     };
 
 private:
+    ShaderProfile _profile;
+    PlatformType _platform;
     Array<char> _funcNameDefineBuffer;
 
 protected:
-    ShaderProfile _profile;
     ShaderCompilationContext* _context = nullptr;
     Array<ShaderMacro> _globalMacros;
     Array<ShaderMacro> _macros;
@@ -37,8 +38,10 @@ public:
     /// Initializes a new instance of the <see cref="ShaderCompiler"/> class.
     /// </summary>
     /// <param name="profile">The profile.</param>
-    ShaderCompiler(ShaderProfile profile)
+    /// <param name="platform">The platform.</param>
+    ShaderCompiler(ShaderProfile profile, PlatformType platform = (PlatformType)0)
         : _profile(profile)
+        , _platform(platform)
     {
     }
 
@@ -51,10 +54,17 @@ public:
     /// <summary>
     /// Gets shader profile supported by this compiler.
     /// </summary>
-    /// <returns>The shader profile.</returns>
     FORCE_INLINE ShaderProfile GetProfile() const
     {
         return _profile;
+    }
+
+    /// <summary>
+    /// Gets target platform supported by this compiler. Returns invalid value of '0' if any platform works.
+    /// </summary>
+    FORCE_INLINE PlatformType GetPlatform() const
+    {
+        return _platform;
     }
 
     /// <summary>
@@ -98,6 +108,7 @@ protected:
 
     static bool WriteShaderFunctionBegin(ShaderCompilationContext* context, ShaderFunctionMeta& meta);
     static bool WriteShaderFunctionPermutation(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const ShaderBindings& bindings, const void* header, int32 headerSize, const void* cache, int32 cacheSize);
+    static bool WriteShaderFunctionPermutation(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const ShaderBindings& bindings, const void* header, int32 headerSize, const void* cache1, int32 cache1Size, const void* cache2, int32 cache2Size);
     static bool WriteShaderFunctionPermutation(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const ShaderBindings& bindings, const void* cache, int32 cacheSize);
     static bool WriteShaderFunctionEnd(ShaderCompilationContext* context, ShaderFunctionMeta& meta);
     static bool WriteCustomDataVS(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const Array<ShaderMacro>& macros, void* additionalData);

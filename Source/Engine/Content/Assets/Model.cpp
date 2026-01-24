@@ -262,6 +262,7 @@ bool Model::GenerateSDF(float resolutionScale, int32 lodIndex, bool cacheData, f
         LOG(Warning, "Cannot generate SDF for virtual models on a main thread.");
         return true;
     }
+    auto chunkLocks = Storage ? Storage->Lock() : FlaxStorage::LockData();
     lodIndex = Math::Clamp(lodIndex, HighestResidentLODIndex(), LODs.Count() - 1);
 
     // Generate SDF

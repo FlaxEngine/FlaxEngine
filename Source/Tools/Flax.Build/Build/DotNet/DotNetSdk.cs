@@ -217,9 +217,17 @@ namespace Flax.Build
                     using RegistryKey sdkVersionsKey = baseKey.OpenSubKey($@"SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\{arch}\sdk");
                     using RegistryKey runtimeKey = baseKey.OpenSubKey(@$"SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\{arch}\sharedfx\Microsoft.NETCore.App");
                     using RegistryKey hostKey = baseKey.OpenSubKey(@$"SOFTWARE\dotnet\Setup\InstalledVersions\{arch}\sharedhost");
-                    dotnetPath = (string)hostKey.GetValue("Path");
+                    dotnetPath = (string)hostKey?.GetValue("Path");
                     dotnetSdkVersions = sdkVersionsKey?.GetValueNames() ?? Enumerable.Empty<string>();
                     dotnetRuntimeVersions = runtimeKey?.GetValueNames() ?? Enumerable.Empty<string>();
+
+                    if (string.IsNullOrEmpty(dotnetPath))
+                    {
+                        // The sharedhost registry key seems to be deprecated, assume the default installation location instead
+                        var defaultPath = Path.Combine(Path.GetPathRoot(Environment.SystemDirectory), "Program Files", "dotnet");
+                        if (File.Exists(Path.Combine(defaultPath, "dotnet.exe")))
+                            dotnetPath = defaultPath;
+                    }
                 }
 #pragma warning restore CA1416
                 break;

@@ -24,6 +24,8 @@ protected:
     void* _type;
     int32 _fieldOffset;
     StringAnsiView _name;
+#else
+    StringAnsiView _name;
 #endif
 
     MClass* _parentClass;

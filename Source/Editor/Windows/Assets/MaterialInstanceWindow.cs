@@ -14,7 +14,6 @@ using FlaxEditor.Surface;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Windows.Assets
 {
@@ -430,7 +429,7 @@ namespace FlaxEditor.Windows.Assets
             for (var i = 0; i < parameters.Length; i++)
             {
                 var p = parameters[i];
-                if (p.IsOverride)
+                if (p.IsOverride && p.IsPublic)
                 {
                     p.IsOverride = false;
                     actions.Add(new EditParamOverrideAction

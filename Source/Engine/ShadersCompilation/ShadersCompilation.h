@@ -48,9 +48,7 @@ public:
     static String CompactShaderPath(StringView path);
 
 private:
-
-    static ShaderCompiler* CreateCompiler(ShaderProfile profile);
-    static ShaderCompiler* RequestCompiler(ShaderProfile profile);
+    static ShaderCompiler* RequestCompiler(ShaderProfile profile, PlatformType platform);
     static void FreeCompiler(ShaderCompiler* compiler);
 };
 

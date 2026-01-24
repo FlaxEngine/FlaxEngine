@@ -400,7 +400,7 @@ namespace FlaxEditor.Surface
                 return scriptType.GetGenericTypeDefinition() == typeof(Dictionary<,>);
             }
             var managedType = TypeUtils.GetType(scriptType);
-            return !TypeUtils.IsDelegate(managedType);
+            return managedType != null && !TypeUtils.IsDelegate(managedType);
         }
 
         internal static bool IsValidVisualScriptFunctionType(ScriptType scriptType)
@@ -408,7 +408,7 @@ namespace FlaxEditor.Surface
             if (scriptType.IsGenericType || scriptType.IsStatic || !scriptType.IsPublic || scriptType.HasAttribute(typeof(HideInEditorAttribute), true))
                 return false;
             var managedType = TypeUtils.GetType(scriptType);
-            return !TypeUtils.IsDelegate(managedType);
+            return managedType != null && !TypeUtils.IsDelegate(managedType);
         }
 
         internal static string GetVisualScriptTypeDescription(ScriptType type)

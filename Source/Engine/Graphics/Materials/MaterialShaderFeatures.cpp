@@ -191,7 +191,7 @@ bool GlobalIlluminationFeature::Bind(MaterialShader::BindParameters& params, Spa
     {
         // Unbind SRVs to prevent issues
         data.DDGI.CascadesCount = 0;
-        data.DDGI.FallbackIrradiance = Float3::Zero;
+        data.DDGI.FallbackIrradiance = Float4::Zero;
         params.GPUContext->UnBindSR(srv + 0);
         params.GPUContext->UnBindSR(srv + 1);
         params.GPUContext->UnBindSR(srv + 2);

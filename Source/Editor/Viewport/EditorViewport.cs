@@ -1063,6 +1063,7 @@ namespace FlaxEditor.Viewport
             InputActions.Add(options => options.Fog, () => Task.ViewFlags ^= ViewFlags.Fog);
             InputActions.Add(options => options.SpecularLight, () => Task.ViewFlags ^= ViewFlags.SpecularLight);
             InputActions.Add(options => options.Decals, () => Task.ViewFlags ^= ViewFlags.Decals);
+            InputActions.Add(options => options.Particles, () => Task.ViewFlags ^= ViewFlags.Particles);
             InputActions.Add(options => options.CustomPostProcess, () => Task.ViewFlags ^= ViewFlags.CustomPostProcess);
             InputActions.Add(options => options.Bloom, () => Task.ViewFlags ^= ViewFlags.Bloom);
             InputActions.Add(options => options.ToneMapping, () => Task.ViewFlags ^= ViewFlags.ToneMapping);
@@ -2115,6 +2116,7 @@ namespace FlaxEditor.Viewport
             new ViewFlagOptions(ViewFlags.Fog, "Fog", Editor.Instance.Options.Options.Input.Fog),
             new ViewFlagOptions(ViewFlags.SpecularLight, "Specular Light", Editor.Instance.Options.Options.Input.SpecularLight),
             new ViewFlagOptions(ViewFlags.Decals, "Decals", Editor.Instance.Options.Options.Input.Decals),
+            new ViewFlagOptions(ViewFlags.Particles, "Particles", Editor.Instance.Options.Options.Input.Particles),
             new ViewFlagOptions(ViewFlags.CustomPostProcess, "Custom Post Process", Editor.Instance.Options.Options.Input.CustomPostProcess),
             new ViewFlagOptions(ViewFlags.Bloom, "Bloom", Editor.Instance.Options.Options.Input.Bloom),
             new ViewFlagOptions(ViewFlags.ToneMapping, "Tone Mapping", Editor.Instance.Options.Options.Input.ToneMapping),
@@ -2134,12 +2136,13 @@ namespace FlaxEditor.Viewport
             if (cm.Visible == false)
                 return;
             var ccm = (ContextMenu)cm;
+            var flags = Task.View.Flags;
             foreach (var e in ccm.Items)
             {
                 if (e is ContextMenuButton b && b.Tag != null)
                 {
                     var v = (ViewFlags)b.Tag;
-                    b.Icon = (Task.View.Flags & v) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                    b.Icon = (flags & v) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
                 }
             }
         }

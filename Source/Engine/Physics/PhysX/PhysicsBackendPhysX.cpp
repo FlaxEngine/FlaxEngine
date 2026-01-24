@@ -2787,7 +2787,8 @@ float PhysicsBackend::ComputeShapeSqrDistanceToPoint(void* shape, const Vector3&
 #if USE_LARGE_WORLDS
     PxVec3 closestPointPx;
     float result = PxGeometryQuery::pointDistance(C2P(point), shapePhysX->getGeometry(), trans, &closestPointPx);
-    *closestPoint = P2C(closestPointPx);
+    if (closestPoint)
+        *closestPoint = P2C(closestPointPx);
     return result;
 #else
     return PxGeometryQuery::pointDistance(C2P(point), shapePhysX->getGeometry(), trans, (PxVec3*)closestPoint);

@@ -264,5 +264,10 @@ bool ParticleMaterialShader::Load()
     // Lazy initialization
     _cacheVolumetricFog.Desc.PS = nullptr;
 
+#if PLATFORM_PS5
+    // Fix shader binding issues on forward shading materials on PS5
+    _drawModes = DrawPass::None;
+#endif
+
     return false;
 }

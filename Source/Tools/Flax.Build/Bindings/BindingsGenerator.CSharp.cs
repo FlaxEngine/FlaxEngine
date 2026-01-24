@@ -703,6 +703,8 @@ namespace Flax.Build.Bindings
                 else if (nativeType.EndsWith("[]"))
                 {
                     parameterMarshalType = $"MarshalUsing(typeof(FlaxEngine.Interop.ArrayMarshaller<,>))";
+                    if (!parameterInfo.IsOut && !parameterInfo.IsRef)
+                        parameterMarshalType += ", In"; // The usage of 'LibraryImportAttribute' does not follow recommendations. It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.
                 }
 
                 if (!string.IsNullOrEmpty(parameterMarshalType))

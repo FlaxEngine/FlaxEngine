@@ -63,6 +63,11 @@ protected:
     /// </summary>
     Task* _continueWith = nullptr;
 
+    /// <summary>
+    /// The task that's starts removal chain, used to sync whole task chain lifetime.
+    /// </summary>
+    Task* _rootForRemoval = nullptr;
+
     void SetState(TaskState state)
     {
         Platform::AtomicStore((int64 volatile*)&_state, (uint64)state);

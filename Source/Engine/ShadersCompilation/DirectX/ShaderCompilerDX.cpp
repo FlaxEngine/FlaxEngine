@@ -59,7 +59,8 @@ public:
         *ppIncludeSource = nullptr;
         const char* source;
         int32 sourceLength;
-        const StringAnsi filename(pFilename);
+        StringAnsi filename(pFilename);
+        filename.Replace('\\', '/');
         if (ShaderCompiler::GetIncludedFileSource(_context, "", filename.Get(), source, sourceLength))
             return E_FAIL;
         IDxcBlobEncoding* textBlob;
@@ -70,25 +71,28 @@ public:
     }
 };
 
-ShaderCompilerDX::ShaderCompilerDX(ShaderProfile profile)
-    : ShaderCompiler(profile)
+ShaderCompilerDX::ShaderCompilerDX(ShaderProfile profile, PlatformType platform, void* dxcCreateInstanceProc)
+    : ShaderCompiler(profile, platform)
 {
     IDxcCompiler3* compiler = nullptr;
     IDxcLibrary* library = nullptr;
+    IDxcContainerBuilder* builder = nullptr;
     IDxcContainerReflection* containerReflection = nullptr;
-    if (FAILED(DxcCreateInstance(CLSID_DxcCompiler, __uuidof(compiler), reinterpret_cast<void**>(&compiler))) ||
-        FAILED(DxcCreateInstance(CLSID_DxcLibrary, __uuidof(library), reinterpret_cast<void**>(&library))) ||
-        FAILED(DxcCreateInstance(CLSID_DxcContainerReflection, __uuidof(containerReflection), reinterpret_cast<void**>(&containerReflection))))
+    DxcCreateInstanceProc createInstance = dxcCreateInstanceProc ? (DxcCreateInstanceProc)dxcCreateInstanceProc : &DxcCreateInstance;
+    if (FAILED(createInstance(CLSID_DxcCompiler, __uuidof(compiler), reinterpret_cast<void**>(&compiler))) ||
+        FAILED(createInstance(CLSID_DxcLibrary, __uuidof(library), reinterpret_cast<void**>(&library))) ||
+        FAILED(createInstance(CLSID_DxcContainerBuilder, __uuidof(builder), reinterpret_cast<void**>(&builder))) ||
+        FAILED(createInstance(CLSID_DxcContainerReflection, __uuidof(containerReflection), reinterpret_cast<void**>(&containerReflection))))
     {
         LOG(Error, "DxcCreateInstance failed");
     }
     _compiler = compiler;
     _library = library;
+    _builder = builder;
     _containerReflection = containerReflection;
-    static bool PrintVersion = true;
-    if (PrintVersion)
+    static HashSet<void*> PrintVersions;
+    if (PrintVersions.Add(createInstance))
     {
-        PrintVersion = false;
         IDxcVersionInfo* version = nullptr;
         if (compiler && SUCCEEDED(compiler->QueryInterface(__uuidof(version), reinterpret_cast<void**>(&version))))
         {
@@ -102,14 +106,13 @@ ShaderCompilerDX::ShaderCompilerDX(ShaderProfile profile)
 
 ShaderCompilerDX::~ShaderCompilerDX()
 {
-    auto compiler = (IDxcCompiler2*)_compiler;
-    if (compiler)
+    if (auto compiler = (IDxcCompiler2*)_compiler)
         compiler->Release();
-    auto library = (IDxcLibrary*)_library;
-    if (library)
+    if (auto library = (IDxcLibrary*)_library)
         library->Release();
-    auto containerReflection = (IDxcContainerReflection*)_containerReflection;
-    if (containerReflection)
+    if (auto builder = (IDxcContainerBuilder*)_builder)
+        builder->Release();
+    if (auto containerReflection = (IDxcContainerReflection*)_containerReflection)
         containerReflection->Release();
 }
 
@@ -221,6 +224,7 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
             argsFull.Add(TEXT("-D"));
             argsFull.Add(*d);
         }
+        GetArgs(meta, argsFull);
 
         // Compile
         ComPtr<IDxcResult> results;
@@ -252,7 +256,7 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
         }
 
         // Get the output
-        ComPtr<IDxcBlob> shaderBuffer = nullptr;
+        ComPtr<IDxcBlob> shaderBuffer;
         if (FAILED(results->GetResult(&shaderBuffer)))
         {
             LOG(Error, "IDxcOperationResult::GetResult failed.");
@@ -455,6 +459,28 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
                     header.UaDimensions[resDesc.BindPoint + shift] = (byte)resDesc.Dimension; // D3D_SRV_DIMENSION matches D3D12_UAV_DIMENSION
                 }
                 break;
+            }
+        }
+
+        // Strip reflection data
+        if (!options->GenerateDebugData)
+        {
+            if (auto builder = (IDxcContainerBuilder*)_builder)
+            {
+                if (builder->Load(shaderBuffer) == S_OK)
+                {
+                    builder->RemovePart(DXC_PART_PDB);
+                    builder->RemovePart(DXC_PART_REFLECTION_DATA);
+                    ComPtr<IDxcOperationResult> serializeResult;
+                    if (builder->SerializeContainer(&serializeResult) == S_OK)
+                    {
+                        ComPtr<IDxcBlob> optimizedShaderBuffer;
+                        if (SUCCEEDED(serializeResult->GetResult(&optimizedShaderBuffer)))
+                        {
+                            shaderBuffer = optimizedShaderBuffer;
+                        }
+                    }
+                }
             }
         }
 

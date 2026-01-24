@@ -7,6 +7,7 @@
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Engine/Globals.h"
 
 bool FileSystemBase::ShowOpenFileDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& filter, bool multiSelect, const StringView& title, Array<String, HeapAllocation>& filenames)
@@ -311,5 +312,41 @@ bool FileSystemBase::DirectoryCopyHelper(const String& dst, const String& src, b
         }
     }
 
+    return false;
+}
+
+bool FileSystemBase::PathFilterHelper(const char* path, const char* searchPattern)
+{
+    // Validate with filter
+    const int32 pathLength = StringUtils::Length(path);
+    const int32 searchPatternLength = StringUtils::Length(searchPattern);
+    if (searchPatternLength == 0 ||
+        StringUtils::Compare(searchPattern, "*") == 0 ||
+        StringUtils::Compare(searchPattern, "*.*") == 0)
+    {
+        // All files
+        return true;
+    }
+    else if (searchPattern[0] == '*' && StringUtils::Find(searchPattern + 1, "*") == nullptr)
+    {
+        // Path ending
+        return searchPatternLength < pathLength && StringUtils::Compare(path + pathLength - searchPatternLength + 1, searchPattern + 1, searchPatternLength - 1) == 0;
+    }
+    else if (searchPattern[0] == '*' && searchPatternLength > 2 && searchPattern[searchPatternLength - 1] == '*')
+    {
+        // Contains pattern
+        bool match = false;
+        for (int32 i = 0; i < pathLength - searchPatternLength - 1; i++)
+        {
+            int32 len = Math::Min(searchPatternLength - 2, pathLength - i);
+            if (StringUtils::Compare(&path[i], &searchPattern[1], len) == 0)
+                return true;
+        }
+    }
+    else
+    {
+        // TODO: implement all cases in a generic way
+        LOG(Warning, "DirectoryGetFiles: Wildcard filter is not implemented ({})", String(searchPattern));
+    }
     return false;
 }

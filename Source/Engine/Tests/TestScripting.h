@@ -204,6 +204,9 @@ public:
     {
         return str.Length();
     }
+
+    // Test parameter passing with non-cost ref
+    API_FUNCTION() virtual void StringParamRef(String& str) {}
 };
 
 // Test debug commands via static class.

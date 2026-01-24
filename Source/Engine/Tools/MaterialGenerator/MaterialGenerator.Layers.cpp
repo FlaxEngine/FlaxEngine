@@ -15,12 +15,14 @@ void MaterialGenerator::ProcessGroupLayers(Box* box, Node* node, Value& value)
         if (!id.IsValid())
         {
             OnError(node, box, TEXT("Missing material."));
+            value = MaterialValue::InitForZero(VariantType::Void);
             break;
         }
         ASSERT(GetRootLayer() != nullptr && GetRootLayer()->ID.IsValid());
         if (id == GetRootLayer()->ID)
         {
             OnError(node, box, TEXT("Cannot use current material as layer."));
+            value = MaterialValue::InitForZero(VariantType::Void);
             break;
         }
 
@@ -29,6 +31,7 @@ void MaterialGenerator::ProcessGroupLayers(Box* box, Node* node, Value& value)
         if (layer == nullptr)
         {
             OnError(node, box, TEXT("Cannot load material."));
+            value = MaterialValue::InitForZero(VariantType::Void);
             break;
         }
         ASSERT(_layers.Contains(layer));

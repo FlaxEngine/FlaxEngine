@@ -18,11 +18,6 @@
 #define DX12_BACK_BUFFER_COUNT 2
 #endif
 
-#define DX12_ROOT_SIGNATURE_CB 0
-#define DX12_ROOT_SIGNATURE_SR (GPU_MAX_CB_BINDED+0)
-#define DX12_ROOT_SIGNATURE_UA (GPU_MAX_CB_BINDED+1)
-#define DX12_ROOT_SIGNATURE_SAMPLER (GPU_MAX_CB_BINDED+2)
-
 class Engine;
 class WindowsWindow;
 class GPUContextDX12;
@@ -215,7 +210,7 @@ public:
     /// <param name="device">The graphics device.</param>
     /// <param name="name">The resource name.</param>
     GPUResourceDX12(GPUDeviceDX12* device, const StringView& name)
-        : GPUResourceBase(device, name)
+        : GPUResourceBase<GPUDeviceDX12, BaseType>(device, name)
     {
     }
 };

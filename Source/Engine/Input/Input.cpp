@@ -80,6 +80,8 @@ Delegate<const Float2&, MouseButton> Input::MouseDoubleClick;
 Delegate<const Float2&, float> Input::MouseWheel;
 Delegate<const Float2&> Input::MouseMove;
 Action Input::MouseLeave;
+Delegate<InputGamepadIndex, GamepadButton> Input::GamepadButtonDown;
+Delegate<InputGamepadIndex, GamepadButton> Input::GamepadButtonUp;
 Delegate<const Float2&, int32> Input::TouchDown;
 Delegate<const Float2&, int32> Input::TouchMove;
 Delegate<const Float2&, int32> Input::TouchUp;
@@ -1025,6 +1027,19 @@ void InputService::Update()
         case InputDevice::EventType::TouchUp:
             Input::TouchUp(e.TouchData.Position, e.TouchData.PointerId);
             break;
+        }
+    }
+    // TODO: route gamepad button events into global InputEvents queue to improve processing
+    for (int32 i = 0; i < Input::Gamepads.Count(); i++)
+    {
+        auto gamepad = Input::Gamepads[i];
+        for (int32 buttonIdx = 1; buttonIdx < (int32)GamepadButton::MAX; buttonIdx++)
+        {
+            GamepadButton button = (GamepadButton)buttonIdx;
+            if (gamepad->GetButtonDown(button))
+                Input::GamepadButtonDown((InputGamepadIndex)i, button);
+            else if (gamepad->GetButtonUp(button))
+                Input::GamepadButtonUp((InputGamepadIndex)i, button);
         }
     }
 

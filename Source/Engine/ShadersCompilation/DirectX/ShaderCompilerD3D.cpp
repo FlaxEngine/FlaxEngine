@@ -196,7 +196,7 @@ bool ShaderCompilerD3D::CompileShader(ShaderFunctionMeta& meta, WritePermutation
     default:
         return true;
     }
-    if (_profile == ShaderProfile::DirectX_SM5)
+    if (GetProfile() == ShaderProfile::DirectX_SM5)
     {
         profileName += "_5_0";
     }

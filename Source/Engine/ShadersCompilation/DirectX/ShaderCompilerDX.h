@@ -15,6 +15,7 @@ private:
     Array<char> _funcNameDefineBuffer;
     void* _compiler;
     void* _library;
+    void* _builder;
     void* _containerReflection;
 
 public:
@@ -22,7 +23,9 @@ public:
     /// Initializes a new instance of the <see cref="ShaderCompilerDX"/> class.
     /// </summary>
     /// <param name="profile">The profile.</param>
-    ShaderCompilerDX(ShaderProfile profile);
+    /// <param name="platform">The platform.</param>
+    /// <param name="dxcCreateInstanceProc">The custom DXC Compiler factory function.</param>
+    ShaderCompilerDX(ShaderProfile profile, PlatformType platform = (PlatformType)0, void* dxcCreateInstanceProc = nullptr);
 
     /// <summary>
     /// Finalizes an instance of the <see cref="ShaderCompilerDX"/> class.
@@ -30,6 +33,10 @@ public:
     ~ShaderCompilerDX();
 
 protected:
+    virtual void GetArgs(ShaderFunctionMeta& meta, Array<const Char*, InlinedAllocation<250>>& args)
+    {
+    }
+
     // [ShaderCompiler]
     bool CompileShader(ShaderFunctionMeta& meta, WritePermutationData customDataWrite = nullptr) override;
     bool OnCompileBegin() override;

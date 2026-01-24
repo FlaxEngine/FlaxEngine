@@ -269,7 +269,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     int32 bloomMipCount = CalculateBloomMipCount(w1, h1);
 
     // Ensure to have valid data and if at least one effect should be applied
-    if (!(useBloom || useToneMapping || useCameraArtifacts) || checkIfSkipPass() || w8 <= 1 || h8 <= 1)
+    if (!(useBloom || useToneMapping || useCameraArtifacts || colorGradingLUT) || checkIfSkipPass() || w8 <= 1 || h8 <= 1)
     {
         // Resources are missing. Do not perform rendering. Just copy raw frame
         context->SetViewportAndScissors((float)output->Width(), (float)output->Height());
@@ -375,6 +375,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
         RENDER_TARGET_POOL_SET_NAME(bloomBuffer1, "PostProcessing.Bloom");
         RENDER_TARGET_POOL_SET_NAME(bloomBuffer2, "PostProcessing.Bloom");
 
+        // TODO: skip this clear? or do it at once for the whole textures (2 calls instead of per-mip)
         for (int32 mip = 0; mip < bloomMipCount; mip++)
         {
             context->Clear(bloomBuffer1->View(0, mip), Color::Transparent);

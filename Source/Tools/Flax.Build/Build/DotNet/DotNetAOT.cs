@@ -462,7 +462,7 @@ namespace Flax.Build
                     else
                     {
                         // Copy to the destination folder
-                        Utilities.FileCopy(assemblyPath, Path.Combine(dotnetOutputPath, assemblyFileName));
+                        Utilities.FileCopy(assemblyPath, Path.Combine(dotnetOutputPath, assemblyFileName), Utilities.CopyMode.OverrideIfNewer);
                     }
                 };
                 if (Configuration.MaxConcurrency > 1 && Configuration.ConcurrencyProcessorScale > 0.0f && !dotnetAotDebug)

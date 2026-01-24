@@ -200,7 +200,7 @@ void Renderer::Render(SceneRenderTask* task)
 
     // Prepare GPU context
     auto context = GPUDevice::Instance->GetMainContext();
-    context->ClearState();
+    context->ResetState();
     context->FlushState();
     const Viewport viewport = task->GetViewport();
     context->SetViewportAndScissors(viewport);
@@ -402,6 +402,8 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         case ViewMode::MaterialComplexity:
         case ViewMode::Wireframe:
         case ViewMode::NoPostFx:
+        case ViewMode::VertexColors:
+        case ViewMode::QuadOverdraw:
             setup.UseTemporalAAJitter = false;
             break;
         }

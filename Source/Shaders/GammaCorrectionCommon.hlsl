@@ -52,7 +52,7 @@ float3 LinearToSrgb(float3 linearColor)
 float3 sRGBToLinear(float3 color)
 {
     color = max(6.10352e-5, color);
-    return color > 0.04045 ? pow(color * (1.0 / 1.055) + 0.0521327, 2.4) : color * (1.0 / 12.92);
+    return select(color > 0.04045, pow(color * (1.0 / 1.055) + 0.0521327, 2.4), color * (1.0 / 12.92));
 }
 
 float3 LogToLinear(float3 logColor)

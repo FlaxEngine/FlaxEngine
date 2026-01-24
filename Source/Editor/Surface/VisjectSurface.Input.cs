@@ -469,7 +469,8 @@ namespace FlaxEditor.Surface
             bool handled = base.OnMouseDown(location, button);
             if (!handled)
                 CustomMouseDown?.Invoke(ref location, button, ref handled);
-            if (handled)
+            var root = Root;
+            if (handled || root == null)
             {
                 // Clear flags
                 _isMovingSelection = false;
@@ -523,11 +524,11 @@ namespace FlaxEditor.Surface
                 if (_leftMouseDown && controlUnderMouse.CanSelect(ref cLocation))
                 {
                     // Check if user is pressing control
-                    if (Root.GetKey(KeyboardKeys.Control))
+                    if (root.GetKey(KeyboardKeys.Control))
                     {
                         AddToSelection(controlUnderMouse);
                     }
-                    else if (Root.GetKey(KeyboardKeys.Shift))
+                    else if (root.GetKey(KeyboardKeys.Shift))
                     {
                         RemoveFromSelection(controlUnderMouse);
                     }
@@ -539,7 +540,7 @@ namespace FlaxEditor.Surface
                     }
 
                     // Start moving selected nodes
-                    if (!Root.GetKey(KeyboardKeys.Shift))
+                    if (!root.GetKey(KeyboardKeys.Shift))
                     {
                         StartMouseCapture();
                         _movingSelectionViewPos = _rootControl.Location;
@@ -559,7 +560,7 @@ namespace FlaxEditor.Surface
                     // Start selecting or commenting
                     StartMouseCapture();
 
-                    if (!Root.GetKey(KeyboardKeys.Control) && !Root.GetKey(KeyboardKeys.Shift))
+                    if (!root.GetKey(KeyboardKeys.Control) && !root.GetKey(KeyboardKeys.Shift))
                     {
                         ClearSelection();
                     }

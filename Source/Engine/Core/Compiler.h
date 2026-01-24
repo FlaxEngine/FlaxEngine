@@ -4,8 +4,9 @@
 
 #if defined(__clang__)
 
-#define DLLEXPORT __attribute__ ((__visibility__ ("default")))
+#define DLLEXPORT __attribute__((__visibility__("default")))
 #define DLLIMPORT
+#define USED __attribute__((used))
 #define THREADLOCAL __thread
 #define STDCALL __attribute__((stdcall))
 #define CDECL __attribute__((cdecl))
@@ -19,7 +20,7 @@
 #define PACK_BEGIN()
 #define PACK_END() __attribute__((__packed__))
 #define ALIGN_BEGIN(_align)
-#define ALIGN_END(_align) __attribute__( (aligned(_align) ) )
+#define ALIGN_END(_align) __attribute__((aligned(_align)))
 #define OFFSET_OF(X, Y) __builtin_offsetof(X, Y)
 #define PRAGMA_DISABLE_DEPRECATION_WARNINGS \
     _Pragma("clang diagnostic push") \
@@ -37,8 +38,9 @@
 
 #elif defined(__GNUC__)
 
-#define DLLEXPORT __attribute__ ((__visibility__ ("default")))
+#define DLLEXPORT __attribute__((__visibility__("default")))
 #define DLLIMPORT
+#define USED __attribute__((used))
 #define THREADLOCAL __thread
 #define STDCALL __attribute__((stdcall))
 #define CDECL __attribute__((cdecl))
@@ -52,7 +54,7 @@
 #define PACK_BEGIN()
 #define PACK_END() __attribute__((__packed__))
 #define ALIGN_BEGIN(_align)
-#define ALIGN_END(_align) __attribute__( (aligned(_align) ) )
+#define ALIGN_END(_align) __attribute__((aligned(_align)))
 #define OFFSET_OF(X, Y) __builtin_offsetof(X, Y)
 #define PRAGMA_DISABLE_DEPRECATION_WARNINGS
 #define PRAGMA_ENABLE_DEPRECATION_WARNINGS
@@ -67,6 +69,7 @@
 
 #define DLLEXPORT __declspec(dllexport)
 #define DLLIMPORT __declspec(dllimport)
+#define USED
 #define THREADLOCAL __declspec(thread)
 #define STDCALL __stdcall
 #define CDECL __cdecl

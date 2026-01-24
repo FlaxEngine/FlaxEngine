@@ -137,6 +137,7 @@ const Char* SplashScreenQuotes[] =
     TEXT("Good Luck Have Fun"),
     TEXT("GG Well Played"),
     TEXT("Now with documentation."),
+    TEXT("We do this not because it is easy,\nbut because we thought it would be easy"),
 };
 
 SplashScreen::~SplashScreen()

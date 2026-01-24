@@ -194,7 +194,6 @@ void Collider::UpdateLayerBits()
     // Own layer mask
     const uint32 mask1 = Physics::LayerMasks[GetLayer()];
 
-    ASSERT(_shape);
     PhysicsBackend::SetShapeFilterMask(_shape, mask0, mask1);
 }
 

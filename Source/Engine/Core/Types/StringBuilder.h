@@ -215,6 +215,11 @@ public:
         return String(_data.Get(), _data.Count());
     }
 
+    StringAnsi ToStringAnsi() const
+    {
+        return StringAnsi(_data.Get(), _data.Count());
+    }
+
     StringView ToStringView() const;
 };
 
