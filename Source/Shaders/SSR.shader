@@ -1,6 +1,13 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+// Skips additional check in TraceScreenSpaceReflection for material that is already done by PS_RayTracePass
 #define SSR_SKIP_INVALID_CHECK 1
+
+// Uses more-optimized Hierarchical Z-Buffer tracing rather than naive Depth Buffer tracing 
+#define SSR_USE_HZB 1
+
+// Enable/disable luminance filter to reduce reflections highlights
+#define SSR_REDUCE_HIGHLIGHTS 1
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/LightingCommon.hlsl"
@@ -11,8 +18,7 @@
 #include "./Flax/GlobalSignDistanceField.hlsl"
 #include "./Flax/GI/GlobalSurfaceAtlas.hlsl"
 
-// Enable/disable luminance filter to reduce reflections highlights
-#define SSR_REDUCE_HIGHLIGHTS 1
+#define SSR_USE_SDF (USE_GLOBAL_SURFACE_ATLAS && CAN_USE_GLOBAL_SURFACE_ATLAS)
 
 META_CB_BEGIN(0, Data)
 GBufferData GBuffer;
@@ -20,13 +26,13 @@ float MaxColorMiplevel;
 float TraceSizeMax;
 float MaxTraceSamples;
 float RoughnessFade;
-float2 SSRtexelSize;
+float2 SSRTexelSize;
 float TemporalTime;
 float BRDFBias;
 float WorldAntiSelfOcclusionBias;
 float EdgeFadeFactor;
 float TemporalResponse;
-float Dummy0;
+uint DepthMips;
 float RayTraceStep;
 float TemporalEffect;
 float Intensity;
@@ -104,14 +110,31 @@ float4 PS_RayTracePass(Quad_VS2PS input) : SV_Target0
 	GBufferSample gBuffer = SampleGBuffer(gBufferData, input.TexCoord);
 
     // Reject invalid pixels
+    BRANCH
     if (gBuffer.ShadingModel == SHADING_MODEL_UNLIT || gBuffer.Roughness > RoughnessFade || gBuffer.ViewPos.z > FadeOutDistance)
         return base;
 
 	// Trace depth buffer to find intersection
-	float3 screenHit = TraceScreenSpaceReflection(input.TexCoord, gBuffer, Depth, gBufferData.ViewPos, ViewMatrix, ViewProjectionMatrix, RayTraceStep, MaxTraceSamples, TemporalEffect, TemporalTime, WorldAntiSelfOcclusionBias, BRDFBias, FadeOutDistance, RoughnessFade, EdgeFadeFactor);
-	float4 result = base;
+    bool uncertainHit = false;
+	float3 screenHit = TraceScreenSpaceReflection(
+#if SSR_USE_HZB
+        uncertainHit, DepthMips,
+#endif
+        input.TexCoord, gBuffer, Depth, gBufferData.ViewPos, ViewMatrix, ViewProjectionMatrix, RayTraceStep, MaxTraceSamples, TemporalEffect, TemporalTime, WorldAntiSelfOcclusionBias, BRDFBias, FadeOutDistance, RoughnessFade, EdgeFadeFactor);
+    float4 result = base;
+#if SSR_USE_SDF
+	if (screenHit.z > 0 && !uncertainHit) // Only use certain SSR hits when SDF tracing is enabled
+#else
 	if (screenHit.z > 0)
+#endif
 	{
+        if (uncertainHit)
+        {
+            // Jitter edges of uncertain hits (when ray goes behind the object)
+            screenHit.xy += RandN2(input.TexCoord + TemporalTime) * SSRTexelSize;
+        }
+
+        // Sample color buffer mip that matches roughness of the surface to get blurred reflections
 	    float3 viewVector = normalize(gBufferData.ViewPos - gBuffer.WorldPos);
         float NdotV = saturate(dot(gBuffer.Normal, viewVector));
         float coneTangent = lerp(0.0, gBuffer.Roughness * 5 * (1.0 - BRDFBias), pow(NdotV, 1.5) * sqrt(gBuffer.Roughness));
@@ -119,21 +142,28 @@ float4 PS_RayTracePass(Quad_VS2PS input) : SV_Target0
         float mip = clamp(log2(intersectionCircleRadius * TraceSizeMax), 0.0, MaxColorMiplevel);
         float3 sampleColor = Texture0.SampleLevel(SamplerLinearClamp, screenHit.xy, mip).rgb;
         result = float4(sampleColor, screenHit.z);
-        if (screenHit.z >= REFLECTIONS_HIT_THRESHOLD)
+
+#if SSR_USE_SDF
+        // Skip SDF tracing if SSR hit is very certain
+        BRANCH
+        if (result.a > 0.95f)
             return result;
+#endif
 	}
 
     // Fallback to Global SDF and Global Surface Atlas tracing
-#if USE_GLOBAL_SURFACE_ATLAS && CAN_USE_GLOBAL_SURFACE_ATLAS
+#if SSR_USE_SDF
 	// Calculate reflection direction (the same TraceScreenSpaceReflection)
     float3 reflectWS = ScreenSpaceReflectionDirection(input.TexCoord, gBuffer, gBufferData.ViewPos, TemporalEffect, TemporalTime, BRDFBias);
 
+    // Raytrace Global SDF
     GlobalSDFTrace sdfTrace;
     float maxDistance = GLOBAL_SDF_WORLD_SIZE;
     sdfTrace.Init(gBuffer.WorldPos, reflectWS, 0.0f, maxDistance);
     GlobalSDFHit sdfHit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, sdfTrace, 2.0f);
     if (sdfHit.IsHit())
     {
+        // Sample Global Surface Atlas
         float3 hitPosition = sdfHit.GetHitPosition(sdfTrace);
         float surfaceThreshold = GetGlobalSurfaceAtlasThreshold(GlobalSDF, sdfHit);
         float4 surfaceAtlas = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasChunks, RWGlobalSurfaceAtlasCulledObjects, GlobalSurfaceAtlasObjects, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hitPosition, -reflectWS, surfaceThreshold);
@@ -159,28 +189,27 @@ float4 PS_ResolvePass(Quad_VS2PS input) : SV_Target0
 	static const float2 Offsets[8] =
 	{
 		float2( 0,  0),
-		float2( 2, -2),
-		float2(-2, -2),
-		float2( 0,  2),
-		float2(-2,  0),
-		float2( 0, -2),
-		float2( 2,  0),
-		float2( 2,  2),
+		float2( 1, -1),
+		float2(-1, -1),
+		float2( 0,  1),
+		float2(-1,  0),
+		float2( 0, -1),
+		float2( 1,  0),
+		float2( 1,  1),
 	};
-
-	float2 uv = input.TexCoord;
 
 	// Inputs:
 	// Texture0 - ray trace buffer (xy: HDR color, z: weight)
 
 	// Sample GBuffer
 	GBufferData gBufferData = GetGBufferData();
-	GBufferSample gBuffer = SampleGBuffer(gBufferData, uv);
+	GBufferSample gBuffer = SampleGBuffer(gBufferData, input.TexCoord);
+    BRANCH
     if (gBuffer.ShadingModel == SHADING_MODEL_UNLIT)
         return 0;
 
 	// Randomize it a little
-	float2 random = RandN2(uv + TemporalTime);
+	float2 random = RandN2(input.TexCoord + TemporalTime);
 	float2 blueNoise = random.xy * 2.0 - 1.0;
 	float2x2 offsetRotationMatrix = float2x2(blueNoise.x, blueNoise.y, -blueNoise.y, blueNoise.x);
 
@@ -189,9 +218,9 @@ float4 PS_ResolvePass(Quad_VS2PS input) : SV_Target0
 	UNROLL
 	for (int i = 0; i < RESOLVE_SAMPLES; i++)
 	{
-		float2 offsetUV = Offsets[i] * SSRtexelSize;
+		float2 offsetUV = Offsets[i] * SSRTexelSize;
 		offsetUV =  mul(offsetRotationMatrix, offsetUV);
-		float4 value = Texture0.SampleLevel(SamplerLinearClamp, uv + offsetUV, 0);
+		float4 value = Texture0.SampleLevel(SamplerLinearClamp, input.TexCoord + offsetUV, 0);
 #if SSR_REDUCE_HIGHLIGHTS
 		value.rgb /= 1 + Luminance(value.rgb);
 #endif
@@ -224,8 +253,8 @@ float4 PS_TemporalPass(Quad_VS2PS input) : SV_Target0
 	float2 velocity = Texture2.SampleLevel(SamplerLinearClamp, uv, 0).xy;
 	float2 prevUV = uv - velocity;
 	float4 current = Texture0.SampleLevel(SamplerLinearClamp, uv, 0);
-	float2 du = float2(SSRtexelSize.x, 0.0);
-	float2 dv = float2(0.0, SSRtexelSize.y);
+	float2 du = float2(SSRTexelSize.x, 0.0);
+	float2 dv = float2(0.0, SSRTexelSize.y);
 
 	// Sample pixels around
 	float4 currentTopLeft = Texture0.SampleLevel(SamplerLinearClamp, uv.xy - dv - du, 0);

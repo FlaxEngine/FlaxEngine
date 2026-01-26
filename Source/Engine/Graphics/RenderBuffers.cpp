@@ -64,6 +64,7 @@ void RenderBuffers::ReleaseUnusedMemory()
     UPDATE_LAZY_KEEP_RT(TemporalSSR);
     UPDATE_LAZY_KEEP_RT(TemporalAA);
     UPDATE_LAZY_KEEP_RT(HalfResDepth);
+    UPDATE_LAZY_KEEP_RT(HiZ);
     UPDATE_LAZY_KEEP_RT(LuminanceMap);
 #undef UPDATE_LAZY_KEEP_RT
     for (int32 i = CustomBuffers.Count() - 1; i >= 0; i--)
@@ -110,6 +111,42 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
     MultiScaler::Instance()->DownscaleDepth(context, halfDepthWidth, halfDepthHeight, DepthBuffer, HalfResDepth->View());
 
     return HalfResDepth;
+}
+
+GPUTexture* RenderBuffers::RequestHiZ(GPUContext* context, bool fullRes, int32 mipLevels)
+{
+    // Skip if already done in the current frame
+    const auto currentFrame = Engine::FrameCount;
+    if (LastFrameHiZ == currentFrame)
+        return HiZ;
+    LastFrameHiZ = currentFrame;
+
+    // Allocate or resize buffer (with full mip-chain)
+    // TODO: migrate to inverse depth and try using r16 again as default (should have no artifacts anymore)
+    auto format = PLATFORM_ANDROID || PLATFORM_IOS || PLATFORM_SWITCH ? PixelFormat::R16_UInt : PixelFormat::R32_Float;
+    auto width = fullRes ? _width : Math::Max(_width >> 1, 1);
+    auto height = fullRes ? _height : Math::Max(_height >> 1, 1);
+    auto desc = GPUTextureDescription::New2D(width, height, mipLevels, format, GPUTextureFlags::ShaderResource);
+    bool useCompute = false; // TODO: impl Compute Shader for downscaling depth to HiZ with a single dispatch (eg. FidelityFX Single Pass Downsampler)
+    if (useCompute)
+        desc.Flags |= GPUTextureFlags::UnorderedAccess;
+    else
+        desc.Flags |= GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews;
+    if (HiZ && HiZ->GetDescription() != desc)
+    {
+        RenderTargetPool::Release(HiZ);
+        HiZ = nullptr;
+    }
+    if (HiZ == nullptr)
+    {
+        HiZ = RenderTargetPool::Get(desc);
+        RENDER_TARGET_POOL_SET_NAME(HiZ, "HiZ");
+    }
+
+    // Downscale
+    MultiScaler::Instance()->BuildHiZ(context, DepthBuffer, HiZ);
+
+    return HiZ;
 }
 
 PixelFormat RenderBuffers::GetOutputFormat() const
@@ -244,6 +281,7 @@ void RenderBuffers::Release()
     UPDATE_LAZY_KEEP_RT(TemporalSSR);
     UPDATE_LAZY_KEEP_RT(TemporalAA);
     UPDATE_LAZY_KEEP_RT(HalfResDepth);
+    UPDATE_LAZY_KEEP_RT(HiZ);
     UPDATE_LAZY_KEEP_RT(LuminanceMap);
 #undef UPDATE_LAZY_KEEP_RT
     CustomBuffers.ClearDelete();

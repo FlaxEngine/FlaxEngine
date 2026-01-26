@@ -443,6 +443,11 @@ String ShadersCompilation::ResolveShaderPath(StringView path)
             // Hard-coded redirect to platform-specific includes
             result = Globals::StartupFolder / TEXT("Source/Platforms");
         }
+        else if (projectName.StartsWith(StringView(TEXT("FlaxThirdParty"))))
+        {
+            // Hard-coded redirect to third-party-specific includes
+            result = Globals::StartupFolder / TEXT("Source/ThirdParty");
+        }
         else
         {
             HashSet<const ProjectInfo*> projects;

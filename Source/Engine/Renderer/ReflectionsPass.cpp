@@ -411,6 +411,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     else
     {
         // Combine reflections and light buffer (additive mode)
+        PROFILE_GPU("Combine");
         if (_depthBounds)
         {
             context->SetRenderTarget(depthBufferRTV, lightBuffer);

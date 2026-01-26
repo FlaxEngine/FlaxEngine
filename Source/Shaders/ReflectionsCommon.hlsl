@@ -6,9 +6,6 @@
 #include "./Flax/GBufferCommon.hlsl"
 #include "./Flax/Quaternion.hlsl"
 
-// Hit depth (view space) threshold to detect if sky was hit (value above it where 1.0f is default)
-#define REFLECTIONS_HIT_THRESHOLD 0.9f
-
 // Packed env probe data
 struct EnvProbeData
 {

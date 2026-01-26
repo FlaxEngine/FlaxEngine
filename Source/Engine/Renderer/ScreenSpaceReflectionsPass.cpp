@@ -22,19 +22,21 @@
 #define TEXTURE1 5
 #define TEXTURE2 6
 
+#define SSR_USE_HZB 1
+
 GPU_CB_STRUCT(Data {
     ShaderGBufferData GBuffer;
     float MaxColorMiplevel;
     float TraceSizeMax;
     float MaxTraceSamples;
     float RoughnessFade;
-    Float2 SSRtexelSize;
+    Float2 SSRTexelSize;
     float TemporalTime;
     float BRDFBias;
     float WorldAntiSelfOcclusionBias;
     float EdgeFadeFactor;
     float TemporalResponse;
-    float Dummy0;
+    uint32 DepthMips;
     float RayTraceStep;
     float TemporalEffect;
     float Intensity;
@@ -157,10 +159,10 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
     const auto colorBufferMips = MipLevelsCount(colorBufferWidth, colorBufferHeight);
 
     // Prepare buffers
-    auto tempDesc = GPUTextureDescription::New2D(colorBufferWidth, colorBufferHeight, 0, PixelFormat::R11G11B10_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews);
     GPUTexture* colorBuffer0, *colorBuffer1;
     if (settings.UseColorBufferMips)
     {
+        auto tempDesc = GPUTextureDescription::New2D(colorBufferWidth, colorBufferHeight, 0, PixelFormat::R11G11B10_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews);
         colorBuffer0 = RenderTargetPool::Get(tempDesc);
         RENDER_TARGET_POOL_SET_NAME(colorBuffer0, "SSR.ColorBuffer0");
         // TODO: maybe allocate colorBuffer1 smaller because mip0 is not used (the same as PostProcessingPass for Bloom), keep in sync to use the same buffer in frame
@@ -170,27 +172,33 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
     else
     {
         // Single mip
-        tempDesc.MipLevels = 1;
-        tempDesc.Flags &= ~GPUTextureFlags::PerMipViews;
+        auto tempDesc = GPUTextureDescription::New2D(colorBufferWidth, colorBufferHeight, 1, PixelFormat::R11G11B10_Float);
         colorBuffer0 = RenderTargetPool::Get(tempDesc);
         colorBuffer1 = nullptr;
     }
-    tempDesc = GPUTextureDescription::New2D(traceWidth, traceHeight, PixelFormat::R16G16B16A16_Float);
-    auto traceBuffer = RenderTargetPool::Get(tempDesc);
-    RENDER_TARGET_POOL_SET_NAME(traceBuffer, "SSR.TraceBuffer");
-    tempDesc = GPUTextureDescription::New2D(resolveWidth, resolveHeight, PixelFormat::R16G16B16A16_Float);
-    auto resolveBuffer = RenderTargetPool::Get(tempDesc);
-    RENDER_TARGET_POOL_SET_NAME(resolveBuffer, "SSR.ResolveBuffer");
+    GPUTexture* traceBuffer, *resolveBuffer;
+    {
+        auto tempDesc = GPUTextureDescription::New2D(traceWidth, traceHeight, PixelFormat::R16G16B16A16_Float);
+        traceBuffer = RenderTargetPool::Get(tempDesc);
+        RENDER_TARGET_POOL_SET_NAME(traceBuffer, "SSR.TraceBuffer");
+        tempDesc.Width = resolveWidth;
+        tempDesc.Height = resolveHeight;
+        resolveBuffer = RenderTargetPool::Get(tempDesc);
+        RENDER_TARGET_POOL_SET_NAME(resolveBuffer, "SSR.ResolveBuffer");
+    }
 
     // Pick effect settings
     int32 maxTraceSamples = 60;
+    int32 resolveSamples = settings.ResolveSamples;
     switch (Graphics::SSRQuality)
     {
     case Quality::Low:
-        maxTraceSamples = 20;
+        maxTraceSamples = 40;
+        resolveSamples = Math::Min(resolveSamples, 2);
         break;
     case Quality::Medium:
         maxTraceSamples = 55;
+        resolveSamples = Math::Min(resolveSamples, 4);
         break;
     case Quality::High:
         maxTraceSamples = 70;
@@ -199,7 +207,6 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
         maxTraceSamples = 120;
         break;
     }
-    const int32 resolveSamples = settings.ResolveSamples;
     int32 resolvePassIndex = 0;
     if (resolveSamples >= 8)
         resolvePassIndex = 3;
@@ -214,12 +221,12 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
     data.RoughnessFade = Math::Saturate(settings.RoughnessThreshold);
     data.MaxTraceSamples = static_cast<float>(maxTraceSamples);
     data.BRDFBias = settings.BRDFBias;
-    data.WorldAntiSelfOcclusionBias = settings.WorldAntiSelfOcclusionBias;
+    data.WorldAntiSelfOcclusionBias = settings.WorldAntiSelfOcclusionBias * (int32)settings.DepthResolution;
     data.EdgeFadeFactor = settings.EdgeFadeFactor;
-    data.SSRtexelSize = Float2(1.0f / (float)traceWidth, 1.0f / (float)traceHeight);
+    data.SSRTexelSize = Float2(1.0f / (float)traceWidth, 1.0f / (float)traceHeight);
     data.TraceSizeMax = (float)Math::Max(traceWidth, traceHeight);
-    data.MaxColorMiplevel = settings.UseColorBufferMips ? (float)colorBufferMips - 2.0f : 0.0f;
-    data.RayTraceStep = static_cast<float>(settings.DepthResolution) / (float)width;
+    data.MaxColorMiplevel = settings.UseColorBufferMips ? (float)(colorBufferMips - 2) : 0.0f;
+    data.RayTraceStep = (float)settings.DepthResolution / (float)width;
     data.Intensity = settings.Intensity;
     data.FadeOutDistance = Math::Max(settings.FadeOutDistance, 100.0f);
     data.TemporalResponse = settings.TemporalResponse;
@@ -245,8 +252,16 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
         }
     }
 
-    // Check if resize depth
+    // Prepare depth buffer
+#if SSR_USE_HZB
+    int32 hzbMips = settings.DepthResolution == ResolutionMode::Full ? 5 : 4; // Using lower mips in tracing introduces blocky artifacts
+    bool hzbFullRes = settings.DepthResolution == ResolutionMode::Full;
+    GPUTexture* depthBufferTrace = buffers->RequestHiZ(context, hzbFullRes, hzbMips);
+    data.DepthMips = hzbMips - 1; // Offset to improve SSR range
+#else
     GPUTexture* depthBufferTrace = settings.DepthResolution == ResolutionMode::Half ? buffers->RequestHalfResDepth(context) : buffers->DepthBuffer;
+    data.DepthMips = 1;
+#endif
 
     // Prepare constants
     context->UpdateCB(cb, &data);
@@ -259,16 +274,19 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
     context->BindSR(3, depthBufferTrace);
 
     // Combine pass
-    context->BindSR(TEXTURE0, lightBuffer);
-    context->BindSR(TEXTURE1, reflectionsRT);
-    context->BindSR(TEXTURE2, _preIntegratedGF->GetTexture());
-    context->SetViewportAndScissors((float)colorBufferWidth, (float)colorBufferHeight);
-    context->SetRenderTarget(colorBuffer0->View(0));
-    context->SetState(_psCombinePass);
-    context->DrawFullscreenTriangle();
-    context->UnBindSR(TEXTURE1);
-    context->UnBindSR(TEXTURE2);
-    context->ResetRenderTarget();
+    {
+        PROFILE_GPU("Combine");
+        context->BindSR(TEXTURE0, lightBuffer);
+        context->BindSR(TEXTURE1, reflectionsRT);
+        context->BindSR(TEXTURE2, _preIntegratedGF->GetTexture());
+        context->SetViewportAndScissors((float)colorBufferWidth, (float)colorBufferHeight);
+        context->SetRenderTarget(colorBuffer0->View(0));
+        context->SetState(_psCombinePass);
+        context->DrawFullscreenTriangle();
+        context->UnBindSR(TEXTURE1);
+        context->UnBindSR(TEXTURE2);
+        context->ResetRenderTarget();
+    }
 
     // Blur Pass
     if (settings.UseColorBufferMips)
@@ -298,37 +316,44 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
     RenderTargetPool::Release(colorBuffer1);
 
     // Ray Trace Pass
-    context->SetViewportAndScissors((float)traceWidth, (float)traceHeight);
-    context->SetRenderTarget(*traceBuffer);
-    context->BindSR(TEXTURE0, colorBuffer0->View());
-    if (useGlobalSurfaceAtlas)
     {
-        context->BindSR(7, bindingDataSDF.Texture ? bindingDataSDF.Texture->ViewVolume() : nullptr);
-        context->BindSR(8, bindingDataSDF.TextureMip ? bindingDataSDF.TextureMip->ViewVolume() : nullptr);
-        context->BindSR(9, bindingDataSurfaceAtlas.Chunks ? bindingDataSurfaceAtlas.Chunks->View() : nullptr);
-        context->BindSR(10, bindingDataSurfaceAtlas.CulledObjects ? bindingDataSurfaceAtlas.CulledObjects->View() : nullptr);
-        context->BindSR(11, bindingDataSurfaceAtlas.Objects ? bindingDataSurfaceAtlas.Objects->View() : nullptr);
-        context->BindSR(12, bindingDataSurfaceAtlas.AtlasDepth->View());
-        context->BindSR(13, bindingDataSurfaceAtlas.AtlasLighting->View());
+        PROFILE_GPU("RayTrace");
+        context->SetViewportAndScissors((float)traceWidth, (float)traceHeight);
+        context->SetRenderTarget(*traceBuffer);
+        context->BindSR(TEXTURE0, colorBuffer0->View());
+        if (useGlobalSurfaceAtlas)
+        {
+            context->BindSR(7, bindingDataSDF.Texture ? bindingDataSDF.Texture->ViewVolume() : nullptr);
+            context->BindSR(8, bindingDataSDF.TextureMip ? bindingDataSDF.TextureMip->ViewVolume() : nullptr);
+            context->BindSR(9, bindingDataSurfaceAtlas.Chunks ? bindingDataSurfaceAtlas.Chunks->View() : nullptr);
+            context->BindSR(10, bindingDataSurfaceAtlas.CulledObjects ? bindingDataSurfaceAtlas.CulledObjects->View() : nullptr);
+            context->BindSR(11, bindingDataSurfaceAtlas.Objects ? bindingDataSurfaceAtlas.Objects->View() : nullptr);
+            context->BindSR(12, bindingDataSurfaceAtlas.AtlasDepth->View());
+            context->BindSR(13, bindingDataSurfaceAtlas.AtlasLighting->View());
+        }
+        context->SetState(_psRayTracePass.Get(useGlobalSurfaceAtlas ? 1 : 0));
+        context->DrawFullscreenTriangle();
+        context->ResetRenderTarget();
+        RenderTargetPool::Release(colorBuffer0);
     }
-    context->SetState(_psRayTracePass.Get(useGlobalSurfaceAtlas ? 1 : 0));
-    context->DrawFullscreenTriangle();
-    context->ResetRenderTarget();
-    RenderTargetPool::Release(colorBuffer0);
 
     // Resolve Pass
-    context->SetViewportAndScissors((float)resolveWidth, (float)resolveHeight);
-    context->SetRenderTarget(resolveBuffer->View());
-    context->BindSR(TEXTURE0, traceBuffer->View());
-    context->SetState(_psResolvePass.Get(resolvePassIndex));
-    context->DrawFullscreenTriangle();
-    context->ResetRenderTarget();
-    RenderTargetPool::Release(traceBuffer);
+    {
+        PROFILE_GPU("Resolve");
+        context->SetViewportAndScissors((float)resolveWidth, (float)resolveHeight);
+        context->SetRenderTarget(resolveBuffer->View());
+        context->BindSR(TEXTURE0, traceBuffer->View());
+        context->SetState(_psResolvePass.Get(resolvePassIndex));
+        context->DrawFullscreenTriangle();
+        context->ResetRenderTarget();
+        RenderTargetPool::Release(traceBuffer);
+    }
 
     // Temporal Pass
     GPUTexture* reflectionsBuffer = resolveBuffer;
     if (useTemporal)
     {
+        PROFILE_GPU("Temporal");
         buffers->LastFrameTemporalSSR = Engine::FrameCount;
         bool resetHistory = false;
         if (!buffers->TemporalSSR || buffers->TemporalSSR->Width() != resolveWidth || buffers->TemporalSSR->Height() != resolveHeight)
@@ -336,7 +361,7 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
             resetHistory = true;
             if (buffers->TemporalSSR)
                 RenderTargetPool::Release(buffers->TemporalSSR);
-            tempDesc = GPUTextureDescription::New2D(resolveWidth, resolveHeight, PixelFormat::R16G16B16A16_Float);
+            auto tempDesc = GPUTextureDescription::New2D(resolveWidth, resolveHeight, PixelFormat::R16G16B16A16_Float);
             buffers->TemporalSSR = RenderTargetPool::Get(tempDesc);
             RENDER_TARGET_POOL_SET_NAME(buffers->TemporalSSR, "SSR.TemporalSSR");
         }
