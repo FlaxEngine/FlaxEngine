@@ -71,6 +71,7 @@ float4 PS(Quad_VS2PS input) : SV_Target0
 	current += (current - neighborhoodAvg) * Sharpness;
 
 	// Sample history by clamp it to the nearby colors range to reduce artifacts
+	current = clamp(current, 0, HDR_CLAMP_MAX);
 	float4 history = SAMPLE_RT_LINEAR(InputHistory, prevUV);
 	float lumaOffset = abs(Luminance(neighborhoodAvg.rgb) - Luminance(current.rgb));
 	float aabbMargin = lerp(4.0, 0.25, saturate(velocityLength * 100.0)) * lumaOffset;
