@@ -8,7 +8,7 @@
 #define NO_GBUFFER_SAMPLING
 #define LIGHTING_NO_DIRECTIONAL 1
 #define LIGHTING_NO_SPECULAR 0
-#define SHADOWS_QUALITY 0
+#define SHADOWS_QUALITY 1
 
 // Debug voxels world space positions
 #define DEBUG_VOXEL_WS_POS 0
