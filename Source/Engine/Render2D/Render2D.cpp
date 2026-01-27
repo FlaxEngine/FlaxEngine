@@ -70,6 +70,8 @@ enum class DrawCallType : byte
 {
     FillRect,
     FillRectNoAlpha,
+    FillRoundedRect,
+    FillCircle,
     FillRT,
     FillTexture,
     FillTexturePoint,
@@ -149,6 +151,7 @@ struct Render2DVertex
     Color Color;
     Float2 CustomData;
     RotatedRectangle ClipMask;
+    Float4 CustomData2;
 };
 
 struct CachedPSO
@@ -162,6 +165,9 @@ struct CachedPSO
 
     GPUPipelineState* PS_Color;
     GPUPipelineState* PS_Color_NoAlpha;
+    
+    GPUPipelineState* PS_RoundedRect;
+    GPUPipelineState* PS_Circle;
 
     GPUPipelineState* PS_Font;
 
@@ -261,7 +267,7 @@ FORCE_INLINE Render2DVertex MakeVertex(const Float2& pos, const Float2& uv, cons
     };
 }
 
-FORCE_INLINE Render2DVertex MakeVertex(const Float2& point, const Float2& uv, const Color& color, const RotatedRectangle& mask, const Float2& customData)
+FORCE_INLINE Render2DVertex MakeVertex(const Float2& point, const Float2& uv, const Color& color, const RotatedRectangle& mask, const Float2& customData, const Float4& CustomData2)
 {
     return
     {
@@ -270,10 +276,11 @@ FORCE_INLINE Render2DVertex MakeVertex(const Float2& point, const Float2& uv, co
         color * TintLayersStack.Peek(),
         customData,
         mask,
+        CustomData2
     };
 }
 
-FORCE_INLINE Render2DVertex MakeVertex(const Float2& point, const Float2& uv, const Color& color, const RotatedRectangle& mask, const Float2& customData, const Color& tint)
+FORCE_INLINE Render2DVertex MakeVertex(const Float2& point, const Float2& uv, const Color& color, const RotatedRectangle& mask, const Float2& customData, const Color& tint, const Float4& CustomData2)
 {
     return
     {
@@ -281,7 +288,8 @@ FORCE_INLINE Render2DVertex MakeVertex(const Float2& point, const Float2& uv, co
         Half2(uv),
         color * tint,
         customData,
-        mask
+        mask,
+        CustomData2
     };
 }
 
@@ -451,6 +459,8 @@ CanDrawCallCallback CanDrawCallBatch[] =
 {
     CanDrawCallCallbackTrue, // FillRect,
     CanDrawCallCallbackTrue,  // FillRectNoAlpha,
+    CanDrawCallCallbackTrue, // FillRoundedRect,
+    CanDrawCallCallbackTrue, // FillCircle,
     CanDrawCallCallbackRT, // FillRT,
     CanDrawCallCallbackTexture, // FillTexture,
     CanDrawCallCallbackTexture, // FillTexturePoint,
@@ -512,6 +522,18 @@ bool CachedPSO::Init(GPUShader* shader, bool useDepth)
         return true;
     //
     desc.BlendMode = BlendingMode::AlphaBlend;
+    desc.PS = shader->GetPS("PS_RoundedRect");
+    PS_RoundedRect = GPUDevice::Instance->CreatePipelineState();
+    if (PS_RoundedRect->Init(desc))
+        return true;
+    //
+    desc.BlendMode = BlendingMode::AlphaBlend;
+    desc.PS = shader->GetPS("PS_Circle");
+    PS_Circle = GPUDevice::Instance->CreatePipelineState();
+    if (PS_Circle->Init(desc))
+        return true;
+    //
+    desc.BlendMode = BlendingMode::AlphaBlend;
     desc.PS = shader->GetPS("PS_Font");
     PS_Font = GPUDevice::Instance->CreatePipelineState();
     if (PS_Font->Init(desc))
@@ -553,6 +575,8 @@ void CachedPSO::Dispose()
     SAFE_DELETE_GPU_RESOURCE(PS_ImagePoint);
     SAFE_DELETE_GPU_RESOURCE(PS_Color);
     SAFE_DELETE_GPU_RESOURCE(PS_Color_NoAlpha);
+    SAFE_DELETE_GPU_RESOURCE(PS_RoundedRect);
+    SAFE_DELETE_GPU_RESOURCE(PS_Circle);
     SAFE_DELETE_GPU_RESOURCE(PS_Font);
     SAFE_DELETE_GPU_RESOURCE(PS_BlurH);
     SAFE_DELETE_GPU_RESOURCE(PS_BlurV);
@@ -614,6 +638,7 @@ bool Render2DService::Init()
         { VertexElement::Types::Color, 0, 0, 0, PixelFormat::R32G32B32A32_Float },
         { VertexElement::Types::TexCoord1, 0, 0, 0, PixelFormat::R32G32B32A32_Float },
         { VertexElement::Types::TexCoord2, 0, 0, 0, PixelFormat::R32G32B32A32_Float },
+        { VertexElement::Types::TexCoord3, 0, 0, 0, PixelFormat::R32G32B32A32_Float },
     }));
 
     DrawCalls.EnsureCapacity(RENDER2D_INITIAL_DRAW_CALL_CAPACITY);
@@ -977,6 +1002,12 @@ void DrawBatch(int32 startIndex, int32 count)
         break;
     case DrawCallType::FillRectNoAlpha:
         Context->SetState(CurrentPso->PS_Color_NoAlpha);
+        break;
+    case DrawCallType::FillRoundedRect:
+        Context->SetState(CurrentPso->PS_RoundedRect);
+        break;
+    case DrawCallType::FillCircle:
+        Context->SetState(CurrentPso->PS_Circle);
         break;
     case DrawCallType::FillRT:
         Context->BindSR(0, d.AsRT.Ptr);
@@ -1485,10 +1516,10 @@ void Render2D::DrawRectangle(const Rectangle& rect, const Color& color1, const C
 
         // Line
 
-        v[0] = MakeVertex(p2t + up, Float2::UnitX, c2t, mask, { thickness, (float)Features });
-        v[1] = MakeVertex(p1t + up, Float2::UnitX, c1t, mask, { thickness, (float)Features });
-        v[2] = MakeVertex(p1t - up, Float2::Zero, c1t, mask, { thickness, (float)Features });
-        v[3] = MakeVertex(p2t - up, Float2::Zero, c2t, mask, { thickness, (float)Features });
+        v[0] = MakeVertex(p2t + up, Float2::UnitX, c2t, mask, { thickness, (float)Features }, {0.0f});
+        v[1] = MakeVertex(p1t + up, Float2::UnitX, c1t, mask, { thickness, (float)Features }, {0.0f});
+        v[2] = MakeVertex(p1t - up, Float2::Zero, c1t, mask, { thickness, (float)Features }, {0.0f});
+        v[3] = MakeVertex(p2t - up, Float2::Zero, c2t, mask, { thickness, (float)Features }, {0.0f});
         VB.Write(v, sizeof(Render2DVertex) * 4);
 
         indices[0] = VBIndex + 0;
@@ -1505,9 +1536,9 @@ void Render2D::DrawRectangle(const Rectangle& rect, const Color& color1, const C
         // Corner cap
 
         const float tmp = thickness * 0.69f;
-        v[0] = MakeVertex(p2t - up, Float2::Zero, c2t, mask, { tmp, (float)Features });
-        v[1] = MakeVertex(p2t + right, Float2::Zero, c2t, mask, { tmp, (float)Features });
-        v[2] = MakeVertex(p2t, Float2(0.5f, 0.0f), c2t, mask, { tmp, (float)Features });
+        v[0] = MakeVertex(p2t - up, Float2::Zero, c2t, mask, { tmp, (float)Features }, {0.0f});
+        v[1] = MakeVertex(p2t + right, Float2::Zero, c2t, mask, { tmp, (float)Features }, {0.0f});
+        v[2] = MakeVertex(p2t, Float2(0.5f, 0.0f), c2t, mask, { tmp, (float)Features }, {0.0f});
         VB.Write(v, sizeof(Render2DVertex) * 4);
 
         indices[0] = VBIndex + 1;
@@ -1738,11 +1769,11 @@ void DrawLineCap(const Float2& capOrigin, const Float2& capDirection, const Floa
     const auto& mask = ClipLayersStack.Peek().Mask;
 
     Render2DVertex v[5];
-    v[0] = MakeVertex(capOrigin, Float2(0.5f, 0.0f), color, mask, { thickness, (float)Render2D::Features });
-    v[1] = MakeVertex(capOrigin + capDirection + up, Float2::Zero, color, mask, { thickness, (float)Render2D::Features });
-    v[2] = MakeVertex(capOrigin + capDirection - up, Float2::Zero, color, mask, { thickness, (float)Render2D::Features });
-    v[3] = MakeVertex(capOrigin + up, Float2::Zero, color, mask, { thickness, (float)Render2D::Features });
-    v[4] = MakeVertex(capOrigin - up, Float2::Zero, color, mask, { thickness, (float)Render2D::Features });
+    v[0] = MakeVertex(capOrigin, Float2(0.5f, 0.0f), color, mask, { thickness, (float)Render2D::Features }, {0.0f});
+    v[1] = MakeVertex(capOrigin + capDirection + up, Float2::Zero, color, mask, { thickness, (float)Render2D::Features }, {0.0f});
+    v[2] = MakeVertex(capOrigin + capDirection - up, Float2::Zero, color, mask, { thickness, (float)Render2D::Features }, {0.0f});
+    v[3] = MakeVertex(capOrigin + up, Float2::Zero, color, mask, { thickness, (float)Render2D::Features }, {0.0f});
+    v[4] = MakeVertex(capOrigin - up, Float2::Zero, color, mask, { thickness, (float)Render2D::Features }, {0.0f});
     VB.Write(v, sizeof(v));
 
     uint32 indices[9];
@@ -1811,10 +1842,10 @@ void DrawLines(const Float2* points, int32 pointsCount, const Color& color1, con
         normal = Float2::Normalize(Float2(-line.Y, line.X));
         up = normal * thicknessHalf;
 
-        v[0] = MakeVertex(p2t + up, Float2::UnitX, color2, mask, { thickness, (float)Render2D::Features });
-        v[1] = MakeVertex(p1t + up, Float2::UnitX, color1, mask, { thickness, (float)Render2D::Features });
-        v[2] = MakeVertex(p1t - up, Float2::Zero, color1, mask, { thickness, (float)Render2D::Features });
-        v[3] = MakeVertex(p2t - up, Float2::Zero, color2, mask, { thickness, (float)Render2D::Features });
+        v[0] = MakeVertex(p2t + up, Float2::UnitX, color2, mask, { thickness, (float)Render2D::Features }, {0.0f});
+        v[1] = MakeVertex(p1t + up, Float2::UnitX, color1, mask, { thickness, (float)Render2D::Features }, {0.0f});
+        v[2] = MakeVertex(p1t - up, Float2::Zero, color1, mask, { thickness, (float)Render2D::Features }, {0.0f});
+        v[3] = MakeVertex(p2t - up, Float2::Zero, color2, mask, { thickness, (float)Render2D::Features }, {0.0f});
         VB.Write(v, sizeof(Render2DVertex) * 4);
 
         indices[0] = VBIndex + 0;
@@ -2132,4 +2163,290 @@ void Render2D::FillTriangle(const Float2& p0, const Float2& p1, const Float2& p2
     drawCall.StartIB = IBIndex;
     drawCall.CountIB = 3;
     WriteTri(p0, p1, p2, color, color, color);
+}
+
+void Render2D::DrawCircle(const Float2& center, float radius, const Color& color, float thickness, int32 segments)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+    if (radius <= 0.0f)
+        return;
+
+    if (segments <= 0)
+    {
+        segments = Math::Clamp(Math::CeilToInt(radius * 2.0f), 16, 256);
+    }
+
+    Lines2.Clear();
+    Lines2.EnsureCapacity(segments + 1);
+
+    const float angleStep = 2.0f * PI / (float)segments;
+    for (int32 i = 0; i <= segments; i++)
+    {
+        const float angle = (float)i * angleStep;
+        Lines2.Add(center + Float2(Math::Cos(angle), Math::Sin(angle)) * radius);
+    }
+
+    DrawLines(Lines2.Get(), Lines2.Count(), color, color, thickness);
+}
+
+void Render2D::FillCircle(const Float2& center, float radius, const Color& color)
+{
+    FillCircle(center, radius, color, Float2::Zero, Float2::One);
+}
+
+void Render2D::FillCircle(const Float2& center, float radius, const Color& color, const Float2& uv1, const Float2& uv2)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+
+    Render2DDrawCall& drawCall = DrawCalls.AddOne();
+    drawCall.Type = DrawCallType::FillCircle;
+    drawCall.StartIB = IBIndex;
+    drawCall.CountIB = 6;
+     
+    Rectangle rect { center - Float2(radius), Float2(radius * 2.0f)};
+    if (EnumHasAnyFlags(Features, RenderingFeatures::VertexSnapping))
+    {
+        rect.Location = Float2::Round(rect.Location);
+        rect.Size = Float2::Round(rect.Size);
+    }
+
+    Float2 points[5];
+    ApplyTransform(rect.GetBottomRight(), points[0]);
+    ApplyTransform(rect.GetBottomLeft(), points[1]);
+    ApplyTransform(rect.GetUpperLeft(), points[2]);
+    ApplyTransform(rect.GetUpperRight(), points[3]);
+
+    // Pass in 0.5f to fill full circle, size is adjusted based on size of the rectangle
+    Float4 customData(0.5f, 0.0f, 0.0f, 0.0f);
+     
+    const auto& mask = ClipLayersStack.Peek().Mask;
+
+    Render2DVertex quad[4];
+    quad[0] = MakeVertex(points[0], uv2, color, mask, { 0.0f, (float)Render2D::Features }, customData);
+    quad[1] = MakeVertex(points[1], Float2(uv1.X, uv2.Y), color, mask, { 0.0f, (float)Render2D::Features }, customData);
+    quad[2] = MakeVertex(points[2], uv1, color, mask, { 0.0f, (float)Render2D::Features }, customData);
+    quad[3] = MakeVertex(points[3], Float2(uv2.X, uv1.Y), color, mask, { 0.0f, (float)Render2D::Features }, customData);
+    VB.Write(quad, sizeof(quad));
+
+    uint32 indices[6];
+    RENDER2D_WRITE_IB_QUAD(indices);
+
+    VBIndex += 4;
+    IBIndex += 6;
+    
+}
+
+struct Corner
+{
+    Float2 Center; 
+    float Radius; 
+    float StartAngle;
+};
+
+ void Render2D::DrawRoundedRectangle(const Rectangle& rect, const Color& color, float radius, float thickness)
+{
+    DrawRoundedRectangle(rect, color, Float4(radius), thickness);
+}
+
+void Render2D::DrawRoundedRectangle(const Rectangle& rect, const Color& color, Float4 radial, float thickness)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+
+    // Clamp radii to half size to prevent overlap artifacts
+    const float minSize = Math::Min(rect.GetWidth(), rect.GetHeight());
+    const float maxRadius = minSize * 0.5f;
+    radial = Float4::Clamp(radial, Float4::Zero, Float4(maxRadius));
+
+    if (radial.IsZero())
+    {
+        DrawRectangle(rect, color, color, color, color, thickness);
+        return;
+    }
+
+    // Use global lines buffer
+    Lines2.Clear();
+
+    // Top edge
+    const float topY = rect.Location.Y;
+    const float rightX = rect.Location.X + rect.Size.X;
+    const float bottomY = rect.Location.Y + rect.Size.Y;
+    const float leftX = rect.Location.X;
+
+    // Corners
+    const Corner corners[] = {
+        { { rightX - radial.Y, topY + radial.Y }, radial.Y, -PI * 0.5f },     // TR
+        { { rightX - radial.Z, bottomY - radial.Z }, radial.Z, 0.0f },        // BR
+        { { leftX + radial.W, bottomY - radial.W }, radial.W, PI * 0.5f },    // BL
+        { { leftX + radial.X, topY + radial.X }, radial.X, PI }               // TL
+    };
+
+    for (const auto& corner : corners)
+    {
+        const int32 resolution = Math::Clamp(Math::CeilToInt(corner.Radius * 0.5f), 1, 64);
+        if (resolution > 1)
+        {
+            const float angleStep = PI * 0.5f / resolution;
+            const float cosStep = Math::Cos(angleStep);
+            const float sinStep = Math::Sin(angleStep);
+
+            float x = Math::Cos(corner.StartAngle) * corner.Radius;
+            float y = Math::Sin(corner.StartAngle) * corner.Radius;
+
+            Lines2.Add(corner.Center + Float2(x, y));
+
+            for (int32 i = 0; i < resolution; i++)
+            {
+                // Rotate the vector
+                const float nx = x * cosStep - y * sinStep;
+                const float ny = x * sinStep + y * cosStep;
+                x = nx;
+                y = ny;
+                Lines2.Add(corner.Center + Float2(x, y));
+            }
+        }
+        else
+        {
+            Lines2.Add(corner.Center + Float2(Math::Cos(corner.StartAngle), Math::Sin(corner.StartAngle)) * corner.Radius);
+            const float endAngle = corner.StartAngle + PI * 0.5f;
+            Lines2.Add(corner.Center + Float2(Math::Cos(endAngle), Math::Sin(endAngle)) * corner.Radius);
+        }
+    }
+
+    // Close loop (connect back to start)
+    Lines2.Add(Lines2[0]);
+
+    DrawLines(Lines2.Get(), Lines2.Count(), color, color, thickness);
+}
+
+void Render2D::FillRoundedRectangle(const Rectangle& rect, const Color& color, float radius)
+{
+    FillRoundedRectangle(rect, color, Float4(radius), Float2::Zero, Float2::One);
+}
+
+void Render2D::FillRoundedRectangle(const Rectangle& rect, const Color& color, float radius, const Float2& uv1, const Float2& uv2)
+{
+    FillRoundedRectangle(rect, color, Float4(radius), uv1, uv2);
+}
+
+void Render2D::FillRoundedRectangle(const Rectangle& rect, const Color& color, Float4 radial)
+{
+    FillRoundedRectangle(rect, color, radial, Float2::Zero, Float2::One);
+}
+
+void Render2D::FillRoundedRectangle(const Rectangle& rect, const Color& color, Float4 radial, const Float2& uv1, const Float2& uv2)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+
+    radial = Float4::Clamp(radial, Float4::Zero, Float4(90));
+
+    if (radial.IsZero())
+    {
+        FillRectangle(rect, color);
+        return;
+    }
+
+    Render2DDrawCall& drawCall = DrawCalls.AddOne();
+    drawCall.Type = DrawCallType::FillRoundedRect;
+    drawCall.StartIB = IBIndex;
+    drawCall.CountIB = 6;
+     
+    Rectangle finalRect = rect;
+    if (EnumHasAnyFlags(Features, RenderingFeatures::VertexSnapping))
+    {
+        finalRect.Location = Float2::Round(finalRect.Location);
+        finalRect.Size = Float2::Round(finalRect.Size);
+    }
+
+    Float2 points[4];
+    ApplyTransform(finalRect.GetBottomRight(), points[0]);
+    ApplyTransform(finalRect.GetBottomLeft(), points[1]);
+    ApplyTransform(finalRect.GetUpperLeft(), points[2]);
+    ApplyTransform(finalRect.GetUpperRight(), points[3]);
+     
+    const float multiplier = 4096.0f;
+    float packedTop = radial.X + radial.Y * multiplier;
+    float packedBottom = (radial.W + radial.Z * multiplier) * 2.0f;
+
+    float rectWidth = finalRect.Size.X;
+    float rectHeight = finalRect.Size.Y;
+     
+    Float4 customData(packedTop, packedBottom, rectWidth, rectHeight);
+     
+    const auto& mask = ClipLayersStack.Peek().Mask;
+
+    Render2DVertex quad[4];
+    quad[0] = MakeVertex(points[0], uv2, color, mask, { 0.0f, (float)Render2D::Features }, customData);
+    quad[1] = MakeVertex(points[1], Float2(uv1.X, uv2.Y), color, mask, { 0.0f, (float)Render2D::Features }, customData);
+    quad[2] = MakeVertex(points[2], uv1, color, mask, { 0.0f, (float)Render2D::Features }, customData);
+    quad[3] = MakeVertex(points[3], Float2(uv2.X, uv1.Y), color, mask, { 0.0f, (float)Render2D::Features }, customData);
+    VB.Write(quad, sizeof(quad));
+
+    uint32 indices[6];
+    RENDER2D_WRITE_IB_QUAD(indices);
+
+    VBIndex += 4;
+    IBIndex += 6;
+}
+
+void Render2D::FillRoundedRectangle(const Rectangle& rect, const Color& color1, const Color& color2, const Color& color3, const Color& color4, float radius)
+{
+    FillRoundedRectangle(rect, color1, color2, color3, color4, Float4(radius));
+}
+
+void Render2D::FillRoundedRectangle(const Rectangle& rect, const Color& color1, const Color& color2, const Color& color3, const Color& color4, Float4 radial)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+
+    radial = Float4::Clamp(radial, Float4::Zero, Float4(90));
+
+    if (radial.IsZero())
+    {
+        FillRectangle(rect, color1, color2, color3, color4);
+        return;
+    }
+
+    Render2DDrawCall& drawCall = DrawCalls.AddOne();
+    drawCall.Type = DrawCallType::FillRoundedRect;
+    drawCall.StartIB = IBIndex;
+    drawCall.CountIB = 6;
+     
+    Rectangle finalRect = rect;
+    if (EnumHasAnyFlags(Features, RenderingFeatures::VertexSnapping))
+    {
+        finalRect.Location = Float2::Round(finalRect.Location);
+        finalRect.Size = Float2::Round(finalRect.Size);
+    }
+
+    Float2 points[4];
+    ApplyTransform(finalRect.GetBottomRight(), points[0]);
+    ApplyTransform(finalRect.GetBottomLeft(), points[1]);
+    ApplyTransform(finalRect.GetUpperLeft(), points[2]);
+    ApplyTransform(finalRect.GetUpperRight(), points[3]);
+
+    const float multiplier = 4096.0f;
+    float packedTop = radial.X + radial.Y * multiplier;
+    float packedBottom = (radial.W + radial.Z * multiplier) * 2.0f;
+     
+    float rectWidth = finalRect.Size.X;
+    float rectHeight = finalRect.Size.Y;
+
+    Float4 customData(packedTop, packedBottom, rectWidth, rectHeight);
+
+    const auto& mask = ClipLayersStack.Peek().Mask;
+
+    const Float2 uv1 = Float2::Zero;
+    const Float2 uv2 = Float2::One;
+
+    Render2DVertex quad[4];
+    quad[0] = MakeVertex(points[0], uv2, color3, mask, { 0.0f, (float)Render2D::Features }, customData);
+    quad[1] = MakeVertex(points[1], Float2(uv1.X, uv2.Y), color4, mask, { 0.0f, (float)Render2D::Features }, customData);
+    quad[2] = MakeVertex(points[2], uv1, color1, mask, { 0.0f, (float)Render2D::Features }, customData);
+    quad[3] = MakeVertex(points[3], Float2(uv2.X, uv1.Y), color2, mask, { 0.0f, (float)Render2D::Features }, customData);
+    VB.Write(quad, sizeof(quad));
+
+    uint32 indices[6];
+    RENDER2D_WRITE_IB_QUAD(indices);
+
+    VBIndex += 4;
+    IBIndex += 6;
 }
