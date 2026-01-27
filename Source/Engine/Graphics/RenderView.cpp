@@ -5,9 +5,9 @@
 #include "Engine/Level/Actors/Camera.h"
 #include "Engine/Core/Math/Double4x4.h"
 #include "Engine/Renderer/RenderList.h"
-#include "Engine/Renderer/RendererPass.h"
 #include "RenderBuffers.h"
 #include "RenderTask.h"
+#include "RenderTools.h"
 
 void RenderView::Prepare(RenderContext& renderContext)
 {
@@ -29,8 +29,8 @@ void RenderView::Prepare(RenderContext& renderContext)
 
         // Calculate jitter
         const float jitterSpread = renderContext.List->Settings.AntiAliasing.TAA_JitterSpread;
-        const float jitterX = (RendererUtils::TemporalHalton(TaaFrameIndex + 1, 2) - 0.5f) * jitterSpread;
-        const float jitterY = (RendererUtils::TemporalHalton(TaaFrameIndex + 1, 3) - 0.5f) * jitterSpread;
+        const float jitterX = (RenderTools::TemporalHalton(TaaFrameIndex + 1, 2) - 0.5f) * jitterSpread;
+        const float jitterY = (RenderTools::TemporalHalton(TaaFrameIndex + 1, 3) - 0.5f) * jitterSpread;
         taaJitter = Float2(jitterX * 2.0f / width, jitterY * 2.0f / height);
 
         // Modify projection matrix

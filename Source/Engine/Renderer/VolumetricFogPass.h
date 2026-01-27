@@ -5,6 +5,7 @@
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Graphics/GPUPipelineStatePermutations.h"
 #include "RendererPass.h"
+#include "DrawCall.h"
 #include "GI/DynamicDiffuseGlobalIllumination.h"
 
 struct VolumetricFogOptions;
@@ -17,12 +18,12 @@ struct RenderPointLightData;
 class VolumetricFogPass : public RendererPass<VolumetricFogPass>
 {
 public:
-
     struct CustomData
     {
         GPUShader* Shader;
         Float3 GridSize;
         float VolumetricFogMaxDistance;
+        Float3 GridSliceParameters;
         int32 ParticleIndex;
     };
 
@@ -57,6 +58,8 @@ private:
         float InverseSquaredLightDistanceBiasScale;
 
         Float4 FogParameters;
+        Float3 GridSliceParameters;
+        float Dummy1;
 
         Matrix PrevWorldToClip;
 
@@ -128,6 +131,13 @@ private:
         /// </summary>
         Float3 GridSize;
 
+        float SphereRasterizeRadiusBias;
+
+        /// <summary>
+        /// Fog options(from renderer).
+        /// </summary>
+        VolumetricFogOptions Options;
+
         /// <summary>
         /// The cached per-frame data for the constant buffer.
         /// </summary>
@@ -138,13 +148,6 @@ private:
     bool _isSupported;
 
 public:
-
-    /// <summary>
-    /// Init
-    /// </summary>
-    VolumetricFogPass();
-
-public:
     /// <summary>
     /// Renders the volumetric fog (generates integrated light scattering 3D texture). Does nothing if feature is disabled or not supported.
     /// </summary>
@@ -152,12 +155,12 @@ public:
     void Render(RenderContext& renderContext);
 
 private:
-
-    bool Init(RenderContext& renderContext, GPUContext* context, VolumetricFogOptions& options);
-    GPUTextureView* GetLocalShadowedLightScattering(RenderContext& renderContext, GPUContext* context, VolumetricFogOptions& options) const;
+    bool Init(RenderContext& renderContext, GPUContext* context);
+    bool InitSphereRasterize(struct RasterizeSphere& sphere, RenderView& view, const Float3& center, float radius);
+    GPUTextureView* GetLocalShadowedLightScattering(RenderContext& renderContext, GPUContext* context) const;
     void InitCircleBuffer();
     template<typename T>
-    void RenderRadialLight(RenderContext& renderContext, GPUContext* context, RenderView& view, VolumetricFogOptions& options, T& light, PerLight& perLight, GPUConstantBuffer* cb2);
+    void RenderRadialLight(RenderContext& renderContext, GPUContext* context, RenderView& view, T& light, PerLight& perLight, GPUConstantBuffer* cb2);
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {

@@ -630,6 +630,20 @@ void RenderTools::ComputeBoxModelDrawMatrix(const RenderView& view, const Orient
     resultIsViewInside = box.Contains(view.Position) == ContainmentType::Contains;
 }
 
+float RenderTools::TemporalHalton(int32 index, int32 base)
+{
+    float result = 0.0f;
+    const float invBase = 1.0f / (float)base;
+    float fraction = invBase;
+    while (index > 0)
+    {
+        result += float(index % base) * fraction;
+        index /= base;
+        fraction *= invBase;
+    }
+    return result;
+}
+
 Float2 RenderTools::GetDepthBounds(const RenderView& view, const Float3& nearPoint, const Float3& farPoint)
 {
     // Point closest the view

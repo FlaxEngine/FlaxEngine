@@ -5,6 +5,7 @@
 #include "./Flax/Common.hlsl"
 #include "./Flax/GBufferCommon.hlsl"
 #include "./Flax/GBuffer.hlsl"
+#include "./Flax/VolumetricFog.hlsl"
 #include "./Flax/ExponentialHeightFog.hlsl"
 
 // Disable Volumetric Fog if is not supported
@@ -21,7 +22,7 @@ DECLARE_GBUFFERDATA_ACCESS(GBuffer)
 
 Texture2D Depth : register(t0);
 #if VOLUMETRIC_FOG
-Texture3D IntegratedLightScattering : register(t1);
+Texture3D VolumetricFogTexture : register(t1);
 #endif
 
 META_PS(true, FEATURE_LEVEL_ES2)
@@ -34,23 +35,6 @@ float4 PS_Fog(Quad_VS2PS input) : SV_Target0
 	GBufferData gBufferData = GetGBufferData();
 	float3 viewPos = GetViewPos(gBufferData, input.TexCoord, rawDepth);
 	float3 worldPos = mul(float4(viewPos, 1), gBufferData.InvViewMatrix).xyz;
-	float3 viewVector = worldPos - GBuffer.ViewPos;
-	float sceneDepth = length(viewVector);
-
-	// Calculate volumetric fog coordinates
-	float depthSlice = sceneDepth / ExponentialHeightFog.VolumetricFogMaxDistance;
-	float3 volumeUV = float3(input.TexCoord, depthSlice);
-
-	// Debug code
-#if VOLUMETRIC_FOG && 0
-	volumeUV = worldPos / 1000;
-	if (!all(volumeUV >= 0 && volumeUV <= 1))
-		return 0;
-
-	return float4(IntegratedLightScattering.SampleLevel(SamplerLinearClamp, volumeUV, 0).rgb, 1);
-	//return float4(volumeUV, 1);
-	//return float4(worldPos / 100, 1);
-#endif
 
     float skipDistance = 0;
 #if VOLUMETRIC_FOG
@@ -62,7 +46,7 @@ float4 PS_Fog(Quad_VS2PS input) : SV_Target0
 
 #if VOLUMETRIC_FOG
     // Sample volumetric fog and mix it in
-	float4 volumetricFog = IntegratedLightScattering.SampleLevel(SamplerLinearClamp, volumeUV, 0);
+	float4 volumetricFog = SampleVolumetricFog(VolumetricFogTexture, worldPos - GBuffer.ViewPos, ExponentialHeightFog.VolumetricFogMaxDistance, input.TexCoord);
 	fog = CombineVolumetricFog(fog, volumetricFog);
 #endif
 

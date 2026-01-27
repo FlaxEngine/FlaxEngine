@@ -14,6 +14,7 @@
 #include "./Flax/Lighting.hlsl"
 #include "./Flax/ShadowsSampling.hlsl"
 #include "./Flax/ExponentialHeightFog.hlsl"
+#include "./Flax/VolumetricFog.hlsl"
 @2// Forward Shading: Constants
 LightData DirectionalLight;
 LightData SkyLight;
@@ -159,16 +160,11 @@ void PS_Forward(
 	float fogSceneDistance = gBuffer.ViewPos.z;
 #endif
 	float4 fog = GetExponentialHeightFog(ExponentialHeightFog, materialInput.WorldPosition, ViewPos, 0, fogSceneDistance);
-
 	if (ExponentialHeightFog.VolumetricFogMaxDistance > 0)
 	{
 		// Sample volumetric fog and mix it in
 		float2 screenUV = materialInput.SvPosition.xy * ScreenSize.zw;
-		float3 viewVector = materialInput.WorldPosition - ViewPos;
-		float sceneDepth = length(viewVector);
-		float depthSlice = sceneDepth / ExponentialHeightFog.VolumetricFogMaxDistance;
-		float3 volumeUV = float3(screenUV, depthSlice);
-		float4 volumetricFog = VolumetricFogTexture.SampleLevel(SamplerLinearClamp, volumeUV, 0);
+		float4 volumetricFog = SampleVolumetricFog(VolumetricFogTexture, materialInput.WorldPosition - ViewPos, ExponentialHeightFog.VolumetricFogMaxDistance, screenUV);
 		fog = CombineVolumetricFog(fog, volumetricFog);
 	}
 

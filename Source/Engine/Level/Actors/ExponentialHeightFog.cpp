@@ -187,8 +187,8 @@ GPU_CB_STRUCT(Data {
 void ExponentialHeightFog::DrawFog(GPUContext* context, RenderContext& renderContext, GPUTextureView* output)
 {
     PROFILE_GPU_CPU("Exponential Height Fog");
-    auto integratedLightScattering = renderContext.Buffers->VolumetricFog;
-    bool useVolumetricFog = integratedLightScattering != nullptr;
+    auto volumetricFogTexture = renderContext.Buffers->VolumetricFog;
+    bool useVolumetricFog = volumetricFogTexture != nullptr;
 
     // Setup shader inputs
     Data data;
@@ -199,9 +199,10 @@ void ExponentialHeightFog::DrawFog(GPUContext* context, RenderContext& renderCon
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
     context->BindSR(0, renderContext.Buffers->DepthBuffer);
-    context->BindSR(1, integratedLightScattering ? integratedLightScattering->ViewVolume() : nullptr);
+    context->BindSR(1, volumetricFogTexture ? volumetricFogTexture->ViewVolume() : nullptr);
 
     // TODO: instead of rendering fullscreen triangle, draw quad transformed at the fog start distance (also it could use early depth discard)
+    // TODO: or use DepthBounds to limit the fog rendering to the distance range
 
     // Draw fog
     const int32 psIndex = (useVolumetricFog ? 1 : 0);

@@ -148,6 +148,8 @@ public:
     static void ComputeSphereModelDrawMatrix(const RenderView& view, const Float3& position, float radius, Matrix& resultWorld, bool& resultIsViewInside);
     static void ComputeBoxModelDrawMatrix(const RenderView& view, const OrientedBoundingBox& box, Matrix& resultWorld, bool& resultIsViewInside);
 
+    static float TemporalHalton(int32 index, int32 base);
+
     // Calculates depth bounds to optimize drawing with depth buffer to cover only specific range of depth. Returns min and max depth (as Float2) to pass into GPUContext::SetDepthBounds.
     static Float2 GetDepthBounds(const RenderView& view, const Float3& nearPoint, const Float3& farPoint);
     static Float2 GetDepthBounds(const RenderView& view, const BoundingSphere& bounds);
