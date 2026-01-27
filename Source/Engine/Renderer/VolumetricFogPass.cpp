@@ -167,8 +167,13 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
         (float)_cache.GridSizeZ);
     auto& fogData = renderContext.Buffers->VolumetricFogData;
     fogData.MaxDistance = options.Distance;
-    if (renderContext.Task->IsCameraCut || renderContext.View.IsOriginTeleport())
+    if (renderContext.Task->IsCameraCut ||
+        renderContext.View.IsOriginTeleport() ||
+        (renderContext.Buffers->VolumetricFog && renderContext.Buffers->VolumetricFog->Size3() != _cache.GridSize))
+    {
+        // Don't blend with history on camera cuts or teleport or resizes
         _cache.HistoryWeight = 0.0f;
+    }
 
     // Init data (partial, without directional light or sky light data);
     GBufferPass::SetInputs(renderContext.View, _cache.Data.GBuffer);
