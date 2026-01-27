@@ -179,6 +179,26 @@ void RenderEnvironmentProbeData::SetShaderData(ShaderEnvProbeData& data) const
     }
 }
 
+RenderFogData::RenderFogData()
+{
+    Renderer = nullptr;
+    VolumetricFogTexture = nullptr;
+    ExponentialHeightFog.FogMinOpacity = 1.0f;
+    ExponentialHeightFog.FogDensity = 0.0f;
+    ExponentialHeightFog.FogCutoffDistance = 0.1f;
+    ExponentialHeightFog.StartDistance = 0.0f;
+    ExponentialHeightFog.ApplyDirectionalInscattering = 0.0f;
+    ExponentialHeightFog.VolumetricFogMaxDistance = -1.0f;
+    ExponentialHeightFog.VolumetricFogGrid = Float4::One;
+}
+
+void RenderFogData::Init(const RenderView& view, IFogRenderer* renderer)
+{
+    Renderer = renderer;
+    renderer->GetExponentialHeightFogData(view, ExponentialHeightFog);
+    renderer->GetVolumetricFogOptions(VolumetricFog);
+}
+
 void* RendererAllocation::Allocate(uintptr size)
 {
     PROFILE_CPU();
@@ -501,7 +521,6 @@ RenderList::RenderList(const SpawnParams& params)
     , Decals(64)
     , Sky(nullptr)
     , AtmosphericFog(nullptr)
-    , Fog(nullptr)
     , Blendable(32)
     , ObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Buffer"))
     , TempObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Buffer"))
@@ -534,7 +553,7 @@ void RenderList::Clear()
     VolumetricFogParticles.Clear();
     Sky = nullptr;
     AtmosphericFog = nullptr;
-    Fog = nullptr;
+    Fog = RenderFogData();
     PostFx.Clear();
     Settings = PostProcessSettings();
     Blendable.Clear();

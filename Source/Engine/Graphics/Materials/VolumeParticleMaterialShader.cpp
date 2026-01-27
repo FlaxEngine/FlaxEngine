@@ -25,8 +25,7 @@ PACK_STRUCT(struct VolumeParticleMaterialShaderData {
     float VolumetricFogMaxDistance;
     int32 ParticleStride;
     int32 ParticleIndex;
-    Float3 GridSliceParameters;
-    float Dummy1;
+    Float4 GridSliceParameters;
     });
 
 DrawPass VolumeParticleMaterialShader::GetDrawModes() const

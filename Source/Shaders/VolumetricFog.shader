@@ -52,8 +52,7 @@ float VolumetricFogMaxDistance;
 float InverseSquaredLightDistanceBiasScale;
 
 float4 FogParameters;
-float3 GridSliceParameters;
-float Dummy1;
+float4 GridSliceParameters;
 
 float4x4 PrevWorldToClip;
 

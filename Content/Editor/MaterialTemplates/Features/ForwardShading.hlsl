@@ -164,7 +164,7 @@ void PS_Forward(
 	{
 		// Sample volumetric fog and mix it in
 		float2 screenUV = materialInput.SvPosition.xy * ScreenSize.zw;
-		float4 volumetricFog = SampleVolumetricFog(VolumetricFogTexture, materialInput.WorldPosition - ViewPos, ExponentialHeightFog.VolumetricFogMaxDistance, screenUV);
+		float4 volumetricFog = SampleVolumetricFog(VolumetricFogTexture, ExponentialHeightFog.VolumetricFogGrid, materialInput.WorldPosition - ViewPos, screenUV);
 		fog = CombineVolumetricFog(fog, volumetricFog);
 	}
 

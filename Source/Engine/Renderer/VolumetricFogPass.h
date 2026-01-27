@@ -23,7 +23,7 @@ public:
         GPUShader* Shader;
         Float3 GridSize;
         float VolumetricFogMaxDistance;
-        Float3 GridSliceParameters;
+        Float4 GridSliceParameters;
         int32 ParticleIndex;
     };
 
@@ -58,8 +58,7 @@ private:
         float InverseSquaredLightDistanceBiasScale;
 
         Float4 FogParameters;
-        Float3 GridSliceParameters;
-        float Dummy1;
+        Float4 GridSliceParameters;
 
         Matrix PrevWorldToClip;
 
@@ -132,11 +131,6 @@ private:
         Float3 GridSize;
 
         float SphereRasterizeRadiusBias;
-
-        /// <summary>
-        /// Fog options(from renderer).
-        /// </summary>
-        VolumetricFogOptions Options;
 
         /// <summary>
         /// The cached per-frame data for the constant buffer.

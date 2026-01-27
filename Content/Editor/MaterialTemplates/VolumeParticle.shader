@@ -22,8 +22,7 @@ float Dummy0;
 float VolumetricFogMaxDistance;
 int ParticleStride;
 int ParticleIndex;
-float3 GridSliceParameters;
-float Dummy1;
+float4 GridSliceParameters;
 @1META_CB_END
 
 // Particles attributes buffer

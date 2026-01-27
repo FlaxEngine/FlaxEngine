@@ -46,7 +46,7 @@ float4 PS_Fog(Quad_VS2PS input) : SV_Target0
 
 #if VOLUMETRIC_FOG
     // Sample volumetric fog and mix it in
-	float4 volumetricFog = SampleVolumetricFog(VolumetricFogTexture, worldPos - GBuffer.ViewPos, ExponentialHeightFog.VolumetricFogMaxDistance, input.TexCoord);
+	float4 volumetricFog = SampleVolumetricFog(VolumetricFogTexture, ExponentialHeightFog.VolumetricFogGrid, worldPos - GBuffer.ViewPos, input.TexCoord);
 	fog = CombineVolumetricFog(fog, volumetricFog);
 #endif
 

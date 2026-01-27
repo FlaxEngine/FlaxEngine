@@ -5,7 +5,7 @@
 
 #define VOLUMETRIC_FOG_GRID_Z_LINEAR 1
 
-float GetDepthFromSlice(float3 gridSliceParameters, float zSlice)
+float GetDepthFromSlice(float4 gridSliceParameters, float zSlice)
 {
 #if VOLUMETRIC_FOG_GRID_Z_LINEAR
 	return zSlice * gridSliceParameters.x;
@@ -14,7 +14,7 @@ float GetDepthFromSlice(float3 gridSliceParameters, float zSlice)
 #endif
 }
 
-float GetSliceFromDepth(float3 gridSliceParameters, float sceneDepth)
+float GetSliceFromDepth(float4 gridSliceParameters, float sceneDepth)
 {
 #if VOLUMETRIC_FOG_GRID_Z_LINEAR
     return sceneDepth * gridSliceParameters.y;
@@ -23,11 +23,10 @@ float GetSliceFromDepth(float3 gridSliceParameters, float sceneDepth)
 #endif
 }
 
-float4 SampleVolumetricFog(Texture3D volumetricFogTexture, float3 viewVector, float maxDistance, float2 uv)
+float4 SampleVolumetricFog(Texture3D volumetricFogTexture, float4 gridSliceParameters, float3 viewVector, float2 uv)
 {
     float sceneDepth = length(viewVector);
-    float zSlice = sceneDepth / maxDistance;
-    // TODO: use GetSliceFromDepth instead to handle non-linear depth distributions
+    float zSlice = GetSliceFromDepth(gridSliceParameters, sceneDepth) * gridSliceParameters.w;
     float3 volumeUV = float3(uv, zSlice);
     return volumetricFogTexture.SampleLevel(SamplerLinearClamp, volumeUV, 0);
 }

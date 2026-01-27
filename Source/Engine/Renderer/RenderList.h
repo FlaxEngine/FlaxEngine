@@ -175,6 +175,17 @@ struct RenderDecalData
     uint32 RenderLayersMask;
 };
 
+struct RenderFogData
+{
+    IFogRenderer* Renderer;
+    GPUTextureView* VolumetricFogTexture;
+    ShaderExponentialHeightFogData ExponentialHeightFog;
+    VolumetricFogOptions VolumetricFog;
+
+    RenderFogData();
+    void Init(const RenderView& view, IFogRenderer* renderer);
+};
+
 /// <summary>
 /// The draw calls list types.
 /// </summary>
@@ -409,9 +420,9 @@ public:
     IAtmosphericFogRenderer* AtmosphericFog;
 
     /// <summary>
-    /// Fog renderer proxy to use (only one per frame)
+    /// Fog rendering data.
     /// </summary>
-    IFogRenderer* Fog;
+    RenderFogData Fog;
 
     /// <summary>
     /// Post effects to render.
