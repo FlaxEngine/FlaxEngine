@@ -120,19 +120,12 @@ Quad_VS2GS VS_WriteToSlice(float2 TexCoord : TEXCOORD0, uint LayerIndex : SV_Ins
 	float depth = (slice / SliceToDepth.x) * SliceToDepth.y;
 	float depthOffset = abs(depth - ViewSpaceBoundingSphere.z);
 
-	if (depthOffset < ViewSpaceBoundingSphere.w)
-	{
-		float radius = sqrt(ViewSpaceBoundingSphere.w * ViewSpaceBoundingSphere.w - depthOffset * depthOffset);
-		float3 positionVS = float3(ViewSpaceBoundingSphere.xy + (TexCoord * 2 - 1) * radius, depth);
-		output.Vertex.Position = mul(float4(positionVS, 1), ViewToVolumeClip);
+	float radius = sqrt(ViewSpaceBoundingSphere.w * ViewSpaceBoundingSphere.w - depthOffset * depthOffset);
+	float3 positionVS = float3(ViewSpaceBoundingSphere.xy + (TexCoord * 2 - 1) * radius, depth);
+	output.Vertex.Position = mul(float4(positionVS, 1), ViewToVolumeClip);
 #if VULKAN
-        output.Vertex.Position.y *= -1;
+    output.Vertex.Position.y *= -1;
 #endif
-	}
-	else
-	{
-		output.Vertex.Position = float4(0, 0, 0, 0);
-	}
 
 	output.Vertex.TexCoord = TexCoord;
 	output.LayerIndex = slice;
