@@ -225,9 +225,10 @@ void PS_VolumetricFog(Quad_GS2PS input, out float4 VBufferA : SV_Target0, out fl
 	Material material = GetMaterialPS(materialInput);
 
 	// Compute fog properties
+	material.Opacity *= material.Mask;
 	float3 albedo = material.Color;
-	float extinction = material.Opacity * material.Mask * 0.001f;
-	float3 emission = material.Emissive;
+	float extinction = material.Opacity * 0.001f;
+	float3 emission = material.Emissive * material.Opacity;
 	float3 scattering = albedo * extinction;
 	float absorption = max(0.0f, extinction - Luminance(scattering));
 
