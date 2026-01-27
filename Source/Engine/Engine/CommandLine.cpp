@@ -149,6 +149,7 @@ bool CommandLine::Parse(const Char* cmdLine)
     PARSE_BOOL_SWITCH("-clearcache ", ClearCache);
     PARSE_BOOL_SWITCH("-clearcooker ", ClearCookerCache);
     PARSE_ARG_SWITCH("-project ", Project);
+    PARSE_BOOL_SWITCH("-lastproject ", LastProject);
     PARSE_BOOL_SWITCH("-new ", NewProject);
     PARSE_BOOL_SWITCH("-genprojectfiles ", GenProjectFiles);
     PARSE_ARG_SWITCH("-build ", Build);
