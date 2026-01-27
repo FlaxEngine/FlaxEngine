@@ -3,6 +3,8 @@
 #include "VolumetricFogPass.h"
 #include "ShadowsPass.h"
 #include "GBufferPass.h"
+#include "DrawCall.h"
+#include "GI/DynamicDiffuseGlobalIllumination.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTools.h"
@@ -20,6 +22,70 @@
 int32 VolumetricFogGridInjectionGroupSize = 4;
 int32 VolumetricFogIntegrationGroupSize = 8;
 #define VOLUMETRIC_FOG_GRID_Z_LINEAR 1
+
+GPU_CB_STRUCT(SkyLightData {
+    Float3 MultiplyColor;
+    float VolumetricScatteringIntensity;
+    Float3 AdditiveColor;
+    float Dummy0;
+    });
+
+GPU_CB_STRUCT(Data {
+    ShaderGBufferData GBuffer;
+
+    Float3 GlobalAlbedo;
+    float GlobalExtinctionScale;
+
+    Float3 GlobalEmissive;
+    float HistoryWeight;
+
+    Float3 GridSize;
+    uint32 MissedHistorySamplesCount;
+
+    uint32 GridSizeIntX;
+    uint32 GridSizeIntY;
+    uint32 GridSizeIntZ;
+    float PhaseG;
+
+    Float2 Dummy0;
+    float VolumetricFogMaxDistance;
+    float InverseSquaredLightDistanceBiasScale;
+
+    Float4 FogParameters;
+    Float4 GridSliceParameters;
+
+    Matrix PrevWorldToClip;
+
+    Float4 FrameJitterOffsets[8];
+
+    ShaderLightData DirectionalLight;
+    SkyLightData SkyLight;
+    DynamicDiffuseGlobalIlluminationPass::ConstantsData DDGI;
+    });
+
+GPU_CB_STRUCT(PerLight {
+    Float2 SliceToDepth;
+    int32 MinZ;
+    float LocalLightScatteringIntensity;
+
+    Float4 ViewSpaceBoundingSphere;
+    Matrix ViewToVolumeClip;
+
+    ShaderLightData LocalLight;
+    });
+
+struct FrameCache
+{
+    Float3 GridSize;
+    int32 GridPixelSize;
+    int32 GridSizeZ;
+    bool FogJitter;
+    float HistoryWeight;
+    int32 MissedHistorySamplesCount;
+    float InverseSquaredLightDistanceBiasScale;
+    float SphereRasterizeRadiusBias;
+    Data Data;
+};
 
 String VolumetricFogPass::ToString() const
 {
@@ -134,7 +200,7 @@ struct alignas(Float4) RasterizeSphere
     uint16 VolumeZBoundsMax;
 };
 
-bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context)
+bool VolumetricFogPass::Init(FrameCache& cache, RenderContext& renderContext, GPUContext* context)
 {
     const auto& fog = renderContext.List->Fog;
     if (renderContext.Buffers->LastFrameVolumetricFog == Engine::FrameCount)
@@ -153,87 +219,87 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context)
     auto& options = fog.VolumetricFog;
 
     // Setup configuration
-    _cache.FogJitter = true;
-    _cache.HistoryWeight = 0.92f;
-    _cache.InverseSquaredLightDistanceBiasScale = 1.0f;
+    cache.FogJitter = true;
+    cache.HistoryWeight = 0.92f;
+    cache.InverseSquaredLightDistanceBiasScale = 1.0f;
     switch (Graphics::VolumetricFogQuality)
     {
     case Quality::Low:
-        _cache.GridPixelSize = 24;
-        _cache.GridSizeZ = 50;
-        _cache.MissedHistorySamplesCount = 1;
+        cache.GridPixelSize = 24;
+        cache.GridSizeZ = 50;
+        cache.MissedHistorySamplesCount = 1;
         break;
     case Quality::Medium:
-        _cache.GridPixelSize = 20;
-        _cache.GridSizeZ = 54;
-        _cache.MissedHistorySamplesCount = 2;
+        cache.GridPixelSize = 20;
+        cache.GridSizeZ = 54;
+        cache.MissedHistorySamplesCount = 2;
         break;
     case Quality::High:
-        _cache.GridPixelSize = 16;
-        _cache.GridSizeZ = 64;
-        _cache.MissedHistorySamplesCount = 4;
+        cache.GridPixelSize = 16;
+        cache.GridSizeZ = 64;
+        cache.MissedHistorySamplesCount = 4;
         break;
     case Quality::Ultra:
-        _cache.GridPixelSize = 8;
-        _cache.GridSizeZ = 128;
-        _cache.MissedHistorySamplesCount = 8;
+        cache.GridPixelSize = 8;
+        cache.GridSizeZ = 128;
+        cache.MissedHistorySamplesCount = 8;
         break;
     }
 
     // Prepare
     const int32 width = renderContext.Buffers->GetWidth();
     const int32 height = renderContext.Buffers->GetHeight();
-    _cache.GridSize = Float3(
-        (float)Math::DivideAndRoundUp(width, _cache.GridPixelSize),
-        (float)Math::DivideAndRoundUp(height, _cache.GridPixelSize),
-        (float)_cache.GridSizeZ);
+    cache.GridSize = Float3(
+        (float)Math::DivideAndRoundUp(width, cache.GridPixelSize),
+        (float)Math::DivideAndRoundUp(height, cache.GridPixelSize),
+        (float)cache.GridSizeZ);
     auto& fogData = renderContext.Buffers->VolumetricFogData;
     fogData.MaxDistance = options.Distance;
     if (renderContext.Task->IsCameraCut ||
         renderContext.View.IsOriginTeleport() ||
-        (renderContext.Buffers->VolumetricFog && renderContext.Buffers->VolumetricFog->Size3() != _cache.GridSize))
+        (renderContext.Buffers->VolumetricFog && renderContext.Buffers->VolumetricFog->Size3() != cache.GridSize))
     {
         // Don't blend with history on camera cuts or teleport or resizes
-        _cache.HistoryWeight = 0.0f;
+        cache.HistoryWeight = 0.0f;
     }
 
     // Init data (partial, without directional light or sky light data);
-    GBufferPass::SetInputs(renderContext.View, _cache.Data.GBuffer);
-    _cache.Data.GlobalAlbedo = options.Albedo.ToFloat3() * options.Albedo.A;
-    _cache.Data.GlobalExtinctionScale = options.ExtinctionScale;
-    _cache.Data.GlobalEmissive = options.Emissive.ToFloat3() * options.Emissive.A;
-    _cache.Data.GridSize = _cache.GridSize;
-    _cache.Data.GridSizeIntX = (uint32)_cache.GridSize.X;
-    _cache.Data.GridSizeIntY = (uint32)_cache.GridSize.Y;
-    _cache.Data.GridSizeIntZ = (uint32)_cache.GridSize.Z;
-    _cache.Data.HistoryWeight = _cache.HistoryWeight;
-    _cache.Data.FogParameters = options.FogParameters;
-    _cache.Data.GridSliceParameters = GetGridSliceParameters(renderContext.View.Near, options.Distance, _cache.GridSizeZ);
+    GBufferPass::SetInputs(renderContext.View, cache.Data.GBuffer);
+    cache.Data.GlobalAlbedo = options.Albedo.ToFloat3() * options.Albedo.A;
+    cache.Data.GlobalExtinctionScale = options.ExtinctionScale;
+    cache.Data.GlobalEmissive = options.Emissive.ToFloat3() * options.Emissive.A;
+    cache.Data.GridSize = cache.GridSize;
+    cache.Data.GridSizeIntX = (uint32)cache.GridSize.X;
+    cache.Data.GridSizeIntY = (uint32)cache.GridSize.Y;
+    cache.Data.GridSizeIntZ = (uint32)cache.GridSize.Z;
+    cache.Data.HistoryWeight = cache.HistoryWeight;
+    cache.Data.FogParameters = options.FogParameters;
+    cache.Data.GridSliceParameters = GetGridSliceParameters(renderContext.View.Near, options.Distance, cache.GridSizeZ);
     /*static bool log = true;
     if (log)
     {
         log = false;
-        for (int slice = 0; slice < _cache.GridSizeZ; slice++)
-            LOG(Error, "Slice {} -> {}", slice, GetDepthFromSlice((float)slice, _cache.Data.GridSliceParameters));
+        for (int slice = 0; slice < cache.GridSizeZ; slice++)
+            LOG(Error, "Slice {} -> {}", slice, GetDepthFromSlice((float)slice, cache.Data.GridSliceParameters));
     }*/
-    _cache.Data.InverseSquaredLightDistanceBiasScale = _cache.InverseSquaredLightDistanceBiasScale;
-    _cache.Data.PhaseG = options.ScatteringDistribution;
-    _cache.Data.VolumetricFogMaxDistance = options.Distance;
-    _cache.Data.MissedHistorySamplesCount = Math::Clamp(_cache.MissedHistorySamplesCount, 1, (int32)ARRAY_COUNT(_cache.Data.FrameJitterOffsets));
-    Matrix::Transpose(renderContext.View.PrevViewProjection, _cache.Data.PrevWorldToClip);
-    _cache.Data.SkyLight.VolumetricScatteringIntensity = 0;
+    cache.Data.InverseSquaredLightDistanceBiasScale = cache.InverseSquaredLightDistanceBiasScale;
+    cache.Data.PhaseG = options.ScatteringDistribution;
+    cache.Data.VolumetricFogMaxDistance = options.Distance;
+    cache.Data.MissedHistorySamplesCount = Math::Clamp(cache.MissedHistorySamplesCount, 1, (int32)ARRAY_COUNT(cache.Data.FrameJitterOffsets));
+    Matrix::Transpose(renderContext.View.PrevViewProjection, cache.Data.PrevWorldToClip);
+    cache.Data.SkyLight.VolumetricScatteringIntensity = 0;
 
     // Fill frame jitter history
     const Float4 defaultOffset(0.5f, 0.5f, 0.5f, 0.0f);
-    for (int32 i = 0; i < ARRAY_COUNT(_cache.Data.FrameJitterOffsets); i++)
-        _cache.Data.FrameJitterOffsets[i] = defaultOffset;
-    _cache.SphereRasterizeRadiusBias = 0.0f;
-    if (_cache.FogJitter)
+    for (int32 i = 0; i < ARRAY_COUNT(cache.Data.FrameJitterOffsets); i++)
+        cache.Data.FrameJitterOffsets[i] = defaultOffset;
+    cache.SphereRasterizeRadiusBias = 0.0f;
+    if (cache.FogJitter)
     {
-        for (int32 i = 0; i < _cache.MissedHistorySamplesCount; i++)
+        for (int32 i = 0; i < cache.MissedHistorySamplesCount; i++)
         {
             const uint64 frameNumber = renderContext.Task->LastUsedFrame - i;
-            _cache.Data.FrameJitterOffsets[i] = Float4(
+            cache.Data.FrameJitterOffsets[i] = Float4(
                 RenderTools::TemporalHalton(frameNumber & 1023, 2),
                 RenderTools::TemporalHalton(frameNumber & 1023, 3),
                 RenderTools::TemporalHalton(frameNumber & 1023, 5),
@@ -241,19 +307,19 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context)
         }
 
         // Add bias to radius when using jittering to avoid pixelization on the circle borders (cell offset is randomized)
-        float worldUnitsPerDepthCell = options.Distance / _cache.GridSize.Z;
+        float worldUnitsPerDepthCell = options.Distance / cache.GridSize.Z;
         // TODO: include XY size too?
-        _cache.SphereRasterizeRadiusBias = worldUnitsPerDepthCell * 0.25f;
+        cache.SphereRasterizeRadiusBias = worldUnitsPerDepthCell * 0.25f;
     }
 
     // Set constant buffer data
     auto cb0 = _shader->GetShader()->GetCB(0);
-    context->UpdateCB(cb0, &_cache.Data);
+    context->UpdateCB(cb0, &cache.Data);
 
     // Clear local lights scattering table if was used and will be probably reused later
     if (renderContext.Buffers->LocalShadowedLightScattering)
     {
-        if (Float3::NearEqual(renderContext.Buffers->LocalShadowedLightScattering->Size3(), _cache.GridSize))
+        if (Float3::NearEqual(renderContext.Buffers->LocalShadowedLightScattering->Size3(), cache.GridSize))
         {
             context->Clear(renderContext.Buffers->LocalShadowedLightScattering->ViewVolume(), Color::Transparent);
         }
@@ -269,21 +335,21 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context)
     return false;
 }
 
-bool VolumetricFogPass::InitSphereRasterize(RasterizeSphere& sphere, RenderView& view, const Float3& center, float radius)
+bool VolumetricFogPass::InitSphereRasterize(FrameCache& cache, RasterizeSphere& sphere, RenderView& view, const Float3& center, float radius)
 {
     ASSERT_LOW_LAYER(!center.IsNanOrInfinity() && !isnan(radius) && !isinf(radius));
     sphere.Center = center;
-    sphere.Radius = radius + _cache.SphereRasterizeRadiusBias;
+    sphere.Radius = radius + cache.SphereRasterizeRadiusBias;
 
     // Calculate sphere volume bounds in camera frustum depth range (min and max)
     sphere.ViewSpaceCenter = Float3::Transform(center, view.View);
-    const float furthestSliceIndex = GetSliceFromDepth(sphere.ViewSpaceCenter.Z + sphere.Radius, _cache.Data.GridSliceParameters);
-    const float closestSliceIndex = GetSliceFromDepth(sphere.ViewSpaceCenter.Z - sphere.Radius, _cache.Data.GridSliceParameters);
-    sphere.VolumeZBoundsMin = (uint16)Math::Clamp(closestSliceIndex, 0.0f, _cache.GridSize.Z - 1.0f);
-    sphere.VolumeZBoundsMax = (uint16)Math::Clamp(furthestSliceIndex, 0.0f, _cache.GridSize.Z - 1.0f);
+    const float furthestSliceIndex = GetSliceFromDepth(sphere.ViewSpaceCenter.Z + sphere.Radius, cache.Data.GridSliceParameters);
+    const float closestSliceIndex = GetSliceFromDepth(sphere.ViewSpaceCenter.Z - sphere.Radius, cache.Data.GridSliceParameters);
+    sphere.VolumeZBoundsMin = (uint16)Math::Clamp(closestSliceIndex, 0.0f, cache.GridSize.Z - 1.0f);
+    sphere.VolumeZBoundsMax = (uint16)Math::Clamp(furthestSliceIndex, 0.0f, cache.GridSize.Z - 1.0f);
 
     // Cull
-    if ((view.Position - sphere.Center).LengthSquared() >= Math::Square(_cache.Data.VolumetricFogMaxDistance + sphere.Radius) ||
+    if ((view.Position - sphere.Center).LengthSquared() >= Math::Square(cache.Data.VolumetricFogMaxDistance + sphere.Radius) ||
         sphere.VolumeZBoundsMin > sphere.VolumeZBoundsMax)
     {
         return true;
@@ -292,12 +358,12 @@ bool VolumetricFogPass::InitSphereRasterize(RasterizeSphere& sphere, RenderView&
     return false;
 }
 
-GPUTextureView* VolumetricFogPass::GetLocalShadowedLightScattering(RenderContext& renderContext, GPUContext* context) const
+GPUTextureView* VolumetricFogPass::GetLocalShadowedLightScattering(FrameCache& cache, RenderContext& renderContext, GPUContext* context) const
 {
     if (renderContext.Buffers->LocalShadowedLightScattering == nullptr)
     {
         ASSERT(renderContext.Buffers->LastFrameVolumetricFog == Engine::FrameCount);
-        const GPUTextureDescription volumeDescRGB = GPUTextureDescription::New3D(_cache.GridSize, PixelFormat::R11G11B10_Float, GPUTextureFlags::RenderTarget | GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess);
+        const GPUTextureDescription volumeDescRGB = GPUTextureDescription::New3D(cache.GridSize, PixelFormat::R11G11B10_Float, GPUTextureFlags::RenderTarget | GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess);
         const auto texture = RenderTargetPool::Get(volumeDescRGB);
         RENDER_TARGET_POOL_SET_NAME(texture, "VolumetricFog.LocalShadowedLightScattering");
         renderContext.Buffers->LocalShadowedLightScattering = texture;
@@ -308,12 +374,11 @@ GPUTextureView* VolumetricFogPass::GetLocalShadowedLightScattering(RenderContext
 }
 
 template<typename T>
-void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUContext* context, RenderView& view, T& light, PerLight& perLight, GPUConstantBuffer* cb2)
+void VolumetricFogPass::RenderRadialLight(FrameCache& cache, RenderContext& renderContext, GPUContext* context, T& light, PerLight& perLight, GPUConstantBuffer* cb2)
 {
     RasterizeSphere sphere;
-    if (InitSphereRasterize(sphere, view, light.Position, light.Radius))
+    if (InitSphereRasterize(cache, sphere, renderContext.View, light.Position, light.Radius))
         return;
-    auto& cache = _cache;
 
     // Setup data
     perLight.SliceToDepth.X = cache.Data.GridSize.Z;
@@ -346,10 +411,9 @@ void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUConte
 void VolumetricFogPass::Render(RenderContext& renderContext)
 {
     auto context = GPUDevice::Instance->GetMainContext();
-    if (Init(renderContext, context))
+    FrameCache cache;
+    if (Init(cache, renderContext, context))
         return;
-    auto& view = renderContext.View;
-    auto& cache = _cache;
     PROFILE_GPU_CPU("Volumetric Fog");
 
     // TODO: test exponential depth distribution (should give better quality near the camera)
@@ -361,7 +425,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     ShadowsPass::GetShadowAtlas(renderContext.Buffers, shadowMap, shadowsBuffer);
 
     // Init directional light data
-    Platform::MemoryClear(&_cache.Data.DirectionalLight, sizeof(_cache.Data.DirectionalLight));
+    Platform::MemoryClear(&cache.Data.DirectionalLight, sizeof(cache.Data.DirectionalLight));
     if (renderContext.List->DirectionalLights.HasItems())
     {
         const int32 dirLightIndex = (int32)renderContext.List->DirectionalLights.Count() - 1;
@@ -370,8 +434,8 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
         if (brightness > ZeroTolerance)
         {
             const bool useShadow = shadowMap && dirLight.CastVolumetricShadow && dirLight.HasShadow;
-            dirLight.SetShaderData(_cache.Data.DirectionalLight, useShadow);
-            _cache.Data.DirectionalLight.Color *= brightness;
+            dirLight.SetShaderData(cache.Data.DirectionalLight, useShadow);
+            cache.Data.DirectionalLight.Color *= brightness;
         }
     }
 
@@ -385,7 +449,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
         case GlobalIlluminationMode::DDGI:
             if (!DynamicDiffuseGlobalIlluminationPass::Instance()->Get(renderContext.Buffers, bindingDataDDGI))
             {
-                _cache.Data.DDGI = bindingDataDDGI.Constants;
+                cache.Data.DDGI = bindingDataDDGI.Constants;
                 useDDGI = true;
             }
             break;
@@ -394,15 +458,15 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
 
     // Init sky light data
     GPUTexture* skyLightImage = nullptr;
-    Platform::MemoryClear(&_cache.Data.SkyLight, sizeof(_cache.Data.SkyLight));
+    Platform::MemoryClear(&cache.Data.SkyLight, sizeof(cache.Data.SkyLight));
     if (renderContext.List->SkyLights.HasItems() && !useDDGI)
     {
         const auto& skyLight = renderContext.List->SkyLights.Last();
         if (skyLight.VolumetricScatteringIntensity > ZeroTolerance)
         {
-            _cache.Data.SkyLight.MultiplyColor = skyLight.Color;
-            _cache.Data.SkyLight.AdditiveColor = skyLight.AdditiveColor;
-            _cache.Data.SkyLight.VolumetricScatteringIntensity = skyLight.VolumetricScatteringIntensity;
+            cache.Data.SkyLight.MultiplyColor = skyLight.Color;
+            cache.Data.SkyLight.AdditiveColor = skyLight.AdditiveColor;
+            cache.Data.SkyLight.VolumetricScatteringIntensity = skyLight.VolumetricScatteringIntensity;
             const auto source = skyLight.Image;
             skyLightImage = source ? source->GetTexture() : nullptr;
         }
@@ -410,7 +474,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
 
     // Set constant buffer data
     auto cb0 = _shader->GetShader()->GetCB(0);
-    context->UpdateCB(cb0, &_cache.Data);
+    context->UpdateCB(cb0, &cache.Data);
     context->BindCB(0, cb0);
 
     // Allocate buffers
@@ -456,7 +520,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
         customData.Shader = _shader->GetShader();
         customData.GridSize = cache.GridSize;
         customData.VolumetricFogMaxDistance = cache.Data.VolumetricFogMaxDistance;
-        customData.GridSliceParameters = _cache.Data.GridSliceParameters;
+        customData.GridSliceParameters = cache.Data.GridSliceParameters;
         bindParams.CustomData = &customData;
         bindParams.BindViewData();
         bindParams.DrawCall = renderContext.List->VolumetricFogParticles.begin();
@@ -465,7 +529,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
         for (auto& drawCall : renderContext.List->VolumetricFogParticles)
         {
             RasterizeSphere sphere;
-            if (InitSphereRasterize(sphere, view, drawCall.Particle.VolumetricFog.Position, drawCall.Particle.VolumetricFog.Radius))
+            if (InitSphereRasterize(cache, sphere, renderContext.View, drawCall.Particle.VolumetricFog.Position, drawCall.Particle.VolumetricFog.Radius))
                 continue;
 
             // Setup material shader data
@@ -504,19 +568,20 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
         // Get lights to render
         Array<uint16, InlinedAllocation<64, RendererAllocation>> pointLights;
         Array<uint16, InlinedAllocation<64, RendererAllocation>> spotLights;
+        Float3 viewPosition = renderContext.View.Position;
         float distance = cache.Data.VolumetricFogMaxDistance;
         for (int32 i = 0; i < renderContext.List->PointLights.Count(); i++)
         {
             const auto& light = renderContext.List->PointLights.Get()[i];
             if (light.VolumetricScatteringIntensity > ZeroTolerance &&
-                (view.Position - light.Position).LengthSquared() < Math::Square(distance + light.Radius))
+                (viewPosition - light.Position).LengthSquared() < Math::Square(distance + light.Radius))
                 pointLights.Add(i);
         }
         for (int32 i = 0; i < renderContext.List->SpotLights.Count(); i++)
         {
             const auto& light = renderContext.List->SpotLights.Get()[i];
             if (light.VolumetricScatteringIntensity > ZeroTolerance &&
-                (view.Position - light.Position).LengthSquared() < Math::Square(distance + light.Radius))
+                (viewPosition - light.Position).LengthSquared() < Math::Square(distance + light.Radius))
                 spotLights.Add(i);
         }
 
@@ -526,7 +591,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
             PROFILE_GPU_CPU_NAMED("Lights Injection");
 
             // Allocate temporary buffer for light scattering injection
-            localShadowedLightScattering = GetLocalShadowedLightScattering(renderContext, context);
+            localShadowedLightScattering = GetLocalShadowedLightScattering(cache, renderContext, context);
 
             // Prepare
             PerLight perLight;
@@ -544,11 +609,11 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
             auto* pointLightsIdxPtr = pointLights.Get();
             auto* pointLightsPtr = renderContext.List->PointLights.Get();
             for (int32 i = 0; i < pointLights.Count(); i++)
-                RenderRadialLight(renderContext, context, view, pointLightsPtr[pointLightsIdxPtr[i]], perLight, cb2);
+                RenderRadialLight(cache, renderContext, context, pointLightsPtr[pointLightsIdxPtr[i]], perLight, cb2);
             auto* spotLightsIdxPtr = spotLights.Get();
             auto* spotLightsPtr = renderContext.List->SpotLights.Get();
             for (int32 i = 0; i < spotLights.Count(); i++)
-                RenderRadialLight(renderContext, context, view, spotLightsPtr[spotLightsIdxPtr[i]], perLight, cb2);
+                RenderRadialLight(cache, renderContext, context, spotLightsPtr[spotLightsIdxPtr[i]], perLight, cb2);
 
             // Cleanup
             context->UnBindCB(2);
