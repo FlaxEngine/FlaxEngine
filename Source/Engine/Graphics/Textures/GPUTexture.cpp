@@ -354,6 +354,7 @@ int32 GPUTexture::ComputeRowPitch(int32 mipLevel, int32 rowAlign) const
 
 bool GPUTexture::Init(const GPUTextureDescription& desc)
 {
+    PROFILE_CPU();
     PROFILE_MEM(GraphicsTextures);
 
     // Validate description
@@ -505,6 +506,7 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
     }
 
 #if COMPILE_WITH_PROFILER
+    ZoneValue(_memoryUsage / 1024); // Memory size in kB
     auto group = ProfilerMemory::Groups::GraphicsTextures;
     if (_desc.IsRenderTarget())
         group = ProfilerMemory::Groups::GraphicsRenderTargets;
