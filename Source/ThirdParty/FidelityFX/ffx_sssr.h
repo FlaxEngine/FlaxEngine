@@ -107,14 +107,14 @@ float3 FFX_SSSR_HierarchicalRaymarch(Texture2D depthBuffer, uint hzbMips, float 
     FFX_SSSR_InitialAdvanceRay(origin, direction, inv_direction, current_mip_resolution, current_mip_resolution_inv, floor_offset, uv_offset, position, current_t);
 
     uint overDiffError = 0;
-    int i = 0;
+    uint i = 0;
     while (i < max_traversal_intersections && current_mip >= most_detailed_mip) {
         float2 current_mip_position = current_mip_resolution * position.xy;
         float surface_z = depthBuffer.Load(int3(current_mip_position, current_mip)).x;
         if (position.z - surface_z > depthDiffError) overDiffError++; // Count number of times we were under the depth by more than the allowed error
         bool skipped_tile = FFX_SSSR_AdvanceRay(origin, direction, inv_direction, current_mip_position, current_mip_resolution_inv, floor_offset, uv_offset, surface_z, position, current_t);
         ++i;
-        if (!skipped_tile || current_mip < hzbMips) // Never go too low depth resolution to avoid blocky artifacts
+        if (!skipped_tile || current_mip < (int)hzbMips) // Never go too low depth resolution to avoid blocky artifacts
         {
             current_mip += skipped_tile ? 1 : -1;
             current_mip_resolution *= skipped_tile ? 0.5 : 2;

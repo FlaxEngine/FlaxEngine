@@ -64,6 +64,9 @@ float3 TraceScreenSpaceReflection(
 #endif
     float2 uv, GBufferSample gBuffer, Texture2D depthBuffer, float3 viewPos, float4x4 viewMatrix, float4x4 viewProjectionMatrix, float stepSize, float maxSamples = 50, bool temporal = false, float temporalTime = 0.0f, float worldAntiSelfOcclusionBias = 0.1f, float brdfBias = 0.82f, float drawDistance = 5000.0f, float roughnessThreshold = 0.4f, float edgeFade = 0.1f)
 {
+#if SSR_USE_HZB
+    uncertainHit = false;
+#endif
 #ifndef SSR_SKIP_INVALID_CHECK
     // Reject invalid pixels
     if (gBuffer.ShadingModel == SHADING_MODEL_UNLIT || gBuffer.Roughness > roughnessThreshold || gBuffer.ViewPos.z > drawDistance)
@@ -73,9 +76,9 @@ float3 TraceScreenSpaceReflection(
     // Calculate view space normal vector
     float3 normalVS = mul(gBuffer.Normal, (float3x3)viewMatrix);
     float3 reflectVS = normalize(reflect(gBuffer.ViewPos, normalVS));
-    if (gBuffer.ViewPos.z < 1.0 && reflectVS.z < 0.4)
-        return 0;
-        
+    if (reflectVS.z < 0.001f)
+        return 0; // Ray goes towards the view
+
     // Calculate ray path in UV space (z is raw depth)
     float3 reflectWS = ScreenSpaceReflectionDirection(uv, gBuffer, viewPos, temporal, temporalTime, brdfBias);
 #if SSR_USE_HZB
@@ -149,6 +152,9 @@ float3 TraceScreenSpaceReflection(
     // Fade on distance
     float distanceFade = saturate((drawDistance - gBuffer.ViewPos.z) / drawDistance);
 
+    // Fade on ray
+    float reflectFade = saturate(reflectVS.z * 8.0f);
+
     // Output: xy: hitUV, z: hitMask
-    return float3(currOffset.xy, fadeOnBorder * roughnessFade * distanceFade);
+    return float3(currOffset.xy, fadeOnBorder * roughnessFade * distanceFade * reflectFade);
 }
