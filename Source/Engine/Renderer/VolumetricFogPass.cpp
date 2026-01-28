@@ -240,15 +240,27 @@ bool VolumetricFogPass::Init(FrameCache& cache, RenderContext& renderContext, GP
         cache.MissedHistorySamplesCount = 4;
         break;
     case Quality::Ultra:
-        cache.GridPixelSize = 8;
+        cache.GridPixelSize = 10;
         cache.GridSizeZ = 128;
         cache.MissedHistorySamplesCount = 8;
         break;
     }
 
-    // Prepare
+    // Calculate volumetric fog size
     const int32 width = renderContext.Buffers->GetWidth();
     const int32 height = renderContext.Buffers->GetHeight();
+    constexpr int32 resolutionLimit = 1920; // Limit resolution to 1080p to save on perf for players on 2k/4k displays (incl. consoles)
+    if (resolutionLimit > 0)
+    {
+        const int32 limitX = resolutionLimit; // Controls screen width limit, height depends on the aspect ratio
+        const int32 limitY = Math::CeilToInt((float)limitX * (float)height / (float)width);
+        if (width > limitX || height > limitY)
+        {
+            const float scaleX = (float)Math::Max(width, limitX) / limitX;
+            const float scaleY = (float)Math::Max(height, limitY) / limitY;
+            cache.GridPixelSize = Math::CeilToInt(cache.GridPixelSize * Math::Max(scaleX, scaleY));
+        }
+    }
     cache.GridSize = Float3(
         (float)Math::DivideAndRoundUp(width, cache.GridPixelSize),
         (float)Math::DivideAndRoundUp(height, cache.GridPixelSize),
