@@ -207,7 +207,7 @@ bool GraphicsService::Init()
 #endif
         )
     {
-#if !USE_EDITOR && BUILD_RELEASE && !PLATFORM_LINUX && !PLATFORM_CONSOLE // IsDebugToolAttached seams to be enabled on many Linux machines via VK_EXT_tooling_info
+#if !USE_EDITOR && BUILD_RELEASE && !PLATFORM_CONSOLE
         // Block graphics debugging to protect contents
         Platform::Fatal(TEXT("Graphics debugger attached."));
 #endif
