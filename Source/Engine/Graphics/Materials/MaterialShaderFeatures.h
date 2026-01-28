@@ -33,6 +33,7 @@ struct ForwardShadingFeature : MaterialShaderFeature
         ShaderLightData SkyLight;
         ShaderEnvProbeData EnvironmentProbe;
         ShaderExponentialHeightFogData ExponentialHeightFog;
+        ShaderVolumetricFogData VolumetricFogData;
         Float3 Dummy2;
         uint32 LocalLightsCount;
         ShaderLightData LocalLights[MaxLocalLights];

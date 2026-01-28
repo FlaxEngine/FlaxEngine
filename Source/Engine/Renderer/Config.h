@@ -42,8 +42,15 @@ GPU_CB_STRUCT(ShaderExponentialHeightFogData {
     float VolumetricFogMaxDistance;
     float DirectionalInscatteringStartDistance;
     float StartDistance;
+    });
 
-    Float4 VolumetricFogGrid;
+/// <summary>
+/// Structure that contains information about volumetric fog
+/// </summary>
+GPU_CB_STRUCT(ShaderVolumetricFogData {
+    Float4 GridSliceParameters;
+    Float2 ScreenSize;
+    Float2 VolumeTexelSize; // Scaled for dithering
     });
 
 /// <summary>

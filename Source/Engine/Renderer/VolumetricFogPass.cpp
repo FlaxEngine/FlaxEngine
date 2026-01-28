@@ -679,8 +679,11 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     renderContext.Buffers->LastFrameVolumetricFog = Engine::FrameCount;
 
     // Update fog to be used by other passes
+    const float ditherNoiseScale = 0.2f; // Scales noise in SampleVolumetricFog
     renderContext.List->Fog.VolumetricFogTexture = integratedLightScattering->ViewVolume();
-    renderContext.List->Fog.ExponentialHeightFog.VolumetricFogGrid = cache.Data.GridSliceParameters;
+    renderContext.List->Fog.VolumetricFogData.GridSliceParameters = cache.Data.GridSliceParameters;
+    renderContext.List->Fog.VolumetricFogData.ScreenSize = renderContext.Buffers->GetSize();
+    renderContext.List->Fog.VolumetricFogData.VolumeTexelSize = Float2(1.0f / cache.GridSize.X, 1.0f / cache.GridSize.Y) * ditherNoiseScale;
 
     groupCountX = Math::DivideAndRoundUp((int32)cache.GridSize.X, VolumetricFogIntegrationGroupSize);
     groupCountY = Math::DivideAndRoundUp((int32)cache.GridSize.Y, VolumetricFogIntegrationGroupSize);

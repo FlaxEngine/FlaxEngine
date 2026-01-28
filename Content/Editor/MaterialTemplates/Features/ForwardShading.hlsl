@@ -20,6 +20,7 @@ LightData DirectionalLight;
 LightData SkyLight;
 EnvProbeData EnvironmentProbe;
 ExponentialHeightFogData ExponentialHeightFog;
+VolumetricFogData VolumetricFog;
 float3 Dummy2;
 uint LocalLightsCount;
 LightData LocalLights[MAX_LOCAL_LIGHTS];
@@ -35,6 +36,7 @@ LightData GetDirectionalLight() { return DirectionalLight; }
 LightData GetSkyLight() { return SkyLight; }
 EnvProbeData GetEnvironmentProbe() { return EnvironmentProbe; }
 ExponentialHeightFogData GetExponentialHeightFog() { return ExponentialHeightFog; }
+VolumetricFogData GetVolumetricFog() { return VolumetricFog; }
 uint GetLocalLightsCount() { return LocalLightsCount; }
 LightData GetLocalLight(uint i) { return LocalLights[i]; }
 @5// Forward Shading: Shaders
@@ -164,7 +166,7 @@ void PS_Forward(
 	{
 		// Sample volumetric fog and mix it in
 		float2 screenUV = materialInput.SvPosition.xy * ScreenSize.zw;
-		float4 volumetricFog = SampleVolumetricFog(VolumetricFogTexture, ExponentialHeightFog.VolumetricFogGrid, materialInput.WorldPosition - ViewPos, screenUV);
+		float4 volumetricFog = SampleVolumetricFog(VolumetricFogTexture, VolumetricFog, materialInput.WorldPosition - ViewPos, screenUV, TemporalAAJitter);
 		fog = CombineVolumetricFog(fog, volumetricFog);
 	}
 

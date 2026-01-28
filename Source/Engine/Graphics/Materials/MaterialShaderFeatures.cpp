@@ -29,7 +29,8 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     const bool canUseShadow = view.Pass != DrawPass::Depth;
 
     // Set fog input
-    data.ExponentialHeightFog = cache->Fog.ExponentialHeightFog;
+    data.ExponentialHeightFog = cache->Fog.ExponentialHeightFogData;
+    data.VolumetricFogData = cache->Fog.VolumetricFogData;
     params.GPUContext->BindSR(volumetricFogTextureRegisterIndex, cache->Fog.VolumetricFogTexture);
 
     // Set directional light input

@@ -182,6 +182,8 @@ void ExponentialHeightFog::GetExponentialHeightFogData(const RenderView& view, S
 GPU_CB_STRUCT(Data {
     ShaderGBufferData GBuffer;
     ShaderExponentialHeightFogData ExponentialHeightFog;
+    ShaderVolumetricFogData VolumetricFog;
+    Float4 TemporalAAJitter;
     });
 
 void ExponentialHeightFog::DrawFog(GPUContext* context, RenderContext& renderContext, GPUTextureView* output)
@@ -193,7 +195,9 @@ void ExponentialHeightFog::DrawFog(GPUContext* context, RenderContext& renderCon
     // Setup shader inputs
     Data data;
     GBufferPass::SetInputs(renderContext.View, data.GBuffer);
-    data.ExponentialHeightFog = renderContext.List->Fog.ExponentialHeightFog;
+    data.ExponentialHeightFog = renderContext.List->Fog.ExponentialHeightFogData;
+    data.VolumetricFog = renderContext.List->Fog.VolumetricFogData;
+    data.TemporalAAJitter = renderContext.View.TemporalAAJitter;
     auto cb = _shader->GetShader()->GetCB(0);
     ASSERT_LOW_LAYER(cb->GetSize() == sizeof(Data));
     context->UpdateCB(cb, &data);

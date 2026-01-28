@@ -16,6 +16,8 @@
 META_CB_BEGIN(0, Data)
 GBufferData GBuffer;
 ExponentialHeightFogData ExponentialHeightFog;
+VolumetricFogData VolumetricFog;
+float4 TemporalAAJitter;
 META_CB_END
 
 DECLARE_GBUFFERDATA_ACCESS(GBuffer)
@@ -46,7 +48,7 @@ float4 PS_Fog(Quad_VS2PS input) : SV_Target0
 
 #if VOLUMETRIC_FOG
     // Sample volumetric fog and mix it in
-	float4 volumetricFog = SampleVolumetricFog(VolumetricFogTexture, ExponentialHeightFog.VolumetricFogGrid, worldPos - GBuffer.ViewPos, input.TexCoord);
+	float4 volumetricFog = SampleVolumetricFog(VolumetricFogTexture, VolumetricFog, worldPos - GBuffer.ViewPos, input.TexCoord, TemporalAAJitter);
 	fog = CombineVolumetricFog(fog, volumetricFog);
 #endif
 

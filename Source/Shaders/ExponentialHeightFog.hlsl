@@ -27,8 +27,6 @@ struct ExponentialHeightFogData
     float VolumetricFogMaxDistance;
     float DirectionalInscatteringStartDistance;
     float StartDistance;
-
-    float4 VolumetricFogGrid;
 };
 
 float4 GetExponentialHeightFog(ExponentialHeightFogData exponentialHeightFog, float3 posWS, float3 camWS, float skipDistance, float sceneDistance)
