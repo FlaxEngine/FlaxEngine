@@ -20,7 +20,7 @@ void BackBufferVulkan::Setup(GPUSwapChainVulkan* window, VkImage backbuffer, Pix
     initResource(VK_IMAGE_LAYOUT_UNDEFINED);
 
     Device = window->GetDevice();
-    Handle.Init(window->GetDevice(), this, backbuffer, 1, format, MSAALevel::None, extent, VK_IMAGE_VIEW_TYPE_2D);
+    Handle.Init(Device, this, backbuffer, 1, format, MSAALevel::None, extent, VK_IMAGE_VIEW_TYPE_2D);
     RenderingDoneSemaphore = New<SemaphoreVulkan>(Device);
     ImageAcquiredSemaphore = New<SemaphoreVulkan>(Device);
 }
@@ -30,6 +30,12 @@ void BackBufferVulkan::Release()
     Handle.Release();
     Delete(RenderingDoneSemaphore);
     Delete(ImageAcquiredSemaphore);
+    if (SubmitCmdBuffer)
+    {
+        SubmitCmdBuffer->Wait();
+        SubmitCmdBuffer = nullptr;
+    }
+    Device = nullptr;
 }
 
 GPUSwapChainVulkan::GPUSwapChainVulkan(GPUDeviceVulkan* device, Window* window)
@@ -131,6 +137,22 @@ GPUTextureView* GPUSwapChainVulkan::GetBackBufferView()
         ASSERT(cmdBufferManager->HasPendingActiveCmdBuffer() && cmdBufferManager->GetActiveCmdBuffer()->GetState() == CmdBufferVulkan::State::IsInsideBegin);
     }
     return &_backBuffers[_acquiredImageIndex].Handle;
+}
+
+void GPUSwapChainVulkan::Begin(RenderTask* task)
+{
+    GPUSwapChain::Begin(task);
+
+    // Wait for the backbuffer to be available
+    if (_currentImageIndex != -1)
+    {
+        auto& backBuffer = _backBuffers[_currentImageIndex];
+        if (backBuffer.SubmitCmdBuffer)
+        {
+            backBuffer.SubmitCmdBuffer->Wait();
+            backBuffer.SubmitCmdBuffer = nullptr;
+        }
+    }
 }
 
 bool GPUSwapChainVulkan::Resize(int32 width, int32 height)
@@ -539,6 +561,11 @@ void GPUSwapChainVulkan::Present(bool vsync)
     auto context = _device->MainContext;
     context->AddImageBarrier(backBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
     context->FlushBarriers();
+
+    // Cache a command buffer to wait on its fence before drawing to this backbuffer again
+    auto& acquiredBackBuffer = _backBuffers[_acquiredImageIndex];
+    ASSERT(acquiredBackBuffer.SubmitCmdBuffer == nullptr);
+    acquiredBackBuffer.SubmitCmdBuffer = context->GetCmdBufferManager()->GetActiveCmdBuffer();
 
     context->GetCmdBufferManager()->SubmitActiveCmdBuffer(_backBuffers[_acquiredImageIndex].RenderingDoneSemaphore);
 

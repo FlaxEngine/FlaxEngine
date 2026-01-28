@@ -2251,8 +2251,13 @@ FenceVulkan* FenceManagerVulkan::AllocateFence(bool createSignaled)
 
 bool FenceManagerVulkan::WaitForFence(FenceVulkan* fence, uint64 timeInNanoseconds) const
 {
+    if (fence->IsSignaled)
+        return false;
+    PROFILE_CPU();
+    ZoneColor(TracyWaitZoneColor);
     ASSERT(_usedFences.Contains(fence));
-    ASSERT(!fence->IsSignaled);
+    if (timeInNanoseconds)
+        timeInNanoseconds = 1000ll * 1000ll * 1000LL; // 1s
     const VkResult result = vkWaitForFences(_device->Device, 1, &fence->Handle, true, timeInNanoseconds);
     LOG_VULKAN_RESULT(result);
     if (result == VK_SUCCESS)

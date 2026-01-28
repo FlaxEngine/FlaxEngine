@@ -119,6 +119,7 @@ public:
 
 public:
     void AddWaitSemaphore(VkPipelineStageFlags waitFlags, SemaphoreVulkan* waitSemaphore);
+    void Wait(float timeInSecondsToWait = 1.0f);
 
     void Begin();
     void End();

@@ -20,6 +20,15 @@ void CmdBufferVulkan::AddWaitSemaphore(VkPipelineStageFlags waitFlags, Semaphore
     _waitSemaphores.Add(waitSemaphore);
 }
 
+void CmdBufferVulkan::Wait(float timeInSecondsToWait)
+{
+    if (!IsSubmitted())
+        return;
+    const bool failed = _device->FenceManager.WaitForFence(_fence, (uint64)(timeInSecondsToWait * 1e9));
+    ASSERT(!failed);
+    RefreshFenceStatus();
+}
+
 void CmdBufferVulkan::Begin()
 {
     PROFILE_CPU();
@@ -186,9 +195,8 @@ CmdBufferVulkan::~CmdBufferVulkan()
     auto& fenceManager = _device->FenceManager;
     if (_state == State::Submitted)
     {
-        // Wait 60ms
-        const uint64 waitForCmdBufferInNanoSeconds = 60 * 1000 * 1000LL;
-        fenceManager.WaitAndReleaseFence(_fence, waitForCmdBufferInNanoSeconds);
+        // Wait
+        fenceManager.WaitAndReleaseFence(_fence);
     }
     else
     {
@@ -300,7 +308,6 @@ void CmdBufferManagerVulkan::SubmitActiveCmdBuffer(SemaphoreVulkan* signalSemaph
 
 void CmdBufferManagerVulkan::WaitForCmdBuffer(CmdBufferVulkan* cmdBuffer, float timeInSecondsToWait)
 {
-    PROFILE_CPU();
     ASSERT(cmdBuffer->IsSubmitted());
     const bool failed = _device->FenceManager.WaitForFence(cmdBuffer->GetFence(), (uint64)(timeInSecondsToWait * 1e9));
     ASSERT(!failed);
