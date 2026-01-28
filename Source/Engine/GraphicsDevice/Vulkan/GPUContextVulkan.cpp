@@ -1443,7 +1443,7 @@ void GPUContextVulkan::Flush()
 
     // Execute commands
     _cmdBufferManager->SubmitActiveCmdBuffer();
-    _cmdBufferManager->PrepareForNewActiveCommandBuffer();
+    _cmdBufferManager->GetNewActiveCommandBuffer();
     ASSERT(_cmdBufferManager->HasPendingActiveCmdBuffer() && _cmdBufferManager->GetActiveCmdBuffer()->GetState() == CmdBufferVulkan::State::IsInsideBegin);
 }
 

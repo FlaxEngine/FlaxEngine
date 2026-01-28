@@ -203,7 +203,7 @@ public:
     FORCE_INLINE CmdBufferVulkan* GetCmdBuffer()
     {
         if (!_activeCmdBuffer)
-            PrepareForNewActiveCommandBuffer();
+            GetNewActiveCommandBuffer();
         return _activeCmdBuffer;
     }
 
@@ -214,7 +214,7 @@ public:
     {
         _pool.RefreshFenceStatus(skipCmdBuffer);
     }
-    void PrepareForNewActiveCommandBuffer();
+    void GetNewActiveCommandBuffer();
 
 #if VULKAN_USE_TIMER_QUERIES && GPU_VULKAN_PAUSE_QUERIES
     void OnTimerQueryBegin(QueryType query);

@@ -241,13 +241,16 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
     }
 
 #if !BUILD_RELEASE
-    if (auto* context = (GPUContextVulkan*)GPUDevice::Instance->GetMainContext())
+    if (GPUDevice::Instance)
     {
-        if (auto* state = (GPUPipelineStateVulkan*)context->GetState())
+        if (auto* context = (GPUContextVulkan*)GPUDevice::Instance->GetMainContext())
         {
-            GPUPipelineState::DebugName name;
-            state->GetDebugName(name);
-            LOG(Warning, "[Vulkan] Error during rendering with {}", String(name.Get(), name.Count() - 1));
+            if (auto* state = (GPUPipelineStateVulkan*)context->GetState())
+            {
+                GPUPipelineState::DebugName name;
+                state->GetDebugName(name);
+                LOG(Warning, "[Vulkan] Error during rendering with {}", String(name.Get(), name.Count() - 1));
+            }
         }
     }
 #endif
@@ -438,13 +441,6 @@ void DeferredDeletionQueueVulkan::EnqueueGenericResource(Type type, uint64 handl
     entry.FrameNumber = Engine::FrameCount;
 
     ScopeLock lock(_locker);
-#if BUILD_DEBUG && 0
-    const Function<bool(const Entry&)> ContainsHandle = [handle](const Entry& e)
-    {
-        return e.Handle == handle;
-    };
-    ASSERT(!ArrayExtensions::Any(_entries, ContainsHandle));
-#endif
     _entries.Add(entry);
 }
 
@@ -1539,29 +1535,17 @@ void* GPUDeviceVulkan::GetNativePtr() const
 static int32 GetMaxSampleCount(VkSampleCountFlags counts)
 {
     if (counts & VK_SAMPLE_COUNT_64_BIT)
-    {
         return VK_SAMPLE_COUNT_64_BIT;
-    }
     if (counts & VK_SAMPLE_COUNT_32_BIT)
-    {
         return VK_SAMPLE_COUNT_32_BIT;
-    }
     if (counts & VK_SAMPLE_COUNT_16_BIT)
-    {
         return VK_SAMPLE_COUNT_16_BIT;
-    }
     if (counts & VK_SAMPLE_COUNT_8_BIT)
-    {
         return VK_SAMPLE_COUNT_8_BIT;
-    }
     if (counts & VK_SAMPLE_COUNT_4_BIT)
-    {
         return VK_SAMPLE_COUNT_4_BIT;
-    }
     if (counts & VK_SAMPLE_COUNT_2_BIT)
-    {
         return VK_SAMPLE_COUNT_2_BIT;
-    }
     return VK_SAMPLE_COUNT_1_BIT;
 }
 

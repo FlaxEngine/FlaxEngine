@@ -127,7 +127,7 @@ GPUTextureView* GPUSwapChainVulkan::GetBackBufferView()
         // Submit here so we can add a dependency with the acquired semaphore
         cmdBuffer->AddWaitSemaphore(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, _acquiredSemaphore);
         cmdBufferManager->SubmitActiveCmdBuffer();
-        cmdBufferManager->PrepareForNewActiveCommandBuffer();
+        cmdBufferManager->GetNewActiveCommandBuffer();
         ASSERT(cmdBufferManager->HasPendingActiveCmdBuffer() && cmdBufferManager->GetActiveCmdBuffer()->GetState() == CmdBufferVulkan::State::IsInsideBegin);
     }
     return &_backBuffers[_acquiredImageIndex].Handle;
@@ -302,36 +302,18 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     {
         uint32 presentModesCount = 0;
         VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, _surface, &presentModesCount, nullptr));
-        Array<VkPresentModeKHR, InlinedAllocation<4>> presentModes;
+        Array<VkPresentModeKHR, InlinedAllocation<8>> presentModes;
         presentModes.Resize(presentModesCount);
         VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, _surface, &presentModesCount, presentModes.Get()));
-        bool foundPresentModeMailbox = false;
-        bool foundPresentModeImmediate = false;
-        bool foundPresentModeFifo = false;
-        for (size_t i = 0; i < presentModesCount; i++)
-        {
-            switch (presentModes[(int32)i])
-            {
-            case VK_PRESENT_MODE_MAILBOX_KHR:
-                foundPresentModeMailbox = true;
-                break;
-            case VK_PRESENT_MODE_IMMEDIATE_KHR:
-                foundPresentModeImmediate = true;
-                break;
-            case VK_PRESENT_MODE_FIFO_KHR:
-                foundPresentModeFifo = true;
-                break;
-            }
-        }
-        if (foundPresentModeMailbox)
+        if (presentModes.Contains(VK_PRESENT_MODE_MAILBOX_KHR))
         {
             presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
         }
-        else if (foundPresentModeImmediate)
+        else if (presentModes.Contains(VK_PRESENT_MODE_IMMEDIATE_KHR))
         {
             presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
         }
-        else if (foundPresentModeFifo)
+        else if (presentModes.Contains(VK_PRESENT_MODE_FIFO_KHR))
         {
             presentMode = VK_PRESENT_MODE_FIFO_KHR;
         }

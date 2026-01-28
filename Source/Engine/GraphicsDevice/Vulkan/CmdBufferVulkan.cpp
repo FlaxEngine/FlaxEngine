@@ -307,7 +307,7 @@ void CmdBufferManagerVulkan::WaitForCmdBuffer(CmdBufferVulkan* cmdBuffer, float 
     cmdBuffer->RefreshFenceStatus();
 }
 
-void CmdBufferManagerVulkan::PrepareForNewActiveCommandBuffer()
+void CmdBufferManagerVulkan::GetNewActiveCommandBuffer()
 {
     PROFILE_CPU();
     ASSERT_LOW_LAYER(_activeCmdBuffer == nullptr)
