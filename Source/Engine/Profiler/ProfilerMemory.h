@@ -44,6 +44,8 @@ public:
         EngineThreading,
         // Memory used by Delegate (engine events system to store all references).
         EngineDelegate,
+        // Memory used by debug tools (eg. DebugDraw, DebugCommands or DebugLog).
+        EngineDebug,
 
         // Total graphics memory usage.
         Graphics,
