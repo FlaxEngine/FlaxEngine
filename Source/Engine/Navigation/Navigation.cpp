@@ -180,7 +180,7 @@ NavigationService NavigationServiceInstance;
 
 void* dtAllocDefault(size_t size, dtAllocHint)
 {
-    PROFILE_MEM(Navigation);
+    PROFILE_MEM(NavigationMesh);
     return Allocator::Allocate(size);
 }
 

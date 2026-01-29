@@ -260,6 +260,8 @@ void InitProfilerMemory(const Char* cmdLine, int32 stage)
     INIT_PARENT(Content, ContentFiles);
     INIT_PARENT(Level, LevelFoliage);
     INIT_PARENT(Level, LevelTerrain);
+    INIT_PARENT(Navigation, NavigationMesh);
+    INIT_PARENT(Navigation, NavigationBuilding);
     INIT_PARENT(Scripting, ScriptingVisual);
     INIT_PARENT(Scripting, ScriptingCSharp);
     INIT_PARENT(ScriptingCSharp, ScriptingCSharpGCCommitted);

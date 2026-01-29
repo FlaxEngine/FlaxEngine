@@ -105,6 +105,10 @@ public:
 
         // Total navigation system memory.
         Navigation,
+        // Navigation mesh memory.
+        NavigationMesh,
+        // Navigation mesh builder memory.
+        NavigationBuilding,
 
         // Total networking system memory.
         Networking,

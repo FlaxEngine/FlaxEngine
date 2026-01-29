@@ -326,7 +326,7 @@ void NavMeshRuntime::EnsureCapacity(int32 tilesToAddCount)
     if (newTilesCount <= capacity)
         return;
     PROFILE_CPU_NAMED("NavMeshRuntime.EnsureCapacity");
-    PROFILE_MEM(Navigation);
+    PROFILE_MEM(NavigationMesh);
 
     // Navmesh tiles capacity growing rule
     int32 newCapacity = capacity ? capacity : 32;
@@ -387,7 +387,7 @@ void NavMeshRuntime::AddTiles(NavMesh* navMesh)
         return;
     auto& data = navMesh->Data;
     PROFILE_CPU_NAMED("NavMeshRuntime.AddTiles");
-    PROFILE_MEM(Navigation);
+    PROFILE_MEM(NavigationMesh);
     ScopeLock lock(Locker);
 
     // Validate data (must match navmesh) or init navmesh to match the tiles options
@@ -419,7 +419,7 @@ void NavMeshRuntime::AddTile(NavMesh* navMesh, NavMeshTileData& tileData)
     ASSERT(navMesh);
     auto& data = navMesh->Data;
     PROFILE_CPU_NAMED("NavMeshRuntime.AddTile");
-    PROFILE_MEM(Navigation);
+    PROFILE_MEM(NavigationMesh);
     ScopeLock lock(Locker);
 
     // Validate data (must match navmesh) or init navmesh to match the tiles options

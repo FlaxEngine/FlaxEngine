@@ -733,7 +733,7 @@ public:
     bool Run() override
     {
         PROFILE_CPU_NAMED("BuildNavMeshTile");
-        PROFILE_MEM(Navigation);
+        PROFILE_MEM(NavigationBuilding);
         const auto navMesh = NavMesh.Get();
         if (!navMesh)
             return false;
@@ -1095,6 +1095,7 @@ void BuildDirtyBounds(Scene* scene, const BoundingBox& dirtyBounds, bool rebuild
         else if (settings->AutoAddMissingNavMeshes)
         {
             // Spawn missing navmesh
+            PROFILE_MEM(Navigation);
             navMesh = New<NavMesh>();
             navMesh->SetStaticFlags(StaticFlags::FullyStatic);
             navMesh->SetName(TEXT("NavMesh.") + navMeshProperties.Name);
@@ -1156,7 +1157,7 @@ void ClearNavigation(Scene* scene)
 
 void NavMeshBuilder::Update()
 {
-    PROFILE_MEM(Navigation);
+    PROFILE_MEM(NavigationBuilding);
     ScopeLock lock(NavBuildQueueLocker);
 
     // Process nav mesh building requests and kick the tasks
@@ -1207,7 +1208,7 @@ void NavMeshBuilder::Build(Scene* scene, float timeoutMs)
     }
 
     PROFILE_CPU_NAMED("NavMeshBuilder");
-    PROFILE_MEM(Navigation);
+    PROFILE_MEM(NavigationBuilding);
     ScopeLock lock(NavBuildQueueLocker);
 
     BuildRequest req;
@@ -1244,7 +1245,7 @@ void NavMeshBuilder::Build(Scene* scene, const BoundingBox& dirtyBounds, float t
     }
 
     PROFILE_CPU_NAMED("NavMeshBuilder");
-    PROFILE_MEM(Navigation);
+    PROFILE_MEM(NavigationBuilding);
     ScopeLock lock(NavBuildQueueLocker);
 
     BuildRequest req;
