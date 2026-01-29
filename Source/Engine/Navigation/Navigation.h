@@ -19,7 +19,7 @@ public:
     /// <param name="startPosition">The start position.</param>
     /// <param name="hitInfo">The result hit information. Valid only when query succeed.</param>
     /// <param name="maxDistance">The maximum distance to search for wall (search radius).</param>
-    /// <returns>True if ray hits an matching object, otherwise false.</returns>
+    /// <returns>True if ray hits a matching object, otherwise false.</returns>
     API_FUNCTION() static bool FindDistanceToWall(const Vector3& startPosition, API_PARAM(Out) NavMeshHit& hitInfo, float maxDistance = MAX_float);
 
     /// <summary>
@@ -81,7 +81,7 @@ public:
     /// <param name="startPosition">The start position.</param>
     /// <param name="endPosition">The end position.</param>
     /// <param name="hitInfo">The result hit information. Valid only when query succeed.</param>
-    /// <returns>True if ray hits an matching object, otherwise false.</returns>
+    /// <returns>True if ray hits a matching object, otherwise false.</returns>
     API_FUNCTION() static bool RayCast(const Vector3& startPosition, const Vector3& endPosition, API_PARAM(Out) NavMeshHit& hitInfo);
 
 public:
