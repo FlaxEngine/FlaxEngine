@@ -59,7 +59,7 @@ namespace
                     elements.Get()[j].Slot = (byte)slot;
             }
         }
-        GPUVertexLayout* result = anyValid ? GPUVertexLayout::Get(elements) : nullptr;
+        GPUVertexLayout* result = anyValid ? GPUVertexLayout::Get(elements, true) : nullptr;
         VertexBufferCache.Add(key, result);
         return result;
     }
@@ -97,6 +97,7 @@ GPUVertexLayout::GPUVertexLayout()
 void GPUVertexLayout::SetElements(const Elements& elements, bool explicitOffsets)
 {
     uint32 offsets[GPU_MAX_VB_BINDED + 1] = {};
+    uint32 maxOffset[GPU_MAX_VB_BINDED + 1] = {};
     _elements = elements;
     for (int32 i = 0; i < _elements.Count(); i++)
     {
@@ -108,9 +109,10 @@ void GPUVertexLayout::SetElements(const Elements& elements, bool explicitOffsets
         else
             e.Offset = (byte)offset;
         offset += PixelFormatExtensions::SizeInBytes(e.Format);
+        maxOffset[e.Slot] = Math::Max(maxOffset[e.Slot], offset);
     }
     _stride = 0;
-    for (uint32 offset : offsets)
+    for (uint32 offset : maxOffset)
         _stride += offset;
 }
 
@@ -139,7 +141,7 @@ VertexElement GPUVertexLayout::FindElement(VertexElement::Types type) const
 GPUVertexLayout* GPUVertexLayout::Get(const Elements& elements, bool explicitOffsets)
 {
     // Hash input layout
-    uint32 hash = 0;
+    uint32 hash = explicitOffsets ? 131 : 0;
     for (const VertexElement& element : elements)
     {
         CombineHash(hash, GetHash(element));
