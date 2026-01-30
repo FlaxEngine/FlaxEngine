@@ -243,11 +243,11 @@ namespace Flax.Build.Projects.VisualStudio
             foreach (var file in files)
             {
                 string fileType;
-                if (file.EndsWith(".h", StringComparison.OrdinalIgnoreCase) || file.EndsWith(".inl", StringComparison.OrdinalIgnoreCase))
+                if (file.EndsWith(".h", StringComparison.OrdinalIgnoreCase) || file.EndsWith(".inl", StringComparison.OrdinalIgnoreCase) || file.EndsWith(".hpp", StringComparison.OrdinalIgnoreCase))
                 {
                     fileType = "ClInclude";
                 }
-                else if (file.EndsWith(".cpp", StringComparison.OrdinalIgnoreCase) || file.EndsWith(".cc", StringComparison.OrdinalIgnoreCase))
+                else if (file.EndsWith(".cpp", StringComparison.OrdinalIgnoreCase) || file.EndsWith(".cc", StringComparison.OrdinalIgnoreCase) || file.EndsWith(".c", StringComparison.OrdinalIgnoreCase))
                 {
                     fileType = "ClCompile";
                 }
