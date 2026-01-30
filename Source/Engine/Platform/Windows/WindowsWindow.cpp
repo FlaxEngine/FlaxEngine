@@ -1262,6 +1262,7 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         UpdateRegion();
         break;
     case WM_SETFOCUS:
+        WindowsInput::SyncKeyState();
         OnGotFocus();
         UpdateCursor();
         if (_isClippingCursor && !_clipCursorSet)
@@ -1282,6 +1283,7 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_ACTIVATEAPP:
         if (wParam == TRUE && !_focused)
         {
+            WindowsInput::SyncKeyState();
             OnGotFocus();
         }
         else if (wParam == FALSE && _focused)
