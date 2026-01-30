@@ -387,19 +387,53 @@ namespace FlaxEditor
             if (_mouseMovesWidget && _activeWidget.UIControl)
             {
                 // Calculate transform delta
-                var resizeAxisAbs = _activeWidget.ResizeAxis.Absolute;
-                var resizeAxisPos = Float2.Clamp(_activeWidget.ResizeAxis, Float2.Zero, Float2.One);
-                var resizeAxisNeg = Float2.Clamp(-_activeWidget.ResizeAxis, Float2.Zero, Float2.One);
                 var delta = location - _mouseMovesPos;
                 // TODO: scale/size snapping?
-                delta *= resizeAxisAbs;
 
                 // Resize control via widget
                 var moveLocation = _mouseMovesPos + delta;
                 var control = _activeWidget.UIControl.Control;
                 var uiControlDelta = GetControlDelta(control, ref _mouseMovesPos, ref moveLocation);
-                control.LocalLocation += uiControlDelta * resizeAxisNeg;
-                control.Size += uiControlDelta * resizeAxisPos - uiControlDelta * resizeAxisNeg;
+
+                // Transform delta to control local space
+                var rotation = control.Rotation * Mathf.DegreesToRadians; // TODO: use total parent rotation
+                var cos = Mathf.Cos(rotation);
+                var sin = Mathf.Sin(rotation);
+                var localDeltaX = uiControlDelta.X * cos + uiControlDelta.Y * sin;
+                var localDeltaY = uiControlDelta.Y * cos - uiControlDelta.X * sin;
+                var localDelta = new Float2(localDeltaX, localDeltaY);
+                localDelta *= _activeWidget.ResizeAxis.Absolute;
+
+                // Calculate size change
+                var resizeAxisPos = Float2.Clamp(_activeWidget.ResizeAxis, Float2.Zero, Float2.One);
+                var resizeAxisNeg = Float2.Clamp(-_activeWidget.ResizeAxis, Float2.Zero, Float2.One);
+                var dSizeScaled = localDelta * resizeAxisPos - localDelta * resizeAxisNeg;
+                var scale = control.Scale;
+                var dSize = new Float2(
+                    Mathf.Abs(scale.X) > Mathf.Epsilon ? dSizeScaled.X / scale.X : 0,
+                    Mathf.Abs(scale.Y) > Mathf.Epsilon ? dSizeScaled.Y / scale.Y : 0);
+
+                // Apply size change
+                control.Size += dSize;
+
+                // Calculate location offset to keep the opposite edge stationary
+                // When PivotRelative is false, resizing keeps Top-Left (Location) constant,
+                // so we only need to slide back if we are resizing Left or Top edges.
+                if (!control.PivotRelative)
+                {
+                    var pivotOffset = Float2.Zero;
+                    if (_activeWidget.ResizeAxis.X < 0 && Mathf.Abs(dSize.X) > Mathf.Epsilon)
+                        pivotOffset.X = -dSize.X * scale.X;
+                    if (_activeWidget.ResizeAxis.Y < 0 && Mathf.Abs(dSize.Y) > Mathf.Epsilon)
+                        pivotOffset.Y = -dSize.Y * scale.Y;
+
+                    // Transform offset back to parent space and apply
+                    var dLocationX = pivotOffset.X * cos - pivotOffset.Y * sin;
+                    var dLocationY = pivotOffset.X * sin + pivotOffset.Y * cos;
+                    var dLocation = new Float2(dLocationX, dLocationY);
+                    
+                    control.LocalLocation += dLocation;
+                }
 
                 // Don't move if layout doesn't allow it
                 if (control.Parent != null)
