@@ -620,7 +620,7 @@ namespace FlaxEditor.Viewport
         {
             base.OnLeftMouseButtonDown();
 
-            _rubberBandSelector.TryStartingRubberBandSelection();
+            _rubberBandSelector.TryStartingRubberBandSelection(_viewMousePos);
         }
 
         /// <inheritdoc />
