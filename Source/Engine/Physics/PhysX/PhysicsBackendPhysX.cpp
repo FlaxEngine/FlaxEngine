@@ -2785,21 +2785,21 @@ float PhysicsBackend::ComputeShapeSqrDistanceToPoint(void* shape, const Vector3&
     auto shapePhysX = (PxShape*)shape;
     const PxTransform trans(C2P(position), C2P(orientation));
 
-    // Special case for heightfield collider
+    // Special case for heightfield collider (not implemented in PhysX)
     if (shapePhysX->getGeometryType() == PxGeometryType::eHEIGHTFIELD)
     {
-        // Do a bunch of raycasts... because for some reason pointDistance does not support height fields...
+        // Do a bunch of raycasts in all directions to find the closest point on the heightfield
         PxVec3 origin = C2P(point);
-        
-        // Get all unit directions based on resolution value
         Array<PxVec3> unitDirections;
-        int32 resolution = 32;
-        for (int32 i = 0; i <= resolution; i++) {
+        constexpr int32 resolution = 32;
+        unitDirections.EnsureCapacity((resolution + 1) * (resolution + 1));
+        for (int32 i = 0; i <= resolution; i++)
+        {
             float phi = PI * (float)i / resolution;
             float sinPhi = Math::Sin(phi);
             float cosPhi = Math::Cos(phi);
-
-            for (int32 j = 0; j <= resolution; j++) {
+            for (int32 j = 0; j <= resolution; j++)
+            {
                 float theta = 2.0f * PI * (float)j / resolution;
                 float cosTheta = Math::Cos(theta);
                 float sinTheta = Math::Sin(theta);
@@ -2815,10 +2815,9 @@ float PhysicsBackend::ComputeShapeSqrDistanceToPoint(void* shape, const Vector3&
         }
 
         PxReal maxDistance = PX_MAX_REAL; // Search indefinitely
-        
         PxQueryFilterData filterData;
         filterData.data.word0 = (PxU32)shapePhysX->getSimulationFilterData().word0;
-        PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eMESH_BOTH_SIDES; // Both sides added for if it is underneath the height field
+        PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eMESH_BOTH_SIDES; // Both sides added for if it is underneath the height field
         PxRaycastBuffer buffer;
         auto scene = shapePhysX->getActor()->getScene();
 
@@ -2841,7 +2840,7 @@ float PhysicsBackend::ComputeShapeSqrDistanceToPoint(void* shape, const Vector3&
         if (closestDistance < maxDistance)
         {
             *closestPoint = P2C(tempClosestPoint);
-            return closestDistance;
+            return closestDistance * closestDistance; // Result is squared distance
         }
 
         return -1.0f;
