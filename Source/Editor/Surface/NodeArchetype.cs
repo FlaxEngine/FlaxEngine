@@ -129,6 +129,8 @@ namespace FlaxEditor.Surface
         /// </summary>
         public NodeFlags Flags;
 
+        public bool UseFixedSize = false;
+
         /// <summary>
         /// Title text.
         /// </summary>

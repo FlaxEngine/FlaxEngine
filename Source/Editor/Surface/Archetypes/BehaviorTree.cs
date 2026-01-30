@@ -415,8 +415,8 @@ namespace FlaxEditor.Surface.Archetypes
                 // Setup boxes
                 _input = (InputBox)GetBox(0);
                 _output = (OutputBox)GetBox(1);
-                _input.ConnectionOffset = new Float2(0, FlaxEditor.Surface.Constants.BoxSize * -0.5f);
-                _output.ConnectionOffset = new Float2(0, FlaxEditor.Surface.Constants.BoxSize * 0.5f);
+                _input.ConnectionOffset = new Float2(0, FlaxEditor.Surface.Constants.BoxRowHeight * -0.5f);
+                _output.ConnectionOffset = new Float2(0, FlaxEditor.Surface.Constants.BoxRowHeight * 0.5f);
 
                 // Setup node type and data
                 var flagsRoot = NodeFlags.NoRemove | NodeFlags.NoCloseButton | NodeFlags.NoSpawnViaPaste;
@@ -515,7 +515,7 @@ namespace FlaxEditor.Surface.Archetypes
                     height += decorator.Height + DecoratorsMarginY;
                     width = Mathf.Max(width, decorator.Width - FlaxEditor.Surface.Constants.NodeCloseButtonSize - 2 * DecoratorsMarginX);
                 }
-                Size = new Float2(width + FlaxEditor.Surface.Constants.NodeMarginX * 2 + FlaxEditor.Surface.Constants.NodeCloseButtonSize, height + FlaxEditor.Surface.Constants.NodeHeaderSize + FlaxEditor.Surface.Constants.NodeFooterSize);
+                Size = new Float2(width + FlaxEditor.Surface.Constants.NodeMarginX * 2 + FlaxEditor.Surface.Constants.NodeCloseButtonSize, height + FlaxEditor.Surface.Constants.NodeHeaderHeight + FlaxEditor.Surface.Constants.NodeFooterSize);
                 UpdateRectangles();
             }
 
@@ -537,7 +537,7 @@ namespace FlaxEditor.Surface.Archetypes
                         decorator.IndexInParent = indexInParent + 1; // Push elements above the node
                 }
                 const float footerSize = FlaxEditor.Surface.Constants.NodeFooterSize;
-                const float headerSize = FlaxEditor.Surface.Constants.NodeHeaderSize;
+                const float headerSize = FlaxEditor.Surface.Constants.NodeHeaderHeight;
                 const float closeButtonMargin = FlaxEditor.Surface.Constants.NodeCloseButtonMargin;
                 const float closeButtonSize = FlaxEditor.Surface.Constants.NodeCloseButtonSize;
                 _headerRect = new Rectangle(0, bounds.Y - Y, bounds.Width, headerSize);
@@ -667,7 +667,7 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             }
 
-            protected override Color FooterColor => Color.Transparent;
+            protected override Color ArchetypeColor => Color.Transparent;
 
             protected override Float2 CalculateNodeSize(float width, float height)
             {
@@ -676,7 +676,7 @@ namespace FlaxEditor.Surface.Archetypes
                     width = Mathf.Max(width, _debugInfoSize.X + 8.0f);
                     height += _debugInfoSize.Y + 8.0f;
                 }
-                return new Float2(width + FlaxEditor.Surface.Constants.NodeCloseButtonSize * 2 + DecoratorsMarginX * 2, height + FlaxEditor.Surface.Constants.NodeHeaderSize);
+                return new Float2(width + FlaxEditor.Surface.Constants.NodeCloseButtonSize * 2 + DecoratorsMarginX * 2, height + FlaxEditor.Surface.Constants.NodeHeaderHeight);
             }
 
             protected override void UpdateRectangles()

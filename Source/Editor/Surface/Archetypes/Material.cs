@@ -323,7 +323,7 @@ namespace FlaxEditor.Surface.Archetypes
             public CustomCodeNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
-                Float2 pos = new Float2(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize), size;
+                Float2 pos = new Float2(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight), size;
                 if (nodeArch.TypeID == 8)
                 {
                     pos += new Float2(60, 0);

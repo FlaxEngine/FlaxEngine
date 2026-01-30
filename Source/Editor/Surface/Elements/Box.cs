@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Undo;
 using FlaxEngine;
@@ -194,9 +195,19 @@ namespace FlaxEditor.Surface.Elements
             set => _isActive = value;
         }
 
+        /// <summary>
+        /// Gets if the box is disabled (user can still connect, but connections will be ignored).
+        /// </summary>
+        public bool IsDisabled => !(Enabled && IsActive);
+
+        /// <summary>
+        /// Gets a value indicating whether all connections are disabled.
+        /// </summary>
+        public bool AllConnectionsDisabled => Connections.All(c => c.IsDisabled);
+
         /// <inheritdoc />
         protected Box(SurfaceNode parentNode, NodeElementArchetype archetype, Float2 location)
-        : base(parentNode, archetype, location, new Float2(Constants.BoxSize), false)
+        : base(parentNode, archetype, location, new Float2(Constants.BoxRowHeight), false)
         {
             _currentType = DefaultType;
             _isSingle = Archetype.Single;

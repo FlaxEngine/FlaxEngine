@@ -54,7 +54,7 @@ namespace FlaxEditor.Surface.Archetypes
                     {
                         _textureGroupPicker = new ComboBox
                         {
-                            Location = new Float2(FlaxEditor.Surface.Constants.NodeMarginX + 50, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize + FlaxEditor.Surface.Constants.LayoutOffsetY * 5),
+                            Location = new Float2(FlaxEditor.Surface.Constants.NodeMarginX + 50, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight + FlaxEditor.Surface.Constants.LayoutOffsetY * 5),
                             Width = 100,
                             Parent = this,
                         };
@@ -204,7 +204,7 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(3, "Max Steps", true, typeof(float), 3, 2),
                     NodeElementArchetype.Factory.Input(4, "Heightmap Texture", true, typeof(FlaxEngine.Object), 4),
                     NodeElementArchetype.Factory.Output(0, "Parallax UVs", typeof(Float2), 5),
-                    NodeElementArchetype.Factory.Text(Surface.Constants.BoxSize + 4, 5 * Surface.Constants.LayoutOffsetY, "Channel"),
+                    NodeElementArchetype.Factory.Text(Surface.Constants.BoxRowHeight + 4, 5 * Surface.Constants.LayoutOffsetY, "Channel"),
                     NodeElementArchetype.Factory.ComboBox(70, 5 * Surface.Constants.LayoutOffsetY, 50, 3, new[]
                     {
                         "R",
