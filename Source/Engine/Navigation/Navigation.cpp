@@ -382,30 +382,6 @@ bool Navigation::RayCast(const Vector3& startPosition, const Vector3& endPositio
     return NavMeshes.First()->RayCast(startPosition, endPosition, hitInfo);
 }
 
-#if COMPILE_WITH_NAV_MESH_BUILDER
-
-bool Navigation::IsBuildingNavMesh()
-{
-    return NavMeshBuilder::IsBuildingNavMesh();
-}
-
-float Navigation::GetNavMeshBuildingProgress()
-{
-    return NavMeshBuilder::GetNavMeshBuildingProgress();
-}
-
-void Navigation::BuildNavMesh(Scene* scene, float timeoutMs)
-{
-    NavMeshBuilder::Build(scene, timeoutMs);
-}
-
-void Navigation::BuildNavMesh(Scene* scene, const BoundingBox& dirtyBounds, float timeoutMs)
-{
-    NavMeshBuilder::Build(scene, dirtyBounds, timeoutMs);
-}
-
-#endif
-
 #if COMPILE_WITH_DEBUG_DRAW
 
 void Navigation::DrawNavMesh()

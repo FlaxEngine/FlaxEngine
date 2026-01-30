@@ -3,6 +3,7 @@
 #if COMPILE_WITH_NAV_MESH_BUILDER
 
 #include "NavMeshBuilder.h"
+#include "Navigation.h"
 #include "NavMesh.h"
 #include "NavigationSettings.h"
 #include "NavMeshBoundsVolume.h"
@@ -706,6 +707,7 @@ struct BuildRequest
     ScriptingObjectReference<Scene> Scene;
     DateTime Time;
     BoundingBox DirtyBounds;
+    bool SpecificScene;
 };
 
 CriticalSection NavBuildQueueLocker;
@@ -713,6 +715,7 @@ Array<BuildRequest> NavBuildQueue;
 
 CriticalSection NavBuildTasksLocker;
 int32 NavBuildTasksMaxCount = 0;
+bool NavBuildCheckMissingNavMeshes = false;
 Array<class NavMeshTileBuildTask*> NavBuildTasks;
 
 class NavMeshTileBuildTask : public ThreadPoolTask
@@ -776,13 +779,13 @@ void CancelNavMeshTileBuildTasks(NavMeshRuntime* runtime)
     NavBuildTasksLocker.Unlock();
 }
 
-void CancelNavMeshTileBuildTasks(NavMeshRuntime* runtime, int32 x, int32 y)
+void CancelNavMeshTileBuildTasks(NavMeshRuntime* runtime, int32 x, int32 y, NavMesh* navMesh)
 {
     NavBuildTasksLocker.Lock();
     for (int32 i = 0; i < NavBuildTasks.Count(); i++)
     {
         auto task = NavBuildTasks[i];
-        if (task->Runtime == runtime && task->X == x && task->Y == y)
+        if (task->Runtime == runtime && task->X == x && task->Y == y && task->NavMesh == navMesh)
         {
             NavBuildTasksLocker.Unlock();
 
@@ -838,7 +841,7 @@ void NavMeshBuilder::Init()
     Level::SceneUnloading.Bind<OnSceneUnloading>();
 }
 
-bool NavMeshBuilder::IsBuildingNavMesh()
+bool Navigation::IsBuildingNavMesh()
 {
     NavBuildTasksLocker.Lock();
     const bool hasAnyTask = NavBuildTasks.HasItems();
@@ -847,7 +850,7 @@ bool NavMeshBuilder::IsBuildingNavMesh()
     return hasAnyTask;
 }
 
-float NavMeshBuilder::GetNavMeshBuildingProgress()
+float Navigation::GetNavMeshBuildingProgress()
 {
     NavBuildTasksLocker.Lock();
     float result = 1.0f;
@@ -1023,7 +1026,7 @@ void BuildDirtyBounds(Scene* scene, NavMesh* navMesh, const BoundingBox& dirtyBo
             for (const auto& tile : unusedTiles)
             {
                 // Wait for any async tasks that are producing this tile
-                CancelNavMeshTileBuildTasks(runtime, tile.X, tile.Y);
+                CancelNavMeshTileBuildTasks(runtime, tile.X, tile.Y, navMesh);
             }
             runtime->Locker.Lock();
             for (const auto& tile : unusedTiles)
@@ -1106,31 +1109,6 @@ void BuildDirtyBounds(Scene* scene, const BoundingBox& dirtyBounds, bool rebuild
     {
         BuildDirtyBounds(scene, navMesh, dirtyBounds, rebuild);
     }
-
-    // Remove unused navmeshes
-    if (settings->AutoRemoveMissingNavMeshes)
-    {
-        for (NavMesh* navMesh : scene->Navigation.Meshes)
-        {
-            // Skip used navmeshes
-            if (navMesh->Data.Tiles.HasItems())
-                continue;
-
-            // Skip navmeshes during async building
-            int32 usageCount = 0;
-            NavBuildTasksLocker.Lock();
-            for (int32 i = 0; i < NavBuildTasks.Count(); i++)
-            {
-                if (NavBuildTasks.Get()[i]->NavMesh == navMesh)
-                    usageCount++;
-            }
-            NavBuildTasksLocker.Unlock();
-            if (usageCount != 0)
-                continue;
-
-            navMesh->DeleteObject();
-        }
-    }
 }
 
 void ClearNavigation(Scene* scene)
@@ -1142,6 +1120,40 @@ void ClearNavigation(Scene* scene)
         if (autoRemoveMissingNavMeshes)
             navMesh->DeleteObject();
     }
+}
+
+void BuildNavigation(BuildRequest& request)
+{
+    // If scene is not specified then build all loaded scenes
+    if (!request.Scene)
+    {
+        for (Scene* scene : Level::Scenes)
+        {
+            request.Scene = scene;
+            BuildNavigation(request);
+        }
+        return;
+    }
+
+    // Early out if scene is not using navigation
+    if (request.Scene->Navigation.Volumes.IsEmpty())
+    {
+        ClearNavigation(request.Scene);
+        return;
+    }
+
+    // Check if similar request is already in a queue
+    for (auto& e : NavBuildQueue)
+    {
+        if (e.Scene == request.Scene && (e.DirtyBounds == request.DirtyBounds || request.DirtyBounds == BoundingBox::Empty))
+        {
+            e = request;
+            return;
+        }
+    }
+
+    // Enqueue request
+    NavBuildQueue.Add(request);
 }
 
 void NavMeshBuilder::Update()
@@ -1158,9 +1170,10 @@ void NavMeshBuilder::Update()
         if (now - req.Time >= 0)
         {
             NavBuildQueue.RemoveAt(i--);
-            const auto scene = req.Scene.Get();
+            Scene* scene = req.Scene.Get();
             if (!scene)
                 continue;
+            bool rebuild = req.DirtyBounds == BoundingBox::Empty;
 
             // Early out if scene has no bounds volumes to define nav mesh area
             if (scene->Navigation.Volumes.IsEmpty())
@@ -1170,7 +1183,6 @@ void NavMeshBuilder::Update()
             }
 
             // Check if build a custom dirty bounds or whole scene
-            bool rebuild = req.DirtyBounds == BoundingBox::Empty;
             if (rebuild)
                 req.DirtyBounds = scene->Navigation.GetNavigationBounds(); // Compute total navigation area bounds
             if (didRebuild)
@@ -1178,26 +1190,37 @@ void NavMeshBuilder::Update()
             else
                 didRebuild = true;
             BuildDirtyBounds(scene, req.DirtyBounds, rebuild);
+            NavBuildCheckMissingNavMeshes = true;
+        }
+    }
+
+    // Remove unused navmeshes (when all active tasks are done)
+    // TODO: ignore AutoRemoveMissingNavMeshes in game and make it editor-only?
+    if (NavBuildCheckMissingNavMeshes && NavBuildTasksMaxCount == 0 && NavigationSettings::Get()->AutoRemoveMissingNavMeshes)
+    {
+        NavBuildCheckMissingNavMeshes = false;
+        NavBuildTasksLocker.Lock();
+        int32 taskCount = NavBuildTasks.Count();
+        NavBuildTasksLocker.Unlock();
+        if (taskCount == 0)
+        {
+            for (Scene* scene : Level::Scenes)
+            {
+                for (NavMesh* navMesh : scene->Navigation.Meshes)
+                {
+                    if (!navMesh->Data.Tiles.HasItems())
+                    {
+                        navMesh->DeleteObject();
+                    }
+                }
+            }
         }
     }
 }
 
-void NavMeshBuilder::Build(Scene* scene, float timeoutMs)
+void Navigation::BuildNavMesh(Scene* scene, float timeoutMs)
 {
-    if (!scene)
-    {
-        LOG(Warning, "Could not generate navmesh without scene.");
-        return;
-    }
-
-    // Early out if scene is not using navigation
-    if (scene->Navigation.Volumes.IsEmpty())
-    {
-        ClearNavigation(scene);
-        return;
-    }
-
-    PROFILE_CPU_NAMED("NavMeshBuilder");
+    PROFILE_CPU();
     PROFILE_MEM(NavigationBuilding);
     ScopeLock lock(NavBuildQueueLocker);
 
@@ -1205,36 +1228,15 @@ void NavMeshBuilder::Build(Scene* scene, float timeoutMs)
     req.Scene = scene;
     req.Time = DateTime::NowUTC() + TimeSpan::FromMilliseconds(timeoutMs);
     req.DirtyBounds = BoundingBox::Empty;
-
-    for (int32 i = 0; i < NavBuildQueue.Count(); i++)
-    {
-        auto& e = NavBuildQueue.Get()[i];
-        if (e.Scene == scene && e.DirtyBounds == req.DirtyBounds)
-        {
-            e = req;
-            return;
-        }
-    }
-
-    NavBuildQueue.Add(req);
+    req.SpecificScene = scene != nullptr;
+    BuildNavigation(req);
 }
 
-void NavMeshBuilder::Build(Scene* scene, const BoundingBox& dirtyBounds, float timeoutMs)
+void Navigation::BuildNavMesh(const BoundingBox& dirtyBounds, Scene* scene, float timeoutMs)
 {
-    if (!scene)
-    {
-        LOG(Warning, "Could not generate navmesh without scene.");
-        return;
-    }
-
-    // Early out if scene is not using navigation
-    if (scene->Navigation.Volumes.IsEmpty())
-    {
-        ClearNavigation(scene);
-        return;
-    }
-
-    PROFILE_CPU_NAMED("NavMeshBuilder");
+    if (dirtyBounds.GetVolume() <= ZeroTolerance)
+        return; // Skip updating empty bounds
+    PROFILE_CPU();
     PROFILE_MEM(NavigationBuilding);
     ScopeLock lock(NavBuildQueueLocker);
 
@@ -1242,8 +1244,8 @@ void NavMeshBuilder::Build(Scene* scene, const BoundingBox& dirtyBounds, float t
     req.Scene = scene;
     req.Time = DateTime::NowUTC() + TimeSpan::FromMilliseconds(timeoutMs);
     req.DirtyBounds = dirtyBounds;
-
-    NavBuildQueue.Add(req);
+    req.SpecificScene = scene != nullptr;
+    BuildNavigation(req);
 }
 
 #endif
