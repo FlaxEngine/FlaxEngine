@@ -34,6 +34,7 @@ public:
 public:
 
     bool WndProc(Window* window, Windows::UINT msg, Windows::WPARAM wParam, Windows::LPARAM lParam);
+    void SyncKeyState();
 };
 
 /// <summary>
@@ -140,6 +141,12 @@ void WindowsInput::Update()
     }
 }
 
+void WindowsInput::SyncKeyState()
+{
+    if (WindowsInputImpl::Keyboard)
+        WindowsInputImpl::Keyboard->SyncKeyState();
+}
+
 bool WindowsInput::WndProc(Window* window, Windows::UINT msg, Windows::WPARAM wParam, Windows::LPARAM lParam)
 {
     if (WindowsInputImpl::Mouse->WndProc(window, msg, wParam, lParam))
@@ -179,6 +186,28 @@ bool WindowsKeyboard::WndProc(Window* window, const Windows::UINT msg, Windows::
     }
 
     return result;
+}
+
+void WindowsKeyboard::SyncKeyState()
+{
+    BYTE keyState[256];
+    if (!::GetKeyboardState(keyState))
+        return;
+
+    _queue.Clear();
+    _state.InputTextLength = 0;
+    _prevState.InputTextLength = 0;
+
+    for (int vk = 0; vk < 256; vk++)
+    {
+        const auto key = static_cast<KeyboardKeys>(vk);
+        if (key >= KeyboardKeys::MAX)
+            continue;
+        const bool isDown = (keyState[vk] & 0x80) != 0;
+        const int32 index = static_cast<int32>(key);
+        _state.Keys[index] = isDown;
+        _prevState.Keys[index] = isDown;
+    }
 }
 
 bool WindowsMouse::WndProc(Window* window, const UINT msg, WPARAM wParam, LPARAM lParam)
