@@ -2784,6 +2784,70 @@ float PhysicsBackend::ComputeShapeSqrDistanceToPoint(void* shape, const Vector3&
 {
     auto shapePhysX = (PxShape*)shape;
     const PxTransform trans(C2P(position), C2P(orientation));
+
+    // Special case for heightfield collider
+    if (shapePhysX->getGeometryType() == PxGeometryType::eHEIGHTFIELD)
+    {
+        // Do a bunch of raycasts... because for some reason pointDistance does not support height fields...
+        PxVec3 origin = C2P(point);
+        
+        // Get all unit directions based on resolution value
+        Array<PxVec3> unitDirections;
+        int32 resolution = 32;
+        for (int32 i = 0; i <= resolution; i++) {
+            float phi = PI * (float)i / resolution;
+            float sinPhi = Math::Sin(phi);
+            float cosPhi = Math::Cos(phi);
+
+            for (int32 j = 0; j <= resolution; j++) {
+                float theta = 2.0f * PI * (float)j / resolution;
+                float cosTheta = Math::Cos(theta);
+                float sinTheta = Math::Sin(theta);
+
+                PxVec3 v;
+                v.x = cosTheta * sinPhi;
+                v.y = cosPhi;
+                v.z = sinTheta * sinPhi;
+            
+                // All generated vectors are unit vectors (length 1)
+                unitDirections.Add(v);
+            }
+        }
+
+        PxReal maxDistance = PX_MAX_REAL; // Search indefinitely
+        
+        PxQueryFilterData filterData;
+        filterData.data.word0 = (PxU32)shapePhysX->getSimulationFilterData().word0;
+        PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eMESH_BOTH_SIDES; // Both sides added for if it is underneath the height field
+        PxRaycastBuffer buffer;
+        auto scene = shapePhysX->getActor()->getScene();
+
+        PxReal closestDistance = maxDistance;
+        PxVec3 tempClosestPoint;
+        for (PxVec3& unitDir : unitDirections)
+        {
+            bool hitResult = scene->raycast(origin, unitDir, maxDistance, buffer, hitFlags, filterData);
+            if (hitResult)
+            {
+                auto& hit = buffer.getAnyHit(0);
+                if (hit.distance < closestDistance && hit.distance > 0.0f)
+                {
+                    tempClosestPoint = hit.position;
+                    closestDistance = hit.distance;
+                }
+            }
+        }
+        
+        if (closestDistance < maxDistance)
+        {
+            *closestPoint = P2C(tempClosestPoint);
+            return closestDistance;
+        }
+
+        return -1.0f;
+    }
+
+    // Default point distance for other collider queries
 #if USE_LARGE_WORLDS
     PxVec3 closestPointPx;
     float result = PxGeometryQuery::pointDistance(C2P(point), shapePhysX->getGeometry(), trans, &closestPointPx);
