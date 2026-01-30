@@ -73,6 +73,11 @@ namespace FlaxEditor.GUI.ContextMenu
         public bool HasChildCMOpened => _childCM != null;
 
         /// <summary>
+        /// Gets the parent context menu (if exists).
+        /// </summary>
+        public ContextMenuBase ParentCM => _parentCM;
+
+        /// <summary>
         /// Gets the topmost context menu.
         /// </summary>
         public ContextMenuBase TopmostCM
@@ -81,9 +86,7 @@ namespace FlaxEditor.GUI.ContextMenu
             {
                 var cm = this;
                 while (cm._parentCM != null && cm._isSubMenu)
-                {
                     cm = cm._parentCM;
-                }
                 return cm;
             }
         }
