@@ -342,6 +342,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 20,
                 Title = "Pack Float2",
                 Description = "Pack components to Float2",
+                AlternativeTitles = new[] { "Make Float2", "Construct Float2", "Compose Float2" },
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(150, 40),
                 DefaultValues = new object[]
@@ -361,6 +362,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 21,
                 Title = "Pack Float3",
                 Description = "Pack components to Float3",
+                AlternativeTitles = new[] { "Make Float3", "Construct Float3", "Compose Float3" },
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(150, 60),
                 DefaultValues = new object[]
@@ -382,6 +384,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 22,
                 Title = "Pack Float4",
                 Description = "Pack components to Float4",
+                AlternativeTitles = new[] { "Make Float4", "Construct Float4", "Compose Float4" },
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(150, 80),
                 DefaultValues = new object[]
@@ -405,6 +408,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 23,
                 Title = "Pack Rotation",
                 Description = "Pack components to Rotation",
+                AlternativeTitles = new[] { "Make Rotation", "Construct Rotation", "Compose Rotation" },
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(150, 60),
                 DefaultValues = new object[]
@@ -426,6 +430,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 24,
                 Title = "Pack Transform",
                 Description = "Pack components to Transform",
+                AlternativeTitles = new[] { "Make Transform", "Construct Transform", "Compose Transform" },
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(150, 80),
                 Elements = new[]
@@ -441,6 +446,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 25,
                 Title = "Pack Box",
                 Description = "Pack components to BoundingBox",
+                AlternativeTitles = new[] { "Make Box", "Construct Box", "Compose Box" },
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(150, 40),
                 Elements = new[]
@@ -454,6 +460,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 26,
                 Title = "Pack Structure",
+                AlternativeTitles = new[] { "Make Structure", "Construct Structure", "Compose Structure" },
                 Create = (id, context, arch, groupArch) => new PackStructureNode(id, context, arch, groupArch),
                 IsInputCompatible = PackStructureNode.IsInputCompatible,
                 IsOutputCompatible = PackStructureNode.IsOutputCompatible,
@@ -479,6 +486,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 30,
                 Title = "Unpack Float2",
                 Description = "Unpack components from Float2",
+                AlternativeTitles = new[] { "Break Float2", "Deconstruct Float2", "Decompose Float2", "Split Float2" },
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(150, 40),
                 Elements = new[]
@@ -493,6 +501,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 31,
                 Title = "Unpack Float3",
                 Description = "Unpack components from Float3",
+                AlternativeTitles = new[] { "Break Float3", "Deconstruct Float3", "Decompose Float3", "Split Float3" },
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(150, 60),
                 Elements = new[]
@@ -508,6 +517,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 32,
                 Title = "Unpack Float4",
                 Description = "Unpack components from Float4",
+                AlternativeTitles = new[] { "Break Float4", "Deconstruct Float4", "Decompose Float4", "Split Float4" },
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(150, 80),
                 Elements = new[]
@@ -524,6 +534,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 33,
                 Title = "Unpack Rotation",
                 Description = "Unpack components from Rotation",
+                AlternativeTitles = new[] { "Break Rotation", "Deconstruct Rotation", "Decompose Rotation", "Split Rotation" },
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(170, 60),
                 Elements = new[]
@@ -539,6 +550,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 34,
                 Title = "Unpack Transform",
                 Description = "Unpack components from Transform",
+                AlternativeTitles = new[] { "Break Transform", "Deconstruct Transform", "Decompose Transform", "Split Transform" },
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(170, 60),
                 Elements = new[]
@@ -554,6 +566,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 35,
                 Title = "Unpack Box",
                 Description = "Unpack components from BoundingBox",
+                AlternativeTitles = new[] { "Break BoundingBox", "Deconstruct BoundingBox", "Decompose BoundingBox", "Split BoundingBox" },
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(170, 40),
                 Elements = new[]
@@ -572,6 +585,7 @@ namespace FlaxEditor.Surface.Archetypes
                 IsOutputCompatible = UnpackStructureNode.IsOutputCompatible,
                 GetInputOutputDescription = UnpackStructureNode.GetInputOutputDescription,
                 Description = "Breaks the structure data to allow extracting components from it.",
+                AlternativeTitles = new[] { "Break Structure", "Deconstruct Structure", "Decompose Structure", "Split Structure" },
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph | NodeFlags.NoSpawnViaGUI,
                 Size = new Float2(180, 20),
                 DefaultValues = new object[]
