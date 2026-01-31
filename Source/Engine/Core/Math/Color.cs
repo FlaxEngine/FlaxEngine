@@ -83,6 +83,11 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        ///  Gets the brightness of the color
+        /// </summary>
+        public float Brightness => R * 0.299f + G * 0.587f + B * 0.114f;
+
+        /// <summary>
         /// Returns the minimum color component value: Min(r,g,b).
         /// </summary>
         public float MinColorComponent => Mathf.Min(Mathf.Min(R, G), B);
