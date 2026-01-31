@@ -702,6 +702,10 @@ namespace FlaxEditor.Options
         [EditorDisplay("Node Editors"), EditorOrder(4580)]
         public InputBinding NodesDistributeVertical = new InputBinding(KeyboardKeys.A, KeyboardKeys.Alt);
 
+        [DefaultValue(typeof(InputBinding), "Shift+F")]
+        [EditorDisplay("Node Editors"), EditorOrder(4590)]
+        public InputBinding FocusSelectedNodes = new InputBinding(KeyboardKeys.F, KeyboardKeys.Shift);
+
         #endregion
     }
 }
