@@ -32,6 +32,7 @@ protected:
     float _contactOffset;
     Vector3 _cachedLocalPosePos;
     Quaternion _cachedLocalPoseRot;
+    RigidBody* _attachedRigidBody;
 
 public:
     /// <summary>
@@ -157,6 +158,11 @@ protected:
     /// Removes the static actor.
     /// </summary>
     void RemoveStaticActor();
+
+    /// <summary>
+    /// Gets the RigidBody actor to attach this collider to.
+    /// </summary>
+    RigidBody* GetRigidBodyToAttach() const;
 
 private:
     friend RigidBody;
