@@ -175,7 +175,7 @@ namespace FlaxEngine.GUI
             // Setup size
             var font = imageBlock.Style.Font.GetFont();
             if (font)
-                imageBlock.Bounds.Size = new Float2(font.Height);
+                imageBlock.Bounds.Size = new Float2(font.Ascender);
             var imageSize = image.Size;
             imageBlock.Bounds.Size.X *= imageSize.X / imageSize.Y; // Keep original aspect ratio
             bool hasWidth = TryParseNumberTag(ref tag, "width", imageBlock.Bounds.Width, out var width);
@@ -215,16 +215,16 @@ namespace FlaxEngine.GUI
                     switch (valign)
                     {
                     case "top":
-                        style.Alignment = TextBlockStyle.Alignments.Top;
+                        style.Alignment |= TextBlockStyle.Alignments.Top;
                         break;
                     case "bottom":
-                        style.Alignment = TextBlockStyle.Alignments.Bottom;
+                        style.Alignment |= TextBlockStyle.Alignments.Bottom;
                         break;
                     case "middle":
-                        style.Alignment = TextBlockStyle.Alignments.Middle;
+                        style.Alignment |= TextBlockStyle.Alignments.Middle;
                         break;
                     case "baseline":
-                        style.Alignment = TextBlockStyle.Alignments.Baseline;
+                        style.Alignment |= TextBlockStyle.Alignments.Baseline;
                         break;
                     }
                 }
@@ -243,17 +243,17 @@ namespace FlaxEngine.GUI
                 var style = context.StyleStack.Peek();
                 if (tag.Attributes.TryGetValue(string.Empty, out var valign))
                 {
-                    style.Alignment &= ~TextBlockStyle.Alignments.VerticalMask;
+                    style.Alignment &= ~TextBlockStyle.Alignments.HorizontalMask;
                     switch (valign)
                     {
                     case "left":
-                        style.Alignment = TextBlockStyle.Alignments.Left;
+                        style.Alignment |= TextBlockStyle.Alignments.Left;
                         break;
                     case "right":
-                        style.Alignment = TextBlockStyle.Alignments.Right;
+                        style.Alignment |= TextBlockStyle.Alignments.Right;
                         break;
                     case "center":
-                        style.Alignment = TextBlockStyle.Alignments.Center;
+                        style.Alignment |= TextBlockStyle.Alignments.Center;
                         break;
                     }
                 }
@@ -270,7 +270,8 @@ namespace FlaxEngine.GUI
             else
             {
                 var style = context.StyleStack.Peek();
-                style.Alignment = TextBlockStyle.Alignments.Center;
+                style.Alignment &= ~TextBlockStyle.Alignments.HorizontalMask;
+                style.Alignment |= TextBlockStyle.Alignments.Center;
                 context.StyleStack.Push(style);
             }
         }

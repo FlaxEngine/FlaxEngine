@@ -6,7 +6,7 @@
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #include "Editor/Managed/ManagedEditor.h"
-#include "NavMeshBuilder.h"
+#include "Navigation.h"
 #endif
 
 NavMeshBoundsVolume::NavMeshBoundsVolume(const SpawnParams& params)
@@ -55,9 +55,30 @@ void NavMeshBoundsVolume::OnBoundsChanged(const BoundingBox& prevBounds)
     // Auto-rebuild modified navmesh area
     if (IsDuringPlay() && IsActiveInHierarchy() && !Editor::IsPlayMode && Editor::Managed->CanAutoBuildNavMesh())
     {
-        BoundingBox dirtyBounds;
-        BoundingBox::Merge(prevBounds, _box, dirtyBounds);
-        NavMeshBuilder::Build(GetScene(), dirtyBounds, ManagedEditor::ManagedEditorOptions.AutoRebuildNavMeshTimeoutMs);
+        if (_box.Intersects(prevBounds))
+        {
+            // Bounds were moved a bit so merge into a single request (for performance reasons)
+            BoundingBox dirtyBounds;
+            BoundingBox::Merge(prevBounds, _box, dirtyBounds);
+            Navigation::BuildNavMesh(dirtyBounds, ManagedEditor::ManagedEditorOptions.AutoRebuildNavMeshTimeoutMs);
+        }
+        else
+        {
+            // Dirty each bounds in separate
+            Navigation::BuildNavMesh(prevBounds, ManagedEditor::ManagedEditorOptions.AutoRebuildNavMeshTimeoutMs);
+            Navigation::BuildNavMesh(_box, ManagedEditor::ManagedEditorOptions.AutoRebuildNavMeshTimeoutMs);
+        }
+    }
+}
+
+void NavMeshBoundsVolume::OnActiveInTreeChanged()
+{
+    BoxVolume::OnActiveInTreeChanged();
+
+    // Auto-rebuild
+    if (IsDuringPlay() && !Editor::IsPlayMode && Editor::Managed->CanAutoBuildNavMesh())
+    {
+        Navigation::BuildNavMesh(_box, ManagedEditor::ManagedEditorOptions.AutoRebuildNavMeshTimeoutMs);
     }
 }
 

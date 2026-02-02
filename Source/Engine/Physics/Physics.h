@@ -102,7 +102,7 @@ public:
     /// <param name="end">The end position of the line.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
-    /// <returns>True if ray hits an matching object, otherwise false.</returns>
+    /// <returns>True if ray hits a matching object, otherwise false.</returns>
     API_FUNCTION() static bool LineCast(const Vector3& start, const Vector3& end, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
@@ -113,18 +113,18 @@ public:
     /// <param name="hitInfo">The result hit information. Valid only when method returns true.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
-    /// <returns>True if ray hits an matching object, otherwise false.</returns>
+    /// <returns>True if ray hits a matching object, otherwise false.</returns>
     API_FUNCTION() static bool LineCast(const Vector3& start, const Vector3& end, API_PARAM(Out) RayCastHit& hitInfo, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     // <summary>
-    /// Performs a line between two points in the scene, returns all hitpoints infos.
+    /// Performs a line between two points in the scene, returns all hit points info.
     /// </summary>
     /// <param name="start">The origin of the ray.</param>
     /// <param name="end">The end position of the line.</param>
     /// <param name="results">The result hits. Valid only when method returns true.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
-    /// <returns>True if ray hits an matching object, otherwise false.</returns>
+    /// <returns>True if ray hits a matching object, otherwise false.</returns>
     API_FUNCTION() static bool LineCastAll(const Vector3& start, const Vector3& end, API_PARAM(Out) Array<RayCastHit, HeapAllocation>& results, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
@@ -135,7 +135,7 @@ public:
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
-    /// <returns>True if ray hits an matching object, otherwise false.</returns>
+    /// <returns>True if ray hits a matching object, otherwise false.</returns>
     API_FUNCTION() static bool RayCast(const Vector3& origin, const Vector3& direction, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
@@ -147,7 +147,7 @@ public:
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
-    /// <returns>True if ray hits an matching object, otherwise false.</returns>
+    /// <returns>True if ray hits a matching object, otherwise false.</returns>
     API_FUNCTION() static bool RayCast(const Vector3& origin, const Vector3& direction, API_PARAM(Out) RayCastHit& hitInfo, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
@@ -159,7 +159,7 @@ public:
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
-    /// <returns>True if ray hits an matching object, otherwise false.</returns>
+    /// <returns>True if ray hits a matching object, otherwise false.</returns>
     API_FUNCTION() static bool RayCastAll(const Vector3& origin, const Vector3& direction, API_PARAM(Out) Array<RayCastHit, HeapAllocation>& results, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
@@ -172,7 +172,7 @@ public:
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
-    /// <returns>True if box hits an matching object, otherwise false.</returns>
+    /// <returns>True if box hits a matching object, otherwise false.</returns>
     API_FUNCTION() static bool BoxCast(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, const Quaternion& rotation = Quaternion::Identity, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
@@ -186,7 +186,7 @@ public:
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
-    /// <returns>True if box hits an matching object, otherwise false.</returns>
+    /// <returns>True if box hits a matching object, otherwise false.</returns>
     API_FUNCTION() static bool BoxCast(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, API_PARAM(Out) RayCastHit& hitInfo, const Quaternion& rotation = Quaternion::Identity, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
@@ -200,7 +200,7 @@ public:
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
-    /// <returns>True if box hits an matching object, otherwise false.</returns>
+    /// <returns>True if box hits a matching object, otherwise false.</returns>
     API_FUNCTION() static bool BoxCastAll(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, API_PARAM(Out) Array<RayCastHit, HeapAllocation>& results, const Quaternion& rotation = Quaternion::Identity, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
@@ -212,7 +212,7 @@ public:
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
-    /// <returns>True if sphere hits an matching object, otherwise false.</returns>
+    /// <returns>True if sphere hits a matching object, otherwise false.</returns>
     API_FUNCTION() static bool SphereCast(const Vector3& center, float radius, const Vector3& direction, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
@@ -225,7 +225,7 @@ public:
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
-    /// <returns>True if sphere hits an matching object, otherwise false.</returns>
+    /// <returns>True if sphere hits a matching object, otherwise false.</returns>
     API_FUNCTION() static bool SphereCast(const Vector3& center, float radius, const Vector3& direction, API_PARAM(Out) RayCastHit& hitInfo, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
@@ -238,7 +238,7 @@ public:
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
-    /// <returns>True if sphere hits an matching object, otherwise false.</returns>
+    /// <returns>True if sphere hits a matching object, otherwise false.</returns>
     API_FUNCTION() static bool SphereCastAll(const Vector3& center, float radius, const Vector3& direction, API_PARAM(Out) Array<RayCastHit, HeapAllocation>& results, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
@@ -252,7 +252,7 @@ public:
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
-    /// <returns>True if capsule hits an matching object, otherwise false.</returns>
+    /// <returns>True if capsule hits a matching object, otherwise false.</returns>
     API_FUNCTION() static bool CapsuleCast(const Vector3& center, float radius, float height, const Vector3& direction, const Quaternion& rotation = Quaternion::Identity, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
@@ -267,7 +267,7 @@ public:
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
-    /// <returns>True if capsule hits an matching object, otherwise false.</returns>
+    /// <returns>True if capsule hits a matching object, otherwise false.</returns>
     API_FUNCTION() static bool CapsuleCast(const Vector3& center, float radius, float height, const Vector3& direction, API_PARAM(Out) RayCastHit& hitInfo, const Quaternion& rotation = Quaternion::Identity, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
@@ -282,7 +282,7 @@ public:
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
-    /// <returns>True if capsule hits an matching object, otherwise false.</returns>
+    /// <returns>True if capsule hits a matching object, otherwise false.</returns>
     API_FUNCTION() static bool CapsuleCastAll(const Vector3& center, float radius, float height, const Vector3& direction, API_PARAM(Out) Array<RayCastHit, HeapAllocation>& results, const Quaternion& rotation = Quaternion::Identity, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
@@ -296,7 +296,7 @@ public:
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
-    /// <returns>True if convex mesh hits an matching object, otherwise false.</returns>
+    /// <returns>True if convex mesh hits a matching object, otherwise false.</returns>
     API_FUNCTION() static bool ConvexCast(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, const Quaternion& rotation = Quaternion::Identity, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
@@ -311,7 +311,7 @@ public:
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
-    /// <returns>True if convex mesh hits an matching object, otherwise false.</returns>
+    /// <returns>True if convex mesh hits a matching object, otherwise false.</returns>
     API_FUNCTION() static bool ConvexCast(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, API_PARAM(Out) RayCastHit& hitInfo, const Quaternion& rotation = Quaternion::Identity, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
@@ -326,7 +326,7 @@ public:
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
-    /// <returns>True if convex mesh hits an matching object, otherwise false.</returns>
+    /// <returns>True if convex mesh hits a matching object, otherwise false.</returns>
     API_FUNCTION() static bool ConvexCastAll(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, API_PARAM(Out) Array<RayCastHit, HeapAllocation>& results, const Quaternion& rotation = Quaternion::Identity, float maxDistance = MAX_float, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
@@ -375,7 +375,7 @@ public:
     API_FUNCTION() static bool CheckConvex(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Quaternion& rotation = Quaternion::Identity, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
-    /// Finds all colliders touching or inside of the given box.
+    /// Finds all colliders touching or inside the given box.
     /// </summary>
     /// <param name="center">The box center.</param>
     /// <param name="halfExtents">The half size of the box in each direction.</param>
@@ -387,7 +387,7 @@ public:
     API_FUNCTION() static bool OverlapBox(const Vector3& center, const Vector3& halfExtents, API_PARAM(Out) Array<Collider*, HeapAllocation>& results, const Quaternion& rotation = Quaternion::Identity, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
-    /// Finds all colliders touching or inside of the given sphere.
+    /// Finds all colliders touching or inside the given sphere.
     /// </summary>
     /// <param name="center">The sphere center.</param>
     /// <param name="radius">The radius of the sphere.</param>
@@ -398,7 +398,7 @@ public:
     API_FUNCTION() static bool OverlapSphere(const Vector3& center, float radius, API_PARAM(Out) Array<Collider*, HeapAllocation>& results, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
-    /// Finds all colliders touching or inside of the given capsule.
+    /// Finds all colliders touching or inside the given capsule.
     /// </summary>
     /// <param name="center">The capsule center.</param>
     /// <param name="radius">The radius of the capsule.</param>
@@ -411,7 +411,7 @@ public:
     API_FUNCTION() static bool OverlapCapsule(const Vector3& center, float radius, float height, API_PARAM(Out) Array<Collider*, HeapAllocation>& results, const Quaternion& rotation = Quaternion::Identity, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
-    /// Finds all colliders touching or inside of the given convex mesh.
+    /// Finds all colliders touching or inside the given convex mesh.
     /// </summary>
     /// <param name="center">The convex mesh center.</param>
     /// <param name="convexMesh">Collision data of the convex mesh.</param>
@@ -424,7 +424,7 @@ public:
     API_FUNCTION() static bool OverlapConvex(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, API_PARAM(Out) Array<Collider*, HeapAllocation>& results, const Quaternion& rotation = Quaternion::Identity, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
-    /// Finds all colliders touching or inside of the given box.
+    /// Finds all colliders touching or inside the given box.
     /// </summary>
     /// <param name="center">The box center.</param>
     /// <param name="halfExtents">The half size of the box in each direction.</param>
@@ -436,7 +436,7 @@ public:
     API_FUNCTION() static bool OverlapBox(const Vector3& center, const Vector3& halfExtents, API_PARAM(Out) Array<PhysicsColliderActor*, HeapAllocation>& results, const Quaternion& rotation = Quaternion::Identity, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
-    /// Finds all colliders touching or inside of the given sphere.
+    /// Finds all colliders touching or inside the given sphere.
     /// </summary>
     /// <param name="center">The sphere center.</param>
     /// <param name="radius">The radius of the sphere.</param>
@@ -447,7 +447,7 @@ public:
     API_FUNCTION() static bool OverlapSphere(const Vector3& center, float radius, API_PARAM(Out) Array<PhysicsColliderActor*, HeapAllocation>& results, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
-    /// Finds all colliders touching or inside of the given capsule.
+    /// Finds all colliders touching or inside the given capsule.
     /// </summary>
     /// <param name="center">The capsule center.</param>
     /// <param name="radius">The radius of the capsule.</param>
@@ -460,7 +460,7 @@ public:
     API_FUNCTION() static bool OverlapCapsule(const Vector3& center, float radius, float height, API_PARAM(Out) Array<PhysicsColliderActor*, HeapAllocation>& results, const Quaternion& rotation = Quaternion::Identity, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
 
     /// <summary>
-    /// Finds all colliders touching or inside of the given convex mesh.
+    /// Finds all colliders touching or inside the given convex mesh.
     /// </summary>
     /// <param name="center">The convex mesh center.</param>
     /// <param name="convexMesh">Collision data of the convex mesh.</param>

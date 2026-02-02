@@ -25,6 +25,7 @@ NavMesh::NavMesh(const SpawnParams& params)
 void NavMesh::SaveNavMesh()
 {
 #if COMPILE_WITH_ASSETS_IMPORTER
+    PROFILE_MEM(NavigationMesh);
 
     // Skip if scene is missing
     const auto scene = GetScene();
@@ -111,7 +112,7 @@ void NavMesh::OnAssetLoaded(Asset* asset, void* caller)
     if (Data.Tiles.HasItems())
         return;
     ScopeLock lock(DataAsset->Locker);
-    PROFILE_MEM(Navigation);
+    PROFILE_MEM(NavigationMesh);
 
     // Remove added tiles
     if (_navMeshActive)

@@ -469,7 +469,7 @@ namespace FlaxEditor.GUI.Docking
                     var childPanels = _childPanels.ToArray();
                     if (childPanels.Length != 0)
                     {
-                        // Move tabs from child panels into this one
+                        // Fallback: move tabs from child panels into this one.
                         DockWindow selectedTab = null;
                         foreach (var childPanel in childPanels)
                         {
@@ -490,7 +490,8 @@ namespace FlaxEditor.GUI.Docking
                     {
                         // Unlink splitter
                         var splitterParent = splitter.Parent;
-                        Assert.IsNotNull(splitterParent);
+                        if (splitterParent == null)
+                            return;
                         splitter.Parent = null;
 
                         // Move controls from second split panel to the split panel parent
@@ -507,15 +508,61 @@ namespace FlaxEditor.GUI.Docking
                         splitter.Dispose();
                     }
                 }
+                else if (IsMaster && _childPanels.Count != 0)
+                {
+                    if (TryCollapseSplitter(_tabsProxy?.Parent as Panel))
+                        return;
+                }
                 else if (!IsMaster)
                 {
                     throw new InvalidOperationException();
                 }
             }
+            else if (_childPanels.Count != 0)
+            {
+                if (TryCollapseSplitter(_tabsProxy?.Parent as Panel))
+                    return;
+            }
             else if (!IsMaster)
             {
                 throw new InvalidOperationException();
             }
+        }
+
+        internal bool CollapseEmptyTabsProxy()
+        {
+            if (TabsCount == 0 && ChildPanelsCount > 0)
+            {
+                return TryCollapseSplitter(_tabsProxy?.Parent as Panel);
+            }
+            return false;
+        }
+
+        private bool TryCollapseSplitter(Panel removedPanelParent)
+        {
+            if (removedPanelParent == null)
+                return false;
+            if (!(removedPanelParent.Parent is SplitPanel tabsSplitter))
+                return false;
+
+            var splitterParent = tabsSplitter.Parent;
+            if (splitterParent == null)
+                return false;
+            tabsSplitter.Parent = null;
+
+            var scrPanel = removedPanelParent == tabsSplitter.Panel2 ? tabsSplitter.Panel1 : tabsSplitter.Panel2;
+            var srcPanelChildrenCount = scrPanel.ChildrenCount;
+            for (int i = srcPanelChildrenCount - 1; i >= 0 && scrPanel.ChildrenCount > 0; i--)
+            {
+                scrPanel.GetChild(i).Parent = splitterParent;
+            }
+            Assert.IsTrue(scrPanel.ChildrenCount == 0);
+            Assert.IsTrue(splitterParent.ChildrenCount == srcPanelChildrenCount);
+
+            tabsSplitter.Dispose();
+            if (_tabsProxy != null && _tabsProxy.Parent == removedPanelParent)
+                _tabsProxy = null;
+            return true;
         }
 
         internal virtual void DockWindowInternal(DockState state, DockWindow window, bool autoSelect = true, float? splitterValue = null)

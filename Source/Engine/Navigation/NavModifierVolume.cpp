@@ -2,7 +2,7 @@
 
 #include "NavModifierVolume.h"
 #include "NavigationSettings.h"
-#include "NavMeshBuilder.h"
+#include "Navigation.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Serialization/Serialization.h"
 #if USE_EDITOR
@@ -83,7 +83,7 @@ void NavModifierVolume::OnBoundsChanged(const BoundingBox& prevBounds)
 #else
         const float timeoutMs = 0.0f;
 #endif
-        NavMeshBuilder::Build(GetScene(), dirtyBounds, timeoutMs);
+        Navigation::BuildNavMesh(dirtyBounds, GetScene(), timeoutMs);
     }
 #endif
 }

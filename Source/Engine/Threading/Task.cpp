@@ -148,9 +148,8 @@ Task* Task::StartNew(Function<bool()>::Signature& action, Object* target)
 
 void Task::Execute()
 {
-    if (IsCanceled())
+    if (!IsQueued())
         return;
-    ASSERT(IsQueued());
     SetState(TaskState::Running);
 
     // Perform an operation
