@@ -12,7 +12,7 @@ namespace FlaxEngine.GUI
     {
         private bool _materialIsDirty = true;
         private float _angle;
-        private float _selectedSegment;
+        private int _selectedSegment;
         private int _highlightSegment = -1;
         private MaterialBase _material;
         private MaterialInstance _materialInstance;
@@ -145,7 +145,7 @@ namespace FlaxEngine.GUI
         /// The selected segment.
         /// </summary>
         [HideInEditor]
-        public float SelectedSegment => _selectedSegment;
+        public int SelectedSegment => _selectedSegment;
 
         /// <summary>
         /// Allows the selected to change when the mouse is moved in the empty center of the menu.
@@ -378,8 +378,7 @@ namespace FlaxEngine.GUI
             var sa = (1.0f / _segmentCount) * Mathf.TwoPi;
             _angle = Mathf.Atan2(p.X, p.Y);
             _angle = Mathf.Ceil((_angle - (sa * 0.5f)) / sa) * sa;
-            _selectedSegment = _angle;
-            _selectedSegment = Mathf.RoundToInt((_selectedSegment < 0 ? Mathf.TwoPi + _selectedSegment : _selectedSegment) / sa);
+            _selectedSegment = Mathf.RoundToInt((_angle < 0 ? Mathf.TwoPi + _angle : _angle) / sa);
             if (float.IsNaN(_angle) || float.IsInfinity(_angle))
                 _angle = 0;
             _materialInstance.SetParameterValue("RadialMenu_Rotation", -_angle + Mathf.Pi);
