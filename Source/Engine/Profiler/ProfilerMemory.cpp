@@ -243,6 +243,7 @@ void InitProfilerMemory(const Char* cmdLine, int32 stage)
 #define INIT_PARENT(parent, child) GroupParents[(int32)ProfilerMemory::Groups::child] = (uint8)ProfilerMemory::Groups::parent
     INIT_PARENT(Engine, EngineThreading);
     INIT_PARENT(Engine, EngineDelegate);
+    INIT_PARENT(Engine, EngineDebug);
     INIT_PARENT(Malloc, MallocArena);
     INIT_PARENT(Graphics, GraphicsTextures);
     INIT_PARENT(Graphics, GraphicsRenderTargets);
@@ -260,6 +261,8 @@ void InitProfilerMemory(const Char* cmdLine, int32 stage)
     INIT_PARENT(Content, ContentFiles);
     INIT_PARENT(Level, LevelFoliage);
     INIT_PARENT(Level, LevelTerrain);
+    INIT_PARENT(Navigation, NavigationMesh);
+    INIT_PARENT(Navigation, NavigationBuilding);
     INIT_PARENT(Scripting, ScriptingVisual);
     INIT_PARENT(Scripting, ScriptingCSharp);
     INIT_PARENT(ScriptingCSharp, ScriptingCSharpGCCommitted);
