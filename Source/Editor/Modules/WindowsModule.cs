@@ -491,10 +491,15 @@ namespace FlaxEditor.Modules
                         Editor.LogWarning("Empty panel inside layout.");
                         p.RemoveIt();
                     }
+                    else
+                    {
+                        p.CollapseEmptyTabsProxy();
+                    }
                 }
             }
 
             panel.SelectTab(selectedTab);
+            panel.CollapseEmptyTabsProxy();
         }
 
         private static void SaveBounds(XmlWriter writer, Window win)
