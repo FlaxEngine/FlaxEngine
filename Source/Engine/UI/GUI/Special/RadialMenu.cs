@@ -130,6 +130,12 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// The material instance of <paramref name="Material"/> used to draw the menu.
+        /// </summary>
+        [HideInEditor]
+        public MaterialInstance MaterialInstance => _materialInstance;
+
+        /// <summary>
         /// The selected callback.
         /// </summary>
         [HideInEditor]
