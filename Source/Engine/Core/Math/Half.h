@@ -5,6 +5,7 @@
 #include "Math.h"
 #include "Vector2.h"
 #include "Vector3.h"
+#include "Vector4.h"
 
 /// <summary>
 /// Half-precision 16 bit floating point number consisting of a sign bit, a 5 bit biased exponent, and a 10 bit mantissa
