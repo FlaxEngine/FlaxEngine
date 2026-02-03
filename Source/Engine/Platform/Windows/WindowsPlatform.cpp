@@ -549,7 +549,6 @@ void WindowsPlatform::ReleaseMutex()
     }
 }
 
-PRAGMA_DISABLE_OPTIMIZATION;
 void CheckInstructionSet()
 {
 #if PLATFORM_ARCH_X86 || PLATFORM_ARCH_X64

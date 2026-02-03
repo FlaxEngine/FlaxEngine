@@ -41,6 +41,35 @@ bool Material::IsMaterialInstance() const
     return false;
 }
 
+#if USE_EDITOR
+
+void Material::GetReferences(Array<Guid>& assets, Array<String>& files) const
+{
+    ShaderAssetTypeBase<MaterialBase>::GetReferences(assets, files);
+
+    // Collect references from material graph (needs to load it)
+    if (!WaitForLoaded() && HasChunk(SHADER_FILE_CHUNK_VISJECT_SURFACE))
+    {
+        ScopeLock lock(Locker);
+        if (!LoadChunks(GET_CHUNK_FLAG(SHADER_FILE_CHUNK_VISJECT_SURFACE)))
+        {
+            const auto surfaceChunk = GetChunk(SHADER_FILE_CHUNK_VISJECT_SURFACE);
+            if (surfaceChunk)
+            {
+                MemoryReadStream stream(surfaceChunk->Get(), surfaceChunk->Size());
+                MaterialGraph graph;
+                if (!graph.Load(&stream, false))
+                {
+                    graph.GetReferences(assets);
+                }
+            }
+        }
+    }
+
+}
+
+#endif
+
 const MaterialInfo& Material::GetInfo() const
 {
     if (_materialShader)

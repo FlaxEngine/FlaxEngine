@@ -38,6 +38,9 @@ public:
 public:
     // [MaterialBase]
     bool IsMaterialInstance() const override;
+#if USE_EDITOR
+    void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
+#endif
 
     // [IMaterial]
     const MaterialInfo& GetInfo() const override;

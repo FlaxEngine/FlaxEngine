@@ -402,6 +402,8 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         case ViewMode::MaterialComplexity:
         case ViewMode::Wireframe:
         case ViewMode::NoPostFx:
+        case ViewMode::VertexColors:
+        case ViewMode::QuadOverdraw:
             setup.UseTemporalAAJitter = false;
             break;
         }

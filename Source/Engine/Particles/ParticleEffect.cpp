@@ -11,6 +11,10 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/Engine.h"
+#if USE_EDITOR
+#include "Editor/Editor.h"
+#include "Editor/Managed/ManagedEditor.h"
+#endif
 
 ParticleEffect::ParticleEffect(const SpawnParams& params)
     : Actor(params)
@@ -465,7 +469,12 @@ void ParticleEffect::Update()
     if (UpdateMode == SimulationUpdateMode::FixedTimestep)
     {
         // Check if last simulation update was past enough to kick a new on
-        const float time = Time::Update.Time.GetTotalSeconds();
+        bool useTimeScale = UseTimeScale;
+#if USE_EDITOR
+        if (!Editor::IsPlayMode && IsDuringPlay())
+            useTimeScale = false;
+#endif
+        const float time = (useTimeScale ? Time::Update.Time : Time::Update.UnscaledTime).GetTotalSeconds();
         if (time - Instance.LastUpdateTime < FixedTimestep)
             return;
     }
@@ -474,9 +483,6 @@ void ParticleEffect::Update()
 }
 
 #if USE_EDITOR
-
-#include "Editor/Editor.h"
-#include "Editor/Managed/ManagedEditor.h"
 
 void ParticleEffect::UpdateExecuteInEditor()
 {
@@ -601,7 +607,9 @@ bool ParticleEffect::HasContentLoaded() const
 
 void ParticleEffect::Draw(RenderContext& renderContext)
 {
-    if (renderContext.View.Pass == DrawPass::GlobalSDF || renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
+    if (renderContext.View.Pass == DrawPass::GlobalSDF || 
+        renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas ||
+        EnumHasNoneFlags(renderContext.View.Flags, ViewFlags::Particles))
         return;
     _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(GetPosition(), renderContext.View.WorldPosition));
     RenderContextBatch renderContextBatch(renderContext);
@@ -610,10 +618,12 @@ void ParticleEffect::Draw(RenderContext& renderContext)
 
 void ParticleEffect::Draw(RenderContextBatch& renderContextBatch)
 {
+    const RenderView& mainView = renderContextBatch.GetMainContext().View;
+    if (EnumHasNoneFlags(mainView.Flags, ViewFlags::Particles))
+        return;
     Particles::DrawParticles(renderContextBatch, this);
 
     // Cull again against the main context (if using multiple ones) to skip caching draw distance from shadow projections
-    const RenderView& mainView = renderContextBatch.GetMainContext().View;
     const BoundingSphere bounds(_sphere.Center - mainView.Origin, _sphere.Radius);
     if (renderContextBatch.Contexts.Count() > 1 && !mainView.CullingFrustum.Intersects(bounds))
         return;

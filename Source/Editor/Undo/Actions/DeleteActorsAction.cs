@@ -303,7 +303,7 @@ namespace FlaxEditor.Actions
                     if (_nodeParents[i] is ActorNode node && node.Actor && node.Actor.Scene && node.AffectsNavigationWithChildren)
                     {
                         var bounds = node.Actor.BoxWithChildren;
-                        Navigation.BuildNavMesh(node.Actor.Scene, bounds, options.General.AutoRebuildNavMeshTimeoutMs);
+                        Navigation.BuildNavMesh(bounds, options.General.AutoRebuildNavMeshTimeoutMs);
                     }
                 }
             }

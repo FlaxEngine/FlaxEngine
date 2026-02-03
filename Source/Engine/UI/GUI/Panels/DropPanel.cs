@@ -12,6 +12,11 @@ namespace FlaxEngine.GUI
     public class DropPanel : ContainerControl
     {
         /// <summary>
+        /// Size of the drop down icon. 
+        /// </summary>
+        public const float DropDownIconSize = 14.0f;
+
+        /// <summary>
         /// The header height.
         /// </summary>
         protected float _headerHeight = 14.0f;
@@ -368,7 +373,7 @@ namespace FlaxEngine.GUI
             var style = Style.Current;
             var enabled = EnabledInHierarchy;
 
-            // Paint Background
+            // Draw Background
             var backgroundColor = BackgroundColor;
             if (backgroundColor.A > 0.0f)
             {
@@ -386,7 +391,7 @@ namespace FlaxEngine.GUI
             float textLeft = 0;
             if (EnableDropDownIcon)
             {
-                textLeft += 14;
+                textLeft += DropDownIconSize;
                 var dropDownRect = new Rectangle(2, (HeaderHeight - 12) / 2, 12, 12);
                 var arrowColor = _mouseOverHeader ? style.Foreground : style.ForegroundGrey;
                 if (_isClosed)
@@ -395,7 +400,7 @@ namespace FlaxEngine.GUI
                     ArrowImageOpened?.Draw(dropDownRect, arrowColor);
             }
 
-            // Text
+            // Header text
             var textRect = new Rectangle(textLeft, 0, Width - textLeft, HeaderHeight);
             _headerTextMargin.ShrinkRectangle(ref textRect);
             var textColor = HeaderTextColor;
@@ -404,7 +409,9 @@ namespace FlaxEngine.GUI
                 textColor *= 0.6f;
             }
 
+            Render2D.PushClip(textRect);
             Render2D.DrawText(HeaderTextFont.GetFont(), HeaderTextMaterial, HeaderText, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
+            Render2D.PopClip();
 
             if (!_isClosed && EnableContainmentLines)
             {

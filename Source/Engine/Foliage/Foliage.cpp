@@ -44,20 +44,39 @@ void Foliage::AddToCluster(ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_S
     ASSERT(instance.Bounds.Radius > ZeroTolerance);
     ASSERT(cluster->Bounds.Intersects(instance.Bounds));
 
-    // Find target cluster
-    while (cluster->Children[0])
+    // Minor clusters don't use bounds intersection but try to find the first free cluster instead
+    if (cluster->IsMinor)
     {
+        // Insert into the first non-full child cluster or subdivide 1st child
+#define CHECK_CHILD(idx) \
+        if (cluster->Children[idx]->Instances.Count() < FOLIAGE_CLUSTER_CAPACITY) \
+        { \
+           cluster->Children[idx]->Instances.Add(&instance); \
+           return; \
+        }
+        CHECK_CHILD(3);
+        CHECK_CHILD(2);
+        CHECK_CHILD(1);
+        cluster = cluster->Children[0];
+#undef CHECK_CHILD
+    }
+    else
+    {
+        // Find target cluster
+        while (cluster->Children[0])
+        {
 #define CHECK_CHILD(idx) \
 			if (cluster->Children[idx]->Bounds.Intersects(instance.Bounds)) \
 			{ \
 				cluster = cluster->Children[idx]; \
 				continue; \
 			}
-        CHECK_CHILD(0);
-        CHECK_CHILD(1);
-        CHECK_CHILD(2);
-        CHECK_CHILD(3);
+            CHECK_CHILD(0);
+            CHECK_CHILD(1);
+            CHECK_CHILD(2);
+            CHECK_CHILD(3);
 #undef CHECK_CHILD
+        }
     }
 
     // Check if it's not full
@@ -79,11 +98,20 @@ void Foliage::AddToCluster(ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_S
         // Setup children
         const Vector3 min = cluster->Bounds.Minimum;
         const Vector3 max = cluster->Bounds.Maximum;
-        const Vector3 size = cluster->Bounds.GetSize();
+        const Vector3 size = max - min;
         cluster->Children[0]->Init(BoundingBox(min, min + size * Vector3(0.5f, 1.0f, 0.5f)));
         cluster->Children[1]->Init(BoundingBox(min + size * Vector3(0.5f, 0.0f, 0.5f), max));
         cluster->Children[2]->Init(BoundingBox(min + size * Vector3(0.5f, 0.0f, 0.0f), min + size * Vector3(1.0f, 1.0f, 0.5f)));
         cluster->Children[3]->Init(BoundingBox(min + size * Vector3(0.0f, 0.0f, 0.5f), min + size * Vector3(0.5f, 1.0f, 1.0f)));
+        if (cluster->IsMinor || size.MinValue() < 1.0f)
+        {
+            // Mark children as minor to avoid infinite subdivision
+            cluster->IsMinor = true;
+            cluster->Children[0]->IsMinor = true;
+            cluster->Children[1]->IsMinor = true;
+            cluster->Children[2]->IsMinor = true;
+            cluster->Children[3]->IsMinor = true;
+        }
 
         // Move instances to a proper cells
         for (int32 i = 0; i < cluster->Instances.Count(); i++)

@@ -629,7 +629,7 @@ namespace FlaxEditor.Viewport
             base.OnLeftMouseButtonDown();
 
             if (!IsAltKeyDown)
-                _rubberBandSelector.TryStartingRubberBandSelection();
+                _rubberBandSelector.TryStartingRubberBandSelection(_viewMousePos);
         }
 
         /// <inheritdoc />
