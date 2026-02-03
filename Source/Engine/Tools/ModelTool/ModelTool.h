@@ -221,6 +221,9 @@ public:
         // If specified, all meshes that name starts with this prefix in the name will be imported as a separate collision data asset (excluded used for rendering).
         API_FIELD(Attributes="EditorOrder(100), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
         String CollisionMeshesPrefix = TEXT("");
+        // If specified, all meshes that name ends with this postfix in the name will be imported as a separate collision data asset (excluded used for rendering).
+        API_FIELD(Attributes="EditorOrder(101), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
+        String CollisionMeshesPostfix = TEXT("");
         // The type of collision that should be generated if the mesh has a collision prefix specified.
         API_FIELD(Attributes="EditorOrder(105), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
         CollisionDataType CollisionType = CollisionDataType::ConvexMesh;
