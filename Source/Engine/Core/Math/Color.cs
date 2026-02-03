@@ -11,7 +11,7 @@ namespace FlaxEngine
 #if FLAX_EDITOR
     [System.ComponentModel.TypeConverter(typeof(TypeConverters.ColorConverter))]
 #endif
-    partial struct Color
+    partial struct Color : Json.ICustomValueEquals
     {
         /// <summary>
         /// The size of the <see cref="Color" /> type, in bytes.
@@ -199,6 +199,13 @@ namespace FlaxEngine
             G = values[1];
             B = values[2];
             A = values[3];
+        }
+
+        /// <inheritdoc />
+        public bool ValueEquals(object other)
+        {
+            var o = (Color)other;
+            return Equals(ref o);
         }
 
         /// <inheritdoc />
