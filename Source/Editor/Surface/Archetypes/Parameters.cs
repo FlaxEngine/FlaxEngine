@@ -1100,6 +1100,27 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.ComboBox(2 + 20, 0, 116)
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 5,
+                Create = (id, context, arch, groupArch) => new SurfaceNodeParamsSet(id, context, arch, groupArch),
+                Title = "Set Parameter",
+                Description = "Parameter value setter invoked when the animation pose is evaluated (output pose comes from input)",
+                Flags = NodeFlags.AnimGraph,
+                Size = new Float2(140, 40),
+                DefaultValues = new object[]
+                {
+                    Guid.Empty,
+                    null
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(void), 0),
+                    NodeElementArchetype.Factory.Input(0, string.Empty, true, typeof(void), 2),
+                    NodeElementArchetype.Factory.Input(1, string.Empty, true, ScriptType.Null, 1, 1),
+                    NodeElementArchetype.Factory.ComboBox(2 + 20, 0, 116)
+                }
+            },
         };
     }
 }

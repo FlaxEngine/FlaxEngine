@@ -41,16 +41,6 @@ FloatR10G10B10A2::FloatR10G10B10A2(const float* values)
 {
 }
 
-FloatR10G10B10A2::operator Float3() const
-{
-    return ToFloat3();
-}
-
-FloatR10G10B10A2::operator Float4() const
-{
-    return ToFloat4();
-}
-
 Float3 FloatR10G10B10A2::ToFloat3() const
 {
     Float3 vectorOut;

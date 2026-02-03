@@ -1892,13 +1892,13 @@ namespace Flax.Build.Bindings
             CppAutoSerializeProperties.Clear();
             CppIncludeFiles.Add("Engine/Serialization/Serialization.h");
 
+            // Serialize
             contents.AppendLine();
             contents.Append($"void {typeNameNative}::Serialize(SerializeStream& stream, const void* otherObj)").AppendLine();
             contents.Append('{').AppendLine();
             if (baseType != null)
                 contents.Append($"    {baseType.FullNameNative}::Serialize(stream, otherObj);").AppendLine();
             contents.Append($"    SERIALIZE_GET_OTHER_OBJ({typeNameNative});").AppendLine();
-
             if (classInfo != null)
             {
                 foreach (var fieldInfo in classInfo.Fields)
@@ -1910,7 +1910,6 @@ namespace Flax.Build.Bindings
                     contents.Append($"    SERIALIZE{typeHint}({fieldInfo.Name});").AppendLine();
                     CppAutoSerializeFields.Add(fieldInfo);
                 }
-
                 foreach (var propertyInfo in classInfo.Properties)
                 {
                     if (propertyInfo.Getter == null || propertyInfo.Setter == null)
@@ -1952,21 +1951,19 @@ namespace Flax.Build.Bindings
                     CppAutoSerializeFields.Add(fieldInfo);
                 }
             }
-
             contents.Append('}').AppendLine();
 
+            // Deserialize
             contents.AppendLine();
             contents.Append($"void {typeNameNative}::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)").AppendLine();
             contents.Append('{').AppendLine();
             if (baseType != null)
                 contents.Append($"    {baseType.FullNameNative}::Deserialize(stream, modifier);").AppendLine();
-
             foreach (var fieldInfo in CppAutoSerializeFields)
             {
                 var typeHint = GenerateCppAutoSerializationDefineType(buildData, contents, moduleInfo, typeInfo, fieldInfo.Type, fieldInfo);
                 contents.Append($"    DESERIALIZE{typeHint}({fieldInfo.Name});").AppendLine();
             }
-
             foreach (var propertyInfo in CppAutoSerializeProperties)
             {
                 contents.AppendLine("    {");
@@ -1978,7 +1975,43 @@ namespace Flax.Build.Bindings
                 contents.AppendLine("        }");
                 contents.AppendLine("    }");
             }
+            contents.Append('}').AppendLine();
 
+            // ShouldSerialize
+            contents.AppendLine();
+            contents.Append($"bool {typeNameNative}::ShouldSerialize(const void* otherObj) const").AppendLine();
+            contents.Append('{').AppendLine();
+            if (!typeInfo.IsScriptingObject)
+            {
+                contents.Append($"    SERIALIZE_GET_OTHER_OBJ({typeNameNative});").AppendLine();
+                contents.AppendLine("    bool result = false;");
+                if (baseType != null)
+                    contents.Append($"    result |= {baseType.FullNameNative}::ShouldSerialize(otherObj);").AppendLine();
+                foreach (var fieldInfo in CppAutoSerializeFields)
+                {
+                    contents.Append($"    result |= Serialization::ShouldSerialize({fieldInfo.Name}, &other->{fieldInfo.Name});").AppendLine();
+                }
+                foreach (var propertyInfo in CppAutoSerializeProperties)
+                {
+                    contents.Append("    {");
+                    contents.Append(" const auto");
+                    if (propertyInfo.Getter.ReturnType.IsConstRef)
+                        contents.Append('&');
+                    contents.Append($" value = {propertyInfo.Getter.Name}();");
+                    contents.Append(" const auto");
+                    if (propertyInfo.Getter.ReturnType.IsConstRef)
+                        contents.Append('&');
+                    contents.Append($" otherValue = other->{propertyInfo.Getter.Name}();");
+                    contents.Append(" result |= Serialization::ShouldSerialize(value, &otherValue);").AppendLine();
+                    contents.Append('}').AppendLine();
+                }
+                contents.AppendLine("    return result;");
+            }
+            else
+            {
+                // Not needed to generate
+                contents.AppendLine("    return true;");
+            }
             contents.Append('}').AppendLine();
         }
 
