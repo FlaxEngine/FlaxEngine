@@ -965,8 +965,8 @@ namespace FlaxEngine
         {
             var dot = Mathr.Clamp(Dot(start, end), -1.0f, 1.0f);
             var theta = Mathr.Acos(dot) * amount;
-            Vector2 RelativeVector = (end - start * dot).Normalized;
-            result = ((start * Mathr.Cos(theta)) + (end * Mathr.Sin(theta)));
+            Vector2 relativeVector = (end - start * dot).Normalized;
+            result = ((start * Mathr.Cos(theta)) + (relativeVector * Mathr.Sin(theta)));
         }
 
         /// <summary>
