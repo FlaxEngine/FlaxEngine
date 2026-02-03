@@ -321,6 +321,33 @@ namespace FlaxEditor.Surface
 
                         foreach (var node in _movingNodes)
                         {
+                            // Allow ripping the node from its current connection
+                            if (RootWindow.GetKey(KeyboardKeys.Alt))
+                            {
+                                InputBox nodeConnectedInput = null;
+                                OutputBox nodeConnectedOuput = null;
+
+                                var boxes = node.GetBoxes();
+                                foreach (var box in boxes)
+                                {
+                                    if (!box.IsOutput && box.Connections.Count > 0)
+                                    {
+                                        nodeConnectedInput = (InputBox)box;
+                                        continue;
+                                    }
+                                    if (box.IsOutput && box.Connections.Count > 0)
+                                    {
+                                        nodeConnectedOuput = (OutputBox)box;
+                                        continue;
+                                    }
+                                }
+
+                                if (nodeConnectedInput != null && nodeConnectedOuput != null)
+                                    TryConnect(nodeConnectedOuput.Connections[0], nodeConnectedInput.Connections[0]);
+                                
+                                node.RemoveConnections();
+                            }
+
                             if (gridSnap)
                             {
                                 Float2 unroundedLocation = node.Location;
@@ -602,6 +629,24 @@ namespace FlaxEditor.Surface
                 {
                     if (_movingNodes != null && _movingNodes.Count > 0)
                     {
+                        // Allow dropping the node onto an existing connection and connect it
+                        if (_movingNodes.Count == 1)
+                        {
+                            var mousePos = _rootControl.PointFromParent(ref _mousePos);
+                            InputBox intersectedConnectionInputBox;
+                            OutputBox intersectedConnectionOutputBox;
+                            if (IntersectsConnection(mousePos, out intersectedConnectionInputBox, out intersectedConnectionOutputBox))
+                            {
+                                SurfaceNode node = _movingNodes.First();
+                                InputBox nodeInputBox = (InputBox)node.GetBoxes().First(b => !b.IsOutput);
+                                OutputBox nodeOutputBox = (OutputBox)node.GetBoxes().First(b => b.IsOutput);
+                                TryConnect(intersectedConnectionOutputBox, nodeInputBox);
+                                TryConnect(nodeOutputBox, intersectedConnectionInputBox);
+
+                                Debug.Log($"INPUT OUTPUT: {intersectedConnectionNodesXDistance}, NODE: {node.Width}");
+                            }
+                        }
+
                         if (Undo != null && !_movingNodesDelta.IsZero && CanEdit)
                             Undo.AddAction(new MoveNodesAction(Context, _movingNodes.Select(x => x.ID).ToArray(), _movingNodesDelta));
                         _movingNodes.Clear();
