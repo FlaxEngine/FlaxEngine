@@ -6,7 +6,7 @@
 #include "Engine/Core/Math/Transform.h"
 #include "Engine/Core/Math/Ray.h"
 #include "Engine/Core/Math/CollisionsHelper.h"
-#include "Engine/Core/Math/Packed.h"
+#include "Engine/Core/Math/Half.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Graphics/PixelFormat.h"
 
@@ -58,7 +58,7 @@ public:
         else if (positionsFormat == PixelFormat::R16G16B16A16_Float)
         {
             LOOP_BEGIN()
-#define GET_POS(idx) (Float3)*(const Half4*)((const byte*)positions + positionsStride * idx)
+#define GET_POS(idx) ((const Half4*)((const byte*)positions + positionsStride * idx))->ToFloat3()
                 Triangles.Add({ GET_POS(i0), GET_POS(i1), GET_POS(i2) });
 #undef GET_POS
             LOOP_END()

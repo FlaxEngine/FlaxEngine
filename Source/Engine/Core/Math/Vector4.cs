@@ -73,7 +73,7 @@ namespace FlaxEngine
 #if FLAX_EDITOR
     [System.ComponentModel.TypeConverter(typeof(TypeConverters.Vector4Converter))]
 #endif
-    public partial struct Vector4 : IEquatable<Vector4>, IFormattable
+    public partial struct Vector4 : IEquatable<Vector4>, IFormattable, Json.ICustomValueEquals
     {
         private static readonly string _formatString = "X:{0:F2} Y:{1:F2} Z:{2:F2} W:{3:F2}";
 
@@ -1525,6 +1525,13 @@ namespace FlaxEngine
                 hashCode = (hashCode * 397) ^ W.GetHashCode();
                 return hashCode;
             }
+        }
+
+        /// <inheritdoc />
+        public bool ValueEquals(object other)
+        {
+            var o = (Vector4)other;
+            return Equals(ref o);
         }
 
         /// <summary>
