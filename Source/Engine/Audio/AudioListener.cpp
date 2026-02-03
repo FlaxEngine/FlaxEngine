@@ -41,7 +41,10 @@ void AudioListener::OnEnable()
     ASSERT(!Audio::Listeners.Contains(this));
     if (Audio::Listeners.Count() >= AUDIO_MAX_LISTENERS)
     {
-        LOG(Warning, "There is more than one Audio Listener active. Please make sure only exactly one is active at any given time.");
+        if IF_CONSTEXPR (AUDIO_MAX_LISTENERS == 1)
+            LOG(Warning, "There is more than one Audio Listener active. Please make sure only exactly one is active at any given time.");
+        else
+            LOG(Warning, "Too many Audio Listener active.");
     }
     else
     {
