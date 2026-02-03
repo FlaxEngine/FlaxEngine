@@ -441,6 +441,9 @@ bool MeshBase::Init(uint32 vertices, uint32 triangles, const Array<const void*, 
     GPUBuffer* vertexBuffer1 = nullptr;
     GPUBuffer* vertexBuffer2 = nullptr;
     GPUBuffer* indexBuffer = nullptr;
+#if MODEL_USE_PRECISE_MESH_INTERSECTS
+    VertexElement positionsElement;
+#endif
 
     // Create GPU buffers
 #if GPU_ENABLE_RESOURCE_NAMING
@@ -470,7 +473,7 @@ bool MeshBase::Init(uint32 vertices, uint32 triangles, const Array<const void*, 
 
     // Init collision proxy
 #if MODEL_USE_PRECISE_MESH_INTERSECTS
-    VertexElement positionsElement = vbLayout[0]->FindElement(VertexElement::Types::Position);
+    positionsElement = vbLayout[0]->FindElement(VertexElement::Types::Position);
     if (use16BitIndexBuffer)
         _collisionProxy.Init<uint16>(vertices, triangles, (const Float3*)vbData[0], (const uint16*)ibData, vertexBuffer0->GetStride(), positionsElement.Format);
     else
