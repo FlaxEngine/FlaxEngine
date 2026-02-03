@@ -6,7 +6,9 @@
 #include "Engine/Core/Math/Transform.h"
 #include "Engine/Core/Math/Ray.h"
 #include "Engine/Core/Math/CollisionsHelper.h"
+#include "Engine/Core/Math/Packed.h"
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Graphics/PixelFormat.h"
 
 /// <summary>
 /// Helper container used for detailed triangle mesh intersections tests.
@@ -31,23 +33,38 @@ public:
     }
 
     template<typename IndexType>
-    void Init(uint32 vertices, uint32 triangles, const Float3* positions, const IndexType* indices, uint32 positionsStride = sizeof(Float3))
+    void Init(uint32 vertices, uint32 triangles, const Float3* positions, const IndexType* indices, uint32 positionsStride = sizeof(Float3), PixelFormat positionsFormat = PixelFormat::R32G32B32_Float)
     {
         Triangles.Clear();
         Triangles.EnsureCapacity(triangles, false);
         const IndexType* it = indices;
-        for (uint32 i = 0; i < triangles; i++)
+#define LOOP_BEGIN() \
+    for (uint32 i = 0; i < triangles; i++) \
+    { \
+        const IndexType i0 = *(it++); \
+        const IndexType i1 = *(it++); \
+        const IndexType i2 = *(it++); \
+        if (i0 < vertices && i1 < vertices && i2 < vertices) \
         {
-            const IndexType i0 = *(it++);
-            const IndexType i1 = *(it++);
-            const IndexType i2 = *(it++);
-            if (i0 < vertices && i1 < vertices && i2 < vertices)
-            {
+#define LOOP_END() } }
+        if (positionsFormat == PixelFormat::R32G32B32_Float)
+        {
+            LOOP_BEGIN()
 #define GET_POS(idx) *(const Float3*)((const byte*)positions + positionsStride * idx)
                 Triangles.Add({ GET_POS(i0), GET_POS(i1), GET_POS(i2) });
 #undef GET_POS
-            }
+            LOOP_END()
         }
+        else if (positionsFormat == PixelFormat::R16G16B16A16_Float)
+        {
+            LOOP_BEGIN()
+#define GET_POS(idx) (Float3)*(const Half4*)((const byte*)positions + positionsStride * idx)
+                Triangles.Add({ GET_POS(i0), GET_POS(i1), GET_POS(i2) });
+#undef GET_POS
+            LOOP_END()
+        }
+#undef LOOP_BEGIN
+#undef LOOP_END
     }
 
     void Clear()

@@ -248,6 +248,19 @@ public:
     explicit Half4(const Color& c);
     explicit Half4(const Rectangle& rect);
 
+    operator Float2() const
+    {
+        return ToFloat2();
+    }
+    operator Float3() const
+    {
+        return ToFloat3();
+    }
+    operator Float4() const
+    {
+        return ToFloat4();
+    }
+
 public:
     Float2 ToFloat2() const;
     Float3 ToFloat3() const;

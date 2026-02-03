@@ -470,10 +470,11 @@ bool MeshBase::Init(uint32 vertices, uint32 triangles, const Array<const void*, 
 
     // Init collision proxy
 #if MODEL_USE_PRECISE_MESH_INTERSECTS
+    VertexElement positionsElement = vbLayout[0]->FindElement(VertexElement::Types::Position);
     if (use16BitIndexBuffer)
-        _collisionProxy.Init<uint16>(vertices, triangles, (const Float3*)vbData[0], (const uint16*)ibData);
+        _collisionProxy.Init<uint16>(vertices, triangles, (const Float3*)vbData[0], (const uint16*)ibData, vertexBuffer0->GetStride(), positionsElement.Format);
     else
-        _collisionProxy.Init<uint32>(vertices, triangles, (const Float3*)vbData[0], (const uint32*)ibData);
+        _collisionProxy.Init<uint32>(vertices, triangles, (const Float3*)vbData[0], (const uint32*)ibData, vertexBuffer0->GetStride(), positionsElement.Format);
 #endif
 
     // Free old buffers
