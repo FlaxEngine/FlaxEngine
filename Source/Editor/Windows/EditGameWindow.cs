@@ -429,6 +429,7 @@ namespace FlaxEditor.Windows
             writer.WriteAttributeString("FarPlane", Viewport.FarPlane.ToString());
             writer.WriteAttributeString("FieldOfView", Viewport.FieldOfView.ToString());
             writer.WriteAttributeString("MovementSpeed", Viewport.MovementSpeed.ToString());
+            writer.WriteAttributeString("ViewportIconsScale", ViewportIconsRenderer.Scale.ToString());
             writer.WriteAttributeString("OrthographicScale", Viewport.OrthographicScale.ToString());
             writer.WriteAttributeString("UseOrthographicProjection", Viewport.UseOrthographicProjection.ToString());
             writer.WriteAttributeString("ViewFlags", ((ulong)Viewport.Task.View.Flags).ToString());
@@ -439,31 +440,24 @@ namespace FlaxEditor.Windows
         {
             if (bool.TryParse(node.GetAttribute("GridEnabled"), out bool value1))
                 Viewport.Grid.Enabled = value1;
-
             if (bool.TryParse(node.GetAttribute("ShowFpsCounter"), out value1))
                 Viewport.ShowFpsCounter = value1;
-
             if (bool.TryParse(node.GetAttribute("ShowNavigation"), out value1))
                 Viewport.ShowNavigation = value1;
-
             if (float.TryParse(node.GetAttribute("NearPlane"), out float value2))
                 Viewport.NearPlane = value2;
-
             if (float.TryParse(node.GetAttribute("FarPlane"), out value2))
                 Viewport.FarPlane = value2;
-
             if (float.TryParse(node.GetAttribute("FieldOfView"), out value2))
                 Viewport.FieldOfView = value2;
-
             if (float.TryParse(node.GetAttribute("MovementSpeed"), out value2))
                 Viewport.MovementSpeed = value2;
-
+            if (float.TryParse(node.GetAttribute("ViewportIconsScale"), out value2))
+                ViewportIconsRenderer.Scale = value2;
             if (float.TryParse(node.GetAttribute("OrthographicScale"), out value2))
                 Viewport.OrthographicScale = value2;
-
             if (bool.TryParse(node.GetAttribute("UseOrthographicProjection"), out value1))
                 Viewport.UseOrthographicProjection = value1;
-
             if (ulong.TryParse(node.GetAttribute("ViewFlags"), out ulong value3))
                 Viewport.Task.ViewFlags = (ViewFlags)value3;
 
