@@ -391,9 +391,12 @@ namespace FlaxEditor.Viewport
         public void DrawEditorPrimitives(GPUContext context, ref RenderContext renderContext, GPUTexture target, GPUTexture targetDepth)
         {
             // Draw gizmos
-            for (int i = 0; i < Gizmos.Count; i++)
+            foreach (var gizmo in Gizmos)
             {
-                Gizmos[i].Draw(ref renderContext);
+                if (gizmo.Visible)
+                {
+                    gizmo.Draw(ref renderContext);
+                }
             }
 
             // Draw selected objects debug shapes and visuals
