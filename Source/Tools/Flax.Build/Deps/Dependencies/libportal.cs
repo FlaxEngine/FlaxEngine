@@ -56,12 +56,12 @@ class libportal : Dependency
 
         foreach (var platform in options.Platforms)
         {
-            BuildStarted(platform);
-            switch (platform)
+            foreach (var architecture in options.Architectures)
             {
-            case TargetPlatform.Linux:
-            {
-                foreach (var architecture in new TargetArchitecture[] { TargetArchitecture.x64 /*, TargetArchitecture.ARM64*/ })
+                BuildStarted(platform, architecture);
+                switch (platform)
+                {
+                case TargetPlatform.Linux:
                 {
                     var buildDir = $"build_{architecture}";
                     Utilities.Run("meson", $"{buildDir} {string.Join(" ", configs)}", null, root, Utilities.RunOptions.DefaultTool);
@@ -71,19 +71,19 @@ class libportal : Dependency
                     Utilities.FileCopy(Path.Combine(root, buildDir, "libportal", "libportal.a"), Path.Combine(depsFolder, "libportal.a"));
                     Utilities.FileCopy(Path.Combine(root, buildDir, "libportal", "portal-enums.h"), Path.Combine(includePath, "portal-enums.h"));
                     Utilities.FileCopy(Path.Combine(root, buildDir, "libportal", "portal-enums.c"), Path.Combine(dstPath, "portal-enums.c"));
+
+                    Utilities.FileCopy(Path.Combine(root, "COPYING"), Path.Combine(dstPath, "LICENSE.txt"));
+
+                    if (!Directory.Exists(includePath))
+                        Directory.CreateDirectory(includePath);
+                    if (!Directory.Exists(Path.Combine(includePath, "libportal")))
+                        Directory.CreateDirectory(Path.Combine(includePath, "libportal"));
+
+                    foreach (var file in Directory.GetFiles(Path.Combine(root, "libportal"), "*.h"))
+                        Utilities.FileCopy(file, Path.Combine(includePath, "libportal", Path.GetFileName(file)));
+                    break;
                 }
-                
-                Utilities.FileCopy(Path.Combine(root, "COPYING"), Path.Combine(dstPath, "LICENSE.txt"));
-                
-                if (!Directory.Exists(includePath))
-                    Directory.CreateDirectory(includePath);
-                if (!Directory.Exists(Path.Combine(includePath, "libportal")))
-                    Directory.CreateDirectory(Path.Combine(includePath, "libportal"));
-                
-                foreach (var file in Directory.GetFiles(Path.Combine(root, "libportal"), "*.h"))
-                    Utilities.FileCopy(file, Path.Combine(includePath, "libportal", Path.GetFileName(file)));
-                break;
-            }
+                }
             }
         }
     }

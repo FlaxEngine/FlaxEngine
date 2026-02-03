@@ -95,12 +95,12 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
-                BuildStarted(platform);
-                switch (platform)
+                foreach (var architecture in options.Architectures)
                 {
-                case TargetPlatform.Windows:
-                {
-                    foreach (var architecture in new TargetArchitecture[] { TargetArchitecture.x64/*, TargetArchitecture.ARM64*/ })
+                    BuildStarted(platform, architecture);
+                    switch (platform)
+                    {
+                    case TargetPlatform.Windows:
                     {
                         var buildDir = Path.Combine(root, "build-" + architecture.ToString());
 
@@ -110,7 +110,7 @@ namespace Flax.Deps.Dependencies
                         else
                             binariesToCopy = new[] { "SDL3.dll", "SDL3.lib", };
                         directoriesToCopy.Add(Path.Combine(buildDir, "include", "SDL3"));
-                        
+
                         var solutionPath = Path.Combine(buildDir, "SDL3.sln");
 
                         RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -DCMAKE_INSTALL_PREFIX=\"{buildDir}\" -DSDL_SHARED={(!buildStatic ? "ON" : "OFF")} -DSDL_STATIC={(buildStatic ? "ON" : "OFF")} -DCMAKE_POLICY_DEFAULT_CMP0091=NEW -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL " + string.Join(" ", configs));
@@ -121,16 +121,13 @@ namespace Flax.Deps.Dependencies
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         foreach (var file in binariesToCopy)
                             Utilities.FileCopy(Path.Combine(buildDir, configuration, file), Path.Combine(depsFolder, file == "SDL3-static.lib" ? "SDL3.lib" : file));
+                        break;
                     }
-                    break;
-                }
-                case TargetPlatform.Linux:
-                case TargetPlatform.Mac:
-                {
-                    foreach (var architecture in new [] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    case TargetPlatform.Linux:
+                    case TargetPlatform.Mac:
                     {
                         var buildDir = Path.Combine(root, "build-" + architecture.ToString());
-                        
+
                         string[] binariesToCopy;
                         if (buildStatic)
                             binariesToCopy = new[] { "libSDL3.a" };
@@ -140,16 +137,17 @@ namespace Flax.Deps.Dependencies
 
                         int concurrency = Math.Min(Math.Max(1, (int)(Environment.ProcessorCount * Configuration.ConcurrencyProcessorScale)), Configuration.MaxConcurrency);
                         RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -DCMAKE_BUILD_TYPE={configuration} -DCMAKE_INSTALL_PREFIX=\"{buildDir}\" -DSDL_SHARED={(!buildStatic ? "ON" : "OFF")} -DSDL_STATIC={(buildStatic ? "ON" : "OFF")} -DCMAKE_POSITION_INDEPENDENT_CODE=ON " + string.Join(" ", configs));
-                        BuildCmake(buildDir, configuration, new Dictionary<string, string>() { {"CMAKE_BUILD_PARALLEL_LEVEL", concurrency.ToString()} });
+                        BuildCmake(buildDir, configuration, new Dictionary<string, string>() { { "CMAKE_BUILD_PARALLEL_LEVEL", concurrency.ToString() } });
                         Utilities.Run("cmake", $"--build .  --target install --config {configuration}", null, buildDir, Utilities.RunOptions.DefaultTool);
 
                         // Copy binaries
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         foreach (var file in binariesToCopy)
                             Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));
+
+                        break;
                     }
-                    break;
-                }
+                    }
                 }
             }
 

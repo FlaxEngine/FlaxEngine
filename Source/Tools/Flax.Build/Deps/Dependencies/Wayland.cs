@@ -38,22 +38,27 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
-                BuildStarted(platform);
-                switch (platform)
+                foreach (var architecture in options.Architectures)
                 {
-                case TargetPlatform.Linux:
-                    if (!Directory.Exists(Path.Combine(includePath, "wayland")))
-                        Directory.CreateDirectory(Path.Combine(includePath, "wayland"));
-
-                    string[] protocolFiles = Directory.GetFiles(protocolsPath, "*.xml", SearchOption.TopDirectoryOnly);
-                    foreach (var protocolPath in protocolFiles)
+                    BuildStarted(platform, architecture);
+                    switch (platform)
                     {
-                        var headerFile = Path.ChangeExtension(Path.GetFileName(protocolPath), "h");
-                        var glueFile = Path.ChangeExtension(Path.GetFileName(protocolPath), "c");
-                        Utilities.Run("wayland-scanner", $"client-header {protocolPath} include/wayland/{headerFile}", null, dstPath, Utilities.RunOptions.DefaultTool);
-                        Utilities.Run("wayland-scanner", $"private-code {protocolPath} {glueFile}", null, dstPath, Utilities.RunOptions.DefaultTool);
+                    case TargetPlatform.Linux:
+                    {
+                        if (!Directory.Exists(Path.Combine(includePath, "wayland")))
+                            Directory.CreateDirectory(Path.Combine(includePath, "wayland"));
+
+                        string[] protocolFiles = Directory.GetFiles(protocolsPath, "*.xml", SearchOption.TopDirectoryOnly);
+                        foreach (var protocolPath in protocolFiles)
+                        {
+                            var headerFile = Path.ChangeExtension(Path.GetFileName(protocolPath), "h");
+                            var glueFile = Path.ChangeExtension(Path.GetFileName(protocolPath), "c");
+                            Utilities.Run("wayland-scanner", $"client-header {protocolPath} include/wayland/{headerFile}", null, dstPath, Utilities.RunOptions.DefaultTool);
+                            Utilities.Run("wayland-scanner", $"private-code {protocolPath} {glueFile}", null, dstPath, Utilities.RunOptions.DefaultTool);
+                        }
+                        break;
                     }
-                    break;
+                    }
                 }
             }
 
