@@ -129,6 +129,12 @@ public:
     FLAXENGINE_API String ToString() const;
 
 public:
+    // Gets a value indicting whether this instance is normalized.
+    bool IsNormalized() const
+    {
+        return Math::Abs((X * X + Y * Y + Z * Z + W * W) - 1.0f) < 1e-4f;
+    }
+
     // Gets a value indicting whether this vector is zero.
     bool IsZero() const
     {
@@ -217,6 +223,45 @@ public:
     Vector4Base GetNegative() const
     {
         return Vector4Base(-X, -Y, -Z, -W);
+    }
+
+    /// <summary>
+    /// Calculates a normalized vector that has length equal to 1.
+    /// </summary>
+    Vector4Base GetNormalized() const
+    {
+        Vector4Base result(X, Y, Z, W);
+        result.Normalize();
+        return result;
+    }
+
+public:
+    /// <summary>
+    /// Performs vector normalization (scales vector up to unit length).
+    /// </summary>
+    void Normalize()
+    {
+        const T length = Math::Sqrt(X * X + Y * Y + Z * Z + W * W);
+        if (length >= ZeroTolerance)
+        {
+            const T inv = (T)1.0f / length;
+            X *= inv;
+            Y *= inv;
+            Z *= inv;
+            W *= inv;
+        }
+    }
+
+    /// <summary>
+    /// Performs fast vector normalization (scales vector up to unit length).
+    /// </summary>
+    void NormalizeFast()
+    {
+        const T inv = 1.0f / Math::Sqrt(X * X + Y * Y + Z * Z + W * W);
+        X *= inv;
+        Y *= inv;
+        Z *= inv;
+        W *= inv;
     }
 
 public:
@@ -467,6 +512,41 @@ public:
     static void Clamp(const Vector4Base& v, const Vector4Base& min, const Vector4Base& max, Vector4Base& result)
     {
         result = Vector4Base(Math::Clamp(v.X, min.X, max.X), Math::Clamp(v.Y, min.Y, max.Y), Math::Clamp(v.Z, min.Z, max.Z), Math::Clamp(v.W, min.W, max.W));
+    }
+
+    // Performs vector normalization (scales vector up to unit length).
+    static Vector4Base Normalize(const Vector4Base& v)
+    {
+        Vector4Base r = v;
+        const T length = Math::Sqrt(r.X * r.X + r.Y * r.Y + r.Z * r.Z + r.W * r.W);
+        if (length >= ZeroTolerance)
+        {
+            const T inv = (T)1.0f / length;
+            r.X *= inv;
+            r.Y *= inv;
+            r.Z *= inv;
+            r.W *= inv;
+        }
+        return r;
+    }
+
+    // Performs vector normalization (scales vector up to unit length). This is a faster version that does not perform check for length equal 0 (it assumes that input vector is not empty).
+    static Vector4Base NormalizeFast(const Vector4Base& v)
+    {
+        const T inv = 1.0f / v.Length();
+        return Vector4Base(v.X * inv, v.Y * inv, v.Z * inv, v.W * inv);
+    }
+
+    // Performs vector normalization (scales vector up to unit length).
+    static FORCE_INLINE void Normalize(const Vector4Base& input, Vector4Base& result)
+    {
+        result = Normalize(input);
+    }
+
+    // Calculates the dot product of two vectors.
+    FORCE_INLINE static T Dot(const Vector4Base& a, const Vector4Base& b)
+    {
+        return a.X * b.X + a.Y * b.Y + a.Z * b.Z + a.W * b.W;
     }
 
     // Performs a linear interpolation between two vectors.
