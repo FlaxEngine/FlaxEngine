@@ -566,6 +566,25 @@ public:
         return result;
     }
 
+    // Performs a spherical linear interpolation between two vectors.
+    static void Slerp(const Vector4Base& start, const Vector4Base& end, T amount, Vector4Base& result) 
+    {
+        T dot = Math::Clamp(Dot(start, end), -1.0f, 1.0f);
+        T theta = Math::Acos(dot) * amount;
+        Vector4Base relativeVector = end - start * dot;
+        relativeVector.Normalize();
+        result = ((start * Math::Cos(theta)) + (relativeVector * Math::Sin(theta)));
+        return result;
+    }
+
+    // Performs a spherical linear interpolation between two vectors.
+    static Vector4Base Slerp(const Vector4Base& start, const Vector4Base& end, T amount)
+    {
+        Vector4Base result;
+        Slerp(start, end, amount, result);
+        return result;
+    }
+
     FLAXENGINE_API static Vector4Base Transform(const Vector4Base& v, const Matrix& m);
 };
 
