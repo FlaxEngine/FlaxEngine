@@ -2,11 +2,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
+using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Modes;
 using FlaxEditor.Windows;
 using FlaxEngine;
@@ -184,6 +186,97 @@ namespace FlaxEditor.Viewport
         /// The edit foliage gizmo.
         /// </summary>
         public Tools.Foliage.EditFoliageGizmoMode EditFoliageGizmo;
+        
+        [HideInEditor]
+        private sealed class EditGameUIEditorRoot : UIEditorRoot
+        {
+            private readonly MainEditorGizmoViewport _viewport;
+
+            private bool UI => _viewport.ShowUI;
+
+            public EditGameUIEditorRoot(MainEditorGizmoViewport viewport)
+            : base(true)
+            {
+                _viewport = viewport;
+                Parent = viewport;
+            }
+
+            public override bool EnableInputs => !UI;
+            public override bool EnableSelecting => UI;
+            public override bool EnableBackground => UI;
+            public override TransformGizmo TransformGizmo => _viewport.TransformGizmo;
+        }
+        
+        internal bool _hasUILinked;
+        private EditGameUIEditorRoot _guiRoot;
+        private bool _showUI = false;
+
+        public bool ShowUI
+        {
+            get => _showUI;
+            set
+            {
+                _showUI = value;
+                if (_showUI)
+                {
+                    // UI widget
+                    Gizmos.Active = null;
+                    ViewportCamera = new UIEditorCamera { UIEditor = _guiRoot };
+
+                    // Show whole UI on startup
+                    var canvas = (CanvasRootControl)_guiRoot.UIRoot.Children.FirstOrDefault(x => x is CanvasRootControl);
+                    if (canvas != null)
+                        ViewportCamera.ShowActor(canvas.Canvas);
+
+                    _guiRoot.Visible = true;
+                }
+                else
+                {
+                    // Generic prefab
+                    Gizmos.Active = TransformGizmo;
+                    ViewportCamera = new FPSCamera();
+                    _guiRoot.Visible = false;
+                }
+            }
+        }
+
+        private void UpdateLinkage()
+        {
+            // Clear flag
+            _hasUILinked = false;
+            _guiRoot.ExternalRoot = null;
+            
+            // Sync UI editor view size with Game Window viewport
+            if (_editor.Windows.GameWin != null && _editor.Windows.GameWin.Viewport != null)
+            {
+                var gameViewport = _editor.Windows.GameWin.Viewport;
+                // Use the actual content size (resolution) of the game viewport
+                _guiRoot.SetViewSize(gameViewport.ContentSize);
+                if (_guiRoot.ExternalRoot == null)
+                    _guiRoot.ExternalRoot = RootControl.CanvasRoot;
+            }
+
+            // Link UI canvases to the viewport
+            foreach (var scene in Level.Scenes)
+            {
+                LinkCanvas(scene);
+            }
+        }
+
+        private void LinkCanvas(Actor actor)
+        {
+            if (actor is UICanvas uiCanvas)
+            {
+                if (uiCanvas.IsActiveInHierarchy && uiCanvas.GUI.Visible && uiCanvas.GUI.Parent != null)
+                {
+                    _hasUILinked = true;
+                }
+            }
+
+            var children = actor.ChildrenCount;
+            for (int i = 0; i < children; i++)
+                LinkCanvas(actor.GetChild(i));
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MainEditorGizmoViewport"/> class.
@@ -267,6 +360,16 @@ namespace FlaxEditor.Viewport
                 // Activate transform mode first
                 Gizmos.SetActiveMode<TransformGizmoMode>();
             }
+            
+            // Use custom UI root
+            _guiRoot = new EditGameUIEditorRoot(this);
+            _guiRoot.IndexInParent = 0;
+            _guiRoot.Visible = false;
+
+            // UI mode buton
+            var uiModeButton = ViewWidgetShowMenu.AddButton("UI Mode", button => ShowUI = button.Checked);
+            uiModeButton.AutoCheck = true;
+            uiModeButton.VisibleChanged += control => (control as ContextMenuButton).Checked = ShowUI;
 
             // Setup input actions
             InputActions.Add(options => options.LockFocusSelection, LockFocusSelection);
@@ -307,6 +410,11 @@ namespace FlaxEditor.Viewport
 
                 var focusDistance = Mathf.Max(selectionBounds.Radius * 2d, 100d);
                 ViewPosition = selectionBounds.Center + (-ViewDirection * (focusDistance + _lockedFocusOffset));
+            }
+            
+            if (Level.ScenesCount > 0)
+            {
+                UpdateLinkage();
             }
         }
 

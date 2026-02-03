@@ -122,7 +122,7 @@ namespace FlaxEditor.Windows
     {
         private readonly ScaledRenderOutputControl _viewport;
         private readonly GameRoot _guiRoot;
-        private bool _showGUI = true, _editGUI = true;
+        private bool _showGUI = true;
         private bool _showDebugDraw = false;
         private bool _audioMuted = false;
         private float _audioVolume = 1;
@@ -191,22 +191,6 @@ namespace FlaxEditor.Windows
                 {
                     _showGUI = value;
                     _guiRoot.Visible = value;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether allow editing game GUI in the view or keep it visible-only.
-        /// </summary>
-        public bool EditGUI
-        {
-            get => _editGUI;
-            set
-            {
-                if (value != _editGUI)
-                {
-                    _editGUI = value;
-                    _guiRoot.Editable = value;
                 }
             }
         }
@@ -371,14 +355,135 @@ namespace FlaxEditor.Windows
         }
 
         /// <summary>
-        /// Root control for game UI preview in Editor. Supports basic UI editing via <see cref="UIEditorRoot"/>.
+        /// Root control for game UI preview in Editor.
         /// </summary>
-        private class GameRoot : UIEditorRoot
+        private class GameRoot : ContainerControl
         {
-            internal bool Editable = true;
-            public override bool EnableInputs => !Time.GamePaused && Editor.IsPlayMode;
-            public override bool EnableSelecting => (!Editor.IsPlayMode || Time.GamePaused) && Editable;
-            public override TransformGizmo TransformGizmo => Editor.Instance.MainTransformGizmo;
+            public bool EnableEvents => !Time.GamePaused;
+
+            public override bool RayCast(ref Float2 location, out Control hit)
+            {
+                return RayCastChildren(ref location, out hit);
+            }
+
+            public override bool ContainsPoint(ref Float2 location, bool precise = false)
+            {
+                if (precise)
+                    return false;
+                return base.ContainsPoint(ref location, precise);
+            }
+
+            public override bool OnCharInput(char c)
+            {
+                if (!EnableEvents)
+                    return false;
+
+                return base.OnCharInput(c);
+            }
+
+            public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
+            {
+                if (!EnableEvents)
+                    return DragDropEffect.None;
+
+                return base.OnDragDrop(ref location, data);
+            }
+
+            public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
+            {
+                if (!EnableEvents)
+                    return DragDropEffect.None;
+
+                return base.OnDragEnter(ref location, data);
+            }
+
+            public override void OnDragLeave()
+            {
+                if (!EnableEvents)
+                    return;
+
+                base.OnDragLeave();
+            }
+
+            public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
+            {
+                if (!EnableEvents)
+                    return DragDropEffect.None;
+
+                return base.OnDragMove(ref location, data);
+            }
+
+            public override bool OnKeyDown(KeyboardKeys key)
+            {
+                if (!EnableEvents)
+                    return false;
+
+                return base.OnKeyDown(key);
+            }
+
+            public override void OnKeyUp(KeyboardKeys key)
+            {
+                if (!EnableEvents)
+                    return;
+
+                base.OnKeyUp(key);
+            }
+
+            public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
+            {
+                if (!EnableEvents)
+                    return false;
+
+                return base.OnMouseDoubleClick(location, button);
+            }
+
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                if (!EnableEvents)
+                    return false;
+
+                return base.OnMouseDown(location, button);
+            }
+
+            public override void OnMouseEnter(Float2 location)
+            {
+                if (!EnableEvents)
+                    return;
+
+                base.OnMouseEnter(location);
+            }
+
+            public override void OnMouseLeave()
+            {
+                if (!EnableEvents)
+                    return;
+
+                base.OnMouseLeave();
+            }
+
+            public override void OnMouseMove(Float2 location)
+            {
+                if (!EnableEvents)
+                    return;
+
+                base.OnMouseMove(location);
+            }
+
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (!EnableEvents)
+                    return false;
+
+                return base.OnMouseUp(location, button);
+            }
+
+            public override bool OnMouseWheel(Float2 location, float delta)
+            {
+                if (!EnableEvents)
+                    return false;
+
+                return base.OnMouseWheel(location, delta);
+            }
         }
 
         /// <summary>
@@ -407,9 +512,12 @@ namespace FlaxEditor.Windows
             // Override the game GUI root
             _guiRoot = new GameRoot
             {
-                Parent = _viewport
+                Parent = _viewport,
+                AnchorPreset = AnchorPresets.StretchAll,
+                AutoFocus = false,
+                Offsets = Margin.Zero,
             };
-            RootControl.GameRoot = _guiRoot.UIRoot;
+            RootControl.GameRoot = _guiRoot;
 
             SizeChanged += control => { ResizeViewport(); };
 
@@ -737,13 +845,6 @@ namespace FlaxEditor.Windows
                 checkbox.StateChanged += x => ShowGUI = x.Checked;
             }
 
-            // Edit GUI
-            {
-                var button = menu.AddButton("Edit GUI");
-                var checkbox = new CheckBox(140, 2, EditGUI) { Parent = button };
-                checkbox.StateChanged += x => EditGUI = x.Checked;
-            }
-
             // Show Debug Draw
             {
                 var button = menu.AddButton("Show Debug Draw");
@@ -1037,7 +1138,6 @@ namespace FlaxEditor.Windows
         public override void OnLayoutSerialize(XmlWriter writer)
         {
             writer.WriteAttributeString("ShowGUI", ShowGUI.ToString());
-            writer.WriteAttributeString("EditGUI", EditGUI.ToString());
             writer.WriteAttributeString("ShowDebugDraw", ShowDebugDraw.ToString());
             writer.WriteAttributeString("DefaultViewportScalingIndex", _defaultScaleActiveIndex.ToString());
             writer.WriteAttributeString("CustomViewportScalingIndex", _customScaleActiveIndex.ToString());
@@ -1048,8 +1148,6 @@ namespace FlaxEditor.Windows
         {
             if (bool.TryParse(node.GetAttribute("ShowGUI"), out bool value1))
                 ShowGUI = value1;
-            if (bool.TryParse(node.GetAttribute("EditGUI"), out value1))
-                EditGUI = value1;
             if (bool.TryParse(node.GetAttribute("ShowDebugDraw"), out value1))
                 ShowDebugDraw = value1;
             if (int.TryParse(node.GetAttribute("DefaultViewportScalingIndex"), out int value2))
@@ -1083,7 +1181,6 @@ namespace FlaxEditor.Windows
         public override void OnLayoutDeserialize()
         {
             ShowGUI = true;
-            EditGUI = true;
             ShowDebugDraw = false;
         }
     }
