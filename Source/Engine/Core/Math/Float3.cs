@@ -60,7 +60,7 @@ namespace FlaxEngine
 #if FLAX_EDITOR
     [System.ComponentModel.TypeConverter(typeof(TypeConverters.Float3Converter))]
 #endif
-    partial struct Float3 : IEquatable<Float3>, IFormattable
+    partial struct Float3 : IEquatable<Float3>, IFormattable, Json.ICustomValueEquals
     {
         private static readonly string _formatString = "X:{0:F2} Y:{1:F2} Z:{2:F2}";
 
@@ -1902,6 +1902,13 @@ namespace FlaxEngine
                 hashCode = (hashCode * 397) ^ Z.GetHashCode();
                 return hashCode;
             }
+        }
+
+        /// <inheritdoc />
+        public bool ValueEquals(object other)
+        {
+            var o = (Float3)other;
+            return Equals(ref o);
         }
 
         /// <summary>
