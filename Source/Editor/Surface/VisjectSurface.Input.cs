@@ -29,6 +29,9 @@ namespace FlaxEditor.Surface
         private HashSet<SurfaceNode> _movingNodes;
         private HashSet<SurfaceNode> _temporarySelectedNodes;
         private readonly Stack<InputBracket> _inputBrackets = new Stack<InputBracket>();
+        private bool _isLazyConnecting;
+        private SurfaceNode _lazyConnectStartNode;
+        private SurfaceNode _lazyConnectEndNode;
 
         private class InputBracket
         {
@@ -250,8 +253,13 @@ namespace FlaxEditor.Surface
             // Cache mouse location
             _mousePos = location;
 
+            if (_isLazyConnecting && GetControlUnderMouse() is SurfaceNode nodeUnderMouse)
+                _lazyConnectEndNode = nodeUnderMouse;
+            else if (_isLazyConnecting && Nodes.Count > 0)
+                _lazyConnectEndNode = GetClosestNodeAtLocation(location);
+
             // Moving around surface with mouse
-            if (_rightMouseDown)
+            if (_rightMouseDown && !_isLazyConnecting)
             {
                 // Calculate delta
                 var delta = location - _rightMouseDownPos;
@@ -542,11 +550,17 @@ namespace FlaxEditor.Surface
                 _middleMouseDownPos = location;
             }
 
+            if (root.GetKey(KeyboardKeys.Alt) && button == MouseButton.Right)
+                _isLazyConnecting = true;
+
             // Check if any node is under the mouse
             SurfaceControl controlUnderMouse = GetControlUnderMouse();
             var cLocation = _rootControl.PointFromParent(ref location);
             if (controlUnderMouse != null)
             {
+                if (controlUnderMouse is SurfaceNode node && _isLazyConnecting)
+                    _lazyConnectStartNode = node;
+
                 // Check if mouse is over header and user is pressing mouse left button
                 if (_leftMouseDown && controlUnderMouse.CanSelect(ref cLocation))
                 {
@@ -581,6 +595,9 @@ namespace FlaxEditor.Surface
             }
             else
             {
+                if (_isLazyConnecting && Nodes.Count > 0)
+                    _lazyConnectStartNode = GetClosestNodeAtLocation(location);
+
                 // Cache flags and state
                 if (_leftMouseDown)
                 {
@@ -720,12 +737,36 @@ namespace FlaxEditor.Surface
                 {
                     // Check if any control is under the mouse
                     _cmStartPos = location;
-                    if (controlUnderMouse == null)
+                    if (controlUnderMouse == null && !_isLazyConnecting)
                     {
                         showPrimaryMenu = true;
                     }
                 }
                 _mouseMoveAmount = 0;
+
+                if (_isLazyConnecting)
+                {
+                    if (_lazyConnectStartNode != null && _lazyConnectEndNode != null && _lazyConnectStartNode != _lazyConnectEndNode)
+                    {
+                        // First check if there is a type matching input and output where input
+                        OutputBox startNodeOutput = (OutputBox)_lazyConnectStartNode.GetBoxes().FirstOrDefault(b => b.IsOutput, null);
+                        InputBox endNodeInput = null;
+
+                        if (startNodeOutput != null)
+                            endNodeInput = (InputBox)_lazyConnectEndNode.GetBoxes().FirstOrDefault(b => !b.IsOutput && b.CurrentType == startNodeOutput.CurrentType && !b.HasAnyConnection && b.IsActive && b.CanConnectWith(startNodeOutput), null);
+
+                        // Perform less strict checks (less ideal conditions for connection but still good) if the first checks failed
+                        if (endNodeInput == null)
+                            endNodeInput = (InputBox)_lazyConnectEndNode.GetBoxes().FirstOrDefault(b => !b.IsOutput && !b.HasAnyConnection && b.CanConnectWith(startNodeOutput), null);
+
+                        if (startNodeOutput != null && endNodeInput != null)
+                            TryConnect(startNodeOutput, endNodeInput);
+                    }
+
+                    _isLazyConnecting = false;
+                    _lazyConnectStartNode = null;
+                    _lazyConnectEndNode = null;
+                }
             }
             if (_middleMouseDown && button == MouseButton.Middle)
             {
@@ -925,6 +966,26 @@ namespace FlaxEditor.Surface
             }
 
             return false;
+        }
+
+        private SurfaceNode GetClosestNodeAtLocation(Float2 location)
+        {
+            SurfaceNode currentClosestNode = null;
+            float currentClosestDistanceSquared = float.MaxValue;
+
+            foreach (var node in Nodes)
+            {
+                Float2 nodeSurfaceLocation = _rootControl.PointToParent(node.Center);
+
+                float distanceSquared = Float2.DistanceSquared(location, nodeSurfaceLocation);
+                if (distanceSquared < currentClosestDistanceSquared)
+                {
+                    currentClosestNode = node;
+                    currentClosestDistanceSquared = distanceSquared;
+                }
+            }
+
+            return currentClosestNode;
         }
 
         private void ResetInput()
