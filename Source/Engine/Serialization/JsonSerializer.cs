@@ -326,9 +326,10 @@ namespace FlaxEngine.Json
                 return customValueEquals.ValueEquals(objB);
 
             // If type contains SceneObject references then it needs to use custom comparision that handles prefab links (see SceneObjectEquals)
-            if (objA.GetType().IsStructure())
+            var typeA = objA.GetType();
+            if (typeA.IsValueType && !typeA.IsEnum && !typeA.IsPrimitive)
             {
-                var contract = Settings.ContractResolver.ResolveContract(objA.GetType());
+                var contract = Settings.ContractResolver.ResolveContract(typeA);
                 if (contract is JsonObjectContract objContract)
                 {
                     foreach (var property in objContract.Properties)
