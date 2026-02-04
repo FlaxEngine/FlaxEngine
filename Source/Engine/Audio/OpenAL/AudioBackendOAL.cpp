@@ -400,7 +400,7 @@ void AudioBackendOAL::Source_IsLoopingChanged(uint32 sourceID, bool loop)
 void AudioBackendOAL::Source_SpatialSetupChanged(uint32 sourceID, bool spatial, float attenuation, float minDistance, float doppler)
 {
     ALC::Locker.Lock();
-    const bool pan = ALC::SourcesData[sourceID].Spatial;
+    const float pan = ALC::SourcesData[sourceID].Pan;
     ALC::Locker.Unlock();
     if (spatial)
     {

@@ -47,6 +47,8 @@ struct VideoPlayerMF
 namespace MF
 {
     Array<VideoBackendPlayer*> Players;
+    TimeSpan UpdateDeltaTime;
+    double UpdateTime;
 
     bool Configure(VideoBackendPlayer& player, VideoPlayerMF& playerMF, DWORD streamIndex)
     {
@@ -395,13 +397,6 @@ namespace MF
         if (!playerMF.Playing && !playerMF.Seek)
             return;
 
-        bool useTimeScale = true;
-#if USE_EDITOR
-        if (!Editor::IsPlayMode)
-            useTimeScale = false;
-#endif
-        TimeSpan dt = useTimeScale ? Time::Update.DeltaTime : Time::Update.UnscaledDeltaTime;
-
         // Update playback time
         if (playerMF.FirstFrame)
         {
@@ -410,9 +405,9 @@ namespace MF
         }
         else if (playerMF.Playing)
         {
-            playerMF.Time += dt;
+            playerMF.Time += UpdateDeltaTime;
         }
-        if (playerMF.Time > player.Duration)
+        if (playerMF.Time > player.Duration && player.Duration.Ticks != 0)
         {
             if (playerMF.Loop)
             {
@@ -452,7 +447,7 @@ namespace MF
         }
 
         // Update streams
-        if (ReadStream(player, playerMF, MF_SOURCE_READER_FIRST_VIDEO_STREAM, dt))
+        if (ReadStream(player, playerMF, MF_SOURCE_READER_FIRST_VIDEO_STREAM, UpdateDeltaTime))
         {
             // Failed to pick a valid sample so try again with seeking
             playerMF.Seek = 1;
@@ -464,7 +459,7 @@ namespace MF
             }
         }
         if (player.AudioInfo.BitDepth != 0)
-            ReadStream(player, playerMF, MF_SOURCE_READER_FIRST_AUDIO_STREAM, dt);
+            ReadStream(player, playerMF, MF_SOURCE_READER_FIRST_AUDIO_STREAM, UpdateDeltaTime);
 
         player.Tick();
     }
@@ -610,12 +605,17 @@ bool VideoBackendMF::Base_Init()
         VIDEO_API_MF_ERROR(MFStartup, hr);
         return true;
     }
+    MF::UpdateTime = Platform::GetTimeSeconds();
 
     return false;
 }
 
 void VideoBackendMF::Base_Update(TaskGraph* graph)
 {
+    double time = Platform::GetTimeSeconds();
+    MF::UpdateDeltaTime = TimeSpan::FromSeconds(time - MF::UpdateTime);
+    MF::UpdateTime = time;
+
     // Schedule work to update all videos in async
     Function<void(int32)> job;
     job.Bind(MF::UpdatePlayer);
