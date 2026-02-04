@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using static FlaxEditor.Surface.Archetypes.Particles;
 using FlaxEditor.Options;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Surface.Undo;
@@ -253,7 +254,7 @@ namespace FlaxEditor.Surface
             // Cache mouse location
             _mousePos = location;
 
-            if (_isLazyConnecting && GetControlUnderMouse() is SurfaceNode nodeUnderMouse)
+            if (_isLazyConnecting && GetControlUnderMouse() is SurfaceNode nodeUnderMouse && !(nodeUnderMouse is SurfaceComment || nodeUnderMouse is ParticleEmitterNode))
                 _lazyConnectEndNode = nodeUnderMouse;
             else if (_isLazyConnecting && Nodes.Count > 0)
                 _lazyConnectEndNode = GetClosestNodeAtLocation(location);
@@ -558,7 +559,7 @@ namespace FlaxEditor.Surface
             var cLocation = _rootControl.PointFromParent(ref location);
             if (controlUnderMouse != null)
             {
-                if (controlUnderMouse is SurfaceNode node && _isLazyConnecting)
+                if (controlUnderMouse is SurfaceNode node && _isLazyConnecting && !(controlUnderMouse is SurfaceComment || controlUnderMouse is ParticleEmitterNode))
                     _lazyConnectStartNode = node;
 
                 // Check if mouse is over header and user is pressing mouse left button
@@ -975,6 +976,9 @@ namespace FlaxEditor.Surface
 
             foreach (var node in Nodes)
             {
+                if (node is SurfaceComment || node is ParticleEmitterNode)
+                    continue;
+
                 Float2 nodeSurfaceLocation = _rootControl.PointToParent(node.Center);
 
                 float distanceSquared = Float2.DistanceSquared(location, nodeSurfaceLocation);
