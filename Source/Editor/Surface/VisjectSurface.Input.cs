@@ -629,7 +629,7 @@ namespace FlaxEditor.Surface
                 {
                     if (_movingNodes != null && _movingNodes.Count > 0)
                     {
-                        // Allow dropping the node onto an existing connection and connect it
+                        // Allow dropping a single node onto an existing connection and connect it
                         if (_movingNodes.Count == 1)
                         {
                             var mousePos = _rootControl.PointFromParent(ref _mousePos);
@@ -643,12 +643,57 @@ namespace FlaxEditor.Surface
                                 TryConnect(intersectedConnectionOutputBox, nodeInputBox);
                                 TryConnect(nodeOutputBox, intersectedConnectionInputBox);
 
-                                Debug.Log($"INPUT OUTPUT: {intersectedConnectionNodesXDistance}, NODE: {node.Width}");
+                                float intersectedConnectionNodesXDistance = intersectedConnectionInputBox.ParentNode.Left - intersectedConnectionOutputBox.ParentNode.Right;
+                                float paddedNodeWidth = node.Width + 2f;
+                                if (intersectedConnectionNodesXDistance < paddedNodeWidth)
+                                {
+                                    List<SurfaceNode> visitedNodes = new List<SurfaceNode>{ node };
+                                    List<SurfaceNode> movedNodes = new List<SurfaceNode>();
+                                    Float2 locationDelta = new Float2(paddedNodeWidth, 0f);
+
+                                    MoveConnectedNodes(intersectedConnectionInputBox.ParentNode);
+
+                                    void MoveConnectedNodes(SurfaceNode node)
+                                    {
+                                        // Only move node if it is to the right of the node we have connected the moved node to
+                                        if (node.Right > intersectedConnectionInputBox.ParentNode.Left + 15f)
+                                        {
+                                            node.Location += locationDelta;
+                                            movedNodes.Add(node);
+                                        }
+
+                                        visitedNodes.Add(node);
+
+                                        foreach (var box in node.GetBoxes())
+                                        {
+                                            if (!box.HasAnyConnection || box == intersectedConnectionInputBox)
+                                                continue;
+
+                                            foreach (var connectedBox in box.Connections)
+                                            {
+                                                SurfaceNode nextNode = connectedBox.ParentNode;
+                                                if (visitedNodes.Contains(nextNode))
+                                                    continue;
+
+                                                MoveConnectedNodes(nextNode);
+                                            }
+                                        }
+                                    }
+
+                                    Float2 nodeMoveOffset = new Float2(node.Width * 0.5f, 0f);
+                                    node.Location += nodeMoveOffset;
+
+                                    var moveNodesAction = new MoveNodesAction(Context, movedNodes.Select(n => n.ID).ToArray(), locationDelta);
+                                    var moveNodeAction = new MoveNodesAction(Context, [node.ID], nodeMoveOffset);
+                                    var multiAction = new MultiUndoAction(moveNodeAction, moveNodesAction);
+
+                                    AddBatchedUndoAction(multiAction);
+                                }
                             }
                         }
 
                         if (Undo != null && !_movingNodesDelta.IsZero && CanEdit)
-                            Undo.AddAction(new MoveNodesAction(Context, _movingNodes.Select(x => x.ID).ToArray(), _movingNodesDelta));
+                            AddBatchedUndoAction(new MoveNodesAction(Context, _movingNodes.Select(x => x.ID).ToArray(), _movingNodesDelta));
                         _movingNodes.Clear();
                     }
                     _movingNodesDelta = Float2.Zero;
