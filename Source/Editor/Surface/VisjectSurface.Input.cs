@@ -656,7 +656,7 @@ namespace FlaxEditor.Surface
                                     void MoveConnectedNodes(SurfaceNode node)
                                     {
                                         // Only move node if it is to the right of the node we have connected the moved node to
-                                        if (node.Right > intersectedConnectionInputBox.ParentNode.Left + 15f)
+                                        if (node.Right > intersectedConnectionInputBox.ParentNode.Left + 15f && !node.Archetype.Flags.HasFlag(NodeFlags.NoMove))
                                         {
                                             node.Location += locationDelta;
                                             movedNodes.Add(node);
