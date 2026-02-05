@@ -682,30 +682,28 @@ void AudioBackendOAL::Base_OnActiveDeviceChanged()
     if (ALC::Inited)
     {
         // Reload all audio clips to recreate their buffers
-        for (Asset* asset : Content::GetAssets())
+        for (AudioClip* audioClip : Content::GetAssets<AudioClip>())
         {
-            if (auto* audioClip = ScriptingObject::Cast<AudioClip>(asset))
+            audioClip->WaitForLoaded();
+            ScopeLock lock(audioClip->Locker);
+
+            // Clear old buffer IDs
+            for (uint32& bufferID : audioClip->Buffers)
+                bufferID = 0;
+
+            if (audioClip->IsStreamable())
             {
-                ScopeLock lock(audioClip->Locker);
+                // Let the streaming recreate missing buffers
+                audioClip->RequestStreamingUpdate();
+            }
+            else
+            {
+                // Reload audio clip
+                auto assetLock = audioClip->Storage->Lock();
+                audioClip->LoadChunk(0);
+                audioClip->Buffers[0] = AudioBackend::Buffer::Create();
+                audioClip->WriteBuffer(0);
 
-                // Clear old buffer IDs
-                for (uint32& bufferID : audioClip->Buffers)
-                    bufferID = 0;
-
-                if (audioClip->IsStreamable())
-                {
-                    // Let the streaming recreate missing buffers
-                    audioClip->RequestStreamingUpdate();
-                }
-                else
-                {
-                    // Reload audio clip
-                    auto assetLock = audioClip->Storage->Lock();
-                    audioClip->LoadChunk(0);
-                    audioClip->Buffers[0] = AudioBackend::Buffer::Create();
-                    audioClip->WriteBuffer(0);
-
-                }
             }
         }
 

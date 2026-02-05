@@ -122,7 +122,26 @@ public:
     /// Gets the assets (loaded or during load).
     /// </summary>
     /// <returns>The collection of assets.</returns>
-    static Array<Asset*, HeapAllocation> GetAssets();
+    API_FUNCTION() static Array<Asset*, HeapAllocation> GetAssets();
+
+    /// <summary>
+    /// Gets the assets (loaded or during load).
+    /// </summary>
+    /// <param name="type">Type of the assets to search for. Includes any assets derived from the type.</param>
+    /// <returns>Found actors list.</returns>
+    API_FUNCTION() static Array<Asset*, HeapAllocation> GetAssets(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type);
+
+    /// <summary>
+    /// Gets the assets (loaded or during load).
+    /// </summary>
+    /// <typeparam name="T">Type of the object.</typeparam>
+    /// <returns>Found actors list.</returns>
+    template<typename T>
+    static Array<T*, HeapAllocation> GetAssets()
+    {
+        Array<Asset*, HeapAllocation> assets = GetAssets(T::GetStaticClass());
+        return *(Array<T*, HeapAllocation>*) & assets;
+    }
 
     /// <summary>
     /// Gets the raw dictionary of assets (loaded or during load).
