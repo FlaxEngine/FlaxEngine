@@ -694,7 +694,6 @@ public:
         Vector3Base relativeVector = end - start * dot;
         relativeVector.Normalize();
         result = ((start * Math::Cos(theta)) + (relativeVector * Math::Sin(theta)));
-        return result;
     }
 
     // Performs a spherical linear interpolation between two vectors.
