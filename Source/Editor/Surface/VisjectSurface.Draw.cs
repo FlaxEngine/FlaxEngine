@@ -214,6 +214,44 @@ namespace FlaxEditor.Surface
         }
 
         /// <summary>
+        /// Draw connection hints for lazy connect feature.
+        /// </summary>
+        protected virtual void DrawLazyConnect()
+        {
+            var style = FlaxEngine.GUI.Style.Current;
+
+            if (_lazyConnectStartNode != null)
+            {
+                Float2 upperLeft = _rootControl.PointToParent(_lazyConnectStartNode.UpperLeft);
+                Rectangle startNodeOutline = new Rectangle(upperLeft + 1f, _lazyConnectStartNode.Size - 1f);
+                startNodeOutline.Size *= ViewScale;
+                Render2D.DrawRectangle(startNodeOutline.MakeExpanded(4f), style.BackgroundSelected, 4f);
+            }
+
+            if (_lazyConnectEndNode != null)
+            {
+                Float2 upperLeft = _rootControl.PointToParent(_lazyConnectEndNode.UpperLeft);
+                Rectangle startNodeOutline = new Rectangle(upperLeft + 1f, _lazyConnectEndNode.Size - 1f);
+                startNodeOutline.Size *= ViewScale;
+                Render2D.DrawRectangle(startNodeOutline.MakeExpanded(4f), style.BackgroundSelected, 4f);
+            }
+
+            Rectangle startRect = new Rectangle(_rightMouseDownPos - 6f, new Float2(12f));
+            Rectangle endRect = new Rectangle(_mousePos - 6f, new Float2(12f));
+            
+            // Start and end shadows/ outlines
+            Render2D.FillRectangle(startRect.MakeExpanded(2.5f), Color.Black);
+            Render2D.FillRectangle(endRect.MakeExpanded(2.5f), Color.Black);
+
+            Render2D.DrawLine(_rightMouseDownPos, _mousePos, Color.Black, 7.5f);
+            Render2D.DrawLine(_rightMouseDownPos, _mousePos, style.ForegroundGrey, 5f);
+
+            // Draw start and end boxes over the lines to hide ugly artifacts at the ends
+            Render2D.FillRectangle(startRect, style.ForegroundGrey);
+            Render2D.FillRectangle(endRect, style.ForegroundGrey);
+        }
+
+        /// <summary>
         /// Draws the contents of the surface (nodes, connections, comments, etc.).
         /// </summary>
         protected virtual void DrawContents()
@@ -259,6 +297,9 @@ namespace FlaxEditor.Surface
             DrawInputBrackets();
 
             DrawContents();
+
+            if (_isLazyConnecting)
+                DrawLazyConnect();
 
             //Render2D.DrawText(style.FontTitle, string.Format("Scale: {0}", _rootControl.Scale), rect, Enabled ? Color.Red : Color.Black);
 
