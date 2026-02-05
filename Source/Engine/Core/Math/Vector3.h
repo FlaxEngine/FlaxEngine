@@ -704,6 +704,23 @@ public:
         return result;
     }
 
+    // Performs a normalized linear interpolation (Nlerp) between two vectors.
+    // Providing a computationally efficient and commutative alternative to Slerp at the expense of constant angular velocity.
+    static void NLerp(const Vector3Base& start, const Vector3Base& end, T amount, Vector3Base& result)
+    {
+        Lerp(start, end, amount, result);
+        result.Normalize();
+    }
+
+    // Performs a normalized linear interpolation (Nlerp) between two vectors.
+    // Providing a computationally efficient and commutative alternative to Slerp at the expense of constant angular velocity.
+    static Vector3Base NLerp(const Vector3Base& start, const Vector3Base& end, T amount)
+    {
+        Vector3Base result;
+        NLerp(start, end, amount, result);
+        return result;
+    }
+
     // Performs a cubic interpolation between two vectors.
     static void SmoothStep(const Vector3Base& start, const Vector3Base& end, T amount, Vector3Base& result)
     {

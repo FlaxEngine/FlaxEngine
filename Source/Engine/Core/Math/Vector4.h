@@ -584,6 +584,23 @@ public:
         return result;
     }
 
+    // Performs a normalized linear interpolation (Nlerp) between two vectors.
+    // Providing a computationally efficient and commutative alternative to Slerp at the expense of constant angular velocity.
+    static void NLerp(const Vector4Base& start, const Vector4Base& end, T amount, Vector4Base& result)
+    {
+        Lerp(start, end, amount, result);
+        result.Normalize();
+    }
+
+    // Performs a normalized linear interpolation (Nlerp) between two vectors.
+    // Providing a computationally efficient and commutative alternative to Slerp at the expense of constant angular velocity.
+    static Vector4Base NLerp(const Vector4Base& start, const Vector4Base& end, T amount)
+    {
+        Vector4Base result;
+        NLerp(start, end, amount, result);
+        return result;
+    }
+
     FLAXENGINE_API static Vector4Base Transform(const Vector4Base& v, const Matrix& m);
 };
 

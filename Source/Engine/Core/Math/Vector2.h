@@ -576,6 +576,24 @@ public:
         return result;
     }
 
+    // Performs a normalized linear interpolation (Nlerp) between two vectors.
+    // Providing a computationally efficient and commutative alternative to Slerp at the expense of constant angular velocity.
+    static void NLerp(const Vector2Base& start, const Vector2Base& end, T amount, Vector2Base& result)
+    {
+        Lerp(start, end, amount, result);
+        result.Normalize();
+    }
+
+    // Performs a normalized linear interpolation (Nlerp) between two vectors.
+    // Providing a computationally efficient and commutative alternative to Slerp at the expense of constant angular velocity.
+    static Vector2Base NLerp(const Vector2Base& start, const Vector2Base& end, T amount)
+    {
+        Vector2Base result;
+        NLerp(start, end, amount, result);
+        return result;
+    }
+
+
 public:
     /// <summary>
     /// Calculates the area of the triangle.

@@ -982,6 +982,33 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Performs a normalized linear interpolation (Nlerp) between two vectors.
+        /// Providing a computationally efficient and commutative alternative to Slerp at the expense of constant angular velocity.
+        /// </summary>
+        /// <param name="start">Start vector.</param>
+        /// <param name="end">End vector.</param>
+        /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
+        /// <param name="result">>When the method completes, contains the linear interpolation of the two vectors.</param>
+        public static void NLerp(ref Vector2 start, ref Vector2 end, float amount, out Vector2 result)
+        {
+            Lerp(ref start, ref end, amount, out result);
+            result.Normalize();
+        }
+
+        /// <summary>
+        /// Performs a normalized linear interpolation (Nlerp) between two vectors.
+        /// Providing a computationally efficient and commutative alternative to Slerp at the expense of constant angular velocity.
+        /// </summary>
+        /// <param name="start">Start vector.</param>
+        /// <param name="end">End vector.</param>
+        /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
+        public static Vector2 NLerp(Vector2 start, Vector2 end, float amount)
+        {
+            NLerp(ref start, ref end, amount, out Vector2 result);
+            return result;
+        }
+
+        /// <summary>
         /// Performs a gradual change of a vector towards a specified target over time
         /// </summary>
         /// <param name="current">Current vector.</param>
