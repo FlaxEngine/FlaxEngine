@@ -874,7 +874,7 @@ namespace FlaxEditor.Windows
                 _cursorVisible = Screen.CursorVisible;
                 _cursorLockMode = Screen.CursorLock;
                 Screen.CursorVisible = true;
-                if (Screen.CursorLock == CursorLockMode.Clipped)
+                if (Screen.CursorLock == CursorLockMode.Clipped || Screen.CursorLock == CursorLockMode.Locked)
                     Screen.CursorLock = CursorLockMode.None;
 
                 // Defocus
@@ -963,8 +963,11 @@ namespace FlaxEditor.Windows
 
             if (Editor.StateMachine.IsPlayMode && !Editor.StateMachine.PlayingState.IsPaused)
             {
+                // Make sure the cursor is always in the viewport when cursor is locked
+                bool forceCenter = _cursorLockMode != CursorLockMode.None && !IsMouseOver;
+
                 // Center mouse in play mode
-                if (CenterMouseOnFocus)
+                if (CenterMouseOnFocus || forceCenter)
                 {
                     var center = PointToWindow(Size * 0.5f);
                     Root.MousePosition = center;
@@ -989,9 +992,10 @@ namespace FlaxEditor.Windows
                 _cursorVisible = Screen.CursorVisible;
                 _cursorLockMode = Screen.CursorLock;
 
-                // Restore cursor visibility (could be hidden by the game)
+                // Restore cursor state, could be hidden or locked by the game
                 if (!_cursorVisible)
                     Screen.CursorVisible = true;
+                Screen.CursorLock = CursorLockMode.None;
 
                 if (Editor.IsPlayMode && IsDocked && IsSelected && RootWindow.FocusedControl == null)
                 {
