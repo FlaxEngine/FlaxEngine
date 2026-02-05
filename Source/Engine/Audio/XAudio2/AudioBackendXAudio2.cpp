@@ -672,7 +672,7 @@ bool AudioBackendXAudio2::Base_Init()
     HRESULT hr = XAudio2Create(&XAudio2::Instance, 0, XAUDIO2_DEFAULT_PROCESSOR);
     if (FAILED(hr))
     {
-        LOG(Error, "Failed to initalize XAudio2. Error: 0x{0:x}", hr);
+        LOG(Error, "Failed to initialize XAudio2. Error: 0x{0:x}", hr);
         return true;
     }
     XAudio2::Instance->RegisterForCallbacks(&XAudio2::Callback);
@@ -681,7 +681,7 @@ bool AudioBackendXAudio2::Base_Init()
     hr = XAudio2::Instance->CreateMasteringVoice(&XAudio2::MasteringVoice);
     if (FAILED(hr))
     {
-        LOG(Error, "Failed to initalize XAudio2 mastering voice. Error: 0x{0:x}", hr);
+        LOG(Error, "Failed to initialize XAudio2 mastering voice. Error: 0x{0:x}", hr);
         return true;
     }
     XAUDIO2_VOICE_DETAILS details;
