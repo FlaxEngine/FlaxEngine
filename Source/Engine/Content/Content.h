@@ -3,6 +3,9 @@
 #pragma once
 
 #include "Engine/Scripting/ScriptingType.h"
+#ifndef _MSC_VER
+#include "Engine/Core/Collections/Array.h"
+#endif
 #include "AssetInfo.h"
 #include "Asset.h"
 #include "Config.h"
