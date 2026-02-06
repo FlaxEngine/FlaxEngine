@@ -3,7 +3,7 @@
 #pragma once
 
 #include "ModelBase.h"
-#include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Threading/ConcurrentDictionary.h"
 #include "Engine/Graphics/Models/SkinnedMesh.h"
 #include "Engine/Graphics/Models/SkeletonData.h"
 
@@ -101,9 +101,9 @@ public:
     struct FLAXENGINE_API SkeletonMapping
     {
         // Target skeleton.
-        AssetReference<SkinnedModel> TargetSkeleton;
+        SkinnedModel* TargetSkeleton;
         // Source skeleton.
-        AssetReference<SkinnedModel> SourceSkeleton;
+        SkinnedModel* SourceSkeleton;
         // The node-to-node mapping for the fast animation sampling for the skinned model skeleton nodes. Each item is index of the source skeleton node into target skeleton node.
         Span<int32> NodesMapping;
     };
@@ -115,7 +115,7 @@ private:
         Span<int32> NodesMapping;
     };
 
-    Dictionary<Asset*, SkeletonMappingData> _skeletonMappingCache;
+    ConcurrentDictionary<Asset*, SkeletonMappingData> _skeletonMappingCache;
 
 public:
     /// <summary>
