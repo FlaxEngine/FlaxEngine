@@ -825,6 +825,13 @@ FORCE_INLINE bool DrawsEqual(const DrawCall* a, const DrawCall* b)
             Platform::MemoryCompare(a->Geometry.VertexBuffers, b->Geometry.VertexBuffers, sizeof(a->Geometry.VertexBuffers) + sizeof(a->Geometry.VertexBuffersOffsets)) == 0;
 }
 
+FORCE_INLINE Span<GPUBuffer*> GetVB(GPUBuffer* const* ptr, int32 maxSize)
+{
+    while (ptr[maxSize - 1] == nullptr && maxSize > 1)
+        maxSize--;
+    return ToSpan<GPUBuffer*>(ptr, maxSize);
+}
+
 void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, RenderList* drawCallsList, GPUTextureView* input)
 {
     if (list.IsEmpty())
@@ -953,7 +960,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
                     Platform::MemoryCopy(vb, activeDraw->Geometry.VertexBuffers, sizeof(DrawCall::Geometry.VertexBuffers));
                     Platform::MemoryCopy(vbOffsets, activeDraw->Geometry.VertexBuffersOffsets, sizeof(DrawCall::Geometry.VertexBuffersOffsets));
                     context->BindIB(activeDraw->Geometry.IndexBuffer);
-                    context->BindVB(ToSpan(vb, ARRAY_COUNT(vb)), vbOffsets);
+                    context->BindVB(GetVB(vb, ARRAY_COUNT(vb)), vbOffsets);
                     context->DrawIndexedInstanced(activeDraw->Draw.IndicesCount, activeCount, instanceBufferOffset, 0, activeDraw->Draw.StartIndex);
                     instanceBufferOffset += activeCount;
 
@@ -970,7 +977,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
 
                 // Single-draw call batch
                 context->BindIB(drawCall.Geometry.IndexBuffer);
-                context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
+                context->BindVB(GetVB(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
                 if (drawCall.InstanceCount == 0)
                 {
                     context->DrawIndexedInstancedIndirect(drawCall.Draw.IndirectArgsBuffer, drawCall.Draw.IndirectArgsOffset);
@@ -993,7 +1000,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
             Platform::MemoryCopy(vb, drawCall.Geometry.VertexBuffers, sizeof(DrawCall::Geometry.VertexBuffers));
             Platform::MemoryCopy(vbOffsets, drawCall.Geometry.VertexBuffersOffsets, sizeof(DrawCall::Geometry.VertexBuffersOffsets));
             context->BindIB(drawCall.Geometry.IndexBuffer);
-            context->BindVB(ToSpan(vb, vbMax + 1), vbOffsets);
+            context->BindVB(GetVB(vb, vbMax + 1), vbOffsets);
 
             if (drawCall.InstanceCount == 0)
             {
@@ -1023,7 +1030,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
 
                 const DrawCall& drawCall = drawCallsData[perDraw.DrawObjectIndex];
                 context->BindIB(drawCall.Geometry.IndexBuffer);
-                context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
+                context->BindVB(GetVB(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
 
                 if (drawCall.InstanceCount == 0)
                 {
@@ -1044,7 +1051,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
             bindParams.DrawCall->Material->Bind(bindParams);
 
             context->BindIB(drawCall.Geometry.IndexBuffer);
-            context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
+            context->BindVB(GetVB(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
 
             for (int32 j = 0; j < batch.Instances.Count(); j++)
             {
@@ -1068,7 +1075,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
                 drawCall.Material->Bind(bindParams);
 
                 context->BindIB(drawCall.Geometry.IndexBuffer);
-                context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
+                context->BindVB(GetVB(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
 
                 if (drawCall.InstanceCount == 0)
                 {

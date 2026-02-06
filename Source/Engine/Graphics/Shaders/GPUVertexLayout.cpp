@@ -44,23 +44,30 @@ namespace
     Dictionary<uint32, GPUVertexLayout*> LayoutCache;
     Dictionary<VertexBufferLayouts, GPUVertexLayout*> VertexBufferCache;
 
+    // TODO: it's not safe to use map and then use again with a lock (find a better way, eg. using two maps, one first read-only and thread safe, second with mutex-guarded new values from this frame)
     GPUVertexLayout* AddCache(const VertexBufferLayouts& key, int32 count)
     {
-        GPUVertexLayout::Elements elements;
-        bool anyValid = false;
-        for (int32 slot = 0; slot < count; slot++)
+        GPUVertexLayout* result;
+        CacheLocker.Lock();
+        if (!VertexBufferCache.TryGet(key, result))
         {
-            if (key.Layouts[slot])
+            GPUVertexLayout::Elements elements;
+            bool anyValid = false;
+            for (int32 slot = 0; slot < count; slot++)
             {
-                anyValid = true;
-                int32 start = elements.Count();
-                elements.Add(key.Layouts[slot]->GetElements());
-                for (int32 j = start; j < elements.Count(); j++)
-                    elements.Get()[j].Slot = (byte)slot;
+                if (key.Layouts[slot])
+                {
+                    anyValid = true;
+                    int32 start = elements.Count();
+                    elements.Add(key.Layouts[slot]->GetElements());
+                    for (int32 j = start; j < elements.Count(); j++)
+                        elements.Get()[j].Slot = (byte)slot;
+                }
             }
+            result = anyValid ? GPUVertexLayout::Get(elements, true) : nullptr;
+            VertexBufferCache.Add(key, result);
         }
-        GPUVertexLayout* result = anyValid ? GPUVertexLayout::Get(elements, true) : nullptr;
-        VertexBufferCache.Add(key, result);
+        CacheLocker.Unlock();
         return result;
     }
 }
@@ -185,11 +192,9 @@ GPUVertexLayout* GPUVertexLayout::Get(const Span<GPUBuffer*>& vertexBuffers)
         key.Layouts[i] = nullptr;
 
     // Lookup existing cache
-    CacheLocker.Lock();
     GPUVertexLayout* result;
     if (!VertexBufferCache.TryGet(key, result))
         result = AddCache(key, vertexBuffers.Length());
-    CacheLocker.Unlock();
 
     return result;
 }
@@ -209,11 +214,9 @@ GPUVertexLayout* GPUVertexLayout::Get(const Span<GPUVertexLayout*>& layouts)
         key.Layouts[i] = nullptr;
 
     // Lookup existing cache
-    CacheLocker.Lock();
     GPUVertexLayout* result;
     if (!VertexBufferCache.TryGet(key, result))
         result = AddCache(key, layouts.Length());
-    CacheLocker.Unlock();
 
     return result;
 }
