@@ -258,18 +258,17 @@ void RenderList::AddSettingsBlend(IPostFxSettingsProvider* provider, float weigh
 
 void RenderList::AddDelayedDraw(DelayedDraw&& func)
 {
-    MemPoolLocker.Lock(); // TODO: convert _delayedDraws into RenderListBuffer with usage of arena Memory for fast alloc
     _delayedDraws.Add(MoveTemp(func));
-    MemPoolLocker.Unlock();
 }
 
-void RenderList::DrainDelayedDraws(RenderContextBatch& renderContextBatch, int32 contextIndex)
+void RenderList::DrainDelayedDraws(GPUContext* context, RenderContextBatch& renderContextBatch, int32 renderContextIndex)
 {
-    if (_delayedDraws.IsEmpty())
+    if (_delayedDraws.Count() == 0)
         return;
+    PROFILE_CPU();
     for (DelayedDraw& e : _delayedDraws)
-        e(renderContextBatch, contextIndex);
-    _delayedDraws.SetCapacity(0);
+        e(context, renderContextBatch, renderContextIndex);
+    _delayedDraws.Clear();
 }
 
 void RenderList::BlendSettings()
@@ -495,7 +494,6 @@ RenderList::RenderList(const SpawnParams& params)
     , ObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Buffer"))
     , TempObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Buffer"))
     , _instanceBuffer(0, sizeof(ShaderObjectDrawInstanceData), TEXT("Instance Buffer"), GPUVertexLayout::Get({ { VertexElement::Types::Attribute0, 3, 0, 1, PixelFormat::R32_UInt } }))
-    , _delayedDraws(&Memory)
 {
 }
 

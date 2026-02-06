@@ -20,6 +20,7 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/SceneObjectsFactory.h"
 #include "Engine/Profiler/ProfilerMemory.h"
+#include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/Serialization.h"
 
 AnimatedModel::AnimatedModel(const SpawnParams& params)
@@ -1012,9 +1013,10 @@ void AnimatedModel::Draw(RenderContext& renderContext)
         // Flush skinning data with GPU
         if (_skinningData.IsDirty())
         {
-            RenderContext::GPULocker.Lock();
-            GPUDevice::Instance->GetMainContext()->UpdateBuffer(_skinningData.BoneMatrices, _skinningData.Data.Get(), _skinningData.Data.Count());
-            RenderContext::GPULocker.Unlock();
+            renderContext.List->AddDelayedDraw([this](GPUContext* context, RenderContextBatch& renderContextBatch, int32 renderContextIndex)
+            {
+                context->UpdateBuffer(_skinningData.BoneMatrices, _skinningData.Data.Get(), _skinningData.Data.Count());
+            });
             _skinningData.OnFlush();
         }
 
@@ -1057,9 +1059,10 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
         // Flush skinning data with GPU
         if (_skinningData.IsDirty())
         {
-            RenderContext::GPULocker.Lock();
-            GPUDevice::Instance->GetMainContext()->UpdateBuffer(_skinningData.BoneMatrices, _skinningData.Data.Get(), _skinningData.Data.Count());
-            RenderContext::GPULocker.Unlock();
+            renderContext.List->AddDelayedDraw([this](GPUContext* context, RenderContextBatch& renderContextBatch, int32 renderContextIndex)
+            {
+                context->UpdateBuffer(_skinningData.BoneMatrices, _skinningData.Data.Get(), _skinningData.Data.Count());
+            });
             _skinningData.OnFlush();
         }
 

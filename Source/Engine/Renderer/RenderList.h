@@ -459,13 +459,14 @@ public:
     /// </summary>
     DynamicTypedBuffer TempObjectBuffer;
 
-    typedef Function<void(RenderContextBatch& renderContextBatch, int32 contextIndex)> DelayedDraw;
+    typedef Function<void(GPUContext* context, RenderContextBatch& renderContextBatch, int32 renderContextIndex)> DelayedDraw;
     void AddDelayedDraw(DelayedDraw&& func);
-    void DrainDelayedDraws(RenderContextBatch& renderContextBatch, int32 contextIndex);
+    void DrainDelayedDraws(GPUContext* context, RenderContextBatch& renderContextBatch, int32 renderContextIndex);
 
     /// <summary>
     /// Adds custom callback (eg. lambda) to invoke after scene draw calls are collected on a main thread (some async draw tasks might be active). Allows for safe usage of GPUContext for draw preparations or to perform GPU-driven drawing.
     /// </summary>
+    /// <remarks>Can be called in async during scene rendering (thread-safe internally). Lambda is allocated by concurrent arena allocator owned by the RenderList.</remarks>
     template<typename T>
     FORCE_INLINE void AddDelayedDraw(const T& lambda)
     {
@@ -476,7 +477,7 @@ public:
 
 private:
     DynamicVertexBuffer _instanceBuffer;
-    Array<DelayedDraw, ConcurrentArenaAllocation> _delayedDraws;
+    RenderListBuffer<DelayedDraw> _delayedDraws;
 
 public:
     /// <summary>

@@ -461,7 +461,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
 
         // Perform custom post-scene drawing (eg. GPU dispatches used by VFX)
         for (int32 i = 0; i < renderContextBatch.Contexts.Count(); i++)
-            renderContextBatch.Contexts[i].List->DrainDelayedDraws(renderContextBatch, i);
+            renderContextBatch.Contexts[i].List->DrainDelayedDraws(context, renderContextBatch, i);
 
 #if USE_EDITOR
         GBufferPass::Instance()->OverrideDrawCalls(renderContext);
