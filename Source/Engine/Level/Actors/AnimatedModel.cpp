@@ -1015,6 +1015,7 @@ void AnimatedModel::Draw(RenderContext& renderContext)
             RenderContext::GPULocker.Lock();
             GPUDevice::Instance->GetMainContext()->UpdateBuffer(_skinningData.BoneMatrices, _skinningData.Data.Get(), _skinningData.Data.Count());
             RenderContext::GPULocker.Unlock();
+            _skinningData.OnFlush();
         }
 
         SkinnedMesh::DrawInfo draw;
@@ -1059,6 +1060,7 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
             RenderContext::GPULocker.Lock();
             GPUDevice::Instance->GetMainContext()->UpdateBuffer(_skinningData.BoneMatrices, _skinningData.Data.Get(), _skinningData.Data.Count());
             RenderContext::GPULocker.Unlock();
+            _skinningData.OnFlush();
         }
 
         SkinnedMesh::DrawInfo draw;
