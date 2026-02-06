@@ -4,7 +4,6 @@
 
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Memory/ArenaAllocation.h"
-#include "Engine/Core/Math/Half.h"
 #include "Engine/Graphics/PostProcessSettings.h"
 #include "Engine/Graphics/DynamicBuffer.h"
 #include "Engine/Scripting/ScriptingObject.h"
