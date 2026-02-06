@@ -68,20 +68,25 @@ void GetRadialLightAttenuation(
     // Distance attenuation
     if (lightData.InverseSquared)
     {
+        // Convert cm-based scene units to meters for inverse-squared falloff.
+        const float distanceScale = 0.01f;
+        const float distanceScaleSqr = distanceScale * distanceScale;
+        float distanceSqrScaled = distanceSqr * distanceScaleSqr;
+        float distanceBiasSqrScaled = distanceBiasSqr * distanceScaleSqr;
         BRANCH
         if (lightData.SourceLength > 0)
         {
-            float3 l01 = lightData.Direction * lightData.SourceLength;
-            float3 l0 = toLight - 0.5 * l01;
-            float3 l1 = toLight + 0.5 * l01;
+            float3 l01 = lightData.Direction * (lightData.SourceLength * distanceScale);
+            float3 l0 = (toLight * distanceScale) - 0.5 * l01;
+            float3 l1 = (toLight * distanceScale) + 0.5 * l01;
             float lengthL0 = length(l0);
             float lengthL1 = length(l1);
-            attenuation = rcp((lengthL0 * lengthL1 + dot(l0, l1)) * 0.5 + distanceBiasSqr);
+            attenuation = rcp((lengthL0 * lengthL1 + dot(l0, l1)) * 0.5 + distanceBiasSqrScaled);
             NoL = saturate(0.5 * (dot(N, l0) / lengthL0 + dot(N, l1) / lengthL1));
         }
         else
         {
-            attenuation = rcp(distanceSqr + distanceBiasSqr);
+            attenuation = rcp(distanceSqrScaled + distanceBiasSqrScaled);
             NoL = saturate(dot(N, L));
         }
         attenuation *= Square(saturate(1 - Square(distanceSqr * Square(lightData.RadiusInv))));
