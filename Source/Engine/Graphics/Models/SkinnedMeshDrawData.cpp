@@ -5,11 +5,6 @@
 #include "Engine/Animations/Config.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Matrix.h"
-#include "Engine/Core/Math/Matrix3x4.h"
-
-SkinnedMeshDrawData::SkinnedMeshDrawData()
-{
-}
 
 SkinnedMeshDrawData::~SkinnedMeshDrawData()
 {

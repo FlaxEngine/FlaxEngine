@@ -1002,7 +1002,7 @@ void AnimatedModel::Draw(RenderContext& renderContext)
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
         return;
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
-        return; // No supported
+        return; // Not supported
     ACTOR_GET_WORLD_MATRIX(this, view, world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
 
