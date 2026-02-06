@@ -415,7 +415,7 @@ namespace Serialization
 
     inline bool ShouldSerialize(const ISerializable& v, const void* otherObj)
     {
-        return true;
+        return !otherObj || v.ShouldSerialize(otherObj);
     }
     inline void Serialize(ISerializable::SerializeStream& stream, const ISerializable& v, const void* otherObj)
     {
@@ -431,7 +431,7 @@ namespace Serialization
     template<typename T>
     inline typename TEnableIf<TIsBaseOf<ISerializable, T>::Value, bool>::Type ShouldSerialize(const ISerializable& v, const void* otherObj)
     {
-        return true;
+        return !otherObj || v.ShouldSerialize(otherObj);
     }
     template<typename T>
     inline typename TEnableIf<TIsBaseOf<ISerializable, T>::Value>::Type Serialize(ISerializable::SerializeStream& stream, const ISerializable& v, const void* otherObj)

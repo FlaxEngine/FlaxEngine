@@ -3,16 +3,9 @@
 #if GRAPHICS_API_DIRECTX12
 
 #include "Engine/Graphics/Config.h"
+#include "Engine/Platform/Platform.h"
+#include "../IncludeDirectXHeaders.h"
 #if USE_PIX && GPU_ALLOW_PROFILE_EVENTS
-// Include these header files before pix3
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#define NOGDI
-#define NODRAWTEXT
-//#define NOCTLMGR
-#define NOFLATSBAPIS
-#include <Windows.h>
-#include <d3d12.h>
 #include <ThirdParty/WinPixEventRuntime/pix3.h>
 #endif
 #include "GPUContextDX12.h"

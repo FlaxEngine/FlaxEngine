@@ -958,6 +958,21 @@ void AnimGraphExecutor::ProcessGroupParameters(Box* box, Node* node, Value& valu
         }
         break;
     }
+    // Set Parameter
+    case 5:
+    {
+        // Set parameter value
+        int32 paramIndex;
+        const auto param = _graph.GetParameter((Guid)node->Values[0], paramIndex);
+        if (param)
+        {
+            context.Data->Parameters[paramIndex].Value = tryGetValue(node->GetBox(1), 1, Value::Null);
+        }
+
+        // Pass over the pose
+        value = tryGetValue(node->GetBox(2), Value::Null);
+        break;
+    }
     default:
         break;
     }

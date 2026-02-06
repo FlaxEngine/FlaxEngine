@@ -14,6 +14,9 @@
 #include "Engine/Audio/AudioListener.h"
 #include "Engine/Audio/AudioSource.h"
 #include "Engine/Audio/AudioSettings.h"
+#include "Engine/Content/Content.h"
+#include "Engine/Level/Level.h"
+#include "Engine/Video/VideoPlayer.h"
 
 // Include OpenAL library
 // Source: https://github.com/kcat/openal-soft
@@ -73,6 +76,7 @@ namespace ALC
     ALCdevice* Device = nullptr;
     ALCcontext* Context = nullptr;
     AudioBackend::FeatureFlags Features = AudioBackend::FeatureFlags::None;
+    bool Inited = false;
     CriticalSection Locker;
     Dictionary<uint32, SourceData> SourcesData;
 
@@ -164,12 +168,9 @@ namespace ALC
         float Time;
     };
 
-    void RebuildContext(const Array<AudioSourceState>& states)
+    void RebuildContext()
     {
-        LOG(Info, "Rebuilding audio contexts");
-
         ClearContext();
-
         if (Device == nullptr)
             return;
 
@@ -182,10 +183,16 @@ namespace ALC
 
         Context = alcCreateContext(Device, attrList);
         alcMakeContextCurrent(Context);
-
+    }
+    
+    void RebuildListeners()
+    {
         for (AudioListener* listener : Audio::Listeners)
             Listener::Rebuild(listener);
-
+    }
+    
+    void RebuildSources(const Array<AudioSourceState>& states)
+    {
         for (int32 i = 0; i < states.Count(); i++)
         {
             AudioSource* source = Audio::Sources[i];
@@ -203,6 +210,13 @@ namespace ALC
                     source->SetTime(state.Time);
             }
         }
+    }
+
+    void RebuildContext(const Array<AudioSourceState>& states)
+    {
+        RebuildContext();
+        RebuildListeners();
+        RebuildSources(states);
     }
 
     void RebuildContext(bool isChangingDevice)
@@ -400,7 +414,7 @@ void AudioBackendOAL::Source_IsLoopingChanged(uint32 sourceID, bool loop)
 void AudioBackendOAL::Source_SpatialSetupChanged(uint32 sourceID, bool spatial, float attenuation, float minDistance, float doppler)
 {
     ALC::Locker.Lock();
-    const bool pan = ALC::SourcesData[sourceID].Spatial;
+    const float pan = ALC::SourcesData[sourceID].Pan;
     ALC::Locker.Unlock();
     if (spatial)
     {
@@ -629,6 +643,7 @@ AudioBackend::FeatureFlags AudioBackendOAL::Base_Features()
 
 void AudioBackendOAL::Base_OnActiveDeviceChanged()
 {
+    PROFILE_CPU();
     PROFILE_MEM(Audio);
 
     // Cleanup
@@ -659,9 +674,53 @@ void AudioBackendOAL::Base_OnActiveDeviceChanged()
         LOG(Fatal, "Failed to open OpenAL device ({0}).", String(name));
         return;
     }
+    if (ALC::Inited)
+        LOG(Info, "Changed audio device to: {}", String(Audio::GetActiveDevice()->Name));
 
-    // Setup
-    ALC::RebuildContext(states);
+    // Rebuild context
+    ALC::RebuildContext();
+    if (ALC::Inited)
+    {
+        // Reload all audio clips to recreate their buffers
+        for (AudioClip* audioClip : Content::GetAssets<AudioClip>())
+        {
+            audioClip->WaitForLoaded();
+            ScopeLock lock(audioClip->Locker);
+
+            // Clear old buffer IDs
+            for (uint32& bufferID : audioClip->Buffers)
+                bufferID = 0;
+
+            if (audioClip->IsStreamable())
+            {
+                // Let the streaming recreate missing buffers
+                audioClip->RequestStreamingUpdate();
+            }
+            else
+            {
+                // Reload audio clip
+                auto assetLock = audioClip->Storage->Lock();
+                audioClip->LoadChunk(0);
+                audioClip->Buffers[0] = AudioBackend::Buffer::Create();
+                audioClip->WriteBuffer(0);
+
+            }
+        }
+
+        // Reload all videos to recreate their buffers
+        for (VideoPlayer* videoPlayer : Level::GetActors<VideoPlayer>(true))
+        {
+            VideoBackendPlayer& player = videoPlayer->_player;
+
+            // Clear audio state
+            for (uint32& bufferID : player.AudioBuffers)
+                bufferID = 0;
+            player.NextAudioBuffer = 0;
+            player.AudioSource = 0;
+        }
+    }
+    ALC::RebuildListeners();
+    ALC::RebuildSources(states);
 }
 
 void AudioBackendOAL::Base_SetDopplerFactor(float value)
@@ -782,6 +841,7 @@ bool AudioBackendOAL::Base_Init()
     if (ALC::IsExtensionSupported("AL_SOFT_source_spatialize"))
         ALC::Features = EnumAddFlags(ALC::Features, FeatureFlags::SpatialMultiChannel);
 #endif
+    ALC::Inited = true;
 
     // Log service info
     LOG(Info, "{0} ({1})", String(alGetString(AL_RENDERER)), String(alGetString(AL_VERSION)));

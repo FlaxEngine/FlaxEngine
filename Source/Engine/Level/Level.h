@@ -474,6 +474,19 @@ public:
     API_FUNCTION() static Array<Actor*> GetActors(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, bool activeOnly = false);
 
     /// <summary>
+    /// Finds all the actors of the given type in all the loaded scenes.
+    /// </summary>
+    /// <typeparam name="T">Type of the object.</typeparam>
+    /// <param name="activeOnly">Finds only active actors.</param>
+    /// <returns>Found actors list.</returns>
+    template<typename T>
+    static Array<T*> GetActors(bool activeOnly = false)
+    {
+        Array<Actor*> actors = GetActors(T::GetStaticClass(), activeOnly);
+        return *(Array<T*>*)&actors;
+    }
+
+    /// <summary>
     /// Finds all the scripts of the given type in an actor or all the loaded scenes.
     /// </summary>
     /// <param name="type">Type of the script to search for. Includes any scripts derived from the type.</param>

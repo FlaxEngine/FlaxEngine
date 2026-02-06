@@ -4,6 +4,7 @@
 
 #include "Engine/Graphics/Shaders/GPUShaderProgram.h"
 #include "Engine/Core/Types/DataContainer.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "../IncludeDirectXHeaders.h"
 
 #if GRAPHICS_API_DIRECTX11

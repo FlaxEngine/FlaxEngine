@@ -584,7 +584,7 @@ namespace FlaxEditor.Viewport
                 _cameraButton = new ViewportWidgetButton(string.Format(MovementSpeedTextFormat, _movementSpeed), _editor.Icons.Camera64, cameraCM, false, cameraSpeedTextWidth)
                 {
                     Tag = this,
-                    TooltipText = "Camera Settings",
+                    TooltipText = "Camera Settings.",
                     Parent = _cameraWidget
                 };
                 _cameraWidget.Parent = this;
@@ -593,7 +593,7 @@ namespace FlaxEditor.Viewport
                 _orthographicModeButton = new ViewportWidgetButton(string.Empty, _editor.Icons.CamSpeed32, null, true)
                 {
                     Checked = !_isOrtho,
-                    TooltipText = "Toggle Orthographic/Perspective Mode",
+                    TooltipText = "Toggle Orthographic/Perspective Mode.",
                     Parent = _cameraWidget
                 };
                 _orthographicModeButton.Toggled += OnOrthographicModeToggled;
@@ -832,7 +832,7 @@ namespace FlaxEditor.Viewport
                 ViewWidgetButtonMenu = new ContextMenu();
                 var viewModeButton = new ViewportWidgetButton("View", SpriteHandle.Invalid, ViewWidgetButtonMenu)
                 {
-                    TooltipText = "View properties",
+                    TooltipText = "View properties.",
                     Parent = viewMode
                 };
                 viewMode.Parent = this;
@@ -863,8 +863,10 @@ namespace FlaxEditor.Viewport
                         {
                         }
                     });
-                    viewLayers.AddButton("Reset layers", () => Task.ViewLayersMask = LayersMask.Default).Icon = _editor.Icons.Rotate32;
-                    viewLayers.AddButton("Disable layers", () => Task.ViewLayersMask = new LayersMask(0));
+                    viewLayers.AddButton("Reset layers", () => Task.ViewLayersMask = LayersMask.Default).Icon = Editor.Instance.Icons.Rotate32;
+                    viewLayers.AddSeparator();
+                    viewLayers.AddButton("Enable all", () => Task.ViewLayersMask = new LayersMask(-1)).Icon = Editor.Instance.Icons.CheckBoxTick12;
+                    viewLayers.AddButton("Disable all", () => Task.ViewLayersMask = new LayersMask(0)).Icon = Editor.Instance.Icons.Cross12;
                     viewLayers.AddSeparator();
                     var layers = LayersAndTagsSettings.GetCurrentLayers();
                     if (layers != null && layers.Length > 0)
@@ -904,8 +906,10 @@ namespace FlaxEditor.Viewport
                         {
                         }
                     });
-                    viewFlags.AddButton("Reset flags", () => Task.ViewFlags = ViewFlags.DefaultEditor).Icon = _editor.Icons.Rotate32;
-                    viewFlags.AddButton("Disable flags", () => Task.ViewFlags = ViewFlags.None);
+                    viewFlags.AddButton("Reset flags", () => Task.ViewFlags = ViewFlags.DefaultEditor).Icon = Editor.Instance.Icons.Rotate32;
+                    viewFlags.AddSeparator();
+                    viewFlags.AddButton("Enable all", () => Task.ViewFlags = ViewFlags.All).Icon = Editor.Instance.Icons.CheckBoxTick12;
+                    viewFlags.AddButton("Disable all", () => Task.ViewFlags = ViewFlags.None).Icon = Editor.Instance.Icons.Cross12;
                     viewFlags.AddSeparator();
                     for (int i = 0; i < ViewFlagsValues.Length; i++)
                     {

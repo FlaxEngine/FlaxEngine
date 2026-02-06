@@ -901,6 +901,15 @@ namespace FlaxEngine.GUI
 
         internal bool RayCastChildren(ref Float2 location, out Control hit)
         {
+            if (_clipChildren)
+            {
+                GetDesireClientArea(out var clientArea);
+                if (!clientArea.Contains(ref location))
+                {
+                    hit = null;
+                    return false;
+                }
+            }
             for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
             {
                 var child = _children[i];
