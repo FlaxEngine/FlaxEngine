@@ -7,17 +7,17 @@
 #include "Engine/Core/Random.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Content/Deprecated.h"
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE
 #include "Engine/Threading/JobSystem.h"
 #if FOLIAGE_USE_DRAW_CALLS_BATCHING
 #include "Engine/Graphics/RenderTools.h"
-#include "Engine/Graphics/GPUDevice.h"
-#include "Engine/Renderer/RenderList.h"
 #endif
 #endif
 #include "Engine/Level/SceneQuery.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
 #include "Engine/Renderer/GI/GlobalSurfaceAtlasPass.h"
 #include "Engine/Serialization/Serialization.h"
@@ -193,6 +193,8 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
         // Draw visible instances
         const auto frame = Engine::FrameCount;
         const auto model = type.Model.Get();
+        const auto transitionLOD = renderContext.View.Pass != DrawPass::Depth; // Let the main view pass update LOD transitions
+        // TODO: move DrawState to be stored per-view (so shadows can fade objects on their own)
         for (int32 i = 0; i < cluster->Instances.Count(); i++)
         {
             auto& instance = *cluster->Instances.Get()[i];
@@ -210,20 +212,29 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
                     // Handling model fade-out transition
                     if (modelFrame == frame && instance.DrawState.PrevLOD != -1)
                     {
-                        // Check if start transition
-                        if (instance.DrawState.LODTransition == 255)
+                        if (transitionLOD)
                         {
-                            instance.DrawState.LODTransition = 0;
-                        }
+                            // Check if start transition
+                            if (instance.DrawState.LODTransition == 255)
+                            {
+                                instance.DrawState.LODTransition = 0;
+                            }
 
-                        RenderTools::UpdateModelLODTransition(instance.DrawState.LODTransition);
+                            RenderTools::UpdateModelLODTransition(instance.DrawState.LODTransition);
 
-                        // Check if end transition
-                        if (instance.DrawState.LODTransition == 255)
-                        {
-                            instance.DrawState.PrevLOD = lodIndex;
+                            // Check if end transition
+                            if (instance.DrawState.LODTransition == 255)
+                            {
+                                instance.DrawState.PrevLOD = lodIndex;
+                            }
+                            else
+                            {
+                                const auto prevLOD = model->ClampLODIndex(instance.DrawState.PrevLOD);
+                                const float normalizedProgress = static_cast<float>(instance.DrawState.LODTransition) * (1.0f / 255.0f);
+                                DrawInstance(renderContext, instance, type, model, prevLOD, normalizedProgress, drawCallsLists, result);
+                            }
                         }
-                        else
+                        else if (instance.DrawState.LODTransition < 255)
                         {
                             const auto prevLOD = model->ClampLODIndex(instance.DrawState.PrevLOD);
                             const float normalizedProgress = static_cast<float>(instance.DrawState.LODTransition) * (1.0f / 255.0f);
@@ -236,29 +247,32 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
                 lodIndex += renderContext.View.ModelLODBias;
                 lodIndex = model->ClampLODIndex(lodIndex);
 
-                // Check if it's the new frame and could update the drawing state (note: model instance could be rendered many times per frame to different viewports)
-                if (modelFrame == frame)
+                if (transitionLOD)
                 {
-                    // Check if start transition
-                    if (instance.DrawState.PrevLOD != lodIndex && instance.DrawState.LODTransition == 255)
+                    // Check if it's the new frame and could update the drawing state (note: model instance could be rendered many times per frame to different viewports)
+                    if (modelFrame == frame)
                     {
+                        // Check if start transition
+                        if (instance.DrawState.PrevLOD != lodIndex && instance.DrawState.LODTransition == 255)
+                        {
+                            instance.DrawState.LODTransition = 0;
+                        }
+
+                        RenderTools::UpdateModelLODTransition(instance.DrawState.LODTransition);
+
+                        // Check if end transition
+                        if (instance.DrawState.LODTransition == 255)
+                        {
+                            instance.DrawState.PrevLOD = lodIndex;
+                        }
+                    }
+                    // Check if there was a gap between frames in drawing this model instance
+                    else if (modelFrame < frame || instance.DrawState.PrevLOD == -1)
+                    {
+                        // Reset state
+                        instance.DrawState.PrevLOD = lodIndex;
                         instance.DrawState.LODTransition = 0;
                     }
-
-                    RenderTools::UpdateModelLODTransition(instance.DrawState.LODTransition);
-
-                    // Check if end transition
-                    if (instance.DrawState.LODTransition == 255)
-                    {
-                        instance.DrawState.PrevLOD = lodIndex;
-                    }
-                }
-                // Check if there was a gap between frames in drawing this model instance
-                else if (modelFrame < frame || instance.DrawState.PrevLOD == -1)
-                {
-                    // Reset state
-                    instance.DrawState.PrevLOD = lodIndex;
-                    instance.DrawState.LODTransition = 255;
                 }
 
                 // Draw
@@ -281,7 +295,8 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
 
                 //DebugDraw::DrawSphere(instance.Bounds, Color::YellowGreen);
 
-                instance.DrawState.PrevFrame = frame;
+                if (transitionLOD)
+                    instance.DrawState.PrevFrame = frame;
             }
         }
     }
@@ -350,7 +365,7 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
                 draw.DrawState = &instance.DrawState;
                 draw.Bounds = sphere;
                 draw.PerInstanceRandom = instance.Random;
-                draw.DrawModes = type._drawModes;
+                draw.DrawModes = type.DrawModes;
                 draw.SetStencilValue(_layer);
                 type.Model->Draw(renderContext, draw);
 
