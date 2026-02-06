@@ -491,6 +491,110 @@ public:
     /// <param name="p2">The third point.</param>
     /// <param name="color">The color.</param>
     API_FUNCTION() static void FillTriangle(const Float2& p0, const Float2& p1, const Float2& p2, const Color& color);
+    
+    /// <summary>
+    /// Draws a circle.
+    /// </summary>
+    /// <param name="center">The center location.</param>
+    /// <param name="radius">The radius.</param>
+    /// <param name="color">The color.</param>
+    /// <param name="thickness">The line thickness.</param>
+    /// <param name="segments">The segments count. If 0, it will be calculated automatically.</param>
+    API_FUNCTION() static void DrawCircle(const Float2& center, float radius, const Color& color, float thickness = 1.0f, int32 segments = 0);
+
+    /// <summary>
+    /// Fills a circle area.
+    /// </summary>
+    /// <param name="center">The center location.</param>
+    /// <param name="radius">The radius.</param>
+    /// <param name="color">The color.</param>
+    API_FUNCTION() static void FillCircle(const Float2& center, float radius, const Color& color);
+    
+    /// <summary>
+    /// Fills a circle area.
+    /// </summary>
+    /// <param name="center">The center location.</param>
+    /// <param name="radius">The radius.</param>
+    /// <param name="color">The color.</param>
+    /// <param name="uv1">The upper-left UV coordinate.</param>
+    /// <param name="uv2">The bottom-right UV coordinate.</param>
+    API_FUNCTION() static void FillCircle(const Float2& center, float radius, const Color& color, const Float2& uv1, const Float2& uv2);
+
+    /// <summary>
+    /// Draws a rounded rectangle borders.
+    /// </summary>
+    /// <param name="rect">The rectangle to draw.</param>
+    /// <param name="color">The color to use.</param>
+    /// <param name="radius">The corner radius.</param>
+    /// <param name="thickness">The line thickness.</param>
+    API_FUNCTION() static void DrawRoundedRectangle(const Rectangle& rect, const Color& color, float radius, float thickness);
+
+    /// <summary>
+    /// Draws a rounded rectangle borders.
+    /// </summary>
+    /// <param name="rect">The rectangle to draw.</param>
+    /// <param name="color">The color to use.</param>
+    /// <param name="radial">The corner radius (x: top-left, y: top-right, z: bottom-right, w: bottom-left).</param>
+    /// <param name="thickness">The line thickness.</param>
+    API_FUNCTION() static void DrawRoundedRectangle(const Rectangle& rect, const Color& color, Float4 radial, float thickness);
+
+    /// <summary>
+    /// Fills a rounded rectangle area.
+    /// </summary>
+    /// <param name="rect">The rectangle to fill.</param>
+    /// <param name="color">The color to use.</param>
+    /// <param name="radius">The corner radius.</param>
+    API_FUNCTION() static void FillRoundedRectangle(const Rectangle& rect, const Color& color, float radius);
+
+    /// <summary>
+    /// Fills a rounded rectangle area.
+    /// </summary>
+    /// <param name="rect">The rectangle to fill.</param>
+    /// <param name="color">The color to use.</param>
+    /// <param name="radius">The corner radius.</param>
+    /// <param name="uv1">The upper-left UV coordinate.</param>
+    /// <param name="uv2">The bottom-right UV coordinate.</param>
+    API_FUNCTION() static void FillRoundedRectangle(const Rectangle& rect, const Color& color, float radius, const Float2& uv1, const Float2& uv2);
+
+    /// <summary>
+    /// Fills a rounded rectangle area.
+    /// </summary>
+    /// <param name="rect">The rectangle to fill.</param>
+    /// <param name="color">The color to use.</param>
+    /// <param name="radial">The corner radius (x: top-left, y: top-right, z: bottom-right, w: bottom-left).</param>
+    API_FUNCTION() static void FillRoundedRectangle(const Rectangle& rect, const Color& color, Float4 radial);
+
+    /// <summary>
+    /// Fills a rounded rectangle area.
+    /// </summary>
+    /// <param name="rect">The rectangle to fill.</param>
+    /// <param name="color">The color to use.</param>
+    /// <param name="radial">The corner radius (x: top-left, y: top-right, z: bottom-right, w: bottom-left).</param>
+    /// <param name="uv1">The upper-left UV coordinate.</param>
+    /// <param name="uv2">The bottom-right UV coordinate.</param>
+    API_FUNCTION() static void FillRoundedRectangle(const Rectangle& rect, const Color& color, Float4 radial, const Float2& uv1, const Float2& uv2);
+
+    /// <summary>
+    /// Fills a rounded rectangle area.
+    /// </summary>
+    /// <param name="rect">The rectangle to fill.</param>
+    /// <param name="color1">The color to use for upper left vertex.</param>
+    /// <param name="color2">The color to use for upper right vertex.</param>
+    /// <param name="color3">The color to use for bottom right vertex.</param>
+    /// <param name="color4">The color to use for bottom left vertex.</param>
+    /// <param name="radius">The corner radius.</param>
+    API_FUNCTION() static void FillRoundedRectangle(const Rectangle& rect, const Color& color1, const Color& color2, const Color& color3, const Color& color4, float radius);
+
+    /// <summary>
+    /// Fills a rounded rectangle area.
+    /// </summary>
+    /// <param name="rect">The rectangle to fill.</param>
+    /// <param name="color1">The color to use for upper left vertex.</param>
+    /// <param name="color2">The color to use for upper right vertex.</param>
+    /// <param name="color3">The color to use for bottom right vertex.</param>
+    /// <param name="color4">The color to use for bottom left vertex.</param>
+    /// <param name="radial">The corner radius (x: top-left, y: top-right, z: bottom-right, w: bottom-left).</param>
+    API_FUNCTION() static void FillRoundedRectangle(const Rectangle& rect, const Color& color1, const Color& color2, const Color& color3, const Color& color4, Float4 radial);
 };
 
 DECLARE_ENUM_OPERATORS(Render2D::RenderingFeatures);
