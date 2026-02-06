@@ -41,8 +41,7 @@ Foliage::Foliage(const SpawnParams& params)
 
 void Foliage::AddToCluster(ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_SIZE>& clusters, FoliageCluster* cluster, FoliageInstance& instance)
 {
-    ASSERT(instance.Bounds.Radius > ZeroTolerance);
-    ASSERT(cluster->Bounds.Intersects(instance.Bounds));
+    ASSERT_LOW_LAYER(instance.Bounds.Radius > ZeroTolerance);
 
     // Minor clusters don't use bounds intersection but try to find the first free cluster instead
     if (cluster->IsMinor)
@@ -63,6 +62,7 @@ void Foliage::AddToCluster(ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_S
     else
     {
         // Find target cluster
+        ASSERT(cluster->Bounds.Intersects(instance.Bounds));
         while (cluster->Children[0])
         {
 #define CHECK_CHILD(idx) \

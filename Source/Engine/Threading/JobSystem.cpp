@@ -317,7 +317,6 @@ int64 JobSystem::Dispatch(const Function<void(int32)>& job, int32 jobCount)
     context.DependantsCount = 0;
     context.DependenciesLeft = 0;
     context.JobsCount = jobCount;
-    ASSERT(context.Dependants.IsEmpty());
     context.Dependants.Clear();
 
     // Move the job queue forward
@@ -367,7 +366,6 @@ int64 JobSystem::Dispatch(const Function<void(int32)>& job, Span<int64> dependen
     context.DependantsCount = 0;
     context.DependenciesLeft = 0;
     context.JobsCount = jobCount;
-    ASSERT(context.Dependants.IsEmpty());
     context.Dependants.Clear();
     {
         JobsLocker.Lock();

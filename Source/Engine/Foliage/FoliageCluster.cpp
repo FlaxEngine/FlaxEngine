@@ -21,26 +21,7 @@ void FoliageCluster::Init(const BoundingBox& bounds)
 
 void FoliageCluster::UpdateTotalBoundsAndCullDistance()
 {
-    if (Children[0])
-    {
-        ASSERT(Instances.IsEmpty());
-
-        Children[0]->UpdateTotalBoundsAndCullDistance();
-        Children[1]->UpdateTotalBoundsAndCullDistance();
-        Children[2]->UpdateTotalBoundsAndCullDistance();
-        Children[3]->UpdateTotalBoundsAndCullDistance();
-
-        TotalBounds = Children[0]->TotalBounds;
-        BoundingBox::Merge(TotalBounds, Children[1]->TotalBounds, TotalBounds);
-        BoundingBox::Merge(TotalBounds, Children[2]->TotalBounds, TotalBounds);
-        BoundingBox::Merge(TotalBounds, Children[3]->TotalBounds, TotalBounds);
-
-        MaxCullDistance = Children[0]->MaxCullDistance;
-        MaxCullDistance = Math::Max(MaxCullDistance, Children[1]->MaxCullDistance);
-        MaxCullDistance = Math::Max(MaxCullDistance, Children[2]->MaxCullDistance);
-        MaxCullDistance = Math::Max(MaxCullDistance, Children[3]->MaxCullDistance);
-    }
-    else if (Instances.HasItems())
+    if (Instances.HasItems())
     {
         BoundingBox box;
         BoundingBox::FromSphere(Instances[0]->Bounds, TotalBounds);
@@ -56,6 +37,30 @@ void FoliageCluster::UpdateTotalBoundsAndCullDistance()
     {
         TotalBounds = Bounds;
         MaxCullDistance = 0;
+    }
+
+    if (Children[0])
+    {
+        Children[0]->UpdateTotalBoundsAndCullDistance();
+        Children[1]->UpdateTotalBoundsAndCullDistance();
+        Children[2]->UpdateTotalBoundsAndCullDistance();
+        Children[3]->UpdateTotalBoundsAndCullDistance();
+
+        if (Instances.HasItems())
+            BoundingBox::Merge(TotalBounds, Children[0]->TotalBounds, TotalBounds);
+        else
+            TotalBounds = Children[0]->TotalBounds;
+        BoundingBox::Merge(TotalBounds, Children[1]->TotalBounds, TotalBounds);
+        BoundingBox::Merge(TotalBounds, Children[2]->TotalBounds, TotalBounds);
+        BoundingBox::Merge(TotalBounds, Children[3]->TotalBounds, TotalBounds);
+
+        if (Instances.HasItems())
+            MaxCullDistance = Math::Max(MaxCullDistance, Children[0]->MaxCullDistance);
+        else
+            MaxCullDistance = Children[0]->MaxCullDistance;
+        MaxCullDistance = Math::Max(MaxCullDistance, Children[1]->MaxCullDistance);
+        MaxCullDistance = Math::Max(MaxCullDistance, Children[2]->MaxCullDistance);
+        MaxCullDistance = Math::Max(MaxCullDistance, Children[3]->MaxCullDistance);
     }
 
     BoundingSphere::FromBox(TotalBounds, TotalBoundsSphere);
