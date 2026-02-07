@@ -6,6 +6,7 @@ using FlaxEngine.GUI;
 
 namespace FlaxEditor.Gizmo;
 
+[HideInEditor]
 public class DirectionGizmo : ContainerControl
 {
     private IGizmoOwner _owner;
