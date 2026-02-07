@@ -28,7 +28,7 @@ void SkinnedMeshDrawData::Setup(int32 bonesCount)
 
     BonesCount = bonesCount;
     _hasValidData = false;
-    _isDirty = false;
+    _isDirty = true;
     Data.Resize(BoneMatrices->GetSize());
     SAFE_DELETE_GPU_RESOURCE(PrevBoneMatrices);
 }
