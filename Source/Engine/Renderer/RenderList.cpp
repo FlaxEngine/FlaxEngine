@@ -31,6 +31,13 @@ namespace
     Array<RenderList*> FreeRenderList;
     Array<Pair<void*, uintptr>> MemPool;
     CriticalSection MemPoolLocker;
+
+    typedef Array<RenderList::IExtension*, FixedAllocation<8>> ExtensionsList;
+    ExtensionsList& GetExtensions()
+    {
+        static ExtensionsList list;
+        return list;
+    }
 }
 
 void ShaderObjectData::Store(const Matrix& worldMatrix, const Matrix& prevWorldMatrix, const Rectangle& lightmapUVsArea, const Float3& geometrySize, float perInstanceRandom, float worldDeterminantSign, float lodDitherFactor)
@@ -236,6 +243,16 @@ void RenderList::CleanupCache()
     MemPoolLocker.Unlock();
 }
 
+RenderList::IExtension::IExtension()
+{
+    GetExtensions().Add(this);
+}
+
+RenderList::IExtension::~IExtension()
+{
+    GetExtensions().Remove(this);
+}
+
 bool RenderList::BlendableSettings::operator<(const BlendableSettings& other) const
 {
     // Sort by higher priority
@@ -269,6 +286,20 @@ void RenderList::DrainDelayedDraws(GPUContext* context, RenderContextBatch& rend
     for (DelayedDraw& e : _delayedDraws)
         e(context, renderContextBatch, renderContextIndex);
     _delayedDraws.Clear();
+}
+
+#define LOOP_EXTENSIONS() const auto& extensions = GetExtensions(); for (auto* e : extensions)
+
+void RenderList::PreDraw(GPUContext* context, RenderContextBatch& renderContextBatch)
+{
+    LOOP_EXTENSIONS()
+        e->PreDraw(context, renderContextBatch);
+}
+
+void RenderList::PostDraw(GPUContext* context, RenderContextBatch& renderContextBatch)
+{
+    LOOP_EXTENSIONS()
+        e->PostDraw(context, renderContextBatch);
 }
 
 void RenderList::BlendSettings()

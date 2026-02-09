@@ -423,6 +423,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         if (setup.UseMotionVectors)
             view.Pass |= DrawPass::MotionVectors;
         renderContextBatch.GetMainContext() = renderContext; // Sync render context in batch with the current value
+        renderContext.List->PreDraw(context, renderContextBatch);
 
         bool drawShadows = !isGBufferDebug && EnumHasAnyFlags(view.Flags, ViewFlags::Shadows) && ShadowsPass::Instance()->IsReady();
         switch (renderContext.View.Mode)
@@ -462,6 +463,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         // Perform custom post-scene drawing (eg. GPU dispatches used by VFX)
         for (int32 i = 0; i < renderContextBatch.Contexts.Count(); i++)
             renderContextBatch.Contexts[i].List->DrainDelayedDraws(context, renderContextBatch, i);
+        renderContext.List->PostDraw(context, renderContextBatch);
 
 #if USE_EDITOR
         GBufferPass::Instance()->OverrideDrawCalls(renderContext);
