@@ -154,6 +154,8 @@ void SkeletonData::Swap(SkeletonData& other)
 {
     Nodes.Swap(other.Nodes);
     Bones.Swap(other.Bones);
+    Dirty();
+    other.Dirty();
 }
 
 Transform SkeletonData::GetNodeTransform(int32 nodeIndex) const
@@ -171,6 +173,7 @@ Transform SkeletonData::GetNodeTransform(int32 nodeIndex) const
 void SkeletonData::SetNodeTransform(int32 nodeIndex, const Transform& value)
 {
     CHECK(Nodes.IsValidIndex(nodeIndex));
+    Dirty();
     const int32 parentIndex = Nodes[nodeIndex].ParentIndex;
     if (parentIndex == -1)
     {
@@ -199,6 +202,39 @@ int32 SkeletonData::FindBone(int32 nodeIndex) const
             return i;
     }
     return -1;
+}
+
+const Array<Matrix>& SkeletonData::GetNodesPose() const
+{
+    // Guard with a simple atomic flag to avoid locking if the pose is up to date
+    if (Platform::AtomicRead(&_dirty))
+    {
+        ScopeLock lock(RenderContext::GPULocker);
+        if (Platform::AtomicRead(&_dirty))
+        {
+            Platform::AtomicStore(&_dirty, 0);
+            const SkeletonNode* nodes = Nodes.Get();
+            const int32 nodesCount = Nodes.Count();
+            _cachedPose.Resize(nodesCount);
+            Matrix* posePtr = _cachedPose.Get();
+            for (int32 nodeIndex = 0; nodeIndex < nodesCount; nodeIndex++)
+            {
+                const SkeletonNode& node = nodes[nodeIndex];
+                Matrix local;
+                Matrix::Transformation(node.LocalTransform.Scale, node.LocalTransform.Orientation, node.LocalTransform.Translation, local);
+                if (node.ParentIndex != -1)
+                    Matrix::Multiply(local, posePtr[node.ParentIndex], posePtr[nodeIndex]);
+                else
+                    posePtr[nodeIndex] = local;
+            }
+        }
+    }
+    return _cachedPose;
+}
+
+void SkeletonData::Dirty()
+{
+    Platform::AtomicStore(&_dirty, 1);
 }
 
 uint64 SkeletonData::GetMemoryUsage() const

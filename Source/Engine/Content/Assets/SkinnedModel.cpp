@@ -378,6 +378,7 @@ bool SkinnedModel::SetupSkeleton(const Array<SkeletonNode>& nodes)
         model->Skeleton.Bones[i].LocalTransform = node.LocalTransform;
         model->Skeleton.Bones[i].NodeIndex = i;
     }
+    model->Skeleton.Dirty();
     ClearSkeletonMapping();
 
     // Calculate offset matrix (inverse bind pose transform) for every bone manually
@@ -435,6 +436,7 @@ bool SkinnedModel::SetupSkeleton(const Array<SkeletonNode>& nodes, const Array<S
     // Setup
     model->Skeleton.Nodes = nodes;
     model->Skeleton.Bones = bones;
+    model->Skeleton.Dirty();
     ClearSkeletonMapping();
 
     // Calculate offset matrix (inverse bind pose transform) for every bone manually
