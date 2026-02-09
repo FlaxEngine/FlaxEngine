@@ -423,9 +423,9 @@ namespace FlaxEditor.Surface
                 new InputActionsContainer.Binding(options => options.NodesAlignLeft, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Left); }),
                 new InputActionsContainer.Binding(options => options.NodesAlignCenter, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Center); }),
                 new InputActionsContainer.Binding(options => options.NodesAlignRight, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Right); }),
-                new InputActionsContainer.Binding(options => options.NodesDistributeHorizontal, () => {  DistributeNodes(SelectedNodes, false); }),
-                new InputActionsContainer.Binding(options => options.NodesDistributeVertical, () => {  DistributeNodes(SelectedNodes, true); }),
-                new InputActionsContainer.Binding(options => options.FocusSelectedNodes, () => {  ShowSelection(); }),
+                new InputActionsContainer.Binding(options => options.NodesDistributeHorizontal, () => { DistributeNodes(SelectedNodes, false); }),
+                new InputActionsContainer.Binding(options => options.NodesDistributeVertical, () => { DistributeNodes(SelectedNodes, true); }),
+                new InputActionsContainer.Binding(options => options.FocusSelectedNodes, () => { FocusSelectionOrWholeGraph(); }),
             });
 
             Context.ControlSpawned += OnSurfaceControlSpawned;
@@ -650,6 +650,17 @@ namespace FlaxEditor.Surface
         {
             ViewScale = (Size / areaRect.Size).MinValue * 0.95f;
             ViewCenterPosition = areaRect.Center;
+        }
+
+        /// <summary>
+        /// Adjusts the view to focus on the currently selected nodes, or the entire graph if no nodes are selected.
+        /// </summary>
+        public void FocusSelectionOrWholeGraph()
+        {
+            if (SelectedNodes.Count > 0)
+                ShowSelection();
+            else
+                ShowWholeGraph();
         }
 
         /// <summary>
