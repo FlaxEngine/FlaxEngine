@@ -38,27 +38,21 @@ public:
 struct alignas(int64) JobContext
 {
     // The next index of the job to process updated when picking a job by the thread.
-    volatile int64 JobIndex;
+    volatile int64 JobIndex = 0;
     // The number of jobs left to process updated after job completion by the thread.
-    volatile int64 JobsLeft;
+    volatile int64 JobsLeft = 0;
     // The unique label of this job used to identify it. Set to -1 when job is done.
-    volatile int64 JobLabel;
+    volatile int64 JobLabel = 0;
     // Utility atomic counter used to indicate that any job is waiting for this one to finish. Then Dependants can be accessed within thread-safe JobsLocker.
-    volatile int64 DependantsCount;
+    volatile int64 DependantsCount = 0;
     // The number of dependency jobs left to be finished before starting this job.
-    volatile int64 DependenciesLeft;
+    volatile int64 DependenciesLeft = 0;
     // The total number of jobs to process (in this context).
-    int32 JobsCount;
+    int32 JobsCount = 0;
     // The job function to execute.
     Function<void(int32)> Job;
     // List of dependant jobs to signal when this job is done.
     Array<int64> Dependants;
-};
-
-template<>
-struct TIsPODType<JobContext>
-{
-    enum { Value = false };
 };
 
 class JobSystemThread : public IRunnable
@@ -111,7 +105,7 @@ bool JobSystemService::Init()
     JobContextsSize = 256;
     JobContextsMask = JobContextsSize - 1;
     JobContexts = (JobContext*)Platform::Allocate(JobContextsSize * sizeof(JobContext), alignof(JobContext));
-    Platform::MemoryClear(JobContexts, sizeof(JobContextsSize * sizeof(JobContext)));
+    Memory::ConstructItems(JobContexts, (int32)JobContextsSize);
 
     // Spawn threads
     ThreadsCount = Math::Min<int32>(Platform::GetCPUInfo().LogicalProcessorCount, ARRAY_COUNT(Threads));
@@ -150,6 +144,7 @@ void JobSystemService::Dispose()
         }
     }
 
+    Memory::DestructItems(JobContexts, (int32)JobContextsSize);
     Platform::Free(JobContexts);
     JobContexts = nullptr;
 }
