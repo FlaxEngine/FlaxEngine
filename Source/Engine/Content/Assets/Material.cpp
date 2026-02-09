@@ -41,6 +41,35 @@ bool Material::IsMaterialInstance() const
     return false;
 }
 
+#if USE_EDITOR
+
+void Material::GetReferences(Array<Guid>& assets, Array<String>& files) const
+{
+    ShaderAssetTypeBase<MaterialBase>::GetReferences(assets, files);
+
+    // Collect references from material graph (needs to load it)
+    if (!WaitForLoaded() && HasChunk(SHADER_FILE_CHUNK_VISJECT_SURFACE))
+    {
+        ScopeLock lock(Locker);
+        if (!LoadChunks(GET_CHUNK_FLAG(SHADER_FILE_CHUNK_VISJECT_SURFACE)))
+        {
+            const auto surfaceChunk = GetChunk(SHADER_FILE_CHUNK_VISJECT_SURFACE);
+            if (surfaceChunk)
+            {
+                MemoryReadStream stream(surfaceChunk->Get(), surfaceChunk->Size());
+                MaterialGraph graph;
+                if (!graph.Load(&stream, false))
+                {
+                    graph.GetReferences(assets);
+                }
+            }
+        }
+    }
+
+}
+
+#endif
+
 const MaterialInfo& Material::GetInfo() const
 {
     if (_materialShader)
@@ -165,9 +194,13 @@ Asset::LoadResult Material::load()
         MaterialGenerator generator;
         generator.Error.Bind(&OnGeneratorError);
         if (_shaderHeader.Material.GraphVersion != MATERIAL_GRAPH_VERSION)
+        {
             LOG(Info, "Converting material \'{0}\', from version {1} to {2}...", name, _shaderHeader.Material.GraphVersion, MATERIAL_GRAPH_VERSION);
+        }
         else
+        {
             LOG(Info, "Updating material \'{0}\'...", name);
+        }
 
         // Load or create material surface
         MaterialLayer* layer;
@@ -186,16 +219,55 @@ Asset::LoadResult Material::load()
 
             // Load layer
             layer = MaterialLayer::Load(GetID(), &stream, _shaderHeader.Material.Info, name);
-            if (ContentDeprecated::Clear())
+            const bool upgradeOldSpecular = _shaderHeader.Material.GraphVersion < 177;
+            if (ContentDeprecated::Clear() || upgradeOldSpecular)
             {
                 // If encountered any deprecated data when loading graph then serialize it
                 MaterialGraph graph;
                 MemoryWriteStream writeStream(1024);
                 stream.SetPosition(0);
-                if (!graph.Load(&stream, true) && !graph.Save(&writeStream, true))
+                if (!graph.Load(&stream, true))
                 {
-                    surfaceChunk->Data.Copy(ToSpan(writeStream));
-                    ContentDeprecated::Clear();
+                    if (upgradeOldSpecular)
+                    {
+                        // [Deprecated in 1.11]
+                        // Specular calculations were changed to support up to 16% of reflectance via ^2 curve instead of linear up to 8%
+                        // Insert Custom Code node that converts old materials into a new system to ensure they look the same
+                        MaterialGraph::Node* rootNode = nullptr;
+                        for (auto& e : graph.Nodes)
+                        {
+                            if (e.Type == ROOT_NODE_TYPE)
+                            {
+                                rootNode = &e;
+                                break;
+                            }
+                        }
+                        const auto& specularBoxInfo = MaterialGenerator::GetMaterialRootNodeBox(MaterialGraphBoxes::Specular);
+                        auto specularBox = rootNode ? rootNode->GetBox(specularBoxInfo.ID) : nullptr;
+                        if (specularBox && specularBox->HasConnection())
+                        {
+                            auto& customCodeNode = graph.Nodes.AddOne();
+                            customCodeNode.ID = graph.Nodes.Count() + 1000;
+                            customCodeNode.Type = GRAPH_NODE_MAKE_TYPE(1, 8);
+                            customCodeNode.Boxes.Resize(2);
+                            customCodeNode.Boxes[0] = MaterialGraphBox(&customCodeNode, 0, VariantType::Float4); // Input0
+                            customCodeNode.Boxes[1] = MaterialGraphBox(&customCodeNode, 8, VariantType::Float4); // Output0
+                            customCodeNode.Values.Resize(1);
+                            customCodeNode.Values[0] = TEXT("// Convert old Specular value to a new range\nOutput0.x = min(Input0.x * 0.5f, 0.6f);");
+                            auto specularSourceBox = specularBox->Connections[0];
+                            specularBox->Connections.Clear();
+                            specularSourceBox->Connections.Clear();
+#define CONNECT(boxA, boxB) boxA->Connections.Add(boxB); boxB->Connections.Add(boxA)
+                            CONNECT(specularSourceBox, (&customCodeNode.Boxes[0])); // Specular -> Input0
+                            CONNECT((&customCodeNode.Boxes[1]), specularBox); // Output0 -> Specular
+#undef CONNECT
+                        }
+                    }
+                    if (!graph.Save(&writeStream, true))
+                    {
+                        surfaceChunk->Data.Copy(ToSpan(writeStream));
+                        ContentDeprecated::Clear();
+                    }
                 }
             }
         }
@@ -410,16 +482,18 @@ void Material::InitCompilationOptions(ShaderCompilationOptions& options)
     // Prepare
     auto& info = _shaderHeader.Material.Info;
     const bool isSurfaceOrTerrainOrDeformable = info.Domain == MaterialDomain::Surface || info.Domain == MaterialDomain::Terrain || info.Domain == MaterialDomain::Deformable;
+    const bool isOpaque = info.BlendMode == MaterialBlendMode::Opaque;
     const bool useCustomData = info.ShadingModel == MaterialShadingModel::Subsurface || info.ShadingModel == MaterialShadingModel::Foliage;
-    const bool useForward = ((info.Domain == MaterialDomain::Surface || info.Domain == MaterialDomain::Deformable) && info.BlendMode != MaterialBlendMode::Opaque) || info.Domain == MaterialDomain::Particle;
+    const bool useForward = ((info.Domain == MaterialDomain::Surface || info.Domain == MaterialDomain::Deformable) && !isOpaque) || info.Domain == MaterialDomain::Particle;
     const bool useTess =
             info.TessellationMode != TessellationMethod::None &&
             RenderTools::CanSupportTessellation(options.Profile) && isSurfaceOrTerrainOrDeformable;
     const bool useDistortion =
             (info.Domain == MaterialDomain::Surface || info.Domain == MaterialDomain::Deformable || info.Domain == MaterialDomain::Particle) &&
-            info.BlendMode != MaterialBlendMode::Opaque &&
+            !isOpaque &&
             EnumHasAnyFlags(info.UsageFlags, MaterialUsageFlags::UseRefraction) &&
             (info.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == MaterialFeaturesFlags::None;
+    const MaterialShadingModel shadingModel = info.ShadingModel == MaterialShadingModel::CustomLit ? MaterialShadingModel::Unlit : info.ShadingModel;
 
     // @formatter:off
     static const char* Numbers[] =
@@ -431,7 +505,7 @@ void Material::InitCompilationOptions(ShaderCompilationOptions& options)
     // Setup shader macros
     options.Macros.Add({ "MATERIAL_DOMAIN", Numbers[(int32)info.Domain] });
     options.Macros.Add({ "MATERIAL_BLEND", Numbers[(int32)info.BlendMode] });
-    options.Macros.Add({ "MATERIAL_SHADING_MODEL", Numbers[(int32)info.ShadingModel] });
+    options.Macros.Add({ "MATERIAL_SHADING_MODEL", Numbers[(int32)shadingModel] });
     options.Macros.Add({ "MATERIAL_MASKED", Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsageFlags::UseMask) ? 1 : 0] });
     options.Macros.Add({ "DECAL_BLEND_MODE", Numbers[(int32)info.DecalBlendingMode] });
     options.Macros.Add({ "USE_EMISSIVE", Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsageFlags::UseEmissive) ? 1 : 0] });
@@ -488,7 +562,7 @@ void Material::InitCompilationOptions(ShaderCompilationOptions& options)
     options.Macros.Add({ "IS_PARTICLE", Numbers[info.Domain == MaterialDomain::Particle ? 1 : 0] });
     options.Macros.Add({ "IS_DEFORMABLE", Numbers[info.Domain == MaterialDomain::Deformable ? 1 : 0] });
     options.Macros.Add({ "USE_FORWARD", Numbers[useForward ? 1 : 0] });
-    options.Macros.Add({ "USE_DEFERRED", Numbers[isSurfaceOrTerrainOrDeformable && info.BlendMode == MaterialBlendMode::Opaque ? 1 : 0] });
+    options.Macros.Add({ "USE_DEFERRED", Numbers[isSurfaceOrTerrainOrDeformable && isOpaque ? 1 : 0] });
     options.Macros.Add({ "USE_DISTORTION", Numbers[useDistortion ? 1 : 0] });
 #endif
 }

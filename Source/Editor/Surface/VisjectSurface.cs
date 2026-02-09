@@ -121,7 +121,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// The connection start.
         /// </summary>
-        protected IConnectionInstigator _connectionInstigator;
+        protected List<IConnectionInstigator> _connectionInstigators = new List<IConnectionInstigator>();
 
         /// <summary>
         /// The last connection instigator under mouse.
@@ -232,19 +232,19 @@ namespace FlaxEditor.Surface
         }
 
         /// <summary>
-        /// Gets a value indicating whether user is box selecting nodes.
+        /// Gets a value indicating whether user is selecting nodes.
         /// </summary>
-        public bool IsBoxSelecting => _leftMouseDown && !_isMovingSelection && _connectionInstigator == null;
+        public bool IsSelecting => _leftMouseDown && !_isMovingSelection && _connectionInstigators.Count == 0;
 
         /// <summary>
-        /// Gets a value indicating whether user was previously box selecting nodes.
+        /// Gets a value indicating whether user was previously selecting nodes.
         /// </summary>
-        public bool WasBoxSelecting { get; private set; }
+        public bool WasSelecting { get; private set; }
 
         /// <summary>
         /// Gets a value indicating whether user is moving selected nodes.
         /// </summary>
-        public bool IsMovingSelection => _leftMouseDown && _isMovingSelection && _connectionInstigator == null;
+        public bool IsMovingSelection => _leftMouseDown && _isMovingSelection && _connectionInstigators.Count == 0;
 
         /// <summary>
         /// Gets a value indicating whether user was previously moving selected nodes.
@@ -254,7 +254,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Gets a value indicating whether user is connecting nodes.
         /// </summary>
-        public bool IsConnecting => _connectionInstigator != null;
+        public bool IsConnecting => _connectionInstigators.Count > 0;
 
         /// <summary>
         /// Gets a value indicating whether the left mouse button is down.

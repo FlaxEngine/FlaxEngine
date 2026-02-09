@@ -3,6 +3,9 @@
 #pragma once
 
 #include "Engine/Scripting/ScriptingType.h"
+#ifndef _MSC_VER
+#include "Engine/Core/Collections/Array.h"
+#endif
 #include "AssetInfo.h"
 #include "Asset.h"
 #include "Config.h"
@@ -75,7 +78,7 @@ public:
     /// </summary>
     /// <param name="id">The asset id.</param>
     /// <returns>The asset path, or empty if failed to find.</returns>
-    API_FUNCTION() static String GetEditorAssetPath(const Guid& id);
+    API_FUNCTION() static StringView GetEditorAssetPath(const Guid& id);
 
     /// <summary>
     /// Finds all the asset IDs. Uses asset registry.
@@ -122,7 +125,26 @@ public:
     /// Gets the assets (loaded or during load).
     /// </summary>
     /// <returns>The collection of assets.</returns>
-    API_PROPERTY() static Array<Asset*, HeapAllocation> GetAssets();
+    API_FUNCTION() static Array<Asset*, HeapAllocation> GetAssets();
+
+    /// <summary>
+    /// Gets the assets (loaded or during load).
+    /// </summary>
+    /// <param name="type">Type of the assets to search for. Includes any assets derived from the type.</param>
+    /// <returns>Found actors list.</returns>
+    API_FUNCTION() static Array<Asset*, HeapAllocation> GetAssets(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type);
+
+    /// <summary>
+    /// Gets the assets (loaded or during load).
+    /// </summary>
+    /// <typeparam name="T">Type of the object.</typeparam>
+    /// <returns>Found actors list.</returns>
+    template<typename T>
+    static Array<T*, HeapAllocation> GetAssets()
+    {
+        Array<Asset*, HeapAllocation> assets = GetAssets(T::GetStaticClass());
+        return *(Array<T*, HeapAllocation>*) & assets;
+    }
 
     /// <summary>
     /// Gets the raw dictionary of assets (loaded or during load).
@@ -368,4 +390,9 @@ private:
     static void onAssetUnload(Asset* asset);
     static void onAssetChangeId(Asset* asset, const Guid& oldId, const Guid& newId);
     static void deleteFileSafety(const StringView& path, const Guid& id);
+
+    // Internal bindings
+#if !COMPILE_WITHOUT_CSHARP
+    API_FUNCTION(NoProxy) static void* GetAssetsInternal();
+#endif
 };

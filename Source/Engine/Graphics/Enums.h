@@ -340,7 +340,14 @@ API_ENUM(Attributes="Flags") enum class GPUResourceMapMode
     /// The resource is mapped for reading and writing.
     /// </summary>
     ReadWrite = Read | Write,
+
+    /// <summary>
+    /// Flag that indicates mapping should fail with no data if the resource is still used by the GPU. Otherwise, CPU will wait for the GPU execution.
+    /// </summary>
+    NoWait = 0x04,
 };
+
+DECLARE_ENUM_OPERATORS(GPUResourceMapMode);
 
 /// <summary>
 /// Primitives types.
@@ -1069,19 +1076,29 @@ API_ENUM(Attributes="Flags") enum class ViewFlags : uint64
     LightsDebug = 1 << 27,
 
     /// <summary>
+    /// Shows/hides particle effects.
+    /// </summary>
+    Particles = 1 << 28,
+
+    /// <summary>
     /// Default flags for Game.
     /// </summary>
-    DefaultGame = Reflections | DepthOfField | Fog | Decals | MotionBlur | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | ContactShadows | GlobalSDF | Sky,
+    DefaultGame = Reflections | DepthOfField | Fog | Decals | MotionBlur | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | ContactShadows | GlobalSDF | Sky | Particles,
 
     /// <summary>
     /// Default flags for Editor.
     /// </summary>
-    DefaultEditor = Reflections | Fog | Decals | DebugDraw | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | EditorSprites | ContactShadows | GlobalSDF | Sky,
+    DefaultEditor = Reflections | Fog | Decals | DebugDraw | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | EditorSprites | ContactShadows | GlobalSDF | Sky | Particles,
 
     /// <summary>
     /// Default flags for materials/models previews generating.
     /// </summary>
-    DefaultAssetPreview = Reflections | Decals | DirectionalLights | PointLights | SpotLights | SkyLights | SpecularLight | AntiAliasing | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | ContactShadows | Sky,
+    DefaultAssetPreview = Reflections | Decals | DirectionalLights | PointLights | SpotLights | SkyLights | SpecularLight | AntiAliasing | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | ContactShadows | Sky | Particles,
+
+    /// <summary>
+    /// All flags enabled.
+    /// </summary>
+    All = None | DebugDraw | EditorSprites | Reflections | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | Decals | DepthOfField | PhysicsDebug | Fog | MotionBlur | ContactShadows | GlobalSDF | Sky | LightsDebug | Particles,
 };
 
 DECLARE_ENUM_OPERATORS(ViewFlags);

@@ -258,7 +258,10 @@ bool MacPlatform::Init()
 
     // Get device id
     {
-        io_registry_entry_t ioRegistryRoot = IORegistryEntryFromPath(kIOMasterPortDefault, "IOService:/");
+#if MAC_OS_X_VERSION_MAX_ALLOWED < 120000
+#define kIOMainPortDefault kIOMasterPortDefault
+#endif
+        io_registry_entry_t ioRegistryRoot = IORegistryEntryFromPath(kIOMainPortDefault, "IOService:/");
         CFStringRef deviceUuid = (CFStringRef)IORegistryEntryCreateCFProperty(ioRegistryRoot, CFSTR(kIOPlatformUUIDKey), kCFAllocatorDefault, 0);
         IOObjectRelease(ioRegistryRoot);
         String uuidStr = AppleUtils::ToString(deviceUuid);
@@ -485,6 +488,7 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
                       String line((const char*)data.bytes, data.length);
                       if (settings.SaveOutput)
                         settings.Output.Add(line.Get(), line.Length());
+#if LOG_ENABLE
                       if (settings.LogOutput)
                       {
                         StringView lineView(line);
@@ -492,6 +496,7 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
                             lineView = StringView(line.Get(), line.Length() - 1);
                         Log::Logger::Write(LogType::Info, lineView);
                       }
+#endif
                     [[stdoutPipe fileHandleForReading] waitForDataInBackgroundAndNotify];
                 }
             }
@@ -512,6 +517,7 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
                       String line((const char*)data.bytes, data.length);
                       if (settings.SaveOutput)
                         settings.Output.Add(line.Get(), line.Length());
+#if LOG_ENABLE
                       if (settings.LogOutput)
                       {
                         StringView lineView(line);
@@ -519,6 +525,7 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
                             lineView = StringView(line.Get(), line.Length() - 1);
                         Log::Logger::Write(LogType::Error, lineView);
                       }
+#endif
                     [[stderrPipe fileHandleForReading] waitForDataInBackgroundAndNotify];
                 }
             }

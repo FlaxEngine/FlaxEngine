@@ -4,6 +4,8 @@
 #include "NavMeshRuntime.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Serialization/Serialization.h"
+#include "Engine/Threading/Threading.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #if COMPILE_WITH_ASSETS_IMPORTER
 #include "Engine/Core/Log.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
@@ -16,13 +18,14 @@
 NavMesh::NavMesh(const SpawnParams& params)
     : Actor(params)
     , IsDataDirty(false)
+    , DataAsset(this)
 {
-    DataAsset.Loaded.Bind<NavMesh, &NavMesh::OnDataAssetLoaded>(this);
 }
 
 void NavMesh::SaveNavMesh()
 {
 #if COMPILE_WITH_ASSETS_IMPORTER
+    PROFILE_MEM(NavigationMesh);
 
     // Skip if scene is missing
     const auto scene = GetScene();
@@ -99,12 +102,17 @@ void NavMesh::RemoveTiles()
         navMesh->RemoveTiles(this);
 }
 
-void NavMesh::OnDataAssetLoaded()
+void NavMesh::OnAssetChanged(Asset* asset, void* caller)
+{
+}
+
+void NavMesh::OnAssetLoaded(Asset* asset, void* caller)
 {
     // Skip if already has data (prevent reloading navmesh on saving)
     if (Data.Tiles.HasItems())
         return;
     ScopeLock lock(DataAsset->Locker);
+    PROFILE_MEM(NavigationMesh);
 
     // Remove added tiles
     if (_navMeshActive)
@@ -123,6 +131,10 @@ void NavMesh::OnDataAssetLoaded()
     {
         AddTiles();
     }
+}
+
+void NavMesh::OnAssetUnloaded(Asset* asset, void* caller)
+{
 }
 
 void NavMesh::Serialize(SerializeStream& stream, const void* otherObj)

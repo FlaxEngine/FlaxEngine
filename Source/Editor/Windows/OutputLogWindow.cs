@@ -235,6 +235,8 @@ namespace FlaxEditor.Windows
 
                 // Add items
                 ItemsListContextMenu.Item lastItem = null;
+                var itemFont = Style.Current.FontSmall;
+                var maxWidth = 0.0f;
                 foreach (var command in commands)
                 {
                     cm.AddItem(lastItem = new Item
@@ -244,7 +246,7 @@ namespace FlaxEditor.Windows
                     });
                     var flags = DebugCommands.GetCommandFlags(command);
                     if (flags.HasFlag(DebugCommands.CommandFlags.Exec))
-                        lastItem.TintColor = new Color(0.85f, 0.85f, 1.0f, 1.0f);
+                        lastItem.TintColor = new Color(0.75f, 0.75f, 1.0f, 1.0f);
                     else if (flags.HasFlag(DebugCommands.CommandFlags.Read) && !flags.HasFlag(DebugCommands.CommandFlags.Write))
                         lastItem.TintColor = new Color(0.85f, 0.85f, 0.85f, 1.0f);
                     lastItem.Focused += item =>
@@ -252,6 +254,7 @@ namespace FlaxEditor.Windows
                         // Set command
                         Set(item.Name);
                     };
+                    maxWidth = Mathf.Max(maxWidth, itemFont.MeasureText(command).X);
                 }
                 cm.ItemClicked += item =>
                 {
@@ -265,6 +268,9 @@ namespace FlaxEditor.Windows
                 cm.Height = 220;
                 if (cm.Height > totalHeight)
                     cm.Height = totalHeight; // Limit popup height if list is small
+                maxWidth += 8.0f + ScrollBar.DefaultSize; // Margin
+                if (cm.Width < maxWidth)
+                    cm.Width = maxWidth;
                 if (searchText != null)
                 {
                     cm.SortItems();
@@ -314,12 +320,25 @@ namespace FlaxEditor.Windows
 
                 // Show commands search popup based on current text input
                 var text = Text.Trim();
-                if (text.Length != 0)
+                bool isWhitespaceOnly = string.IsNullOrWhiteSpace(Text) && !string.IsNullOrEmpty(Text);
+                if (text.Length != 0 || isWhitespaceOnly)
                 {
                     DebugCommands.Search(text, out var matches);
-                    if (matches.Length != 0)
+                    if (matches.Length != 0 || isWhitespaceOnly)
                     {
-                        ShowPopup(ref _searchPopup, matches, text);
+                        string[] commands = [];
+                        if (isWhitespaceOnly)
+                            DebugCommands.GetAllCommands(out commands);
+
+                        ShowPopup(ref _searchPopup, isWhitespaceOnly ? commands : matches, text);
+                        
+                        if (isWhitespaceOnly)
+                        {
+                            // Scroll to and select first item for consistent behaviour
+                            var firstItem = _searchPopup.ItemsPanel.Children[0] as Item;
+                            _searchPopup.ScrollToAndHighlightItemByName(firstItem.Name);
+                        }
+
                         return;
                     }
                 }
@@ -344,8 +363,8 @@ namespace FlaxEditor.Windows
                     // Update history buffer
                     if (_window._commandHistory == null)
                         _window._commandHistory = new List<string>();
-                    else if (_window._commandHistory.Count != 0 && _window._commandHistory.Last() == command)
-                        _window._commandHistory.RemoveAt(_window._commandHistory.Count - 1);
+                    else if (_window._commandHistory.Count != 0 && _window._commandHistory.Contains(command))
+                        _window._commandHistory.Remove(command);
                     _window._commandHistory.Add(command);
                     if (_window._commandHistory.Count > CommandHistoryLimit)
                         _window._commandHistory.RemoveAt(0);

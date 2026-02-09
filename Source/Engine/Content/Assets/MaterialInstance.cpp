@@ -90,9 +90,11 @@ void MaterialInstance::OnBaseParamsChanged()
     // Get the newest parameters
     baseParams->Clone(Params);
 
+#if 0
     // Override all public parameters by default
     for (auto& param : Params)
         param.SetIsOverride(param.IsPublic());
+#endif
 
     // Copy previous parameters values
     for (int32 i = 0; i < oldParams.Count(); i++)
@@ -216,10 +218,14 @@ Asset::LoadResult MaterialInstance::load()
     Guid baseMaterialId;
     headerStream.Read(baseMaterialId);
     auto baseMaterial = Content::LoadAsync<MaterialBase>(baseMaterialId);
+    if (baseMaterial)
+        baseMaterial->AddReference();
 
     // Load parameters
     if (Params.Load(&headerStream))
     {
+        if (baseMaterial)
+            baseMaterial->RemoveReference();
         LOG(Warning, "Cannot load material parameters.");
         return LoadResult::CannotLoadData;
     }
@@ -237,6 +243,8 @@ Asset::LoadResult MaterialInstance::load()
         ParamsChanged();
     }
 
+    if (baseMaterial)
+        baseMaterial->RemoveReference();
     return LoadResult::Ok;
 }
 

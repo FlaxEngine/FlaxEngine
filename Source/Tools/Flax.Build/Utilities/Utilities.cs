@@ -42,21 +42,14 @@ namespace Flax.Build
         }
 
         /// <summary>
-        /// Restores a targets nuget packages.
+        /// Gets the NuGet packages cache folder path.
         /// </summary>
-        /// <param name="graph">The task graph.</param>
-        /// <param name="target">The target.</param>
-        /// <param name="dotNetPath">The dotnet path.</param>
-        public static void RestoreNugetPackages(Graph.TaskGraph graph, Target target)
+        /// <returns>The path.</returns>
+        public static string GetNugetPackagesPath()
         {
-            var dotNetPath = GetDotNetPath();
-            var task = graph.Add<Graph.Task>();
-            task.WorkingDirectory = target.FolderPath;
-            task.InfoMessage = $"Restoring Nuget Packages for {target.Name}";
-            task.CommandPath = dotNetPath;
-            task.CommandArguments = $"restore";
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
         }
-        
+
         /// <summary>
         /// Gets the hash code for the string (the same for all platforms). Matches Engine algorithm for string hashing.
         /// </summary>
@@ -145,23 +138,50 @@ namespace Flax.Build
         }
 
         /// <summary>
+        /// File copy modes.
+        /// </summary>
+        public enum CopyMode
+        {
+            /// <summary>
+            /// Copies the file to the destination, fails if it already exists.
+            /// </summary>
+            New,
+
+            /// <summary>
+            /// If destination file exists, it will be overriden.
+            /// </summary>
+            OverrideIfExists,
+
+            /// <summary>
+            /// If destination file exists, has the same size and is newer than source file, it won't be overriden (avoids unnecessary copies).
+            /// </summary>
+            OverrideIfNewer,
+        }
+
+        /// <summary>
         /// Copies the file.
         /// </summary>
         /// <param name="srcFilePath">The source file path.</param>
         /// <param name="dstFilePath">The destination file path.</param>
-        /// <param name="overwrite"><see langword="true" /> if the destination file can be overwritten; otherwise, <see langword="false" />.</param>
-        public static void FileCopy(string srcFilePath, string dstFilePath, bool overwrite = true)
+        /// <param name="mode">Copy operation modes.</param>
+        public static void FileCopy(string srcFilePath, string dstFilePath, CopyMode mode = CopyMode.OverrideIfExists)
         {
             if (string.IsNullOrEmpty(srcFilePath))
                 throw new ArgumentNullException(nameof(srcFilePath));
             if (string.IsNullOrEmpty(dstFilePath))
                 throw new ArgumentNullException(nameof(dstFilePath));
 
+            if (mode == CopyMode.OverrideIfNewer &&
+                File.Exists(dstFilePath) &&
+                File.GetLastWriteTime(srcFilePath) <= File.GetLastWriteTime(dstFilePath) &&
+                new FileInfo(dstFilePath).Length == new FileInfo(srcFilePath).Length)
+                return;
+
             Log.Verbose(srcFilePath + " -> " + dstFilePath);
 
             try
             {
-                File.Copy(srcFilePath, dstFilePath, overwrite);
+                File.Copy(srcFilePath, dstFilePath, mode != CopyMode.New);
             }
             catch (Exception ex)
             {
@@ -171,6 +191,17 @@ namespace Flax.Build
                     Log.Error("Failed to copy file. " + ex.Message);
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Copies the file.
+        /// </summary>
+        /// <param name="srcFilePath">The source file path.</param>
+        /// <param name="dstFilePath">The destination file path.</param>
+        /// <param name="overwrite"><see langword="true" /> if the destination file can be overwritten; otherwise, <see langword="false" />.</param>
+        public static void FileCopy(string srcFilePath, string dstFilePath, bool overwrite)
+        {
+            FileCopy(srcFilePath, dstFilePath, overwrite ? CopyMode.OverrideIfExists : CopyMode.New);
         }
 
         /// <summary>
@@ -858,6 +889,18 @@ namespace Flax.Build
                     return -1;
                 return 0;
             });
+        }
+
+        internal static bool ParseVersion(string text, out Version ver)
+        {
+            if (Version.TryParse(text, out ver))
+                return true;
+            if (int.TryParse(text, out var major))
+            {
+                ver = new Version(major, 0);
+                return true;
+            }
+            return false;
         }
     }
 }

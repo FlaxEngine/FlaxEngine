@@ -73,6 +73,11 @@ namespace FlaxEditor.GUI.ContextMenu
         public bool HasChildCMOpened => _childCM != null;
 
         /// <summary>
+        /// Gets the parent context menu (if exists).
+        /// </summary>
+        public ContextMenuBase ParentCM => _parentCM;
+
+        /// <summary>
         /// Gets the topmost context menu.
         /// </summary>
         public ContextMenuBase TopmostCM
@@ -81,9 +86,7 @@ namespace FlaxEditor.GUI.ContextMenu
             {
                 var cm = this;
                 while (cm._parentCM != null && cm._isSubMenu)
-                {
                     cm = cm._parentCM;
-                }
                 return cm;
             }
         }
@@ -109,14 +112,20 @@ namespace FlaxEditor.GUI.ContextMenu
         public bool UseInput = true;
 
         /// <summary>
+        /// Optional flag that can disable UI navigation (tab/enter).
+        /// </summary>
+        public bool UseNavigation = true;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ContextMenuBase"/> class.
         /// </summary>
         public ContextMenuBase()
         : base(0, 0, 120, 32)
         {
-            _direction = ContextMenuDirection.RightDown;
             Visible = false;
+            AutoFocus = true;
 
+            _direction = ContextMenuDirection.RightDown;
             _isSubMenu = true;
         }
 
@@ -593,6 +602,21 @@ namespace FlaxEditor.GUI.ContextMenu
             case KeyboardKeys.Escape:
                 Hide();
                 return true;
+            case KeyboardKeys.Return:
+                if (UseNavigation && Root?.FocusedControl != null)
+                {
+                    Root.SubmitFocused();
+                    return true;
+                }
+                break;
+            case KeyboardKeys.Tab:
+                if (UseNavigation && Root != null)
+                {
+                    bool shiftDown = Root.GetKey(KeyboardKeys.Shift);
+                    Root.Navigate(shiftDown ? NavDirection.Previous : NavDirection.Next);
+                    return true;
+                }
+                break;
             }
             return false;
         }

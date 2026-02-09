@@ -52,9 +52,12 @@ private:
     void OnShaderReloading(Asset* obj)
     {
         _psDofDepthBlurGeneration->ReleaseGPU();
-        _psBokehGeneration->ReleaseGPU();
-        _psBokeh->ReleaseGPU();
-        _psBokehComposite->ReleaseGPU();
+        if (_psBokehGeneration)
+            _psBokehGeneration->ReleaseGPU();
+        if (_psBokeh)
+            _psBokeh->ReleaseGPU();
+        if (_psBokehComposite)
+            _psBokehComposite->ReleaseGPU();
         invalidateResources();
     }
 #endif

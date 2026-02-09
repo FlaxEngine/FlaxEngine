@@ -18,6 +18,7 @@
 #include "Engine/Content/Deprecated.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/Serialization.h"
 #include <ThirdParty/recastnavigation/DetourNavMesh.h>
 #include <ThirdParty/recastnavigation/RecastAlloc.h>
@@ -93,6 +94,7 @@ NavMeshRuntime* NavMeshRuntime::Get(const NavMeshProperties& navMeshProperties, 
     if (!result && createIfMissing)
     {
         // Create a new navmesh
+        PROFILE_MEM(Navigation);
         result = New<NavMeshRuntime>(navMeshProperties);
         NavMeshes.Add(result);
     }
@@ -178,16 +180,20 @@ NavigationService NavigationServiceInstance;
 
 void* dtAllocDefault(size_t size, dtAllocHint)
 {
+    PROFILE_MEM(NavigationMesh);
     return Allocator::Allocate(size);
 }
 
 void* rcAllocDefault(size_t size, rcAllocHint)
 {
+    PROFILE_MEM(Navigation);
     return Allocator::Allocate(size);
 }
 
 NavigationSettings::NavigationSettings()
 {
+    PROFILE_MEM(Navigation);
+
     // Init navmeshes
     NavMeshes.Resize(1);
     auto& navMesh = NavMeshes[0];
@@ -375,30 +381,6 @@ bool Navigation::RayCast(const Vector3& startPosition, const Vector3& endPositio
         return false;
     return NavMeshes.First()->RayCast(startPosition, endPosition, hitInfo);
 }
-
-#if COMPILE_WITH_NAV_MESH_BUILDER
-
-bool Navigation::IsBuildingNavMesh()
-{
-    return NavMeshBuilder::IsBuildingNavMesh();
-}
-
-float Navigation::GetNavMeshBuildingProgress()
-{
-    return NavMeshBuilder::GetNavMeshBuildingProgress();
-}
-
-void Navigation::BuildNavMesh(Scene* scene, float timeoutMs)
-{
-    NavMeshBuilder::Build(scene, timeoutMs);
-}
-
-void Navigation::BuildNavMesh(Scene* scene, const BoundingBox& dirtyBounds, float timeoutMs)
-{
-    NavMeshBuilder::Build(scene, dirtyBounds, timeoutMs);
-}
-
-#endif
 
 #if COMPILE_WITH_DEBUG_DRAW
 

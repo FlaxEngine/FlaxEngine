@@ -9,6 +9,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Audio/Audio.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 #if PLATFORM_WINDOWS
 // Tweak Win ver
@@ -232,6 +233,7 @@ void AudioBackendXAudio2::Listener_ReinitializeAll()
 
 uint32 AudioBackendXAudio2::Source_Add(const AudioDataInfo& format, const Vector3& position, const Quaternion& orientation, float volume, float pitch, float pan, bool loop, bool spatial, float attenuation, float minDistance, float doppler)
 {
+    PROFILE_MEM(Audio);
     ScopeLock lock(XAudio2::Locker);
 
     // Get first free source
@@ -580,6 +582,7 @@ void AudioBackendXAudio2::Source_DequeueProcessedBuffers(uint32 sourceID)
 
 uint32 AudioBackendXAudio2::Buffer_Create()
 {
+    PROFILE_MEM(Audio);
     uint32 bufferID;
     ScopeLock lock(XAudio2::Locker);
 
@@ -618,6 +621,7 @@ void AudioBackendXAudio2::Buffer_Delete(uint32 bufferID)
 
 void AudioBackendXAudio2::Buffer_Write(uint32 bufferID, byte* samples, const AudioDataInfo& info)
 {
+    PROFILE_MEM(Audio);
     CHECK(info.NumChannels <= MAX_INPUT_CHANNELS);
 
     XAudio2::Locker.Lock();
@@ -668,7 +672,7 @@ bool AudioBackendXAudio2::Base_Init()
     HRESULT hr = XAudio2Create(&XAudio2::Instance, 0, XAUDIO2_DEFAULT_PROCESSOR);
     if (FAILED(hr))
     {
-        LOG(Error, "Failed to initalize XAudio2. Error: 0x{0:x}", hr);
+        LOG(Error, "Failed to initialize XAudio2. Error: 0x{0:x}", hr);
         return true;
     }
     XAudio2::Instance->RegisterForCallbacks(&XAudio2::Callback);
@@ -677,7 +681,7 @@ bool AudioBackendXAudio2::Base_Init()
     hr = XAudio2::Instance->CreateMasteringVoice(&XAudio2::MasteringVoice);
     if (FAILED(hr))
     {
-        LOG(Error, "Failed to initalize XAudio2 mastering voice. Error: 0x{0:x}", hr);
+        LOG(Error, "Failed to initialize XAudio2 mastering voice. Error: 0x{0:x}", hr);
         return true;
     }
     XAUDIO2_VOICE_DETAILS details;

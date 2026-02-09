@@ -32,7 +32,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         private void OnImageClicked(Image image, MouseButton button)
         {
             var texture = Values[0] as GPUTexture;
-            if (!texture)
+            if (!texture || button != MouseButton.Right)
                 return;
             var menu = new ContextMenu();
             menu.AddButton("Save...", () => Screenshot.Capture(Values[0] as GPUTexture));

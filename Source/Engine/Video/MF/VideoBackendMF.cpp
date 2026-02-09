@@ -4,6 +4,7 @@
 
 #include "VideoBackendMF.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Threading/TaskGraph.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Engine/Time.h"
@@ -11,18 +12,25 @@
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #endif
+#if PLATFORM_XBOX_ONE || PLATFORM_XBOX_SCARLETT
+#define USE_STOCKD3D 0
+#include <mf_x/mfapi.h>
+#include <mf_x/mfidl.h>
+#include <mf_x/mfreadwrite.h>
+#else
 #include <sdkddkver.h>
 #if WINVER >= _WIN32_WINNT_WINBLUE && WINVER < _WIN32_WINNT_WIN10
 // Fix compilation for Windows 8.1 on the latest Windows SDK
 typedef enum _MFVideoSphericalFormat { } MFVideoSphericalFormat;
 #endif
-#if !defined(MF_SOURCE_READER_CURRENT_TYPE_INDEX) && !defined(PLATFORM_GDK)
+#if !defined(MF_SOURCE_READER_CURRENT_TYPE_INDEX) && !defined(PLATFORM_GDK) && WINVER < _WIN32_WINNT_WIN10
 // Fix compilation for Windows 7 on the latest Windows SDK
 #define MF_SOURCE_READER_CURRENT_TYPE_INDEX 0xFFFFFFFF
 #endif
 #include <mfapi.h>
 #include <mfidl.h>
 #include <mfreadwrite.h>
+#endif
 
 #define VIDEO_API_MF_ERROR(api, err) LOG(Warning, "[VideoBackendMF] {} failed with error 0x{:x}", TEXT(#api), (uint64)err)
 
@@ -39,10 +47,13 @@ struct VideoPlayerMF
 namespace MF
 {
     Array<VideoBackendPlayer*> Players;
+    TimeSpan UpdateDeltaTime;
+    double UpdateTime;
 
     bool Configure(VideoBackendPlayer& player, VideoPlayerMF& playerMF, DWORD streamIndex)
     {
         PROFILE_CPU_NAMED("Configure");
+        PROFILE_MEM(Video);
         IMFMediaType *mediaType = nullptr, *nativeType = nullptr;
         bool result = true;
 
@@ -109,7 +120,7 @@ namespace MF
                 player.Format = PixelFormat::NV12;
             else if (subtype == MFVideoFormat_YUY2)
                 player.Format = PixelFormat::YUY2;
-#if (WDK_NTDDI_VERSION >= NTDDI_WIN10)
+#if (WDK_NTDDI_VERSION >= NTDDI_WIN10) && PLATFORM_WINDOWS
             else if (subtype == MFVideoFormat_A2R10G10B10)
                 player.Format = PixelFormat::R10G10B10A2_UNorm;
             else if (subtype == MFVideoFormat_A16B16G16R16F)
@@ -118,6 +129,14 @@ namespace MF
             else
             {
                 // Reconfigure decoder to output supported format by force
+#if PLATFORM_XBOX_ONE || PLATFORM_XBOX_SCARLETT
+                // Xbox supports NV12 via HV decoder
+                auto fallbackFormat = PixelFormat::NV12;
+                GUID fallbackFormatGuid = MFVideoFormat_NV12;
+#else
+                auto fallbackFormat = PixelFormat::YUY2;
+                GUID fallbackFormatGuid = MFVideoFormat_YUY2;
+#endif
                 IMFMediaType* customType = nullptr;
                 hr = MFCreateMediaType(&customType);
                 if (FAILED(hr))
@@ -126,7 +145,7 @@ namespace MF
                     goto END;
                 }
                 customType->SetGUID(MF_MT_MAJOR_TYPE, majorType);
-                customType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_YUY2);
+                customType->SetGUID(MF_MT_SUBTYPE, fallbackFormatGuid);
                 MFSetAttributeSize(customType, MF_MT_FRAME_SIZE, width, height);
                 hr = playerMF.SourceReader->SetCurrentMediaType(streamIndex, nullptr, customType);
                 if (FAILED(hr))
@@ -134,12 +153,13 @@ namespace MF
                     VIDEO_API_MF_ERROR(SetCurrentMediaType, hr);
                     goto END;
                 }
-                player.Format = PixelFormat::YUY2;
+                player.Format = fallbackFormat;
                 customType->Release();
             }
         }
         else if (majorType == MFMediaType_Audio)
         {
+#if !(PLATFORM_XBOX_ONE || PLATFORM_XBOX_SCARLETT) // TODO: fix missing MFAudioFormat_PCM/MFAudioFormat_Float convertion on Xbox (bug?)
             player.AudioInfo.SampleRate = MFGetAttributeUINT32(mediaType, MF_MT_AUDIO_SAMPLES_PER_SECOND, 0);
             player.AudioInfo.NumChannels = MFGetAttributeUINT32(mediaType, MF_MT_AUDIO_NUM_CHANNELS, 0);
             player.AudioInfo.BitDepth = MFGetAttributeUINT32(mediaType, MF_MT_AUDIO_BITS_PER_SAMPLE, 16);
@@ -163,6 +183,7 @@ namespace MF
                 }
                 customType->Release();
             }
+#endif
         }
 
         result = false;
@@ -367,6 +388,7 @@ namespace MF
     void UpdatePlayer(int32 index)
     {
         PROFILE_CPU();
+        PROFILE_MEM(Video);
         auto& player = *Players[index];
         ZoneText(player.DebugUrl, player.DebugUrlLen);
         auto& playerMF = player.GetBackendState<VideoPlayerMF>();
@@ -374,13 +396,6 @@ namespace MF
         // Skip paused player
         if (!playerMF.Playing && !playerMF.Seek)
             return;
-
-        bool useTimeScale = true;
-#if USE_EDITOR
-        if (!Editor::IsPlayMode)
-            useTimeScale = false;
-#endif
-        TimeSpan dt = useTimeScale ? Time::Update.DeltaTime : Time::Update.UnscaledDeltaTime;
 
         // Update playback time
         if (playerMF.FirstFrame)
@@ -390,9 +405,9 @@ namespace MF
         }
         else if (playerMF.Playing)
         {
-            playerMF.Time += dt;
+            playerMF.Time += UpdateDeltaTime;
         }
-        if (playerMF.Time > player.Duration)
+        if (playerMF.Time > player.Duration && player.Duration.Ticks != 0)
         {
             if (playerMF.Loop)
             {
@@ -432,7 +447,7 @@ namespace MF
         }
 
         // Update streams
-        if (ReadStream(player, playerMF, MF_SOURCE_READER_FIRST_VIDEO_STREAM, dt))
+        if (ReadStream(player, playerMF, MF_SOURCE_READER_FIRST_VIDEO_STREAM, UpdateDeltaTime))
         {
             // Failed to pick a valid sample so try again with seeking
             playerMF.Seek = 1;
@@ -444,7 +459,7 @@ namespace MF
             }
         }
         if (player.AudioInfo.BitDepth != 0)
-            ReadStream(player, playerMF, MF_SOURCE_READER_FIRST_AUDIO_STREAM, dt);
+            ReadStream(player, playerMF, MF_SOURCE_READER_FIRST_AUDIO_STREAM, UpdateDeltaTime);
 
         player.Tick();
     }
@@ -453,6 +468,7 @@ namespace MF
 bool VideoBackendMF::Player_Create(const VideoBackendPlayerInfo& info, VideoBackendPlayer& player)
 {
     PROFILE_CPU();
+    PROFILE_MEM(Video);
     player = VideoBackendPlayer();
     auto& playerMF = player.GetBackendState<VideoPlayerMF>();
 
@@ -572,6 +588,7 @@ const Char* VideoBackendMF::Base_Name()
 bool VideoBackendMF::Base_Init()
 {
     PROFILE_CPU();
+    PROFILE_MEM(Video);
 
     // Init COM
     HRESULT hr = CoInitializeEx(0, COINIT_MULTITHREADED);
@@ -588,12 +605,17 @@ bool VideoBackendMF::Base_Init()
         VIDEO_API_MF_ERROR(MFStartup, hr);
         return true;
     }
+    MF::UpdateTime = Platform::GetTimeSeconds();
 
     return false;
 }
 
 void VideoBackendMF::Base_Update(TaskGraph* graph)
 {
+    double time = Platform::GetTimeSeconds();
+    MF::UpdateDeltaTime = TimeSpan::FromSeconds(time - MF::UpdateTime);
+    MF::UpdateTime = time;
+
     // Schedule work to update all videos in async
     Function<void(int32)> job;
     job.Bind(MF::UpdatePlayer);

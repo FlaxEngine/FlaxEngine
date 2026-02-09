@@ -52,6 +52,17 @@ void CapsuleCollider::DrawPhysicsDebug(RenderView& view)
         DEBUG_DRAW_WIRE_CAPSULE(_transform.LocalToWorld(_center), rotation, radius, height, Color::GreenYellow * 0.8f, 0, true);
 }
 
+void CapsuleCollider::OnDebugDrawSelf()
+{
+    Quaternion rotation;
+    Quaternion::Multiply(_transform.Orientation, Quaternion::Euler(0, 90, 0), rotation);
+    const float minSize = 0.001f;
+    const float radius = Math::Max(Math::Abs(_radius) * _cachedScale, minSize);
+    const float height = Math::Max(Math::Abs(_height) * _cachedScale, minSize);
+    const Vector3 position = _transform.LocalToWorld(_center);
+    DEBUG_DRAW_WIRE_CAPSULE(position, rotation, radius, height, Color::GreenYellow, 0, false);
+}
+
 void CapsuleCollider::OnDebugDrawSelected()
 {
     Quaternion rotation;

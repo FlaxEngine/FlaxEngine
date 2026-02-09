@@ -13,7 +13,7 @@
 /// Performs an animation and renders a skinned model.
 /// </summary>
 API_CLASS(Attributes="ActorContextMenu(\"New/Animation/Animated Model\"), ActorToolbox(\"Visuals\")")
-class FLAXENGINE_API AnimatedModel : public ModelInstanceActor
+class FLAXENGINE_API AnimatedModel : public ModelInstanceActor, IAssetReference
 {
     DECLARE_SCENE_OBJECT(AnimatedModel);
     friend class AnimationsSystem;
@@ -232,6 +232,12 @@ public:
     API_FUNCTION() void GetCurrentPose(API_PARAM(Out) Array<Matrix>& nodesTransformation, bool worldSpace = false) const;
 
     /// <summary>
+    /// Gets the per-node final transformations (skeleton pose).
+    /// </summary>
+    /// <param name="nodesTransformation">The output per-node final transformation matrices.</param>
+    void GetCurrentPose(Span<Matrix>& nodesTransformation) const;
+
+    /// <summary>
     /// Sets the per-node final transformations (skeleton pose).
     /// </summary>
     /// <param name="nodesTransformation">The per-node final transformation matrices.</param>
@@ -406,8 +412,8 @@ public:
     /// Stops the animation playback on the slot in Anim Graph.
     /// </summary>
     /// <param name="slotName">The name of the slot.</param>
-    /// <param name="anim">The animation to stop.</param>
-    API_FUNCTION() void StopSlotAnimation(const StringView& slotName, Animation* anim);
+    /// <param name="anim">The animation to check. Null to use slot name only.</param>
+    API_FUNCTION() void StopSlotAnimation(const StringView& slotName, Animation* anim = nullptr);
 
     /// <summary>
     /// Pauses all the animations playback on the all slots in Anim Graph.
@@ -418,8 +424,8 @@ public:
     /// Pauses the animation playback on the slot in Anim Graph.
     /// </summary>
     /// <param name="slotName">The name of the slot.</param>
-    /// <param name="anim">The animation to pause.</param>
-    API_FUNCTION() void PauseSlotAnimation(const StringView& slotName, Animation* anim);
+    /// <param name="anim">The animation to check. Null to use slot name only.</param>
+    API_FUNCTION() void PauseSlotAnimation(const StringView& slotName, Animation* anim = nullptr);
 
     /// <summary>
     /// Checks if any  animation playback is active on any  slot in Anim Graph (not paused).
@@ -430,8 +436,8 @@ public:
     /// Checks if the animation playback is active on the slot in Anim Graph (not paused).
     /// </summary>
     /// <param name="slotName">The name of the slot.</param>
-    /// <param name="anim">The animation to check.</param>
-    API_FUNCTION() bool IsPlayingSlotAnimation(const StringView& slotName, Animation* anim);
+    /// <param name="anim">The animation to check. Null to use slot name only.</param>
+    API_FUNCTION() bool IsPlayingSlotAnimation(const StringView& slotName, Animation* anim = nullptr);
 
 private:
     void ApplyRootMotion(const Transform& rootMotionDelta);
@@ -449,6 +455,11 @@ private:
 
     void OnGraphChanged();
     void OnGraphLoaded();
+
+    // [IAssetReference]
+    void OnAssetChanged(Asset* asset, void* caller) override;
+    void OnAssetLoaded(Asset* asset, void* caller) override;
+    void OnAssetUnloaded(Asset* asset, void* caller) override;
 
 public:
     // [ModelInstanceActor]

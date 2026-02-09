@@ -204,14 +204,9 @@ public:
         GPUBuffer* BufferSecondary = nullptr;
 
         /// <summary>
-        /// The indirect draw command arguments buffer used by the GPU particles to invoke drawing on a GPU based on the particles amount (instances count).
-        /// </summary>
-        GPUBuffer* IndirectDrawArgsBuffer = nullptr;
-
-        /// <summary>
         /// The GPU particles sorting buffer. Contains structure of particle index and the sorting key for every particle. Used to sort particles.
         /// </summary>
-        GPUBuffer* SortingKeysBuffer = nullptr;
+        GPUBuffer* SortingKeys = nullptr;
 
         /// <summary>
         /// The particles indices buffer (GPU side).

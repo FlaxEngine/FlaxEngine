@@ -257,6 +257,37 @@ void GetWindowsVersion(String& windowsName, int32& versionMajor, int32& versionM
     RegCloseKey(hKey);
 }
 
+#if PLATFORM_ARCH_X86 || PLATFORM_ARCH_X64
+
+struct CPUBrand
+{
+    char Buffer[0x40];
+
+    CPUBrand()
+    {
+        Buffer[0] = 0;
+        int32 cpuInfo[4];
+        __cpuid(cpuInfo, 0x80000000);
+        if (cpuInfo[0] >= 0x80000004)
+        {
+            // Get name
+            for (uint32 i = 0; i < 3; i++)
+            {
+                __cpuid(cpuInfo, 0x80000002 + i);
+                memcpy(Buffer + i * sizeof(cpuInfo), cpuInfo, sizeof(cpuInfo));
+            }
+
+            // Trim ending whitespaces
+            int32 size = StringUtils::Length(Buffer);
+            while (size > 1 && Buffer[size - 1] == ' ')
+                size--;
+            Buffer[size] = 0;
+        }
+    }
+};
+
+#endif
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     // Find window to process that message
@@ -512,10 +543,70 @@ void WindowsPlatform::ReleaseMutex()
     }
 }
 
+void CheckInstructionSet()
+{
+#if PLATFORM_ARCH_X86 || PLATFORM_ARCH_X64
+    // Check the minimum vector instruction set support
+    int32 cpuInfo[4] = { -1 };
+    __cpuid(cpuInfo, 0);
+    int32 cpuInfoSize = cpuInfo[0];
+    __cpuid(cpuInfo, 1);
+    bool SSE2 = cpuInfo[3] & (1u << 26);
+    bool SSE3 = cpuInfo[2] & (1u << 0);
+    bool SSE41 = cpuInfo[2] & (1u << 19);
+    bool SSE42 = cpuInfo[2] & (1u << 20);
+    bool AVX = cpuInfo[2] & (1u << 28);
+    bool POPCNT = cpuInfo[2] & (1u << 23);
+    bool AVX2 = false;
+    if (cpuInfoSize >= 7)
+    {
+        __cpuid(cpuInfo, 7);
+        AVX2 = cpuInfo[1] & (1u << 5) && (_xgetbv(0) & 6) == 6;
+    }
+    const Char* missingFeature = nullptr;
+#if defined(__AVX__)
+    if (!AVX)
+        missingFeature = TEXT("AVX");
+#endif
+#if defined(__AVX2__)
+    if (!AVX2)
+        missingFeature = TEXT("AVX2");
+#endif
+#if PLATFORM_SIMD_SSE2
+    if (!SSE2)
+        missingFeature = TEXT("SSE2");
+#endif
+#if PLATFORM_SIMD_SSE3
+    if (!SSE3)
+        missingFeature = TEXT("SSE3");
+#endif
+#if PLATFORM_SIMD_SSE4_1
+    if (!SSE41)
+        missingFeature = TEXT("SSE4.1");
+#endif
+#if PLATFORM_SIMD_SSE4_2
+    if (!SSE42)
+        missingFeature = TEXT("SSE4.2");
+    if (!POPCNT)
+        missingFeature = TEXT("POPCNT");
+#endif
+    if (missingFeature)
+    {
+        // Not supported CPU
+        CPUBrand cpu;
+        Platform::Error(String::Format(TEXT("Cannot start program due to lack of CPU feature {}.\n\n{}"), missingFeature, String(cpu.Buffer)));
+        exit(-1);
+    }
+#endif
+}
+PRAGMA_ENABLE_OPTIMIZATION;
+
 void WindowsPlatform::PreInit(void* hInstance)
 {
     ASSERT(hInstance);
     Instance = hInstance;
+
+    CheckInstructionSet();
 
     // Disable the process from being showing "ghosted" while not responding messages during slow tasks
     DisableProcessWindowsGhosting();
@@ -556,14 +647,8 @@ void WindowsPlatform::PreInit(void* hInstance)
     FlaxDbgHelpUnlock();
 #endif
 
+    // Get system version
     GetWindowsVersion(WindowsName, VersionMajor, VersionMinor, VersionBuild);
-
-    // Validate platform
-    if (VersionMajor < 6)
-    {
-        Error(TEXT("Not supported operating system version."));
-        exit(-1);
-    }
 }
 
 bool WindowsPlatform::IsWindows10()
@@ -640,25 +725,25 @@ bool WindowsPlatform::Init()
 
     // Check if can run Engine on current platform
 #if WINVER >= 0x0A00
-    if (!IsWindows10OrGreater() && !IsWindowsServer())
+    if (VersionMajor < 10 && !IsWindowsServer())
     {
         Platform::Fatal(TEXT("Flax Engine requires Windows 10 or higher."));
         return true;
     }
 #elif WINVER >= 0x0603
-    if (!IsWindows8Point1OrGreater() && !IsWindowsServer())
+    if ((VersionMajor < 8 || (VersionMajor == 8 && VersionMinor == 0)) && !IsWindowsServer())
     {
         Platform::Fatal(TEXT("Flax Engine requires Windows 8.1 or higher."));
         return true;
     }
 #elif WINVER >= 0x0602
-    if (!IsWindows8OrGreater() && !IsWindowsServer())
+    if (VersionMajor < 8 && !IsWindowsServer())
     {
         Platform::Fatal(TEXT("Flax Engine requires Windows 8 or higher."));
         return true;
     }
 #else
-    if (!IsWindows7OrGreater() && !IsWindowsServer())
+    if (VersionMajor < 7 && !IsWindowsServer())
     {
         Platform::Fatal(TEXT("Flax Engine requires Windows 7 or higher."));
         return true;
@@ -713,20 +798,8 @@ void WindowsPlatform::LogInfo()
 
 #if PLATFORM_ARCH_X86 || PLATFORM_ARCH_X64
     // Log CPU brand
-    {
-	    char brandBuffer[0x40] = {};
-	    int32 cpuInfo[4] = { -1 };
-	    __cpuid(cpuInfo, 0x80000000);
-	    if (cpuInfo[0] >= 0x80000004)
-	    {
-		    for (uint32 i = 0; i < 3; i++)
-		    {
-			    __cpuid(cpuInfo, 0x80000002 + i);
-			    memcpy(brandBuffer + i * sizeof(cpuInfo), cpuInfo, sizeof(cpuInfo));
-		    }
-	    }
-        LOG(Info, "CPU: {0}", String(brandBuffer));
-    }
+    CPUBrand cpu;
+    LOG(Info, "CPU: {0}", String(cpu.Buffer));
 #endif
 
     LOG(Info, "Microsoft {0} {1}-bit ({2}.{3}.{4})", WindowsName, Platform::Is64BitPlatform() ? TEXT("64") : TEXT("32"), VersionMajor, VersionMinor, VersionBuild);
@@ -1054,8 +1127,10 @@ void ReadPipe(HANDLE pipe, Array<char>& rawData, Array<Char>& logData, LogType l
             int32 tmp;
             StringUtils::ConvertANSI2UTF16(rawData.Get(), logData.Get(), rawData.Count(), tmp);
             logData.Last() = '\0';
+#if LOG_ENABLE
             if (settings.LogOutput)
                 Log::Logger::Write(logType, StringView(logData.Get(), rawData.Count()));
+#endif
             if (settings.SaveOutput)
                 settings.Output.Add(logData.Get(), rawData.Count());
         }

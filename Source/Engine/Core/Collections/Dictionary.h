@@ -164,6 +164,15 @@ public:
     }
 
     /// <summary>
+    /// Initializes an empty <see cref="Dictionary"/> without reserving any space.
+    /// </summary>
+    /// <param name="tag">The custom allocation tag.</param>
+    Dictionary(typename Base::AllocationTag tag)
+        : Base(tag)
+    {
+    }
+
+    /// <summary>
     /// Initializes <see cref="Dictionary"/> by reserving space.
     /// </summary>
     /// <param name="capacity">The number of elements that can be added without a need to allocate more memory.</param>
@@ -549,7 +558,7 @@ public:
     /// Removes element with a specified key.
     /// </summary>
     /// <param name="key">The element key to remove.</param>
-    /// <returns>True if cannot remove item from the collection because cannot find it, otherwise false.</returns>
+    /// <returns>True if item was removed from collection, otherwise false.</returns>
     template<typename KeyComparableType>
     bool Remove(const KeyComparableType& key)
     {
@@ -569,7 +578,7 @@ public:
     /// Removes element at specified iterator.
     /// </summary>
     /// <param name="i">The element iterator to remove.</param>
-    /// <returns>True if cannot remove item from the collection because cannot find it, otherwise false.</returns>
+    /// <returns>True if item was removed from collection, otherwise false.</returns>
     bool Remove(const Iterator& i)
     {
         ASSERT(i._collection == this);

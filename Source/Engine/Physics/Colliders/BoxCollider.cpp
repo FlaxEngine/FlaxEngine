@@ -23,15 +23,15 @@ void BoxCollider::SetSize(const Float3& value)
 void BoxCollider::AutoResize(bool globalOrientation = true)
 {
     Actor* parent = GetParent();
-    if (Cast<Scene>(parent))
+    if (parent == nullptr || Cast<Scene>(parent))
         return;
 
     // Get bounds of all siblings (excluding itself)
     const Vector3 parentScale = parent->GetScale();
     if (parentScale.IsAnyZero())
-        return; // Avoid division by zero
+        return;
 
-    // Hacky way to get unrotated bounded box of parent.
+    // Hacky way to get unrotated bounded box of parent
     const Quaternion parentOrientation = parent->GetOrientation();
     parent->SetOrientation(Quaternion::Identity);
     BoundingBox parentBox = parent->GetBox();
@@ -86,7 +86,7 @@ void BoxCollider::OnDebugDraw()
 
 namespace
 {
-    OrientedBoundingBox GetWriteBox(const Vector3& min, const Vector3& max, const float margin)
+    OrientedBoundingBox GetWireBox(const Vector3& min, const Vector3& max, const float margin)
     {
         OrientedBoundingBox box;
         const Vector3 vec = max - min;
@@ -111,10 +111,39 @@ namespace
     }
 }
 
-void BoxCollider::OnDebugDrawSelected()
+void BoxCollider::OnDebugDrawSelf()
 {
     const Color color = Color::GreenYellow;
     DEBUG_DRAW_WIRE_BOX(_bounds, color * 0.3f, 0, false);
+
+    Vector3 corners[8];
+    _bounds.GetCorners(corners);
+    const float margin = Math::Min(1.0f, (float)_bounds.GetSize().MinValue() * 0.01f);
+    const Color wiresColor = color.AlphaMultiplied(0.6f);
+    if (margin > 0.05f)
+    {
+        DEBUG_DRAW_BOX(GetWireBox(corners[0], corners[1], margin), wiresColor, 0, true);
+        DEBUG_DRAW_BOX(GetWireBox(corners[0], corners[3], margin), wiresColor, 0, true);
+        DEBUG_DRAW_BOX(GetWireBox(corners[0], corners[4], margin), wiresColor, 0, true);
+        DEBUG_DRAW_BOX(GetWireBox(corners[1], corners[2], margin), wiresColor, 0, true);
+        DEBUG_DRAW_BOX(GetWireBox(corners[1], corners[5], margin), wiresColor, 0, true);
+        DEBUG_DRAW_BOX(GetWireBox(corners[2], corners[3], margin), wiresColor, 0, true);
+        DEBUG_DRAW_BOX(GetWireBox(corners[2], corners[6], margin), wiresColor, 0, true);
+        DEBUG_DRAW_BOX(GetWireBox(corners[3], corners[7], margin), wiresColor, 0, true);
+        DEBUG_DRAW_BOX(GetWireBox(corners[4], corners[5], margin), wiresColor, 0, true);
+        DEBUG_DRAW_BOX(GetWireBox(corners[4], corners[7], margin), wiresColor, 0, true);
+        DEBUG_DRAW_BOX(GetWireBox(corners[5], corners[6], margin), wiresColor, 0, true);
+        DEBUG_DRAW_BOX(GetWireBox(corners[6], corners[7], margin), wiresColor, 0, true);
+    }
+    else
+    {
+        DEBUG_DRAW_WIRE_BOX(_bounds, wiresColor, 0, true);
+    }
+}
+
+void BoxCollider::OnDebugDrawSelected()
+{
+    OnDebugDrawSelf();
 
     if (_contactOffset > 0)
     {
@@ -123,24 +152,6 @@ void BoxCollider::OnDebugDrawSelected()
         DEBUG_DRAW_WIRE_BOX(contactBounds, Color::Blue.AlphaMultiplied(0.2f), 0, false);
     }
 
-    Vector3 corners[8];
-    _bounds.GetCorners(corners);
-    const float margin = 1.0f;
-    const Color wiresColor = color.AlphaMultiplied(0.6f);
-    DEBUG_DRAW_BOX(GetWriteBox(corners[0], corners[1], margin), wiresColor, 0, true);
-    DEBUG_DRAW_BOX(GetWriteBox(corners[0], corners[3], margin), wiresColor, 0, true);
-    DEBUG_DRAW_BOX(GetWriteBox(corners[0], corners[4], margin), wiresColor, 0, true);
-    DEBUG_DRAW_BOX(GetWriteBox(corners[1], corners[2], margin), wiresColor, 0, true);
-    DEBUG_DRAW_BOX(GetWriteBox(corners[1], corners[5], margin), wiresColor, 0, true);
-    DEBUG_DRAW_BOX(GetWriteBox(corners[2], corners[3], margin), wiresColor, 0, true);
-    DEBUG_DRAW_BOX(GetWriteBox(corners[2], corners[6], margin), wiresColor, 0, true);
-    DEBUG_DRAW_BOX(GetWriteBox(corners[3], corners[7], margin), wiresColor, 0, true);
-    DEBUG_DRAW_BOX(GetWriteBox(corners[4], corners[5], margin), wiresColor, 0, true);
-    DEBUG_DRAW_BOX(GetWriteBox(corners[4], corners[7], margin), wiresColor, 0, true);
-    DEBUG_DRAW_BOX(GetWriteBox(corners[5], corners[6], margin), wiresColor, 0, true);
-    DEBUG_DRAW_BOX(GetWriteBox(corners[6], corners[7], margin), wiresColor, 0, true);
-
-    // Base
     Collider::OnDebugDrawSelected();
 }
 

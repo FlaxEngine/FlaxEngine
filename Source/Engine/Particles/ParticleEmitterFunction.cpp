@@ -5,6 +5,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #if USE_EDITOR
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
@@ -41,7 +42,7 @@ ParticleEmitterFunction::ParticleEmitterFunction(const SpawnParams& params, cons
 
 Asset::LoadResult ParticleEmitterFunction::load()
 {
-    ConcurrentSystemLocker::WriteScope systemScope(Particles::SystemLocker);
+    PROFILE_MEM(Particles);
 
     // Load graph
     const auto surfaceChunk = GetChunk(0);
@@ -94,7 +95,7 @@ Asset::LoadResult ParticleEmitterFunction::load()
 
 void ParticleEmitterFunction::unload(bool isReloading)
 {
-    ConcurrentSystemLocker::WriteScope systemScope(Particles::SystemLocker);
+    ScopeWriteLock systemScope(Particles::SystemLocker);
     Graph.Clear();
 #if COMPILE_WITH_PARTICLE_GPU_GRAPH
     GraphGPU.Clear();
@@ -187,7 +188,6 @@ bool ParticleEmitterFunction::SaveSurface(const BytesContainer& data) const
 {
     if (OnCheckSave())
         return true;
-    ConcurrentSystemLocker::WriteScope systemScope(Particles::SystemLocker);
     ScopeLock lock(Locker);
 
     // Set Visject Surface data

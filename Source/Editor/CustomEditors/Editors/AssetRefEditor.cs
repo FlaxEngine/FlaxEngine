@@ -123,6 +123,8 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             base.Refresh();
 
+            if (Picker == null)
+                return;
             var differentValues = HasDifferentValues;
             Picker.DifferentValues = differentValues;
             if (!differentValues)

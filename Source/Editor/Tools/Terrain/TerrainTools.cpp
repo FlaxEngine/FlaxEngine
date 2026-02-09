@@ -74,11 +74,6 @@ struct TextureDataResult
     PixelFormat Format;
     Int2 Mip0Size;
     BytesContainer* Mip0DataPtr;
-
-    TextureDataResult()
-        : Lock(FlaxStorage::LockData::Invalid)
-    {
-    }
 };
 
 bool GetTextureDataForSampling(Texture* texture, TextureDataResult& data, bool hdr = false)
@@ -149,13 +144,13 @@ bool GetTextureDataForSampling(Texture* texture, TextureDataResult& data, bool h
 
 bool TerrainTools::GenerateTerrain(Terrain* terrain, const Int2& numberOfPatches, Texture* heightmap, float heightmapScale, Texture* splatmap1, Texture* splatmap2)
 {
+    PROFILE_CPU_NAMED("Terrain.GenerateTerrain");
     CHECK_RETURN(terrain && terrain->GetChunkSize() != 0, true);
     if (numberOfPatches.X < 1 || numberOfPatches.Y < 1)
     {
-        LOG(Warning, "Cannot setup terain with no patches.");
+        LOG(Warning, "Cannot setup terrain with no patches.");
         return false;
     }
-    PROFILE_CPU_NAMED("Terrain.GenerateTerrain");
 
     // Wait for assets to be loaded
     if (heightmap && heightmap->WaitForLoaded())
@@ -178,7 +173,9 @@ bool TerrainTools::GenerateTerrain(Terrain* terrain, const Int2& numberOfPatches
     terrain->AddPatches(numberOfPatches);
 
     // Prepare data
-    const auto heightmapSize = terrain->GetChunkSize() * Terrain::ChunksCountEdge + 1;
+    const int32 heightmapSize = terrain->GetChunkSize() * Terrain::ChunksCountEdge + 1;
+    const float heightmapSizeInv = 1.0f / (float)(heightmapSize - 1);
+    const Float2 uvPerPatch = Float2::One / Float2(numberOfPatches);
     Array<float> heightmapData;
     heightmapData.Resize(heightmapSize * heightmapSize);
 
@@ -192,19 +189,17 @@ bool TerrainTools::GenerateTerrain(Terrain* terrain, const Int2& numberOfPatches
         const auto sampler = PixelFormatSampler::Get(dataHeightmap.Format);
 
         // Initialize with sub-range of the input heightmap
-        const Vector2 uvPerPatch = Vector2::One / Vector2(numberOfPatches);
-        const float heightmapSizeInv = 1.0f / (heightmapSize - 1);
         for (int32 patchIndex = 0; patchIndex < terrain->GetPatchesCount(); patchIndex++)
         {
             auto patch = terrain->GetPatch(patchIndex);
-            const Vector2 uvStart = Vector2((float)patch->GetX(), (float)patch->GetZ()) * uvPerPatch;
+            const Float2 uvStart = Float2((float)patch->GetX(), (float)patch->GetZ()) * uvPerPatch;
 
             // Sample heightmap pixels with interpolation to get actual heightmap vertices locations
             for (int32 z = 0; z < heightmapSize; z++)
             {
                 for (int32 x = 0; x < heightmapSize; x++)
                 {
-                    const Vector2 uv = uvStart + Vector2(x * heightmapSizeInv, z * heightmapSizeInv) * uvPerPatch;
+                    const Float2 uv = uvStart + Float2(x * heightmapSizeInv, z * heightmapSizeInv) * uvPerPatch;
                     const Color color = sampler->SampleLinear(dataHeightmap.Mip0DataPtr->Get(), uv, dataHeightmap.Mip0Size, dataHeightmap.RowPitch);
                     heightmapData[z * heightmapSize + x] = color.R * heightmapScale;
                 }
@@ -230,17 +225,11 @@ bool TerrainTools::GenerateTerrain(Terrain* terrain, const Int2& numberOfPatches
     Texture* splatmaps[2] = { splatmap1, splatmap2 };
     Array<Color32> splatmapData;
     TextureDataResult data1;
-    const Vector2 uvPerPatch = Vector2::One / Vector2(numberOfPatches);
-    const float heightmapSizeInv = 1.0f / (heightmapSize - 1);
     for (int32 index = 0; index < ARRAY_COUNT(splatmaps); index++)
     {
         const auto splatmap = splatmaps[index];
         if (!splatmap)
             continue;
-
-        // Prepare data
-        if (splatmapData.IsEmpty())
-            splatmapData.Resize(heightmapSize * heightmapSize);
 
         // Get splatmap data
         if (GetTextureDataForSampling(splatmap, data1))
@@ -248,19 +237,18 @@ bool TerrainTools::GenerateTerrain(Terrain* terrain, const Int2& numberOfPatches
         const auto sampler = PixelFormatSampler::Get(data1.Format);
 
         // Modify heightmap splatmaps with sub-range of the input splatmaps
+        splatmapData.Resize(heightmapSize * heightmapSize);
         for (int32 patchIndex = 0; patchIndex < terrain->GetPatchesCount(); patchIndex++)
         {
             auto patch = terrain->GetPatch(patchIndex);
-
-            const Vector2 uvStart = Vector2((float)patch->GetX(), (float)patch->GetZ()) * uvPerPatch;
+            const Float2 uvStart = Float2((float)patch->GetX(), (float)patch->GetZ()) * uvPerPatch;
 
             // Sample splatmap pixels with interpolation to get actual splatmap values
             for (int32 z = 0; z < heightmapSize; z++)
             {
                 for (int32 x = 0; x < heightmapSize; x++)
                 {
-                    const Vector2 uv = uvStart + Vector2(x * heightmapSizeInv, z * heightmapSizeInv) * uvPerPatch;
-
+                    const Float2 uv = uvStart + Float2(x * heightmapSizeInv, z * heightmapSizeInv) * uvPerPatch;
                     const Color color = sampler->SampleLinear(data1.Mip0DataPtr->Get(), uv, data1.Mip0Size, data1.RowPitch);
 
                     Color32 layers;
@@ -374,63 +362,38 @@ Color32* TerrainTools::GetSplatMapData(Terrain* terrain, const Int2& patchCoord,
 
 bool TerrainTools::ExportTerrain(Terrain* terrain, String outputFolder)
 {
+    PROFILE_CPU_NAMED("Terrain.ExportTerrain");
     CHECK_RETURN(terrain && terrain->GetPatchesCount() != 0, true);
-    const auto firstPatch = terrain->GetPatch(0);
-
-    // Calculate texture size
-    const int32 patchEdgeVertexCount = terrain->GetChunkSize() * Terrain::ChunksCountEdge + 1;
-    const int32 patchVertexCount = patchEdgeVertexCount * patchEdgeVertexCount;
 
     // Find size of heightmap in patches
+    const auto firstPatch = terrain->GetPatch(0);
     Int2 start(firstPatch->GetX(), firstPatch->GetZ());
     Int2 end(start);
-    for (int32 i = 0; i < terrain->GetPatchesCount(); i++)
+    for (int32 patchIndex = 0; patchIndex < terrain->GetPatchesCount(); patchIndex++)
     {
-        const int32 x = terrain->GetPatch(i)->GetX();
-        const int32 y = terrain->GetPatch(i)->GetZ();
-
-        if (x < start.X)
-            start.X = x;
-        if (y < start.Y)
-            start.Y = y;
-        if (x > end.X)
-            end.X = x;
-        if (y > end.Y)
-            end.Y = y;
+        const auto patch = terrain->GetPatch(patchIndex);
+        const Int2 pos(patch->GetX(), patch->GetZ());
+        start = Int2::Min(start, pos);
+        end = Int2::Max(end, pos);
     }
     const Int2 size = (end + 1) - start;
 
-    // Allocate - with space for non-existent patches
+    // Allocate heightmap for a whole terrain (NumberOfPatches * 4x4 * ChunkSize + 1)
+    const Int2 heightmapSize = size * Terrain::ChunksCountEdge * terrain->GetChunkSize() + 1;
     Array<float> heightmap;
-    heightmap.Resize(patchVertexCount * size.X * size.Y);
-
-    // Set to any element, where: min < elem < max
+    heightmap.Resize(heightmapSize.X * heightmapSize.Y);
     heightmap.SetAll(firstPatch->GetHeightmapData()[0]);
 
-    const int32 heightmapWidth = patchEdgeVertexCount * size.X;
-
-    // Fill heightmap with data
+    // Fill heightmap with data from all patches
+    const int32 rowSize = terrain->GetChunkSize() * Terrain::ChunksCountEdge + 1;
     for (int32 patchIndex = 0; patchIndex < terrain->GetPatchesCount(); patchIndex++)
     {
-        // Pick a patch
         const auto patch = terrain->GetPatch(patchIndex);
-        const float* data = patch->GetHeightmapData();
-
-        // Beginning of patch
-        int32 dstIndex = (patch->GetX() - start.X) * patchEdgeVertexCount +
-                (patch->GetZ() - start.Y) * size.Y * patchVertexCount;
-
-        // Iterate over lines in patch
-        for (int32 z = 0; z < patchEdgeVertexCount; z++)
-        {
-            // Iterate over vertices in line
-            for (int32 x = 0; x < patchEdgeVertexCount; x++)
-            {
-                heightmap[dstIndex + x] = data[z * patchEdgeVertexCount + x];
-            }
-
-            dstIndex += heightmapWidth;
-        }
+        const Int2 pos(patch->GetX() - start.X, patch->GetZ() - start.Y);
+        const float* src = patch->GetHeightmapData();
+        float* dst = heightmap.Get() + pos.X * (rowSize - 1) + pos.Y * heightmapSize.X * (rowSize - 1);
+        for (int32 row = 0; row < rowSize; row++)
+            Platform::MemoryCopy(dst + row * heightmapSize.X, src + row * rowSize, rowSize * sizeof(float));
     }
 
     // Interpolate to 16-bit int
@@ -438,44 +401,42 @@ bool TerrainTools::ExportTerrain(Terrain* terrain, String outputFolder)
     maxHeight = minHeight = heightmap[0];
     for (int32 i = 1; i < heightmap.Count(); i++)
     {
-        float h = heightmap[i];
+        float h = heightmap.Get()[i];
         if (maxHeight < h)
             maxHeight = h;
         else if (minHeight > h)
             minHeight = h;
     }
-
-    const float maxValue = 65535.0f;
-    const float alpha = maxValue / (maxHeight - minHeight);
+    const float alpha = MAX_uint16 / (maxHeight - minHeight);
 
     // Storage for pixel data
-    Array<uint16> byteHeightmap(heightmap.Capacity());
-
-    for (auto& elem : heightmap)
+    Array<uint16> byteHeightmap;
+    byteHeightmap.Resize(heightmap.Count());
+    for (int32 i = 0; i < heightmap.Count(); i++)
     {
-        byteHeightmap.Add(static_cast<uint16>(alpha * (elem - minHeight)));
+        float height = heightmap.Get()[i];
+        byteHeightmap.Get()[i] = static_cast<uint16>(alpha * (height - minHeight));
     }
 
     // Create texture
     TextureData textureData;
-    textureData.Height = textureData.Width = heightmapWidth;
+    textureData.Width = heightmapSize.X;
+    textureData.Height = heightmapSize.Y;
     textureData.Depth = 1;
     textureData.Format = PixelFormat::R16_UNorm;
     textureData.Items.Resize(1);
     textureData.Items[0].Mips.Resize(1);
-
-    // Fill mip data
     TextureMipData* srcMip = textureData.GetData(0, 0);
     srcMip->Data.Link(byteHeightmap.Get());
     srcMip->Lines = textureData.Height;
-    srcMip->RowPitch = textureData.Width * 2; // 2 bytes per pixel for format R16
+    srcMip->RowPitch = textureData.Width * sizeof(uint16);
     srcMip->DepthPitch = srcMip->Lines * srcMip->RowPitch;
 
     // Find next non-existing file heightmap file
     FileSystem::NormalizePath(outputFolder);
     const String baseFileName(TEXT("heightmap"));
     String outputPath;
-    for (int32 i = 0; i < MAX_int32; i++)
+    for (int32 i = 0; i < 100; i++)
     {
         outputPath = outputFolder / baseFileName + StringUtils::ToString(i) + TEXT(".png");
         if (!FileSystem::FileExists(outputPath))

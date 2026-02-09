@@ -12,6 +12,7 @@
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 #if PLATFORM_DESKTOP
 #define VULKAN_UNIFORM_RING_BUFFER_SIZE (24 * 1024 * 1024)
@@ -41,6 +42,7 @@ UniformBufferUploaderVulkan::UniformBufferUploaderVulkan(GPUDeviceVulkan* device
     VkResult result = vmaCreateBuffer(_device->Allocator, &bufferInfo, &allocInfo, &_buffer, &_allocation, nullptr);
     LOG_VULKAN_RESULT(result);
     _memoryUsage = bufferInfo.size;
+    PROFILE_MEM_INC(GraphicsCommands, _memoryUsage);
 
     // Map buffer
     result = vmaMapMemory(_device->Allocator, _allocation, (void**)&_mapped);
@@ -87,6 +89,7 @@ void UniformBufferUploaderVulkan::OnReleaseGPU()
 {
     if (_allocation != VK_NULL_HANDLE)
     {
+        PROFILE_MEM_DEC(GraphicsCommands, _memoryUsage);
         if (_mapped)
         {
             vmaUnmapMemory(_device->Allocator, _allocation);

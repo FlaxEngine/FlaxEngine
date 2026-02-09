@@ -8,11 +8,14 @@
 #include "Engine/Core/RandomStream.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Ray.h"
+#include "Engine/Core/Utilities.h"
 #include "Engine/Platform/ConditionVariable.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Threading/JobSystem.h"
+#include "Engine/Threading/Threading.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUBuffer.h"
+#include "Engine/Graphics/GPUTimerQuery.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Async/GPUTask.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
@@ -25,7 +28,6 @@
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Engine/Units.h"
 #if USE_EDITOR
-#include "Engine/Core/Utilities.h"
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Types/TimeSpan.h"
@@ -80,14 +82,18 @@ class GPUModelSDFTask : public GPUTask
 {
     ConditionVariable* _signal;
     AssetReference<Shader> _shader;
+    MeshAccelerationStructure* _scene;
     Model* _inputModel;
     const ModelData* _modelData;
     int32 _lodIndex;
+    float _backfacesThreshold;
     Int3 _resolution;
     ModelBase::SDFData* _sdf;
-    GPUBuffer *_sdfSrc, *_sdfDst;
     GPUTexture* _sdfResult;
     Float3 _xyzToLocalMul, _xyzToLocalAdd;
+#if GPU_ALLOW_PROFILE_EVENTS
+    GPUTimerQuery* _timerQuery;
+#endif
 
     const uint32 ThreadGroupSize = 64;
     GPU_CB_STRUCT(Data {
@@ -95,7 +101,7 @@ class GPUModelSDFTask : public GPUTask
         uint32 ResolutionSize;
         float MaxDistance;
         uint32 VertexStride;
-        int32 Index16bit;
+        float BackfacesThreshold;
         uint32 TriangleCount;
         Float3 VoxelToPosMul;
         float WorldUnitsPerVoxel;
@@ -104,47 +110,46 @@ class GPUModelSDFTask : public GPUTask
         });
 
 public:
-    GPUModelSDFTask(ConditionVariable& signal, Model* inputModel, const ModelData* modelData, int32 lodIndex, const Int3& resolution, ModelBase::SDFData* sdf, GPUTexture* sdfResult, const Float3& xyzToLocalMul, const Float3& xyzToLocalAdd)
-        : GPUTask(Type::Custom)
+    GPUModelSDFTask(ConditionVariable& signal, MeshAccelerationStructure* scene, Model* inputModel, const ModelData* modelData, int32 lodIndex, const Int3& resolution, ModelBase::SDFData* sdf, GPUTexture* sdfResult, const Float3& xyzToLocalMul, const Float3& xyzToLocalAdd, float backfacesThreshold)
+        : GPUTask(Type::Custom, GPU_ALLOW_PROFILE_EVENTS ? 4 : GPU_ASYNC_LATENCY) // Fix timer query result reading with some more latency
         , _signal(&signal)
         , _shader(Content::LoadAsyncInternal<Shader>(TEXT("Shaders/SDF")))
+        , _scene(scene)
         , _inputModel(inputModel)
         , _modelData(modelData)
         , _lodIndex(lodIndex)
+        , _backfacesThreshold(backfacesThreshold)
         , _resolution(resolution)
         , _sdf(sdf)
-        , _sdfSrc(GPUBuffer::New())
-        , _sdfDst(GPUBuffer::New())
         , _sdfResult(sdfResult)
         , _xyzToLocalMul(xyzToLocalMul)
         , _xyzToLocalAdd(xyzToLocalAdd)
-    {
-#if GPU_ENABLE_RESOURCE_NAMING
-        _sdfSrc->SetName(TEXT("SDFSrc"));
-        _sdfDst->SetName(TEXT("SDFDst"));
+#if GPU_ALLOW_PROFILE_EVENTS
+        , _timerQuery(GPUDevice::Instance->CreateTimerQuery())
 #endif
+    {
     }
 
     ~GPUModelSDFTask()
     {
-        SAFE_DELETE_GPU_RESOURCE(_sdfSrc);
-        SAFE_DELETE_GPU_RESOURCE(_sdfDst);
+#if GPU_ALLOW_PROFILE_EVENTS
+        SAFE_DELETE_GPU_RESOURCE(_timerQuery);
+#endif
     }
 
     Result run(GPUTasksContext* tasksContext) override
     {
         PROFILE_GPU_CPU("GPUModelSDFTask");
         GPUContext* context = tasksContext->GPU;
+#if GPU_ALLOW_PROFILE_EVENTS
+        _timerQuery->Begin();
+#endif
 
         // Allocate resources
         if (_shader == nullptr || _shader->WaitForLoaded())
             return Result::Failed;
         GPUShader* shader = _shader->GetShader();
         const uint32 resolutionSize = _resolution.X * _resolution.Y * _resolution.Z;
-        auto desc = GPUBufferDescription::Typed(resolutionSize, PixelFormat::R32_UInt, true);
-        // TODO: use transient texture (single frame)
-        if (_sdfSrc->Init(desc) || _sdfDst->Init(desc))
-            return Result::Failed;
         auto cb = shader->GetCB(0);
         Data data;
         data.Resolution = _resolution;
@@ -153,6 +158,13 @@ public:
         data.WorldUnitsPerVoxel = _sdf->WorldUnitsPerVoxel;
         data.VoxelToPosMul = _xyzToLocalMul;
         data.VoxelToPosAdd = _xyzToLocalAdd;
+        data.BackfacesThreshold = _backfacesThreshold - 0.05f; // Bias a bit
+
+        // Send BVH to the GPU
+        auto bvh = _scene->ToGPU();
+        CHECK_RETURN(bvh.BVHBuffer && bvh.VertexBuffer && bvh.IndexBuffer, Result::Failed);
+        data.VertexStride = sizeof(Float3);
+        data.TriangleCount = bvh.IndexBuffer->GetElementsCount() / 3;
 
         // Dispatch in 1D and fallback to 2D when using large resolution
         Int3 threadGroups(Math::CeilToInt((float)resolutionSize / ThreadGroupSize), 1, 1);
@@ -164,159 +176,34 @@ public:
         }
         data.ThreadGroupsX = threadGroups.X;
 
-        // Init SDF volume
+        // Init constants
         context->BindCB(0, cb);
         context->UpdateCB(cb, &data);
-        context->BindUA(0, _sdfSrc->View());
-        context->Dispatch(shader->GetCS("CS_Init"), threadGroups.X, threadGroups.Y, threadGroups.Z);
 
-        // Rendering input triangles into the SDF volume
-        if (_inputModel)
-        {
-            PROFILE_GPU_CPU_NAMED("Rasterize");
-            const ModelLOD& lod = _inputModel->LODs[Math::Clamp(_lodIndex, _inputModel->HighestResidentLODIndex(), _inputModel->LODs.Count() - 1)];
-            GPUBuffer *vbTemp = nullptr, *ibTemp = nullptr;
-            for (int32 i = 0; i < lod.Meshes.Count(); i++)
-            {
-                const Mesh& mesh = lod.Meshes[i];
-                const MaterialSlot& materialSlot = _inputModel->MaterialSlots[mesh.GetMaterialSlotIndex()];
-                if (materialSlot.Material && !materialSlot.Material->WaitForLoaded())
-                {
-                    // Skip transparent materials
-                    if (materialSlot.Material->GetInfo().BlendMode != MaterialBlendMode::Opaque)
-                        continue;
-                }
-
-                GPUBuffer* vb = mesh.GetVertexBuffer(0);
-                GPUBuffer* ib = mesh.GetIndexBuffer();
-                data.Index16bit = mesh.Use16BitIndexBuffer() ? 1 : 0;
-                data.VertexStride = vb->GetStride();
-                data.TriangleCount = mesh.GetTriangleCount();
-                const uint32 groups = Math::CeilToInt((float)data.TriangleCount / ThreadGroupSize);
-                if (groups > GPU_MAX_CS_DISPATCH_THREAD_GROUPS)
-                {
-                    // TODO: support larger meshes via 2D dispatch
-                    LOG(Error, "Not supported mesh with {} triangles.", data.TriangleCount);
-                    continue;
-                }
-                context->UpdateCB(cb, &data);
-                if (!EnumHasAllFlags(vb->GetDescription().Flags, GPUBufferFlags::RawBuffer | GPUBufferFlags::ShaderResource))
-                {
-                    desc = GPUBufferDescription::Raw(vb->GetSize(), GPUBufferFlags::ShaderResource);
-                    // TODO: use transient buffer (single frame)
-                    if (!vbTemp)
-                    {
-                        vbTemp = GPUBuffer::New();
-#if GPU_ENABLE_RESOURCE_NAMING
-                        vbTemp->SetName(TEXT("SDFvb"));
-#endif
-                    }
-                    vbTemp->Init(desc);
-                    context->CopyBuffer(vbTemp, vb, desc.Size);
-                    vb = vbTemp;
-                }
-                if (!EnumHasAllFlags(ib->GetDescription().Flags, GPUBufferFlags::RawBuffer | GPUBufferFlags::ShaderResource))
-                {
-                    desc = GPUBufferDescription::Raw(ib->GetSize(), GPUBufferFlags::ShaderResource);
-                    // TODO: use transient buffer (single frame)
-                    if (!ibTemp)
-                    {
-                        ibTemp = GPUBuffer::New();
-#if GPU_ENABLE_RESOURCE_NAMING
-                        ibTemp->SetName(TEXT("SDFib"));
-#endif
-                    }
-                    ibTemp->Init(desc);
-                    context->CopyBuffer(ibTemp, ib, desc.Size);
-                    ib = ibTemp;
-                }
-                context->BindSR(0, vb->View());
-                context->BindSR(1, ib->View());
-                context->Dispatch(shader->GetCS("CS_RasterizeTriangle"), groups, 1, 1);
-            }
-            SAFE_DELETE_GPU_RESOURCE(vbTemp);
-            SAFE_DELETE_GPU_RESOURCE(ibTemp);
-        }
-        else if (_modelData)
-        {
-            PROFILE_GPU_CPU_NAMED("Rasterize");
-            const ModelLodData& lod = _modelData->LODs[Math::Clamp(_lodIndex, 0, _modelData->LODs.Count() - 1)];
-            auto vb = GPUBuffer::New();
-            auto ib = GPUBuffer::New();
-#if GPU_ENABLE_RESOURCE_NAMING
-            vb->SetName(TEXT("SDFvb"));
-            ib->SetName(TEXT("SDFib"));
-#endif
-            for (int32 i = 0; i < lod.Meshes.Count(); i++)
-            {
-                const MeshData* mesh = lod.Meshes[i];
-                const MaterialSlotEntry& materialSlot = _modelData->Materials[mesh->MaterialSlotIndex];
-                auto material = Content::LoadAsync<MaterialBase>(materialSlot.AssetID);
-                if (material && !material->WaitForLoaded())
-                {
-                    // Skip transparent materials
-                    if (material->GetInfo().BlendMode != MaterialBlendMode::Opaque)
-                        continue;
-                }
-
-                data.Index16bit = 0;
-                data.VertexStride = sizeof(Float3);
-                data.TriangleCount = mesh->Indices.Count() / 3;
-                const uint32 groups = Math::CeilToInt((float)data.TriangleCount / ThreadGroupSize);
-                if (groups > GPU_MAX_CS_DISPATCH_THREAD_GROUPS)
-                {
-                    // TODO: support larger meshes via 2D dispatch
-                    LOG(Error, "Not supported mesh with {} triangles.", data.TriangleCount);
-                    continue;
-                }
-                context->UpdateCB(cb, &data);
-                desc = GPUBufferDescription::Raw(mesh->Positions.Count() * sizeof(Float3), GPUBufferFlags::ShaderResource);
-                desc.InitData = mesh->Positions.Get();
-                // TODO: use transient buffer (single frame)
-                vb->Init(desc);
-                desc = GPUBufferDescription::Raw(mesh->Indices.Count() * sizeof(uint32), GPUBufferFlags::ShaderResource);
-                desc.InitData = mesh->Indices.Get();
-                // TODO: use transient buffer (single frame)
-                ib->Init(desc);
-                context->BindSR(0, vb->View());
-                context->BindSR(1, ib->View());
-                context->Dispatch(shader->GetCS("CS_RasterizeTriangle"), groups, 1, 1);
-            }
-            SAFE_DELETE_GPU_RESOURCE(vb);
-            SAFE_DELETE_GPU_RESOURCE(ib);
-        }
-        
-        // Convert SDF volume data back to floats
-        context->Dispatch(shader->GetCS("CS_Resolve"), threadGroups.X, threadGroups.Y, threadGroups.Z);
-
-        // Run linear flood-fill loop to populate all voxels with valid distances (spreads the initial values from triangles rasterization)
-        {
-            PROFILE_GPU_CPU_NAMED("FloodFill");
-            auto csFloodFill = shader->GetCS("CS_FloodFill");
-            const int32 floodFillIterations = Math::Max(_resolution.MaxValue() / 2 + 1, 8);
-            for (int32 floodFill = 0; floodFill < floodFillIterations; floodFill++)
-            {
-                context->ResetUA();
-                context->BindUA(0, _sdfDst->View());
-                context->BindSR(0, _sdfSrc->View());
-                context->Dispatch(csFloodFill, threadGroups.X, threadGroups.Y, threadGroups.Z);
-                Swap(_sdfSrc, _sdfDst);
-            }
-        }
-
-        // Encode SDF values into output storage
-        context->ResetUA();
-        context->BindSR(0, _sdfSrc->View());
-        // TODO: update GPU SDF texture within this task to skip additional CPU->GPU copy
-        auto sdfTextureDesc = GPUTextureDescription::New3D(_resolution.X, _resolution.Y, _resolution.Z, PixelFormat::R16_UNorm, GPUTextureFlags::UnorderedAccess | GPUTextureFlags::RenderTarget);
+        // Allocate output texture
+        auto sdfTextureDesc = GPUTextureDescription::New3D(_resolution.X, _resolution.Y, _resolution.Z, PixelFormat::R16_UNorm, GPUTextureFlags::UnorderedAccess);
         // TODO: use transient texture (single frame)
         auto sdfTexture = GPUTexture::New();
 #if GPU_ENABLE_RESOURCE_NAMING
         sdfTexture->SetName(TEXT("SDFTexture"));
 #endif
         sdfTexture->Init(sdfTextureDesc);
-        context->BindUA(1, sdfTexture->ViewVolume());
-        context->Dispatch(shader->GetCS("CS_Encode"), threadGroups.X, threadGroups.Y, threadGroups.Z);
+
+        // Renders directly to the output texture
+        context->BindUA(0, sdfTexture->ViewVolume());
+
+        // Init the volume (rasterization mixes with existing contents)
+        context->Dispatch(shader->GetCS("CS_Init"), threadGroups.X, threadGroups.Y, threadGroups.Z);
+
+        // Render input triangles into the SDF volume
+        {
+            PROFILE_GPU("Rasterize");
+            context->BindSR(0, bvh.VertexBuffer->View());
+            context->BindSR(1, bvh.IndexBuffer->View());
+            context->BindSR(2, bvh.BVHBuffer->View());
+            auto* rasterizeCS = shader->GetCS("CS_RasterizeTriangles");
+            context->Dispatch(rasterizeCS, threadGroups.X, threadGroups.Y, threadGroups.Z);
+        }
 
         // Copy result data into readback buffer
         if (_sdfResult)
@@ -328,6 +215,9 @@ public:
 
         SAFE_DELETE_GPU_RESOURCE(sdfTexture);
 
+#if GPU_ALLOW_PROFILE_EVENTS
+        _timerQuery->End();
+#endif
         return Result::Ok;
     }
 
@@ -335,6 +225,10 @@ public:
     {
         GPUTask::OnSync();
         _signal->NotifyOne();
+#if GPU_ALLOW_PROFILE_EVENTS
+        if (_timerQuery->HasResult())
+            LOG(Info, "GPU SDF generation took {} ms", Utilities::RoundTo1DecimalPlace(_timerQuery->GetResult()));
+#endif
     }
 
     void OnFail() override
@@ -365,9 +259,11 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, const ModelData* modelData, 
         return true;
     ModelBase::SDFData sdf;
     sdf.WorldUnitsPerVoxel = METERS_TO_UNITS(0.1f) / Math::Max(resolutionScale, 0.0001f); // 1 voxel per 10 centimeters
+#if 0
     const float boundsMargin = sdf.WorldUnitsPerVoxel * 0.5f; // Add half-texel margin around the mesh
     bounds.Minimum -= boundsMargin;
     bounds.Maximum += boundsMargin;
+#endif
     const Float3 size = bounds.GetSize();
     Int3 resolution(Float3::Ceil(Float3::Clamp(size / sdf.WorldUnitsPerVoxel, 4, 256)));
     Float3 uvwToLocalMul = size;
@@ -442,6 +338,13 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, const ModelData* modelData, 
     // http://ramakarl.com/pdfs/2016_Hoetzlein_GVDB.pdf
     // https://www.cse.chalmers.se/~uffe/HighResolutionSparseVoxelDAGs.pdf
 
+    // Setup acceleration structure for fast ray tracing the mesh triangles
+    MeshAccelerationStructure scene;
+    if (inputModel)
+        scene.Add(inputModel, lodIndex);
+    else if (modelData)
+        scene.Add(modelData, lodIndex);
+
     // Check if run SDF generation on a GPU via Compute Shader or on a Job System
     useGPU &= GPUDevice::Instance
             && GPUDevice::Instance->GetState() == GPUDevice::DeviceState::Ready
@@ -462,7 +365,7 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, const ModelData* modelData, 
         // Run SDF generation via GPU async task
         ConditionVariable signal;
         CriticalSection mutex;
-        Task* task = New<GPUModelSDFTask>(signal, inputModel, modelData, lodIndex, resolution, &sdf, sdfResult, xyzToLocalMul, xyzToLocalAdd);
+        Task* task = New<GPUModelSDFTask>(signal, &scene, inputModel, modelData, lodIndex, resolution, &sdf, sdfResult, xyzToLocalMul, xyzToLocalAdd, backfacesThreshold);
         task->Start();
         mutex.Lock();
         signal.Wait(mutex);
@@ -486,16 +389,10 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, const ModelData* modelData, 
     }
     else
     {
-        // Setup acceleration structure for fast ray tracing the mesh triangles
-        MeshAccelerationStructure scene;
-        if (inputModel)
-            scene.Add(inputModel, lodIndex);
-        else if (modelData)
-            scene.Add(modelData, lodIndex);
         scene.BuildBVH();
 
         // Brute-force for each voxel to calculate distance to the closest triangle with point query and distance sign by raycasting around the voxel
-        constexpr int32 sampleCount = 12;
+        constexpr int32 sampleCount = BUILD_DEBUG ? 6 : 12;
         Float3 sampleDirections[sampleCount];
         {
             RandomStream rand;
@@ -523,36 +420,30 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, const ModelData* modelData, 
                     Real minDistance = sdf.MaxDistance;
                     Vector3 voxelPos = Float3((float)x, (float)y, (float)z) * xyzToLocalMul + xyzToLocalAdd;
 
-                    // Point query to find the distance to the closest surface
-                    scene.PointQuery(voxelPos, minDistance, hitPoint, hitTriangle);
-
                     // Raycast samples around voxel to count triangle backfaces hit
-                    int32 hitBackCount = 0, hitCount = 0;
+                    int32 hitBackCount = 0, minBackfaceHitCount = (int32)(sampleCount * backfacesThreshold);
                     for (int32 sample = 0; sample < sampleCount; sample++)
                     {
                         Ray sampleRay(voxelPos, sampleDirections[sample]);
                         sampleRay.Position -= sampleRay.Direction * 0.0001f; // Apply small margin
                         if (scene.RayCast(sampleRay, hitDistance, hitNormal, hitTriangle))
                         {
-                            if (hitDistance < minDistance)
-                                minDistance = hitDistance;
-                            hitCount++;
-                            const bool backHit = Float3::Dot(sampleRay.Direction, hitTriangle.GetNormal()) > 0;
-                            if (backHit)
-                                hitBackCount++;
+                            minDistance = Math::Min(hitDistance, minDistance);
+                            if (Float3::Dot(sampleRay.Direction, hitTriangle.GetNormal()) > 0)
+                            {
+                                if (++hitBackCount >= minBackfaceHitCount)
+                                    break;
+                            }
                         }
                     }
 
-                    float distance = (float)minDistance;
-                    // TODO: surface thickness threshold? shift reduce distance for all voxels by something like 0.01 to enlarge thin geometry
-                    // if ((float)hitBackCount > (float)hitCount * 0.3f && hitCount != 0)
-                    if ((float)hitBackCount > (float)sampleCount * backfacesThreshold && hitCount != 0)
-                    {
-                        // Voxel is inside the geometry so turn it into negative distance to the surface
-                        distance *= -1;
-                    }
+                    // Point query to find the distance to the closest surface
+                    scene.PointQuery(voxelPos, minDistance, hitPoint, hitTriangle, minDistance);
+                    if (hitBackCount >= minBackfaceHitCount)
+                        minDistance *= -1; // Voxel is inside the geometry so turn it into negative distance to the surface
+
                     const int32 xAddress = x + yAddress;
-                    formatWrite(voxels.Get() + xAddress * formatStride, distance * encodeMAD.X + encodeMAD.Y);
+                    formatWrite(voxels.Get() + xAddress * formatStride, minDistance * encodeMAD.X + encodeMAD.Y);
                 }
             }
         };
@@ -676,6 +567,7 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(CalculateBoneOffsetMatrices);
     SERIALIZE(LightmapUVsSource);
     SERIALIZE(CollisionMeshesPrefix);
+    SERIALIZE(CollisionMeshesPostfix);
     SERIALIZE(CollisionType);
     SERIALIZE(PositionFormat);
     SERIALIZE(TexCoordFormat);
@@ -730,6 +622,7 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(CalculateBoneOffsetMatrices);
     DESERIALIZE(LightmapUVsSource);
     DESERIALIZE(CollisionMeshesPrefix);
+    DESERIALIZE(CollisionMeshesPostfix);
     DESERIALIZE(CollisionType);
     DESERIALIZE(PositionFormat);
     DESERIALIZE(TexCoordFormat);
@@ -1520,6 +1413,9 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                 const Char* roughnessNames[] = { TEXT("roughness"), TEXT("rough") };
                 TrySetupMaterialParameter(materialInstance, ToSpan(roughnessNames, ARRAY_COUNT(roughnessNames)), material.Roughness.Value, MaterialParameterType::Float);
                 TRY_SETUP_TEXTURE_PARAM(Roughness, roughnessNames, Texture);
+                const Char* metalnessNames[] = { TEXT("metalness"), TEXT("metallic") };
+                TrySetupMaterialParameter(materialInstance, ToSpan(metalnessNames, ARRAY_COUNT(metalnessNames)), material.Metalness.Value, MaterialParameterType::Float);
+                TRY_SETUP_TEXTURE_PARAM(Metalness, metalnessNames, Texture);
 #undef TRY_SETUP_TEXTURE_PARAM
 
                 materialInstance->Save();
@@ -1545,11 +1441,22 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                 materialOptions.Opacity.Texture = data.Textures[material.Opacity.TextureIndex].AssetID;
             materialOptions.Roughness.Value = material.Roughness.Value;
             if (material.Roughness.TextureIndex != -1)
+            {
                 materialOptions.Roughness.Texture = data.Textures[material.Roughness.TextureIndex].AssetID;
+                materialOptions.Roughness.Channel = material.Roughness.Channel;
+            }
+            materialOptions.Metalness.Value = material.Metalness.Value;
+            if (material.Metalness.TextureIndex != -1)
+            {
+                materialOptions.Metalness.Texture = data.Textures[material.Metalness.TextureIndex].AssetID;
+                materialOptions.Metalness.Channel = material.Metalness.Channel;
+            }
             if (material.Normals.TextureIndex != -1)
                 materialOptions.Normals.Texture = data.Textures[material.Normals.TextureIndex].AssetID;
             if (material.TwoSided || material.Diffuse.HasAlphaMask)
                 materialOptions.Info.CullMode = CullMode::TwoSided;
+            if (material.Wireframe)
+                materialOptions.Info.FeaturesFlags |= MaterialFeaturesFlags::Wireframe;
             if (!Math::IsOne(material.Opacity.Value) || material.Opacity.TextureIndex != -1)
                 materialOptions.Info.BlendMode = MaterialBlendMode::Transparent;
             AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialTag, assetPath, material.AssetID, &materialOptions);
@@ -1611,9 +1518,16 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             // Transform the nodes using the import transformation
             if (data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
             {
+                BitArray<> visitedNodes;
+                visitedNodes.Resize(data.Nodes.Count());
+                visitedNodes.SetAll(false);
                 for (int i = 0; i < data.LODs[0].Meshes.Count(); ++i)
                 {
                     auto* meshData = data.LODs[0].Meshes[i];
+                    int32 nodeIndex = meshData->NodeIndex;
+                    if (visitedNodes[nodeIndex])
+                        continue;
+                    visitedNodes.Set(nodeIndex, true);
                     Transform transform = importTransform;
                     if (options.UseLocalOrigin)
                     {
@@ -1627,8 +1541,6 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                         transform.Translation -= center;
                     }
 
-                    int32 nodeIndex = meshData->NodeIndex;
-                    
                     auto& node = data.Nodes[nodeIndex];
                     node.LocalTransform = transform.LocalToWorld(node.LocalTransform);
                 }
@@ -1920,7 +1832,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
     }
 
     // Collision mesh output
-    if (options.CollisionMeshesPrefix.HasChars())
+    if (options.CollisionMeshesPrefix.HasChars() || options.CollisionMeshesPostfix.HasChars())
     {
         // Extract collision meshes from the model
         ModelData collisionModel;
@@ -1929,7 +1841,8 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             for (int32 i = lod.Meshes.Count() - 1; i >= 0; i--)
             {
                 auto mesh = lod.Meshes[i];
-                if (mesh->Name.StartsWith(options.CollisionMeshesPrefix, StringSearchCase::IgnoreCase))
+                if ((options.CollisionMeshesPrefix.HasChars() && mesh->Name.StartsWith(options.CollisionMeshesPrefix, StringSearchCase::IgnoreCase)) ||
+                    (options.CollisionMeshesPostfix.HasChars() && mesh->Name.EndsWith(options.CollisionMeshesPostfix, StringSearchCase::IgnoreCase)))
                 {
                     // Remove material slot used by this mesh (if no other mesh else uses it)
                     int32 materialSlotUsageCount = 0;

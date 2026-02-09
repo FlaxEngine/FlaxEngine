@@ -15,36 +15,23 @@
 class OggVorbisDecoder : public AudioDecoder
 {
 public:
-
     ReadStream* Stream;
     uint32 Offset;
     uint32 ChannelCount;
     OggVorbis_File OggVorbisFile;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="OggVorbisDecoder"/> class.
     /// </summary>
-    OggVorbisDecoder()
-    {
-        Stream = nullptr;
-        Offset = 0;
-        ChannelCount = 0;
-        OggVorbisFile.datasource = nullptr;
-    }
+    OggVorbisDecoder();
 
     /// <summary>
     /// Finalizes an instance of the <see cref="OggVorbisDecoder"/> class.
     /// </summary>
-    ~OggVorbisDecoder()
-    {
-        if (OggVorbisFile.datasource != nullptr)
-            ov_clear(&OggVorbisFile);
-    }
+    ~OggVorbisDecoder();
 
 public:
-
     // [AudioDecoder]
     bool Open(ReadStream* stream, AudioDataInfo& info, uint32 offset = 0) override;
     void Seek(uint32 offset) override;

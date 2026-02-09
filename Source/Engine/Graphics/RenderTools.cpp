@@ -620,6 +620,40 @@ void RenderTools::ComputeSphereModelDrawMatrix(const RenderView& view, const Flo
     resultIsViewInside = Float3::DistanceSquared(view.Position, position) < Math::Square(radius * 1.1f); // Manually tweaked bias
 }
 
+Float3 RenderTools::GetColorQuantizationError(PixelFormat format)
+{
+    Float3 mantissaBits;
+    switch (format)
+    {
+    case PixelFormat::R11G11B10_Float:
+        mantissaBits = Float3(6, 6, 5);
+        break;
+    case PixelFormat::R10G10B10A2_UNorm:
+        mantissaBits = Float3(10, 10, 10);
+        break;
+    case PixelFormat::R16G16B16A16_Float:
+        mantissaBits = Float3(16, 16, 16);
+        break;
+    case PixelFormat::R32G32B32A32_Float:
+        mantissaBits = Float3(23, 23, 23);
+        break;
+    case PixelFormat::R9G9B9E5_SharedExp:
+        mantissaBits = Float3(5, 6, 5);
+        break;
+    case PixelFormat::R8G8B8A8_UNorm:
+    case PixelFormat::B8G8R8A8_UNorm:
+        mantissaBits = Float3(8, 8, 8);
+        break;
+    default:
+        return Float3::Zero;
+    }
+    return {
+        Math::Pow(0.5f, mantissaBits.X),
+        Math::Pow(0.5f, mantissaBits.Y),
+        Math::Pow(0.5f, mantissaBits.Z)
+    };
+}
+
 int32 MipLevelsCount(int32 width)
 {
     int32 result = 1;

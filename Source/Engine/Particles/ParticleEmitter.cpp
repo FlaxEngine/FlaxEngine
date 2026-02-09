@@ -15,6 +15,7 @@
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #if USE_EDITOR
 #include "ParticleEmitterFunction.h"
 #include "Engine/ShadersCompilation/Config.h"
@@ -43,6 +44,7 @@ ParticleEmitter::ParticleEmitter(const SpawnParams& params, const AssetInfo* inf
 
 ParticleEffect* ParticleEmitter::Spawn(Actor* parent, const Transform& transform, float duration, bool autoDestroy)
 {
+    PROFILE_MEM(Particles);
     CHECK_RETURN(!WaitForLoaded(), nullptr);
     auto system = Content::CreateVirtualAsset<ParticleSystem>();
     CHECK_RETURN(system, nullptr);
@@ -103,7 +105,7 @@ namespace
 
 Asset::LoadResult ParticleEmitter::load()
 {
-    ConcurrentSystemLocker::WriteScope systemScope(Particles::SystemLocker);
+    PROFILE_MEM(Particles);
 
     // Load the graph
     const auto surfaceChunk = GetChunk(SHADER_FILE_CHUNK_VISJECT_SURFACE);
@@ -327,7 +329,6 @@ Asset::LoadResult ParticleEmitter::load()
 
     // Wait for resources used by the emitter to be loaded
     // eg. texture used to place particles on spawn needs to be available
-    bool waitForAsset = false;
     for (const auto& node : Graph.Nodes)
     {
         if ((node.Type == GRAPH_NODE_MAKE_TYPE(5, 1) || node.Type == GRAPH_NODE_MAKE_TYPE(5, 2)) && node.Assets.Count() > 0)
@@ -335,11 +336,6 @@ Asset::LoadResult ParticleEmitter::load()
             const auto texture = node.Assets[0].As<TextureBase>();
             if (texture)
             {
-                if (!waitForAsset)
-                {
-                    waitForAsset = true;
-                    Particles::SystemLocker.End(true);
-                }
                 WaitForAsset(texture);
             }
         }
@@ -348,23 +344,16 @@ Asset::LoadResult ParticleEmitter::load()
     {
         if (parameter.Type.Type == VariantType::Asset)
         {
-            if (!waitForAsset)
-            {
-                waitForAsset = true;
-                Particles::SystemLocker.End(true);
-            }
             WaitForAsset((Asset*)parameter.Value);
         }
     }
-    if (waitForAsset)
-        Particles::SystemLocker.Begin(true);
 
     return LoadResult::Ok;
 }
 
 void ParticleEmitter::unload(bool isReloading)
 {
-    ConcurrentSystemLocker::WriteScope systemScope(Particles::SystemLocker);
+    ScopeWriteLock systemScope(Particles::SystemLocker);
 #if COMPILE_WITH_SHADER_COMPILER
     UnregisterForShaderReloads(this);
 #endif
@@ -455,7 +444,6 @@ bool ParticleEmitter::SaveSurface(const BytesContainer& data)
 {
     if (OnCheckSave())
         return true;
-    ConcurrentSystemLocker::WriteScope systemScope(Particles::SystemLocker);
     ScopeLock lock(Locker);
 
     // Release all chunks

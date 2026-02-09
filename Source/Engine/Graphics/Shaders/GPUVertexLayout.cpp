@@ -59,7 +59,7 @@ namespace
                     elements.Get()[j].Slot = (byte)slot;
             }
         }
-        GPUVertexLayout* result = anyValid ? GPUVertexLayout::Get(elements) : nullptr;
+        GPUVertexLayout* result = anyValid ? GPUVertexLayout::Get(elements, true) : nullptr;
         VertexBufferCache.Add(key, result);
         return result;
     }
@@ -97,6 +97,7 @@ GPUVertexLayout::GPUVertexLayout()
 void GPUVertexLayout::SetElements(const Elements& elements, bool explicitOffsets)
 {
     uint32 offsets[GPU_MAX_VB_BINDED + 1] = {};
+    uint32 maxOffset[GPU_MAX_VB_BINDED + 1] = {};
     _elements = elements;
     for (int32 i = 0; i < _elements.Count(); i++)
     {
@@ -108,9 +109,10 @@ void GPUVertexLayout::SetElements(const Elements& elements, bool explicitOffsets
         else
             e.Offset = (byte)offset;
         offset += PixelFormatExtensions::SizeInBytes(e.Format);
+        maxOffset[e.Slot] = Math::Max(maxOffset[e.Slot], offset);
     }
     _stride = 0;
-    for (uint32 offset : offsets)
+    for (uint32 offset : maxOffset)
         _stride += offset;
 }
 
@@ -139,7 +141,7 @@ VertexElement GPUVertexLayout::FindElement(VertexElement::Types type) const
 GPUVertexLayout* GPUVertexLayout::Get(const Elements& elements, bool explicitOffsets)
 {
     // Hash input layout
-    uint32 hash = 0;
+    uint32 hash = explicitOffsets ? 131 : 0;
     for (const VertexElement& element : elements)
     {
         CombineHash(hash, GetHash(element));
@@ -216,20 +218,21 @@ GPUVertexLayout* GPUVertexLayout::Get(const Span<GPUVertexLayout*>& layouts)
     return result;
 }
 
-GPUVertexLayout* GPUVertexLayout::Merge(GPUVertexLayout* base, GPUVertexLayout* reference, bool removeUnused, bool addMissing, int32 missingSlotOverride)
+GPUVertexLayout* GPUVertexLayout::Merge(GPUVertexLayout* base, GPUVertexLayout* reference, bool removeUnused, bool addMissing, int32 missingSlotOverride, bool referenceOrder)
 {
     GPUVertexLayout* result = base ? base : reference;
     if (base && reference && base != reference)
     {
         bool elementsModified = false;
         Elements newElements = base->GetElements();
+        const Elements& refElements = reference->GetElements();
         if (removeUnused)
         {
             for (int32 i = newElements.Count() - 1; i >= 0; i--)
             {
                 bool missing = true;
                 const VertexElement& e = newElements.Get()[i];
-                for (const VertexElement& ee : reference->GetElements())
+                for (const VertexElement& ee : refElements)
                 {
                     if (ee.Type == e.Type)
                     {
@@ -247,7 +250,7 @@ GPUVertexLayout* GPUVertexLayout::Merge(GPUVertexLayout* base, GPUVertexLayout* 
         }
         if (addMissing)
         {
-            for (const VertexElement& e : reference->GetElements())
+            for (const VertexElement& e : refElements)
             {
                 bool missing = true;
                 for (const VertexElement& ee : base->GetElements())
@@ -279,6 +282,32 @@ GPUVertexLayout* GPUVertexLayout::Merge(GPUVertexLayout* base, GPUVertexLayout* 
                     }
                     newElements.Add(ne);
                     elementsModified = true;
+                }
+            }
+        }
+        if (referenceOrder)
+        {
+            for (int32 i = 0, j = 0; i < newElements.Count() && j < refElements.Count(); j++)
+            {
+                if (newElements[i].Type == refElements[j].Type)
+                {
+                    // Elements match so move forward
+                    i++;
+                    continue;
+                }
+
+                // Find reference element in a new list
+                for (int32 k = i + 1; k < newElements.Count(); k++)
+                {
+                    if (newElements[k].Type == refElements[j].Type)
+                    {
+                        // Move matching element to the reference position
+                        VertexElement e = newElements[k];
+                        newElements.RemoveAt(k);
+                        newElements.Insert(i, e);
+                        i++;
+                        break;
+                    }
                 }
             }
         }

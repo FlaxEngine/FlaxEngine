@@ -16,6 +16,7 @@
 #include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Scripting/Enums.h"
 
 namespace
@@ -353,6 +354,8 @@ int32 GPUTexture::ComputeRowPitch(int32 mipLevel, int32 rowAlign) const
 
 bool GPUTexture::Init(const GPUTextureDescription& desc)
 {
+    PROFILE_MEM(GraphicsTextures);
+
     // Validate description
     const auto device = GPUDevice::Instance;
     if (desc.Usage == GPUResourceUsage::Dynamic)
@@ -501,6 +504,17 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
         return true;
     }
 
+#if COMPILE_WITH_PROFILER
+    auto group = ProfilerMemory::Groups::GraphicsTextures;
+    if (_desc.IsRenderTarget())
+        group = ProfilerMemory::Groups::GraphicsRenderTargets;
+    else if (_desc.IsCubeMap())
+        group = ProfilerMemory::Groups::GraphicsCubeMaps;
+    else if (_desc.IsVolume())
+        group = ProfilerMemory::Groups::GraphicsVolumeTextures;
+    ProfilerMemory::IncrementGroup(group, _memoryUsage);
+#endif
+
     // Render targets and depth buffers doesn't support normal textures streaming and are considered to be always resident
     if (IsRegularTexture() == false)
     {
@@ -589,6 +603,17 @@ GPUResourceType GPUTexture::GetResourceType() const
 
 void GPUTexture::OnReleaseGPU()
 {
+#if COMPILE_WITH_PROFILER
+    auto group = ProfilerMemory::Groups::GraphicsTextures;
+    if (_desc.IsRenderTarget())
+        group = ProfilerMemory::Groups::GraphicsRenderTargets;
+    else if (_desc.IsCubeMap())
+        group = ProfilerMemory::Groups::GraphicsCubeMaps;
+    else if (_desc.IsVolume())
+        group = ProfilerMemory::Groups::GraphicsVolumeTextures;
+    ProfilerMemory::DecrementGroup(group, _memoryUsage);
+#endif
+
     _desc.Clear();
     _residentMipLevels = 0;
 }
@@ -603,6 +628,7 @@ GPUTask* GPUTexture::UploadMipMapAsync(const BytesContainer& data, int32 mipInde
 GPUTask* GPUTexture::UploadMipMapAsync(const BytesContainer& data, int32 mipIndex, int32 rowPitch, int32 slicePitch, bool copyData)
 {
     PROFILE_CPU();
+    PROFILE_MEM(GraphicsTextures);
     ASSERT(IsAllocated());
     ASSERT(mipIndex < MipLevels() && data.IsValid());
     ASSERT(data.Length() >= slicePitch);
@@ -712,6 +738,7 @@ bool GPUTexture::DownloadData(TextureData& result)
         MISSING_CODE("support volume texture data downloading.");
     }
     PROFILE_CPU();
+    PROFILE_MEM(GraphicsTextures);
 
     // Use faster path for staging resources
     if (IsStaging()) // TODO: what about chips with unified memory? if rendering is not active then we can access GPU memory from CPU directly (eg. mobile, integrated GPUs and some consoles)
@@ -798,6 +825,7 @@ Task* GPUTexture::DownloadDataAsync(TextureData& result)
         MISSING_CODE("support volume texture data downloading.");
     }
     PROFILE_CPU();
+    PROFILE_MEM(GraphicsTextures);
 
     // Use faster path for staging resources
     if (IsStaging())

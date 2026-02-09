@@ -14,7 +14,13 @@ namespace Flax.Build
         /// Specifies the minimum Windows version to use (eg. 10).
         /// </summary>
         [CommandLine("winMinVer", "<version>", "Specifies the minimum Windows version to use (eg. 10).")]
-        public static string WindowsMinVer = "7";
+        public static string WindowsMinVer = "10";
+
+        /// <summary>
+        /// Specifies the minimum CPU architecture type to support (on x86/x64).
+        /// </summary>
+        [CommandLine("winCpuArch", "<arch>", "Specifies the minimum CPU architecture type to support (on x86/x64).")]
+        public static CpuArchitecture WindowsCpuArch = CpuArchitecture.SSE4_2; // 99.78% support on PC according to Steam Hardware & Software Survey: September 2025 (https://store.steampowered.com/hwsurvey/)
     }
 }
 
@@ -38,13 +44,8 @@ namespace Flax.Build.Platforms
         : base(platform, architecture, WindowsPlatformToolset.Latest, WindowsPlatformSDK.Latest)
         {
             // Select minimum Windows version
-            if (!Version.TryParse(Configuration.WindowsMinVer, out _minVersion))
-            {
-                if (int.TryParse(Configuration.WindowsMinVer, out var winMinVerMajor))
-                    _minVersion = new Version(winMinVerMajor, 0);
-                else
-                    _minVersion = new Version(7, 0);
-            }
+            if (!Utilities.ParseVersion(Configuration.WindowsMinVer, out _minVersion))
+                _minVersion = new Version(7, 0);
         }
 
         /// <inheritdoc />
@@ -75,10 +76,27 @@ namespace Flax.Build.Platforms
             options.LinkEnv.InputLibraries.Add("oleaut32.lib");
             options.LinkEnv.InputLibraries.Add("delayimp.lib");
 
-            if (options.Architecture == TargetArchitecture.ARM64)
+            options.CompileEnv.CpuArchitecture = Configuration.WindowsCpuArch;
+
+            if (options.Architecture == TargetArchitecture.x64)
+            {
+                if (_minVersion.Major <= 7 && options.CompileEnv.CpuArchitecture == CpuArchitecture.AVX2)
+                {
+                    // Old Windows had lower support ratio for latest CPU features
+                    options.CompileEnv.CpuArchitecture = CpuArchitecture.AVX;
+                }
+                if (_minVersion.Major >= 11 && options.CompileEnv.CpuArchitecture == CpuArchitecture.AVX)
+                {
+                    // Windows 11 has hard requirement on SSE4.2
+                    options.CompileEnv.CpuArchitecture = CpuArchitecture.SSE4_2;
+                }
+            }
+            else if (options.Architecture == TargetArchitecture.ARM64)
             {
                 options.CompileEnv.PreprocessorDefinitions.Add("USE_SOFT_INTRINSICS");
                 options.LinkEnv.InputLibraries.Add("softintrin.lib");
+                if (options.CompileEnv.CpuArchitecture != CpuArchitecture.None)
+                    options.CompileEnv.CpuArchitecture = CpuArchitecture.NEON;
             }
         }
 
@@ -87,10 +105,13 @@ namespace Flax.Build.Platforms
         {
             base.SetupCompileCppFilesArgs(graph, options, args);
 
-            if (Toolset >= WindowsPlatformToolset.v142 && _minVersion.Major >= 11)
+            switch (options.CompileEnv.CpuArchitecture)
             {
-                // Windows 11 requires SSE4.2
-                args.Add("/d2archSSE42");
+            case CpuArchitecture.AVX: args.Add("/arch:AVX"); break;
+            case CpuArchitecture.AVX2: args.Add("/arch:AVX2"); break;
+            case CpuArchitecture.AVX512: args.Add("/arch:AVX512"); break;
+            case CpuArchitecture.SSE2: args.Add("/arch:SSE2"); break;
+            case CpuArchitecture.SSE4_2: args.Add("/arch:SSE4.2"); break;
             }
         }
 

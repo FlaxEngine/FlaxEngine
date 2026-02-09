@@ -12,8 +12,10 @@
 #include "Engine/Core/Collections/RingBuffer.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #if USE_CSHARP
 #include "Engine/Scripting/ManagedCLR/MCore.h"
+#include "Engine/Scripting/Internal/InternalCalls.h"
 #endif
 
 #define JOB_SYSTEM_ENABLED 1
@@ -118,17 +120,22 @@ void* JobSystemAllocation::Allocate(uintptr size)
         }
     }
     if (!result)
+    {
+        PROFILE_MEM(EngineThreading);
         result = Platform::Allocate(size, 16);
+    }
     return result;
 }
 
 void JobSystemAllocation::Free(void* ptr, uintptr size)
 {
+    PROFILE_MEM(EngineThreading);
     MemPool.Add({ ptr, size });
 }
 
 bool JobSystemService::Init()
 {
+    PROFILE_MEM(EngineThreading);
     ThreadsCount = Math::Min<int32>(Platform::GetCPUInfo().LogicalProcessorCount, ARRAY_COUNT(Threads));
     for (int32 i = 0; i < ThreadsCount; i++)
     {
@@ -178,6 +185,7 @@ int32 JobSystemThread::Run()
     JobData data;
     Function<void(int32)> job;
     bool attachCSharpThread = true;
+    MONO_THREAD_INFO_TYPE* monoThreadInfo = nullptr;
     while (Platform::AtomicRead(&ExitFlag) == 0)
     {
         // Try to get a job
@@ -199,6 +207,7 @@ int32 JobSystemThread::Run()
             {
                 MCore::Thread::Attach();
                 attachCSharpThread = false;
+                monoThreadInfo = mono_thread_info_attach();
             }
 #endif
 
@@ -238,9 +247,11 @@ int32 JobSystemThread::Run()
         else
         {
             // Wait for signal
+            MONO_ENTER_GC_SAFE_WITH_INFO(monoThreadInfo);
             JobsMutex.Lock();
             JobsSignal.Wait(JobsMutex);
             JobsMutex.Unlock();
+            MONO_EXIT_GC_SAFE_WITH_INFO;
         }
     }
     return 0;
@@ -379,6 +390,7 @@ void JobSystem::Wait(int64 label)
 {
 #if JOB_SYSTEM_ENABLED
     PROFILE_CPU();
+    ZoneColor(TracyWaitZoneColor);
 
     while (Platform::AtomicRead(&ExitFlag) == 0)
     {

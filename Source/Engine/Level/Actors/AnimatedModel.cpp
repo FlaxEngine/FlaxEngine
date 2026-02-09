@@ -19,6 +19,7 @@
 #include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/SceneObjectsFactory.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/Serialization.h"
 
 AnimatedModel::AnimatedModel(const SpawnParams& params)
@@ -27,16 +28,13 @@ AnimatedModel::AnimatedModel(const SpawnParams& params)
     , _counter(0)
     , _lastMinDstSqr(MAX_Real)
     , _lastUpdateFrame(0)
+    , SkinnedModel(this)
+    , AnimationGraph(this)
 {
     _drawCategory = SceneRendering::SceneDrawAsync;
     GraphInstance.Object = this;
     _box = BoundingBox(Vector3::Zero);
     _sphere = BoundingSphere(Vector3::Zero, 0.0f);
-
-    SkinnedModel.Changed.Bind<AnimatedModel, &AnimatedModel::OnSkinnedModelChanged>(this);
-    SkinnedModel.Loaded.Bind<AnimatedModel, &AnimatedModel::OnSkinnedModelLoaded>(this);
-    AnimationGraph.Changed.Bind<AnimatedModel, &AnimatedModel::OnGraphChanged>(this);
-    AnimationGraph.Loaded.Bind<AnimatedModel, &AnimatedModel::OnGraphLoaded>(this);
 }
 
 AnimatedModel::~AnimatedModel()
@@ -86,7 +84,8 @@ void AnimatedModel::PreInitSkinningData()
 {
     if (!SkinnedModel || !SkinnedModel->IsLoaded())
         return;
-
+    PROFILE_CPU();
+    PROFILE_MEM(Animations);
     ScopeLock lock(SkinnedModel->Locker);
 
     SetupSkinningData();
@@ -96,28 +95,30 @@ void AnimatedModel::PreInitSkinningData()
 
     // Get nodes global transformations for the initial pose
     GraphInstance.NodesPose.Resize(nodesCount, false);
+    auto nodesPose = GraphInstance.NodesPose.Get();
     for (int32 nodeIndex = 0; nodeIndex < nodesCount; nodeIndex++)
     {
         Matrix localTransform;
         skeleton.Nodes[nodeIndex].LocalTransform.GetWorld(localTransform);
         const int32 parentIndex = skeleton.Nodes[nodeIndex].ParentIndex;
         if (parentIndex != -1)
-            GraphInstance.NodesPose[nodeIndex] = localTransform * GraphInstance.NodesPose[parentIndex];
+            nodesPose[nodeIndex] = localTransform * nodesPose[parentIndex];
         else
-            GraphInstance.NodesPose[nodeIndex] = localTransform;
+            nodesPose[nodeIndex] = localTransform;
     }
     GraphInstance.Invalidate();
-    GraphInstance.RootTransform = skeleton.Nodes[0].LocalTransform;
+    GraphInstance.RootTransform = nodesCount > 0 ? skeleton.Nodes[0].LocalTransform : Transform::Identity;
 
     // Setup bones transformations including bone offset matrix
-    Array<Matrix> identityMatrices; // TODO: use shared memory?
-    identityMatrices.Resize(bonesCount, false);
+    Matrix3x4* output = (Matrix3x4*)_skinningData.Data.Get();
+    const SkeletonBone* bones = skeleton.Bones.Get();
     for (int32 boneIndex = 0; boneIndex < bonesCount; boneIndex++)
     {
-        auto& bone = skeleton.Bones[boneIndex];
-        identityMatrices.Get()[boneIndex] = bone.OffsetMatrix * GraphInstance.NodesPose[bone.NodeIndex];
+        auto& bone = bones[boneIndex];
+        Matrix identityMatrix = bone.OffsetMatrix * nodesPose[bone.NodeIndex];
+        output[boneIndex].SetMatrixTranspose(identityMatrix);
     }
-    _skinningData.SetData(identityMatrices.Get(), true);
+    _skinningData.OnDataChanged(true);
 
     UpdateBounds();
     UpdateSockets();
@@ -135,6 +136,13 @@ void AnimatedModel::GetCurrentPose(Array<Matrix>& nodesTransformation, bool worl
         for (auto& m : nodesTransformation)
             m = m * world;
     }
+}
+
+void AnimatedModel::GetCurrentPose(Span<Matrix>& nodesTransformation) const
+{
+    if (GraphInstance.NodesPose.IsEmpty())
+        const_cast<AnimatedModel*>(this)->PreInitSkinningData(); // Ensure to have valid nodes pose to return
+    nodesTransformation = ToSpan(GraphInstance.NodesPose);
 }
 
 void AnimatedModel::SetCurrentPose(const Array<Matrix>& nodesTransformation, bool worldSpace)
@@ -546,10 +554,11 @@ void AnimatedModel::StopSlotAnimation(const StringView& slotName, Animation* ani
 {
     for (auto& slot : GraphInstance.Slots)
     {
-        if (slot.Animation == anim && slot.Name == slotName)
+        if ((slot.Animation == anim || anim == nullptr) && slot.Name == slotName)
         {
             //slot.Animation = nullptr; // TODO: make an immediate version of this method and set the animation to nullptr.
-            slot.Reset = true;
+            if (slot.Animation != nullptr)
+                slot.Reset = true;
             break;
         }
     }
@@ -565,7 +574,7 @@ void AnimatedModel::PauseSlotAnimation(const StringView& slotName, Animation* an
 {
     for (auto& slot : GraphInstance.Slots)
     {
-        if (slot.Animation == anim && slot.Name == slotName)
+        if ((slot.Animation == anim || anim == nullptr) && slot.Name == slotName)
         {
             slot.Pause = true;
             break;
@@ -587,7 +596,7 @@ bool AnimatedModel::IsPlayingSlotAnimation(const StringView& slotName, Animation
 {
     for (auto& slot : GraphInstance.Slots)
     {
-        if (slot.Animation == anim && slot.Name == slotName && !slot.Pause)
+        if ((slot.Animation == anim || anim == nullptr) && slot.Name == slotName && !slot.Pause)
             return true;
     }
     return false;
@@ -621,6 +630,7 @@ void AnimatedModel::SyncParameters()
         }
         else
         {
+            PROFILE_MEM(Animations);
             ScopeLock lock(AnimationGraph->Locker);
 
             // Clone the parameters
@@ -658,7 +668,11 @@ void AnimatedModel::RunBlendShapeDeformer(const MeshBase* mesh, MeshDeformationD
         {
             if (q.First == blendShape.Name)
             {
-                const float weight = q.Second * blendShape.Weight;
+                float weight = q.Second;
+                if (!Math::IsZero(blendShape.Weight))
+                    weight *= blendShape.Weight;
+                if (Math::IsZero(weight))
+                    break;
                 blendShapes.Add(Pair<const BlendShape&, const float>(blendShape, weight));
                 minVertexIndex = Math::Min(minVertexIndex, blendShape.MinVertexIndex);
                 maxVertexIndex = Math::Max(maxVertexIndex, blendShape.MaxVertexIndex);
@@ -916,6 +930,26 @@ void AnimatedModel::OnGraphLoaded()
     SyncParameters();
 }
 
+void AnimatedModel::OnAssetChanged(Asset* asset, void* caller)
+{
+    if (caller == &SkinnedModel)
+        OnSkinnedModelChanged();
+    else if (caller == &AnimationGraph)
+        OnGraphChanged();
+}
+
+void AnimatedModel::OnAssetLoaded(Asset* asset, void* caller)
+{
+    if (caller == &SkinnedModel)
+        OnSkinnedModelLoaded();
+    else if (caller == &AnimationGraph)
+        OnGraphLoaded();
+}
+
+void AnimatedModel::OnAssetUnloaded(Asset* asset, void* caller)
+{
+}
+
 bool AnimatedModel::HasContentLoaded() const
 {
     return (SkinnedModel == nullptr || SkinnedModel->IsLoaded()) && Entries.HasContentLoaded();
@@ -998,6 +1032,7 @@ void AnimatedModel::Draw(RenderContext& renderContext)
         draw.LODBias = LODBias;
         draw.ForcedLOD = ForcedLOD;
         draw.SortOrder = SortOrder;
+        draw.SetStencilValue(_layer);
 
         SkinnedModel->Draw(renderContext, draw);
     }
@@ -1039,6 +1074,7 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
         draw.LODBias = LODBias;
         draw.ForcedLOD = ForcedLOD;
         draw.SortOrder = SortOrder;
+        draw.SetStencilValue(_layer);
 
         PRAGMA_DISABLE_DEPRECATION_WARNINGS
         if (ShadowsMode != ShadowsCastingMode::All)

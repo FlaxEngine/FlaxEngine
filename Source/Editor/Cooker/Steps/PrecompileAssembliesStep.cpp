@@ -12,7 +12,7 @@
 void PrecompileAssembliesStep::OnBuildStarted(CookingData& data)
 {
     const DotNetAOTModes aotMode = data.Tools->UseAOT();
-    if (aotMode == DotNetAOTModes::None)
+    if (aotMode == DotNetAOTModes::None || EnumHasAllFlags(data.Options, BuildOptions::NoCook))
         return;
     const auto& buildSettings = *BuildSettings::Get();
 
@@ -59,6 +59,7 @@ bool PrecompileAssembliesStep::Perform(CookingData& data)
     data.StepProgress(infoMsg, 0);
 
     // Override Newtonsoft.Json with AOT-version (one that doesn't use System.Reflection.Emit)
+    // TODO: remove it since EngineModule does properly reference AOT lib now
     EditorUtilities::CopyFileIfNewer(data.ManagedCodeOutputPath / TEXT("Newtonsoft.Json.dll"), Globals::StartupFolder / TEXT("Source/Platforms/DotNet/AOT/Newtonsoft.Json.dll"));
     FileSystem::DeleteFile(data.ManagedCodeOutputPath / TEXT("Newtonsoft.Json.xml"));
     FileSystem::DeleteFile(data.ManagedCodeOutputPath / TEXT("Newtonsoft.Json.pdb"));
@@ -69,7 +70,7 @@ bool PrecompileAssembliesStep::Perform(CookingData& data)
     const String logFile = data.CacheDirectory / TEXT("AOTLog.txt");
     String args = String::Format(
         TEXT("-log -logfile=\"{}\" -runDotNetAOT -mutex -platform={} -arch={} -configuration={} -aotMode={} -binaries=\"{}\" -intermediate=\"{}\" {}"),
-        logFile, platform, architecture, configuration, ToString(aotMode), data.DataOutputPath, data.ManagedCodeOutputPath, GAME_BUILD_DOTNET_VER);
+        logFile, platform, architecture, configuration, ToString(aotMode), data.DataOutputPath, data.ManagedCodeOutputPath, data.GetDotnetCommandArg());
     if (!buildSettings.SkipUnusedDotnetLibsPackaging)
         args += TEXT(" -skipUnusedDotnetLibs=false"); // Run AOT on whole class library (not just used libs)
     for (const String& define : data.CustomDefines)

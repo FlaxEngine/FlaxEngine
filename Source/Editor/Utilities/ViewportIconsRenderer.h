@@ -23,6 +23,21 @@ public:
     API_FIELD() static float Scale;
 
     /// <summary>
+    /// The minimum size of the icons.
+    /// </summary>
+    API_FIELD() static Real MinSize;
+
+    /// <summary>
+    /// The maximum size of the icons.
+    /// </summary>
+    API_FIELD() static Real MaxSize;
+
+    /// <summary>
+    /// The distance to the camera at which the icons will be drawn at their maximum size.
+    /// </summary>
+    API_FIELD() static Real MaxSizeDistance;
+
+    /// <summary>
     /// Draws the icons for the actors in the given scene (or actor tree).
     /// </summary>
     /// <param name="position">The icon position.</param>

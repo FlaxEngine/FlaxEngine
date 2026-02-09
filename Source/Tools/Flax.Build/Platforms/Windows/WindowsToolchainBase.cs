@@ -778,6 +778,7 @@ namespace Flax.Build.Platforms
         /// <inheritdoc />
         public override void LinkFiles(TaskGraph graph, BuildOptions options, string outputFilePath)
         {
+            outputFilePath = Utilities.NormalizePath(outputFilePath);
             var linkEnvironment = options.LinkEnv;
             var task = graph.Add<LinkTask>();
 

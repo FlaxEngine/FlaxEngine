@@ -266,6 +266,39 @@ namespace FlaxEngine
             }
 
             /// <summary>
+            /// Copies the contents of the input <see cref="T:System.Span`1"/> into the elements of this stream.
+            /// </summary>
+            /// <param name="src">The source <see cref="T:System.Span`1"/>.</param>
+            public void Set(Span<uint> src)
+            {
+                if (IsLinear(PixelFormat.R32_UInt))
+                {
+                    src.CopyTo(MemoryMarshal.Cast<byte, uint>(_data));
+                }
+                else if (IsLinear(PixelFormat.R16_UInt))
+                {
+                    var count = Count;
+                    fixed (byte* data = _data)
+                    {
+                        for (int i = 0; i < count; i++)
+                            ((ushort*)data)[i] = (ushort)src[i];
+                    }
+                }
+                else
+                {
+                    var count = Count;
+                    fixed (byte* data = _data)
+                    {
+                        for (int i = 0; i < count; i++)
+                        {
+                            var v = new Float4(src[i]);
+                            _sampler.Write(data + i * _stride, ref v);
+                        }
+                    }
+                }
+            }
+
+            /// <summary>
             /// Copies the contents of this stream into a destination <see cref="T:System.Span`1" />.
             /// </summary>
             /// <param name="dst">The destination <see cref="T:System.Span`1" />.</param>
@@ -281,9 +314,7 @@ namespace FlaxEngine
                     fixed (byte* data = _data)
                     {
                         for (int i = 0; i < count; i++)
-                        {
                             dst[i] = new Float2(_sampler.Read(data + i * _stride));
-                        }
                     }
                 }
             }
@@ -304,9 +335,7 @@ namespace FlaxEngine
                     fixed (byte* data = _data)
                     {
                         for (int i = 0; i < count; i++)
-                        {
                             dst[i] = new Float3(_sampler.Read(data + i * _stride));
-                        }
                     }
                 }
             }
@@ -327,9 +356,37 @@ namespace FlaxEngine
                     fixed (byte* data = _data)
                     {
                         for (int i = 0; i < count; i++)
-                        {
                             dst[i] = (Color)_sampler.Read(data + i * _stride);
-                        }
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Copies the contents of this stream into a destination <see cref="T:System.Span`1" />.
+            /// </summary>
+            /// <param name="dst">The destination <see cref="T:System.Span`1" />.</param>
+            public void CopyTo(Span<uint> dst)
+            {
+                if (IsLinear(PixelFormat.R32_UInt))
+                {
+                    _data.CopyTo(MemoryMarshal.Cast<uint, byte>(dst));
+                }
+                else if (IsLinear(PixelFormat.R16_UInt))
+                {
+                    var count = Count;
+                    fixed (byte* data = _data)
+                    {
+                        for (int i = 0; i < count; i++)
+                            dst[i] = ((ushort*)data)[i];
+                    }
+                }
+                else
+                {
+                    var count = Count;
+                    fixed (byte* data = _data)
+                    {
+                        for (int i = 0; i < count; i++)
+                            dst[i] = (uint)_sampler.Read(data + i * _stride).X;
                     }
                 }
             }
@@ -620,6 +677,16 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Gets or sets the index buffer with triangle indices.
+        /// </summary>
+        /// <remarks>Uses <see cref="Index"/> stream to read or write data to the index buffer.</remarks>
+        public uint[] Triangles
+        {
+            get => GetStreamUInt(Index());
+            set => SetStreamUInt(Index(), value);
+        }
+
+        /// <summary>
         /// Gets or sets the vertex positions. Null if <see cref="VertexElement.Types.Position"/> does not exist in vertex buffers of the mesh.
         /// </summary>
         /// <remarks>Uses <see cref="Position"/> stream to read or write data to the vertex buffer.</remarks>
@@ -657,6 +724,25 @@ namespace FlaxEngine
         {
             get => GetStreamFloat2(VertexElement.Types.TexCoord);
             set => SetStreamFloat2(VertexElement.Types.TexCoord, value);
+        }
+
+        private uint[] GetStreamUInt(Stream stream)
+        {
+            uint[] result = null;
+            if (stream.IsValid)
+            {
+                result = new uint[stream.Count];
+                stream.CopyTo(result);
+            }
+            return result;
+        }
+
+        private void SetStreamUInt(Stream stream, uint[] value)
+        {
+            if (stream.IsValid)
+            {
+                stream.Set(value);
+            }
         }
 
         private delegate void TransformDelegate3(ref Float3 value);

@@ -36,6 +36,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             ScriptName = scriptName;
             TooltipText = "Create a new script";
+            DrawHighlights = false;
         }
     }
 
@@ -70,7 +71,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var buttonHeight = (textSize.Y < 18) ? 18 : textSize.Y + 4;
             _addScriptsButton = new Button
             {
-                TooltipText = "Add new scripts to the actor",
+                TooltipText = "Add new scripts to the actor.",
                 AnchorPreset = AnchorPresets.MiddleCenter,
                 Text = buttonText,
                 Parent = this,
@@ -114,7 +115,16 @@ namespace FlaxEditor.CustomEditors.Dedicated
             cm.TextChanged += text =>
             {
                 if (!IsValidScriptName(text))
+                {
+                    // Remove NewScriptItems
+                    List<Control> newScriptItems = cm.ItemsPanel.Children.FindAll(c => c is NewScriptItem);
+                    foreach (var item in newScriptItems)
+                    {
+                        cm.ItemsPanel.RemoveChild(item);
+                    }
+
                     return;
+                }
                 if (!cm.ItemsPanel.Children.Any(x => x.Visible && x is not NewScriptItem))
                 {
                     // If there are no visible items, that means the search failed so we can find the create script button or create one if it's the first time
@@ -876,7 +886,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 // Add drag button to the group
                 var scriptDrag = new DragImage
                 {
-                    TooltipText = "Script reference",
+                    TooltipText = "Script reference.",
                     AutoFocus = true,
                     IsScrollable = false,
                     Color = FlaxEngine.GUI.Style.Current.ForegroundGrey,
@@ -899,14 +909,17 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 settingsButton.Tag = script;
                 settingsButton.Clicked += OnSettingsButtonClicked;
 
-                group.Panel.HeaderTextMargin = new Margin(scriptDrag.Right - 12, 15, 2, 2);
+                // Adjust margin to not overlap with other ui elements in the header
+                group.Panel.HeaderTextMargin = group.Panel.HeaderTextMargin with { Left = scriptDrag.Right - 12, Right = settingsButton.Width + Utilities.Constants.UIMargin };
                 group.Object(values, editor);
                 // Remove drop down arrows and containment lines if no objects in the group
                 if (group.Children.Count == 0)
                 {
+                    group.Panel.Close();
                     group.Panel.ArrowImageOpened = null;
                     group.Panel.ArrowImageClosed = null;
                     group.Panel.EnableContainmentLines = false;
+                    group.Panel.CanOpenClose = false;
                 }
 
                 // Scripts arrange bar

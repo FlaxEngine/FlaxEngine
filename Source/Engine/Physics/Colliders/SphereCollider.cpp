@@ -35,9 +35,14 @@ void SphereCollider::DrawPhysicsDebug(RenderView& view)
         DEBUG_DRAW_WIRE_SPHERE(_sphere, Color::GreenYellow * 0.8f, 0, true);
 }
 
-void SphereCollider::OnDebugDrawSelected()
+void SphereCollider::OnDebugDrawSelf()
 {
     DEBUG_DRAW_WIRE_SPHERE(_sphere, Color::GreenYellow, 0, false);
+}
+
+void SphereCollider::OnDebugDrawSelected()
+{
+    OnDebugDrawSelf();
 
     if (_contactOffset > 0)
     {

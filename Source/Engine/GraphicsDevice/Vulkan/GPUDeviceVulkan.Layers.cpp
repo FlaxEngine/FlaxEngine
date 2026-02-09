@@ -45,6 +45,9 @@ static const char* GInstanceExtensions[] =
 #if defined(VK_KHR_display) && 0
     VK_KHR_DISPLAY_EXTENSION_NAME,
 #endif
+#if GPU_ENABLE_TRACY && VK_EXT_calibrated_timestamps && VK_EXT_host_query_reset
+    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME, // Required by VK_EXT_host_query_reset (unless using Vulkan 1.1 or newer)
+#endif
     nullptr
 };
 
@@ -62,6 +65,10 @@ static const char* GDeviceExtensions[] =
 #endif
 #if VK_KHR_sampler_mirror_clamp_to_edge
     VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
+#endif
+#if GPU_ENABLE_TRACY && VK_EXT_calibrated_timestamps && VK_EXT_host_query_reset
+    VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME,
+    VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME,
 #endif
     nullptr
 };

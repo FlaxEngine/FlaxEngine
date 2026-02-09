@@ -6,6 +6,7 @@
 #include "Engine/Level/Level.h"
 #include "Engine/Content/Deprecated.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Threading/Threading.h"
@@ -146,6 +147,7 @@ bool ParticleSystem::SaveTimeline(const BytesContainer& data) const
 
 ParticleEffect* ParticleSystem::Spawn(Actor* parent, const Transform& transform, bool autoDestroy)
 {
+    PROFILE_MEM(Particles);
     CHECK_RETURN(!WaitForLoaded(), nullptr);
 
     auto effect = New<ParticleEffect>();
@@ -202,6 +204,7 @@ bool ParticleSystem::Save(const StringView& path)
 
 Asset::LoadResult ParticleSystem::load()
 {
+    PROFILE_MEM(Particles);
     Version++;
 
     // Get the data chunk

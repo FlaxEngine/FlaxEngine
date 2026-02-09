@@ -181,15 +181,8 @@ namespace FlaxEditor.Windows.Assets
 
         private class CollisionDataPreview : ModelBasePreview
         {
-            public bool ShowCollisionData = false;
-            private int _verticesCount = 0;
-            private int _trianglesCount = 0;
-
-            public void SetVerticesAndTriangleCount(int verticesCount, int triangleCount)
-            {
-                _verticesCount = verticesCount;
-                _trianglesCount = triangleCount;
-            }
+            public bool ShowInfo;
+            public string Info;
             
             /// <inheritdoc />
             public CollisionDataPreview(bool useWidgets) 
@@ -204,13 +197,12 @@ namespace FlaxEditor.Windows.Assets
             {
                 base.Draw();
 
-                if (ShowCollisionData)
+                if (ShowInfo)
                 {
-                    var text = string.Format("\nTriangles: {0:N0}\nVertices: {1:N0}\nMemory Size: {2}", _trianglesCount, _verticesCount, Utilities.Utils.FormatBytesCount(Asset.MemoryUsage));
                     var font = Style.Current.FontMedium;
                     var pos = new Float2(10, 50);
-                    Render2D.DrawText(font, text, new Rectangle(pos + Float2.One, Size), Color.Black);
-                    Render2D.DrawText(font, text, new Rectangle(pos, Size), Color.White);
+                    Render2D.DrawText(font, Info, new Rectangle(pos + Float2.One, Size), Color.Black);
+                    Render2D.DrawText(font, Info, new Rectangle(pos, Size), Color.White);
                 }
             }
         }
@@ -222,11 +214,11 @@ namespace FlaxEditor.Windows.Assets
             // Toolstrip
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.CenterView64, () => _preview.ResetCamera()).LinkTooltip("Show whole collision");
-            var infoButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Info64).LinkTooltip("Show Collision Data");
+            var infoButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Info64).LinkTooltip("Show Collision Data info");
             infoButton.Clicked += () =>
             {
-                _preview.ShowCollisionData = !_preview.ShowCollisionData;
-                infoButton.Checked = _preview.ShowCollisionData;
+                _preview.ShowInfo = !_preview.ShowInfo;
+                infoButton.Checked = _preview.ShowInfo;
             };
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/physics/colliders/collision-data.html")).LinkTooltip("See documentation to learn more");
 
@@ -293,7 +285,7 @@ namespace FlaxEditor.Windows.Assets
             }
             _collisionWiresShowActor.Model = _collisionWiresModel;
             _collisionWiresShowActor.SetMaterial(0, FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.WiresDebugMaterial));
-            _preview.SetVerticesAndTriangleCount(triangleCount, indicesCount / 3);
+            _preview.Info = string.Format("\nTriangles: {0:N0}\nVertices: {1:N0}\nMemory Size: {2}", triangleCount, indicesCount / 3, Utilities.Utils.FormatBytesCount(Asset.MemoryUsage));
             _preview.Asset = FlaxEngine.Content.LoadAsync<ModelBase>(_asset.Options.Model);
         }
 

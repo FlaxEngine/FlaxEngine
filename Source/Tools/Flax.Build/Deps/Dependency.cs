@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Flax.Build;
 using Flax.Build.Platforms;
 using Flax.Build.Projects.VisualStudio;
@@ -39,6 +40,11 @@ namespace Flax.Deps
             /// The target platforms to build dependency for (contains only platforms supported by the dependency itself).
             /// </summary>
             public TargetPlatform[] Platforms;
+
+            /// <summary>
+            /// The target architectures to build dependency for (contains only platforms supported by the dependency itself).
+            /// </summary>
+            public TargetArchitecture[] Architectures;
         }
 
         /// <summary>
@@ -46,10 +52,123 @@ namespace Flax.Deps
         /// </summary>
         protected static TargetPlatform BuildPlatform => Platform.BuildPlatform.Target;
 
+        private static Version? _cmakeVersion;
+        protected static Version CMakeVersion
+        {
+            get
+            {
+                if (_cmakeVersion == null)
+                {
+                    try
+                    {
+                        var versionOutput = Utilities.ReadProcessOutput("cmake", "--version");
+                        var versionStart = versionOutput.IndexOf("cmake version ") + "cmake version ".Length;
+                        var versionEnd = versionOutput.IndexOfAny(['-', '\n', '\r'], versionStart); // End of line or dash before Git hash
+                        var versionString = versionOutput.Substring(versionStart, versionEnd - versionStart);
+                        _cmakeVersion = new Version(versionString);
+                    }
+                    catch (Exception)
+                    {
+                        // Assume old version by default (in case of errors)
+                        _cmakeVersion = new Version(3, 0);
+                    }
+                }
+                return _cmakeVersion;
+            }
+        }
+
         /// <summary>
         /// Gets the platforms list supported by this dependency to build on the current build platform (based on <see cref="Platform.BuildPlatform"/>).
         /// </summary>
-        public abstract TargetPlatform[] Platforms { get; }
+        public virtual TargetPlatform[] Platforms
+        {
+            get
+            {
+                // The most common build setup
+                switch (BuildPlatform)
+                {
+                case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetPlatform.Windows,
+                        TargetPlatform.XboxOne,
+                        TargetPlatform.XboxScarlett,
+                        TargetPlatform.PS4,
+                        TargetPlatform.PS5,
+                        TargetPlatform.Android,
+                        TargetPlatform.Switch,
+                    };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetPlatform.Linux,
+                    };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetPlatform.Mac,
+                        TargetPlatform.iOS,
+                    };
+                default: return new TargetPlatform[0];
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the architectures list supported by this dependency to build on the current build platform (based on <see cref="Platform.BuildPlatform"/>).
+        /// </summary>
+        public virtual TargetArchitecture[] Architectures
+        {
+            get
+            {
+                // Default value returns all supported architectures for all supported platforms
+                switch (BuildPlatform)
+                {
+                case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        //TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.XboxOne:
+                case TargetPlatform.XboxScarlett:
+                case TargetPlatform.PS4:
+                case TargetPlatform.PS5:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                    };
+                case TargetPlatform.Switch:
+                    return new[]
+                    {
+                        TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Android:
+                    return new[]
+                    {
+                        TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.iOS:
+                    return new[]
+                    {
+                        TargetArchitecture.ARM64,
+                    };
+                default: return new TargetArchitecture[0];
+                }
+            }
+        }
 
         /// <summary>
         /// True if build dependency by default, otherwise only when explicitly specified via command line.
@@ -66,9 +185,9 @@ namespace Flax.Deps
         /// Logs build process start.
         /// </summary>
         /// <param name="platform">Target platform.</param>
-        protected void BuildStarted(TargetPlatform platform)
+        protected void BuildStarted(TargetPlatform platform, TargetArchitecture architecture)
         {
-            Log.Info($"Building {GetType().Name} for {platform}");
+            Log.Info($"Building {GetType().Name} for {platform}{(architecture != TargetArchitecture.AnyCPU ? $" ({architecture})" : "")}");
         }
 
         /// <summary>
@@ -248,13 +367,29 @@ namespace Flax.Deps
         }
 
         /// <summary>
+        /// Gets the maximum concurrency level for a cmake command. See CMAKE_BUILD_PARALLEL_LEVEL or -j docs.
+        /// </summary>
+        public static string CmakeBuildParallel => Math.Min(Math.Max(1, (int)(Environment.ProcessorCount * Configuration.ConcurrencyProcessorScale)), Configuration.MaxConcurrency).ToString();
+
+        /// <summary>
         /// Builds the cmake project.
         /// </summary>
         /// <param name="path">The path.</param>
         /// <param name="envVars">Custom environment variables to pass to the child process.</param>
-        public static void BuildCmake(string path, Dictionary<string, string> envVars = null)
+        public static void BuildCmake(string path, Dictionary<string, string> envVars)
         {
-            Utilities.Run("cmake", "--build .  --config Release", null, path, Utilities.RunOptions.DefaultTool, envVars);
+            BuildCmake(path, "Release", envVars);
+        }
+
+        /// <summary>
+        /// Builds the cmake project.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <param name="config">The configuration preset.</param>
+        /// <param name="envVars">Custom environment variables to pass to the child process.</param>
+        public static void BuildCmake(string path, string config = "Release", Dictionary<string, string> envVars = null)
+        {
+            Utilities.Run("cmake", $"--build .  --config {config}", null, path, Utilities.RunOptions.DefaultTool, envVars);
         }
 
         /// <summary>
@@ -292,7 +427,13 @@ namespace Flax.Deps
                     break;
                 default: throw new InvalidArchitectureException(architecture);
                 }
-                cmdLine = string.Format("CMakeLists.txt -G \"Visual Studio 17 2022\" -A {0}", arch);
+                if (CMakeVersion.Major > 4 || (CMakeVersion.Major == 4 && CMakeVersion.Minor >= 2))
+                {
+                    // This generates both .sln and .slnx solution files
+                    cmdLine = string.Format("CMakeLists.txt -G \"Visual Studio 17 2022\" -G \"Visual Studio 18 2026\" -A {0}", arch);
+                }
+                else
+                    cmdLine = string.Format("CMakeLists.txt -G \"Visual Studio 17 2022\" -A {0}", arch);
                 break;
             }
             case TargetPlatform.PS4:
@@ -305,8 +446,12 @@ namespace Flax.Deps
                 cmdLine = "CMakeLists.txt";
                 break;
             case TargetPlatform.Switch:
-                cmdLine = string.Format("-DCMAKE_TOOLCHAIN_FILE=\"{1}\\Source\\Platforms\\Switch\\Binaries\\Data\\Switch.cmake\" -G \"NMake Makefiles\" -DCMAKE_MAKE_PROGRAM=\"{0}..\\..\\VC\\bin\\nmake.exe\"", Environment.GetEnvironmentVariable("VS140COMNTOOLS"), Globals.EngineRoot);
+            {
+                var nmakeSubdir = "bin\\Hostx64\\x64\\nmake.exe";
+                var toolset = WindowsPlatform.GetToolsets().First(e => File.Exists(Path.Combine(e.Value, nmakeSubdir)));
+                cmdLine = string.Format("-DCMAKE_TOOLCHAIN_FILE=\"{1}\\Source\\Platforms\\Switch\\Binaries\\Data\\Switch.cmake\" -G \"NMake Makefiles\" -DCMAKE_MAKE_PROGRAM=\"{0}\"", Path.Combine(toolset.Value, nmakeSubdir), Globals.EngineRoot);
                 break;
+            }
             case TargetPlatform.Android:
             {
                 var ndk = AndroidNdk.Instance.RootPath;
@@ -435,7 +580,7 @@ namespace Flax.Deps
             case TargetPlatform.Mac: break;
             default: throw new InvalidPlatformException(BuildPlatform);
             }
-            Utilities.Run(path, args, null, workspace, Utilities.RunOptions.ThrowExceptionOnError, envVars);
+            Utilities.Run(path, args, null, workspace, Utilities.RunOptions.DefaultTool, envVars);
         }
 
         internal bool GetMsBuildForPlatform(TargetPlatform targetPlatform, out VisualStudioVersion vsVersion, out string msBuildPath)

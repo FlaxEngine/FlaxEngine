@@ -38,7 +38,7 @@ void* GPUBufferDX12::Map(GPUResourceMapMode mode)
 {
     D3D12_RANGE readRange;
     D3D12_RANGE* readRangePtr;
-    switch (mode)
+    switch (mode & GPUResourceMapMode::ReadWrite)
     {
     case GPUResourceMapMode::Read:
         readRangePtr = nullptr;
@@ -136,8 +136,13 @@ bool GPUBufferDX12::OnInit()
 
     // Create resource
     ID3D12Resource* resource;
+#if PLATFORM_WINDOWS
+    D3D12_HEAP_FLAGS heapFlags = EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::VertexBuffer | GPUBufferFlags::IndexBuffer) || _desc.InitData ? D3D12_HEAP_FLAG_CREATE_NOT_ZEROED : D3D12_HEAP_FLAG_NONE;
+#else
+    D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_NONE;
+#endif
     D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
-    VALIDATE_DIRECTX_CALL(_device->GetDevice()->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, initialState, nullptr, IID_PPV_ARGS(&resource)));
+    VALIDATE_DIRECTX_CALL(_device->GetDevice()->CreateCommittedResource(&heapProperties, heapFlags, &resourceDesc, initialState, nullptr, IID_PPV_ARGS(&resource)));
 
     // Set state
     initResource(resource, initialState, 1);

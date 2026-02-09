@@ -474,6 +474,23 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
             value = writeLocal(VariantType::Float3, String::Format(TEXT("GetWorldPos({1}, {0}.rgb)"), depthSample->Value, uv), node);
             break;
         }
+        case MaterialSceneTextures::SceneStencil:
+        case MaterialSceneTextures::ObjectLayer:
+        {
+            auto stencilParam = findOrAddSceneTexture(MaterialSceneTextures::SceneStencil);
+            const auto parent = box->GetParent<ShaderGraphNode<>>();
+            MaterialGraphBox* uvBox = parent->GetBox(0);
+            bool useCustomUVs = uvBox->HasConnection();
+            String uv;
+            if (useCustomUVs)
+                uv = MaterialValue::Cast(tryGetValue(uvBox, getUVs), VariantType::Float2).Value;
+            else
+                uv = TEXT("input.TexCoord.xy");
+            const Char* func = type == MaterialSceneTextures::ObjectLayer ? TEXT("STENCIL_BUFFER_OBJECT_LAYER") : TEXT("");
+            value = writeLocal(VariantType::Int, String::Format(TEXT("{2}(STENCIL_BUFFER_LOAD({0}, {1} * ScreenSize.xy))"), stencilParam.ShaderName, uv, func), node);
+            _includes.Add(TEXT("./Flax/Stencil.hlsl"));
+            break;
+        }
         default:
         {
             // Sample single texture
@@ -517,7 +534,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
     }
     // Sample Texture
     case 9:
-    // Procedural Texture Sample
+    // Procedural Sample Texture
     case 17:
     {
         // Get input boxes
@@ -568,7 +585,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         const auto offset = useOffset ? eatBox(offsetBox->GetParent<Node>(), offsetBox->FirstConnection()) : Value::Zero;
         const Char* samplerName;
         const int32 samplerIndex = node->Values[0].AsInt;
-        if (samplerIndex == TextureGroup)
+        if (samplerIndex == TextureGroup && node->Values.Count() > 2)
         {
             auto& textureGroupSampler = findOrAddTextureGroupSampler(node->Values[2].AsInt);
             samplerName = *textureGroupSampler.ShaderName;
@@ -722,7 +739,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         const int32 samplerIndex = node->Values.Count() >= 4 ? node->Values[3].AsInt : LinearWrap;
         if (samplerIndex == TextureGroup)
         {
-            auto& textureGroupSampler = findOrAddTextureGroupSampler(node->Values[3].AsInt);
+            auto& textureGroupSampler = findOrAddTextureGroupSampler(node->Values[5].AsInt);
             samplerName = *textureGroupSampler.ShaderName;
         }
         else if (samplerIndex >= 0 && samplerIndex < ARRAY_COUNT(SamplerNames))
@@ -811,7 +828,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         const int32 samplerIndex = node->Values[3].AsInt;
         if (samplerIndex == TextureGroup)
         {
-            auto& textureGroupSampler = findOrAddTextureGroupSampler(node->Values[3].AsInt);
+            auto& textureGroupSampler = findOrAddTextureGroupSampler(node->Values[5].AsInt);
             samplerName = *textureGroupSampler.ShaderName;
         }
         else if (samplerIndex >= 0 && samplerIndex < ARRAY_COUNT(SamplerNames))

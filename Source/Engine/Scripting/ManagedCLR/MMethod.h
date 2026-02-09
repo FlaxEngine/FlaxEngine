@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Memory/ArenaAllocation.h"
 #if COMPILE_WITH_PROFILER
 #include "Engine/Profiler/ProfilerSrcLoc.h"
 #endif
@@ -21,15 +22,18 @@ class FLAXENGINE_API MMethod
 protected:
 #if USE_MONO
     MonoMethod* _monoMethod;
+    StringAnsi _name;
 #elif USE_NETCORE
     void* _handle;
+    StringAnsiView _name;
     int32 _paramsCount;
     mutable void* _returnType;
     mutable Array<void*, InlinedAllocation<8>> _parameterTypes;
     void CacheSignature() const;
+#else
+    StringAnsiView _name;
 #endif
     MClass* _parentClass;
-    StringAnsi _name;
     MVisibility _visibility;
 #if !USE_MONO_AOT
     void* _cachedThunk = nullptr;
@@ -41,19 +45,18 @@ protected:
 #endif
     int32 _isStatic : 1;
 
-    mutable Array<MObject*> _attributes;
+    mutable Array<MObject*, ArenaAllocation> _attributes;
 
 public:
 #if USE_MONO
     explicit MMethod(MonoMethod* monoMethod, MClass* parentClass);
     explicit MMethod(MonoMethod* monoMethod, const char* name, MClass* parentClass);
 #elif USE_NETCORE
-    MMethod(MClass* parentClass, StringAnsi&& name, void* handle, int32 paramsCount, MMethodAttributes attributes);
+    MMethod(MClass* parentClass, StringAnsiView name, void* handle, int32 paramsCount, MMethodAttributes attributes);
 #endif
 
 public:
 #if COMPILE_WITH_PROFILER
-    StringAnsi ProfilerName;
     SourceLocationData ProfilerData;
 #endif
 
@@ -109,7 +112,7 @@ public:
     /// <summary>
     /// Gets the method name.
     /// </summary>
-    FORCE_INLINE const StringAnsi& GetName() const
+    FORCE_INLINE StringAnsiView GetName() const
     {
         return _name;
     }
@@ -197,5 +200,5 @@ public:
     /// Returns an instance of all attributes connected with given method. Returns null if the method doesn't have any attributes.
     /// </summary>
     /// <returns>The array of attribute objects.</returns>
-    const Array<MObject*>& GetAttributes() const;
+    const Array<MObject*, ArenaAllocation>& GetAttributes() const;
 };

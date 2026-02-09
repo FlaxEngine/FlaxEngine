@@ -12,6 +12,7 @@
 #include "Engine/Audio/AudioSource.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/Script.h"
 #include "Engine/Scripting/ManagedCLR/MException.h"
@@ -151,6 +152,7 @@ void SceneAnimationPlayer::Tick(float dt)
     SceneAnimation* anim = Animation.Get();
     if (!anim || !anim->IsLoaded())
         return;
+    PROFILE_MEM(Animations);
 
     // Setup state
     if (_tracks.Count() != anim->TrackStatesCount)
@@ -229,6 +231,7 @@ void SceneAnimationPlayer::MapTrack(const StringView& from, const Guid& to)
     SceneAnimation* anim = Animation.Get();
     if (!anim || !anim->IsLoaded())
         return;
+    PROFILE_MEM(Animations);
     for (int32 j = 0; j < anim->Tracks.Count(); j++)
     {
         const auto& track = anim->Tracks[j];

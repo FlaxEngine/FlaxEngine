@@ -19,6 +19,9 @@ namespace Flax.Deps.Dependencies
     class mono : Dependency
     {
         /// <inheritdoc />
+        public override bool BuildByDefault => false; // Unused in favor of nethost
+
+        /// <inheritdoc />
         public override TargetPlatform[] Platforms
         {
             get
@@ -46,6 +49,48 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.Mac,
                     };
                 default: return new TargetPlatform[0];
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public override TargetArchitecture[] Architectures
+        {
+            get
+            {
+                switch (BuildPlatform)
+                {
+                case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        //TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.XboxOne:
+                case TargetPlatform.XboxScarlett:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                    };
+                case TargetPlatform.Switch:
+                case TargetPlatform.Android:
+                    return new[]
+                    {
+                        TargetArchitecture.ARM64,
+                    };
+                default: return new TargetArchitecture[0];
                 }
             }
         }
@@ -546,8 +591,8 @@ namespace Flax.Deps.Dependencies
                 {
                     var envVars = new Dictionary<string, string>
                     {
-                        { "CC", "clang-7" },
-                        { "CXX", "clang++-7" }
+                        { "CC", "clang-" + Configuration.LinuxClangMinVer },
+                        { "CXX", "clang++-" + Configuration.LinuxClangMinVer }
                     };
                     var monoOptions = new[]
                     {

@@ -15,6 +15,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
@@ -427,6 +428,7 @@ public:
             // Write to objects buffer (this must match unpacking logic in HLSL)
             uint32 objectAddress = ObjectsBuffer.Data.Count() / sizeof(Float4);
             ObjectsListBuffer.Write(objectAddress);
+            ObjectsBuffer.Data.EnsureCapacity(ObjectsBuffer.Data.Count() + sizeof(Float4) * (GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE + 6 * GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE));
             auto* objectData = ObjectsBuffer.WriteReserve<Float4>(GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE);
             objectData[0] = Float4(object.Position, object.Radius);
             objectData[1] = Float4::Zero;
@@ -510,6 +512,7 @@ public:
             {
                 // Dirty object to redraw
                 object->LastFrameUpdated = 0;
+                return;
             }
             GlobalSurfaceAtlasLight* light = Lights.TryGet(a->GetID());
             if (light)
@@ -550,9 +553,6 @@ bool GlobalSurfaceAtlasPass::Init()
     // Check platform support
     const auto device = GPUDevice::Instance;
     _supported = device->GetFeatureLevel() >= FeatureLevel::SM5 && device->Limits.HasCompute && device->Limits.HasTypedUAVLoad;
-#if PLATFORM_APPLE_FAMILY
-    _supported = false; // Vulkan over Metal has some issues in complex scenes with DDGI
-#endif
     return false;
 }
 
@@ -939,6 +939,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     // Send objects data to the GPU
     {
         PROFILE_GPU_CPU_NAMED("Update Objects");
+        GPUMemoryPass pass(context);
         surfaceAtlasData.ObjectsBuffer.Flush(context);
         surfaceAtlasData.ObjectsListBuffer.Flush(context);
     }
@@ -976,7 +977,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         {
             // Get the last counter value (accept staging readback delay or not available data yet)
             notReady = true;
-            auto data = (uint32*)_culledObjectsSizeBuffer->Map(GPUResourceMapMode::Read);
+            auto data = (uint32*)_culledObjectsSizeBuffer->Map(GPUResourceMapMode::Read | GPUResourceMapMode::NoWait);
             if (data)
             {
                 uint32 counter = data[surfaceAtlasData.CulledObjectsCounterIndex];
@@ -1447,7 +1448,6 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         auto colorGradingLUT = ColorGradingPass::Instance()->RenderLUT(renderContext);
         EyeAdaptationPass::Instance()->Render(renderContext, tempBuffer);
         PostProcessingPass::Instance()->Render(renderContext, tempBuffer, output, colorGradingLUT);
-        RenderTargetPool::Release(colorGradingLUT);
         RenderTargetPool::Release(tempBuffer);
         context->ResetRenderTarget();
 

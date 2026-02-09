@@ -25,6 +25,7 @@ namespace FlaxEditor.Viewport
         private readonly Editor _editor;
         private readonly ContextMenuButton _showGridButton;
         private readonly ContextMenuButton _showNavigationButton;
+        private readonly ContextMenuButton _toggleGameViewButton;
         private SelectionOutline _customSelectionOutline;
 
         /// <summary>
@@ -108,6 +109,13 @@ namespace FlaxEditor.Viewport
         private EditorSpritesRenderer _editorSpritesRenderer;
         private ViewportRubberBandSelector _rubberBandSelector;
 
+        private bool _gameViewActive;
+        private ViewFlags _preGameViewFlags;
+        private ViewMode _preGameViewViewMode;
+        private bool _gameViewWasGridShown;
+        private bool _gameViewWasFpsCounterShown;
+        private bool _gameViewWasNagivationShown;
+
         /// <summary>
         /// Drag and drop handlers
         /// </summary>
@@ -185,6 +193,7 @@ namespace FlaxEditor.Viewport
         : base(Object.New<SceneRenderTask>(), editor.Undo, editor.Scene.Root)
         {
             _editor = editor;
+            var inputOptions = _editor.Options.Options.Input;
             DragHandlers = new ViewportDragHandlers(this, this, ValidateDragItem, ValidateDragActorType, ValidateDragScriptItem);
 
             // Prepare rendering task
@@ -232,8 +241,13 @@ namespace FlaxEditor.Viewport
             _showGridButton.CloseMenuOnClick = false;
 
             // Show navigation widget
-            _showNavigationButton = ViewWidgetShowMenu.AddButton("Navigation", () => ShowNavigation = !ShowNavigation);
+            _showNavigationButton = ViewWidgetShowMenu.AddButton("Navigation", inputOptions.ToggleNavMeshVisibility, () => ShowNavigation = !ShowNavigation);
             _showNavigationButton.CloseMenuOnClick = false;
+
+            // Game View
+            ViewWidgetButtonMenu.AddSeparator();
+            _toggleGameViewButton = ViewWidgetButtonMenu.AddButton("Game View", inputOptions.ToggleGameView, ToggleGameView);
+            _toggleGameViewButton.CloseMenuOnClick = false;
 
             // Create camera widget
             ViewWidgetButtonMenu.AddSeparator();
@@ -259,6 +273,10 @@ namespace FlaxEditor.Viewport
             InputActions.Add(options => options.FocusSelection, FocusSelection);
             InputActions.Add(options => options.RotateSelection, RotateSelection);
             InputActions.Add(options => options.Delete, _editor.SceneEditing.Delete);
+            InputActions.Add(options => options.ToggleNavMeshVisibility, () => ShowNavigation = !ShowNavigation);
+
+            // Game View
+            InputActions.Add(options => options.ToggleGameView, ToggleGameView);
         }
 
         /// <inheritdoc />
@@ -340,6 +358,13 @@ namespace FlaxEditor.Viewport
         {
             _debugDrawData.Clear();
 
+            if (task is SceneRenderTask sceneRenderTask)
+            {
+                // Sync debug view to avoid lag on culling/LODing
+                var view = sceneRenderTask.View;
+                DebugDraw.SetView(ref view);
+            }
+
             // Collect selected objects debug shapes and visuals
             var selectedParents = TransformGizmo.SelectedParents;
             if (selectedParents.Count > 0)
@@ -366,9 +391,12 @@ namespace FlaxEditor.Viewport
         public void DrawEditorPrimitives(GPUContext context, ref RenderContext renderContext, GPUTexture target, GPUTexture targetDepth)
         {
             // Draw gizmos
-            for (int i = 0; i < Gizmos.Count; i++)
+            foreach (var gizmo in Gizmos)
             {
-                Gizmos[i].Draw(ref renderContext);
+                if (gizmo.Visible)
+                {
+                    gizmo.Draw(ref renderContext);
+                }
             }
 
             // Draw selected objects debug shapes and visuals
@@ -472,6 +500,36 @@ namespace FlaxEditor.Viewport
                 obj.Transform = trans;
             }
             TransformGizmo.EndTransforming();
+        }
+
+        /// <summary>
+        /// Toggles game view view mode on or off.
+        /// </summary>
+        public void ToggleGameView()
+        {
+            if (!_gameViewActive)
+            {
+                // Cache flags & values
+                _preGameViewFlags = Task.ViewFlags;
+                _preGameViewViewMode = Task.ViewMode;
+                _gameViewWasGridShown = Grid.Enabled;
+                _gameViewWasFpsCounterShown = ShowFpsCounter;
+                _gameViewWasNagivationShown = ShowNavigation;
+            }
+
+            // Set flags & values
+            Task.ViewFlags = _gameViewActive ? _preGameViewFlags : ViewFlags.DefaultGame;
+            Task.ViewMode = _gameViewActive ? _preGameViewViewMode : ViewMode.Default;
+            ShowFpsCounter = _gameViewActive ? _gameViewWasFpsCounterShown : false;
+            ShowNavigation = _gameViewActive ? _gameViewWasNagivationShown : false;
+            Grid.Enabled = _gameViewActive ? _gameViewWasGridShown : false;
+
+            _gameViewActive = !_gameViewActive;
+
+            TransformGizmo.Visible = !_gameViewActive;
+            SelectionOutline.ShowSelectionOutline = !_gameViewActive;
+
+            _toggleGameViewButton.Icon = _gameViewActive ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
         }
 
         /// <inheritdoc />
@@ -613,7 +671,7 @@ namespace FlaxEditor.Viewport
         {
             base.OnLeftMouseButtonDown();
 
-            _rubberBandSelector.TryStartingRubberBandSelection();
+            _rubberBandSelector.TryStartingRubberBandSelection(_viewMousePos);
         }
 
         /// <inheritdoc />

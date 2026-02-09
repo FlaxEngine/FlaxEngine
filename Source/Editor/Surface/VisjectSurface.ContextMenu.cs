@@ -261,10 +261,10 @@ namespace FlaxEditor.Surface
         /// </summary>
         /// <param name="activeCM">The active context menu to show.</param>
         /// <param name="location">The display location on the surface control.</param>
-        /// <param name="startBox">The start box.</param>
-        protected virtual void OnShowPrimaryMenu(VisjectCM activeCM, Float2 location, Box startBox)
+        /// <param name="startBoxes">The start boxes.</param>
+        protected virtual void OnShowPrimaryMenu(VisjectCM activeCM, Float2 location, List<Box> startBoxes)
         {
-            activeCM.Show(this, location, startBox);
+            activeCM.Show(this, location, startBoxes);
         }
 
         /// <summary>
@@ -298,8 +298,10 @@ namespace FlaxEditor.Surface
 
             _cmStartPos = location;
 
-            // Offset added in case the user doesn't like the box and wants to quickly get rid of it by clicking
-            OnShowPrimaryMenu(_activeVisjectCM, _cmStartPos + ContextMenuOffset, _connectionInstigator as Box);
+            List<Box> startBoxes = new List<Box>(_connectionInstigators.Where(c => c is Box).Cast<Box>());
+
+            // Position offset added so the user can quickly close the menu by clicking
+            OnShowPrimaryMenu(_activeVisjectCM, _cmStartPos + ContextMenuOffset, startBoxes);
 
             if (!string.IsNullOrEmpty(input))
             {
@@ -513,17 +515,15 @@ namespace FlaxEditor.Surface
         private void OnPrimaryMenuVisibleChanged(Control primaryMenu)
         {
             if (!primaryMenu.Visible)
-            {
-                _connectionInstigator = null;
-            }
+                _connectionInstigators.Clear();
         }
 
         /// <summary>
         /// Handles Visject CM item click event by spawning the selected item.
         /// </summary>
         /// <param name="visjectCmItem">The item.</param>
-        /// <param name="selectedBox">The selected box.</param>
-        protected virtual void OnPrimaryMenuButtonClick(VisjectCMItem visjectCmItem, Box selectedBox)
+        /// <param name="selectedBoxes">The selected boxes.</param>
+        protected virtual void OnPrimaryMenuButtonClick(VisjectCMItem visjectCmItem, List<Box> selectedBoxes)
         {
             if (!CanEdit)
                 return;
@@ -550,34 +550,36 @@ namespace FlaxEditor.Surface
             // Auto select new node
             Select(node);
 
-            if (selectedBox != null)
+            for (int i = 0; i < selectedBoxes.Count; i++)
             {
-                Box endBox = null;
-                foreach (var box in node.GetBoxes().Where(box => box.IsOutput != selectedBox.IsOutput))
+                Box currentBox = selectedBoxes[i];
+                if (currentBox != null)
                 {
-                    if (selectedBox.IsOutput)
+                    Box endBox = null;
+                    foreach (var box in node.GetBoxes().Where(box => box.IsOutput != currentBox.IsOutput))
                     {
-                        if (box.CanUseType(selectedBox.CurrentType))
+                        if (currentBox.IsOutput)
                         {
-                            endBox = box;
-                            break;
+                            if (box.CanUseType(currentBox.CurrentType))
+                            {
+                                endBox = box;
+                                break;
+                            }
                         }
-                    }
-                    else
-                    {
-                        if (selectedBox.CanUseType(box.CurrentType))
+                        else
                         {
-                            endBox = box;
-                            break;
+                            if (currentBox.CanUseType(box.CurrentType))
+                            {
+                                endBox = box;
+                                break;
+                            }
                         }
-                    }
 
-                    if (endBox == null && selectedBox.CanUseType(box.CurrentType))
-                    {
-                        endBox = box;
+                        if (endBox == null && currentBox.CanUseType(box.CurrentType))
+                            endBox = box;
                     }
+                    TryConnect(currentBox, endBox);
                 }
-                TryConnect(selectedBox, endBox);
             }
         }
 
@@ -593,13 +595,8 @@ namespace FlaxEditor.Surface
             }
 
             // If the user is patiently waiting for his box to get connected to the newly created one fulfill his wish!
-
-            _connectionInstigator = startBox;
-
             if (!IsConnecting)
-            {
                 ConnectingStart(startBox);
-            }
             ConnectingEnd(endBox);
 
             // Smart-Select next box

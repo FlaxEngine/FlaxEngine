@@ -129,8 +129,6 @@ void MaterialComplexityMaterialShader::Draw(RenderContext& renderContext, GPUCon
         DrawCall drawCall;
         MaterialBase::BindParameters bindParams(context, renderContext, drawCall);
         bindParams.BindViewData();
-        drawCall.WorldDeterminantSign = 1.0f;
-        drawCall.PerInstanceRandom = 0.0f;
         context->SetRenderTarget(lightBuffer);
         for (int32 i = 0; i < decals.Count(); i++)
         {

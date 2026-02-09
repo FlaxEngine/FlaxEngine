@@ -44,20 +44,39 @@ void Foliage::AddToCluster(ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_S
     ASSERT(instance.Bounds.Radius > ZeroTolerance);
     ASSERT(cluster->Bounds.Intersects(instance.Bounds));
 
-    // Find target cluster
-    while (cluster->Children[0])
+    // Minor clusters don't use bounds intersection but try to find the first free cluster instead
+    if (cluster->IsMinor)
     {
+        // Insert into the first non-full child cluster or subdivide 1st child
+#define CHECK_CHILD(idx) \
+        if (cluster->Children[idx]->Instances.Count() < FOLIAGE_CLUSTER_CAPACITY) \
+        { \
+           cluster->Children[idx]->Instances.Add(&instance); \
+           return; \
+        }
+        CHECK_CHILD(3);
+        CHECK_CHILD(2);
+        CHECK_CHILD(1);
+        cluster = cluster->Children[0];
+#undef CHECK_CHILD
+    }
+    else
+    {
+        // Find target cluster
+        while (cluster->Children[0])
+        {
 #define CHECK_CHILD(idx) \
 			if (cluster->Children[idx]->Bounds.Intersects(instance.Bounds)) \
 			{ \
 				cluster = cluster->Children[idx]; \
 				continue; \
 			}
-        CHECK_CHILD(0);
-        CHECK_CHILD(1);
-        CHECK_CHILD(2);
-        CHECK_CHILD(3);
+            CHECK_CHILD(0);
+            CHECK_CHILD(1);
+            CHECK_CHILD(2);
+            CHECK_CHILD(3);
 #undef CHECK_CHILD
+        }
     }
 
     // Check if it's not full
@@ -79,11 +98,20 @@ void Foliage::AddToCluster(ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_S
         // Setup children
         const Vector3 min = cluster->Bounds.Minimum;
         const Vector3 max = cluster->Bounds.Maximum;
-        const Vector3 size = cluster->Bounds.GetSize();
+        const Vector3 size = max - min;
         cluster->Children[0]->Init(BoundingBox(min, min + size * Vector3(0.5f, 1.0f, 0.5f)));
         cluster->Children[1]->Init(BoundingBox(min + size * Vector3(0.5f, 0.0f, 0.5f), max));
         cluster->Children[2]->Init(BoundingBox(min + size * Vector3(0.5f, 0.0f, 0.0f), min + size * Vector3(1.0f, 1.0f, 0.5f)));
         cluster->Children[3]->Init(BoundingBox(min + size * Vector3(0.0f, 0.0f, 0.5f), min + size * Vector3(0.5f, 1.0f, 1.0f)));
+        if (cluster->IsMinor || size.MinValue() < 1.0f)
+        {
+            // Mark children as minor to avoid infinite subdivision
+            cluster->IsMinor = true;
+            cluster->Children[0]->IsMinor = true;
+            cluster->Children[1]->IsMinor = true;
+            cluster->Children[2]->IsMinor = true;
+            cluster->Children[3]->IsMinor = true;
+        }
 
         // Move instances to a proper cells
         for (int32 i = 0; i < cluster->Instances.Count(); i++)
@@ -103,17 +131,17 @@ void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instan
     for (int32 meshIndex = 0; meshIndex < meshes.Count(); meshIndex++)
     {
         auto& drawCall = drawCallsLists[lod][meshIndex];
-        if (!drawCall.DrawCall.Material)
+        if (!drawCall.Material)
             continue;
 
         DrawKey key;
-        key.Mat = drawCall.DrawCall.Material;
+        key.Mat = drawCall.Material;
         key.Geo = &meshes.Get()[meshIndex];
         key.Lightmap = instance.Lightmap.TextureIndex;
         auto* e = result.TryGet(key);
         if (!e)
         {
-            e = &result[key];
+            e = &result.Add(key, BatchedDrawCall(renderContext.List))->Value;
             ASSERT_LOW_LAYER(key.Mat);
             e->DrawCall.Material = key.Mat;
             e->DrawCall.Surface.Lightmap = EnumHasAnyFlags(_staticFlags, StaticFlags::Lightmap) && _scene ? _scene->LightmapsData.GetReadyLightmap(key.Lightmap) : nullptr;
@@ -127,7 +155,7 @@ void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instan
         const Float3 translation = transform.Translation - renderContext.View.Origin;
         Matrix::Transformation(transform.Scale, transform.Orientation, translation, world);
         constexpr float worldDeterminantSign = 1.0f;
-        instanceData.Store(world, world, instance.Lightmap.UVsArea, drawCall.DrawCall.Surface.GeometrySize, instance.Random, worldDeterminantSign, lodDitherFactor);
+        instanceData.Store(world, world, instance.Lightmap.UVsArea, drawCall.Surface.GeometrySize, instance.Random, worldDeterminantSign, lodDitherFactor);
     }
 }
 
@@ -323,6 +351,7 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
                 draw.Bounds = sphere;
                 draw.PerInstanceRandom = instance.Random;
                 draw.DrawModes = type._drawModes;
+                draw.SetStencilValue(_layer);
                 type.Model->Draw(renderContext, draw);
 
                 //DebugDraw::DrawSphere(instance.Bounds, Color::YellowGreen);
@@ -400,6 +429,7 @@ void Foliage::DrawClusterGlobalSA(GlobalSurfaceAtlasPass* globalSA, const Vector
 void Foliage::DrawFoliageJob(int32 i)
 {
     PROFILE_CPU();
+    PROFILE_MEM(Graphics);
     const FoliageType& type = FoliageTypes[i];
     if (type.IsReady() && type.Model->CanBeRendered())
     {
@@ -429,7 +459,7 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Dr
         {
             const auto& mesh = meshes.Get()[meshIndex];
             auto& drawCall = drawCallsList.Get()[meshIndex];
-            drawCall.DrawCall.Material = nullptr;
+            drawCall.Material = nullptr; // DrawInstance skips draw calls from meshes with unset material
 
             // Check entry visibility
             const auto& entry = type.Entries[mesh.GetMaterialSlotIndex()];
@@ -454,13 +484,13 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Dr
             if (drawModes == DrawPass::None)
                 continue;
 
-            drawCall.DrawCall.Material = material;
-            drawCall.DrawCall.Surface.GeometrySize = mesh.GetBox().GetSize();
+            drawCall.Material = material;
+            drawCall.Surface.GeometrySize = mesh.GetBox().GetSize();
         }
     }
 
     // Draw instances of the foliage type
-    BatchedDrawCalls result;
+    BatchedDrawCalls result(&renderContext.List->Memory);
     DrawCluster(renderContext, type.Root, type, drawCallsLists, result);
 
     // Submit draw calls with valid instances added
@@ -551,6 +581,7 @@ FoliageType* Foliage::GetFoliageType(int32 index)
 void Foliage::AddFoliageType(Model* model)
 {
     PROFILE_CPU();
+    PROFILE_MEM(LevelFoliage);
 
     // Ensure to have unique model
     CHECK(model);
@@ -629,6 +660,7 @@ int32 Foliage::GetFoliageTypeInstancesCount(int32 index) const
 
 void Foliage::AddInstance(const FoliageInstance& instance)
 {
+    PROFILE_MEM(LevelFoliage);
     ASSERT(instance.Type >= 0 && instance.Type < FoliageTypes.Count());
     auto type = &FoliageTypes[instance.Type];
 
@@ -705,6 +737,7 @@ void Foliage::OnFoliageTypeModelLoaded(int32 index)
     if (_disableFoliageTypeEvents)
         return;
     PROFILE_CPU();
+    PROFILE_MEM(LevelFoliage);
     auto& type = FoliageTypes[index];
     ASSERT(type.IsReady());
 
@@ -803,6 +836,7 @@ void Foliage::OnFoliageTypeModelLoaded(int32 index)
 void Foliage::RebuildClusters()
 {
     PROFILE_CPU();
+    PROFILE_MEM(LevelFoliage);
 
     // Faster path if foliage is empty or no types is ready
     bool anyTypeReady = false;
@@ -1177,6 +1211,7 @@ void Foliage::Draw(RenderContext& renderContext)
         draw.Bounds = instance.Bounds;
         draw.PerInstanceRandom = instance.Random;
         draw.DrawModes = type.DrawModes & view.Pass & view.GetShadowsDrawPassMask(type.ShadowsMode);
+        draw.SetStencilValue(_layer);
         type.Model->Draw(renderContext, draw);
         return;
     }
@@ -1228,7 +1263,7 @@ void Foliage::Draw(RenderContextBatch& renderContextBatch)
         _renderContextBatch = &renderContextBatch;
         Function<void(int32)> func;
         func.Bind<Foliage, &Foliage::DrawFoliageJob>(this);
-        const uint64 waitLabel = JobSystem::Dispatch(func, FoliageTypes.Count());
+        const int64 waitLabel = JobSystem::Dispatch(func, FoliageTypes.Count());
         renderContextBatch.WaitLabels.Add(waitLabel);
         return;
     }
@@ -1334,6 +1369,7 @@ void Foliage::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
     Actor::Deserialize(stream, modifier);
 
     PROFILE_CPU();
+    PROFILE_MEM(LevelFoliage);
 
     // Clear
 #if FOLIAGE_USE_SINGLE_QUAD_TREE

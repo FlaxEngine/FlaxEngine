@@ -37,6 +37,24 @@ namespace Flax.Deps.Dependencies
         }
 
         /// <inheritdoc />
+        public override TargetArchitecture[] Architectures
+        {
+            get
+            {
+                switch (BuildPlatform)
+                {
+                case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                default: return new TargetArchitecture[0];
+                }
+            }
+        }
+
+        /// <inheritdoc />
         public override void Build(BuildOptions options)
         {
             var root = options.IntermediateFolder;
@@ -69,7 +87,7 @@ namespace Flax.Deps.Dependencies
             Utilities.ReplaceInFile(Path.Combine(root, "Src", "Newtonsoft.Json", "Newtonsoft.Json.csproj"), "HAVE_DYNAMIC;", ";");
             Utilities.ReplaceInFile(Path.Combine(root, "Src", "Newtonsoft.Json", "Newtonsoft.Json.csproj"), "HAVE_EXPRESSIONS;", ";");
             Utilities.ReplaceInFile(Path.Combine(root, "Src", "Newtonsoft.Json", "Newtonsoft.Json.csproj"), "HAVE_REGEX;", ";");
-            Utilities.ReplaceInFile(Path.Combine(root, "Src", "Newtonsoft.Json", "Newtonsoft.Json.csproj"), "HAVE_TYPE_DESCRIPTOR;", ";");
+            //Utilities.ReplaceInFile(Path.Combine(root, "Src", "Newtonsoft.Json", "Newtonsoft.Json.csproj"), "HAVE_TYPE_DESCRIPTOR;", ";");
             Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, buildPlatform);
             {
                 var platform = "AOT";

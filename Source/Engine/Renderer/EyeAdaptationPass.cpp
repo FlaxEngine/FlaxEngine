@@ -98,6 +98,7 @@ void EyeAdaptationPass::Render(RenderContext& renderContext, GPUTexture* colorBu
     if (mode == EyeAdaptationMode::Manual)
     {
         // Apply fixed manual exposure
+        context->ResetSR();
         context->SetRenderTarget(*colorBuffer);
         context->SetViewportAndScissors((float)colorBuffer->Width(), (float)colorBuffer->Height());
         context->SetState(_psManual);
@@ -258,13 +259,7 @@ bool EyeAdaptationPass::setupResources()
     if (!_shader->IsLoaded())
         return true;
     const auto shader = _shader->GetShader();
-
-    // Validate shader constant buffer size
-    if (shader->GetCB(0)->GetSize() != sizeof(EyeAdaptationData))
-    {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, EyeAdaptationData);
-        return true;
-    }
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, EyeAdaptationData);
 
     // Create pipeline stages
     GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;

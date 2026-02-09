@@ -19,7 +19,6 @@ int32 VolumetricFogGridInjectionGroupSize = 4;
 int32 VolumetricFogIntegrationGroupSize = 8;
 
 VolumetricFogPass::VolumetricFogPass()
-    : _shader(nullptr)
 {
 }
 
@@ -54,19 +53,9 @@ bool VolumetricFogPass::setupResources()
     if (!_shader->IsLoaded())
         return true;
     auto shader = _shader->GetShader();
-
-    // Validate shader constant buffers sizes
-    if (shader->GetCB(0)->GetSize() != sizeof(Data))
-    {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
-        return true;
-    }
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
     // CB1 is used for per-draw info (ObjectIndex)
-    if (shader->GetCB(2)->GetSize() != sizeof(PerLight))
-    {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 2, PerLight);
-        return true;
-    }
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 2, PerLight);
 
     // Cache compute shaders
     _csInitialize = shader->GetCS("CS_Initialize");
@@ -110,7 +99,6 @@ float ComputeZSliceFromDepth(float sceneDepth, const VolumetricFogOptions& optio
 
 bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, VolumetricFogOptions& options)
 {
-    auto& view = renderContext.View;
     const auto fog = renderContext.List->Fog;
 
     // Check if already prepared for this frame
@@ -122,7 +110,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
     }
 
     // Check if skip rendering
-    if (fog == nullptr || (view.Flags & ViewFlags::Fog) == ViewFlags::None || !_isSupported || checkIfSkipPass())
+    if (fog == nullptr || !renderContext.List->Setup.UseVolumetricFog || !_isSupported || checkIfSkipPass())
     {
         RenderTargetPool::Release(renderContext.Buffers->VolumetricFog);
         renderContext.Buffers->VolumetricFog = nullptr;
@@ -164,7 +152,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
         break;
     case Quality::Ultra:
         _cache.GridPixelSize = 8;
-        _cache.GridSizeZ = 256;
+        _cache.GridSizeZ = 128;
         _cache.FogJitter = true;
         _cache.MissedHistorySamplesCount = 8;
         break;
@@ -179,6 +167,8 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
         (float)_cache.GridSizeZ);
     auto& fogData = renderContext.Buffers->VolumetricFogData;
     fogData.MaxDistance = options.Distance;
+    if (renderContext.Task->IsCameraCut || renderContext.View.IsOriginTeleport())
+        _cache.HistoryWeight = 0.0f;
 
     // Init data (partial, without directional light or sky light data);
     GBufferPass::SetInputs(renderContext.View, _cache.Data.GBuffer);
@@ -195,7 +185,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
     _cache.Data.PhaseG = options.ScatteringDistribution;
     _cache.Data.VolumetricFogMaxDistance = options.Distance;
     _cache.Data.MissedHistorySamplesCount = Math::Clamp(_cache.MissedHistorySamplesCount, 1, (int32)ARRAY_COUNT(_cache.Data.FrameJitterOffsets));
-    Matrix::Transpose(view.PrevViewProjection, _cache.Data.PrevWorldToClip);
+    Matrix::Transpose(renderContext.View.PrevViewProjection, _cache.Data.PrevWorldToClip);
     _cache.Data.SkyLight.VolumetricScatteringIntensity = 0;
 
     // Fill frame jitter history
@@ -311,7 +301,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     PROFILE_GPU_CPU("Volumetric Fog");
 
     // TODO: test exponential depth distribution (should give better quality near the camera)
-    // TODO: use tiled light culling and render unshadowed lights in single pass
+    // TODO: use tiled light culling and render shadowed/unshadowed lights in single pass
 
     // Try to get shadows atlas
     GPUTexture* shadowMap;
@@ -396,7 +386,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     }
 
     // Render local fog particles
-    if (renderContext.List->VolumetricFogParticles.HasItems())
+    if (renderContext.List->VolumetricFogParticles.Count() != 0)
     {
         PROFILE_GPU_CPU_NAMED("Local Fog");
 
@@ -416,7 +406,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
         customData.VolumetricFogMaxDistance = cache.Data.VolumetricFogMaxDistance;
         bindParams.CustomData = &customData;
         bindParams.BindViewData();
-        bindParams.DrawCall = &renderContext.List->VolumetricFogParticles.First();
+        bindParams.DrawCall = renderContext.List->VolumetricFogParticles.begin();
         bindParams.BindDrawData();
 
         for (auto& drawCall : renderContext.List->VolumetricFogParticles)
@@ -528,7 +518,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     {
         PROFILE_GPU("Light Scattering");
 
-        const bool temporalHistoryIsValid = renderContext.Buffers->VolumetricFogHistory && !renderContext.Task->IsCameraCut && Float3::NearEqual(renderContext.Buffers->VolumetricFogHistory->Size3(), cache.GridSize);
+        const bool temporalHistoryIsValid = renderContext.Buffers->VolumetricFogHistory && Float3::NearEqual(renderContext.Buffers->VolumetricFogHistory->Size3(), cache.GridSize);
         const auto lightScatteringHistory = temporalHistoryIsValid ? renderContext.Buffers->VolumetricFogHistory : nullptr;
 
         context->BindUA(0, lightScattering->ViewVolume());

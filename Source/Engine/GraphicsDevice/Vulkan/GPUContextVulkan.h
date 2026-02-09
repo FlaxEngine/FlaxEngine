@@ -16,6 +16,7 @@ class GPUTextureViewVulkan;
 class GPUBufferVulkan;
 class GPUVertexLayoutVulkan;
 class GPUPipelineStateVulkan;
+class GPUShaderProgramCSVulkan;
 class ComputePipelineStateVulkan;
 class GPUConstantBufferVulkan;
 class DescriptorPoolVulkan;
@@ -34,7 +35,7 @@ class DescriptorSetLayoutVulkan;
 /// <summary>
 /// Size of the pipeline barriers buffer size (will be auto-flushed on overflow).
 /// </summary>
-#define VK_BARRIER_BUFFER_SIZE 16
+#define VK_BARRIER_BUFFER_SIZE 64
 
 /// <summary>
 /// The Vulkan pipeline resources layout barrier batching structure.
@@ -45,18 +46,19 @@ struct PipelineBarrierVulkan
     VkPipelineStageFlags DestStage = 0;
     Array<VkImageMemoryBarrier, FixedAllocation<VK_BARRIER_BUFFER_SIZE>> ImageBarriers;
     Array<VkBufferMemoryBarrier, FixedAllocation<VK_BARRIER_BUFFER_SIZE>> BufferBarriers;
+    Array<VkMemoryBarrier, FixedAllocation<4>> MemoryBarriers;
 #if VK_ENABLE_BARRIERS_DEBUG
     Array<GPUTextureViewVulkan*, FixedAllocation<VK_BARRIER_BUFFER_SIZE>> ImageBarriersDebug;
 #endif
 
     FORCE_INLINE bool IsFull() const
     {
-        return ImageBarriers.Count() == VK_BARRIER_BUFFER_SIZE || BufferBarriers.Count() == VK_BARRIER_BUFFER_SIZE;
+        return ImageBarriers.Count() == VK_BARRIER_BUFFER_SIZE || BufferBarriers.Count() == VK_BARRIER_BUFFER_SIZE || MemoryBarriers.Count() == 4;
     }
 
     FORCE_INLINE bool HasBarrier() const
     {
-        return ImageBarriers.Count() + BufferBarriers.Count() != 0;
+        return ImageBarriers.Count() + BufferBarriers.Count() + MemoryBarriers.Count() != 0 || SourceStage + DestStage != 0;
     }
 
     void Execute(const CmdBufferVulkan* cmdBuffer);
@@ -83,6 +85,7 @@ private:
 
     RenderPassVulkan* _renderPass;
     GPUPipelineStateVulkan* _currentState;
+    GPUShaderProgramCSVulkan* _currentCompute;
     GPUVertexLayoutVulkan* _vertexLayout;
     GPUTextureViewVulkan* _rtDepth;
     GPUTextureViewVulkan* _rtHandles[GPU_MAX_RT_BINDED];
@@ -93,6 +96,9 @@ private:
     DescriptorOwnerResourceVulkan** _handles[(int32)SpirvShaderResourceBindingType::MAX];
 #if ENABLE_ASSERTION
     uint32 _handlesSizes[(int32)SpirvShaderResourceBindingType::MAX];
+#endif
+#if COMPILE_WITH_PROFILER
+    void* _tracyContext;
 #endif
 
     typedef Array<DescriptorPoolVulkan*> DescriptorPoolArray;
@@ -127,6 +133,8 @@ public:
     void AddImageBarrier(GPUTextureVulkan* texture, int32 mipSlice, int32 arraySlice, VkImageLayout dstLayout);
     void AddImageBarrier(GPUTextureVulkan* texture, VkImageLayout dstLayout);
     void AddBufferBarrier(GPUBufferVulkan* buffer, VkAccessFlags dstAccess);
+    void AddMemoryBarrier();
+    void AddUABarrier();
 
     void FlushBarriers();
 
@@ -185,7 +193,7 @@ public:
     void SetScissor(const Rectangle& scissorRect) override;
     GPUPipelineState* GetState() const override;
     void SetState(GPUPipelineState* state) override;
-    void ClearState() override;
+    void ResetState() override;
     void FlushState() override;
     void Flush() override;
     void UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 size, uint32 offset) override;
@@ -196,6 +204,9 @@ public:
     void CopyCounter(GPUBuffer* dstBuffer, uint32 dstOffset, GPUBuffer* srcBuffer) override;
     void CopyResource(GPUResource* dstResource, GPUResource* srcResource) override;
     void CopySubresource(GPUResource* dstResource, uint32 dstSubresource, GPUResource* srcResource, uint32 srcSubresource) override;
+    void Transition(GPUResource* resource, GPUResourceAccess access) override;
+    void MemoryBarrier() override;
+    void OverlapUA(bool end) override;
 };
 
 #endif

@@ -56,6 +56,7 @@ public:
 public:
     // [Collider]
 #if USE_EDITOR
+    void OnDebugDrawSelf() override;
     void OnDebugDrawSelected() override;
 #endif
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;

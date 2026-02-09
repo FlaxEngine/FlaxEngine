@@ -52,13 +52,16 @@ DEFINE_INTERNAL_CALL(int32) PlatformInternal_MemoryCompare(const void* buf1, con
 
 DEFINE_INTERNAL_CALL(void) DebugLogHandlerInternal_LogWrite(LogType level, MString* msgObj)
 {
+#if LOG_ENABLE
     StringView msg;
     MUtils::ToString(msgObj, msg);
     Log::Logger::Write(level, msg);
+#endif
 }
 
 DEFINE_INTERNAL_CALL(void) DebugLogHandlerInternal_Log(LogType level, MString* msgObj, ScriptingObject* obj, MString* stackTrace)
 {
+#if LOG_ENABLE
     if (msgObj == nullptr)
         return;
 
@@ -71,6 +74,7 @@ DEFINE_INTERNAL_CALL(void) DebugLogHandlerInternal_Log(LogType level, MString* m
     // TODO: maybe option for build to threat warnings and errors as fatal errors?
     //const String logMessage = String::Format(TEXT("Debug:{1} {2}"), objName, *msg);
     Log::Logger::Write(level, msg);
+#endif
 }
 
 DEFINE_INTERNAL_CALL(void) DebugLogHandlerInternal_LogException(MObject* exception, ScriptingObject* obj)

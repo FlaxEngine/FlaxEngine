@@ -42,6 +42,36 @@ namespace Flax.Deps.Dependencies
         }
 
         /// <inheritdoc />
+        public override TargetArchitecture[] Architectures
+        {
+            get
+            {
+                switch (BuildPlatform)
+                {
+                case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        //TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                default: return new TargetArchitecture[0];
+                }
+            }
+        }
+
+        /// <inheritdoc />
         public override void Build(BuildOptions options)
         {
             var root = options.IntermediateFolder;
@@ -69,15 +99,15 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
-                BuildStarted(platform);
-                switch (platform)
+                foreach (var architecture in options.Architectures)
                 {
-                case TargetPlatform.Windows:
-                {
-                    // Build for Win64 and ARM64
-                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    BuildStarted(platform, architecture);
+                    switch (platform)
                     {
-                        var buildDir = Path.Combine(root, "build-" + architecture.ToString());
+                    case TargetPlatform.Windows:
+                    {
+                        // Build for Windows
+                        var buildDir = Path.Combine(root, "build-" + architecture);
                         var solutionPath = Path.Combine(buildDir, "CURL.sln");
 
                         RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -DBUILD_CURL_EXE=OFF -DBUILD_SHARED_LIBS=OFF -DCURL_STATIC_CRT=OFF");
@@ -85,56 +115,55 @@ namespace Flax.Deps.Dependencies
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         foreach (var file in binariesToCopyWin)
                             Utilities.FileCopy(Path.Combine(buildDir, "lib", configuration, file), Path.Combine(depsFolder, Path.GetFileName(file)));
+                        break;
                     }
-                    break;
-                }
-                case TargetPlatform.Linux:
-                {
-                    // Build for Linux
-                    var settings = new[]
+                    case TargetPlatform.Linux:
                     {
-                        "--without-librtmp",
-                        "--without-ssl",
-                        "--with-gnutls",
-                        "--disable-ipv6",
-                        "--disable-manual",
-                        "--disable-verbose",
-                        "--disable-shared",
-                        "--enable-static",
-                        "-disable-ldap --disable-sspi --disable-ftp --disable-file --disable-dict --disable-telnet --disable-tftp --disable-rtsp --disable-pop3 --disable-imap --disable-smtp --disable-gopher --disable-smb",
-                    };
-                    var envVars = new Dictionary<string, string>
+                        // Build for Linux
+                        var settings = new[]
+                        {
+                            "--without-librtmp",
+                            //"--without-ssl",
+                            "--with-gnutls",
+                            "--disable-ipv6",
+                            "--disable-manual",
+                            "--disable-verbose",
+                            "--disable-shared",
+                            "--enable-static",
+                            "-disable-ldap --disable-sspi --disable-ftp --disable-file --disable-dict --disable-telnet --disable-tftp --disable-rtsp --disable-pop3 --disable-imap --disable-smtp --disable-gopher --disable-smb",
+                        };
+                        var envVars = new Dictionary<string, string>
+                        {
+                            { "CC", "clang-" + Configuration.LinuxClangMinVer },
+                            { "CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer },
+                            { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
+                        };
+                        var buildDir = Path.Combine(root, "build");
+                        SetupDirectory(buildDir, true);
+                        Utilities.Run("chmod", "+x configure", null, root, Utilities.RunOptions.DefaultTool);
+                        Utilities.Run(Path.Combine(root, "configure"), string.Join(" ", settings) + " --prefix=\"" + buildDir + "\"", null, root, Utilities.RunOptions.DefaultTool, envVars);
+                        Utilities.Run("make", null, null, root, Utilities.RunOptions.DefaultTool);
+                        Utilities.Run("make", "install", null, root, Utilities.RunOptions.DefaultTool);
+                        var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
+                        var filename = "libcurl.a";
+                        Utilities.FileCopy(Path.Combine(buildDir, "lib", filename), Path.Combine(depsFolder, filename));
+                        break;
+                    }
+                    case TargetPlatform.Mac:
                     {
-                        { "CC", "clang-7" },
-                        { "CC_FOR_BUILD", "clang-7" },
-                    };
-                    var buildDir = Path.Combine(root, "build");
-                    SetupDirectory(buildDir, true);
-                    Utilities.Run("chmod", "+x configure", null, root, Utilities.RunOptions.ThrowExceptionOnError);
-                    Utilities.Run(Path.Combine(root, "configure"), string.Join(" ", settings) + " --prefix=\"" + buildDir + "\"", null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
-                    Utilities.Run("make", null, null, root, Utilities.RunOptions.ThrowExceptionOnError);
-                    Utilities.Run("make", "install", null, root, Utilities.RunOptions.ThrowExceptionOnError);
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                    var filename = "libcurl.a";
-                    Utilities.FileCopy(Path.Combine(buildDir, "lib", filename), Path.Combine(depsFolder, filename));
-                    break;
-                }
-                case TargetPlatform.Mac:
-                {
-                    // Build for Mac
-                    var settings = new[]
-                    {
-                        "--with-secure-transport",
-                        "--without-librtmp",
-                        "--disable-ipv6",
-                        "--disable-manual",
-                        "--disable-verbose",
-                        "--disable-shared",
-                        "--enable-static",
-                        "-disable-ldap --disable-sspi --disable-ftp --disable-file --disable-dict --disable-telnet --disable-tftp --disable-rtsp --disable-pop3 --disable-imap --disable-smtp --disable-gopher --disable-smb",
-                    };
-                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
-                    {
+                        // Build for Mac
+                        var settings = new[]
+                        {
+                            "--with-secure-transport",
+                            "--without-librtmp",
+                            "--disable-ipv6",
+                            "--disable-manual",
+                            "--disable-verbose",
+                            "--disable-shared",
+                            "--enable-static",
+                            "-disable-ldap --disable-sspi --disable-ftp --disable-file --disable-dict --disable-telnet --disable-tftp --disable-rtsp --disable-pop3 --disable-imap --disable-smtp --disable-gopher --disable-smb",
+                        };
+
                         var arch = GetAppleArchName(architecture);
                         var archName = arch + "-apple-darwin19";
                         if (architecture == TargetArchitecture.ARM64)
@@ -153,17 +182,17 @@ namespace Flax.Deps.Dependencies
                         };
                         var buildDir = Path.Combine(root, "build");
                         SetupDirectory(buildDir, true);
-                        Utilities.Run("chmod", "+x configure", null, root, Utilities.RunOptions.ThrowExceptionOnError);
-                        Utilities.Run("chmod", "+x install-sh", null, root, Utilities.RunOptions.ThrowExceptionOnError);
-                        Utilities.Run(Path.Combine(root, "configure"), string.Join(" ", settings) + " --host=" + archName + " --prefix=\"" + buildDir + "\"", null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
-                        Utilities.Run("make", null, null, root, Utilities.RunOptions.ThrowExceptionOnError);
-                        Utilities.Run("make", "install", null, root, Utilities.RunOptions.ThrowExceptionOnError);
+                        Utilities.Run("chmod", "+x configure", null, root, Utilities.RunOptions.DefaultTool);
+                        Utilities.Run("chmod", "+x install-sh", null, root, Utilities.RunOptions.DefaultTool);
+                        Utilities.Run(Path.Combine(root, "configure"), string.Join(" ", settings) + " --host=" + archName + " --prefix=\"" + buildDir + "\"", null, root, Utilities.RunOptions.DefaultTool, envVars);
+                        Utilities.Run("make", null, null, root, Utilities.RunOptions.DefaultTool);
+                        Utilities.Run("make", "install", null, root, Utilities.RunOptions.DefaultTool);
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         var filename = "libcurl.a";
                         Utilities.FileCopy(Path.Combine(buildDir, "lib", filename), Path.Combine(depsFolder, filename));
+                        break;
                     }
-                    break;
-                }
+                    }
                 }
             }
 

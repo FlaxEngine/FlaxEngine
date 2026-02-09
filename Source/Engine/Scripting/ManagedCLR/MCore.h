@@ -57,6 +57,10 @@ public:
     static void UnloadScriptingAssemblyLoadContext();
 #endif
 
+    // Utility for guarding against using C# scripting runtime after shutdown (eg. when asset delegate is not properly disposed).
+    static bool Ready;
+    static void OnManagedEventAfterShutdown(const char* eventName);
+
 public:
     /// <summary>
     /// Utilities for C# object management.
@@ -122,6 +126,7 @@ public:
         static void Collect(int32 generation);
         static void Collect(int32 generation, MGCCollectionMode collectionMode, bool blocking, bool compacting);
         static int32 MaxGeneration();
+        static void MemoryInfo(int64& totalCommitted, int64& heapSize);
         static void WaitForPendingFinalizers();
         static void WriteRef(void* ptr, MObject* ref);
         static void WriteValue(void* dst, void* src, int32 count, const MClass* klass);

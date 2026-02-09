@@ -16,6 +16,7 @@
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Threading/Task.h"
+#include "Engine/Threading/Threading.h"
 
 static_assert(MODEL_MAX_VB == 3, "Update code in mesh to match amount of vertex buffers.");
 
@@ -440,10 +441,13 @@ bool MeshBase::Init(uint32 vertices, uint32 triangles, const Array<const void*, 
     GPUBuffer* vertexBuffer1 = nullptr;
     GPUBuffer* vertexBuffer2 = nullptr;
     GPUBuffer* indexBuffer = nullptr;
+#if MODEL_USE_PRECISE_MESH_INTERSECTS
+    VertexElement positionsElement;
+#endif
 
     // Create GPU buffers
 #if GPU_ENABLE_RESOURCE_NAMING
-    const String& modelPath = _model->GetPath();
+    const String modelPath = _model->GetPath();
 #define MESH_BUFFER_NAME(postfix) modelPath + TEXT(postfix)
 #else
 #define MESH_BUFFER_NAME(postfix) String::Empty
@@ -469,10 +473,11 @@ bool MeshBase::Init(uint32 vertices, uint32 triangles, const Array<const void*, 
 
     // Init collision proxy
 #if MODEL_USE_PRECISE_MESH_INTERSECTS
+    positionsElement = vbLayout[0]->FindElement(VertexElement::Types::Position);
     if (use16BitIndexBuffer)
-        _collisionProxy.Init<uint16>(vertices, triangles, (const Float3*)vbData[0], (const uint16*)ibData);
+        _collisionProxy.Init<uint16>(vertices, triangles, (const Float3*)vbData[0], (const uint16*)ibData, vertexBuffer0->GetStride(), positionsElement.Format);
     else
-        _collisionProxy.Init<uint32>(vertices, triangles, (const Float3*)vbData[0], (const uint32*)ibData);
+        _collisionProxy.Init<uint32>(vertices, triangles, (const Float3*)vbData[0], (const uint32*)ibData, vertexBuffer0->GetStride(), positionsElement.Format);
 #endif
 
     // Free old buffers

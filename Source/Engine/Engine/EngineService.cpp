@@ -26,7 +26,7 @@ static bool CompareEngineServices(EngineService* const& a, EngineService* const&
     { \
         ZoneScoped; \
         auto& services = GetServices(); \
-        for (int32 i = 0; i < services.Count(); i++) \
+        for (int32 i = services.Count() - 1; i >= 0; i--) \
             services[i]->name(); \
     }
 

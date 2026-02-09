@@ -17,6 +17,7 @@
 #include "Engine/Core/Utilities.h"
 #if COMPILE_WITH_PROFILER
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #endif
 #include "Engine/Threading/Threading.h"
 #include "Engine/Engine/CommandLine.h"
@@ -50,6 +51,7 @@ Array<User*, FixedAllocation<8>> PlatformBase::Users;
 Delegate<User*> PlatformBase::UserAdded;
 Delegate<User*> PlatformBase::UserRemoved;
 void* OutOfMemoryBuffer = nullptr;
+volatile int64 FatalReporting = 0;
 
 const Char* ToString(NetworkConnectionType value)
 {
@@ -205,6 +207,16 @@ void PlatformBase::Exit()
 
 #if COMPILE_WITH_PROFILER
 
+#define TEST_MALLOC 0
+#if TEST_MALLOC
+#include "Engine/Utilities/MallocTester.h"
+MallocTester& GetMallocTester()
+{
+    static MallocTester MallocTest;
+    return MallocTest;
+}
+#endif
+
 #define TRACY_ENABLE_MEMORY (TRACY_ENABLE)
 
 void PlatformBase::OnMemoryAlloc(void* ptr, uint64 size)
@@ -212,11 +224,20 @@ void PlatformBase::OnMemoryAlloc(void* ptr, uint64 size)
     if (!ptr)
         return;
 
+#if TEST_MALLOC
+    if (GetMallocTester().OnMalloc(ptr, size))
+        LOG(Fatal, "Invalid mallloc detected for pointer 0x{0:x} ({1} bytes)!\n{2}", (uintptr)ptr, size, Platform::GetStackTrace(3));
+#endif
+
 #if TRACY_ENABLE_MEMORY
     // Track memory allocation in Tracy
     //tracy::Profiler::MemAlloc(ptr, (size_t)size, false);
     tracy::Profiler::MemAllocCallstack(ptr, (size_t)size, 12, false);
 #endif
+
+    // Register in memory profiler
+    if (ProfilerMemory::Enabled)
+        ProfilerMemory::OnMemoryAlloc(ptr, size);
 
     // Register allocation during the current CPU event
     auto thread = ProfilerCPU::GetCurrentThread();
@@ -235,9 +256,18 @@ void PlatformBase::OnMemoryFree(void* ptr)
     if (!ptr)
         return;
 
+    // Register in memory profiler
+    if (ProfilerMemory::Enabled)
+        ProfilerMemory::OnMemoryFree(ptr);
+
 #if TRACY_ENABLE_MEMORY
     // Track memory allocation in Tracy
     tracy::Profiler::MemFree(ptr, false);
+#endif
+
+#if TEST_MALLOC
+    if (GetMallocTester().OnFree(ptr))
+        LOG(Fatal, "Invalid free detected for pointer 0x{0:x}!\n{1}", (uintptr)ptr, Platform::GetStackTrace(3));
 #endif
 }
 
@@ -277,11 +307,20 @@ int32 PlatformBase::GetCacheLineSize()
 
 void PlatformBase::Fatal(const StringView& msg, void* context, FatalErrorType error)
 {
+    // Let only one thread to report the error (and wait for it to end to have valid log before crash)
+RETRY:
+    if (Platform::InterlockedCompareExchange(&FatalReporting, 1, 0) != 0)
+    {
+        Platform::Sleep(1);
+        goto RETRY;
+    }
+
     // Check if is already during fatal state
     if (Engine::FatalError != FatalErrorType::None)
     {
         // Just send one more error to the log and back
         LOG(Error, "Error after fatal error: {0}", msg);
+        Platform::AtomicStore(&FatalReporting, 0);
         return;
     }
 
@@ -301,10 +340,11 @@ void PlatformBase::Fatal(const StringView& msg, void* context, FatalErrorType er
     Engine::RequestingExit();
 
     // Collect crash info (platform-dependant implementation that might collect stack trace and/or create memory dump)
+#if LOG_ENABLE
     {
         // Log separation for crash info
         LOG_FLUSH();
-        Log::Logger::WriteFloor();
+        LOG_FLOOR();
         LOG(Error, "");
         LOG(Error, "Critical error! Reason: {0}", msg);
         LOG(Error, "");
@@ -372,6 +412,12 @@ void PlatformBase::Fatal(const StringView& msg, void* context, FatalErrorType er
             LOG(Error, "External Used Physical Memory: {0} ({1}%)", Utilities::BytesToText(externalUsedPhysical), (int32)(100 * externalUsedPhysical / memoryStats.TotalPhysicalMemory));
             LOG(Error, "External Used Virtual Memory: {0} ({1}%)", Utilities::BytesToText(externalUsedVirtual), (int32)(100 * externalUsedVirtual / memoryStats.TotalVirtualMemory));
         }
+#if COMPILE_WITH_PROFILER
+        if (error == FatalErrorType::OutOfMemory || error == FatalErrorType::GPUOutOfMemory)
+        {
+            ProfilerMemory::Dump();
+        }
+#endif
     }
     if (Log::Logger::LogFilePath.HasChars())
     {
@@ -384,13 +430,16 @@ void PlatformBase::Fatal(const StringView& msg, void* context, FatalErrorType er
 
         // Capture the original log file
         LOG(Error, "");
-        Log::Logger::WriteFloor();
+        LOG_FLOOR();
         LOG_FLUSH();
         FileSystem::CopyFile(crashDataFolder / TEXT("Log.txt"), Log::Logger::LogFilePath);
 
         LOG(Error, "Crash info collected.");
-        Log::Logger::WriteFloor();
+        LOG_FLOOR();
     }
+#endif
+
+    Platform::AtomicStore(&FatalReporting, 0);
 
     // Show error message
     if (Engine::ReportCrash.IsBinded())

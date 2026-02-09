@@ -62,7 +62,7 @@ void DeformableMaterialShader::Bind(BindParameters& params)
     {
         Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
         Matrix::Transpose(drawCall.Deformable.LocalMatrix, materialData->LocalMatrix);
-        materialData->WorldDeterminantSign = drawCall.WorldDeterminantSign;
+        materialData->WorldDeterminantSign = drawCall.WorldDeterminant ? -1.0f : 1.0f;
         materialData->Segment = drawCall.Deformable.Segment;
         materialData->ChunksPerSegment = drawCall.Deformable.ChunksPerSegment;
         materialData->MeshMinZ = drawCall.Deformable.MeshMinZ;
@@ -84,13 +84,10 @@ void DeformableMaterialShader::Bind(BindParameters& params)
     // Select pipeline state based on current pass and render mode
     const bool wireframe = (_info.FeaturesFlags & MaterialFeaturesFlags::Wireframe) != MaterialFeaturesFlags::None || view.Mode == ViewMode::Wireframe;
     CullMode cullMode = view.Pass == DrawPass::Depth ? CullMode::TwoSided : _info.CullMode;
-    if (cullMode != CullMode::TwoSided && drawCall.WorldDeterminantSign < 0)
+    if (cullMode != CullMode::TwoSided && drawCall.WorldDeterminant)
     {
         // Invert culling when scale is negative
-        if (cullMode == CullMode::Normal)
-            cullMode = CullMode::Inverted;
-        else
-            cullMode = CullMode::Normal;
+        cullMode = cullMode == CullMode::Normal ? CullMode::Inverted : CullMode::Normal;
     }
     PipelineStateCache* psCache = _cache.GetPS(view.Pass);
     ASSERT(psCache);
@@ -98,6 +95,7 @@ void DeformableMaterialShader::Bind(BindParameters& params)
 
     // Bind pipeline
     context->SetState(state);
+    context->SetStencilRef(drawCall.StencilValue);
 }
 
 void DeformableMaterialShader::Unload()
@@ -139,10 +137,17 @@ bool DeformableMaterialShader::Load()
     {
         _drawModes |= DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas;
 
+        psDesc.StencilEnable = true;
+        psDesc.StencilReadMask = 0;
+        psDesc.StencilPassOp = StencilOperation::Replace;
+
         // GBuffer Pass
         psDesc.VS = _shader->GetVS("VS_SplineModel");
         psDesc.PS = _shader->GetPS("PS_GBuffer");
         _cache.Default.Init(psDesc);
+
+        psDesc.StencilEnable = false;
+        psDesc.StencilPassOp = StencilOperation::Keep;
     }
     else
     {

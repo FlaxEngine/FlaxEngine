@@ -114,6 +114,16 @@ public:
     API_EVENT() static Action MouseLeave;
 
     /// <summary>
+    /// Event fired when gamepad button goes down.
+    /// </summary>
+    API_EVENT() static Delegate<InputGamepadIndex, GamepadButton> GamepadButtonDown;
+
+    /// <summary>
+    /// Event fired when gamepad button goes up.
+    /// </summary>
+    API_EVENT() static Delegate<InputGamepadIndex, GamepadButton> GamepadButtonUp;
+
+    /// <summary>
     /// Event fired when touch action begins.
     /// </summary>
     API_EVENT() static Delegate<const Float2&, int32> TouchDown;

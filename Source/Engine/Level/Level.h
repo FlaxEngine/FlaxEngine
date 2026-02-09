@@ -48,7 +48,12 @@ public:
     /// <summary>
     /// True if game objects (actors and scripts) can receive a tick during engine Update/LateUpdate/FixedUpdate events. Can be used to temporarily disable gameplay logic updating.
     /// </summary>
-    API_FIELD() static bool TickEnabled;
+    API_FIELD(Attributes="DebugCommand") static bool TickEnabled;
+
+    /// <summary>
+    /// Fraction of the frame budget to limit time spent on levels streaming. For example, value of 0.3 means that 30% of frame time can be spent on levels loading within a single frame (eg. 0.3 at 60fps is 4.8ms budget).
+    /// </summary>
+    API_FIELD(Attributes="DebugCommand") static float StreamingFrameBudget;
 
 public:
     /// <summary>
@@ -469,6 +474,19 @@ public:
     API_FUNCTION() static Array<Actor*> GetActors(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, bool activeOnly = false);
 
     /// <summary>
+    /// Finds all the actors of the given type in all the loaded scenes.
+    /// </summary>
+    /// <typeparam name="T">Type of the object.</typeparam>
+    /// <param name="activeOnly">Finds only active actors.</param>
+    /// <returns>Found actors list.</returns>
+    template<typename T>
+    static Array<T*> GetActors(bool activeOnly = false)
+    {
+        Array<Actor*> actors = GetActors(T::GetStaticClass(), activeOnly);
+        return *(Array<T*>*)&actors;
+    }
+
+    /// <summary>
     /// Finds all the scripts of the given type in an actor or all the loaded scenes.
     /// </summary>
     /// <param name="type">Type of the script to search for. Includes any scripts derived from the type.</param>
@@ -551,13 +569,13 @@ private:
         OnActorOrderInParentChanged = 3,
         OnActorNameChanged = 4,
         OnActorActiveChanged = 5,
+#if USE_EDITOR
+        OnActorDestroyChildren = 6,
+#endif
     };
 
     static void callActorEvent(ActorEventType eventType, Actor* a, Actor* b);
-
-    // All loadScene assume that ScenesLock has been taken by the calling thread
-    static bool loadScene(JsonAsset* sceneAsset);
-    static bool loadScene(const BytesContainer& sceneData, Scene** outScene = nullptr);
-    static bool loadScene(rapidjson_flax::Document& document, Scene** outScene = nullptr);
-    static bool loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** outScene = nullptr, const String* assetPath = nullptr);
+#if USE_EDITOR
+    API_EVENT(Internal) static Delegate<Actor*> ActorDestroyChildren;
+#endif
 };

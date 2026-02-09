@@ -18,7 +18,7 @@ private:
     GPUBuffer* _dispatchArgsBuffer = nullptr;
     GPUConstantBuffer* _cb;
     GPUShaderProgramCS* _indirectArgsCS;
-    GPUShaderProgramCS* _preSortCS;
+    ComputeShaderPermutation<2> _preSortCS;
     GPUShaderProgramCS* _innerSortCS;
     GPUShaderProgramCS* _outerSortCS;
     GPUShaderProgramCS* _copyIndicesCS;
@@ -26,15 +26,16 @@ private:
 public:
 
     /// <summary>
-    /// Sorts the specified buffer of index-key pairs.
+    /// Sorts the specified buffers of index-key pairs.
     /// </summary>
     /// <param name="context">The GPU context.</param>
-    /// <param name="sortingKeysBuffer">The sorting keys buffer. Used as a structured buffer of type Item (see above).</param>
+    /// <param name="indicesBuffer">The sorting indices buffer with an index for each item (sequence of: 0, 1, 2, 3...). After sorting represents actual items order based on their keys. Valid for uint value types - used as RWBuffer.</param>
+    /// <param name="keysBuffer">The sorting keys buffer with a sort value for each item (must match order of items in indicesBuffer). Valid for float value types - used as RWBuffer.</param>
     /// <param name="countBuffer">The buffer that contains a items counter value.</param>
     /// <param name="counterOffset">The offset into counter buffer to find count for this list. Must be a multiple of 4 bytes.</param>
     /// <param name="sortAscending">True to sort in ascending order (smallest to largest), otherwise false to sort in descending order.</param>
-    /// <param name="sortedIndicesBuffer">The output buffer for sorted values extracted from the sorted sortingKeysBuffer after algorithm run. Valid for uint value types - used as RWBuffer.</param>
-    void Sort(GPUContext* context, GPUBuffer* sortingKeysBuffer, GPUBuffer* countBuffer, uint32 counterOffset, bool sortAscending, GPUBuffer* sortedIndicesBuffer);
+    /// <param name="maxElements">Optional upper limit of elements to sort. Cna be used to optimize indirect dispatches allocation. If non-zero, then it gets calculated based on the input item buffer size.</param>
+    void Sort(GPUContext* context, GPUBuffer* indicesBuffer, GPUBuffer* keysBuffer, GPUBuffer* countBuffer, uint32 counterOffset, bool sortAscending, int32 maxElements = 0);
 
 public:
 
@@ -45,7 +46,7 @@ public:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
-        _preSortCS = nullptr;
+        _preSortCS.Clear();
         _innerSortCS = nullptr;
         _outerSortCS = nullptr;
         invalidateResources();

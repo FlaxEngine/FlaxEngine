@@ -9,6 +9,7 @@
 #include "Engine/Physics/PhysicsBackend.h"
 #include "Engine/Physics/CollisionCooking.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Threading/Threading.h"
 
 REGISTER_BINARY_ASSET(CollisionData, "FlaxEngine.CollisionData", true);
@@ -35,6 +36,7 @@ bool CollisionData::CookCollision(CollisionDataType type, ModelBase* modelObj, i
         return true;
     }
     PROFILE_CPU();
+    PROFILE_MEM(Physics);
 
     // Prepare
     CollisionCooking::Argument arg;
@@ -64,6 +66,7 @@ bool CollisionData::CookCollision(CollisionDataType type, ModelBase* modelObj, i
 bool CollisionData::CookCollision(CollisionDataType type, const Span<Float3>& vertices, const Span<uint32>& triangles, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
 {
     PROFILE_CPU();
+    PROFILE_MEM(Physics);
     CHECK_RETURN(vertices.Length() != 0, true);
     CHECK_RETURN(triangles.Length() != 0 && triangles.Length() % 3 == 0, true);
     ModelData modelData;
@@ -78,6 +81,7 @@ bool CollisionData::CookCollision(CollisionDataType type, const Span<Float3>& ve
 bool CollisionData::CookCollision(CollisionDataType type, const Span<Float3>& vertices, const Span<int32>& triangles, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
 {
     PROFILE_CPU();
+    PROFILE_MEM(Physics);
     CHECK_RETURN(vertices.Length() != 0, true);
     CHECK_RETURN(triangles.Length() != 0 && triangles.Length() % 3 == 0, true);
     ModelData modelData;
@@ -99,6 +103,7 @@ bool CollisionData::CookCollision(CollisionDataType type, ModelData* modelData, 
         return true;
     }
     PROFILE_CPU();
+    PROFILE_MEM(Physics);
 
     // Prepare
     CollisionCooking::Argument arg;
@@ -180,6 +185,7 @@ bool CollisionData::GetModelTriangle(uint32 faceIndex, MeshBase*& mesh, uint32& 
 void CollisionData::ExtractGeometry(Array<Float3>& vertexBuffer, Array<int32>& indexBuffer) const
 {
     PROFILE_CPU();
+    PROFILE_MEM(Physics);
     vertexBuffer.Clear();
     indexBuffer.Clear();
 
@@ -197,6 +203,7 @@ const Array<Float3>& CollisionData::GetDebugLines()
     if (_hasMissingDebugLines && IsLoaded())
     {
         PROFILE_CPU();
+        PROFILE_MEM(Physics);
         ScopeLock lock(Locker);
         _hasMissingDebugLines = false;
 
@@ -250,6 +257,8 @@ Asset::LoadResult CollisionData::load()
 
 CollisionData::LoadResult CollisionData::load(const SerializedOptions* options, byte* dataPtr, int32 dataSize)
 {
+    PROFILE_MEM(Physics);
+
     // Load options
     _options.Type = options->Type;
     _options.Model = options->Model;

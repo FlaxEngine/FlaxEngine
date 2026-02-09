@@ -11,9 +11,8 @@
 
 MeshCollider::MeshCollider(const SpawnParams& params)
     : Collider(params)
+    , CollisionData(this)
 {
-    CollisionData.Changed.Bind<MeshCollider, &MeshCollider::OnCollisionDataChanged>(this);
-    CollisionData.Loaded.Bind<MeshCollider, &MeshCollider::OnCollisionDataLoaded>(this);
 }
 
 void MeshCollider::OnCollisionDataChanged()
@@ -33,8 +32,9 @@ void MeshCollider::OnCollisionDataChanged()
 
 void MeshCollider::OnCollisionDataLoaded()
 {
-    UpdateGeometry();
-    UpdateBounds();
+    // Not needed as OnCollisionDataChanged waits for it to be loaded
+    //UpdateGeometry();
+    //UpdateBounds();
 }
 
 bool MeshCollider::CanAttach(RigidBody* rigidBody) const
@@ -85,13 +85,18 @@ void MeshCollider::DrawPhysicsDebug(RenderView& view)
     }
 }
 
-void MeshCollider::OnDebugDrawSelected()
+void MeshCollider::OnDebugDrawSelf()
 {
     if (CollisionData && CollisionData->IsLoaded())
     {
         const auto& debugLines = CollisionData->GetDebugLines();
         DEBUG_DRAW_LINES(Span<Float3>(debugLines.Get(), debugLines.Count()), _transform.GetWorld(), Color::GreenYellow, 0, false);
     }
+}
+
+void MeshCollider::OnDebugDrawSelected()
+{
+    OnDebugDrawSelf();
 
     // Base
     Collider::OnDebugDrawSelected();
@@ -151,4 +156,20 @@ void MeshCollider::GetGeometry(CollisionShape& collision)
         collision.SetTriangleMesh(CollisionData->GetTriangle(), scale.Raw);
     else
         collision.SetSphere(minSize);
+}
+
+void MeshCollider::OnAssetChanged(Asset* asset, void* caller)
+{
+    Collider::OnAssetChanged(asset, caller);
+
+    if (caller == &CollisionData)
+        OnCollisionDataChanged();
+}
+
+void MeshCollider::OnAssetLoaded(Asset* asset, void* caller)
+{
+    Collider::OnAssetLoaded(asset, caller);
+
+    if (caller == &CollisionData)
+        OnCollisionDataLoaded();
 }

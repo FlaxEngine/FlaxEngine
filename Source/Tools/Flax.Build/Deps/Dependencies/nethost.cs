@@ -92,7 +92,12 @@ namespace Flax.Deps.Dependencies
                 os = "windows";
                 runtimeFlavor = "Mono";
                 buildMonoAotCross = true;
-                buildArgs = $" -subset mono+libs -cmakeargs \"-DDISABLE_JIT=1-DENABLE_PERFTRACING=0-DDISABLE_REFLECTION_EMIT=1-DDISABLE_EVENTPIPE=1-DDISABLE_COM=1-DDISABLE_PROFILER=1-DDISABLE_COMPONENTS=1\" /p:FeaturePerfTracing=false /p:FeatureManagedEtw=false /p:FeatureManagedEtwChannels=false /p:FeatureEtw=false /p:ApiCompatValidateAssemblies=false";
+                var defines = "-D_GAMING_XBOX=1-DDISABLE_JIT=1-DENABLE_PERFTRACING=0-DDISABLE_REFLECTION_EMIT=1-DDISABLE_EVENTPIPE=1-DDISABLE_COM=1-DDISABLE_PROFILER=1-DDISABLE_COMPONENTS=1";
+                defines += targetPlatform == TargetPlatform.XboxScarlett ? "-D_GAMING_XBOX_SCARLETT=1" : "-D_GAMING_XBOX_XBOXONE=1";
+                defines += "-DDISABLE_EXECUTABLES=1-DDISABLE_SHARED_LIBS=1";
+                buildArgs = $" -subset mono+libs -cmakeargs \"{defines}\" /p:FeaturePerfTracing=false /p:FeatureWin32Registry=false /p:FeatureCominteropApartmentSupport=false /p:FeatureManagedEtw=false /p:FeatureManagedEtwChannels=false /p:FeatureEtw=false /p:ApiCompatValidateAssemblies=false";
+                envVars.Add("_GAMING_XBOX", "1");
+                envVars.Add(targetPlatform == TargetPlatform.XboxScarlett ? "_GAMING_XBOX_SCARLETT" : "_GAMING_XBOX_XBOXONE", "1");
                 break;
             case TargetPlatform.Linux:
                 os = "linux";
@@ -240,15 +245,28 @@ namespace Flax.Deps.Dependencies
                 switch (targetPlatform)
                 {
                 case TargetPlatform.Windows:
-                case TargetPlatform.XboxOne:
-                case TargetPlatform.XboxScarlett:
                     libs1 = new[]
                     {
                         "lib/coreclr.dll",
                         "lib/coreclr.import.lib",
                     };
-                    libs2 = new string[]
+                    libs2 = new[]
                     {
+                        "System.Globalization.Native.dll",
+                        "System.IO.Compression.Native.dll",
+                    };
+                    break;
+                case TargetPlatform.XboxOne:
+                case TargetPlatform.XboxScarlett:
+                    libs1 = new[]
+                    {
+                        "lib/monosgen-2.0.lib",
+                        "lib/mono-profiler-aot.lib",
+                    };
+                    libs2 = new[]
+                    {
+                        "lib/System.Globalization.Native-Static.lib",
+                        "lib/System.IO.Compression.Native-Static.lib",
                     };
                     break;
                 default:
@@ -296,9 +314,19 @@ namespace Flax.Deps.Dependencies
         {
             root = options.IntermediateFolder;
 
+            // On Windows MAX_PATH=260 might cause some build issues with CMake+Ninja, even when LongPathsEnabled=1
+            // To solve this, simply use a drive root folder instead of Deps directory
+            if (BuildPlatform == TargetPlatform.Windows && root.Length > 30)
+            {
+                root = Path.Combine(Path.GetPathRoot(root), "nethost");
+                Log.Info($"Using custom rooted build directory: {root} (due to path size limit)");
+                SetupDirectory(root, false);
+            }
+
             // Ensure to have dependencies installed
-            Utilities.Run("ninja", "--version", null, null, Utilities.RunOptions.ThrowExceptionOnError);
-            Utilities.Run("cmake", "--version", null, null, Utilities.RunOptions.ThrowExceptionOnError);
+            Utilities.Run("ninja", "--version", null, null, Utilities.RunOptions.DefaultTool);
+            Utilities.Run("cmake", "--version", null, null, Utilities.RunOptions.DefaultTool);
+            Utilities.Run("python", "--version", null, null, Utilities.RunOptions.DefaultTool);
 
             // Get the source
             if (!Directory.Exists(Path.Combine(root, ".git")))
@@ -324,24 +352,27 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
-                BuildStarted(platform);
-                var platformData = Path.Combine(GetBinariesFolder(options, platform), "Data", "nethost");
-                if (Directory.Exists(platformData))
-                    Utilities.DirectoryCopy(platformData, root, true, true);
-                switch (platform)
+                foreach (var architecture in options.Architectures)
                 {
-                case TargetPlatform.PS4:
-                case TargetPlatform.PS5:
-                case TargetPlatform.XboxOne:
-                case TargetPlatform.XboxScarlett:
-                    Build(options, platform, TargetArchitecture.x64);
+                    BuildStarted(platform, architecture);
+                    var platformData = Path.Combine(GetBinariesFolder(options, platform), "Data", "nethost");
+                    if (Directory.Exists(platformData))
+                        Utilities.DirectoryCopy(platformData, root, true, true);
+                    switch (platform)
+                    {
+                    case TargetPlatform.PS4:
+                    case TargetPlatform.PS5:
+                    case TargetPlatform.XboxOne:
+                    case TargetPlatform.XboxScarlett:
+                        Build(options, platform, TargetArchitecture.x64);
                     break;
-                case TargetPlatform.Android:
-                    Build(options, platform, TargetArchitecture.ARM64);
+                    case TargetPlatform.Android:
+                        Build(options, platform, TargetArchitecture.ARM64);
                     break;
-                case TargetPlatform.Switch:
-                    Build(options, platform, TargetArchitecture.ARM64);
+                    case TargetPlatform.Switch:
+                        Build(options, platform, TargetArchitecture.ARM64);
                     break;
+                    }
                 }
             }
 

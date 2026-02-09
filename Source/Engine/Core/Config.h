@@ -30,13 +30,17 @@
 #endif
 
 // Enable logging service (saving log to file, can be disabled using -nolog command line)
+#ifndef LOG_ENABLE
 #define LOG_ENABLE 1
+#endif
 
 // Enable crash reporting service (stack trace and crash dump collecting)
 #define CRASH_LOG_ENABLE (!BUILD_RELEASE)
 
 // Enable/disable assertion
+#ifndef ENABLE_ASSERTION
 #define ENABLE_ASSERTION (!BUILD_RELEASE)
+#endif
 
 // Enable/disable assertion for Engine low layers
 #define ENABLE_ASSERTION_LOW_LAYERS ENABLE_ASSERTION && (BUILD_DEBUG || FLAX_TESTS)
@@ -53,5 +57,5 @@
 #define API_PARAM(...)
 #define API_TYPEDEF(...)
 #define API_INJECT_CODE(...)
-#define API_AUTO_SERIALIZATION(...) public: void Serialize(SerializeStream& stream, const void* otherObj) override; void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
+#define API_AUTO_SERIALIZATION(...) public: bool ShouldSerialize(const void* otherObj) const override; void Serialize(SerializeStream& stream, const void* otherObj) override; void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 #define DECLARE_SCRIPTING_TYPE_MINIMAL(type) public: friend class type##Internal; static struct ScriptingTypeInitializer TypeInitializer;

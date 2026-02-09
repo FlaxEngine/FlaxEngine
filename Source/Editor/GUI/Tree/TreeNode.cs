@@ -319,6 +319,8 @@ namespace FlaxEditor.GUI.Tree
         public TreeNode(bool canChangeOrder, SpriteHandle iconCollapsed, SpriteHandle iconOpened)
         : base(0, 0, 64, 16)
         {
+            AutoFocus = true;
+
             _canChangeOrder = canChangeOrder;
             _animationProgress = 1.0f;
             _cachedHeight = _headerHeight;
@@ -1138,8 +1140,11 @@ namespace FlaxEditor.GUI.Tree
                         ParentTree.DraggedOverNode = this;
 
                     // Expand node if mouse goes over arrow
-                    if (ArrowRect.Contains(location) && HasAnyVisibleChild)
+                    if (ArrowRect.Contains(location) && HasAnyVisibleChild && IsCollapsed)
+                    {
                         Expand(true);
+                        ParentTree?.FlushPendingPerformLayout();
+                    }
 
                     result = OnDragEnterHeader(data);
                 }
@@ -1170,8 +1175,11 @@ namespace FlaxEditor.GUI.Tree
                         ParentTree.DraggedOverNode = this;
 
                     // Expand node if mouse goes over arrow
-                    if (ArrowRect.Contains(location) && HasAnyVisibleChild)
+                    if (ArrowRect.Contains(location) && HasAnyVisibleChild && IsCollapsed)
+                    {
                         Expand(true);
+                        ParentTree?.FlushPendingPerformLayout();
+                    }
 
                     if (!_isDragOverHeader)
                         result = OnDragEnterHeader(data);

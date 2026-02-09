@@ -47,6 +47,7 @@ ThreadLocal<LogContextThreadData> GlobalLogContexts;
 
 void LogContext::Print(LogType verbosity)
 {
+#if LOG_ENABLE
     auto& stack = GlobalLogContexts.Get();
     if (stack.Count == 0)
         return;
@@ -102,6 +103,7 @@ void LogContext::Print(LogType verbosity)
         // Print message
         Log::Logger::Write(verbosity, msg.ToStringView());
     }
+#endif
 }
 
 void LogContext::Push(const Guid& id)

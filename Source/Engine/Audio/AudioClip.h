@@ -18,6 +18,7 @@ class AudioSource;
 API_CLASS(NoSpawn) class FLAXENGINE_API AudioClip : public BinaryAsset, public StreamableResource
 {
     DECLARE_BINARY_ASSET_HEADER(AudioClip, 2);
+    friend class AudioBackendOAL;
 
 public:
     /// <summary>
@@ -44,22 +45,11 @@ public:
         FlaxStorage::LockData _dataLock;
 
     public:
-        /// <summary>
-        /// Init
-        /// </summary>
-        /// <param name="asset">Parent asset</param>
-        StreamingTask(AudioClip* asset)
-            : _asset(asset)
-            , _dataLock(asset->Storage->Lock())
-        {
-        }
+        StreamingTask(AudioClip* asset);
 
     public:
         // [ThreadPoolTask]
-        bool HasReference(Object* resource) const override
-        {
-            return _asset == resource;
-        }
+        bool HasReference(Object* resource) const override;
 
     protected:
         // [ThreadPoolTask]

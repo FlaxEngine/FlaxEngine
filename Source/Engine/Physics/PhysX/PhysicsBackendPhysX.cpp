@@ -24,7 +24,9 @@
 #include "Engine/Platform/CPUInfo.h"
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/WriteStream.h"
+#include "Engine/Threading/JobSystem.h"
 #include <ThirdParty/PhysX/PxPhysicsAPI.h>
 #include <ThirdParty/PhysX/PxQueryFiltering.h>
 #include <ThirdParty/PhysX/extensions/PxFixedJoint.h>
@@ -44,7 +46,6 @@
 #endif
 #if WITH_CLOTH
 #include "Engine/Physics/Actors/Cloth.h"
-#include "Engine/Threading/JobSystem.h"
 #include "Engine/Threading/Threading.h"
 #include <ThirdParty/NvCloth/Callbacks.h>
 #include <ThirdParty/NvCloth/Factory.h>
@@ -81,7 +82,6 @@ struct ActionDataPhysX
 struct ScenePhysX
 {
     PxScene* Scene = nullptr;
-    PxCpuDispatcher* CpuDispatcher = nullptr;
     PxControllerManager* ControllerManager = nullptr;
     void* ScratchMemory = nullptr;
     Vector3 Origin = Vector3::Zero;
@@ -117,6 +117,7 @@ class AllocatorPhysX : public PxAllocatorCallback
     void* allocate(size_t size, const char* typeName, const char* filename, int line) override
     {
         ASSERT(size < 1024 * 1024 * 1024); // Prevent invalid allocation size
+        PROFILE_MEM(Physics);
         return Allocator::Allocate(size, 16);
     }
 
@@ -495,7 +496,9 @@ protected:
 #define PxHitFlagEmpty (PxHitFlags)0
 #define SCENE_QUERY_FLAGS (PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eFACE_INDEX | PxHitFlag::eUV)
 
-#define SCENE_QUERY_SETUP(blockSingle) auto scenePhysX = (ScenePhysX*)scene; if (scene == nullptr) return false; \
+#define SCENE_QUERY_SETUP(blockSingle) PROFILE_CPU(); \
+        auto scenePhysX = (ScenePhysX*)scene; \
+        if (scene == nullptr) return false; \
 		PxQueryFilterData filterData; \
 		filterData.flags |=  PxQueryFlag::ePREFILTER; \
 		filterData.data.word0 = layerMask; \
@@ -540,6 +543,7 @@ namespace
 {
     PxFoundation* Foundation = nullptr;
     PxPhysics* PhysX = nullptr;
+    PxDefaultCpuDispatcher* CpuDispatcher = nullptr;
 #if WITH_PVD
     PxPvd* PVD = nullptr;
 #endif
@@ -725,6 +729,7 @@ void ScenePhysX::UpdateVehicles(float dt)
     if (WheelVehicles.IsEmpty())
         return;
     PROFILE_CPU_NAMED("Physics.Vehicles");
+    PROFILE_MEM(Physics);
 
     // Update vehicles steering
     WheelVehiclesCache.Clear();
@@ -1731,6 +1736,7 @@ void PhysicsBackend::Shutdown()
 #if WITH_PVD
     RELEASE_PHYSX(PVD);
 #endif
+    RELEASE_PHYSX(CpuDispatcher);
     RELEASE_PHYSX(Foundation);
     SceneOrigins.Clear();
 }
@@ -1788,9 +1794,13 @@ void* PhysicsBackend::CreateScene(const PhysicsSettings& settings)
     }
     if (sceneDesc.cpuDispatcher == nullptr)
     {
-        scenePhysX->CpuDispatcher = PxDefaultCpuDispatcherCreate(Math::Clamp<uint32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 1, 4));
-        CHECK_INIT(scenePhysX->CpuDispatcher, "PxDefaultCpuDispatcherCreate failed!");
-        sceneDesc.cpuDispatcher = scenePhysX->CpuDispatcher;
+        if (CpuDispatcher == nullptr)
+        {
+            uint32 threads = Math::Clamp<uint32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 1, 8);
+            CpuDispatcher = PxDefaultCpuDispatcherCreate(threads);
+            CHECK_INIT(CpuDispatcher, "PxDefaultCpuDispatcherCreate failed!");
+        }
+        sceneDesc.cpuDispatcher = CpuDispatcher;
     }
     switch (settings.BroadPhaseType)
     {
@@ -1852,7 +1862,6 @@ void PhysicsBackend::DestroyScene(void* scene)
     }
 #endif
     RELEASE_PHYSX(scenePhysX->ControllerManager);
-    SAFE_DELETE(scenePhysX->CpuDispatcher);
     Allocator::Free(scenePhysX->ScratchMemory);
     scenePhysX->Scene->release();
 
@@ -1861,6 +1870,7 @@ void PhysicsBackend::DestroyScene(void* scene)
 
 void PhysicsBackend::StartSimulateScene(void* scene, float dt)
 {
+    PROFILE_MEM(Physics);
     auto scenePhysX = (ScenePhysX*)scene;
     const auto& settings = *PhysicsSettings::Get();
 
@@ -1893,8 +1903,26 @@ void PhysicsBackend::StartSimulateScene(void* scene, float dt)
     scenePhysX->Stepper.renderDone();
 }
 
+PxActor** CachedActiveActors;
+int64 CachedActiveActorsCount;
+volatile int64 CachedActiveActorIndex;
+
+void FlushActiveTransforms(int32 i)
+{
+    PROFILE_CPU();
+    int64 index;
+    while ((index = Platform::InterlockedIncrement(&CachedActiveActorIndex)) < CachedActiveActorsCount)
+    {
+        const auto pxActor = (PxRigidActor*)CachedActiveActors[index];
+        auto actor = static_cast<IPhysicsActor*>(pxActor->userData);
+        if (actor)
+            actor->OnActiveTransformChanged();
+    }
+}
+
 void PhysicsBackend::EndSimulateScene(void* scene)
 {
+    PROFILE_MEM(Physics);
     auto scenePhysX = (ScenePhysX*)scene;
 
     {
@@ -1910,10 +1938,18 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         // Gather change info
         PxU32 activeActorsCount;
         PxActor** activeActors = scenePhysX->Scene->getActiveActors(activeActorsCount);
-        if (activeActorsCount > 0)
+
+        // Update changed transformations
+        if (activeActorsCount > 50 && JobSystem::GetThreadsCount() > 1)
         {
-            // Update changed transformations
-            // TODO: use jobs system if amount if huge
+            // Run in async via job system
+            CachedActiveActors = activeActors;
+            CachedActiveActorsCount = activeActorsCount;
+            CachedActiveActorIndex = -1;
+            JobSystem::Execute(FlushActiveTransforms, JobSystem::GetThreadsCount());
+        }
+        else
+        {
             for (uint32 i = 0; i < activeActorsCount; i++)
             {
                 const auto pxActor = (PxRigidActor*)*activeActors++;
@@ -1933,6 +1969,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         scenePhysX->EventsCallback.SendTriggerEvents();
         scenePhysX->EventsCallback.SendCollisionEvents();
         scenePhysX->EventsCallback.SendJointEvents();
+        scenePhysX->EventsCallback.Clear();
     }
 
     // Clear delta after simulation ended
@@ -2482,7 +2519,7 @@ Vector3 PhysicsBackend::GetRigidDynamicActorCenterOfMass(void* actor)
     return P2C(actorPhysX->getCMassLocalPose().p);
 }
 
-void PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(void* actor, const Float3& value)
+void PhysicsBackend::AddRigidDynamicActorCenterOfMassOffset(void* actor, const Float3& value)
 {
     auto actorPhysX = (PxRigidDynamic*)actor;
     auto pose = actorPhysX->getCMassLocalPose();
@@ -2747,10 +2784,74 @@ float PhysicsBackend::ComputeShapeSqrDistanceToPoint(void* shape, const Vector3&
 {
     auto shapePhysX = (PxShape*)shape;
     const PxTransform trans(C2P(position), C2P(orientation));
+
+    // Special case for heightfield collider (not implemented in PhysX)
+    if (shapePhysX->getGeometryType() == PxGeometryType::eHEIGHTFIELD)
+    {
+        // Do a bunch of raycasts in all directions to find the closest point on the heightfield
+        PxVec3 origin = C2P(point);
+        Array<PxVec3> unitDirections;
+        constexpr int32 resolution = 32;
+        unitDirections.EnsureCapacity((resolution + 1) * (resolution + 1));
+        for (int32 i = 0; i <= resolution; i++)
+        {
+            float phi = PI * (float)i / resolution;
+            float sinPhi = Math::Sin(phi);
+            float cosPhi = Math::Cos(phi);
+            for (int32 j = 0; j <= resolution; j++)
+            {
+                float theta = 2.0f * PI * (float)j / resolution;
+                float cosTheta = Math::Cos(theta);
+                float sinTheta = Math::Sin(theta);
+
+                PxVec3 v;
+                v.x = cosTheta * sinPhi;
+                v.y = cosPhi;
+                v.z = sinTheta * sinPhi;
+            
+                // All generated vectors are unit vectors (length 1)
+                unitDirections.Add(v);
+            }
+        }
+
+        PxReal maxDistance = PX_MAX_REAL; // Search indefinitely
+        PxQueryFilterData filterData;
+        filterData.data.word0 = (PxU32)shapePhysX->getSimulationFilterData().word0;
+        PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eMESH_BOTH_SIDES; // Both sides added for if it is underneath the height field
+        PxRaycastBuffer buffer;
+        auto scene = shapePhysX->getActor()->getScene();
+
+        PxReal closestDistance = maxDistance;
+        PxVec3 tempClosestPoint;
+        for (PxVec3& unitDir : unitDirections)
+        {
+            bool hitResult = scene->raycast(origin, unitDir, maxDistance, buffer, hitFlags, filterData);
+            if (hitResult)
+            {
+                auto& hit = buffer.getAnyHit(0);
+                if (hit.distance < closestDistance && hit.distance > 0.0f)
+                {
+                    tempClosestPoint = hit.position;
+                    closestDistance = hit.distance;
+                }
+            }
+        }
+        
+        if (closestDistance < maxDistance)
+        {
+            *closestPoint = P2C(tempClosestPoint);
+            return closestDistance * closestDistance; // Result is squared distance
+        }
+
+        return -1.0f;
+    }
+
+    // Default point distance for other collider queries
 #if USE_LARGE_WORLDS
     PxVec3 closestPointPx;
     float result = PxGeometryQuery::pointDistance(C2P(point), shapePhysX->getGeometry(), trans, &closestPointPx);
-    *closestPoint = P2C(closestPointPx);
+    if (closestPoint)
+        *closestPoint = P2C(closestPointPx);
     return result;
 #else
     return PxGeometryQuery::pointDistance(C2P(point), shapePhysX->getGeometry(), trans, (PxVec3*)closestPoint);
@@ -3893,6 +3994,7 @@ void PhysicsBackend::RemoveVehicle(void* scene, WheeledVehicle* actor)
 void* PhysicsBackend::CreateCloth(const PhysicsClothDesc& desc)
 {
     PROFILE_CPU();
+    PROFILE_MEM(Physics);
 #if USE_CLOTH_SANITY_CHECKS
     {
         // Sanity check
@@ -4429,14 +4531,14 @@ void PhysicsBackend::FlushRequests(void* scene)
     }
     if (scenePhysX->RemoveColliders.HasItems())
     {
-        for (int32 i = 0; i < scenePhysX->RemoveColliders.Count(); i++)
-            scenePhysX->EventsCallback.OnColliderRemoved(scenePhysX->RemoveColliders[i]);
+        for (PhysicsColliderActor* e : scenePhysX->RemoveColliders)
+            scenePhysX->EventsCallback.OnColliderRemoved(e);
         scenePhysX->RemoveColliders.Clear();
     }
     if (scenePhysX->RemoveJoints.HasItems())
     {
-        for (int32 i = 0; i < scenePhysX->RemoveJoints.Count(); i++)
-            scenePhysX->EventsCallback.OnJointRemoved(scenePhysX->RemoveJoints[i]);
+        for (Joint* e : scenePhysX->RemoveJoints)
+            scenePhysX->EventsCallback.OnJointRemoved(e);
         scenePhysX->RemoveJoints.Clear();
     }
 

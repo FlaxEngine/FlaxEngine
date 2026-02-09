@@ -444,6 +444,9 @@ namespace FlaxEditor.Utilities
         /// <returns>The result value.</returns>
         public static double Parse(string text)
         {
+            // Hack to allow parsing numbers while using "_" as a separator (like this: 1_000)
+            text = text.Replace("_", string.Empty);
+
             var tokens = Tokenize(text);
             var rpn = OrderTokens(tokens);
             return EvaluateRPN(rpn);

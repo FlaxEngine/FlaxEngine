@@ -23,6 +23,7 @@
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/Script.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Level/Level.h"
 #include "FlaxEngine.Gen.h"
 
@@ -77,7 +78,7 @@ namespace ScriptsBuilderImpl
     void onScriptsReloadEnd();
     void onScriptsLoaded();
 
-    void GetClassName(const StringAnsi& fullname, StringAnsi& className);
+    void GetClassName(const StringAnsiView fullname, StringAnsi& className);
 
     void onCodeEditorAsyncOpenBegin()
     {
@@ -272,7 +273,7 @@ bool ScriptsBuilder::GenerateProject(const StringView& customArgs)
     return RunBuildTool(args);
 }
 
-void ScriptsBuilderImpl::GetClassName(const StringAnsi& fullname, StringAnsi& className)
+void ScriptsBuilderImpl::GetClassName(const StringAnsiView fullname, StringAnsi& className)
 {
     const auto lastDotIndex = fullname.FindLast('.');
     if (lastDotIndex != -1)
@@ -413,6 +414,7 @@ void ScriptsBuilder::GetBinariesConfiguration(const Char*& target, const Char*& 
 
 bool ScriptsBuilderImpl::compileGameScriptsAsyncInner()
 {
+    PROFILE_MEM(Editor);
     LOG(Info, "Starting scripts compilation...");
     CallEvent(EventType::CompileStarted);
 
@@ -519,6 +521,8 @@ void ScriptsBuilderImpl::onEditorAssemblyUnloading(MAssembly* assembly)
 
 bool ScriptsBuilderImpl::compileGameScriptsAsync()
 {
+    PROFILE_MEM(Editor);
+
     // Start
     {
         ScopeLock scopeLock(_locker);
@@ -562,6 +566,7 @@ bool ScriptsBuilderService::Init()
     // Check flag
     if (_isInited)
         return false;
+    PROFILE_MEM(Editor);
     _isInited = true;
 
     // Link for Editor assembly unload event to clear cached Internal_OnCompilationEnd to prevent errors
@@ -659,6 +664,9 @@ bool ScriptsBuilderService::Init()
 
 void ScriptsBuilderService::Update()
 {
+    PROFILE_CPU();
+    PROFILE_MEM(Editor);
+
     // Send compilation events
     {
         ScopeLock scopeLock(_compileEventsLocker);

@@ -191,7 +191,7 @@ void WheeledVehicle::SetThrottle(float value)
     _throttle = Math::Clamp(value, -1.0f, 1.0f);
 }
 
-float WheeledVehicle::GetThrottle()
+float WheeledVehicle::GetThrottle() const
 {
     return _throttle;
 }
@@ -199,6 +199,11 @@ float WheeledVehicle::GetThrottle()
 void WheeledVehicle::SetSteering(float value)
 {
     _steering = Math::Clamp(value, -1.0f, 1.0f);
+}
+
+float WheeledVehicle::GetSteering()
+{
+    return _steering;
 }
 
 void WheeledVehicle::SetBrake(float value)
@@ -209,9 +214,19 @@ void WheeledVehicle::SetBrake(float value)
     _tankRightBrake = value;
 }
 
+float WheeledVehicle::GetBrake()
+{
+    return _brake;
+}
+
 void WheeledVehicle::SetHandbrake(float value)
 {
     _handBrake = Math::Saturate(value);
+}
+
+float WheeledVehicle::GetHandbrake()
+{
+    return _handBrake;
 }
 
 void WheeledVehicle::SetTankLeftThrottle(float value)
@@ -387,6 +402,7 @@ void WheeledVehicle::DrawPhysicsDebug(RenderView& view)
 void WheeledVehicle::OnDebugDrawSelected()
 {
     // Wheels shapes
+    int32 wheelIndex = 0;
     for (const auto& wheel : _wheels)
     {
         if (wheel.Collider && wheel.Collider->GetParent() == this && !wheel.Collider->GetIsTrigger())
@@ -423,14 +439,20 @@ void WheeledVehicle::OnDebugDrawSelected()
             {
                 DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(data.State.TireContactPoint, 5.0f), Color::Green, 0, false);
             }
+            if (ShowDebugDrawWheelNames)
+            {
+                const String text = String::Format(TEXT("Index: {}\nCollider: {}"), wheelIndex, wheel.Collider->GetName());
+                DEBUG_DRAW_TEXT(text, currentPos, Color::Blue, 10, 0);
+            }
         }
+        wheelIndex++;
     }
 
     // Anti roll bars axes
     const int32 wheelsCount = _wheels.Count();
-    for (int32 i = 0; i < GetAntiRollBars().Count(); i++)
+    for (int32 i = 0; i < _antiRollBars.Count(); i++)
     {
-        const int32 axleIndex = GetAntiRollBars()[i].Axle;
+        const int32 axleIndex = _antiRollBars[i].Axle;
         const int32 leftWheelIndex = axleIndex * 2;
         const int32 rightWheelIndex = leftWheelIndex + 1;
         if (leftWheelIndex >= wheelsCount || rightWheelIndex >= wheelsCount)

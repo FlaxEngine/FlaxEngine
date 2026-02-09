@@ -8,6 +8,7 @@
 #include "Engine/Content/WeakAssetReference.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 /// <summary>
 /// Asset loading task object.
@@ -44,6 +45,7 @@ protected:
     Result run() override
     {
         PROFILE_CPU();
+        PROFILE_MEM(ContentAssets);
 
         // Keep valid ref to the asset
         AssetReference<::Asset> ref = Asset.Get();

@@ -65,7 +65,10 @@ namespace Flax.Build
                     if (ApplyConsoleColors)
                         Console.ForegroundColor = color;
 
-                    Console.WriteLine(Indent + message);
+                    if (color != ConsoleColor.Red)
+                        Console.WriteLine(Indent + message);
+                    else
+                        Console.Error.WriteLine(Indent + message);
 
                     if (ApplyConsoleColors)
                         Console.ResetColor();

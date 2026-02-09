@@ -314,17 +314,36 @@ float4 PS_Debug(Quad_VS2PS input) : SV_Target
 	GlobalSDFHit hit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, trace);
 
 	// Debug draw
-	float3 color = saturate(hit.StepsCount / 80.0f).xxx;
-	if (!hit.IsHit())
-		color.rg *= 0.4f;
-#if 0
-	else
-	{
+	float3 color = saturate(hit.StepsCount / 50.0f).xxx;
+	if (hit.IsHit())
+    {
+#if 1
+        float3 hitPosition = hit.GetHitPosition(trace);
+        float hitSDF;
+        float3 hitNormal = SampleGlobalSDFGradient(GlobalSDF, GlobalSDFTex, GlobalSDFMip, hitPosition, hitSDF, hit.HitCascade);
+#if 1
+        // Composite step count with SDF normals
+		//color.rgb *= saturate(normalize(hitNormal) * 0.5f + 0.7f) + 0.3f;
+		color = lerp(normalize(hitNormal) * 0.5f + 0.5f, 1 - color, saturate(hit.StepsCount / 80.0f));
+#else
 		// Debug draw SDF normals
-		float dst;
-		color.rgb = normalize(SampleGlobalSDFGradient(GlobalSDF, GlobalSDFTex, hit.GetHitPosition(trace), dst)) * 0.5f + 0.5f;
-	}
+		color = normalize(hitNormal) * 0.5f + 0.5f;
 #endif
+#else
+        // Heatmap with step count
+        if (hit.StepsCount > 40)
+            color = float3(saturate(hit.StepsCount / 80.0f), 0, 0);
+        else if (hit.StepsCount > 20)
+            color = float3(saturate(hit.StepsCount / 40.0f).xx, 0);
+        else
+            color = float3(0, saturate(hit.StepsCount / 20.0f), 0);
+#endif
+    }
+    else
+    {
+        // Bluish sky
+		color.rg *= 0.4f;
+    }
 	return float4(color, 1);
 }
 

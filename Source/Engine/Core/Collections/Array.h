@@ -20,6 +20,7 @@ API_CLASS(InBuild) class Array
 public:
     using ItemType = T;
     using AllocationData = typename AllocationType::template Data<T>;
+    using AllocationTag = typename AllocationType::Tag;
 
 private:
     int32 _count;
@@ -33,6 +34,17 @@ public:
     FORCE_INLINE Array()
         : _count(0)
         , _capacity(0)
+    {
+    }
+
+    /// <summary>
+    /// Initializes an empty <see cref="Array"/> without reserving any space.
+    /// </summary>
+    /// <param name="tag">The custom allocation tag.</param>
+    Array(AllocationTag tag)
+        : _count(0)
+        , _capacity(0)
+        , _allocation(tag)
     {
     }
 
@@ -647,11 +659,8 @@ public:
         T* data = _allocation.Get();
         if (index < _count)
         {
-            T* dst = data + index;
-            T* src = data + (index + 1);
-            const int32 count = _count - index;
-            for (int32 i = 0; i < count; ++i)
-                dst[i] = MoveTemp(src[i]);
+            for (int32 i = index; i < _count; i++)
+                data[i] = MoveTemp(data[i + 1]);
         }
         Memory::DestructItems(data + _count, 1);
     }

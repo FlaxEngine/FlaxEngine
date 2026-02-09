@@ -12,6 +12,11 @@ namespace FlaxEngine.GUI
     public class DropPanel : ContainerControl
     {
         /// <summary>
+        /// Size of the drop down icon. 
+        /// </summary>
+        public const float DropDownIconSize = 14.0f;
+
+        /// <summary>
         /// The header height.
         /// </summary>
         protected float _headerHeight = 14.0f;
@@ -104,13 +109,20 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets a value indicating whether enable drop down icon drawing.
         /// </summary>
-        [EditorOrder(1)]
+        [EditorOrder(2)]
         public bool EnableDropDownIcon { get; set; }
+
+        /// <summary>
+        /// Get or sets a value indicating whether the panel can be opened or closed via the user interacting with the ui.
+        /// Changing the open/ closed state from code or the Properties panel will still work regardless.
+        /// </summary>
+        [EditorOrder(1)]
+        public bool CanOpenClose { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether to enable containment line drawing,
         /// </summary>
-        [EditorOrder(2)]
+        [EditorOrder(3)]
         public bool EnableContainmentLines { get; set; } = false;
 
         /// <summary>
@@ -361,7 +373,7 @@ namespace FlaxEngine.GUI
             var style = Style.Current;
             var enabled = EnabledInHierarchy;
 
-            // Paint Background
+            // Draw Background
             var backgroundColor = BackgroundColor;
             if (backgroundColor.A > 0.0f)
             {
@@ -369,7 +381,7 @@ namespace FlaxEngine.GUI
             }
 
             // Header
-            var color = _mouseOverHeader ? HeaderColorMouseOver : HeaderColor;
+            var color = _mouseOverHeader && CanOpenClose ? HeaderColorMouseOver : HeaderColor;
             if (color.A > 0.0f)
             {
                 Render2D.FillRectangle(new Rectangle(0, 0, Width, HeaderHeight), color);
@@ -379,7 +391,7 @@ namespace FlaxEngine.GUI
             float textLeft = 0;
             if (EnableDropDownIcon)
             {
-                textLeft += 14;
+                textLeft += DropDownIconSize;
                 var dropDownRect = new Rectangle(2, (HeaderHeight - 12) / 2, 12, 12);
                 var arrowColor = _mouseOverHeader ? style.Foreground : style.ForegroundGrey;
                 if (_isClosed)
@@ -388,7 +400,7 @@ namespace FlaxEngine.GUI
                     ArrowImageOpened?.Draw(dropDownRect, arrowColor);
             }
 
-            // Text
+            // Header text
             var textRect = new Rectangle(textLeft, 0, Width - textLeft, HeaderHeight);
             _headerTextMargin.ShrinkRectangle(ref textRect);
             var textColor = HeaderTextColor;
@@ -397,7 +409,9 @@ namespace FlaxEngine.GUI
                 textColor *= 0.6f;
             }
 
+            Render2D.PushClip(textRect);
             Render2D.DrawText(HeaderTextFont.GetFont(), HeaderTextMaterial, HeaderText, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
+            Render2D.PopClip();
 
             if (!_isClosed && EnableContainmentLines)
             {
@@ -510,7 +524,7 @@ namespace FlaxEngine.GUI
             if (button == MouseButton.Left && _mouseButtonLeftDown)
             {
                 _mouseButtonLeftDown = false;
-                if (_mouseOverHeader)
+                if (_mouseOverHeader && CanOpenClose)
                     Toggle();
                 return true;
             }
@@ -540,7 +554,7 @@ namespace FlaxEngine.GUI
             if (button == MouseButton.Left && _mouseButtonLeftDown)
             {
                 _mouseButtonLeftDown = false;
-                if (_mouseOverHeader)
+                if (_mouseOverHeader && CanOpenClose)
                     Toggle();
                 return true;
             }

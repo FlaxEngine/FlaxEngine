@@ -246,6 +246,8 @@ void ParticleEmitterGPUGenerator::ProcessGroupTextures(Box* box, Node* node, Val
             break;
         }
         case MaterialSceneTextures::WorldPosition:
+        case MaterialSceneTextures::SceneStencil:
+        case MaterialSceneTextures::ObjectLayer:
             value = Value::Zero; // Not implemented
             break;
         default:

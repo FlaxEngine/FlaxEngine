@@ -320,6 +320,17 @@ namespace Flax.Build.Platforms
         {
         }
 
+        /// <summary>
+        /// Gets linker argument to reference a specific shared library file.
+        /// </summary>
+        /// <param name="graph">The graph.</param>
+        /// <param name="options">The options.</param>
+        /// <param name="library">The shared library file path.</param>
+        protected virtual string GetSharedLibraryLinkArg(TaskGraph graph, BuildOptions options, string library)
+        {
+            return string.Format("\"-l{0}\"", GetLibName(library));
+        }
+
         /// <inheritdoc />
         public override CompileOutput CompileCppFiles(TaskGraph graph, BuildOptions options, List<string> sourceFiles, string outputPath)
         {
@@ -507,7 +518,7 @@ namespace Flax.Build.Platforms
             var args = new List<string>();
             args.AddRange(options.LinkEnv.CustomArgs);
             {
-                args.Add(string.Format("-o \"{0}\"", outputFilePath));
+                args.Add(string.Format("-o \"{0}\"", outputFilePath.Replace('\\', '/')));
 
                 if (!options.LinkEnv.DebugInformation)
                 {
@@ -527,7 +538,8 @@ namespace Flax.Build.Platforms
 
             // Input libraries
             var libraryPaths = new HashSet<string>();
-            foreach (var library in linkEnvironment.InputLibraries)
+            var dynamicLibExt = Platform.SharedLibraryFileExtension;
+            foreach (var library in linkEnvironment.InputLibraries.Concat(options.Libraries))
             {
                 var dir = Path.GetDirectoryName(library);
                 var ext = Path.GetExtension(library);
@@ -539,37 +551,12 @@ namespace Flax.Build.Platforms
                 {
                     // Skip executable
                 }
-                else if (ext == ".so")
+                else if (ext == dynamicLibExt)
                 {
                     // Link against dynamic library
                     task.PrerequisiteFiles.Add(library);
                     libraryPaths.Add(dir);
-                    args.Add(string.Format("\"-l{0}\"", GetLibName(library)));
-                }
-                else
-                {
-                    task.PrerequisiteFiles.Add(library);
-                    args.Add(string.Format("\"{0}\"", GetLibName(library)));
-                }
-            }
-            foreach (var library in options.Libraries)
-            {
-                var dir = Path.GetDirectoryName(library);
-                var ext = Path.GetExtension(library);
-                if (string.IsNullOrEmpty(dir))
-                {
-                    args.Add(string.Format("\"-l{0}\"", library));
-                }
-                else if (string.IsNullOrEmpty(ext))
-                {
-                    // Skip executable
-                }
-                else if (ext == ".so")
-                {
-                    // Link against dynamic library
-                    task.PrerequisiteFiles.Add(library);
-                    libraryPaths.Add(dir);
-                    args.Add(string.Format("\"-l{0}\"", GetLibName(library)));
+                    args.Add(GetSharedLibraryLinkArg(graph, options, library));
                 }
                 else
                 {
@@ -580,8 +567,7 @@ namespace Flax.Build.Platforms
 
             // Input files (link static libraries last)
             task.PrerequisiteFiles.AddRange(linkEnvironment.InputFiles);
-            foreach (var file in linkEnvironment.InputFiles.Where(x => !x.EndsWith(".a"))
-                                                .Concat(linkEnvironment.InputFiles.Where(x => x.EndsWith(".a"))))
+            foreach (var file in linkEnvironment.InputFiles.Where(x => !x.EndsWith(".a")).Concat(linkEnvironment.InputFiles.Where(x => x.EndsWith(".a"))))
             {
                 args.Add(string.Format("\"{0}\"", file.Replace('\\', '/')));
             }
@@ -619,7 +605,7 @@ namespace Flax.Build.Platforms
         /// <inheritdoc />
         public override void LinkFiles(TaskGraph graph, BuildOptions options, string outputFilePath)
         {
-            outputFilePath = outputFilePath.Replace('\\', '/');
+            outputFilePath = Utilities.NormalizePath(outputFilePath);
 
             Task linkTask;
             switch (options.LinkEnv.Output)

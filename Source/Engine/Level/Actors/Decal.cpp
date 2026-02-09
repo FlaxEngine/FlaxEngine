@@ -87,6 +87,7 @@ void Decal::Draw(RenderContext& renderContext)
         transform.Scale *= _size;
         renderContext.View.GetWorldMatrix(transform, data.World);
         data.SortOrder = SortOrder;
+        data.RenderLayersMask = RenderLayersMask;
         data.Material = material;
         renderContext.List->Decals.Add(data);
     }
@@ -102,6 +103,7 @@ void Decal::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(Material);
     SERIALIZE_MEMBER(Size, _size);
     SERIALIZE(SortOrder);
+    SERIALIZE(RenderLayersMask);
     SERIALIZE(DrawMinScreenSize);
 }
 
@@ -113,6 +115,7 @@ void Decal::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     DESERIALIZE(Material);
     DESERIALIZE_MEMBER(Size, _size);
     DESERIALIZE(SortOrder);
+    DESERIALIZE(RenderLayersMask);
     DESERIALIZE(DrawMinScreenSize);
 
     _bounds.Extents = _size * 0.5f;

@@ -102,12 +102,57 @@ namespace Flax.Build.NativeCpp
             Version = version;
             Framework = framework;
         }
+
+        internal string GetLibFolder(string nugetPath)
+        {
+            var libFolder = Path.Combine(nugetPath, Name, Version, "lib", Framework);
+            if (Directory.Exists(libFolder))
+                return libFolder;
+
+            // Try to find nearest framework folder
+            if (Framework.StartsWith("net"))
+            {
+                var baseVersion = int.Parse(Framework.Substring(3, Framework.IndexOf('.') - 3));
+                for (int version = baseVersion - 1; version >= 5; version--)
+                {
+                    var framework = $"net{version}.0";
+                    libFolder = Path.Combine(nugetPath, Name, Version, "lib", framework);
+                    if (Directory.Exists(libFolder))
+                    {
+                        Framework = framework;
+                        return libFolder;
+                    }
+                }
+            }
+
+            Log.Error($"Missing NuGet package \"{Name}, {Version}, {Framework}\" (nuget: {nugetPath})");
+            return string.Empty;
+        }
+
+        internal string GetNuspecPath(string nugetPath)
+        {
+            var files = Directory.GetFiles(Path.Combine(nugetPath, Name, Version), "*.nuspec", SearchOption.TopDirectoryOnly);
+            return files[0];
+        }
+
+        internal string GetLibPath(string nugetPath, string libFolder = null)
+        {
+            if (libFolder == null)
+                libFolder = GetLibFolder(nugetPath);
+            var dlls = Directory.GetFiles(libFolder, "*.dll", SearchOption.TopDirectoryOnly);
+            if (dlls.Length == 0)
+            {
+                Log.Error($"Missing NuGet package \"{Name}, {Version}, {Framework}\" binaries (folder: {libFolder})");
+                return string.Empty;
+            }
+            return dlls[0];
+        }
     }
 
     /// <summary>
     /// The native C++ module build settings container.
     /// </summary>
-    public sealed class BuildOptions
+    public sealed class BuildOptions : ICloneable
     {
         /// <summary>
         /// The target that builds this module.
@@ -167,7 +212,7 @@ namespace Flax.Build.NativeCpp
         /// <summary>
         /// The nuget package references.
         /// </summary>
-        public List<NugetPackage> NugetPackageReferences = new List<NugetPackage>();
+        public HashSet<NugetPackage> NugetPackageReferences = new HashSet<NugetPackage>();
 
         /// <summary>
         /// The collection of defines with preprocessing symbol for a source files of this module. Inherited by the modules that include it.
@@ -480,6 +525,27 @@ namespace Flax.Build.NativeCpp
                 }
                 SourcePaths.Clear();
             }
+        }
+
+        /// <inheritdoc />
+        public object Clone()
+        {
+            var clone = new BuildOptions
+            {
+                Target = Target,
+                Platform = Platform,
+                Toolchain = Toolchain,
+                Architecture = Architecture,
+                Configuration = Configuration,
+                CompileEnv = (CompileEnvironment)CompileEnv.Clone(),
+                LinkEnv = (LinkEnvironment)LinkEnv.Clone(),
+                IntermediateFolder = IntermediateFolder,
+                OutputFolder = OutputFolder,
+                WorkingDirectory = WorkingDirectory,
+                HotReloadPostfix = HotReloadPostfix,
+                Flags = Flags,
+            };
+            return clone;
         }
     }
 }

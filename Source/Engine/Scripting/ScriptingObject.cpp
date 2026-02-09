@@ -93,6 +93,8 @@ ScriptingObject::ScriptingObject(const SpawnParams& params)
     : _gcHandle((MGCHandle)params.Managed)
 #elif !COMPILE_WITHOUT_CSHARP
     : _gcHandle(params.Managed ? MCore::GCHandle::New(params.Managed) : 0)
+#else
+    : _gcHandle(0)
 #endif
     , _type(params.Type)
     , _id(params.ID)
@@ -249,7 +251,7 @@ ScriptingObject* ScriptingObject::ToNative(MObject* obj)
 #if USE_CSHARP
     if (obj)
     {
-#if USE_MONO || USE_MONO_AOT
+#if USE_MONO || USE_MONO_AOT || DOTNET_HOST_MONO
         const auto ptrField = MCore::Object::GetClass(obj)->GetField(ScriptingObject_unmanagedPtr);
         CHECK_RETURN(ptrField, nullptr);
         ptrField->GetValue(obj, &ptr);
@@ -745,9 +747,13 @@ DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_FindObject(Guid* id, MTypeObject* 
     if (!skipLog)
     {
         if (klass)
+        {
             LOG(Warning, "Unable to find scripting object with ID={0} of type {1}", *id, String(klass->GetFullName()));
+        }
         else
+        {
             LOG(Warning, "Unable to find scripting object with ID={0}", *id);
+        }
         LogContext::Print(LogType::Warning);
     }
     return nullptr;

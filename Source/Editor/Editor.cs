@@ -23,6 +23,7 @@ using FlaxEngine.Assertions;
 using FlaxEngine.GUI;
 using FlaxEngine.Interop;
 using FlaxEngine.Json;
+using FlaxEngine.Utilities;
 
 #pragma warning disable CS1591
 
@@ -51,6 +52,7 @@ namespace FlaxEditor
         private readonly List<EditorModule> _modules = new List<EditorModule>(16);
         private bool _isAfterInit, _areModulesInited, _areModulesAfterInitEnd, _isHeadlessMode, _autoExit;
         private string _projectToOpen;
+        private bool _projectIsNew;
         private float _lastAutoSaveTimer, _autoExitTimeout = 0.1f;
         private Button _saveNowButton;
         private Button _cancelSaveButton;
@@ -737,11 +739,12 @@ namespace FlaxEditor
                 var procSettings = new CreateProcessSettings
                 {
                     FileName = Platform.ExecutableFilePath,
-                    Arguments = string.Format("-project \"{0}\"", _projectToOpen),
+                    Arguments = string.Format("-project \"{0}\"" + (_projectIsNew ? " -new" : string.Empty), _projectToOpen),
                     ShellExecute = true,
                     WaitForEnd = false,
                     HiddenWindow = false,
                 };
+                _projectIsNew = false;
                 _projectToOpen = null;
                 Platform.CreateProcess(ref procSettings);
             }
@@ -788,6 +791,24 @@ namespace FlaxEditor
                     win.Save();
                 }
             }
+        }
+
+        /// <summary>
+        /// Creates the given project. Afterwards closes this project with running editor and opens the given project.
+        /// </summary>
+        /// <param name="projectFilePath">The project file path.</param>
+        public void NewProject(string projectFilePath)
+        {
+            if (projectFilePath == null)
+            {
+                MessageBox.Show("Missing project");
+                return;
+            }
+
+            // Cache project path and start editor exit (it will open new instance on valid closing)
+            _projectToOpen = StringUtils.NormalizePath(Path.GetDirectoryName(projectFilePath));
+            _projectIsNew = true;
+            Windows.MainWindow.Close(ClosingReason.User);
         }
 
         /// <summary>
@@ -1350,7 +1371,7 @@ namespace FlaxEditor
         public void BuildCSG()
         {
             var scenes = Level.Scenes;
-            scenes.ToList().ForEach(x => x.BuildCSG(0));
+            scenes.ForEach(x => x.BuildCSG(0));
             Scene.MarkSceneEdited(scenes);
         }
 
@@ -1360,7 +1381,7 @@ namespace FlaxEditor
         public void BuildNavMesh()
         {
             var scenes = Level.Scenes;
-            scenes.ToList().ForEach(x => Navigation.BuildNavMesh(x, 0));
+            Navigation.BuildNavMesh();
             Scene.MarkSceneEdited(scenes);
         }
 
@@ -1370,6 +1391,7 @@ namespace FlaxEditor
         public void BuildAllMeshesSDF()
         {
             var models = new List<Model>();
+            var forceRebuild = Input.GetKey(KeyboardKeys.F);
             Scene.ExecuteOnGraph(node =>
             {
                 if (node is StaticModelNode staticModelNode && staticModelNode.Actor is StaticModel staticModel)
@@ -1379,7 +1401,7 @@ namespace FlaxEditor
                         model != null &&
                         !models.Contains(model) &&
                         !model.IsVirtual &&
-                        model.SDF.Texture == null)
+                        (forceRebuild || model.SDF.Texture == null))
                     {
                         models.Add(model);
                     }
@@ -1392,7 +1414,17 @@ namespace FlaxEditor
                 {
                     var model = models[i];
                     Log($"[{i}/{models.Count}] Generating SDF for {model}");
-                    if (!model.GenerateSDF())
+                    float resolutionScale = 1.0f, backfacesThreshold = 0.6f;
+                    int lodIndex = 6;
+                    bool useGPU = true;
+                    var sdf = model.SDF;
+                    if (sdf.Texture != null)
+                    {
+                        // Preserve options set on this model
+                        resolutionScale = sdf.ResolutionScale;
+                        lodIndex = sdf.LOD;
+                    }
+                    if (!model.GenerateSDF(resolutionScale, lodIndex, true, backfacesThreshold, useGPU))
                         model.Save();
                 }
             });
@@ -1567,7 +1599,7 @@ namespace FlaxEditor
                 if (dockedTo != null && dockedTo.SelectedTab != gameWin && dockedTo.SelectedTab != null)
                     result = dockedTo.SelectedTab.Size;
                 else
-                    result = gameWin.Viewport.Size;
+                    result = gameWin.Viewport.ContentSize;
 
                 result *= root.DpiScale;
                 result = Float2.Round(result);

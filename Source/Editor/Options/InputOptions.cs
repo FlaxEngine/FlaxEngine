@@ -387,6 +387,14 @@ namespace FlaxEditor.Options
         [EditorDisplay("Viewport"), EditorOrder(1760)]
         public InputBinding ToggleOrthographic = new InputBinding(KeyboardKeys.NumpadDecimal);
 
+        [DefaultValue(typeof(InputBinding), "G")]
+        [EditorDisplay("Viewport"), EditorOrder(1770)]
+        public InputBinding ToggleGameView = new InputBinding(KeyboardKeys.G);
+
+        [DefaultValue(typeof(InputBinding), "P")]
+        [EditorDisplay("Viewport"), EditorOrder(1770)]
+        public InputBinding ToggleNavMeshVisibility = new InputBinding(KeyboardKeys.P);
+
         #endregion
 
         #region Debug Views
@@ -571,6 +579,10 @@ namespace FlaxEditor.Options
         [EditorDisplay("View Flags"), EditorOrder(3260)]
         public InputBinding DebugDraw = new InputBinding(KeyboardKeys.Alpha4, KeyboardKeys.Control, KeyboardKeys.Shift);
 
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3270)]
+        public InputBinding Particles = new InputBinding(KeyboardKeys.None);
+
         #endregion
 
         #region Interface
@@ -649,6 +661,10 @@ namespace FlaxEditor.Options
         [DefaultValue(typeof(InputBinding), "None")]
         [EditorDisplay("Windows"), EditorOrder(4020)]
         public InputBinding VisualScriptDebuggerWindow = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "Control+Comma")]
+        [EditorDisplay("Windows"), EditorOrder(4030)]
+        public InputBinding EditorOptionsWindow = new InputBinding(KeyboardKeys.Comma, KeyboardKeys.Control);
 
         #endregion
 

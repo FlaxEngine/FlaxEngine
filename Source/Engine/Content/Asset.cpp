@@ -9,6 +9,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/LogContext.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Threading/MainThreadTask.h"
 #include "Engine/Threading/ThreadLocal.h"
@@ -34,15 +35,18 @@ bool ContentDeprecated::Clear(bool newValue)
 
 #endif
 
+AssetReferenceBase::AssetReferenceBase(IAssetReference* owner)
+    : _owner(owner)
+{
+}
+
 AssetReferenceBase::~AssetReferenceBase()
 {
     Asset* asset = _asset;
     if (asset)
     {
         _asset = nullptr;
-        asset->OnLoaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnLoaded>(this);
-        asset->OnUnloaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnUnloaded>(this);
-        asset->RemoveReference();
+        asset->RemoveReference(this);
     }
 }
 
@@ -51,43 +55,51 @@ String AssetReferenceBase::ToString() const
     return _asset ? _asset->ToString() : TEXT("<null>");
 }
 
+void AssetReferenceBase::OnAssetChanged(Asset* asset, void* caller)
+{
+    if (_owner)
+        _owner->OnAssetChanged(asset, this);
+}
+
+void AssetReferenceBase::OnAssetLoaded(Asset* asset, void* caller)
+{
+    if (_asset != asset)
+        return;
+    Loaded();
+    if (_owner)
+        _owner->OnAssetLoaded(asset, this);
+}
+
+void AssetReferenceBase::OnAssetUnloaded(Asset* asset, void* caller)
+{
+    if (_asset != asset)
+        return;
+    Unload();
+    OnSet(nullptr);
+    if (_owner)
+        _owner->OnAssetUnloaded(asset, this);
+}
+
 void AssetReferenceBase::OnSet(Asset* asset)
 {
     auto e = _asset;
     if (e != asset)
     {
         if (e)
-        {
-            e->OnLoaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnLoaded>(this);
-            e->OnUnloaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnUnloaded>(this);
-            e->RemoveReference();
-        }
+            e->RemoveReference(this);
         _asset = e = asset;
         if (e)
-        {
-            e->AddReference();
-            e->OnLoaded.Bind<AssetReferenceBase, &AssetReferenceBase::OnLoaded>(this);
-            e->OnUnloaded.Bind<AssetReferenceBase, &AssetReferenceBase::OnUnloaded>(this);
-        }
+            e->AddReference(this);
         Changed();
+        if (_owner)
+            _owner->OnAssetChanged(asset, this);
         if (e && e->IsLoaded())
+        {
             Loaded();
+            if (_owner)
+                _owner->OnAssetLoaded(asset, this);
+        }
     }
-}
-
-void AssetReferenceBase::OnLoaded(Asset* asset)
-{
-    if (_asset != asset)
-        return;
-    Loaded();
-}
-
-void AssetReferenceBase::OnUnloaded(Asset* asset)
-{
-    if (_asset != asset)
-        return;
-    Unload();
-    OnSet(nullptr);
 }
 
 WeakAssetReferenceBase::~WeakAssetReferenceBase()
@@ -96,7 +108,7 @@ WeakAssetReferenceBase::~WeakAssetReferenceBase()
     if (asset)
     {
         _asset = nullptr;
-        asset->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnUnloaded>(this);
+        asset->RemoveReference(this, true);
     }
 }
 
@@ -105,26 +117,34 @@ String WeakAssetReferenceBase::ToString() const
     return _asset ? _asset->ToString() : TEXT("<null>");
 }
 
+void WeakAssetReferenceBase::OnAssetChanged(Asset* asset, void* caller)
+{
+}
+
+void WeakAssetReferenceBase::OnAssetLoaded(Asset* asset, void* caller)
+{
+}
+
+void WeakAssetReferenceBase::OnAssetUnloaded(Asset* asset, void* caller)
+{
+    if (_asset != asset)
+        return;
+    Unload();
+    asset->RemoveReference(this, true);
+    _asset = nullptr;
+}
+
 void WeakAssetReferenceBase::OnSet(Asset* asset)
 {
     auto e = _asset;
     if (e != asset)
     {
         if (e)
-            e->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnUnloaded>(this);
+            e->RemoveReference(this, true);
         _asset = e = asset;
         if (e)
-            e->OnUnloaded.Bind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnUnloaded>(this);
+            e->AddReference(this, true);
     }
-}
-
-void WeakAssetReferenceBase::OnUnloaded(Asset* asset)
-{
-    if (_asset != asset)
-        return;
-    Unload();
-    asset->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnUnloaded>(this);
-    _asset = nullptr;
 }
 
 SoftAssetReferenceBase::~SoftAssetReferenceBase()
@@ -133,8 +153,7 @@ SoftAssetReferenceBase::~SoftAssetReferenceBase()
     if (asset)
     {
         _asset = nullptr;
-        asset->OnUnloaded.Unbind<SoftAssetReferenceBase, &SoftAssetReferenceBase::OnUnloaded>(this);
-        asset->RemoveReference();
+        asset->RemoveReference(this);
     }
 #if !BUILD_RELEASE
     _id = Guid::Empty;
@@ -146,22 +165,34 @@ String SoftAssetReferenceBase::ToString() const
     return _asset ? _asset->ToString() : (_id.IsValid() ? _id.ToString() : TEXT("<null>"));
 }
 
+void SoftAssetReferenceBase::OnAssetChanged(Asset* asset, void* caller)
+{
+}
+
+void SoftAssetReferenceBase::OnAssetLoaded(Asset* asset, void* caller)
+{
+}
+
+void SoftAssetReferenceBase::OnAssetUnloaded(Asset* asset, void* caller)
+{
+    if (_asset != asset)
+        return;
+    _asset->RemoveReference(this);
+    _asset = nullptr;
+    _id = Guid::Empty;
+    Changed();
+}
+
 void SoftAssetReferenceBase::OnSet(Asset* asset)
 {
     if (_asset == asset)
         return;
     if (_asset)
-    {
-        _asset->OnUnloaded.Unbind<SoftAssetReferenceBase, &SoftAssetReferenceBase::OnUnloaded>(this);
-        _asset->RemoveReference();
-    }
+        _asset->RemoveReference(this);
     _asset = asset;
     _id = asset ? asset->GetID() : Guid::Empty;
     if (asset)
-    {
-        asset->AddReference();
-        asset->OnUnloaded.Bind<SoftAssetReferenceBase, &SoftAssetReferenceBase::OnUnloaded>(this);
-    }
+        asset->AddReference(this);
     Changed();
 }
 
@@ -170,10 +201,7 @@ void SoftAssetReferenceBase::OnSet(const Guid& id)
     if (_id == id)
         return;
     if (_asset)
-    {
-        _asset->OnUnloaded.Unbind<SoftAssetReferenceBase, &SoftAssetReferenceBase::OnUnloaded>(this);
-        _asset->RemoveReference();
-    }
+        _asset->RemoveReference(this);
     _asset = nullptr;
     _id = id;
     Changed();
@@ -184,21 +212,7 @@ void SoftAssetReferenceBase::OnResolve(const ScriptingTypeHandle& type)
     ASSERT(!_asset);
     _asset = ::LoadAsset(_id, type);
     if (_asset)
-    {
-        _asset->OnUnloaded.Bind<SoftAssetReferenceBase, &SoftAssetReferenceBase::OnUnloaded>(this);
-        _asset->AddReference();
-    }
-}
-
-void SoftAssetReferenceBase::OnUnloaded(Asset* asset)
-{
-    if (_asset != asset)
-        return;
-    _asset->RemoveReference();
-    _asset->OnUnloaded.Unbind<SoftAssetReferenceBase, &SoftAssetReferenceBase::OnUnloaded>(this);
-    _asset = nullptr;
-    _id = Guid::Empty;
-    Changed();
+        _asset->AddReference(this);
 }
 
 Asset::Asset(const SpawnParams& params, const AssetInfo* info)
@@ -214,6 +228,39 @@ Asset::Asset(const SpawnParams& params, const AssetInfo* info)
 int32 Asset::GetReferencesCount() const
 {
     return (int32)Platform::AtomicRead(const_cast<int64 volatile*>(&_refCount));
+}
+
+void Asset::AddReference()
+{
+    Platform::InterlockedIncrement(&_refCount);
+}
+
+void Asset::AddReference(IAssetReference* ref, bool week)
+{
+    if (!week)
+        Platform::InterlockedIncrement(&_refCount);
+    if (ref)
+    {
+        //PROFILE_MEM(EngineDelegate); // Include references tracking memory within Delegate memory
+        ScopeLock lock(_referencesLocker);
+        _references.Add(ref);
+    }
+}
+
+void Asset::RemoveReference()
+{
+    Platform::InterlockedDecrement(&_refCount);
+}
+
+void Asset::RemoveReference(IAssetReference* ref, bool week)
+{
+    if (ref)
+    {
+        ScopeLock lock(_referencesLocker);
+        _references.Remove(ref);
+    }
+    if (!week)
+        Platform::InterlockedDecrement(&_refCount);
 }
 
 String Asset::ToString() const
@@ -232,7 +279,7 @@ void Asset::OnDeleteObject()
 
     const bool wasMarkedToDelete = _deleteFileOnUnload != 0;
 #if USE_EDITOR
-    const String path = wasMarkedToDelete ? GetPath() : String::Empty;
+    const String path = wasMarkedToDelete ? String(GetPath()) : String::Empty;
 #endif
     const Guid id = GetID();
 
@@ -354,6 +401,7 @@ uint64 Asset::GetMemoryUsage() const
     if (Platform::AtomicRead(&_loadingTask))
         result += sizeof(ContentLoadTask);
     result += (OnLoaded.Capacity() + OnReloading.Capacity() + OnUnloaded.Capacity()) * sizeof(EventType::FunctionType);
+    result += _references.Capacity() * sizeof(HashSet<IAssetReference*>::Bucket);
     Locker.Unlock();
     return result;
 }
@@ -439,11 +487,16 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds) const
     const auto loadingTask = (ContentLoadTask*)Platform::AtomicRead(&_loadingTask);
     if (loadingTask == nullptr)
     {
+        if (IsLoaded())
+            return false;
         LOG(Warning, "WaitForLoaded asset \'{0}\' failed. No loading task attached and asset is not loaded.", ToString());
         return true;
     }
 
     PROFILE_CPU();
+    ZoneColor(TracyWaitZoneColor);
+    const StringView path(GetPath());
+    ZoneText(*path, path.Length());
 
     Content::WaitForTask(loadingTask, timeoutInMilliseconds);
 
@@ -528,6 +581,7 @@ ContentLoadTask* Asset::createLoadingTask()
 
 void Asset::startLoading()
 {
+    PROFILE_MEM(ContentAssets);
     ASSERT(!IsLoaded());
     ASSERT(Platform::AtomicRead(&_loadingTask) == 0);
     auto loadingTask = createLoadingTask();
@@ -614,7 +668,7 @@ void Asset::onLoaded()
     {
         onLoaded_MainThread();
     }
-    else if (OnLoaded.IsBinded())
+    else if (OnLoaded.IsBinded() || _references.HasItems())
     {
         Function<void()> action;
         action.Bind<Asset, &Asset::onLoaded>(this);
@@ -627,6 +681,9 @@ void Asset::onLoaded_MainThread()
     ASSERT(IsInMainThread());
 
     // Send event
+    ScopeLock lock(_referencesLocker);
+    for (const auto& e : _references)
+        e.Item->OnAssetLoaded(this, this);
     OnLoaded(this);
 }
 
@@ -640,6 +697,9 @@ void Asset::onUnload_MainThread()
     CancelStreaming();
 
     // Send event
+    ScopeLock lock(_referencesLocker);
+    for (const auto& e : _references)
+        e.Item->OnAssetUnloaded(this, this);
     OnUnloaded(this);
 }
 

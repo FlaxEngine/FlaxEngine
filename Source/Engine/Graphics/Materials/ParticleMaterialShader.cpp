@@ -49,7 +49,6 @@ void ParticleMaterialShader::Bind(BindParameters& params)
     auto context = params.GPUContext;
     auto& view = params.RenderContext.View;
     auto& drawCall = *params.DrawCall;
-    const uint32 sortedIndicesOffset = drawCall.Particle.Module->SortedIndicesOffset;
     Span<byte> cb(_cbData.Get(), _cbData.Count());
     ASSERT_LOW_LAYER(cb.Length() >= sizeof(ParticleMaterialShaderData));
     auto materialData = reinterpret_cast<ParticleMaterialShaderData*>(cb.Get());
@@ -103,7 +102,7 @@ void ParticleMaterialShader::Bind(BindParameters& params)
         static StringView ParticleModelFacingModeOffset(TEXT("ModelFacingMode"));
 
         materialData->WorldMatrix.SetMatrixTranspose(drawCall.World);
-        materialData->SortedIndicesOffset = drawCall.Particle.Particles->GPU.SortedIndices && params.RenderContext.View.Pass != DrawPass::Depth ? sortedIndicesOffset : 0xFFFFFFFF;
+        materialData->SortedIndicesOffset = drawCall.Particle.Particles->GPU.SortedIndices && params.RenderContext.View.Pass != DrawPass::Depth ? drawCall.Particle.Module->SortedIndicesOffset : 0xFFFFFFFF;
         materialData->PerInstanceRandom = drawCall.PerInstanceRandom;
         materialData->ParticleStride = drawCall.Particle.Particles->Stride;
         materialData->PositionOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticlePosition, ParticleAttribute::ValueTypes::Float3);
@@ -264,6 +263,11 @@ bool ParticleMaterialShader::Load()
 
     // Lazy initialization
     _cacheVolumetricFog.Desc.PS = nullptr;
+
+#if PLATFORM_PS5
+    // Fix shader binding issues on forward shading materials on PS5
+    _drawModes = DrawPass::None;
+#endif
 
     return false;
 }

@@ -2,6 +2,8 @@
 
 #if PLATFORM_UNIX
 
+#define HAS_DIRS !PLATFORM_PS4 && !PLATFORM_PS5
+
 #include "UnixFileSystem.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Core/Types/TimeSpan.h"
@@ -13,7 +15,9 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <cerrno>
+#if HAS_DIRS
 #include <dirent.h>
+#endif
 
 #if PLATFORM_MAC || PLATFORM_IOS
 typedef StringAsANSI<> UnixString;
@@ -47,6 +51,8 @@ bool UnixFileSystem::CreateDirectory(const StringView& path)
     // Create the last directory on the path (the recursive calls will have taken care of the parent directories by now)
     return mkdir(pathAnsi.Get(), 0755) != 0 && errno != EEXIST;
 }
+
+#if HAS_DIRS
 
 bool DeleteUnixPathTree(const char* path)
 {
@@ -114,8 +120,11 @@ bool DeleteUnixPathTree(const char* path)
     return false;
 }
 
+#endif
+
 bool UnixFileSystem::DeleteDirectory(const String& path, bool deleteContents)
 {
+#if HAS_DIRS
     const UnixString pathANSI(*path, path.Length());
     if (deleteContents)
     {
@@ -125,6 +134,9 @@ bool UnixFileSystem::DeleteDirectory(const String& path, bool deleteContents)
     {
         return rmdir(pathANSI.Get()) != 0;
     }
+#else
+    return true;
+#endif
 }
 
 bool UnixFileSystem::DirectoryExists(const StringView& path)
@@ -151,6 +163,7 @@ bool UnixFileSystem::DirectoryGetFiles(Array<String>& results, const String& pat
 
 bool UnixFileSystem::GetChildDirectories(Array<String>& results, const String& path)
 {
+#if HAS_DIRS
     size_t pathLength;
     DIR* dir;
     struct stat statPath, statEntry;
@@ -206,6 +219,9 @@ bool UnixFileSystem::GetChildDirectories(Array<String>& results, const String& p
     closedir(dir);
 
     return false;
+#else
+    return true;
+#endif
 }
 
 bool UnixFileSystem::FileExists(const StringView& path)
@@ -243,12 +259,16 @@ uint64 UnixFileSystem::GetFileSize(const StringView& path)
 
 bool UnixFileSystem::IsReadOnly(const StringView& path)
 {
+#if HAS_DIRS
     const UnixString pathANSI(*path, path.Length());
     if (access(pathANSI.Get(), W_OK) == -1)
     {
         return errno == EACCES;
     }
     return false;
+#else
+    return true;
+#endif
 }
 
 bool UnixFileSystem::SetReadOnly(const StringView& path, bool isReadOnly)
@@ -299,6 +319,7 @@ bool UnixFileSystem::MoveFile(const StringView& dst, const StringView& src, bool
 
 bool UnixFileSystem::getFilesFromDirectoryTop(Array<String>& results, const char* path, const char* searchPattern)
 {
+#if HAS_DIRS
     size_t pathLength;
     struct stat statPath, statEntry;
     struct dirent* entry;
@@ -346,53 +367,22 @@ bool UnixFileSystem::getFilesFromDirectoryTop(Array<String>& results, const char
         if (S_ISREG(statEntry.st_mode) != 0)
         {
             // Validate with filter
-            const int32 fullPathLength = StringUtils::Length(fullPath);
-            const int32 searchPatternLength = StringUtils::Length(searchPattern);
-            if (searchPatternLength == 0 ||
-                StringUtils::Compare(searchPattern, "*") == 0 ||
-                StringUtils::Compare(searchPattern, "*.*") == 0)
-            {
-                // All files
-            }
-            else if (searchPattern[0] == '*' && searchPatternLength < fullPathLength && StringUtils::Compare(fullPath + fullPathLength - searchPatternLength + 1, searchPattern + 1, searchPatternLength - 1) == 0)
-            {
-                // Path ending
-            }
-            else if (searchPattern[0] == '*' && searchPatternLength > 2 && searchPattern[searchPatternLength-1] == '*')
-            {
-                // Contains pattern
-                bool match = false;
-                for (int32 i = 0; i < pathLength - searchPatternLength - 1; i++)
-                {
-                    int32 len = Math::Min(searchPatternLength - 2, pathLength - i);
-                    if (StringUtils::Compare(&entry->d_name[i], &searchPattern[1], len) == 0)
-                    {
-                        match = true;
-                        break;
-                    }
-                }
-                if (!match)
-                    continue;
-            }
-            else
-            {
-                // TODO: implement all cases in a generic way
-                LOG(Warning, "DirectoryGetFiles: Wildcard filter is not implemented");
-                continue;
-            }
-
-            // Add file
-            results.Add(String(fullPath));
+            if (FileSystemBase::PathFilterHelper(fullPath, searchPattern))
+                results.Add(String(fullPath));
         }
     }
 
     closedir(dir);
 
     return false;
+#else
+    return true;
+#endif
 }
 
 bool UnixFileSystem::getFilesFromDirectoryAll(Array<String>& results, const char* path, const char* searchPattern)
 {
+#if HAS_DIRS
     // Find all files in this directory
     getFilesFromDirectoryTop(results, path, searchPattern);
 
@@ -452,6 +442,9 @@ bool UnixFileSystem::getFilesFromDirectoryAll(Array<String>& results, const char
     closedir(dir);
 
     return false;
+#else
+    return true;
+#endif
 }
 
 DateTime UnixFileSystem::GetFileLastEditTime(const StringView& path)

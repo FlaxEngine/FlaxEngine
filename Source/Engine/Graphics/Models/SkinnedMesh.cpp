@@ -158,6 +158,7 @@ void SkeletonData::Swap(SkeletonData& other)
 
 Transform SkeletonData::GetNodeTransform(int32 nodeIndex) const
 {
+    CHECK_RETURN(Nodes.IsValidIndex(nodeIndex), Transform::Identity);
     const int32 parentIndex = Nodes[nodeIndex].ParentIndex;
     if (parentIndex == -1)
     {
@@ -169,6 +170,7 @@ Transform SkeletonData::GetNodeTransform(int32 nodeIndex) const
 
 void SkeletonData::SetNodeTransform(int32 nodeIndex, const Transform& value)
 {
+    CHECK(Nodes.IsValidIndex(nodeIndex));
     const int32 parentIndex = Nodes[nodeIndex].ParentIndex;
     if (parentIndex == -1)
     {
@@ -312,8 +314,8 @@ void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info,
     drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
     drawCall.Surface.Skinning = info.Skinning;
     drawCall.Surface.LODDitherFactor = lodDitherFactor;
-    drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
+    drawCall.StencilValue = info.StencilValue;
 
     // Push draw call to the render list
     renderContext.List->AddDrawCall(renderContext, drawModes, StaticFlags::None, drawCall, entry.ReceiveDecals, info.SortOrder);
@@ -353,8 +355,8 @@ void SkinnedMesh::Draw(const RenderContextBatch& renderContextBatch, const DrawI
     drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
     drawCall.Surface.Skinning = info.Skinning;
     drawCall.Surface.LODDitherFactor = lodDitherFactor;
-    drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
+    drawCall.StencilValue = info.StencilValue;
 
     // Push draw call to the render lists
     const auto shadowsMode = entry.ShadowsMode & slot.ShadowsMode;

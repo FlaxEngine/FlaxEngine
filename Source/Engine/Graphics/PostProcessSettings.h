@@ -378,7 +378,7 @@ API_STRUCT() struct FLAXENGINE_API GlobalIlluminationSettings : ISerializable
     /// The irradiance lighting outside the GI range used as a fallback to prevent pure-black scene outside the Global Illumination range.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(40), PostProcessSetting((int)GlobalIlluminationSettingsOverride.FallbackIrradiance)")
-    Color FallbackIrradiance = Color::Black;
+    Color FallbackIrradiance = Color::Transparent;
 
 public:
     /// <summary>

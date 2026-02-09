@@ -14,6 +14,7 @@
 #include "Engine/Graphics/PixelFormatSampler.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 #if USE_EDITOR
 #include "Engine/Core/Collections/Dictionary.h"
@@ -210,6 +211,7 @@ bool TextureTool::HasAlpha(const StringView& path)
 bool TextureTool::ImportTexture(const StringView& path, TextureData& textureData)
 {
     PROFILE_CPU();
+    PROFILE_MEM(GraphicsTextures);
     LOG(Info, "Importing texture from \'{0}\'", path);
     const auto startTime = DateTime::NowUTC();
 
@@ -247,6 +249,7 @@ bool TextureTool::ImportTexture(const StringView& path, TextureData& textureData
 bool TextureTool::ImportTexture(const StringView& path, TextureData& textureData, Options options, String& errorMsg)
 {
     PROFILE_CPU();
+    PROFILE_MEM(GraphicsTextures);
     LOG(Info, "Importing texture from \'{0}\'. Options: {1}", path, options.ToString());
     const auto startTime = DateTime::NowUTC();
 
@@ -296,6 +299,7 @@ bool TextureTool::ImportTexture(const StringView& path, TextureData& textureData
 bool TextureTool::ExportTexture(const StringView& path, const TextureData& textureData)
 {
     PROFILE_CPU();
+    PROFILE_MEM(GraphicsTextures);
     LOG(Info, "Exporting texture to \'{0}\'.", path);
     const auto startTime = DateTime::NowUTC();
     ImageType type;
@@ -346,6 +350,7 @@ bool TextureTool::Convert(TextureData& dst, const TextureData& src, const PixelF
         return true;
     }
     PROFILE_CPU();
+    PROFILE_MEM(GraphicsTextures);
 
 #if COMPILE_WITH_DIRECTXTEX
     return ConvertDirectXTex(dst, src, dstFormat);
@@ -375,6 +380,7 @@ bool TextureTool::Resize(TextureData& dst, const TextureData& src, int32 dstWidt
         return true;
     }
     PROFILE_CPU();
+    PROFILE_MEM(GraphicsTextures);
 #if COMPILE_WITH_DIRECTXTEX
     return ResizeDirectXTex(dst, src, dstWidth, dstHeight);
 #elif COMPILE_WITH_STB
@@ -488,6 +494,7 @@ bool TextureTool::GetImageType(const StringView& path, ImageType& type)
 bool TextureTool::Transform(TextureData& texture, const Function<void(Color&)>& transformation)
 {   
     PROFILE_CPU();
+    PROFILE_MEM(GraphicsTextures);
     auto sampler = PixelFormatSampler::Get(texture.Format);
     if (!sampler)
         return true;

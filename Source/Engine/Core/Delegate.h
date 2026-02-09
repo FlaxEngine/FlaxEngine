@@ -12,6 +12,9 @@
 #include "Engine/Threading/Threading.h"
 #include "Engine/Core/Collections/HashSet.h"
 #endif
+#if COMPILE_WITH_PROFILER
+#include "Engine/Profiler/ProfilerMemory.h"
+#endif
 
 /// <summary>
 /// The function object that supports binding static, member and lambda functions.
@@ -59,7 +62,7 @@ private:
     struct Lambda
     {
         int64 Refs;
-        void (*Dtor)(void*);
+        void (*Dtor)(void* callee, Lambda* lambda);
     };
 
     void* _callee;
@@ -75,8 +78,7 @@ private:
     {
         if (Platform::InterlockedDecrement(&_lambda->Refs) == 0)
         {
-            ((Lambda*)_lambda)->Dtor(_callee);
-            Allocator::Free(_lambda);
+            _lambda->Dtor(_callee, _lambda);
         }
     }
 
@@ -186,15 +188,55 @@ public:
             LambdaDtor();
         _lambda = (Lambda*)Allocator::Allocate(sizeof(Lambda) + sizeof(T));
         _lambda->Refs = 1;
-        _lambda->Dtor = [](void* callee) -> void
+        _lambda->Dtor = [](void* callee, Lambda* lambda) -> void
         {
             static_cast<T*>(callee)->~T();
+            Allocator::Free(lambda);
         };
         _function = [](void* callee, Params... params) -> ReturnType
         {
             return (*static_cast<T*>(callee))(Forward<Params>(params)...);
         };
         _callee = (byte*)_lambda + sizeof(Lambda);
+        new(_callee) T(lambda);
+    }
+
+    /// <summary>
+    /// Binds a lambda with a custom memory allocator.
+    /// </summary>
+    /// <param name="tag">The custom allocation tag.</param>
+    /// <param name="lambda">The lambda.</param>
+    template<typename AllocationType, typename T>
+    void Bind(typename AllocationType::Tag tag, const T& lambda)
+    {
+        if (_lambda)
+            LambdaDtor();
+        using AllocationData = typename AllocationType::template Data<byte>;
+        static_assert(AllocationType::HasSwap, "Function lambda binding supports only custom allocators with swap operation.");
+
+        // Allocate lambda (using temp data)
+        AllocationData tempAlloc(tag);
+        tempAlloc.Allocate(sizeof(Lambda) + sizeof(AllocationData) + sizeof(T));
+
+        // Move temp data into the one allocated
+        AllocationData* dataAlloc = (AllocationData*)(tempAlloc.Get() + sizeof(Lambda));
+        new(dataAlloc) AllocationData();
+        dataAlloc->Swap(tempAlloc);
+
+        // Initialize lambda
+        _lambda = (Lambda*)dataAlloc->Get();
+        _lambda->Refs = 1;
+        _lambda->Dtor = [](void* callee, Lambda* lambda) -> void
+        {
+            static_cast<T*>(callee)->~T();
+            AllocationData* dataAlloc = (AllocationData*)((byte*)lambda + sizeof(Lambda));
+            dataAlloc->Free();
+        };
+        _function = [](void* callee, Params... params) -> ReturnType
+        {
+            return (*static_cast<T*>(callee))(Forward<Params>(params)...);
+        };
+        _callee = (byte*)_lambda + sizeof(AllocationData) + sizeof(Lambda);
         new(_callee) T(lambda);
     }
 
@@ -457,6 +499,9 @@ public:
     /// <param name="f">The function to bind.</param>
     void Bind(const FunctionType& f)
     {
+#if COMPILE_WITH_PROFILER
+        PROFILE_MEM(EngineDelegate);
+#endif
 #if DELEGATE_USE_ATOMIC
         const intptr size = Platform::AtomicRead(&_size);
         FunctionType* bindings = (FunctionType*)Platform::AtomicRead(&_ptr);

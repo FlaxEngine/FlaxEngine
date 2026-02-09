@@ -10,9 +10,10 @@
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Serialization/JsonWriters.h"
 #include "Editor/Cooker/PlatformTools.h"
+#include "Engine/Engine/Globals.h"
 #include "Editor/Editor.h"
 #include "Editor/ProjectInfo.h"
-#include "Engine/Engine/Globals.h"
+#include "Editor/Utilities/EditorUtilities.h"
 #if PLATFORM_MAC
 #include <sys/stat.h>
 #endif
@@ -127,7 +128,7 @@ bool CompileScriptsStep::DeployBinaries(CookingData& data, const String& path, c
         const String dst = dstPath / StringUtils::GetFileName(file);
         if (dst == file)
             continue;
-        if (FileSystem::CopyFile(dst, file))
+        if (EditorUtilities::CopyFileIfNewer(dst, file))
         {
             data.Error(String::Format(TEXT("Failed to copy file from {0} to {1}."), file, dst));
             return true;
@@ -189,7 +190,7 @@ bool CompileScriptsStep::Perform(CookingData& data)
     const String logFile = data.CacheDirectory / TEXT("CompileLog.txt");
     auto args = String::Format(
         TEXT("-log -logfile=\"{4}\" -build -mutex -buildtargets={0} -platform={1} -arch={2} -configuration={3} -aotMode={5} {6}"),
-        target, platform, architecture, configuration, logFile, ToString(data.Tools->UseAOT()), GAME_BUILD_DOTNET_VER);
+        target, platform, architecture, configuration, logFile, ToString(data.Tools->UseAOT()), data.GetDotnetCommandArg());
 #if PLATFORM_WINDOWS
     if (data.Platform == BuildPlatform::LinuxX64)
 #elif PLATFORM_LINUX

@@ -69,7 +69,7 @@ API_STRUCT(NoDefault, Namespace="FlaxEngine.Networking") struct FLAXENGINE_API N
     API_FIELD() uint64 Word1 = 0;
 
     // All bits set for all clients.
-    API_FIELD() static NetworkClientsMask All;
+    API_FIELD(ReadOnly) static NetworkClientsMask All;
 
     FORCE_INLINE bool HasBit(int32 bitIndex) const
     {
@@ -98,6 +98,35 @@ API_STRUCT(NoDefault, Namespace="FlaxEngine.Networking") struct FLAXENGINE_API N
     FORCE_INLINE operator bool() const
     {
         return Word0 + Word1 != 0;
+    }
+
+    NetworkClientsMask operator&(const NetworkClientsMask& other) const
+    {
+        return { Word0 & other.Word0, Word1 & other.Word1 };
+    }
+
+    NetworkClientsMask operator|(const NetworkClientsMask& other) const
+    {
+        return { Word0 | other.Word0, Word1 | other.Word1 };
+    }
+
+    NetworkClientsMask operator~() const
+    {
+        return { ~Word0, ~Word1 };
+    }
+
+    NetworkClientsMask& operator|=(const NetworkClientsMask& other)
+    {
+        Word0 |= other.Word0;
+        Word1 |= other.Word1;
+        return *this;
+    }
+
+    NetworkClientsMask& operator&=(const NetworkClientsMask& other)
+    {
+        Word0 &= other.Word0;
+        Word1 &= other.Word1;
+        return *this;
     }
 
     bool operator==(const NetworkClientsMask& other) const

@@ -450,7 +450,7 @@ public:
 /// <summary>
 /// The high-level renderer context. Used to collect the draw calls for the scene rendering. Can be used to perform a custom rendering.
 /// </summary>
-API_STRUCT(NoDefault) struct RenderContext
+API_STRUCT(NoDefault) struct FLAXENGINE_API RenderContext
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(RenderContext);
 
@@ -491,7 +491,7 @@ API_STRUCT(NoDefault) struct RenderContext
 /// <summary>
 /// The high-level renderer context batch that encapsulates multiple rendering requests within a single task (eg. optimize main view scene rendering and shadow projections at once).
 /// </summary>
-API_STRUCT(NoDefault) struct RenderContextBatch
+API_STRUCT(NoDefault) struct FLAXENGINE_API RenderContextBatch
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(RenderContextBatch);
 
@@ -513,7 +513,7 @@ API_STRUCT(NoDefault) struct RenderContextBatch
     /// <summary>
     /// The Job System labels to wait on, after draw calls collecting.
     /// </summary>
-    API_FIELD() Array<uint64, InlinedAllocation<8>> WaitLabels;
+    API_FIELD() Array<int64, InlinedAllocation<8>> WaitLabels;
 
     /// <summary>
     /// Enables using async tasks via Job System when performing drawing.

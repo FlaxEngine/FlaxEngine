@@ -14,6 +14,7 @@
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Scripting/BinaryModule.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/JsonTools.h"
 
 struct AxisEvaluation
@@ -79,6 +80,8 @@ Delegate<const Float2&, MouseButton> Input::MouseDoubleClick;
 Delegate<const Float2&, float> Input::MouseWheel;
 Delegate<const Float2&> Input::MouseMove;
 Action Input::MouseLeave;
+Delegate<InputGamepadIndex, GamepadButton> Input::GamepadButtonDown;
+Delegate<InputGamepadIndex, GamepadButton> Input::GamepadButtonUp;
 Delegate<const Float2&, int32> Input::TouchDown;
 Delegate<const Float2&, int32> Input::TouchMove;
 Delegate<const Float2&, int32> Input::TouchUp;
@@ -89,12 +92,14 @@ Array<AxisConfig> Input::AxisMappings;
 
 void InputSettings::Apply()
 {
+    PROFILE_MEM(Input);
     Input::ActionMappings = ActionMappings;
     Input::AxisMappings = AxisMappings;
 }
 
 void InputSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
+    PROFILE_MEM(Input);
     const auto actionMappings = stream.FindMember("ActionMappings");
     if (actionMappings != stream.MemberEnd())
     {
@@ -166,6 +171,7 @@ void Mouse::OnMouseMoved(const Float2& newPosition)
 
 void Mouse::OnMouseDown(const Float2& position, const MouseButton button, Window* target)
 {
+    PROFILE_MEM(Input);
     Event& e = _queue.AddOne();
     e.Type = EventType::MouseDown;
     e.Target = target;
@@ -184,6 +190,7 @@ bool Mouse::IsAnyButtonDown() const
 
 void Mouse::OnMouseUp(const Float2& position, const MouseButton button, Window* target)
 {
+    PROFILE_MEM(Input);
     Event& e = _queue.AddOne();
     e.Type = EventType::MouseUp;
     e.Target = target;
@@ -193,6 +200,7 @@ void Mouse::OnMouseUp(const Float2& position, const MouseButton button, Window* 
 
 void Mouse::OnMouseDoubleClick(const Float2& position, const MouseButton button, Window* target)
 {
+    PROFILE_MEM(Input);
     Event& e = _queue.AddOne();
     e.Type = EventType::MouseDoubleClick;
     e.Target = target;
@@ -202,6 +210,7 @@ void Mouse::OnMouseDoubleClick(const Float2& position, const MouseButton button,
 
 void Mouse::OnMouseMove(const Float2& position, Window* target)
 {
+    PROFILE_MEM(Input);
     Event& e = _queue.AddOne();
     e.Type = EventType::MouseMove;
     e.Target = target;
@@ -210,6 +219,7 @@ void Mouse::OnMouseMove(const Float2& position, Window* target)
 
 void Mouse::OnMouseLeave(Window* target)
 {
+    PROFILE_MEM(Input);
     Event& e = _queue.AddOne();
     e.Type = EventType::MouseLeave;
     e.Target = target;
@@ -217,6 +227,7 @@ void Mouse::OnMouseLeave(Window* target)
 
 void Mouse::OnMouseWheel(const Float2& position, float delta, Window* target)
 {
+    PROFILE_MEM(Input);
     Event& e = _queue.AddOne();
     e.Type = EventType::MouseWheel;
     e.Target = target;
@@ -313,6 +324,7 @@ void Keyboard::OnCharInput(Char c, Window* target)
     if (c < 32)
         return;
 
+    PROFILE_MEM(Input);
     Event& e = _queue.AddOne();
     e.Type = EventType::Char;
     e.Target = target;
@@ -323,6 +335,7 @@ void Keyboard::OnKeyUp(KeyboardKeys key, Window* target)
 {
     if (key >= KeyboardKeys::MAX)
         return;
+    PROFILE_MEM(Input);
     Event& e = _queue.AddOne();
     e.Type = EventType::KeyUp;
     e.Target = target;
@@ -333,6 +346,7 @@ void Keyboard::OnKeyDown(KeyboardKeys key, Window* target)
 {
     if (key >= KeyboardKeys::MAX)
         return;
+    PROFILE_MEM(Input);
     Event& e = _queue.AddOne();
     e.Type = EventType::KeyDown;
     e.Target = target;
@@ -615,6 +629,7 @@ float Input::GetAxisRaw(const StringView& name)
 
 void Input::SetInputMappingFromSettings(const JsonAssetReference<InputSettings>& settings)
 {
+    PROFILE_MEM(Input);
     auto actionMappings = settings.GetInstance()->ActionMappings;
     ActionMappings.Resize(actionMappings.Count(), false);
     for (int i = 0; i < actionMappings.Count(); i++)
@@ -634,6 +649,7 @@ void Input::SetInputMappingFromSettings(const JsonAssetReference<InputSettings>&
 
 void Input::SetInputMappingToDefaultSettings()
 {
+    PROFILE_MEM(Input);
     InputSettings* settings = InputSettings::Get();
     if (settings)
     {
@@ -696,6 +712,7 @@ Array<AxisConfig> Input::GetAllAxisConfigsByName(const StringView& name)
 
 void Input::SetAxisConfigByName(const StringView& name, AxisConfig& config, bool all)
 {
+    PROFILE_MEM(Input);
     for (int i = 0; i < AxisMappings.Count(); ++i)
     {
         auto& mapping = AxisMappings.At(i);
@@ -712,6 +729,7 @@ void Input::SetAxisConfigByName(const StringView& name, AxisConfig& config, bool
 
 void Input::SetAxisConfigByName(const StringView& name, InputAxisType inputType, const KeyboardKeys positiveButton, const KeyboardKeys negativeButton, bool all)
 {
+    PROFILE_MEM(Input);
     for (int i = 0; i < AxisMappings.Count(); ++i)
     {
         auto& mapping = AxisMappings.At(i);
@@ -727,6 +745,7 @@ void Input::SetAxisConfigByName(const StringView& name, InputAxisType inputType,
 
 void Input::SetAxisConfigByName(const StringView& name, InputAxisType inputType, const GamepadButton positiveButton, const GamepadButton negativeButton, InputGamepadIndex gamepadIndex, bool all)
 {
+    PROFILE_MEM(Input);
     for (int i = 0; i < AxisMappings.Count(); ++i)
     {
         auto& mapping = AxisMappings.At(i);
@@ -742,6 +761,7 @@ void Input::SetAxisConfigByName(const StringView& name, InputAxisType inputType,
 
 void Input::SetAxisConfigByName(const StringView& name, InputAxisType inputType, const float gravity, const float deadZone, const float sensitivity, const float scale, const bool snap, bool all)
 {
+    PROFILE_MEM(Input);
     for (int i = 0; i < AxisMappings.Count(); ++i)
     {
         auto& mapping = AxisMappings.At(i);
@@ -760,6 +780,7 @@ void Input::SetAxisConfigByName(const StringView& name, InputAxisType inputType,
 
 void Input::SetActionConfigByName(const StringView& name, const KeyboardKeys key, bool all)
 {
+    PROFILE_MEM(Input);
     for (int i = 0; i < ActionMappings.Count(); ++i)
     {
         auto& mapping = ActionMappings.At(i);
@@ -774,6 +795,7 @@ void Input::SetActionConfigByName(const StringView& name, const KeyboardKeys key
 
 void Input::SetActionConfigByName(const StringView& name, const MouseButton mouseButton, bool all)
 {
+    PROFILE_MEM(Input);
     for (int i = 0; i < ActionMappings.Count(); ++i)
     {
         auto& mapping = ActionMappings.At(i);
@@ -788,6 +810,7 @@ void Input::SetActionConfigByName(const StringView& name, const MouseButton mous
 
 void Input::SetActionConfigByName(const StringView& name, const GamepadButton gamepadButton, InputGamepadIndex gamepadIndex, bool all)
 {
+    PROFILE_MEM(Input);
     for (int i = 0; i < ActionMappings.Count(); ++i)
     {
         auto& mapping = ActionMappings.At(i);
@@ -802,6 +825,7 @@ void Input::SetActionConfigByName(const StringView& name, const GamepadButton ga
 
 void Input::SetActionConfigByName(const StringView& name, ActionConfig& config, bool all)
 {
+    PROFILE_MEM(Input);
     for (int i = 0; i < ActionMappings.Count(); ++i)
     {
         auto& mapping = ActionMappings.At(i);
@@ -819,6 +843,7 @@ void Input::SetActionConfigByName(const StringView& name, ActionConfig& config, 
 void InputService::Update()
 {
     PROFILE_CPU();
+    PROFILE_MEM(Input);
     const auto frame = Time::Update.TicksCount;
     const auto dt = Time::Update.UnscaledDeltaTime.GetTotalSeconds();
     InputEvents.Clear();
@@ -1002,6 +1027,19 @@ void InputService::Update()
         case InputDevice::EventType::TouchUp:
             Input::TouchUp(e.TouchData.Position, e.TouchData.PointerId);
             break;
+        }
+    }
+    // TODO: route gamepad button events into global InputEvents queue to improve processing
+    for (int32 i = 0; i < Input::Gamepads.Count(); i++)
+    {
+        auto gamepad = Input::Gamepads[i];
+        for (int32 buttonIdx = 1; buttonIdx < (int32)GamepadButton::MAX; buttonIdx++)
+        {
+            GamepadButton button = (GamepadButton)buttonIdx;
+            if (gamepad->GetButtonDown(button))
+                Input::GamepadButtonDown((InputGamepadIndex)i, button);
+            else if (gamepad->GetButtonUp(button))
+                Input::GamepadButtonUp((InputGamepadIndex)i, button);
         }
     }
 

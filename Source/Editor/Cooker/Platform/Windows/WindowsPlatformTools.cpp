@@ -528,6 +528,9 @@ bool WindowsPlatformTools::OnDeployBinaries(CookingData& data)
 
 void WindowsPlatformTools::OnBuildStarted(CookingData& data)
 {
+    if (EnumHasAllFlags(data.Options, BuildOptions::NoCook))
+        return;
+
     // Remove old executable
     Array<String> files;
     FileSystem::DirectoryGetFiles(files, data.NativeCodeOutputPath, TEXT("*.exe"), DirectorySearchOption::TopDirectoryOnly);
