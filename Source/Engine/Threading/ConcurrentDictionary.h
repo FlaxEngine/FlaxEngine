@@ -7,6 +7,8 @@
 
 /// <summary>
 /// Template for unordered dictionary with mapped key with value pairs that supports asynchronous data reading and writing.
+/// Implemented via reader-writer lock pattern, so multiple threads can read data at the same time, but only one thread can write data and it blocks all other threads (including readers) until the write operation is finished.
+/// Optimized for frequent reads (no lock operation).
 /// </summary>
 /// <typeparam name="KeyType">The type of the keys in the dictionary.</typeparam>
 /// <typeparam name="ValueType">The type of the values in the dictionary.</typeparam>
