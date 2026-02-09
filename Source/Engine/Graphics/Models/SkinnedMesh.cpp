@@ -212,7 +212,6 @@ const Array<Matrix>& SkeletonData::GetNodesPose() const
         ScopeLock lock(RenderContext::GPULocker);
         if (Platform::AtomicRead(&_dirty))
         {
-            Platform::AtomicStore(&_dirty, 0);
             const SkeletonNode* nodes = Nodes.Get();
             const int32 nodesCount = Nodes.Count();
             _cachedPose.Resize(nodesCount);
@@ -227,6 +226,7 @@ const Array<Matrix>& SkeletonData::GetNodesPose() const
                 else
                     posePtr[nodeIndex] = local;
             }
+            Platform::AtomicStore(&_dirty, 0);
         }
     }
     return _cachedPose;
