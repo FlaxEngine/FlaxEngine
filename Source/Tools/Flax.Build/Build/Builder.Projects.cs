@@ -428,11 +428,15 @@ namespace Flax.Build
 
                                 // Get source files
                                 var sourceFiles = new List<string>();
+                                var embeddedResources = new List<string>();
                                 var generatedSourceFiles = new List<string>();
                                 foreach (var module in binaryModule.Value)
                                 {
                                     // C# sources included into build source files
                                     sourceFiles.AddRange(modulesBuildOptions[module].SourceFiles.Where(x => x.EndsWith(".cs")));
+
+                                    // Embedded resource files included into build embedded resources files
+                                    embeddedResources.AddRange(modulesBuildOptions[module].EmbeddedResources);
                                 }
                                 sourceFiles.RemoveAll(x => x.EndsWith(BuildFilesPostfix));
                                 foreach (var target in targets)
@@ -490,6 +494,7 @@ namespace Flax.Build
                                     project.Path = Path.Combine(projectsRoot, project.Name + '.' + dotNetProjectGenerator.ProjectFileExtension);
                                 }
                                 project.SourceFiles = sourceFiles;
+                                project.EmbeddedResources = embeddedResources;
                                 project.GeneratedSourceFiles = generatedSourceFiles;
                                 project.CSharp.UseFlaxVS = true;
                                 project.Configurations.AddRange(mainProject.Configurations);
@@ -626,6 +631,7 @@ namespace Flax.Build
                             project.SourceFiles.Add(e.FilePath);
                         foreach (var e in rules.Modules)
                             project.SourceFiles.Add(e.FilePath);
+                        project.EmbeddedResources = new List<string>();
                         project.CSharp.SystemReferences = new HashSet<string>
                         {
                             "System",
