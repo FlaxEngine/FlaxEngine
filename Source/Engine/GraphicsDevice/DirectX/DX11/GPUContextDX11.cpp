@@ -773,6 +773,25 @@ void GPUContextDX11::Flush()
         _context->Flush();
 }
 
+void GPUContextDX11::FinishGPUCommands()
+{
+    // Create a query object to wait for GPU completion
+    D3D11_QUERY_DESC queryDesc = {};
+    queryDesc.Query = D3D11_QUERY_EVENT;
+
+    ID3D11Query* query;
+    HRESULT hr = _device->GetDevice()->CreateQuery(&queryDesc, &query);
+    if (FAILED(hr)) return;
+
+    // End the query after issuing commands
+    _context->End(query);
+
+    // Wait for the GPU to finish commands
+    while (_context->GetData(query, nullptr, 0, 0) != S_OK) {
+        // Optionally: yield the CPU or sleep briefly to avoid tight loop
+        Sleep(0);
+    }
+}
 void GPUContextDX11::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 size, uint32 offset)
 {
     ASSERT(data);
