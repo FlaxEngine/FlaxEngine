@@ -4,6 +4,7 @@
 #define __REFLECTIONS_COMMON__
 
 #include "./Flax/GBufferCommon.hlsl"
+#include "./Flax/BRDF.hlsl"
 
 // Hit depth (view space) threshold to detect if sky was hit (value above it where 1.0f is default)
 #define REFLECTIONS_HIT_THRESHOLD 0.9f
@@ -48,15 +49,29 @@ float4 SampleReflectionProbe(float3 viewPos, TextureCube probe, ProbeData data, 
 // Calculates the reflective environment lighting to multiply the raw reflection color for the specular light (eg. from Env Probe or SSR).
 float3 GetReflectionSpecularLighting(float3 viewPos, GBufferSample gBuffer)
 {
-	// Calculate reflection color
-    float3 specularColor = GetSpecularColor(gBuffer);
+    // Calculate reflection color
     float3 V = normalize(viewPos - gBuffer.WorldPos);
     float NoV = saturate(dot(gBuffer.Normal, V));
+    float3 specularColor = GetSpecularColor(gBuffer);
     float3 reflections = EnvBRDFApprox(specularColor, gBuffer.Roughness, NoV);
-    
-	// Apply specular occlusion
-	float roughnessSq = gBuffer.Roughness * gBuffer.Roughness;
-	reflections *= GetSpecularOcclusion(NoV, roughnessSq, gBuffer.AO);
+
+    // Apply specular occlusion
+    float roughnessSq = gBuffer.Roughness * gBuffer.Roughness;
+    reflections *= GetSpecularOcclusion(NoV, roughnessSq, gBuffer.AO);
+
+    return reflections;
+}
+float3 GetReflectionSpecularLighting(Texture2D preIntegratedGF, float3 viewPos, GBufferSample gBuffer)
+{
+    // Calculate reflection color
+    float3 V = normalize(viewPos - gBuffer.WorldPos);
+    float NoV = saturate(dot(gBuffer.Normal, V));
+    float3 specularColor = GetSpecularColor(gBuffer);
+    float3 reflections = EnvBRDF(preIntegratedGF, specularColor, gBuffer.Roughness, NoV);
+
+    // Apply specular occlusion
+    float roughnessSq = gBuffer.Roughness * gBuffer.Roughness;
+    reflections *= GetSpecularOcclusion(NoV, roughnessSq, gBuffer.AO);
 
     return reflections;
 }

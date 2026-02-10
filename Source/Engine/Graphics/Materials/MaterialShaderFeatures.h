@@ -25,10 +25,9 @@ struct ForwardShadingFeature : MaterialShaderFeature
 {
     enum { MaxLocalLights = 4 };
 
-    enum { SRVs = 5 };
+    enum { SRVs = 6 };
 
-    PACK_STRUCT(struct Data
-        {
+    PACK_STRUCT(struct Data {
         ShaderLightData DirectionalLight;
         ShaderLightData SkyLight;
         ShaderEnvProbeData EnvironmentProbe;
@@ -76,8 +75,7 @@ struct GlobalIlluminationFeature : MaterialShaderFeature
 {
     enum { SRVs = 3 };
 
-    PACK_STRUCT(struct Data
-        {
+    PACK_STRUCT(struct Data {
         DynamicDiffuseGlobalIlluminationPass::ConstantsData DDGI;
         });
 
@@ -92,13 +90,10 @@ struct SDFReflectionsFeature : MaterialShaderFeature
 {
     enum { SRVs = 7 };
 
-    PACK_STRUCT(struct Data
-    {
+    PACK_STRUCT(struct Data {
         GlobalSignDistanceFieldPass::ConstantsData GlobalSDF;
         GlobalSurfaceAtlasPass::ConstantsData GlobalSurfaceAtlas;
-    });
-
-    
+        });
 
     static bool Bind(MaterialShader::BindParameters& params, Span<byte>& cb, int32& srv);
 #if USE_EDITOR
