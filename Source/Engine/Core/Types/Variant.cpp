@@ -35,13 +35,6 @@
 #endif
 #define AsEnum AsUint64
 
-// Editor can hot-reload assemblies thus cached type names may become invalid, otherwise use modules that are never unloaded and their type names are always valid
-#if USE_EDITOR
-#define IS_VARIANT_TYPE_NAME_STATIC(canReload) !canReload
-#else
-#define IS_VARIANT_TYPE_NAME_STATIC(canReload) true
-#endif
-
 namespace
 {
     const char* InBuiltTypesTypeNames[40] =
@@ -352,13 +345,13 @@ void VariantType::SetTypeName(const StringAnsiView& typeName, bool staticName)
 
 void VariantType::SetTypeName(const ScriptingType& type)
 {
-    SetTypeName(type.Fullname, IS_VARIANT_TYPE_NAME_STATIC(type.Module->CanReload));
+    SetTypeName(type.Fullname, type.Module->CanReload);
 }
 
 void VariantType::SetTypeName(const MClass& klass)
 {
 #if USE_CSHARP
-    SetTypeName(klass.GetFullName(), IS_VARIANT_TYPE_NAME_STATIC(klass.GetAssembly()->CanReload()));
+    SetTypeName(klass.GetFullName(), klass.GetAssembly()->CanReload());
 #endif
 }
 
@@ -385,11 +378,23 @@ VariantType VariantType::GetElementType() const
 
 void VariantType::Inline()
 {
-    const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(TypeName);
-    if (typeHandle)
-        SetTypeName(typeHandle.GetType());
+    // Check if the typename comes from static assembly which can be used to inline name instead of dynamic memory allocation
+    StringAnsiView typeName(TypeName);
+    auto& modules = BinaryModule::GetModules();
+    for (auto module : modules)
+    {
+        int32 typeIndex;
+        if (!module->CanReload && module->FindScriptingType(typeName, typeIndex))
+        {
+            ScriptingTypeHandle typeHandle(module, typeIndex);
+            SetTypeName(typeHandle.GetType().Fullname, true);
+            return;
+        }
+    }
+
 #if USE_CSHARP
-    else if (const auto mclass = Scripting::FindClass(TypeName))
+    // Try with C#-only types
+    if (const auto mclass = Scripting::FindClass(TypeName))
         SetTypeName(*mclass);
 #endif
 }
