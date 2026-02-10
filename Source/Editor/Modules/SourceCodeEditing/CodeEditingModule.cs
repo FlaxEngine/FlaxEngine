@@ -334,6 +334,9 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                     }
                 }
             }
+            if (editor == null)
+                editor = Editor.Instance.CodeEditing.Editors[0];
+
             Editor.Instance.CodeEditing.SelectedEditor = editor;
         }
 
