@@ -310,6 +310,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                         using (var xmlReader = XmlReader.Create(new StreamReader(xmlFilePath)))
                         {
                             result = new Dictionary<string, string>();
+                            StringBuilder content = new StringBuilder(2048);
                             while (xmlReader.Read())
                             {
                                 if (xmlReader.NodeType == XmlNodeType.Element && string.Equals(xmlReader.Name, "member", StringComparison.Ordinal))
@@ -318,9 +319,39 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                                     var memberReader = xmlReader.ReadSubtree();
                                     if (memberReader.ReadToDescendant("summary"))
                                     {
-                                        // Remove <see cref=""/> and replace them with the captured group (the content of the cref). Additionally, getting rid of prefixes
-                                        const string crefPattern = @"<see\s+cref=""(?:[A-Z]:FlaxEngine\.)?([^""]+)""\s*\/>";
-                                        result[rawName] = Regex.Replace(memberReader.ReadInnerXml(), crefPattern, "$1").Replace('\n', ' ').Trim();
+                                        content.Clear();
+                                        do
+                                        {
+                                            if (memberReader.NodeType == XmlNodeType.Element && memberReader.Read())
+                                            {
+                                                while (memberReader.NodeType == XmlNodeType.Text)
+                                                {
+                                                    content.Append(memberReader.Value);
+                                                    if (memberReader.Read() && memberReader.NodeType == XmlNodeType.Element)
+                                                    {
+                                                        var nodeRef = TrimRef(memberReader.GetAttribute("cref")); // <see cref=""/>
+                                                        if (nodeRef == null)
+                                                            nodeRef = memberReader.GetAttribute("name"); // <paramref name=""/>
+                                                        content.Append(nodeRef);
+                                                        memberReader.Read();
+
+                                                        string TrimRef(string str)
+                                                        {
+                                                            if (str == null)
+                                                                return null;
+                                                            if (str.IndexOf(":FlaxEngine.") == 1)
+                                                                return str.Substring("T:FlaxEngine.".Length);
+                                                            return str.Substring("T:".Length);
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            if (memberReader.NodeType == XmlNodeType.EndElement && memberReader.Name == "summary")
+                                                break;
+                                        } while (memberReader.Read());
+
+                                        result[rawName] = content.ToString().Trim(' ', '\r', '\n');
                                     }
                                 }
                             }
@@ -343,7 +374,12 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         {
             _typeCache.Clear();
             _memberCache.Clear();
-            _xmlCache.Clear();
+
+            foreach (var asm in _xmlCache.Keys.ToArray())
+            {
+                if (asm.IsCollectible)
+                    _xmlCache.Remove(asm);
+            }
         }
 
         /// <inheritdoc />
