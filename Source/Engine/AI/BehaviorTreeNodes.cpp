@@ -696,7 +696,24 @@ void BehaviorTreeCooldownDecorator::PostUpdate(const BehaviorUpdateContext& cont
 
 bool BehaviorTreeKnowledgeConditionalDecorator::CanUpdate(const BehaviorUpdateContext& context)
 {
-    return BehaviorKnowledge::CompareValues((float)ValueA.Get(context.Knowledge), ValueB, Comparison);
+    switch (typeOfBValue)
+    {
+    case BehaviorCompareValueBType::Boolean:
+        if ((bool)ValueA.Get(context.Knowledge) == booleanValue)
+        {
+            return true;
+        } else
+        {
+            return false;
+        }
+
+    case BehaviorCompareValueBType::Float :
+        return BehaviorKnowledge::CompareValues((float)ValueA.Get(context.Knowledge), floatValue, Comparison);
+
+    case BehaviorCompareValueBType::Int :
+        return BehaviorKnowledge::CompareValues((int)ValueA.Get(context.Knowledge), intValue, Comparison);
+    }
+
 }
 
 bool BehaviorTreeKnowledgeValuesConditionalDecorator::CanUpdate(const BehaviorUpdateContext& context)

@@ -407,9 +407,21 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeKnowledgeConditionalDecorator
     API_FIELD(Attributes="EditorOrder(0)")
     BehaviorKnowledgeSelectorAny ValueA;
 
-    // The second value to use for comparision (constant).
+    // Type of value to compare to value A.
+    API_FIELD(Attributes="EditorOrder(5)")
+    BehaviorCompareValueBType typeOfBValue = BehaviorCompareValueBType::Boolean;
+    
+    // The boolean value. Ignore if type of B value is not set on Boolean.
+    API_FIELD(Attributes="EditorOrder(9)")
+    bool booleanValue = false;
+
+    // The float value to compare. Ignore if type of B value is not set on Float.
     API_FIELD(Attributes="EditorOrder(10)")
-    float ValueB = 0.0f;
+    float floatValue = 0.0f;
+
+    // The int value to compare. Ignore if type of B value is not set on Int.
+    API_FIELD(Attributes="EditorOrder(11)")
+    int intValue = 0;
 
     // Values comparision mode.
     API_FIELD(Attributes="EditorOrder(20)")
