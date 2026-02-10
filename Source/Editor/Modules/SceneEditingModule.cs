@@ -245,7 +245,7 @@ namespace FlaxEditor.Modules
             if (!isPlayMode && options.General.AutoRebuildNavMesh && actor.Scene && node.AffectsNavigationWithChildren)
             {
                 var bounds = actor.BoxWithChildren;
-                Navigation.BuildNavMesh(actor.Scene, bounds, options.General.AutoRebuildNavMeshTimeoutMs);
+                Navigation.BuildNavMesh(bounds, options.General.AutoRebuildNavMeshTimeoutMs);
             }
         }
 

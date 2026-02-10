@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace FlaxEngine
 {
-    partial struct Rectangle : IEquatable<Rectangle>
+    partial struct Rectangle : IEquatable<Rectangle>, Json.ICustomValueEquals
     {
         /// <summary>
         /// A <see cref="Rectangle"/> which represents an empty space.
@@ -521,6 +521,13 @@ namespace FlaxEngine
             {
                 return (Location.GetHashCode() * 397) ^ Size.GetHashCode();
             }
+        }
+
+        /// <inheritdoc />
+        public bool ValueEquals(object other)
+        {
+            var o = (Rectangle)other;
+            return Equals(ref o);
         }
 
         /// <inheritdoc />

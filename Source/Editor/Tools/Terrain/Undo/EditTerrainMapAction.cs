@@ -172,7 +172,7 @@ namespace FlaxEditor.Tools.Terrain.Undo
             if (_navmeshBoundsModifications != null)
             {
                 foreach (var bounds in _navmeshBoundsModifications)
-                    Navigation.BuildNavMesh(scene, bounds, _dirtyNavMeshTimeoutMs);
+                    Navigation.BuildNavMesh(bounds, _dirtyNavMeshTimeoutMs);
             }
 
             Editor.Instance.Scene.MarkSceneEdited(scene);
@@ -217,11 +217,10 @@ namespace FlaxEditor.Tools.Terrain.Undo
             }
 
             // Update navmesh
-            var scene = Terrain.Scene;
             if (_navmeshBoundsModifications != null)
             {
                 foreach (var bounds in _navmeshBoundsModifications)
-                    Navigation.BuildNavMesh(scene, bounds, _dirtyNavMeshTimeoutMs);
+                    Navigation.BuildNavMesh(bounds, _dirtyNavMeshTimeoutMs);
             }
 
             Editor.Instance.Scene.MarkSceneEdited(Terrain.Scene);

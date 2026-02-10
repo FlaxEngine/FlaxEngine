@@ -19,6 +19,48 @@ namespace FlaxEditor.GUI
     /// <seealso cref="CurveEditorBase" />
     public abstract partial class CurveEditor<T> : CurveEditorBase where T : new()
     {
+        /// <summary>
+        /// Represents a single point in a <see cref="CurveEditorPreset"/>.
+        /// </summary>
+        protected struct CurvePresetPoint
+        {
+            /// <summary>
+            /// The time.
+            /// </summary>
+            public float Time;
+
+            /// <summary>
+            /// The value.
+            /// </summary>
+            public float Value;
+
+            /// <summary>
+            /// The in tangent. Will be ignored in <see cref="LinearCurveEditor{T}"/>
+            /// </summary>
+            public float TangentIn;
+
+            /// <summary>
+            /// The out tangent. Will be ignored in <see cref="LinearCurveEditor{T}"/>
+            /// </summary>
+            public float TangentOut;
+        }
+
+        /// <summary>
+        /// A curve preset.
+        /// </summary>
+        protected struct CurveEditorPreset()
+        {
+            /// <summary>
+            /// If the tangents will be linear or smooth.
+            /// </summary>
+            public bool LinearTangents;
+
+            /// <summary>
+            /// The points of the preset.
+            /// </summary>
+            public List<CurvePresetPoint> Points;
+        }
+
         private class Popup : ContextMenuBase
         {
             private CustomEditorPresenter _presenter;
@@ -26,11 +68,12 @@ namespace FlaxEditor.GUI
             private List<int> _keyframeIndices;
             private bool _isDirty;
 
-            public Popup(CurveEditor<T> editor, object[] selection, List<int> keyframeIndices = null, float height = 140.0f)
-            : this(editor, height)
+            public Popup(CurveEditor<T> editor, object[] selection, List<int> keyframeIndices = null, float maxHeight = 140.0f)
+            : this(editor, maxHeight)
             {
                 _presenter.Select(selection);
                 _presenter.OpenAllGroups();
+                Size = new Float2(Size.X, Mathf.Min(_presenter.ContainerControl.Size.Y, maxHeight));
                 _keyframeIndices = keyframeIndices;
                 if (keyframeIndices != null && selection.Length != keyframeIndices.Count)
                     throw new Exception();
@@ -169,7 +212,7 @@ namespace FlaxEditor.GUI
                 if (IsSelected)
                     color = Editor.ContainsFocus ? style.SelectionBorder : Color.Lerp(style.ForegroundDisabled, style.SelectionBorder, 0.4f);
                 if (IsMouseOver)
-                    color *= 1.1f;
+                    color *= 1.5f;
                 Render2D.FillRectangle(rect, color);
             }
 
@@ -285,7 +328,7 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// The keyframes size.
         /// </summary>
-        protected static readonly Float2 KeyframesSize = new Float2(7.0f);
+        protected static readonly Float2 KeyframesSize = new Float2(8.0f);
 
         /// <summary>
         /// The colors for the keyframe points.
@@ -325,6 +368,63 @@ namespace FlaxEditor.GUI
         private Color _linesColor;
         private Color _labelsColor;
         private Font _labelsFont;
+
+        /// <summary>
+        /// Preset values for <see cref="CurvePreset"/> to be applied to a <see cref="CurveEditor{T}"/>.
+        /// </summary>
+        protected Dictionary<CurvePreset, CurveEditorPreset> Presets = new Dictionary<CurvePreset, CurveEditorPreset>
+        {
+            { CurvePreset.Constant, new CurveEditorPreset
+                {
+                    LinearTangents = true,
+                    Points = new List<CurvePresetPoint>
+                    {
+                        new CurvePresetPoint { Time = 0f, Value = 0.5f, TangentIn = 0f, TangentOut = 0f },
+                        new CurvePresetPoint { Time = 1f, Value = 0.5f, TangentIn = 0f, TangentOut = 0f },
+                    }
+                }
+            },
+            { CurvePreset.EaseIn, new CurveEditorPreset
+                {
+                    LinearTangents = false,
+                    Points = new List<CurvePresetPoint>
+                    {
+                        new CurvePresetPoint { Time = 0f, Value = 0f, TangentIn = 0f, TangentOut = 0f },
+                        new CurvePresetPoint { Time = 1f, Value = 1f, TangentIn = -1.4f, TangentOut = 0f },
+                    }
+                }
+            },
+            { CurvePreset.EaseOut, new CurveEditorPreset
+                {
+                    LinearTangents = false,
+                    Points = new List<CurvePresetPoint>
+                    {
+                        new CurvePresetPoint { Time = 1f, Value = 1f, TangentIn = 0f, TangentOut = 0f },
+                        new CurvePresetPoint { Time = 0f, Value = 0f, TangentIn = 0f, TangentOut = 1.4f },
+                    }
+                }
+            },
+            { CurvePreset.Linear, new CurveEditorPreset
+                {
+                    LinearTangents = true,
+                    Points = new List<CurvePresetPoint>
+                    {
+                        new CurvePresetPoint { Time = 0f, Value = 0f, TangentIn = 0f, TangentOut = 0f },
+                        new CurvePresetPoint { Time = 1f, Value = 1f, TangentIn = 0f, TangentOut = 0f },
+                    }
+                }
+            },
+            { CurvePreset.Smoothstep, new CurveEditorPreset
+                {
+                    LinearTangents = false,
+                    Points = new List<CurvePresetPoint>
+                    {
+                        new CurvePresetPoint { Time = 0f, Value = 0f, TangentIn = 0f, TangentOut = 0f },
+                        new CurvePresetPoint { Time = 1f, Value = 1f, TangentIn = 0f, TangentOut = 0f },
+                    }
+                }
+            },
+        };
 
         /// <summary>
         /// The keyframe UI points.
@@ -569,6 +669,28 @@ namespace FlaxEditor.GUI
         protected abstract void RemoveKeyframesInternal(HashSet<int> indicesToRemove);
 
         /// <summary>
+        /// Tries to convert a float to the type of the type wildcard of the curve editor.
+        /// </summary>
+        /// <param name="value">The float.</param>
+        /// <returns>The converted value.</returns>
+        public static object ConvertCurvePresetValueToCurveEditorType(float value)
+        {
+            if (typeof(T) == typeof(Float2))
+                return new Float2(value);
+            if (typeof(T) == typeof(Float3))
+                return new Float3(value);
+            if (typeof(T) == typeof(Float4))
+                return new Float4(value);
+            if (typeof(T) == typeof(Vector2))
+                return new Vector2(value);
+            if (typeof(T) == typeof(Vector3))
+                return new Vector3(value);
+            if (typeof(T) == typeof(Vector4))
+                return new Vector4(value);
+            return value;
+        }
+
+        /// <summary>
         /// Called when showing a context menu. Can be used to add custom buttons with actions.
         /// </summary>
         /// <param name="cm">The menu.</param>
@@ -750,6 +872,17 @@ namespace FlaxEditor.GUI
         public override void ShowWholeCurve()
         {
             ShowCurve(false);
+        }
+
+        /// <summary>
+        /// Applies a <see cref="CurvePreset"/> to the curve editor.
+        /// </summary>
+        /// <param name="preset">The preset.</param>
+        public virtual void ApplyPreset(CurvePreset preset)
+        {
+            // Remove existing keyframes
+            SelectAll();
+            RemoveKeyframes();
         }
 
         /// <inheritdoc />
@@ -1025,6 +1158,31 @@ namespace FlaxEditor.GUI
             else if (options.FocusSelection.Process(this))
             {
                 FocusSelection();
+                return true;
+            }
+
+            bool left = key == KeyboardKeys.ArrowLeft;
+            bool right = key == KeyboardKeys.ArrowRight;
+            bool up = key == KeyboardKeys.ArrowUp;
+            bool down = key == KeyboardKeys.ArrowDown;
+
+            if (left || right || up || down)
+            {
+                bool shift = Root.GetKey(KeyboardKeys.Shift);
+                bool alt = Root.GetKey(KeyboardKeys.Alt);
+                float deltaValue = 10f;
+                if (shift || alt)
+                    deltaValue = shift ? 2.5f : 5f;
+
+                Float2 moveDelta = Float2.Zero;
+                if (left || right)
+                    moveDelta.X = left ? -deltaValue : deltaValue;
+                if (up || down)
+                    moveDelta.Y = up ? -deltaValue : deltaValue;
+
+                _contents.OnMoveStart(Float2.Zero);
+                _contents.OnMove(moveDelta);
+                _contents.OnMoveEnd(Float2.Zero);
                 return true;
             }
 
@@ -1524,6 +1682,22 @@ namespace FlaxEditor.GUI
         {
             for (int i = 0; i < _tangents.Length; i++)
                 _tangents[i].Visible = false;
+        }
+
+        /// <inheritdoc />
+        public override void ApplyPreset(CurvePreset preset)
+        {
+            base.ApplyPreset(preset);
+
+            CurveEditorPreset data = Presets[preset];
+            foreach (var point in data.Points)
+            {
+                float time = point.Time;
+                object value = ConvertCurvePresetValueToCurveEditorType((float)point.Value);
+                AddKeyframe(time, value);
+            }
+
+            ShowWholeCurve();
         }
 
         /// <inheritdoc />
@@ -2310,6 +2484,30 @@ namespace FlaxEditor.GUI
                     _tangents[i].Visible = false;
                 }
             }
+        }
+
+        /// <inheritdoc />
+        public override void ApplyPreset(CurvePreset preset)
+        {
+            base.ApplyPreset(preset);
+
+            CurveEditorPreset data = Presets[preset];
+
+            foreach (var point in data.Points)
+            {
+                float time = point.Time;
+                object value = ConvertCurvePresetValueToCurveEditorType((float)point.Value);
+                object tangentIn = ConvertCurvePresetValueToCurveEditorType((float)point.TangentIn);
+                object tangentOut = ConvertCurvePresetValueToCurveEditorType((float)point.TangentOut);
+
+                AddKeyframe(time, value, tangentIn, tangentOut);
+            }
+
+            SelectAll();
+            if (data.LinearTangents)
+                SetTangentsLinear();
+
+            ShowWholeCurve();
         }
 
         /// <inheritdoc />

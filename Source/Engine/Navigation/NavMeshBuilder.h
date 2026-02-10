@@ -15,11 +15,7 @@ class FLAXENGINE_API NavMeshBuilder
 {
 public:
     static void Init();
-    static bool IsBuildingNavMesh();
-    static float GetNavMeshBuildingProgress();
     static void Update();
-    static void Build(Scene* scene, float timeoutMs);
-    static void Build(Scene* scene, const BoundingBox& dirtyBounds, float timeoutMs);
 };
 
 #endif

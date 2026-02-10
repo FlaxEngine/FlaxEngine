@@ -73,6 +73,10 @@ struct TIsPODType<SkeletonBone>
 /// </remarks>
 class FLAXENGINE_API SkeletonData
 {
+private:
+    mutable volatile int64 _dirty = 1;
+    mutable Array<Matrix> _cachedPose;
+
 public:
     /// <summary>
     /// The nodes in this hierarchy. The root node is always at the index 0.
@@ -114,6 +118,11 @@ public:
     int32 FindNode(const StringView& name) const;
     int32 FindBone(int32 nodeIndex) const;
 
+    // Gets the skeleton nodes transforms in mesh space (pose). Calculated from the local node transforms and hierarchy. Cached internally and updated when data is dirty.
+    const Array<Matrix>& GetNodesPose() const;
+
+    // Marks data as dirty (modified) to update internal state and recalculate cached data if needed (eg. skeleton pose).
+    void Dirty();
     uint64 GetMemoryUsage() const;
 
     /// <summary>

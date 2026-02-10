@@ -15,6 +15,7 @@
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Content/Assets/CubeTexture.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Half.h"
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Level/Actors/PostFxVolume.h"
@@ -30,6 +31,13 @@ namespace
     Array<RenderList*> FreeRenderList;
     Array<Pair<void*, uintptr>> MemPool;
     CriticalSection MemPoolLocker;
+
+    typedef Array<RenderList::IExtension*, FixedAllocation<8>> ExtensionsList;
+    ExtensionsList& GetExtensions()
+    {
+        static ExtensionsList list;
+        return list;
+    }
 }
 
 void ShaderObjectData::Store(const Matrix& worldMatrix, const Matrix& prevWorldMatrix, const Rectangle& lightmapUVsArea, const Float3& geometrySize, float perInstanceRandom, float worldDeterminantSign, float lodDitherFactor)
@@ -268,6 +276,16 @@ void RenderList::CleanupCache()
     MemPoolLocker.Unlock();
 }
 
+RenderList::IExtension::IExtension()
+{
+    GetExtensions().Add(this);
+}
+
+RenderList::IExtension::~IExtension()
+{
+    GetExtensions().Remove(this);
+}
+
 bool RenderList::BlendableSettings::operator<(const BlendableSettings& other) const
 {
     // Sort by higher priority
@@ -290,18 +308,31 @@ void RenderList::AddSettingsBlend(IPostFxSettingsProvider* provider, float weigh
 
 void RenderList::AddDelayedDraw(DelayedDraw&& func)
 {
-    MemPoolLocker.Lock(); // TODO: convert _delayedDraws into RenderListBuffer with usage of arena Memory for fast alloc
     _delayedDraws.Add(MoveTemp(func));
-    MemPoolLocker.Unlock();
 }
 
-void RenderList::DrainDelayedDraws(RenderContextBatch& renderContextBatch, int32 contextIndex)
+void RenderList::DrainDelayedDraws(GPUContext* context, RenderContextBatch& renderContextBatch, int32 renderContextIndex)
 {
-    if (_delayedDraws.IsEmpty())
+    if (_delayedDraws.Count() == 0)
         return;
+    PROFILE_CPU();
     for (DelayedDraw& e : _delayedDraws)
-        e(renderContextBatch, contextIndex);
-    _delayedDraws.SetCapacity(0);
+        e(context, renderContextBatch, renderContextIndex);
+    _delayedDraws.Clear();
+}
+
+#define LOOP_EXTENSIONS() const auto& extensions = GetExtensions(); for (auto* e : extensions)
+
+void RenderList::PreDraw(GPUContext* context, RenderContextBatch& renderContextBatch)
+{
+    LOOP_EXTENSIONS()
+        e->PreDraw(context, renderContextBatch);
+}
+
+void RenderList::PostDraw(GPUContext* context, RenderContextBatch& renderContextBatch)
+{
+    LOOP_EXTENSIONS()
+        e->PostDraw(context, renderContextBatch);
 }
 
 void RenderList::BlendSettings()
@@ -526,7 +557,6 @@ RenderList::RenderList(const SpawnParams& params)
     , ObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Buffer"))
     , TempObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Buffer"))
     , _instanceBuffer(0, sizeof(ShaderObjectDrawInstanceData), TEXT("Instance Buffer"), GPUVertexLayout::Get({ { VertexElement::Types::Attribute0, 3, 0, 1, PixelFormat::R32_UInt } }))
-    , _delayedDraws(&Memory)
 {
 }
 
@@ -858,6 +888,13 @@ FORCE_INLINE bool DrawsEqual(const DrawCall* a, const DrawCall* b)
             Platform::MemoryCompare(a->Geometry.VertexBuffers, b->Geometry.VertexBuffers, sizeof(a->Geometry.VertexBuffers) + sizeof(a->Geometry.VertexBuffersOffsets)) == 0;
 }
 
+FORCE_INLINE Span<GPUBuffer*> GetVB(GPUBuffer* const* ptr, int32 maxSize)
+{
+    while (ptr[maxSize - 1] == nullptr && maxSize > 1)
+        maxSize--;
+    return ToSpan<GPUBuffer*>(ptr, maxSize);
+}
+
 void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, RenderList* drawCallsList, GPUTextureView* input)
 {
     if (list.IsEmpty())
@@ -986,7 +1023,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
                     Platform::MemoryCopy(vb, activeDraw->Geometry.VertexBuffers, sizeof(DrawCall::Geometry.VertexBuffers));
                     Platform::MemoryCopy(vbOffsets, activeDraw->Geometry.VertexBuffersOffsets, sizeof(DrawCall::Geometry.VertexBuffersOffsets));
                     context->BindIB(activeDraw->Geometry.IndexBuffer);
-                    context->BindVB(ToSpan(vb, ARRAY_COUNT(vb)), vbOffsets);
+                    context->BindVB(GetVB(vb, ARRAY_COUNT(vb)), vbOffsets);
                     context->DrawIndexedInstanced(activeDraw->Draw.IndicesCount, activeCount, instanceBufferOffset, 0, activeDraw->Draw.StartIndex);
                     instanceBufferOffset += activeCount;
 
@@ -1003,7 +1040,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
 
                 // Single-draw call batch
                 context->BindIB(drawCall.Geometry.IndexBuffer);
-                context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
+                context->BindVB(GetVB(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
                 if (drawCall.InstanceCount == 0)
                 {
                     context->DrawIndexedInstancedIndirect(drawCall.Draw.IndirectArgsBuffer, drawCall.Draw.IndirectArgsOffset);
@@ -1026,7 +1063,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
             Platform::MemoryCopy(vb, drawCall.Geometry.VertexBuffers, sizeof(DrawCall::Geometry.VertexBuffers));
             Platform::MemoryCopy(vbOffsets, drawCall.Geometry.VertexBuffersOffsets, sizeof(DrawCall::Geometry.VertexBuffersOffsets));
             context->BindIB(drawCall.Geometry.IndexBuffer);
-            context->BindVB(ToSpan(vb, vbMax + 1), vbOffsets);
+            context->BindVB(GetVB(vb, vbMax + 1), vbOffsets);
 
             if (drawCall.InstanceCount == 0)
             {
@@ -1056,7 +1093,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
 
                 const DrawCall& drawCall = drawCallsData[perDraw.DrawObjectIndex];
                 context->BindIB(drawCall.Geometry.IndexBuffer);
-                context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
+                context->BindVB(GetVB(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
 
                 if (drawCall.InstanceCount == 0)
                 {
@@ -1077,7 +1114,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
             bindParams.DrawCall->Material->Bind(bindParams);
 
             context->BindIB(drawCall.Geometry.IndexBuffer);
-            context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
+            context->BindVB(GetVB(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
 
             for (int32 j = 0; j < batch.Instances.Count(); j++)
             {
@@ -1101,7 +1138,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
                 drawCall.Material->Bind(bindParams);
 
                 context->BindIB(drawCall.Geometry.IndexBuffer);
-                context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
+                context->BindVB(GetVB(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
 
                 if (drawCall.InstanceCount == 0)
                 {

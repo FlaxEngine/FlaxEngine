@@ -555,7 +555,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 var options = Editor.Instance.Options.Options.General;
                 if (options.AutoRebuildNavMesh)
                 {
-                    Navigation.BuildNavMesh(collider.Scene, collider.Box, options.AutoRebuildNavMeshTimeoutMs);
+                    Navigation.BuildNavMesh(collider.Box, options.AutoRebuildNavMeshTimeoutMs);
                 }
             }
         }

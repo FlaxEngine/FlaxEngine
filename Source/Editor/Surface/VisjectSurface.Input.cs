@@ -724,7 +724,12 @@ namespace FlaxEditor.Surface
 
             if (HasNodesSelection)
             {
-                var keyMoveRange = 50;
+                var keyMoveDelta = 50;
+                bool altDown = RootWindow.GetKey(KeyboardKeys.Alt);
+                bool shiftDown = RootWindow.GetKey(KeyboardKeys.Shift);
+                if (altDown || shiftDown)
+                    keyMoveDelta = shiftDown ? 10 : 25;
+
                 switch (key)
                 {
                 case KeyboardKeys.Backspace:
@@ -752,17 +757,18 @@ namespace FlaxEditor.Surface
                     Box selectedBox = GetSelectedBox(SelectedNodes);
                     if (selectedBox != null)
                     {
-                        Box toSelect = (key == KeyboardKeys.ArrowUp) ? selectedBox?.ParentNode.GetPreviousBox(selectedBox) : selectedBox?.ParentNode.GetNextBox(selectedBox);
-                        if (toSelect != null && toSelect.IsOutput == selectedBox.IsOutput)
-                        {
-                            Select(toSelect.ParentNode);
-                            toSelect.ParentNode.SelectBox(toSelect);
-                        }
+                        int delta = key == KeyboardKeys.ArrowDown ? 1 : -1;
+                        List<Box> boxes = selectedBox.ParentNode.GetBoxes().FindAll(b => b.IsOutput == selectedBox.IsOutput);
+                        int selectedIndex = boxes.IndexOf(selectedBox);
+                        Box toSelect = boxes[Mathf.Wrap(selectedIndex + delta, 0, boxes.Count - 1)];
+
+                        Select(toSelect.ParentNode);
+                        toSelect.ParentNode.SelectBox(toSelect);
                     }
                     else if (!IsMovingSelection && CanEdit)
                     {
                         // Move selected nodes
-                        var delta = new Float2(0, key == KeyboardKeys.ArrowUp ? -keyMoveRange : keyMoveRange);
+                        var delta = new Float2(0, key == KeyboardKeys.ArrowUp ? -keyMoveDelta : keyMoveDelta);
                         MoveSelectedNodes(delta);
                     }
                     return true;
@@ -775,12 +781,8 @@ namespace FlaxEditor.Surface
                     if (selectedBox != null)
                     {
                         Box toSelect = null;
-                        if ((key == KeyboardKeys.ArrowRight && selectedBox.IsOutput) || (key == KeyboardKeys.ArrowLeft && !selectedBox.IsOutput))
+                        if (((key == KeyboardKeys.ArrowRight && selectedBox.IsOutput) || (key == KeyboardKeys.ArrowLeft && !selectedBox.IsOutput)) && selectedBox.HasAnyConnection)
                         {
-                            if (_selectedConnectionIndex < 0 || _selectedConnectionIndex >= selectedBox.Connections.Count)
-                            {
-                                _selectedConnectionIndex = 0;
-                            }
                             toSelect = selectedBox.Connections[_selectedConnectionIndex];
                         }
                         else
@@ -808,7 +810,7 @@ namespace FlaxEditor.Surface
                     else if (!IsMovingSelection && CanEdit)
                     {
                         // Move selected nodes
-                        var delta = new Float2(key == KeyboardKeys.ArrowLeft ? -keyMoveRange : keyMoveRange, 0);
+                        var delta = new Float2(key == KeyboardKeys.ArrowLeft ? -keyMoveDelta : keyMoveDelta, 0);
                         MoveSelectedNodes(delta);
                     }
                     return true;
@@ -824,13 +826,9 @@ namespace FlaxEditor.Surface
                         return true;
 
                     if (Root.GetKey(KeyboardKeys.Shift))
-                    {
                         _selectedConnectionIndex = ((_selectedConnectionIndex - 1) % connectionCount + connectionCount) % connectionCount;
-                    }
                     else
-                    {
                         _selectedConnectionIndex = (_selectedConnectionIndex + 1) % connectionCount;
-                    }
                     return true;
                 }
                 }

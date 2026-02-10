@@ -562,6 +562,7 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(CalculateBoneOffsetMatrices);
     SERIALIZE(LightmapUVsSource);
     SERIALIZE(CollisionMeshesPrefix);
+    SERIALIZE(CollisionMeshesPostfix);
     SERIALIZE(CollisionType);
     SERIALIZE(PositionFormat);
     SERIALIZE(TexCoordFormat);
@@ -616,6 +617,7 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(CalculateBoneOffsetMatrices);
     DESERIALIZE(LightmapUVsSource);
     DESERIALIZE(CollisionMeshesPrefix);
+    DESERIALIZE(CollisionMeshesPostfix);
     DESERIALIZE(CollisionType);
     DESERIALIZE(PositionFormat);
     DESERIALIZE(TexCoordFormat);
@@ -1827,7 +1829,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
     }
 
     // Collision mesh output
-    if (options.CollisionMeshesPrefix.HasChars())
+    if (options.CollisionMeshesPrefix.HasChars() || options.CollisionMeshesPostfix.HasChars())
     {
         // Extract collision meshes from the model
         ModelData collisionModel;
@@ -1836,7 +1838,8 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             for (int32 i = lod.Meshes.Count() - 1; i >= 0; i--)
             {
                 auto mesh = lod.Meshes[i];
-                if (mesh->Name.StartsWith(options.CollisionMeshesPrefix, StringSearchCase::IgnoreCase))
+                if ((options.CollisionMeshesPrefix.HasChars() && mesh->Name.StartsWith(options.CollisionMeshesPrefix, StringSearchCase::IgnoreCase)) ||
+                    (options.CollisionMeshesPostfix.HasChars() && mesh->Name.EndsWith(options.CollisionMeshesPostfix, StringSearchCase::IgnoreCase)))
                 {
                     // Remove material slot used by this mesh (if no other mesh else uses it)
                     int32 materialSlotUsageCount = 0;

@@ -17,7 +17,7 @@ struct ScriptingTypeHandle;
 /// </summary>
 API_STRUCT(InBuild) struct FLAXENGINE_API VariantType
 {
-    enum Types
+    enum Types : uint8
     {
         Null = 0,
         Void,
@@ -80,10 +80,22 @@ API_STRUCT(InBuild) struct FLAXENGINE_API VariantType
     };
 
 public:
-    /// <summary>
-    /// The type of the variant.
-    /// </summary>
-    Types Type;
+    union
+    {
+        struct
+        {
+            /// <summary>
+            /// The type of the variant.
+            /// </summary>
+            Types Type;
+
+            /// <summary>
+            /// Internal flag used to indicate that pointer to TypeName has been linked from a static/external memory that is stable (eg. ScriptingType or MClass). Allows avoiding dynamic memory allocation.
+            /// </summary>
+            uint8 StaticName : 1;
+        };
+        uint16 Packed;
+    };
 
     /// <summary>
     /// The optional additional full name of the scripting type. Used for Asset, Object, Enum, Structure types to describe type precisely.
@@ -94,17 +106,20 @@ public:
     FORCE_INLINE VariantType()
     {
         Type = Null;
+        StaticName = 0;
         TypeName = nullptr;
     }
 
     FORCE_INLINE explicit VariantType(Types type)
     {
         Type = type;
+        StaticName = 0;
         TypeName = nullptr;
     }
 
     explicit VariantType(Types type, const StringView& typeName);
-    explicit VariantType(Types type, const StringAnsiView& typeName);
+    explicit VariantType(Types type, const StringAnsiView& typeName, bool staticName = false);
+    explicit VariantType(Types type, const ScriptingType& sType);
     explicit VariantType(Types type, const MClass* klass);
     explicit VariantType(const StringAnsiView& typeName);
     VariantType(const VariantType& other);
@@ -112,7 +127,8 @@ public:
 
     FORCE_INLINE ~VariantType()
     {
-        Allocator::Free(TypeName);
+        if (!StaticName)
+            Allocator::Free(TypeName);
     }
 
 public:
@@ -130,9 +146,13 @@ public:
 
 public:
     void SetTypeName(const StringView& typeName);
-    void SetTypeName(const StringAnsiView& typeName);
+    void SetTypeName(const StringAnsiView& typeName, bool staticName = false);
+    void SetTypeName(const ScriptingType& type);
+    void SetTypeName(const MClass& klass);
     const char* GetTypeName() const;
     VariantType GetElementType() const;
+    // Drops custom type name into the name allocated by the scripting module to reduce memory allocations when referencing types.
+    void Inline();
     ::String ToString() const;
 };
 

@@ -30,6 +30,7 @@ protected:
     void OnDisable() override;
 #if USE_EDITOR
     void OnBoundsChanged(const BoundingBox& prevBounds) override;
+    void OnActiveInTreeChanged() override;
     Color GetWiresColor() override;
 #endif
 };

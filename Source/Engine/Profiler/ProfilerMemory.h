@@ -44,6 +44,8 @@ public:
         EngineThreading,
         // Memory used by Delegate (engine events system to store all references).
         EngineDelegate,
+        // Memory used by debug tools (eg. DebugDraw, DebugCommands or DebugLog).
+        EngineDebug,
 
         // Total graphics memory usage.
         Graphics,
@@ -105,6 +107,10 @@ public:
 
         // Total navigation system memory.
         Navigation,
+        // Navigation mesh memory.
+        NavigationMesh,
+        // Navigation mesh builder memory.
+        NavigationBuilding,
 
         // Total networking system memory.
         Networking,

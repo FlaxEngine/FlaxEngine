@@ -5,6 +5,7 @@
 
 #include "./Flax/GBufferCommon.hlsl"
 #include "./Flax/Quaternion.hlsl"
+#include "./Flax/BRDF.hlsl"
 
 // Packed env probe data
 struct EnvProbeData
@@ -86,10 +87,31 @@ float4 SampleReflectionProbe(float3 viewPos, TextureCube probe, EnvProbeData dat
 // Calculates the reflective environment lighting to multiply the raw reflection color for the specular light (eg. from Env Probe or SSR).
 float3 GetReflectionSpecularLighting(float3 viewPos, GBufferSample gBuffer)
 {
-    float3 specularColor = GetSpecularColor(gBuffer);
+    // Calculate reflection color
     float3 V = normalize(viewPos - gBuffer.WorldPos);
     float NoV = saturate(dot(gBuffer.Normal, V));
-    return EnvBRDFApprox(specularColor, gBuffer.Roughness, NoV);
+    float3 specularColor = GetSpecularColor(gBuffer);
+    float3 reflections = EnvBRDFApprox(specularColor, gBuffer.Roughness, NoV);
+
+    // Apply specular occlusion
+    float roughnessSq = gBuffer.Roughness * gBuffer.Roughness;
+    reflections *= GetSpecularOcclusion(NoV, roughnessSq, gBuffer.AO);
+
+    return reflections;
+}
+float3 GetReflectionSpecularLighting(Texture2D preIntegratedGF, float3 viewPos, GBufferSample gBuffer)
+{
+    // Calculate reflection color
+    float3 V = normalize(viewPos - gBuffer.WorldPos);
+    float NoV = saturate(dot(gBuffer.Normal, V));
+    float3 specularColor = GetSpecularColor(gBuffer);
+    float3 reflections = EnvBRDF(preIntegratedGF, specularColor, gBuffer.Roughness, NoV);
+
+    // Apply specular occlusion
+    float roughnessSq = gBuffer.Roughness * gBuffer.Roughness;
+    reflections *= GetSpecularOcclusion(NoV, roughnessSq, gBuffer.AO);
+
+    return reflections;
 }
 
 #endif

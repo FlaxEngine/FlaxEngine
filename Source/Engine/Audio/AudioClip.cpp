@@ -132,9 +132,7 @@ int32 AudioClip::GetFirstBufferIndex(float time, float& offset) const
         if (_buffersStartTimes[i + 1] > time)
         {
             offset = time - _buffersStartTimes[i];
-#if BUILD_DEBUG
-            ASSERT(Math::Abs(GetBufferStartTime(i) + offset - time) < 0.001f);
-#endif
+            ASSERT_LOW_LAYER(Math::Abs(GetBufferStartTime(i) + offset - time) < 0.001f);
             return i;
         }
     }
