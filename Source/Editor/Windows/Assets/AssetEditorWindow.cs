@@ -59,7 +59,7 @@ namespace FlaxEditor.Windows.Assets
 
             UpdateTitle();
 
-            ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
+            ScriptsBuilder.ScriptsReloadEnd += OnScriptsReloadEnd;
         }
 
         /// <summary>
@@ -141,7 +141,7 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         protected override void OnClose()
         {
-            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
+            ScriptsBuilder.ScriptsReloadEnd -= OnScriptsReloadEnd;
 
             if (_item != null)
             {
@@ -155,7 +155,7 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
+            ScriptsBuilder.ScriptsReloadEnd -= OnScriptsReloadEnd;
 
             if (_item != null)
             {
@@ -167,18 +167,8 @@ namespace FlaxEditor.Windows.Assets
         }
 
         /// <inheritdoc />
-        protected virtual void OnScriptsReloadBegin()
+        protected virtual void OnScriptsReloadEnd()
         {
-            if (!IsHidden)
-            {
-                if (IsEdited && _item != null)
-                {
-                    Editor.Log($"Auto-saving local changes to asset '{_item.Path}' before reloading code");
-                    Save();
-                }
-                Editor.Instance.Windows.AddToRestore(this);
-                Close();
-            }
         }
 
         #region IEditable Implementation
@@ -269,19 +259,19 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public void OnItemDeleted(ContentItem item)
         {
-            if (item == _item)
-            {
-                Close();
-            }
+            if (item != _item)
+                return;
+
+            Close();
         }
 
         /// <inheritdoc />
         public void OnItemRenamed(ContentItem item)
         {
-            if (item == _item)
-            {
-                UpdateTitle();
-            }
+            if (item != _item)
+                return;
+
+            UpdateTitle();
         }
 
         /// <inheritdoc />
@@ -290,12 +280,12 @@ namespace FlaxEditor.Windows.Assets
         }
 
         /// <inheritdoc />
-        public void OnItemDispose(ContentItem item)
+        public virtual void OnItemDispose(ContentItem item)
         {
-            if (item == _item)
-            {
-                Close();
-            }
+            if (item != _item)
+                return;
+
+            Close();
         }
 
         #endregion

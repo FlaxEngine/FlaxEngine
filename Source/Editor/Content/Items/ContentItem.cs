@@ -872,6 +872,8 @@ namespace FlaxEditor.Content
             }
 
             base.OnDestroy();
+
+            Root?.SyncCallbacks();
         }
 
         /// <inheritdoc />

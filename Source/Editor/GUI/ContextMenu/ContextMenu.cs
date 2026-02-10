@@ -363,6 +363,23 @@ namespace FlaxEditor.GUI.ContextMenu
                 separator.Dispose();
 
             base.Show(parent, location, direction);
+
+            // Ensure context menus for custom asset items (ShowContextMenuForItem) are destroyed during hot-reload
+            if (Tag != null && Tag.GetType().IsCollectible)
+                ScriptsBuilder.ScriptsReload += OnScriptsReload;
+        }
+
+        private void OnScriptsReload()
+        {
+            OnDestroy();
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            ScriptsBuilder.ScriptsReload -= OnScriptsReload;
+
+            base.OnDestroy();
         }
 
         /// <inheritdoc />

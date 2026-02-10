@@ -807,10 +807,10 @@ namespace FlaxEditor.Modules
         {
             _rebuildFlag = true;
             if (immediate)
-                RebuildInternal();
+                RebuildInternal(true);
         }
 
-        private void RebuildInternal()
+        private void RebuildInternal(bool fastSetup)
         {
             var enableEvents = _enableEvents;
             if (enableEvents)
@@ -827,7 +827,7 @@ namespace FlaxEditor.Modules
             // Load all folders
             // TODO: we should create async task for gathering content and whole workspace contents if it takes too long
             // TODO: create progress bar in content window and after end we should enable events and update it
-            _isDuringFastSetup = true;
+            _isDuringFastSetup = fastSetup;
             var startItems = _itemsCreated;
             foreach (var project in Projects)
             {
@@ -1251,7 +1251,7 @@ namespace FlaxEditor.Modules
         {
             // Handle init when project was loaded without scripts loading ()
             if (_rebuildInitFlag)
-                RebuildInternal();
+                RebuildInternal(true);
         }
 
         private void OnImportFileDone(string path)
@@ -1328,6 +1328,7 @@ namespace FlaxEditor.Modules
 
         private void OnScriptsReload()
         {
+            // Cleanup any content items and proxies which are owned by scripting assemblies
             var enabledEvents = _enableEvents;
             _enableEvents = false;
             _isDuringFastSetup = true;
@@ -1335,22 +1336,22 @@ namespace FlaxEditor.Modules
             foreach (var project in Projects)
             {
                 if (project.Content != null)
-                {
-                    //Dispose(project.Content.Folder);
-                    for (int i = 0; i < project.Content.Folder.Children.Count; i++)
-                    {
-                        Dispose(project.Content.Folder.Children[i]);
-                        i--;
-                    }
-                }
+                    DisposeCollectible(project.Content.Folder);
                 if (project.Source != null)
+                    DisposeCollectible(project.Source.Folder);
+            }
+
+            void DisposeCollectible(ContentItem item)
+            {
+                if (item is ContentFolder folder)
                 {
-                    //Dispose(project.Source.Folder);
-                    for (int i = 0; i < project.Source.Folder.Children.Count; i++)
-                    {
-                        Dispose(project.Source.Folder.Children[i]);
-                        i--;
-                    }
+                    foreach (var child in folder.Children.ToArray())
+                        DisposeCollectible(child);
+                }
+                else
+                {
+                    if (item.GetType().IsCollectible)
+                        Dispose(item);
                 }
             }
 
@@ -1369,7 +1370,7 @@ namespace FlaxEditor.Modules
 
         private void OnScriptsReloadEnd()
         {
-            RebuildInternal();
+            RebuildInternal(false);
         }
 
         /// <inheritdoc />
@@ -1391,7 +1392,7 @@ namespace FlaxEditor.Modules
             // Lazy-rebuilds
             if (_rebuildFlag)
             {
-                RebuildInternal();
+                RebuildInternal(true);
             }
         }
 
