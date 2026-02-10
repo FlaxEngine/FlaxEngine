@@ -14,13 +14,83 @@
 #include "Engine/Content/Deprecated.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Models/MeshAccessor.h"
 #include "Engine/Graphics/Models/MeshDeformation.h"
+#include "Engine/Renderer/RenderList.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/SceneObjectsFactory.h"
-#include "Engine/Profiler/ProfilerMemory.h"
+#include "Engine/Profiler/Profiler.h"
 #include "Engine/Serialization/Serialization.h"
+
+// Implements efficient skinning data update within a shared GPUMemoryPass with manual resource transitions batched for all animated models.
+class AnimatedModelRenderListExtension : public RenderList::IExtension
+{
+public:
+    struct Item
+    {
+        GPUBuffer* BoneMatrices;
+        void* Data;
+        int32 Size;
+    };
+
+    RenderListBuffer<Item> Items;
+
+    void PreDraw(GPUContext* context, RenderContextBatch& renderContextBatch) override
+    {
+        Items.Clear();
+    }
+
+    void PostDraw(GPUContext* context, RenderContextBatch& renderContextBatch) override
+    {
+        const int32 count = Items.Count();
+        if (count == 0)
+            return;
+        PROFILE_GPU_CPU_NAMED("Update Bones");
+        GPUMemoryPass pass(context);
+        Item* items = Items.Get();
+
+        // Special case for D3D11 backend that doesn't need transitions
+        if (context->GetDevice()->GetRendererType() <= RendererType::DirectX11)
+        {
+            for (int32 i = 0; i < count; i++)
+            {
+                Item& item = items[i];
+                context->UpdateBuffer(item.BoneMatrices, item.Data, item.Size);
+            }
+        }
+        else
+        {
+            // Batch resource barriers for buffer update
+            for (int32 i = 0; i < count; i++)
+                pass.Transition(items[i].BoneMatrices, GPUResourceAccess::CopyWrite);
+
+            // Update all buffers within Memory Pass (no barriers between)
+            for (int32 i = 0; i < count; i++)
+            {
+                Item& item = items[i];
+                context->UpdateBuffer(item.BoneMatrices, item.Data, item.Size);
+            }
+
+            // Batch resource barriers for reading in Vertex Shader
+            for (int32 i = 0; i < count; i++)
+                pass.Transition(items[i].BoneMatrices, GPUResourceAccess::ShaderReadGraphics);
+        }
+
+#if COMPILE_WITH_PROFILER
+        // Insert amount of kilobytes of data updated into profiler trace
+        uint32 dataSize = 0;
+        for (int32 i = 0; i < count; i++)
+            dataSize += items[i].Size;
+        ZoneValue(dataSize / 1024);
+#endif
+
+        Items.Clear();
+    }
+};
+
+AnimatedModelRenderListExtension RenderListExtension;
 
 AnimatedModel::AnimatedModel(const SpawnParams& params)
     : ModelInstanceActor(params)
@@ -1002,7 +1072,7 @@ void AnimatedModel::Draw(RenderContext& renderContext)
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
         return;
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
-        return; // No supported
+        return; // Not supported
     ACTOR_GET_WORLD_MATRIX(this, view, world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
 
@@ -1012,9 +1082,8 @@ void AnimatedModel::Draw(RenderContext& renderContext)
         // Flush skinning data with GPU
         if (_skinningData.IsDirty())
         {
-            RenderContext::GPULocker.Lock();
-            GPUDevice::Instance->GetMainContext()->UpdateBuffer(_skinningData.BoneMatrices, _skinningData.Data.Get(), _skinningData.Data.Count());
-            RenderContext::GPULocker.Unlock();
+            RenderListExtension.Items.Add({ _skinningData.BoneMatrices, _skinningData.Data.Get(), _skinningData.Data.Count() });
+            _skinningData.OnFlush();
         }
 
         SkinnedMesh::DrawInfo draw;
@@ -1056,9 +1125,8 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
         // Flush skinning data with GPU
         if (_skinningData.IsDirty())
         {
-            RenderContext::GPULocker.Lock();
-            GPUDevice::Instance->GetMainContext()->UpdateBuffer(_skinningData.BoneMatrices, _skinningData.Data.Get(), _skinningData.Data.Count());
-            RenderContext::GPULocker.Unlock();
+            RenderListExtension.Items.Add({ _skinningData.BoneMatrices, _skinningData.Data.Get(), _skinningData.Data.Count() });
+            _skinningData.OnFlush();
         }
 
         SkinnedMesh::DrawInfo draw;

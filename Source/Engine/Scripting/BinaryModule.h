@@ -91,6 +91,11 @@ public:
     /// </summary>
     Dictionary<StringAnsi, int32> TypeNameToTypeIndex;
 
+    /// <summary>
+    /// Determinates whether module can be hot-reloaded at runtime. For example, in Editor after scripts recompilation. Some modules such as engine and class library modules are static.
+    /// </summary>
+    bool CanReload;
+
 public:
 
     /// <summary>

@@ -8,6 +8,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
+#include "Engine/Threading/ConcurrentDictionary.h"
 #if GPU_ENABLE_RESOURCE_NAMING
 #include "Engine/Scripting/Enums.h"
 #endif
@@ -40,27 +41,37 @@ uint32 GetHash(const VertexBufferLayouts& key)
 
 namespace
 {
-    CriticalSection CacheLocker;
-    Dictionary<uint32, GPUVertexLayout*> LayoutCache;
-    Dictionary<VertexBufferLayouts, GPUVertexLayout*> VertexBufferCache;
+    ConcurrentDictionary<uint32, GPUVertexLayout*> LayoutCache;
+    ConcurrentDictionary<VertexBufferLayouts, GPUVertexLayout*> VertexBufferCache;
 
-    GPUVertexLayout* AddCache(const VertexBufferLayouts& key, int32 count)
+    GPUVertexLayout* GetCache(const VertexBufferLayouts& key, int32 count)
     {
-        GPUVertexLayout::Elements elements;
-        bool anyValid = false;
-        for (int32 slot = 0; slot < count; slot++)
+        GPUVertexLayout* result;
+        if (!VertexBufferCache.TryGet(key, result))
         {
-            if (key.Layouts[slot])
+            GPUVertexLayout::Elements elements;
+            bool anyValid = false;
+            for (int32 slot = 0; slot < count; slot++)
             {
-                anyValid = true;
-                int32 start = elements.Count();
-                elements.Add(key.Layouts[slot]->GetElements());
-                for (int32 j = start; j < elements.Count(); j++)
-                    elements.Get()[j].Slot = (byte)slot;
+                if (key.Layouts[slot])
+                {
+                    anyValid = true;
+                    int32 start = elements.Count();
+                    elements.Add(key.Layouts[slot]->GetElements());
+                    for (int32 j = start; j < elements.Count(); j++)
+                        elements.Get()[j].Slot = (byte)slot;
+                }
             }
+            result = anyValid ? GPUVertexLayout::Get(elements, true) : nullptr;
+            if (!VertexBufferCache.Add(key, result))
+            {
+                // Other thread added the value
+                Delete(result);
+                bool found = VertexBufferCache.TryGet(key, result);
+                ASSERT(found);
+            }
+
         }
-        GPUVertexLayout* result = anyValid ? GPUVertexLayout::Get(elements, true) : nullptr;
-        VertexBufferCache.Add(key, result);
         return result;
     }
 }
@@ -148,7 +159,6 @@ GPUVertexLayout* GPUVertexLayout::Get(const Elements& elements, bool explicitOff
     }
 
     // Lookup existing cache
-    CacheLocker.Lock();
     GPUVertexLayout* result;
     if (!LayoutCache.TryGet(hash, result))
     {
@@ -160,12 +170,16 @@ GPUVertexLayout* GPUVertexLayout::Get(const Elements& elements, bool explicitOff
                 LOG(Error, " {}", e.ToString());
 #endif
             LOG(Error, "Failed to create vertex layout");
-            CacheLocker.Unlock();
             return nullptr;
         }
-        LayoutCache.Add(hash, result);
+        if (!LayoutCache.Add(hash, result))
+        {
+            // Other thread added the value
+            Delete(result);
+            bool found = LayoutCache.TryGet(hash, result);
+            ASSERT(found);
+        }
     }
-    CacheLocker.Unlock();
 
     return result;
 }
@@ -185,13 +199,7 @@ GPUVertexLayout* GPUVertexLayout::Get(const Span<GPUBuffer*>& vertexBuffers)
         key.Layouts[i] = nullptr;
 
     // Lookup existing cache
-    CacheLocker.Lock();
-    GPUVertexLayout* result;
-    if (!VertexBufferCache.TryGet(key, result))
-        result = AddCache(key, vertexBuffers.Length());
-    CacheLocker.Unlock();
-
-    return result;
+    return GetCache(key, vertexBuffers.Length());
 }
 
 GPUVertexLayout* GPUVertexLayout::Get(const Span<GPUVertexLayout*>& layouts)
@@ -209,13 +217,7 @@ GPUVertexLayout* GPUVertexLayout::Get(const Span<GPUVertexLayout*>& layouts)
         key.Layouts[i] = nullptr;
 
     // Lookup existing cache
-    CacheLocker.Lock();
-    GPUVertexLayout* result;
-    if (!VertexBufferCache.TryGet(key, result))
-        result = AddCache(key, layouts.Length());
-    CacheLocker.Unlock();
-
-    return result;
+    return GetCache(key, layouts.Length());
 }
 
 GPUVertexLayout* GPUVertexLayout::Merge(GPUVertexLayout* base, GPUVertexLayout* reference, bool removeUnused, bool addMissing, int32 missingSlotOverride, bool referenceOrder)

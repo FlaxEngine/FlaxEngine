@@ -874,6 +874,7 @@ bool MAssembly::LoadCorlib()
         return true;
     }
     _hasCachedClasses = false;
+    _canReload = false;
     CachedAssemblyHandles.Add(_handle, this);
 
     // End

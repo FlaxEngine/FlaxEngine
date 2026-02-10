@@ -4,6 +4,9 @@
 
 #include "HashSetBase.h"
 
+template<typename KeyType, typename ValueType, typename AllocationType>
+class ConcurrentDictionary;
+
 /// <summary>
 /// Describes single portion of space for the key and value pair in a hash map.
 /// </summary>
@@ -13,6 +16,7 @@ struct DictionaryBucket
     friend Memory;
     friend HashSetBase<AllocationType, DictionaryBucket>;
     friend Dictionary<KeyType, ValueType, AllocationType>;
+    friend ConcurrentDictionary<KeyType, ValueType, AllocationType>;
 
     /// <summary>The key.</summary>
     KeyType Key;
