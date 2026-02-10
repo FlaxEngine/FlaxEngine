@@ -684,6 +684,19 @@ Array<Asset*> Content::GetAssets()
     return assets;
 }
 
+Array<Asset*> Content::GetAssets(const MClass* type)
+{
+    Array<Asset*> assets;
+    AssetsLocker.Lock();
+    for (auto& e : Assets)
+    {
+        if (e.Value->Is(type))
+            assets.Add(e.Value);
+    }
+    AssetsLocker.Unlock();
+    return assets;
+}
+
 const Dictionary<Guid, Asset*>& Content::GetAssetsRaw()
 {
     AssetsLocker.Lock();

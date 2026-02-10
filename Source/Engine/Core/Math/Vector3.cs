@@ -73,7 +73,7 @@ namespace FlaxEngine
 #if FLAX_EDITOR
     [System.ComponentModel.TypeConverter(typeof(TypeConverters.Vector3Converter))]
 #endif
-    public unsafe partial struct Vector3 : IEquatable<Vector3>, IFormattable
+    public unsafe partial struct Vector3 : IEquatable<Vector3>, IFormattable, Json.ICustomValueEquals
     {
         private static readonly string _formatString = "X:{0:F2} Y:{1:F2} Z:{2:F2}";
 
@@ -1040,6 +1040,33 @@ namespace FlaxEngine
         public static Vector3 Lerp(Vector3 start, Vector3 end, float amount)
         {
             Lerp(ref start, ref end, amount, out var result);
+            return result;
+        }
+
+        /// <summary>
+        /// Performs a spherical linear interpolation between two vectors.
+        /// </summary>
+        /// <param name="start">Start vector.</param>
+        /// <param name="end">End vector.</param>
+        /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
+        /// <param name="result">When the method completes, contains the linear interpolation of the two vectors.</param>
+        public static void Slerp(ref Vector3 start, ref Vector3 end, float amount, out Vector3 result)
+        {
+            var dot = Mathr.Clamp(Dot(start, end), -1.0f, 1.0f);
+            var theta = Mathr.Acos(dot) * amount;
+            Vector3 relativeVector = (end - start * dot).Normalized;
+            result = ((start * Mathr.Cos(theta)) + (relativeVector * Mathr.Sin(theta)));
+        }
+
+        /// <summary>
+        /// Performs a spherical linear interpolation between two vectors.
+        /// </summary>
+        /// <param name="start">Start vector.</param>
+        /// <param name="end">End vector.</param>
+        /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
+        public static Vector3 Slerp(Vector3 start, Vector3 end, float amount)
+        {
+            Slerp(ref start, ref end, amount, out var result);
             return result;
         }
 
@@ -2131,6 +2158,13 @@ namespace FlaxEngine
                 hashCode = (hashCode * 397) ^ Z.GetHashCode();
                 return hashCode;
             }
+        }
+
+        /// <inheritdoc />
+        public bool ValueEquals(object other)
+        {
+            var o = (Vector3)other;
+            return Equals(ref o);
         }
 
         /// <summary>

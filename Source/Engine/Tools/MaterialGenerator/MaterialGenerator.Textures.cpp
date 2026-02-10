@@ -585,7 +585,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         const auto offset = useOffset ? eatBox(offsetBox->GetParent<Node>(), offsetBox->FirstConnection()) : Value::Zero;
         const Char* samplerName;
         const int32 samplerIndex = node->Values[0].AsInt;
-        if (samplerIndex == TextureGroup)
+        if (samplerIndex == TextureGroup && node->Values.Count() > 2)
         {
             auto& textureGroupSampler = findOrAddTextureGroupSampler(node->Values[2].AsInt);
             samplerName = *textureGroupSampler.ShaderName;
