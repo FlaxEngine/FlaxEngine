@@ -30,6 +30,7 @@ Script::Script(const SpawnParams& params)
     , _wasAwakeCalled(false)
     , _wasStartCalled(false)
     , _wasEnableCalled(false)
+    ,_setEnableSensiviteCodeLock(false)
 {
 #if USE_EDITOR
     _executeInEditor = GetClass()->HasAttribute(StdTypesContainer::Instance()->ExecuteInEditModeAttribute);
@@ -47,12 +48,36 @@ void Script::SetEnabled(bool value)
         // Call event for the script
         if (_parent == nullptr || (_parent->IsDuringPlay() && _parent->IsActiveInHierarchy()))
         {
-            if (value)
+            if (_enabled)
             {
                 if (!_wasEnableCalled)
                 {
+                    //this will trigger if somone calls in OnStart or in rere cases also applays to OnAwake 
+                    //example:
+                    //SetEnabled(true)
+                    //SetEnabled(false)
+                    //SetEnabled(true)
+                    //when object was never initialized or object was never initialized and OnStart contaions SetEnabled call
+                    if (_setEnableSensiviteCodeLock)
+                    {
+                        //let the API user know abaut this
+                        //silence is the worst
+                        LOG_STR(Warning, TEXT(
+						"Modification of the Enabled state failed, state was modified before the object got a chance to complete Enable() call.\n"
+						"Note:\n"
+						"Try to not modify the enabled state in OnStart or OnAwake, if object is disabled when is spawned. this might interupt Initialization code\n"
+						"also this may cause unexpected behavior in your scripts."));
+
+                        return;
+                    }
+                    //lock the funcion from geting called from the Start
+                    _setEnableSensiviteCodeLock = 1;
+
                     Start();
                     Enable();
+
+                    //unlock funcion
+                    _setEnableSensiviteCodeLock = 0;
                 }
             }
             else if (_wasEnableCalled)
