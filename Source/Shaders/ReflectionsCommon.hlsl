@@ -48,10 +48,17 @@ float4 SampleReflectionProbe(float3 viewPos, TextureCube probe, ProbeData data, 
 // Calculates the reflective environment lighting to multiply the raw reflection color for the specular light (eg. from Env Probe or SSR).
 float3 GetReflectionSpecularLighting(float3 viewPos, GBufferSample gBuffer)
 {
+	// Calculate reflection color
     float3 specularColor = GetSpecularColor(gBuffer);
     float3 V = normalize(viewPos - gBuffer.WorldPos);
     float NoV = saturate(dot(gBuffer.Normal, V));
-    return EnvBRDFApprox(specularColor, gBuffer.Roughness, NoV);
+    float3 reflections = EnvBRDFApprox(specularColor, gBuffer.Roughness, NoV);
+    
+	// Apply specular occlusion
+	float roughnessSq = gBuffer.Roughness * gBuffer.Roughness;
+	reflections *= GetSpecularOcclusion(NoV, roughnessSq, gBuffer.AO);
+
+    return reflections;
 }
 
 #endif

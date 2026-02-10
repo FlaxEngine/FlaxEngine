@@ -142,11 +142,11 @@ void PS_Forward(
 #endif
 #endif
 
-	light.rgb += reflections * GetReflectionSpecularLighting(ViewPos, gBuffer) * light.a;	
+	light.rgb += reflections * GetReflectionSpecularLighting(ViewPos, gBuffer) * light.a;
 #endif
 
-	// Add lighting (apply ambient occlusion)
-	output.rgb += light.rgb * gBuffer.AO;
+	// Add lighting
+	output.rgb += light.rgb;
 
 #endif
 

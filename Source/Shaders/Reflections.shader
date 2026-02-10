@@ -79,7 +79,7 @@ float4 PS_CombinePass(Quad_VS2PS input) : SV_Target0
 	// Calculate specular color
 	float3 specularColor = GetSpecularColor(gBuffer);
 
-	// Calculate reflecion color
+	// Calculate reflection color
 	float3 V = normalize(gBufferData.ViewPos - gBuffer.WorldPos);
 	float NoV = saturate(dot(gBuffer.Normal, V));
 	reflections *= EnvBRDF(PreIntegratedGF, specularColor, gBuffer.Roughness, NoV);
