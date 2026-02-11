@@ -3,15 +3,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
-using System.Linq;
 using Flax.Build;
-using Flax.Build.Platforms;
 
 namespace Flax.Deps.Dependencies
 {
     /// <summary>
-    /// 
+    /// Simple DirectMedia Layer (SDL for short) is a cross-platform library designed to make it easy to write multi-media software, such as games and emulators.
     /// </summary>
     /// <seealso cref="Flax.Deps.Dependency" />
     class SDL : Dependency

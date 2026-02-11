@@ -5,7 +5,6 @@
 #include "LinuxVulkanPlatform.h"
 #include "../RenderToolsVulkan.h"
 #include "Engine/Platform/Window.h"
-
 #include "Engine/Platform/Linux/IncludeX11.h"
 #define Display X11::Display
 #define Window X11::Window
@@ -14,7 +13,6 @@
 #undef Display
 #undef Window
 #undef VisualID
-
 #include "vulkan/vulkan_wayland.h"
 
 // Export extension from volk

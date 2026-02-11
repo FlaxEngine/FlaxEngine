@@ -242,10 +242,7 @@ public:
     /// <summary>
     /// Checks if window is closed.
     /// </summary>
-    API_PROPERTY() virtual bool IsClosed() const
-    {
-        return _isClosing;
-    }
+    API_PROPERTY() virtual bool IsClosed() const;
 
     /// <summary>
     /// Checks if window is foreground (the window with which the user is currently working).

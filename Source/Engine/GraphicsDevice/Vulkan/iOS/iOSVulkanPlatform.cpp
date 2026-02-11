@@ -17,6 +17,7 @@ void iOSVulkanPlatform::GetInstanceExtensions(Array<const char*>& extensions, Ar
 void iOSVulkanPlatform::CreateSurface(Window* window, GPUDeviceVulkan* device, VkInstance instance, VkSurfaceKHR* surface)
 {
     void* windowHandle = window->GetNativePtr();
+
 	// Create surface on a main UI Thread
 	Function<void()> func = [&windowHandle, &instance, &surface]()
 	{

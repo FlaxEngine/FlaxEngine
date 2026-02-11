@@ -374,11 +374,6 @@ void LinuxWindow::BringToFront(bool force)
 	X11::XFlush(display);
 }
 
-bool LinuxWindow::IsClosed() const
-{
-	return _isClosing;
-}
-
 bool LinuxWindow::IsForegroundWindow() const
 {
 	return _focused || _focusOnMapped;

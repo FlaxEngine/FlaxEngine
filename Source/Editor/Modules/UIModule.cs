@@ -30,7 +30,7 @@ namespace FlaxEditor.Modules
     {
         private class MainWindowDecorations : WindowDecorations
         {
-            public MainWindowDecorations(RootControl window, bool iconOnly) 
+            public MainWindowDecorations(RootControl window, bool iconOnly)
             : base(window, iconOnly)
             {
             }
@@ -45,7 +45,7 @@ namespace FlaxEditor.Modules
                 var editor = Editor.Instance;
                 return editor.Windows.EditWin.InputActions.Process(editor, this, key);
             }
-            
+
             /// <inheritdoc />
             public override void DrawBorders()
             {
@@ -61,7 +61,7 @@ namespace FlaxEditor.Modules
                 Render2D.DrawLine(rect.UpperRight, rect.BottomRight, color);
             }
         }
-        
+
         private struct Status
         {
             public int ID;
@@ -78,7 +78,7 @@ namespace FlaxEditor.Modules
         private bool _progressFailed;
 
         ContextMenuSingleSelectGroup<int> _numberOfClientsGroup = new ContextMenuSingleSelectGroup<int>();
-        
+
         /// <summary>
         /// Defines a viewport scaling option.
         /// </summary>
@@ -99,7 +99,7 @@ namespace FlaxEditor.Modules
                 /// </summary>
                 Aspect = 1,
             }
-            
+
             /// <summary>
             /// The name.
             /// </summary>
@@ -115,7 +115,7 @@ namespace FlaxEditor.Modules
             /// </summary>
             public Int2 Size;
         }
- 
+
         /// <summary>
         /// The default viewport scaling options.
         /// </summary>
@@ -486,7 +486,7 @@ namespace FlaxEditor.Modules
 
             // Update window background
             mainWindow.BackgroundColor = Style.Current.Background;
-            
+
             InitViewportScaleOptions();
 
             InitSharedMenus();
@@ -497,7 +497,7 @@ namespace FlaxEditor.Modules
             InitWindowDecorations(mainWindow);
 
             Editor.Options.OptionsChanged += OnOptionsChanged;
-            
+
             mainWindow.PerformLayout(true);
         }
 
@@ -536,7 +536,7 @@ namespace FlaxEditor.Modules
                     Size = new Int2(2560, 1440),
                 });
             }
-            
+
             if (Editor.Instance.ProjectCache.TryGetCustomData("CustomViewportScalingOptions", out string data))
             {
                 CustomViewportScaleOptions = JsonSerializer.Deserialize<List<ViewportScaleOption>>(data);
@@ -549,7 +549,7 @@ namespace FlaxEditor.Modules
         public void SaveCustomViewportScalingOptions()
         {
             var customOptions = JsonSerializer.Serialize(CustomViewportScaleOptions);
-            Editor.Instance.ProjectCache.SetCustomData("CustomViewportScalingOptions",  customOptions);
+            Editor.Instance.ProjectCache.SetCustomData("CustomViewportScalingOptions", customOptions);
         }
 
         /// <inheritdoc />
@@ -778,7 +778,7 @@ namespace FlaxEditor.Modules
             MenuWindow = MainMenu.AddButton("Window");
             cm = MenuWindow.ContextMenu;
             cm.VisibleChanged += OnMenuWindowVisibleChanged;
-            cm.AddButton("Content", inputOptions.ContentWindow,Editor.Windows.ContentWin.FocusOrShow);
+            cm.AddButton("Content", inputOptions.ContentWindow, Editor.Windows.ContentWin.FocusOrShow);
             cm.AddButton("Scene", inputOptions.SceneWindow, Editor.Windows.SceneWin.FocusOrShow);
             cm.AddButton("Toolbox", inputOptions.ToolboxWindow, Editor.Windows.ToolboxWin.FocusOrShow);
             cm.AddButton("Properties", inputOptions.PropertiesWindow, Editor.Windows.PropertiesWin.FocusOrShow);
@@ -817,14 +817,14 @@ namespace FlaxEditor.Modules
             var driver = Platform.DisplayServer;
             if (!string.IsNullOrEmpty(driver))
                 driver = $" ({driver})";
-            
+
             WindowDecorations = new MainWindowDecorations(mainWindow, !Utilities.Utils.UseCustomWindowDecorations(isMainWindow: true))
             {
                 Parent = mainWindow,
                 IconTooltipText = $"{mainWindow.RootWindow.Title}\nVersion {Globals.EngineVersion}\nConfiguration {configuration}\nGraphics {GPUDevice.Instance.RendererType}{driver}",
             };
         }
-        
+
         private void OnOptionsChanged(EditorOptions options)
         {
             var inputOptions = options.Input;

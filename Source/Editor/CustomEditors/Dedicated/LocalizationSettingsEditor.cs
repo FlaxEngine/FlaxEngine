@@ -195,7 +195,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     filesCount += files.Length;
                     foreach (var file in files)
                         FindNewKeysCpp(file, newKeys, allKeys);
-                    files = Directory.GetFiles(Globals.ProjectSourceFolder, "*.h", SearchOption.AllDirectories).Concat(Directory.GetFiles(Globals.ProjectSourceFolder, "*.hpp", SearchOption.AllDirectories)).ToArray();;
+                    files = Directory.GetFiles(Globals.ProjectSourceFolder, "*.h", SearchOption.AllDirectories).Concat(Directory.GetFiles(Globals.ProjectSourceFolder, "*.hpp", SearchOption.AllDirectories)).ToArray();
                     filesCount += files.Length;
                     foreach (var file in files)
                         FindNewKeysCpp(file, newKeys, allKeys);

@@ -279,7 +279,7 @@ namespace FlaxEditor.GUI.ContextMenu
                     _window.GotFocus += OnWindowGotFocus;
                     _window.LostFocus += OnWindowLostFocus;
                 }
-                
+
 #if USE_IS_FOREGROUND && USE_SDL_WORKAROUNDS
                 // The focus between popup and parent windows doesn't change, force hide the popup when clicked on parent
                 parentWin.Window.MouseDown += OnWindowMouseDown;

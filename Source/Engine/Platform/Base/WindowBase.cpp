@@ -599,6 +599,11 @@ void WindowBase::Close(ClosingReason reason)
     OnClosed();
 }
 
+bool WindowBase::IsClosed() const
+{
+    return _isClosing || EnumHasAnyFlags(Flags, ObjectFlags::WasMarkedToDelete);
+}
+
 bool WindowBase::IsForegroundWindow() const
 {
     return _focused;

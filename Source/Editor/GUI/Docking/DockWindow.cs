@@ -193,6 +193,7 @@ namespace FlaxEditor.GUI.Docking
         {
             CreateFloating(Float2.Zero, Float2.Zero);
         }
+
         /// <summary>
         /// Creates the window in a floating state.
         /// </summary>

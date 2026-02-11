@@ -1923,10 +1923,9 @@ namespace FlaxEditor.Viewport
             _input.MouseWheelDelta = 0;
         }
 
-        /// <inheritdoc />
-        public void OnMouseMoveRelative(ref Float2 mouseMotion)
+        private void OnMouseMoveRelative(ref Float2 motion)
         {
-            _mouseDelta += mouseMotion;
+            _mouseDelta += motion;
         }
 
         /// <inheritdoc />

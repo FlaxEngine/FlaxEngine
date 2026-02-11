@@ -16,11 +16,10 @@ void Win32VulkanPlatform::GetInstanceExtensions(Array<const char*>& extensions, 
 
 void Win32VulkanPlatform::CreateSurface(Window* window, GPUDeviceVulkan* device, VkInstance instance, VkSurfaceKHR* surface)
 {
-    void* windowHandle = window->GetNativePtr();
     VkWin32SurfaceCreateInfoKHR surfaceCreateInfo;
     RenderToolsVulkan::ZeroStruct(surfaceCreateInfo, VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR);
     surfaceCreateInfo.hinstance = GetModuleHandle(nullptr);
-    surfaceCreateInfo.hwnd = static_cast<HWND>(windowHandle);
+    surfaceCreateInfo.hwnd = static_cast<HWND>(window->GetNativePtr());
     VALIDATE_VULKAN_RESULT(vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, nullptr, surface));
 }
 

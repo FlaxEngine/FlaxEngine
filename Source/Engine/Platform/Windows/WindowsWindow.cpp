@@ -352,7 +352,7 @@ void WindowsWindow::Restore()
 
 bool WindowsWindow::IsClosed() const
 {
-    return !HasHWND();
+    return !HasHWND() || EnumHasAnyFlags(Flags, ObjectFlags::WasMarkedToDelete);
 }
 
 bool WindowsWindow::IsForegroundWindow() const

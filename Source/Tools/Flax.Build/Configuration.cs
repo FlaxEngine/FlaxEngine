@@ -288,6 +288,7 @@ namespace Flax.Build
         [CommandLine("useLogInRelease", "Can be used to disable logging in Release game builds")]
         public static bool UseLogInRelease = true;
 
+        /// <summary>
         /// True if SDL support should be enabled.
         /// </summary>
         [CommandLine("useSdl", "1 to enable SDL support in build")]
@@ -311,10 +312,14 @@ namespace Flax.Build
 
         public static bool WithSDL(NativeCpp.BuildOptions options)
         {
-            bool supportedPlatform = options.Platform.Target == TargetPlatform.Windows ||
-                                     options.Platform.Target == TargetPlatform.Linux ||
-                                     options.Platform.Target == TargetPlatform.Mac;
-            return UseSDL && supportedPlatform;
+            switch (options.Platform.Target)
+            {
+            case TargetPlatform.Windows:
+            case TargetPlatform.Linux:
+            case TargetPlatform.Mac:
+                return UseSDL;
+            default: return false;
+            }
         }
     }
 }

@@ -411,7 +411,7 @@ namespace Flax.Build.Platforms
                 // Use shared arguments
                 args.Clear();
                 args.AddRange(commonArgs);
-                
+
                 // Language for the file
                 args.Add("-x");
                 if (Path.GetExtension(sourceFile).Equals(".c", StringComparison.OrdinalIgnoreCase))
@@ -419,7 +419,7 @@ namespace Flax.Build.Platforms
                 else
                 {
                     args.Add("c++");
-                    
+
                     // C++ version
                     switch (compileEnvironment.CppVersion)
                     {

@@ -12,8 +12,6 @@
 // Prevent wierd error 'Invalid VkValidationCacheEXT Object'
 #define VULKAN_USE_VALIDATION_CACHE 0
 
-class GPUDeviceVulkan;
-
 /// <summary>
 /// The implementation for the Vulkan API support for Linux platform.
 /// </summary>

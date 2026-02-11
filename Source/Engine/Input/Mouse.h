@@ -117,7 +117,7 @@ public:
     }
 
     /// <summary>
-    /// Gets the current state of mouse relative mode. 
+    /// Gets the current state of mouse relative mode.
     /// </summary>
     /// <param name="window">The window to check against, or null to check for any window.</param>
     /// <returns>True if mouse is in relative mode, otherwise false.</returns>

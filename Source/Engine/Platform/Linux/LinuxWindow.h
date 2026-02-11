@@ -72,7 +72,6 @@ public:
 	void Minimize() override;
 	void Maximize() override;
 	void Restore() override;
-	bool IsClosed() const override;
     bool IsForegroundWindow() const override;
 	void BringToFront(bool force = false) override;
 	void SetClientBounds(const Rectangle& clientArea) override;

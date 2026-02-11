@@ -50,7 +50,7 @@ namespace FlaxEditor.GUI.Docking
         /// The mouse position.
         /// </summary>
         public Float2 MousePosition = Float2.Minimum;
-        
+
         /// <summary>
         /// The mouse position.
         /// </summary>

@@ -160,7 +160,6 @@ public:
     void Minimize() override;
     void Maximize() override;
     void Restore() override;
-    bool IsClosed() const override;
     void BringToFront(bool force = false) override;
     void SetClientBounds(const Rectangle& clientArea) override;
     void SetPosition(const Float2& position) override;

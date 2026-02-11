@@ -34,12 +34,12 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="mousePosition">The mouse position.</param>
         public delegate void MouseMoveDelegate(ref Float2 mousePosition);
-        
+
         /// <summary>
         /// Perform mouse move action in relative mode.
         /// </summary>
-        /// <param name="mouseMotion">The relative mouse motion.</param>
-        public delegate void MouseMoveRelativeDelegate(ref Float2 mouseMotion);
+        /// <param name="motion">The relative mouse motion.</param>
+        public delegate void MouseMoveRelativeDelegate(ref Float2 motion);
 
         /// <summary>
         /// Perform mouse wheel action.
@@ -285,10 +285,10 @@ namespace FlaxEngine
             GUI.OnMouseMove(pos);
         }
         
-        internal void Internal_OnMouseMoveRelative(ref Float2 mouseMotion)
+        internal void Internal_OnMouseMoveRelative(ref Float2 motion)
         {
-            MouseMoveRelative?.Invoke(ref mouseMotion);
-            GUI.OnMouseMoveRelative(mouseMotion);
+            MouseMoveRelative?.Invoke(ref motion);
+            GUI.OnMouseMoveRelative(motion);
         }
 
         internal void Internal_OnMouseLeave()

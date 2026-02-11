@@ -14,13 +14,13 @@ namespace FlaxEditor.GUI.Docking
         private class FloatWindowDecorations : WindowDecorations
         {
             private FloatWindowDockPanel _panel;
-            
+
             public FloatWindowDecorations(FloatWindowDockPanel panel)
             : base(panel.RootWindow)
             {
                 _panel = panel;
             }
-            
+
             /// <inheritdoc />
             public override bool OnMouseDown(Float2 location, MouseButton button)
             {
@@ -76,19 +76,19 @@ namespace FlaxEditor.GUI.Docking
             Parent = window;
             _window.Window.Closing += OnClosing;
             _window.Window.LeftButtonHit += OnLeftButtonHit;
-            
+
             if (Utilities.Utils.UseCustomWindowDecorations())
             {
                 var decorations = Parent.AddChild(new FloatWindowDecorations(this));
                 decorations.SetAnchorPreset(AnchorPresets.HorizontalStretchTop, false);
             }
         }
-        
+
         /// <inheritdoc />
         protected override void PerformLayoutBeforeChildren()
         {
             base.PerformLayoutBeforeChildren();
-            
+
             var decorations = Parent.GetChild<FloatWindowDecorations>();
             if (decorations != null)
             {
@@ -143,7 +143,7 @@ namespace FlaxEditor.GUI.Docking
             settings.ShowAfterFirstPaint = false;
             settings.ShowInTaskbar = true;
             settings.StartPosition = startPosition;
-            
+
             if (Utilities.Utils.UseCustomWindowDecorations())
             {
                 settings.HasBorder = false;

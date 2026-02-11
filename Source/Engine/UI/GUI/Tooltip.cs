@@ -213,7 +213,7 @@ namespace FlaxEngine.GUI
             var rightBottomLocationSS = locationSS + dpiSize;
 
             // Prioritize tooltip placement within parent window, fall back to virtual desktop
-            /*if (rightBottomMonitorBounds.Y < rightBottomLocationSS.Y)
+            if (rightBottomMonitorBounds.Y < rightBottomLocationSS.Y)
             {
                 // Direction: up
                 locationSS.Y -= dpiSize.Y + flipOffset;
@@ -222,7 +222,7 @@ namespace FlaxEngine.GUI
             {
                 // Direction: left
                 locationSS.X -= dpiSize.X + flipOffset * 2;
-            }*/
+            }
         }
 
         /// <inheritdoc />

@@ -322,7 +322,7 @@ namespace FlaxEditor.GUI.Input
 #else
 
         /// <inheritdoc />
-        public override void OnMouseMoveRelative(Float2 mouseMotion)
+        public override void OnMouseMoveRelative(Float2 motion)
         {
             var location = Root.TrackingMouseOffset;
             if (_isSliding)
@@ -344,7 +344,7 @@ namespace FlaxEditor.GUI.Input
                 _cursorChanged = false;
             }
 
-            base.OnMouseMoveRelative(mouseMotion);
+            base.OnMouseMoveRelative(motion);
         }
 
 #endif

@@ -1,8 +1,5 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System;
-using FlaxEditor.GUI.Docking;
-using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -26,12 +23,12 @@ public class WindowDecorations : ContainerControl
     /// The title label in the title bar.
     /// </summary>
     public Label Title => _title;
-    
+
     /// <summary>
     /// The icon used in the title bar.
     /// </summary>
     public Image Icon => _icon;
-    
+
     /// <summary>
     /// The tooltip shown when hovering over the icon.
     /// </summary>
@@ -54,7 +51,7 @@ public class WindowDecorations : ContainerControl
     : base(0, 0, 0, 20)
     {
         _window = window.RootWindow.Window;
-        
+
         AutoFocus = false;
         AnchorPreset = AnchorPresets.HorizontalStretchTop;
         BackgroundColor = Color.Transparent;
@@ -75,13 +72,13 @@ public class WindowDecorations : ContainerControl
         {
             _icon.Margin = new Margin(6, 6, 6, 6);
             Height = 28;
-            
+
             _window.HitTest += OnHitTest;
             _window.Closed += OnWindowClosed;
-            
+
             FontAsset windowIconsFont = FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.WindowIconsFont);
             Font iconFont = windowIconsFont?.CreateFont(9);
-            
+
             _title = new Label(0, 0, Width, Height)
             {
                 Text = _window.Title,
@@ -150,7 +147,7 @@ public class WindowDecorations : ContainerControl
             _charChromeMaximize = ((char)EditorAssets.SegMDL2Icons.ChromeMaximize).ToString();
         }
     }
-    
+
     /// <inheritdoc />
     public override void Update(float deltaTime)
     {
@@ -216,20 +213,20 @@ public class WindowDecorations : ContainerControl
             if (pos.Y > winSize.Y - distance)
                 return WindowHitCodes.Bottom;
         }
-        
+
         var controlUnderMouse = GetChildAt(pos, control => control != _title);
         if (_title.Bounds.Contains(pos) && controlUnderMouse == null)
             return WindowHitCodes.Caption;
 
         return WindowHitCodes.Client;
     }
-    
+
     /// <inheritdoc />
     public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
     {
         // These may not work with main window due to SDL not passing mouse events
         // when interacting with hit tests on caption area...
-        
+
         if (Title.Bounds.Contains(location) && button == MouseButton.Left)
         {
             if (_window.IsMaximized)
@@ -251,7 +248,7 @@ public class WindowDecorations : ContainerControl
     {
         // Calculate extents for title bounds area excluding the icon and main menu area
         float x = 0;
-        
+
         // Icon
         if (_icon != null)
         {
@@ -273,7 +270,7 @@ public class WindowDecorations : ContainerControl
                 }
             }
         }
-     
+
         // Buttons
         float rightMostButtonX = Width;
         if (_closeButton != null)
@@ -302,7 +299,7 @@ public class WindowDecorations : ContainerControl
             _title.Bounds = new Rectangle(x, 0, rightMostButtonX - x, Height);
         }
     }
-    
+
     /// <inheritdoc />
     public override void Draw()
     {
@@ -321,7 +318,7 @@ public class WindowDecorations : ContainerControl
 
         if (Editor.Instance.UI.StatusBar == null)
             return;
-        
+
         const float thickness = 1.0f;
         Color color = Editor.Instance.UI.StatusBar.StatusColor;
         Rectangle rect = new Rectangle(thickness * 0.5f, thickness * 0.5f, Parent.Width - thickness, Parent.Height - thickness);

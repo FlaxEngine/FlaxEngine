@@ -85,10 +85,12 @@ namespace FlaxEditor.Options
             /// Never show the close button.
             /// </summary>
             Never,
+
             /// <summary>
             /// Show the close button on tabs that are currently selected.
             /// </summary>
             SelectedTab,
+
             /// <summary>
             /// Show the close button on all tabs that can be closed.
             /// </summary>
@@ -188,18 +190,18 @@ namespace FlaxEditor.Options
             /// Determined automatically based on the system and any known compatibility issues with native decorations.
             /// </summary>
             Auto,
-            
+
             /// <summary>
             /// Automatically choose most compatible window decorations for child windows, prefer custom decorations on main window.
             /// </summary>
             [EditorDisplay(Name = "Auto (Child Only)")]
             AutoChildOnly,
-            
+
             /// <summary>
             /// Use native system window decorations on all windows.
             /// </summary>
             Native,
-            
+
             /// <summary>
             /// Use custom client-side window decorations on all windows.
             /// </summary>
@@ -322,7 +324,7 @@ namespace FlaxEditor.Options
 #endif
 
         /// <summary>
-        /// Gets or sets a value indicating wether the minum tab width should be used. Editor restart required.
+        /// Gets or sets a value indicating whether the minimum tab width should be used. Editor restart required.
         /// </summary>
         [DefaultValue(false)]
         [EditorDisplay("Tabs & Windows"), EditorOrder(99)]
@@ -518,7 +520,7 @@ namespace FlaxEditor.Options
         [DefaultValue(1), Range(1, 4)]
         [EditorDisplay("Cook & Run"), EditorOrder(600)]
         public int NumberOfGameClientsToLaunch = 1;
-        
+
         /// <summary>
         /// Gets or sets the build configuration to use when using Cook and Run option in the editor.
         /// </summary>
@@ -533,7 +535,7 @@ namespace FlaxEditor.Options
         public float ConnectionCurvature { get; set; } = 1.0f;
 
         /// <summary>
-        /// Gets or sets a value that indicates wether the context menu description panel is shown or not.
+        /// Gets or sets a value that indicates whether the context menu description panel is shown or not.
         /// </summary>
         [DefaultValue(true)]
         [EditorDisplay("Visject"), EditorOrder(550), Tooltip("Shows/hides the description panel in visual scripting context menu.")]
