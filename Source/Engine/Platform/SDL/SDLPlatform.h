@@ -77,9 +77,14 @@ public:
     static bool SupportsNativeDecorations();
     static bool SupportsNativeDecorationDragging();
     static void SetHighDpiAwarenessEnabled(bool enable);
+#if !PLATFORM_WINDOWS
     static BatteryInfo GetBatteryInfo();
+#endif
     static int32 GetDpi();
+#if PLATFORM_LINUX
     static String GetUserLocaleName();
+#endif
+    static bool CanOpenUrl(const StringView& url);
     static void OpenUrl(const StringView& url);
     static Float2 GetMousePosition();
     static void SetMousePosition(const Float2& pos);
@@ -87,7 +92,9 @@ public:
     static Rectangle GetMonitorBounds(const Float2& screenPos);
     static Rectangle GetVirtualDesktopBounds();
     static Window* CreateWindow(const CreateWindowSettings& settings);
+#if !PLATFORM_WINDOWS
     static int32 CreateProcess(CreateProcessSettings& settings);
+#endif
 };
 
 #endif

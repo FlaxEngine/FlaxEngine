@@ -32,7 +32,9 @@
 namespace SDLImpl
 {
     int32 SystemDpi = 96;
+#if PLATFORM_LINUX
     String UserLocale("en");
+#endif
     bool WindowDecorationsSupported = true;
     bool SupportsDecorationDragging = true;
     String WaylandDisplayEnv;
@@ -107,6 +109,7 @@ bool SDLPlatform::Init()
     if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
         Platform::Fatal(String::Format(TEXT("Failed to initialize SDL: {0}."), String(SDL_GetError())));
 
+#if PLATFORM_LINUX
     int localesCount = 0;
     auto locales = SDL_GetPreferredLocales(&localesCount);
     for (int i = 0; i < localesCount; i++)
@@ -123,6 +126,7 @@ bool SDLPlatform::Init()
         }
     }
     SDL_free(locales);
+#endif
 
     if (InitInternal())
         return true;
@@ -214,6 +218,7 @@ bool SDLPlatform::SupportsNativeDecorationDragging()
     return SDLImpl::SupportsDecorationDragging;
 }
 
+#if !PLATFORM_WINDOWS
 BatteryInfo SDLPlatform::GetBatteryInfo()
 {
     BatteryInfo info;
@@ -241,15 +246,23 @@ BatteryInfo SDLPlatform::GetBatteryInfo()
     }
     return info;
 }
+#endif
 
 int32 SDLPlatform::GetDpi()
 {
     return SDLImpl::SystemDpi;
 }
 
+#if PLATFORM_LINUX
 String SDLPlatform::GetUserLocaleName()
 {
     return SDLImpl::UserLocale;
+}
+#endif
+
+bool SDLPlatform::CanOpenUrl(const StringView& url)
+{
+    return true;
 }
 
 void SDLPlatform::OpenUrl(const StringView& url)
@@ -317,6 +330,8 @@ Window* SDLPlatform::CreateWindow(const CreateWindowSettings& settings)
 {
     return New<SDLWindow>(settings);
 }
+
+#if !PLATFORM_WINDOWS
 
 bool ReadStream(SDL_IOStream*& stream, char* buffer, int64 bufferLength, int64& bufferPosition, LogType logType, CreateProcessSettings& settings)
 {
@@ -478,5 +493,7 @@ int32 SDLPlatform::CreateProcess(CreateProcessSettings& settings)
     SDL_DestroyProcess(process);
     return result;
 }
+
+#endif
 
 #endif

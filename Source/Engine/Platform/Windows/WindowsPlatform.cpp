@@ -775,13 +775,11 @@ bool WindowsPlatform::Init()
     DWORD tmp;
     Char buffer[256];
 
-#if !PLATFORM_SDL
     // Get user locale string
     if (GetUserDefaultLocaleName(buffer, LOCALE_NAME_MAX_LENGTH))
     {
         UserLocale = String(buffer);
     }
-#endif
 
     // Get computer name string
     if (GetComputerNameW(buffer, &tmp))
@@ -951,12 +949,12 @@ int32 WindowsPlatform::GetDpi()
 {
     return SystemDpi;
 }
+#endif
 
 String WindowsPlatform::GetUserLocaleName()
 {
     return UserLocale;
 }
-#endif
 
 String WindowsPlatform::GetComputerName()
 {
@@ -1120,7 +1118,6 @@ bool IsProcRunning(HANDLE handle)
     return WaitForSingleObject(handle, 0) == WAIT_TIMEOUT;
 }
 
-#if !PLATFORM_SDL
 void ReadPipe(HANDLE pipe, Array<char>& rawData, Array<Char>& logData, LogType logType, CreateProcessSettings& settings)
 {
     // Check if any data is ready to read
@@ -1329,6 +1326,7 @@ int32 WindowsPlatform::CreateProcess(CreateProcessSettings& settings)
     return result;
 }
 
+#if !PLATFORM_SDL
 Window* WindowsPlatform::CreateWindow(const CreateWindowSettings& settings)
 {
     return New<WindowsWindow>(settings);
