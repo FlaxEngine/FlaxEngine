@@ -696,7 +696,7 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     Float2 pos = AppleUtils::PosToCoca(settings.Position);
     NSRect frame = NSMakeRect(pos.X, pos.Y - settings.Size.Y, settings.Size.X, settings.Size.Y);
     NSUInteger styleMask = NSWindowStyleMaskClosable;
-    if (settings.IsRegularWindow)
+    if (settings.Type == WindowType::Regular)
     {
         styleMask |= NSWindowStyleMaskTitled;
         if (settings.AllowMinimize)

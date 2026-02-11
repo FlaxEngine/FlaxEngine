@@ -108,7 +108,7 @@ WindowsWindow::WindowsWindow(const CreateWindowSettings& settings)
         // Create window style flags
         style |= WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
 #if WINDOWS_USE_NEW_BORDER_LESS
-        if (settings.IsRegularWindow)
+        if (settings.Type == WindowType::Regular)
             style |= WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU | WS_THICKFRAME | WS_GROUP;
 #elif WINDOWS_USE_NEWER_BORDER_LESS
         if (settings.Type == WindowType::Regular)
@@ -215,7 +215,7 @@ void WindowsWindow::Show()
         // Show
         ShowWindow(_handle, (_settings.AllowInput && _settings.ActivateWhenFirstShown) ? SW_SHOW : SW_SHOWNA);
 #if WINDOWS_USE_NEW_BORDER_LESS
-        if (!_settings.HasBorder && _settings.IsRegularWindow)
+        if (!_settings.HasBorder && settings.Type == WindowType::Regular)
         {
             SetWindowPos(_handle, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
         }
@@ -285,7 +285,7 @@ void WindowsWindow::SetBorderless(bool isBorderless, bool maximized)
         lStyle |= WS_POPUP;
         lStyle |= WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
 #if WINDOWS_USE_NEW_BORDER_LESS
-        if (_settings.IsRegularWindow)
+        if (_settings.Type == WindowType::Regular)
             style |= WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU | WS_THICKFRAME | WS_GROUP;
 #elif WINDOWS_USE_NEWER_BORDER_LESS
         if (_settings.Type == WindowType::Regular)
@@ -835,7 +835,7 @@ void WindowsWindow::UpdateRegion()
 {
 #if WINDOWS_USE_NEW_BORDER_LESS
     // Use region to remove rounded corners of the window
-    if (!_settings.HasBorder && _settings.IsRegularWindow)
+    if (!_settings.HasBorder && _settings.Type == WindowType::Regular)
     {
         if (!_maximized && !_isResizing)
         {
@@ -961,7 +961,7 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_NCCALCSIZE:
     {
 #if WINDOWS_USE_NEW_BORDER_LESS
-        if (wParam && !_settings.HasBorder && _settings.IsRegularWindow)
+        if (wParam && !_settings.HasBorder && _settings.Type == WindowType::Regular)
         {
             if (_maximized)
             {
@@ -995,7 +995,7 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
             }
         }
 #elif WINDOWS_USE_NEWER_BORDER_LESS
-        if (wParam == TRUE && !_settings.HasBorder) // && _settings.IsRegularWindow)
+        if (wParam == TRUE && !_settings.HasBorder) // && _settings.Type == WindowType::Regular)
         {
             // In maximized mode fill the whole work area of the monitor (excludes task bar)
             if (IsWindowMaximized(_handle))
