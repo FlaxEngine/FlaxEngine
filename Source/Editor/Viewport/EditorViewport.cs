@@ -1234,14 +1234,15 @@ namespace FlaxEditor.Viewport
         /// <param name="orientation">The orientation.</param>
         protected virtual void OrientViewport(ref Quaternion orientation)
         {
+            float orbitRadius = 2000.0f;
             if (ViewportCamera is FPSCamera fpsCamera)
             {
-                var pos = ViewPosition + Float3.Backward * orientation * 2000.0f;
+                var pos = ViewPosition + Float3.Backward * orientation * orbitRadius;
                 fpsCamera.MoveViewport(pos, orientation);
             }
             else
             {
-                ViewportCamera.SetArcBallView(orientation, ViewPosition, 2000.0f);
+                ViewportCamera.SetArcBallView(orientation, ViewPosition, orbitRadius);
             }
         }
 
