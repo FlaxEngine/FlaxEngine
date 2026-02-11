@@ -262,10 +262,17 @@ namespace FlaxEditor.Options
         private TextAlignment _tooltipTextAlignment = TextAlignment.Center;
 
         /// <summary>
+        /// Gets or sets header text alignment.
+        /// </summary>
+        [DefaultValue(TextAlignment.Near)]
+        [EditorDisplay("Interface"), EditorOrder(322)]
+        public TextAlignment HeaderTextAlignment = TextAlignment.Near;
+
+        /// <summary>
         /// Whether to scroll to the script when a script is added to an actor.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Interface"), EditorOrder(322)]
+        [EditorDisplay("Interface"), EditorOrder(323)]
         public bool ScrollToScriptOnAdd { get; set; } = true;
 
 #if PLATFORM_WINDOWS
