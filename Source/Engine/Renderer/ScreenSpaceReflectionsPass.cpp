@@ -262,6 +262,14 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
     GPUTexture* depthBufferTrace = settings.DepthResolution == ResolutionMode::Half ? buffers->RequestHalfResDepth(context) : buffers->DepthBuffer;
     data.DepthMips = 1;
 #endif
+    if (depthBufferTrace == nullptr)
+    {
+        RenderTargetPool::Release(colorBuffer0);
+        RenderTargetPool::Release(colorBuffer1);
+        RenderTargetPool::Release(traceBuffer);
+        RenderTargetPool::Release(resolveBuffer);
+        return nullptr;
+    }
 
     // Prepare constants
     context->UpdateCB(cb, &data);

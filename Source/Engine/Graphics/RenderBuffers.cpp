@@ -84,6 +84,8 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
     const auto currentFrame = Engine::FrameCount;
     if (LastFrameHalfResDepth == currentFrame)
         return HalfResDepth;
+    if (!MultiScaler::Instance()->IsReady())
+        return DepthBuffer;
 
     const int32 halfDepthWidth = RenderTools::GetResolution(_width, ResolutionMode::Half);
     const int32 halfDepthHeight = RenderTools::GetResolution(_height, ResolutionMode::Half);
@@ -119,6 +121,8 @@ GPUTexture* RenderBuffers::RequestHiZ(GPUContext* context, bool fullRes, int32 m
     const auto currentFrame = Engine::FrameCount;
     if (LastFrameHiZ == currentFrame)
         return HiZ;
+    if (!MultiScaler::Instance()->IsReady())
+        return nullptr;
     LastFrameHiZ = currentFrame;
 
     // Allocate or resize buffer (with full mip-chain)
