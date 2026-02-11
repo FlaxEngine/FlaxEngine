@@ -1404,7 +1404,7 @@ bool ModelTool::ImportDataOpenFBX(const String& path, ModelData& data, Options& 
     }
 
     // Import skeleton
-    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton))
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton) && context.Bones.HasItems())
     {
         data.Skeleton.Nodes.Resize(context.Nodes.Count(), false);
         for (int32 i = 0; i < context.Nodes.Count(); i++)
