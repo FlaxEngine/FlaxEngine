@@ -108,7 +108,11 @@ namespace FlaxEditor.GUI.Docking
                 return;
 
             // Create docking hint window
-            WindowDragHelper.StartDragging(this);
+            Window dragSourceWindow = null;
+#if !PLATFORM_SDL
+            dragSourceWindow = _window?.Window;
+#endif
+            WindowDragHelper.StartDragging(this, dragSourceWindow);
         }
 
         /// <summary>
@@ -127,11 +131,15 @@ namespace FlaxEditor.GUI.Docking
             settings.Title = title;
             settings.Size = size;
             settings.Position = location;
-            settings.MinimumSize = new Float2(200, 150);
+            settings.MinimumSize = new Float2(100, 100);
             settings.MaximumSize = Float2.Zero; // Unlimited size
             settings.Fullscreen = false;
             settings.HasBorder = true;
+#if PLATFORM_SDL
             settings.SupportsTransparency = true;
+#else
+            settings.SupportsTransparency = false;
+#endif
             settings.ActivateWhenFirstShown = true;
             settings.AllowInput = true;
             settings.AllowMinimize = true;

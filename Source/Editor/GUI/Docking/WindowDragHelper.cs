@@ -44,13 +44,33 @@ namespace FlaxEditor.GUI.Docking
             _toMove = toMove;
             _toSet = DockState.Float;
             var window = toMove.Window.Window;
+            var mousePos = Platform.MousePosition;
+
+            // Check if window is maximized and restore window for correct dragging
+            if (window.IsMaximized)
+            {
+                var windowMousePos = mousePos - window.Position;
+                var previousSize = window.Size;
+                window.Restore();
+                window.Position = mousePos - windowMousePos * window.Size / previousSize;
+            }
+
+            // When drag starts from a tabs the window might not be shown yet
+            if (!window.IsVisible)
+            {
+                window.Show();
+                window.Position = mousePos - new Float2(40, 10);
+            }
 
             // Bind events
             FlaxEngine.Scripting.Update += OnUpdate;
             window.MouseUp += OnMouseUp;
-            
+#if !PLATFORM_SDL
+            window.StartTrackingMouse(false);
+#endif
+
             // Update rectangles
-            UpdateRects(Platform.MousePosition);
+            UpdateRects(mousePos);
             
             // Ensure the dragged window stays on top of every other window
             window.IsAlwaysOnTop = true;
@@ -58,13 +78,21 @@ namespace FlaxEditor.GUI.Docking
             _dragSourceWindow = dragSourceWindow;
             if (_dragSourceWindow != null) // Detaching a tab from existing window
             {
+#if PLATFORM_SDL
                 _dragOffset = new Float2(window.Size.X / 2, 10.0f);
-                
-                _dragSourceWindow.MouseUp += OnMouseUp; // The mouse up event is sent to the source window on Windows
+#else
+                _dragOffset = mousePos - window.Position;
+#endif
+
+                // The mouse up event is sent to the source window on Windows
+                _dragSourceWindow.MouseUp += OnMouseUp;
 
                 // TODO: when detaching tab in floating window (not main window), the drag source window is still main window?
                 var dragSourceWindowWayland = toMove.MasterPanel?.RootWindow.Window ?? Editor.Instance.Windows.MainWindow;
                 window.DoDragDrop(window.Title, _dragOffset, dragSourceWindowWayland);
+#if !PLATFORM_SDL
+                _dragSourceWindow.BringToFront();
+#endif
             }
             else
             {
@@ -84,7 +112,12 @@ namespace FlaxEditor.GUI.Docking
             // Unbind events
             FlaxEngine.Scripting.Update -= OnUpdate;
             if (window != null)
+            {
                 window.MouseUp -= OnMouseUp;
+#if !PLATFORM_SDL
+                window.EndTrackingMouse();
+#endif
+            }
             if (_dragSourceWindow != null)
                 _dragSourceWindow.MouseUp -= OnMouseUp;
 
@@ -160,13 +193,14 @@ namespace FlaxEditor.GUI.Docking
         /// Start dragging a floating dock panel.
         /// </summary>
         /// <param name="toMove">Floating dock panel to move.</param>
+        /// <param name="dragSourceWindow">The window where dragging started from.</param>
         /// <returns>The window drag helper object.</returns>
-        public static WindowDragHelper StartDragging(FloatWindowDockPanel toMove)
+        public static WindowDragHelper StartDragging(FloatWindowDockPanel toMove, Window dragSourceWindow = null)
         {
             if (toMove == null)
                 throw new ArgumentNullException();
 
-            return new WindowDragHelper(toMove, null);
+            return new WindowDragHelper(toMove, dragSourceWindow);
         }
 
         /// <summary>
@@ -268,7 +302,8 @@ namespace FlaxEditor.GUI.Docking
                 }
 
                 // Prefer panel in the same window we hit earlier
-                if (dockPanel?.RootWindow != _toDock?.RootWindow)
+                // TODO: this doesn't allow docking window into another floating window over the main window
+                /*if (dockPanel?.RootWindow != _toDock?.RootWindow)
                 {
                     foreach (var hit in hitResults)
                     {
@@ -278,7 +313,7 @@ namespace FlaxEditor.GUI.Docking
                             break;
                         }
                     }
-                }
+                }*/
             }
             
             if (dockPanel != _toDock)
@@ -291,10 +326,16 @@ namespace FlaxEditor.GUI.Docking
                 _toDock?.RootWindow.Window.BringToFront();
                 //_toDock?.RootWindow.Window.Focus();
 
+#if PLATFORM_SDL
                 // Make the dragged window transparent when dock hints are visible
                 _toMove.Window.Window.Opacity = _toDock == null ? 1.0f : DragWindowOpacity;
+#else
+                // Bring the drop source always to the top
+                if (_dragSourceWindow != null)
+                    _dragSourceWindow.BringToFront();
+#endif
             }
-            
+
             // Check dock state to use
             bool showProxyHints = _toDock != null;
             bool showBorderHints = showProxyHints;
@@ -441,18 +482,21 @@ namespace FlaxEditor.GUI.Docking
 
         private void OnUpdate()
         {
+            // If the engine lost focus during dragging, end the action
+            if (!Engine.HasFocus)
+            {
+                Dispose();
+                return;
+            }
+
             var mousePos = Platform.MousePosition;
-
             if (_mouse != mousePos)
-                OnMouseMove(mousePos);
-        }
-        
-        private void OnMouseMove(Float2 mousePos)
-        {
-            if (_dragSourceWindow != null)
-                _toMove.Window.Window.Position = mousePos - _dragOffset;
+            {
+                if (_dragSourceWindow != null)
+                    _toMove.Window.Window.Position = mousePos - _dragOffset;
 
-            UpdateRects(mousePos);
+                UpdateRects(mousePos);
+            }
         }
     }
 }
