@@ -423,8 +423,9 @@ namespace FlaxEditor.Surface
                 new InputActionsContainer.Binding(options => options.NodesAlignLeft, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Left); }),
                 new InputActionsContainer.Binding(options => options.NodesAlignCenter, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Center); }),
                 new InputActionsContainer.Binding(options => options.NodesAlignRight, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Right); }),
-                new InputActionsContainer.Binding(options => options.NodesDistributeHorizontal, () => {  DistributeNodes(SelectedNodes, false); }),
-                new InputActionsContainer.Binding(options => options.NodesDistributeVertical, () => {  DistributeNodes(SelectedNodes, true); }),
+                new InputActionsContainer.Binding(options => options.NodesDistributeHorizontal, () => { DistributeNodes(SelectedNodes, false); }),
+                new InputActionsContainer.Binding(options => options.NodesDistributeVertical, () => { DistributeNodes(SelectedNodes, true); }),
+                new InputActionsContainer.Binding(options => options.FocusSelectedNodes, () => { FocusSelectionOrWholeGraph(); }),
             });
 
             Context.ControlSpawned += OnSurfaceControlSpawned;
@@ -436,7 +437,10 @@ namespace FlaxEditor.Surface
             DragHandlers.Add(_dragAssets = new DragAssets<DragDropEventArgs>(ValidateDragItem));
             DragHandlers.Add(_dragParameters = new DragNames<DragDropEventArgs>(SurfaceParameter.DragPrefix, ValidateDragParameter));
 
+            OnEditorOptionsChanged(Editor.Instance.Options.Options);
+
             ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
+            Editor.Instance.Options.OptionsChanged += OnEditorOptionsChanged;
         }
 
         private void OnScriptsReloadBegin()
@@ -444,6 +448,11 @@ namespace FlaxEditor.Surface
             _activeVisjectCM = null;
             _cmPrimaryMenu?.Dispose();
             _cmPrimaryMenu = null;
+        }
+
+        private void OnEditorOptionsChanged(EditorOptions options)
+        {
+            _focusSelectedNodeBinding = options.Input.FocusSelectedNodes;
         }
 
         /// <summary>
@@ -641,6 +650,37 @@ namespace FlaxEditor.Surface
         {
             ViewScale = (Size / areaRect.Size).MinValue * 0.95f;
             ViewCenterPosition = areaRect.Center;
+        }
+
+        /// <summary>
+        /// Adjusts the view to focus on the currently selected nodes, or the entire graph if no nodes are selected.
+        /// </summary>
+        public void FocusSelectionOrWholeGraph()
+        {
+            if (SelectedNodes.Count > 0)
+                ShowSelection();
+            else
+                ShowWholeGraph();
+        }
+
+        /// <summary>
+        /// Shows the selected controls by changing the view scale and the position.
+        /// </summary>
+        public void ShowSelection()
+        {
+            var selection = SelectedControls;
+            if (selection.Count == 0)
+                return;
+
+            // Calculate the bounds of all selected controls
+            Rectangle bounds = selection[0].Bounds;
+            for (int i = 1; i < selection.Count; i++)
+                bounds = Rectangle.Union(bounds, selection[i].Bounds);
+
+            // Add margin
+            bounds = bounds.MakeExpanded(250.0f);
+
+            ShowArea(bounds);
         }
 
         /// <summary>
@@ -1066,6 +1106,7 @@ namespace FlaxEditor.Surface
             _cmPrimaryMenu?.Dispose();
 
             ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
+            Editor.Instance.Options.OptionsChanged += OnEditorOptionsChanged;
 
             base.OnDestroy();
         }
