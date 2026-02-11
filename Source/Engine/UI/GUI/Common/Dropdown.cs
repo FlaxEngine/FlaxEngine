@@ -595,7 +595,7 @@ namespace FlaxEngine.GUI
                 Size = new Float2(size.X - margin, size.Y),
                 Font = Font,
                 TextColor = TextColor * 0.9f,
-                TextColorHighlighted = TextColorHighlighted,
+                TextColorHighlighted = TextColorHighlighted.Brightness < 0.05f ? Color.Lerp(TextColorHighlighted, Color.White, 0.3f) : TextColorHighlighted,
                 HorizontalAlignment = HorizontalAlignment,
                 VerticalAlignment = VerticalAlignment,
                 Text = _items[i],
