@@ -265,6 +265,11 @@ API_STRUCT() struct GPULimits
     API_FIELD() bool HasDepthClip;
 
     /// <summary>
+    /// True if device supports depth buffer bounds testing (see GPUPipelineState::Description::DepthBoundsEnable and GPUContext::SetDepthBounds).
+    /// </summary>
+    API_FIELD() bool HasDepthBounds = false;
+
+    /// <summary>
     /// True if device supports depth buffer texture as a readonly depth buffer (can be sampled in the shader while performing depth-test).
     /// </summary>
     API_FIELD() bool HasReadOnlyDepth;

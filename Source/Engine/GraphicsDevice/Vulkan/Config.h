@@ -45,8 +45,14 @@
 #endif
 #endif
 
-#ifndef VULKAN_USE_QUERIES
-#define VULKAN_USE_QUERIES 1
+#ifndef VULKAN_USE_TIMER_QUERIES
+#define VULKAN_USE_TIMER_QUERIES 1
 #endif
+
+// Toggles GPUTimerQueryVulkan to use BeginQuery/EndQuery via GPuContext rather than old custom implementation
+#define GPU_VULKAN_QUERY_NEW 1
+
+// Toggles pausing and resuming all GPU timer queries when command buffer is being flushed (for more exact timings)
+#define GPU_VULKAN_PAUSE_QUERIES 0
 
 #endif

@@ -241,13 +241,16 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
     }
 
 #if !BUILD_RELEASE
-    if (auto* context = (GPUContextVulkan*)GPUDevice::Instance->GetMainContext())
+    if (GPUDevice::Instance)
     {
-        if (auto* state = (GPUPipelineStateVulkan*)context->GetState())
+        if (auto* context = (GPUContextVulkan*)GPUDevice::Instance->GetMainContext())
         {
-            GPUPipelineState::DebugName name;
-            state->GetDebugName(name);
-            LOG(Warning, "[Vulkan] Error during rendering with {}", String(name.Get(), name.Count() - 1));
+            if (auto* state = (GPUPipelineStateVulkan*)context->GetState())
+            {
+                GPUPipelineState::DebugName name;
+                state->GetDebugName(name);
+                LOG(Warning, "[Vulkan] Error during rendering with {}", String(name.Get(), name.Count() - 1));
+            }
         }
     }
 #endif
@@ -438,13 +441,6 @@ void DeferredDeletionQueueVulkan::EnqueueGenericResource(Type type, uint64 handl
     entry.FrameNumber = Engine::FrameCount;
 
     ScopeLock lock(_locker);
-#if BUILD_DEBUG && 0
-    const Function<bool(const Entry&)> ContainsHandle = [handle](const Entry& e)
-    {
-        return e.Handle == handle;
-    };
-    ASSERT(!ArrayExtensions::Any(_entries, ContainsHandle));
-#endif
     _entries.Add(entry);
 }
 
@@ -627,14 +623,14 @@ RenderPassVulkan::~RenderPassVulkan()
     Device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::RenderPass, Handle);
 }
 
-QueryPoolVulkan::QueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, VkQueryType type)
+QueryPoolVulkan::QueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, GPUQueryType type)
     : _device(device)
     , _handle(VK_NULL_HANDLE)
-    , _type(type)
+    , Type(type)
 {
     VkQueryPoolCreateInfo createInfo;
     RenderToolsVulkan::ZeroStruct(createInfo, VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO);
-    createInfo.queryType = type;
+    createInfo.queryType = type == GPUQueryType::Occlusion ? VK_QUERY_TYPE_OCCLUSION : VK_QUERY_TYPE_TIMESTAMP;
     createInfo.queryCount = capacity;
     VALIDATE_VULKAN_RESULT(vkCreateQueryPool(device->Device, &createInfo, nullptr, &_handle));
 
@@ -667,7 +663,7 @@ void QueryPoolVulkan::Reset(CmdBufferVulkan* cmdBuffer)
 
 #endif
 
-BufferedQueryPoolVulkan::BufferedQueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, VkQueryType type)
+BufferedQueryPoolVulkan::BufferedQueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, GPUQueryType type)
     : QueryPoolVulkan(device, capacity, type)
     , _lastBeginIndex(0)
 {
@@ -720,6 +716,16 @@ void BufferedQueryPoolVulkan::ReleaseQuery(uint32 queryIndex)
             _lastBeginIndex = (uint32)queryIndex;
         }
     }
+    if (_usedQueryBits[word] == 0)
+    {
+        // Check if pool got empty and reset the pointer back to start
+        for (int32 wordIndex = 0; wordIndex < _usedQueryBits.Count(); wordIndex++)
+        {
+            if (_usedQueryBits[wordIndex])
+                return;
+        }
+        _lastBeginIndex = 0;
+    }
 }
 
 void BufferedQueryPoolVulkan::MarkQueryAsStarted(uint32 queryIndex)
@@ -729,7 +735,7 @@ void BufferedQueryPoolVulkan::MarkQueryAsStarted(uint32 queryIndex)
     _startedQueryBits[word] = _startedQueryBits[word] | bit;
 }
 
-bool BufferedQueryPoolVulkan::GetResults(GPUContextVulkan* context, uint32 index, uint64& result)
+bool BufferedQueryPoolVulkan::GetResults(uint32 index, uint64& result)
 {
     const uint64 bit = (uint64)(index % 64);
     const uint64 bitMask = (uint64)1 << bit;
@@ -1187,6 +1193,10 @@ GPUDevice* GPUDeviceVulkan::Create()
         return nullptr;
     }
     uint32 vendorId = 0;
+#if PLATFORM_MAC && PLATFORM_ARCH_X64
+    // Intel-based macs have artifacts on MoltenVK when using dedicated AMD GPU so fallback to integrated Intel GPU
+    vendorId = GPU_VENDOR_ID_INTEL;
+#endif
     if (CommandLine::Options.NVIDIA.IsTrue())
         vendorId = GPU_VENDOR_ID_NVIDIA;
     else if (CommandLine::Options.AMD.IsTrue())
@@ -1224,22 +1234,20 @@ GPUDeviceVulkan::~GPUDeviceVulkan()
     GPUDeviceVulkan::Dispose();
 }
 
-BufferedQueryPoolVulkan* GPUDeviceVulkan::FindAvailableQueryPool(VkQueryType queryType)
+int32 GPUDeviceVulkan::GetOrCreateQueryPool(GPUQueryType type)
 {
-    auto& pools = queryType == VK_QUERY_TYPE_OCCLUSION ? OcclusionQueryPools : TimestampQueryPools;
-
-    // Try to use pool with available space inside
-    for (int32 i = 0; i < pools.Count(); i++)
+    auto pools = QueryPools.Get();
+    for (int32 i = 0; i < QueryPools.Count(); i++)
     {
-        auto pool = pools.Get()[i];
-        if (pool->HasRoom())
-            return pool;
+        auto pool = pools[i];
+        if (pool->Type == type && pool->HasRoom())
+            return i;
     }
 
-    // Create new pool
-    const auto pool = New<BufferedQueryPoolVulkan>(this, queryType == VK_QUERY_TYPE_OCCLUSION ? 4096 : 1024, queryType);
-    pools.Add(pool);
-    return pool;
+    PROFILE_CPU_NAMED("Create Create Pool");
+    auto pool = New<BufferedQueryPoolVulkan>(this, type == GPUQueryType::Occlusion ? 4096 : 1024, type);
+    QueryPools.Add(pool);
+    return QueryPools.Count() - 1;
 }
 
 RenderPassVulkan* GPUDeviceVulkan::GetOrCreateRenderPass(RenderTargetLayoutVulkan& layout)
@@ -1527,29 +1535,17 @@ void* GPUDeviceVulkan::GetNativePtr() const
 static int32 GetMaxSampleCount(VkSampleCountFlags counts)
 {
     if (counts & VK_SAMPLE_COUNT_64_BIT)
-    {
         return VK_SAMPLE_COUNT_64_BIT;
-    }
     if (counts & VK_SAMPLE_COUNT_32_BIT)
-    {
         return VK_SAMPLE_COUNT_32_BIT;
-    }
     if (counts & VK_SAMPLE_COUNT_16_BIT)
-    {
         return VK_SAMPLE_COUNT_16_BIT;
-    }
     if (counts & VK_SAMPLE_COUNT_8_BIT)
-    {
         return VK_SAMPLE_COUNT_8_BIT;
-    }
     if (counts & VK_SAMPLE_COUNT_4_BIT)
-    {
         return VK_SAMPLE_COUNT_4_BIT;
-    }
     if (counts & VK_SAMPLE_COUNT_2_BIT)
-    {
         return VK_SAMPLE_COUNT_2_BIT;
-    }
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
@@ -1736,6 +1732,7 @@ bool GPUDeviceVulkan::Init()
         limits.HasAppendConsumeBuffers = false; // TODO: add Append Consume buffers support for Vulkan
         limits.HasSeparateRenderTargetBlendState = true;
         limits.HasDepthClip = PhysicalDeviceFeatures.depthClamp;
+        limits.HasDepthBounds = PhysicalDeviceFeatures.depthBounds;
         limits.HasDepthAsSRV = true;
         limits.HasReadOnlyDepth = true;
         limits.HasMultisampleDepthAsSRV = !!PhysicalDeviceFeatures.sampleRateShading;
@@ -1748,6 +1745,10 @@ bool GPUDeviceVulkan::Init()
         limits.MaximumTexture3DSize = PhysicalDeviceLimits.maxImageDimension3D;
         limits.MaximumTextureCubeSize = PhysicalDeviceLimits.maxImageDimensionCube;
         limits.MaximumSamplerAnisotropy = PhysicalDeviceLimits.maxSamplerAnisotropy;
+        if (PhysicalDeviceLimits.timestampComputeAndGraphics != VK_TRUE)
+        {
+            LOG(Warning, "Timer Queries are unsupported by this device");
+        }
 
         for (int32 i = 0; i < static_cast<int32>(PixelFormat::MAX); i++)
         {
@@ -1978,6 +1979,16 @@ void GPUDeviceVulkan::DrawBegin()
     // Base
     GPUDevice::DrawBegin();
 
+    // Put back used queries to the pool
+    for (auto& query : QueriesToRelease)
+    {
+        auto pool = QueryPools[query.PoolIndex];
+        pool->ReleaseQuery(query.QueryIndex);
+        if (pool->Type == GPUQueryType::Timer)
+            pool->ReleaseQuery(query.SecondQueryIndex);
+    }
+    QueriesToRelease.Clear();
+
     // Flush resources
     DeferredDeletionQueue.ReleaseResources();
     DescriptorPoolsManager->GC();
@@ -2018,8 +2029,7 @@ void GPUDeviceVulkan::Dispose()
     _layouts.ClearDelete();
     HelperResources.Dispose();
     UploadBuffer.Dispose();
-    TimestampQueryPools.ClearDelete();
-    OcclusionQueryPools.ClearDelete();
+    QueryPools.ClearDelete();
     SAFE_DELETE_GPU_RESOURCE(UniformBufferUploader);
     Delete(DescriptorPoolsManager);
     SAFE_DELETE(MainContext);
@@ -2078,6 +2088,61 @@ void GPUDeviceVulkan::WaitForGPU()
         ZoneColor(TracyWaitZoneColor);
         VALIDATE_VULKAN_RESULT(vkDeviceWaitIdle(Device));
     }
+}
+
+bool GPUDeviceVulkan::GetQueryResult(uint64 queryID, uint64& result, bool wait)
+{
+    if (!queryID)
+        return false;
+    GPUQueryVulkan query;
+    query.Raw = queryID;
+    auto pool = QueryPools[query.PoolIndex];
+
+RETRY:
+    bool hasData;
+    uint64 resultSecondary;
+    switch (pool->Type)
+    {
+    case GPUQueryType::Timer:
+        hasData = pool->GetResults(query.QueryIndex, result) && pool->GetResults(query.SecondQueryIndex, resultSecondary);
+#if VULKAN_USE_TIMER_QUERIES && GPU_VULKAN_PAUSE_QUERIES
+        if (hasData)
+        {
+            // Check if dependant queries have completed (timer queries can be split when active command buffer get submitted) 
+            // TODO: impl this
+        }
+#endif
+        if (hasData)
+        {
+            if (resultSecondary >= result)
+            {
+                // Convert GPU timestamps to nanoseconds and then to microseconds
+                double nanoseconds = double(resultSecondary - result) * double(PhysicalDeviceLimits.timestampPeriod);
+                result = (uint64)(nanoseconds * 0.001);
+            }
+            else
+                result = 0;
+        }
+        break;
+    case GPUQueryType::Occlusion:
+        hasData = pool->GetResults(query.QueryIndex, result);
+        break;
+    }
+
+    if (!hasData && wait)
+    {
+        // Wait until data is ready
+        Platform::Yield();
+        goto RETRY;
+    }
+
+    if (hasData)
+    {
+        // Auto-release query on the next frame
+        QueriesToRelease.Add(query);
+    }
+
+    return hasData;
 }
 
 GPUTexture* GPUDeviceVulkan::CreateTexture(const StringView& name)
@@ -2186,8 +2251,13 @@ FenceVulkan* FenceManagerVulkan::AllocateFence(bool createSignaled)
 
 bool FenceManagerVulkan::WaitForFence(FenceVulkan* fence, uint64 timeInNanoseconds) const
 {
+    if (fence->IsSignaled)
+        return false;
+    PROFILE_CPU();
+    ZoneColor(TracyWaitZoneColor);
     ASSERT(_usedFences.Contains(fence));
-    ASSERT(!fence->IsSignaled);
+    if (timeInNanoseconds)
+        timeInNanoseconds = 1000ll * 1000ll * 1000LL; // 1s
     const VkResult result = vkWaitForFences(_device->Device, 1, &fence->Handle, true, timeInNanoseconds);
     LOG_VULKAN_RESULT(result);
     if (result == VK_SUCCESS)

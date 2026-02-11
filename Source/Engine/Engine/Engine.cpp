@@ -40,15 +40,11 @@
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
 #include "Engine/Scripting/ManagedCLR/MException.h"
-#include "Engine/Core/Config/PlatformSettings.h"
 #endif
 
 namespace EngineImpl
 {
     bool IsReady = false;
-#if !USE_EDITOR
-    bool RunInBackground = false;
-#endif
     String CommandLine = nullptr;
     int32 Fps = 0, FpsAccumulatedFrames = 0;
     double FpsAccumulated = 0.0;
@@ -169,9 +165,6 @@ int32 Engine::Main(const Char* cmdLine)
     Platform::BeforeRun();
     EngineImpl::InitMainWindow();
     Application::BeforeRun();
-#if !USE_EDITOR && (PLATFORM_WINDOWS || PLATFORM_LINUX || PLATFORM_MAC)
-    EngineImpl::RunInBackground = PlatformSettings::Get()->RunInBackground;
-#endif
     LOG_FLOOR();
     LOG_FLUSH();
     Time::Synchronize();
@@ -354,20 +347,8 @@ void Engine::OnUpdate()
 
     UpdateCount++;
 
-    const auto mainWindow = MainWindow;
-
-#if !USE_EDITOR
-    // Pause game if window lost focus and cannot run in a background
-    bool isGameRunning = true;
-    if (mainWindow && !mainWindow->IsFocused())
-    {
-        isGameRunning = EngineImpl::RunInBackground;
-    }
-    Time::SetGamePaused(!isGameRunning);
-#endif
-
     // Determine if application has focus (flag used by the other parts of the engine)
-    HasFocus = (mainWindow && mainWindow->IsFocused()) || Platform::GetHasFocus();
+    HasFocus = (MainWindow && MainWindow->IsFocused()) || Platform::GetHasFocus();
 
     // Simulate lags
     //Platform::Sleep(100);

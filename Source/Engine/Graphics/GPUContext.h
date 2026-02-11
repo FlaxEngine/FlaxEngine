@@ -28,6 +28,7 @@ class GPUBufferView;
 class GPUVertexLayout;
 struct GPUPass;
 enum class GPUResourceAccess;
+enum class GPUQueryType;
 
 // Gets the GPU texture view. Checks if pointer is not null and texture has one or more mip levels loaded.
 #define GET_TEXTURE_VIEW_SAFE(t) (t && t->ResidentMipLevels() > 0 ? t->View() : nullptr)
@@ -556,6 +557,20 @@ public:
 
 public:
     /// <summary>
+    /// Begins the GPU query that will measure commands until EndQuery.
+    /// </summary>
+    /// <param name="type">Query type.</param>
+    /// <returns>Unique identifier of the query used to EndQuery and then GetQueryResult to read the query result data.</returns>
+    virtual uint64 BeginQuery(GPUQueryType type) = 0;
+
+    /// <summary>
+    /// Ends the GPU query. Use GPUDevice::GetQueryResult to read the results back.
+    /// </summary>
+    /// <param name="queryID">Query identifier returned by BeginQuery.</param>
+    virtual void EndQuery(uint64 queryID) = 0;
+
+public:
+    /// <summary>
     /// Sets the rendering viewport and scissor rectangle.
     /// </summary>
     /// <param name="width">The width (in pixels).</param>
@@ -601,6 +616,13 @@ public:
     /// </summary>
     /// <param name="scissorRect">The scissor rectangle (in pixels).</param>
     API_FUNCTION() virtual void SetScissor(API_PARAM(Ref) const Rectangle& scissorRect) = 0;
+
+    /// <summary>
+    /// Sets the minimum and maximum depth values for depth bounds test.
+    /// </summary>
+    /// <param name="minDepth">The minimum value for depth bound test.</param>
+    /// <param name="maxDepth">The maximum value for depth bound test.</param>
+    API_FUNCTION() virtual void SetDepthBounds(float minDepth, float maxDepth) = 0;
 
 public:
     /// <summary>

@@ -47,7 +47,7 @@ namespace FlaxEditor.Windows
             };
             new Label(nameLabel.Left, nameLabel.Bottom + 4, nameLabel.Width, 50)
             {
-                Text = string.Format("Version: {0}\nCopyright (c) 2012-2025 Wojciech Figat.\nAll rights reserved.", Globals.EngineVersion),
+                Text = string.Format("Version: {0}\nCopyright (c) 2012-2026 Wojciech Figat.\nAll rights reserved.", Globals.EngineVersion),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Near,
                 Parent = this

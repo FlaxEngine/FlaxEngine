@@ -11,6 +11,7 @@
 #include "Engine/Content/Assets/SkinnedModel.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Packed.h"
+#include "Engine/Core/Math/OrientedBoundingBox.h"
 #include "Engine/Engine/Time.h"
 
 const Char* ToString(RendererType value)
@@ -618,6 +619,109 @@ void RenderTools::ComputeSphereModelDrawMatrix(const RenderView& view, const Flo
 
     // Check if view is inside the sphere
     resultIsViewInside = Float3::DistanceSquared(view.Position, position) < Math::Square(radius * 1.1f); // Manually tweaked bias
+}
+
+void RenderTools::ComputeBoxModelDrawMatrix(const RenderView& view, const OrientedBoundingBox& box, Matrix& resultWorld, bool& resultIsViewInside)
+{
+    // Construct world matrix
+    Matrix::Transformation(box.Transformation.Scale * box.Extents * 2.0f, box.Transformation.Orientation, box.Transformation.Translation, resultWorld);
+
+    // Check if view is inside the sphere
+    resultIsViewInside = box.Contains(view.Position) == ContainmentType::Contains;
+}
+
+float RenderTools::TemporalHalton(int32 index, int32 base)
+{
+    float result = 0.0f;
+    const float invBase = 1.0f / (float)base;
+    float fraction = invBase;
+    while (index > 0)
+    {
+        result += float(index % base) * fraction;
+        index /= base;
+        fraction *= invBase;
+    }
+    return result;
+}
+
+Float2 RenderTools::GetDepthBounds(const RenderView& view, const Float3& nearPoint, const Float3& farPoint)
+{
+    // Point closest the view
+    const Float4 nearPointClip = Matrix::TransformPosition(view.ViewProjection(), Float4(nearPoint, 1.0));
+    float nearDepth = nearPointClip.Z / nearPointClip.W;
+    if (nearDepth >= 1.0f)
+        nearDepth = 0.0f; // Near point is behind the view
+
+    // Point furthest away the view
+    const Float4 farPointClip = Matrix::TransformPosition(view.ViewProjection(), Float4(farPoint, 1.0f));
+    float farDepth = farPointClip.Z / farPointClip.W;
+    if (farDepth >= 1.0f)
+        farDepth = 1.0f; // Far point is behind the view
+
+    // Clamp within valid depth range
+    nearDepth = Math::Clamp(nearDepth, 0.0f, 1.0f);
+    farDepth = Math::Clamp(farDepth, nearDepth, 1.0f);
+
+    // TODO: swap depths when using reversed depth buffer
+    return Float2(nearDepth, farDepth);
+}
+
+Float2 RenderTools::GetDepthBounds(const RenderView& view, const BoundingSphere& bounds)
+{
+    const Float3 nearPoint = bounds.Center - bounds.Radius * view.Direction;
+    const Float3 farPoint = bounds.Center + bounds.Radius * view.Direction;
+    return GetDepthBounds(view, nearPoint, farPoint);
+}
+
+Float2 RenderTools::GetDepthBounds(const RenderView& view, const Span<Float3>& points)
+{
+    // Find min and max depth range for list of points
+    float nearDepth = 1.0f, farDepth = 0.0f;
+    for (int32 i = 0; i < points.Length(); i++)
+    {
+        const Float4 pointClip = Matrix::TransformPosition(view.ViewProjection(), Float4(points[i], 1.0));
+        float depth = pointClip.Z / pointClip.W;
+        if (depth >= 1.0f)
+            depth = 0.0f; // Point is behind the view
+        nearDepth = Math::Min(nearDepth, depth);
+        farDepth = Math::Max(farDepth, depth);
+    }
+
+    // Clamp within valid depth range
+    nearDepth = Math::Clamp(nearDepth, 0.0f, 1.0f);
+    farDepth = Math::Clamp(farDepth, nearDepth, 1.0f);
+
+    // TODO: swap depths when using reversed depth buffer
+    return Float2(nearDepth, farDepth);
+}
+
+Float2 RenderTools::GetDepthBounds(const RenderView& view, const BoundingBox& bounds)
+{
+    Float3 corners[8];
+    bounds.GetCorners(corners);
+    return GetDepthBounds(view, Span<Float3>(corners, 8));
+}
+
+Float2 RenderTools::GetDepthBounds(const RenderView& view, const OrientedBoundingBox& bounds)
+{
+    Float3 corners[8];
+    bounds.GetCorners(corners);
+    return GetDepthBounds(view, Span<Float3>(corners, 8));
+}
+
+float RenderTools::GetDepthBounds(const RenderView& view, const Float3& point, bool near)
+{
+    const Float4 pointClip = Matrix::TransformPosition(view.ViewProjection(), Float4(point, 1.0));
+    float depth = pointClip.Z / pointClip.W;
+    if (depth >= 1.0f)
+        depth = near ? 0.0f : 1.0f; // Point is behind the view
+    return Math::Clamp(depth, 0.0f, 1.0f);
+}
+
+float RenderTools::GetDepthBounds(const RenderView& view, float viewDistance, bool near)
+{
+    Float3 point = view.Position + view.Direction * (viewDistance * 2.0f);
+    return GetDepthBounds(view, point, near);
 }
 
 Float3 RenderTools::GetColorQuantizationError(PixelFormat format)

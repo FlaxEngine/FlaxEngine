@@ -463,7 +463,7 @@ bool ImportTexture(ModelData& result, AssimpImporterData& data, aiString& aFilen
     return true;
 }
 
-bool ImportMaterialTexture(ModelData& result, AssimpImporterData& data, const aiMaterial* aMaterial, aiTextureType aTextureType, int32& textureIndex, TextureEntry::TypeHint type)
+bool ImportMaterialTexture(ModelData& result, AssimpImporterData& data, const aiMaterial* aMaterial, aiTextureType aTextureType, int32& textureIndex, TextureEntry::TypeHint type, bool sRGB = false)
 {
     aiString aFilename;
     if (aMaterial->GetTexture(aTextureType, 0, &aFilename, nullptr, nullptr, nullptr, nullptr) == AI_SUCCESS)
@@ -503,6 +503,7 @@ bool ImportMaterialTexture(ModelData& result, AssimpImporterData& data, const ai
         auto& texture = result.Textures.AddOne();
         texture.FilePath = path;
         texture.Type = type;
+        texture.sRGB = sRGB;
         texture.AssetID = Guid::Empty;
         return true;
     }
@@ -549,12 +550,12 @@ bool ImportMaterials(ModelData& result, AssimpImporterData& data, String& errorM
 
             if (EnumHasAnyFlags(data.Options.ImportTypes, ImportDataTypes::Textures))
             {
-                ImportMaterialTexture(result, data, aMaterial, aiTextureType_DIFFUSE, materialSlot.Diffuse.TextureIndex, TextureEntry::TypeHint::ColorRGB);
+                ImportMaterialTexture(result, data, aMaterial, aiTextureType_DIFFUSE, materialSlot.Diffuse.TextureIndex, TextureEntry::TypeHint::ColorRGB, true);
                 ImportMaterialTexture(result, data, aMaterial, aiTextureType_EMISSIVE, materialSlot.Emissive.TextureIndex, TextureEntry::TypeHint::ColorRGB);
                 ImportMaterialTexture(result, data, aMaterial, aiTextureType_NORMALS, materialSlot.Normals.TextureIndex, TextureEntry::TypeHint::Normals);
                 ImportMaterialTexture(result, data, aMaterial, aiTextureType_OPACITY, materialSlot.Opacity.TextureIndex, TextureEntry::TypeHint::ColorRGBA);
                 ImportMaterialTexture(result, data, aMaterial, aiTextureType_METALNESS, materialSlot.Metalness.TextureIndex, TextureEntry::TypeHint::ColorRGB);
-                ImportMaterialTexture(result, data, aMaterial, aiTextureType_DIFFUSE_ROUGHNESS, materialSlot.Roughness.TextureIndex, TextureEntry::TypeHint::ColorRGB);
+                ImportMaterialTexture(result, data, aMaterial, aiTextureType_DIFFUSE_ROUGHNESS, materialSlot.Roughness.TextureIndex, TextureEntry::TypeHint::ColorRGB, true);
 
                 if (materialSlot.Roughness.TextureIndex != -1 && (data.Path.EndsWith(TEXT(".gltf")) || data.Path.EndsWith(TEXT(".glb"))))
                 {

@@ -8,6 +8,7 @@
 #include "./Flax/IESProfile.hlsl"
 #include "./Flax/GBuffer.hlsl"
 #include "./Flax/Lighting.hlsl"
+#include "./Flax/Noise.hlsl"
 
 // Per light data
 META_CB_BEGIN(0, PerLight)
@@ -168,6 +169,9 @@ float4 PS_Sky(Model_VS2PS input) : SV_Target0
 	if (gBuffer.ShadingModel != SHADING_MODEL_UNLIT)
 	{
 		output = GetSkyLightLighting(Light, gBuffer, CubeImage);
+
+        // Apply dithering to hide banding artifacts
+        output.rgb += rand2dTo1d(uv) * 0.02f * Luminance(saturate(output.rgb));
 	}
 
 	return output;

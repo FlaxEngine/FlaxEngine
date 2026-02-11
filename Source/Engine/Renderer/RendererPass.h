@@ -13,25 +13,6 @@
 #include "Engine/Profiler/Profiler.h"
 #include "Config.h"
 
-class RendererUtils
-{
-public:
-
-    static float TemporalHalton(int32 index, int32 base)
-    {
-        float result = 0.0f;
-        const float invBase = 1.0f / base;
-        float fraction = invBase;
-        while (index > 0)
-        {
-            result += (index % base) * fraction;
-            index /= base;
-            fraction *= invBase;
-        }
-        return result;
-    }
-};
-
 /// <summary>
 /// Base class for renderer components called render pass.
 /// Each render pass supports proper resources initialization and disposing.

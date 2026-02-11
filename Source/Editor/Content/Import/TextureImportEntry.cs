@@ -187,6 +187,11 @@ namespace FlaxEditor.Content.Import
                 // Glossiness, metalness, ambient occlusion, displacement, height, cavity or specular
                 _settings.Settings.Type = TextureFormatType.GrayScale;
             }
+            else if (_settings.Settings.Type == TextureFormatType.ColorRGB)
+            {
+                // Blind guess that common color texture is sRGB
+                _settings.Settings.sRGB = true;
+            }
 
             // Try to restore target asset texture import options (useful for fast reimport)
             Editor.TryRestoreImportOptions(ref _settings.Settings, ResultUrl);

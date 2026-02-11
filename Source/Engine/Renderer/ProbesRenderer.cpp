@@ -18,6 +18,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/AssetReference.h"
+#include "Engine/Engine/Units.h"
 #include "Engine/Graphics/PixelFormat.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
@@ -448,12 +449,12 @@ void ProbesRendererService::OnRender(RenderTask* task, GPUContext* context)
         if (_current.Type == ProbeEntry::Types::EnvProbe)
         {
             auto envProbe = (EnvironmentProbe*)_current.Actor.Get();
-            Vector3 position = envProbe->GetPosition();
-            float radius = envProbe->GetScaledRadius();
-            float nearPlane = Math::Max(0.1f, envProbe->CaptureNearPlane);
+            Vector3 position = envProbe->GetTransform().LocalToWorld(envProbe->CaptureOffset);
+            float radius = envProbe->GetSphere().Radius;
+            float nearPlane = Math::Max(METERS_TO_UNITS(0.001f), envProbe->CaptureNearPlane);
 
             // Adjust far plane distance
-            float farPlane = Math::Max(radius, nearPlane + 100.0f);
+            float farPlane = Math::Max(radius, nearPlane + METERS_TO_UNITS(1.0f));
             farPlane *= farPlane < 10000 ? 10 : 4;
             Function<bool(Actor*, const Vector3&, float&)> f(&FixFarPlane);
             SceneQuery::TreeExecute<const Vector3&, float&>(f, position, farPlane);
@@ -467,7 +468,7 @@ void ProbesRendererService::OnRender(RenderTask* task, GPUContext* context)
             auto skyLight = (SkyLight*)_current.Actor.Get();
             Vector3 position = skyLight->GetPosition();
             float nearPlane = 10.0f;
-            float farPlane = Math::Max(nearPlane + 1000.0f, skyLight->SkyDistanceThreshold * 2.0f);
+            float farPlane = Math::Max(nearPlane + METERS_TO_UNITS(10.0f), skyLight->SkyDistanceThreshold * 2.0f);
             _customCullingNear = skyLight->SkyDistanceThreshold;
 
             // Setup view

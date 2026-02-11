@@ -41,6 +41,7 @@ namespace FlaxEditor.GUI.Dialogs
         private bool _useDynamicEditing;
         private bool _activeEyedropper;
         private bool _canPassLastChangeEvent = true;
+        private bool _linear;
         private ColorValueBox.ColorPickerEvent _onChanged;
         private ColorValueBox.ColorPickerClosedEvent _onClosed;
 
@@ -56,6 +57,7 @@ namespace FlaxEditor.GUI.Dialogs
         private Button _cCancel;
         private Button _cOK;
         private Button _cEyedropper;
+        private Button _cLinearSRGB;
 
         private List<Color> _savedColors = new List<Color>();
         private List<Button> _savedColorButtons = new List<Button>();
@@ -118,6 +120,7 @@ namespace FlaxEditor.GUI.Dialogs
             _value = Color.Transparent;
             _onChanged = colorChanged;
             _onClosed = pickerClosed;
+            _linear = !Graphics.GammaColorSpace;
 
             // Get saved colors if they exist
             if (Editor.Instance.ProjectCache.TryGetCustomData("ColorPickerSavedColors", out string savedColors))
@@ -227,6 +230,25 @@ namespace FlaxEditor.GUI.Dialogs
             _cEyedropper.Width = _cEyedropper.Height;
             _cEyedropper.X -= _cEyedropper.Width;
 
+            // Linear/sRGB toggle button
+            _cLinearSRGB = new Button(_cOK.X - EyedropperMargin, _cHex.Bottom + PickerMargin)
+            {
+                TooltipText = "Toggles between color preview in Linear and sRGB",
+                BackgroundBrush = new SpriteBrush(Editor.Instance.Icons.SplineAligned64),
+                BackgroundColor = _cEyedropper.BackgroundColor,
+                BackgroundColorHighlighted = _cEyedropper.BackgroundColorHighlighted,
+                BorderColor = _linear ? Color.Transparent : style.Foreground,
+                BorderColorHighlighted = _cEyedropper.BorderColorHighlighted,
+                Size = _cEyedropper.Size,
+                Parent = this,
+                Location = _cEyedropper.BottomLeft + new Float2(0, 4),
+            };
+            _cLinearSRGB.Clicked += () =>
+            {
+                _linear = !_linear;
+                _cLinearSRGB.BorderColor = _linear ? Color.Transparent : style.Foreground;
+            };
+
             // Set initial color
             SelectedColor = initialValue;
         }
@@ -281,7 +303,10 @@ namespace FlaxEditor.GUI.Dialogs
             if (_activeEyedropper)
             {
                 _activeEyedropper = false;
-                SelectedColor = colorPicked;
+                Color color = colorPicked;
+                if (_linear)
+                    color = color.ToLinear();
+                SelectedColor = color;
                 ScreenUtilities.PickColorDone -= OnColorPicked;
             }
         }
@@ -330,7 +355,11 @@ namespace FlaxEditor.GUI.Dialogs
                 Float2 mousePosition = Platform.MousePosition;
                 Color color = ScreenUtilities.GetColorAt(mousePosition);
                 if (color != Color.Transparent)
+                {
+                	if (_linear)
+                		color = color.ToLinear();
                     SelectedColor = color;
+                }
             }
         }
 
@@ -391,7 +420,7 @@ namespace FlaxEditor.GUI.Dialogs
                     }
                 }
             }
-            Render2D.FillRectangle(newRect, _value);
+            Render2D.FillRectangle(newRect, _linear ? _value.ToSRgb() : _value);
         }
 
         /// <inheritdoc />

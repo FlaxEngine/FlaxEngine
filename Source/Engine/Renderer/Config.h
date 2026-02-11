@@ -45,6 +45,15 @@ GPU_CB_STRUCT(ShaderExponentialHeightFogData {
     });
 
 /// <summary>
+/// Structure that contains information about volumetric fog
+/// </summary>
+GPU_CB_STRUCT(ShaderVolumetricFogData {
+    Float4 GridSliceParameters;
+    Float2 ScreenSize;
+    Float2 VolumeTexelSize; // Scaled for dithering
+    });
+
+/// <summary>
 /// Structure that contains information about atmosphere fog for shaders.
 /// </summary>
 GPU_CB_STRUCT(ShaderAtmosphericFogData {
@@ -88,8 +97,9 @@ GPU_CB_STRUCT(ShaderLightData {
 /// Packed env probe data
 /// </summary>
 GPU_CB_STRUCT(ShaderEnvProbeData {
-    Float4 Data0; // x - Position.x,  y - Position.y,  z - Position.z,  w - unused
-    Float4 Data1; // x - Radius    ,  y - 1 / Radius,  z - Brightness,  w - unused
+    Float4 Data0;
+    Float4 Data1;
+    Float4 Data2;
     });
 
 // Minimum roughness value used for shading (prevent 0 roughness which causes NaNs in Vis_SmithJointApprox)

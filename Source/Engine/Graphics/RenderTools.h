@@ -34,6 +34,12 @@ public:
         return Math::FloatSelect(worldMatrix.RotDeterminant(), 1, -1);
     }
 
+    template<typename ResolutionMode>
+    FORCE_INLINE static int32 GetResolution(int32 base, ResolutionMode mode)
+    {
+        return Math::DivideAndRoundUp(base, (int32)mode);
+    }
+
     /// <summary>
     /// Computes the feature level for the given shader profile.
     /// </summary>
@@ -140,6 +146,19 @@ public:
     static void CalculateTangentFrame(Float3& resultNormal, Float4& resultTangent, const Float3& normal, const Float3& tangent);
 
     static void ComputeSphereModelDrawMatrix(const RenderView& view, const Float3& position, float radius, Matrix& resultWorld, bool& resultIsViewInside);
+    static void ComputeBoxModelDrawMatrix(const RenderView& view, const OrientedBoundingBox& box, Matrix& resultWorld, bool& resultIsViewInside);
+
+    static float TemporalHalton(int32 index, int32 base);
+
+    // Calculates depth bounds to optimize drawing with depth buffer to cover only specific range of depth. Returns min and max depth (as Float2) to pass into GPUContext::SetDepthBounds.
+    static Float2 GetDepthBounds(const RenderView& view, const Float3& nearPoint, const Float3& farPoint);
+    static Float2 GetDepthBounds(const RenderView& view, const BoundingSphere& bounds);
+    static Float2 GetDepthBounds(const RenderView& view, const Span<Float3>& points);
+    static Float2 GetDepthBounds(const RenderView& view, const BoundingBox& bounds);
+    static Float2 GetDepthBounds(const RenderView& view, const OrientedBoundingBox& bounds);
+    static float GetDepthBounds(const RenderView& view, const Float3& point, bool near);
+    static float GetDepthBounds(const RenderView& view, float viewDistance, bool near);
+    static constexpr float DepthBoundMaxBackground = 1.0f - 0.0000001f; // Skip background/sky pixels from shading
 
     // Calculates error for a given render target format to reduce floating-point precision artifacts via QuantizeColor (from Noise.hlsl).
     static Float3 GetColorQuantizationError(PixelFormat format);

@@ -27,7 +27,11 @@ Quality Graphics::GlobalSDFQuality = Quality::High;
 Quality Graphics::GIQuality = Quality::High;
 bool Graphics::GICascadesBlending = false;
 PostProcessSettings Graphics::PostProcessSettings;
+bool Graphics::GammaColorSpace = true;
 bool Graphics::SpreadWorkload = true;
+#if !BUILD_RELEASE || USE_EDITOR
+float Graphics::TestValue = 0.0f;
+#endif
 bool Graphics::PostProcessing::ColorGradingVolumeLUT = true;
 
 #if GRAPHICS_API_NULL
@@ -73,6 +77,7 @@ void GraphicsSettings::Apply()
     Graphics::GICascadesBlending = GICascadesBlending;
     Graphics::PostProcessSettings = ::PostProcessSettings();
     Graphics::PostProcessSettings.BlendWith(PostProcessSettings, 1.0f);
+    Graphics::GammaColorSpace = GammaColorSpace;
 #if !USE_EDITOR // OptionsModule handles fallback fonts in Editor
     Font::FallbackFonts = FallbackFonts;
 #endif
@@ -202,7 +207,7 @@ bool GraphicsService::Init()
 #endif
         )
     {
-#if !USE_EDITOR && BUILD_RELEASE && !PLATFORM_LINUX && !PLATFORM_CONSOLE // IsDebugToolAttached seams to be enabled on many Linux machines via VK_EXT_tooling_info
+#if !USE_EDITOR && BUILD_RELEASE && !PLATFORM_CONSOLE
         // Block graphics debugging to protect contents
         Platform::Fatal(TEXT("Graphics debugger attached."));
 #endif

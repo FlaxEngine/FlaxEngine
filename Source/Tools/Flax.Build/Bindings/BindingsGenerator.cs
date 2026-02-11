@@ -459,7 +459,7 @@ namespace Flax.Build.Bindings
                         tokenValue = tokenValue.Replace("false", "0");
                         tokenValue = tokenValue.Replace("true", "1");
                         tokenValue = tokenValue.Replace("||", "|");
-                        if (tokenValue.Length != 0 && tokenValue != "1" && tokenValue != "0" && tokenValue != "|")
+                        if (tokenValue.Length != 0 && tokenValue != "1" && tokenValue != "0" && tokenValue != "|" && tokenValue != "&")
                             tokenValue = "0";
                         if (negate)
                             tokenValue = tokenValue == "1" ? "0" : "1";
@@ -469,6 +469,7 @@ namespace Flax.Build.Bindings
                     }
 
                     // Filter condition
+                    condition = condition.Replace("&&", "&");
                     bool modified;
                     do
                     {
@@ -488,14 +489,51 @@ namespace Flax.Build.Bindings
                             condition = condition.Replace("0|1", "1");
                             modified = true;
                         }
+                        if (condition.Contains("0|0"))
+                        {
+                            condition = condition.Replace("0|0", "0");
+                            modified = true;
+                        }
+                        if (condition.Contains("1&1"))
+                        {
+                            condition = condition.Replace("1&1", "1");
+                            modified = true;
+                        }
+                        if (condition.Contains("1&0"))
+                        {
+                            condition = condition.Replace("1&0", "0");
+                            modified = true;
+                        }
+                        if (condition.Contains("0&1"))
+                        {
+                            condition = condition.Replace("0&1", "0");
+                            modified = true;
+                        }
+                        if (condition.Contains("0&0"))
+                        {
+                            condition = condition.Replace("0&0", "0");
+                            modified = true;
+                        }
                     } while (modified);
 
                     // Skip chunk of code of condition fails
-                    if (condition != "1")
+                    bool skip = condition != "1";
+                    context.PreprocessorWaitForElse = !skip;
+                    if (skip)
                     {
                         ParsePreprocessorIf(context.File, tokenizer, ref token);
                     }
 
+                    break;
+                }
+                case "else":
+                {
+                    // Skip chunk of code if one of the previous conditions was taken (if/elif)
+                    if (context.PreprocessorWaitForElse)
+                    {
+                        context.PreprocessorWaitForElse = false;
+                        ParsePreprocessorIf(context.File, tokenizer, ref token);
+                    }
                     break;
                 }
                 case "ifdef":
@@ -511,8 +549,11 @@ namespace Flax.Build.Bindings
 
                     // Check condition
                     define = define.Trim();
-                    if (!context.PreprocessorDefines.ContainsKey(define) && !context.ModuleOptions.CompileEnv.PreprocessorDefinitions.Contains(define))
+                    bool skip = !context.PreprocessorDefines.ContainsKey(define) && !context.ModuleOptions.CompileEnv.PreprocessorDefinitions.Contains(define);
+                    context.PreprocessorWaitForElse = !skip;
+                    if (skip)
                     {
+                        context.PreprocessorWaitForElse = true;
                         ParsePreprocessorIf(context.File, tokenizer, ref token);
                     }
 
@@ -520,6 +561,7 @@ namespace Flax.Build.Bindings
                 }
                 case "endif":
                 {
+                    context.PreprocessorWaitForElse = false;
                     token = tokenizer.NextToken(true);
                     break;
                 }

@@ -97,6 +97,7 @@ void GPUContextDX11::FrameBegin()
 
     // Setup
     _flushOnDispatch = false;
+    _depthBounds = false;
     _omDirtyFlag = false;
     _uaDirtyFlag = false;
     _cbDirtyFlag = false;
@@ -541,7 +542,7 @@ void GPUContextDX11::DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCo
 {
     onDrawCall();
     _context->DrawIndexedInstanced(indicesCount, instanceCount, startIndex, startVertex, startInstance);
-    RENDER_STAT_DRAW_CALL(0, indicesCount / 3 * instanceCount);
+    RENDER_STAT_DRAW_CALL(indicesCount * instanceCount, indicesCount / 3 * instanceCount);
 }
 
 void GPUContextDX11::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
@@ -566,6 +567,83 @@ void GPUContextDX11::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint
     RENDER_STAT_DRAW_CALL(0, 0);
 }
 
+uint64 GPUContextDX11::BeginQuery(GPUQueryType type)
+{
+    // Allocate a pooled query
+    uint16 queryIndex;
+    static_assert(ARRAY_COUNT(_device->_readyQueries) == (int32)GPUQueryType::MAX, "Invalid query types count");
+    if (_device->_readyQueries[(int32)type].HasItems())
+    {
+        // Use query from cached list
+        queryIndex = _device->_readyQueries[(int32)type].Pop();
+    }
+    else
+    {
+        // Add a new query
+        queryIndex = _device->_queries.Count();
+        auto& query = _device->_queries.AddOne();
+        query.Type = type;
+        D3D11_QUERY_DESC queryDesc;
+        queryDesc.Query = type == GPUQueryType::Occlusion ? D3D11_QUERY_OCCLUSION : D3D11_QUERY_TIMESTAMP;
+        queryDesc.MiscFlags = 0;
+        HRESULT hr = _device->GetDevice()->CreateQuery(&queryDesc, &query.Query);
+        LOG_DIRECTX_RESULT_WITH_RETURN(hr, 0);
+        if (type == GPUQueryType::Timer)
+        {
+            // Timer queries need additional one for begin and end disjoint
+            hr = _device->GetDevice()->CreateQuery(&queryDesc, &query.TimerBeginQuery);
+            LOG_DIRECTX_RESULT_WITH_RETURN(hr, 0);
+            queryDesc.Query = D3D11_QUERY_TIMESTAMP_DISJOINT;
+            hr = _device->GetDevice()->CreateQuery(&queryDesc, &query.DisjointQuery);
+            LOG_DIRECTX_RESULT_WITH_RETURN(hr, 0);
+        }
+    }
+    static_assert(sizeof(GPUQueryDX11) == sizeof(uint64), "Invalid query size.");
+    GPUQueryDX11 q = {};
+    q.Type = (uint16)type;
+    q.Index = queryIndex;
+    q.Padding = 1; // Ensure Raw is never 0, even for the first query
+
+    // Begin query
+    {
+        auto& query = _device->_queries[queryIndex];
+        ASSERT_LOW_LAYER(query.State == GPUQueryDataDX11::Ready);
+        ASSERT_LOW_LAYER(query.Type == type);
+        query.State = GPUQueryDataDX11::Begin;
+        auto context = _device->GetIM();
+        if (type == GPUQueryType::Timer)
+        {
+            context->Begin(query.DisjointQuery);
+            context->End(query.TimerBeginQuery);
+        }
+        else
+        {
+            context->Begin(query.Query);
+        }
+    }
+
+    return q.Raw;
+}
+
+void GPUContextDX11::EndQuery(uint64 queryID)
+{
+    if (!queryID)
+        return;
+
+    // End query
+    GPUQueryDX11 q;
+    q.Raw = queryID;
+    auto& query = _device->_queries[q.Index];
+    ASSERT_LOW_LAYER(query.State == GPUQueryDataDX11::Begin);
+    query.State = GPUQueryDataDX11::End;
+    auto context = _device->GetIM();
+    context->End(query.Query);
+    if (q.Type == (uint16)GPUQueryType::Timer)
+    {
+        context->End(query.DisjointQuery);
+    }
+}
+
 void GPUContextDX11::SetViewport(const Viewport& viewport)
 {
     _context->RSSetViewports(1, (D3D11_VIEWPORT*)&viewport);
@@ -579,6 +657,28 @@ void GPUContextDX11::SetScissor(const Rectangle& scissorRect)
     rect.top = (LONG)scissorRect.GetTop();
     rect.bottom = (LONG)scissorRect.GetBottom();
     _context->RSSetScissorRects(1, &rect);
+}
+
+void GPUContextDX11::SetDepthBounds(float minDepth, float maxDepth)
+{
+    SetDepthBounds(true, minDepth, maxDepth);
+}
+
+void GPUContextDX11::SetDepthBounds(bool enable, float minDepth, float maxDepth)
+{
+    _depthBounds = true;
+#if COMPILE_WITH_NVAPI
+    if (EnableNvapi)
+    {
+        NvAPI_D3D11_SetDepthBoundsTest(_context, enable, minDepth, maxDepth);
+    }
+#endif
+#if COMPILE_WITH_AGS
+    if (AgsContext)
+    {
+        agsDriverExtensionsDX11_SetDepthBounds(AgsContext, _context, enable, minDepth, maxDepth);
+    }
+#endif
 }
 
 GPUPipelineState* GPUContextDX11::GetState() const
@@ -1022,6 +1122,12 @@ void GPUContextDX11::flushIA()
 
 void GPUContextDX11::onDrawCall()
 {
+    if (_depthBounds && (!_currentState || !_currentState->DepthBounds))
+    {
+        // Auto-disable depth bounds
+        SetDepthBounds(false, 0.0f, 1.0f);
+    }
+
     _flushOnDispatch = false;
     flushCBs();
     flushSRVs();

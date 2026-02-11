@@ -7,8 +7,6 @@
 #include "Engine/Scripting/ScriptingType.h"
 #include "RenderStats.h"
 
-class GPUTimerQuery;
-
 #if COMPILE_WITH_PROFILER
 
 // Profiler events buffers capacity (tweaked manually)
@@ -38,7 +36,7 @@ public:
         /// <summary>
         /// The timer query used to get the exact event time on a GPU. Assigned and managed by the internal profiler layer.
         /// </summary>
-        API_FIELD() GPUTimerQuery* Timer;
+        API_FIELD() uint64 Query;
 
         /// <summary>
         /// The rendering stats for this event. When event is active it holds the stats on event begin.
@@ -54,6 +52,11 @@ public:
         /// The event depth. Value 0 is used for the root events.
         /// </summary>
         API_FIELD() int32 Depth;
+
+        /// <summary>
+        /// True if event timer query is active.
+        /// </summary>
+        API_FIELD() bool QueryActive;
     };
 
     /// <summary>
@@ -84,7 +87,7 @@ public:
         /// <summary>
         /// Ends all used timer queries.
         /// </summary>
-        void EndAll();
+        void EndAllQueries();
 
         /// <summary>
         /// Tries the resolve this frame. Skips if already resolved or has no collected events.
@@ -122,11 +125,6 @@ public:
 
 private:
     static int32 _depth;
-
-    static Array<GPUTimerQuery*> _timerQueriesPool;
-    static Array<GPUTimerQuery*> _timerQueriesFree;
-
-    static GPUTimerQuery* GetTimerQuery();
 
 public:
     /// <summary>
@@ -171,6 +169,12 @@ public:
     /// <param name="statsData">The rendering stats data.</param>
     /// <returns>True if got the data, otherwise false.</returns>
     API_FUNCTION() static bool GetLastFrameData(float& drawTimeMs, float& presentTimeMs, RenderStatsData& statsData);
+
+    /// <summary>
+    /// Profiles next frame(s) rendering performance and dumps the results to the log (as a hierarchy structure). When using more than 1 frame, the results are averaged for more accurate profiling (especially for A/B testing).
+    /// </summary>
+    /// <param name="frames">Amount of frames to profile for more stable results (event durations are averaged). Value 0 uses default of 4 frames.</param>
+    API_FUNCTION(Attributes = "DebugCommand") static void Dump(int32 frames = 4);
 
 private:
     static void BeginFrame();

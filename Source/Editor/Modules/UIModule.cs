@@ -62,10 +62,18 @@ namespace FlaxEditor.Modules
             }
         }
         
+        private struct Status
+        {
+            public int ID;
+            public string Text;
+            public DateTime EndTime;
+        }
+
         private Label _progressLabel;
         private ProgressBar _progressBar;
         private Button _outputLogButton;
-        private List<KeyValuePair<string, DateTime>> _statusMessages;
+        private List<Status> _statusMessages;
+        private int _statusID = 1;
         private ContentStats _contentStats;
         private bool _progressFailed;
 
@@ -379,7 +387,7 @@ namespace FlaxEditor.Modules
 
             string text;
             if (_statusMessages != null && _statusMessages.Count != 0)
-                text = _statusMessages[0].Key;
+                text = _statusMessages[0].Text;
             else if (Editor.StateMachine.CurrentState.Status != null)
                 text = Editor.StateMachine.CurrentState.Status;
             else if (contentStats.LoadingAssetsCount != 0)
@@ -401,13 +409,34 @@ namespace FlaxEditor.Modules
         /// Adds the status bar message text to be displayed as a notification.
         /// </summary>
         /// <param name="message">The message to display.</param>
-        public void AddStatusMessage(string message)
+        /// <returns>The ID of that status message (unique). Can be used to hide it manually.</returns>
+        public int AddStatusMessage(string message)
         {
             if (_statusMessages == null)
-                _statusMessages = new List<KeyValuePair<string, DateTime>>();
-            _statusMessages.Add(new KeyValuePair<string, DateTime>(message, DateTime.Now + TimeSpan.FromSeconds(3.0f)));
+                _statusMessages = new List<Status>();
+            var status = new Status { ID = _statusID++, Text = message, EndTime = DateTime.Now + TimeSpan.FromSeconds(3.0f) };
+            _statusMessages.Add(status);
             if (_statusMessages.Count == 1)
                 UpdateStatusBar();
+            return status.ID;
+        }
+
+        /// <summary>
+        /// Removes a specific status message once it's not needed anymore,
+        /// </summary>
+        /// <param name="id">The ID of the message returned by <see cref="AddStatusMessage"/>.</param>
+        public void RemoveStatusMessage(int id)
+        {
+            if (_statusMessages == null || id == 0)
+                return;
+            for (var i = 0; i < _statusMessages.Count; i++)
+            {
+                if (_statusMessages[i].ID == id)
+                {
+                    _statusMessages.RemoveAt(i);
+                    return;
+                }
+            }
         }
 
         internal bool ProgressVisible
@@ -526,7 +555,7 @@ namespace FlaxEditor.Modules
         /// <inheritdoc />
         public override void OnUpdate()
         {
-            if (_statusMessages != null && _statusMessages.Count > 0 && _statusMessages[0].Value - DateTime.Now < TimeSpan.Zero)
+            if (_statusMessages != null && _statusMessages.Count > 0 && _statusMessages[0].EndTime - DateTime.Now < TimeSpan.Zero)
             {
                 _statusMessages.RemoveAt(0);
                 UpdateStatusBar();

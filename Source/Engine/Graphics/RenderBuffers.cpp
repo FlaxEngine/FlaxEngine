@@ -1,10 +1,12 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "RenderBuffers.h"
+#include "Engine/Core/Config/GraphicsSettings.h"
+#include "RenderTools.h"
 #include "Engine/Graphics/GPUDevice.h"
-#include "Engine/Renderer/Utils/MultiScaler.h"
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/RenderTargetPool.h"
+#include "Engine/Renderer/Utils/MultiScaler.h"
 #include "Engine/Engine/Engine.h"
 
 // How many frames keep cached buffers for temporal or optional effects?
@@ -62,6 +64,7 @@ void RenderBuffers::ReleaseUnusedMemory()
     UPDATE_LAZY_KEEP_RT(TemporalSSR);
     UPDATE_LAZY_KEEP_RT(TemporalAA);
     UPDATE_LAZY_KEEP_RT(HalfResDepth);
+    UPDATE_LAZY_KEEP_RT(HiZ);
     UPDATE_LAZY_KEEP_RT(LuminanceMap);
 #undef UPDATE_LAZY_KEEP_RT
     for (int32 i = CustomBuffers.Count() - 1; i >= 0; i--)
@@ -82,16 +85,17 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
     if (LastFrameHalfResDepth == currentFrame)
         return HalfResDepth;
 
-    const int32 halfDepthWidth = _width / 2;
-    const int32 halfDepthHeight = _height / 2;
+    const int32 halfDepthWidth = RenderTools::GetResolution(_width, ResolutionMode::Half);
+    const int32 halfDepthHeight = RenderTools::GetResolution(_height, ResolutionMode::Half);
     const PixelFormat halfDepthFormat = GPU_DEPTH_BUFFER_PIXEL_FORMAT;
+    auto tempDesc = GPUTextureDescription::New2D(halfDepthWidth, halfDepthHeight, halfDepthFormat);
+    if (EnumHasAnyFlags(DepthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView))
+        tempDesc.Flags = GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil | GPUTextureFlags::ReadOnlyDepthView;
 
     LastFrameHalfResDepth = currentFrame;
     if (HalfResDepth == nullptr)
     {
         // Missing buffer
-        auto tempDesc = GPUTextureDescription::New2D(halfDepthWidth, halfDepthHeight, halfDepthFormat);
-        tempDesc.Flags = GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil;
         HalfResDepth = RenderTargetPool::Get(tempDesc);
         RENDER_TARGET_POOL_SET_NAME(HalfResDepth, "HalfResDepth");
     }
@@ -99,8 +103,6 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
     {
         // Wrong size buffer
         RenderTargetPool::Release(HalfResDepth);
-        auto tempDesc = GPUTextureDescription::New2D(halfDepthWidth, halfDepthHeight, halfDepthFormat);
-        tempDesc.Flags = GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil;
         HalfResDepth = RenderTargetPool::Get(tempDesc);
         RENDER_TARGET_POOL_SET_NAME(HalfResDepth, "HalfResDepth");
     }
@@ -111,10 +113,67 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
     return HalfResDepth;
 }
 
+GPUTexture* RenderBuffers::RequestHiZ(GPUContext* context, bool fullRes, int32 mipLevels)
+{
+    // Skip if already done in the current frame
+    const auto currentFrame = Engine::FrameCount;
+    if (LastFrameHiZ == currentFrame)
+        return HiZ;
+    LastFrameHiZ = currentFrame;
+
+    // Allocate or resize buffer (with full mip-chain)
+    // TODO: migrate to inverse depth and try using r16 again as default (should have no artifacts anymore)
+    auto format = PLATFORM_ANDROID || PLATFORM_IOS || PLATFORM_SWITCH ? PixelFormat::R16_UInt : PixelFormat::R32_Float;
+    auto width = fullRes ? _width : Math::Max(_width >> 1, 1);
+    auto height = fullRes ? _height : Math::Max(_height >> 1, 1);
+    auto desc = GPUTextureDescription::New2D(width, height, mipLevels, format, GPUTextureFlags::ShaderResource);
+    bool useCompute = false; // TODO: impl Compute Shader for downscaling depth to HiZ with a single dispatch (eg. FidelityFX Single Pass Downsampler)
+    if (useCompute)
+        desc.Flags |= GPUTextureFlags::UnorderedAccess;
+    else
+        desc.Flags |= GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews;
+    if (HiZ && HiZ->GetDescription() != desc)
+    {
+        RenderTargetPool::Release(HiZ);
+        HiZ = nullptr;
+    }
+    if (HiZ == nullptr)
+    {
+        HiZ = RenderTargetPool::Get(desc);
+        RENDER_TARGET_POOL_SET_NAME(HiZ, "HiZ");
+    }
+
+    // Downscale
+    MultiScaler::Instance()->BuildHiZ(context, DepthBuffer, HiZ);
+
+    return HiZ;
+}
+
 PixelFormat RenderBuffers::GetOutputFormat() const
 {
+    auto colorFormat = GraphicsSettings::Get()->RenderColorFormat;
     // TODO: fix incorrect alpha leaking into reflections on PS5 with R11G11B10_Float
-    return _useAlpha || PLATFORM_PS5 ? PixelFormat::R16G16B16A16_Float : PixelFormat::R11G11B10_Float;
+    if (_useAlpha || PLATFORM_PS5)
+    {
+        // Promote to format when alpha when needed
+        switch (colorFormat)
+        {
+        case GraphicsSettings::RenderColorFormats::R11G11B10:
+            colorFormat = GraphicsSettings::RenderColorFormats::R16G16B16A16;
+            break;
+        }
+    }
+    switch (colorFormat)
+    {
+    case GraphicsSettings::RenderColorFormats::R11G11B10:
+        return PixelFormat::R11G11B10_Float;
+    case GraphicsSettings::RenderColorFormats::R8G8B8A8:
+        return PixelFormat::R8G8B8A8_UNorm;
+    case GraphicsSettings::RenderColorFormats::R16G16B16A16:
+        return PixelFormat::R16G16B16A16_Float;
+    default:
+        return PixelFormat::R32G32B32A32_Float;
+    }
 }
 
 bool RenderBuffers::GetUseAlpha() const
@@ -222,6 +281,7 @@ void RenderBuffers::Release()
     UPDATE_LAZY_KEEP_RT(TemporalSSR);
     UPDATE_LAZY_KEEP_RT(TemporalAA);
     UPDATE_LAZY_KEEP_RT(HalfResDepth);
+    UPDATE_LAZY_KEEP_RT(HiZ);
     UPDATE_LAZY_KEEP_RT(LuminanceMap);
 #undef UPDATE_LAZY_KEEP_RT
     CustomBuffers.ClearDelete();

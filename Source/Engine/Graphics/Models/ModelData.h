@@ -279,6 +279,11 @@ struct FLAXENGINE_API TextureEntry
     TypeHint Type;
 
     /// <summary>
+    /// Hints that texture contents are in sRGB color format.
+    /// </summary>
+    bool sRGB = false;
+
+    /// <summary>
     /// The texture asset identifier.
     /// </summary>
     Guid AssetID;

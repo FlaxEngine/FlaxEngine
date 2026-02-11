@@ -350,6 +350,24 @@ API_ENUM(Attributes="Flags") enum class GPUResourceMapMode
 DECLARE_ENUM_OPERATORS(GPUResourceMapMode);
 
 /// <summary>
+/// GPU resources types.
+/// </summary>
+enum class GPUQueryType
+{
+    /// <summary>
+    /// Measures duration of GPU commands execution. Returns time in microseconds (1/1000 ms).
+    /// </summary>
+    Timer = 0,
+
+    /// <summary>
+    /// Tests object visibility by counting number of pixel samples that are not culled (by depth or stencil tests).
+    /// </summary>
+    Occlusion = 1,
+
+    MAX
+};
+
+/// <summary>
 /// Primitives types.
 /// </summary>
 API_ENUM() enum class PrimitiveTopologyType

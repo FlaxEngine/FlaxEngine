@@ -4,8 +4,8 @@
 #define MAX_LOCAL_LIGHTS 4
 @1// Forward Shading: Includes
 #include "./Flax/LightingCommon.hlsl"
-#if USE_REFLECTIONS
 #include "./Flax/ReflectionsCommon.hlsl"
+#if USE_REFLECTIONS
 #define MATERIAL_REFLECTIONS_SSR 1
 #if MATERIAL_REFLECTIONS == MATERIAL_REFLECTIONS_SSR
 #include "./Flax/SSR.hlsl"
@@ -14,11 +14,13 @@
 #include "./Flax/Lighting.hlsl"
 #include "./Flax/ShadowsSampling.hlsl"
 #include "./Flax/ExponentialHeightFog.hlsl"
+#include "./Flax/VolumetricFog.hlsl"
 @2// Forward Shading: Constants
 LightData DirectionalLight;
 LightData SkyLight;
-ProbeData EnvironmentProbe;
+EnvProbeData EnvironmentProbe;
 ExponentialHeightFogData ExponentialHeightFog;
+VolumetricFogData VolumetricFog;
 float3 Dummy2;
 uint LocalLightsCount;
 LightData LocalLights[MAX_LOCAL_LIGHTS];
@@ -28,12 +30,14 @@ TextureCube SkyLightTexture : register(t__SRV__);
 Buffer<float4> ShadowsBuffer : register(t__SRV__);
 Texture2D<float> ShadowMap : register(t__SRV__);
 Texture3D VolumetricFogTexture : register(t__SRV__);
+Texture2D PreIntegratedGF : register(t__SRV__);
 @4// Forward Shading: Utilities
 // Public accessors for lighting data, use them as data binding might change but those methods will remain.
 LightData GetDirectionalLight() { return DirectionalLight; }
 LightData GetSkyLight() { return SkyLight; }
-ProbeData GetEnvironmentProbe() { return EnvironmentProbe; }
+EnvProbeData GetEnvironmentProbe() { return EnvironmentProbe; }
 ExponentialHeightFogData GetExponentialHeightFog() { return ExponentialHeightFog; }
+VolumetricFogData GetVolumetricFog() { return VolumetricFog; }
 uint GetLocalLightsCount() { return LocalLightsCount; }
 LightData GetLocalLight(uint i) { return LocalLights[i]; }
 @5// Forward Shading: Shaders
@@ -108,7 +112,8 @@ void PS_Forward(
 
 	// Calculate reflections
 #if USE_REFLECTIONS
-	float3 reflections = SampleReflectionProbe(ViewPos, EnvProbe, EnvironmentProbe, gBuffer.WorldPos, gBuffer.Normal, gBuffer.Roughness).rgb;
+	float4 reflections = SampleReflectionProbe(ViewPos, EnvProbe, EnvironmentProbe, gBuffer.WorldPos, gBuffer.Normal, gBuffer.Roughness);
+	reflections.rgb *= reflections.a;
 
 #if MATERIAL_REFLECTIONS == MATERIAL_REFLECTIONS_SSR
 	// Screen Space Reflections
@@ -116,7 +121,7 @@ void PS_Forward(
 	Texture2D sceneColorTexture = MATERIAL_REFLECTIONS_SSR_COLOR;
 	float2 screenUV = materialInput.SvPosition.xy * ScreenSize.zw;
 	float stepSize = ScreenSize.z; // 1 / screenWidth
-	float maxSamples = 48;
+	float maxSamples = 50;
 	float worldAntiSelfOcclusionBias = 0.1f;
 	float brdfBias = 0.82f;
 	float drawDistance = 5000.0f;
@@ -124,7 +129,7 @@ void PS_Forward(
 	if (hit.z > 0)
 	{
 		float3 screenColor = sceneColorTexture.SampleLevel(SamplerPointClamp, hit.xy, 0).rgb;
-		reflections = lerp(reflections, screenColor, hit.z);
+		reflections.rgb = lerp(reflections.rgb, screenColor, hit.z);
 	}
 
 	// Fallback to software tracing if possible
@@ -136,17 +141,17 @@ void PS_Forward(
 		if (TraceSDFSoftwareReflections(gBuffer, reflectWS, surfaceAtlas))
 		{
 			float3 screenColor = sceneColorTexture.SampleLevel(SamplerPointClamp, hit.xy, 0).rgb;
-        	reflections = lerp(surfaceAtlas, float4(screenColor, 1), hit.z);
+        	reflections.rgb = lerp(surfaceAtlas, float4(screenColor, 1), hit.z);
 		}
 	}
 #endif
 #endif
 
-	light.rgb += reflections * GetReflectionSpecularLighting(ViewPos, gBuffer) * light.a;	
+	light.rgb += reflections.rgb * GetReflectionSpecularLighting(PreIntegratedGF, ViewPos, gBuffer);
 #endif
 
-	// Add lighting (apply ambient occlusion)
-	output.rgb += light.rgb * gBuffer.AO;
+	// Add lighting
+	output.rgb += light.rgb;
 
 #endif
 
@@ -158,17 +163,13 @@ void PS_Forward(
 #else
 	float fogSceneDistance = gBuffer.ViewPos.z;
 #endif
-	float4 fog = GetExponentialHeightFog(ExponentialHeightFog, materialInput.WorldPosition, ViewPos, 0, fogSceneDistance);
-
+	float fogSkipDistance = max(ExponentialHeightFog.VolumetricFogMaxDistance - 100, 0);
+	float4 fog = GetExponentialHeightFog(ExponentialHeightFog, materialInput.WorldPosition, ViewPos, fogSkipDistance, fogSceneDistance);
 	if (ExponentialHeightFog.VolumetricFogMaxDistance > 0)
 	{
 		// Sample volumetric fog and mix it in
 		float2 screenUV = materialInput.SvPosition.xy * ScreenSize.zw;
-		float3 viewVector = materialInput.WorldPosition - ViewPos;
-		float sceneDepth = length(viewVector);
-		float depthSlice = sceneDepth / ExponentialHeightFog.VolumetricFogMaxDistance;
-		float3 volumeUV = float3(screenUV, depthSlice);
-		float4 volumetricFog = VolumetricFogTexture.SampleLevel(SamplerLinearClamp, volumeUV, 0);
+		float4 volumetricFog = SampleVolumetricFog(VolumetricFogTexture, VolumetricFog, materialInput.WorldPosition - ViewPos, screenUV, TemporalAAJitter);
 		fog = CombineVolumetricFog(fog, volumetricFog);
 	}
 

@@ -26,6 +26,8 @@ bool EnableNvapi = false;
 #endif
 #if COMPILE_WITH_AGS
 #include <ThirdParty/AGS/amd_ags.h>
+#include "Engine/Engine/Globals.h"
+#include "FlaxEngine.Gen.h"
 AGSContext* AgsContext = nullptr;
 #endif
 #if !USE_EDITOR && PLATFORM_WINDOWS
@@ -173,6 +175,15 @@ GPUVertexLayoutDX11::GPUVertexLayoutDX11(GPUDeviceDX11* device, const Elements& 
         dst.InputSlotClass = src.PerInstance ? D3D11_INPUT_PER_INSTANCE_DATA : D3D11_INPUT_PER_VERTEX_DATA;
         dst.InstanceDataStepRate = src.PerInstance ? 1 : 0;
     }
+}
+
+void GPUQueryDataDX11::Release()
+{
+    SAFE_RELEASE(Query);
+    SAFE_RELEASE(TimerBeginQuery);
+    SAFE_RELEASE(DisjointQuery);
+    Result = 0;
+    State = Ready;
 }
 
 GPUDevice* GPUDeviceDX11::Create()
@@ -460,23 +471,23 @@ bool GPUDeviceDX11::Init()
         if (returnCode == AGS_SUCCESS)
         {
             LOG(Info, "AMD driver version: {}, Radeon Software Version {}", TO_UTF16(gpuInfo.driverVersion), TO_UTF16(gpuInfo.radeonSoftwareVersion));
+            const Char* asicFamily[] =
+            {
+                TEXT("Unknown"),
+                TEXT("Pre GCN"),
+                TEXT("GCN Gen1"),
+                TEXT("GCN Gen2"),
+                TEXT("GCN Gen3"),
+                TEXT("GCN Gen4"),
+                TEXT("Vega"),
+                TEXT("RDNA"),
+                TEXT("RDNA2"),
+                TEXT("RDNA3"),
+                TEXT("RDNA4"),
+            };
             for (int32 i = 0; i < gpuInfo.numDevices; i++)
             {
                 AGSDeviceInfo& deviceInfo = gpuInfo.devices[i];
-                const Char* asicFamily[] =
-                {
-                    TEXT("Unknown"),
-                    TEXT("Pre GCN"),
-                    TEXT("GCN Gen1"),
-                    TEXT("GCN Gen2"),
-                    TEXT("GCN Gen3"),
-                    TEXT("GCN Gen4"),
-                    TEXT("Vega"),
-                    TEXT("RDNA"),
-                    TEXT("RDNA2"),
-                    TEXT("RDNA3"),
-                    TEXT("RDNA4"),
-                };
                 LOG(Info, " > GPU {}: {} ({})", i, TO_UTF16(deviceInfo.adapterString), asicFamily[deviceInfo.asicFamily <= AGSAsicFamily_RDNA4 ? deviceInfo.asicFamily : 0]);
                 LOG(Info, "   CUs: {}, WGPs: {}, ROPs: {}", deviceInfo.numCUs, deviceInfo.numWGPs, deviceInfo.numROPs);
                 LOG(Info, "   Core clock: {} MHz, Memory clock: {} MHz, {:.2f} Tflops", deviceInfo.coreClock, deviceInfo.memoryClock, deviceInfo.teraFlops);
@@ -485,7 +496,8 @@ bool GPUDeviceDX11::Init()
         }
         else
         {
-            LOG(Warning, "agsInitialize failed with result {} ({})", (int32)returnCode);
+            LOG(Warning, "agsInitialize failed with result {}", (int32)returnCode);
+            AgsContext = nullptr;
         }
     }
 #endif
@@ -509,9 +521,38 @@ bool GPUDeviceDX11::Init()
     // Create DirectX device
     D3D_FEATURE_LEVEL createdFeatureLevel = static_cast<D3D_FEATURE_LEVEL>(0);
     D3D_FEATURE_LEVEL targetFeatureLevel = _adapter->MaxFeatureLevel;
-    VALIDATE_DIRECTX_CALL(D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, flags, &targetFeatureLevel, 1, D3D11_SDK_VERSION, &_device, &createdFeatureLevel, &_imContext));
-    ASSERT(_device);
-    ASSERT(_imContext);
+#if COMPILE_WITH_AGS
+    AGSDX11ReturnedParams AgsReturnedParams;
+    if (AgsContext)
+    {
+        AGSDX11DeviceCreationParams creationParams = { adapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, flags, &targetFeatureLevel, 1, D3D11_SDK_VERSION, nullptr };
+        AGSDX11ExtensionParams extensionParams = {
+            *Globals::ProductName,
+            TEXT("Flax"),
+            AGS_UNSPECIFIED_VERSION,
+            AGS_MAKE_VERSION(FLAXENGINE_VERSION_MAJOR, FLAXENGINE_VERSION_MINOR, FLAXENGINE_VERSION_BUILD),
+            0,
+            7,
+            AGS_CROSSFIRE_MODE_DISABLE
+        };
+        Platform::MemoryClear(&AgsReturnedParams, sizeof(AgsReturnedParams));
+        AGSReturnCode returnCode = agsDriverExtensionsDX11_CreateDevice(AgsContext, &creationParams, &extensionParams, &AgsReturnedParams);
+        if (returnCode != AGS_SUCCESS)
+        {
+            LOG(Error, "agsDriverExtensionsDX11_CreateDevice failed with result {}", (int32)returnCode);
+            return true;
+        }
+        _device = AgsReturnedParams.pDevice;
+        _imContext = AgsReturnedParams.pImmediateContext;
+        createdFeatureLevel = AgsReturnedParams.featureLevel;
+    }
+    else
+#endif
+    {
+        VALIDATE_DIRECTX_CALL(D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, flags, &targetFeatureLevel, 1, D3D11_SDK_VERSION, &_device, &createdFeatureLevel, &_imContext));
+    }
+    if (!_device || !_imContext)
+        return true;
     ASSERT(createdFeatureLevel == targetFeatureLevel);
     _state = DeviceState::Created;
 
@@ -619,6 +660,20 @@ bool GPUDeviceDX11::Init()
             _device->CheckFormatSupport(dxgiFormat, &formatSupport);
             FeaturesPerFormat[i] = FormatFeatures(format, static_cast<MSAALevel>(maxCount), (FormatSupport)formatSupport);
         }
+
+        // Driver extensions support
+#if COMPILE_WITH_NVAPI
+        if (EnableNvapi)
+        {
+            limits.HasDepthBounds = true;
+        }
+#endif
+#if COMPILE_WITH_AGS
+        if (AgsContext && AgsReturnedParams.extensionsSupported.depthBoundsTest != 0)
+        {
+            limits.HasDepthBounds = true;
+        }
+#endif
     }
 
     // Init debug layer
@@ -801,6 +856,11 @@ void GPUDeviceDX11::Dispose()
     {
         SAFE_RELEASE(RasterizerStates[i]);
     }
+    for (auto& query : _queries)
+        query.Release();
+    _queries.Clear();
+    for (auto& e : _readyQueries)
+        e.Clear();
 
     // Clear DirectX stuff
     SAFE_DELETE(_mainContext);
@@ -877,6 +937,89 @@ void GPUDeviceDX11::DrawEnd()
         infoQueue->ClearStoredMessages();
     }
 #endif
+
+    // Auto-return finished queries back to the pool
+    auto* queries = _queries.Get();
+    int32 queriesCount = _queries.Count();
+    for (int32 i = 0; i < queriesCount; i++)
+    {
+        auto& query = queries[i];
+        if (query.State == GPUQueryDataDX11::Finished)
+        {
+            query.State = GPUQueryDataDX11::Ready;
+            query.Result = 0;
+            _readyQueries[(int32)query.Type].Push(i);
+        }
+    }
+}
+
+bool GPUDeviceDX11::GetQueryResult(uint64 queryID, uint64& result, bool wait)
+{
+    if (!queryID)
+        return false;
+
+    GPUQueryDX11 q;
+    q.Raw = queryID;
+    auto& query = _queries[q.Index];
+    if (query.State == GPUQueryDataDX11::Finished)
+    {
+        // Use resolved result
+        result = query.Result;
+        return true;
+    }
+    ASSERT_LOW_LAYER(query.State == GPUQueryDataDX11::End);
+    auto context = GetIM();
+
+RETRY:
+    bool hasData;
+    if (q.Type == (uint16)GPUQueryType::Timer)
+    {
+        D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjointData;
+        hasData = context->GetData(query.DisjointQuery, &disjointData, sizeof(disjointData), 0) == S_OK;
+        if (hasData)
+        {
+            UINT64 timeBegin = 0, timeEnd = 0;
+            context->GetData(query.TimerBeginQuery, &timeBegin, sizeof(timeBegin), 0);
+            context->GetData(query.Query, &timeEnd, sizeof(timeEnd), 0);
+
+            if (disjointData.Disjoint == FALSE && disjointData.Frequency > 0)
+            {
+                result = timeEnd > timeBegin ? (timeEnd - timeBegin) * 1000000ull / disjointData.Frequency : 0;
+            }
+            else
+            {
+                result = 0;
+#if !BUILD_RELEASE
+                static bool LogOnce = true;
+                if (LogOnce)
+                {
+                    LogOnce = false;
+                    LOG(Warning, "Unreliable GPU timer query detected.");
+                }
+#endif
+            }
+        }
+    }
+    else
+    {
+        hasData = context->GetData(query.Query, &result, sizeof(uint64), 0) == S_OK;
+    }
+
+    if (!hasData && wait)
+    {
+        // Wait until data is ready
+        Platform::Yield();
+        goto RETRY;
+    }
+
+    if (hasData)
+    {
+        // Query has valid data now (until auto-recycle back to pool)
+        query.State = GPUQueryDataDX11::Finished;
+        query.Result = result;
+    }
+
+    return hasData;
 }
 
 GPUTexture* GPUDeviceDX11::CreateTexture(const StringView& name)

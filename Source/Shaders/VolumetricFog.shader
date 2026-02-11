@@ -8,7 +8,7 @@
 #define NO_GBUFFER_SAMPLING
 #define LIGHTING_NO_DIRECTIONAL 1
 #define LIGHTING_NO_SPECULAR 0
-#define SHADOWS_QUALITY 0
+#define SHADOWS_QUALITY 1
 
 // Debug voxels world space positions
 #define DEBUG_VOXEL_WS_POS 0
@@ -17,9 +17,11 @@
 #define DEBUG_VOXELS 0
 
 #include "./Flax/Common.hlsl"
+#include "./Flax/Math.hlsl"
 #include "./Flax/LightingCommon.hlsl"
 #include "./Flax/ShadowsSampling.hlsl"
 #include "./Flax/GBuffer.hlsl"
+#include "./Flax/VolumetricFog.hlsl"
 #include "./Flax/GI/DDGI.hlsl"
 
 struct SkyLightData
@@ -50,6 +52,7 @@ float VolumetricFogMaxDistance;
 float InverseSquaredLightDistanceBiasScale;
 
 float4 FogParameters;
+float4 GridSliceParameters;
 
 float4x4 PrevWorldToClip;
 
@@ -83,23 +86,18 @@ float GetPhase(float g, float cosTheta)
 	return HenyeyGreensteinPhase(g, cosTheta);
 }
 
-float GetSliceDepth(float zSlice)
-{
-	return (zSlice / GridSize.z) * VolumetricFogMaxDistance;
-}
-
 float3 GetCellPositionWS(uint3 gridCoordinate, float3 cellOffset, out float sceneDepth)
 {
 	float2 volumeUV = (gridCoordinate.xy + cellOffset.xy) / GridSize.xy;
-	sceneDepth = GetSliceDepth(gridCoordinate.z + cellOffset.z) / GBuffer.ViewFar;
+	sceneDepth = GetDepthFromSlice(GridSliceParameters, gridCoordinate.z + cellOffset.z) / GBuffer.ViewFar;
 	float deviceDepth = LinearZ2DeviceDepth(GBuffer, sceneDepth);
 	return GetWorldPos(GBuffer, volumeUV, deviceDepth);
 }
 
 float3 GetCellPositionWS(uint3 gridCoordinate, float3 cellOffset)
 {
-	float temp;
-	return GetCellPositionWS(gridCoordinate, cellOffset, temp);
+	float sceneDepth;
+	return GetCellPositionWS(gridCoordinate, cellOffset, sceneDepth);
 }
 
 float3 GetVolumeUV(float3 worldPosition, float4x4 worldToClip)
@@ -120,16 +118,12 @@ Quad_VS2GS VS_WriteToSlice(float2 TexCoord : TEXCOORD0, uint LayerIndex : SV_Ins
 	float depth = (slice / SliceToDepth.x) * SliceToDepth.y;
 	float depthOffset = abs(depth - ViewSpaceBoundingSphere.z);
 
-	if (depthOffset < ViewSpaceBoundingSphere.w)
-	{
-		float radius = sqrt(ViewSpaceBoundingSphere.w * ViewSpaceBoundingSphere.w - depthOffset * depthOffset);
-		float3 positionVS = float3(ViewSpaceBoundingSphere.xy + (TexCoord * 2 - 1) * radius, depth);
-		output.Vertex.Position = mul(float4(positionVS, 1), ViewToVolumeClip);
-	}
-	else
-	{
-		output.Vertex.Position = float4(0, 0, 0, 0);
-	}
+	float radius = sqrt(ViewSpaceBoundingSphere.w * ViewSpaceBoundingSphere.w - depthOffset * depthOffset);
+	float3 positionVS = float3(ViewSpaceBoundingSphere.xy + (TexCoord * 2 - 1) * radius, depth);
+	output.Vertex.Position = mul(float4(positionVS, 1), ViewToVolumeClip);
+#if VULKAN
+    output.Vertex.Position.y *= -1;
+#endif
 
 	output.Vertex.TexCoord = TexCoord;
 	output.LayerIndex = slice;
@@ -168,17 +162,16 @@ META_PERMUTATION_1(USE_SHADOW=1)
 float4 PS_InjectLight(Quad_GS2PS input) : SV_Target0
 {
 	uint3 gridCoordinate = uint3(input.Vertex.Position.xy, input.LayerIndex);
-
-	// Prevent from shading locations outside the volume
-	if (!all(gridCoordinate < GridSizeInt))
+	if (any(gridCoordinate >= GridSizeInt))
 		return 0;
-
+        
+    // Supersample if history buffer is outside the view
 	float3 historyUV = GetVolumeUV(GetCellPositionWS(gridCoordinate, 0.5f), PrevWorldToClip);
 	float historyAlpha = HistoryWeight;
 	FLATTEN
 	if (any(historyUV < 0) || any(historyUV > 1))
 		historyAlpha = 0;
-	uint samplesCount = historyAlpha < 0.001f ? MissedHistorySamplesCount : 1;
+	uint samplesCount = historyAlpha < 0.01f ? MissedHistorySamplesCount : 1;
 
 	float NoL = 0;
 	bool isSpotLight = LocalLight.SpotAngles.x > -2.0f;
@@ -186,8 +179,6 @@ float4 PS_InjectLight(Quad_GS2PS input) : SV_Target0
 	for (uint sampleIndex = 0; sampleIndex < samplesCount; sampleIndex++)
 	{
 		float3 cellOffset = FrameJitterOffsets[sampleIndex].xyz;
-		//float cellOffset = 0.5f;
-
 		float3 positionWS = GetCellPositionWS(gridCoordinate, cellOffset);
 		float3 cameraVector = normalize(positionWS - GBuffer.ViewPos);
 		float cellRadius = length(positionWS - GetCellPositionWS(gridCoordinate + uint3(1, 1, 1), cellOffset));
@@ -206,13 +197,9 @@ float4 PS_InjectLight(Quad_GS2PS input) : SV_Target0
 		if (attenuation > 0)
 		{
             if (isSpotLight)
-	        {
                 shadow = SampleSpotLightShadow(LocalLight, ShadowsBuffer, ShadowMap, positionWS).SurfaceShadow;
-	        }
 	        else
-	        {
                 shadow = SamplePointLightShadow(LocalLight, ShadowsBuffer, ShadowMap, positionWS).SurfaceShadow;
-	        }
 		}
 #endif
 
@@ -230,12 +217,10 @@ RWTexture3D<float4> RWVBufferB : register(u1);
 
 META_CS(true, FEATURE_LEVEL_SM5)
 [numthreads(4, 4, 4)]
-void CS_Initialize(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupThreadId : SV_GroupThreadID)
+void CS_Initialize(uint3 DispatchThreadId : SV_DispatchThreadID)
 {
 	uint3 gridCoordinate = DispatchThreadId;
-
-	float voxelOffset = 0.5f;
-	float3 positionWS = GetCellPositionWS(gridCoordinate, voxelOffset);
+	float3 positionWS = GetCellPositionWS(gridCoordinate, 0.5f);
 
 	// Unpack the fog parameters (packing done in C++ ExponentialHeightFog::GetVolumetricFogOptions)
 	float fogDensity = FogParameters.x;
@@ -278,26 +263,25 @@ META_CS(true, FEATURE_LEVEL_SM5)
 META_PERMUTATION_1(USE_DDGI=0)
 META_PERMUTATION_1(USE_DDGI=1)
 [numthreads(4, 4, 4)]
-void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupThreadId : SV_GroupThreadID)
+void CS_LightScattering(uint3 DispatchThreadId : SV_DispatchThreadID)
 {
 	uint3 gridCoordinate = DispatchThreadId;
-	float3 lightScattering = 0;
-	uint samplesCount = 1;
-
+	if (any(gridCoordinate >= GridSizeInt))
+		return;
+        
+    // Supersample if history buffer is outside the view
 	float3 historyUV = GetVolumeUV(GetCellPositionWS(gridCoordinate, 0.5f), PrevWorldToClip);
 	float historyAlpha = HistoryWeight;
 	FLATTEN
 	if (any(historyUV < 0) || any(historyUV > 1))
 		historyAlpha = 0;
-	samplesCount = historyAlpha < 0.001f && all(gridCoordinate < GridSizeInt) ? MissedHistorySamplesCount : 1;
-
+	uint samplesCount = historyAlpha < 0.01f ? MissedHistorySamplesCount : 1;
+    
+	float3 lightScattering = 0;
 	for (uint sampleIndex = 0; sampleIndex < samplesCount; sampleIndex++)
 	{
 		float3 cellOffset = FrameJitterOffsets[sampleIndex].xyz;
-		//float3 cellOffset = 0.5f;
-
-		float sceneDepth;
-		float3 positionWS = GetCellPositionWS(gridCoordinate, cellOffset, sceneDepth);
+		float3 positionWS = GetCellPositionWS(gridCoordinate, cellOffset);
 		float3 cameraVector = positionWS - GBuffer.ViewPos;
 		float cameraVectorLength = length(cameraVector);
 		float3 cameraVectorNormalized = cameraVector / cameraVectorLength;
@@ -310,8 +294,7 @@ void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_
 
 #if USE_DDGI
         // Dynamic Diffuse Global Illumination
-        float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesData, ProbesDistance, ProbesIrradiance, positionWS, cameraVectorNormalized, 0.0f, cellOffset.x);
-        lightScattering += float4(irradiance, 1);
+        lightScattering += SampleDDGIIrradiance(DDGI, ProbesData, ProbesDistance, ProbesIrradiance, positionWS, cameraVectorNormalized, 0.0f, cellOffset.x);
 #else
 		// Sky light
 		if (SkyLight.VolumetricScatteringIntensity > 0)
@@ -338,12 +321,9 @@ void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_
 		float4 historyScatteringAndExtinction = LightScatteringHistory.SampleLevel(SamplerLinearClamp, historyUV, 0);
 		scatteringAndExtinction = lerp(scatteringAndExtinction, historyScatteringAndExtinction, historyAlpha);
 	}
-	
-	if (all(gridCoordinate < GridSizeInt))
-	{
-		scatteringAndExtinction = select(or(isnan(scatteringAndExtinction), isinf(scatteringAndExtinction)), 0, scatteringAndExtinction);
-		RWLightScattering[gridCoordinate] = max(scatteringAndExtinction, 0);
-	}
+
+	scatteringAndExtinction = select(or(isnan(scatteringAndExtinction), isinf(scatteringAndExtinction)), 0, scatteringAndExtinction);
+	RWLightScattering[gridCoordinate] = max(scatteringAndExtinction, 0);
 }
 
 #elif defined(_CS_FinalIntegration)
@@ -354,9 +334,11 @@ Texture3D<float4> LightScattering : register(t0);
 
 META_CS(true, FEATURE_LEVEL_SM5)
 [numthreads(8, 8, 1)]
-void CS_FinalIntegration(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupThreadId : SV_GroupThreadID)
+void CS_FinalIntegration(uint3 DispatchThreadId : SV_DispatchThreadID)
 {
 	uint3 gridCoordinate = DispatchThreadId;
+	if (any(gridCoordinate.xy >= GridSizeInt.xy))
+		return;
 	float4 acc = float4(0, 0, 0, 1);
 	float3 prevPositionWS = GBuffer.ViewPos;
 
@@ -367,11 +349,17 @@ void CS_FinalIntegration(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV
 		float3 positionWS = GetCellPositionWS(coords, 0.5f);
 		
 		// Ref: "Physically Based and Unified Volumetric Rendering in Frostbite"
-		float transmittance = exp(-scatteringExtinction.w * length(positionWS - prevPositionWS));
+		float stepDistance = length(positionWS - prevPositionWS);
+		float transmittance = exp(-scatteringExtinction.w * stepDistance);
 		float3 scatteringIntegratedOverSlice = (scatteringExtinction.rgb - scatteringExtinction.rgb * transmittance) / max(scatteringExtinction.w, 0.00001f);
+
+        // Apply distance fade
+        float distanceFade = Remap(layerIndex, GridSizeInt.z * 0.8f, GridSizeInt.z - 1, 1, 0);
+        scatteringIntegratedOverSlice *= distanceFade;
+
+        // Accumulate
 		acc.rgb += scatteringIntegratedOverSlice * acc.a;
 		acc.a *= transmittance;
-	
 #if DEBUG_VOXELS
 		RWIntegratedLightScattering[coords] = float4(scatteringExtinction.rgb, 1.0f);
 #elif DEBUG_VOXEL_WS_POS

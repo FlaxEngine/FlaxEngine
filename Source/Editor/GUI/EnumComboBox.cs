@@ -242,6 +242,15 @@ namespace FlaxEditor.GUI
         {
             FieldInfo[] fields = type.GetFields();
             entries.Capacity = Mathf.Max(fields.Length - 1, entries.Capacity);
+            if (formatMode == EnumDisplayAttribute.FormatMode.Default)
+            {
+                // Override display mode from enum itself
+                var attr = type.GetCustomAttribute<EnumDisplayAttribute>();
+                if (attr != null)
+                {
+                    formatMode = attr.Mode;
+                }
+            }
             for (int i = 0; i < fields.Length; i++)
             {
                 var field = fields[i];

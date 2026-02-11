@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Memory/ArenaAllocation.h"
+#include "Engine/Core/Math/Quaternion.h"
 #include "Engine/Graphics/PostProcessSettings.h"
 #include "Engine/Graphics/DynamicBuffer.h"
 #include "Engine/Scripting/ScriptingObject.h"
@@ -153,10 +154,14 @@ struct RenderEnvironmentProbeData
 {
     GPUTexture* Texture;
     Float3 Position;
-    float Radius;
+    float Radius; // unscaled for box
     float Brightness;
     int32 SortOrder;
     uint32 HashID;
+    bool BoxProjection;
+    Float3 Scale; // box-only
+    float BlendDistance;
+    Quaternion Orientation; // box-only
 
     void SetShaderData(ShaderEnvProbeData& data) const;
 };
@@ -167,6 +172,18 @@ struct RenderDecalData
     MaterialBase* Material;
     int32 SortOrder;
     uint32 RenderLayersMask;
+};
+
+struct RenderFogData
+{
+    IFogRenderer* Renderer;
+    GPUTextureView* VolumetricFogTexture;
+    ShaderExponentialHeightFogData ExponentialHeightFogData;
+    ShaderVolumetricFogData VolumetricFogData;
+    VolumetricFogOptions VolumetricFog;
+
+    RenderFogData();
+    void Init(const RenderView& view, IFogRenderer* renderer);
 };
 
 /// <summary>
@@ -418,9 +435,9 @@ public:
     IAtmosphericFogRenderer* AtmosphericFog;
 
     /// <summary>
-    /// Fog renderer proxy to use (only one per frame)
+    /// Fog rendering data.
     /// </summary>
-    IFogRenderer* Fog;
+    RenderFogData Fog;
 
     /// <summary>
     /// Post effects to render.

@@ -29,6 +29,15 @@ public:
     /// </summary>
     typedef JsonWriter SerializeStream;
 
+    /// <summary>
+    /// Serialization callback context container. Used by OnSerializing, OnSerialized, OnDeserializing, OnDeserialized methods.
+    /// </summary>
+    struct FLAXENGINE_API CallbackContext
+    {
+        // The deserialization modifier object.
+        ISerializeModifier* Modifier = nullptr;
+    };
+
 public:
 
     /// <summary>

@@ -119,6 +119,7 @@ public:
 
 public:
     void AddWaitSemaphore(VkPipelineStageFlags waitFlags, SemaphoreVulkan* waitSemaphore);
+    void Wait(float timeInSecondsToWait = 1.0f);
 
     void Begin();
     void End();
@@ -168,10 +169,18 @@ class CmdBufferManagerVulkan
 {
 private:
     GPUDeviceVulkan* _device;
+    GPUContextVulkan* _context;
     CmdBufferPoolVulkan _pool;
     QueueVulkan* _queue;
     CmdBufferVulkan* _activeCmdBuffer;
-    Array<GPUTimerQueryVulkan*> _queriesInProgress;
+#if VULKAN_USE_TIMER_QUERIES && GPU_VULKAN_PAUSE_QUERIES
+#if GPU_VULKAN_QUERY_NEW
+    typedef uint64 QueryType;
+#else
+    typedef GPUTimerQueryVulkan* QueryType;
+#endif
+    Array<QueryType> _activeTimerQueries;
+#endif
 
 public:
     CmdBufferManagerVulkan(GPUDeviceVulkan* device, GPUContextVulkan* context);
@@ -192,29 +201,26 @@ public:
         return _activeCmdBuffer != nullptr;
     }
 
-    FORCE_INLINE bool HasQueriesInProgress() const
-    {
-        return _queriesInProgress.Count() != 0;
-    }
-
     FORCE_INLINE CmdBufferVulkan* GetCmdBuffer()
     {
         if (!_activeCmdBuffer)
-            PrepareForNewActiveCommandBuffer();
+            GetNewActiveCommandBuffer();
         return _activeCmdBuffer;
     }
 
 public:
     void SubmitActiveCmdBuffer(SemaphoreVulkan* signalSemaphore = nullptr);
     void WaitForCmdBuffer(CmdBufferVulkan* cmdBuffer, float timeInSecondsToWait = 1.0f);
-    void RefreshFenceStatus(CmdBufferVulkan* skipCmdBuffer = nullptr)
+    void RefreshFenceStatus(const CmdBufferVulkan* skipCmdBuffer = nullptr)
     {
         _pool.RefreshFenceStatus(skipCmdBuffer);
     }
-    void PrepareForNewActiveCommandBuffer();
+    void GetNewActiveCommandBuffer();
 
-    void OnQueryBegin(GPUTimerQueryVulkan* query);
-    void OnQueryEnd(GPUTimerQueryVulkan* query);
+#if VULKAN_USE_TIMER_QUERIES && GPU_VULKAN_PAUSE_QUERIES
+    void OnTimerQueryBegin(QueryType query);
+    void OnTimerQueryEnd(QueryType query);
+#endif
 };
 
 #endif

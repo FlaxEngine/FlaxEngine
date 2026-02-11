@@ -672,12 +672,12 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         renderContext.List->AtmosphericFog->DrawFog(context, renderContext, *lightBuffer);
         context->ResetSR();
     }
-    if (renderContext.List->Fog)
+    if (renderContext.List->Fog.Renderer)
     {
         VolumetricFogPass::Instance()->Render(renderContext);
 
         PROFILE_GPU_CPU("Fog");
-        renderContext.List->Fog->DrawFog(context, renderContext, *lightBuffer);
+        renderContext.List->Fog.Renderer->DrawFog(context, renderContext, *lightBuffer);
         context->ResetSR();
     }
 

@@ -218,9 +218,14 @@ API_ENUM(Attributes="Flags") enum class AmbientOcclusionSettingsOverride : int32
     FadeDistance = 1 << 5,
 
     /// <summary>
+    /// Overrides <see cref="AmbientOcclusionSettings.DepthResolution"/> property.
+    /// </summary>
+    DepthResolution = 1 << 6,
+
+    /// <summary>
     /// All properties.
     /// </summary>
-    All = Enabled | Intensity | Power | Radius | FadeOutDistance | FadeDistance,
+    All = Enabled | Intensity | Power | Radius | FadeOutDistance | FadeDistance | DepthResolution,
 };
 
 /// <summary>
@@ -273,6 +278,12 @@ API_STRUCT() struct FLAXENGINE_API AmbientOcclusionSettings : ISerializable
     /// </summary>
     API_FIELD(Attributes="Limit(0.0f), EditorOrder(5), PostProcessSetting((int)AmbientOcclusionSettingsOverride.FadeDistance)")
     float FadeDistance = 500.0f;
+
+    /// <summary>
+    /// The depth buffer downscale option to optimize rendering performance. Full gives better quality, but half improves performance.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(6), PostProcessSetting((int)AmbientOcclusionSettingsOverride.DepthResolution)")
+    ResolutionMode DepthResolution = ResolutionMode::Half;
 
 public:
     /// <summary>
@@ -1791,7 +1802,7 @@ API_STRUCT() struct FLAXENGINE_API ScreenSpaceReflectionsSettings : ISerializabl
     /// The raycast resolution. Full gives better quality, but half improves performance.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(25), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.ResolvePassResolution)")
-    ResolutionMode ResolvePassResolution = ResolutionMode::Full;
+    ResolutionMode ResolvePassResolution = ResolutionMode::Half;
 
     /// <summary>
     /// The number of rays used to resolve the reflection color. Higher values provide better quality but reduce effect performance. Use value of 1 for the best performance at cost of quality.
@@ -1833,7 +1844,7 @@ API_STRUCT() struct FLAXENGINE_API ScreenSpaceReflectionsSettings : ISerializabl
     /// The intensity of the temporal effect. Lower values produce reflections faster, but more noise.
     /// </summary>
     API_FIELD(Attributes="Limit(0, 20.0f, 0.5f), EditorOrder(55), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.TemporalScale)")
-    float TemporalScale = 8.0f;
+    DEPRECATED("TemporalScale of SSR is unsued now.") float TemporalScale = 8.0f;
 
     /// <summary>
     /// Defines how quickly reflections blend between the reflection in the current frame and the history buffer. Lower values produce reflections faster, but with more jittering. If the camera in your game doesn't move much, we recommend values closer to 1.

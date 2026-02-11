@@ -14,6 +14,7 @@
 #include "Engine/Content/Deprecated.h"
 #include "Engine/ContentExporters/AssetExporters.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
+#include "Engine/Core/Math/OrientedBoundingBox.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/Scene.h"
@@ -22,6 +23,7 @@ EnvironmentProbe::EnvironmentProbe(const SpawnParams& params)
     : Actor(params)
     , _radius(3000.0f)
     , _isUsingCustomProbe(false)
+    , BoxProjection(false)
 {
     _drawCategory = SceneRendering::PreRender;
     _sphere = BoundingSphere(Vector3::Zero, _radius);
@@ -48,14 +50,14 @@ void EnvironmentProbe::SetRadius(float value)
     UpdateBounds();
 }
 
-float EnvironmentProbe::GetScaledRadius() const
-{
-    return _radius * _transform.Scale.MaxValue();
-}
-
 GPUTexture* EnvironmentProbe::GetProbe() const
 {
     return _probe ? _probe->GetTexture() : _probeTexture;
+}
+
+CubeTexture* EnvironmentProbe::GetProbeAsset() const
+{
+    return _probe;
 }
 
 bool EnvironmentProbe::IsUsingCustomProbe() const
@@ -164,8 +166,16 @@ void EnvironmentProbe::SetProbeData(TextureData& data)
 
 void EnvironmentProbe::UpdateBounds()
 {
-    _sphere = BoundingSphere(GetPosition(), GetScaledRadius());
-    BoundingBox::FromSphere(_sphere, _box);
+    if (BoxProjection)
+    {
+        OrientedBoundingBox(_radius, _transform).GetBoundingBox(_box);
+        BoundingSphere::FromBox(_box, _sphere);
+    }
+    else
+    {
+        _sphere = BoundingSphere(_transform.Translation, _radius * _transform.Scale.MaxValue());
+        BoundingBox::FromSphere(_sphere, _box);
+    }
     if (_sceneRenderingKey != -1)
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Bounds);
 }
@@ -178,7 +188,7 @@ void EnvironmentProbe::Draw(RenderContext& renderContext)
     {
         // Size culling
         const Float3 position = _sphere.Center - renderContext.View.Origin;
-        const float radius = GetScaledRadius();
+        const float radius = _sphere.Radius;
         const float drawMinScreenSize = 0.02f;
         const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
         const float screenRadiusSquared = RenderTools::ComputeBoundsScreenRadiusSquared(position, radius, *lodView) * renderContext.View.ModelLODDistanceFactorSqrt;
@@ -195,10 +205,17 @@ void EnvironmentProbe::Draw(RenderContext& renderContext)
             RenderEnvironmentProbeData data;
             data.Texture = texture;
             data.Position = position;
-            data.Radius = radius;
+            data.Radius = _radius;
             data.Brightness = Brightness;
             data.SortOrder = SortOrder;
             data.HashID = GetHash(_id);
+            data.BlendDistance = Math::Clamp(BlendDistance, 0.001f, _radius * _transform.Scale.MinValue());
+            data.BoxProjection = BoxProjection;
+            if (data.BoxProjection)
+            {
+                data.Orientation = _transform.Orientation;
+                data.Scale = _transform.Scale;
+            }
             renderContext.List->EnvironmentProbes.Add(data);
         }
     }
@@ -211,7 +228,25 @@ void EnvironmentProbe::Draw(RenderContext& renderContext)
 void EnvironmentProbe::OnDebugDrawSelected()
 {
     // Draw influence range
-    DEBUG_DRAW_WIRE_SPHERE(_sphere, Color::CornflowerBlue, 0, true);
+    auto rangeColor = Color::CornflowerBlue;
+    auto rangeColorAlpha = rangeColor.AlphaMultiplied(0.2f);
+    if (BoxProjection)
+    {
+        OrientedBoundingBox box(_radius, _transform);
+        DEBUG_DRAW_WIRE_BOX(box, rangeColorAlpha, 0, false);
+        DEBUG_DRAW_WIRE_BOX(box, rangeColor, 0, true);
+    }
+    else
+    {
+        DEBUG_DRAW_WIRE_SPHERE(_sphere, rangeColorAlpha, 0, false);
+        DEBUG_DRAW_WIRE_SPHERE(_sphere, rangeColor, 0, true);
+    }
+
+    // Draw capture point (if offset)
+    if (!CaptureOffset.IsZero())
+    {
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(_transform.LocalToWorld(CaptureOffset), 10.0f), Color::Blue, 0, false);
+    }
 
     // Base
     Actor::OnDebugDrawSelected();
@@ -234,10 +269,13 @@ void EnvironmentProbe::Serialize(SerializeStream& stream, const void* otherObj)
 
     SERIALIZE_MEMBER(Radius, _radius);
     SERIALIZE(CubemapResolution);
+    SERIALIZE(BoxProjection);
     SERIALIZE(Brightness);
+    SERIALIZE(BlendDistance);
     SERIALIZE(SortOrder);
     SERIALIZE(UpdateMode);
     SERIALIZE(CaptureNearPlane);
+    SERIALIZE(CaptureOffset);
     SERIALIZE_MEMBER(IsCustomProbe, _isUsingCustomProbe);
     SERIALIZE_MEMBER(ProbeID, _probe);
 }
@@ -249,10 +287,13 @@ void EnvironmentProbe::Deserialize(DeserializeStream& stream, ISerializeModifier
 
     DESERIALIZE_MEMBER(Radius, _radius);
     DESERIALIZE(CubemapResolution);
+    DESERIALIZE(BoxProjection);
     DESERIALIZE(Brightness);
+    DESERIALIZE(BlendDistance);
     DESERIALIZE(SortOrder);
     DESERIALIZE(UpdateMode);
     DESERIALIZE(CaptureNearPlane);
+    DESERIALIZE(CaptureOffset);
     DESERIALIZE_MEMBER(IsCustomProbe, _isUsingCustomProbe);
     DESERIALIZE_MEMBER(ProbeID, _probe);
 

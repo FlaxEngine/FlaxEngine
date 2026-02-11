@@ -778,6 +778,22 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         value = result;
         break;
     }
+    // Linear to sRGB
+    case 52:
+    {
+        const auto linear = tryGetValue(node->GetBox(0), Value::Zero).AsFloat3();
+        value = writeLocal(linear.Type, String::Format(TEXT("LinearToSrgb({0})"), linear.Value), node);
+        _includes.Add(TEXT("./Flax/GammaCorrectionCommon.hlsl"));
+        break;
+    }
+    // sRGB to Linear
+    case 53:
+    {
+        const auto sRGB = tryGetValue(node->GetBox(0), Value::Zero).AsFloat3();
+        value = writeLocal(sRGB.Type, String::Format(TEXT("sRGBToLinear({0})"), sRGB.Value), node);
+        _includes.Add(TEXT("./Flax/GammaCorrectionCommon.hlsl"));
+        break;
+    }
     default:
         break;
     }

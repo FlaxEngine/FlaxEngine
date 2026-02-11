@@ -274,7 +274,7 @@ namespace FlaxEngine.GUI
             if (_focusedControl != null)
             {
                 _focusedControl.OnGotFocus();
-                Assert.IsTrue(_focusedControl.IsFocused);
+                Assert.IsTrue(_focusedControl == null || _focusedControl.IsFocused);
             }
 
             // Update flags

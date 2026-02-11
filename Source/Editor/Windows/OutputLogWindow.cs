@@ -249,7 +249,7 @@ namespace FlaxEditor.Windows
                         lastItem.TintColor = new Color(0.75f, 0.75f, 1.0f, 1.0f);
                     else if (flags.HasFlag(DebugCommands.CommandFlags.Read) && !flags.HasFlag(DebugCommands.CommandFlags.Write))
                         lastItem.TintColor = new Color(0.85f, 0.85f, 0.85f, 1.0f);
-                    lastItem.Focused += item =>
+                    lastItem.ItemFocused += item =>
                     {
                         // Set command
                         Set(item.Name);

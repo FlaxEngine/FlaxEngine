@@ -78,11 +78,27 @@ public:
     /// </summary>
     API_FIELD() static PostProcessSettings PostProcessSettings;
 
+    /// <summary>
+    /// Enables Gamma color space workflow (instead of Linear). Gamma color space defines colors with an applied a gamma curve (sRGB) so they are perceptually linear.
+    /// This makes sense when the output of the rendering represent final color values that will be presented to a non-HDR screen.
+    /// </summary>
+    API_FIELD(ReadOnly) static bool GammaColorSpace;
+
 public:
     /// <summary>
     /// Debug utility to toggle graphics workloads amortization over several frames by systems such as shadows mapping, global illumination or surface atlas. Can be used to test performance in the worst-case scenario (eg. camera-cut).
     /// </summary>
     API_FIELD() static bool SpreadWorkload;
+
+#if BUILD_RELEASE && !USE_EDITOR
+    /// <summary>Unused.</summary>
+    API_FIELD() static constexpr float TestValue = 0.0f;
+#else
+    /// <summary>
+    /// Debug utility to control visual or rendering features during development. For example, can be used to branch different code paths in shaders for A/B testing (perf or quality).
+    /// </summary>
+    API_FIELD() static float TestValue;
+#endif
 
 public:
     // Post Processing effects rendering configuration.

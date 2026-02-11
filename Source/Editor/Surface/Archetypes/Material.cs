@@ -1229,6 +1229,32 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, "Result", typeof(Float4), 3),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 52,
+                Title = "Linear to sRGB",
+                Description = "Converts linear color into sRGB.",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(150, 20),
+                Elements =
+                [
+                    NodeElementArchetype.Factory.Input(0, "Linear", true, typeof(Float3), 0),
+                    NodeElementArchetype.Factory.Output(0, "sRGB", typeof(Float3), 1),
+                ]
+            },
+            new NodeArchetype
+            {
+                TypeID = 53,
+                Title = "sRGB to Linear",
+                Description = "Converts sRGB color into linear.",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(150, 20),
+                Elements =
+                [
+                    NodeElementArchetype.Factory.Input(0, "sRGB", true, typeof(Float3), 0),
+                    NodeElementArchetype.Factory.Output(0, "Linear", typeof(Float3), 1),
+                ]
+            },
         };
     }
 }

@@ -144,6 +144,11 @@ void GPUDeviceNull::WaitForGPU()
 {
 }
 
+bool GPUDeviceNull::GetQueryResult(uint64 queryID, uint64& result, bool wait)
+{
+    return false;
+}
+
 GPUTexture* GPUDeviceNull::CreateTexture(const StringView& name)
 {
     PROFILE_MEM(GraphicsTextures);

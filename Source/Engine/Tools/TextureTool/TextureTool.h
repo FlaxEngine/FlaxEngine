@@ -45,7 +45,7 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
         API_FIELD(Attributes="EditorOrder(40)")
         bool IndependentChannels = false;
 
-        // True if use sRGB format for texture data. Recommended for color maps and diffuse color textures.
+        // If checked, indicates that input file should be loaded as an sRGB image. Common for color maps and diffuse/albedo textures.
         API_FIELD(Attributes="EditorOrder(50), EditorDisplay(null, \"sRGB\")")
         bool sRGB = false;
 

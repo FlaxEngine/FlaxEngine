@@ -40,8 +40,10 @@ API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
 
     /// <summary>
     /// Enables game running when application window loses focus.
+    /// [Deprecated in v1.12]
     /// </summary>
     API_FIELD(Attributes="EditorOrder(1010), EditorDisplay(\"Other\", \"Run In Background\")")
+    DEPRECATED("Use UnfocusedPause from TimeSettings.")
     bool RunInBackground = false;
 
     /// <summary>

@@ -46,20 +46,28 @@ groupshared uint SharedHistogram[HISTOGRAM_SIZE];
 // Generates the histogram
 META_CS(true, FEATURE_LEVEL_SM5)
 [numthreads(THREADGROUP_SIZE_X, THREADGROUP_SIZE_Y, 1)]
-void CS_GenerateHistogram(uint3 groupId : SV_GroupID, uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupThreadId : SV_GroupThreadID, uint groupIndex : SV_GroupIndex)
+void CS_GenerateHistogram(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupThreadId : SV_GroupThreadID)
 {
-	const uint localThreadId = groupThreadId.y * THREADGROUP_SIZE_X + groupThreadId.x;
+	const uint threadId = groupThreadId.y * THREADGROUP_SIZE_X + groupThreadId.x;
 
 	// Clear the histogram
-	if (localThreadId < HISTOGRAM_SIZE)
-		SharedHistogram[localThreadId] = 0u;
+	if (threadId < HISTOGRAM_SIZE)
+		SharedHistogram[threadId] = 0u;
 
 	GroupMemoryBarrierWithGroupSync();
 
 	// Gather local group histogram
 	if (dispatchThreadId.x < InputSize.x && dispatchThreadId.y < InputSize.y)
 	{
+#if 1
+        // Screen vignette to put more weight into samples in the center of the image
+        float2 uv = (float2)dispatchThreadId.xy / float2(InputSize.x, InputSize.y);
+        float2 center = abs(uv - float2(0.5f, 0.5f));
+        float scale = saturate(1 - dot(center, center));
+        uint weight = (uint)(scale * scale * 64.0f);
+#else
 		uint weight = 1u;
+#endif
 		float3 color = Input[dispatchThreadId.xy].xyz;
 		float luminance = Luminance(color);
 		float logLuminance = ComputeHistogramPositionFromLuminance(luminance);
@@ -70,8 +78,8 @@ void CS_GenerateHistogram(uint3 groupId : SV_GroupID, uint3 dispatchThreadId : S
 	GroupMemoryBarrierWithGroupSync();
 
 	// Merge everything
-	if (localThreadId < HISTOGRAM_SIZE)
-		InterlockedAdd(HistogramBuffer[localThreadId], SharedHistogram[localThreadId]);
+	if (threadId < HISTOGRAM_SIZE)
+		InterlockedAdd(HistogramBuffer[threadId], SharedHistogram[threadId]);
 }
 
 #endif

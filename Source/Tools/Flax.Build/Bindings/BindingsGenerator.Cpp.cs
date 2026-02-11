@@ -1879,6 +1879,25 @@ namespace Flax.Build.Bindings
             return false;
         }
 
+        private static void GenerateCppAutoSerializationCallback(BuildData buildData, StringBuilder contents, ApiTypeInfo typeInfo, string callback, string context)
+        {
+            // Generate invoking custom serialization callbacks (pre/post serialization/deserialization)
+            if (typeInfo is ClassStructInfo classStructInfo)
+            {
+                foreach (var functionInfo in classStructInfo.Functions)
+                {
+                    if (functionInfo.Name != callback)
+                        continue;
+                    if (functionInfo.Parameters.Count != 1 && functionInfo.Parameters[0].Type.Type != "CallbackContext")
+                    {
+                        Log.Warning(GetBuildErrorLocation(typeInfo, $"Invalid serialization callback parameters in function '{typeInfo.Name}::{functionInfo.Name}'"));
+                        continue;
+                    }
+                    contents.AppendLine($"    {typeInfo.NativeName}::{functionInfo.Name}({context});");
+                }
+            }
+        }
+
         private static void GenerateCppAutoSerialization(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, ApiTypeInfo typeInfo, string typeNameNative)
         {
             var classInfo = typeInfo as ClassInfo;
@@ -1892,10 +1911,15 @@ namespace Flax.Build.Bindings
             CppAutoSerializeProperties.Clear();
             CppIncludeFiles.Add("Engine/Serialization/Serialization.h");
 
+            // ISerializable::CallbackContext
+            var callbackContextSerialize = "{ nullptr }";
+            var callbackContextDeserialize = "{ modifier }";
+
             // Serialize
             contents.AppendLine();
             contents.Append($"void {typeNameNative}::Serialize(SerializeStream& stream, const void* otherObj)").AppendLine();
             contents.Append('{').AppendLine();
+            GenerateCppAutoSerializationCallback(buildData, contents, typeInfo, "OnSerializing", callbackContextSerialize);
             if (baseType != null)
                 contents.Append($"    {baseType.FullNameNative}::Serialize(stream, otherObj);").AppendLine();
             contents.Append($"    SERIALIZE_GET_OTHER_OBJ({typeNameNative});").AppendLine();
@@ -1951,12 +1975,14 @@ namespace Flax.Build.Bindings
                     CppAutoSerializeFields.Add(fieldInfo);
                 }
             }
+            GenerateCppAutoSerializationCallback(buildData, contents, typeInfo, "OnSerialized", callbackContextSerialize);
             contents.Append('}').AppendLine();
 
             // Deserialize
             contents.AppendLine();
             contents.Append($"void {typeNameNative}::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)").AppendLine();
             contents.Append('{').AppendLine();
+            GenerateCppAutoSerializationCallback(buildData, contents, typeInfo, "OnDeserializing", callbackContextDeserialize);
             if (baseType != null)
                 contents.Append($"    {baseType.FullNameNative}::Deserialize(stream, modifier);").AppendLine();
             foreach (var fieldInfo in CppAutoSerializeFields)
@@ -1976,6 +2002,7 @@ namespace Flax.Build.Bindings
                 contents.AppendLine("    }");
             }
             contents.Append('}').AppendLine();
+            GenerateCppAutoSerializationCallback(buildData, contents, typeInfo, "OnDeserialized", callbackContextDeserialize);
 
             // ShouldSerialize
             contents.AppendLine();

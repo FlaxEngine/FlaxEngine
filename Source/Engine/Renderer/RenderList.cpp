@@ -171,8 +171,41 @@ void RenderSkyLightData::SetShaderData(ShaderLightData& data, bool useShadow) co
 
 void RenderEnvironmentProbeData::SetShaderData(ShaderEnvProbeData& data) const
 {
-    data.Data0 = Float4(Position, 0);
-    data.Data1 = Float4(Radius, 1.0f / Radius, Brightness, 0);
+    data.Data0 = Float4(Position, Brightness);
+    if (BoxProjection)
+    {
+        data.Data0.W *= -1;
+        data.Data1 = Float4(Scale * Radius, BlendDistance);
+        Quaternion invQuat;
+        Quaternion::Invert(Orientation, invQuat);
+        data.Data2 = *(Float4*)&invQuat;
+    }
+    else
+    {
+        data.Data1 = Float4(Radius, 0, 0, 0);
+        data.Data2 = Float4::Zero;
+    }
+}
+
+RenderFogData::RenderFogData()
+{
+    Renderer = nullptr;
+    VolumetricFogTexture = nullptr;
+    ExponentialHeightFogData.FogMinOpacity = 1.0f;
+    ExponentialHeightFogData.FogDensity = 0.0f;
+    ExponentialHeightFogData.FogCutoffDistance = 0.1f;
+    ExponentialHeightFogData.StartDistance = 0.0f;
+    ExponentialHeightFogData.ApplyDirectionalInscattering = 0.0f;
+    ExponentialHeightFogData.VolumetricFogMaxDistance = -1.0f;
+    VolumetricFogData.GridSliceParameters = Float4::One;
+    VolumetricFogData.ScreenSize = VolumetricFogData.VolumeTexelSize = Float2::Zero;
+}
+
+void RenderFogData::Init(const RenderView& view, IFogRenderer* renderer)
+{
+    Renderer = renderer;
+    renderer->GetExponentialHeightFogData(view, ExponentialHeightFogData);
+    renderer->GetVolumetricFogOptions(VolumetricFog);
 }
 
 void* RendererAllocation::Allocate(uintptr size)
@@ -520,7 +553,6 @@ RenderList::RenderList(const SpawnParams& params)
     , Decals(64)
     , Sky(nullptr)
     , AtmosphericFog(nullptr)
-    , Fog(nullptr)
     , Blendable(32)
     , ObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Buffer"))
     , TempObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Buffer"))
@@ -552,7 +584,7 @@ void RenderList::Clear()
     VolumetricFogParticles.Clear();
     Sky = nullptr;
     AtmosphericFog = nullptr;
-    Fog = nullptr;
+    Fog = RenderFogData();
     PostFx.Clear();
     Settings = PostProcessSettings();
     Blendable.Clear();

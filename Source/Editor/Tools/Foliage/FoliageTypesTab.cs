@@ -484,7 +484,7 @@ namespace FlaxEditor.Tools.Foliage
                         Tag = i,
                         Parent = _items,
                     };
-                    itemView.Clicked += OnFoliageTypeListItemClicked;
+                    itemView.ItemClicked += OnFoliageTypeListItemClicked;
 
                     y += itemView.Height + _items.Spacing;
                 }

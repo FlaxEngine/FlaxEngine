@@ -69,6 +69,30 @@ API_STRUCT() struct RenderStatsData
         MIX(PipelineStateChanges);
 #undef MIX
     }
+
+    RenderStatsData& operator+=(const RenderStatsData& other)
+    {
+#define MIX(name) name += other.name
+        MIX(DrawCalls);
+        MIX(DispatchCalls);
+        MIX(Vertices);
+        MIX(Triangles);
+        MIX(PipelineStateChanges);
+#undef MIX
+        return *this;
+    }
+
+    RenderStatsData& operator*=(float scale)
+    {
+#define MIX(name) name = (int64)(name * scale)
+        MIX(DrawCalls);
+        MIX(DispatchCalls);
+        MIX(Vertices);
+        MIX(Triangles);
+        MIX(PipelineStateChanges);
+#undef MIX
+        return *this;
+    }
 };
 
 #define RENDER_STAT_DISPATCH_CALL() Platform::InterlockedIncrement(&RenderStatsData::Counter.DispatchCalls)

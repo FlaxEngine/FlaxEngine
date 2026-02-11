@@ -81,6 +81,9 @@ int2 PerPassFullResCoordOffset;
 int PassIndex;
 float EffectMaxDistance;
 
+float3 Padding0;
+uint InputDepthScale;
+
 float2 Viewport2xPixelSize;
 float2 Viewport2xPixelSize_x_025; // Viewport2xPixelSize * 0.25 (for fusing add+mul into mad)
 
@@ -213,7 +216,7 @@ void PS_PrepareDepths(in float4 inPos : SV_POSITION, out float out0 : SV_Target0
 	float b = depths.z;
 	float a = depths.w;
 #else
-	int3 baseCoord = int3(int2(inPos.xy) * 2, 0);
+	int3 baseCoord = int3(int2(inPos.xy) * InputDepthScale, 0);
 	float c = g_DepthSource.Load(baseCoord, int2(0, 1)).x;
 	float d = g_DepthSource.Load(baseCoord, int2(1, 1)).x;
 	float b = g_DepthSource.Load(baseCoord, int2(1, 0)).x;
@@ -230,7 +233,7 @@ void PS_PrepareDepths(in float4 inPos : SV_POSITION, out float out0 : SV_Target0
 META_PS(true, FEATURE_LEVEL_ES2)
 void PS_PrepareDepthsHalf(in float4 inPos : SV_POSITION, out float out0 : SV_Target0, out float out1 : SV_Target1)
 {
-	int3 baseCoord = int3(int2(inPos.xy) * 2, 0);
+	int3 baseCoord = int3(int2(inPos.xy) * InputDepthScale, 0);
 	float a = g_DepthSource.Load(baseCoord, int2(0, 0)).x;
 	float d = g_DepthSource.Load(baseCoord, int2(1, 1)).x;
 

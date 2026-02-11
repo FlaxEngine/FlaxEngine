@@ -38,6 +38,9 @@ private:
 
     GPUDeviceDX12* _device;
     ID3D12GraphicsCommandList* _commandList;
+#ifdef __ID3D12GraphicsCommandList1_FWD_DEFINED__
+    ID3D12GraphicsCommandList1* _commandList1;
+#endif
     ID3D12CommandAllocator* _currentAllocator;
     GPUPipelineStateDX12* _currentState;
     GPUShaderProgramCS* _currentCompute;
@@ -197,8 +200,11 @@ public:
     void DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex) override;
     void DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
     void DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
+    uint64 BeginQuery(GPUQueryType type) override;
+    void EndQuery(uint64 queryID) override;
     void SetViewport(const Viewport& viewport) override;
     void SetScissor(const Rectangle& scissorRect) override;
+    void SetDepthBounds(float minDepth, float maxDepth) override;
     GPUPipelineState* GetState() const override;
     void SetState(GPUPipelineState* state) override;
     void ResetState() override;

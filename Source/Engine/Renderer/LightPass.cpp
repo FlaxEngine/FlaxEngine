@@ -37,6 +37,7 @@ bool LightPass::Init()
     _psLightSpotInside.CreatePipelineStates();
     _psLightSky = GPUDevice::Instance->CreatePipelineState();
     _psLightSkyInside = GPUDevice::Instance->CreatePipelineState();
+    _depthBounds = GPUDevice::Instance->Limits.HasDepthBounds && GPUDevice::Instance->Limits.HasReadOnlyDepth;
 
     // Load assets
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Lights"));
@@ -75,6 +76,11 @@ bool LightPass::setupResources()
         psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
         psDesc.BlendMode = BlendingMode::Add;
         psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
+        if (_depthBounds)
+        {
+            psDesc.DepthEnable = psDesc.DepthBoundsEnable = true;
+            psDesc.DepthWriteEnable = false;
+        }
         if (_psLightDir.Create(psDesc, shader, "PS_Directional"))
             return true;
     }
@@ -85,6 +91,7 @@ bool LightPass::setupResources()
         psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
         psDesc.VS = shader->GetVS("VS_Model");
         psDesc.DepthEnable = true;
+        psDesc.DepthBoundsEnable = _depthBounds;
         psDesc.CullMode = CullMode::Normal;
         if (_psLightPoint.Create(psDesc, shader, "PS_Point"))
             return true;
@@ -100,6 +107,7 @@ bool LightPass::setupResources()
         psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
         psDesc.VS = shader->GetVS("VS_Model");
         psDesc.DepthEnable = true;
+        psDesc.DepthBoundsEnable = _depthBounds;
         psDesc.CullMode = CullMode::Normal;
         if (_psLightSpot.Create(psDesc, shader, "PS_Spot"))
             return true;
@@ -116,6 +124,7 @@ bool LightPass::setupResources()
         psDesc.VS = shader->GetVS("VS_Model");
         psDesc.PS = shader->GetPS("PS_Sky");
         psDesc.DepthEnable = true;
+        psDesc.DepthBoundsEnable = _depthBounds;
         psDesc.CullMode = CullMode::Normal;
         if (_psLightSky->Init(psDesc))
             return true;
@@ -286,6 +295,11 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         }
 
         // Calculate lighting
+        if (_depthBounds)
+        {
+            Float2 minMaxDepth = RenderTools::GetDepthBounds(view, BoundingSphere(light.Position, light.Radius));
+            context->SetDepthBounds(minMaxDepth.X, minMaxDepth.Y);
+        }
         context->UpdateCB(cb0, &perLight);
         context->BindCB(0, cb0);
         context->BindCB(1, cb1);
@@ -329,6 +343,11 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         }
 
         // Calculate lighting
+        if (_depthBounds)
+        {
+            Float2 minMaxDepth = RenderTools::GetDepthBounds(view, BoundingSphere(light.Position, light.Radius));
+            context->SetDepthBounds(minMaxDepth.X, minMaxDepth.Y);
+        }
         context->UpdateCB(cb0, &perLight);
         context->BindCB(0, cb0);
         context->BindCB(1, cb1);
@@ -360,6 +379,8 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         light.SetShaderData(perLight.Light, light.HasShadow);
 
         // Calculate lighting
+        if (_depthBounds)
+            context->SetDepthBounds(0.0f, RenderTools::DepthBoundMaxBackground);
         context->UpdateCB(cb0, &perLight);
         context->BindCB(0, cb0);
         context->BindCB(1, cb1);
@@ -389,6 +410,11 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         context->BindSR(7, light.Image ? light.Image->GetTexture() : nullptr);
 
         // Calculate lighting
+        if (_depthBounds)
+        {
+            Float2 minMaxDepth = RenderTools::GetDepthBounds(view, BoundingSphere(light.Position, light.Radius));
+            context->SetDepthBounds(minMaxDepth.X, minMaxDepth.Y);
+        }
         context->UpdateCB(cb0, &perLight);
         context->BindCB(0, cb0);
         context->BindCB(1, cb1);
@@ -399,6 +425,8 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
     RenderTargetPool::Release(shadowMask);
 
     // Restore state
+    if (_depthBounds)
+        context->SetDepthBounds(0, 1);
     context->ResetRenderTarget();
     context->ResetSR();
     context->ResetCB();

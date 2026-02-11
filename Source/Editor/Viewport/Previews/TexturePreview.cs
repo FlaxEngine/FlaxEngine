@@ -410,6 +410,22 @@ namespace FlaxEditor.Viewport.Previews
             UpdateTextureRect();
         }
 
+        /// <summary>
+        /// Draws the material
+        /// </summary>
+        protected void DrawMaterial(ref Rectangle rect)
+        {
+            var textureObj = _previewMaterial.GetParameterValue("Texture");
+            var removeGamma = textureObj is TextureBase texture && PixelFormatExtensions.IsSRGB(texture.Format);
+            if (removeGamma)
+                Render2D.Features |= Render2D.RenderingFeatures.RemoveGamma;
+
+            Render2D.DrawMaterial(_previewMaterial, rect);
+
+            if (removeGamma)
+                Render2D.Features &= ~Render2D.RenderingFeatures.RemoveGamma;
+        }
+
         private void OnMipWidgetMenuOnVisibleChanged(Control control)
         {
             if (!control.Visible)
@@ -610,14 +626,9 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         protected override void DrawTexture(ref Rectangle rect)
         {
-            // Background
             Render2D.FillRectangle(rect, Color.Gray);
-
-            // Check if has loaded asset
             if (_asset && _asset.IsLoaded)
-            {
-                Render2D.DrawMaterial(_previewMaterial, rect);
-            }
+                DrawMaterial(ref rect);
         }
     }
 
@@ -665,14 +676,9 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         protected override void DrawTexture(ref Rectangle rect)
         {
-            // Background
             Render2D.FillRectangle(rect, Color.Gray);
-
-            // Check if has loaded asset
             if (_asset && _asset.IsLoaded)
-            {
-                Render2D.DrawMaterial(_previewMaterial, rect);
-            }
+                DrawMaterial(ref rect);
         }
     }
 }

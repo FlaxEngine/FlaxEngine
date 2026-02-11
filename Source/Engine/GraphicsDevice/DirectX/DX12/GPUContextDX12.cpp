@@ -133,6 +133,9 @@ GPUContextDX12::GPUContextDX12(GPUDeviceDX12* device, D3D12_COMMAND_LIST_TYPE ty
     FrameFenceValues[1] = 0;
     _currentAllocator = _device->GetCommandQueue()->RequestAllocator();
     VALIDATE_DIRECTX_CALL(device->GetDevice()->CreateCommandList(0, type, _currentAllocator, nullptr, IID_PPV_ARGS(&_commandList)));
+#ifdef __ID3D12GraphicsCommandList1_FWD_DEFINED__
+    _commandList->QueryInterface(IID_PPV_ARGS(&_commandList1));
+#endif
 #if GPU_ENABLE_RESOURCE_NAMING
     _commandList->SetName(TEXT("GPUContextDX12::CommandList"));
 #endif
@@ -1239,7 +1242,7 @@ void GPUContextDX12::DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCo
 {
     OnDrawCall();
     _commandList->DrawIndexedInstanced(indicesCount, instanceCount, startIndex, startVertex, startInstance);
-    RENDER_STAT_DRAW_CALL(0, indicesCount / 3 * instanceCount);
+    RENDER_STAT_DRAW_CALL(indicesCount * instanceCount, indicesCount / 3 * instanceCount);
 }
 
 void GPUContextDX12::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
@@ -1268,6 +1271,31 @@ void GPUContextDX12::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint
     RENDER_STAT_DRAW_CALL(0, 0);
 }
 
+uint64 GPUContextDX12::BeginQuery(GPUQueryType type)
+{
+    auto query = _device->AllocQuery(type);
+    if (query.Raw)
+    {
+        auto heap = _device->QueryHeaps[query.Heap];
+        if (type == GPUQueryType::Timer) // Timer queries call End twice on different queries to calculate duration between GPU time clocks
+            _commandList->EndQuery(heap->QueryHeap, heap->QueryType, query.SecondaryElement);
+        else
+            _commandList->BeginQuery(heap->QueryHeap, heap->QueryType, query.Element);
+    }
+    return query.Raw;
+}
+
+void GPUContextDX12::EndQuery(uint64 queryID)
+{
+    if (queryID)
+    {
+        GPUQueryDX12 query;
+        query.Raw = queryID;
+        auto heap = _device->QueryHeaps[query.Heap];
+        _commandList->EndQuery(heap->QueryHeap, heap->QueryType, query.Element);
+    }
+}
+
 void GPUContextDX12::SetViewport(const Viewport& viewport)
 {
     _commandList->RSSetViewports(1, (D3D12_VIEWPORT*)&viewport);
@@ -1281,6 +1309,14 @@ void GPUContextDX12::SetScissor(const Rectangle& scissorRect)
     rect.top = (LONG)scissorRect.GetTop();
     rect.bottom = (LONG)scissorRect.GetBottom();
     _commandList->RSSetScissorRects(1, &rect);
+}
+
+void GPUContextDX12::SetDepthBounds(float minDepth, float maxDepth)
+{
+#ifdef __ID3D12GraphicsCommandList1_FWD_DEFINED__
+    if (_commandList1)
+        _commandList1->OMSetDepthBounds(minDepth, maxDepth);
+#endif
 }
 
 GPUPipelineState* GPUContextDX12::GetState() const

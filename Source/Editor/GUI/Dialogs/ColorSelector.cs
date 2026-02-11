@@ -310,6 +310,26 @@ namespace FlaxEditor.GUI.Dialogs
             Render2D.DrawRectangle(_slider1Rect, _isMouseDownSlider1 ? style.BackgroundSelected : Color.Black);
             Render2D.DrawRectangle(valueR, _isMouseDownSlider1 ? Color.White : Color.Gray);
 
+            // Draw checkerboard pattern to part of the alpha slider background
+            var alphaRect = _slider2Rect;
+            Render2D.FillRectangle(alphaRect, Color.White);
+            var smallRectSize = alphaRect.Width * 0.5f;
+            var numHor = Mathf.CeilToInt(alphaRect.Width / smallRectSize);
+            var numVer = Mathf.CeilToInt(alphaRect.Height / smallRectSize);
+            for (int i = 0; i < numHor; i++)
+            {
+                for (int j = 0; j < numVer; j++)
+                {
+                    if ((i + j) % 2 == 0)
+                    {
+                        var rect = new Rectangle(alphaRect.X + smallRectSize * i, alphaRect.Y + smallRectSize * j, new Float2(smallRectSize));
+                        Render2D.PushClip(alphaRect);
+                        Render2D.FillRectangle(rect, Color.Gray);
+                        Render2D.PopClip();
+                    }
+                }
+            }
+
             // Alpha
             float alphaY = _slider2Rect.Height * (1 - _color.A);
             var alphaR = new Rectangle(_slider2Rect.X - slidersOffset, _slider2Rect.Y + alphaY - slidersThickness / 2, _slider2Rect.Width + slidersOffset * 2, slidersThickness);

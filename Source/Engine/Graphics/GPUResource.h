@@ -32,7 +32,7 @@ API_ENUM() enum class GPUResourceType
     PipelineState,
     // GPU binding descriptor
     Descriptor,
-    // GPU timer query
+    // GPU timer or occlusion query
     Query,
     // GPU texture sampler
     Sampler,

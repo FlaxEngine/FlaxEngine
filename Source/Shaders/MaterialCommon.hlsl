@@ -176,7 +176,8 @@ cbuffer ViewData : register(b1)
     float4 TemporalAAJitter;
     float3 LargeWorldsChunkIndex;
     float LargeWorldsChunkSize;
-    float3 ViewPadding0;
+    float2 ViewPadding0;
+    float TestValue;
     float ScaledTimeParam;
 };
 #endif

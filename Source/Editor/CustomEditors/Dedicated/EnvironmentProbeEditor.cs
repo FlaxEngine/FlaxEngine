@@ -21,10 +21,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             if (Values.HasDifferentTypes == false)
             {
-                var group = layout.Group("Bake");
+                var group = layout.Group("Probe");
                 group.Panel.ItemsMargin = new Margin(Utilities.Constants.UIMargin * 2);
                 _bake = group.Button("Bake").Button;
                 _bake.Clicked += BakeButtonClicked;
+                var view = group.Button("View", "Opens the probe texture viewer");
+                view.Button.Clicked += OnViewButtonClicked;
             }
         }
 
@@ -48,6 +50,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     envProbe.Bake();
                     Editor.Instance.Scene.MarkSceneEdited(envProbe.Scene);
                 }
+            }
+        }
+
+        private void OnViewButtonClicked()
+        {
+            foreach (var value in Values)
+            {
+                if (value is EnvironmentProbe probe && probe.ProbeAsset)
+                    Editor.Instance.ContentEditing.Open(probe.ProbeAsset);
             }
         }
     }
