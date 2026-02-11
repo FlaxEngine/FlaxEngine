@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using static FlaxEditor.Surface.Archetypes.Particles;
 using FlaxEditor.Options;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Surface.Undo;
@@ -29,6 +30,9 @@ namespace FlaxEditor.Surface
         private HashSet<SurfaceNode> _movingNodes;
         private HashSet<SurfaceNode> _temporarySelectedNodes;
         private readonly Stack<InputBracket> _inputBrackets = new Stack<InputBracket>();
+        private bool _isLazyConnecting;
+        private SurfaceNode _lazyConnectStartNode;
+        private SurfaceNode _lazyConnectEndNode;
 
         private class InputBracket
         {
@@ -250,8 +254,13 @@ namespace FlaxEditor.Surface
             // Cache mouse location
             _mousePos = location;
 
+            if (_isLazyConnecting && GetControlUnderMouse() is SurfaceNode nodeUnderMouse && !(nodeUnderMouse is SurfaceComment || nodeUnderMouse is ParticleEmitterNode))
+                _lazyConnectEndNode = nodeUnderMouse;
+            else if (_isLazyConnecting && Nodes.Count > 0)
+                _lazyConnectEndNode = GetClosestNodeAtLocation(location);
+
             // Moving around surface with mouse
-            if (_rightMouseDown)
+            if (_rightMouseDown && !_isLazyConnecting)
             {
                 // Calculate delta
                 var delta = location - _rightMouseDownPos;
@@ -321,6 +330,33 @@ namespace FlaxEditor.Surface
 
                         foreach (var node in _movingNodes)
                         {
+                            // Allow ripping the node from its current connection
+                            if (RootWindow.GetKey(KeyboardKeys.Alt))
+                            {
+                                InputBox nodeConnectedInput = null;
+                                OutputBox nodeConnectedOuput = null;
+
+                                var boxes = node.GetBoxes();
+                                foreach (var box in boxes)
+                                {
+                                    if (!box.IsOutput && box.Connections.Count > 0)
+                                    {
+                                        nodeConnectedInput = (InputBox)box;
+                                        continue;
+                                    }
+                                    if (box.IsOutput && box.Connections.Count > 0)
+                                    {
+                                        nodeConnectedOuput = (OutputBox)box;
+                                        continue;
+                                    }
+                                }
+
+                                if (nodeConnectedInput != null && nodeConnectedOuput != null)
+                                    TryConnect(nodeConnectedOuput.Connections[0], nodeConnectedInput.Connections[0]);
+                                
+                                node.RemoveConnections();
+                            }
+
                             if (gridSnap)
                             {
                                 Float2 unroundedLocation = node.Location;
@@ -515,11 +551,17 @@ namespace FlaxEditor.Surface
                 _middleMouseDownPos = location;
             }
 
+            if (root.GetKey(KeyboardKeys.Alt) && button == MouseButton.Right)
+                _isLazyConnecting = true;
+
             // Check if any node is under the mouse
             SurfaceControl controlUnderMouse = GetControlUnderMouse();
             var cLocation = _rootControl.PointFromParent(ref location);
             if (controlUnderMouse != null)
             {
+                if (controlUnderMouse is SurfaceNode node && _isLazyConnecting && !(controlUnderMouse is SurfaceComment || controlUnderMouse is ParticleEmitterNode))
+                    _lazyConnectStartNode = node;
+
                 // Check if mouse is over header and user is pressing mouse left button
                 if (_leftMouseDown && controlUnderMouse.CanSelect(ref cLocation))
                 {
@@ -554,6 +596,9 @@ namespace FlaxEditor.Surface
             }
             else
             {
+                if (_isLazyConnecting && Nodes.Count > 0)
+                    _lazyConnectStartNode = GetClosestNodeAtLocation(location);
+
                 // Cache flags and state
                 if (_leftMouseDown)
                 {
@@ -602,8 +647,71 @@ namespace FlaxEditor.Surface
                 {
                     if (_movingNodes != null && _movingNodes.Count > 0)
                     {
+                        // Allow dropping a single node onto an existing connection and connect it
+                        if (_movingNodes.Count == 1)
+                        {
+                            var mousePos = _rootControl.PointFromParent(ref _mousePos);
+                            InputBox intersectedConnectionInputBox;
+                            OutputBox intersectedConnectionOutputBox;
+                            if (IntersectsConnection(mousePos, out intersectedConnectionInputBox, out intersectedConnectionOutputBox))
+                            {
+                                SurfaceNode node = _movingNodes.First();
+                                InputBox nodeInputBox = (InputBox)node.GetBoxes().First(b => !b.IsOutput);
+                                OutputBox nodeOutputBox = (OutputBox)node.GetBoxes().First(b => b.IsOutput);
+                                TryConnect(intersectedConnectionOutputBox, nodeInputBox);
+                                TryConnect(nodeOutputBox, intersectedConnectionInputBox);
+
+                                float intersectedConnectionNodesXDistance = intersectedConnectionInputBox.ParentNode.Left - intersectedConnectionOutputBox.ParentNode.Right;
+                                float paddedNodeWidth = node.Width + 2f;
+                                if (intersectedConnectionNodesXDistance < paddedNodeWidth)
+                                {
+                                    List<SurfaceNode> visitedNodes = new List<SurfaceNode>{ node };
+                                    List<SurfaceNode> movedNodes = new List<SurfaceNode>();
+                                    Float2 locationDelta = new Float2(paddedNodeWidth, 0f);
+
+                                    MoveConnectedNodes(intersectedConnectionInputBox.ParentNode);
+
+                                    void MoveConnectedNodes(SurfaceNode node)
+                                    {
+                                        // Only move node if it is to the right of the node we have connected the moved node to
+                                        if (node.Right > intersectedConnectionInputBox.ParentNode.Left + 15f && !node.Archetype.Flags.HasFlag(NodeFlags.NoMove))
+                                        {
+                                            node.Location += locationDelta;
+                                            movedNodes.Add(node);
+                                        }
+
+                                        visitedNodes.Add(node);
+
+                                        foreach (var box in node.GetBoxes())
+                                        {
+                                            if (!box.HasAnyConnection || box == intersectedConnectionInputBox)
+                                                continue;
+
+                                            foreach (var connectedBox in box.Connections)
+                                            {
+                                                SurfaceNode nextNode = connectedBox.ParentNode;
+                                                if (visitedNodes.Contains(nextNode))
+                                                    continue;
+
+                                                MoveConnectedNodes(nextNode);
+                                            }
+                                        }
+                                    }
+
+                                    Float2 nodeMoveOffset = new Float2(node.Width * 0.5f, 0f);
+                                    node.Location += nodeMoveOffset;
+
+                                    var moveNodesAction = new MoveNodesAction(Context, movedNodes.Select(n => n.ID).ToArray(), locationDelta);
+                                    var moveNodeAction = new MoveNodesAction(Context, [node.ID], nodeMoveOffset);
+                                    var multiAction = new MultiUndoAction(moveNodeAction, moveNodesAction);
+
+                                    AddBatchedUndoAction(multiAction);
+                                }
+                            }
+                        }
+
                         if (Undo != null && !_movingNodesDelta.IsZero && CanEdit)
-                            Undo.AddAction(new MoveNodesAction(Context, _movingNodes.Select(x => x.ID).ToArray(), _movingNodesDelta));
+                            AddBatchedUndoAction(new MoveNodesAction(Context, _movingNodes.Select(x => x.ID).ToArray(), _movingNodesDelta));
                         _movingNodes.Clear();
                     }
                     _movingNodesDelta = Float2.Zero;
@@ -630,12 +738,36 @@ namespace FlaxEditor.Surface
                 {
                     // Check if any control is under the mouse
                     _cmStartPos = location;
-                    if (controlUnderMouse == null)
+                    if (controlUnderMouse == null && !_isLazyConnecting)
                     {
                         showPrimaryMenu = true;
                     }
                 }
                 _mouseMoveAmount = 0;
+
+                if (_isLazyConnecting)
+                {
+                    if (_lazyConnectStartNode != null && _lazyConnectEndNode != null && _lazyConnectStartNode != _lazyConnectEndNode)
+                    {
+                        // First check if there is a type matching input and output where input
+                        OutputBox startNodeOutput = (OutputBox)_lazyConnectStartNode.GetBoxes().FirstOrDefault(b => b.IsOutput, null);
+                        InputBox endNodeInput = null;
+
+                        if (startNodeOutput != null)
+                            endNodeInput = (InputBox)_lazyConnectEndNode.GetBoxes().FirstOrDefault(b => !b.IsOutput && b.CurrentType == startNodeOutput.CurrentType && !b.HasAnyConnection && b.IsActive && b.CanConnectWith(startNodeOutput), null);
+
+                        // Perform less strict checks (less ideal conditions for connection but still good) if the first checks failed
+                        if (endNodeInput == null)
+                            endNodeInput = (InputBox)_lazyConnectEndNode.GetBoxes().FirstOrDefault(b => !b.IsOutput && !b.HasAnyConnection && b.CanConnectWith(startNodeOutput), null);
+
+                        if (startNodeOutput != null && endNodeInput != null)
+                            TryConnect(startNodeOutput, endNodeInput);
+                    }
+
+                    _isLazyConnecting = false;
+                    _lazyConnectStartNode = null;
+                    _lazyConnectEndNode = null;
+                }
             }
             if (_middleMouseDown && button == MouseButton.Middle)
             {
@@ -835,6 +967,29 @@ namespace FlaxEditor.Surface
             }
 
             return false;
+        }
+
+        private SurfaceNode GetClosestNodeAtLocation(Float2 location)
+        {
+            SurfaceNode currentClosestNode = null;
+            float currentClosestDistanceSquared = float.MaxValue;
+
+            foreach (var node in Nodes)
+            {
+                if (node is SurfaceComment || node is ParticleEmitterNode)
+                    continue;
+
+                Float2 nodeSurfaceLocation = _rootControl.PointToParent(node.Center);
+
+                float distanceSquared = Float2.DistanceSquared(location, nodeSurfaceLocation);
+                if (distanceSquared < currentClosestDistanceSquared)
+                {
+                    currentClosestNode = node;
+                    currentClosestDistanceSquared = distanceSquared;
+                }
+            }
+
+            return currentClosestNode;
         }
 
         private void ResetInput()
