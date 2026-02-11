@@ -1562,4 +1562,49 @@ void WindowsPlatform::CollectCrashData(const String& crashDataFolder, void* cont
 
 #endif
 
+#if USE_EDITOR
+
+#include "Engine/Core/Math/Color32.h"
+
+WIN_API COLORREF WIN_API_CALLCONV GetPixel(_In_ HDC hdc, _In_ int x, _In_ int y);
+#define GetRValue(rgb) (LOBYTE(rgb))
+#define GetGValue(rgb) (LOBYTE(((WORD)(rgb)) >> 8))
+#define GetBValue(rgb) (LOBYTE((rgb) >> 16))
+#pragma comment(lib, "Gdi32.lib")
+
+static HHOOK MouseCallbackHook;
+
+LRESULT CALLBACK OnScreenUtilsMouseCallback(_In_ int nCode, _In_ WPARAM wParam, _In_ LPARAM lParam)
+{
+    if (nCode >= 0 && wParam == WM_LBUTTONDOWN)
+    {
+        UnhookWindowsHookEx(MouseCallbackHook);
+
+        // Push event with the picked color
+        const Float2 cursorPos = Platform::GetMousePosition();
+        const Color32 colorPicked = PlatformBase::GetScreenColorAt(cursorPos);
+        PlatformBase::PickScreenColorDone(colorPicked);
+        return 1;
+    }
+    return CallNextHookEx(NULL, nCode, wParam, lParam);
+}
+
+Color32 WindowsPlatform::GetScreenColorAt(const Float2& pos)
+{
+    PROFILE_CPU();
+    HDC deviceContext = GetDC(NULL);
+    COLORREF color = GetPixel(deviceContext, (int)pos.X, (int)pos.Y);
+    ReleaseDC(NULL, deviceContext);
+    return Color32(GetRValue(color), GetGValue(color), GetBValue(color), 255);
+}
+
+void WindowsPlatform::PickScreenColor()
+{
+    MouseCallbackHook = SetWindowsHookEx(WH_MOUSE_LL, OnScreenUtilsMouseCallback, NULL, NULL);
+    if (MouseCallbackHook == NULL)
+        LOG(Warning, "Failed to set mouse hook (GetLastError={})", GetLastError());
+}
+
+#endif
+
 #endif

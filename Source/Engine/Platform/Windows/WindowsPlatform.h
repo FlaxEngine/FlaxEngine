@@ -90,6 +90,10 @@ public:
     static Array<StackFrame, HeapAllocation> GetStackFrames(int32 skipCount = 0, int32 maxDepth = 60, void* context = nullptr);
     static void CollectCrashData(const String& crashDataFolder, void* context = nullptr);
 #endif
+#if USE_EDITOR
+    static Color32 GetScreenColorAt(const Float2& pos);
+    static void PickScreenColor();
+#endif
 };
 
 #endif

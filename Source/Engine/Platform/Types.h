@@ -30,8 +30,6 @@ class Win32Network;
 typedef Win32Network Network;
 class UserBase;
 typedef UserBase User;
-class WindowsScreenUtilities;
-typedef WindowsScreenUtilities ScreenUtilities;
 
 #elif PLATFORM_UWP
 
@@ -59,8 +57,6 @@ class Win32Network;
 typedef Win32Network Network;
 class UserBase;
 typedef UserBase User;
-class ScreenUtilitiesBase;
-typedef ScreenUtilitiesBase ScreenUtilities;
 
 #elif PLATFORM_LINUX
 
@@ -90,8 +86,6 @@ class UnixNetwork;
 typedef UnixNetwork Network;
 class UserBase;
 typedef UserBase User;
-class LinuxScreenUtilities;
-typedef LinuxScreenUtilities ScreenUtilities;
 
 #elif PLATFORM_PS4
 
@@ -119,8 +113,6 @@ class PS4Network;
 typedef PS4Network Network;
 class PS4User;
 typedef PS4User User;
-class ScreenUtilitiesBase;
-typedef ScreenUtilitiesBase ScreenUtilities;
 
 #elif PLATFORM_PS5
 
@@ -148,8 +140,6 @@ class PS5Network;
 typedef PS5Network Network;
 class PS5User;
 typedef PS5User User;
-class ScreenUtilitiesBase;
-typedef ScreenUtilitiesBase ScreenUtilities;
 
 #elif PLATFORM_XBOX_ONE
 
@@ -177,8 +167,6 @@ class Win32Network;
 typedef Win32Network Network;
 class GDKUser;
 typedef GDKUser User;
-class ScreenUtilitiesBase;
-typedef ScreenUtilitiesBase ScreenUtilities;
 
 #elif PLATFORM_XBOX_SCARLETT
 
@@ -206,8 +194,6 @@ class Win32Network;
 typedef Win32Network Network;
 class GDKUser;
 typedef GDKUser User;
-class ScreenUtilitiesBase;
-typedef ScreenUtilitiesBase ScreenUtilities;
 
 #elif PLATFORM_ANDROID
 
@@ -235,8 +221,6 @@ class UnixNetwork;
 typedef UnixNetwork Network;
 class UserBase;
 typedef UserBase User;
-class ScreenUtilitiesBase;
-typedef ScreenUtilitiesBase ScreenUtilities;
 
 #elif PLATFORM_SWITCH
 
@@ -264,8 +248,6 @@ class SwitchNetwork;
 typedef SwitchNetwork Network;
 class SwitchUser;
 typedef SwitchUser User;
-class ScreenUtilitiesBase;
-typedef ScreenUtilitiesBase ScreenUtilities;
 
 #elif PLATFORM_MAC
 
@@ -295,8 +277,6 @@ class UnixNetwork;
 typedef UnixNetwork Network;
 class UserBase;
 typedef UserBase User;
-class MacScreenUtilities;
-typedef MacScreenUtilities ScreenUtilities;
 
 #elif PLATFORM_IOS
 
@@ -324,8 +304,6 @@ class UnixNetwork;
 typedef UnixNetwork Network;
 class UserBase;
 typedef UserBase User;
-class ScreenUtilitiesBase;
-typedef ScreenUtilitiesBase ScreenUtilities;
 
 #else
 

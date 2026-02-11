@@ -888,6 +888,26 @@ public:
 
     // Crash dump data handling
     static void CollectCrashData(const String& crashDataFolder, void* context = nullptr);
+
+public:
+#if USE_EDITOR
+    /// <summary>
+    /// Gets the pixel color at the specified coordinates.
+    /// </summary>
+    /// <param name="pos">Screen-space coordinate to read.</param>
+    /// <returns>Pixel color at the specified coordinates, or transparent color when color couldn't be picked up.</returns>
+    API_FUNCTION() static Color32 GetScreenColorAt(const Float2& pos);
+
+    /// <summary>
+    /// Starts async color picking. Color will be returned through PickColorDone event when the action ends (user selected the final color with a mouse). When action is active, GetColorAt can be used to read the current value.
+    /// </summary>
+    API_FUNCTION() static void PickScreenColor();
+
+    /// <summary>
+    /// Called when PickColor action is finished.
+    /// </summary>
+    API_EVENT() static Delegate<Color32> PickScreenColorDone;
+#endif
 };
 
 extern FLAXENGINE_API const Char* ToString(PlatformType type);

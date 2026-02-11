@@ -797,6 +797,26 @@ void PlatformBase::CollectCrashData(const String& crashDataFolder, void* context
 {
 }
 
+#if USE_EDITOR
+
+#include "Engine/Core/Math/Color32.h"
+
+Delegate<Color32> PlatformBase::PickScreenColorDone;
+
+Color32 PlatformBase::GetScreenColorAt(const Float2& pos)
+{
+    // No supported
+    return Color32::Transparent;
+}
+
+void PlatformBase::PickScreenColor()
+{
+    // Just return transparent color when not implemented/supported
+    PickScreenColorDone(Color32::Transparent);
+}
+
+#endif
+
 const Char* ToString(PlatformType type)
 {
     switch (type)
