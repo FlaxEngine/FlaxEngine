@@ -77,6 +77,8 @@ bool CommandLine::Parse(const Char* cmdLine)
     Char* argStart;
     Char* argEnd;
     int32 len;
+    (void)argStart;
+    (void)argEnd;
 
 #define PARSE_BOOL_SWITCH(text, field) \
 		pos = (Char*)StringUtils::FindIgnoreCase(buffer.Get(), TEXT(text)); \
