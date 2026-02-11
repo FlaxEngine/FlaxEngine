@@ -103,11 +103,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     var actors = ScriptsEditor.ParentEditor.Values;
                     foreach (var a in actors)
                     {
-                        if (a.GetType() != requireActor.RequiredType)
-                        {
-                            item.Enabled = false;
-                            break;
-                        }
+                        if (a.GetType() == requireActor.RequiredType)
+                            continue;
+                        if (requireActor.IncludeInheritedTypes && a.GetType().IsSubclassOf(requireActor.RequiredType))
+                            continue;
+                        item.Enabled = false;
+                        break;
                     }
                 }
                 cm.AddItem(item);
@@ -837,7 +838,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     if (attribute != null)
                     {
                         var actor = script.Actor;
-                        if (actor.GetType() != attribute.RequiredType && !actor.GetType().IsSubclassOf(attribute.RequiredType))
+                        if (actor.GetType() != attribute.RequiredType && (attribute.IncludeInheritedTypes && !actor.GetType().IsSubclassOf(attribute.RequiredType)))
                         {
                             Editor.LogWarning($"`{Utilities.Utils.GetPropertyNameUI(scriptType.Name)}` on `{script.Actor}` is missing a required Actor of type `{attribute.RequiredType}`.");
                             hasAllRequirements = false;

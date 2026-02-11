@@ -13,13 +13,20 @@ public class RequireActorAttribute : Attribute
     /// The required type.
     /// </summary>
     public Type RequiredType;
+    
+    /// <summary>
+    /// Whether to include inherited types.
+    /// </summary>
+    public bool IncludeInheritedTypes;
 
     /// <summary>
     /// Initializes a new instance of the  <see cref="RequireActorAttribute"/> class.
     /// </summary>
     /// <param name="type">The required type.</param>
-    public RequireActorAttribute(Type type)
+    /// <param name="includeInheritedTypes">Whether to include inherited types.</param>
+    public RequireActorAttribute(Type type, bool includeInheritedTypes = false)
     {
         RequiredType = type;
+        IncludeInheritedTypes = includeInheritedTypes;
     }
 }
