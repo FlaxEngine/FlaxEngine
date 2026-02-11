@@ -213,7 +213,12 @@ namespace FlaxEditor.GUI.Docking
             base.OnSelectedTabChanged();
 
             if (_window != null && SelectedTab != null)
+            {
                 _window.Title = SelectedTab.Title;
+                var decorations = Parent.GetChild<FloatWindowDecorations>();
+                if (decorations != null)
+                    decorations.PerformLayout();
+            }
         }
 
         /// <inheritdoc />
