@@ -26,7 +26,7 @@ namespace FlaxEditor.GUI.Docking
         /// <summary>
         /// The hint control size.
         /// </summary>
-        public const float HintControlSize = 32.0f;
+        public const float HintControlSize = 48.0f;
 
         /// <summary>
         /// The opacity of the dragged window when hint controls are shown.
@@ -341,7 +341,10 @@ namespace FlaxEditor.GUI.Docking
             bool showBorderHints = showProxyHints;
             bool showCenterHint = showProxyHints;
             Control hoveredHintControl = null;
+            Float2 hoveredLocationOffset = Float2.Zero;
             Float2 hoveredSizeOverride = Float2.Zero;
+            DockState prevToSet = _toSet;
+            float hoveredMargin = 1.0f;
             if (showProxyHints)
             {
                 // If moved window has not only tabs but also child panels disable docking as tab
@@ -358,7 +361,7 @@ namespace FlaxEditor.GUI.Docking
                 // Cache dock rectangles
                 var size = _rectDock.Size / Platform.DpiScale;
                 var offset = _toDock.PointFromScreen(_rectDock.Location);
-                var borderMargin = 4.0f;
+                var borderMargin = 10.0f;
                 var hintWindowsSize = HintControlSize;
                 var hintWindowsSize2 = hintWindowsSize * 0.5f;
                 var hintPreviewSize = new Float2(Math.Max(HintControlSize * 2, size.X * 0.5f), Math.Max(HintControlSize * 2, size.Y * 0.5f));
@@ -371,35 +374,40 @@ namespace FlaxEditor.GUI.Docking
                 _rCenter = new Rectangle(centerX - hintWindowsSize2, centerY - hintWindowsSize2, hintWindowsSize, hintWindowsSize) + offset;
 
                 // Hit test, and calculate the approximation for filled area when hovered over the hint
-                DockState toSet = DockState.Float;
+                var toSet = DockState.Float;
+                var hintTestPoint = _toDock.PointFromScreen(_mouse);
                 if (showBorderHints)
                 {
-                    if (_rUpper.Contains(_toDock.PointFromScreen(_mouse)))
+                    if (_rUpper.Contains(ref hintTestPoint))
                     {
                         toSet = DockState.DockTop;
                         hoveredHintControl = _dockHintUp;
-                        hoveredSizeOverride = new Float2(size.X, hintPreviewSize.Y);
+                        hoveredSizeOverride = new Float2(size.X, size.Y * DockPanel.DefaultSplitterValue);
+                        hoveredLocationOffset.Y -= borderMargin - hoveredMargin;
                     }
-                    else if (_rBottom.Contains(_toDock.PointFromScreen(_mouse)))
+                    else if (_rBottom.Contains(ref hintTestPoint))
                     {
                         toSet = DockState.DockBottom;
                         hoveredHintControl = _dockHintDown;
-                        hoveredSizeOverride = new Float2(size.X, hintPreviewSize.Y);
+                        hoveredSizeOverride = new Float2(size.X, size.Y * DockPanel.DefaultSplitterValue);
+                        hoveredLocationOffset.Y += borderMargin - hoveredMargin;
                     }
-                    else if (_rLeft.Contains(_toDock.PointFromScreen(_mouse)))
+                    else if (_rLeft.Contains(ref hintTestPoint))
                     {
                         toSet = DockState.DockLeft;
                         hoveredHintControl = _dockHintLeft;
-                        hoveredSizeOverride = new Float2(hintPreviewSize.X, size.Y);
+                        hoveredSizeOverride = new Float2(size.X * DockPanel.DefaultSplitterValue, size.Y);
+                        hoveredLocationOffset.X -= borderMargin - hoveredMargin;
                     }
-                    else if (_rRight.Contains(_toDock.PointFromScreen(_mouse)))
+                    else if (_rRight.Contains(ref hintTestPoint))
                     {
                         toSet = DockState.DockRight;
                         hoveredHintControl = _dockHintRight;
-                        hoveredSizeOverride = new Float2(hintPreviewSize.X, size.Y);
+                        hoveredSizeOverride = new Float2(size.X * DockPanel.DefaultSplitterValue, size.Y);
+                        hoveredLocationOffset.X += borderMargin - hoveredMargin;
                     }
                 }
-                if (showCenterHint && _rCenter.Contains(_toDock.PointFromScreen(_mouse)))
+                if (showCenterHint && _rCenter.Contains(ref hintTestPoint))
                 {
                     toSet = DockState.DockFill;
                     hoveredHintControl = _dockHintCenter;
@@ -416,38 +424,41 @@ namespace FlaxEditor.GUI.Docking
             // Update sizes and opacity of hint controls
             if (_toDock != null)
             {
+                var mainColor = Style.Current.Selection;
                 if (hoveredHintControl != _dockHintDown)
                 {
                     _dockHintDown.Size = new Float2(HintControlSize);
-                    _dockHintDown.BackgroundColor = Style.Current.Selection.AlphaMultiplied(0.6f);
+                    _dockHintDown.BackgroundColor = mainColor.AlphaMultiplied(0.6f);
                 }
                 if (hoveredHintControl != _dockHintLeft)
                 {
                     _dockHintLeft.Size = new Float2(HintControlSize);
-                    _dockHintLeft.BackgroundColor = Style.Current.Selection.AlphaMultiplied(0.6f);
+                    _dockHintLeft.BackgroundColor = mainColor.AlphaMultiplied(0.6f);
                 }
                 if (hoveredHintControl != _dockHintRight)
                 {
                     _dockHintRight.Size = new Float2(HintControlSize);
-                    _dockHintRight.BackgroundColor = Style.Current.Selection.AlphaMultiplied(0.6f);
+                    _dockHintRight.BackgroundColor = mainColor.AlphaMultiplied(0.6f);
                 }
                 if (hoveredHintControl != _dockHintUp)
                 {
                     _dockHintUp.Size = new Float2(HintControlSize);
-                    _dockHintUp.BackgroundColor = Style.Current.Selection.AlphaMultiplied(0.6f);
+                    _dockHintUp.BackgroundColor = mainColor.AlphaMultiplied(0.6f);
                 }
                 if (hoveredHintControl != _dockHintCenter)
                 {
                     _dockHintCenter.Size = new Float2(HintControlSize);
-                    _dockHintCenter.BackgroundColor = Style.Current.Selection.AlphaMultiplied(0.6f);
+                    _dockHintCenter.BackgroundColor = mainColor.AlphaMultiplied(0.6f);
                 }
 
                 if (_toSet != DockState.Float)
                 {
                     if (hoveredHintControl != null)
                     {
-                        hoveredHintControl.BackgroundColor = Style.Current.Selection.AlphaMultiplied(1.0f);
-                        hoveredHintControl.Size = hoveredSizeOverride;
+                        hoveredHintControl.BackgroundColor = mainColor;
+                        if (_toSet != prevToSet)
+                            hoveredHintControl.Location += hoveredLocationOffset;
+                        hoveredHintControl.Size = hoveredSizeOverride - hoveredMargin;
                     }
                 }
             }
