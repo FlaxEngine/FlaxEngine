@@ -1013,7 +1013,7 @@ namespace FlaxEditor.Modules
                     ContentItem item;
                     if (path.EndsWith(".cs"))
                         item = new CSharpScriptItem(path);
-                    else if (path.EndsWith(".cpp") || path.EndsWith(".h"))
+                    else if (path.EndsWith(".cpp") || path.EndsWith(".h") || path.EndsWith(".c") || path.EndsWith(".hpp"))
                         item = new CppScriptItem(path);
                     else if (path.EndsWith(".shader") || path.EndsWith(".hlsl"))
                         item = new ShaderSourceItem(path);

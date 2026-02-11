@@ -14,11 +14,6 @@ class FLAXENGINE_API GDKPlatform : public Win32Platform
 public:
 
     /// <summary>
-    /// Win32 application windows class name.
-    /// </summary>
-    static const Char* ApplicationWindowClass;
-
-    /// <summary>
     /// Handle to Win32 application instance.
     /// </summary>
     static void* Instance;

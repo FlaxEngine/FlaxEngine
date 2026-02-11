@@ -491,7 +491,7 @@ namespace Flax.Build
                 var cppFiles = new List<string>(moduleOptions.SourceFiles.Count / 2);
                 for (int i = 0; i < moduleOptions.SourceFiles.Count; i++)
                 {
-                    if (moduleOptions.SourceFiles[i].EndsWith(".cpp", StringComparison.OrdinalIgnoreCase))
+                    if (moduleOptions.SourceFiles[i].EndsWith(".cpp", StringComparison.OrdinalIgnoreCase) || moduleOptions.SourceFiles[i].EndsWith(".c", StringComparison.OrdinalIgnoreCase))
                         cppFiles.Add(moduleOptions.SourceFiles[i]);
                 }
 

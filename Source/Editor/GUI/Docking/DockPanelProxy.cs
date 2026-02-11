@@ -19,11 +19,7 @@ namespace FlaxEditor.GUI.Docking
         private float _tabHeight = Editor.Instance.Options.Options.Interface.TabHeight;
         private bool _useMinimumTabWidth = Editor.Instance.Options.Options.Interface.UseMinimumTabWidth;
         private float _minimumTabWidth = Editor.Instance.Options.Options.Interface.MinimumTabWidth;
-#if PLATFORM_WINDOWS
-        private readonly bool _hideTabForSingleTab = Editor.Instance.Options.Options.Interface.HideSingleTabWindowTabBars;
-#else
-        private readonly bool _hideTabForSingleTab = false;
-#endif
+        private readonly bool _hideTabForSingleTab = Utilities.Utils.HideSingleTabWindowTabBars();
 
         /// <summary>
         /// The is mouse down flag (left button).
@@ -54,6 +50,11 @@ namespace FlaxEditor.GUI.Docking
         /// The mouse position.
         /// </summary>
         public Float2 MousePosition = Float2.Minimum;
+        
+        /// <summary>
+        /// The mouse position.
+        /// </summary>
+        public Float2 MouseStartPosition = Float2.Minimum;
 
         /// <summary>
         /// The start drag asynchronous window.
@@ -196,7 +197,7 @@ namespace FlaxEditor.GUI.Docking
                 if (_panel.ChildPanelsCount == 0 && _panel.TabsCount == 1 && _panel.IsFloating)
                 {
                     // Create docking hint window but in an async manner
-                    DockHintWindow.Create(_panel as FloatWindowDockPanel);
+                    WindowDragHelper.StartDragging(_panel as FloatWindowDockPanel);
                 }
                 else
                 {
@@ -207,7 +208,7 @@ namespace FlaxEditor.GUI.Docking
                     _panel.SelectTab(index - 1);
 
                     // Create docking hint window
-                    DockHintWindow.Create(win);
+                    WindowDragHelper.StartDragging(win, _panel.RootWindow.Window);
                 }
             }
         }
@@ -393,6 +394,7 @@ namespace FlaxEditor.GUI.Docking
             if (IsSingleFloatingWindow)
                 return base.OnMouseDown(location, button);
             MouseDownWindow = GetTabAtPos(location, out IsMouseDownOverCross);
+            MouseStartPosition = location;
 
             // Check buttons
             if (button == MouseButton.Left)
@@ -478,6 +480,20 @@ namespace FlaxEditor.GUI.Docking
                     if (!IsMouseDownOverCross && MouseDownWindow != null)
                         StartDrag(MouseDownWindow);
                     MouseDownWindow = null;
+                }
+                // Check if single tab is tried to be moved
+                else if (MouseDownWindow != null && _panel.TabsCount <= 1)
+                {
+                    if ((MousePosition - MouseStartPosition).Length > 3)
+                    {
+                        // Clear flag
+                        IsMouseLeftButtonDown = false;
+
+                        // Check tab under the mouse
+                        if (!IsMouseDownOverCross && MouseDownWindow != null)
+                            StartDrag(MouseDownWindow);
+                        MouseDownWindow = null;
+                    }
                 }
                 // Check if has more than one tab to change order
                 else if (MouseDownWindow != null && _panel.TabsCount > 1)

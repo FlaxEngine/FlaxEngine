@@ -190,12 +190,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     foreach (var file in files)
                         FindNewKeysCSharp(file, newKeys, allKeys);
 
-                    // C++
-                    files = Directory.GetFiles(Globals.ProjectSourceFolder, "*.cpp", SearchOption.AllDirectories);
+                    // C/C++
+                    files = Directory.GetFiles(Globals.ProjectSourceFolder, "*.cpp", SearchOption.AllDirectories).Concat(Directory.GetFiles(Globals.ProjectSourceFolder, "*.c", SearchOption.AllDirectories)).ToArray();
                     filesCount += files.Length;
                     foreach (var file in files)
                         FindNewKeysCpp(file, newKeys, allKeys);
-                    files = Directory.GetFiles(Globals.ProjectSourceFolder, "*.h", SearchOption.AllDirectories);
+                    files = Directory.GetFiles(Globals.ProjectSourceFolder, "*.h", SearchOption.AllDirectories).Concat(Directory.GetFiles(Globals.ProjectSourceFolder, "*.hpp", SearchOption.AllDirectories)).ToArray();;
                     filesCount += files.Length;
                     foreach (var file in files)
                         FindNewKeysCpp(file, newKeys, allKeys);

@@ -351,11 +351,15 @@ namespace FlaxEditor.GUI.Dialogs
             // Update eye dropper tool
             if (_activeEyedropper)
             {
+                // Try reading the color under the cursor in realtime if supported by the platform
                 Float2 mousePosition = Platform.MousePosition;
                 Color color = ScreenUtilities.GetColorAt(mousePosition);
-                if (_linear)
-                    color = color.ToLinear();
-                SelectedColor = color;
+                if (color != Color.Transparent)
+                {
+                    if (_linear)
+                        color = color.ToLinear();
+                    SelectedColor = color;
+                }
             }
         }
 

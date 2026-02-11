@@ -10,7 +10,6 @@ using System.Text;
 using System.Xml;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.Dialogs;
-using FlaxEditor.GUI.Docking;
 using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
 using FlaxEditor.Windows.Profiler;
@@ -763,17 +762,19 @@ namespace FlaxEditor.Modules
             var settings = CreateWindowSettings.Default;
             settings.Title = "Flax Editor";
             settings.Size = Platform.DesktopSize * 0.75f;
+            settings.MinimumSize = new Float2(200, 150);
             settings.StartPosition = WindowStartPosition.CenterScreen;
             settings.ShowAfterFirstPaint = true;
-#if PLATFORM_WINDOWS
-            if (!Editor.Instance.Options.Options.Interface.UseNativeWindowSystem)
+            
+            if (Utilities.Utils.UseCustomWindowDecorations(isMainWindow: true))
             {
                 settings.HasBorder = false;
-
+#if PLATFORM_WINDOWS && !PLATFORM_SDL
                 // Skip OS sizing frame and implement it using LeftButtonHit
                 settings.HasSizingFrame = false;
+#endif
             }
-#elif PLATFORM_LINUX
+#if PLATFORM_LINUX && !PLATFORM_SDL
             settings.HasBorder = false;
 #endif
             MainWindow = Platform.CreateWindow(ref settings);

@@ -29,7 +29,7 @@ const Char* SplashScreenQuotes[] =
 #elif PLATFORM_LINUX
     TEXT("Try it on a Raspberry"),
     TEXT("Trying to exit vim"),
-    TEXT("Sudo flax --loadproject"),
+    TEXT("sudo flax --project HelloWorld.flaxproj"),
 #elif PLATFORM_MAC
     TEXT("don't compare Macbooks to oranges."),
     TEXT("Why does macbook heat up?\nBecause it doesn't have windows"),
@@ -105,6 +105,7 @@ const Char* SplashScreenQuotes[] =
     TEXT("You have my bow.\nAnd my axe!"),
     TEXT("To the bridge of Khazad-dum."),
     TEXT("One ring to rule them all.\nOne ring to find them."),
+    TEXT("Where there's a whip, there's a way."),
     TEXT("That's what she said"),
     TEXT("We could be compiling shaders here"),
     TEXT("Hello There"),
@@ -166,7 +167,7 @@ void SplashScreen::Show()
     settings.AllowMaximize = false;
     settings.AllowDragAndDrop = false;
     settings.IsTopmost = false;
-    settings.IsRegularWindow = false;
+    settings.Type = WindowType::Utility;
     settings.HasSizingFrame = false;
     settings.ShowAfterFirstPaint = true;
     settings.StartPosition = WindowStartPosition::CenterScreen;

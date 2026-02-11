@@ -140,6 +140,9 @@ API_ENUM() enum class ArchitectureType
 #if !defined(PLATFORM_SWITCH)
 #define PLATFORM_SWITCH 0
 #endif
+#if !defined(PLATFORM_SDL)
+#define PLATFORM_SDL 0
+#endif
 
 #if PLATFORM_WINDOWS
 #include "Windows/WindowsDefines.h"

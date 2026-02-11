@@ -180,6 +180,34 @@ namespace FlaxEditor.Options
         }
 
         /// <summary>
+        /// Options for type of window decorations to use.
+        /// </summary>
+        public enum WindowDecorationsType
+        {
+            /// <summary>
+            /// Determined automatically based on the system and any known compatibility issues with native decorations.
+            /// </summary>
+            Auto,
+            
+            /// <summary>
+            /// Automatically choose most compatible window decorations for child windows, prefer custom decorations on main window.
+            /// </summary>
+            [EditorDisplay(Name = "Auto (Child Only)")]
+            AutoChildOnly,
+            
+            /// <summary>
+            /// Use native system window decorations on all windows.
+            /// </summary>
+            Native,
+            
+            /// <summary>
+            /// Use custom client-side window decorations on all windows.
+            /// </summary>
+            [EditorDisplay(Name = "Client-side")]
+            ClientSide,
+        }
+
+        /// <summary>
         /// Gets or sets the Editor User Interface scale. Applied to all UI elements, windows and text. Can be used to scale the interface up on a bigger display. Editor restart required.
         /// </summary>
         [DefaultValue(1.0f), Limit(0.1f, 10.0f)]
@@ -268,7 +296,14 @@ namespace FlaxEditor.Options
         [EditorDisplay("Interface"), EditorOrder(322)]
         public bool ScrollToScriptOnAdd { get; set; } = true;
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_SDL
+        /// <summary>
+        /// Gets or sets a value indicating whether use native window title bar decorations in child windows. Editor restart required.
+        /// </summary>
+        [DefaultValue(WindowDecorationsType.AutoChildOnly)]
+        [EditorDisplay("Interface"), EditorOrder(70), Tooltip("Determines whether use native window title bar decorations. Editor restart required.")]
+        public WindowDecorationsType WindowDecorations { get; set; } = WindowDecorationsType.AutoChildOnly;
+#elif PLATFORM_WINDOWS
         /// <summary>
         /// Gets or sets a value indicating whether use native window title bar. Editor restart required.
         /// </summary>
@@ -277,7 +312,7 @@ namespace FlaxEditor.Options
         public bool UseNativeWindowSystem { get; set; } = false;
 #endif
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_SDL || PLATFORM_WINDOWS
         /// <summary>
         /// Gets or sets a value indicating whether a window containing a single tabs hides the tab bar. Editor restart recommended.
         /// </summary>

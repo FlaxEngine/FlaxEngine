@@ -52,6 +52,14 @@ namespace Flax.Build.Platforms
             options.LinkEnv.InputLibraries.Add("Cocoa.framework");
             options.LinkEnv.InputLibraries.Add("QuartzCore.framework");
             options.LinkEnv.InputLibraries.Add("AVFoundation.framework");
+
+            // SDL3 requires the following frameworks:
+            options.LinkEnv.InputLibraries.Add("Foundation.framework");
+            options.LinkEnv.InputLibraries.Add("GameController.framework");
+            options.LinkEnv.InputLibraries.Add("Carbon.framework");
+            options.LinkEnv.InputLibraries.Add("ForceFeedback.framework");
+            options.LinkEnv.InputLibraries.Add("UniformTypeIdentifiers.framework");
+            options.LinkEnv.InputLibraries.Add("CoreHaptics.framework");
         }
 
         protected override void AddArgsCommon(BuildOptions options, List<string> args)
