@@ -338,5 +338,17 @@ namespace FlaxEngine.GUI
 
             base.OnMouseMove(location);
         }
+
+        /// <inheritdoc />
+        public override void OnMouseMoveRelative(Float2 motion)
+        {
+            if (_trackingControl != null)
+            {
+                _trackingControl.OnMouseMoveRelative(motion);
+                return;
+            }
+
+            base.OnMouseMoveRelative(motion);
+        }
     }
 }

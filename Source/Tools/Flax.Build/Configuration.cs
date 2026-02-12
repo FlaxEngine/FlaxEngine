@@ -288,6 +288,12 @@ namespace Flax.Build
         [CommandLine("useLogInRelease", "Can be used to disable logging in Release game builds")]
         public static bool UseLogInRelease = true;
 
+        /// <summary>
+        /// True if SDL support should be enabled.
+        /// </summary>
+        [CommandLine("useSdl", "1 to enable SDL support in build")]
+        public static bool UseSDL = true;
+
         public static bool WithCSharp(NativeCpp.BuildOptions options)
         {
             return UseCSharp || options.Target.IsEditor;
@@ -302,6 +308,18 @@ namespace Flax.Build
         public static bool WithDotNet(NativeCpp.BuildOptions options)
         {
             return UseDotNet;
+        }
+
+        public static bool WithSDL(NativeCpp.BuildOptions options)
+        {
+            switch (options.Platform.Target)
+            {
+            case TargetPlatform.Windows:
+            case TargetPlatform.Linux:
+            case TargetPlatform.Mac:
+                return UseSDL;
+            default: return false;
+            }
         }
     }
 }

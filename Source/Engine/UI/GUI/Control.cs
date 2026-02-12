@@ -775,6 +775,15 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// When mouse moves over control's area while mouse is in relative mode
+        /// </summary>
+        /// <param name="motion">Mouse relative motion</param>
+        [NoAnimate]
+        public virtual void OnMouseMoveRelative(Float2 motion)
+        {
+        }
+
+        /// <summary>
         /// When mouse leaves control's area
         /// </summary>
         [NoAnimate]

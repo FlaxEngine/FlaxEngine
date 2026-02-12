@@ -97,7 +97,9 @@ X11::Cursor Cursors[(int32)CursorType::MAX];
 X11::XcursorImage* CursorsImg[(int32)CursorType::MAX];
 Dictionary<StringAnsi, X11::KeyCode> KeyNameMap;
 Array<KeyboardKeys> KeyCodeMap;
-Delegate<void*> LinuxPlatform::xEventRecieved;
+#if !PLATFORM_SDL
+Delegate<void*> LinuxPlatform::xEventReceived;
+#endif
 Window* MouseTrackingWindow = nullptr;
 
 // Message boxes configuration
@@ -655,7 +657,11 @@ static int X11_MessageBoxLoop(MessageBoxData* data)
 	return 0;
 }
 
+#if !PLATFORM_SDL
 DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
+#else
+DialogResult MessageBox::ShowFallback(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
+#endif
 {
     if (CommandLine::Options.Headless.IsTrue())
         return DialogResult::None;
@@ -842,6 +848,8 @@ DialogResult MessageBox::Show(Window* parent, const StringView& text, const Stri
 	return data.resultButtonIndex == -1 ? DialogResult::None : data.buttons[data.resultButtonIndex].result;
 }
 
+#if !PLATFORM_SDL
+
 int X11ErrorHandler(X11::Display* display, X11::XErrorEvent* event)
 {
     if (event->error_code == 5)
@@ -851,6 +859,8 @@ int X11ErrorHandler(X11::Display* display, X11::XErrorEvent* event)
 	LOG(Error, "X11 Error: {0}", String(buffer));
 	return 0;
 }
+
+#endif
 
 int32 CalculateDpi()
 {
@@ -1207,17 +1217,20 @@ public:
     }
 };
 
+#if !PLATFORM_SDL
 struct Property
 {
-	unsigned char* data;
-	int format, nitems;
-	X11::Atom type;
+    unsigned char* data;
+    int format, nitems;
+    X11::Atom type;
 };
+#endif
 
 namespace Impl
 {
 	LinuxKeyboard* Keyboard;
 	LinuxMouse* Mouse;
+#if !PLATFORM_SDL
     StringAnsi ClipboardText;
 
     void ClipboardGetText(String& result, X11::Atom source, X11::Atom atom, X11::Window window)
@@ -1332,6 +1345,7 @@ namespace Impl
         X11::XQueryPointer(display, w, &wtmp, &child, &tmp, &tmp, &tmp, &tmp, &utmp);
         return FindAppWindow(display, child);
     }
+#endif
 
     Dictionary<String, String> LoadConfigFile(StringView path)
 	{
@@ -1361,6 +1375,7 @@ namespace Impl
 	}
 }
 
+#if !PLATFORM_SDL
 class LinuxDropFilesData : public IGuiData
 {
 public:
@@ -1398,7 +1413,7 @@ public:
     }
 };
 
-DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
+DragDropEffect Window::DoDragDrop(const StringView& data)
 {
     if (CommandLine::Options.Headless.IsTrue())
         return DragDropEffect::None;
@@ -1412,13 +1427,14 @@ DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
     StringAnsi dataAnsi(data);
     LinuxDropTextData dropData;
     dropData.Text = data;
+    unsigned long mainWindow = _window;
 
     // Begin dragging
 	auto screen = X11::XDefaultScreen(xDisplay);
 	auto rootWindow = X11::XRootWindow(xDisplay, screen);
-    if (X11::XGrabPointer(xDisplay, _window, 1, Button1MotionMask | ButtonReleaseMask, GrabModeAsync, GrabModeAsync, rootWindow, cursorWrong, CurrentTime) != GrabSuccess)
+    if (X11::XGrabPointer(xDisplay, mainWindow, 1, Button1MotionMask | ButtonReleaseMask, GrabModeAsync, GrabModeAsync, rootWindow, cursorWrong, CurrentTime) != GrabSuccess)
 	    return DragDropEffect::None;
-    X11::XSetSelectionOwner(xDisplay, xAtomXdndSelection, _window, CurrentTime);
+    X11::XSetSelectionOwner(xDisplay, xAtomXdndSelection, mainWindow, CurrentTime);
 
     // Process events
     X11::XEvent event;
@@ -1526,7 +1542,7 @@ DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
                     m.window = previousWindow;
                     m.message_type = xAtomXdndLeave;
                     m.format = 32;
-                    m.data.l[0] = _window;
+                    m.data.l[0] = mainWindow;
                     m.data.l[1] = 0;
                     m.data.l[2] = 0;
                     m.data.l[3] = 0;
@@ -1555,7 +1571,7 @@ DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
                     m.window = window;
                     m.message_type = xAtomXdndEnter;
                     m.format = 32;
-                    m.data.l[0] = _window;
+                    m.data.l[0] = mainWindow;
                     m.data.l[1] = Math::Min(5, version) << 24  | (formats.Count() > 3);
                     m.data.l[2] = formats.Count() > 0 ? formats[0] : 0;
                     m.data.l[3] = formats.Count() > 1 ? formats[1] : 0;
@@ -1590,7 +1606,7 @@ DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
                     m.window = window;
                     m.message_type = xAtomXdndPosition;
                     m.format = 32;
-                    m.data.l[0] = _window;
+                    m.data.l[0] = mainWindow;
                     m.data.l[1] = 0;
                     m.data.l[2] = (x << 16) | y;
                     m.data.l[3] = CurrentTime;
@@ -1633,7 +1649,7 @@ DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
                     m.window = previousWindow;
                     m.message_type = xAtomXdndDrop;
                     m.format = 32;
-                    m.data.l[0] = _window;
+                    m.data.l[0] = mainWindow;
                     m.data.l[1] = 0;
                     m.data.l[2] = CurrentTime;
                     m.data.l[3] = 0;
@@ -1680,7 +1696,7 @@ DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
             m.window = previousWindow;
             m.message_type = xAtomXdndLeave;
             m.format = 32;
-            m.data.l[0] = _window;
+            m.data.l[0] = mainWindow;
             m.data.l[1] = 0;
             m.data.l[2] = 0;
             m.data.l[3] = 0;
@@ -1706,7 +1722,7 @@ void LinuxClipboard::SetText(const StringView& text)
 {
     if (CommandLine::Options.Headless.IsTrue())
         return;
-    auto mainWindow = (LinuxWindow*)Engine::MainWindow;
+    auto mainWindow = Engine::MainWindow;
     if (!mainWindow)
         return;
     X11::Window window = (X11::Window)mainWindow->GetNativePtr();
@@ -1729,7 +1745,7 @@ String LinuxClipboard::GetText()
     if (CommandLine::Options.Headless.IsTrue())
         return String::Empty;
     String result;
-    auto mainWindow = (LinuxWindow*)Engine::MainWindow;
+    auto mainWindow = Engine::MainWindow;
     if (!mainWindow)
         return result;
     X11::Window window = (X11::Window)mainWindow->GetNativePtr();
@@ -1758,9 +1774,11 @@ Array<String> LinuxClipboard::GetFiles()
     return Array<String>();
 }
 
+#endif
+
 void* LinuxPlatform::GetXDisplay()
 {
-	return xDisplay;
+    return xDisplay;
 }
 
 bool LinuxPlatform::CreateMutex(const Char* name)
@@ -1781,6 +1799,11 @@ bool LinuxPlatform::CreateMutex(const Char* name)
 const String& LinuxPlatform::GetHomeDirectory()
 {
     return HomeDir;
+}
+
+String LinuxPlatform::GetDisplayServer()
+{
+    return xDisplay ? TEXT("X11") : TEXT("");
 }
 
 bool LinuxPlatform::Is64BitPlatform()
@@ -2095,6 +2118,7 @@ bool LinuxPlatform::Init()
 
     UnixGetMacAddress(MacAddress);
 
+#if !PLATFORM_SDL
     // Get user locale string
     setlocale(LC_ALL, "");
     const char* locale = setlocale(LC_CTYPE, NULL);
@@ -2104,6 +2128,7 @@ bool LinuxPlatform::Init()
     UserLocale.Replace('_', '-');
     if (UserLocale == TEXT("C"))
         UserLocale = TEXT("en");
+#endif
 
     // Get computer name string
     gethostname(buffer, UNIX_APP_BUFF_SIZE);
@@ -2147,7 +2172,11 @@ bool LinuxPlatform::Init()
     // Skip setup if running in headless mode (X11 might not be available on servers)
     if (CommandLine::Options.Headless.IsTrue())
         return false;
-
+#if PLATFORM_SDL
+    xDisplay = X11::XOpenDisplay(nullptr);
+#endif
+    
+#if !PLATFORM_SDL
 	X11::XInitThreads();
 
 	xDisplay = X11::XOpenDisplay(nullptr);
@@ -2286,7 +2315,7 @@ bool LinuxPlatform::Init()
     Input::Mouse = Impl::Mouse = New<LinuxMouse>();
     Input::Keyboard = Impl::Keyboard = New<LinuxKeyboard>();
 	LinuxInput::Init();
-
+#endif
     return false;
 }
 
@@ -2296,6 +2325,7 @@ void LinuxPlatform::BeforeRun()
 
 void LinuxPlatform::Tick()
 {
+#if !PLATFORM_SDL
 	UnixPlatform::Tick();
 
 	LinuxInput::UpdateState();
@@ -2312,9 +2342,9 @@ void LinuxPlatform::Tick()
 			continue;
 
         // External event handling
-		xEventRecieved(&event);
+		xEventReceived(&event);
 
-		LinuxWindow* window;
+		Window* window;
 		switch (event.type)
 		{
 			case ClientMessage:
@@ -2646,6 +2676,7 @@ void LinuxPlatform::Tick()
 	}
 
 	//X11::XFlush(xDisplay);
+#endif
 }
 
 void LinuxPlatform::BeforeExit()
@@ -2654,6 +2685,7 @@ void LinuxPlatform::BeforeExit()
 
 void LinuxPlatform::Exit()
 {
+#if !PLATFORM_SDL
 	for (int32 i = 0; i < (int32)CursorType::MAX; i++)
 	{
 		if (Cursors[i])
@@ -2679,6 +2711,7 @@ void LinuxPlatform::Exit()
 		X11::XCloseDisplay(xDisplay);
 		xDisplay = nullptr;
 	}
+#endif
 }
 
 String LinuxPlatform::GetSystemName()
@@ -2700,6 +2733,7 @@ Version LinuxPlatform::GetSystemVersion()
     return Version(0, 0);
 }
 
+#if !PLATFORM_SDL
 int32 LinuxPlatform::GetDpi()
 {
     return SystemDpi;
@@ -2709,6 +2743,7 @@ String LinuxPlatform::GetUserLocaleName()
 {
     return UserLocale;
 }
+#endif
 
 String LinuxPlatform::GetComputerName()
 {
@@ -2916,10 +2951,12 @@ bool LinuxPlatform::SetWorkingDirectory(const String& path)
     return chdir(StringAsANSI<>(*path).Get()) != 0;
 }
 
+#if !PLATFORM_SDL
 Window* LinuxPlatform::CreateWindow(const CreateWindowSettings& settings)
 {
     return New<LinuxWindow>(settings);
 }
+#endif
 
 extern char **environ;
 
@@ -2961,6 +2998,7 @@ bool LinuxPlatform::SetEnvironmentVariable(const String& name, const String& val
     return setenv(StringAsANSI<>(*name).Get(), StringAsANSI<>(*value).Get(), true) != 0;
 }
 
+#if !PLATFORM_SDL
 int32 LinuxPlatform::CreateProcess(CreateProcessSettings& settings)
 {
     LOG(Info, "Command: {0} {1}", settings.FileName, settings.Arguments);
@@ -3074,6 +3112,7 @@ int32 LinuxPlatform::CreateProcess(CreateProcessSettings& settings)
 
 	return returnCode;
 }
+#endif
 
 void* LinuxPlatform::LoadLibrary(const Char* filename)
 {
@@ -3129,5 +3168,161 @@ Array<LinuxPlatform::StackFrame> LinuxPlatform::GetStackFrames(int32 skipCount, 
 #endif
     return result;
 }
+
+#if USE_EDITOR
+
+#include "Engine/Core/Math/Vector2.h"
+#include "Engine/Core/Math/Vector4.h"
+#include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Platform/Linux/LinuxPlatform.h"
+#include "Engine/Platform/Linux/IncludeX11.h"
+
+#if PLATFORM_SDL
+#include <libportal/portal-enums.h>
+#include <libportal/screenshot.h>
+
+namespace PortalImpl
+{
+    XdpPortal* Portal = nullptr;
+    int64 MainLoopReady = 0;
+
+    gpointer GLibMainLoop(gpointer data);
+    void PickColorCallback(GObject* source, GAsyncResult* result, gpointer data);
+}
+#endif
+
+Color32 LinuxPlatform::GetScreenColorAt(const Float2& pos)
+{
+    X11::Display* display = (X11::Display*)Platform::GetXDisplay();
+    if (display)
+    {
+        int defaultScreen = X11::XDefaultScreen(display);
+        X11::Window rootWindow = X11::XRootWindow(display, defaultScreen);
+        X11::XImage* image = X11::XGetImage(display, rootWindow, (int)pos.X, (int)pos.Y, 1, 1, AllPlanes, XYPixmap);
+        if (image)
+        {
+            X11::XColor color;
+            color.pixel = XGetPixel(image, 0, 0);
+            X11::XFree(image);
+
+            X11::XQueryColor(display, X11::XDefaultColormap(display, defaultScreen), &color);
+
+            Color32 outputColor;
+            outputColor.R = color.red / 256;
+            outputColor.G = color.green / 256;
+            outputColor.B = color.blue / 256;
+            outputColor.A = 255;
+            return outputColor;
+        }
+        else
+        {
+            // XWayland doesn't support XGetImage
+        }
+    }
+
+    return Color32::Transparent;
+}
+
+void OnScreenUtilsXEventCallback(void* eventPtr)
+{
+    X11::XEvent* event = (X11::XEvent*)eventPtr;
+    X11::Display* display = (X11::Display*)Platform::GetXDisplay();
+    if (event->type == ButtonPress)
+    {
+        const Float2 cursorPos = Platform::GetMousePosition();
+        const Color32 colorPicked = LinuxPlatform::GetScreenColorAt(cursorPos);
+        X11::XUngrabPointer(display, CurrentTime);
+        PlatformBase::PickScreenColorDone(colorPicked);
+        LinuxPlatform::xEventReceived.Unbind(OnScreenUtilsXEventCallback);
+    }
+}
+
+void LinuxPlatform::PickScreenColor()
+{
+    PROFILE_CPU();
+    X11::Display* display = (X11::Display*)Platform::GetXDisplay();
+    if (display)
+    {
+        X11::Window rootWindow = X11::XRootWindow(display, X11::XDefaultScreen(display));
+        X11::Cursor cursor = XCreateFontCursor(display, 130);
+        int grabbedPointer = X11::XGrabPointer(display, rootWindow, 0, ButtonPressMask, GrabModeAsync, GrabModeAsync, rootWindow, cursor, CurrentTime);
+        if (grabbedPointer != GrabSuccess)
+        {
+            LOG(Error, "Failed to grab cursor for events.");
+            X11::XFreeCursor(display, cursor);
+            return;
+        }
+
+        X11::XFreeCursor(display, cursor);
+        LinuxPlatform::xEventReceived.Bind(OnScreenUtilsXEventCallback);
+        return;
+    }
+#if PLATFORM_SDL
+    if (PortalImpl::MainLoopReady == 0)
+    {
+        // Initialize portal
+        GError* error = nullptr;
+        PortalImpl::Portal = xdp_portal_initable_new(&error);
+        if (error != nullptr)
+        {
+            PortalImpl::MainLoopReady = 2;
+            LOG(Error, "Failed to initialize XDP Portal");
+            return;
+        }
+
+        // Run the GLib main loop in other thread in order to process asynchronous callbacks
+        g_thread_new(nullptr, PortalImpl::GLibMainLoop, nullptr);
+        while (Platform::AtomicRead(&PortalImpl::MainLoopReady) != 1)
+            Platform::Sleep(1);
+    }
+
+    if (PortalImpl::Portal != nullptr)
+    {
+        // Enter color picking mode, the callback receives the final color
+        xdp_portal_pick_color(PortalImpl::Portal, nullptr, nullptr, PortalImpl::PickColorCallback, nullptr);
+    }
+#endif
+}
+
+#if PLATFORM_SDL
+
+gpointer PortalImpl::GLibMainLoop(gpointer data)
+{
+    GMainContext* mainContext = g_main_context_get_thread_default();
+    GMainLoop* mainLoop = g_main_loop_new(mainContext, false);
+
+    Platform::AtomicStore(&PortalImpl::MainLoopReady, 1);
+
+    g_main_loop_run(mainLoop);
+    g_main_loop_unref(mainLoop);
+    return nullptr;
+}
+
+void PortalImpl::PickColorCallback(GObject* source, GAsyncResult* result, gpointer data)
+{
+    GError* error = nullptr;
+    GVariant* variant = xdp_portal_pick_color_finish(PortalImpl::Portal, result, &error);
+    if (error)
+    {
+        if (g_error_matches(error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+            LOG(Info, "XDP Portal pick color cancelled");
+        else
+            LOG(Error, "XDP Portal pick color failed: {}", String(error->message));
+        return;
+    }
+
+    // The color is stored in a triple double variant, extract the values
+    Double4 colorDouble;
+    g_variant_get(variant, "(ddd)", &colorDouble.X, &colorDouble.Y, &colorDouble.Z);
+    g_variant_unref(variant);
+    colorDouble.W = 1.0f;
+    Vector4 colorVector = colorDouble;
+    Color32 color = Color32(colorVector);
+
+    PlatformBase::PickScreenColorDone(color);
+}
+#endif
+
+#endif
 
 #endif

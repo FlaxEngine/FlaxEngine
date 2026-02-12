@@ -163,6 +163,7 @@ namespace FlaxEditor.Surface
                         }
                     }
                 }
+                surface.Dispose();
             }
         }
 

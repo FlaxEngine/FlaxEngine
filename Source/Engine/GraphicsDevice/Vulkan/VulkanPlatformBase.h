@@ -17,6 +17,8 @@ enum class VulkanValidationLevel
     All = 5,
 };
 
+class GPUDeviceVulkan;
+
 /// <summary>
 /// The base implementation for the Vulkan API platform support.
 /// </summary>

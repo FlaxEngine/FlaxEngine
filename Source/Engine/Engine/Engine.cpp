@@ -101,6 +101,8 @@ int32 Engine::Main(const Char* cmdLine)
     CommandLine::Options.Std = true;
 #endif
 
+    Platform::SetHighDpiAwarenessEnabled(!CommandLine::Options.LowDPI.IsTrue());
+
     if (Platform::Init())
     {
         Platform::Fatal(TEXT("Cannot init platform."));
@@ -110,7 +112,6 @@ int32 Engine::Main(const Char* cmdLine)
     InitProfilerMemory(cmdLine, 1);
 #endif
 
-    Platform::SetHighDpiAwarenessEnabled(!CommandLine::Options.LowDPI.IsTrue());
     Time::StartupTime = DateTime::Now();
     Globals::StartupFolder = Globals::BinariesFolder = Platform::GetMainDirectory();
 #if USE_EDITOR

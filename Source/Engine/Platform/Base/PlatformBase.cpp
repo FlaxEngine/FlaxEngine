@@ -46,6 +46,7 @@ static_assert(sizeof(double) == 8, "Invalid double type size.");
 static_assert((PLATFORM_THREADS_LIMIT & (PLATFORM_THREADS_LIMIT - 1)) == 0, "Threads limit must be power of two.");
 static_assert(PLATFORM_THREADS_LIMIT % 4 == 0, "Threads limit must be multiple of 4.");
 
+const Char* PlatformBase::ApplicationClassName = TEXT("FlaxWindow");
 float PlatformBase::CustomDpiScale = 1.0f;
 Array<User*, FixedAllocation<8>> PlatformBase::Users;
 Delegate<User*> PlatformBase::UserAdded;
@@ -772,6 +773,26 @@ String PlatformBase::GetStackTrace(int32 skipCount, int32 maxDepth, void* contex
 void PlatformBase::CollectCrashData(const String& crashDataFolder, void* context)
 {
 }
+
+#if USE_EDITOR
+
+#include "Engine/Core/Math/Color32.h"
+
+Delegate<Color32> PlatformBase::PickScreenColorDone;
+
+Color32 PlatformBase::GetScreenColorAt(const Float2& pos)
+{
+    // No supported
+    return Color32::Transparent;
+}
+
+void PlatformBase::PickScreenColor()
+{
+    // Just return transparent color when not implemented/supported
+    PickScreenColorDone(Color32::Transparent);
+}
+
+#endif
 
 const Char* ToString(PlatformType type)
 {

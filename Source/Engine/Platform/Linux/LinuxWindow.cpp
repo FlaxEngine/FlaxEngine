@@ -1,6 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-#if PLATFORM_LINUX
+#if PLATFORM_LINUX && !PLATFORM_SDL
 
 #include "../Window.h"
 #include "Engine/Input/Input.h"
@@ -112,7 +112,7 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	windowAttributes.border_pixel = XBlackPixel(display, screen);
 	windowAttributes.event_mask = KeyPressMask | KeyReleaseMask | StructureNotifyMask | ExposureMask;
 
-    if (!settings.IsRegularWindow)
+    if (settings.Type != WindowType::Regular)
     {
         windowAttributes.save_under = true;
         windowAttributes.override_redirect = true;
@@ -126,7 +126,7 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	*/
 
     unsigned long valueMask = CWBackPixel | CWBorderPixel | CWEventMask | CWColormap;
-    if (!settings.IsRegularWindow)
+    if (settings.Type != WindowType::Regular)
     {
         valueMask |= CWOverrideRedirect | CWSaveUnder;
     }
@@ -183,7 +183,7 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
     X11::XClassHint* classHint = X11::XAllocClassHint();
     if (classHint)
     {
-        const char* className = settings.IsRegularWindow ? "FlexEditor" : "FlaxPopup";
+        const char* className = settings.Type == WindowType::Regular ? "FlaxEditor" : "FlaxPopup";
 
         classHint->res_name = const_cast<char*>(className);
         classHint->res_class = const_cast<char*>(className);
@@ -234,7 +234,7 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	}
 
 	// Adjust type for utility windows
-	if (!settings.IsRegularWindow)
+	if (settings.Type != WindowType::Regular)
 	{
 		X11::Atom value = XInternAtom(display, "_NET_WM_WINDOW_TYPE_DOCK", 0);
 		X11::Atom wmType = XInternAtom(display, "_NET_WM_WINDOW_TYPE", 0);
@@ -372,11 +372,6 @@ void LinuxWindow::BringToFront(bool force)
 
 	X11::XSendEvent(display, X11_DefaultRootWindow(display), 0, SubstructureRedirectMask | SubstructureNotifyMask, &event);
 	X11::XFlush(display);
-}
-
-bool LinuxWindow::IsClosed() const
-{
-	return _isClosing;
 }
 
 bool LinuxWindow::IsForegroundWindow() const
@@ -631,7 +626,7 @@ void LinuxWindow::OnButtonPress(void* event)
 	}
 
 	// Handle double-click
-	if (buttonEvent->button == Button1)
+	if (buttonEvent->button == Button1 && !Input::Mouse->IsRelative())
 	{
 		if (
 			buttonEvent->time < (MouseLastButtonPressTime + MouseDoubleClickTime) &&

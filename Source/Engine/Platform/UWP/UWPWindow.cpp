@@ -364,11 +364,6 @@ void UWPWindow::Restore()
     // Not supported
 }
 
-bool UWPWindow::IsClosed() const
-{
-    return _isClosing;
-}
-
 void UWPWindow::BringToFront(bool force)
 {
     Focus();

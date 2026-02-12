@@ -12,15 +12,20 @@ struct android_app;
 /// <summary>
 /// The Android platform implementation and application management utilities.
 /// </summary>
+API_CLASS(Static, Tag="NoTypeInitializer")
 class FLAXENGINE_API AndroidPlatform : public UnixPlatform
 {
 public:
 
     static android_app* GetApp();
-    static String GetAppPackageName();
-    static String GetDeviceManufacturer();
-    static String GetDeviceModel();
-    static String GetDeviceBuildNumber();
+    // Gets 'getPackageName()' value.
+    API_PROPERTY() static String GetAppPackageName();
+    // Gets 'android.os.Build.MANUFACTURER' value.
+    API_PROPERTY() static String GetDeviceManufacturer();
+    // Gets 'android.os.Build.MODEL' value.
+    API_PROPERTY() static String GetDeviceModel();
+    // Gets 'android.os.Build.DISPLAY' value.
+    API_PROPERTY() static String GetDeviceBuildNumber();
     static void PreInit(android_app* app);
 
 public:

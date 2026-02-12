@@ -1,6 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-#if PLATFORM_MAC
+#if PLATFORM_MAC && !PLATFORM_SDL
 
 #include "../Window.h"
 #include "Engine/Platform/Apple/AppleUtils.h"
@@ -507,7 +507,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 	Float2 mousePos = GetMousePosition(Window, event);
     mousePos = Window->ClientToScreen(mousePos);
     MouseButton mouseButton = MouseButton::Left;
-    if ([event clickCount] == 2)
+    if ([event clickCount] == 2 && !Input::Mouse->IsRelative())
         Input::Mouse->OnMouseDoubleClick(mousePos, mouseButton, Window);
     else
 	    Input::Mouse->OnMouseDown(mousePos, mouseButton, Window);
@@ -544,7 +544,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
     if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
     MouseButton mouseButton = MouseButton::Right;
-    if ([event clickCount] == 2)
+    if ([event clickCount] == 2 && !Input::Mouse->IsRelative())
         Input::Mouse->OnMouseDoubleClick(Window->ClientToScreen(mousePos), mouseButton, Window);
     else
 	    Input::Mouse->OnMouseDown(Window->ClientToScreen(mousePos), mouseButton, Window);
@@ -582,7 +582,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
     default:
         return;
     }
-    if ([event clickCount] == 2)
+    if ([event clickCount] == 2 && !Input::Mouse->IsRelative())
         Input::Mouse->OnMouseDoubleClick(Window->ClientToScreen(mousePos), mouseButton, Window);
     else
 	    Input::Mouse->OnMouseDown(Window->ClientToScreen(mousePos), mouseButton, Window);
@@ -696,7 +696,7 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     Float2 pos = AppleUtils::PosToCoca(settings.Position);
     NSRect frame = NSMakeRect(pos.X, pos.Y - settings.Size.Y, settings.Size.X, settings.Size.Y);
     NSUInteger styleMask = NSWindowStyleMaskClosable;
-    if (settings.IsRegularWindow)
+    if (settings.Type == WindowType::Regular)
     {
         styleMask |= NSWindowStyleMaskTitled;
         if (settings.AllowMinimize)

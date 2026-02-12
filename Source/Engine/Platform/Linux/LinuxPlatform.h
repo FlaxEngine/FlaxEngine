@@ -10,6 +10,7 @@
 /// <summary>
 /// The Linux platform implementation and application management utilities.
 /// </summary>
+API_CLASS(Static, Tag="NoTypeInitializer")
 class FLAXENGINE_API LinuxPlatform : public UnixPlatform
 {
 public:
@@ -30,13 +31,17 @@ public:
     /// <summary>
     /// Gets the current user home directory.
     /// </summary>
-    /// <returns>The user home directory.</returns>
     static const String& GetHomeDirectory();
+
+    /// <summary>
+    /// Returns the display server name on Linux (eg. X11, Wayland).
+    /// </summary>
+    API_PROPERTY() static String GetDisplayServer();
 
     /// <summary>
     /// An event that is fired when an XEvent is received during platform tick.
     /// </summary>
-    static Delegate<void*> xEventRecieved;
+    static Delegate<void*> xEventReceived;
 
 public:
 
@@ -124,8 +129,10 @@ public:
     static void Tick();
     static void BeforeExit();
     static void Exit();
+#if !PLATFORM_SDL
     static int32 GetDpi();
     static String GetUserLocaleName();
+#endif
     static String GetComputerName();
     static bool GetHasFocus();
     static bool CanOpenUrl(const StringView& url);
@@ -140,15 +147,23 @@ public:
     static Guid GetUniqueDeviceId();
     static String GetWorkingDirectory();
     static bool SetWorkingDirectory(const String& path);
+#if !PLATFORM_SDL
     static Window* CreateWindow(const CreateWindowSettings& settings);
+#endif
     static void GetEnvironmentVariables(Dictionary<String, String, HeapAllocation>& result);
     static bool GetEnvironmentVariable(const String& name, String& value);
     static bool SetEnvironmentVariable(const String& name, const String& value);
+#if !PLATFORM_SDL
     static int32 CreateProcess(CreateProcessSettings& settings);
+#endif
     static void* LoadLibrary(const Char* filename);
     static void FreeLibrary(void* handle);
     static void* GetProcAddress(void* handle, const char* symbol);
     static Array<StackFrame, HeapAllocation> GetStackFrames(int32 skipCount = 0, int32 maxDepth = 60, void* context = nullptr);
+#if USE_EDITOR
+    static Color32 GetScreenColorAt(const Float2& pos);
+    static void PickScreenColor();
+#endif
 };
 
 #endif

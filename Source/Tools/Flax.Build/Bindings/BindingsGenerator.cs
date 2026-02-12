@@ -127,7 +127,7 @@ namespace Flax.Build.Bindings
             var headerFiles = new List<string>(moduleOptions.SourceFiles.Count / 2);
             for (int i = 0; i < moduleOptions.SourceFiles.Count; i++)
             {
-                if (moduleOptions.SourceFiles[i].EndsWith(".h", StringComparison.OrdinalIgnoreCase))
+                if (moduleOptions.SourceFiles[i].EndsWith(".h", StringComparison.OrdinalIgnoreCase) || moduleOptions.SourceFiles[i].EndsWith(".hpp", StringComparison.OrdinalIgnoreCase))
                     headerFiles.Add(moduleOptions.SourceFiles[i]);
             }
             if (headerFiles.Count == 0)

@@ -9,14 +9,10 @@
 /// <summary>
 /// The GDK platform implementation and application management utilities.
 /// </summary>
+API_CLASS(Static, Tag="NoTypeInitializer")
 class FLAXENGINE_API GDKPlatform : public Win32Platform
 {
 public:
-
-    /// <summary>
-    /// Win32 application windows class name.
-    /// </summary>
-    static const Char* ApplicationWindowClass;
 
     /// <summary>
     /// Handle to Win32 application instance.
@@ -42,10 +38,13 @@ public:
     /// <param name="hInstance">The Win32 application instance.</param>
     static void PreInit(void* hInstance);
 
-    static bool IsRunningOnDevKit();
-
-    static void SignInSilently();
-    static void SignInWithUI();
+    // True, if game is running Xbox Devkit.
+    API_PROPERTY() static bool IsRunningOnDevKit();
+    // Signs in user without showing UI. If user is not signed in, it will fail and return false. Use SignInWithUI to show UI and let user sign in.
+    API_FUNCTION() static void SignInSilently();
+    // Signs in user with showing UI. If user is already signed in, it will succeed and return true. If user is not signed in, it will show UI and let user sign in.
+    API_FUNCTION() static void SignInWithUI();
+    // Searches for a user with a specific local ID.
     static User* FindUser(const struct XUserLocalId& id);
 
 public:

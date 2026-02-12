@@ -1220,7 +1220,7 @@ namespace Flax.Build.Bindings
             if (functionInfo.IsStatic)
             {
                 // Call native static method
-                string nativeType = caller.Tags != null && caller.Tags.ContainsKey("NativeInvokeUseName") ? caller.Name : caller.NativeName;
+                string nativeType = caller.HasTag("NativeInvokeUseName") ? caller.Name : caller.NativeName;
                 if (caller.Parent != null && !(caller.Parent is FileInfo))
                     nativeType = caller.Parent.FullNameNative + "::" + nativeType;
                 call = $"{nativeType}::{functionInfo.Name}";
@@ -2363,6 +2363,8 @@ namespace Flax.Build.Bindings
             var interfacesTable = GenerateCppInterfaceInheritanceTable(buildData, contents, moduleInfo, classInfo, classTypeNameNative, classTypeNameInternal);
 
             // Type initializer
+            if (classInfo.HasTag("NoTypeInitializer"))
+                return;
             if (GenerateCppIsTemplateInstantiationType(classInfo))
                 contents.Append("template<> ");
             contents.Append($"ScriptingTypeInitializer {classTypeNameNative}::TypeInitializer((BinaryModule*)GetBinaryModule{moduleInfo.Name}(), ");

@@ -402,10 +402,11 @@ DEFINE_INTERNAL_CALL(void) EditorInternal_RunVisualScriptBreakpointLoopTick(floa
                 break;
             }
         }
+        WindowsManager::WindowsLocker.Unlock();
         for (const auto& e : inputEvents)
         {
             auto window = e.Target ? e.Target : defaultWindow;
-            if (!window)
+            if (!window || window->IsClosed())
                 continue;
             switch (e.Type)
             {
@@ -435,12 +436,14 @@ DEFINE_INTERNAL_CALL(void) EditorInternal_RunVisualScriptBreakpointLoopTick(floa
             case InputDevice::EventType::MouseMove:
                 window->OnMouseMove(window->ScreenToClient(e.MouseData.Position));
                 break;
+            case InputDevice::EventType::MouseMoveRelative:
+                window->OnMouseMoveRelative(e.MouseMovementData.PositionRelative);
+                break;
             case InputDevice::EventType::MouseLeave:
                 window->OnMouseLeave();
                 break;
             }
         }
-        WindowsManager::WindowsLocker.Unlock();
     }
     WindowsManager::WindowsLocker.Lock();
     Array<Window*, InlinedAllocation<32>> windows;

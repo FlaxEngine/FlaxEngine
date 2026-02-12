@@ -1583,5 +1583,37 @@ namespace FlaxEditor.Utilities
                 c = c.Parent;
             return c as ISceneEditingContext;
         }
+
+        internal static bool UseCustomWindowDecorations(bool isMainWindow = false)
+        {
+#if PLATFORM_SDL
+            return Editor.Instance.Options.Options.Interface.WindowDecorations switch
+            {
+                Options.InterfaceOptions.WindowDecorationsType.Auto => !SDLPlatform.SupportsNativeDecorations,
+                Options.InterfaceOptions.WindowDecorationsType.AutoChildOnly => !isMainWindow ? !SDLPlatform.SupportsNativeDecorations : true,
+                Options.InterfaceOptions.WindowDecorationsType.Native => false,
+                Options.InterfaceOptions.WindowDecorationsType.ClientSide => true,
+                _ => throw new ArgumentOutOfRangeException()
+            };
+#elif PLATFORM_WINDOWS
+            return !Editor.Instance.Options.Options.Interface.UseNativeWindowSystem;
+#else
+            return false;
+#endif
+        }
+
+        internal static bool HideSingleTabWindowTabBars()
+        {
+#if PLATFORM_SDL
+            // We should not hide the tab bars if tab handle is the only way to dock the window
+            bool clientSideDecorations = UseCustomWindowDecorations(false);
+            bool draggableDecorations = clientSideDecorations || SDLPlatform.SupportsNativeDecorationDragging;
+            return draggableDecorations && Editor.Instance.Options.Options.Interface.HideSingleTabWindowTabBars;
+#elif PLATFORM_WINDOWS
+            return Editor.Instance.Options.Options.Interface.HideSingleTabWindowTabBars;
+#else
+            return false;
+#endif
+        }
     }
 }

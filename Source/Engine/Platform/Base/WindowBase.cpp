@@ -1,13 +1,14 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+#include "Engine/Core/Math/Color32.h"
 #include "Engine/Platform/Window.h"
+#include "Engine/Platform/WindowsManager.h"
+#include "Engine/Platform/IGuiData.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/RenderTask.h"
-#include "Engine/Platform/WindowsManager.h"
 #include "Engine/Graphics/GPUSwapChain.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Input/Input.h"
-#include "Engine/Platform/IGuiData.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
@@ -107,7 +108,7 @@ WindowBase::WindowBase(const CreateWindowSettings& settings)
     if (settings.StartPosition == WindowStartPosition::CenterParent
         || settings.StartPosition == WindowStartPosition::CenterScreen)
     {
-        Rectangle parentBounds = Rectangle(Float2::Zero, Platform::GetDesktopSize());
+        Rectangle parentBounds = Platform::GetMonitorBounds(Float2::Minimum);
         if (settings.Parent != nullptr && settings.StartPosition == WindowStartPosition::CenterParent)
             parentBounds = settings.Parent->GetClientBounds();
 
@@ -163,6 +164,15 @@ void WindowBase::SetIsVisible(bool isVisible)
         else
             Hide();
     }
+}
+
+bool WindowBase::IsAlwaysOnTop() const
+{
+    return false;
+}
+
+void WindowBase::SetIsAlwaysOnTop(bool isAlwaysOnTop)
+{
 }
 
 String WindowBase::ToString() const
@@ -264,6 +274,13 @@ void WindowBase::OnMouseMove(const Float2& mousePosition)
     PROFILE_MEM(UI);
     MouseMove(mousePosition);
     INVOKE_EVENT_PARAMS_1(OnMouseMove, (void*)&mousePosition);
+}
+
+void WindowBase::OnMouseMoveRelative(const Float2& mousePositionRelative)
+{
+    PROFILE_CPU_NAMED("GUI.OnMouseMoveRelative");
+    MouseMoveRelative(mousePositionRelative);
+    INVOKE_EVENT_PARAMS_1(OnMouseMoveRelative, (void*)&mousePositionRelative);
 }
 
 void WindowBase::OnMouseLeave()
@@ -581,6 +598,11 @@ void WindowBase::Close(ClosingReason reason)
     // Close
     Hide();
     OnClosed();
+}
+
+bool WindowBase::IsClosed() const
+{
+    return _isClosing || EnumHasAnyFlags(Flags, ObjectFlags::WasMarkedToDelete);
 }
 
 bool WindowBase::IsForegroundWindow() const

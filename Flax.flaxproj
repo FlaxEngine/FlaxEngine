@@ -4,7 +4,7 @@
     "Major": 1,
     "Minor": 12,
     "Revision": 0,
-    "Build": 6904
+    "Build": 6905
   },
   "Company": "Flax",
   "Copyright": "Copyright (c) 2012-2026 Wojciech Figat. All rights reserved.",
@@ -13,6 +13,7 @@
   "Configuration": {
     "UseCSharp": true,
     "UseLargeWorlds": false,
-    "UseDotNet": true
+    "UseDotNet": true,
+    "UseSDL": true
   }
 }

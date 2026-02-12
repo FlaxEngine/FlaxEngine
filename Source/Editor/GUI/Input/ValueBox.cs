@@ -292,6 +292,7 @@ namespace FlaxEditor.GUI.Input
             return base.OnMouseDown(location, button);
         }
 
+#if !PLATFORM_SDL
         /// <inheritdoc />
         public override void OnMouseMove(Float2 location)
         {
@@ -318,13 +319,45 @@ namespace FlaxEditor.GUI.Input
             base.OnMouseMove(location);
         }
 
+#else
+
+        /// <inheritdoc />
+        public override void OnMouseMoveRelative(Float2 motion)
+        {
+            var location = Root.TrackingMouseOffset;
+            if (_isSliding)
+            {
+                // Update sliding
+                ApplySliding(Root.TrackingMouseOffset.X * _slideSpeed);
+                return;
+            }
+
+            // Update cursor type so user knows they can slide value
+            if (CanUseSliding && SlideRect.Contains(location) && !_isSliding)
+            {
+                Cursor = CursorType.SizeWE;
+                _cursorChanged = true;
+            }
+            else if (_cursorChanged && !_isSliding)
+            {
+                Cursor = CursorType.Default;
+                _cursorChanged = false;
+            }
+
+            base.OnMouseMoveRelative(motion);
+        }
+
+#endif
+
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && _isSliding)
             {
+#if !PLATFORM_SDL
                 // End sliding and return mouse to original location
                 RootWindow.MousePosition = _mouseClickedPosition;
+#endif
                 EndSliding();
                 return true;
             }

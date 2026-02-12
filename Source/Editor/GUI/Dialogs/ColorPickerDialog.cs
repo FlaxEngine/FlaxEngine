@@ -303,19 +303,22 @@ namespace FlaxEditor.GUI.Dialogs
             if (_activeEyedropper)
             {
                 _activeEyedropper = false;
-                Color color = colorPicked;
-                if (_linear)
-                    color = color.ToLinear();
-                SelectedColor = color;
-                ScreenUtilities.PickColorDone -= OnColorPicked;
+                if (colorPicked != Color.Transparent)
+                {
+                    Color color = colorPicked;
+                    if (_linear)
+                        color = color.ToLinear();
+                    SelectedColor = color;
+                }
+                Platform.PickScreenColorDone -= OnColorPicked;
             }
         }
 
         private void OnEyedropStart()
         {
             _activeEyedropper = true;
-            ScreenUtilities.PickColor();
-            ScreenUtilities.PickColorDone += OnColorPicked;
+            Platform.PickScreenColor();
+            Platform.PickScreenColorDone += OnColorPicked;
         }
 
         private void OnRGBAChanged()
@@ -351,11 +354,15 @@ namespace FlaxEditor.GUI.Dialogs
             // Update eye dropper tool
             if (_activeEyedropper)
             {
+                // Try reading the color under the cursor in realtime if supported by the platform
                 Float2 mousePosition = Platform.MousePosition;
-                Color color = ScreenUtilities.GetColorAt(mousePosition);
-                if (_linear)
-                    color = color.ToLinear();
-                SelectedColor = color;
+                Color color = Platform.GetScreenColorAt(mousePosition);
+                if (color != Color.Transparent)
+                {
+                    if (_linear)
+                        color = color.ToLinear();
+                    SelectedColor = color;
+                }
             }
         }
 
@@ -437,7 +444,7 @@ namespace FlaxEditor.GUI.Dialogs
             {
                 // Cancel eye dropping
                 _activeEyedropper = false;
-                ScreenUtilities.PickColorDone -= OnColorPicked;
+                Platform.PickScreenColorDone -= OnColorPicked;
                 return true;
             }
 
