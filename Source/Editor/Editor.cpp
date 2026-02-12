@@ -526,6 +526,23 @@ int32 Editor::LoadProduct()
             return 12;
     }
 
+    // Get the last opened project path
+    String localCachePath;
+    FileSystem::GetSpecialFolderPath(SpecialFolder::AppData, localCachePath);
+    String editorConfigPath = localCachePath / TEXT("Flax");
+    String lastProjectSettingPath = editorConfigPath / TEXT("LastProject.txt");
+    if (!FileSystem::DirectoryExists(editorConfigPath))
+        FileSystem::CreateDirectory(editorConfigPath);
+    String lastProjectPath;
+    if (FileSystem::FileExists(lastProjectSettingPath))
+        File::ReadAllText(lastProjectSettingPath, lastProjectPath);
+    if (!FileSystem::DirectoryExists(lastProjectPath))
+        lastProjectPath = String::Empty;
+
+    // Try to open the last project when requested
+    if (projectPath.IsEmpty() && CommandLine::Options.LastProject.IsTrue() && !lastProjectPath.IsEmpty())
+        projectPath = lastProjectPath;
+
     // Missing project case
     if (projectPath.IsEmpty())
     {
@@ -541,7 +558,7 @@ int32 Editor::LoadProduct()
         Array<String> files;
         if (FileSystem::ShowOpenFileDialog(
             nullptr,
-            StringView::Empty,
+            lastProjectPath,
             TEXT("Project files (*.flaxproj)\0*.flaxproj\0All files (*.*)\0*.*\0"),
             false,
             TEXT("Select project to open in Editor"),
@@ -624,6 +641,10 @@ int32 Editor::LoadProduct()
             return -2;
         }
     }
+
+    // Update the last opened project path
+    if (lastProjectPath.Compare(Project->ProjectFolderPath) != 0)
+        File::WriteAllText(lastProjectSettingPath, Project->ProjectFolderPath, Encoding::UTF8);
 
     return 0;
 }
