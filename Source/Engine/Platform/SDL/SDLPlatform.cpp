@@ -158,7 +158,7 @@ bool SDLPlatform::Init()
 
 void SDLPlatform::LogInfo()
 {
-    base::LogInfo();
+    SDLPlatformBase::LogInfo();
 
     const int32 runtimeVersion = SDL_GetVersion();
     LOG(Info, "Using SDL version {}.{}.{} ({}), runtime: {}.{}.{} ({})",
