@@ -53,7 +53,10 @@ void Collider::SetCenter(const Vector3& value)
     if (_staticActor)
         PhysicsBackend::SetShapeLocalPose(_shape, _center * GetScale(), Quaternion::Identity);
     else if (const RigidBody* rigidBody = GetAttachedRigidBody())
-        PhysicsBackend::SetShapeLocalPose(_shape, (_localTransform.Translation + _localTransform.Orientation * _center) * rigidBody->GetScale(), _localTransform.Orientation);
+    {
+        const Transform& t = rigidBody->GetTransform().WorldToLocal(GetTransform());
+        PhysicsBackend::SetShapeLocalPose(_shape, (t.Translation + t.Orientation * _center) * rigidBody->GetScale(), t.Orientation);
+    }
     UpdateBounds();
 }
 
@@ -135,7 +138,10 @@ RigidBody* Collider::GetAttachedRigidBody() const
 {
     if (_shape && _staticActor == nullptr)
     {
-        return dynamic_cast<RigidBody*>(GetParent());
+        if (_attachedRigidBody != nullptr)
+            return _attachedRigidBody;
+        else
+            return GetRigidBodyToAttach();
     }
     return nullptr;
 }
@@ -176,14 +182,17 @@ void Collider::Attach(RigidBody* rigidBody)
 
     // Attach
     PhysicsBackend::AttachShape(_shape, rigidBody->GetPhysicsActor());
-    _cachedLocalPosePos = (_localTransform.Translation + _localTransform.Orientation * _center) * rigidBody->GetScale();
-    _cachedLocalPoseRot = _localTransform.Orientation;
+    const Transform& t = rigidBody->GetTransform().WorldToLocal(GetTransform());
+    _cachedLocalPosePos = (t.Translation + t.Orientation * _center) * rigidBody->GetScale();
+    _cachedLocalPoseRot = t.Orientation;
     PhysicsBackend::SetShapeLocalPose(_shape, _cachedLocalPosePos, _cachedLocalPoseRot);
     if (rigidBody->IsDuringPlay())
     {
         rigidBody->UpdateBounds();
         rigidBody->UpdateMass();
     }
+    rigidBody->OnColliderChanged(this);
+    _attachedRigidBody = rigidBody;
 }
 
 void Collider::UpdateLayerBits()
@@ -242,7 +251,7 @@ void Collider::UpdateGeometry()
         // Reattach again (only if can, see CanAttach function)
         if (actor)
         {
-            const auto rigidBody = dynamic_cast<RigidBody*>(GetParent());
+            const auto rigidBody = GetRigidBodyToAttach();
             if (rigidBody && CanAttach(rigidBody))
             {
                 Attach(rigidBody);
@@ -287,6 +296,24 @@ void Collider::RemoveStaticActor()
     _staticActor = nullptr;
 }
 
+RigidBody* Collider::GetRigidBodyToAttach() const
+{
+    RigidBody* result = nullptr;
+    Actor* parentActor = GetParent();
+    // Get first rigid body in parents
+    while (parentActor != nullptr)
+    {
+        RigidBody* rigidCheck = dynamic_cast<RigidBody*>(parentActor);
+        if (rigidCheck)
+        {
+            result = rigidCheck;
+            break;
+        }
+        parentActor = parentActor->GetParent();
+    }
+    return result;
+}
+
 void Collider::BeginPlay(SceneBeginData* data)
 {
     // Check if has no shape created (it means no rigidbody requested it but also collider may be spawned at runtime)
@@ -295,7 +322,7 @@ void Collider::BeginPlay(SceneBeginData* data)
         CreateShape();
 
         // Check if parent is a rigidbody
-        const auto rigidBody = dynamic_cast<RigidBody*>(GetParent());
+        const auto rigidBody = GetRigidBodyToAttach();
         if (rigidBody && CanAttach(rigidBody))
         {
             // Attach to the rigidbody
@@ -337,6 +364,7 @@ void Collider::EndPlay()
         PhysicsBackend::RemoveCollider(this);
         PhysicsBackend::DestroyShape(_shape);
         _shape = nullptr;
+        _attachedRigidBody = nullptr;
     }
 }
 
@@ -376,7 +404,7 @@ void Collider::OnParentChanged()
         }
 
         // Check if the new parent is a rigidbody
-        rigidBody = dynamic_cast<RigidBody*>(GetParent());
+        rigidBody = GetRigidBodyToAttach();
         if (rigidBody && CanAttach(rigidBody))
         {
             // Attach to the rigidbody
@@ -404,11 +432,12 @@ void Collider::OnTransformChanged()
     }
     else if (const RigidBody* rigidBody = GetAttachedRigidBody())
     {
-        const Vector3 localPosePos = (_localTransform.Translation + _localTransform.Orientation * _center) * rigidBody->GetScale();
-        if (_cachedLocalPosePos != localPosePos || _cachedLocalPoseRot != _localTransform.Orientation)
+        const Transform& t = rigidBody->GetTransform().WorldToLocal(GetTransform());
+        const Vector3 localPosePos = (t.Translation + t.Orientation * _center) * rigidBody->GetScale();
+        if (_cachedLocalPosePos != localPosePos || _cachedLocalPoseRot != t.Orientation)
         {
             _cachedLocalPosePos = localPosePos;
-            _cachedLocalPoseRot = _localTransform.Orientation;
+            _cachedLocalPoseRot = t.Orientation;
             PhysicsBackend::SetShapeLocalPose(_shape, localPosePos, _cachedLocalPoseRot);
         }
     }

@@ -488,6 +488,7 @@ public:
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     void AddMovement(const Vector3& translation, const Quaternion& rotation) override;
 #if USE_EDITOR
+    void DrawColliders(Actor* a);
     void OnDebugDrawSelected() override;
 #endif
 

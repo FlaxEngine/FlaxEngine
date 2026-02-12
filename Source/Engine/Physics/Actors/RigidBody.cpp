@@ -343,6 +343,18 @@ void RigidBody::AddMovement(const Vector3& translation, const Quaternion& rotati
 
 #include "Engine/Debug/DebugDraw.h"
 
+void RigidBody::DrawColliders(Actor* a)
+{
+    const auto collider = Cast<Collider>(a);
+    if (collider && collider->GetAttachedRigidBody() == this)
+        collider->OnDebugDrawSelf();
+
+    for (Actor* child : a->Children)
+    {
+        DrawColliders(child);
+    }
+}
+
 void RigidBody::OnDebugDrawSelected()
 {
     // Draw center of mass
@@ -353,13 +365,8 @@ void RigidBody::OnDebugDrawSelected()
     DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetPosition() + (GetOrientation() * GetCenterOfMass()), 2.5f), Color::Aqua, 0, false);
 
     // Draw all attached colliders
-    for (Actor* child : Children)
-    {
-        const auto collider = Cast<Collider>(child);
-        if (collider && collider->GetAttachedRigidBody() == this)
-            collider->OnDebugDrawSelf();
-    }
-
+    DrawColliders(this);
+    
     Actor::OnDebugDrawSelected();
 }
 
@@ -525,16 +532,6 @@ void RigidBody::BeginPlay(SceneBeginData* data)
     PhysicsBackend::SetRigidDynamicActorAngularDamping(_actor, _angularDamping);
     PhysicsBackend::SetRigidDynamicActorMaxAngularVelocity(_actor, _maxAngularVelocity);
     PhysicsBackend::SetRigidDynamicActorConstraints(_actor, _constraints);
-
-    // Find colliders to attach
-    for (int32 i = 0; i < Children.Count(); i++)
-    {
-        auto collider = dynamic_cast<Collider*>(Children[i]);
-        if (collider && collider->CanAttach(this))
-        {
-            collider->Attach(this);
-        }
-    }
 
     // Setup mass (calculate or use overriden value)
     UpdateMass();
