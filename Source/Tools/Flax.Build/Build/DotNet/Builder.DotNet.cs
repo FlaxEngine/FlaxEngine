@@ -245,6 +245,8 @@ namespace Flax.Build
             args.Add(string.Format("/nullable:{0}", buildOptions.ScriptingAPI.CSharpNullableReferences.ToString().ToLowerInvariant()));
             if (buildOptions.ScriptingAPI.CSharpNullableReferences == CSharpNullableReferences.Disable)
                 args.Add("-nowarn:8632"); // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
+            if (buildOptions.Configuration != TargetConfiguration.Release)
+                args.Add("-nowarn:1701"); // Assuming assembly reference 'XXX, Version=8.0.0.0' used by 'Y' matches identity 'X, Version=9.0.0.0' of 'X', you may need to supply runtime policy
 #else
             args.Add("/langversion:7.3");
 #endif
