@@ -153,7 +153,7 @@ bool SDLPlatform::Init()
 
     //SDL_StartTextInput(); // TODO: Call this only when text input is expected (shows virtual keyboard in some cases)
 
-    return base::Init();
+    return SDLPlatformBase::Init();
 }
 
 void SDLPlatform::LogInfo()

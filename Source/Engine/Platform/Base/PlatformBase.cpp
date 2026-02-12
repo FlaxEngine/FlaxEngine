@@ -292,24 +292,6 @@ PlatformType PlatformBase::GetPlatformType()
     return PLATFORM_TYPE;
 }
 
-#if !PLATFORM_SDL
-
-bool PlatformBase::SupportsNativeDecorations()
-{
-    return true;
-}
-
-bool PlatformBase::SupportsNativeDecorationDragging()
-{
-#if PLATFORM_LINUX
-    return false;
-#else
-    return true;
-#endif
-}
-
-#endif
-
 bool PlatformBase::Is64BitApp()
 {
 #if PLATFORM_64BITS

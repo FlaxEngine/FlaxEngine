@@ -20,26 +20,22 @@ static_assert(false, "Unsupported Platform");
 class SDLWindow;
 union SDL_Event;
 
+#if PLATFORM_WINDOWS
+typedef WindowsPlatform SDLPlatformBase;
+#elif PLATFORM_LINUX
+typedef LinuxPlatform SDLPlatformBase;
+#elif PLATFORM_MAC
+typedef MacPlatform SDLPlatformBase;
+#else
+static_assert(false, "Unsupported SDL platform.");
+#endif
+
 /// <summary>
 /// The SDL platform implementation and application management utilities.
 /// </summary>
-class FLAXENGINE_API SDLPlatform
-#if PLATFORM_WINDOWS
-    : public WindowsPlatform
+API_CLASS(Static, Tag="NoTypeInitializer")
+class FLAXENGINE_API SDLPlatform : public SDLPlatformBase
 {
-    using base = WindowsPlatform;
-#elif PLATFORM_LINUX
-    : public LinuxPlatform
-{
-    using base = LinuxPlatform;
-#elif PLATFORM_MAC
-: public MacPlatform
-{
-    using base = MacPlatform;
-#else
-{
-    static_assert(false, "Unsupported Platform");
-#endif
     friend SDLWindow;
 
 private:
@@ -68,13 +64,21 @@ public:
     static bool UsesWayland();
     static bool UsesX11();
 
+    /// <summary>
+    /// Returns true if system provides decorations for windows.
+    /// </summary>
+    API_PROPERTY() static bool SupportsNativeDecorations();
+
+    /// <summary>
+    /// Returns true if system provides support for native window dragging events.
+    /// </summary>
+    API_PROPERTY() static bool SupportsNativeDecorationDragging();
+
 public:
     // [PlatformBase]
     static bool Init();
     static void LogInfo();
     static void Tick();
-    static bool SupportsNativeDecorations();
-    static bool SupportsNativeDecorationDragging();
     static void SetHighDpiAwarenessEnabled(bool enable);
 #if !PLATFORM_WINDOWS
     static BatteryInfo GetBatteryInfo();

@@ -1701,7 +1701,7 @@ String SDLPlatform::GetDisplayServer()
 
 void SDLPlatform::SetHighDpiAwarenessEnabled(bool enable)
 {
-    base::SetHighDpiAwarenessEnabled(enable);
+    SDLPlatformBase::SetHighDpiAwarenessEnabled(enable);
 }
 
 bool SDLPlatform::UsesWindows()
