@@ -323,7 +323,8 @@ namespace FlaxEditor.GUI.Docking
                 AddDockHints();
 
                 // Make sure the all the dock hint areas are not under other windows
-                _toDock?.RootWindow.Window.BringToFront();
+                if (_toDock != Editor.Instance.UI.MasterPanel)
+                    _toDock?.RootWindow.Window.BringToFront();
                 //_toDock?.RootWindow.Window.Focus();
 
 #if PLATFORM_SDL
