@@ -2445,9 +2445,10 @@ namespace Flax.Build.Bindings
             // Functions
             foreach (var functionInfo in structureInfo.Functions)
             {
-                // TODO: add support for API functions in structures
-                throw new NotImplementedException($"TODO: add support for API functions in structures (function {functionInfo} in structure {structureInfo.Name})");
-                //GenerateCppWrapperFunction(buildData, contents, structureInfo, structureTypeNameInternal, functionInfo);
+                if (!useCSharp || functionInfo.IsHidden)
+                    continue;
+
+                GenerateCppWrapperFunction(buildData, contents, structureInfo, internalTypeName, functionInfo);
             }
 
             GenerateCppTypeInternals?.Invoke(buildData, structureInfo, contents);
