@@ -90,7 +90,7 @@ void SDLWindow::Init()
 SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     : WindowBase(settings)
     , _handle(nullptr)
-    , _cachedClientRectangle(Rectangle())
+    , _cachedClientRectangle(Rectangle::Empty)
 #if PLATFORM_LINUX
     , _dragOver(false)
 #endif
@@ -127,9 +127,11 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     if (_settings.SupportsTransparency)
         flags |= SDL_WINDOW_TRANSPARENT;
 
+#if !PLATFORM_WINDOWS // Fixed on Windows by adding WS_EX_APPWINDOW flag down below
     // Disable parenting of child windows as those are always on top of the parent window and never show up in taskbar
     if (_settings.Parent != nullptr && (_settings.Type != WindowType::Tooltip && _settings.Type != WindowType::Popup))
         _settings.Parent = nullptr;
+#endif
 
     // The window position needs to be relative to the parent window
     Int2 relativePosition(Math::TruncToInt(settings.Position.X), Math::TruncToInt(settings.Position.Y));
@@ -158,6 +160,16 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     _windowId = SDL_GetWindowID(_window);
     _handle = GetNativeWindowPointer(_window);
     ASSERT(_handle != nullptr);
+
+#if PLATFORM_WINDOWS
+    // Windows that have parent are hidden in taskbar on Windows in SDL so hack it
+    if (_settings.ShowInTaskbar && _settings.Parent != nullptr && (_settings.Type != WindowType::Tooltip && _settings.Type != WindowType::Popup))
+    {
+        LONG lStyle = GetWindowLong((HWND)_handle, GWL_EXSTYLE);
+        lStyle |= WS_EX_APPWINDOW;
+        SetWindowLong((HWND)_handle, GWL_EXSTYLE, lStyle);
+    }
+#endif
 
     SDL_DisplayID display = SDL_GetDisplayForWindow(_window);
     _dpiScale = SDL_GetWindowDisplayScale(_window);
