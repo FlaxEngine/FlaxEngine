@@ -294,11 +294,6 @@ PlatformType PlatformBase::GetPlatformType()
 
 #if !PLATFORM_SDL
 
-String PlatformBase::GetDisplayServer()
-{
-    return String::Empty;
-}
-
 bool PlatformBase::SupportsNativeDecorations()
 {
     return true;

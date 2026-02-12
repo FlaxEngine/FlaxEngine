@@ -10,6 +10,7 @@
 /// <summary>
 /// The Linux platform implementation and application management utilities.
 /// </summary>
+API_CLASS(Static, Tag="NoTypeInitializer")
 class FLAXENGINE_API LinuxPlatform : public UnixPlatform
 {
 public:
@@ -30,8 +31,12 @@ public:
     /// <summary>
     /// Gets the current user home directory.
     /// </summary>
-    /// <returns>The user home directory.</returns>
     static const String& GetHomeDirectory();
+
+    /// <summary>
+    /// Returns the display server name on Linux (eg. X11, Wayland).
+    /// </summary>
+    API_PROPERTY() static String GetDisplayServer();
 
     /// <summary>
     /// An event that is fired when an XEvent is received during platform tick.

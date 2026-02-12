@@ -62,18 +62,17 @@ private:
 public:
 #if PLATFORM_LINUX
     static void* GetXDisplay();
+    static String GetDisplayServer();
 #endif
     static bool UsesWindows();
     static bool UsesWayland();
     static bool UsesX11();
 
 public:
-
     // [PlatformBase]
     static bool Init();
     static void LogInfo();
     static void Tick();
-    static String GetDisplayServer();
     static bool SupportsNativeDecorations();
     static bool SupportsNativeDecorationDragging();
     static void SetHighDpiAwarenessEnabled(bool enable);

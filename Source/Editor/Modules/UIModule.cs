@@ -814,9 +814,12 @@ namespace FlaxEditor.Modules
         private void InitWindowDecorations(RootControl mainWindow)
         {
             ScriptsBuilder.GetBinariesConfiguration(out _, out _, out _, out var configuration);
-            var driver = Platform.DisplayServer;
+            string driver = string.Empty;
+#if PLATFORM_LINUX
+            driver = LinuxPlatform.DisplayServer;
             if (!string.IsNullOrEmpty(driver))
                 driver = $" ({driver})";
+#endif
 
             WindowDecorations = new MainWindowDecorations(mainWindow, !Utilities.Utils.UseCustomWindowDecorations(isMainWindow: true))
             {

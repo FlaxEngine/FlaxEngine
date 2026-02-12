@@ -1691,6 +1691,14 @@ void* SDLPlatform::GetXDisplay()
     return X11Impl::xDisplay;
 }
 
+String SDLPlatform::GetDisplayServer()
+{
+    String driver(SDL_GetCurrentVideoDriver());
+    if (driver.Length() > 0)
+        driver[0] = StringUtils::ToUpper(driver[0]);
+    return driver;
+}
+
 void SDLPlatform::SetHighDpiAwarenessEnabled(bool enable)
 {
     base::SetHighDpiAwarenessEnabled(enable);

@@ -126,6 +126,11 @@ namespace Flax.Build.Bindings
             }
         }
 
+        public bool HasTag(string tag)
+        {
+            return Tags != null && Tags.ContainsKey(tag);
+        }
+
         public string GetTag(string tag)
         {
             if (Tags != null && Tags.TryGetValue(tag, out var value))

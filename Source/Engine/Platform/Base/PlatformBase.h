@@ -370,11 +370,6 @@ public:
     API_PROPERTY() static PlatformType GetPlatformType();
 
     /// <summary>
-    /// Returns the display server name on Linux.
-    /// </summary>
-    API_PROPERTY() static String GetDisplayServer();
-
-    /// <summary>
     /// Returns true if system provides decorations for windows.
     /// </summary>
     API_PROPERTY() static bool SupportsNativeDecorations();
