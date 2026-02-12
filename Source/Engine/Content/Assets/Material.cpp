@@ -3,6 +3,7 @@
 #include "Material.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DataContainer.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Content/Upgraders/ShaderAssetUpgrader.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Graphics/GPUDevice.h"

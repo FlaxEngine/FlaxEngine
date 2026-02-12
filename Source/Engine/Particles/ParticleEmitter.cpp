@@ -4,6 +4,7 @@
 #include "ParticleSystem.h"
 #include "ParticleEffect.h"
 #include "Particles.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Content/Upgraders/ShaderAssetUpgrader.h"
 #include "Engine/Core/Log.h"

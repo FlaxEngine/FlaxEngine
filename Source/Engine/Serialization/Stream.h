@@ -10,7 +10,6 @@
 
 class ReadStream;
 class WriteStream;
-struct CommonValue;
 struct Variant;
 struct VariantType;
 class ISerializable;

@@ -20,8 +20,6 @@
 #include "Engine/Core/Math/Matrix.h"
 #include "ISerializable.h"
 
-struct CommonValue;
-
 /// <summary>
 /// Json value container utilities.
 /// </summary>
@@ -103,7 +101,6 @@ public:
     static Guid GetGuid(const Value& value);
     static DateTime GetDate(const Value& value);
     static DateTime GetDateTime(const Value& value);
-    static CommonValue GetCommonValue(const Value& value);
 
 public:
     FORCE_INLINE static String GetString(const Value& node, const char* name)

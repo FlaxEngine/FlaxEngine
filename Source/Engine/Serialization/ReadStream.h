@@ -108,7 +108,6 @@ public:
     void Read(String& data, int16 lock);
     void Read(StringAnsi& data);
     void Read(StringAnsi& data, int8 lock);
-    void Read(CommonValue& data);
     void Read(VariantType& data);
     void Read(Variant& data);
 
@@ -237,10 +236,6 @@ public:
     // Reads String from the stream
     /// [Deprecated on 11.10.2022, expires on 11.10.2024]
     DEPRECATED("Use Read method") void ReadString(String* data, int16 lock);
-
-    // Reads CommonValue from the stream
-    /// [Deprecated on 11.10.2022, expires on 11.10.2024]
-    DEPRECATED("Use Read method") void ReadCommonValue(CommonValue* data);
 
     // Reads VariantType from the stream
     /// [Deprecated on 11.10.2022, expires on 11.10.2024]

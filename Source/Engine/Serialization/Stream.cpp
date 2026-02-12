@@ -5,9 +5,18 @@
 #include "JsonWriters.h"
 #include "JsonSerializer.h"
 #include "MemoryReadStream.h"
-#include "Engine/Core/Types/CommonValue.h"
 #include "Engine/Core/Types/Variant.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Core/Math/Vector2.h"
+#include "Engine/Core/Math/Vector3.h"
+#include "Engine/Core/Math/Vector4.h"
+#include "Engine/Core/Math/Matrix.h"
+#include "Engine/Core/Math/Ray.h"
+#include "Engine/Core/Math/Rectangle.h"
+#include "Engine/Core/Math/Transform.h"
+#include "Engine/Core/Math/BoundingBox.h"
+#include "Engine/Core/Math/BoundingSphere.h"
+#include "Engine/Core/Math/Color.h"
 #include "Engine/Content/Asset.h"
 #include "Engine/Core/Cache.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
@@ -104,137 +113,6 @@ void ReadStream::Read(String& data, int16 lock)
         ptr++;
     }
 }
-
-PRAGMA_DISABLE_DEPRECATION_WARNINGS
-void ReadStream::Read(CommonValue& data)
-{
-    // [Deprecated on 31.07.2020, expires on 31.07.2022]
-    byte type;
-    ReadByte(&type);
-    switch (static_cast<CommonType>(type))
-    {
-    case CommonType::Bool:
-        data.Set(ReadBool());
-        break;
-    case CommonType::Integer:
-    {
-        int32 v;
-        ReadInt32(&v);
-        data.Set(v);
-    }
-    break;
-    case CommonType::Float:
-    {
-        float v;
-        ReadFloat(&v);
-        data.Set(v);
-    }
-    break;
-    case CommonType::Vector2:
-    {
-        Float2 v;
-        Read(v);
-        data.Set(v);
-    }
-    break;
-    case CommonType::Vector3:
-    {
-        Float3 v;
-        Read(v);
-        data.Set(v);
-    }
-    break;
-    case CommonType::Vector4:
-    {
-        Float4 v;
-        Read(v);
-        data.Set(v);
-    }
-    break;
-    case CommonType::Color:
-    {
-        Color v;
-        Read(v);
-        data.Set(v);
-    }
-    break;
-    case CommonType::Guid:
-    {
-        Guid v;
-        Read(v);
-        data.Set(v);
-    }
-    break;
-    case CommonType::String:
-    {
-        String v;
-        Read(v, 953);
-        data.Set(v);
-    }
-    break;
-    case CommonType::Box:
-    {
-        BoundingBox v;
-        Read(v);
-        data.Set(v);
-    }
-    break;
-    case CommonType::Rotation:
-    {
-        Quaternion v;
-        Read(v);
-        data.Set(v);
-    }
-    break;
-    case CommonType::Transform:
-    {
-        Transform v;
-        Read(v);
-        data.Set(v);
-    }
-    break;
-    case CommonType::Sphere:
-    {
-        BoundingSphere v;
-        Read(v);
-        data.Set(v);
-    }
-    break;
-    case CommonType::Rectangle:
-    {
-        Rectangle v;
-        Read(v);
-        data.Set(v);
-    }
-    case CommonType::Ray:
-    {
-        Ray v;
-        Read(v);
-        data.Set(v);
-    }
-    break;
-    case CommonType::Matrix:
-    {
-        Matrix v;
-        Read(v);
-        data.Set(v);
-    }
-    break;
-    case CommonType::Blob:
-    {
-        int32 length;
-        Read(length);
-        data.SetBlob(length);
-        if (length > 0)
-        {
-            ReadBytes(data.AsBlob.Data, length);
-        }
-    }
-    break;
-    default: CRASH;
-    }
-}
-PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 void ReadStream::Read(VariantType& data)
 {
@@ -550,13 +428,6 @@ void ReadStream::ReadString(String* data, int16 lock)
     Read(*data, lock);
 }
 
-PRAGMA_DISABLE_DEPRECATION_WARNINGS
-void ReadStream::ReadCommonValue(CommonValue* data)
-{
-    Read(*data);
-}
-PRAGMA_ENABLE_DEPRECATION_WARNINGS
-
 void ReadStream::ReadVariantType(VariantType* data)
 {
     Read(*data);
@@ -739,71 +610,6 @@ void WriteStream::Write(const StringAnsiView& data, int8 lock)
     for (int32 i = 0; i < length; i++)
         WriteUint8((uint8)((uint8)data[i] ^ lock));
 }
-
-PRAGMA_DISABLE_DEPRECATION_WARNINGS
-void WriteStream::Write(const CommonValue& data)
-{
-    // [Deprecated on 31.07.2020, expires on 31.07.2022]
-    WriteByte(static_cast<byte>(data.Type));
-    switch (data.Type)
-    {
-    case CommonType::Bool:
-        Write(data.AsBool);
-        break;
-    case CommonType::Integer:
-        Write(data.AsInteger);
-        break;
-    case CommonType::Float:
-        Write(data.AsFloat);
-        break;
-    case CommonType::Vector2:
-        Write(data.AsVector2);
-        break;
-    case CommonType::Vector3:
-        Write(data.AsVector3);
-        break;
-    case CommonType::Vector4:
-        Write(data.AsVector4);
-        break;
-    case CommonType::Color:
-        Write(data.AsColor);
-        break;
-    case CommonType::Guid:
-        Write(data.AsGuid);
-        break;
-    case CommonType::String:
-        Write(data.AsString, 953);
-        break;
-    case CommonType::Box:
-        Write(data.AsBox);
-        break;
-    case CommonType::Rotation:
-        Write(data.AsRotation);
-        break;
-    case CommonType::Transform:
-        Write(data.AsTransform);
-        break;
-    case CommonType::Sphere:
-        Write(data.AsSphere);
-        break;
-    case CommonType::Rectangle:
-        Write(data.AsRectangle);
-        break;
-    case CommonType::Ray:
-        Write(data.AsRay);
-        break;
-    case CommonType::Matrix:
-        Write(data.AsMatrix);
-        break;
-    case CommonType::Blob:
-        WriteInt32(data.AsBlob.Length);
-        if (data.AsBlob.Length > 0)
-            WriteBytes(data.AsBlob.Data, data.AsBlob.Length);
-        break;
-    default: CRASH;
-    }
-}
-PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 void WriteStream::Write(const VariantType& data)
 {
@@ -1003,13 +809,6 @@ void WriteStream::WriteStringAnsi(const StringAnsiView& data, int8 lock)
 {
     Write(data, lock);
 }
-
-PRAGMA_DISABLE_DEPRECATION_WARNINGS
-void WriteStream::WriteCommonValue(const CommonValue& data)
-{
-    Write(data);
-}
-PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 void WriteStream::WriteVariantType(const VariantType& data)
 {

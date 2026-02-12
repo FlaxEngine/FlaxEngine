@@ -7,13 +7,10 @@
 #include "VisjectMeta.h"
 #include "GraphNode.h"
 #include "GraphParameter.h"
-#include "Engine/Content/Deprecated.h"
 #include "Engine/Serialization/ReadStream.h"
 #include "Engine/Serialization/WriteStream.h"
 
 // [Deprecated on 31.07.2020, expires on 31.07.2022]
-extern FLAXENGINE_API void ReadOldGraphParamValue_Deprecated(byte graphParamType, ReadStream* stream, GraphParameter* param);
-extern FLAXENGINE_API void ReadOldGraphNodeValue_Deprecated(ReadStream* stream, Variant& result);
 extern FLAXENGINE_API void ReadOldGraphBoxType_Deprecated(uint32 connectionType, VariantType& type);
 extern FLAXENGINE_API StringView GetGraphFunctionTypeName_Deprecated(const Variant& v);
 
@@ -183,158 +180,10 @@ public:
         Array<TmpConnectionHint> tmpHints;
         if (version < 7000)
         {
-            // [Deprecated on 31.07.2020, expires on 31.07.2022]
-            MARK_CONTENT_DEPRECATED();
-
-            // Time saved
-            int64 timeSaved;
-            stream->ReadInt64(&timeSaved);
-
-            // Nodes count
-            int32 nodesCount;
-            stream->ReadInt32(&nodesCount);
-            Nodes.Resize(nodesCount, false);
-
-            // Parameters count
-            int32 parametersCount;
-            stream->ReadInt32(&parametersCount);
-            Parameters.Resize(parametersCount, false);
-
-            // For each node
-            for (int32 i = 0; i < nodesCount; i++)
-            {
-                auto node = &Nodes[i];
-
-                // ID
-                stream->ReadUint32(&node->ID);
-
-                // Type
-                stream->ReadUint32(&node->Type);
-
-                if (onNodeCreated(node))
-                    return true;
-            }
-
-            // For each param
-            for (int32 i = 0; i < parametersCount; i++)
-            {
-                // Create param
-                auto param = &Parameters[i];
-
-                // Properties
-                auto type = stream->ReadByte();
-                stream->Read(param->Identifier);
-                stream->Read(param->Name, 97);
-                param->IsPublic = stream->ReadBool();
-                bool isStatic = stream->ReadBool();
-                bool isUIVisible = stream->ReadBool();
-                bool isUIEditable = stream->ReadBool();
-
-                // References [Deprecated]
-                int32 refsCount;
-                stream->ReadInt32(&refsCount);
-                for (int32 j = 0; j < refsCount; j++)
-                {
-                    uint32 refID;
-                    stream->ReadUint32(&refID);
-                }
-
-                // Value
-                ReadOldGraphParamValue_Deprecated(type, stream, param);
-
-                // Meta
-                if (param->Meta.Load(stream, loadMeta))
-                    return true;
-
-                if (onParamCreated(param))
-                    return true;
-            }
-
-            // For each node
-            for (int32 i = 0; i < nodesCount; i++)
-            {
-                auto node = &Nodes[i];
-
-                // Values
-                int32 valuesCnt;
-                stream->ReadInt32(&valuesCnt);
-                node->Values.Resize(valuesCnt);
-                for (int32 j = 0; j < valuesCnt; j++)
-                    ReadOldGraphNodeValue_Deprecated(stream, node->Values[j]);
-
-                // Boxes
-                uint16 boxesCount;
-                stream->ReadUint16(&boxesCount);
-                node->Boxes.Clear();
-                for (int32 j = 0; j < boxesCount; j++)
-                {
-                    byte boxID = stream->ReadByte();
-                    node->Boxes.Resize(node->Boxes.Count() > boxID + 1 ? node->Boxes.Count() : boxID + 1);
-                    Box* box = &node->Boxes[boxID];
-
-                    box->Parent = node;
-                    box->ID = boxID;
-                    uint32 connectionType;
-                    stream->ReadUint32((uint32*)&connectionType);
-                    ReadOldGraphBoxType_Deprecated(connectionType, box->Type);
-
-                    uint16 connectionsCount;
-                    stream->ReadUint16(&connectionsCount);
-                    box->Connections.Resize(connectionsCount);
-                    for (int32 k = 0; k < connectionsCount; k++)
-                    {
-                        uint32 targetNodeID;
-                        stream->ReadUint32(&targetNodeID);
-                        byte targetBoxID = stream->ReadByte();
-                        TmpConnectionHint hint;
-                        hint.Node = GetNode(targetNodeID);
-                        if (hint.Node == nullptr)
-                            return true;
-                        hint.BoxID = targetBoxID;
-                        box->Connections[k] = (Box*)(intptr)tmpHints.Count();
-                        tmpHints.Add(hint);
-                    }
-                }
-
-                // Meta
-                if (node->Meta.Load(stream, loadMeta))
-                    return true;
-
-                if (onNodeLoaded(node))
-                    return true;
-            }
-
-            // Visject Meta
-            if (Meta.Load(stream, loadMeta))
-                return true;
-
-            // Setup connections
-            for (int32 i = 0; i < Nodes.Count(); i++)
-            {
-                auto node = &Nodes[i];
-                for (int32 j = 0; j < node->Boxes.Count(); j++)
-                {
-                    Box* box = &node->Boxes[j];
-                    if (box->Parent == nullptr)
-                        continue;
-                    for (int32 k = 0; k < box->Connections.Count(); k++)
-                    {
-                        int32 hintIndex = (int32)(intptr)box->Connections[k];
-                        TmpConnectionHint hint = tmpHints[hintIndex];
-                        box->Connections[k] = hint.Node->GetBox(hint.BoxID);
-                    }
-                }
-            }
-
-            // Ending char
-            byte end;
-            stream->ReadByte(&end);
-            if (end != '\t')
-            {
-                return true;
-            }
+            LOG(Warning, "Not supported Visject Surface version. Open and re-save asset with Flax 1.11.");
+            return true;
         }
-        else if (version == 7000)
+        if (version == 7000)
         {
             // Nodes count
             int32 nodesCount;

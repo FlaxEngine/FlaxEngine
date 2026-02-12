@@ -7,7 +7,6 @@
 
 class Asset;
 struct Transform;
-struct CommonValue;
 template<typename T>
 class AssetReference;
 struct ScriptingTypeHandle;
@@ -264,7 +263,6 @@ public:
     explicit Variant(Dictionary<Variant, Variant, HeapAllocation>&& v);
     explicit Variant(const Dictionary<Variant, Variant, HeapAllocation>& v);
     explicit Variant(const Span<byte>& v);
-    explicit Variant(const CommonValue& v);
 
     template<typename T>
     Variant(const class AssetReference<T>& v)

@@ -1,6 +1,9 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "GraphUtilities.h"
+#include "Engine/Core/Math/Vector2.h"
+#include "Engine/Core/Math/Vector3.h"
+#include "Engine/Core/Math/Vector4.h"
 
 // [Deprecated on 31.07.2020, expires on 31.07.2022]
 enum class GraphParamType_Deprecated
@@ -56,130 +59,17 @@ enum class GraphConnectionType_Deprecated : uint32
 };
 
 // Required by deprecated graph data upgrade code
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Content/Assets/Texture.h"
 #include "Engine/Content/Assets/CubeTexture.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
-#include "Engine/Core/Types/CommonValue.h"
 #include "Engine/Level/Actor.h"
 
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
-FLAXENGINE_API void ReadOldGraphParamValue_Deprecated(byte graphParamType, ReadStream* stream, GraphParameter* param)
-{
-    // [Deprecated on 31.07.2020, expires on 31.07.2022]
-    CommonValue value;
-    stream->ReadCommonValue(&value);
-    switch ((GraphParamType_Deprecated)graphParamType)
-    {
-    case GraphParamType_Deprecated::Bool:
-        param->Type = VariantType(VariantType::Bool);
-        param->Value = value.GetBool();
-        break;
-    case GraphParamType_Deprecated::Integer:
-        param->Type = VariantType(VariantType::Int);
-        param->Value = value.GetInteger();
-        break;
-    case GraphParamType_Deprecated::Float:
-        param->Type = VariantType(VariantType::Float);
-        param->Value = value.GetFloat();
-        break;
-    case GraphParamType_Deprecated::Vector2:
-        param->Type = VariantType(VariantType::Float2);
-        param->Value = value.GetVector2();
-        break;
-    case GraphParamType_Deprecated::Vector3:
-        param->Type = VariantType(VariantType::Float3);
-        param->Value = value.GetVector3();
-        break;
-    case GraphParamType_Deprecated::Vector4:
-        param->Type = VariantType(VariantType::Float4);
-        param->Value = value.GetVector4();
-        break;
-    case GraphParamType_Deprecated::Color:
-        param->Type = VariantType(VariantType::Color);
-        param->Value = value.GetColor();
-        break;
-    case GraphParamType_Deprecated::Texture:
-    case GraphParamType_Deprecated::NormalMap:
-        ASSERT(value.Type == CommonType::Guid);
-        param->Type = VariantType(VariantType::Asset, TEXT("FlaxEngine.Texture"));
-        param->Value.SetAsset(LoadAsset(value.AsGuid, Texture::TypeInitializer));
-        break;
-    case GraphParamType_Deprecated::String:
-        ASSERT(value.Type == CommonType::String);
-        param->Type = VariantType(VariantType::String);
-        param->Value.SetString(StringView(value.AsString));
-        break;
-    case GraphParamType_Deprecated::Box:
-        ASSERT(value.Type == CommonType::Box);
-        param->Type = VariantType(VariantType::BoundingBox);
-        param->Value = Variant(value.AsBox);
-        break;
-    case GraphParamType_Deprecated::Rotation:
-        ASSERT(value.Type == CommonType::Rotation);
-        param->Type = VariantType(VariantType::Quaternion);
-        param->Value = value.AsRotation;
-        break;
-    case GraphParamType_Deprecated::Transform:
-        ASSERT(value.Type == CommonType::Transform);
-        param->Type = VariantType(VariantType::Transform);
-        param->Value = Variant(value.AsTransform);
-        break;
-    case GraphParamType_Deprecated::Asset:
-        ASSERT(value.Type == CommonType::Guid);
-        param->Type = VariantType(VariantType::Asset);
-        param->Value.SetAsset(LoadAsset(value.AsGuid, Asset::TypeInitializer));
-        break;
-    case GraphParamType_Deprecated::Rectangle:
-        ASSERT(value.Type == CommonType::Rectangle);
-        param->Type = VariantType(VariantType::Rectangle);
-        param->Value = value.AsRectangle;
-        break;
-    case GraphParamType_Deprecated::Matrix:
-        ASSERT(value.Type == CommonType::Matrix);
-        param->Type = VariantType(VariantType::Matrix);
-        param->Value = Variant(value.AsMatrix);
-        break;
-    case GraphParamType_Deprecated::Actor:
-        ASSERT(value.Type == CommonType::Guid);
-        param->Type = VariantType(VariantType::Object, TEXT("FlaxEngine.Actor"));
-        param->Value.SetObject(FindObject(value.AsGuid, Actor::GetStaticClass()));
-        break;
-    case GraphParamType_Deprecated::CubeTexture:
-        ASSERT(value.Type == CommonType::Guid);
-        param->Type = VariantType(VariantType::Asset, TEXT("FlaxEngine.CubeTexture"));
-        param->Value.SetAsset(LoadAsset(value.AsGuid, CubeTexture::TypeInitializer));
-        break;
-    case GraphParamType_Deprecated::GPUTexture:
-    case GraphParamType_Deprecated::GPUTextureArray:
-    case GraphParamType_Deprecated::GPUTextureVolume:
-    case GraphParamType_Deprecated::GPUTextureCube:
-        param->Type = VariantType(VariantType::Object, TEXT("FlaxEngine.GPUTexture"));
-        param->Value.SetObject(nullptr);
-        break;
-    case GraphParamType_Deprecated::SceneTexture:
-        param->Type = VariantType(VariantType::Enum, TEXT("FlaxEngine.MaterialSceneTextures"));
-        param->Value.AsUint64 = (uint64)value.AsInteger;
-        break;
-    case GraphParamType_Deprecated::ChannelMask:
-        param->Type = VariantType(VariantType::Enum, TEXT("FlaxEngine.ChannelMask"));
-        param->Value.AsUint64 = (uint64)value.AsInteger;
-        break;
-    default:
-        CRASH;
-    }
-}
-
-FLAXENGINE_API void ReadOldGraphNodeValue_Deprecated(ReadStream* stream, Variant& result)
-{
-    // [Deprecated on 31.07.2020, expires on 31.07.2022]
-    CommonValue value;
-    stream->ReadCommonValue(&value);
-    result = Variant(value);
-}
-
 FLAXENGINE_API void ReadOldGraphBoxType_Deprecated(uint32 connectionType, VariantType& type)
 {
     // [Deprecated on 31.07.2020, expires on 31.07.2022]
+    MARK_CONTENT_DEPRECATED();
     switch ((GraphConnectionType_Deprecated)connectionType)
     {
     case GraphConnectionType_Deprecated::Invalid:
@@ -247,6 +137,7 @@ FLAXENGINE_API void ReadOldGraphBoxType_Deprecated(uint32 connectionType, Varian
 FLAXENGINE_API StringView GetGraphFunctionTypeName_Deprecated(const Variant& v)
 {
     // [Deprecated on 31.07.2020, expires on 31.07.2022]
+    MARK_CONTENT_DEPRECATED();
     if (v.Type.Type == VariantType::String)
         return (StringView)v;
     if (v.Type.Type == VariantType::Int)

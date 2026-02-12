@@ -6,7 +6,6 @@
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Utilities/StringConverter.h"
 
-struct CommonValue;
 class ISerializable;
 
 // Helper macro for JSON serialization keys (reduces allocations count)
@@ -140,7 +139,6 @@ public:
     void Quaternion(const Quaternion& value);
     void Ray(const Ray& value);
     void Matrix(const Matrix& value);
-    void CommonValue(const CommonValue& value);
     void Transform(const ::Transform& value);
     void Transform(const ::Transform& value, const ::Transform* other);
     void Plane(const Plane& value);

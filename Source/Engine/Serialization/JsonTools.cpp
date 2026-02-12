@@ -3,7 +3,6 @@
 #include "JsonTools.h"
 #include "ISerializable.h"
 #include "Engine/Core/Collections/Dictionary.h"
-#include "Engine/Core/Types/CommonValue.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
@@ -284,87 +283,3 @@ DateTime JsonTools::GetDateTime(const Value& value)
 {
     return DateTime(value.GetInt64());
 }
-
-PRAGMA_DISABLE_DEPRECATION_WARNINGS
-#include "Engine/Content/Deprecated.h"
-CommonValue JsonTools::GetCommonValue(const Value& value)
-{
-    // [Deprecated on 31.07.2020, expires on 31.07.2022]
-    MARK_CONTENT_DEPRECATED();
-    CommonValue result;
-    const auto typeMember = value.FindMember("Type");
-    const auto valueMember = value.FindMember("Value");
-    if (typeMember != value.MemberEnd() && typeMember->value.IsInt() && valueMember != value.MemberEnd())
-    {
-        const auto& v = valueMember->value;
-        switch ((CommonType)typeMember->value.GetInt())
-        {
-        case CommonType::Bool:
-            result = v.GetBool();
-            break;
-        case CommonType::Integer:
-            result = v.GetInt();
-            break;
-        case CommonType::Float:
-            result = v.GetFloat();
-            break;
-        case CommonType::Vector2:
-            result = GetFloat2(v);
-            break;
-        case CommonType::Vector3:
-            result = GetFloat3(v);
-            break;
-        case CommonType::Vector4:
-            result = GetFloat4(v);
-            break;
-        case CommonType::Color:
-            result = GetColor(v);
-            break;
-        case CommonType::Guid:
-            result = GetGuid(v);
-            break;
-        case CommonType::String:
-            result = v.GetText();
-            break;
-        case CommonType::Box:
-            result = GetBoundingBox(v);
-            break;
-        case CommonType::Rotation:
-            result = GetQuaternion(v);
-            break;
-        case CommonType::Transform:
-            result = GetTransform(v);
-            break;
-        case CommonType::Sphere:
-            result = GetBoundingSphere(v);
-            break;
-        case CommonType::Rectangle:
-            result = GetRectangle(v);
-            break;
-        case CommonType::Ray:
-            result = GetRay(v);
-            break;
-        case CommonType::Pointer:
-            result = (void*)v.GetInt64();
-            break;
-        case CommonType::Matrix:
-            result = GetMatrix(v);
-            break;
-        case CommonType::Blob:
-        {
-            const int32 length = v.GetStringLength();
-            result.SetBlob(length);
-            Encryption::Base64Decode(v.GetString(), length, result.AsBlob.Data);
-            break;
-        }
-        case CommonType::Object:
-            result = FindObject(GetGuid(v), ScriptingObject::GetStaticClass());
-            break;
-        default:
-            CRASH;
-            break;
-        }
-    }
-    return result;
-}
-PRAGMA_ENABLE_DEPRECATION_WARNINGS

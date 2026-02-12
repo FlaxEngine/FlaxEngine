@@ -201,10 +201,9 @@ namespace FlaxEditor.GUI.Timeline
                     var idx = stream.ReadInt32();
                     var id = stream.ReadGuid();
                     object value = null;
-                    if (version == 2)
-                        stream.ReadCommonValue(ref value);
-                    else
-                        value = stream.ReadVariant();
+                    if (version <= 2)
+                        throw new Exception("Not supported asset version. Open and re-save asset with Flax 1.11.");
+                    value = stream.ReadVariant();
 
                     Emitters[idx].ParametersOverrides.Add(id, value);
                 }
