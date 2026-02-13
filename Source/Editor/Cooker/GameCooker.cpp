@@ -69,6 +69,10 @@
 #include "Platform/iOS/iOSPlatformTools.h"
 #include "Engine/Platform/iOS/iOSPlatformSettings.h"
 #endif
+#if PLATFORM_TOOLS_WEB
+#include "Platform/Web/WebPlatformTools.h"
+#include "Engine/Platform/Web/WebPlatformSettings.h"
+#endif
 
 namespace GameCookerImpl
 {
@@ -151,6 +155,8 @@ const Char* ToString(const BuildPlatform platform)
         return TEXT("iOS ARM64");
     case BuildPlatform::WindowsARM64:
         return TEXT("Windows ARM64");
+    case BuildPlatform::Web:
+        return TEXT("Web");
     default:
         return TEXT("");
     }
@@ -307,6 +313,10 @@ void CookingData::GetBuildPlatformName(const Char*& platform, const Char*& archi
         platform = TEXT("Windows");
         architecture = TEXT("ARM64");
         break;
+    case BuildPlatform::Web:
+        platform = TEXT("Web");
+        architecture = TEXT("x86");
+        break;
     default:
         LOG(Fatal, "Unknown or unsupported build platform.");
     }
@@ -462,6 +472,11 @@ PlatformTools* GameCooker::GetTools(BuildPlatform platform)
             result = New<iOSPlatformTools>();
             break;
 #endif
+#if PLATFORM_TOOLS_WEB
+        case BuildPlatform::Web:
+            result = New<WebPlatformTools>();
+            break;
+#endif
         }
         Tools.Add(platform, result);
     }
@@ -603,6 +618,9 @@ void GameCooker::GetCurrentPlatform(PlatformType& platform, BuildPlatform& build
         break;
     case PlatformType::iOS:
         buildPlatform = BuildPlatform::iOSARM64;
+        break;
+    case PlatformType::Web:
+        buildPlatform = BuildPlatform::Web;
         break;
     default: ;
     }

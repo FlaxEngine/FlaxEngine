@@ -37,6 +37,7 @@ namespace Flax.Build
             TargetPlatform.Switch,
             TargetPlatform.Mac,
             TargetPlatform.iOS,
+            TargetPlatform.Web,
         };
 
         /// <summary>

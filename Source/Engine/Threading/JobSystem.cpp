@@ -6,16 +6,13 @@
 #include "Engine/Platform/Thread.h"
 #include "Engine/Platform/ConditionVariable.h"
 #include "Engine/Core/Types/Span.h"
-#include "Engine/Core/Types/Pair.h"
-#include "Engine/Core/Memory/SimpleHeapAllocation.h"
-#include "Engine/Core/Collections/RingBuffer.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 #if USE_CSHARP
 #include "Engine/Scripting/ManagedCLR/MCore.h"
-#include "Engine/Scripting/Internal/InternalCalls.h"
 #endif
+#include "Engine/Scripting/Internal/InternalCalls.h"
 
 #define JOB_SYSTEM_ENABLED 1
 

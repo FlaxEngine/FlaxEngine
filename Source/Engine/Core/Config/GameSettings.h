@@ -90,6 +90,7 @@ public:
     Guid PS5Platform;
     Guid MacPlatform;
     Guid iOSPlatform;
+    Guid WebPlatform;
 
 public:
     /// <summary>

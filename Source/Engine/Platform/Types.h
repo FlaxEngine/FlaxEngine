@@ -305,6 +305,29 @@ typedef UnixNetwork Network;
 class UserBase;
 typedef UserBase User;
 
+#elif PLATFORM_WEB
+
+class UnixCriticalSection;
+typedef UnixCriticalSection CriticalSection;
+class UnixReadWriteLock;
+typedef UnixReadWriteLock ReadWriteLock;
+class UnixConditionVariable;
+typedef UnixConditionVariable ConditionVariable;
+class WebFileSystem;
+typedef WebFileSystem FileSystem;
+class FileSystemWatcherBase;
+typedef FileSystemWatcherBase FileSystemWatcher;
+class UnixFile;
+typedef UnixFile File;
+class WebThread;
+typedef WebThread Thread;
+class ClipboardBase;
+typedef ClipboardBase Clipboard;
+class UnixNetwork;
+typedef UnixNetwork Network;
+class UserBase;
+typedef UserBase User;
+
 #else
 
 #error Missing Types implementation!

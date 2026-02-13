@@ -39,6 +39,12 @@ public class Physics : EngineModule
     {
         base.Setup(options);
 
+        if (options.Platform.Target == TargetPlatform.Web) // TODO: build PhysX for Web
+        {
+            options.PrivateDefinitions.Add("COMPILE_WITH_EMPTY_PHYSICS");
+            return;
+        }
+
         SetupPhysicsBackend(this, options);
 
         if (WithCooking)

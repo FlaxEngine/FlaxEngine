@@ -74,6 +74,9 @@ public class Main : EngineModule
         case TargetPlatform.iOS:
             options.SourcePaths.Add(Path.Combine(FolderPath, "Default"));
             break;
+        case TargetPlatform.Web:
+            options.SourcePaths.Add(Path.Combine(FolderPath, "Web"));
+            break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
     }

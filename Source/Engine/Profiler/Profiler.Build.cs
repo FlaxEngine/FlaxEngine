@@ -15,6 +15,8 @@ public class Profiler : EngineModule
     /// <returns>True if use profiler, otherwise false.</returns>
     public static bool Use(BuildOptions options)
     {
+        if (options.Platform.Target == TargetPlatform.Web)
+            return false;
         return options.Configuration != TargetConfiguration.Release || options.Target.IsEditor;
     }
 

@@ -67,6 +67,7 @@ namespace Flax.Build.Platforms
             case TargetPlatform.Switch: return Sdk.HasValid("SwitchSdk");
             case TargetPlatform.XboxOne:
             case TargetPlatform.XboxScarlett: return GetPlatform(platform, true)?.HasRequiredSDKsInstalled ?? false;
+            case TargetPlatform.Web: return EmscriptenSdk.Instance.IsValid;
             default: return false;
             }
         }

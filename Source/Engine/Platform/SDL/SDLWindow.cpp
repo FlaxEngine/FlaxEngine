@@ -38,6 +38,7 @@
 #include "Engine/Platform/Linux/IncludeX11.h"
 #elif PLATFORM_MAC
 #include <Cocoa/Cocoa.h>
+#elif PLATFORM_WEB
 #else
 static_assert(false, "Unsupported Platform");
 #endif
@@ -77,6 +78,8 @@ void* GetNativeWindowPointer(SDL_Window* window)
     windowPtr = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, nullptr);
 #elif PLATFORM_IOS
     windowPtr = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER, nullptr);
+#elif PLATFORM_WEB
+    windowPtr = (void*)1; // Mock value (TODO: consider SDL_PROP_WINDOW_EMSCRIPTEN_CANVAS_ID_STRING)
 #else
     static_assert(false, "unsupported platform");
 #endif

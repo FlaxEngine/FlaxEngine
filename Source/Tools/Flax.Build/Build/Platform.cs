@@ -170,7 +170,7 @@ namespace Flax.Build
         /// <summary>
         /// Gets the default project format used by the given platform.
         /// </summary>
-        public abstract Projects.ProjectFormat DefaultProjectFormat { get; }
+        public virtual Projects.ProjectFormat DefaultProjectFormat => Projects.ProjectFormat.VisualStudioCode;
 
         /// <summary>
         /// Creates the toolchain for a given architecture.
@@ -343,6 +343,7 @@ namespace Flax.Build
             case TargetPlatform.Switch: return targetArchitecture == TargetArchitecture.ARM64;
             case TargetPlatform.Mac: return targetArchitecture == TargetArchitecture.ARM64 || targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.iOS: return targetArchitecture == TargetArchitecture.ARM64;
+            case TargetPlatform.Web: return targetArchitecture == TargetArchitecture.x86;
             default: return false;
             }
         }

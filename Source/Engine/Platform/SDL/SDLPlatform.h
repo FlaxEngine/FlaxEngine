@@ -7,28 +7,24 @@
 #include "Engine/Platform/Base/Enums.h"
 #if PLATFORM_WINDOWS
 #include "Engine/Platform/Windows/WindowsPlatform.h"
+typedef WindowsPlatform SDLPlatformBase;
 typedef struct tagMSG MSG;
 #elif PLATFORM_LINUX
 #include "Engine/Platform/Linux/LinuxPlatform.h"
+typedef LinuxPlatform SDLPlatformBase;
 union _XEvent;
 #elif PLATFORM_MAC
 #include "Engine/Platform/Mac/MacPlatform.h"
+typedef MacPlatform SDLPlatformBase;
+#elif PLATFORM_WEB
+#include "Engine/Platform/Web/WebPlatform.h"
+typedef WebPlatform SDLPlatformBase;
 #else
-static_assert(false, "Unsupported Platform");
+static_assert(false, "Unsupported SDL platform.");
 #endif
 
 class SDLWindow;
 union SDL_Event;
-
-#if PLATFORM_WINDOWS
-typedef WindowsPlatform SDLPlatformBase;
-#elif PLATFORM_LINUX
-typedef LinuxPlatform SDLPlatformBase;
-#elif PLATFORM_MAC
-typedef MacPlatform SDLPlatformBase;
-#else
-static_assert(false, "Unsupported SDL platform.");
-#endif
 
 /// <summary>
 /// The SDL platform implementation and application management utilities.
@@ -84,7 +80,7 @@ public:
     static BatteryInfo GetBatteryInfo();
 #endif
     static int32 GetDpi();
-#if PLATFORM_LINUX
+#if PLATFORM_LINUX || PLATFORM_WEB
     static String GetUserLocaleName();
 #endif
     static bool CanOpenUrl(const StringView& url);

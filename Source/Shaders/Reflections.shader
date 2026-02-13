@@ -8,7 +8,7 @@
 #include "./Flax/ReflectionsCommon.hlsl"
 
 // Enable/disable blurring SSR during sampling results and mixing with reflections buffer
-#define SSR_MIX_BLUR (!defined(PLATFORM_ANDROID) && !defined(PLATFORM_IOS) && !defined(PLATFORM_SWITCH))
+#define SSR_MIX_BLUR (!defined(PLATFORM_WEB) && !defined(PLATFORM_ANDROID) && !defined(PLATFORM_IOS) && !defined(PLATFORM_SWITCH))
 
 META_CB_BEGIN(0, Data)
 EnvProbeData PData;

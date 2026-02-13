@@ -304,7 +304,7 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
         // Also for high surface roughness values it adds more blur to the reflection tail which looks more realistic.
 
         // Downscale with gaussian blur
-        auto filterMode = PLATFORM_ANDROID || PLATFORM_IOS || PLATFORM_SWITCH ? MultiScaler::FilterMode::GaussianBlur5 : MultiScaler::FilterMode::GaussianBlur9;
+        auto filterMode = PLATFORM_WEB || PLATFORM_ANDROID || PLATFORM_IOS || PLATFORM_SWITCH ? MultiScaler::FilterMode::GaussianBlur5 : MultiScaler::FilterMode::GaussianBlur9;
         for (int32 mipLevel = 1; mipLevel < colorBufferMips; mipLevel++)
         {
             const int32 mipWidth = Math::Max(colorBufferWidth >> mipLevel, 1);

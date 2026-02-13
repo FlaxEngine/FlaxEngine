@@ -87,6 +87,7 @@ public class Editor : EditorModule
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Android", "PLATFORM_TOOLS_ANDROID");
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "iOS", "PLATFORM_TOOLS_IOS");
         }
+        AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Web", "PLATFORM_TOOLS_WEB");
 
         // Visual Studio integration
         if (options.Platform.Target == TargetPlatform.Windows && Flax.Build.Platform.BuildTargetPlatform == TargetPlatform.Windows)

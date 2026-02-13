@@ -96,6 +96,10 @@ public class Graphics : EngineModule
             else
                 Log.WarningOnce(string.Format("Building for {0} without Vulkan rendering backend (Vulkan SDK is missing)", options.Platform.Target), ref _logMissingVulkanSDK);
             break;
+        case TargetPlatform.Web:
+            options.PrivateDependencies.Add("GraphicsDeviceNull");
+            // TODO: add WebGPU
+            break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
 

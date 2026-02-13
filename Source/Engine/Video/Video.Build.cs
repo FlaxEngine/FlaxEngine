@@ -63,6 +63,10 @@ public class Video : EngineModule
             options.SourcePaths.Add(Path.Combine(FolderPath, "Android"));
             options.CompileEnv.PreprocessorDefinitions.Add("VIDEO_API_ANDROID");
             break;
+        case TargetPlatform.Web:
+            // No implemented
+            break;
+        default: throw new InvalidPlatformException(options.Platform.Target);
         }
     }
 

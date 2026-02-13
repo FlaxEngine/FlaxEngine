@@ -48,7 +48,7 @@ void ThreadBase::Kill(bool waitForJoin)
         return;
     }
     ASSERT(GetID());
-    const auto thread = static_cast<Thread*>(this);
+    Thread* thread = (Thread*)this;
 
     // Stop runnable object
     if (_callAfterWork && _runnable)

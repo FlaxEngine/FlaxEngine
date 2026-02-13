@@ -48,6 +48,9 @@ public class SDL : DepsModule
         case TargetPlatform.Mac:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libSDL3.a"));
             break;
+        case TargetPlatform.Web:
+            options.OutputFiles.Add("--use-port=sdl3");
+            return;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
 		

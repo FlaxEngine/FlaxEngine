@@ -51,6 +51,9 @@ public class vorbis : DepsModule
         case TargetPlatform.PS5:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libvorbis.a"));
             break;
+        case TargetPlatform.Web:
+            options.OutputFiles.Add("--use-port=vorbis");
+            break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
     }

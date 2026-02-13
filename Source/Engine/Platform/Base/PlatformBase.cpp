@@ -44,7 +44,7 @@ static_assert(sizeof(double) == 8, "Invalid double type size.");
 
 // Check configuration
 static_assert((PLATFORM_THREADS_LIMIT & (PLATFORM_THREADS_LIMIT - 1)) == 0, "Threads limit must be power of two.");
-static_assert(PLATFORM_THREADS_LIMIT % 4 == 0, "Threads limit must be multiple of 4.");
+static_assert(PLATFORM_THREADS_LIMIT % 4 == 0 || PLATFORM_THREADS_LIMIT == 1, "Threads limit must be multiple of 4.");
 
 const Char* PlatformBase::ApplicationClassName = TEXT("FlaxWindow");
 float PlatformBase::CustomDpiScale = 1.0f;
@@ -293,6 +293,15 @@ PlatformType PlatformBase::GetPlatformType()
 }
 
 bool PlatformBase::Is64BitApp()
+{
+#if PLATFORM_64BITS
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool PlatformBase::Is64BitPlatform()
 {
 #if PLATFORM_64BITS
     return true;
@@ -820,6 +829,8 @@ const Char* ToString(PlatformType type)
         return TEXT("Mac");
     case PlatformType::iOS:
         return TEXT("iOS");
+    case PlatformType::Web:
+        return TEXT("Web");
     default:
         return TEXT("");
     }

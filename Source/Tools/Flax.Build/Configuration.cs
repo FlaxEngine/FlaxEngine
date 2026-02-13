@@ -296,6 +296,8 @@ namespace Flax.Build
 
         public static bool WithCSharp(NativeCpp.BuildOptions options)
         {
+            if (options.Platform.Target == TargetPlatform.Web)
+                return false; // TODO: implement .NET for WebAssembly
             return UseCSharp || options.Target.IsEditor;
         }
 
@@ -318,6 +320,8 @@ namespace Flax.Build
             case TargetPlatform.Linux:
             case TargetPlatform.Mac:
                 return UseSDL;
+            case TargetPlatform.Web:
+                return true;
             default: return false;
             }
         }

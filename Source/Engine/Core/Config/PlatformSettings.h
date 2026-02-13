@@ -38,3 +38,6 @@
 #if PLATFORM_IOS
 #include "Engine/Platform/iOS/iOSPlatformSettings.h"
 #endif
+#if PLATFORM_WEB
+#include "Engine/Platform/Web/WebPlatformSettings.h"
+#endif

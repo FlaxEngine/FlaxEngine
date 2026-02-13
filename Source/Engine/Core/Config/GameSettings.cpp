@@ -95,6 +95,8 @@ IMPLEMENT_ENGINE_SETTINGS_GETTER(SwitchPlatformSettings, SwitchPlatform);
 IMPLEMENT_ENGINE_SETTINGS_GETTER(MacPlatformSettings, MacPlatform);
 #elif PLATFORM_IOS
 IMPLEMENT_ENGINE_SETTINGS_GETTER(iOSPlatformSettings, iOSPlatform);
+#elif PLATFORM_WEB
+IMPLEMENT_ENGINE_SETTINGS_GETTER(WebPlatformSettings, WebPlatform);
 #else
 #error Unknown platform
 #endif
@@ -280,6 +282,7 @@ void GameSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE(PS5Platform);
     DESERIALIZE(MacPlatform);
     DESERIALIZE(iOSPlatform);
+    DESERIALIZE(WebPlatform);
 }
 
 #if USE_EDITOR

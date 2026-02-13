@@ -104,6 +104,7 @@ namespace Flax.Build.Platforms
             {
             case TargetPlatform.Linux: return HasRequiredSDKsInstalled;
             case TargetPlatform.Android: return AndroidSdk.Instance.IsValid && AndroidNdk.Instance.IsValid;
+            case TargetPlatform.Web: return EmscriptenSdk.Instance.IsValid;
             default: return false;
             }
         }

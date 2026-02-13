@@ -127,7 +127,7 @@ GPUTexture* RenderBuffers::RequestHiZ(GPUContext* context, bool fullRes, int32 m
 
     // Allocate or resize buffer (with full mip-chain)
     // TODO: migrate to inverse depth and try using r16 again as default (should have no artifacts anymore)
-    auto format = PLATFORM_ANDROID || PLATFORM_IOS || PLATFORM_SWITCH ? PixelFormat::R16_UInt : PixelFormat::R32_Float;
+    auto format = PLATFORM_WEB || PLATFORM_ANDROID || PLATFORM_IOS || PLATFORM_SWITCH ? PixelFormat::R16_UInt : PixelFormat::R32_Float;
     auto width = fullRes ? _width : Math::Max(_width >> 1, 1);
     auto height = fullRes ? _height : Math::Max(_height >> 1, 1);
     auto desc = GPUTextureDescription::New2D(width, height, mipLevels, format, GPUTextureFlags::ShaderResource);

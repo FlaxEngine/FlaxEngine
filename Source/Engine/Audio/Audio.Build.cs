@@ -60,6 +60,9 @@ public class Audio : EngineModule
         case TargetPlatform.iOS:
             useOpenAL = true;
             break;
+        case TargetPlatform.Web:
+            // TODO: audio playback on Web (OpenAL)
+            break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
 

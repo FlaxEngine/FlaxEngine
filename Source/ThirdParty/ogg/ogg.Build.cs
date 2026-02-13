@@ -45,6 +45,9 @@ public class ogg : DepsModule
         case TargetPlatform.iOS:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libogg.a"));
             break;
+        case TargetPlatform.Web:
+            options.OutputFiles.Add("--use-port=ogg");
+            break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
     }

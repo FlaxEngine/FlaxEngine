@@ -573,6 +573,14 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
         break;
     }
 #endif
+#if PLATFORM_TOOLS_WEB
+    case BuildPlatform::Web:
+    {
+        const char* platformDefineName = "PLATFORM_WEB";
+        // TODO: compile shaders for WebGPU
+        break;
+    }
+#endif
     default:
     {
         LOG(Warning, "Not implemented platform or shaders not supported.");

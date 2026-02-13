@@ -796,6 +796,7 @@ void ShaderGenerator::ProcessGroupTools(Box* box, Node* node, Value& value)
         PLATFORM_CASE(10, "PLATFORM_PS5");
         PLATFORM_CASE(11, "PLATFORM_MAC");
         PLATFORM_CASE(12, "PLATFORM_IOS");
+        PLATFORM_CASE(13, "PLATFORM_WEB");
 #undef PLATFORM_CASE
         break;
     }

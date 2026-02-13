@@ -32,6 +32,8 @@
 #include "Mac/MacPlatform.h"
 #elif PLATFORM_IOS
 #include "iOS/iOSPlatform.h"
+#elif PLATFORM_WEB
+#include "Web/WebPlatform.h"
 #else
 #error Missing Platform implementation!
 #endif

@@ -45,7 +45,9 @@
 #define GPU_USE_WINDOW_SRV 1
 
 // True if allow graphics profile events and markers
+#ifndef GPU_ALLOW_PROFILE_EVENTS
 #define GPU_ALLOW_PROFILE_EVENTS (!BUILD_RELEASE)
+#endif
 
 // True if allow hardware tessellation shaders (Hull and Domain shaders)
 #ifndef GPU_ALLOW_TESSELLATION_SHADERS
@@ -58,7 +60,9 @@
 #endif
 
 // Enable/disable creating GPU resources on separate threads (otherwise only the main thread can be used)
+#ifndef GPU_ENABLE_ASYNC_RESOURCES_CREATION
 #define GPU_ENABLE_ASYNC_RESOURCES_CREATION 1
+#endif
 
 // Enable/disable force shaders recompilation
 #define GPU_FORCE_RECOMPILE_SHADERS 0

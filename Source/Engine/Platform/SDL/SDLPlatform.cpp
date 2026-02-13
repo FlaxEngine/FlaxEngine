@@ -32,7 +32,7 @@
 namespace SDLImpl
 {
     int32 SystemDpi = 96;
-#if PLATFORM_LINUX
+#if PLATFORM_LINUX || PLATFORM_WEB
     String UserLocale("en");
 #endif
     bool WindowDecorationsSupported = true;
@@ -109,7 +109,7 @@ bool SDLPlatform::Init()
     if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
         Platform::Fatal(String::Format(TEXT("Failed to initialize SDL: {0}."), String(SDL_GetError())));
 
-#if PLATFORM_LINUX
+#if PLATFORM_LINUX || PLATFORM_WEB
     int localesCount = 0;
     auto locales = SDL_GetPreferredLocales(&localesCount);
     for (int i = 0; i < localesCount; i++)
@@ -241,7 +241,7 @@ int32 SDLPlatform::GetDpi()
     return SDLImpl::SystemDpi;
 }
 
-#if PLATFORM_LINUX
+#if PLATFORM_LINUX || PLATFORM_WEB
 String SDLPlatform::GetUserLocaleName()
 {
     return SDLImpl::UserLocale;
@@ -435,8 +435,10 @@ int32 SDLPlatform::CreateProcess(CreateProcessSettings& settings)
     SDL_SetPointerProperty(props, SDL_PROP_PROCESS_CREATE_ARGS_POINTER, cmd.Get());
     SDL_SetPointerProperty(props, SDL_PROP_PROCESS_CREATE_ENVIRONMENT_POINTER, env);
     SDL_SetBooleanProperty(props, SDL_PROP_PROCESS_CREATE_BACKGROUND_BOOLEAN, background);
+#if !PLATFORM_WEB
     if (workingDirectory.HasChars())
         SDL_SetStringProperty(props, SDL_PROP_PROCESS_CREATE_WORKING_DIRECTORY_STRING, workingDirectory.Get());
+#endif
     if (captureStdOut)
     {
         SDL_SetNumberProperty(props, SDL_PROP_PROCESS_CREATE_STDOUT_NUMBER, SDL_PROCESS_STDIO_APP);

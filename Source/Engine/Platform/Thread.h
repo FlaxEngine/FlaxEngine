@@ -16,6 +16,8 @@
 #include "Platforms/Switch/Engine/Platform/SwitchThread.h"
 #elif PLATFORM_MAC || PLATFORM_IOS
 #include "Apple/AppleThread.h"
+#elif PLATFORM_WEB
+#include "Web/WebThread.h"
 #else
 #error Missing Thread implementation!
 #endif

@@ -45,6 +45,9 @@ public class freetype : DepsModule
         case TargetPlatform.iOS:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libfreetype.a"));
             break;
+        case TargetPlatform.Web:
+            options.OutputFiles.Add("--use-port=freetype");
+            break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
 

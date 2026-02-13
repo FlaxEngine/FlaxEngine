@@ -414,7 +414,7 @@ namespace Flax.Build.Platforms
 
                 // Language for the file
                 args.Add("-x");
-                if (Path.GetExtension(sourceFile).Equals(".c", StringComparison.OrdinalIgnoreCase))
+                if (sourceFile.EndsWith(".c", StringComparison.OrdinalIgnoreCase))
                     args.Add("c");
                 else
                 {

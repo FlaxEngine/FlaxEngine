@@ -114,11 +114,6 @@ public:
     static void Yield();
     static double GetTimeSeconds();
     static uint64 GetTimeCycles();
-    FORCE_INLINE static uint64 GetClockFrequency()
-    {
-        // Dummy value
-        return 1000000;
-    }
     static void GetSystemTime(int32& year, int32& month, int32& dayOfWeek, int32& day, int32& hour, int32& minute, int32& second, int32& millisecond);
     static void GetUTCTime(int32& year, int32& month, int32& dayOfWeek, int32& day, int32& hour, int32& minute, int32& second, int32& millisecond);
 #if !BUILD_RELEASE

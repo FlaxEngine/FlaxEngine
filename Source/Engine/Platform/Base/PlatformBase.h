@@ -378,7 +378,7 @@ public:
     /// Returns true if running on 64-bit computer
     /// </summary>
     /// <returns>True if running on 64-bit computer, otherwise false.</returns>
-    API_PROPERTY() static bool Is64BitPlatform() = delete;
+    API_PROPERTY() static bool Is64BitPlatform();
 
     /// <summary>
     /// Gets the name of the operating system.
@@ -470,7 +470,11 @@ public:
     /// Gets the system clock frequency.
     /// </summary>
     /// <returns>The clock frequency.</returns>
-    API_PROPERTY() static uint64 GetClockFrequency() = delete;
+    API_PROPERTY() static uint64 GetClockFrequency()
+    {
+        // Dummy value
+        return 1000000;
+    }
 
     /// <summary>
     /// Gets current system time based on current computer settings.

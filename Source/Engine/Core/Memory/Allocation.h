@@ -58,7 +58,7 @@ public:
     typedef void* Tag;
 
     template<typename T>
-    class alignas(sizeof(void*)) Data
+    class alignas(uint64) Data
     {
     private:
         byte _data[Capacity * sizeof(T)];
@@ -200,13 +200,13 @@ public:
     typedef void* Tag;
 
     template<typename T>
-    class alignas(sizeof(void*)) Data
+    class alignas(sizeof(uint64)) Data
     {
     private:
         typedef typename FallbackAllocation::template Data<T> FallbackData;
 
         bool _useFallback = false;
-        alignas(sizeof(void*)) byte _data[Capacity * sizeof(T)];
+        alignas(sizeof(uint64)) byte _data[Capacity * sizeof(T)];
         FallbackData _fallback;
 
     public:

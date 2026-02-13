@@ -784,7 +784,7 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     // Disable cascades blending when baking lightmaps
     if (IsRunningRadiancePass)
         atlasLight.BlendCSM = false;
-#elif PLATFORM_SWITCH || PLATFORM_IOS || PLATFORM_ANDROID
+#elif PLATFORM_WEB || PLATFORM_SWITCH || PLATFORM_IOS || PLATFORM_ANDROID
     // Disable cascades blending on low-end platforms
     atlasLight.BlendCSM = false;
 #endif
