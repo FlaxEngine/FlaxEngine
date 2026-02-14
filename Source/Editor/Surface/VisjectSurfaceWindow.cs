@@ -723,6 +723,9 @@ namespace FlaxEditor.Surface
             foreach (var param in ((IVisjectSurfaceWindow)Values[0]).VisjectSurface.Parameters)
             {
                 string cleanParamName = param.Name.Replace(" ", "");
+                // Filter out headers and other non-parameter entries that can be present in the parameters list
+                if (string.IsNullOrEmpty(cleanParamName))
+                    continue;
                 allParamNames += $"private const string {cleanParamName}ParameterName = \"{param.Name}\";\n";
             }
 
