@@ -106,6 +106,14 @@ public:
     }
 
     /// <summary>
+    /// Gets the atlas pixel format.
+    /// </summary>
+    FORCE_INLINE PixelFormat GetPixelFormat() const
+    {
+        return _format;
+    }
+
+    /// <summary>
     /// Gets the atlas size.
     /// </summary>
     FORCE_INLINE Float2 GetSize() const
@@ -186,8 +194,8 @@ public:
     /// <summary>
     /// Returns glyph's bitmap data of the slot.
     /// </summary>
-	/// <param name="slot">The slot in atlas.</param>
-	/// <param name="width">The width of the slot.</param>
+    /// <param name="slot">The slot in atlas.</param>
+    /// <param name="width">The width of the slot.</param>
     /// <param name="height">The height of the slot.</param>
     /// <param name="stride">The stride of the slot.</param>
     /// <returns>The pointer to the bitmap data of the given slot.</returns>
