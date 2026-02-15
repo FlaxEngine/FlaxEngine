@@ -15,7 +15,7 @@ public class msdfgen : DepsModule
         base.Init();
 
         LicenseType = LicenseTypes.MIT;
-        LicenseFilePath = "LICENSE.TXT";
+        LicenseFilePath = "LICENSE.txt";
 
         // Merge third-party modules into engine binary
         BinaryModuleName = "FlaxEngine";
@@ -35,7 +35,7 @@ public class msdfgen : DepsModule
         case TargetPlatform.Linux:
         case TargetPlatform.Mac:
         case TargetPlatform.Android:
-            options.OutputFiles.Add(Path.Combine(depsRoot, "msdfgen-core.a"));
+            options.OutputFiles.Add(Path.Combine(depsRoot, "libmsdfgen-core.a"));
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }

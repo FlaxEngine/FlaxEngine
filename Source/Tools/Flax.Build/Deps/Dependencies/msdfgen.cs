@@ -40,6 +40,36 @@ namespace Flax.Deps.Dependencies
         }
 
         /// <inheritdoc />
+        public override TargetArchitecture[] Architectures
+        {
+            get
+            {
+                switch (BuildPlatform)
+                {
+                case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        //TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                default: return new TargetArchitecture[0];
+                }
+            }
+        }
+
+        /// <inheritdoc />
         public override void Build(BuildOptions options)
         {
             var root = options.IntermediateFolder;
@@ -64,17 +94,18 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
-                BuildStarted(platform);
-                switch (platform)
+                foreach (var architecture in options.Architectures)
                 {
-                case TargetPlatform.Windows:
-                {
-                    var configuration = "Release";
-
-                    // Build for Windows
-                    File.Delete(Path.Combine(root, "CMakeCache.txt"));
-                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    BuildStarted(platform, architecture);
+                    switch (platform)
                     {
+                    case TargetPlatform.Windows:
+                    {
+                        var configuration = "Release";
+
+                        // Build for Windows
+                        File.Delete(Path.Combine(root, "CMakeCache.txt"));
+                        
                         var buildDir = Path.Combine(root, "build-" + architecture);
                         var installDir = Path.Combine(root, "install-" + architecture);
                         SetupDirectory(buildDir, true);
@@ -85,20 +116,57 @@ namespace Flax.Deps.Dependencies
                         Utilities.FileCopy(Path.Combine(installDir, "lib", "msdfgen-core.lib"), Path.Combine(depsFolder, "msdfgen-core.lib"));
                         // This will be set multiple times, but the headers are the same anyway.
                         includeDir = Path.Combine(installDir, "include");
-                    }
 
-                    break;
-                }
-                case TargetPlatform.Linux:
-                {
-                    // todo
-                    break;
-                }
-                case TargetPlatform.Mac:
-                {
-                    // todo
-                    break;
-                }
+                        break;
+                    }
+                    case TargetPlatform.Linux:
+                    {
+                        var configuration = "Release";
+                        var envVars = new Dictionary<string, string>
+                        {
+                            { "CC", "clang-" + Configuration.LinuxClangMinVer },
+                            { "CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer },
+                            { "CXX", "clang++-" + Configuration.LinuxClangMinVer },
+                            { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
+                        };
+
+                        // Build for Linux
+                        File.Delete(Path.Combine(root, "CMakeCache.txt"));
+
+                        var buildDir = Path.Combine(root, "build-" + architecture);
+                        var installDir = Path.Combine(root, "install-" + architecture);
+                        SetupDirectory(buildDir, true);
+                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" " + cmakeArgs + " -DCMAKE_POSITION_INDEPENDENT_CODE=ON", envVars);
+                        BuildCmake(buildDir);
+                        Utilities.Run("cmake", $"--install {buildDir} --prefix {installDir} --config {configuration}", null, root, Utilities.RunOptions.DefaultTool);
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        Utilities.FileCopy(Path.Combine(installDir, "lib", "libmsdfgen-core.a"), Path.Combine(depsFolder, "libmsdfgen-core.a"));
+                        // This will be set multiple times, but the headers are the same anyway.
+                        includeDir = Path.Combine(installDir, "include");
+                        
+                        break;
+                    }
+                    case TargetPlatform.Mac:
+                    {
+                        var configuration = "Release";
+
+                        // Build for Mac
+                        File.Delete(Path.Combine(root, "CMakeCache.txt"));
+
+                        var buildDir = Path.Combine(root, "build-" + architecture);
+                        var installDir = Path.Combine(root, "install-" + architecture);
+                        SetupDirectory(buildDir, true);
+                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" " + cmakeArgs);
+                        BuildCmake(buildDir);
+                        Utilities.Run("cmake", $"--install {buildDir} --prefix {installDir} --config {configuration}", null, root, Utilities.RunOptions.DefaultTool);
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        Utilities.FileCopy(Path.Combine(installDir, "lib", "libmsdfgen-core.a"), Path.Combine(depsFolder, "libmsdfgen-core.a"));
+                        // This will be set multiple times, but the headers are the same anyway.
+                        includeDir = Path.Combine(installDir, "include");
+                        
+                        break;
+                    }
+                    }
                 }
             }
 
