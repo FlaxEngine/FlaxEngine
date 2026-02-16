@@ -86,21 +86,36 @@ namespace Flax.Build.Platforms
             options.CompileEnv.CpuArchitecture = CpuArchitecture.None; // TODO: try SIMD support in Emscripten
         }
 
-        private void AddSharedArgs(List<string> args, bool debugInformation, bool optimization, FavorSizeOrSpeed favorSizeOrSpeed)
+        private void AddSharedArgs(List<string> args, BuildOptions options, bool debugInformation, bool optimization)
         {
             if (debugInformation)
                 args.Add("-g2");
             else
                 args.Add("-g0");
 
-            if (favorSizeOrSpeed == FavorSizeOrSpeed.SmallCode)
+            if (options.CompileEnv.FavorSizeOrSpeed == FavorSizeOrSpeed.SmallCode)
                 args.Add("-Os");
-            if (favorSizeOrSpeed == FavorSizeOrSpeed.FastCode)
+            if (options.CompileEnv.FavorSizeOrSpeed == FavorSizeOrSpeed.FastCode)
+                args.Add("-O3");
+            else if (optimization && options.Configuration == TargetConfiguration.Release)
                 args.Add("-O3");
             else if (optimization)
                 args.Add("-O2");
             else
                 args.Add("-O0");
+
+            if (options.CompileEnv.RuntimeTypeInfo)
+                args.Add("-frtti");
+            else
+                args.Add("-fno-rtti");
+
+            if (options.CompileEnv.TreatWarningsAsErrors)
+                args.Add("-Wall -Werror");
+
+            if (options.CompileEnv.EnableExceptions)
+                args.Add("-fexceptions");
+            else
+                args.Add("-fno-exceptions");
         }
 
         /// <inheritdoc />
@@ -114,7 +129,7 @@ namespace Flax.Build.Platforms
             {
                 commonArgs.Add("-c");
 
-                AddSharedArgs(commonArgs, options.CompileEnv.DebugInformation, options.CompileEnv.Optimization, options.CompileEnv.FavorSizeOrSpeed);
+                AddSharedArgs(commonArgs, options, options.CompileEnv.DebugInformation, options.CompileEnv.Optimization);
             }
 
             // Add preprocessor definitions
@@ -204,7 +219,8 @@ namespace Flax.Build.Platforms
             {
                 args.Add(string.Format("-o \"{0}\"", outputFilePath.Replace('\\', '/')));
 
-               AddSharedArgs(args, options.LinkEnv.DebugInformation, options.LinkEnv.Optimization, options.CompileEnv.FavorSizeOrSpeed);
+                AddSharedArgs(args, options, options.LinkEnv.DebugInformation, options.LinkEnv.Optimization);
+
             }
 
             args.Add("-Wl,--start-group");

@@ -111,6 +111,10 @@
 #define _DEPRECATED(_0, _1, LASTARG, ...) LASTARG
 #define DEPRECATED(...) _DEPRECATED(, ##__VA_ARGS__, _DEPRECATED_1(__VA_ARGS__), _DEPRECATED_0())
 
+#if defined(__EXCEPTIONS) || defined(__cpp_exceptions) || defined(_CPPUNWIND)
+#define HAS_EXCEPTIONS
+#endif
+
 // C++ 17
 #if __cplusplus >= 201703L
 #define IF_CONSTEXPR constexpr

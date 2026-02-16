@@ -267,8 +267,21 @@ namespace Flax.Build
                 break;
             }
 
-            options.CompileEnv.EnableExceptions = true; // TODO: try to disable this!
-            options.CompileEnv.Sanitizers = Configuration.Sanitizers;
+            switch (options.Platform.Target)
+            {
+            case TargetPlatform.Windows:
+            case TargetPlatform.XboxOne:
+            case TargetPlatform.XboxScarlett:
+            case TargetPlatform.UWP:
+            case TargetPlatform.Linux:
+            case TargetPlatform.iOS:
+            case TargetPlatform.Mac:
+                // TODO: try to disable this on more platforms! (eg. LocalizationService::OnLocalizationChanged uses it)
+                options.CompileEnv.EnableExceptions = true;
+                break;
+            }
+            options.CompileEnv.RuntimeTypeInfo = true; // TODO: try migrating from dynamic_cast to casting via ScriptingType and skip RTTI
+            options.CompileEnv.Sanitizers |= Configuration.Sanitizers;
             switch (options.Configuration)
             {
             case TargetConfiguration.Debug:
