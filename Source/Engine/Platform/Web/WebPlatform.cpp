@@ -8,6 +8,7 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/Version.h"
 #include "Engine/Core/Types/Guid.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Platform/CPUInfo.h"
 #include "Engine/Platform/MemoryStats.h"
 #if !BUILD_RELEASE
@@ -15,6 +16,7 @@
 #include "Engine/Utilities/StringConverter.h"
 #endif
 #include <chrono>
+#include <unistd.h>
 #include <emscripten/emscripten.h>
 #include <emscripten/threading.h>
 #include <emscripten/version.h>
@@ -234,6 +236,46 @@ void WebPlatform::Tick()
 
 void WebPlatform::Exit()
 {
+}
+
+extern char** environ;
+
+void WebPlatform::GetEnvironmentVariables(Dictionary<String, String, HeapAllocation>& result)
+{
+    char** s = environ;
+    for (; *s; s++)
+    {
+        char* var = *s;
+        int32 split = -1;
+        for (int32 i = 0; var[i]; i++)
+        {
+            if (var[i] == '=')
+            {
+                split = i;
+                break;
+            }
+        }
+        if (split == -1)
+            result[String(var)] = String::Empty;
+        else
+            result[String(var, split)] = String(var + split + 1);
+    }
+}
+
+bool WebPlatform::GetEnvironmentVariable(const String& name, String& value)
+{
+    char* env = getenv(StringAsANSI<>(*name).Get());
+    if (env)
+    {
+        value = String(env);
+        return false;
+    }
+    return true;
+}
+
+bool WebPlatform::SetEnvironmentVariable(const String& name, const String& value)
+{
+    return setenv(StringAsANSI<>(*name).Get(), StringAsANSI<>(*value).Get(), true) != 0;
 }
 
 void* WebPlatform::LoadLibrary(const Char* filename)

@@ -108,6 +108,9 @@ public:
     static void LogInfo();
     static void Tick();
     static void Exit();
+    static void GetEnvironmentVariables(Dictionary<String, String, HeapAllocation>& result);
+    static bool GetEnvironmentVariable(const String& name, String& value);
+    static bool SetEnvironmentVariable(const String& name, const String& value);
     static void* LoadLibrary(const Char* filename);
     static void FreeLibrary(void* handle);
     static void* GetProcAddress(void* handle, const char* symbol);
