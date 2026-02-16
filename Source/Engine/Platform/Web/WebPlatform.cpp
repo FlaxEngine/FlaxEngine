@@ -49,7 +49,6 @@ CPUInfo WebPlatform::GetCPUInfo()
 
 MemoryStats WebPlatform::GetMemoryStats()
 {
-    // Mock memory stats
     MemoryStats result;
     result.TotalPhysicalMemory = emscripten_get_heap_max();
     result.UsedPhysicalMemory = emscripten_get_heap_size();
@@ -116,7 +115,7 @@ void WebPlatform::GetSystemTime(int32& year, int32& month, int32& dayOfWeek, int
     hour = time.tm_hour;
     minute = time.tm_min;
     second = time.tm_sec;
-    millisecond = (int64)emscripten_get_now() % 1000; // Fake it based on other timer
+    millisecond = abs((int64)emscripten_get_now()) % 1000; // Fake it based on other timer
 }
 
 void WebPlatform::GetUTCTime(int32& year, int32& month, int32& dayOfWeek, int32& day, int32& hour, int32& minute, int32& second, int32& millisecond)
@@ -135,7 +134,7 @@ void WebPlatform::GetUTCTime(int32& year, int32& month, int32& dayOfWeek, int32&
     hour = time.tm_hour;
     minute = time.tm_min;
     second = time.tm_sec;
-    millisecond = (int64)emscripten_get_now() % 1000; // Fake it based on other timer
+    millisecond = abs((int64)emscripten_get_now()) % 1000; // Fake it based on other timer
 }
 
 #if !BUILD_RELEASE

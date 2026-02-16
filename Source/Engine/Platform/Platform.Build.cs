@@ -96,10 +96,10 @@ public class Platform : EngineModule
 
         if (EngineConfiguration.WithSDL(options))
         {
-            options.PublicDependencies.Add("SDL");
+            options.PrivateDependencies.Add("SDL");
             options.SourcePaths.Add(Path.Combine(FolderPath, "SDL"));
             if (options.Platform.Target == TargetPlatform.Linux)
-                options.PublicDependencies.Add("Wayland");
+                options.PrivateDependencies.Add("Wayland");
         }
         if (options.Target.IsEditor)
         {

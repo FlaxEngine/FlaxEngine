@@ -153,6 +153,10 @@ namespace Flax.Build.Platforms
                 commonArgs.Add("-c");
 
                 AddSharedArgs(commonArgs, options, options.CompileEnv.DebugInformation, options.CompileEnv.Optimization);
+
+                // Hack to pull SDL3 port via emcc
+                if (options.CompileEnv.PreprocessorDefinitions.Contains("PLATFORM_SDL"))
+                    commonArgs.Add("--use-port=sdl3");
             }
 
             // Add preprocessor definitions

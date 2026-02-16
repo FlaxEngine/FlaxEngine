@@ -55,7 +55,7 @@ bool WebPlatformTools::IsNativeCodeFile(CookingData& data, const String& file)
 
 void WebPlatformTools::OnBuildStarted(CookingData& data)
 {
-    // Adjust the cooking output folder for the data files so file_packager tool can build the and output final data inside the cooker output folder
+    // Adjust the cooking output folder for the data files so file_packager tool can compress and output final data inside the cooker output folder
     data.DataOutputPath = data.CacheDirectory / TEXT("Files");
 }
 
@@ -122,11 +122,11 @@ bool WebPlatformTools::OnPostProcess(CookingData& data)
         }
         const String filesIncludeBegin = TEXT("// include: files.js");
         const String filesIncludeEnd = TEXT("// end include: files.js");
+        String fileJs = data.OriginalOutputPath / TEXT("files.js");
         if (!gameJsText.Contains(filesIncludeBegin))
         {
             // Insert generated files.js into the main game file after the minimum_runtime_check.js include
             String fileJsText;
-            String fileJs = data.OriginalOutputPath / TEXT("files.js");
             if (File::ReadAllText(fileJs, fileJsText))
             {
                 data.Error(String::Format(TEXT("Failed to load file '{}'"), fileJs));
@@ -140,6 +140,9 @@ bool WebPlatformTools::OnPostProcess(CookingData& data)
             gameJsText.Insert(location, fileJsText);
             File::WriteAllText(gameJs, gameJsText, Encoding::UTF8);
         }
+
+        // Remove the generated files.js as it's now included in the main game JS file
+        FileSystem::DeleteFile(fileJs);
     }
 
     const auto buildSettings = BuildSettings::Get();
