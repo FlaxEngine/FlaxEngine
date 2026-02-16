@@ -90,7 +90,7 @@ namespace Flax.Deps.Dependencies
             var cmakeArgs = string.Join(" ", args);
 
             // Get the source
-            CloneGitRepoSingleBranch(root, "https://github.com/Chlumsky/msdfgen.git", "master", "a4dafbac1c29021613fbc89768963f3a7e2105aa");
+            CloneGitRepoSingleBranch(root, "https://github.com/Chlumsky/msdfgen.git", "master", "1874bcf7d9624ccc85b4bc9a85d78116f690f35b");
 
             foreach (var platform in options.Platforms)
             {
