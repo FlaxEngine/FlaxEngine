@@ -258,6 +258,10 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
     {
         // Generate bitmap for MSDF
         FT_GlyphSlot glyph = face->glyph;
+
+        // Set advance in advance
+        entry.AdvanceX = Convert26Dot6ToRoundedPixel<int16>(glyph->advance.x);
+
         int16 msdf_top = 0;
         int16 msdf_left = 0;
         MSDFGenerator::GenerateMSDF(glyph, GlyphImageData, glyphWidth, glyphHeight, msdf_top, msdf_left);
@@ -268,8 +272,7 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
             return false;
         }
 
-        // Fill the character data
-        entry.AdvanceX = Convert26Dot6ToRoundedPixel<int16>(glyph->advance.x);
+        // Fill the remaining character data
         entry.OffsetY = msdf_top;
         entry.OffsetX = msdf_left;
         entry.IsValid = true;

@@ -124,6 +124,6 @@ public:
         outputWidth = width;
         outputHeight = height;
         top = static_cast<int16>(Math::CeilToInt(bounds.t + pxRange / 2.0));
-        left = static_cast<int16>(Math::FloorToInt(bounds.l + pxRange / 2.0));
+        left = static_cast<int16>(Math::FloorToInt(bounds.l - pxRange / 2.0));
     }
 };
