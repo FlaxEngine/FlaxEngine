@@ -189,6 +189,8 @@ const Char* ToString(const DotNetAOTModes mode)
         return TEXT("MonoAOTDynamic");
     case DotNetAOTModes::MonoAOTStatic:
         return TEXT("MonoAOTStatic");
+    case DotNetAOTModes::NoDotnet:
+        return TEXT("NoDotnet");
     default:
         return TEXT("");
     }

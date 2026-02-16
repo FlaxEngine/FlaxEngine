@@ -573,6 +573,7 @@ bool Scripting::Load()
     auto* flaxEngineModule = (NativeBinaryModule*)GetBinaryModuleFlaxEngine();
     if (!flaxEngineModule->Assembly->IsLoaded())
     {
+#if USE_CSHARP
         String flaxEnginePath = Globals::BinariesFolder / TEXT("FlaxEngine.CSharp.dll");
 #if USE_MONO_AOT
         if (!FileSystem::FileExists(flaxEnginePath))
@@ -583,6 +584,7 @@ bool Scripting::Load()
             LOG(Error, "Failed to load FlaxEngine C# assembly.");
             return true;
         }
+#endif
         flaxEngineModule->CanReload = false;
         flaxEngineModule->Assembly->_canReload = false;
         onEngineLoaded(flaxEngineModule->Assembly);

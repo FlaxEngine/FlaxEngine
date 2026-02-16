@@ -36,7 +36,7 @@ ArchitectureType WebPlatformTools::GetArchitecture() const
 
 DotNetAOTModes WebPlatformTools::UseAOT() const
 {
-    return DotNetAOTModes::MonoAOTStatic;
+    return DotNetAOTModes::NoDotnet;
 }
 
 PixelFormat WebPlatformTools::GetTextureFormat(CookingData& data, TextureBase* texture, PixelFormat format)
