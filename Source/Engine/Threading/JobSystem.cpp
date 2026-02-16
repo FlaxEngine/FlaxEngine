@@ -14,7 +14,7 @@
 #endif
 #include "Engine/Scripting/Internal/InternalCalls.h"
 
-#define JOB_SYSTEM_ENABLED 1
+#define JOB_SYSTEM_ENABLED (PLATFORM_THREADS_LIMIT > 1)
 
 #if JOB_SYSTEM_ENABLED
 

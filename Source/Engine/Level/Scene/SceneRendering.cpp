@@ -88,6 +88,7 @@ void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory c
 
     // Draw all visual components
     _drawListIndex = -1;
+#if PLATFORM_THREADS_LIMIT > 1
     if (_drawListSize >= 64 && category == SceneDrawAsync && renderContextBatch.EnableAsync)
     {
         // Run in async via Job System
@@ -97,6 +98,7 @@ void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory c
         renderContextBatch.WaitLabels.Add(waitLabel);
     }
     else
+#endif
     {
         // Scene is small so draw on a main-thread
         DrawActorsJob(0);

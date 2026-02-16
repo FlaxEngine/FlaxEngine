@@ -80,10 +80,14 @@ namespace
     // Loading assets
     THREADLOCAL LoadingThread* ThisLoadThread = nullptr;
     LoadingThread* MainLoadThread = nullptr;
+#if PLATFORM_THREADS_LIMIT > 1
     Array<LoadingThread*> LoadThreads;
     ConcurrentTaskQueue<ContentLoadTask> LoadTasks;
     ConditionVariable LoadTasksSignal;
     CriticalSection LoadTasksMutex;
+#else
+    Array<ContentLoadTask*> LoadTasks;
+#endif
 
     // Unloading assets
     Dictionary<Asset*, TimeSpan> UnloadQueue;
@@ -125,11 +129,12 @@ bool ContentService::Init()
     Cache.Init();
 
     // Create loading threads
+    MainLoadThread = New<LoadingThread>();
+    ThisLoadThread = MainLoadThread;
+#if PLATFORM_THREADS_LIMIT > 1
     const CPUInfo cpuInfo = Platform::GetCPUInfo();
     const int32 count = Math::Clamp(Math::CeilToInt(LOADING_THREAD_PER_LOGICAL_CORE * (float)cpuInfo.LogicalProcessorCount), 1, 12);
     LOG(Info, "Creating {0} content loading threads...", count);
-    MainLoadThread = New<LoadingThread>();
-    ThisLoadThread = MainLoadThread;
     LoadThreads.Resize(count);
     for (int32 i = 0; i < count; i++)
     {
@@ -142,6 +147,7 @@ bool ContentService::Init()
             return true;
         }
     }
+#endif
 
     return false;
 }
@@ -150,14 +156,29 @@ void ContentService::Update()
 {
     PROFILE_CPU();
 
-    ScopeLock lock(LoadedAssetsToInvokeLocker);
+#if PLATFORM_THREADS_LIMIT == 1
+    // Run content-streaming tasks on a main thread
+    if (LoadTasks.HasItems())
+    {
+        double timeLimit = 0.01; // 10ms
+        double startTime = Platform::GetTimeSeconds();
+        do
+        {
+            auto task = LoadTasks[0];
+            LoadTasks.RemoveAt(0);
+            MainLoadThread->Run(task);
+        } while (LoadTasks.HasItems() && Platform::GetTimeSeconds() - startTime < timeLimit);
+    }
+#endif
 
     // Broadcast `OnLoaded` events
+    LoadedAssetsToInvokeLocker.Lock();
     while (LoadedAssetsToInvoke.HasItems())
     {
         auto asset = LoadedAssetsToInvoke.Dequeue();
         asset->onLoaded_MainThread();
     }
+    LoadedAssetsToInvokeLocker.Unlock();
 }
 
 void ContentService::LateUpdate()
@@ -219,10 +240,12 @@ void ContentService::LateUpdate()
 
 void ContentService::BeforeExit()
 {
+#if PLATFORM_THREADS_LIMIT > 1
     // Signal threads to end work soon
     for (auto thread : LoadThreads)
         thread->NotifyExit();
     LoadTasksSignal.NotifyAll();
+#endif
 }
 
 void ContentService::Dispose()
@@ -251,6 +274,7 @@ void ContentService::Dispose()
     // NOW dispose graphics device - where there is no loaded assets at all
     Graphics::DisposeDevice();
 
+#if PLATFORM_THREADS_LIMIT > 1
     // Exit all load threads
     for (auto thread : LoadThreads)
         thread->NotifyExit();
@@ -258,12 +282,19 @@ void ContentService::Dispose()
     for (auto thread : LoadThreads)
         thread->Join();
     LoadThreads.ClearDelete();
+#endif
     Delete(MainLoadThread);
     MainLoadThread = nullptr;
     ThisLoadThread = nullptr;
 
+#if PLATFORM_THREADS_LIMIT > 1
     // Cancel all remaining tasks (no chance to execute them)
     LoadTasks.CancelAll();
+#else
+    for (auto* e : LoadTasks)
+        e->Cancel();
+    LoadTasks.Clear();
+#endif
 }
 
 IAssetFactory::Collection& IAssetFactory::Get()
@@ -329,6 +360,7 @@ String LoadingThread::ToString() const
 
 int32 LoadingThread::Run()
 {
+#if PLATFORM_THREADS_LIMIT > 1
     PROFILE_MEM(Content);
 #if USE_EDITOR && PLATFORM_WINDOWS
     // Initialize COM
@@ -366,6 +398,7 @@ int32 LoadingThread::Run()
     }
 
     ThisLoadThread = nullptr;
+#endif
     return 0;
 }
 
@@ -382,7 +415,9 @@ String ContentLoadTask::ToString() const
 void ContentLoadTask::Enqueue()
 {
     LoadTasks.Add(this);
+#if PLATFORM_THREADS_LIMIT > 1
     LoadTasksSignal.NotifyOne();
+#endif
 }
 
 bool ContentLoadTask::Run()
@@ -1137,6 +1172,7 @@ void Content::WaitForTask(ContentLoadTask* loadingTask, double timeoutInMillisec
 #define CHECK_CONDITIONS() (!Engine::ShouldExit() && (timeoutInSeconds <= 0.0 || Platform::GetTimeSeconds() - startTime < timeoutInSeconds))
         do
         {
+#if PLATFORM_THREADS_LIMIT > 1
             // Give opportunity for other threads to use the current core
             if (loopCounter == 0)
                 ; // First run is fast
@@ -1183,6 +1219,34 @@ void Content::WaitForTask(ContentLoadTask* loadingTask, double timeoutInMillisec
                 LoadTasks.enqueue_bulk(localQueue.Get(), localQueue.Count());
                 localQueue.Clear();
             }
+#else
+            // Try to execute content tasks
+            if (task->IsQueued() && CHECK_CONDITIONS() && !LoadTasks.Remove((ContentLoadTask*)task))
+            {
+                PROFILE_CPU_NAMED("Inline");
+                ZoneColor(0xffaaaaaa);
+                thread->Run((ContentLoadTask*)task);
+            }
+            while (!task->IsQueued() && CHECK_CONDITIONS() && LoadTasks.HasItems())
+            {
+                // Find a task that can be executed (some tasks may be waiting for other tasks to finish so they are not queued yet)
+                int32 index = 0;
+                for (int32 i = 0; i < LoadTasks.Count(); i++)
+                {
+                    if (LoadTasks[i]->GetContinueWithTask() == task)
+                    {
+                        index = i;
+                        break;
+                    }
+                }
+                ContentLoadTask* tmp = LoadTasks[index];
+                LoadTasks.RemoveAt(index);
+
+                PROFILE_CPU_NAMED("Inline");
+                ZoneColor(0xffaaaaaa);
+                thread->Run(tmp);
+            }
+#endif
 
             // Check if task is done
             if (task->IsEnded())

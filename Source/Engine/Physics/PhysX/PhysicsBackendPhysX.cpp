@@ -539,11 +539,35 @@ protected:
 			hitInfo = hit.shape ? static_cast<PhysicsColliderActor*>(hit.shape->userData) : nullptr; \
 		}
 
+#if PLATFORM_THREADS_LIMIT <= 1
+
+class DummyCpuDispatcher : public PxCpuDispatcher
+{
+public:
+    void submitTask(PxBaseTask& task) override
+    {
+        // Run directly
+        PROFILE_CPU_NAMED("Physics");
+        task.run();
+        task.release();
+    }
+    uint32_t getWorkerCount() const override
+    {
+        return 1;
+    }
+};
+
+#endif
+
 namespace
 {
     PxFoundation* Foundation = nullptr;
     PxPhysics* PhysX = nullptr;
+#if PLATFORM_THREADS_LIMIT > 1
     PxDefaultCpuDispatcher* CpuDispatcher = nullptr;
+#else
+    DummyCpuDispatcher* CpuDispatcher = nullptr;
+#endif
 #if WITH_PVD
     PxPvd* PVD = nullptr;
 #endif
@@ -1736,7 +1760,11 @@ void PhysicsBackend::Shutdown()
 #if WITH_PVD
     RELEASE_PHYSX(PVD);
 #endif
+#if PLATFORM_THREADS_LIMIT > 1
     RELEASE_PHYSX(CpuDispatcher);
+#else
+    SAFE_DELETE(CpuDispatcher);
+#endif
     RELEASE_PHYSX(Foundation);
     SceneOrigins.Clear();
 }
@@ -1796,8 +1824,13 @@ void* PhysicsBackend::CreateScene(const PhysicsSettings& settings)
     {
         if (CpuDispatcher == nullptr)
         {
+#if PLATFORM_THREADS_LIMIT > 1
             uint32 threads = Math::Clamp<uint32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 1, 8);
             CpuDispatcher = PxDefaultCpuDispatcherCreate(threads);
+            CHECK_INIT(CpuDispatcher, "PxDefaultCpuDispatcherCreate failed!");
+#else
+            CpuDispatcher = New<DummyCpuDispatcher>();
+#endif
             CHECK_INIT(CpuDispatcher, "PxDefaultCpuDispatcherCreate failed!");
         }
         sceneDesc.cpuDispatcher = CpuDispatcher;

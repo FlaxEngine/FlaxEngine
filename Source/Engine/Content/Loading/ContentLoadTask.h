@@ -5,14 +5,14 @@
 #include "Engine/Threading/Task.h"
 
 class Asset;
-class LoadingThread;
 
 /// <summary>
 /// Describes content loading task object.
 /// </summary>
 class ContentLoadTask : public Task
 {
-    friend LoadingThread;
+    friend class LoadingThread;
+    friend class ContentService;
 
 public:
     /// <summary>
