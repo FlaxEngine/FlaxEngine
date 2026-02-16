@@ -41,7 +41,7 @@ PACK_STRUCT(struct SpriteParticleVertex
 class SpriteParticleRenderer
 {
 public:
-    volatile int64 Ready = 0;
+    volatile intptr Ready = 0;
     GPUBuffer* VB = nullptr;
     GPUBuffer* IB = nullptr;
     const static int32 VertexCount = 4;

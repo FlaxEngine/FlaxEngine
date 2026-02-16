@@ -286,13 +286,13 @@ FlaxStorage::LockData FlaxStorage::LockSafe()
 
 uint32 FlaxStorage::GetRefCount() const
 {
-    return (uint32)Platform::AtomicRead((int64*)&_refCount);
+    return (uint32)Platform::AtomicRead((intptr*)&_refCount);
 }
 
 bool FlaxStorage::ShouldDispose() const
 {
-    return Platform::AtomicRead((int64*)&_refCount) == 0 &&
-            Platform::AtomicRead((int64*)&_chunksLock) == 0 &&
+    return Platform::AtomicRead((intptr*)&_refCount) == 0 &&
+            Platform::AtomicRead((intptr*)&_chunksLock) == 0 &&
             Platform::GetTimeSeconds() - _lastRefLostTime >= 0.5; // TTL in seconds
 }
 

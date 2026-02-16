@@ -29,7 +29,7 @@ namespace Flax.Build.Platforms
         public override string ExecutableFileExtension => ".html";
 
         /// <inheritdoc />
-        public override string SharedLibraryFileExtension => ".so";
+        public override string SharedLibraryFileExtension => ".wasm";
 
         /// <inheritdoc />
         public override string StaticLibraryFileExtension => ".a";
