@@ -7,6 +7,18 @@ using System.Linq;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
 
+namespace Flax.Build
+{
+    partial class Configuration
+    {
+        /// <summary>
+        /// Specifies the initial memory size (in MB) to use by Web app.
+        /// </summary>
+        [CommandLine("webInitialMemory", "<size_mb>", "Specifies the initial memory size (in MB) to use by Web app.")]
+        public static int WebInitialMemory = 32;
+    }
+}
+
 namespace Flax.Build.Platforms
 {
     /// <summary>
@@ -116,6 +128,17 @@ namespace Flax.Build.Platforms
                 args.Add("-fexceptions");
             else
                 args.Add("-fno-exceptions");
+
+            if (options.LinkEnv.LinkTimeCodeGeneration)
+                args.Add("-flto");
+
+            var sanitizers = options.CompileEnv.Sanitizers;
+            if (sanitizers.HasFlag(Sanitizer.Address))
+                args.Add("-fsanitize=address");
+            if (sanitizers.HasFlag(Sanitizer.Undefined))
+                args.Add("-fsanitize=undefined");
+            if (sanitizers == Sanitizer.None)
+                args.Add("-fsanitize=null -fsanitize-minimal-runtime"); // Minimal Runtime
         }
 
         /// <inheritdoc />
@@ -221,6 +244,13 @@ namespace Flax.Build.Platforms
 
                 AddSharedArgs(args, options, options.LinkEnv.DebugInformation, options.LinkEnv.Optimization);
 
+                // Setup memory
+                var initialMemory = Configuration.WebInitialMemory;
+                if (options.CompileEnv.Sanitizers.HasFlag(Sanitizer.Address))
+                    initialMemory = Math.Max(initialMemory, 64); // Address Sanitizer needs more memory
+                args.Add($"-sINITIAL_MEMORY={initialMemory}MB");
+                args.Add("-sSTACK_SIZE=4MB");
+                args.Add("-sALLOW_MEMORY_GROWTH=1");
             }
 
             args.Add("-Wl,--start-group");

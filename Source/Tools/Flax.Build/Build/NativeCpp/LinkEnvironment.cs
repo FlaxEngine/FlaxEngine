@@ -62,7 +62,7 @@ namespace Flax.Build.NativeCpp
         public bool UseFastPDBLinking = false;
 
         /// <summary>
-        /// Enables the link time code generation (LTCG).
+        /// Enables the link time code generation (LTCG) or Link Time Optimization (LTO).
         /// </summary>
         public bool LinkTimeCodeGeneration = false;
 
