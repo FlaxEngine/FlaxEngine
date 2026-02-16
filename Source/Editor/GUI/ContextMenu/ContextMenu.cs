@@ -502,6 +502,7 @@ namespace FlaxEditor.GUI.ContextMenu
             if (base.OnKeyDown(key))
                 return true;
 
+            // Keyboard navigation around the menu
             switch (key)
             {
             case KeyboardKeys.ArrowDown:
@@ -525,6 +526,20 @@ namespace FlaxEditor.GUI.ContextMenu
                         return true;
                     }
                 }
+                break;
+            case KeyboardKeys.ArrowRight:
+                for (int i = 0; i < _panel.Children.Count; i++)
+                {
+                    if (_panel.Children[i] is ContextMenuChildMenu item && item.Visible && item.IsFocused && !item.ContextMenu.IsOpened)
+                    {
+                        item.ShowChild(this);
+                        item.ContextMenu._panel.Children.FirstOrDefault(x => x is ContextMenuButton && x.Visible)?.Focus();
+                        break;
+                    }
+                }
+                break;
+            case KeyboardKeys.ArrowLeft:
+                ParentCM?.RootWindow.Focus();
                 break;
             }
 

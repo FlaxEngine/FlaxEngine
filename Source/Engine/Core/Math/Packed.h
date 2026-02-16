@@ -40,9 +40,14 @@ struct FLAXENGINE_API FloatR10G10B10A2
     {
         return Value;
     }
-
-    operator Float3() const;
-    operator Float4() const;
+    operator Float3() const
+    {
+        return ToFloat3();
+    }
+    operator Float4() const
+    {
+        return ToFloat4();
+    }
 
     FloatR10G10B10A2& operator=(const FloatR10G10B10A2& other)
     {

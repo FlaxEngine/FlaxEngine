@@ -593,11 +593,12 @@ namespace FlaxEditor.CustomEditors.Editors
                 panel.Panel.Offsets = new Margin(7, 7, 0, 0);
                 panel.Panel.BackgroundColor = _background;
                 var elementType = ElementType;
+                var bindingAttr = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public;
                 bool single = elementType.IsPrimitive ||
                               elementType.Equals(new ScriptType(typeof(string))) ||
                               elementType.IsEnum ||
-                              (elementType.GetFields().Length == 1 && elementType.GetProperties().Length == 0) ||
-                              (elementType.GetProperties().Length == 1 && elementType.GetFields().Length == 0) ||
+                              (elementType.GetFields(bindingAttr).Length == 1 && elementType.GetProperties(bindingAttr).Length == 0) ||
+                              (elementType.GetProperties(bindingAttr).Length == 1 && elementType.GetFields(bindingAttr).Length == 0) ||
                               elementType.Equals(new ScriptType(typeof(JsonAsset))) ||
                               elementType.Equals(new ScriptType(typeof(SettingsBase)));
                 if (_cachedDropPanels == null)

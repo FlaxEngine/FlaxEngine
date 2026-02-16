@@ -227,9 +227,9 @@ public:
 void PrefabInstanceData::CollectPrefabInstances(PrefabInstancesData& prefabInstancesData, const Guid& prefabId, Actor* defaultInstance, Actor* targetActor)
 {
     ScopeLock lock(PrefabManager::PrefabsReferencesLocker);
-    if (PrefabManager::PrefabsReferences.ContainsKey(prefabId))
+    if (auto instancesPtr = PrefabManager::PrefabsReferences.TryGet(prefabId))
     {
-        auto& instances = PrefabManager::PrefabsReferences[prefabId];
+        auto& instances = *instancesPtr;
         int32 usedCount = 0;
         for (int32 instanceIndex = 0; instanceIndex < instances.Count(); instanceIndex++)
         {

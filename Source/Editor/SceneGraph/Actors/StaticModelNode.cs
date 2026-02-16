@@ -47,6 +47,11 @@ namespace FlaxEditor.SceneGraph.Actors
             }
         }
 
+        /// <summary>
+        /// Gets the model used by this actor.
+        /// </summary>
+        public Model Model => ((StaticModel)Actor).Model;
+
         /// <inheritdoc />
         public StaticModelNode(Actor actor)
         : base(actor)
@@ -120,12 +125,12 @@ namespace FlaxEditor.SceneGraph.Actors
         {
             base.OnContextMenu(contextMenu, window);
 
-            // Check if every selected node is a primitive
+            // Check if every selected node is a primitive or has collision asset
             var selection = GetSelection(window);
             bool autoOptionEnabled = true;
             foreach (var node in selection)
             {
-                if (node is StaticModelNode staticModelNode && !staticModelNode.IsPrimitive)
+                if (node is StaticModelNode staticModelNode && (!staticModelNode.IsPrimitive && GetCollisionData(staticModelNode.Model) == null))
                 {
                     autoOptionEnabled = false;
                     break;
@@ -201,6 +206,54 @@ namespace FlaxEditor.SceneGraph.Actors
             return Array.Empty<SceneGraphNode>();
         }
 
+        private static bool TryCollisionData(Model model, BinaryAssetItem assetItem, out CollisionData collisionData)
+        {
+            collisionData = FlaxEngine.Content.Load<CollisionData>(assetItem.ID);
+            if (collisionData)
+            {
+                var options = collisionData.Options;
+                if (options.Model == model.ID || options.Model == Guid.Empty)
+                    return true;
+            }
+            return false;
+        }
+
+        private CollisionData GetCollisionData(Model model)
+        {
+            if (model == null)
+                return null;
+
+            // Check if there already is collision data for that model to reuse
+            var modelItem = (AssetItem)Editor.Instance.ContentDatabase.Find(model.ID);
+            if (modelItem?.ParentFolder != null)
+            {
+                foreach (var child in modelItem.ParentFolder.Children)
+                {
+                    // Check if there is collision that was made with this model
+                    if (child is BinaryAssetItem b && b.IsOfType<CollisionData>())
+                    {
+                        if (TryCollisionData(model, b, out var collisionData))
+                            return collisionData;
+                    }
+
+                    // Check if there is an auto-imported collision
+                    if (child is ContentFolder childFolder && childFolder.ShortName == modelItem.ShortName)
+                    {
+                        foreach (var childFolderChild in childFolder.Children)
+                        {
+                            if (childFolderChild is BinaryAssetItem c && c.IsOfType<CollisionData>())
+                            {
+                                if (TryCollisionData(model, c, out var collisionData))
+                                    return collisionData;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
         private void CreateAuto(StaticModel actor, Spawner spawner, bool singleNode)
         {
             // Special case for in-built Editor models that can use analytical collision
@@ -242,6 +295,15 @@ namespace FlaxEditor.SceneGraph.Actors
                 spawner(collider);
                 collider.LocalPosition = new Vector3(0, 50.0f, 0);
                 collider.LocalOrientation = Quaternion.Euler(0, 0, 90.0f);
+            }
+            else
+            {
+                var collider = new MeshCollider
+                {
+                    Transform = actor.Transform,
+                    CollisionData = GetCollisionData(model),
+                };
+                spawner(collider);
             }
         }
 

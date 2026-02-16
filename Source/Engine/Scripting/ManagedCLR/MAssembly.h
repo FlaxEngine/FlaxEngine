@@ -34,6 +34,7 @@ private:
 
     int32 _isLoaded : 1;
     int32 _isLoading : 1;
+    int32 _canReload : 1;
     mutable int32 _hasCachedClasses : 1;
 
     mutable ClassesDictionary _classes;
@@ -123,6 +124,14 @@ public:
     FORCE_INLINE bool IsLoaded() const
     {
         return _isLoaded != 0;
+    }
+
+    /// <summary>
+    /// Returns true if assembly can be hot-reloaded at runtime. For example, in Editor after scripts recompilation. Some assemblies such as engine and class library modules are static.
+    /// </summary>
+    FORCE_INLINE bool CanReload() const
+    {
+        return USE_EDITOR && _canReload;
     }
 
     /// <summary>

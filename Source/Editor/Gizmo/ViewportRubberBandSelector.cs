@@ -36,11 +36,12 @@ public sealed class ViewportRubberBandSelector
     /// Triggers the start of a rubber band selection.
     /// </summary>
     /// <returns>True if selection started, otherwise false.</returns>
-    public bool TryStartingRubberBandSelection()
+    public bool TryStartingRubberBandSelection(Float2 mousePosition)
     {
         if (!_isRubberBandSpanning && _owner.Gizmos.Active != null && !_owner.Gizmos.Active.IsControllingMouse && !_owner.IsRightMouseButtonDown)
         {
             _tryStartRubberBand = true;
+            _cachedStartingMousePosition = mousePosition;
             return true;
         }
         return false;
@@ -82,12 +83,15 @@ public sealed class ViewportRubberBandSelector
             return;
         }
 
-        if (_tryStartRubberBand && (Mathf.Abs(_owner.MouseDelta.X) > 0.1f || Mathf.Abs(_owner.MouseDelta.Y) > 0.1f) && canStart)
+        if (_tryStartRubberBand && canStart)
         {
-            _isRubberBandSpanning = true;
-            _cachedStartingMousePosition = mousePosition;
-            _rubberBandRect = new Rectangle(_cachedStartingMousePosition, Float2.Zero);
-            _tryStartRubberBand = false;
+            var delta = mousePosition - _cachedStartingMousePosition;
+            if (Mathf.Abs(delta.X) > 0.1f || Mathf.Abs(delta.Y) > 0.1f)
+            {
+                _isRubberBandSpanning = true;
+                _rubberBandRect = new Rectangle(_cachedStartingMousePosition, Float2.Zero);
+                _tryStartRubberBand = false;
+            }
         }
         else if (_isRubberBandSpanning && _owner.Gizmos.Active != null && !_owner.Gizmos.Active.IsControllingMouse && !_owner.IsRightMouseButtonDown)
         {

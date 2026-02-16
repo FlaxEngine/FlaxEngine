@@ -73,7 +73,7 @@ namespace FlaxEngine
 #if FLAX_EDITOR
     [System.ComponentModel.TypeConverter(typeof(TypeConverters.Vector2Converter))]
 #endif
-    public unsafe partial struct Vector2 : IEquatable<Vector2>, IFormattable
+    public unsafe partial struct Vector2 : IEquatable<Vector2>, IFormattable, Json.ICustomValueEquals
     {
         private static readonly string _formatString = "X:{0:F2} Y:{1:F2}";
 
@@ -955,6 +955,33 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Performs a spherical linear interpolation between two vectors.
+        /// </summary>
+        /// <param name="start">Start vector.</param>
+        /// <param name="end">End vector.</param>
+        /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
+        /// <param name="result">>When the method completes, contains the linear interpolation of the two vectors.</param>
+        public static void Slerp(ref Vector2 start, ref Vector2 end, float amount, out Vector2 result)
+        {
+            var dot = Mathr.Clamp(Dot(start, end), -1.0f, 1.0f);
+            var theta = Mathr.Acos(dot) * amount;
+            Vector2 relativeVector = (end - start * dot).Normalized;
+            result = ((start * Mathr.Cos(theta)) + (relativeVector * Mathr.Sin(theta)));
+        }
+
+        /// <summary>
+        /// Performs a spherical linear interpolation between two vectors.
+        /// </summary>
+        /// <param name="start">Start vector.</param>
+        /// <param name="end">End vector.</param>
+        /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
+        public static Vector2 Slerp(Vector2 start, Vector2 end, float amount)
+        {
+            Slerp(ref start, ref end, amount, out Vector2 result);
+            return result;
+        }
+
+        /// <summary>
         /// Performs a gradual change of a vector towards a specified target over time
         /// </summary>
         /// <param name="current">Current vector.</param>
@@ -1772,6 +1799,13 @@ namespace FlaxEngine
             {
                 return (X.GetHashCode() * 397) ^ Y.GetHashCode();
             }
+        }
+
+        /// <inheritdoc />
+        public bool ValueEquals(object other)
+        {
+            var o = (Vector2)other;
+            return Equals(ref o);
         }
 
         /// <summary>

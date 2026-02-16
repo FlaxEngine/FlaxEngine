@@ -5,6 +5,7 @@
 #include "Math.h"
 #include "Vector2.h"
 #include "Vector3.h"
+#include "Vector4.h"
 
 /// <summary>
 /// Half-precision 16 bit floating point number consisting of a sign bit, a 5 bit biased exponent, and a 10 bit mantissa
@@ -247,6 +248,19 @@ public:
     explicit Half4(const Float4& v);
     explicit Half4(const Color& c);
     explicit Half4(const Rectangle& rect);
+
+    operator Float2() const
+    {
+        return ToFloat2();
+    }
+    operator Float3() const
+    {
+        return ToFloat3();
+    }
+    operator Float4() const
+    {
+        return ToFloat4();
+    }
 
 public:
     Float2 ToFloat2() const;

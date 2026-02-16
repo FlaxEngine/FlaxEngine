@@ -23,6 +23,7 @@ using FlaxEngine.Assertions;
 using FlaxEngine.GUI;
 using FlaxEngine.Interop;
 using FlaxEngine.Json;
+using FlaxEngine.Utilities;
 
 #pragma warning disable CS1591
 
@@ -1370,7 +1371,7 @@ namespace FlaxEditor
         public void BuildCSG()
         {
             var scenes = Level.Scenes;
-            scenes.ToList().ForEach(x => x.BuildCSG(0));
+            scenes.ForEach(x => x.BuildCSG(0));
             Scene.MarkSceneEdited(scenes);
         }
 
@@ -1380,7 +1381,7 @@ namespace FlaxEditor
         public void BuildNavMesh()
         {
             var scenes = Level.Scenes;
-            scenes.ToList().ForEach(x => Navigation.BuildNavMesh(x, 0));
+            Navigation.BuildNavMesh();
             Scene.MarkSceneEdited(scenes);
         }
 

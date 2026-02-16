@@ -1140,8 +1140,11 @@ namespace FlaxEditor.GUI.Tree
                         ParentTree.DraggedOverNode = this;
 
                     // Expand node if mouse goes over arrow
-                    if (ArrowRect.Contains(location) && HasAnyVisibleChild)
+                    if (ArrowRect.Contains(location) && HasAnyVisibleChild && IsCollapsed)
+                    {
                         Expand(true);
+                        ParentTree?.FlushPendingPerformLayout();
+                    }
 
                     result = OnDragEnterHeader(data);
                 }
@@ -1172,8 +1175,11 @@ namespace FlaxEditor.GUI.Tree
                         ParentTree.DraggedOverNode = this;
 
                     // Expand node if mouse goes over arrow
-                    if (ArrowRect.Contains(location) && HasAnyVisibleChild)
+                    if (ArrowRect.Contains(location) && HasAnyVisibleChild && IsCollapsed)
+                    {
                         Expand(true);
+                        ParentTree?.FlushPendingPerformLayout();
+                    }
 
                     if (!_isDragOverHeader)
                         result = OnDragEnterHeader(data);

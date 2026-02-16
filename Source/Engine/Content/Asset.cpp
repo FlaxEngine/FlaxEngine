@@ -487,6 +487,8 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds) const
     const auto loadingTask = (ContentLoadTask*)Platform::AtomicRead(&_loadingTask);
     if (loadingTask == nullptr)
     {
+        if (IsLoaded())
+            return false;
         LOG(Warning, "WaitForLoaded asset \'{0}\' failed. No loading task attached and asset is not loaded.", ToString());
         return true;
     }

@@ -10,9 +10,11 @@
 #if USE_EDITOR
 #include "Engine/Renderer/Lightmaps.h"
 #endif
+#include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Level/Actors/EnvironmentProbe.h"
+#include "Engine/Renderer/ReflectionsPass.h"
 
 void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<byte>& cb, int32& srv)
 {
@@ -26,6 +28,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     const int32 shadowsBufferRegisterIndex = srv + 2;
     const int32 shadowMapShaderRegisterIndex = srv + 3;
     const int32 volumetricFogTextureRegisterIndex = srv + 4;
+    const int32 preIntegratedGFRegisterIndex = srv + 5;
     const bool canUseShadow = view.Pass != DrawPass::Depth;
 
     // Set fog input
@@ -47,6 +50,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
         data.ExponentialHeightFog.FogCutoffDistance = 0.1f;
         data.ExponentialHeightFog.StartDistance = 0.0f;
         data.ExponentialHeightFog.ApplyDirectionalInscattering = 0.0f;
+        data.ExponentialHeightFog.VolumetricFogMaxDistance = -1.0f;
     }
     params.GPUContext->BindSR(volumetricFogTextureRegisterIndex, volumetricFogTexture);
 
@@ -100,9 +104,12 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     }
     if (noEnvProbe)
     {
-        data.EnvironmentProbe.Data1 = Float4::Zero;
+        Platform::MemoryClear(&data.EnvironmentProbe, sizeof(data.EnvironmentProbe));
         params.GPUContext->UnBindSR(envProbeShaderRegisterIndex);
     }
+    // TODO: find a better way to find this texture (eg. cache GPUTextureView* handle within ForwardShading cache for a whole frame)
+    static AssetReference<Texture> PreIntegratedGF = Content::LoadAsyncInternal<Texture>(PRE_INTEGRATED_GF_ASSET_NAME);
+    params.GPUContext->BindSR(preIntegratedGFRegisterIndex, PreIntegratedGF->GetTexture());
 
     // Set local lights
     data.LocalLightsCount = 0;

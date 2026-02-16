@@ -270,8 +270,8 @@ namespace FlaxEngine.Json
 
             // Special case when saving reference to prefab object and the objects are different but the point to the same prefab object
             // In that case, skip saving reference as it's defined in prefab (will be populated via IdsMapping during deserialization)
-            if (objA is SceneObject sceneA && objB is SceneObject sceneB && sceneA && sceneB && sceneA.HasPrefabLink && sceneB.HasPrefabLink)
-                return sceneA.PrefabObjectID == sceneB.PrefabObjectID;
+            if (objA is SceneObject sceneObjA && objB is SceneObject sceneObjB && sceneObjA && sceneObjB && sceneObjA.HasPrefabLink && sceneObjB.HasPrefabLink)
+                return sceneObjA.PrefabObjectID == sceneObjB.PrefabObjectID;
 
             // Comparing an Int32 and Int64 both of the same value returns false, make types the same then compare
             if (objA.GetType() != objB.GetType())
@@ -286,7 +286,6 @@ namespace FlaxEngine.Json
                            type == typeof(Int32) ||
                            type == typeof(UInt32) ||
                            type == typeof(Int64) ||
-                           type == typeof(SByte) ||
                            type == typeof(UInt64);
                 }
                 if (IsInteger(objA) && IsInteger(objB))
@@ -301,6 +300,12 @@ namespace FlaxEngine.Json
             {
                 if (aList.Count != bList.Count)
                     return false;
+                for (int i = 0; i < aList.Count; i++)
+                {
+                    if (!ValueEquals(aList[i], bList[i]))
+                        return false;
+                }
+                return true;
             }
             if (objA is IEnumerable aEnumerable && objB is IEnumerable bEnumerable)
             {
@@ -316,8 +321,30 @@ namespace FlaxEngine.Json
                 return !bEnumerator.MoveNext();
             }
 
-            if (objA is ICustomValueEquals customValueEquals && objA.GetType() == objB.GetType())
+            // Custom comparer
+            if (objA is ICustomValueEquals customValueEquals)
                 return customValueEquals.ValueEquals(objB);
+
+            // If type contains SceneObject references then it needs to use custom comparision that handles prefab links (see SceneObjectEquals)
+            var typeA = objA.GetType();
+            if (typeA.IsValueType && !typeA.IsEnum && !typeA.IsPrimitive)
+            {
+                var contract = Settings.ContractResolver.ResolveContract(typeA);
+                if (contract is JsonObjectContract objContract)
+                {
+                    foreach (var property in objContract.Properties)
+                    {
+                        var valueProvider = property.ValueProvider;
+                        var propA = valueProvider.GetValue(objA);
+                        var propB = valueProvider.GetValue(objB);
+                        if (!ValueEquals(propA, propB))
+                            return false;
+                    }
+                    return true;
+                }
+            }
+
+            // Generic fallback
             return objA.Equals(objB);
 #endif
         }

@@ -2,7 +2,6 @@
 
 using System;
 using System.Globalization;
-using System.IO;
 using System.Reflection;
 using System.Xml;
 using FlaxEditor.Content;
@@ -25,7 +24,7 @@ namespace FlaxEditor.Windows.Assets
     /// </summary>
     /// <seealso cref="Animation" />
     /// <seealso cref="FlaxEditor.Windows.Assets.AssetEditorWindow" />
-    public sealed class AnimationWindow : AssetEditorWindowBase<Animation>
+    public sealed class AnimationWindow : ClonedAssetEditorWindowBase<Animation>
     {
         private sealed class Preview : AnimationPreview
         {
@@ -255,6 +254,7 @@ namespace FlaxEditor.Windows.Assets
         private bool _isWaitingForTimelineLoad;
         private SkinnedModel _initialPreviewModel, _initialBaseModel;
         private float _initialPanel2Splitter = 0.6f;
+        private bool _timelineIsDirty;
 
         /// <summary>
         /// Gets the animation timeline editor.
@@ -295,7 +295,7 @@ namespace FlaxEditor.Windows.Assets
                 Parent = _panel1.Panel1,
                 Enabled = false
             };
-            _timeline.Modified += MarkAsEdited;
+            _timeline.Modified += OnTimelineModified;
             _timeline.SetNoTracksText("Loading...");
 
             // Asset properties
@@ -321,11 +321,31 @@ namespace FlaxEditor.Windows.Assets
         {
             MarkAsEdited();
             UpdateToolstrip();
+            _propertiesPresenter.BuildLayout();
+        }
+
+        private void OnTimelineModified()
+        {
+            _timelineIsDirty = true;
+            MarkAsEdited();
+        }
+
+        private bool RefreshTempAsset()
+        {
+            if (_asset == null || _isWaitingForTimelineLoad)
+                return true;
+            if (_timeline.IsModified)
+            {
+                _timeline.Save(_asset);
+            }
+            _propertiesPresenter.BuildLayoutOnUpdate();
+
+            return false;
         }
 
         private string GetPreviewModelCacheName()
         {
-            return _asset.ID + ".PreviewModel";
+            return _item.ID + ".PreviewModel";
         }
 
         /// <inheritdoc />
@@ -361,7 +381,11 @@ namespace FlaxEditor.Windows.Assets
             if (!IsEdited)
                 return;
 
-            _timeline.Save(_asset);
+            if (RefreshTempAsset())
+                return;
+            if (SaveToOriginal())
+                return;
+
             ClearEditedFlag();
             _item.RefreshThumbnail();
         }
@@ -414,10 +438,18 @@ namespace FlaxEditor.Windows.Assets
         {
             base.Update(deltaTime);
 
+            // Check if temporary asset need to be updated
+            if (_timelineIsDirty)
+            {
+                _timelineIsDirty = false;
+                RefreshTempAsset();
+            }
+
+            // Check if need to load timeline
             if (_isWaitingForTimelineLoad && _asset.IsLoaded)
             {
                 _isWaitingForTimelineLoad = false;
-                _timeline._id = _asset.ID;
+                _timeline._id = _item.ID;
                 _timeline.Load(_asset);
                 _undo.Clear();
                 _timeline.Enabled = true;

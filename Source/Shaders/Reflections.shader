@@ -76,18 +76,8 @@ float4 PS_CombinePass(Quad_VS2PS input) : SV_Target0
 	// Sample reflections buffer
 	float3 reflections = SAMPLE_RT(Reflections, input.TexCoord).rgb;
 
-	// Calculate specular color
-	float3 specularColor = GetSpecularColor(gBuffer);
-
-	// Calculate reflecion color
-	float3 V = normalize(gBufferData.ViewPos - gBuffer.WorldPos);
-	float NoV = saturate(dot(gBuffer.Normal, V));
-	reflections *= EnvBRDF(PreIntegratedGF, specularColor, gBuffer.Roughness, NoV);
-
-	// Apply specular occlusion
-	float roughnessSq = gBuffer.Roughness * gBuffer.Roughness;
-	float specularOcclusion = GetSpecularOcclusion(NoV, roughnessSq, gBuffer.AO);
-	reflections *= specularOcclusion;
+	// Calculate reflection color
+	reflections *= GetReflectionSpecularLighting(PreIntegratedGF, gBufferData.ViewPos, gBuffer);
 
 	return float4(reflections, 0);
 }

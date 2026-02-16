@@ -65,7 +65,7 @@ namespace FlaxEngine
 #if FLAX_EDITOR
     [System.ComponentModel.TypeConverter(typeof(TypeConverters.Double2Converter))]
 #endif
-    partial struct Double2 : IEquatable<Double2>, IFormattable
+    partial struct Double2 : IEquatable<Double2>, IFormattable, Json.ICustomValueEquals
     {
         private static readonly string _formatString = "X:{0:F2} Y:{1:F2}";
 
@@ -1572,6 +1572,13 @@ namespace FlaxEngine
             {
                 return (X.GetHashCode() * 397) ^ Y.GetHashCode();
             }
+        }
+
+        /// <inheritdoc />
+        public bool ValueEquals(object other)
+        {
+            var o = (Double2)other;
+            return Equals(ref o);
         }
 
         /// <summary>

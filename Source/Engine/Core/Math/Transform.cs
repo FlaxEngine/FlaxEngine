@@ -16,7 +16,7 @@ using System.Runtime.InteropServices;
 namespace FlaxEngine
 {
     [Serializable]
-    partial struct Transform : IEquatable<Transform>, IFormattable
+    partial struct Transform : IEquatable<Transform>, IFormattable, Json.ICustomValueEquals
     {
         private static readonly string _formatString = "Translation:{0} Orientation:{1} Scale:{2}";
 
@@ -671,6 +671,13 @@ namespace FlaxEngine
                 hashCode = (hashCode * 397) ^ Scale.GetHashCode();
                 return hashCode;
             }
+        }
+
+        /// <inheritdoc />
+        public bool ValueEquals(object other)
+        {
+            var o = (Transform)other;
+            return Equals(ref o);
         }
 
         /// <summary>

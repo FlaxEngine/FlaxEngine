@@ -11,6 +11,10 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/Engine.h"
+#if USE_EDITOR
+#include "Editor/Editor.h"
+#include "Editor/Managed/ManagedEditor.h"
+#endif
 
 ParticleEffect::ParticleEffect(const SpawnParams& params)
     : Actor(params)
@@ -465,7 +469,12 @@ void ParticleEffect::Update()
     if (UpdateMode == SimulationUpdateMode::FixedTimestep)
     {
         // Check if last simulation update was past enough to kick a new on
-        const float time = Time::Update.Time.GetTotalSeconds();
+        bool useTimeScale = UseTimeScale;
+#if USE_EDITOR
+        if (!Editor::IsPlayMode && IsDuringPlay())
+            useTimeScale = false;
+#endif
+        const float time = (useTimeScale ? Time::Update.Time : Time::Update.UnscaledTime).GetTotalSeconds();
         if (time - Instance.LastUpdateTime < FixedTimestep)
             return;
     }
@@ -474,9 +483,6 @@ void ParticleEffect::Update()
 }
 
 #if USE_EDITOR
-
-#include "Editor/Editor.h"
-#include "Editor/Managed/ManagedEditor.h"
 
 void ParticleEffect::UpdateExecuteInEditor()
 {

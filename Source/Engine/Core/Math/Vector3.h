@@ -686,6 +686,24 @@ public:
         return result;
     }
 
+    // Performs a spherical linear interpolation between two vectors.
+    static void Slerp(const Vector3Base& start, const Vector3Base& end, T amount, Vector3Base& result) 
+    {
+        T dot = Math::Clamp(Dot(start, end), -1.0f, 1.0f);
+        T theta = Math::Acos(dot) * amount;
+        Vector3Base relativeVector = end - start * dot;
+        relativeVector.Normalize();
+        result = ((start * Math::Cos(theta)) + (relativeVector * Math::Sin(theta)));
+    }
+
+    // Performs a spherical linear interpolation between two vectors.
+    static Vector3Base Slerp(const Vector3Base& start, const Vector3Base& end, T amount)
+    {
+        Vector3Base result;
+        Slerp(start, end, amount, result);
+        return result;
+    }
+
     // Performs a cubic interpolation between two vectors.
     static void SmoothStep(const Vector3Base& start, const Vector3Base& end, T amount, Vector3Base& result)
     {

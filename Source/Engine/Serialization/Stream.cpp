@@ -255,6 +255,7 @@ void ReadStream::Read(VariantType& data)
             ptr++;
         }
         *ptr = 0;
+        data.Inline();
     }
     else if (typeNameLength > 0)
     {

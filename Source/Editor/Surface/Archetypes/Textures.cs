@@ -23,11 +23,14 @@ namespace FlaxEditor.Surface.Archetypes
             TextureGroup = 4,
         }
 
-        internal class SampleTextureNode : SurfaceNode
+        internal class TextureSamplerNode : SurfaceNode
         {
             private ComboBox _textureGroupPicker;
+            protected int _samplerTypeValueIndex = -1;
+            protected int _textureGroupValueIndex = -1;
+            protected int _level = 5;
 
-            public SampleTextureNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            protected TextureSamplerNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
             }
@@ -48,13 +51,13 @@ namespace FlaxEditor.Surface.Archetypes
 
             private void UpdateUI()
             {
-                if ((int)Values[0] == (int)CommonSamplerType.TextureGroup)
+                if ((int)Values[_samplerTypeValueIndex] == (int)CommonSamplerType.TextureGroup)
                 {
                     if (_textureGroupPicker == null)
                     {
                         _textureGroupPicker = new ComboBox
                         {
-                            Location = new Float2(FlaxEditor.Surface.Constants.NodeMarginX + 50, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize + FlaxEditor.Surface.Constants.LayoutOffsetY * 5),
+                            Location = new Float2(FlaxEditor.Surface.Constants.NodeMarginX + 50, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize + FlaxEditor.Surface.Constants.LayoutOffsetY * _level),
                             Width = 100,
                             Parent = this,
                         };
@@ -71,7 +74,7 @@ namespace FlaxEditor.Surface.Archetypes
                         _textureGroupPicker.Visible = true;
                     }
                     _textureGroupPicker.SelectedIndexChanged -= OnSelectedTextureGroupChanged;
-                    _textureGroupPicker.SelectedIndex = (int)Values[2];
+                    _textureGroupPicker.SelectedIndex = (int)Values[_textureGroupValueIndex];
                     _textureGroupPicker.SelectedIndexChanged += OnSelectedTextureGroupChanged;
                 }
                 else if (_textureGroupPicker != null)
@@ -83,7 +86,39 @@ namespace FlaxEditor.Surface.Archetypes
 
             private void OnSelectedTextureGroupChanged(ComboBox comboBox)
             {
-                SetValue(2, _textureGroupPicker.SelectedIndex);
+                SetValue(_textureGroupValueIndex, _textureGroupPicker.SelectedIndex);
+            }
+        }
+
+        internal class SampleTextureNode : TextureSamplerNode
+        {
+            public SampleTextureNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {
+                _samplerTypeValueIndex = 0;
+                _textureGroupValueIndex = 2;
+            }
+        }
+
+        internal class TriplanarSampleTextureNode : TextureSamplerNode
+        {
+            public TriplanarSampleTextureNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {
+                _samplerTypeValueIndex = 3;
+                _textureGroupValueIndex = 5;
+                _level = 5;
+            }
+        }
+
+        internal class ProceduralSampleTextureNode : TextureSamplerNode
+        {
+            public ProceduralSampleTextureNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {
+                _samplerTypeValueIndex = 0;
+                _textureGroupValueIndex = 2;
+                _level = 4;
             }
         }
 
@@ -280,9 +315,9 @@ namespace FlaxEditor.Surface.Archetypes
                 ConnectionsHints = ConnectionsHint.Vector,
                 DefaultValues = new object[]
                 {
-                    0,
-                    -1.0f,
-                    0,
+                    (int)CommonSamplerType.LinearClamp, // Sampler
+                    -1.0f, // Level
+                    0, // Texture Group
                 },
                 Elements = new[]
                 {
@@ -402,6 +437,7 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 16,
+                Create = (id, context, arch, groupArch) => new TriplanarSampleTextureNode(id, context, arch, groupArch),
                 Title = "Triplanar Texture",
                 Description = "Projects a texture using world-space coordinates with triplanar mapping.",
                 Flags = NodeFlags.MaterialGraph,
@@ -411,8 +447,9 @@ namespace FlaxEditor.Surface.Archetypes
                     Float3.One, // Scale
                     1.0f, // Blend
                     Float2.Zero, // Offset
-                    2, // Sampler
+                    (int)CommonSamplerType.LinearWrap, // Sampler
                     false, // Local
+                    0, // Texture Group
                 },
                 Elements = new[]
                 {
@@ -430,17 +467,17 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 17,
-                Create = (id, context, arch, groupArch) => new SampleTextureNode(id, context, arch, groupArch),
+                Create = (id, context, arch, groupArch) => new ProceduralSampleTextureNode(id, context, arch, groupArch),
                 Title = "Procedural Sample Texture",
                 Description = "Samples a texture to create a more natural look with less obvious tiling.",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(240, 110),
+                Size = new Float2(240, 130),
                 ConnectionsHints = ConnectionsHint.Vector,
                 DefaultValues = new object[]
                 {
-                    2,
-                    -1.0f,
-                    0,
+                    (int)CommonSamplerType.LinearWrap, // Sampler
+                    -1.0f, // Level
+                    0, // Texture Group
                 },
                 Elements = new[]
                 {
@@ -448,8 +485,8 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(1, "UVs", true, null, 1),
                     NodeElementArchetype.Factory.Input(2, "Offset", true, typeof(Float2), 3),
                     NodeElementArchetype.Factory.Output(0, "Color", typeof(Float4), 4),
-                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 4, "Sampler"),
-                    NodeElementArchetype.Factory.ComboBox(50, Surface.Constants.LayoutOffsetY * 4, 100, 0, typeof(CommonSamplerType))
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 3, "Sampler"),
+                    NodeElementArchetype.Factory.ComboBox(50, Surface.Constants.LayoutOffsetY * 3, 100, 0, typeof(CommonSamplerType))
                 }
             },
             new NodeArchetype
@@ -469,6 +506,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 23,
                 Title = "Triplanar Normal Map",
+                Create = (id, context, arch, groupArch) => new TriplanarSampleTextureNode(id, context, arch, groupArch),
                 Description = "Projects a normal map texture using world-space coordinates with triplanar mapping.",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(280, 100),
@@ -477,8 +515,9 @@ namespace FlaxEditor.Surface.Archetypes
                     Float3.One, // Scale
                     1.0f, // Blend
                     Float2.Zero, // Offset
-                    2, // Sampler
+                    (int)CommonSamplerType.LinearWrap, // Sampler
                     false, // Local
+                    0, // Texture Group
                 },
                 Elements = new[]
                 {

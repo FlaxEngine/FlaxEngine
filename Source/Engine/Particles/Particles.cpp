@@ -677,11 +677,10 @@ void CleanupGPUParticlesSorting()
     SAFE_DELETE_GPU_RESOURCE(GPUIndirectArgsBuffer);
 }
 
-void DrawEmittersGPU(RenderContextBatch& renderContextBatch)
+void DrawEmittersGPU(GPUContext* context, RenderContextBatch& renderContextBatch)
 {
     PROFILE_GPU_CPU_NAMED("DrawEmittersGPU");
     ScopeReadLock systemScope(Particles::SystemLocker);
-    GPUContext* context = GPUDevice::Instance->GetMainContext();
 
     // Count draws and sorting passes needed for resources allocation
     uint32 indirectArgsSize = 0;
@@ -1124,9 +1123,9 @@ void DrawEmitterGPU(RenderContextBatch& renderContextBatch, ParticleBuffer* buff
     if (GPUEmitterDraws.Count() == 0)
     {
         // The first emitter schedules the drawing of all batched draws
-        renderContextBatch.GetMainContext().List->AddDelayedDraw([](RenderContextBatch& renderContextBatch, int32 contextIndex)
+        renderContextBatch.GetMainContext().List->AddDelayedDraw([](GPUContext* context, RenderContextBatch& renderContextBatch, int32 renderContextIndex)
         {
-            DrawEmittersGPU(renderContextBatch);
+            DrawEmittersGPU(context, renderContextBatch);
         });
     }
     GPUEmitterDraws.Add({ buffer, drawCall, drawModes, staticFlags, bounds, renderModulesIndices, indirectArgsSize, sortOrder, sorting });

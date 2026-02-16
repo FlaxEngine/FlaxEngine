@@ -480,6 +480,7 @@ DebugDrawCall WriteLists(int32& vertexCounter, const Array<T>& listA, const Arra
 
 FORCE_INLINE DebugTriangle* AppendTriangles(int32 count, float duration, bool depthTest)
 {
+    PROFILE_MEM(EngineDebug);
     Array<DebugTriangle>* list;
     if (depthTest)
         list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
@@ -492,6 +493,7 @@ FORCE_INLINE DebugTriangle* AppendTriangles(int32 count, float duration, bool de
 
 FORCE_INLINE DebugTriangle* AppendWireTriangles(int32 count, float duration, bool depthTest)
 {
+    PROFILE_MEM(EngineDebug);
     Array<DebugTriangle>* list;
     if (depthTest)
         list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultWireTriangles : &Context->DebugDrawDepthTest.OneFrameWireTriangles;
@@ -539,7 +541,7 @@ DebugDrawService DebugDrawServiceInstance;
 
 bool DebugDrawService::Init()
 {
-    PROFILE_MEM(Graphics);
+    PROFILE_MEM(EngineDebug);
     Context = &GlobalContext;
 
     // Init wireframe sphere cache
@@ -658,7 +660,7 @@ void DebugDrawService::Update()
     }
 
     PROFILE_CPU();
-    PROFILE_MEM(Graphics);
+    PROFILE_MEM(EngineDebug);
 
     // Update lists
     float deltaTime = Time::Update.DeltaTime.GetTotalSeconds();
@@ -1114,6 +1116,7 @@ void DebugDraw::DrawRay(const Ray& ray, const Color& color, float length, float 
 
 void DebugDraw::DrawLine(const Vector3& start, const Vector3& end, const Color& color, float duration, bool depthTest)
 {
+    PROFILE_MEM(EngineDebug);
     const Float3 startF = start - Context->Origin, endF = end - Context->Origin;
     auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
     if (duration > 0)
@@ -1132,6 +1135,7 @@ void DebugDraw::DrawLine(const Vector3& start, const Vector3& end, const Color& 
 
 void DebugDraw::DrawLine(const Vector3& start, const Vector3& end, const Color& startColor, const Color& endColor, float duration, bool depthTest)
 {
+    PROFILE_MEM(EngineDebug);
     const Float3 startF = start - Context->Origin, endF = end - Context->Origin;
     auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
     if (duration > 0)
@@ -1161,6 +1165,7 @@ void DebugDraw::DrawLines(const Span<Float3>& lines, const Matrix& transform, co
     }
 
     // Draw lines
+    PROFILE_MEM(EngineDebug);
     const Float3* p = lines.Get();
     auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
     const Matrix transformF = transform * Matrix::Translation(-Context->Origin);
@@ -1200,6 +1205,7 @@ void DebugDraw::DrawLines(GPUBuffer* lines, const Matrix& transform, float durat
     }
 
     // Draw lines
+    PROFILE_MEM(EngineDebug);
     auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
     auto& geometry = debugDrawData.GeometryBuffers.AddOne();
     geometry.Buffer = lines;
@@ -1224,6 +1230,7 @@ void DebugDraw::DrawLines(const Span<Double3>& lines, const Matrix& transform, c
     }
 
     // Draw lines
+    PROFILE_MEM(EngineDebug);
     const Double3* p = lines.Get();
     auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
     const Matrix transformF = transform * Matrix::Translation(-Context->Origin);
@@ -1270,6 +1277,7 @@ void DebugDraw::DrawBezier(const Vector3& p1, const Vector3& p2, const Vector3& 
     const float segmentCountInv = 1.0f / (float)segmentCount;
 
     // Draw segmented curve from lines
+    PROFILE_MEM(EngineDebug);
     auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
     if (duration > 0)
     {
@@ -1310,6 +1318,7 @@ void DebugDraw::DrawWireBox(const BoundingBox& box, const Color& color, float du
         c -= Context->Origin;
 
     // Draw lines
+    PROFILE_MEM(EngineDebug);
     auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
     if (duration > 0)
     {
@@ -1344,6 +1353,7 @@ void DebugDraw::DrawWireFrustum(const BoundingFrustum& frustum, const Color& col
         c -= Context->Origin;
 
     // Draw lines
+    PROFILE_MEM(EngineDebug);
     auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
     if (duration > 0)
     {
@@ -1378,6 +1388,7 @@ void DebugDraw::DrawWireBox(const OrientedBoundingBox& box, const Color& color, 
         c -= Context->Origin;
 
     // Draw lines
+    PROFILE_MEM(EngineDebug);
     auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
     if (duration > 0)
     {
@@ -1419,6 +1430,7 @@ void DebugDraw::DrawWireSphere(const BoundingSphere& sphere, const Color& color,
     auto& cache = SphereCache[index];
 
     // Draw lines of the unit sphere after linear transform
+    PROFILE_MEM(EngineDebug);
     auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
     if (duration > 0)
     {
@@ -1454,6 +1466,7 @@ void DebugDraw::DrawSphere(const BoundingSphere& sphere, const Color& color, flo
         list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
     else
         list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
+    PROFILE_MEM(EngineDebug);
     list->EnsureCapacity(list->Count() + SphereTriangleCache.Count());
 
     const Float3 centerF = sphere.Center - Context->Origin;
@@ -1485,6 +1498,7 @@ void DebugDraw::DrawCircle(const Vector3& position, const Float3& normal, float 
     Matrix::Multiply(scale, world, matrix);
 
     // Draw lines of the unit circle after linear transform
+    PROFILE_MEM(EngineDebug);
     Float3 prev = Float3::Transform(CircleCache[0], matrix);
     auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
     for (int32 i = 1; i < DEBUG_DRAW_CIRCLE_VERTICES;)
@@ -1515,6 +1529,7 @@ void DebugDraw::DrawWireTriangle(const Vector3& v0, const Vector3& v1, const Vec
 
 void DebugDraw::DrawTriangle(const Vector3& v0, const Vector3& v1, const Vector3& v2, const Color& color, float duration, bool depthTest)
 {
+    PROFILE_MEM(EngineDebug);
     DebugTriangle t;
     t.Color = Color32(color);
     t.TimeLeft = duration;
@@ -1570,6 +1585,7 @@ void DebugDraw::DrawTriangles(GPUBuffer* triangles, const Matrix& transform, flo
         DebugLog::ThrowException("Cannot draw debug lines with incorrect amount of items in array");
         return;
     }
+    PROFILE_MEM(EngineDebug);
     auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
     auto& geometry = debugDrawData.GeometryBuffers.AddOne();
     geometry.Buffer = triangles;
@@ -1859,6 +1875,7 @@ void DebugDraw::DrawWireCapsule(const Vector3& position, const Quaternion& orien
         Matrix::Multiply(rotation, translation, world);
 
         // Write vertices
+        PROFILE_MEM(EngineDebug);
         auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
         Color32 color32(color);
         if (duration > 0)
@@ -1953,6 +1970,7 @@ namespace
     void DrawCylinder(Array<DebugTriangle>* list, const Vector3& position, const Quaternion& orientation, float radius, float height, const Color& color, float duration)
     {
         // Setup cache
+        PROFILE_MEM(EngineDebug);
         Float3 CylinderCache[DEBUG_DRAW_CYLINDER_VERTICES];
         const float angleBetweenFacets = TWO_PI / DEBUG_DRAW_CYLINDER_RESOLUTION;
         const float verticalOffset = height * 0.5f;
@@ -2024,6 +2042,7 @@ namespace
 
     void DrawCone(Array<DebugTriangle>* list, const Vector3& position, const Quaternion& orientation, float radius, float angleXY, float angleXZ, const Color& color, float duration)
     {
+        PROFILE_MEM(EngineDebug);
         const float tolerance = 0.001f;
         const float angle1 = Math::Clamp(angleXY, tolerance, PI - tolerance);
         const float angle2 = Math::Clamp(angleXZ, tolerance, PI - tolerance);
@@ -2113,6 +2132,7 @@ void DebugDraw::DrawArc(const Vector3& position, const Quaternion& orientation, 
 {
     if (angle <= 0)
         return;
+    PROFILE_MEM(EngineDebug);
     if (angle > TWO_PI)
         angle = TWO_PI;
     Array<DebugTriangle>* list;
@@ -2145,6 +2165,7 @@ void DebugDraw::DrawWireArc(const Vector3& position, const Quaternion& orientati
 {
     if (angle <= 0)
         return;
+    PROFILE_MEM(EngineDebug);
     if (angle > TWO_PI)
         angle = TWO_PI;
     const int32 resolution = Math::CeilToInt((float)DEBUG_DRAW_CONE_RESOLUTION / TWO_PI * angle);
@@ -2211,6 +2232,7 @@ void DebugDraw::DrawBox(const BoundingBox& box, const Color& color, float durati
         list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
     else
         list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
+    PROFILE_MEM(EngineDebug);
     list->EnsureCapacity(list->Count() + 36);
     for (int i0 = 0; i0 < 36;)
     {
@@ -2239,6 +2261,7 @@ void DebugDraw::DrawBox(const OrientedBoundingBox& box, const Color& color, floa
         list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
     else
         list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
+    PROFILE_MEM(EngineDebug);
     list->EnsureCapacity(list->Count() + 36);
     for (int i0 = 0; i0 < 36;)
     {
@@ -2254,6 +2277,7 @@ void DebugDraw::DrawText(const StringView& text, const Float2& position, const C
 {
     if (text.Length() == 0 || size < 4)
         return;
+    PROFILE_MEM(EngineDebug);
     Array<DebugText2D>* list = duration > 0 ? &Context->DebugDrawDefault.DefaultText2D : &Context->DebugDrawDefault.OneFrameText2D;
     auto& t = list->AddOne();
     t.Text.Resize(text.Length() + 1);
@@ -2269,6 +2293,7 @@ void DebugDraw::DrawText(const StringView& text, const Vector3& position, const 
 {
     if (text.Length() == 0 || size < 4)
         return;
+    PROFILE_MEM(EngineDebug);
     Array<DebugText3D>* list = duration > 0 ? &Context->DebugDrawDefault.DefaultText3D : &Context->DebugDrawDefault.OneFrameText3D;
     auto& t = list->AddOne();
     t.Text.Resize(text.Length() + 1);
@@ -2286,6 +2311,7 @@ void DebugDraw::DrawText(const StringView& text, const Transform& transform, con
 {
     if (text.Length() == 0 || size < 4)
         return;
+    PROFILE_MEM(EngineDebug);
     Array<DebugText3D>* list = duration > 0 ? &Context->DebugDrawDefault.DefaultText3D : &Context->DebugDrawDefault.OneFrameText3D;
     auto& t = list->AddOne();
     t.Text.Resize(text.Length() + 1);

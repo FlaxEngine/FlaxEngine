@@ -37,11 +37,6 @@ public:
 
 public:
     /// <summary>
-    /// Initializes a new instance of the <see cref="SkinnedMeshDrawData"/> class.
-    /// </summary>
-    SkinnedMeshDrawData();
-
-    /// <summary>
     /// Finalizes an instance of the <see cref="SkinnedMeshDrawData"/> class.
     /// </summary>
     ~SkinnedMeshDrawData();
@@ -76,7 +71,7 @@ public:
     void OnDataChanged(bool dropHistory);
 
     /// <summary>
-    /// After bones Data has been send to the GPU buffer.
+    /// After bones Data has been sent to the GPU buffer.
     /// </summary>
     void OnFlush()
     {

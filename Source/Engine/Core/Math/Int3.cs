@@ -14,7 +14,7 @@ namespace FlaxEngine
 #if FLAX_EDITOR
     [System.ComponentModel.TypeConverter(typeof(TypeConverters.Int3Converter))]
 #endif
-    partial struct Int3 : IEquatable<Int3>, IFormattable
+    partial struct Int3 : IEquatable<Int3>, IFormattable, Json.ICustomValueEquals
     {
         private static readonly string _formatString = "X:{0} Y:{1} Z:{2}";
 
@@ -1021,6 +1021,13 @@ namespace FlaxEngine
                 hashCode = (hashCode * 397) ^ Z.GetHashCode();
                 return hashCode;
             }
+        }
+
+        /// <inheritdoc />
+        public bool ValueEquals(object other)
+        {
+            var o = (Int3)other;
+            return Equals(ref o);
         }
 
         /// <summary>

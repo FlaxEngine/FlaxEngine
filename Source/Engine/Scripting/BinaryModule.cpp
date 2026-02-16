@@ -683,6 +683,8 @@ BinaryModule* BinaryModule::GetModule(const StringAnsiView& name)
 
 BinaryModule::BinaryModule()
 {
+    CanReload = USE_EDITOR;
+
     // Register
     GetModules().Add(this);
 }
