@@ -7,10 +7,12 @@
 
 #define THREAD_LOCAL_USE_DYNAMIC_BUCKETS (PLATFORM_DESKTOP)
 
+#if PLATFORM_THREADS_LIMIT > 1
+
 /// <summary>
 /// Per-thread local variable storage for basic types (POD). Implemented using atomic with per-thread storage indexed via thread id hashing. Consider using 'THREADLOCAL' define before the variable instead.
 /// </summary>
-template<typename T, int32 MaxThreads = PLATFORM_THREADS_LIMIT>
+template<typename T, int32 MaxThreads = (PLATFORM_THREADS_LIMIT >= 16 ? PLATFORM_THREADS_LIMIT : 16)>
 class ThreadLocal
 {
 protected:
@@ -63,7 +65,7 @@ public:
 #if THREAD_LOCAL_USE_DYNAMIC_BUCKETS
         if (auto dynamicBuckets = (Bucket*)Platform::AtomicRead((intptr volatile*)&_dynamicBuckets))
         {
-            for (int32 i = 0; i < MaxThreads; i++)
+            for (int32 i = 0; i < DynamicMaxThreads; i++)
             {
                 if (Platform::AtomicRead((int64 volatile*)&dynamicBuckets[i].ThreadID) != 0)
                     result++;
@@ -84,7 +86,7 @@ public:
 #if THREAD_LOCAL_USE_DYNAMIC_BUCKETS
         if (auto dynamicBuckets = (Bucket*)Platform::AtomicRead((intptr volatile*)&_dynamicBuckets))
         {
-            for (int32 i = 0; i < MaxThreads; i++)
+            for (int32 i = 0; i < DynamicMaxThreads; i++)
             {
                 if (Platform::AtomicRead((int64 volatile*)&dynamicBuckets[i].ThreadID) != 0)
                     result.Add(dynamicBuckets[i].Value);
@@ -154,3 +156,58 @@ protected:
         return *(Bucket*)nullptr;
     }
 };
+
+#else
+
+/// <summary>
+/// Single-threaded version of thread local variable storage for basic types (POD).
+/// </summary>
+template<typename T, int32 MaxThreads = 1>
+class ThreadLocal
+{
+protected:
+    static_assert(TIsPODType<T>::Value, "Only POD types are supported");
+
+    T _value;
+    bool _set = false;
+
+public:
+    ThreadLocal()
+    {
+        Platform::MemoryClear(&_value, sizeof(_value));
+        _set = false;
+    }
+
+public:
+    FORCE_INLINE T& Get()
+    {
+        _set = true;
+        return _value;
+    }
+
+    FORCE_INLINE void Set(const T& value)
+    {
+        _value = value;
+        _set = true;
+    }
+
+    FORCE_INLINE int32 Count() const
+    {
+        return _set ? 1 : 0;
+    }
+
+    template<typename AllocationType = HeapAllocation>
+    FORCE_INLINE void GetValues(Array<T, AllocationType>& result) const
+    {
+        if (_set)
+            result.Add(_value);
+    }
+
+    FORCE_INLINE void Clear()
+    {
+        Platform::MemoryClear(&_value, sizeof(_value));
+        _set = false;
+    }
+};
+
+#endif
