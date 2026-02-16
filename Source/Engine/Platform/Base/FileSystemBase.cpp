@@ -244,11 +244,11 @@ bool FileSystemBase::CopyDirectory(const String& dst, const String& src, bool wi
     return !FileSystem::DirectoryExists(*src) || FileSystemBase::DirectoryCopyHelper(dst, src, withSubDirectories);
 }
 
-uint64 FileSystemBase::GetDirectorySize(const StringView& path)
+uint64 FileSystemBase::GetDirectorySize(const StringView& path, const Char* searchPattern, DirectorySearchOption option)
 {
     uint64 result = 0;
     Array<String> files;
-    FileSystem::DirectoryGetFiles(files, path);
+    FileSystem::DirectoryGetFiles(files, path, searchPattern, option);
     for (const String& file : files)
         result += FileSystem::GetFileSize(file);
     return result;

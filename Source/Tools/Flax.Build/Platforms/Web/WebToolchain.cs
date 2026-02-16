@@ -251,6 +251,10 @@ namespace Flax.Build.Platforms
                 args.Add($"-sINITIAL_MEMORY={initialMemory}MB");
                 args.Add("-sSTACK_SIZE=4MB");
                 args.Add("-sALLOW_MEMORY_GROWTH=1");
+
+                // Setup file access (Game Cooker packs files with file_packager tool)
+                args.Add("-sFORCE_FILESYSTEM");
+                args.Add("-sLZ4");
             }
 
             args.Add("-Wl,--start-group");
