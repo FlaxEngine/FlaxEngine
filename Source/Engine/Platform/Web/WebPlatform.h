@@ -77,7 +77,7 @@ public:
 #ifdef __EMSCRIPTEN_PTHREADS__
         return (uint64)pthread_self();
 #else
-        return 0;
+        return 1;
 #endif
     }
     static String GetSystemName();

@@ -357,6 +357,8 @@ StringView StringUtils::GetPathWithoutExtension(const StringView& path)
 void StringUtils::PathRemoveRelativeParts(String& path)
 {
     FileSystem::NormalizePath(path);
+    if (path.Length() == 1 && path[0] == TEXT('/'))
+        return;
 
     Array<String> components;
     path.Split(TEXT('/'), components);

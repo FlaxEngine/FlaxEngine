@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if PLATFORM_UNIX
+#if PLATFORM_UNIX && !PLATFORM_WEB
 
 #include "Engine/Platform/Base/ThreadBase.h"
 #include <pthread.h>

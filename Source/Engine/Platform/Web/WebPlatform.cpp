@@ -7,7 +7,6 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/Version.h"
-#include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Platform/CPUInfo.h"
 #include "Engine/Platform/MemoryStats.h"
@@ -52,7 +51,7 @@ MemoryStats WebPlatform::GetMemoryStats()
     MemoryStats result;
     result.TotalPhysicalMemory = emscripten_get_heap_max();
     result.UsedPhysicalMemory = emscripten_get_heap_size();
-    result.TotalVirtualMemory = result.TotalPhysicalMemory;
+    result.TotalVirtualMemory = 2ull * 1024 * 1024 * 1024; // Max 2GB
     result.UsedVirtualMemory = result.UsedPhysicalMemory;
     result.ProgramSizeMemory = 0;
     return result;

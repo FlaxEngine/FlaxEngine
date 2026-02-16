@@ -45,6 +45,11 @@ void ThreadBase::Kill(bool waitForJoin)
     if (!_isRunning)
     {
         ClearHandleInternal();
+        if (_callAfterWork)
+        {
+            _callAfterWork = false;
+            _runnable->AfterWork(true);
+        }
         return;
     }
     ASSERT(GetID());
