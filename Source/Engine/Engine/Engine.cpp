@@ -74,7 +74,7 @@ int32 Engine::ExitCode = 0;
 Window* Engine::MainWindow = nullptr;
 double EngineIdleTime = 0;
 
-int32 Engine::Main(const Char* cmdLine)
+int32 Engine::OnInit(const Char* cmdLine)
 {
 #if COMPILE_WITH_PROFILER
     extern void InitProfilerMemory(const Char* cmdLine, int32 stage);
@@ -151,7 +151,7 @@ int32 Engine::Main(const Char* cmdLine)
 #if LOG_ENABLE
         Log::Logger::Dispose();
 #endif
-        return 0;
+        return 1;
     }
 #endif
 
@@ -171,88 +171,96 @@ int32 Engine::Main(const Char* cmdLine)
     EngineImpl::IsReady = true;
     PROFILE_MEM_END();
 
+    return 0;
+}
+
+void Engine::OnLoop()
+{
+    // Reduce CPU usage by introducing idle time if the engine is running very fast and has enough time to spend
+    const bool useSleep = !PLATFORM_WEB; // TODO: this should probably be a platform setting
+    if ((useSleep && Time::UpdateFPS > ZeroTolerance) || !Platform::GetHasFocus())
+    {
+        double nextTick = Time::GetNextTick();
+        double timeToTick = nextTick - Platform::GetTimeSeconds();
+
+        // Sleep less than needed, some platforms may sleep slightly more than requested
+        if (timeToTick > 0.002)
+        {
+            PROFILE_CPU_NAMED("Idle");
+            auto sleepStart = Platform::GetTimeSeconds();
+            Platform::Sleep(1);
+            auto sleepEnd = Platform::GetTimeSeconds();
+            EngineIdleTime += sleepEnd - sleepStart;
+        }
+    }
+
+    // App paused logic
+    if (Platform::GetIsPaused())
+    {
+        OnPause();
+        do
+        {
+            Platform::Sleep(10);
+            Platform::Tick();
+        } while (Platform::GetIsPaused() && !ShouldExit());
+        if (ShouldExit())
+            return;
+        OnUnpause();
+    }
+
+    // Use the same time for all ticks to improve synchronization
+    const double time = Platform::GetTimeSeconds();
+
+    // Update application (will gather data and other platform related events)
+    {
+        PROFILE_CPU_NAMED("Platform.Tick");
+        Platform::Tick();
+#if COMPILE_WITH_PROFILER
+        extern void TickProfilerMemory();
+        TickProfilerMemory();
+#endif
+    }
+
+    // Update game logic
+    if (Time::OnBeginUpdate(time))
+    {
+        OnUpdate();
+        OnLateUpdate();
+        Time::OnEndUpdate();
+        EngineIdleTime = 0;
+    }
+
+    // Start physics simulation
+    if (Time::OnBeginPhysics(time))
+    {
+        OnFixedUpdate();
+        OnLateFixedUpdate();
+        Time::OnEndPhysics();
+    }
+
+    // Draw frame
+    if (Time::OnBeginDraw(time))
+    {
+        OnDraw();
+        Time::OnEndDraw();
+    }
+}
+
+int32 Engine::Main(const Char* cmdLine)
+{
+    // Initialize
+    ExitCode = OnInit(cmdLine);
+    if (ExitCode != 0)
+        return ExitCode;
+
     // Main engine loop
-    const bool useSleep = true; // TODO: this should probably be a platform setting
     while (!ShouldExit())
     {
-        // Reduce CPU usage by introducing idle time if the engine is running very fast and has enough time to spend
-        if ((useSleep && Time::UpdateFPS > ZeroTolerance) || !Platform::GetHasFocus())
-        {
-            double nextTick = Time::GetNextTick();
-            double timeToTick = nextTick - Platform::GetTimeSeconds();
-
-            // Sleep less than needed, some platforms may sleep slightly more than requested
-            if (timeToTick > 0.002)
-            {
-                PROFILE_CPU_NAMED("Idle");
-                auto sleepStart = Platform::GetTimeSeconds();
-                Platform::Sleep(1);
-                auto sleepEnd = Platform::GetTimeSeconds();
-                EngineIdleTime += sleepEnd - sleepStart;
-            }
-        }
-
-        // App paused logic
-        if (Platform::GetIsPaused())
-        {
-            OnPause();
-            do
-            {
-                Platform::Sleep(10);
-                Platform::Tick();
-            } while (Platform::GetIsPaused() && !ShouldExit());
-            if (ShouldExit())
-                break;
-            OnUnpause();
-        }
-
-        // Use the same time for all ticks to improve synchronization
-        const double time = Platform::GetTimeSeconds();
-
-        // Update application (will gather data and other platform related events)
-        {
-            PROFILE_CPU_NAMED("Platform.Tick");
-            Platform::Tick();
-#if COMPILE_WITH_PROFILER
-            extern void TickProfilerMemory();
-            TickProfilerMemory();
-#endif
-        }
-
-        // Update game logic
-        if (Time::OnBeginUpdate(time))
-        {
-            OnUpdate();
-            OnLateUpdate();
-            Time::OnEndUpdate();
-            EngineIdleTime = 0;
-        }
-
-        // Start physics simulation
-        if (Time::OnBeginPhysics(time))
-        {
-            OnFixedUpdate();
-            OnLateFixedUpdate();
-            Time::OnEndPhysics();
-        }
-
-        // Draw frame
-        if (Time::OnBeginDraw(time))
-        {
-            OnDraw();
-            Time::OnEndDraw();
-        }
+        OnLoop();
     }
 
-    // Call on exit event
+    // Shutdown
     OnExit();
-
-    // Delete temporary directory only if Engine is closing normally (after crash user/developer can restore some data)
-    if (FileSystem::DirectoryExists(Globals::TemporaryFolder))
-    {
-        FileSystem::DeleteDirectory(Globals::TemporaryFolder);
-    }
-
     return ExitCode;
 }
 
@@ -556,6 +564,12 @@ void Engine::OnExit()
 #endif
 
     Platform::Exit();
+
+    // Delete temporary directory only if Engine is closing normally (after crash user/developer can restore some data)
+    if (ExitCode == 0 && FileSystem::DirectoryExists(Globals::TemporaryFolder))
+    {
+        FileSystem::DeleteDirectory(Globals::TemporaryFolder);
+    }
 }
 
 void EngineImpl::InitLog()
