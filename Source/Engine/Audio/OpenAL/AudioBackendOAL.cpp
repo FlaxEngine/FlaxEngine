@@ -136,7 +136,11 @@ namespace ALC
         {
             ASSERT_LOW_LAYER(sourceID == 0);
             alGenSources(1, &sourceID);
-            ASSERT_LOW_LAYER(sourceID != 0);
+            if (sourceID == 0)
+            {
+                ALC_CHECK_ERROR(alGenSources);
+                return;
+            }
 
             alSourcef(sourceID, AL_GAIN, volume);
             alSourcef(sourceID, AL_PITCH, pitch);
@@ -174,14 +178,23 @@ namespace ALC
         if (Device == nullptr)
             return;
 
+#if PLATFORM_WEB
+        ALCint* attrList = nullptr;
+#else
         ALCint attrList[] = { ALC_HRTF_SOFT, ALC_FALSE };
         if (Audio::GetEnableHRTF())
         {
             LOG(Info, "Enabling OpenAL HRTF");
             attrList[1] = ALC_TRUE; 
         }
+#endif
 
         Context = alcCreateContext(Device, attrList);
+        if (Context == nullptr)
+        {
+            LOG(Error, "Failed to create OpenAL context.");
+            return;
+        }
         alcMakeContextCurrent(Context);
     }
     
@@ -198,7 +211,7 @@ namespace ALC
             AudioSource* source = Audio::Sources[i];
             Source::Rebuild(source->SourceID, source->GetPosition(), source->GetOrientation(), source->GetVolume(), source->GetPitch(), source->GetPan(), source->GetIsLooping() && !source->UseStreaming(), source->Is3D(), source->GetAttenuation(), source->GetMinDistance(), source->GetDopplerFactor());
 
-            if (states.HasItems())
+            if (states.HasItems() && source->SourceID)
             {
                 // Restore playback state
                 auto& state = states[i];
@@ -337,18 +350,18 @@ void AudioBackendOAL::Listener_ReinitializeAll()
 uint32 AudioBackendOAL::Source_Add(const AudioDataInfo& format, const Vector3& position, const Quaternion& orientation, float volume, float pitch, float pan, bool loop, bool spatial, float attenuation, float minDistance, float doppler)
 {
     PROFILE_MEM(Audio);
-
     uint32 sourceID = 0;
     ALC::Source::Rebuild(sourceID, position, orientation, volume, pitch, pan, loop, spatial, attenuation, minDistance, doppler);
-
-    // Cache audio data format assigned on source (used in Source_GetCurrentBufferTime)
-    ALC::Locker.Lock();
-    auto& data = ALC::SourcesData[sourceID];
-    data.Format = format;
-    data.Spatial = spatial;
-    data.Pan = pan;
-    ALC::Locker.Unlock();
-
+    if (sourceID)
+    {
+        // Cache audio data format assigned on source (used in Source_GetCurrentBufferTime)
+        ALC::Locker.Lock();
+        auto& data = ALC::SourcesData[sourceID];
+        data.Format = format;
+        data.Spatial = spatial;
+        data.Pan = pan;
+        ALC::Locker.Unlock();
+    }
     return sourceID;
 }
 
@@ -646,6 +659,13 @@ void AudioBackendOAL::Base_OnActiveDeviceChanged()
     PROFILE_CPU();
     PROFILE_MEM(Audio);
 
+    // Fast-path on startup
+    if (!ALC::Inited && ALC::Device)
+    {
+        ALC::RebuildContext();
+        return;
+    }
+
     // Cleanup
     Array<ALC::AudioSourceState> states;
     states.EnsureCapacity(Audio::Sources.Count());
@@ -788,7 +808,6 @@ bool AudioBackendOAL::Base_Init()
 
             devicesStr += (device.InternalName.Length() + 1) * sizeof(ALCchar);
         }
-
         if (activeDeviceIndex == -1)
         {
             LOG(Warning, "Failed to pick a default device");
@@ -829,18 +848,21 @@ bool AudioBackendOAL::Base_Init()
     }
 
     // Init
-    Base_SetDopplerFactor(AudioSettings::Get()->DopplerFactor);
-    alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED); // Default attenuation model
-    int32 clampedIndex = Math::Clamp(activeDeviceIndex, -1, Audio::Devices.Count() - 1);
-    if (clampedIndex == Audio::GetActiveDeviceIndex())
-    {
-        ALC::RebuildContext(true);
-    }
-    Audio::SetActiveDeviceIndex(activeDeviceIndex);
 #ifdef AL_SOFT_source_spatialize
     if (ALC::IsExtensionSupported("AL_SOFT_source_spatialize"))
         ALC::Features = EnumAddFlags(ALC::Features, FeatureFlags::SpatialMultiChannel);
 #endif
+#if !PLATFORM_WEB
+    ALC::Features = EnumAddFlags(ALC::Features, FeatureFlags::HRTF);
+#endif
+    Base_SetDopplerFactor(AudioSettings::Get()->DopplerFactor);
+    alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED); // Default attenuation model
+    if (Audio::GetActiveDeviceIndex() == Math::Clamp(activeDeviceIndex, -1, Audio::Devices.Count() - 1))
+    {
+        // Manually create context if SetActiveDeviceIndex won't call it
+        Base_OnActiveDeviceChanged();
+    }
+    Audio::SetActiveDeviceIndex(activeDeviceIndex);
     ALC::Inited = true;
 
     // Log service info

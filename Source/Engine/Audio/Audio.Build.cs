@@ -61,7 +61,7 @@ public class Audio : EngineModule
             useOpenAL = true;
             break;
         case TargetPlatform.Web:
-            // TODO: audio playback on Web (OpenAL)
+            useOpenAL = true;
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
@@ -101,6 +101,9 @@ public class Audio : EngineModule
                 options.OutputFiles.Add(Path.Combine(depsRoot, "libopenal.a"));
                 options.Libraries.Add("CoreAudio.framework");
                 options.Libraries.Add("AudioToolbox.framework");
+                break;
+            case TargetPlatform.Web:
+                options.LinkEnv.CustomArgs.Add("-lopenal");
                 break;
             default: throw new InvalidPlatformException(options.Platform.Target);
             }

@@ -429,6 +429,7 @@ namespace Flax.Build
                 var dependencyModule = buildData.Rules.GetModule(moduleName);
                 if (dependencyModule != null && buildData.Modules.TryGetValue(dependencyModule, out var dependencyOptions))
                 {
+                    moduleOptions.LinkEnv.CustomArgs.AddRange(dependencyOptions.LinkEnv.CustomArgs);
                     moduleOptions.LinkEnv.InputFiles.AddRange(dependencyOptions.OutputFiles);
                     moduleOptions.DependencyFiles.AddRange(dependencyOptions.DependencyFiles);
                     moduleOptions.OptionalDependencyFiles.AddRange(dependencyOptions.OptionalDependencyFiles);
@@ -445,6 +446,7 @@ namespace Flax.Build
                 var dependencyModule = buildData.Rules.GetModule(moduleName);
                 if (dependencyModule != null && buildData.Modules.TryGetValue(dependencyModule, out var dependencyOptions))
                 {
+                    moduleOptions.LinkEnv.CustomArgs.AddRange(dependencyOptions.LinkEnv.CustomArgs);
                     moduleOptions.LinkEnv.InputFiles.AddRange(dependencyOptions.OutputFiles);
                     moduleOptions.DependencyFiles.AddRange(dependencyOptions.DependencyFiles);
                     moduleOptions.OptionalDependencyFiles.AddRange(dependencyOptions.OptionalDependencyFiles);
@@ -940,6 +942,7 @@ namespace Flax.Build
                         var moduleOptions = BuildModule(buildData, module);
 
                         // Merge module into target environment
+                        buildData.TargetOptions.LinkEnv.CustomArgs.AddRange(moduleOptions.LinkEnv.CustomArgs);
                         buildData.TargetOptions.LinkEnv.InputFiles.AddRange(moduleOptions.OutputFiles);
                         buildData.TargetOptions.DependencyFiles.AddRange(moduleOptions.DependencyFiles);
                         buildData.TargetOptions.OptionalDependencyFiles.AddRange(moduleOptions.OptionalDependencyFiles);

@@ -145,6 +145,11 @@ void Audio::SetEnableHRTF(bool value)
 {
     if (EnableHRTF == value)
         return;
+    if (value && EnumHasNoneFlags(AudioBackend::Features(), AudioBackend::FeatureFlags::HRTF))
+    {
+        LOG(Warning, "HRTF audio is not supported.");
+        return;
+    }
     EnableHRTF = value;
     AudioBackend::Listener::ReinitializeAll();
 }
@@ -202,6 +207,11 @@ bool AudioService::Init()
     if (AudioBackend::Init())
     {
         LOG(Warning, "Failed to initialize audio backend.");
+    }
+    if (EnableHRTF && EnumHasNoneFlags(AudioBackend::Features(), AudioBackend::FeatureFlags::HRTF))
+    {
+        LOG(Warning, "HRTF audio is not supported.");
+        EnableHRTF = false;
     }
 
     Engine::Pause.Bind(&OnEnginePause);
