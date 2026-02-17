@@ -70,7 +70,7 @@ bool WebPlatformTools::OnPostProcess(CookingData& data)
     {
         Array<String> files;
         FileSystem::DirectoryGetFiles(files, data.OriginalOutputPath, TEXT("*"), DirectorySearchOption::TopDirectoryOnly);
-        for (String& file : files)
+        for (const String& file : files)
         {
             if (file.EndsWith(TEXT(".js")))
             {
@@ -87,6 +87,19 @@ bool WebPlatformTools::OnPostProcess(CookingData& data)
     {
         data.Error(TEXT("Failed to find the main JavaScript for the output game"));
         return true;
+    }
+
+    // Move .wasm assemblies into the data files in order for dlopen to work (blocking)
+    {
+        Array<String> files;
+        FileSystem::DirectoryGetFiles(files, data.OriginalOutputPath, TEXT("*.wasm"), DirectorySearchOption::AllDirectories);
+        StringView gameWasm = StringUtils::GetFileNameWithoutExtension(gameJs);
+        for (const String& file : files)
+        {
+            if (StringUtils::GetFileNameWithoutExtension(file) == gameWasm)
+                continue; // Skip the main game module
+            FileSystem::MoveFile(data.DataOutputPath / StringUtils::GetFileName(file), file, true);
+        }
     }
 
     // Pack data files into a single file using Emscripten's file_packager tool

@@ -17,10 +17,13 @@ namespace Flax.Build.Platforms
         public override bool HasRequiredSDKsInstalled { get; }
 
         /// <inheritdoc />
-        public override bool HasSharedLibrarySupport => false;
+        public override bool HasSharedLibrarySupport => true;
 
         /// <inheritdoc />
-        public override bool HasModularBuildSupport => false;
+        public override bool HasModularBuildSupport => true;
+
+        /// <inheritdoc />
+        public override bool HasExecutableFileReferenceSupport => true;
 
         /// <inheritdoc />
         public override bool HasDynamicCodeExecutionSupport => false;

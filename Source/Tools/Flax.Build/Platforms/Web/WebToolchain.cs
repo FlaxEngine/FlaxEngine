@@ -132,6 +132,9 @@ namespace Flax.Build.Platforms
             if (options.LinkEnv.LinkTimeCodeGeneration)
                 args.Add("-flto");
 
+            if (options.LinkEnv.Output == LinkerOutput.SharedLibrary)
+                args.Add("-fPIC");
+
             var sanitizers = options.CompileEnv.Sanitizers;
             if (sanitizers.HasFlag(Sanitizer.Address))
                 args.Add("-fsanitize=address");
@@ -259,6 +262,13 @@ namespace Flax.Build.Platforms
                 // Setup file access (Game Cooker packs files with file_packager tool)
                 args.Add("-sFORCE_FILESYSTEM");
                 args.Add("-sLZ4");
+
+                // https://emscripten.org/docs/compiling/Dynamic-Linking.html#dynamic-linking
+                // TODO: use -sMAIN_MODULE=2 and -sSIDE_MODULE=2 to strip unused code (mark public APIs with EMSCRIPTEN_KEEPALIVE)
+                if (options.LinkEnv.Output == LinkerOutput.Executable)
+                    args.Add("-sMAIN_MODULE");
+                else
+                    args.Add("-sSIDE_MODULE");
             }
 
             args.Add("-Wl,--start-group");
@@ -266,6 +276,7 @@ namespace Flax.Build.Platforms
             // Input libraries
             var libraryPaths = new HashSet<string>();
             var dynamicLibExt = Platform.SharedLibraryFileExtension;
+            var executableExt = Platform.ExecutableFileExtension;
             foreach (var library in options.LinkEnv.InputLibraries.Concat(options.Libraries))
             {
                 var dir = Path.GetDirectoryName(library);
@@ -279,7 +290,7 @@ namespace Flax.Build.Platforms
                 {
                     args.Add(string.Format("\"-l{0}\"", library));
                 }
-                else if (string.IsNullOrEmpty(ext))
+                else if (ext == executableExt)
                 {
                     // Skip executable
                 }

@@ -11,11 +11,13 @@
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Platform/CPUInfo.h"
 #include "Engine/Platform/MemoryStats.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #if !BUILD_RELEASE
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Utilities/StringConverter.h"
 #endif
 #include <chrono>
+#include <dlfcn.h>
 #include <unistd.h>
 #include <emscripten/emscripten.h>
 #include <emscripten/threading.h>
@@ -279,16 +281,25 @@ bool WebPlatform::SetEnvironmentVariable(const String& name, const String& value
 
 void* WebPlatform::LoadLibrary(const Char* filename)
 {
-    return nullptr;
+    PROFILE_CPU();
+    ZoneText(filename, StringUtils::Length(filename));
+    const StringAsANSI<> filenameANSI(filename);
+    void* result = dlopen(filenameANSI.Get(), RTLD_NOW);
+    if (!result)
+    {
+        LOG(Error, "Failed to load {0} because {1}", filename, String(dlerror()));
+    }
+    return result;
 }
 
 void WebPlatform::FreeLibrary(void* handle)
 {
+    dlclose(handle);
 }
 
 void* WebPlatform::GetProcAddress(void* handle, const char* symbol)
 {
-    return nullptr;
+    return dlsym(handle, symbol);
 }
 
 #endif
