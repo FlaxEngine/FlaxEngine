@@ -91,7 +91,7 @@ public:
     static Rectangle GetMonitorBounds(const Float2& screenPos);
     static Rectangle GetVirtualDesktopBounds();
     static Window* CreateWindow(const CreateWindowSettings& settings);
-#if !PLATFORM_WINDOWS
+#if !PLATFORM_WINDOWS && !PLATFORM_WEB
     static int32 CreateProcess(CreateProcessSettings& settings);
 #endif
 };

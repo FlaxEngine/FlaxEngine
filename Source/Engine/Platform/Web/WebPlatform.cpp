@@ -27,6 +27,7 @@
 namespace
 {
     CPUInfo Cpu;
+    double DateStart = emscripten_get_now();
 };
 
 void WebFileSystem::GetSpecialFolderPath(const SpecialFolder type, String& result)
@@ -117,7 +118,7 @@ void WebPlatform::GetSystemTime(int32& year, int32& month, int32& dayOfWeek, int
     hour = time.tm_hour;
     minute = time.tm_min;
     second = time.tm_sec;
-    millisecond = abs((int64)emscripten_get_now()) % 1000; // Fake it based on other timer
+    millisecond = (int64)(emscripten_get_now() - DateStart) % 1000; // Fake it based on other timer
 }
 
 void WebPlatform::GetUTCTime(int32& year, int32& month, int32& dayOfWeek, int32& day, int32& hour, int32& minute, int32& second, int32& millisecond)
@@ -136,7 +137,7 @@ void WebPlatform::GetUTCTime(int32& year, int32& month, int32& dayOfWeek, int32&
     hour = time.tm_hour;
     minute = time.tm_min;
     second = time.tm_sec;
-    millisecond = abs((int64)emscripten_get_now()) % 1000; // Fake it based on other timer
+    millisecond = (int64)(emscripten_get_now() - DateStart) % 1000; // Fake it based on other timer
 }
 
 #if !BUILD_RELEASE

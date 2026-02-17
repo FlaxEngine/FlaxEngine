@@ -319,7 +319,7 @@ Window* SDLPlatform::CreateWindow(const CreateWindowSettings& settings)
     return New<SDLWindow>(settings);
 }
 
-#if !PLATFORM_WINDOWS
+#if !PLATFORM_WINDOWS && !PLATFORM_WEB
 
 bool ReadStream(SDL_IOStream*& stream, char* buffer, int64 bufferLength, int64& bufferPosition, LogType logType, CreateProcessSettings& settings)
 {
