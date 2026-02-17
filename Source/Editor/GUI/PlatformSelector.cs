@@ -93,7 +93,7 @@ namespace FlaxEditor.GUI
                 new PlatformData(PlatformType.PS5, icons.PS5Icon128, "PlayStation 5"),
                 new PlatformData(PlatformType.Mac, icons.MacOSIcon128, "macOS"),
                 new PlatformData(PlatformType.iOS, icons.IOSIcon128, "iOS"),
-                new PlatformData(PlatformType.Web, icons.Flax64, "Web"),
+                new PlatformData(PlatformType.Web, icons.Web128, "Web"),
             };
 
             const float IconSize = 64.0f;

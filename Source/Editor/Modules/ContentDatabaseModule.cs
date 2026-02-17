@@ -1188,6 +1188,7 @@ namespace FlaxEditor.Modules
             Proxy.Add(new SettingsProxy(typeof(AndroidPlatformSettings), Editor.Instance.Icons.AndroidSettings128));
             Proxy.Add(new SettingsProxy(typeof(MacPlatformSettings), Editor.Instance.Icons.AppleSettings128));
             Proxy.Add(new SettingsProxy(typeof(iOSPlatformSettings), Editor.Instance.Icons.AppleSettings128));
+            Proxy.Add(new SettingsProxy(typeof(WebPlatformSettings), Editor.Instance.Icons.WebSettings128));
 
             var typePS4PlatformSettings = TypeUtils.GetManagedType(GameSettings.PS4PlatformSettingsTypename);
             if (typePS4PlatformSettings != null)
