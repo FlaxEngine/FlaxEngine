@@ -7,8 +7,6 @@
 
 class PlatformMain
 {
-    int32 State = 0;
-
     static void Loop()
     {
         // Tick engine

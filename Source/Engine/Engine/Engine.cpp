@@ -93,16 +93,8 @@ int32 Engine::OnInit(const Char* cmdLine)
         return -1;
     }
 
-#if FLAX_TESTS
-    // Configure engine for test running environment
-    CommandLine::Options.Headless = true;
-    CommandLine::Options.Null = true;
-    CommandLine::Options.Mute = true;
-    CommandLine::Options.Std = true;
-#endif
-
+    // Init platform
     Platform::SetHighDpiAwarenessEnabled(!CommandLine::Options.LowDPI.IsTrue());
-
     if (Platform::Init())
     {
         Platform::Fatal(TEXT("Cannot init platform."));
@@ -111,8 +103,9 @@ int32 Engine::OnInit(const Char* cmdLine)
 #if COMPILE_WITH_PROFILER
     InitProfilerMemory(cmdLine, 1);
 #endif
-
     Time::StartupTime = DateTime::Now();
+
+    // Setup paths and folders
     Globals::StartupFolder = Globals::BinariesFolder = Platform::GetMainDirectory();
 #if USE_EDITOR
     Globals::StartupFolder /= TEXT("../../../..");
@@ -127,26 +120,23 @@ int32 Engine::OnInit(const Char* cmdLine)
 #endif
     StringUtils::PathRemoveRelativeParts(Globals::StartupFolder);
     FileSystem::NormalizePath(Globals::BinariesFolder);
-
     FileSystem::GetSpecialFolderPath(SpecialFolder::Temporary, Globals::TemporaryFolder);
     if (Globals::TemporaryFolder.IsEmpty())
         Platform::Fatal(TEXT("Failed to gather temporary folder directory."));
     Globals::TemporaryFolder /= Guid::New().ToString(Guid::FormatType::D);
 
     // Load game info or project info
-    {
-        const int32 result = Application::LoadProduct();
-        if (result != 0)
-            return result;
-    }
+    const int32 result = Application::LoadProduct();
+    if (result != 0)
+        return result;
 
+    // Init logging
     EngineImpl::InitPaths();
     EngineImpl::InitLog();
 
 #if USE_EDITOR
     if (Editor::CheckProjectUpgrade())
     {
-        // End
         LOG(Warning, "Loading project cancelled. Closing...");
 #if LOG_ENABLE
         Log::Logger::Dispose();

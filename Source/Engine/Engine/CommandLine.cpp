@@ -170,6 +170,14 @@ bool CommandLine::Parse(const Char* cmdLine)
     PARSE_BOOL_SWITCH("-shaderprofile ", ShaderProfile);
 #endif
 
+#if FLAX_TESTS
+    // Configure engine for test running environment
+    Options.Headless = true;
+    Options.Null = true;
+    Options.Mute = true;
+    Options.Std = true;
+#endif
+
     return false;
 }
 
