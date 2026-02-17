@@ -147,10 +147,19 @@ bool WebPlatformTools::OnPostProcess(CookingData& data)
             }
             const String insertPrefixLocation = TEXT("// end include: minimum_runtime_check.js");
             int32 location = gameJsText.Find(insertPrefixLocation);
-            CHECK_RETURN(location != -1, true);
-            location += insertPrefixLocation.Length() + 1;
-            fileJsText = filesIncludeBegin + TEXT("\n") + fileJsText + TEXT("\n") + filesIncludeEnd + TEXT("\n");
-            gameJsText.Insert(location, fileJsText);
+            if (location != -1)
+            {
+                location += insertPrefixLocation.Length() + 1;
+                fileJsText = filesIncludeBegin + TEXT("\n") + fileJsText + TEXT("\n") + filesIncludeEnd + TEXT("\n");
+                gameJsText.Insert(location, fileJsText);
+            }
+            else
+            {
+                // Comments are missing in Release when JS/HTML are minified
+                fileJsText.Insert(0, filesIncludeBegin);
+                fileJsText.Insert(0, TEXT("\n"));
+                gameJsText.Insert(0, fileJsText);
+            }
             File::WriteAllText(gameJs, gameJsText, Encoding::UTF8);
         }
 

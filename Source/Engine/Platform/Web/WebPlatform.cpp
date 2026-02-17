@@ -6,16 +6,14 @@
 #include "WebFileSystem.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/String.h"
+#include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/Version.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Platform/CPUInfo.h"
 #include "Engine/Platform/MemoryStats.h"
 #include "Engine/Profiler/ProfilerCPU.h"
-#if !BUILD_RELEASE
-#include "Engine/Core/Types/StringView.h"
 #include "Engine/Utilities/StringConverter.h"
-#endif
 #include <chrono>
 #include <dlfcn.h>
 #include <unistd.h>
