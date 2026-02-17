@@ -874,7 +874,7 @@ namespace FlaxEditor.Windows
                 _cursorVisible = Screen.CursorVisible;
                 _cursorLockMode = Screen.CursorLock;
                 Screen.CursorVisible = true;
-                if (Screen.CursorLock == CursorLockMode.Clipped || Screen.CursorLock == CursorLockMode.Locked)
+                if (_cursorLockMode != CursorLockMode.None)
                     Screen.CursorLock = CursorLockMode.None;
 
                 // Defocus
