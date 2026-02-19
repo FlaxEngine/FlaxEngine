@@ -6,6 +6,7 @@
 #include "Engine/Core/Math/Math.h"
 #include <ThirdParty/freetype/ftoutln.h>
 #include <ThirdParty/msdfgen/msdfgen.h>
+#include <ThirdParty/msdfgen/msdfgen/core/ShapeDistanceFinder.h>
 
 class MSDFGenerator
 {
@@ -72,6 +73,17 @@ class MSDFGenerator
         return 0;
     }
 
+    static void correctWinding(Shape& shape, Shape::Bounds& bounds)
+    {
+        Point2 p(bounds.l - (bounds.r - bounds.l) - 1, bounds.b - (bounds.t - bounds.b) - 1);
+        double distance = msdfgen::SimpleTrueShapeDistanceFinder::oneShotDistance(shape, p);
+        if (distance > 0)
+        {
+            for (auto& contour : shape.contours)
+                contour.reverse();
+        }
+    }
+
 public:
     static void GenerateMSDF(FT_GlyphSlot glyph, Array<byte>& output, int32& outputWidth, int32& outputHeight, int16& top, int16& left)
     {
@@ -98,7 +110,7 @@ public:
         // Also hard-coded in material: MSDFFontMaterial
         const double pxRange = 4.0;
 
-        msdfgen::Shape::Bounds bounds = shape.getBounds();
+        Shape::Bounds bounds = shape.getBounds();
         int32 width = static_cast<int32>(Math::CeilToInt(bounds.r - bounds.l + pxRange));
         int32 height = static_cast<int32>(Math::CeilToInt(bounds.t - bounds.b + pxRange));
         msdfgen::Bitmap<float, 4> msdf(width, height);
@@ -106,6 +118,7 @@ public:
         msdfgen::SDFTransformation t(
             msdfgen::Projection(1.0, msdfgen::Vector2(-bounds.l + pxRange / 2.0, -bounds.b + pxRange / 2.0)), msdfgen::Range(pxRange)
         );
+        correctWinding(shape, bounds);
         generateMTSDF(msdf, shape, t);
 
         output.Resize(width * height * 4);
