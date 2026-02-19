@@ -96,6 +96,30 @@ float4 PS_Font(VS2PS input) : SV_Target0
 	return color;
 }
 
+META_PS(true, FEATURE_LEVEL_ES2)
+float4 PS_FontMSDF(VS2PS input) : SV_Target0
+{
+	PerformClipping(input);
+
+	float4 color = input.Color;
+	float3 msd = Image.Sample(SamplerLinearClamp, input.TexCoord).rgb;
+    float sd = max(min(msd.r, msd.g), min(max(msd.r, msd.g), msd.b));
+
+    uint width, height;
+    Image.GetDimensions(width, height);
+    float pxRange = 4.0f; // Must match C++ code
+    float unitRange = float2(pxRange, pxRange) / float2(width, height);
+
+    float2 dx = ddx(input.TexCoord);
+    float2 dy = ddy(input.TexCoord);
+    float2 screenTexSize = rsqrt(dx * dx + dy * dy);
+    float screenPxRange = max(0.5f * dot(screenTexSize, unitRange), 1.0f);
+    float screenPxDist = screenPxRange * (sd - 0.5f);
+
+    float opacity = saturate(screenPxDist + 0.5f);
+	return float4(color.rgb, opacity);
+}
+
 float4 GetSample(float weight, float offset, float2 uv)
 {
 #if BLUR_V
