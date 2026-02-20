@@ -32,6 +32,7 @@ public:
 
         // Setup main loop to be called by Emscripten
         emscripten_set_main_loop(Loop, -1, false);
+        emscripten_set_main_loop_timing(EM_TIMING_RAF, 1); // Run main loop on each animation frame (vsync)
 
         // Run the first loop
         Loop();
