@@ -312,4 +312,50 @@ void* WebPlatform::GetProcAddress(void* handle, const char* symbol)
     return dlsym(handle, symbol);
 }
 
+Array<PlatformBase::StackFrame> WebPlatform::GetStackFrames(int32 skipCount, int32 maxDepth, void* context)
+{
+    Array<StackFrame> result;
+#if CRASH_LOG_ENABLE
+    // Get callstack
+    char callstack[1024];
+    emscripten_get_callstack(EM_LOG_JS_STACK, callstack, sizeof(callstack));
+
+    // Parse callstack
+    int32 pos = 0;
+    while (callstack[pos])
+    {
+        StackFrame& frame = result.AddOne();
+        frame.ProgramCounter = 0;
+        frame.ModuleName[0] = 0;
+        frame.FileName[0] = 0;
+        frame.LineNumber = 0;
+
+        // Skip leading spaces
+        while (callstack[pos] == ' ')
+            pos++;
+
+        // Skip 'at '
+        pos += 3;
+
+        // Read function name
+        int32 dst = 0;
+        while (callstack[pos] && callstack[pos] != '\n' && dst < ARRAY_COUNT(frame.FileName) - 1)
+            frame.FunctionName[dst++] = callstack[pos++];
+        frame.FunctionName[dst] = 0;
+
+        // Skip '\n'
+        if (callstack[pos])
+            pos++;
+    }
+
+    // Adjust frames range
+    skipCount += 2; // Skip this function and utility JS frames
+    while (skipCount-- && result.HasItems())
+        result.RemoveAtKeepOrder(0);
+    if (result.Count() > maxDepth)
+        result.Resize(maxDepth);
+#endif
+    return result;
+}
+
 #endif
