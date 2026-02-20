@@ -13,6 +13,7 @@
 #include "Engine/Platform/CPUInfo.h"
 #include "Engine/Platform/MemoryStats.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Engine/Web/WebGame.h"
 #include "Engine/Utilities/StringConverter.h"
 #include <chrono>
 #include <dlfcn.h>
@@ -27,6 +28,16 @@ namespace
     CPUInfo Cpu;
     double DateStart = emscripten_get_now();
 };
+
+void WebGame::InitMainWindowSettings(CreateWindowSettings& settings)
+{
+    // Set window size matching the canvas item in HTML
+    settings.Fullscreen = false;
+    int width = 1, height = 1;
+    emscripten_get_canvas_element_size(WEB_CANVAS_ID, &width, &height);
+    settings.Size.X = width;
+    settings.Size.Y = height;
+}
 
 void WebFileSystem::GetSpecialFolderPath(const SpecialFolder type, String& result)
 {

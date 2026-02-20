@@ -12,6 +12,9 @@
 /// <seealso cref="Game" />
 class WebGame : public GameBase
 {
+public:
+    // [GameBase]
+    static void InitMainWindowSettings(CreateWindowSettings& settings);
 };
 
 typedef WebGame Game;
