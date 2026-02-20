@@ -15,6 +15,10 @@
 #include "Engine/Scripting/Enums.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Threading/Threading.h"
+#if GPU_ENABLE_RESOURCE_NAMING && !USE_EDITOR
+#include "Engine/Content/Content.h"
+#include "Engine/Content/Cache/AssetsCache.h"
+#endif
 
 TextureMipData::TextureMipData()
     : RowPitch(0)
@@ -243,7 +247,7 @@ REGISTER_BINARY_ASSET_ABSTRACT(TextureBase, "FlaxEngine.TextureBase");
 
 TextureBase::TextureBase(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)
-    , _texture(this, info->Path)
+    , _texture(this, GPU_GET_RESOURCE_NAME_FROM_ASSET(info))
     , _customData(nullptr)
     , _parent(this)
 {
