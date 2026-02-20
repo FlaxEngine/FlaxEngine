@@ -490,6 +490,13 @@ public:
     API_FUNCTION() void Draw(GPUTexture* dst, GPUTexture* src);
 
     /// <summary>
+    /// Draws the specified source texture view to destination render target (using fullscreen triangle). Copies contents with resizing and format conversion support. Uses linear texture sampling.
+    /// </summary>
+    /// <param name="dst">The destination texture.</param>
+    /// <param name="src">The source texture view.</param>
+    API_FUNCTION() void Draw(GPUTexture* dst, GPUTextureView* src);
+
+    /// <summary>
     /// Draws the specified texture to render target (using fullscreen triangle). Copies contents with resizing and format conversion support. Uses linear texture sampling.
     /// </summary>
     /// <param name="rt">The texture.</param>

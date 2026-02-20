@@ -1807,7 +1807,7 @@ bool GPUDeviceVulkan::Init()
                     msaa = maxMsaa;
             }
 
-            FeaturesPerFormat[i] = FormatFeatures(format, msaa, support);
+            FeaturesPerFormat[i] = FormatFeatures(msaa, support);
         }
     }
 

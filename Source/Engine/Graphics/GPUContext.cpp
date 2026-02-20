@@ -101,6 +101,19 @@ void GPUContext::Draw(GPUTexture* dst, GPUTexture* src)
     DrawFullscreenTriangle();
 }
 
+void GPUContext::Draw(GPUTexture* dst, GPUTextureView* src)
+{
+    ASSERT_LOW_LAYER(dst && src);
+    ResetRenderTarget();
+    const float width = (float)dst->Width();
+    const float height = (float)dst->Height();
+    SetViewport(width, height);
+    SetRenderTarget(dst->View());
+    BindSR(0, src);
+    SetState(_device->GetCopyLinearPS());
+    DrawFullscreenTriangle();
+}
+
 void GPUContext::Draw(GPUTexture* rt)
 {
     ASSERT_LOW_LAYER(rt);

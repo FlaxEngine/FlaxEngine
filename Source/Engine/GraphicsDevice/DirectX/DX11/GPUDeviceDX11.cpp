@@ -658,7 +658,7 @@ bool GPUDeviceDX11::Init()
             }
             UINT formatSupport = 0;
             _device->CheckFormatSupport(dxgiFormat, &formatSupport);
-            FeaturesPerFormat[i] = FormatFeatures(format, static_cast<MSAALevel>(maxCount), (FormatSupport)formatSupport);
+            FeaturesPerFormat[i] = FormatFeatures((MSAALevel)maxCount, (FormatSupport)formatSupport);
         }
 
         // Driver extensions support

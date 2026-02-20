@@ -62,7 +62,7 @@ bool GPUDeviceNull::Init()
         limits.MaximumTextureCubeSize = 16384;
         limits.MaximumSamplerAnisotropy = 1;
         for (int32 i = 0; i < static_cast<int32>(PixelFormat::MAX); i++)
-            FeaturesPerFormat[i] = FormatFeatures(static_cast<PixelFormat>(i), MSAALevel::None, FormatSupport::None);
+            FeaturesPerFormat[i] = FormatFeatures(MSAALevel::None, FormatSupport::None);
     }
 
     // Create main context
