@@ -102,6 +102,9 @@ bool SDLPlatform::Init()
     SDL_SetHint(SDL_HINT_WINDOWS_RAW_KEYBOARD, "1");
 
     SDL_SetHint(SDL_HINT_VIDEO_WAYLAND_SCALE_TO_DISPLAY, "1");
+#if USE_EDITOR
+    SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "1"); // Allow screensaver in Editor when idle
+#endif
 
     //if (InitInternal())
     //    return true;
