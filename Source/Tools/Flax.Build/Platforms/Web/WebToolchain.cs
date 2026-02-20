@@ -266,9 +266,14 @@ namespace Flax.Build.Platforms
                 // https://emscripten.org/docs/compiling/Dynamic-Linking.html#dynamic-linking
                 // TODO: use -sMAIN_MODULE=2 and -sSIDE_MODULE=2 to strip unused code (mark public APIs with EMSCRIPTEN_KEEPALIVE)
                 if (options.LinkEnv.Output == LinkerOutput.Executable)
+                {
                     args.Add("-sMAIN_MODULE");
+                    args.Add("-sEXPORT_ALL");
+                }
                 else
+                {
                     args.Add("-sSIDE_MODULE");
+                }
             }
 
             args.Add("-Wl,--start-group");
