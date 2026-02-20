@@ -21,5 +21,6 @@
 
 #define GPU_ALLOW_TESSELLATION_SHADERS 0 // MoltenVK has artifacts when using tess so disable it
 #define GPU_ALLOW_GEOMETRY_SHADERS 0 // Don't even try GS on mobile
+#define GPU_ENABLE_PRELOADING_RESOURCES 0 // Don't preload things unless needed
 
 #endif

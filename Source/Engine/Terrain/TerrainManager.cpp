@@ -68,6 +68,15 @@ TerrainManagerService TerrainManagerServiceInstance;
 
 MaterialBase* TerrainManager::GetDefaultTerrainMaterial()
 {
+    if (!DefaultTerrainMaterial)
+    {
+        // Load default terrain material as fallback
+        DefaultTerrainMaterial = Content::LoadAsyncInternal<MaterialBase>(TEXT("Engine/DefaultTerrainMaterial"));
+        if (DefaultTerrainMaterial == nullptr)
+        {
+            LOG(Warning, "Default terrain material is missing.");
+        }
+    }
     return DefaultTerrainMaterial.Get();
 }
 
@@ -221,13 +230,9 @@ bool TerrainManager::GetChunkGeometry(DrawCall& drawCall, int32 chunkSize, int32
 
 bool TerrainManagerService::Init()
 {
-    // Load default terrain material as fallback
-    DefaultTerrainMaterial = Content::LoadAsyncInternal<MaterialBase>(TEXT("Engine/DefaultTerrainMaterial"));
-    if (DefaultTerrainMaterial == nullptr)
-    {
-        LOG(Warning, "Default terrain material is missing.");
-    }
-
+#if GPU_ENABLE_PRELOADING_RESOURCES
+    TerrainManager::GetDefaultTerrainMaterial();
+#endif
     return false;
 }
 

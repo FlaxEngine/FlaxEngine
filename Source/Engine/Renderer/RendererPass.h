@@ -21,7 +21,9 @@
 class FLAXENGINE_API RendererPassBase : public Object
 {
 protected:
-
+#if !GPU_ENABLE_PRELOADING_RESOURCES
+    bool _lazyInit = true;
+#endif
     bool _hasValidResources;
 
     /// <summary>
@@ -66,7 +68,13 @@ protected:
     {
         if (_hasValidResources)
             return false;
-
+#if !GPU_ENABLE_PRELOADING_RESOURCES
+        if (_lazyInit)
+        {
+            _lazyInit = false;
+            Init();
+        }
+#endif
         const bool setupFailed = setupResources();
         _hasValidResources = !setupFailed;
         return setupFailed;

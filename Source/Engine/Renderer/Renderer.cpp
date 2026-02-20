@@ -105,6 +105,7 @@ bool RendererService::Init()
         return false;
     }
 
+#if GPU_ENABLE_PRELOADING_RESOURCES
     // Init child services
     for (int32 i = 0; i < PassList.Count(); i++)
     {
@@ -114,6 +115,7 @@ bool RendererService::Init()
             return true;
         }
     }
+#endif
 
     return false;
 }

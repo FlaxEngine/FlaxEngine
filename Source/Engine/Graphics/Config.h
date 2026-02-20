@@ -64,6 +64,11 @@
 #define GPU_ENABLE_ASYNC_RESOURCES_CREATION 1
 #endif
 
+// Enable/disable preloading GPU resources (eg. shaders, default assets)
+#ifndef GPU_ENABLE_PRELOADING_RESOURCES
+#define GPU_ENABLE_PRELOADING_RESOURCES 1
+#endif
+
 // Enable/disable force shaders recompilation
 #define GPU_FORCE_RECOMPILE_SHADERS 0
 

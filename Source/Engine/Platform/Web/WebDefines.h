@@ -18,6 +18,7 @@
 #define GPU_ALLOW_TESSELLATION_SHADERS 0
 #define GPU_ALLOW_GEOMETRY_SHADERS 0
 #define GPU_ALLOW_PROFILE_EVENTS 0
+#define GPU_ENABLE_PRELOADING_RESOURCES 0 // Don't preload things unless needed
 
 // Threading is optional
 #ifdef __EMSCRIPTEN_PTHREADS__
