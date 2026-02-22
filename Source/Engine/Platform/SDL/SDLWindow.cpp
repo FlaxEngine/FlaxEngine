@@ -154,6 +154,10 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
         SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_MENU_BOOLEAN, true);
     if (_settings.Parent != nullptr)
         SDL_SetPointerProperty(props, SDL_PROP_WINDOW_CREATE_PARENT_POINTER, _settings.Parent->_window);
+#if PLATFORM_WEB
+    SDL_SetStringProperty(props, "SDL.window.create.emscripten.canvas_id", WEB_CANVAS_ID);
+    SDL_SetStringProperty(props, "SDL.window.create.emscripten.keyboard_element", WEB_CANVAS_ID);
+#endif
 
     _window = SDL_CreateWindowWithProperties(props);
     SDL_DestroyProperties(props);
