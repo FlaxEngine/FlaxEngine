@@ -114,10 +114,10 @@ public:
         int32 width = static_cast<int32>(Math::CeilToInt(bounds.r - bounds.l + pxRange));
         int32 height = static_cast<int32>(Math::CeilToInt(bounds.t - bounds.b + pxRange));
         msdfgen::Bitmap<float, 4> msdf(width, height);
+
+        auto transform = msdfgen::Vector2(Math::Ceil(-bounds.l + pxRange / 2.0), Math::Ceil(-bounds.b + pxRange / 2.0));
         
-        msdfgen::SDFTransformation t(
-            msdfgen::Projection(1.0, msdfgen::Vector2(-bounds.l + pxRange / 2.0, -bounds.b + pxRange / 2.0)), msdfgen::Range(pxRange)
-        );
+        msdfgen::SDFTransformation t(msdfgen::Projection(1.0, transform), msdfgen::Range(pxRange));
         correctWinding(shape, bounds);
         generateMTSDF(msdf, shape, t);
 
@@ -136,7 +136,7 @@ public:
         }
         outputWidth = width;
         outputHeight = height;
-        top = static_cast<int16>(Math::CeilToInt(bounds.t + pxRange / 2.0));
-        left = static_cast<int16>(Math::FloorToInt(bounds.l - pxRange / 2.0));
+        top = height - static_cast<int16>(transform.y);
+        left = -static_cast<int16>(transform.x);
     }
 };
