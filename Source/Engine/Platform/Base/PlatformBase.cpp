@@ -227,7 +227,7 @@ void PlatformBase::OnMemoryAlloc(void* ptr, uint64 size)
 
 #if TEST_MALLOC
     if (GetMallocTester().OnMalloc(ptr, size))
-        LOG(Fatal, "Invalid mallloc detected for pointer 0x{0:x} ({1} bytes)!\n{2}", (uintptr)ptr, size, Platform::GetStackTrace(3));
+        LOG(Fatal, "Invalid malloc detected for pointer 0x{0:x} ({1} bytes)!\n{2}", (uintptr)ptr, size, Platform::GetStackTrace(3));
 #endif
 
 #if TRACY_ENABLE_MEMORY
@@ -385,9 +385,13 @@ RETRY:
                     StringAsUTF16<ARRAY_COUNT(StackFrame::FileName)> fileName(frame.FileName);
                     LOG(Error, "    at {0}{1}() in {2}:line {3}", moduleName.Get(), functionName.Get(), fileName.Get(), frame.LineNumber);
                 }
-                else if (StringUtils::Length(frame.FunctionName) != 0)
+                else if (StringUtils::Length(frame.ModuleName) != 0 && StringUtils::Length(frame.FunctionName) != 0)
                 {
                     LOG(Error, "    at {0}{1}()", moduleName.Get(), functionName.Get());
+                }
+                else if (StringUtils::Length(frame.FunctionName) != 0)
+                {
+                    LOG(Error, "    at {0}0x{1:x}", functionName.Get(), (uint64)frame.ProgramCounter);
                 }
                 else if (StringUtils::Length(frame.ModuleName) != 0)
                 {
