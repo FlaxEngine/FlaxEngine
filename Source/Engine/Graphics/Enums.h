@@ -75,6 +75,11 @@ API_ENUM() enum class RendererType
     /// </summary>
     PS5 = 12,
 
+    /// <summary>
+    /// WebGPU
+    /// </summary>
+    WebGPU = 13,
+
     API_ENUM(Attributes="HideInEditor")
     MAX
 };
@@ -130,6 +135,11 @@ API_ENUM() enum class ShaderProfile
     /// PlayStation 5
     /// </summary>
     PS5 = 8,
+
+    /// <summary>
+    /// WebGPU
+    /// </summary>
+    WebGPU = 9,
 
     API_ENUM(Attributes="HideInEditor")
     MAX

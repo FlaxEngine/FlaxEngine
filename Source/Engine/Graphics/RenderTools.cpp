@@ -58,6 +58,9 @@ const Char* ToString(RendererType value)
     case RendererType::PS5:
         result = TEXT("PS5");
         break;
+    case RendererType::WebGPU:
+        result = TEXT("WebGPU");
+        break;
     default:
         result = TEXT("?");
     }
@@ -95,6 +98,9 @@ const Char* ToString(ShaderProfile value)
         break;
     case ShaderProfile::PS5:
         result = TEXT("PS5");
+        break;
+    case ShaderProfile::WebGPU:
+        result = TEXT("WebGPU");
         break;
     default:
         result = TEXT("?");
@@ -268,6 +274,7 @@ FeatureLevel RenderTools::GetFeatureLevel(ShaderProfile profile)
     case ShaderProfile::GLSL_440:
     case ShaderProfile::GLSL_410:
     case ShaderProfile::Unknown:
+    case ShaderProfile::WebGPU:
         return FeatureLevel::ES2;
     default:
         return FeatureLevel::ES2;

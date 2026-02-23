@@ -176,6 +176,11 @@ bool GraphicsService::Init()
         if (!device)
             device = CreateGPUDevicePS5();
 #endif
+#if GRAPHICS_API_WEBGPU
+        extern GPUDevice* CreateGPUDeviceWebGPU();
+        if (!device)
+            device = CreateGPUDeviceWebGPU();
+#endif
     }
 
     // Null as a fallback
