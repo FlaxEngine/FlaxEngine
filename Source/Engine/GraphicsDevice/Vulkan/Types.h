@@ -2,8 +2,6 @@
 
 #pragma once
 
-#if COMPILE_WITH_VK_SHADER_COMPILER || GRAPHICS_API_VULKAN
-
 #include "Engine/Graphics/PixelFormat.h"
 
 #if GRAPHICS_API_VULKAN
@@ -122,7 +120,12 @@ struct SpirvShaderHeader
         /// <summary>
         /// The raw SPIR-V byte code.
         /// </summary>
-        Raw = 0,
+        SPIRV = 0,
+
+        /// <summary>
+        /// The raw WGSL shader code.
+        /// </summary>
+        WGSL = 1,
     };
 
     /// <summary>
@@ -135,5 +138,3 @@ struct SpirvShaderHeader
     /// </summary>
     SpirvShaderDescriptorInfo DescriptorInfo;
 };
-
-#endif

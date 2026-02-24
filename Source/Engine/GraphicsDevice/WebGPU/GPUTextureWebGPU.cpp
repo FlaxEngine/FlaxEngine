@@ -19,6 +19,7 @@ void GPUTextureViewWebGPU::Create(WGPUTexture texture, WGPUTextureViewDescriptor
         LOG(Error, "Failed to create a view for texture '{}'", GetParent() ? GetParent()->GetName() : StringView::Empty);
 #endif
     }
+    Format = desc ? desc->format : wgpuTextureGetFormat(texture);
 }
 
 void GPUTextureViewWebGPU::Release()
@@ -178,18 +179,22 @@ void GPUTextureWebGPU::InitHandles()
 
         // Init per slice views
         _handlesPerSlice.Resize(Depth(), false);
-        viewDesc.dimension = WGPUTextureViewDimension_2D;
+        //viewDesc.dimension = WGPUTextureViewDimension_2DArray;
         if (_desc.HasPerSliceViews() && IsRenderTarget())
         {
             for (int32 sliceIndex = 0; sliceIndex < Depth(); sliceIndex++)
             {
+                //viewDesc.baseArrayLayer = sliceIndex;
+                //viewDesc.arrayLayerCount = 1;
                 auto& view = _handlesPerSlice[sliceIndex];
                 view.Init(this, format, msaa);
                 view.Create(Texture, &viewDesc);
                 view.DepthSlice = sliceIndex;
             }
         }
-        viewDesc.dimension = _viewDimension;
+        //viewDesc.baseArrayLayer = 0;
+        //viewDesc.arrayLayerCount = MipLevels();
+        //viewDesc.dimension = _viewDimension;
     }
     else if (IsArray())
     {

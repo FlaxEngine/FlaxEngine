@@ -440,6 +440,14 @@ void GPUContextWebGPU::Flush()
         return;
     PROFILE_CPU();
 
+    // End existing pass (if any)
+    if (_renderPass)
+    {
+        wgpuRenderPassEncoderEnd(_renderPass);
+        wgpuRenderPassEncoderRelease(_renderPass);
+    }
+
+    // End commands recording
     WGPUCommandBufferDescriptor commandBufferDesc = WGPU_COMMAND_BUFFER_DESCRIPTOR_INIT;
     WGPUCommandBuffer commandBuffer = wgpuCommandEncoderFinish(Encoder, &commandBufferDesc);
     wgpuCommandEncoderRelease(Encoder);
@@ -706,7 +714,7 @@ void GPUContextWebGPU::OnDrawCall()
                 colorAttachment.clearValue = { clear.RGBA[0], clear.RGBA[1], clear.RGBA[2], clear.RGBA[3] };
             }
             _pipelineKey.MultiSampleCount = (int32)renderTarget->GetMSAA();
-            _pipelineKey.RenderTargetFormats[i] = RenderToolsWebGPU::ToTextureFormat(renderTarget->GetFormat());
+            _pipelineKey.RenderTargetFormats[i] = renderTarget->Format;
         }
         if (_depthStencil)
         {
@@ -738,7 +746,7 @@ void GPUContextWebGPU::OnDrawCall()
                     depthStencilAttachment.stencilClearValue = clear.Stencil;
                 }
             }
-            _pipelineKey.DepthStencilFormat = RenderToolsWebGPU::ToTextureFormat(_depthStencil->GetFormat());
+            _pipelineKey.DepthStencilFormat = _depthStencil->Format;
         }
         else
         {
@@ -752,9 +760,7 @@ void GPUContextWebGPU::OnDrawCall()
 
         // Apply pending state
         if (_stencilRef != 0)
-        {
             wgpuRenderPassEncoderSetStencilReference(_renderPass, _stencilRef);
-        }
         auto scissorRect = _scissorRect;
         // TODO: skip calling this if scissorRect is default (0, 0, attachment width, attachment  height)
         wgpuRenderPassEncoderSetScissorRect(_renderPass, (uint32_t)scissorRect.GetX(), (uint32_t)scissorRect.GetY(), (uint32_t)scissorRect.GetWidth(), (uint32_t)scissorRect.GetHeight());
@@ -780,7 +786,7 @@ void GPUContextWebGPU::OnDrawCall()
         wgpuRenderPassEncoderSetPipeline(_renderPass, pipeline);
         RENDER_STAT_PS_STATE_CHANGE();
     }
-    if (_indexBufferDirty)
+    if (_indexBufferDirty && _indexBuffer.Buffer)
     {
         _indexBufferDirty = false;
         wgpuRenderPassEncoderSetIndexBuffer(_renderPass, _indexBuffer.Buffer, _indexBuffer32Bit ? WGPUIndexFormat_Uint32 : WGPUIndexFormat_Uint16, _indexBuffer.Offset, _indexBuffer.Size);

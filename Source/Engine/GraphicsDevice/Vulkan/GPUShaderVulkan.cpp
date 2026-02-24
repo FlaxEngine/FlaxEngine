@@ -11,7 +11,6 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Serialization/MemoryReadStream.h"
-#include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 
 #if PLATFORM_DESKTOP
@@ -109,7 +108,7 @@ GPUShaderProgram* GPUShaderVulkan::CreateGPUShaderProgram(ShaderStage type, cons
 
     // Extract the SPIR-V bytecode
     BytesContainer spirv;
-    ASSERT(header->Type == SpirvShaderHeader::Types::Raw);
+    ASSERT(header->Type == SpirvShaderHeader::Types::SPIRV);
     spirv.Link(bytecode);
 
     // Create shader module from SPIR-V bytecode

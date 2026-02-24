@@ -8,7 +8,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 
-bool FileBase::ReadAllBytes(const StringView& path, byte* data, int32 length)
+bool FileBase::ReadAllBytes(const StringView& path, void* data, int32 length)
 {
     PROFILE_CPU_NAMED("File::ReadAllBytes");
     ZoneText(*path, path.Length());
@@ -232,7 +232,7 @@ bool FileBase::ReadAllText(const StringView& path, StringAnsi& data)
     return false;
 }
 
-bool FileBase::WriteAllBytes(const StringView& path, const byte* data, int32 length)
+bool FileBase::WriteAllBytes(const StringView& path, const void* data, int32 length)
 {
     PROFILE_CPU_NAMED("File::WriteAllBytes");
     ZoneText(*path, path.Length());

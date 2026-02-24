@@ -19,7 +19,7 @@ void GPUSamplerDescription::Clear()
 {
     Platform::MemoryClear(this, sizeof(GPUSamplerDescription));
     MaxMipLevel = MAX_float;
-    MaxAnisotropy = 1.0f;
+    MaxAnisotropy = 1;
 }
 
 bool GPUSamplerDescription::Equals(const GPUSamplerDescription& other) const

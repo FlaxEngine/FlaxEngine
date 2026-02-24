@@ -39,7 +39,6 @@ GPUVertexLayoutWebGPU::GPUVertexLayoutWebGPU(GPUDeviceWebGPU* device, const Elem
         dst.nextInChain = nullptr;
         dst.format = RenderToolsWebGPU::ToVertexFormat(src.Format);
         dst.offset = src.Offset;
-        dst.shaderLocation = src.Slot;
         if (src.PerInstance)
             Layout.stepMode = WGPUVertexStepMode_Instance;
     }
@@ -360,10 +359,8 @@ bool GPUDeviceWebGPU::Init()
         WGPUDevice Device = nullptr;
     };
     AsyncCallbackWebGPU<WGPURequestDeviceCallbackInfo, DeviceUserData> deviceRequest(WGPU_REQUEST_DEVICE_CALLBACK_INFO_INIT);
-#if GPU_ENABLE_RESOURCE_NAMING
     deviceDesc.label = WEBGPU_STR("Flax Device");
     deviceDesc.defaultQueue.label = WEBGPU_STR("Flax Queue");
-#endif
     deviceRequest.Info.callback = [](WGPURequestDeviceStatus status, WGPUDevice device, WGPUStringView message, WGPU_NULLABLE void* userdata1, WGPU_NULLABLE void* userdata2)
     {
         DeviceUserData& userData = *reinterpret_cast<DeviceUserData*>(userdata1);

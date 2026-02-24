@@ -87,9 +87,11 @@ void GPUSwapChainWebGPU::Present(bool vsync)
 
     // Release the texture
     auto surfaceTexture = _surfaceView.Texture;
-    ASSERT(surfaceTexture);
-    _surfaceView.Release();
-    wgpuTextureRelease(surfaceTexture);
+    if (surfaceTexture)
+    {
+        _surfaceView.Release();
+        wgpuTextureRelease(surfaceTexture);
+    }
 
     // Base
     GPUSwapChain::Present(vsync);
