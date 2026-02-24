@@ -13,6 +13,38 @@ class GPUAdapterWebGPU;
 class GPUSamplerWebGPU;
 
 /// <summary>
+/// Pool for uploading data to GPU buffers. It manages large buffers and suballocates for multiple small updates, minimizing the number of buffer creations and copies.
+/// </summary>
+class GPUDataUploaderWebGPU
+{
+    friend class GPUDeviceWebGPU;
+private:
+    struct Entry
+    {
+        WGPUBuffer Buffer;
+        uint32 Size;
+        uint32 ActiveOffset;
+        uint64 ActiveFrame;
+        WGPUBufferUsage Usage;
+    };
+
+    uint64 _frame = 0;
+    WGPUDevice _device;
+    Array<Entry> _entries;
+
+public:
+    struct Allocation
+    {
+        WGPUBuffer Buffer = nullptr;
+        uint32 Offset = 0;
+    };
+
+    Allocation Allocate(uint32 size, uint32 alignment = 16, WGPUBufferUsage usage = 0);
+    void DrawBegin();
+    void ReleaseGPU();
+};
+
+/// <summary>
 /// Implementation of Graphics Device for Web GPU backend.
 /// </summary>
 class GPUDeviceWebGPU : public GPUDevice
@@ -30,6 +62,8 @@ public:
     WGPUDevice Device = nullptr;
     WGPUQueue Queue = nullptr;
     GPUSamplerWebGPU* DefaultSamplers[6] = {};
+    GPUDataUploaderWebGPU DataUploader;
+    uint32 MinUniformBufferOffsetAlignment = 1;
 
 public:
     // [GPUDeviceDX]
@@ -46,6 +80,7 @@ public:
         return Device;
     }
     bool Init() override;
+    void DrawBegin() override;
     void Dispose() override;
     void WaitForGPU() override;
     bool GetQueryResult(uint64 queryID, uint64& result, bool wait = false) override;

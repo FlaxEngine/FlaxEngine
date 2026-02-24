@@ -41,6 +41,7 @@ GPUContextWebGPU::GPUContextWebGPU(GPUDeviceWebGPU* device)
     , _device(device)
 {
     _vertexBufferNullLayout = WGPU_VERTEX_BUFFER_LAYOUT_INIT;
+    _minUniformBufferOffsetAlignment = device->MinUniformBufferOffsetAlignment;
 }
 
 GPUContextWebGPU::~GPUContextWebGPU()
@@ -309,7 +310,12 @@ void GPUContextWebGPU::UpdateCB(GPUConstantBuffer* cb, const void* data)
     const uint32 size = cbWebGPU->GetSize();
     if (size != 0)
     {
-        wgpuQueueWriteBuffer(_device->Queue, cbWebGPU->Buffer, 0, data, size);
+        // Allocate a chunk of memory in a shared page allocator
+        auto allocation = _device->DataUploader.Allocate(size, _minUniformBufferOffsetAlignment, WGPUBufferUsage_Uniform);
+        cbWebGPU->Allocation = allocation;
+        // TODO: consider holding CPU-side staging buffer and copying data to the GPU buffer in a single batch for all uniforms (before flushing the active command encoder)
+        wgpuQueueWriteBuffer(_device->Queue, allocation.Buffer, allocation.Offset, data, size);
+        _bindGroupDirty = true;
     }
 }
 
@@ -461,9 +467,21 @@ void GPUContextWebGPU::Flush()
 void GPUContextWebGPU::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 size, uint32 offset)
 {
     ASSERT(data);
-    ASSERT(buffer && buffer->GetSize() >= size);
+    ASSERT(buffer && buffer->GetSize() >= size + offset);
     auto bufferWebGPU = (GPUBufferWebGPU*)buffer;
-    wgpuQueueWriteBuffer(_device->Queue, bufferWebGPU->Buffer, offset, data, size);
+    if (bufferWebGPU->IsDynamic())
+    {
+        // Synchronous upload via shared buffer
+        // TODO: test using map/unmap sequence
+        auto allocation = _device->DataUploader.Allocate(size - offset);
+        wgpuQueueWriteBuffer(_device->Queue, allocation.Buffer, allocation.Offset, data, size);
+        wgpuCommandEncoderCopyBufferToBuffer(Encoder, allocation.Buffer, allocation.Offset, bufferWebGPU->Buffer, offset, size);
+    }
+    else
+    {
+        // Efficient upload via queue
+        wgpuQueueWriteBuffer(_device->Queue, bufferWebGPU->Buffer, offset, data, size);
+    }
 }
 
 void GPUContextWebGPU::CopyBuffer(GPUBuffer* dstBuffer, GPUBuffer* srcBuffer, uint32 size, uint32 dstOffset, uint32 srcOffset)

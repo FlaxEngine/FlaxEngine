@@ -10,26 +10,10 @@
 #include "Engine/GraphicsDevice/Vulkan/Types.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 
-GPUConstantBufferWebGPU::GPUConstantBufferWebGPU(GPUDeviceWebGPU* device, uint32 size, WGPUBuffer buffer, const StringView& name) noexcept
+GPUConstantBufferWebGPU::GPUConstantBufferWebGPU(GPUDeviceWebGPU* device, uint32 size, const StringView& name) noexcept
     : GPUResourceWebGPU(device, name)
 {
     _size = _memoryUsage = size;
-    Buffer = buffer;
-}
-
-GPUConstantBufferWebGPU::~GPUConstantBufferWebGPU()
-{
-    if (Buffer)
-        wgpuBufferRelease(Buffer);
-}
-
-void GPUConstantBufferWebGPU::OnReleaseGPU()
-{
-    if (Buffer)
-    {
-        wgpuBufferRelease(Buffer);
-        Buffer = nullptr;
-    }
 }
 
 GPUShaderProgram* GPUShaderWebGPU::CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, Span<byte> bytecode, MemoryReadStream& stream)

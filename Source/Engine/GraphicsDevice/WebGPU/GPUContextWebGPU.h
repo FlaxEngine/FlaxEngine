@@ -43,6 +43,7 @@ private:
 
     GPUDeviceWebGPU* _device;
     WGPUVertexBufferLayout _vertexBufferNullLayout;
+    uint32 _minUniformBufferOffsetAlignment;
 
     // State tracking
     int32 _renderPassDirty : 1;

@@ -14,15 +14,10 @@
 class GPUConstantBufferWebGPU : public GPUResourceWebGPU<GPUConstantBuffer>
 {
 public:
-    GPUConstantBufferWebGPU(GPUDeviceWebGPU* device, uint32 size, WGPUBuffer buffer, const StringView& name) noexcept;
-    ~GPUConstantBufferWebGPU();
+    GPUConstantBufferWebGPU(GPUDeviceWebGPU* device, uint32 size, const StringView& name) noexcept;
 
 public:
-    WGPUBuffer Buffer;
-
-public:
-    // [GPUResourceWebGPU]
-    void OnReleaseGPU() final override;
+    GPUDataUploaderWebGPU::Allocation Allocation;
 };
 
 /// <summary>

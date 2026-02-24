@@ -19,6 +19,7 @@
 #include "Engine/Core/Collections/Sorting.h"
 #endif
 #include "Engine/Graphics/PixelFormatExtensions.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 #include <emscripten/emscripten.h>
 
@@ -42,6 +43,81 @@ GPUVertexLayoutWebGPU::GPUVertexLayoutWebGPU(GPUDeviceWebGPU* device, const Elem
         if (src.PerInstance)
             Layout.stepMode = WGPUVertexStepMode_Instance;
     }
+}
+
+GPUDataUploaderWebGPU::Allocation GPUDataUploaderWebGPU::Allocate(uint32 size, uint32 alignment, WGPUBufferUsage usage)
+{
+    // Find a free buffer from the current frame
+    for (auto& e : _entries)
+    {
+        uint32 alignedOffset = Math::AlignUp(e.ActiveOffset, alignment);
+        if (e.ActiveFrame == _frame && (usage ? (e.Usage & usage) == usage : e.Usage == WGPUBufferUsage_CopyDst) && alignedOffset + size <= e.Size)
+        {
+            e.ActiveOffset = alignedOffset + size;
+            return { e.Buffer, alignedOffset };
+        }
+    }
+
+    // Find an unused buffer from the old frames
+    for (auto& e : _entries)
+    {
+        if (e.ActiveFrame < _frame - 3 && (e.Usage & usage) == usage && size <= e.Size)
+        {
+            e.ActiveOffset = size;
+            e.ActiveFrame = _frame;
+            return { e.Buffer, 0 };
+        }
+    }
+
+    // Allocate a new buffer
+    {
+        WGPUBufferDescriptor desc = WGPU_BUFFER_DESCRIPTOR_INIT;
+#if GPU_ENABLE_RESOURCE_NAMING
+        if (usage & WGPUBufferUsage_Uniform)
+            desc.label = WEBGPU_STR("Upload Uniforms");
+        else
+            desc.label = WEBGPU_STR("Upload Buffer");
+#endif
+        desc.size = Math::Max<uint32>(16 * 1024, Math::RoundUpToPowerOf2(size)); // Allocate larger pages for good suballocations
+        desc.usage = WGPUBufferUsage_CopyDst | usage;
+        WGPUBuffer buffer = wgpuDeviceCreateBuffer(_device, &desc);
+        if (buffer == nullptr)
+        {
+            LOG(Error, "Failed to create buffer of size {} bytes", size);
+            return { nullptr, 0 };
+        }
+        _entries.Insert(0, { buffer, (uint32)desc.size, size, _frame, desc.usage });
+        PROFILE_MEM_INC(GraphicsBuffers, desc.usage);
+        return { buffer, 0 };
+    }
+}
+
+void GPUDataUploaderWebGPU::DrawBegin()
+{
+    // Free old buffers and recycle unused ones
+    uint64 frame = Engine::FrameCount;
+    for (int32 i = _entries.Count() - 1; i >= 0; i--)
+    {
+        auto& e = _entries[i];
+        if (frame - e.ActiveFrame > 100)
+        {
+            wgpuBufferRelease(e.Buffer);
+            PROFILE_MEM_DEC(GraphicsBuffers, e.Size);
+            _entries.RemoveAt(i);
+        }
+    }
+    _frame = frame;
+}
+
+void GPUDataUploaderWebGPU::ReleaseGPU()
+{
+    // Free data
+    for (auto& e : _entries)
+    {
+        wgpuBufferRelease(e.Buffer);
+        PROFILE_MEM_DEC(GraphicsBuffers, e.Size);
+    }
+    _entries.Clear();
 }
 
 GPUDeviceWebGPU::GPUDeviceWebGPU(WGPUInstance instance, GPUAdapterWebGPU* adapter)
@@ -105,6 +181,7 @@ bool GPUDeviceWebGPU::Init()
     WGPULimits limits = WGPU_LIMITS_INIT;
     if (wgpuAdapterGetLimits(Adapter->Adapter, &limits) == WGPUStatus_Success)
     {
+        MinUniformBufferOffsetAlignment = limits.minUniformBufferOffsetAlignment;
         Limits.HasDepthClip = features.Contains(WGPUFeatureName_DepthClipControl);
         Limits.HasReadOnlyDepth = true;
         Limits.MaximumTexture1DSize = Math::Min<int32>(GPU_MAX_TEXTURE_SIZE, limits.maxTextureDimension1D);
@@ -400,11 +477,19 @@ bool GPUDeviceWebGPU::Init()
 #undef INIT_SAMPLER
 
     // Setup commands processing
+    DataUploader._device = Device;
     Queue = wgpuDeviceGetQueue(Device);
     _mainContext = New<GPUContextWebGPU>(this);
 
     _state = DeviceState::Ready;
     return GPUDevice::Init();
+}
+
+void GPUDeviceWebGPU::DrawBegin()
+{
+    GPUDevice::DrawBegin();
+
+    DataUploader.DrawBegin();
 }
 
 GPUDeviceWebGPU::~GPUDeviceWebGPU()
@@ -479,6 +564,7 @@ void GPUDeviceWebGPU::Dispose()
     preDispose();
 
     // Clear device resources
+    DataUploader.ReleaseGPU();
     SAFE_DELETE_GPU_RESOURCES(DefaultSamplers);
     SAFE_DELETE(_mainContext);
     SAFE_DELETE(Adapter);
@@ -556,23 +642,7 @@ GPUSwapChain* GPUDeviceWebGPU::CreateSwapChain(Window* window)
 GPUConstantBuffer* GPUDeviceWebGPU::CreateConstantBuffer(uint32 size, const StringView& name)
 {
     PROFILE_MEM(GraphicsShaders);
-    WGPUBuffer buffer = nullptr;
-    if (size)
-    {
-        WGPUBufferDescriptor desc = WGPU_BUFFER_DESCRIPTOR_INIT;
-#if GPU_ENABLE_RESOURCE_NAMING
-        desc.label = WEBGPU_STR("Uniform");
-#endif
-        desc.size = size;
-        desc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform;
-        buffer = wgpuDeviceCreateBuffer(Device, &desc);
-        if (buffer == nullptr)
-        {
-            LOG(Error, "Failed to create uniform buffer '{}' of size {} bytes", name, size);
-            return nullptr;
-        }
-    }
-    return New<GPUConstantBufferWebGPU>(this, size, buffer, name);
+    return New<GPUConstantBufferWebGPU>(this, size, name);
 }
 
 #endif
