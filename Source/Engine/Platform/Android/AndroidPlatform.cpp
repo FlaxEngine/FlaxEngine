@@ -992,11 +992,16 @@ void AndroidPlatform::Exit()
 
 #if !BUILD_RELEASE
 
-void AndroidPlatform::Log(const StringView& msg)
+void AndroidPlatform::Log(const StringView& msg, int32 logType)
 {
     const StringAsANSI<512> msgAnsi(*msg, msg.Length());
     const char* str = msgAnsi.Get();
-    __android_log_write(ANDROID_LOG_INFO, "Flax", str);
+    int prio = ANDROID_LOG_INFO;
+    if (logType == (int32)LogType::Warning)
+        prio = ANDROID_LOG_WARN;
+    if (logType == (int32)LogType::Error)
+        prio = ANDROID_LOG_ERROR;
+    __android_log_write(prio, "Flax", str);
 }
 
 #endif

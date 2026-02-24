@@ -149,9 +149,7 @@ void WebPlatform::GetUTCTime(int32& year, int32& month, int32& dayOfWeek, int32&
     millisecond = (int64)(emscripten_get_now() - DateStart) % 1000; // Fake it based on other timer
 }
 
-#if !BUILD_RELEASE
-
-void WebPlatform::Log(const StringView& msg)
+void WebPlatform::Log(const StringView& msg, int32 logType)
 {
     const StringAsANSI<512> msgAnsi(*msg, msg.Length());
 
@@ -163,8 +161,15 @@ void WebPlatform::Log(const StringView& msg)
             buffer[i] = 'p';
     }
 
-    emscripten_log(EM_LOG_CONSOLE, buffer);
+    int flags = EM_LOG_CONSOLE;
+    if (logType == (int32)LogType::Warning)
+        flags |= EM_LOG_WARN;
+    if (logType == (int32)LogType::Error)
+        flags |= EM_LOG_ERROR;
+    emscripten_log(flags, buffer);
 }
+
+#if !BUILD_RELEASE
 
 bool WebPlatform::IsDebuggerPresent()
 {

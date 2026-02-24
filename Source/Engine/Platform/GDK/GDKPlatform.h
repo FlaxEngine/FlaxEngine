@@ -57,7 +57,7 @@ public:
     static void BeforeExit();
     static void Exit();
 #if !BUILD_RELEASE
-    static void Log(const StringView& msg);
+    static void Log(const StringView& msg, int32 logType = 1);
     static bool IsDebuggerPresent();
 #endif
     static String GetSystemName();

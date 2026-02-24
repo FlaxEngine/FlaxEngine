@@ -874,7 +874,7 @@ void WindowsPlatform::Exit()
 
 #if !BUILD_RELEASE
 
-void WindowsPlatform::Log(const StringView& msg)
+void WindowsPlatform::Log(const StringView& msg, int32 logType)
 {
     Char buffer[512];
     Char* str;

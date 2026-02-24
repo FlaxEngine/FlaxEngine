@@ -177,7 +177,8 @@ namespace Log
         /// Writes a custom message to the log.
         /// </summary>
         /// <param name="msg">The message text.</param>
-        static void Write(const StringView& msg);
+        /// <param name="type">The message type.</param>
+        static void Write(const StringView& msg, LogType type = LogType::Info);
 
         /// <summary>
         /// Writes an exception formatted message to log file.

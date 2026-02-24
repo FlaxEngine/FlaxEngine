@@ -361,7 +361,7 @@ void ApplePlatform::GetUTCTime(int32& year, int32& month, int32& dayOfWeek, int3
 
 #if !BUILD_RELEASE
 
-void ApplePlatform::Log(const StringView& msg)
+void ApplePlatform::Log(const StringView& msg, int32 logType)
 {
 #if !USE_EDITOR
     NSLog(@"%s", StringAsANSI<>(*msg, msg.Length()).Get());

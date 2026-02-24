@@ -116,7 +116,7 @@ bool Log::Logger::Init()
     return false;
 }
 
-void Log::Logger::Write(const StringView& msg)
+void Log::Logger::Write(const StringView& msg, LogType type)
 {
     const auto ptr = msg.Get();
     const auto length = msg.Length();
@@ -152,7 +152,7 @@ void Log::Logger::Write(const StringView& msg)
 
 #if !BUILD_RELEASE
     // Send message to platform logging
-    Platform::Log(msg);
+    Platform::Log(msg, (int32)type);
 #endif
 
     // Write message to log file
@@ -270,7 +270,7 @@ void Log::Logger::Write(LogType type, const StringView& msg)
     ProcessLogMessage(type, msg, w);
 
     // Log formatted message
-    Write(StringView(w.data(), (int32)w.size()));
+    Write(StringView(w.data(), (int32)w.size()), type);
 
     // Fire events
     OnMessage(type, msg);

@@ -483,7 +483,7 @@ void GDKPlatform::Exit()
 
 #if !BUILD_RELEASE
 
-void GDKPlatform::Log(const StringView& msg)
+void GDKPlatform::Log(const StringView& msg, int32 logType)
 {
     Char buffer[512];
     Char* str;

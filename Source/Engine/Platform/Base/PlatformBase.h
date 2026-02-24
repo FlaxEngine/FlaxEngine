@@ -540,7 +540,8 @@ public:
     /// Logs the specified message to the platform-dependant logging stream.
     /// </summary>
     /// <param name="msg">The message.</param>
-    static void Log(const StringView& msg);
+    /// <param name="logType">The type of the log matching LogType enum. 1 - log, 2 - warning, 4 - error</param>
+    static void Log(const StringView& msg, int32 logType = 1);
 
     /// <summary>
     /// Checks whenever program is running with debugger attached.

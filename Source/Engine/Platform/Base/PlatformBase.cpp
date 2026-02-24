@@ -521,7 +521,7 @@ void PlatformBase::Fatal(const StringView& msg, FatalErrorType error)
     Fatal(msg, nullptr, error);
 }
 
-void PlatformBase::Log(const StringView& msg)
+void PlatformBase::Log(const StringView& msg, int32 logType)
 {
 }
 

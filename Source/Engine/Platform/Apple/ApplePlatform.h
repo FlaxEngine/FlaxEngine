@@ -82,7 +82,7 @@ public:
     static void GetSystemTime(int32& year, int32& month, int32& dayOfWeek, int32& day, int32& hour, int32& minute, int32& second, int32& millisecond);
     static void GetUTCTime(int32& year, int32& month, int32& dayOfWeek, int32& day, int32& hour, int32& minute, int32& second, int32& millisecond);
 #if !BUILD_RELEASE
-    static void Log(const StringView& msg);
+    static void Log(const StringView& msg, int32 logType = 1);
     static bool IsDebuggerPresent();
 #endif
     static bool Init();
