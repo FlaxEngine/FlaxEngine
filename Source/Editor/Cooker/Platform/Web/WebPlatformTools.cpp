@@ -43,7 +43,7 @@ DotNetAOTModes WebPlatformTools::UseAOT() const
 
 PixelFormat WebPlatformTools::GetTextureFormat(CookingData& data, TextureBase* texture, PixelFormat format)
 {
-    // TODO: texture compression for Web (eg. ASTC for mobile and BC for others?)
+    // Bundle raw textures
     return PixelFormatExtensions::FindUncompressedFormat(format);
 }
 

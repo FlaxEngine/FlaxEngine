@@ -166,8 +166,14 @@ WGPURenderPipeline GPUPipelineStateWebGPU::GetPipeline(const Key& key)
     for (int32 i = 0; i < _fragmentDesc.targetCount; i++)
         _colorTargets[i].format = (WGPUTextureFormat)key.RenderTargetFormats[i];
     WGPUVertexBufferLayout buffers[GPU_MAX_VB_BINDED];
+    PipelineDesc.vertex.bufferCount = key.VertexBufferCount;
+    int32 shaderLocation = 0;
     for (int32 i = 0; i < PipelineDesc.vertex.bufferCount; i++)
+    {
         buffers[i] = *key.VertexBuffers[i];
+        for (int32 j = 0; j < buffers[i].attributeCount; j++)
+            ((WGPUVertexAttribute&)buffers[i].attributes[j]).shaderLocation = shaderLocation++;
+    }
     PipelineDesc.vertex.buffers = buffers;
 
     // Create object
@@ -196,13 +202,10 @@ bool GPUPipelineStateWebGPU::Init(const Description& desc)
     if (IsValid())
         OnReleaseGPU();
 
-    // Cache shaders
-    VS = (GPUShaderProgramVSWebGPU*)desc.VS;
-    PS = (GPUShaderProgramPSWebGPU*)desc.PS;
-
     // Initialize description (without dynamic state from context such as render targets, vertex buffers, etc.)
     PipelineDesc = WGPU_RENDER_PIPELINE_DESCRIPTOR_INIT;
 #if GPU_ENABLE_RESOURCE_NAMING
+    DebugDesc = desc;
     GetDebugName(_debugName);
     PipelineDesc.label = { _debugName.Get(), (size_t)_debugName.Count() - 1 };
 #endif
@@ -257,17 +260,24 @@ bool GPUPipelineStateWebGPU::Init(const Description& desc)
             writeMask |= WGPUColorWriteMask_Blue;
         if (EnumHasAllFlags(desc.BlendMode.RenderTargetWriteMask, BlendingMode::ColorWrite::Alpha))
             writeMask |= WGPUColorWriteMask_Alpha;
-    }
-    for (auto& e : _colorTargets)
+    }    for (auto& e : _colorTargets)
     {
         e = WGPU_COLOR_TARGET_STATE_INIT;
-        e.blend = &_blendState;
+        if (desc.BlendMode.BlendEnable)
+            e.blend = &_blendState;
         e.writeMask = writeMask;
     }
 
+    // Cache shaders
+    VS = (GPUShaderProgramVSWebGPU*)desc.VS;
+    PipelineDesc.vertex.module = VS->ShaderModule;
+    PS = (GPUShaderProgramPSWebGPU*)desc.PS;
+    if (PS)
+    {
+        _fragmentDesc.module = PS->ShaderModule;
+    }
+
     // TODO: set resources binding into PipelineDesc.layout
-    // TODO: set vertex shader into PipelineDesc.vertex
-    // TODO: set pixel shader into PipelineDesc.fragment
 
     _memoryUsage = 1;
     return GPUPipelineState::Init(desc);

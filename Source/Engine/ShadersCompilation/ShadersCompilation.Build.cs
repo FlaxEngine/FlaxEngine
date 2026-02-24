@@ -59,6 +59,8 @@ public class ShadersCompilation : EngineModule
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
 
+        if (ShaderCompilerWebGPU.Use(options))
+            options.PrivateDependencies.Add("ShaderCompilerWebGPU");
         if (Sdk.HasValid("PS4Sdk"))
             options.PrivateDependencies.Add("ShaderCompilerPS4");
         if (Sdk.HasValid("PS5Sdk"))

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Graphics/GPUPipelineState.h"
 #include "GPUShaderProgramWebGPU.h"
 #include "GPUDeviceWebGPU.h"

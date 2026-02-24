@@ -577,7 +577,7 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
     case BuildPlatform::Web:
     {
         const char* platformDefineName = "PLATFORM_WEB";
-        // TODO: compile shaders for WebGPU
+        COMPILE_PROFILE(WebGPU, SHADER_FILE_CHUNK_INTERNAL_GENERIC_CACHE);
         break;
     }
 #endif

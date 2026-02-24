@@ -42,6 +42,9 @@
 #if COMPILE_WITH_VK_SHADER_COMPILER
 #include "Vulkan/ShaderCompilerVulkan.h"
 #endif
+#if COMPILE_WITH_WEBGPU_SHADER_COMPILER
+#include "WebGPU/ShaderCompilerWebGPU.h"
+#endif
 #if COMPILE_WITH_PS4_SHADER_COMPILER
 #include "Platforms/PS4/Engine/ShaderCompilerPS4/ShaderCompilerPS4.h"
 #endif
@@ -159,7 +162,7 @@ bool ShadersCompilation::Compile(ShaderCompilationOptions& options)
         return true;
     }
     const int32 shadersCount = meta.GetShadersCount();
-    if (shadersCount == 0)
+    if (shadersCount == 0 && featureLevel > FeatureLevel::ES2)
     {
         LOG(Warning, "Shader has no valid functions.");
     }
@@ -253,6 +256,11 @@ ShaderCompiler* ShadersCompilation::RequestCompiler(ShaderProfile profile, Platf
 #if COMPILE_WITH_VK_SHADER_COMPILER
     case ShaderProfile::Vulkan_SM5:
         compiler = New<ShaderCompilerVulkan>(profile);
+        break;
+#endif
+#if COMPILE_WITH_WEBGPU_SHADER_COMPILER
+    case ShaderProfile::WebGPU:
+        compiler = New<ShaderCompilerWebGPU>(profile);
         break;
 #endif
 #if COMPILE_WITH_PS4_SHADER_COMPILER

@@ -96,7 +96,7 @@ ShaderCompilerVulkan::~ShaderCompilerVulkan()
 // @formatter:off
 const TBuiltInResource DefaultTBuiltInResource =
 {
-    /* .MaxLights = */ 32,
+    /* .MaxLights = */ 0,
     /* .MaxClipPlanes = */ 6,
     /* .MaxTextureUnits = */ 32,
     /* .MaxTextureCoords = */ 32,
@@ -589,7 +589,6 @@ bool ShaderCompilerVulkan::CompileShader(ShaderFunctionMeta& meta, WritePermutat
     // Prepare
     if (WriteShaderFunctionBegin(_context, meta))
         return true;
-    auto options = _context->Options;
     auto type = meta.GetStage();
 
     // Prepare
@@ -669,9 +668,9 @@ bool ShaderCompilerVulkan::CompileShader(ShaderFunctionMeta& meta, WritePermutat
         glslang::TProgram program;
         shader.setEntryPoint(meta.Name.Get());
         shader.setSourceEntryPoint(meta.Name.Get());
-        int lengths = options->SourceLength - 1;
+        int lengths = _context->Options->SourceLength - 1;
         const char* names = _context->TargetNameAnsi;
-        shader.setStringsWithLengthsAndNames(&options->Source, &lengths, &names, 1);
+        shader.setStringsWithLengthsAndNames(&_context->Options->Source, &lengths, &names, 1);
         const int defaultVersion = 450;
         std::string preamble;
         for (int32 i = 0; i < _macros.Count() - 1; i++)
@@ -687,14 +686,8 @@ bool ShaderCompilerVulkan::CompileShader(ShaderFunctionMeta& meta, WritePermutat
             preamble.append("\n");
         }
         shader.setPreamble(preamble.c_str());
-        shader.setInvertY(true);
-        //shader.setAutoMapLocations(true);
-        //shader.setAutoMapBindings(true);
-        //shader.setShiftBinding(glslang::TResourceType::EResUav, 500);
-        shader.setHlslIoMapping(true);
         shader.setEnvInput(glslang::EShSourceHlsl, lang, glslang::EShClientVulkan, defaultVersion);
-        shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_0);
-        shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_0);
+        InitParsing(_context, shader);
         if (!shader.parse(&DefaultTBuiltInResource, defaultVersion, false, messages, includer))
         {
             const auto msg = shader.getInfoLog();
@@ -899,16 +892,7 @@ bool ShaderCompilerVulkan::CompileShader(ShaderFunctionMeta& meta, WritePermutat
         std::vector<unsigned> spirv;
         spv::SpvBuildLogger logger;
         glslang::SpvOptions spvOptions;
-        spvOptions.generateDebugInfo = false;
-        spvOptions.disassemble = false;
-        spvOptions.disableOptimizer = options->NoOptimize;
-        spvOptions.optimizeSize = !options->NoOptimize;
-        spvOptions.stripDebugInfo = !options->GenerateDebugData;
-#if BUILD_DEBUG
-        spvOptions.validate = true;
-#else
-        spvOptions.validate = false;
-#endif
+        InitCodegen(_context, spvOptions);
         glslang::GlslangToSpv(*program.getIntermediate(lang), spirv, &logger, &spvOptions);
         const std::string spirvLogOutput = logger.getAllMessages();
         if (!spirvLogOutput.empty())
@@ -931,10 +915,8 @@ bool ShaderCompilerVulkan::CompileShader(ShaderFunctionMeta& meta, WritePermutat
         }
 #endif
 
-        int32 spirvBytesCount = (int32)spirv.size() * sizeof(unsigned);
-        header.Type = SpirvShaderHeader::Types::Raw;
 
-        if (WriteShaderFunctionPermutation(_context, meta, permutationIndex, bindings, &header, sizeof(header), &spirv[0], spirvBytesCount))
+        if (Write(_context, meta, permutationIndex, bindings, header, spirv))
             return true;
 
         if (customDataWrite && customDataWrite(_context, meta, permutationIndex, _macros, additionalData))
@@ -954,6 +936,34 @@ bool ShaderCompilerVulkan::OnCompileBegin()
     // TODO: handle options->TreatWarningsAsErrors
 
     return false;
+}
+
+void ShaderCompilerVulkan::InitParsing(ShaderCompilationContext* context, glslang::TShader& shader)
+{
+    shader.setInvertY(true);
+    //shader.setAutoMapLocations(true);
+    //shader.setAutoMapBindings(true);
+    //shader.setShiftBinding(glslang::TResourceType::EResUav, 500);
+    shader.setHlslIoMapping(true);
+    shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_0);
+    shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_0);
+}
+
+void ShaderCompilerVulkan::InitCodegen(ShaderCompilationContext* context, glslang::SpvOptions& spvOptions)
+{
+    spvOptions.generateDebugInfo = false;
+    spvOptions.disassemble = false;
+    spvOptions.disableOptimizer = context->Options->NoOptimize;
+    spvOptions.optimizeSize = !context->Options->NoOptimize;
+    spvOptions.stripDebugInfo = !context->Options->GenerateDebugData;
+    spvOptions.validate = BUILD_DEBUG;
+}
+
+bool ShaderCompilerVulkan::Write(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const ShaderBindings& bindings, struct SpirvShaderHeader& header, std::vector<unsigned int>& spirv)
+{
+    int32 spirvBytesCount = (int32)spirv.size() * sizeof(unsigned);
+    header.Type = SpirvShaderHeader::Types::SPIRV;
+    return WriteShaderFunctionPermutation(_context, meta, permutationIndex, bindings, &header, sizeof(header), &spirv[0], spirvBytesCount);
 }
 
 #endif
