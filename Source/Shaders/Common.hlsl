@@ -54,7 +54,7 @@
 #define SHADING_MODEL_FOLIAGE 3
 
 // Detect feature level support
-#if FEATURE_LEVEL >= FEATURE_LEVEL_SM5
+#if FEATURE_LEVEL >= FEATURE_LEVEL_SM5 || defined(WGSL)
 #define CAN_USE_GATHER 1
 #else
 #define CAN_USE_GATHER 0
@@ -73,6 +73,13 @@
 #define CAN_USE_TESSELLATION 1
 #else
 #define CAN_USE_TESSELLATION 0
+#endif
+#if defined(WGSL)
+// Wrap not supported read-only Buffer binded as shader resource into StructuredBuffer to be used as storage on WebGPU
+#define CAN_USE_TYPED_BUFFER_LOADS 0
+#define Buffer StructuredBuffer
+#else
+#define CAN_USE_TYPED_BUFFER_LOADS 1
 #endif
 
 // Compiler attributes

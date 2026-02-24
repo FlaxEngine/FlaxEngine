@@ -263,6 +263,7 @@ bool EyeAdaptationPass::setupResources()
 
     // Create pipeline stages
     GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+    psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::Red;
     if (!_psLuminanceMap->IsValid())
     {
         psDesc.PS = shader->GetPS("PS_LuminanceMap");

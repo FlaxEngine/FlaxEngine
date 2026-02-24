@@ -97,14 +97,14 @@ ObjectData LoadObject(Buffer<float4> objectsBuffer, uint objectIndex)
     // This must match ShaderObjectData::Store
     objectIndex *= 8;
     ObjectData object = (ObjectData)0;
-    float4 vector0 = objectsBuffer.Load(objectIndex + 0);
-    float4 vector1 = objectsBuffer.Load(objectIndex + 1);
-    float4 vector2 = objectsBuffer.Load(objectIndex + 2);
-    float4 vector3 = objectsBuffer.Load(objectIndex + 3);
-    float4 vector4 = objectsBuffer.Load(objectIndex + 4);
-    float4 vector5 = objectsBuffer.Load(objectIndex + 5);
-    float4 vector6 = objectsBuffer.Load(objectIndex + 6);
-    float4 vector7 = objectsBuffer.Load(objectIndex + 7);
+    float4 vector0 = objectsBuffer[objectIndex + 0];
+    float4 vector1 = objectsBuffer[objectIndex + 1];
+    float4 vector2 = objectsBuffer[objectIndex + 2];
+    float4 vector3 = objectsBuffer[objectIndex + 3];
+    float4 vector4 = objectsBuffer[objectIndex + 4];
+    float4 vector5 = objectsBuffer[objectIndex + 5];
+    float4 vector6 = objectsBuffer[objectIndex + 6];
+    float4 vector7 = objectsBuffer[objectIndex + 7];
     object.WorldMatrix[0] = float4(vector0.xyz, 0.0f);
     object.WorldMatrix[1] = float4(vector1.xyz, 0.0f);
     object.WorldMatrix[2] = float4(vector2.xyz, 0.0f);

@@ -10,6 +10,7 @@
 
 // Disable Volumetric Fog if is not supported
 #if VOLUMETRIC_FOG && !CAN_USE_COMPUTE_SHADER
+#undef VOLUMETRIC_FOG
 #define VOLUMETRIC_FOG 0
 #endif
 

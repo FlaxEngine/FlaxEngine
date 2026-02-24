@@ -21,9 +21,9 @@ float Dummy1;
 
 META_CB_END
 
-float AdaptLuminance(float currentLum, Texture2D previousLuminance)
+float AdaptLuminance(float currentLum, Texture2D<float> previousLuminance)
 {
-	float previousLum = previousLuminance.Load(int3(0, 0, 0)).x;
+	float previousLum = previousLuminance.Load(int3(0, 0, 0));
 
 	// Adapt the luminance using Pattanaik's technique
 	float delta = currentLum - previousLum;
@@ -40,7 +40,7 @@ float AdaptLuminance(float currentLum, Texture2D previousLuminance)
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_Manual(Quad_VS2PS input) : SV_Target
 {
-	return PreExposure.xxxx; 
+	return PreExposure.xxxx;
 }
 
 #endif
@@ -51,7 +51,7 @@ Texture2D SceneColor : register(t0);
 
 // Creates the luminance map for the scene
 META_PS(true, FEATURE_LEVEL_ES2)
-float4 PS_LuminanceMap(Quad_VS2PS input) : SV_Target
+float PS_LuminanceMap(Quad_VS2PS input) : SV_Target
 {
 	// Sample the input
 	float3 color = SceneColor.Sample(SamplerLinearClamp, input.TexCoord).rgb;
@@ -60,35 +60,35 @@ float4 PS_LuminanceMap(Quad_VS2PS input) : SV_Target
 	float luminance = Luminance(color);
 
 	// Clamp to avoid artifacts from exceeding fp16
-	return clamp(luminance, 1e-4, 60000.0f).xxxx;
+	return clamp(luminance, 1e-4, 60000.0f);
 }
 
 #endif
 
 #ifdef _PS_BlendLuminance
 
-Texture2D CurrentLuminance : register(t0);
-Texture2D PreviousLuminance : register(t1);
+Texture2D<float> CurrentLuminance : register(t0);
+Texture2D<float> PreviousLuminance : register(t1);
 
 // Slowly adjusts the scene luminance based on the previous scene luminance
 META_PS(true, FEATURE_LEVEL_ES2)
-float4 PS_BlendLuminance(Quad_VS2PS input) : SV_Target
+float PS_BlendLuminance(Quad_VS2PS input) : SV_Target
 {
-	float currentLum = CurrentLuminance.Load(int3(0, 0, 0)).x;
-	return AdaptLuminance(currentLum, PreviousLuminance).xxxx;
+	float currentLum = CurrentLuminance.Load(int3(0, 0, 0));
+	return AdaptLuminance(currentLum, PreviousLuminance);
 }
 
 #endif
 
 #ifdef _PS_ApplyLuminance
 
-Texture2D AverageLuminance : register(t0);
+Texture2D<float> AverageLuminance : register(t0);
 
 // Applies the luminance to the scene color (using multiply blending mode)
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_ApplyLuminance(Quad_VS2PS input) : SV_Target
 {
-	float averageLuminance = AverageLuminance.Load(int3(0, 0, 0)).x;
+	float averageLuminance = AverageLuminance.Load(int3(0, 0, 0));
 	float exposure = 1.0f / averageLuminance;
 	return float4((PreExposure * exposure).xxx, 1);
 }
@@ -101,7 +101,7 @@ float4 PS_ApplyLuminance(Quad_VS2PS input) : SV_Target
 #define HISTOGRAM_SIZE 64
 
 StructuredBuffer<uint> HistogramBuffer : register(t0);
-Texture2D PreviousLuminance : register(t1);
+Texture2D<float> PreviousLuminance : register(t1);
 
 float ComputeLuminanceFromHistogramPosition(float histogramPosition)
 {
@@ -148,10 +148,10 @@ float GetAverageLuminance()
 
 // Samples evaluates the scene color luminance based on the histogram
 META_PS(true, FEATURE_LEVEL_ES2)
-float4 PS_Histogram(Quad_VS2PS input) : SV_Target
+float PS_Histogram(Quad_VS2PS input) : SV_Target
 {
 	float currentLum = GetAverageLuminance();
-	return AdaptLuminance(currentLum, PreviousLuminance).xxxx;
+	return AdaptLuminance(currentLum, PreviousLuminance);
 }
 
 #endif
