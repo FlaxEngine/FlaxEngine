@@ -829,7 +829,6 @@ bool AudioBackendOAL::Base_Init()
     }
 
     // Init
-    Base_SetDopplerFactor(AudioSettings::Get()->DopplerFactor);
     alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED); // Default attenuation model
     int32 clampedIndex = Math::Clamp(activeDeviceIndex, -1, Audio::Devices.Count() - 1);
     if (clampedIndex == Audio::GetActiveDeviceIndex())
@@ -841,6 +840,7 @@ bool AudioBackendOAL::Base_Init()
     if (ALC::IsExtensionSupported("AL_SOFT_source_spatialize"))
         ALC::Features = EnumAddFlags(ALC::Features, FeatureFlags::SpatialMultiChannel);
 #endif
+    Base_SetDopplerFactor(AudioSettings::Get()->DopplerFactor);
     ALC::Inited = true;
 
     // Log service info

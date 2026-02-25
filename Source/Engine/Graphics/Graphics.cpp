@@ -28,6 +28,7 @@ Quality Graphics::GIQuality = Quality::High;
 bool Graphics::GICascadesBlending = false;
 PostProcessSettings Graphics::PostProcessSettings;
 bool Graphics::SpreadWorkload = true;
+float Graphics::Shadows::MinObjectPixelSize = 2.0f;
 bool Graphics::PostProcessing::ColorGradingVolumeLUT = true;
 
 #if GRAPHICS_API_NULL
