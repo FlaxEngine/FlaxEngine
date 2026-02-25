@@ -71,11 +71,13 @@ bool GPUBufferWebGPU::OnInit()
     switch (_desc.Usage)
     {
     case GPUResourceUsage::Default:
-        if (!_desc.InitData)
-            bufferDesc.usage |= WGPUBufferUsage_CopyDst;
+        bufferDesc.usage |= WGPUBufferUsage_CopyDst;
         break;
     case GPUResourceUsage::Dynamic:
-        bufferDesc.usage |= WGPUBufferUsage_MapWrite;
+        if (bufferDesc.usage == 0) // WebGPU doesn't allow to map-write Index/Vertex/Storage buffers
+            bufferDesc.usage = WGPUBufferUsage_MapWrite;
+        else
+            bufferDesc.usage |= WGPUBufferUsage_CopyDst;
         break;
     case GPUResourceUsage::StagingUpload:
         bufferDesc.usage |= WGPUBufferUsage_MapWrite | WGPUBufferUsage_CopySrc;
@@ -88,18 +90,23 @@ bool GPUBufferWebGPU::OnInit()
         break;
     }
     bufferDesc.size = _desc.Size;
-    bufferDesc.mappedAtCreation = _desc.InitData != nullptr;
+    bufferDesc.mappedAtCreation = _desc.InitData != nullptr && (bufferDesc.usage & WGPUBufferUsage_MapWrite);
     Buffer = wgpuDeviceCreateBuffer(_device->Device, &bufferDesc);
     if (!Buffer)
         return true;
     _memoryUsage = _desc.Size;
+    Usage = bufferDesc.usage;
 
     // Initialize with a data if provided
-    if (_desc.InitData)
+    if (bufferDesc.mappedAtCreation)
     {
         //wgpuBufferWriteMappedRange(Buffer, 0, _desc.InitData, _desc.Size);
         Platform::MemoryCopy(wgpuBufferGetMappedRange(Buffer, 0, _desc.Size), _desc.InitData, _desc.Size);
         wgpuBufferUnmap(Buffer);
+    }
+    else if (_desc.InitData)
+    {
+        wgpuQueueWriteBuffer(_device->Queue, Buffer, 0, _desc.InitData, _desc.Size);
     }
 
     // Create view

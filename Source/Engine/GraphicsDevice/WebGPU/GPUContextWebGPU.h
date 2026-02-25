@@ -44,6 +44,9 @@ private:
     GPUDeviceWebGPU* _device;
     WGPUVertexBufferLayout _vertexBufferNullLayout;
     uint32 _minUniformBufferOffsetAlignment;
+    Array<WGPUBindGroupEntry> _bindGroupEntries;
+    Array<uint32> _dynamicOffsets;
+    Array<WGPUBindGroup> _unusedBindGroups;
 
     // State tracking
     int32 _renderPassDirty : 1;
@@ -86,6 +89,9 @@ private:
     void ManualClear(const PendingClear& clear);
     void OnDrawCall();
     void OnDispatch(GPUShaderProgramCS* shader);
+    void EndRenderPass();
+    void FlushRenderPass();
+    void FlushBindGroup();
 
 public:
     // [GPUContext]

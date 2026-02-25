@@ -5,7 +5,6 @@
 #include "GPUPipelineStateWebGPU.h"
 #include "GPUVertexLayoutWebGPU.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Core/Math/Color32.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 
@@ -138,6 +137,20 @@ void GPUPipelineStateWebGPU::OnReleaseGPU()
     for (auto& e : _pipelines)
         wgpuRenderPipelineRelease(e.Value);
     _pipelines.Clear();
+    for (auto& e : BindGroupLayouts)
+    {
+        if (e)
+        {
+            wgpuBindGroupLayoutRelease(e);
+            e = nullptr;
+        }
+    }
+    if (PipelineDesc.layout)
+    {
+        wgpuPipelineLayoutRelease(PipelineDesc.layout);
+        PipelineDesc.layout = nullptr;
+    }
+    Platform::MemoryClear(&BindGroupDescriptors, sizeof(BindGroupDescriptors));
 }
 
 uint32 GetHash(const GPUPipelineStateWebGPU::Key& key)
@@ -260,7 +273,8 @@ bool GPUPipelineStateWebGPU::Init(const Description& desc)
             writeMask |= WGPUColorWriteMask_Blue;
         if (EnumHasAllFlags(desc.BlendMode.RenderTargetWriteMask, BlendingMode::ColorWrite::Alpha))
             writeMask |= WGPUColorWriteMask_Alpha;
-    }    for (auto& e : _colorTargets)
+    }
+    for (auto& e : _colorTargets)
     {
         e = WGPU_COLOR_TARGET_STATE_INIT;
         if (desc.BlendMode.BlendEnable)
@@ -270,14 +284,116 @@ bool GPUPipelineStateWebGPU::Init(const Description& desc)
 
     // Cache shaders
     VS = (GPUShaderProgramVSWebGPU*)desc.VS;
+    BindGroupDescriptors[GPUBindGroupsWebGPU::Vertex] = &VS->DescriptorInfo;
     PipelineDesc.vertex.module = VS->ShaderModule;
     PS = (GPUShaderProgramPSWebGPU*)desc.PS;
     if (PS)
     {
+        BindGroupDescriptors[GPUBindGroupsWebGPU::Pixel] = &PS->DescriptorInfo;
         _fragmentDesc.module = PS->ShaderModule;
     }
 
-    // TODO: set resources binding into PipelineDesc.layout
+    // Count the biggest bind group entries (for all shaders) to allocate reused memory
+    int32 maxEntriesCount = 0;
+    for (int32 groupIndex = 0; groupIndex < ARRAY_COUNT(BindGroupDescriptors); groupIndex++)
+    {
+        auto descriptors = BindGroupDescriptors[groupIndex];
+        if (descriptors && maxEntriesCount < descriptors->DescriptorTypesCount)
+            maxEntriesCount = (int32)descriptors->DescriptorTypesCount;
+    }
+    Array<WGPUBindGroupLayoutEntry, InlinedAllocation<8>> entries;
+    entries.Resize(maxEntriesCount);
+
+    // Setup bind groups
+    WGPUBindGroupLayoutEntry* entriesPtr = entries.Get();
+    for (int32 groupIndex = 0; groupIndex < ARRAY_COUNT(BindGroupDescriptors); groupIndex++)
+    {
+        auto descriptors = BindGroupDescriptors[groupIndex];
+        if (!descriptors || descriptors->DescriptorTypesCount == 0)
+            continue;
+
+        int32 entriesCount = descriptors->DescriptorTypesCount;
+        Platform::MemoryClear(entries.Get(), sizeof(WGPUBindGroupLayoutEntry) * entriesCount);
+        auto visibility = groupIndex == 0 ? WGPUShaderStage_Vertex : WGPUShaderStage_Fragment;
+        for (int32 index = 0; index < entriesCount; index++)
+        {
+            auto& descriptor = descriptors->DescriptorTypes[index];
+            auto& entry = entriesPtr[index];
+            entry.binding = descriptor.Binding;
+            entry.bindingArraySize = descriptor.Count;
+            entry.visibility = visibility;
+            switch (descriptor.DescriptorType)
+            {
+            case VK_DESCRIPTOR_TYPE_SAMPLER:
+                entry.sampler.type = WGPUSamplerBindingType_Undefined;
+                break;
+            case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+                entry.texture.sampleType = WGPUTextureSampleType_Undefined;
+                switch (descriptor.ResourceType)
+                {
+                case SpirvShaderResourceType::Texture1D:
+                    entry.texture.viewDimension = WGPUTextureViewDimension_1D;
+                    break;
+                case SpirvShaderResourceType::Texture2D:
+                    entry.texture.viewDimension = WGPUTextureViewDimension_2D;
+                    break;
+                case SpirvShaderResourceType::Texture3D:
+                    entry.texture.viewDimension = WGPUTextureViewDimension_3D;
+                    break;
+                case SpirvShaderResourceType::TextureCube:
+                    entry.texture.viewDimension = WGPUTextureViewDimension_Cube;
+                    break;
+                case SpirvShaderResourceType::Texture1DArray:
+                    CRASH; // Not supported TODO: add error at compile time (in ShaderCompilerWebGPU::Write)
+                    break;
+                case SpirvShaderResourceType::Texture2DArray:
+                    entry.texture.viewDimension = WGPUTextureViewDimension_2DArray;
+                    break;
+                }
+                break;
+            case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+                entry.buffer.hasDynamicOffset = true;
+            case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+                if (descriptor.BindingType == SpirvShaderResourceBindingType::SRV)
+                    entry.buffer.type = WGPUBufferBindingType_ReadOnlyStorage;
+                else
+                    entry.buffer.type = WGPUBufferBindingType_Storage;
+                break;
+            case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+                entry.buffer.hasDynamicOffset = true;
+            case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+                entry.buffer.type = WGPUBufferBindingType_Uniform;
+                break;
+            default:
+#if GPU_ENABLE_DIAGNOSTICS
+                LOG(Fatal, "Unknown descriptor type: {} used as {} in '{}'", (uint32)descriptor.DescriptorType, (uint32)descriptor.BindingType, String(_debugName.Get(), _debugName.Count() - 1));
+#else
+                CRASH;
+#endif
+                return true;
+            }
+        }
+
+        // Create a bind group layout
+        WGPUBindGroupLayoutDescriptor bindGroupLayoutDesc = WGPU_BIND_GROUP_LAYOUT_DESCRIPTOR_INIT;
+        bindGroupLayoutDesc.entryCount = entriesCount;
+        bindGroupLayoutDesc.entries = entriesPtr;
+        BindGroupLayouts[groupIndex] = wgpuDeviceCreateBindGroupLayout(_device->Device, &bindGroupLayoutDesc);
+    }
+
+    // Create the pipeline layout
+    WGPUPipelineLayoutDescriptor layoutDesc = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
+#if GPU_ENABLE_RESOURCE_NAMING
+    layoutDesc.label = PipelineDesc.label;
+#endif
+    layoutDesc.bindGroupLayoutCount = GPUBindGroupsWebGPU::GraphicsMax;
+    layoutDesc.bindGroupLayouts = BindGroupLayouts;
+    PipelineDesc.layout = wgpuDeviceCreatePipelineLayout(_device->Device, &layoutDesc);
+    if (!PipelineDesc.layout)
+    {
+        LOG(Error, "wgpuDeviceCreatePipelineLayout failed");
+        return true;
+    }
 
     _memoryUsage = 1;
     return GPUPipelineState::Init(desc);

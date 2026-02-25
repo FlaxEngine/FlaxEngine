@@ -52,6 +52,8 @@ public:
 public:
     // Handle to the WebGPU buffer object.
     WGPUBuffer Buffer = nullptr;
+    // Usage flags of the buffer.
+    WGPUBufferUsage Usage = 0;
 
 public:
     // [GPUBuffer]

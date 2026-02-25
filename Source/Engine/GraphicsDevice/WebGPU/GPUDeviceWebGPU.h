@@ -10,7 +10,25 @@
 
 class GPUContextWebGPU;
 class GPUAdapterWebGPU;
+class GPUTextureWebGPU;
 class GPUSamplerWebGPU;
+
+namespace GPUBindGroupsWebGPU
+{
+    enum Stage
+    {
+        // Vertex shader stage
+        Vertex = 0,
+        // Pixel shader stage
+        Pixel = 1,
+        // Graphics pipeline stages count
+        GraphicsMax,
+        // Compute pipeline slot
+        Compute = 0,
+        // The maximum amount of slots for all stages
+        Max = GraphicsMax,
+    };
+};
 
 /// <summary>
 /// Pool for uploading data to GPU buffers. It manages large buffers and suballocates for multiple small updates, minimizing the number of buffer creations and copies.
@@ -39,7 +57,7 @@ public:
         uint32 Offset = 0;
     };
 
-    Allocation Allocate(uint32 size, uint32 alignment = 16, WGPUBufferUsage usage = 0);
+    Allocation Allocate(uint32 size, WGPUBufferUsage usage, uint32 alignment = 16);
     void DrawBegin();
     void ReleaseGPU();
 };
@@ -62,6 +80,7 @@ public:
     WGPUDevice Device = nullptr;
     WGPUQueue Queue = nullptr;
     GPUSamplerWebGPU* DefaultSamplers[6] = {};
+    GPUTextureWebGPU* DefaultTexture = nullptr;
     GPUDataUploaderWebGPU DataUploader;
     uint32 MinUniformBufferOffsetAlignment = 1;
 

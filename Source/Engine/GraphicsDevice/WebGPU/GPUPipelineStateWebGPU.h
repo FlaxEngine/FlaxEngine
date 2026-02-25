@@ -53,6 +53,8 @@ public:
     GPUShaderProgramVSWebGPU* VS = nullptr;
     GPUShaderProgramPSWebGPU* PS = nullptr;
     WGPURenderPipelineDescriptor PipelineDesc;
+    WGPUBindGroupLayout BindGroupLayouts[GPUBindGroupsWebGPU::GraphicsMax] = {};
+    SpirvShaderDescriptorInfo* BindGroupDescriptors[GPUBindGroupsWebGPU::GraphicsMax] = {};
 
 public:
     GPUPipelineStateWebGPU(GPUDeviceWebGPU* device)

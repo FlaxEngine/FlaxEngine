@@ -45,13 +45,13 @@ GPUVertexLayoutWebGPU::GPUVertexLayoutWebGPU(GPUDeviceWebGPU* device, const Elem
     }
 }
 
-GPUDataUploaderWebGPU::Allocation GPUDataUploaderWebGPU::Allocate(uint32 size, uint32 alignment, WGPUBufferUsage usage)
+GPUDataUploaderWebGPU::Allocation GPUDataUploaderWebGPU::Allocate(uint32 size, WGPUBufferUsage usage, uint32 alignment)
 {
     // Find a free buffer from the current frame
     for (auto& e : _entries)
     {
         uint32 alignedOffset = Math::AlignUp(e.ActiveOffset, alignment);
-        if (e.ActiveFrame == _frame && (usage ? (e.Usage & usage) == usage : e.Usage == WGPUBufferUsage_CopyDst) && alignedOffset + size <= e.Size)
+        if (e.ActiveFrame == _frame && e.Usage == usage && alignedOffset + size <= e.Size)
         {
             e.ActiveOffset = alignedOffset + size;
             return { e.Buffer, alignedOffset };
@@ -61,7 +61,7 @@ GPUDataUploaderWebGPU::Allocation GPUDataUploaderWebGPU::Allocate(uint32 size, u
     // Find an unused buffer from the old frames
     for (auto& e : _entries)
     {
-        if (e.ActiveFrame < _frame - 3 && (e.Usage & usage) == usage && size <= e.Size)
+        if (e.ActiveFrame < _frame - 3 && e.Usage == usage && size <= e.Size)
         {
             e.ActiveOffset = size;
             e.ActiveFrame = _frame;
@@ -79,7 +79,7 @@ GPUDataUploaderWebGPU::Allocation GPUDataUploaderWebGPU::Allocate(uint32 size, u
             desc.label = WEBGPU_STR("Upload Buffer");
 #endif
         desc.size = Math::Max<uint32>(16 * 1024, Math::RoundUpToPowerOf2(size)); // Allocate larger pages for good suballocations
-        desc.usage = WGPUBufferUsage_CopyDst | usage;
+        desc.usage = usage;
         WGPUBuffer buffer = wgpuDeviceCreateBuffer(_device, &desc);
         if (buffer == nullptr)
         {
@@ -490,6 +490,14 @@ void GPUDeviceWebGPU::DrawBegin()
     GPUDevice::DrawBegin();
 
     DataUploader.DrawBegin();
+
+    // Create default texture
+    if (!DefaultTexture)
+    {
+        DefaultTexture = New<GPUTextureWebGPU>(this, TEXT("DefaultTexture"));
+        DefaultTexture->Init(GPUTextureDescription::New2D(1, 1, PixelFormat::R8G8B8A8_UNorm, GPUTextureFlags::ShaderResource));
+        DefaultTexture->SetResidentMipLevels(1);
+    }
 }
 
 GPUDeviceWebGPU::~GPUDeviceWebGPU()
@@ -565,6 +573,7 @@ void GPUDeviceWebGPU::Dispose()
 
     // Clear device resources
     DataUploader.ReleaseGPU();
+    SAFE_DELETE_GPU_RESOURCE(DefaultTexture);
     SAFE_DELETE_GPU_RESOURCES(DefaultSamplers);
     SAFE_DELETE(_mainContext);
     SAFE_DELETE(Adapter);
