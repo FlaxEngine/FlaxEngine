@@ -1373,7 +1373,7 @@ void GPUContextDX12::Flush()
 void GPUContextDX12::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 size, uint32 offset)
 {
     ASSERT(data);
-    ASSERT(buffer && buffer->GetSize() >= size);
+    ASSERT(buffer && buffer->GetSize() >= size + offset);
 
     auto bufferDX12 = (GPUBufferDX12*)buffer;
 

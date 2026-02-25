@@ -1450,7 +1450,7 @@ void GPUContextVulkan::Flush()
 void GPUContextVulkan::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 size, uint32 offset)
 {
     ASSERT(data);
-    ASSERT(buffer && buffer->GetSize() >= size);
+    ASSERT(buffer && buffer->GetSize() >= size + offset);
 
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
     if (cmdBuffer->IsInsideRenderPass())

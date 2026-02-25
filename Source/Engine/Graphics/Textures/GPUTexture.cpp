@@ -415,6 +415,8 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
             || desc.ArraySize > device->Limits.MaximumTexture2DArraySize)
         {
             LOG(Warning, "Cannot create texture. Invalid dimensions. Description: {0}", desc.ToString());
+            if (desc.Width > 0 && desc.Height > 0 && desc.ArraySize > 0)
+                LOG(Warning, "GPU device supports max 2D texture size {} and array size: {}", device->Limits.MaximumTexture2DSize, device->Limits.MaximumTexture2DArraySize);
             return true;
         }
 
@@ -453,6 +455,8 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
             || desc.Depth > device->Limits.MaximumTexture3DSize)
         {
             LOG(Warning, "Cannot create texture. Invalid dimensions. Description: {0}", desc.ToString());
+            if (desc.Width > 0 && desc.Height > 0 && desc.Depth > 0)
+                LOG(Warning, "GPU device supports max 3D texture size {}", device->Limits.MaximumTexture3DSize);
             return true;
         }
 
@@ -472,6 +476,8 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
             || desc.Width != desc.Height)
         {
             LOG(Warning, "Cannot create texture. Invalid dimensions. Description: {0}", desc.ToString());
+            if (desc.Width > 0 && desc.Height > 0 && desc.ArraySize > 0)
+                LOG(Warning, "GPU device supports max cue texture size {} and array size: {}", device->Limits.MaximumTextureCubeSize, device->Limits.MaximumTexture2DArraySize / 6);
             return true;
         }
 
