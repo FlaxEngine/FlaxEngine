@@ -7,6 +7,31 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 
+bool HasStencil(WGPUTextureFormat format)
+{
+    switch (format)
+    {
+    case WGPUTextureFormat_Depth24PlusStencil8:
+    case WGPUTextureFormat_Depth32FloatStencil8:
+        return true;
+    default:
+        return false;
+    }
+}
+
+WGPUTextureFormat DropStencil(WGPUTextureFormat format)
+{
+    switch (format)
+    {
+    case WGPUTextureFormat_Depth24PlusStencil8:
+        return WGPUTextureFormat_Depth24Plus;
+    case WGPUTextureFormat_Depth32FloatStencil8:
+        return WGPUTextureFormat_Depth32Float;
+    default:
+        return format;
+    }
+}
+
 void GPUTextureViewWebGPU::Create(WGPUTexture texture, WGPUTextureViewDescriptor const* desc)
 {
     if (View)
@@ -17,13 +42,31 @@ void GPUTextureViewWebGPU::Create(WGPUTexture texture, WGPUTextureViewDescriptor
     {
 #if GPU_ENABLE_RESOURCE_NAMING
         LOG(Error, "Failed to create a view for texture '{}'", GetParent() ? GetParent()->GetName() : StringView::Empty);
+#else
+        LOG(Error, "Failed to create a view for texture");
 #endif
     }
+    ViewRender = View;
+
+    // Depth-stencil textures expose depth-only when binding to shaders (unless via custom _handleStencil view) so make separate ViewRender for rendering with all components
+    if (desc && desc->aspect == WGPUTextureAspect_All && ::HasStencil(desc->format))
+    {
+        auto depthOnlyDesc = *desc;
+        depthOnlyDesc.aspect = WGPUTextureAspect_DepthOnly;
+        depthOnlyDesc.format = DropStencil(depthOnlyDesc.format);
+        View = wgpuTextureCreateView(texture, &depthOnlyDesc);
+    }
+
     Format = desc ? desc->format : wgpuTextureGetFormat(texture);
 }
 
 void GPUTextureViewWebGPU::Release()
 {
+    if (View != ViewRender)
+    {
+        wgpuTextureViewRelease(ViewRender);
+        ViewRender = nullptr;
+    }
     if (View)
     {
         wgpuTextureViewRelease(View);
@@ -64,7 +107,7 @@ bool GPUTextureWebGPU::OnInit()
         textureDesc.dimension = WGPUTextureDimension_3D;
         break;
     case TextureDimensions::CubeTexture:
-        _viewDimension = IsArray() ? WGPUTextureViewDimension_CubeArray : WGPUTextureViewDimension_Cube;
+        _viewDimension = _desc.ArraySize > 6 ? WGPUTextureViewDimension_CubeArray : WGPUTextureViewDimension_Cube;
         textureDesc.dimension = WGPUTextureDimension_2D;
         textureDesc.size.depthOrArrayLayers *= 6; // Each cubemap uses 6 array slices
         break;

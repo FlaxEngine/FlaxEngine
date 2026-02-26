@@ -238,4 +238,55 @@ PixelFormat RenderToolsWebGPU::ToPixelFormat(WGPUTextureFormat format)
     }
 }
 
+PixelFormat RenderToolsWebGPU::ToPixelFormat(WGPUVertexFormat format)
+{
+    switch (format)
+    {
+        // @formatter:off
+    case WGPUVertexFormat_Uint8: return PixelFormat::R8_UInt;
+    case WGPUVertexFormat_Uint8x2: return PixelFormat::R8G8_UInt;
+    case WGPUVertexFormat_Uint8x4: return PixelFormat::R8G8B8A8_UInt;
+    case WGPUVertexFormat_Sint8: return PixelFormat::R8_SInt;
+    case WGPUVertexFormat_Sint8x2: return PixelFormat::R8G8_SInt;
+    case WGPUVertexFormat_Sint8x4: return PixelFormat::R8G8B8A8_SInt;
+    case WGPUVertexFormat_Unorm8: return PixelFormat::R8_UNorm;
+    case WGPUVertexFormat_Unorm8x2: return PixelFormat::R8G8_UNorm;
+    case WGPUVertexFormat_Unorm8x4: return PixelFormat::R8G8B8A8_UNorm;
+    case WGPUVertexFormat_Snorm8: return PixelFormat::R8_SNorm;
+    case WGPUVertexFormat_Snorm8x2: return PixelFormat::R8G8_SNorm;
+    case WGPUVertexFormat_Snorm8x4: return PixelFormat::R8G8B8A8_SNorm;
+    case WGPUVertexFormat_Uint16: return PixelFormat::R16_UInt;
+    case WGPUVertexFormat_Uint16x2: return PixelFormat::R16G16_UInt;
+    case WGPUVertexFormat_Uint16x4: return PixelFormat::R16G16B16A16_UInt;
+    case WGPUVertexFormat_Sint16: return PixelFormat::R16_SInt;
+    case WGPUVertexFormat_Sint16x2: return PixelFormat::R16G16_SInt;
+    case WGPUVertexFormat_Sint16x4: return PixelFormat::R16G16B16A16_SInt;
+    case WGPUVertexFormat_Unorm16: return PixelFormat::R16_UNorm;
+    case WGPUVertexFormat_Unorm16x2: return PixelFormat::R16G16_UNorm;
+    case WGPUVertexFormat_Unorm16x4: return PixelFormat::R16G16B16A16_UNorm;
+    case WGPUVertexFormat_Snorm16: return PixelFormat::R16_SNorm;
+    case WGPUVertexFormat_Snorm16x2: return PixelFormat::R16G16_SNorm;
+    case WGPUVertexFormat_Snorm16x4: return PixelFormat::R16G16B16A16_SNorm;
+    case WGPUVertexFormat_Float16: return PixelFormat::R16_Float;
+    case WGPUVertexFormat_Float16x2: return PixelFormat::R16G16_Float;
+    case WGPUVertexFormat_Float16x4: return PixelFormat::R16G16B16A16_Float;
+    case WGPUVertexFormat_Float32: return PixelFormat::R32_Float;
+    case WGPUVertexFormat_Float32x2: return PixelFormat::R32G32_Float;
+    case WGPUVertexFormat_Float32x3: return PixelFormat::R32G32B32_Float;
+    case WGPUVertexFormat_Float32x4: return PixelFormat::R32G32B32A32_Float;
+    case WGPUVertexFormat_Uint32: return PixelFormat::R32_UInt;
+    case WGPUVertexFormat_Uint32x2: return PixelFormat::R32G32_UInt;
+    case WGPUVertexFormat_Uint32x3: return PixelFormat::R32G32B32_UInt;
+    case WGPUVertexFormat_Uint32x4: return PixelFormat::R32G32B32A32_UInt;
+    case WGPUVertexFormat_Sint32: return PixelFormat::R32_SInt;
+    case WGPUVertexFormat_Sint32x2: return PixelFormat::R32G32_SInt;
+    case WGPUVertexFormat_Sint32x3: return PixelFormat::R32G32B32_SInt;
+    case WGPUVertexFormat_Sint32x4: return PixelFormat::R32G32B32A32_SInt;
+    case WGPUVertexFormat_Unorm10_10_10_2: return PixelFormat::R10G10B10A2_UNorm;
+    case WGPUVertexFormat_Unorm8x4BGRA: return PixelFormat::B8G8R8A8_UNorm;
+    default: return PixelFormat::Unknown;
+        // @formatter:on
+    }
+}
+
 #endif

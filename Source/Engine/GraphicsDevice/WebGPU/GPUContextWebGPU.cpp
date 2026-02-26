@@ -686,27 +686,26 @@ void GPUContextWebGPU::ManualClear(const PendingClear& clear)
     {
         renderPassDesc.depthStencilAttachment = &depthStencilAttachment;
         depthStencilAttachment = WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_INIT;
-        depthStencilAttachment.view = clear.View->View;
+        depthStencilAttachment.view = clear.View->ViewRender;
         depthStencilAttachment.depthLoadOp = WGPULoadOp_Clear;
         depthStencilAttachment.depthStoreOp = WGPUStoreOp_Store;
         depthStencilAttachment.depthClearValue = clear.Depth;
         depthStencilAttachment.stencilClearValue = clear.Stencil;
+        if (clear.View->HasStencil)
+        {
+            depthStencilAttachment.stencilLoadOp = WGPULoadOp_Clear;
+            depthStencilAttachment.stencilStoreOp = WGPUStoreOp_Store;
+        }
     }
     else
     {
         renderPassDesc.colorAttachmentCount = 1;
         renderPassDesc.colorAttachments = &colorAttachment;
         colorAttachment = WGPU_RENDER_PASS_COLOR_ATTACHMENT_INIT;
-        colorAttachment.view = clear.View->View;
+        colorAttachment.view = clear.View->ViewRender;
         colorAttachment.depthSlice = clear.View->DepthSlice;
         colorAttachment.loadOp = WGPULoadOp_Clear;
         colorAttachment.storeOp = WGPUStoreOp_Store;
-        if (clear.View->HasStencil)
-        {
-            depthStencilAttachment.stencilLoadOp = WGPULoadOp_Clear;
-            depthStencilAttachment.stencilStoreOp = WGPUStoreOp_Store;
-            depthStencilAttachment.stencilClearValue = clear.Stencil;
-        }
         colorAttachment.clearValue = { clear.RGBA[0], clear.RGBA[1], clear.RGBA[2], clear.RGBA[3] };
     }
     auto renderPass = wgpuCommandEncoderBeginRenderPass(Encoder, &renderPassDesc);
@@ -805,11 +804,11 @@ void GPUContextWebGPU::FlushRenderPass()
         auto& colorAttachment = colorAttachments[i];
         colorAttachment = WGPU_RENDER_PASS_COLOR_ATTACHMENT_INIT;
         auto renderTarget = _renderTargets[i];
-        colorAttachment.view = renderTarget->View;
+        colorAttachment.view = renderTarget->ViewRender;
         colorAttachment.depthSlice = renderTarget->DepthSlice;
         colorAttachment.loadOp = WGPULoadOp_Load;
         colorAttachment.storeOp = WGPUStoreOp_Store;
-        if (FindClear(_depthStencil, clear))
+        if (FindClear(renderTarget, clear))
         {
             colorAttachment.loadOp = WGPULoadOp_Clear;
             colorAttachment.clearValue = { clear.RGBA[0], clear.RGBA[1], clear.RGBA[2], clear.RGBA[3] };
@@ -820,7 +819,7 @@ void GPUContextWebGPU::FlushRenderPass()
     if (_depthStencil)
     {
         renderPassDesc.depthStencilAttachment = &depthStencilAttachment;
-        depthStencilAttachment.view = _depthStencil->View;
+        depthStencilAttachment.view = _depthStencil->ViewRender;
         depthStencilAttachment.depthLoadOp = WGPULoadOp_Load;
         depthStencilAttachment.depthStoreOp = _depthStencil->ReadOnly ? WGPUStoreOp_Discard : WGPUStoreOp_Store;
         depthStencilAttachment.depthReadOnly = _depthStencil->ReadOnly;

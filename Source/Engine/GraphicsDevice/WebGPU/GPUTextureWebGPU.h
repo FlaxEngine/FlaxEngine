@@ -31,6 +31,8 @@ public:
     WGPUTexture Texture = nullptr;
     // Handle to the WebGPU texture view object.
     WGPUTextureView View = nullptr;
+    // Handle to the WebGPU texture view object for render passes (contains all views).
+    WGPUTextureView ViewRender = nullptr;
     bool HasStencil = false;
     bool ReadOnly = false;
     uint32 DepthSlice = WGPU_DEPTH_SLICE_UNDEFINED;

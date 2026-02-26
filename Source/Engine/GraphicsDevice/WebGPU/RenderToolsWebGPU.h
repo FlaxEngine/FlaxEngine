@@ -69,6 +69,7 @@ public:
     static WGPUVertexFormat ToVertexFormat(PixelFormat format);
     static WGPUTextureFormat ToTextureFormat(PixelFormat format);
     static PixelFormat ToPixelFormat(WGPUTextureFormat format);
+    static PixelFormat ToPixelFormat(WGPUVertexFormat format);
 };
 
 #endif
