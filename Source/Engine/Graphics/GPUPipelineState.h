@@ -215,6 +215,14 @@ public:
         return _meta.UsedUAsMask;
     }
 
+    /// <summary>
+    /// Gets texture samplers mask (each set bit marks usage of the sampler slot at the bit index slot). Combined from all the used shader stages.
+    /// </summary>
+    FORCE_INLINE uint32 GetUsedSamplersMask() const
+    {
+        return _meta.UsedSamplersMask;
+    }
+
 public:
     /// <summary>
     /// Returns true if pipeline state is valid and ready to use

@@ -728,7 +728,9 @@ bool ShaderCompilerVulkan::CompileShader(ShaderFunctionMeta& meta, WritePermutat
         void* additionalData = nullptr;
         SpirvShaderHeader header;
         Platform::MemoryClear(&header, sizeof(header));
-        ShaderBindings bindings = { 0, 0, 0, 0 };
+        ShaderBindings bindings = {};
+        bindings.InputsCount = program.getNumPipeInputs();
+        bindings.OutputsCount = program.getNumPipeOutputs();
         if (type == ShaderStage::Vertex)
         {
             additionalData = &additionalDataVS;
@@ -822,6 +824,10 @@ bool ShaderCompilerVulkan::CompileShader(ShaderFunctionMeta& meta, WritePermutat
 
             switch (descriptor.BindingType)
             {
+            case SpirvShaderResourceBindingType::SAMPLER:
+                ASSERT_LOW_LAYER(descriptor.Slot >= 0 && descriptor.Slot < GPU_MAX_SAMPLER_BINDED);
+                bindings.UsedSamplersMask |= 1 << descriptor.Slot;
+                break;
             case SpirvShaderResourceBindingType::CB:
                 ASSERT_LOW_LAYER(descriptor.Slot >= 0 && descriptor.Slot < GPU_MAX_CB_BINDED);
                 bindings.UsedCBsMask |= 1 << descriptor.Slot;

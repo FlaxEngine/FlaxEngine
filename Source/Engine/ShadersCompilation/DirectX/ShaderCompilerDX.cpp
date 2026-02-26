@@ -372,7 +372,9 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
         }
         DxShaderHeader header;
         Platform::MemoryClear(&header, sizeof(header));
-        ShaderBindings bindings = { desc.InstructionCount, 0, 0, 0 };
+        ShaderBindings bindings = { desc.InstructionCount };
+        bindings.InputsCount = desc.InputParameters;
+        bindings.OutputsCount = desc.OutputParameters;
         for (uint32 a = 0; a < desc.ConstantBuffers; a++)
         {
             auto cb = shaderReflection->GetConstantBufferByIndex(a);
@@ -422,13 +424,12 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
             {
             // Sampler
             case D3D_SIT_SAMPLER:
+                bindings.UsedSamplersMask |= 1 << resDesc.BindPoint;
                 break;
-
             // Constant Buffer
             case D3D_SIT_CBUFFER:
             case D3D_SIT_TBUFFER:
                 break;
-
             // Shader Resource
             case D3D_SIT_TEXTURE:
                 for (UINT shift = 0; shift < resDesc.BindCount; shift++)
@@ -445,7 +446,6 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
                     header.SrDimensions[resDesc.BindPoint + shift] = D3D_SRV_DIMENSION_BUFFER;
                 }
                 break;
-
             // Unordered Access
             case D3D_SIT_UAV_RWTYPED:
             case D3D_SIT_UAV_RWSTRUCTURED:

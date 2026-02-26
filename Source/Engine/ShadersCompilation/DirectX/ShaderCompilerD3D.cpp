@@ -79,6 +79,9 @@ namespace
 {
     bool ProcessShader(ShaderCompilationContext* context, Array<ShaderCompiler::ShaderResourceBuffer>& constantBuffers, ID3D11ShaderReflection* reflector, D3D11_SHADER_DESC& desc, ShaderBindings& bindings)
     {
+        bindings.InputsCount = desc.InputParameters;
+        bindings.OutputsCount = desc.OutputParameters;
+
         // Extract constant buffers usage information
         for (uint32 a = 0; a < desc.ConstantBuffers; a++)
         {
@@ -131,13 +134,12 @@ namespace
             {
             // Sampler
             case D3D_SIT_SAMPLER:
+                bindings.UsedSamplersMask |= 1 << resDesc.BindPoint;
                 break;
-
             // Constant Buffer
             case D3D_SIT_CBUFFER:
             case D3D_SIT_TBUFFER:
                 break;
-
             // Shader Resource
             case D3D_SIT_TEXTURE:
             case D3D_SIT_STRUCTURED:
@@ -145,7 +147,6 @@ namespace
                 for (UINT shift = 0; shift < resDesc.BindCount; shift++)
                     bindings.UsedSRsMask |= 1 << (resDesc.BindPoint + shift);
                 break;
-
             // Unordered Access
             case D3D_SIT_UAV_RWTYPED:
             case D3D_SIT_UAV_RWSTRUCTURED:
@@ -316,7 +317,7 @@ bool ShaderCompilerD3D::CompileShader(ShaderFunctionMeta& meta, WritePermutation
                 additionalDataVS.Inputs.Add({ ParseVertexElementType(inputDesc.SemanticName, inputDesc.SemanticIndex), 0, 0, 0, format });
             }
         }
-        ShaderBindings bindings = { desc.InstructionCount, 0, 0, 0 };
+        ShaderBindings bindings = { desc.InstructionCount };
         if (ProcessShader(_context, _constantBuffers, reflector.Get(), desc, bindings))
             return true;
 

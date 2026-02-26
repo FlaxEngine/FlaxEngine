@@ -112,15 +112,13 @@ bool GPUPipelineState::Init(const Description& desc)
 #endif
 
     // Cache shader stages usage flags for pipeline state
-    _meta.InstructionsCount = 0;
-    _meta.UsedCBsMask = 0;
-    _meta.UsedSRsMask = 0;
-    _meta.UsedUAsMask = 0;
+    Platform::MemoryClear(&_meta, sizeof(_meta));
 #define CHECK_STAGE(stage) \
 	if (desc.stage) { \
 		_meta.UsedCBsMask |= desc.stage->GetBindings().UsedCBsMask; \
 		_meta.UsedSRsMask |= desc.stage->GetBindings().UsedSRsMask; \
 		_meta.UsedUAsMask |= desc.stage->GetBindings().UsedUAsMask; \
+		_meta.UsedSamplersMask |= desc.stage->GetBindings().UsedSamplersMask; \
 	}
     CHECK_STAGE(VS);
     CHECK_STAGE(HS);
