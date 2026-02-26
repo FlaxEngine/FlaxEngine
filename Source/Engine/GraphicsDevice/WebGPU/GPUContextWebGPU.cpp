@@ -347,8 +347,10 @@ void GPUContextWebGPU::UpdateCB(GPUConstantBuffer* cb, const void* data)
     if (size != 0)
     {
         // Allocate a chunk of memory in a shared page allocator
-        auto allocation = _device->DataUploader.Allocate(size, WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst, _minUniformBufferOffsetAlignment);
+        uint32 alignedSize = Math::AlignUp<uint32>(size, 16); // Uniform buffers must be aligned to 16 bytes
+        auto allocation = _device->DataUploader.Allocate(alignedSize, WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst, _minUniformBufferOffsetAlignment);
         cbWebGPU->Allocation = allocation;
+        cbWebGPU->AllocationSize = alignedSize;
         // TODO: consider holding CPU-side staging buffer and copying data to the GPU buffer in a single batch for all uniforms (before flushing the active command encoder)
         wgpuQueueWriteBuffer(_device->Queue, allocation.Buffer, allocation.Offset, data, size);
         _bindGroupDirty = true;
@@ -944,7 +946,13 @@ void GPUContextWebGPU::FlushBindGroup()
                 if (!entry.textureView)
                 {
                     // Fallback
-                    view = _device->DefaultTexture->View(0);
+                    auto defaultTexture = _device->DefaultTexture[(int32)descriptor.ResourceType];
+                    if (!defaultTexture)
+                    {
+                        LOG(Error, "Missing resource {} at slot {} of binding space {}", (int32)descriptor.ResourceType, descriptor.Slot, (int32)descriptor.BindingType);
+                        CRASH;
+                    }
+                    view = defaultTexture->View(0);
                     ptr = (GPUResourceViewPtrWebGPU*)view->GetNativePtr();
                     entry.textureView = ptr->TextureView->View;
                 }
@@ -974,7 +982,7 @@ void GPUContextWebGPU::FlushBindGroup()
                 if (uniform && uniform->Allocation.Buffer)
                 {
                     entry.buffer = uniform->Allocation.Buffer;
-                    entry.size = uniform->GetSize();
+                    entry.size = uniform->AllocationSize;
                     _dynamicOffsets.Add(uniform->Allocation.Offset);
                 }
                 else
@@ -988,7 +996,7 @@ void GPUContextWebGPU::FlushBindGroup()
                 {
                     entry.buffer = uniform->Allocation.Buffer;
                     entry.offset = uniform->Allocation.Offset;
-                    entry.size = uniform->GetSize();
+                    entry.size = uniform->AllocationSize;
                 }
                 else
                     CRASH; // TODO: add dummy buffer as fallback

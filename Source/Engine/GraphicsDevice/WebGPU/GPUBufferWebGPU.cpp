@@ -66,7 +66,7 @@ bool GPUBufferWebGPU::OnInit()
         bufferDesc.usage |= WGPUBufferUsage_Vertex;
     else if (EnumHasAllFlags(_desc.Flags, GPUBufferFlags::Argument))
         bufferDesc.usage |= WGPUBufferUsage_Indirect;
-    if (IsUnorderedAccess())
+    if (IsUnorderedAccess() || IsShaderResource()) // SRV buffers need to be bind as read-only storage
         bufferDesc.usage |= WGPUBufferUsage_Storage;
     switch (_desc.Usage)
     {

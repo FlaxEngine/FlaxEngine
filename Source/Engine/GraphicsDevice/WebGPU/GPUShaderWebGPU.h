@@ -18,6 +18,7 @@ public:
 
 public:
     GPUDataUploaderWebGPU::Allocation Allocation;
+    uint32 AllocationSize;
 };
 
 /// <summary>

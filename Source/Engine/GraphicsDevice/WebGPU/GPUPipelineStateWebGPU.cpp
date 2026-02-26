@@ -258,9 +258,15 @@ bool GPUPipelineStateWebGPU::Init(const Description& desc)
     PipelineDesc.fragment = &_fragmentDesc;
     _fragmentDesc = WGPU_FRAGMENT_STATE_INIT;
     _fragmentDesc.targets = _colorTargets;
-    _blendState = WGPU_BLEND_STATE_INIT;
-    _blendState.color = ToBlendComponent(desc.BlendMode.BlendOp, desc.BlendMode.SrcBlend, desc.BlendMode.DestBlend);
-    _blendState.alpha = ToBlendComponent(desc.BlendMode.BlendOpAlpha, desc.BlendMode.SrcBlendAlpha, desc.BlendMode.DestBlendAlpha);
+    Platform::MemoryClear(&_colorTargets, sizeof(_colorTargets));
+    if (desc.BlendMode.BlendEnable)
+    {
+        _blendState = WGPU_BLEND_STATE_INIT;
+        _blendState.color = ToBlendComponent(desc.BlendMode.BlendOp, desc.BlendMode.SrcBlend, desc.BlendMode.DestBlend);
+        _blendState.alpha = ToBlendComponent(desc.BlendMode.BlendOpAlpha, desc.BlendMode.SrcBlendAlpha, desc.BlendMode.DestBlendAlpha);
+        for (auto& e : _colorTargets)
+            e.blend = &_blendState;
+    }
     WGPUColorWriteMask writeMask = WGPUColorWriteMask_All;
     if (desc.BlendMode.RenderTargetWriteMask != BlendingMode::ColorWrite::All)
     {
@@ -274,12 +280,10 @@ bool GPUPipelineStateWebGPU::Init(const Description& desc)
         if (EnumHasAllFlags(desc.BlendMode.RenderTargetWriteMask, BlendingMode::ColorWrite::Alpha))
             writeMask |= WGPUColorWriteMask_Alpha;
     }
-    for (auto& e : _colorTargets)
+    if (PS)
     {
-        e = WGPU_COLOR_TARGET_STATE_INIT;
-        if (desc.BlendMode.BlendEnable)
-            e.blend = &_blendState;
-        e.writeMask = writeMask;
+        for (int32 rtIndex = 0; rtIndex < PS->GetBindings().OutputsCount; rtIndex++)
+            _colorTargets[rtIndex].writeMask = writeMask;
     }
 
     // Cache shaders

@@ -18,6 +18,7 @@
 #if BUILD_DEBUG
 #include "Engine/Core/Collections/Sorting.h"
 #endif
+#include "Engine/GraphicsDevice/Vulkan/Types.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Profiler/ProfilerMemory.h"
@@ -182,8 +183,11 @@ bool GPUDeviceWebGPU::Init()
     if (wgpuAdapterGetLimits(Adapter->Adapter, &limits) == WGPUStatus_Success)
     {
         MinUniformBufferOffsetAlignment = limits.minUniformBufferOffsetAlignment;
+        Limits.HasDepthAsSRV = true;
+        Limits.HasReadOnlyDepth = true;
         Limits.HasDepthClip = features.Contains(WGPUFeatureName_DepthClipControl);
         Limits.HasReadOnlyDepth = true;
+        Limits.MaximumSamplerAnisotropy = 4;
         Limits.MaximumTexture1DSize = Math::Min<int32>(GPU_MAX_TEXTURE_SIZE, limits.maxTextureDimension1D);
         Limits.MaximumTexture2DSize = Math::Min<int32>(GPU_MAX_TEXTURE_SIZE, limits.maxTextureDimension2D);
         Limits.MaximumTexture3DSize = Math::Min<int32>(GPU_MAX_TEXTURE_SIZE, limits.maxTextureDimension3D);
@@ -492,11 +496,20 @@ void GPUDeviceWebGPU::DrawBegin()
     DataUploader.DrawBegin();
 
     // Create default texture
-    if (!DefaultTexture)
+    static_assert(ARRAY_COUNT(DefaultTexture) == (int32)SpirvShaderResourceType::MAX, "Invalid size of default textures");
+    if (!DefaultTexture[(int32)SpirvShaderResourceType::Texture2D])
     {
-        DefaultTexture = New<GPUTextureWebGPU>(this, TEXT("DefaultTexture"));
-        DefaultTexture->Init(GPUTextureDescription::New2D(1, 1, PixelFormat::R8G8B8A8_UNorm, GPUTextureFlags::ShaderResource));
-        DefaultTexture->SetResidentMipLevels(1);
+        GPUTextureWebGPU* texture;
+#define INIT_TEXTURE(type, desc) \
+    texture = New<GPUTextureWebGPU>(this, TEXT("DefaultTexture")); \
+    DefaultTexture[(int32)SpirvShaderResourceType::type] = texture; \
+    texture->Init(desc); \
+    texture->SetResidentMipLevels(1)
+        INIT_TEXTURE(Texture2D, GPUTextureDescription::New2D(1, 1, PixelFormat::R8G8B8A8_UNorm, GPUTextureFlags::ShaderResource));
+        INIT_TEXTURE(Texture3D, GPUTextureDescription::New3D(1, 1, 1, PixelFormat::R8G8B8A8_UNorm, GPUTextureFlags::ShaderResource));
+        INIT_TEXTURE(TextureCube, GPUTextureDescription::NewCube(1, 1, PixelFormat::R8G8B8A8_UNorm, GPUTextureFlags::ShaderResource));
+#undef INIT_TEXTURE
+        
     }
 }
 
@@ -573,7 +586,7 @@ void GPUDeviceWebGPU::Dispose()
 
     // Clear device resources
     DataUploader.ReleaseGPU();
-    SAFE_DELETE_GPU_RESOURCE(DefaultTexture);
+    SAFE_DELETE_GPU_RESOURCES(DefaultTexture);
     SAFE_DELETE_GPU_RESOURCES(DefaultSamplers);
     SAFE_DELETE(_mainContext);
     SAFE_DELETE(Adapter);

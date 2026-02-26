@@ -14,6 +14,7 @@ GPUConstantBufferWebGPU::GPUConstantBufferWebGPU(GPUDeviceWebGPU* device, uint32
     : GPUResourceWebGPU(device, name)
 {
     _size = _memoryUsage = size;
+    AllocationSize = 0;
 }
 
 GPUShaderProgram* GPUShaderWebGPU::CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, Span<byte> bytecode, MemoryReadStream& stream)

@@ -41,6 +41,7 @@ enum class SpirvShaderResourceType
     TextureCube = 7,
     Texture1DArray = 8,
     Texture2DArray = 9,
+    MAX
 };
 
 enum class SpirvShaderResourceBindingType : byte

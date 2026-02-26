@@ -80,7 +80,7 @@ public:
     WGPUDevice Device = nullptr;
     WGPUQueue Queue = nullptr;
     GPUSamplerWebGPU* DefaultSamplers[6] = {};
-    GPUTextureWebGPU* DefaultTexture = nullptr;
+    GPUTextureWebGPU* DefaultTexture[10] = {};
     GPUDataUploaderWebGPU DataUploader;
     uint32 MinUniformBufferOffsetAlignment = 1;
 

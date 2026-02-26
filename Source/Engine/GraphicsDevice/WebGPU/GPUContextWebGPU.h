@@ -75,6 +75,10 @@ private:
     Array<PendingClear, FixedAllocation<16>> _pendingClears;
     GPUResourceView* _shaderResources[GPU_MAX_SR_BINDED];
     GPUResourceView* _storageResources[GPU_MAX_SR_BINDED];
+    GPUResourceView** _resourceTables[(int32)SpirvShaderResourceBindingType::MAX];
+#if ENABLE_ASSERTION
+    uint32 _resourceTableSizes[(int32)SpirvShaderResourceBindingType::MAX];
+#endif
 
 public:
     GPUContextWebGPU(GPUDeviceWebGPU* device);
