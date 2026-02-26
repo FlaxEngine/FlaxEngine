@@ -32,6 +32,9 @@ public class Video : EngineModule
             options.OutputFiles.Add("mfreadwrite.lib");
             options.OutputFiles.Add("mfuuid.lib");
             break;
+        case TargetPlatform.Linux:
+            // Not implemented
+            break;
         case TargetPlatform.XboxOne:
         case TargetPlatform.XboxScarlett:
             // Media Foundation
@@ -64,7 +67,7 @@ public class Video : EngineModule
             options.CompileEnv.PreprocessorDefinitions.Add("VIDEO_API_ANDROID");
             break;
         case TargetPlatform.Web:
-            // No implemented
+            // Not implemented
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
