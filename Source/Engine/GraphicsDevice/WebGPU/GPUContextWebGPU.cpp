@@ -115,6 +115,27 @@ void GPUContextWebGPU::FrameEnd()
     Flush();
 }
 
+#if GPU_ALLOW_PROFILE_EVENTS
+
+#include "Engine/Utilities/StringConverter.h"
+
+void GPUContextWebGPU::EventBegin(const Char* name)
+{
+    StringAsANSI<> nameAnsi(name);
+    wgpuCommandEncoderPushDebugGroup(Encoder, { nameAnsi.Get(), (size_t)nameAnsi.Length() });
+}
+
+void GPUContextWebGPU::EventEnd()
+{
+    // Cannot insert commands in encoder during render pass
+    if (_renderPass)
+        EndRenderPass();
+
+    wgpuCommandEncoderPopDebugGroup(Encoder);
+}
+
+#endif
+
 void* GPUContextWebGPU::GetNativePtr() const
 {
     return Encoder;

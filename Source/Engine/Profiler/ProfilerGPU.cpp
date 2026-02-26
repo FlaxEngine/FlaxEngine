@@ -16,7 +16,11 @@ RenderStatsData RenderStatsData::Counter;
 
 int32 ProfilerGPU::_depth = 0;
 bool ProfilerGPU::Enabled = false;
+#if GPU_AUTO_PROFILE_EVENTS
+bool ProfilerGPU::EventsEnabled = true;
+#else
 bool ProfilerGPU::EventsEnabled = false;
+#endif
 int32 ProfilerGPU::CurrentBuffer = 0;
 ProfilerGPU::EventBuffer ProfilerGPU::Buffers[PROFILER_GPU_EVENTS_FRAMES];
 

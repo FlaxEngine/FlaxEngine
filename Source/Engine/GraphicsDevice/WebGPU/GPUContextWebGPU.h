@@ -57,7 +57,7 @@ private:
     int32 _indexBuffer32Bit : 1;
     int32 _blendFactorDirty : 1;
     int32 _blendFactorSet : 1;
-    int32 _renderTargetCount : 3;
+    int32 _renderTargetCount : 4;
     int32 _vertexBufferCount : 3;
     uint32 _stencilRef;
     Float4 _blendFactor;
@@ -97,6 +97,10 @@ public:
     // [GPUContext]
     void FrameBegin() override;
     void FrameEnd() override;
+#if GPU_ALLOW_PROFILE_EVENTS
+    void EventBegin(const Char* name) override;
+    void EventEnd() override;
+#endif
     void* GetNativePtr() const override;
     bool IsDepthBufferBinded() override;
     void Clear(GPUTextureView* rt, const Color& color) override;
