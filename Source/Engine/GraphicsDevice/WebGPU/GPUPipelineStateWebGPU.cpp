@@ -4,9 +4,11 @@
 
 #include "GPUPipelineStateWebGPU.h"
 #include "GPUVertexLayoutWebGPU.h"
+#include "RenderToolsWebGPU.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
 
 WGPUCompareFunction ToCompareFunction(ComparisonFunc value)
 {
@@ -179,15 +181,53 @@ WGPURenderPipeline GPUPipelineStateWebGPU::GetPipeline(const Key& key)
     for (int32 i = 0; i < _fragmentDesc.targetCount; i++)
         _colorTargets[i].format = (WGPUTextureFormat)key.RenderTargetFormats[i];
     WGPUVertexBufferLayout buffers[GPU_MAX_VB_BINDED];
-    PipelineDesc.vertex.bufferCount = key.VertexBufferCount;
-    int32 shaderLocation = 0;
-    for (int32 i = 0; i < PipelineDesc.vertex.bufferCount; i++)
+    if (key.VertexLayout)
     {
-        buffers[i] = *key.VertexBuffers[i];
-        for (int32 j = 0; j < buffers[i].attributeCount; j++)
-            ((WGPUVertexAttribute&)buffers[i].attributes[j]).shaderLocation = shaderLocation++;
+        // Combine input layout of Vertex Buffers with the destination layout used by the Vertex Shader
+        GPUVertexLayoutWebGPU* mergedVertexLayout = key.VertexLayout;
+        if (!mergedVertexLayout)
+            mergedVertexLayout = (GPUVertexLayoutWebGPU*)VS->Layout; // Fallback to shader-specified layout (if using old APIs)
+        if (VS->InputLayout)
+            mergedVertexLayout = (GPUVertexLayoutWebGPU*)GPUVertexLayout::Merge(mergedVertexLayout, VS->InputLayout, false, true, -1, true);
+
+        // Build attributes list
+        WGPUVertexAttribute attributes[GPU_MAX_VS_ELEMENTS];
+        PipelineDesc.vertex.bufferCount = 0;
+        PipelineDesc.vertex.buffers = buffers;
+        int32 attributeIndex = 0;
+        auto& elements = mergedVertexLayout->GetElements();
+        for (int32 bufferIndex = 0; bufferIndex < GPU_MAX_VB_BINDED; bufferIndex++)
+        {
+            auto& buffer = buffers[bufferIndex];
+            buffer.nextInChain = nullptr;
+            buffer.stepMode = WGPUVertexStepMode_Vertex;
+            buffer.arrayStride = 0;
+            buffer.attributeCount = 0;
+            buffer.attributes = attributes + attributeIndex;
+            for (int32 i = 0; i < elements.Count(); i++)
+            {
+                const VertexElement& element = elements[i];
+                if (element.Slot != bufferIndex)
+                    continue;
+                WGPUVertexAttribute& dst = attributes[attributeIndex++];
+                buffer.attributeCount++;
+                dst.nextInChain = nullptr;
+                dst.format = RenderToolsWebGPU::ToVertexFormat(element.Format);
+                dst.offset = element.Offset;
+                dst.shaderLocation = i; // Elements are sorted to match Input Layout order of Vertex Shader as provided by GPUVertexLayout::Merge
+                if (element.PerInstance)
+                    buffer.stepMode = WGPUVertexStepMode_Instance;
+                buffer.arrayStride = Math::Max<uint64>(buffer.arrayStride, element.Offset + PixelFormatExtensions::SizeInBytes(element.Format));
+                PipelineDesc.vertex.bufferCount = Math::Max<size_t>(PipelineDesc.vertex.bufferCount, bufferIndex + 1);
+            }
+        }
     }
-    PipelineDesc.vertex.buffers = buffers;
+    else
+    {
+        // No vertex input
+        PipelineDesc.vertex.bufferCount = 0;
+        PipelineDesc.vertex.buffers = nullptr;
+    }
 
     // Create object
     pipeline = wgpuDeviceCreateRenderPipeline(_device->Device, &PipelineDesc);
@@ -280,9 +320,10 @@ bool GPUPipelineStateWebGPU::Init(const Description& desc)
         if (EnumHasAllFlags(desc.BlendMode.RenderTargetWriteMask, BlendingMode::ColorWrite::Alpha))
             writeMask |= WGPUColorWriteMask_Alpha;
     }
-    if (PS)
+    if (desc.PS)
     {
-        for (int32 rtIndex = 0; rtIndex < PS->GetBindings().OutputsCount; rtIndex++)
+        uint16 outputsCount = desc.PS->GetBindings().OutputsCount;
+        for (uint16 rtIndex = 0; rtIndex < outputsCount; rtIndex++)
             _colorTargets[rtIndex].writeMask = writeMask;
     }
 

@@ -42,7 +42,6 @@ private:
     };
 
     GPUDeviceWebGPU* _device;
-    WGPUVertexBufferLayout _vertexBufferNullLayout;
     uint32 _minUniformBufferOffsetAlignment;
     Array<WGPUBindGroupEntry> _bindGroupEntries;
     Array<uint32> _dynamicOffsets;

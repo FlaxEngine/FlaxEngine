@@ -41,7 +41,6 @@ GPUContextWebGPU::GPUContextWebGPU(GPUDeviceWebGPU* device)
     : GPUContext(device)
     , _device(device)
 {
-    _vertexBufferNullLayout = WGPU_VERTEX_BUFFER_LAYOUT_INIT;
     _minUniformBufferOffsetAlignment = device->MinUniformBufferOffsetAlignment;
 
     // Setup descriptor handles tables lookup cache
@@ -307,14 +306,13 @@ void GPUContextWebGPU::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint3
     ASSERT(vertexBuffers.Length() <= GPU_MAX_VB_BINDED);
     _vertexBufferDirty = true;
     _vertexBufferCount = vertexBuffers.Length();
-    _pipelineKey.VertexBufferCount = vertexBuffers.Length();
+    _pipelineKey.VertexLayout = (GPUVertexLayoutWebGPU*)(vertexLayout ? vertexLayout : GPUVertexLayout::Get(vertexBuffers));
     for (int32 i = 0; i < vertexBuffers.Length(); i++)
     {
         auto vbWebGPU = (GPUBufferWebGPU*)vertexBuffers.Get()[i];
         _vertexBuffers[i].Buffer = vbWebGPU ? vbWebGPU->Buffer : nullptr;
         _vertexBuffers[i].Offset = vertexBuffersOffsets ? vertexBuffersOffsets[i] : 0;
         _vertexBuffers[i].Size = vbWebGPU ? vbWebGPU->GetSize() : 0;
-        _pipelineKey.VertexBuffers[i] = vbWebGPU && vbWebGPU->GetVertexLayout() ? &((GPUVertexLayoutWebGPU*)vbWebGPU->GetVertexLayout())->Layout : &_vertexBufferNullLayout;
     }
 }
 

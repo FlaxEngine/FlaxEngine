@@ -25,9 +25,8 @@ public:
                 uint16 DepthStencilFormat : 7;
                 uint16 MultiSampleCount : 3;
                 uint16 RenderTargetCount : 3;
-                uint16 VertexBufferCount : 3;
                 uint8 RenderTargetFormats[GPU_MAX_RT_BINDED];
-                struct WGPUVertexBufferLayout* VertexBuffers[GPU_MAX_VB_BINDED];
+                class GPUVertexLayoutWebGPU* VertexLayout;
             };
             uint64 Packed[4];
         };
