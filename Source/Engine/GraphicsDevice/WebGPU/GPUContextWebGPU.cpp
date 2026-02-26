@@ -548,7 +548,6 @@ void GPUContextWebGPU::UpdateTexture(GPUTexture* texture, int32 arrayIndex, int3
     ASSERT(texture && texture->IsAllocated() && data);
     auto textureWebGPU = (GPUTextureWebGPU*)texture;
     ASSERT_LOW_LAYER(textureWebGPU->Texture && wgpuTextureGetUsage(textureWebGPU->Texture) & WGPUTextureUsage_CopyDst);
-    ASSERT(!texture->IsVolume()); // TODO: impl uploading volume textures (handle write size properly)
 
     int32 mipWidth, mipHeight, mipDepth;
     texture->GetMipSize(mipIndex, mipWidth, mipHeight, mipDepth);
@@ -556,11 +555,12 @@ void GPUContextWebGPU::UpdateTexture(GPUTexture* texture, int32 arrayIndex, int3
     WGPUTexelCopyTextureInfo copyInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     copyInfo.texture = textureWebGPU->Texture;
     copyInfo.mipLevel = mipIndex;
+    copyInfo.origin.z = arrayIndex;
     copyInfo.aspect = WGPUTextureAspect_All;
     WGPUTexelCopyBufferLayout dataLayout = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT;
     dataLayout.bytesPerRow = rowPitch;
     dataLayout.rowsPerImage = mipHeight;
-    WGPUExtent3D writeSize = { (uint32_t)mipWidth, (uint32_t)mipHeight, 1 };
+    WGPUExtent3D writeSize = { (uint32_t)mipWidth, (uint32_t)mipHeight, (uint32_t)mipDepth };
     wgpuQueueWriteTexture(_device->Queue, &copyInfo, data, slicePitch, &dataLayout, &writeSize);
 }
 
@@ -572,9 +572,10 @@ void GPUContextWebGPU::CopyTexture(GPUTexture* dstResource, uint32 dstSubresourc
     ASSERT_LOW_LAYER(dstTextureWebGPU->Texture && wgpuTextureGetUsage(dstTextureWebGPU->Texture) & WGPUTextureUsage_CopyDst);
     ASSERT_LOW_LAYER(srcTextureWebGPU->Texture && wgpuTextureGetUsage(srcTextureWebGPU->Texture) & WGPUTextureUsage_CopySrc);
 
-    // TODO: handle array/depth slices
     const int32 srcMipIndex = srcSubresource % srcTextureWebGPU->MipLevels();
     const int32 dstMipIndex = dstSubresource % srcTextureWebGPU->MipLevels();
+    const int32 srcArrayIndex = srcSubresource / srcTextureWebGPU->ArraySize();
+    const int32 dstArrayIndex = srcSubresource / srcTextureWebGPU->ArraySize();
 
     int32 srcMipWidth, srcMipHeight, srcMipDepth;
     srcTextureWebGPU->GetMipSize(srcMipIndex, srcMipWidth, srcMipHeight, srcMipDepth);
@@ -582,11 +583,12 @@ void GPUContextWebGPU::CopyTexture(GPUTexture* dstResource, uint32 dstSubresourc
     WGPUTexelCopyTextureInfo srcInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     srcInfo.texture = srcTextureWebGPU->Texture;
     srcInfo.mipLevel = srcMipIndex;
+    srcInfo.origin.z = srcArrayIndex;
     srcInfo.aspect = WGPUTextureAspect_All;
     WGPUTexelCopyTextureInfo dstInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     dstInfo.texture = dstTextureWebGPU->Texture;
     dstInfo.mipLevel = dstMipIndex;
-    dstInfo.origin = { dstX, dstY, dstZ };
+    dstInfo.origin = { dstX, dstY, dstZ + dstArrayIndex };
     dstInfo.aspect = WGPUTextureAspect_All;
     WGPUExtent3D copySize = { (uint32_t)srcMipWidth, (uint32_t)srcMipHeight, (uint32_t)srcMipDepth };
     wgpuCommandEncoderCopyTextureToTexture(Encoder, &srcInfo, &dstInfo, &copySize);
