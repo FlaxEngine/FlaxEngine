@@ -334,5 +334,5 @@ API_STRUCT(NoDefault) struct GPULimits
     /// <summary>
     /// The maximum degree of anisotropic filtering used for texture sampling.
     /// </summary>
-    API_FIELD() float MaximumSamplerAnisotropy = 0.0f;
+    API_FIELD() float MaximumSamplerAnisotropy = 1.0f;
 };

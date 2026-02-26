@@ -743,7 +743,7 @@ void GPUContextWebGPU::OnDrawCall()
     for (int32 i = _pendingClears.Count() - 1; i >= 0; i--)
     {
         auto clear = _pendingClears[i];
-        if (clear.View != _depthStencil && SpanContains(renderTargets, clear.View))
+        if (clear.View != _depthStencil && !SpanContains(renderTargets, clear.View))
         {
             ManualClear(clear);
             _pendingClears.RemoveAt(i);
