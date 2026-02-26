@@ -35,7 +35,7 @@ float4 PS(Quad_VS2PS input) : SV_Target0
 	float2 velocity = SAMPLE_RT_LINEAR(MotionVectors, input.TexCoord).xy;
 	float velocityLength = length(velocity);
 	float2 prevUV = input.TexCoord - velocity;
-	float prevDepth = LinearizeZ(GBuffer, SAMPLE_RT(Depth, prevUV).r);
+	float prevDepth = LinearizeZ(GBuffer, SAMPLE_RT_LOAD(Depth, prevUV).r);
 
 	// Find the closest pixel in 3x3 neighborhood
 	float currentDepth = 1;
@@ -55,7 +55,7 @@ float4 PS(Quad_VS2PS input) : SV_Target0
 			neighborhoodMax = max(neighborhoodMax, neighbor);
 			neighborhoodSum += neighbor;
 
-			float neighborDepth = LinearizeZ(GBuffer, SAMPLE_RT(Depth, sampleUV).r);
+			float neighborDepth = LinearizeZ(GBuffer, SAMPLE_RT_LOAD(Depth, sampleUV).r);
 			float depthDiff = abs(max(neighborDepth - prevDepth, 0));
 			minDepthDiff = min(minDepthDiff, depthDiff);
 			if (x == 0 && y == 0)

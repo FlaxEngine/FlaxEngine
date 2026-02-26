@@ -37,6 +37,7 @@ public:
     bool ReadOnly = false;
     uint32 DepthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
     WGPUTextureFormat Format = WGPUTextureFormat_Undefined;
+    WGPUTextureSampleType SampleType = WGPUTextureSampleType_Undefined;
     GPUResourceViewPtrWebGPU Ptr;
 
 public:

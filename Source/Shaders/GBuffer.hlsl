@@ -56,7 +56,7 @@ float3 GetWorldPos(GBufferData gBuffer, float2 uv, float deviceDepth)
 // Sample raw device depth buffer
 float SampleZ(float2 uv)
 {
-    return SAMPLE_RT(Depth, uv).r;
+    return SAMPLE_RT_LOAD(Depth, uv).r;
 }
 
 // Sample linear depth
@@ -121,25 +121,6 @@ GBufferSample SampleGBuffer(GBufferData gBuffer, float2 uv)
 #if defined(USE_GBUFFER_CUSTOM_DATA)
 	result.CustomData = gBuffer3;
 #endif
-
-    return result;
-}
-
-// Sample GBuffer (fast - only few parameters are being sampled)
-GBufferSample SampleGBufferFast(GBufferData gBuffer, float2 uv)
-{
-    GBufferSample result;
-
-    // Sample GBuffer
-    float4 gBuffer1 = SAMPLE_RT(GBuffer1, uv);
-
-    // Decode normal and shading model
-    result.Normal = DecodeNormal(gBuffer1.rgb);
-    result.ShadingModel = (int)(gBuffer1.a * 3.999);
-
-    // Calculate view space position
-    result.ViewPos = GetViewPos(gBuffer, uv);
-    result.WorldPos = mul(float4(result.ViewPos, 1), gBuffer.InvViewMatrix).xyz;
 
     return result;
 }

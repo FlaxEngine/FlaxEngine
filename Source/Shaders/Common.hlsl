@@ -136,6 +136,18 @@ SamplerComparisonState ShadowSamplerLinear : register(s5);
 // General purpose macros
 #define SAMPLE_RT(rt, texCoord) rt.SampleLevel(SamplerPointClamp, texCoord, 0)
 #define SAMPLE_RT_LINEAR(rt, texCoord) rt.SampleLevel(SamplerLinearClamp, texCoord, 0)
+#if defined(WGSL)
+// WebGPU doesn't allow to sample depth texture with regular sampler, need to use Load instead of Sample and get texture size for UV to pixel coordinate conversion
+float4 LoadTextureWGSL(Texture2D tex, float2 uv)
+{
+    uint2 size;
+    tex.GetDimensions(size.x, size.y);
+    return tex.Load(uint3(size * uv, 0));
+}
+#define SAMPLE_RT_LOAD(rt, texCoord) LoadTextureWGSL(rt, texCoord)
+#else
+#define SAMPLE_RT_LOAD(rt, texCoord) SAMPLE_RT(rt, texCoord)
+#endif
 #define HDR_CLAMP_MAX 65472.0
 #define PI 3.1415926535897932
 

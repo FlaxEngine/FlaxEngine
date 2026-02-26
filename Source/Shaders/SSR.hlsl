@@ -116,7 +116,7 @@ float3 TraceScreenSpaceReflection(
     while (currSampleIndex < numSamples)
     {
         // Sample depth buffer and calculate depth difference
-        float currSample = SAMPLE_RT(depthBuffer, currOffset.xy).r;
+        float currSample = SAMPLE_RT_LOAD(depthBuffer, currOffset.xy).r;
         float depthDiff = currOffset.z - currSample;
 
         // Check intersection

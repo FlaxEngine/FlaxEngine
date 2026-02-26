@@ -58,6 +58,24 @@ void GPUTextureViewWebGPU::Create(WGPUTexture texture, WGPUTextureViewDescriptor
     }
 
     Format = desc ? desc->format : wgpuTextureGetFormat(texture);
+    switch (Format)
+    {
+    case WGPUTextureFormat_Depth16Unorm:
+    case WGPUTextureFormat_Depth24Plus:
+    case WGPUTextureFormat_Depth24PlusStencil8:
+    case WGPUTextureFormat_Depth32Float:
+    case WGPUTextureFormat_Depth32FloatStencil8:
+        // https://www.w3.org/TR/webgpu/#depth-formats
+        SampleType = WGPUTextureSampleType_UnfilterableFloat;
+        break;
+    case WGPUTextureFormat_Stencil8:
+        // https://www.w3.org/TR/webgpu/#depth-formats
+        SampleType = WGPUTextureSampleType_Uint;
+        break;
+    default:
+        SampleType = WGPUTextureSampleType_Undefined;
+        break;
+    }
 }
 
 void GPUTextureViewWebGPU::Release()

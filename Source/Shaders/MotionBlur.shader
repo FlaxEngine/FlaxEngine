@@ -204,7 +204,7 @@ float4 PS_MotionBlur(Quad_VS2PS input) : SV_Target
 
 	// Sample pixel depth
 	GBufferData gBufferData = GetGBufferData();
-	float pixelDepth = LinearizeZ(gBufferData, SAMPLE_RT(Input3, input.TexCoord).x);
+	float pixelDepth = LinearizeZ(gBufferData, SAMPLE_RT_LOAD(Input3, input.TexCoord).x);
 
 	// Calculate noise to make it look better with less samples per pixel
 	float noise = FullscreenGradientNoise(input.TexCoord);
@@ -229,12 +229,12 @@ float4 PS_MotionBlur(Quad_VS2PS input) : SV_Target
 		float weight1 = 1;
 		float weight2 = 1;
 #else
-		float depth1 = LinearizeZ(gBufferData, SAMPLE_RT(Input3, sampleUV1).x);
+		float depth1 = LinearizeZ(gBufferData, SAMPLE_RT_LOAD(Input3, sampleUV1).x);
 		float2 velocity1 = Input1.SampleLevel(SamplerPointClamp, sampleUV1, 0).xy;
 		velocity1 = ClampVelocity(velocity1);
 		float velocityLength1 = length(velocity1);
 
-		float depth2 = LinearizeZ(gBufferData, SAMPLE_RT(Input3, sampleUV2).x);
+		float depth2 = LinearizeZ(gBufferData, SAMPLE_RT_LOAD(Input3, sampleUV2).x);
 		float2 velocity2 = Input1.SampleLevel(SamplerPointClamp, sampleUV2, 0).xy;
 		velocity2 = ClampVelocity(velocity2);
 		float velocityLength2 = length(velocity2);

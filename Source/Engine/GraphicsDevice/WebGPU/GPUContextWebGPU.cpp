@@ -760,7 +760,7 @@ void GPUContextWebGPU::OnDrawCall()
     if (_pipelineDirty)
     {
         _pipelineDirty = false;
-        WGPURenderPipeline pipeline = _pipelineState ? _pipelineState->GetPipeline(_pipelineKey) : nullptr;
+        WGPURenderPipeline pipeline = _pipelineState ? _pipelineState->GetPipeline(_pipelineKey, _shaderResources) : nullptr;
         wgpuRenderPassEncoderSetPipeline(_renderPass, pipeline);
         RENDER_STAT_PS_STATE_CHANGE();
 

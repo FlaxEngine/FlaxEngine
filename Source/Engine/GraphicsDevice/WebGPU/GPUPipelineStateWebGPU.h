@@ -28,7 +28,7 @@ public:
                 uint8 RenderTargetFormats[GPU_MAX_RT_BINDED];
                 class GPUVertexLayoutWebGPU* VertexLayout;
             };
-            uint64 Packed[4];
+            uint64 Packed[3];
         };
 
         FORCE_INLINE bool operator==(const Key& other) const
@@ -62,7 +62,11 @@ public:
     }
 
 public:
-    WGPURenderPipeline GetPipeline(const Key& key);
+    // Gets the pipeline for the given rendering state. Pipelines are cached and reused for the same key.
+    WGPURenderPipeline GetPipeline(const Key& key, GPUResourceView* shaderResources[GPU_MAX_SR_BINDED]);
+
+private:
+    void InitLayout(GPUResourceView* shaderResources[GPU_MAX_SR_BINDED]);
 
 public:
     // [GPUPipelineState]
