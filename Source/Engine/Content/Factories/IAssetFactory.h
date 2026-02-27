@@ -63,3 +63,32 @@ public:
         return nullptr;
     }
 };
+
+#if !BUILD_RELEASE // cheak it in none relise builds
+#define INTERNAL_FACTORY_REGISTER_CHEAK(type)\
+if (IAssetFactory::Get().ContainsKey(type::TypeName)) \
+{ \
+    if (Platform::IsDebuggerPresent()) \
+    { \
+    PLATFORM_DEBUG_BREAK; \
+    } \
+    Platform::Assert("[IAssetFactory] Can't register "#type \
+        " it is already registered", __FILE__, __LINE__); \
+        return; \
+}
+#define INTERNAL_FACTORY_UNREGISTER_CHEAK(type)\
+if (!IAssetFactory::Get().ContainsKey(type::TypeName)) \
+{ \
+    if (Platform::IsDebuggerPresent()) \
+    { \
+    PLATFORM_DEBUG_BREAK; \
+    } \
+    Platform::Assert("[IAssetFactory] Can't un register "#type \
+        " it is missing", __FILE__, __LINE__); \
+        return; \
+}
+#else
+#define INTERNAL_FACTORY_REGISTER_CHEAK(type)
+#define INTERNAL_FACTORY_UNREGISTER_CHEAK(type)
+#endif // 
+
