@@ -76,9 +76,23 @@ namespace FlaxEditor.GUI
             toolstrip.IsLayoutLocked = toolstripLocked;
             toolstrip.ItemsMargin = toolstripMargin;
 
-            var lastToolstripButton = toolstrip.LastButton;
+            var margin = toolstrip.ItemsMargin;
+            float xOffset = margin.Left;
+            bool hadChild = false;
+            for (int i = 0; i < toolstrip.ChildrenCount; i++)
+            {
+                var child = toolstrip.GetChild(i);
+                if (child == this || !child.Visible)
+                    continue;
+                hadChild = true;
+                xOffset += child.Width + margin.Width;
+            }
+
+            var right = hadChild ? xOffset - margin.Width : margin.Left;
             var parentSize = Parent.Size;
-            Bounds = new Rectangle(lastToolstripButton.Right + 8.0f, 0, parentSize.X - X - 8.0f, toolstrip.Height);
+            var x = right + 8.0f;
+            var width = Mathf.Max(parentSize.X - x - 8.0f, 0.0f);
+            Bounds = new Rectangle(x, 0, width, toolstrip.Height);
         }
 
         /// <inheritdoc />

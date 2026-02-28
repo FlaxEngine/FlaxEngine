@@ -19,7 +19,7 @@ namespace FlaxEditor.Content.GUI
         /// <summary>
         /// Gets the target node.
         /// </summary>
-        public ContentTreeNode TargetNode { get; }
+        public ContentFolderTreeNode TargetNode { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ContentNavigationButton"/> class.
@@ -28,7 +28,7 @@ namespace FlaxEditor.Content.GUI
         /// <param name="x">The x position.</param>
         /// <param name="y">The y position.</param>
         /// <param name="height">The height.</param>
-        public ContentNavigationButton(ContentTreeNode targetNode, float x, float y, float height)
+        public ContentNavigationButton(ContentFolderTreeNode targetNode, float x, float y, float height)
         : base(x, y, height)
         {
             TargetNode = targetNode;
@@ -147,7 +147,7 @@ namespace FlaxEditor.Content.GUI
             ClearItems();
             foreach (var child in Target.TargetNode.Children)
             {
-                if (child is ContentTreeNode node)
+                if (child is ContentFolderTreeNode node)
                 {
                     if (node.Folder.VisibleInHierarchy) // Respect the filter set by ContentFilterConfig.Filter(...)
                         AddItem(node.Folder.ShortName);
@@ -180,7 +180,7 @@ namespace FlaxEditor.Content.GUI
             var item = _items[index];
             foreach (var child in Target.TargetNode.Children)
             {
-                if (child is ContentTreeNode node && node.Folder.ShortName == item)
+                if (child is ContentFolderTreeNode node && node.Folder.ShortName == item)
                 {
                     Editor.Instance.Windows.ContentWin.Navigate(node);
                     return;
