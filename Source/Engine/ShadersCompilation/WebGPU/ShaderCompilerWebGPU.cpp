@@ -28,6 +28,9 @@ void ShaderCompilerWebGPU::InitParsing(ShaderCompilationContext* context, glslan
 {
     ShaderCompilerVulkan::InitParsing(context, shader);
 
+    // Don't flip Y like Vulkan does
+    shader.setInvertY(false);
+
     // Use newer SPIR-V
     shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_2);
     shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_3);
