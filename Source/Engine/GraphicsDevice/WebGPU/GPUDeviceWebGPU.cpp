@@ -209,13 +209,14 @@ bool GPUDeviceWebGPU::Init()
                 FormatSupport::MultisampleRenderTarget |
                 FormatSupport::MultisampleResolve |
                 FormatSupport::MultisampleLoad;
+        auto supportsBasicStorage = FormatSupport::UnorderedAccessReadOnly | FormatSupport::UnorderedAccessWriteOnly;
 
 #define ADD_FORMAT(pixelFormat, support)
         FeaturesPerFormat[(int32)PixelFormat::R8_UNorm].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMSAA;
         FeaturesPerFormat[(int32)PixelFormat::R8_UInt].Support |= supportsBuffer | supportsTexture | supportsRender;
         FeaturesPerFormat[(int32)PixelFormat::R8_SInt].Support |= supportsBuffer | supportsTexture | supportsRender;
-        FeaturesPerFormat[(int32)PixelFormat::R16_UInt].Support |= supportsBuffer | supportsTexture;
-        FeaturesPerFormat[(int32)PixelFormat::R16_SInt].Support |= supportsBuffer | supportsTexture;
+        FeaturesPerFormat[(int32)PixelFormat::R16_UInt].Support |= supportsBuffer | supportsTexture | FormatSupport::RenderTarget;
+        FeaturesPerFormat[(int32)PixelFormat::R16_SInt].Support |= supportsBuffer | supportsTexture | FormatSupport::RenderTarget;
         FeaturesPerFormat[(int32)PixelFormat::R16_Float].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMSAA;
         FeaturesPerFormat[(int32)PixelFormat::R8G8_UNorm].Support |= supportsBuffer | supportsTexture;
         FeaturesPerFormat[(int32)PixelFormat::R8G8_SNorm].Support |= supportsBuffer | supportsTexture;
@@ -223,32 +224,32 @@ bool GPUDeviceWebGPU::Init()
         FeaturesPerFormat[(int32)PixelFormat::R8G8_SInt].Support |= supportsBuffer | supportsTexture;
         FeaturesPerFormat[(int32)PixelFormat::R32_Float].Support |= supportsBuffer | supportsTexture | FormatSupport::RenderTarget;
         FeaturesPerFormat[(int32)PixelFormat::R32_Float].Support & ~FormatSupport::ShaderSample;
-        FeaturesPerFormat[(int32)PixelFormat::R32_UInt].Support |= supportsBuffer | supportsTexture | FormatSupport::RenderTarget;
-        FeaturesPerFormat[(int32)PixelFormat::R32_SInt].Support |= supportsBuffer | supportsTexture | FormatSupport::RenderTarget;
+        FeaturesPerFormat[(int32)PixelFormat::R32_UInt].Support |= supportsBuffer | supportsTexture | FormatSupport::RenderTarget | FormatSupport::UnorderedAccess;
+        FeaturesPerFormat[(int32)PixelFormat::R32_SInt].Support |= supportsBuffer | supportsTexture | FormatSupport::RenderTarget | FormatSupport::UnorderedAccess;
         FeaturesPerFormat[(int32)PixelFormat::R16G16_UInt].Support |= supportsBuffer | supportsTexture;
         FeaturesPerFormat[(int32)PixelFormat::R16G16_SInt].Support |= supportsBuffer | supportsTexture;
         FeaturesPerFormat[(int32)PixelFormat::R16G16_Float].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMSAA;
-        FeaturesPerFormat[(int32)PixelFormat::R8G8B8A8_UNorm].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMSAA;
+        FeaturesPerFormat[(int32)PixelFormat::R8G8B8A8_UNorm].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMSAA | supportsBasicStorage;
         FeaturesPerFormat[(int32)PixelFormat::R8G8B8A8_UNorm_sRGB].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMSAA;
-        FeaturesPerFormat[(int32)PixelFormat::R8G8B8A8_SNorm].Support |= supportsBuffer | supportsTexture;
-        FeaturesPerFormat[(int32)PixelFormat::R8G8B8A8_UInt].Support |= supportsBuffer | supportsTexture;
-        FeaturesPerFormat[(int32)PixelFormat::R8G8B8A8_SInt].Support |= supportsBuffer | supportsTexture;
+        FeaturesPerFormat[(int32)PixelFormat::R8G8B8A8_SNorm].Support |= supportsBuffer | supportsTexture | supportsBasicStorage;
+        FeaturesPerFormat[(int32)PixelFormat::R8G8B8A8_UInt].Support |= supportsBuffer | supportsTexture | supportsBasicStorage;
+        FeaturesPerFormat[(int32)PixelFormat::R8G8B8A8_SInt].Support |= supportsBuffer | supportsTexture | supportsBasicStorage;
         FeaturesPerFormat[(int32)PixelFormat::B8G8R8A8_UNorm].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMSAA;
         FeaturesPerFormat[(int32)PixelFormat::R10G10B10A2_UInt].Support |= supportsBuffer | supportsTexture;
         FeaturesPerFormat[(int32)PixelFormat::R10G10B10A2_UNorm].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMSAA;
         FeaturesPerFormat[(int32)PixelFormat::R11G11B10_Float].Support |= supportsBuffer | supportsTexture;
         FeaturesPerFormat[(int32)PixelFormat::R9G9B9E5_SharedExp].Support |= supportsBuffer | supportsTexture;
-        FeaturesPerFormat[(int32)PixelFormat::R32G32_Float].Support |= supportsBuffer | supportsTexture | FormatSupport::RenderTarget;
+        FeaturesPerFormat[(int32)PixelFormat::R32G32_Float].Support |= supportsBuffer | supportsTexture | FormatSupport::RenderTarget | supportsBasicStorage;
         FeaturesPerFormat[(int32)PixelFormat::R32G32_Float].Support & ~FormatSupport::ShaderSample;
         FeaturesPerFormat[(int32)PixelFormat::R32G32_UInt].Support |= supportsBuffer | supportsTexture | FormatSupport::RenderTarget;
         FeaturesPerFormat[(int32)PixelFormat::R32G32_SInt].Support |= supportsBuffer | supportsTexture | FormatSupport::RenderTarget;
-        FeaturesPerFormat[(int32)PixelFormat::R16G16B16A16_UInt].Support |= supportsBuffer | supportsTexture;
-        FeaturesPerFormat[(int32)PixelFormat::R16G16B16A16_SInt].Support |= supportsBuffer | supportsTexture;
-        FeaturesPerFormat[(int32)PixelFormat::R16G16B16A16_Float].Support |= supportsBuffer | supportsTexture | supportsRender;
+        FeaturesPerFormat[(int32)PixelFormat::R16G16B16A16_UInt].Support |= supportsBuffer | supportsTexture | supportsBasicStorage;
+        FeaturesPerFormat[(int32)PixelFormat::R16G16B16A16_SInt].Support |= supportsBuffer | supportsTexture | supportsBasicStorage;
+        FeaturesPerFormat[(int32)PixelFormat::R16G16B16A16_Float].Support |= supportsBuffer | supportsTexture | supportsRender | supportsBasicStorage;
         FeaturesPerFormat[(int32)PixelFormat::R32G32B32A32_Float].Support |= supportsBuffer | supportsTexture | FormatSupport::RenderTarget;
         FeaturesPerFormat[(int32)PixelFormat::R32G32B32A32_Float].Support & ~FormatSupport::ShaderSample;
-        FeaturesPerFormat[(int32)PixelFormat::R32G32B32A32_UInt].Support |= supportsBuffer | supportsTexture | FormatSupport::RenderTarget;
-        FeaturesPerFormat[(int32)PixelFormat::R32G32B32A32_SInt].Support |= supportsBuffer | supportsTexture | FormatSupport::RenderTarget;
+        FeaturesPerFormat[(int32)PixelFormat::R32G32B32A32_UInt].Support |= supportsBuffer | supportsTexture | FormatSupport::RenderTarget | supportsBasicStorage;
+        FeaturesPerFormat[(int32)PixelFormat::R32G32B32A32_SInt].Support |= supportsBuffer | supportsTexture | FormatSupport::RenderTarget | supportsBasicStorage;
         FeaturesPerFormat[(int32)PixelFormat::D16_UNorm].Support |= supportsBuffer | supportsTexture | supportsDepth;
         FeaturesPerFormat[(int32)PixelFormat::D24_UNorm_S8_UInt].Support |= supportsBuffer | supportsTexture | supportsDepth;
         FeaturesPerFormat[(int32)PixelFormat::D32_Float].Support |= supportsBuffer | supportsTexture | supportsDepth;
@@ -269,20 +270,47 @@ bool GPUDeviceWebGPU::Init()
             FeaturesPerFormat[(int32)PixelFormat::R16G16B16A16_SInt].Support |= supportsMultisampling;
             FeaturesPerFormat[(int32)PixelFormat::R16G16B16A16_Float].Support |= supportsMSAA;
             FeaturesPerFormat[(int32)PixelFormat::R32_Float].Support |= supportsMultisampling;
+            FeaturesPerFormat[(int32)PixelFormat::R32G32_Float].Support |= supportsMultisampling;
             FeaturesPerFormat[(int32)PixelFormat::R10G10B10A2_UInt].Support |= supportsMultisampling;
         }
         if (features.Contains(WGPUFeatureName_TextureFormatsTier1))
         {
-            FeaturesPerFormat[(int32)PixelFormat::R8_SNorm].Support |= supportsBuffer | supportsTexture;
-            FeaturesPerFormat[(int32)PixelFormat::R16_UNorm].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMSAA;
-            FeaturesPerFormat[(int32)PixelFormat::R16_SNorm].Support |= supportsBuffer | supportsTexture;
-            FeaturesPerFormat[(int32)PixelFormat::R16G16_UNorm].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMultisampling;
-            FeaturesPerFormat[(int32)PixelFormat::R16G16_SNorm].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMultisampling;
-            FeaturesPerFormat[(int32)PixelFormat::R16G16B16A16_UNorm].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMultisampling;
-            FeaturesPerFormat[(int32)PixelFormat::R16G16B16A16_SNorm].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMultisampling;
+            FeaturesPerFormat[(int32)PixelFormat::R8_UNorm].Support |= supportsBasicStorage;
+            FeaturesPerFormat[(int32)PixelFormat::R8_SNorm].Support |= supportsBuffer | supportsTexture | supportsBasicStorage;
+            FeaturesPerFormat[(int32)PixelFormat::R8_UInt].Support |= supportsBasicStorage;
+            FeaturesPerFormat[(int32)PixelFormat::R8_SInt].Support |= supportsBasicStorage;
+            FeaturesPerFormat[(int32)PixelFormat::R16_UNorm].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMSAA | supportsBasicStorage;
+            FeaturesPerFormat[(int32)PixelFormat::R16_SNorm].Support |= supportsBuffer | supportsTexture | supportsBasicStorage;
+            //FeaturesPerFormat[(int32)PixelFormat::R16_UInt].Support |= supportsBasicStorage; // TODO: fix issues with particle indices buffer that could use it
+            FeaturesPerFormat[(int32)PixelFormat::R16_SInt].Support |= supportsBasicStorage;
+            FeaturesPerFormat[(int32)PixelFormat::R16_Float].Support |= supportsBasicStorage;
+            FeaturesPerFormat[(int32)PixelFormat::R16G16_UNorm].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMultisampling | supportsBasicStorage;
+            FeaturesPerFormat[(int32)PixelFormat::R16G16_SNorm].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMultisampling | supportsBasicStorage;
+            FeaturesPerFormat[(int32)PixelFormat::R16G16_UInt].Support |= supportsBasicStorage;
+            FeaturesPerFormat[(int32)PixelFormat::R16G16_SInt].Support |= supportsBasicStorage;
+            FeaturesPerFormat[(int32)PixelFormat::R16G16_Float].Support |= supportsBasicStorage;
+            FeaturesPerFormat[(int32)PixelFormat::R16G16B16A16_UNorm].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMultisampling | supportsBasicStorage;
+            FeaturesPerFormat[(int32)PixelFormat::R16G16B16A16_SNorm].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMultisampling | supportsBasicStorage;
+            FeaturesPerFormat[(int32)PixelFormat::R10G10B10A2_UNorm].Support |= supportsBasicStorage;
+            FeaturesPerFormat[(int32)PixelFormat::R11G11B10_Float].Support |= supportsBasicStorage;
         }
         if (features.Contains(WGPUFeatureName_TextureFormatsTier2))
         {
+            FeaturesPerFormat[(int32)PixelFormat::R8_UNorm].Support |= FormatSupport::UnorderedAccessReadWrite;
+            FeaturesPerFormat[(int32)PixelFormat::R8_UInt].Support |= FormatSupport::UnorderedAccessReadWrite;
+            FeaturesPerFormat[(int32)PixelFormat::R8_SInt].Support |= FormatSupport::UnorderedAccessReadWrite;
+            FeaturesPerFormat[(int32)PixelFormat::R8G8B8A8_UNorm].Support |= FormatSupport::UnorderedAccessReadWrite;
+            FeaturesPerFormat[(int32)PixelFormat::R8G8B8A8_UInt].Support |= FormatSupport::UnorderedAccessReadWrite;
+            FeaturesPerFormat[(int32)PixelFormat::R8G8B8A8_SInt].Support |= FormatSupport::UnorderedAccessReadWrite;
+            FeaturesPerFormat[(int32)PixelFormat::R16_UInt].Support |= FormatSupport::UnorderedAccessReadWrite;
+            FeaturesPerFormat[(int32)PixelFormat::R16_SInt].Support |= FormatSupport::UnorderedAccessReadWrite;
+            FeaturesPerFormat[(int32)PixelFormat::R16_Float].Support |= FormatSupport::UnorderedAccessReadWrite;
+            FeaturesPerFormat[(int32)PixelFormat::R16G16B16A16_UInt].Support |= FormatSupport::UnorderedAccessReadWrite;
+            FeaturesPerFormat[(int32)PixelFormat::R16G16B16A16_SInt].Support |= FormatSupport::UnorderedAccessReadWrite;
+            FeaturesPerFormat[(int32)PixelFormat::R16G16B16A16_Float].Support |= FormatSupport::UnorderedAccessReadWrite;
+            FeaturesPerFormat[(int32)PixelFormat::R32G32B32A32_UInt].Support |= FormatSupport::UnorderedAccessReadWrite;
+            FeaturesPerFormat[(int32)PixelFormat::R32G32B32A32_SInt].Support |= FormatSupport::UnorderedAccessReadWrite;
+            FeaturesPerFormat[(int32)PixelFormat::R32G32B32A32_Float].Support |= FormatSupport::UnorderedAccessReadWrite;
         }
         if (features.Contains(WGPUFeatureName_Depth32FloatStencil8))
         {
@@ -452,7 +480,7 @@ bool GPUDeviceWebGPU::Init()
 
     TotalGraphicsMemory = 1024 * 1024 * 1024; // Dummy 1GB
 
-    // Create default samplers
+    // Create default resources
     auto samplerDesc = GPUSamplerDescription::New();
 #define INIT_SAMPLER(slot, filter, addressMode, compare) \
     DefaultSamplers[slot] = New<GPUSamplerWebGPU>(this); \
@@ -467,6 +495,15 @@ bool GPUDeviceWebGPU::Init()
     INIT_SAMPLER(4, GPUSamplerFilter::Point, GPUSamplerAddressMode::Clamp, GPUSamplerCompareFunction::Less);
     INIT_SAMPLER(5, GPUSamplerFilter::Trilinear, GPUSamplerAddressMode::Clamp, GPUSamplerCompareFunction::Less);
 #undef INIT_SAMPLER
+    {
+        WGPUBufferDescriptor bufferDesc = WGPU_BUFFER_DESCRIPTOR_INIT;
+#if GPU_ENABLE_RESOURCE_NAMING
+        bufferDesc.label = WEBGPU_STR("DefaultBuffer");
+#endif
+        bufferDesc.usage = WGPUBufferUsage_Storage;
+        bufferDesc.size = 64;
+        DefaultBuffer = wgpuDeviceCreateBuffer(Device, &bufferDesc);
+    }
 
     // Setup commands processing
     DataUploader._device = Device;
@@ -578,6 +615,11 @@ void GPUDeviceWebGPU::Dispose()
     SAFE_DELETE_GPU_RESOURCES(DefaultSamplers);
     SAFE_DELETE(_mainContext);
     SAFE_DELETE(Adapter);
+    if (DefaultBuffer)
+    {
+        wgpuBufferRelease(DefaultBuffer);
+        DefaultBuffer = nullptr;
+    }
     if (Queue)
     {
         wgpuQueueRelease(Queue);

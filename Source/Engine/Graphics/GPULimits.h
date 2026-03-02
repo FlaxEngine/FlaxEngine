@@ -8,97 +8,111 @@
 /// <summary>
 /// Which resources are supported for a given format and given device.
 /// </summary>
-API_ENUM(Attributes="Flags") enum class FormatSupport : int32
+API_ENUM(Attributes="Flags") enum class FormatSupport : uint64
 {
     /// <summary>
     /// No features supported.	
     /// </summary>
-    None = 0,
+    None = 0x0,
 
     /// <summary>
     /// Buffer resources supported.
     /// </summary>
-    Buffer = 1,
+    Buffer = 0x1,
 
     /// <summary>
     /// Vertex buffers supported.
+    /// </summary>
+    VertexBuffer = 0x2,
+
+    /// <summary>
+    /// Vertex buffers supported.
+    /// [Deprecated in 1.12]
     /// </summary>
     InputAssemblyVertexBuffer = 2,
 
     /// <summary>
     /// Index buffers supported.
     /// </summary>
+    IndexBuffer = 0x4,
+
+    /// <summary>
+    /// Index buffers supported.
+    /// [Deprecated in 1.12]
+    /// </summary>
     InputAssemblyIndexBuffer = 4,
 
     /// <summary>
     /// Streaming output buffers supported.
     /// </summary>
-    StreamOutputBuffer = 8,
+    StreamOutputBuffer = 0x8,
 
     /// <summary>
     /// 1D texture resources supported.
     /// </summary>
-    Texture1D = 16,
+    Texture1D = 0x10,
 
     /// <summary>
     /// 2D texture resources supported.
     /// </summary>
-    Texture2D = 32,
+    Texture2D = 0x20,
 
     /// <summary>
     /// 3D texture resources supported.
     /// </summary>
-    Texture3D = 64,
+    Texture3D = 0x40,
 
     /// <summary>
     /// Cube texture resources supported.
     /// </summary>
-    TextureCube = 128,
+    TextureCube = 0x80,
 
     /// <summary>
     /// The shader Load function for texture objects is supported.
     /// </summary>
-    ShaderLoad = 256,
+    ShaderLoad = 0x100,
 
     /// <summary>
     /// The shader Sample function for texture objects is supported.
     /// </summary>
-    ShaderSample = 512,
+    ShaderSample = 0x200,
 
     /// <summary>
     /// The shader SampleCmp and SampleCmpLevelZero functions for texture objects are supported.
     /// </summary>
-    ShaderSampleComparison = 1024,
+    ShaderSampleComparison = 0x400,
 
     /// <summary>
     /// Unused.
+    /// [Deprecated in 1.12]
     /// </summary>
     ShaderSampleMonoText = 2048,
 
     /// <summary>
     /// Mipmaps are supported.
     /// </summary>
-    Mip = 4096,
+    Mip = 0x1000,
 
     /// <summary>
     /// Automatic generation of mipmaps is supported.
+    /// [Deprecated in 1.12]
     /// </summary>
     MipAutogen = 8192,
 
     /// <summary>
     /// Render targets are supported.
     /// </summary>
-    RenderTarget = 16384,
+    RenderTarget = 0x4000,
 
     /// <summary>
     /// Blend operations supported.
     /// </summary>
-    Blendable = 32768,
+    Blendable = 0x8000,
 
     /// <summary>
     /// Depth stencils supported.
     /// </summary>
-    DepthStencil = 65536,
+    DepthStencil = 0x10000,
 
     /// <summary>
     /// CPU locking supported.
@@ -108,67 +122,87 @@ API_ENUM(Attributes="Flags") enum class FormatSupport : int32
     /// <summary>
     /// Multisample antialiasing (MSAA) resolve operations are supported.
     /// </summary>
-    MultisampleResolve = 262144,
+    MultisampleResolve = 0x40000,
 
     /// <summary>
     /// Format can be displayed on screen.
     /// </summary>
-    Display = 524288,
+    Display = 0x80000,
 
     /// <summary>
     /// Format can't be cast to another format.
     /// </summary>
-    CastWithinBitLayout = 1048576,
+    CastWithinBitLayout = 0x100000,
 
     /// <summary>
     /// Format can be used as a multi-sampled render target.
     /// </summary>
-    MultisampleRenderTarget = 2097152,
+    MultisampleRenderTarget = 0x200000,
 
     /// <summary>
     /// Format can be used as a multi-sampled texture and read into a shader with the shader Load function.
     /// </summary>
-    MultisampleLoad = 4194304,
+    MultisampleLoad = 0x400000,
 
     /// <summary>
     /// Format can be used with the shader gather function.
     /// </summary>
-    ShaderGather = 8388608,
+    ShaderGather = 0x800000,
 
     /// <summary>
     /// Format supports casting when the resource is a back buffer.
     /// </summary>
-    BackBufferCast = 16777216,
+    BackBufferCast = 0x1000000,
 
     /// <summary>
     /// Format can be used for an unordered access view.
     /// </summary>
-    TypedUnorderedAccessView = 33554432,
+    TypedUnorderedAccessView = 0x2000000,
 
     /// <summary>
     /// Format can be used with the shader gather with comparison function.
     /// </summary>
-    ShaderGatherComparison = 67108864,
+    ShaderGatherComparison = 0x4000000,
 
     /// <summary>
     /// Format can be used with the decoder output.
     /// </summary>
-    DecoderOutput = 134217728,
+    DecoderOutput = 0x8000000,
 
     /// <summary>
     /// Format can be used with the video processor output.
     /// </summary>
-    VideoProcessorOutput = 268435456,
+    VideoProcessorOutput = 0x10000000,
 
     /// <summary>
     /// Format can be used with the video processor input.
     /// </summary>
-    VideoProcessorInput = 536870912,
+    VideoProcessorInput = 0x20000000,
 
     /// <summary>
     /// Format can be used with the video encoder.
     /// </summary>
-    VideoEncoder = 1073741824,
+    VideoEncoder = 0x40000000,
+
+    /// <summary>
+    /// Format can be used as unorder access resource for read-only operations (shader load).
+    /// </summary>
+    UnorderedAccessReadOnly = 0x80000000,
+
+    /// <summary>
+    /// Format can be used as unorder access resource for write-only operations (shader store).
+    /// </summary>
+    UnorderedAccessWriteOnly = 0x100000000,
+
+    /// <summary>
+    /// Format can be used as unorder access resource for both read-write operations (shader load and store).
+    /// </summary>
+    UnorderedAccessReadWrite = 0x200000000,
+
+    /// <summary>
+    /// Format can be used as unorder access resource for read/write operations.
+    /// </summary>
+    UnorderedAccess = UnorderedAccessReadOnly | UnorderedAccessWriteOnly | UnorderedAccessReadWrite,
 };
 
 DECLARE_ENUM_OPERATORS(FormatSupport);

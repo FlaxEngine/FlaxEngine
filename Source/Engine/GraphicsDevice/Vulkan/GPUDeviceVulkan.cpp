@@ -1769,13 +1769,11 @@ bool GPUDeviceVulkan::Init()
                 if (properties.linearTilingFeatures != 0 || properties.optimalTilingFeatures != 0)
                     support |= FormatSupport::Texture1D | FormatSupport::Texture2D | FormatSupport::Texture3D | FormatSupport::TextureCube;
                 CHECK_IMAGE_FORMAT(VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT, FormatSupport::ShaderLoad);
-                //VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT,
+                CHECK_IMAGE_FORMAT(VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT, FormatSupport::UnorderedAccess);
                 //VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT
                 CHECK_IMAGE_FORMAT(VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT, FormatSupport::RenderTarget);
                 CHECK_IMAGE_FORMAT(VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT, FormatSupport::Blendable);
                 CHECK_IMAGE_FORMAT(VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT, FormatSupport::DepthStencil);
-                //VK_FORMAT_FEATURE_BLIT_SRC_BIT
-                //VK_FORMAT_FEATURE_BLIT_DST_BIT
                 CHECK_IMAGE_FORMAT(VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT, FormatSupport::ShaderSample | FormatSupport::ShaderSampleComparison);
 #undef CHECK_IMAGE_FORMAT
 
@@ -1783,8 +1781,7 @@ bool GPUDeviceVulkan::Init()
 #define CHECK_BUFFER_FORMAT(bit, feature) if ((properties.bufferFeatures & bit) == bit) support |= feature
                 if (properties.bufferFeatures != 0)
                     support |= FormatSupport::Buffer;
-                //VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
-                //VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
+                CHECK_BUFFER_FORMAT(VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT, FormatSupport::UnorderedAccess);
                 //VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT
                 CHECK_BUFFER_FORMAT(VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT, FormatSupport::InputAssemblyVertexBuffer);
 #undef CHECK_BUFFER_FORMAT

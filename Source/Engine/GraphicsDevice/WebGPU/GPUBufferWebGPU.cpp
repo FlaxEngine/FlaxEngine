@@ -89,12 +89,12 @@ bool GPUBufferWebGPU::OnInit()
         bufferDesc.usage |= WGPUBufferUsage_MapRead | WGPUBufferUsage_MapWrite | WGPUBufferUsage_CopySrc;
         break;
     }
-    bufferDesc.size = _desc.Size;
+    bufferDesc.size = (_desc.Size + 3) & ~0x3; // Align up to the multiple of 4 bytes
     bufferDesc.mappedAtCreation = _desc.InitData != nullptr && (bufferDesc.usage & WGPUBufferUsage_MapWrite);
     Buffer = wgpuDeviceCreateBuffer(_device->Device, &bufferDesc);
     if (!Buffer)
         return true;
-    _memoryUsage = _desc.Size;
+    _memoryUsage = bufferDesc.size;
     Usage = bufferDesc.usage;
 
     // Initialize with a data if provided

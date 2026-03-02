@@ -400,6 +400,7 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
         LOG(Warning, "Cannot create texture. Depth Stencil texture cannot have mip maps. Description: {0}", desc.ToString());
         return true;
     }
+    auto formatFeatures = device->GetFormatFeatures(desc.Format);
     switch (desc.Dimensions)
     {
     case TextureDimensions::Texture:
@@ -407,6 +408,11 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
         if (desc.HasPerSliceViews())
         {
             LOG(Warning, "Cannot create texture. Texture cannot have per slice views. Description: {0}", desc.ToString());
+            return true;
+        }
+        if (EnumHasNoneFlags(formatFeatures.Support, FormatSupport::Texture2D))
+        {
+            LOG(Warning, "Cannot create texture. Not supported format. Description: {0}", desc.ToString());
             return true;
         }
         if (desc.Width <= 0 || desc.Height <= 0 || desc.ArraySize <= 0
@@ -449,6 +455,11 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
             LOG(Warning, "Cannot create texture. Volume texture cannot have per slice map views if is not a render target. Description: {0}", desc.ToString());
             return true;
         }
+        if (EnumHasNoneFlags(formatFeatures.Support, FormatSupport::Texture3D))
+        {
+            LOG(Warning, "Cannot create texture. Not supported format. Description: {0}", desc.ToString());
+            return true;
+        }
         if (desc.Width <= 0 || desc.Height <= 0 || desc.Depth <= 0
             || desc.Width > device->Limits.MaximumTexture3DSize
             || desc.Height > device->Limits.MaximumTexture3DSize
@@ -467,6 +478,11 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
         if (desc.HasPerSliceViews())
         {
             LOG(Warning, "Cannot create texture. Cube texture cannot have per slice views. Description: {0}", desc.ToString());
+            return true;
+        }
+        if (EnumHasNoneFlags(formatFeatures.Support, FormatSupport::TextureCube))
+        {
+            LOG(Warning, "Cannot create texture. Not supported format. Description: {0}", desc.ToString());
             return true;
         }
         if (desc.Width <= 0 || desc.ArraySize <= 0

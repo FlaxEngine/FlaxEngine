@@ -512,6 +512,8 @@ void GPUContextWebGPU::Flush()
 
 void GPUContextWebGPU::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 size, uint32 offset)
 {
+    if (size == 0)
+        return;
     ASSERT(data);
     ASSERT(buffer && buffer->GetSize() >= size + offset);
     auto bufferWebGPU = (GPUBufferWebGPU*)buffer;
@@ -526,10 +528,10 @@ void GPUContextWebGPU::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 
             EndRenderPass();
 
         // Synchronous upload via shared buffer
-        // TODO: test using map/unmap sequence
-        auto allocation = _device->DataUploader.Allocate(size - offset, WGPUBufferUsage_CopySrc | WGPUBufferUsage_CopyDst);
-        wgpuQueueWriteBuffer(_device->Queue, allocation.Buffer, allocation.Offset, data, size);
-        wgpuCommandEncoderCopyBufferToBuffer(Encoder, allocation.Buffer, allocation.Offset, bufferWebGPU->Buffer, offset, size);
+        auto sizeAligned = (size + 3) & ~0x3; // Number of bytes must be a multiple of 4 for both wgpuQueueWriteBuffer and wgpuCommandEncoderCopyBufferToBuffer
+        auto allocation = _device->DataUploader.Allocate(sizeAligned, WGPUBufferUsage_CopySrc | WGPUBufferUsage_CopyDst);
+        wgpuQueueWriteBuffer(_device->Queue, allocation.Buffer, allocation.Offset, data, sizeAligned);
+        wgpuCommandEncoderCopyBufferToBuffer(Encoder, allocation.Buffer, allocation.Offset, bufferWebGPU->Buffer, offset, sizeAligned);
     }
     else
     {
@@ -547,7 +549,8 @@ void GPUContextWebGPU::CopyBuffer(GPUBuffer* dstBuffer, GPUBuffer* srcBuffer, ui
     ASSERT(dstBuffer && srcBuffer);
     auto srcBufferWebGPU = (GPUBufferWebGPU*)srcBuffer;
     auto dstBufferWebGPU = (GPUBufferWebGPU*)dstBuffer;
-    wgpuCommandEncoderCopyBufferToBuffer(Encoder, srcBufferWebGPU->Buffer, srcOffset, dstBufferWebGPU->Buffer, dstOffset, size);
+    auto copySize = (size + 3) & ~0x3; // Number of bytes must be a multiple of 4 for wgpuCommandEncoderCopyBufferToBuffer
+    wgpuCommandEncoderCopyBufferToBuffer(Encoder, srcBufferWebGPU->Buffer, srcOffset, dstBufferWebGPU->Buffer, dstOffset, copySize);
 }
 
 void GPUContextWebGPU::UpdateTexture(GPUTexture* texture, int32 arrayIndex, int32 mipIndex, const void* data, uint32 rowPitch, uint32 slicePitch)
@@ -1003,7 +1006,7 @@ void GPUContextWebGPU::FlushBindGroup()
                     auto defaultTexture = _device->DefaultTexture[(int32)descriptor.ResourceType];
                     if (!defaultTexture)
                     {
-                        LOG(Error, "Missing resource {} at slot {} of binding space {}", (int32)descriptor.ResourceType, descriptor.Slot, (int32)descriptor.BindingType);
+                        LOG(Error, "Missing default resource {} at slot {} of binding space {}", (int32)descriptor.ResourceType, descriptor.Slot, (int32)descriptor.BindingType);
                         CRASH;
                     }
                     switch (descriptor.ResourceType)
@@ -1035,11 +1038,7 @@ void GPUContextWebGPU::FlushBindGroup()
                 if (ptr && ptr->BufferView)
                     entry.buffer = ptr->BufferView->Buffer;
                 if (!entry.buffer)
-                {
-                    // Fallback
-                    LOG(Error, "Missing resource {} at slot {} of binding space {}", (int32)descriptor.ResourceType, descriptor.Slot, (int32)descriptor.BindingType);
-                    CRASH; // TODO: add default buffer as fallback (_device->DefaultBuffer)
-                }
+                    entry.buffer = _device->DefaultBuffer; // Fallback
                 break;
             }
             case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
@@ -1056,7 +1055,7 @@ void GPUContextWebGPU::FlushBindGroup()
                         _dynamicOffsets.Add(uniform->Allocation.Offset);
                 }
                 else
-                    CRASH; // TODO: add dummy buffer as fallback
+                    LOG(Fatal, "Missing constant buffer at slot {}", descriptor.Slot);
                 break;
             }
             default:
