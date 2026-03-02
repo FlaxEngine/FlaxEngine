@@ -68,13 +68,14 @@ bool MultiScaler::setupResources()
     }
     if (!_psHalfDepth.IsValid())
     {
+        psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::Red;
         psDesc.PS = shader->GetPS("PS_HalfDepth", 0);
         if (_psHalfDepth[0]->Init(psDesc))
             return true;
         psDesc.PS = shader->GetPS("PS_HalfDepth", 2);
-        psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::Red;
         if (_psHalfDepth[2]->Init(psDesc))
             return true;
+        psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::None;
         psDesc.PS = shader->GetPS("PS_HalfDepth", 1);
         psDesc.DepthWriteEnable = true;
         psDesc.DepthEnable = true;
@@ -214,9 +215,13 @@ void MultiScaler::Filter(FilterMode mode, GPUContext* context, int32 width, int3
 void MultiScaler::DownscaleDepth(GPUContext* context, int32 dstWidth, int32 dstHeight, GPUTexture* src, GPUTextureView* dst)
 {
     PROFILE_GPU_CPU("Downscale Depth");
+    bool outputDepth = ((GPUTexture*)dst->GetParent())->IsDepthStencil();
     if (checkIfSkipPass())
     {
-        context->ClearDepth(dst);
+        if (outputDepth)
+            context->ClearDepth(dst);
+        else
+            context->Clear(dst, Color::Transparent);
         return;
     }
 
@@ -224,14 +229,16 @@ void MultiScaler::DownscaleDepth(GPUContext* context, int32 dstWidth, int32 dstH
     Data data;
     data.TexelSize.X = 1.0f / (float)src->Width();
     data.TexelSize.Y = 1.0f / (float)src->Height();
-    bool outputDepth = ((GPUTexture*)dst->GetParent())->IsDepthStencil();
     auto cb = _shader->GetShader()->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
 
     // Draw
     context->SetViewportAndScissors((float)dstWidth, (float)dstHeight);
-    context->SetRenderTarget(dst, (GPUTextureView*)nullptr);
+    if (outputDepth)
+        context->SetRenderTarget(dst, (GPUTextureView*)nullptr);
+    else
+        context->SetRenderTarget(dst);
     context->BindSR(0, src);
     context->SetState(_psHalfDepth[outputDepth ? 1 : 0]);
     context->DrawFullscreenTriangle();

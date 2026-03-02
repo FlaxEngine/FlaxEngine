@@ -74,12 +74,20 @@
 #else
 #define CAN_USE_TESSELLATION 0
 #endif
+
 #if defined(WGSL)
-// Wrap not supported read-only Buffer binded as shader resource into StructuredBuffer to be used as storage on WebGPU
+// Alias read-only Buffer binded as shader resource into StructuredBuffer to be used as storage on WebGPU (not supported)
 #define CAN_USE_TYPED_BUFFER_LOADS 0
 #define Buffer StructuredBuffer
+
+// Hack matrix multiplication order for WebGPU (row-major vs column-major bug?)
+#define PROJECT_POINT(p, m) mul(m, p)
+
+// Stenil8 is in Red channel on WebGPU
+#define STENCIL_BUFFER_SWIZZLE .r
 #else
 #define CAN_USE_TYPED_BUFFER_LOADS 1
+#define PROJECT_POINT(p, m) mul(p, m)
 #endif
 
 // Compiler attributes
@@ -144,9 +152,9 @@ float4 LoadTextureWGSL(Texture2D tex, float2 uv)
     tex.GetDimensions(size.x, size.y);
     return tex.Load(uint3(size * uv, 0));
 }
-#define SAMPLE_RT_LOAD(rt, texCoord) LoadTextureWGSL(rt, texCoord)
+#define SAMPLE_RT_DEPTH(rt, texCoord) LoadTextureWGSL(rt, texCoord).r
 #else
-#define SAMPLE_RT_LOAD(rt, texCoord) SAMPLE_RT(rt, texCoord)
+#define SAMPLE_RT_DEPTH(rt, texCoord) SAMPLE_RT(rt, texCoord).r
 #endif
 #define HDR_CLAMP_MAX 65472.0
 #define PI 3.1415926535897932

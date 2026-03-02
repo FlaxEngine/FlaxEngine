@@ -87,12 +87,10 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
     if (!MultiScaler::Instance()->IsReady())
         return DepthBuffer;
 
-    const int32 halfDepthWidth = RenderTools::GetResolution(_width, ResolutionMode::Half);
-    const int32 halfDepthHeight = RenderTools::GetResolution(_height, ResolutionMode::Half);
-    const PixelFormat halfDepthFormat = GPU_DEPTH_BUFFER_PIXEL_FORMAT;
-    auto tempDesc = GPUTextureDescription::New2D(halfDepthWidth, halfDepthHeight, halfDepthFormat);
-    if (EnumHasAnyFlags(DepthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView))
-        tempDesc.Flags = GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil | GPUTextureFlags::ReadOnlyDepthView;
+    auto format = GPU_DEPTH_BUFFER_PIXEL_FORMAT;
+    auto width = RenderTools::GetResolution(_width, ResolutionMode::Half);
+    auto height = RenderTools::GetResolution(_height, ResolutionMode::Half);
+    auto tempDesc = GPUTextureDescription::New2D(width, height, format, DepthBuffer->Flags());
 
     LastFrameHalfResDepth = currentFrame;
     if (HalfResDepth == nullptr)
@@ -101,7 +99,7 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
         HalfResDepth = RenderTargetPool::Get(tempDesc);
         RENDER_TARGET_POOL_SET_NAME(HalfResDepth, "HalfResDepth");
     }
-    else if (HalfResDepth->Width() != halfDepthWidth || HalfResDepth->Height() != halfDepthHeight || HalfResDepth->Format() != halfDepthFormat)
+    else if (HalfResDepth->Width() != width || HalfResDepth->Height() != height || HalfResDepth->Format() != format)
     {
         // Wrong size buffer
         RenderTargetPool::Release(HalfResDepth);
@@ -110,7 +108,7 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
     }
 
     // Generate depth
-    MultiScaler::Instance()->DownscaleDepth(context, halfDepthWidth, halfDepthHeight, DepthBuffer, HalfResDepth->View());
+    MultiScaler::Instance()->DownscaleDepth(context, width, height, DepthBuffer, HalfResDepth->View());
 
     return HalfResDepth;
 }
@@ -126,8 +124,7 @@ GPUTexture* RenderBuffers::RequestHiZ(GPUContext* context, bool fullRes, int32 m
     LastFrameHiZ = currentFrame;
 
     // Allocate or resize buffer (with full mip-chain)
-    // TODO: migrate to inverse depth and try using r16 again as default (should have no artifacts anymore)
-    auto format = PLATFORM_WEB || PLATFORM_ANDROID || PLATFORM_IOS || PLATFORM_SWITCH ? PixelFormat::R16_UInt : PixelFormat::R32_Float;
+    auto format = PixelFormat::R32_Float;
     auto width = fullRes ? _width : Math::Max(_width >> 1, 1);
     auto height = fullRes ? _height : Math::Max(_height >> 1, 1);
     auto desc = GPUTextureDescription::New2D(width, height, mipLevels, format, GPUTextureFlags::ShaderResource);

@@ -121,6 +121,7 @@ bool AmbientOcclusionPass::setupResources()
 
     // Create pipeline states
     auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+    psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::Red;
     if (!_psPrepareDepths->IsValid())
     {
         psDesc.PS = shader->GetPS("PS_PrepareDepths");
@@ -144,6 +145,7 @@ bool AmbientOcclusionPass::setupResources()
                 return true;
         }
     }
+    psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RG;
     for (int32 i = 0; i < ARRAY_COUNT(_psGenerate); i++)
     {
         if (!_psGenerate[i]->IsValid())
@@ -174,7 +176,7 @@ bool AmbientOcclusionPass::setupResources()
             return true;
     }
     psDesc.BlendMode = BlendingMode::Multiply;
-    psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::Alpha;
+    psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::Alpha; // Write only into AO channel in GBuffer
     if (_depthBounds)
     {
         psDesc.DepthEnable = psDesc.DepthBoundsEnable = true;
@@ -278,7 +280,7 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
     GPUTextureView* depthBufferApply = _depthBounds ? renderContext.Buffers->DepthBuffer->ViewReadOnlyDepth() : nullptr;
 
     // Request temporary buffers
-    GPUTexture* m_halfDepths[4];
+    GPUTexture* m_halfDepths[4] = {};
     GPUTexture* m_pingPongHalfResultA;
     GPUTexture* m_pingPongHalfResultB;
     GPUTexture* m_finalResults;
@@ -286,6 +288,8 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
         GPUTextureDescription tempDesc;
         for (int i = 0; i < 4; i++)
         {
+            if (settings.SkipHalfPixels && (i == 1 || i == 2))
+                continue;
 #if SSAO_DEPTH_MIPS_ENABLE_AT_QUALITY_PRESET < 99
             tempDesc = GPUTextureDescription::New2D(m_halfSizeX, m_halfSizeY, 0, SSAO_DEPTH_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews);
 #else
@@ -407,7 +411,7 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
         }
 
         // Only do mipmaps for higher quality levels (not beneficial on quality level 1, and detrimental on quality level 0)
-        if (settings.QualityLevel > 1 && SSAO_DEPTH_MIPS_ENABLE_AT_QUALITY_PRESET < 99)
+        if (settings.QualityLevel > 1 && SSAO_DEPTH_MIPS_ENABLE_AT_QUALITY_PRESET < 99 && !settings.SkipHalfPixels)
         {
             for (int i = 1; i < SSAO_DEPTH_MIP_LEVELS; i++)
             {

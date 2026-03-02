@@ -395,6 +395,7 @@ void RenderList::RunPostFxPass(GPUContext* context, RenderContext& renderContext
         auto material = Settings.PostFxMaterials.Materials[i].Get();
         if (material && material->IsReady() && material->IsPostFx() && material->GetInfo().PostFxLocation == locationA)
         {
+            context->ResetSR();
             ASSERT(needTempTarget);
             context->SetRenderTarget(*output);
             bindParams.Input = *input;
@@ -431,6 +432,7 @@ void RenderList::RunPostFxPass(GPUContext* context, RenderContext& renderContext
 
     if (needTempTarget)
         RenderTargetPool::Release(output);
+    context->ResetSR();
 }
 
 void RenderList::RunMaterialPostFxPass(GPUContext* context, RenderContext& renderContext, MaterialPostFxLocation location, GPUTexture*& input, GPUTexture*& output)
@@ -441,6 +443,7 @@ void RenderList::RunMaterialPostFxPass(GPUContext* context, RenderContext& rende
         auto material = Settings.PostFxMaterials.Materials[i].Get();
         if (material && material->IsReady() && material->IsPostFx() && material->GetInfo().PostFxLocation == location)
         {
+            context->ResetSR();
             context->SetRenderTarget(*output);
             bindParams.Input = *input;
             material->Bind(bindParams);
@@ -459,6 +462,7 @@ void RenderList::RunCustomPostFxPass(GPUContext* context, RenderContext& renderC
     {
         if (fx->Location == location)
         {
+            context->ResetSR();
             if (fx->UseSingleTarget || output == nullptr)
             {
                 fx->Render(context, renderContext, input, nullptr);

@@ -96,4 +96,21 @@ float4 TextureGatherBlue(Texture2D tex, SamplerState sam, float2 uv)
 #endif
 }
 
+float4 TextureGatherDepth(Texture2D tex, float2 uv)
+{
+#if defined(WGSL)
+    // WebGPU doesn't allow to sample depth texture with regular sampler, need to use Load instead of Sample and get texture size for UV to pixel coordinate conversion
+    uint2 size;
+    tex.GetDimensions(size.x, size.y);
+    uint2 coord = (uint2)((float2)size * uv - 0.5f);
+    float x = tex.Load(uint3(coord + uint2(0, 1), 0)).x;
+    float y = tex.Load(uint3(coord + uint2(1, 1), 0)).x;
+    float z = tex.Load(uint3(coord + uint2(1, 0), 0)).x;
+    float w = tex.Load(uint3(coord + uint2(0, 0), 0)).x;
+    return float4(x, y, z, w);
+#else
+    return TextureGatherRed(tex, SamplerPointClamp, uv);
+#endif
+}
+
 #endif

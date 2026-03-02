@@ -34,7 +34,7 @@ META_VS_IN_ELEMENT(POSITION, 0, R32G32B32_FLOAT, 0, 0, PER_VERTEX, 0, true)
 Model_VS2PS VS_Model(ModelInput_PosOnly input)
 {
 	Model_VS2PS output;
-	output.Position = mul(float4(input.Position.xyz, 1), WVP);
+	output.Position = PROJECT_POINT(float4(input.Position.xyz, 1), WVP);
 	output.ScreenPos = output.Position;
 	return output;
 }

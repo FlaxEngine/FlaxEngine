@@ -28,7 +28,7 @@ public:
                 uint8 RenderTargetFormats[GPU_MAX_RT_BINDED];
                 class GPUVertexLayoutWebGPU* VertexLayout;
             };
-            uint64 Packed[3];
+            uint64 Packed[2];
         };
 
         FORCE_INLINE bool operator==(const Key& other) const

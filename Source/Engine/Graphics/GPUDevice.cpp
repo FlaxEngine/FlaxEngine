@@ -391,8 +391,6 @@ bool GPUDevice::Init()
 
     _res->TasksManager.SetExecutor(CreateTasksExecutor());
     LOG(Info, "Total graphics memory: {0}", Utilities::BytesToText(TotalGraphicsMemory));
-    if (!Limits.HasCompute)
-        LOG(Warning, "Compute Shaders are not supported");
     for (const auto& videoOutput : VideoOutputs)
         LOG(Info, "Video output '{0}' {1}x{2} {3} Hz", videoOutput.Name, videoOutput.Width, videoOutput.Height, videoOutput.RefreshRate);
     Engine::RequestingExit.Bind<GPUDevice, &GPUDevice::OnRequestingExit>(this);

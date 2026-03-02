@@ -34,7 +34,7 @@ META_PERMUTATION_1(VOLUMETRIC_FOG=1)
 float4 PS_Fog(Quad_VS2PS input) : SV_Target0
 {
     // Get world space position at given pixel coordinate
-	float rawDepth = SAMPLE_RT_LOAD(Depth, input.TexCoord).r;
+	float rawDepth = SAMPLE_RT_DEPTH(Depth, input.TexCoord);
 	GBufferData gBufferData = GetGBufferData();
 	float3 viewPos = GetViewPos(gBufferData, input.TexCoord, rawDepth);
 	float3 worldPos = mul(float4(viewPos, 1), gBufferData.InvViewMatrix).xyz;

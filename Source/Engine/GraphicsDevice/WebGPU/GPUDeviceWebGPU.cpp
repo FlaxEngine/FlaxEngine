@@ -28,22 +28,6 @@ GPUVertexLayoutWebGPU::GPUVertexLayoutWebGPU(GPUDeviceWebGPU* device, const Elem
     : GPUResourceBase<GPUDeviceWebGPU, GPUVertexLayout>(device, StringView::Empty)
 {
     SetElements(elements, explicitOffsets);
-    Layout = WGPU_VERTEX_BUFFER_LAYOUT_INIT;
-    Layout.stepMode = WGPUVertexStepMode_Vertex;
-    Layout.arrayStride = GetStride();
-    Layout.attributeCount = elements.Count();
-    Layout.attributes = Attributes;
-    const VertexElement* srcElements = GetElements().Get();
-    for (int32 i = 0; i < elements.Count(); i++)
-    {
-        const VertexElement& src = srcElements[i];
-        WGPUVertexAttribute& dst = Attributes[i];
-        dst.nextInChain = nullptr;
-        dst.format = RenderToolsWebGPU::ToVertexFormat(src.Format);
-        dst.offset = src.Offset;
-        if (src.PerInstance)
-            Layout.stepMode = WGPUVertexStepMode_Instance;
-    }
 }
 
 GPUDataUploaderWebGPU::Allocation GPUDataUploaderWebGPU::Allocate(uint32 size, WGPUBufferUsage usage, uint32 alignment)
@@ -183,6 +167,7 @@ bool GPUDeviceWebGPU::Init()
     if (wgpuAdapterGetLimits(Adapter->Adapter, &limits) == WGPUStatus_Success)
     {
         MinUniformBufferOffsetAlignment = limits.minUniformBufferOffsetAlignment;
+        Limits.HasDrawIndirect = true;
         Limits.HasDepthAsSRV = true;
         Limits.HasReadOnlyDepth = true;
         Limits.HasDepthClip = features.Contains(WGPUFeatureName_DepthClipControl);
@@ -431,6 +416,9 @@ bool GPUDeviceWebGPU::Init()
         {
             LOG(Info, "WebGPU: {}", WEBGPU_TO_STR(message));
         }
+        static int32 LogSpamLeft = 20;
+        if (LogSpamLeft-- < 0)
+            CRASH; // Too many errors
 #endif
     };
 

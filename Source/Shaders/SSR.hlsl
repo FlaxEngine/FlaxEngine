@@ -18,7 +18,7 @@ float2 ClipToUv(float2 clipPos)
 // go into clip space (-1:1 from bottom/left to up/right)
 float3 ProjectWorldToClip(float3 wsPos, float4x4 viewProjectionMatrix)
 {
-    float4 clipPos = mul(float4(wsPos, 1), viewProjectionMatrix);
+    float4 clipPos = PROJECT_POINT(float4(wsPos, 1), viewProjectionMatrix);
     return clipPos.xyz / clipPos.w;
 }
 
@@ -74,7 +74,7 @@ float3 TraceScreenSpaceReflection(
 #endif
 
     // Calculate view space normal vector
-    float3 normalVS = mul(gBuffer.Normal, (float3x3)viewMatrix);
+    float3 normalVS = PROJECT_POINT(gBuffer.Normal, (float3x3)viewMatrix);
     float3 reflectVS = normalize(reflect(gBuffer.ViewPos, normalVS));
     if (reflectVS.z < 0.001f)
         return 0; // Ray goes towards the view
@@ -116,7 +116,7 @@ float3 TraceScreenSpaceReflection(
     while (currSampleIndex < numSamples)
     {
         // Sample depth buffer and calculate depth difference
-        float currSample = SAMPLE_RT_LOAD(depthBuffer, currOffset.xy).r;
+        float currSample = SAMPLE_RT_DEPTH(depthBuffer, currOffset.xy);
         float depthDiff = currOffset.z - currSample;
 
         // Check intersection

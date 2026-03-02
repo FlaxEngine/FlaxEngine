@@ -11,6 +11,8 @@
 #include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 
+#define WEBGPU_LOG_PSO 0
+
 WGPUCompareFunction ToCompareFunction(ComparisonFunc value)
 {
     switch (value)
@@ -158,10 +160,9 @@ void GPUPipelineStateWebGPU::OnReleaseGPU()
 
 uint32 GetHash(const GPUPipelineStateWebGPU::Key& key)
 {
-    static_assert(sizeof(GPUPipelineStateWebGPU::Key) == sizeof(uint64) * 3, "Invalid PSO key size.");
+    static_assert(sizeof(GPUPipelineStateWebGPU::Key) == sizeof(uint64) * 2, "Invalid PSO key size.");
     uint32 hash = GetHash(key.Packed[0]);
     CombineHash(hash, GetHash(key.Packed[1]));
-    CombineHash(hash, GetHash(key.Packed[2]));
     return hash;
 }
 
@@ -175,6 +176,9 @@ WGPURenderPipeline GPUPipelineStateWebGPU::GetPipeline(const Key& key, GPUResour
 #if GPU_ENABLE_RESOURCE_NAMING
     ZoneText(_debugName.Get(), _debugName.Count() - 1);
 #endif
+#if WEBGPU_LOG_PSO
+    LOG(Info, "[WebGPU] GetPipeline: '{}'", String(_debugName.Get(), _debugName.Count() - 1));
+#endif
 
     // Lazy-init layout (cannot do it during Init as texture samplers that access eg. depth need to explicitly use UnfilterableFloat)
     if (!PipelineDesc.layout)
@@ -182,10 +186,14 @@ WGPURenderPipeline GPUPipelineStateWebGPU::GetPipeline(const Key& key, GPUResour
 
     // Build final pipeline description
     _depthStencilDesc.format = (WGPUTextureFormat)key.DepthStencilFormat;
+    PipelineDesc.depthStencil = key.DepthStencilFormat ? &_depthStencilDesc : nullptr; // Unbind depth stencil state when no debug buffer is bound
     PipelineDesc.multisample.count = key.MultiSampleCount;
-    _fragmentDesc.targetCount = key.RenderTargetCount;
-    for (int32 i = 0; i < _fragmentDesc.targetCount; i++)
-        _colorTargets[i].format = (WGPUTextureFormat)key.RenderTargetFormats[i];
+    if (PS)
+    {
+        _fragmentDesc.targetCount = key.RenderTargetCount;
+        for (int32 i = 0; i < _fragmentDesc.targetCount; i++)
+            _colorTargets[i].format = (WGPUTextureFormat)key.RenderTargetFormats[i];
+    }
     WGPUVertexBufferLayout buffers[GPU_MAX_VB_BINDED];
     if (key.VertexLayout)
     {
@@ -253,6 +261,10 @@ WGPURenderPipeline GPUPipelineStateWebGPU::GetPipeline(const Key& key, GPUResour
 
 void GPUPipelineStateWebGPU::InitLayout(GPUResourceView* shaderResources[GPU_MAX_SR_BINDED])
 {
+#if WEBGPU_LOG_PSO
+    // Debug log for PSOs with specific name
+    const bool log = true;// StringAnsiView(_debugName.Get(), _debugName.Count() - 1).Contains("PS_HalfDepth");
+#endif
 
     // Count the biggest bind group entries (for all shaders) to allocate reused memory
     int32 maxEntriesCount = 0;
@@ -276,6 +288,11 @@ void GPUPipelineStateWebGPU::InitLayout(GPUResourceView* shaderResources[GPU_MAX
         int32 entriesCount = descriptors->DescriptorTypesCount;
         Platform::MemoryClear(entries.Get(), sizeof(WGPUBindGroupLayoutEntry) * entriesCount);
         auto visibility = groupIndex == 0 ? WGPUShaderStage_Vertex : WGPUShaderStage_Fragment;
+#if WEBGPU_LOG_PSO
+        if (log)
+            LOG(Info, " > group {} - {}", groupIndex, groupIndex == 0 ? TEXT("Vertex") : TEXT("Fragment"));
+        const Char* samplerType = TEXT("?");
+#endif
         for (int32 index = 0; index < entriesCount; index++)
         {
             auto& descriptor = descriptors->DescriptorTypes[index];
@@ -287,16 +304,87 @@ void GPUPipelineStateWebGPU::InitLayout(GPUResourceView* shaderResources[GPU_MAX
             {
             case VK_DESCRIPTOR_TYPE_SAMPLER:
                 entry.sampler.type = WGPUSamplerBindingType_Undefined;
+                if (descriptor.Slot == 4 || descriptor.Slot == 5) // Hack for ShadowSampler and ShadowSamplerLinear (this could get binded samplers table just like for shaderResources)
+                    entry.sampler.type = WGPUSamplerBindingType_Comparison;
+#if WEBGPU_LOG_PSO
+                switch (entry.sampler.type)
+                {
+                case WGPUSamplerBindingType_BindingNotUsed:
+                    samplerType = TEXT("BindingNotUsed");
+                    break;
+                case WGPUSamplerBindingType_Undefined:
+                    samplerType = TEXT("Undefined");
+                    break;
+                case WGPUSamplerBindingType_Filtering:
+                    samplerType = TEXT("Filtering");
+                    break;
+                case WGPUSamplerBindingType_NonFiltering:
+                    samplerType = TEXT("NonFiltering");
+                    break;
+                case WGPUSamplerBindingType_Comparison:
+                    samplerType = TEXT("Comparison");
+                    break;
+                }
+                if (log)
+                    LOG(Info, "   > [{}] sampler ({})", entry.binding, samplerType);
+#endif
                 break;
             case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
                 entry.texture.sampleType = WGPUTextureSampleType_Undefined;
                 if (shaderResources[descriptor.Slot])
                 {
-                    // Hack to use the sample type directly from the view which allows to fix incorrect Depth Buffer reading that allows only manual Load when UnfilterableFloat is used (see SAMPLE_RT_LOAD)
+                    // Hack to use the sample type directly from the view which allows to fix incorrect Depth Buffer reading that allows only manual Load when UnfilterableFloat is used (see SAMPLE_RT_DEPTH)
                     auto ptr = (GPUResourceViewPtrWebGPU*)shaderResources[descriptor.Slot]->GetNativePtr();
                     if (ptr && ptr->TextureView)
                         entry.texture.sampleType = ptr->TextureView->SampleType;
                 }
+#if WEBGPU_LOG_PSO
+                if (log)
+                {
+                    switch (entry.texture.sampleType)
+                    {
+                    case WGPUTextureSampleType_BindingNotUsed:
+                        samplerType = TEXT("BindingNotUsed");
+                        break;
+                    case WGPUTextureSampleType_Undefined:
+                        samplerType = TEXT("Undefined");
+                        break;
+                    case WGPUTextureSampleType_Float:
+                        samplerType = TEXT("Float");
+                        break;
+                    case WGPUTextureSampleType_UnfilterableFloat:
+                        samplerType = TEXT("UnfilterableFloat");
+                        break;
+                    case WGPUTextureSampleType_Depth:
+                        samplerType = TEXT("Depth");
+                        break;
+                    case WGPUTextureSampleType_Sint:
+                        samplerType = TEXT("Sint");
+                        break;
+                    case WGPUTextureSampleType_Uint:
+                        samplerType = TEXT("Uint");
+                        break;
+                    }
+                    switch (descriptor.ResourceType)
+                    {
+                    case SpirvShaderResourceType::Texture1D:
+                        LOG(Info, "   > [{}] texture 1D ({})", entry.binding, samplerType);
+                        break;
+                    case SpirvShaderResourceType::Texture2D:
+                        LOG(Info, "   > [{}] texture 2D ({})", entry.binding, samplerType);
+                        break;
+                    case SpirvShaderResourceType::Texture3D:
+                        LOG(Info, "   > [{}] texture 3D ({})", entry.binding, samplerType);
+                        break;
+                    case SpirvShaderResourceType::TextureCube:
+                        LOG(Info, "   > [{}] texture Cube ({})", entry.binding, samplerType);
+                        break;
+                    case SpirvShaderResourceType::Texture2DArray:
+                        LOG(Info, "   > [{}] texture 2D array ({})", entry.binding, samplerType);
+                        break;
+                    }
+                }
+#endif
                 switch (descriptor.ResourceType)
                 {
                 case SpirvShaderResourceType::Texture1D:
@@ -326,11 +414,19 @@ void GPUPipelineStateWebGPU::InitLayout(GPUResourceView* shaderResources[GPU_MAX
                     entry.buffer.type = WGPUBufferBindingType_ReadOnlyStorage;
                 else
                     entry.buffer.type = WGPUBufferBindingType_Storage;
+#if WEBGPU_LOG_PSO
+                if (log)
+                    LOG(Info, "   > [{}] storage buffer (read-only = {}, dynamic = {})", entry.binding, entry.buffer.type == WGPUBufferBindingType_ReadOnlyStorage, entry.buffer.hasDynamicOffset);
+#endif
                 break;
             case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
                 entry.buffer.hasDynamicOffset = true;
             case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
                 entry.buffer.type = WGPUBufferBindingType_Uniform;
+#if WEBGPU_LOG_PSO
+                if (log)
+                    LOG(Info, "   > [{}] uniform buffer (dynamic = {})", entry.binding, entry.buffer.hasDynamicOffset);
+#endif
                 break;
             default:
 #if GPU_ENABLE_DIAGNOSTICS
@@ -414,33 +510,33 @@ bool GPUPipelineStateWebGPU::Init(const Description& desc)
         }
     }
     PipelineDesc.multisample.alphaToCoverageEnabled = desc.BlendMode.AlphaToCoverageEnable;
-    PipelineDesc.fragment = &_fragmentDesc;
-    _fragmentDesc = WGPU_FRAGMENT_STATE_INIT;
-    _fragmentDesc.targets = _colorTargets;
-    Platform::MemoryClear(&_colorTargets, sizeof(_colorTargets));
-    if (desc.BlendMode.BlendEnable)
-    {
-        _blendState = WGPU_BLEND_STATE_INIT;
-        _blendState.color = ToBlendComponent(desc.BlendMode.BlendOp, desc.BlendMode.SrcBlend, desc.BlendMode.DestBlend);
-        _blendState.alpha = ToBlendComponent(desc.BlendMode.BlendOpAlpha, desc.BlendMode.SrcBlendAlpha, desc.BlendMode.DestBlendAlpha);
-        for (auto& e : _colorTargets)
-            e.blend = &_blendState;
-    }
-    WGPUColorWriteMask writeMask = WGPUColorWriteMask_All;
-    if (desc.BlendMode.RenderTargetWriteMask != BlendingMode::ColorWrite::All)
-    {
-        writeMask = 0;
-        if (EnumHasAllFlags(desc.BlendMode.RenderTargetWriteMask, BlendingMode::ColorWrite::Red))
-            writeMask |= WGPUColorWriteMask_Red;
-        if (EnumHasAllFlags(desc.BlendMode.RenderTargetWriteMask, BlendingMode::ColorWrite::Green))
-            writeMask |= WGPUColorWriteMask_Green;
-        if (EnumHasAllFlags(desc.BlendMode.RenderTargetWriteMask, BlendingMode::ColorWrite::Blue))
-            writeMask |= WGPUColorWriteMask_Blue;
-        if (EnumHasAllFlags(desc.BlendMode.RenderTargetWriteMask, BlendingMode::ColorWrite::Alpha))
-            writeMask |= WGPUColorWriteMask_Alpha;
-    }
     if (desc.PS)
     {
+        PipelineDesc.fragment = &_fragmentDesc;
+        _fragmentDesc = WGPU_FRAGMENT_STATE_INIT;
+        _fragmentDesc.targets = _colorTargets;
+        Platform::MemoryClear(&_colorTargets, sizeof(_colorTargets));
+        if (desc.BlendMode.BlendEnable)
+        {
+            _blendState = WGPU_BLEND_STATE_INIT;
+            _blendState.color = ToBlendComponent(desc.BlendMode.BlendOp, desc.BlendMode.SrcBlend, desc.BlendMode.DestBlend);
+            _blendState.alpha = ToBlendComponent(desc.BlendMode.BlendOpAlpha, desc.BlendMode.SrcBlendAlpha, desc.BlendMode.DestBlendAlpha);
+            for (auto& e : _colorTargets)
+                e.blend = &_blendState;
+        }
+        WGPUColorWriteMask writeMask = WGPUColorWriteMask_All;
+        if (desc.BlendMode.RenderTargetWriteMask != BlendingMode::ColorWrite::All)
+        {
+            writeMask = 0;
+            if (EnumHasAllFlags(desc.BlendMode.RenderTargetWriteMask, BlendingMode::ColorWrite::Red))
+                writeMask |= WGPUColorWriteMask_Red;
+            if (EnumHasAllFlags(desc.BlendMode.RenderTargetWriteMask, BlendingMode::ColorWrite::Green))
+                writeMask |= WGPUColorWriteMask_Green;
+            if (EnumHasAllFlags(desc.BlendMode.RenderTargetWriteMask, BlendingMode::ColorWrite::Blue))
+                writeMask |= WGPUColorWriteMask_Blue;
+            if (EnumHasAllFlags(desc.BlendMode.RenderTargetWriteMask, BlendingMode::ColorWrite::Alpha))
+                writeMask |= WGPUColorWriteMask_Alpha;
+        }
         uint16 outputsCount = desc.PS->GetBindings().OutputsCount;
         for (uint16 rtIndex = 0; rtIndex < outputsCount; rtIndex++)
             _colorTargets[rtIndex].writeMask = writeMask;

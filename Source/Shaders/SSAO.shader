@@ -234,7 +234,7 @@ META_PS(true, FEATURE_LEVEL_ES2)
 void PS_PrepareDepthsHalf(in float4 inPos : SV_POSITION, out float out0 : SV_Target0, out float out1 : SV_Target1)
 {
 	int3 baseCoord = int3(int2(inPos.xy) * InputDepthScale, 0);
-	float a = g_DepthSource.Load(baseCoord, int2(0, 0)).x;
+	float a = g_DepthSource.Load(baseCoord).x;
 	float d = g_DepthSource.Load(baseCoord, int2(1, 1)).x;
 
 	GBufferData gBufferData = GetGBufferData();
@@ -325,7 +325,7 @@ float3 LoadNormal(int2 pos)
 {
 	float3 normalEncoded = g_NormalmapSource.Load(int3(pos, 0)).xyz;
 	float3 normalWS = DecodeNormal(normalEncoded);
-	float3 normalVS = mul(normalWS, (float3x3)ViewMatrix);
+	float3 normalVS = PROJECT_POINT(normalWS, (float3x3)ViewMatrix);
 	return normalVS;
 }
 
@@ -333,7 +333,7 @@ float3 LoadNormal(int2 pos, int2 offset)
 {
 	float3 normalEncoded = g_NormalmapSource.Load(int3(pos, 0), offset).xyz;
 	float3 normalWS = DecodeNormal(normalEncoded);
-	float3 normalVS = mul(normalWS, (float3x3)ViewMatrix);
+	float3 normalVS = PROJECT_POINT(normalWS, (float3x3)ViewMatrix);
 	return normalVS;
 }
 
@@ -720,21 +720,21 @@ float2 SampleBlurred(float4 inPos, float2 coord)
 
 // Edge-sensitive blur
 META_PS(true, FEATURE_LEVEL_ES2)
-float2 PS_SmartBlur(in float4 inPos : SV_POSITION, in float2 inUV : TEXCOORD0) : SV_Target
+float2 PS_SmartBlur(in float4 inPos : SV_POSITION, in noperspective float2 inUV : TEXCOORD0) : SV_Target
 {
 	return SampleBlurred(inPos, inUV);
 }
 
 // Edge-sensitive blur (wider kernel)
 META_PS(true, FEATURE_LEVEL_ES2)
-float2 PS_SmartBlurWide(in float4 inPos : SV_POSITION, in float2 inUV : TEXCOORD0) : SV_Target
+float2 PS_SmartBlurWide(in float4 inPos : SV_POSITION, in noperspective float2 inUV : TEXCOORD0) : SV_Target
 {
 	return SampleBlurredWide(inPos, inUV);
 }
 
 // Edge-ignorant blur in x and y directions, 9 pixels touched (for the lowest quality level 0)
 META_PS(true, FEATURE_LEVEL_ES2)
-float2 PS_NonSmartBlur(in float4 inPos : SV_POSITION, in float2 inUV : TEXCOORD0) : SV_Target
+float2 PS_NonSmartBlur(in float4 inPos : SV_POSITION, in noperspective float2 inUV : TEXCOORD0) : SV_Target
 {
 	float2 halfPixel = HalfViewportPixelSize * 0.5f;
 	
@@ -751,7 +751,7 @@ float2 PS_NonSmartBlur(in float4 inPos : SV_POSITION, in float2 inUV : TEXCOORD0
 
 // Edge-ignorant blur & apply (for the lowest quality level 0)
 META_PS(true, FEATURE_LEVEL_ES2)
-float4 PS_Apply(in float4 inPos : SV_POSITION, in float2 inUV : TEXCOORD0) : SV_Target
+float4 PS_Apply(in float4 inPos : SV_POSITION, in noperspective float2 inUV : TEXCOORD0) : SV_Target
 {
 	float a = g_FinalSSAO.SampleLevel(SamplerLinearClamp, float3(inUV.xy, 0), 0.0).x;
 	float b = g_FinalSSAO.SampleLevel(SamplerLinearClamp, float3(inUV.xy, 1), 0.0).x;
@@ -765,7 +765,7 @@ float4 PS_Apply(in float4 inPos : SV_POSITION, in float2 inUV : TEXCOORD0) : SV_
 
 // Edge-ignorant blur & apply, skipping half pixels in checkerboard pattern
 META_PS(true, FEATURE_LEVEL_ES2)
-float4 PS_ApplyHalf(in float4 inPos : SV_POSITION, in float2 inUV : TEXCOORD0) : SV_Target
+float4 PS_ApplyHalf(in float4 inPos : SV_POSITION, in noperspective float2 inUV : TEXCOORD0) : SV_Target
 {
 	float a = g_FinalSSAO.SampleLevel(SamplerLinearClamp, float3(inUV.xy, 0), 0.0).x;
 	float d = g_FinalSSAO.SampleLevel(SamplerLinearClamp, float3(inUV.xy, 3), 0.0).x;

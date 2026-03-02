@@ -32,7 +32,7 @@ MaterialInput VS(ModelInput_PosOnly input)
 	MaterialInput output;
 
 	// Compute vertex position
-	output.Position = mul(float4(input.Position.xyz, 1), WorldViewProjection);
+	output.Position = PROJECT_POINT(float4(input.Position.xyz, 1), WorldViewProjection);
 	output.ScreenPos = output.Position;
 
 	return output;
@@ -47,7 +47,7 @@ GBufferOutput PS_Sky(MaterialInput input)
     // Calculate view vector (unproject at the far plane)
 	GBufferData gBufferData = GetGBufferData();
 	float4 clipPos = float4(input.ScreenPos.xy / input.ScreenPos.w, 1.0, 1.0);
-	clipPos = mul(clipPos, InvViewProjection);
+	clipPos = PROJECT_POINT(clipPos, InvViewProjection);
 	float3 worldPos = clipPos.xyz / clipPos.w;
     float3 viewVector = normalize(worldPos - gBufferData.ViewPos);
 

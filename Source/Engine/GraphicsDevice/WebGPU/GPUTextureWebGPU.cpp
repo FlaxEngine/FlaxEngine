@@ -32,12 +32,38 @@ WGPUTextureFormat DropStencil(WGPUTextureFormat format)
     }
 }
 
-void GPUTextureViewWebGPU::Create(WGPUTexture texture, WGPUTextureViewDescriptor const* desc)
+void SetWebGPUTextureViewSampler(GPUTextureView* view, uint32 samplerType)
+{
+    ((GPUTextureViewWebGPU*)view)->SampleType = (WGPUTextureSampleType)samplerType;
+}
+
+void GPUTextureViewWebGPU::Create(WGPUTexture texture, const WGPUTextureViewDescriptor& desc)
 {
     if (View)
         wgpuTextureViewRelease(View);
     Texture = texture;
-    View = wgpuTextureCreateView(texture, desc);
+
+    auto viewDesc = desc;
+    auto renderDesc = desc;
+    auto separateViews = false;
+
+    // Render views cannot have more than 1 mip levels count
+    if (desc.usage & WGPUTextureUsage_RenderAttachment && renderDesc.mipLevelCount > 1)
+    {
+        renderDesc.mipLevelCount = 1;
+        separateViews = true;
+    }
+
+    // Depth-stencil textures expose depth-only when binding to shaders (unless via custom _handleStencil view) so make separate ViewRender for rendering with all components
+    if (desc.aspect == WGPUTextureAspect_All && ::HasStencil(desc.format))
+    {
+        viewDesc.aspect = WGPUTextureAspect_DepthOnly;
+        viewDesc.format = DropStencil(viewDesc.format);
+        separateViews = true;
+    }
+
+    // Create views
+    View = wgpuTextureCreateView(texture, &viewDesc);
     if (!View)
     {
 #if GPU_ENABLE_RESOURCE_NAMING
@@ -46,18 +72,13 @@ void GPUTextureViewWebGPU::Create(WGPUTexture texture, WGPUTextureViewDescriptor
         LOG(Error, "Failed to create a view for texture");
 #endif
     }
-    ViewRender = View;
+    if (separateViews)
+        ViewRender = wgpuTextureCreateView(texture, &renderDesc);
+    else
+        ViewRender = View;
 
-    // Depth-stencil textures expose depth-only when binding to shaders (unless via custom _handleStencil view) so make separate ViewRender for rendering with all components
-    if (desc && desc->aspect == WGPUTextureAspect_All && ::HasStencil(desc->format))
-    {
-        auto depthOnlyDesc = *desc;
-        depthOnlyDesc.aspect = WGPUTextureAspect_DepthOnly;
-        depthOnlyDesc.format = DropStencil(depthOnlyDesc.format);
-        View = wgpuTextureCreateView(texture, &depthOnlyDesc);
-    }
-
-    Format = desc ? desc->format : wgpuTextureGetFormat(texture);
+    // Cache metadata
+    Format = desc.format;
     switch (Format)
     {
     case WGPUTextureFormat_Depth16Unorm:
@@ -76,6 +97,8 @@ void GPUTextureViewWebGPU::Create(WGPUTexture texture, WGPUTextureViewDescriptor
         SampleType = WGPUTextureSampleType_Undefined;
         break;
     }
+    RenderSize.Width = Math::Max<uint16>(wgpuTextureGetWidth(Texture) >> renderDesc.baseMipLevel, 1);
+    RenderSize.Height = Math::Max<uint16>(wgpuTextureGetHeight(Texture) >> renderDesc.baseMipLevel, 1);
 }
 
 void GPUTextureViewWebGPU::Release()
@@ -113,21 +136,22 @@ bool GPUTextureWebGPU::OnInit()
         textureDesc.usage |= WGPUTextureUsage_RenderAttachment;
     textureDesc.size.width = _desc.Width;
     textureDesc.size.height = _desc.Height;
-    textureDesc.size.depthOrArrayLayers = _desc.Depth;
     switch (_desc.Dimensions)
     {
     case TextureDimensions::Texture:
         _viewDimension = IsArray() ? WGPUTextureViewDimension_2DArray : WGPUTextureViewDimension_2D;
         textureDesc.dimension = WGPUTextureDimension_2D;
+        textureDesc.size.depthOrArrayLayers = _desc.ArraySize;
         break;
     case TextureDimensions::VolumeTexture:
         _viewDimension = WGPUTextureViewDimension_3D;
         textureDesc.dimension = WGPUTextureDimension_3D;
+        textureDesc.size.depthOrArrayLayers = _desc.Depth;
         break;
     case TextureDimensions::CubeTexture:
         _viewDimension = _desc.ArraySize > 6 ? WGPUTextureViewDimension_CubeArray : WGPUTextureViewDimension_Cube;
         textureDesc.dimension = WGPUTextureDimension_2D;
-        textureDesc.size.depthOrArrayLayers *= 6; // Each cubemap uses 6 array slices
+        textureDesc.size.depthOrArrayLayers = _desc.ArraySize;
         break;
     }
     textureDesc.format = RenderToolsWebGPU::ToTextureFormat(Format());
@@ -136,7 +160,7 @@ bool GPUTextureWebGPU::OnInit()
     textureDesc.viewFormats = &textureDesc.format;
     textureDesc.viewFormatCount = 1;
     _format = textureDesc.format;
-    _usage = textureDesc.usage;
+    Usage = textureDesc.usage;
     Texture = wgpuDeviceCreateTexture(_device->Device, &textureDesc);
     if (!Texture)
         return true;
@@ -179,7 +203,7 @@ void GPUTextureWebGPU::OnResidentMipsChanged()
     // Update the view to handle base mip level as highest resident mip
     WGPUTextureViewDescriptor viewDesc = WGPU_TEXTURE_VIEW_DESCRIPTOR_INIT;
     viewDesc.format = _format;
-    viewDesc.usage = _usage;
+    viewDesc.usage = Usage;
     viewDesc.dimension = _viewDimension;
     viewDesc.baseMipLevel = MipLevels() - ResidentMipLevels();
     viewDesc.mipLevelCount = ResidentMipLevels();
@@ -188,7 +212,7 @@ void GPUTextureWebGPU::OnResidentMipsChanged()
     GPUTextureViewWebGPU& view = IsVolume() ? _handleVolume : _handlesPerSlice[0];
     if (view.GetParent() == nullptr)
         view.Init(this, _desc.Format, _desc.MultiSampleLevel);
-    view.Create(Texture, &viewDesc);
+    view.Create(Texture, viewDesc);
 }
 
 void GPUTextureWebGPU::OnReleaseGPU()
@@ -220,7 +244,7 @@ void GPUTextureWebGPU::InitHandles()
     viewDesc.label = { _name.Get(), (size_t)_name.Length() };
 #endif
     viewDesc.format = _format;
-    viewDesc.usage = _usage;
+    viewDesc.usage = Usage;
     viewDesc.dimension = _viewDimension;
     viewDesc.mipLevelCount = MipLevels();
     viewDesc.arrayLayerCount = ArraySize();
@@ -235,7 +259,7 @@ void GPUTextureWebGPU::InitHandles()
         {
             auto& view = _handleVolume;
             view.Init(this, format, msaa);
-            view.Create(Texture, &viewDesc);
+            view.Create(Texture, viewDesc);
         }
 
         // Init per slice views
@@ -249,7 +273,7 @@ void GPUTextureWebGPU::InitHandles()
                 //viewDesc.arrayLayerCount = 1;
                 auto& view = _handlesPerSlice[sliceIndex];
                 view.Init(this, format, msaa);
-                view.Create(Texture, &viewDesc);
+                view.Create(Texture, viewDesc);
                 view.DepthSlice = sliceIndex;
             }
         }
@@ -263,7 +287,7 @@ void GPUTextureWebGPU::InitHandles()
         {
             auto& view = _handleArray;
             view.Init(this, format, msaa);
-            view.Create(Texture, &viewDesc);
+            view.Create(Texture, viewDesc);
         }
 
         // Create per array slice handles
@@ -275,7 +299,7 @@ void GPUTextureWebGPU::InitHandles()
             viewDesc.arrayLayerCount = 1;
             auto& view = _handlesPerSlice[arrayIndex];
             view.Init(this, format, msaa);
-            view.Create(Texture, &viewDesc);
+            view.Create(Texture, viewDesc);
         }
         viewDesc.baseArrayLayer = 0;
         viewDesc.arrayLayerCount = MipLevels();
@@ -287,7 +311,7 @@ void GPUTextureWebGPU::InitHandles()
         _handlesPerSlice.Resize(1, false);
         auto& view = _handlesPerSlice[0];
         view.Init(this, format, msaa);
-        view.Create(Texture, &viewDesc);
+        view.Create(Texture, viewDesc);
     }
 
     // Init per mip map handles
@@ -308,7 +332,7 @@ void GPUTextureWebGPU::InitHandles()
                 auto& view = slice[mipIndex];
                 viewDesc.baseMipLevel = mipIndex;
                 view.Init(this, format, msaa);
-                view.Create(Texture, &viewDesc);
+                view.Create(Texture, viewDesc);
             }
         }
         viewDesc.dimension = _viewDimension;
@@ -319,7 +343,7 @@ void GPUTextureWebGPU::InitHandles()
     {
         auto& view = _handleReadOnlyDepth;
         view.Init(this, format, msaa);
-        view.Create(Texture, &viewDesc);
+        view.Create(Texture, viewDesc);
         view.ReadOnly = true;
     }
 
@@ -339,7 +363,7 @@ void GPUTextureWebGPU::InitHandles()
         viewDesc.aspect = WGPUTextureAspect_StencilOnly;
         viewDesc.format = WGPUTextureFormat_Stencil8;
         _handleStencil.Init(this, stencilFormat, msaa);
-        _handleStencil.Create(Texture, &viewDesc);
+        _handleStencil.Create(Texture, viewDesc);
     }
 }
 

@@ -9,6 +9,28 @@
 
 #if GRAPHICS_API_WEBGPU
 
+struct GPUTextureViewSizeWebGPU
+{
+    union
+    {
+        struct
+        {
+            uint16 Width, Height;
+        };
+        uint32 Packed = 0;
+    };
+
+    FORCE_INLINE void Set(GPUTextureViewSizeWebGPU other)
+    {
+        if (Packed == 0)
+            Packed = other.Packed;
+        else
+        {
+            ASSERT(Packed == other.Packed);
+        }
+    }
+};
+
 /// <summary>
 /// The texture view for Web GPU backend.
 /// </summary>
@@ -36,13 +58,14 @@ public:
     bool HasStencil = false;
     bool ReadOnly = false;
     uint32 DepthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+    GPUTextureViewSizeWebGPU RenderSize;
     WGPUTextureFormat Format = WGPUTextureFormat_Undefined;
     WGPUTextureSampleType SampleType = WGPUTextureSampleType_Undefined;
     GPUResourceViewPtrWebGPU Ptr;
 
 public:
     using GPUTextureView::Init;
-    void Create(WGPUTexture texture, WGPUTextureViewDescriptor const* desc = nullptr);
+    void Create(WGPUTexture texture, const WGPUTextureViewDescriptor& desc);
     void Release();
 
 public:
@@ -70,7 +93,6 @@ private:
 #endif
     WGPUTextureFormat _format = WGPUTextureFormat_Undefined;
     WGPUTextureViewDimension _viewDimension = WGPUTextureViewDimension_Undefined;
-    WGPUTextureUsage _usage = 0;
 
 public:
     GPUTextureWebGPU(GPUDeviceWebGPU* device, const StringView& name)
@@ -81,6 +103,8 @@ public:
 public:
     // Handle to the WebGPU texture object.
     WGPUTexture Texture = nullptr;
+    // Usage flags fo the created texture.
+    WGPUTextureUsage Usage = 0;
 
 public:
     // [GPUTexture]

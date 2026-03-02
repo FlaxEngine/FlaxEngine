@@ -1178,6 +1178,11 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
             LOG(Fatal, "Failed to setup shadow map of size {0}x{1} and format {2}", desc.Width, desc.Height, ScriptingEnum::ToString(desc.Format));
             return;
         }
+#if PLATFORM_WEB
+        // Hack to fix WebGPU limitation that requires to specify different sampler type manually to sample depth texture
+        void SetWebGPUTextureViewSampler(GPUTextureView * view, uint32 samplerType);
+        SetWebGPUTextureViewSampler(shadows.ShadowMapAtlas->View(), 0x00000004); // WGPUTextureSampleType_Depth
+#endif
         shadows.ClearShadowMapAtlas = true;
         shadows.Resolution = atlasResolution;
         shadows.ViewOrigin = renderContext.View.Origin;

@@ -9,7 +9,7 @@ float2 Padding;
 META_CB_END
 
 // Use linear sampling (less texture fetches required)
-#define SAMPLE(rt, texCoord) SAMPLE_RT_LINEAR(rt, texCoord)
+#define SAMPLE_BLUR(rt, texCoord) SAMPLE_RT_LINEAR(rt, texCoord)
 
 Texture2D Input : register(t0);
 
@@ -26,7 +26,7 @@ float PS_HalfDepth(Quad_VS2PS input)
 #endif
 {
     // Load 4 depth values (2x2 quad)
-	float4 depths = TextureGatherRed(Input, SamplerPointClamp, input.TexCoord);
+	float4 depths = TextureGatherDepth(Input, input.TexCoord);
 
 #if HZB_CLOSEST
 	return min(depths.x, min(depths.y, min(depths.z, depths.w)));
@@ -50,7 +50,7 @@ float4 PS_Blur5(Quad_VS2PS input) : SV_Target0
 		0.35294118
 	};
 
-	float4 color = SAMPLE(Input, input.TexCoord) * weights[0];
+	float4 color = SAMPLE_BLUR(Input, input.TexCoord) * weights[0];
 
 	UNROLL
 	for (int i = 1; i < 2; i++)
@@ -61,8 +61,8 @@ float4 PS_Blur5(Quad_VS2PS input) : SV_Target0
 	float2 texCoordOffset = float2(0, offsets[i]) * TexelSize;
 #endif
 
-		color += (SAMPLE(Input, input.TexCoord + texCoordOffset)
-				+ SAMPLE(Input, input.TexCoord - texCoordOffset))
+		color += (SAMPLE_BLUR(Input, input.TexCoord + texCoordOffset)
+				+ SAMPLE_BLUR(Input, input.TexCoord - texCoordOffset))
 				* weights[i];
 	}
 
@@ -86,7 +86,7 @@ float4 PS_Blur9(Quad_VS2PS input) : SV_Target0
 		0.07027027
 	};
 
-	float4 color = SAMPLE(Input, input.TexCoord) * weights[0];
+	float4 color = SAMPLE_BLUR(Input, input.TexCoord) * weights[0];
 
 	UNROLL
 	for (int i = 1; i < 3; i++)
@@ -97,8 +97,8 @@ float4 PS_Blur9(Quad_VS2PS input) : SV_Target0
 	float2 texCoordOffset = float2(0, offsets[i]) * TexelSize;
 #endif
 
-		color += (SAMPLE(Input, input.TexCoord + texCoordOffset)
-				+ SAMPLE(Input, input.TexCoord - texCoordOffset))
+		color += (SAMPLE_BLUR(Input, input.TexCoord + texCoordOffset)
+				+ SAMPLE_BLUR(Input, input.TexCoord - texCoordOffset))
 				* weights[i];
 	}
 
@@ -124,7 +124,7 @@ float4 PS_Blur13(Quad_VS2PS input) : SV_Target0
 		0.01038136
 	};
 
-	float4 color = SAMPLE(Input, input.TexCoord) * weights[0];
+	float4 color = SAMPLE_BLUR(Input, input.TexCoord) * weights[0];
 
 	UNROLL
 	for (int i = 1; i < 4; i++)
@@ -135,8 +135,8 @@ float4 PS_Blur13(Quad_VS2PS input) : SV_Target0
 	float2 texCoordOffset = float2(0, offsets[i]) * TexelSize;
 #endif
 
-		color += (SAMPLE(Input, input.TexCoord + texCoordOffset)
-				+ SAMPLE(Input, input.TexCoord - texCoordOffset))
+		color += (SAMPLE_BLUR(Input, input.TexCoord + texCoordOffset)
+				+ SAMPLE_BLUR(Input, input.TexCoord - texCoordOffset))
 				* weights[i];
 	}
 

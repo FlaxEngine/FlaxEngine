@@ -56,7 +56,7 @@ float3 GetWorldPos(GBufferData gBuffer, float2 uv, float deviceDepth)
 // Sample raw device depth buffer
 float SampleZ(float2 uv)
 {
-    return SAMPLE_RT_LOAD(Depth, uv).r;
+    return SAMPLE_RT_DEPTH(Depth, uv);
 }
 
 // Sample linear depth

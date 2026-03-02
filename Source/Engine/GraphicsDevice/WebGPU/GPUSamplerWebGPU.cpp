@@ -41,19 +41,19 @@ bool GPUSamplerWebGPU::OnInit()
     switch (_desc.Filter)
     {
     case GPUSamplerFilter::Point:
-        samplerDesc.magFilter = samplerDesc.magFilter = WGPUFilterMode_Nearest;
+        samplerDesc.magFilter = samplerDesc.minFilter = WGPUFilterMode_Nearest;
         samplerDesc.mipmapFilter = WGPUMipmapFilterMode_Nearest;
         break;
     case GPUSamplerFilter::Bilinear:
-        samplerDesc.magFilter = samplerDesc.magFilter = WGPUFilterMode_Linear;
+        samplerDesc.magFilter = samplerDesc.minFilter = WGPUFilterMode_Linear;
         samplerDesc.mipmapFilter = WGPUMipmapFilterMode_Nearest;
         break;
     case GPUSamplerFilter::Trilinear:
-        samplerDesc.magFilter = samplerDesc.magFilter = WGPUFilterMode_Linear;
+        samplerDesc.magFilter = samplerDesc.minFilter = WGPUFilterMode_Linear;
         samplerDesc.mipmapFilter = WGPUMipmapFilterMode_Linear;
         break;
     case GPUSamplerFilter::Anisotropic:
-        samplerDesc.magFilter = samplerDesc.magFilter = WGPUFilterMode_Linear;
+        samplerDesc.magFilter = samplerDesc.minFilter = WGPUFilterMode_Linear;
         samplerDesc.mipmapFilter = WGPUMipmapFilterMode_Linear;
         break;
     }

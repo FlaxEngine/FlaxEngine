@@ -60,6 +60,8 @@ GPUContextWebGPU::GPUContextWebGPU(GPUDeviceWebGPU* device)
 
 GPUContextWebGPU::~GPUContextWebGPU()
 {
+    if (Encoder)
+        Flush();
     CHECK(Encoder == nullptr);
 }
 
@@ -120,6 +122,10 @@ void GPUContextWebGPU::FrameEnd()
 
 void GPUContextWebGPU::EventBegin(const Char* name)
 {
+    // Cannot insert commands in encoder during render pass
+    if (_renderPass)
+        EndRenderPass();
+
     StringAsANSI<> nameAnsi(name);
     wgpuCommandEncoderPushDebugGroup(Encoder, { nameAnsi.Get(), (size_t)nameAnsi.Length() });
 }
@@ -252,17 +258,19 @@ void GPUContextWebGPU::SetStencilRef(uint32 value)
 
 void GPUContextWebGPU::ResetSR()
 {
+    _bindGroupDirty = true;
     Platform::MemoryClear(_shaderResources, sizeof(_shaderResources));
 }
 
 void GPUContextWebGPU::ResetUA()
 {
+    _bindGroupDirty = true;
     Platform::MemoryClear(_storageResources, sizeof(_storageResources));
 }
 
 void GPUContextWebGPU::ResetCB()
 {
-    _bindGroupDirty = false;
+    _bindGroupDirty = true;
     Platform::MemoryClear(_constantBuffers, sizeof(_constantBuffers));
 }
 
@@ -425,14 +433,14 @@ void GPUContextWebGPU::EndQuery(uint64 queryID)
 void GPUContextWebGPU::SetViewport(const Viewport& viewport)
 {
     _viewport = viewport;
-    if (_renderPass)
+    if (_renderPass && !_renderPassDirty)
         wgpuRenderPassEncoderSetViewport(_renderPass, viewport.X, viewport.Y, viewport.Width, viewport.Height, viewport.MinDepth, viewport.MaxDepth);
 }
 
 void GPUContextWebGPU::SetScissor(const Rectangle& scissorRect)
 {
     _scissorRect = scissorRect;
-    if (_renderPass)
+    if (_renderPass && !_renderPassDirty)
         wgpuRenderPassEncoderSetScissorRect(_renderPass, (uint32_t)scissorRect.GetX(), (uint32_t)scissorRect.GetY(), (uint32_t)scissorRect.GetWidth(), (uint32_t)scissorRect.GetHeight());
 }
 
@@ -490,6 +498,7 @@ void GPUContextWebGPU::Flush()
     WGPUCommandBufferDescriptor commandBufferDesc = WGPU_COMMAND_BUFFER_DESCRIPTOR_INIT;
     WGPUCommandBuffer commandBuffer = wgpuCommandEncoderFinish(Encoder, &commandBufferDesc);
     wgpuCommandEncoderRelease(Encoder);
+    Encoder = nullptr;
     if (commandBuffer)
     {
         wgpuQueueSubmit(_device->Queue, 1, &commandBuffer);
@@ -567,8 +576,7 @@ void GPUContextWebGPU::CopyTexture(GPUTexture* dstResource, uint32 dstSubresourc
     ASSERT(dstResource && srcResource);
     auto srcTextureWebGPU = (GPUTextureWebGPU*)srcResource;
     auto dstTextureWebGPU = (GPUTextureWebGPU*)dstResource;
-    ASSERT_LOW_LAYER(dstTextureWebGPU->Texture && wgpuTextureGetUsage(dstTextureWebGPU->Texture) & WGPUTextureUsage_CopyDst);
-    ASSERT_LOW_LAYER(srcTextureWebGPU->Texture && wgpuTextureGetUsage(srcTextureWebGPU->Texture) & WGPUTextureUsage_CopySrc);
+    ASSERT_LOW_LAYER(dstTextureWebGPU->Texture && srcTextureWebGPU->Texture);
 
     const int32 srcMipIndex = srcSubresource % srcTextureWebGPU->MipLevels();
     const int32 dstMipIndex = dstSubresource % srcTextureWebGPU->MipLevels();
@@ -578,18 +586,45 @@ void GPUContextWebGPU::CopyTexture(GPUTexture* dstResource, uint32 dstSubresourc
     int32 srcMipWidth, srcMipHeight, srcMipDepth;
     srcTextureWebGPU->GetMipSize(srcMipIndex, srcMipWidth, srcMipHeight, srcMipDepth);
 
-    WGPUTexelCopyTextureInfo srcInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
-    srcInfo.texture = srcTextureWebGPU->Texture;
-    srcInfo.mipLevel = srcMipIndex;
-    srcInfo.origin.z = srcArrayIndex;
-    srcInfo.aspect = WGPUTextureAspect_All;
-    WGPUTexelCopyTextureInfo dstInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
-    dstInfo.texture = dstTextureWebGPU->Texture;
-    dstInfo.mipLevel = dstMipIndex;
-    dstInfo.origin = { dstX, dstY, dstZ + dstArrayIndex };
-    dstInfo.aspect = WGPUTextureAspect_All;
-    WGPUExtent3D copySize = { (uint32_t)srcMipWidth, (uint32_t)srcMipHeight, (uint32_t)srcMipDepth };
-    wgpuCommandEncoderCopyTextureToTexture(Encoder, &srcInfo, &dstInfo, &copySize);
+    if (dstTextureWebGPU->Usage & WGPUTextureUsage_CopyDst && srcTextureWebGPU->Usage & WGPUTextureUsage_CopySrc)
+    {
+        // Direct copy
+        WGPUTexelCopyTextureInfo srcInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
+        srcInfo.texture = srcTextureWebGPU->Texture;
+        srcInfo.mipLevel = srcMipIndex;
+        srcInfo.origin.z = srcArrayIndex;
+        srcInfo.aspect = WGPUTextureAspect_All;
+        WGPUTexelCopyTextureInfo dstInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
+        dstInfo.texture = dstTextureWebGPU->Texture;
+        dstInfo.mipLevel = dstMipIndex;
+        dstInfo.origin = { dstX, dstY, dstZ + dstArrayIndex };
+        dstInfo.aspect = WGPUTextureAspect_All;
+        WGPUExtent3D copySize = { (uint32_t)srcMipWidth, (uint32_t)srcMipHeight, (uint32_t)srcMipDepth };
+        wgpuCommandEncoderCopyTextureToTexture(Encoder, &srcInfo, &dstInfo, &copySize);
+    }
+    else if (dstTextureWebGPU->Usage & WGPUTextureUsage_RenderAttachment && srcTextureWebGPU->Usage & WGPUTextureUsage_TextureBinding)
+    {
+        // Copy via drawing
+        ResetRenderTarget();
+        SetViewportAndScissors(srcMipWidth, srcMipHeight);
+        SetState(_device->GetCopyLinearPS());
+        if (srcSubresource == 0 && dstSubresource == 0)
+        {
+            SetRenderTarget(dstTextureWebGPU->View(0));
+            BindSR(0, srcTextureWebGPU->View(0));
+        }
+        else
+        {
+            ASSERT(dstTextureWebGPU->HasPerMipViews() && srcResource->HasPerMipViews());
+            SetRenderTarget(dstTextureWebGPU->View(dstArrayIndex, dstMipIndex));
+            BindSR(0, srcTextureWebGPU->View(srcArrayIndex, srcMipIndex));
+        }
+        DrawFullscreenTriangle();
+    }
+    else
+    {
+        LOG(Fatal, "Cannot copy texture {} to {}", srcTextureWebGPU->GetDescription().ToString(), dstTextureWebGPU->GetDescription().ToString());
+    }
 }
 
 void GPUContextWebGPU::ResetCounter(GPUBuffer* buffer)
@@ -615,9 +650,15 @@ void GPUContextWebGPU::CopyResource(GPUResource* dstResource, GPUResource* srcRe
     {
         // Texture -> Texture
         ASSERT(srcTexture->MipLevels() == dstTexture->MipLevels());
-        ASSERT(srcTexture->ArraySize() == 1); // TODO: implement copying texture arrays
-        for (int32 mipLevel = 0; mipLevel < srcTexture->MipLevels(); mipLevel++)
-            CopyTexture(dstTexture, mipLevel, 0, 0, 0, srcTexture, mipLevel);
+        ASSERT(srcTexture->ArraySize() == dstTexture->ArraySize());
+        for (int32 arraySlice = 0; arraySlice < srcTexture->ArraySize(); arraySlice++)
+        {
+            for (int32 mipLevel = 0; mipLevel < srcTexture->MipLevels(); mipLevel++)
+            {
+                uint32 subresource = arraySlice * srcTexture->MipLevels() + mipLevel;
+                CopyTexture(dstTexture, subresource, 0, 0, 0, srcTexture, subresource);
+            }
+        }
     }
     else if (srcTexture)
     {
@@ -751,7 +792,7 @@ void GPUContextWebGPU::OnDrawCall()
     }
 
     // Check if need to start a new render pass
-    if (_renderPassDirty)
+    if (_renderPassDirty || !_renderPass)
     {
         FlushRenderPass();
     }
@@ -815,13 +856,14 @@ void GPUContextWebGPU::FlushRenderPass()
 
     // Start a new render pass
     WGPURenderPassColorAttachment colorAttachments[GPU_MAX_RT_BINDED];
-    WGPURenderPassDepthStencilAttachment depthStencilAttachment = WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_INIT;
+    WGPURenderPassDepthStencilAttachment depthStencilAttachment;
     WGPURenderPassDescriptor renderPassDesc = WGPU_RENDER_PASS_DESCRIPTOR_INIT;
     renderPassDesc.colorAttachmentCount = _renderTargetCount;
     renderPassDesc.colorAttachments = colorAttachments;
     PendingClear clear;
     _pipelineKey.MultiSampleCount = 1;
     _pipelineKey.RenderTargetCount = _renderTargetCount;
+    GPUTextureViewSizeWebGPU attachmentSize;
     for (int32 i = 0; i < renderPassDesc.colorAttachmentCount; i++)
     {
         auto& colorAttachment = colorAttachments[i];
@@ -838,43 +880,54 @@ void GPUContextWebGPU::FlushRenderPass()
         }
         _pipelineKey.MultiSampleCount = (int32)renderTarget->GetMSAA();
         _pipelineKey.RenderTargetFormats[i] = renderTarget->Format;
+        attachmentSize.Set(renderTarget->RenderSize);
     }
     if (_depthStencil)
     {
+        auto renderTarget = _depthStencil;
         renderPassDesc.depthStencilAttachment = &depthStencilAttachment;
-        depthStencilAttachment.view = _depthStencil->ViewRender;
-        depthStencilAttachment.depthLoadOp = WGPULoadOp_Load;
-        depthStencilAttachment.depthStoreOp = _depthStencil->ReadOnly ? WGPUStoreOp_Discard : WGPUStoreOp_Store;
-        depthStencilAttachment.depthReadOnly = _depthStencil->ReadOnly;
-        if (_depthStencil->HasStencil)
+        depthStencilAttachment = WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_INIT;
+        depthStencilAttachment.view = renderTarget->ViewRender;
+        depthStencilAttachment.depthLoadOp = renderTarget->ReadOnly ? WGPULoadOp_Undefined : WGPULoadOp_Load;
+        depthStencilAttachment.depthStoreOp = renderTarget->ReadOnly ? WGPUStoreOp_Undefined : WGPUStoreOp_Store;
+        depthStencilAttachment.depthReadOnly = renderTarget->ReadOnly;
+        if (renderTarget->HasStencil)
         {
-            depthStencilAttachment.stencilLoadOp = WGPULoadOp_Load;
-            depthStencilAttachment.stencilStoreOp = _depthStencil->ReadOnly ? WGPUStoreOp_Discard : WGPUStoreOp_Store;
-            depthStencilAttachment.depthReadOnly = _depthStencil->ReadOnly;
+            depthStencilAttachment.stencilLoadOp = renderTarget->ReadOnly ? WGPULoadOp_Undefined : WGPULoadOp_Load;
+            depthStencilAttachment.stencilStoreOp = renderTarget->ReadOnly ? WGPUStoreOp_Undefined : WGPUStoreOp_Store;
+            depthStencilAttachment.depthReadOnly = renderTarget->ReadOnly;
+            depthStencilAttachment.stencilReadOnly = renderTarget->ReadOnly;
         }
         else
         {
             depthStencilAttachment.stencilClearValue = 0;
-            depthStencilAttachment.stencilLoadOp = WGPULoadOp_Clear;
-            depthStencilAttachment.stencilStoreOp = WGPUStoreOp_Discard;
+            depthStencilAttachment.stencilLoadOp = WGPULoadOp_Undefined;
+            depthStencilAttachment.stencilStoreOp = WGPUStoreOp_Undefined;
             depthStencilAttachment.stencilReadOnly = true;
         }
-        if (FindClear(_depthStencil, clear))
+        if (!renderTarget->ReadOnly && FindClear(renderTarget, clear))
         {
             depthStencilAttachment.depthLoadOp = WGPULoadOp_Clear;
             depthStencilAttachment.depthClearValue = clear.Depth;
-            if (_depthStencil->HasStencil)
+            if (renderTarget->HasStencil)
             {
                 depthStencilAttachment.stencilLoadOp = WGPULoadOp_Clear;
                 depthStencilAttachment.stencilClearValue = clear.Stencil;
             }
         }
-        _pipelineKey.DepthStencilFormat = _depthStencil->Format;
+        else
+        {
+            depthStencilAttachment.depthClearValue = 0.0f;
+            depthStencilAttachment.stencilClearValue = 0;
+        }
+        _pipelineKey.DepthStencilFormat = renderTarget->Format;
+        attachmentSize.Set(renderTarget->RenderSize);
     }
     else
     {
         _pipelineKey.DepthStencilFormat = WGPUTextureFormat_Undefined;
     }
+    ASSERT(attachmentSize.Packed != 0);
     _renderPass = wgpuCommandEncoderBeginRenderPass(Encoder, &renderPassDesc);
     ASSERT(_renderPass);
 
@@ -885,11 +938,11 @@ void GPUContextWebGPU::FlushRenderPass()
     if (_stencilRef != 0)
         wgpuRenderPassEncoderSetStencilReference(_renderPass, _stencilRef);
     auto scissorRect = _scissorRect;
-    // TODO: skip calling this if scissorRect is default (0, 0, attachment width, attachment  height)
-    wgpuRenderPassEncoderSetScissorRect(_renderPass, (uint32_t)scissorRect.GetX(), (uint32_t)scissorRect.GetY(), (uint32_t)scissorRect.GetWidth(), (uint32_t)scissorRect.GetHeight());
+    if (scissorRect != Rectangle(0, 0, attachmentSize.Width, attachmentSize.Height))
+        wgpuRenderPassEncoderSetScissorRect(_renderPass, (uint32_t)scissorRect.GetX(), (uint32_t)scissorRect.GetY(), (uint32_t)scissorRect.GetWidth(), (uint32_t)scissorRect.GetHeight());
     auto viewport = _viewport;
-    // TODO: skip calling this if viewport is default (0, 0, attachment width, attachment  height, 0, 1)
-    wgpuRenderPassEncoderSetViewport(_renderPass, viewport.X, viewport.Y, viewport.Width, viewport.Height, viewport.MinDepth, viewport.MaxDepth);
+    if (viewport != Viewport(Float2(attachmentSize.Width, attachmentSize.Height)))
+        wgpuRenderPassEncoderSetViewport(_renderPass, viewport.X, viewport.Y, viewport.Width, viewport.Height, viewport.MinDepth, viewport.MaxDepth);
 
     // Auto-dirty pipeline when new render pass starts
     if (_pipelineState)
@@ -937,6 +990,7 @@ void GPUContextWebGPU::FlushBindGroup()
                 break;
             }
             case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+            case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
             {
                 ASSERT_LOW_LAYER(descriptor.BindingType == SpirvShaderResourceBindingType::SRV);
                 auto view = _shaderResources[descriptor.Slot];
@@ -952,7 +1006,19 @@ void GPUContextWebGPU::FlushBindGroup()
                         LOG(Error, "Missing resource {} at slot {} of binding space {}", (int32)descriptor.ResourceType, descriptor.Slot, (int32)descriptor.BindingType);
                         CRASH;
                     }
-                    view = defaultTexture->View(0);
+                    switch (descriptor.ResourceType)
+                    {
+                    case SpirvShaderResourceType::Texture3D:
+                        view = defaultTexture->ViewVolume();
+                        break;
+                    case SpirvShaderResourceType::Texture1DArray:
+                    case SpirvShaderResourceType::Texture2DArray:
+                        view = defaultTexture->ViewArray();
+                        break;
+                    default:
+                        view = defaultTexture->View(0);
+                        break;
+                    }
                     ptr = (GPUResourceViewPtrWebGPU*)view->GetNativePtr();
                     entry.textureView = ptr->TextureView->View;
                 }
@@ -976,6 +1042,7 @@ void GPUContextWebGPU::FlushBindGroup()
                 }
                 break;
             }
+            case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
             case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
             {
                 GPUConstantBufferWebGPU* uniform = _constantBuffers[descriptor.Slot];
@@ -983,20 +1050,10 @@ void GPUContextWebGPU::FlushBindGroup()
                 {
                     entry.buffer = uniform->Allocation.Buffer;
                     entry.size = uniform->AllocationSize;
-                    _dynamicOffsets.Add(uniform->Allocation.Offset);
-                }
-                else
-                    CRASH; // TODO: add dummy buffer as fallback
-                break;
-            }
-            case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-            {
-                GPUConstantBufferWebGPU* uniform = _constantBuffers[descriptor.Slot];
-                if (uniform && uniform->Allocation.Buffer)
-                {
-                    entry.buffer = uniform->Allocation.Buffer;
-                    entry.offset = uniform->Allocation.Offset;
-                    entry.size = uniform->AllocationSize;
+                    if (descriptor.DescriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+                        entry.offset = uniform->Allocation.Offset;
+                    else
+                        _dynamicOffsets.Add(uniform->Allocation.Offset);
                 }
                 else
                     CRASH; // TODO: add dummy buffer as fallback
@@ -1015,9 +1072,21 @@ void GPUContextWebGPU::FlushBindGroup()
         // Create a bind group
         bindGroupDesc.entryCount = _bindGroupEntries.Count();
         bindGroupDesc.entries = entriesPtr;
+#if BUILD_DEBUG
+        for (int32 i = 0; i < bindGroupDesc.entryCount; i++)
+        {
+            auto& e = bindGroupDesc.entries[i];
+            if ((e.buffer != nullptr) + (e.sampler != nullptr) + (e.textureView != nullptr) != 1)
+            {
+                LOG(Error, "Invalid binding in group {} at index {} ({})", groupIndex, i, _pipelineState->GetName());
+                LOG(Error, " > sampler: {}", (uint32)e.sampler);
+                LOG(Error, " > textureView: {}", (uint32)e.textureView);
+                LOG(Error, " > buffer: {}", (uint32)e.buffer);
+            }
+        }
+#endif
         WGPUBindGroup bindGroup = wgpuDeviceCreateBindGroup(_device->Device, &bindGroupDesc);
         _unusedBindGroups.Add(bindGroup);
-        // TODO: cache and release them
 
         // Bind group
         wgpuRenderPassEncoderSetBindGroup(_renderPass, groupIndex, bindGroup, _dynamicOffsets.Count(), _dynamicOffsets.Get());

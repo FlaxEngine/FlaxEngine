@@ -14,10 +14,6 @@ class GPUVertexLayoutWebGPU : public GPUResourceBase<GPUDeviceWebGPU, GPUVertexL
 {
 public:
 	GPUVertexLayoutWebGPU(GPUDeviceWebGPU* device, const Elements& elements, bool explicitOffsets);
-
-public:
-    WGPUVertexBufferLayout Layout;
-    WGPUVertexAttribute Attributes[GPU_MAX_VS_ELEMENTS];
 };
 
 #endif

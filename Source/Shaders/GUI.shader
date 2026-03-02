@@ -31,7 +31,7 @@ VS2PS VS(Render2DVertex input)
 	if ((int)input.CustomDataAndClipOrigin.y & RENDER2D_FEATURE_VERTEX_SNAPPING)
 		input.Position = (float2)(int2)input.Position;
 
-	output.Position = mul(float4(input.Position, 0, 1), ViewProjection);
+	output.Position = PROJECT_POINT(float4(input.Position, 0, 1), ViewProjection);
 	output.Color = input.Color;
 	output.TexCoord = input.TexCoord;
 	output.ClipOriginAndPos = float4(input.CustomDataAndClipOrigin.zw, input.Position);
@@ -116,7 +116,7 @@ float4 PS_Downscale(Quad_VS2PS input) : SV_Target0
 {
 	float2 boundsPos = input.TexCoord * Bounds.zw + Bounds.xy;
 
-	float4 clipPos = mul(float4(boundsPos, 0, 1), ViewProjection);
+	float4 clipPos = PROJECT_POINT(float4(boundsPos, 0, 1), ViewProjection);
 	clipPos.xy /= clipPos.w;
 
 	float2 uvPos = ClipToUv(clipPos.xy);
