@@ -308,7 +308,7 @@ VertexOutput VS_SplineModel(ModelInput input)
 	world = mul(world, WorldMatrix);
 
 	// Compute clip space position
-	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
+	output.Position = PROJECT_POINT(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 
 	// Pass vertex attributes
 	output.Geometry.TexCoord = input.TexCoord0;
@@ -338,7 +338,7 @@ VertexOutput VS_SplineModel(ModelInput input)
 #if USE_POSITION_OFFSET
 	output.Geometry.WorldPosition += material.PositionOffset;
 	output.Geometry.PrevWorldPosition += material.PositionOffset;
-	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
+	output.Position = PROJECT_POINT(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 #endif
 
 	// Get tessalation multiplier (per vertex)

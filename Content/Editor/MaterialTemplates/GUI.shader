@@ -227,7 +227,7 @@ VertexOutput VS_GUI(Render2DVertex input)
 	if ((int)input.CustomDataAndClipOrigin.y & 1)
 		input.Position = (int2)input.Position;
 
-	output.Position = mul(float4(input.Position, 0, 1), ViewProjectionMatrix);
+	output.Position = PROJECT_POINT(float4(input.Position, 0, 1), ViewProjectionMatrix);
 	output.WorldPosition = mul(float4(input.Position, 0, 1), WorldMatrix).xyz;
 	output.TexCoord = input.TexCoord;
 	output.WindowPos = input.Position;

@@ -42,10 +42,10 @@ struct MaterialInput
 float2 SvPositionToDecalUV(float4 svPosition)
 {
 	float2 screenUV = svPosition.xy * ScreenSize.zw;
-	svPosition.z = SAMPLE_RT(DepthBuffer, screenUV).r;
-	float4 positionHS = mul(float4(svPosition.xyz, 1), SvPositionToWorld);
+	svPosition.z = SAMPLE_RT_DEPTH(DepthBuffer, screenUV);
+	float4 positionHS = PROJECT_POINT(float4(svPosition.xyz, 1), SvPositionToWorld);
 	float3 positionWS = positionHS.xyz / positionHS.w;
-	float3 positionOS = mul(float4(positionWS, 1), InvWorld).xyz;
+	float3 positionOS = PROJECT_POINT(float4(positionWS, 1), InvWorld).xyz;
 	return positionOS.xz + 0.5f;
 }
 
@@ -182,10 +182,10 @@ META_VS_IN_ELEMENT(POSITION, 0, R32G32B32_FLOAT, 0, 0, PER_VERTEX, 0, true)
 void VS_Decal(in float3 Position : POSITION0, out float4 SvPosition : SV_Position)
 {
 	// Compute world space vertex position
-	float3 worldPosition = mul(float4(Position.xyz, 1), WorldMatrix).xyz;
+	float3 worldPosition = PROJECT_POINT(float4(Position.xyz, 1), WorldMatrix).xyz;
 
 	// Compute clip space position
-	SvPosition = mul(float4(worldPosition.xyz, 1), ViewProjectionMatrix);
+	SvPosition = PROJECT_POINT(float4(worldPosition.xyz, 1), ViewProjectionMatrix);
 }
 
 // Pixel Shader function for decals rendering
@@ -213,11 +213,11 @@ void PS_Decal(
 	}
 
 	float2 screenUV = SvPosition.xy * ScreenSize.zw;
-	SvPosition.z = SAMPLE_RT(DepthBuffer, screenUV).r;
+	SvPosition.z = SAMPLE_RT_DEPTH(DepthBuffer, screenUV);
 
-	float4 positionHS = mul(float4(SvPosition.xyz, 1), SvPositionToWorld);
+	float4 positionHS = PROJECT_POINT(float4(SvPosition.xyz, 1), SvPositionToWorld);
 	float3 positionWS = positionHS.xyz / positionHS.w;
-	float3 positionOS = mul(float4(positionWS, 1), InvWorld).xyz;
+	float3 positionOS = PROJECT_POINT(float4(positionWS, 1), InvWorld).xyz;
 
 	clip(0.5 - abs(positionOS.xyz));
 	float2 decalUVs = positionOS.xz + 0.5f;
