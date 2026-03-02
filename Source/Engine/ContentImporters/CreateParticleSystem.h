@@ -29,11 +29,12 @@ public:
         MemoryWriteStream stream(64);
         {
             // Create empty system
-            stream.WriteInt32(2);
+            stream.WriteInt32(4);
             stream.WriteFloat(60.0f); // FramesPerSecond
             stream.WriteInt32(5 * 60); // DurationFrames
             stream.WriteInt32(0); // Emitters Count
             stream.WriteInt32(0); // Tracks Count
+            stream.WriteInt32(0); // Parameter Overrides Count
         }
         context.Data.Header.Chunks[0]->Data.Copy(ToSpan(stream));
 

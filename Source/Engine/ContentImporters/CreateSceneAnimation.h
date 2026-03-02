@@ -29,7 +29,7 @@ public:
         MemoryWriteStream stream(64);
         {
             // Create empty timeline
-            stream.WriteInt32(2);
+            stream.WriteInt32(4);
             stream.WriteFloat(60.0f); // FramesPerSecond
             stream.WriteInt32(5 * 60); // DurationFrames
             stream.WriteInt32(0); // Tracks Count
