@@ -275,7 +275,7 @@ namespace FlaxEngine.GUI
         /// Gets or sets the speed of the caret flashing animation.
         /// </summary>
         [EditorDisplay("Caret Style"), EditorOrder(2021), Tooltip("The speed of the caret flashing animation.")]
-        public float CaretFlashSpeed { get; set; } = 6.0f;
+        public float CaretFlashSpeed { get; set; } = 6.5f;
 
         /// <summary>
         /// Gets or sets the speed of the selection background flashing animation.
