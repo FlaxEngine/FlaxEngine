@@ -605,11 +605,13 @@ bool GPUDeviceDX11::Init()
             limits.HasVolumeTextureRendering = true;
             limits.HasDrawIndirect = true;
             limits.HasAppendConsumeBuffers = true;
-            limits.HasSeparateRenderTargetBlendState = true;
             limits.HasDepthAsSRV = true;
             limits.HasDepthClip = true;
             limits.HasReadOnlyDepth = true;
+            PRAGMA_DISABLE_DEPRECATION_WARNINGS
+            limits.HasSeparateRenderTargetBlendState = true;
             limits.HasMultisampleDepthAsSRV = true;
+            PRAGMA_ENABLE_DEPRECATION_WARNINGS
             limits.HasTypedUAVLoad = featureDataD3D11Options2.TypedUAVLoadAdditionalFormats != 0;
             limits.MaximumMipLevelsCount = D3D11_REQ_MIP_LEVELS;
             limits.MaximumTexture1DSize = D3D11_REQ_TEXTURE1D_U_DIMENSION;
@@ -629,11 +631,9 @@ bool GPUDeviceDX11::Init()
             limits.HasVolumeTextureRendering = false;
             limits.HasDrawIndirect = false;
             limits.HasAppendConsumeBuffers = false;
-            limits.HasSeparateRenderTargetBlendState = false;
             limits.HasDepthAsSRV = false;
             limits.HasDepthClip = true;
             limits.HasReadOnlyDepth = createdFeatureLevel == D3D_FEATURE_LEVEL_10_1;
-            limits.HasMultisampleDepthAsSRV = false;
             limits.HasTypedUAVLoad = false;
             limits.MaximumMipLevelsCount = D3D10_REQ_MIP_LEVELS;
             limits.MaximumTexture1DSize = D3D10_REQ_TEXTURE1D_U_DIMENSION;

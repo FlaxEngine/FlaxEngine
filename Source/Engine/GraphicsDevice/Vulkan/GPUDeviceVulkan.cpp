@@ -1730,12 +1730,14 @@ bool GPUDeviceVulkan::Init()
         limits.HasVolumeTextureRendering = true;
         limits.HasDrawIndirect = PhysicalDeviceLimits.maxDrawIndirectCount >= 1;
         limits.HasAppendConsumeBuffers = false; // TODO: add Append Consume buffers support for Vulkan
-        limits.HasSeparateRenderTargetBlendState = true;
         limits.HasDepthClip = PhysicalDeviceFeatures.depthClamp;
         limits.HasDepthBounds = PhysicalDeviceFeatures.depthBounds;
         limits.HasDepthAsSRV = true;
         limits.HasReadOnlyDepth = true;
+        PRAGMA_DISABLE_DEPRECATION_WARNINGS
+        limits.HasSeparateRenderTargetBlendState = true;
         limits.HasMultisampleDepthAsSRV = !!PhysicalDeviceFeatures.sampleRateShading;
+        PRAGMA_ENABLE_DEPRECATION_WARNINGS
         limits.HasTypedUAVLoad = true;
         limits.MaximumMipLevelsCount = Math::Min(static_cast<int32>(log2(PhysicalDeviceLimits.maxImageDimension2D)), GPU_MAX_TEXTURE_MIP_LEVELS);
         limits.MaximumTexture1DSize = PhysicalDeviceLimits.maxImageDimension1D;
