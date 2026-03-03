@@ -12,6 +12,7 @@
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Platform/CPUInfo.h"
 #include "Engine/Platform/MemoryStats.h"
+#include "Engine/Platform/MessageBox.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/Web/WebGame.h"
@@ -38,6 +39,14 @@ void WebGame::InitMainWindowSettings(CreateWindowSettings& settings)
     emscripten_get_canvas_element_size(WEB_CANVAS_ID, &width, &height);
     settings.Size.X = width;
     settings.Size.Y = height;
+}
+
+DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
+{
+    StringAnsi textAnsi(text);
+    StringAnsi captionAnsi(caption);
+    EM_ASM({ alert(UTF8ToString($0) + "\n\n" + UTF8ToString($1)); }, captionAnsi.Get(), textAnsi.Get());
+    return DialogResult::None;
 }
 
 void WebFileSystem::GetSpecialFolderPath(const SpecialFolder type, String& result)
