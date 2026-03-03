@@ -14,12 +14,15 @@
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Platform/Window.h"
 #include "RendererPass.h"
-#include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/AssetReference.h"
+#include "Engine/Graphics/RenderTargetPool.h"
 
 // Amount of frames to wait for data from atmosphere precompute job
 #define ATMOSPHERE_PRECOMPUTE_LATENCY_FRAMES 1
+
+// Amount of frames to hold shader resources in memory before auto-release
+#define ATMOSPHERE_PRECOMPUTE_AUTO_RELEASE_FRAMES 70
 
 const float DensityHeight = 0.5f;
 const int32 MaxScatteringOrder = 4;
@@ -43,24 +46,6 @@ const static float RadiusScale = 1;
 const static float RadiusGround = 6360 * RadiusScale;
 const static float RadiusAtmosphere = 6420 * RadiusScale;
 
-class DownloadJob : public ThreadPoolTask
-{
-private:
-
-    GPUTexture* _transmittance;
-    GPUTexture* _irradiance;
-    GPUTexture* _inscatter;
-
-public:
-
-    DownloadJob(GPUTexture* transmittance, GPUTexture* irradiance, GPUTexture* inscatter);
-
-protected:
-
-    // [ThreadPoolTask]
-    bool Run() override;
-};
-
 GPU_CB_STRUCT(Data {
     float First;
     float AtmosphereR;
@@ -74,12 +59,12 @@ namespace AtmospherePreComputeImpl
     bool _isUpdatePending = false;
     bool _isReadyForCompute = false;
     bool _hasDataCached = false;
+    uint64 _dataCachedFrameNumber;
 
     AssetReference<Shader> _shader;
     GPUPipelineState* _psTransmittance = nullptr;
     GPUPipelineState* _psIrradiance1 = nullptr;
     GPUPipelineState* _psIrradianceN = nullptr;
-    GPUPipelineState* _psCopyIrradiance = nullptr;
     GPUPipelineState* _psCopyIrradianceAdd = nullptr;
     GPUPipelineState* _psInscatter1_A = nullptr;
     GPUPipelineState* _psInscatter1_B = nullptr;
@@ -89,15 +74,9 @@ namespace AtmospherePreComputeImpl
     GPUPipelineState* _psInscatterN = nullptr;
     SceneRenderTask* _task = nullptr;
 
-    //
     GPUTexture* AtmosphereTransmittance = nullptr;
     GPUTexture* AtmosphereIrradiance = nullptr;
     GPUTexture* AtmosphereInscatter = nullptr;
-    //
-    GPUTexture* AtmosphereDeltaE = nullptr;
-    GPUTexture* AtmosphereDeltaSR = nullptr;
-    GPUTexture* AtmosphereDeltaSM = nullptr;
-    GPUTexture* AtmosphereDeltaJ = nullptr;
 
     uint64 _updateFrameNumber;
     bool _wasCancelled;
@@ -107,7 +86,7 @@ namespace AtmospherePreComputeImpl
         return _updateFrameNumber > 0 && _updateFrameNumber + ATMOSPHERE_PRECOMPUTE_LATENCY_FRAMES <= Engine::FrameCount;
     }
 
-    void onRender(RenderTask* task, GPUContext* context);
+    void Render(RenderTask* task, GPUContext* context);
 }
 
 using namespace AtmospherePreComputeImpl;
@@ -142,16 +121,14 @@ bool AtmospherePreCompute::GetCache(AtmosphereCache* cache)
     {
         _isUpdatePending = true;
     }
-
     return _hasDataCached;
 }
 
-bool init()
+bool InitAtmospherePreCompute()
 {
     if (_isReadyForCompute)
         return false;
-
-    LOG(Info, "Starting Atmosphere Pre Compute service");
+    PROFILE_CPU();
 
     // Load shader
     if (_shader == nullptr)
@@ -167,23 +144,22 @@ bool init()
     auto shader = _shader->GetShader();
     ASSERT(shader->GetCB(0) != nullptr);
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
+    auto device = GPUDevice::Instance;
 
     // Create pipeline stages
-    _psTransmittance = GPUDevice::Instance->CreatePipelineState();
-    _psIrradiance1 = GPUDevice::Instance->CreatePipelineState();
-    _psIrradianceN = GPUDevice::Instance->CreatePipelineState();
-    _psCopyIrradiance = GPUDevice::Instance->CreatePipelineState();
-    _psCopyIrradianceAdd = GPUDevice::Instance->CreatePipelineState();
-    _psInscatter1_A = GPUDevice::Instance->CreatePipelineState();
-    _psInscatter1_B = GPUDevice::Instance->CreatePipelineState();
-    _psCopyInscatter1 = GPUDevice::Instance->CreatePipelineState();
-    _psInscatterS = GPUDevice::Instance->CreatePipelineState();
-    _psInscatterN = GPUDevice::Instance->CreatePipelineState();
-    _psCopyInscatterNAdd = GPUDevice::Instance->CreatePipelineState();
+    _psTransmittance = device->CreatePipelineState();
+    _psIrradiance1 = device->CreatePipelineState();
+    _psIrradianceN = device->CreatePipelineState();
+    _psCopyIrradianceAdd = device->CreatePipelineState();
+    _psInscatter1_A = device->CreatePipelineState();
+    _psInscatter1_B = device->CreatePipelineState();
+    _psCopyInscatter1 = device->CreatePipelineState();
+    _psInscatterS = device->CreatePipelineState();
+    _psInscatterN = device->CreatePipelineState();
+    _psCopyInscatterNAdd = device->CreatePipelineState();
     GPUPipelineState::Description psDesc, psDescLayers;
     psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
     psDescLayers = psDesc;
-    //psDescLayers.GS = shader->GetGS(0);
     {
         psDesc.PS = shader->GetPS("PS_Transmittance");
         if (_psTransmittance->Init(psDesc))
@@ -197,11 +173,6 @@ bool init()
     {
         psDesc.PS = shader->GetPS("PS_IrradianceN");
         if (_psIrradianceN->Init(psDesc))
-            return true;
-    }
-    {
-        psDesc.PS = shader->GetPS("PS_CopyIrradiance1");
-        if (_psCopyIrradiance->Init(psDesc))
             return true;
     }
     {
@@ -246,30 +217,24 @@ bool init()
     _task = New<SceneRenderTask>();
     _task->Enabled = false;
     _task->IsCustomRendering = true;
-    _task->Render.Bind(onRender);
+    _task->Render.Bind(Render);
 
     // Init render targets
-    AtmosphereTransmittance = GPUDevice::Instance->CreateTexture(TEXT("AtmospherePreCompute.Transmittance"));
-    if (AtmosphereTransmittance->Init(GPUTextureDescription::New2D(TransmittanceTexWidth, TransmittanceTexHeight, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget)))
-        return true;
-    AtmosphereIrradiance = GPUDevice::Instance->CreateTexture(TEXT("AtmospherePreCompute.Irradiance"));
-    if (AtmosphereIrradiance->Init(GPUTextureDescription::New2D(IrradianceTexWidth, IrradianceTexHeight, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget)))
-        return true;
-    AtmosphereDeltaE = GPUDevice::Instance->CreateTexture(TEXT("AtmospherePreCompute.DeltaE"));
-    if (AtmosphereDeltaE->Init(GPUTextureDescription::New2D(IrradianceTexWidth, IrradianceTexHeight, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget)))
-        return true;
-    AtmosphereInscatter = GPUDevice::Instance->CreateTexture(TEXT("AtmospherePreCompute.Inscatter"));
-    if (AtmosphereInscatter->Init(GPUTextureDescription::New3D(InscatterWidth, InscatterHeight, InscatterDepth, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerSliceViews)))
-        return true;
-    AtmosphereDeltaSR = GPUDevice::Instance->CreateTexture(TEXT("AtmospherePreCompute.DeltaSR"));
-    if (AtmosphereDeltaSR->Init(GPUTextureDescription::New3D(InscatterWidth, InscatterHeight, InscatterDepth, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerSliceViews)))
-        return true;
-    AtmosphereDeltaSM = GPUDevice::Instance->CreateTexture(TEXT("AtmospherePreCompute.DeltaSM"));
-    if (AtmosphereDeltaSM->Init(GPUTextureDescription::New3D(InscatterWidth, InscatterHeight, InscatterDepth, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerSliceViews)))
-        return true;
-    AtmosphereDeltaJ = GPUDevice::Instance->CreateTexture(TEXT("AtmospherePreCompute.DeltaJ"));
-    if (AtmosphereDeltaJ->Init(GPUTextureDescription::New3D(InscatterWidth, InscatterHeight, InscatterDepth, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerSliceViews)))
-        return true;
+    if (!AtmosphereTransmittance)
+    {
+        AtmosphereTransmittance = device->CreateTexture(TEXT("AtmospherePreCompute.Transmittance"));
+        auto desc = GPUTextureDescription::New2D(TransmittanceTexWidth, TransmittanceTexHeight, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
+        if (AtmosphereTransmittance->Init(desc))
+            return true;
+        AtmosphereIrradiance = device->CreateTexture(TEXT("AtmospherePreCompute.Irradiance"));
+        desc = GPUTextureDescription::New2D(IrradianceTexWidth, IrradianceTexHeight, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
+        if (AtmosphereIrradiance->Init(desc))
+            return true;
+        AtmosphereInscatter = device->CreateTexture(TEXT("AtmospherePreCompute.Inscatter"));
+        desc = GPUTextureDescription::New3D(InscatterWidth, InscatterHeight, InscatterDepth, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerSliceViews);
+        if (AtmosphereInscatter->Init(desc))
+            return true;
+    }
 
     // Mark as ready
     _isReadyForCompute = true;
@@ -277,7 +242,7 @@ bool init()
     return false;
 }
 
-void release()
+void ReleaseAtmospherePreCompute()
 {
     if (!_isReadyForCompute)
         return;
@@ -287,13 +252,10 @@ void release()
     }
     _updateFrameNumber = 0;
 
-    LOG(Info, "Disposing Atmosphere Pre Compute service");
-
     // Release data
     SAFE_DELETE_GPU_RESOURCE(_psTransmittance);
     SAFE_DELETE_GPU_RESOURCE(_psIrradiance1);
     SAFE_DELETE_GPU_RESOURCE(_psIrradianceN);
-    SAFE_DELETE_GPU_RESOURCE(_psCopyIrradiance);
     SAFE_DELETE_GPU_RESOURCE(_psCopyIrradianceAdd);
     SAFE_DELETE_GPU_RESOURCE(_psInscatter1_A);
     SAFE_DELETE_GPU_RESOURCE(_psInscatter1_B);
@@ -303,52 +265,30 @@ void release()
     SAFE_DELETE_GPU_RESOURCE(_psCopyInscatterNAdd);
     _shader = nullptr;
     SAFE_DELETE(_task);
-    SAFE_DELETE_GPU_RESOURCE(AtmosphereTransmittance);
-    SAFE_DELETE_GPU_RESOURCE(AtmosphereIrradiance);
-    SAFE_DELETE_GPU_RESOURCE(AtmosphereInscatter);
-    SAFE_DELETE_GPU_RESOURCE(AtmosphereDeltaE);
-    SAFE_DELETE_GPU_RESOURCE(AtmosphereDeltaSR);
-    SAFE_DELETE_GPU_RESOURCE(AtmosphereDeltaSM);
-    SAFE_DELETE_GPU_RESOURCE(AtmosphereDeltaJ);
 
     _isReadyForCompute = false;
 }
 
 void AtmospherePreComputeService::Update()
 {
-    // Calculate time delta since last update
-    auto currentTime = Time::Update.UnscaledTime;
-
     // Check if render job is done
     if (isUpdateSynced())
     {
-        // Create async job to gather data from the GPU
-        //ThreadPool::AddJob(New<DownloadJob>(AtmosphereTransmittance, AtmosphereIrradiance, AtmosphereInscatter));
-
-        // TODO: download data from generated cache textures
-        // TODO: serialize cached textures
-
         // Clear flags
         _updateFrameNumber = 0;
         _isUpdatePending = false;
-
-        // Release service
-        //release();
-        // TODO: release service data
     }
     else if (_isUpdatePending && (_task == nullptr || !_task->Enabled))
     {
         PROFILE_CPU();
         PROFILE_MEM(Graphics);
 
-        // TODO: init but without a stalls, just wait for resources loaded and then start rendering
-
-        // Init service
+        // Wait for the shader
         if (!_shader)
             _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/AtmospherePreCompute"));
         if (_shader && !_shader->IsLoaded())
             return;
-        if (init())
+        if (InitAtmospherePreCompute())
         {
             LOG(Fatal, "Cannot setup Atmosphere Pre Compute!");
         }
@@ -357,11 +297,20 @@ void AtmospherePreComputeService::Update()
         _task->Enabled = true;
         _updateFrameNumber = 0;
     }
+    else if (_hasDataCached && _isReadyForCompute && !_isUpdatePending && Engine::FrameCount - _dataCachedFrameNumber > ATMOSPHERE_PRECOMPUTE_AUTO_RELEASE_FRAMES)
+    {
+        // Automatically free resources after last update (keep Transmittance/Irradiance/Inscatter textures valid for use)
+        ReleaseAtmospherePreCompute();
+    }
 }
 
 void AtmospherePreComputeService::Dispose()
 {
-    release();
+    ReleaseAtmospherePreCompute();
+    _hasDataCached = false;
+    SAFE_DELETE_GPU_RESOURCE(AtmosphereTransmittance);
+    SAFE_DELETE_GPU_RESOURCE(AtmosphereIrradiance);
+    SAFE_DELETE_GPU_RESOURCE(AtmosphereInscatter);
 }
 
 void GetLayerValue(int32 layer, float& atmosphereR, Float4& dhdh)
@@ -377,7 +326,7 @@ void GetLayerValue(int32 layer, float& atmosphereR, Float4& dhdh)
     dhdh = Float4(dMin, dMax, dMinP, dMaxP);
 }
 
-void AtmospherePreComputeImpl::onRender(RenderTask* task, GPUContext* context)
+void AtmospherePreComputeImpl::Render(RenderTask* task, GPUContext* context)
 {
     // If job has been cancelled (eg. on window close)
     if (_wasCancelled)
@@ -386,6 +335,23 @@ void AtmospherePreComputeImpl::onRender(RenderTask* task, GPUContext* context)
         return;
     }
     ASSERT(_isUpdatePending && _updateFrameNumber == 0);
+    PROFILE_GPU_CPU("AtmospherePreCompute");
+
+    // Allocate temporary render targets
+    auto desc = GPUTextureDescription::New2D(IrradianceTexWidth, IrradianceTexHeight, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
+    auto AtmosphereDeltaE = RenderTargetPool::Get(desc);
+    desc = GPUTextureDescription::New3D(InscatterWidth, InscatterHeight, InscatterDepth, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerSliceViews);
+    auto AtmosphereDeltaSR = RenderTargetPool::Get(desc);
+    desc = GPUTextureDescription::New3D(InscatterWidth, InscatterHeight, InscatterDepth, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerSliceViews);
+    auto AtmosphereDeltaSM = RenderTargetPool::Get(desc);
+    desc = GPUTextureDescription::New3D(InscatterWidth, InscatterHeight, InscatterDepth, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerSliceViews);
+    auto AtmosphereDeltaJ = RenderTargetPool::Get(desc);
+    if (!AtmosphereDeltaE || !AtmosphereDeltaSR || !AtmosphereDeltaSM || !AtmosphereDeltaJ)
+        return;
+    RENDER_TARGET_POOL_SET_NAME(AtmosphereDeltaE, "AtmospherePreCompute.DeltaE");
+    RENDER_TARGET_POOL_SET_NAME(AtmosphereDeltaSR, "AtmospherePreCompute.DeltaSR");
+    RENDER_TARGET_POOL_SET_NAME(AtmosphereDeltaSM, "AtmospherePreCompute.DeltaSM");
+    RENDER_TARGET_POOL_SET_NAME(AtmosphereDeltaJ, "AtmospherePreCompute.DeltaJ");
 
     const auto shader = _shader->GetShader();
     const auto cb = shader->GetCB(0);
@@ -433,33 +399,6 @@ void AtmospherePreComputeImpl::onRender(RenderTask* task, GPUContext* context)
     }
     context->ResetRenderTarget();
 
-    //// old way to render Inscatter1 to DeltaSR and DeltaSM at once but didn't work well :/ (no time to find out why)
-    //for (int32 layer = 0; layer < InscatterAltitudeSampleNum; layer++)
-    //{
-    //	GetLayerValue(layer, data.AtmosphereR, data.dhdh);
-    //	data.AtmosphereLayer = layer;
-    //	cb->SetData(&data);
-    //	context->Bind(0, cb);
-
-    //	GPUTextureView* deltaRTs[2] = { AtmosphereDeltaSR->HandleSlice(layer), AtmosphereDeltaSM->HandleSlice(layer) };
-    //	//GPUTextureView* deltaRTs[2] = { AtmosphereIrradiance->Handle(), AtmosphereDeltaE->Handle() };
-    //	context->SetRenderTarget(nullptr, 2, deltaRTs);
-    //	//context->SetRenderTarget(AtmosphereIrradiance->View());
-    //	//context->SetRenderTarget(AtmosphereDeltaSR->HandleSlice(layer));
-    //	//context->SetRenderTarget(AtmosphereDeltaSR->View());
-    //	context->DrawFullscreenTriangle();
-    //}
-    //context->SetRenderTarget();
-
-    // Copy deltaE into irradiance texture E (line 4 in algorithm 4.1)
-    /*context->SetRenderTarget(*AtmosphereIrradiance);
-    context->SetViewport(IrradianceTexWidth, IrradianceTexHeight);
-    context->Bind(3, AtmosphereDeltaE);
-    context->SetState(_psCopyIrradiance);
-    context->DrawFullscreenTriangle();*/
-    // TODO: remove useless CopyIrradiance shader program?
-
-    context->SetViewportAndScissors((float)IrradianceTexWidth, (float)IrradianceTexHeight);
     context->Clear(*AtmosphereIrradiance, Color::Transparent);
 
     // Copy deltaS into inscatter texture S (line 5 in algorithm 4.1)
@@ -511,6 +450,7 @@ void AtmospherePreComputeImpl::onRender(RenderTask* task, GPUContext* context)
         context->BindSR(5, AtmosphereDeltaSM->ViewVolume());
         context->SetState(_psIrradianceN);
         context->DrawFullscreenTriangle();
+        context->ResetRenderTarget();
 
         // Compute deltaS (line 9 in algorithm 4.1)
         context->UnBindSR(4);
@@ -535,6 +475,7 @@ void AtmospherePreComputeImpl::onRender(RenderTask* task, GPUContext* context)
         context->BindSR(3, AtmosphereDeltaE);
         context->SetState(_psCopyIrradianceAdd);
         context->DrawFullscreenTriangle();
+        context->ResetRenderTarget();
 
         // Add deltaS into inscatter texture S (line 11 in algorithm 4.1)
         context->SetViewportAndScissors((float)InscatterWidth, (float)InscatterHeight);
@@ -555,138 +496,14 @@ void AtmospherePreComputeImpl::onRender(RenderTask* task, GPUContext* context)
     // Cleanup
     context->ResetRenderTarget();
     context->ResetSR();
+    RenderTargetPool::Release(AtmosphereDeltaE);
+    RenderTargetPool::Release(AtmosphereDeltaSR);
+    RenderTargetPool::Release(AtmosphereDeltaSM);
+    RenderTargetPool::Release(AtmosphereDeltaJ);
 
     // Mark as rendered
     _hasDataCached = true;
     _isUpdatePending = false;
-    _updateFrameNumber = Engine::FrameCount;
+    _dataCachedFrameNumber = _updateFrameNumber = Engine::FrameCount;
     _task->Enabled = false;
-}
-
-DownloadJob::DownloadJob(GPUTexture* transmittance, GPUTexture* irradiance, GPUTexture* inscatter)
-    : _transmittance(transmittance)
-    , _irradiance(irradiance)
-    , _inscatter(inscatter)
-{
-}
-
-bool DownloadJob::Run()
-{
-    TextureData textureData;
-    Array<byte> data;
-
-#if BUILD_DEBUG
-
-    // Transmittance
-    /*{
-        if (_transmittance->DownloadData(textureData))
-        {
-            LOG(Fatal, 193, "AtmospherePreCompute::DownloadJob::Transmittance");
-            return;
-        }
-
-        auto in = textureData.Get(0, 0);
-        int rowPich = 3 * TransmittanceTexWidth * sizeof(BYTE);
-        int size = rowPich * TransmittanceTexHeight;
-        data.EnsureCapacity(size, false);
-        byte* p = data.Get();
-        for (int y = 0; y < TransmittanceTexHeight; y++)
-        {
-            for (int x = 0; x < TransmittanceTexWidth; x++)
-            {
-                Float4 t = ((Half4*)&in->Data[y * in->RowPitch + x * sizeof(Half4)])->ToFloat4();
-                *p++ = Math::Saturate(t.Z) * 255;
-                *p++ = Math::Saturate(t.Y) * 255;
-                *p++ = Math::Saturate(t.X) * 255;
-            }
-        }
-
-        FileSystem::SaveBitmapToFile(data.Get(),
-                                     TransmittanceTexWidth,
-                                     TransmittanceTexHeight,
-                                     24,
-                                     0,
-                                     L"C:\\Users\\Wojtek\\Downloads\\transmittance_Flax.bmp");
-    }*/
-
-    // Irradiance
-    /*{
-        textureData.Clear();
-        if (_irradiance->DownloadData(textureData))
-        {
-            LOG(Fatal, 193, "AtmospherePreCompute::DownloadJob::Irradiance");
-            return;
-        }
-
-        auto in = textureData.Get(0, 0);
-        int rowPich = 3 * IrradianceTexWidth * sizeof(BYTE);
-        int size = rowPich * IrradianceTexHeight;
-        data.EnsureCapacity(size, false);
-        byte* p = data.Get();
-        for (int y = 0; y < IrradianceTexHeight; y++)
-        {
-            for (int x = 0; x < IrradianceTexWidth; x++)
-            {
-                Float4 t = ((Half4*)&in->Data[y * in->RowPitch + x * sizeof(Half4)])->ToFloat4();
-                *p++ = Math::Saturate(t.Z) * 255;
-                *p++ = Math::Saturate(t.Y) * 255;
-                *p++ = Math::Saturate(t.X) * 255;
-            }
-        }
-
-        FileSystem::SaveBitmapToFile(data.Get(),
-                                     IrradianceTexWidth,
-                                     IrradianceTexHeight,
-                                     24,
-                                     0,
-                                     L"C:\\Users\\Wojtek\\Downloads\\irradiance_Flax.bmp");
-    }*/
-
-    /*// Inscatter
-    {
-        textureData.Clear();
-        if (_inscatter->DownloadData(textureData))
-        {
-            LOG(Fatal, 193, "AtmospherePreCompute::DownloadJob::Inscatter");
-            return;
-        }
-        auto in = textureData.Get(0, 0);
-        int rowPich = 3 * InscatterWidth * sizeof(BYTE);
-        int size = rowPich * InscatterHeight;
-        data.EnsureCapacity(size, false);
-
-        for (int32 depthSlice = 0; depthSlice < InscatterDepth; depthSlice++)
-        {
-            byte* p = data.Get();
-            byte* s = in->Data.Get() + depthSlice * in->DepthPitch;
-
-            for (int y = 0; y < InscatterHeight; y++)
-            {
-                for (int x = 0; x < InscatterWidth; x++)
-                {
-                    Float4 t = ((Half4*)&s[y * in->RowPitch + x * sizeof(Half4)])->ToFloat4();
-                    *p++ = Math::Saturate(t.Z) * 255;
-                    *p++ = Math::Saturate(t.Y) * 255;
-                    *p++ = Math::Saturate(t.X) * 255;
-                }
-            }
-
-            FileSystem::SaveBitmapToFile(data.Get(),
-                                         InscatterWidth,
-                                         InscatterHeight,
-                                         24,
-                                         0,
-                                         *String::Format(TEXT("C:\\Users\\Wojtek\\Downloads\\inscatter_{0}_Flax.bmp"), depthSlice));
-
-            break;
-        }
-    }*/
-
-#else
-
-    MISSING_CODE("download precomputed atmosphere data from the GPU!");
-
-#endif
-
-    return false;
 }
