@@ -416,7 +416,20 @@ bool GPUDeviceWebGPU::Init()
 #endif
     }
 
-    // Inti device options
+    // Validate engine requirements from adapter limits
+#define CHECK_LIMIT(limit, minValue) if (limits.limit < minValue) LOG(Fatal, "WebGPU adapter doesn't meet minimum requirements (unsupported device). {} limit is {} but needs to be {} (or higher).", TEXT(#limit), limits.limit, minValue)
+    CHECK_LIMIT(maxBindGroups, GPUBindGroupsWebGPU::Pixel + 1); // 2 groups (one for Vertex Shader, other for Pixel Shader)
+    CHECK_LIMIT(maxStorageBuffersPerShaderStage, 3); // ObjectsBuffer + BoneMatrices + PrevBoneMatrices (even more might be needed by game shaders)
+    CHECK_LIMIT(maxSamplersPerShaderStage, 8); // Samplers
+    CHECK_LIMIT(maxSampledTexturesPerShaderStage, 8); // Textures
+    CHECK_LIMIT(maxDynamicUniformBuffersPerPipelineLayout, GPU_MAX_CB_BINDED); // Constant Buffers
+    CHECK_LIMIT(maxColorAttachments, GPU_MAX_RT_BINDED); // Render Targets
+    CHECK_LIMIT(maxVertexBuffers, GPU_MAX_VB_BINDED); // Vertex Buffers
+    CHECK_LIMIT(maxVertexAttributes, 8); // Vertex Elements
+    CHECK_LIMIT(maxBufferSize, 32ull * 1025 * 1024); // Min 32MB buffer
+#undef CHECK_LIMIT
+
+    // Init device options
     WGPUDeviceDescriptor deviceDesc = WGPU_DEVICE_DESCRIPTOR_INIT;
     deviceDesc.requiredLimits = &limits;
     deviceDesc.requiredFeatureCount = features.Count();
