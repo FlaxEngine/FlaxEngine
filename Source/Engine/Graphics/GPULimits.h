@@ -297,8 +297,9 @@ API_STRUCT(NoDefault) struct GPULimits
 
     /// <summary>
     /// True if device supports separate render target blending states.
+    /// [Deprecated in v1.12]
     /// </summary>
-    API_FIELD() bool HasSeparateRenderTargetBlendState = false;
+    API_FIELD() DEPRECATED() bool HasSeparateRenderTargetBlendState = false;
 
     /// <summary>
     /// True if device supports depth buffer texture as a shader resource view.
@@ -322,8 +323,9 @@ API_STRUCT(NoDefault) struct GPULimits
 
     /// <summary>
     /// True if device supports multisampled depth buffer texture as a shader resource view.
+    /// [Deprecated in v1.12]
     /// </summary>
-    API_FIELD() bool HasMultisampleDepthAsSRV = false;
+    API_FIELD() DEPRECATED() bool HasMultisampleDepthAsSRV = false;
 
     /// <summary>
     /// True if device supports reading from typed UAV in shader (common types such as R32G32B32A32, R16G16B16A16, R16, R8). This doesn't apply to single-component 32-bit formats.
