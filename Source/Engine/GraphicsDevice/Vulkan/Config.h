@@ -49,4 +49,9 @@
 #define VULKAN_USE_QUERIES 1
 #endif
 
+// Fence wait operation timeout in seconds
+#ifndef VULKAN_WAIT_TIMEOUT
+#define VULKAN_WAIT_TIMEOUT 5.0f
+#endif
+
 #endif
