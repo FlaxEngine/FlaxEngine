@@ -160,7 +160,7 @@ namespace FlaxEditor.GUI.Dialogs
             _cAlpha.ValueChanged += OnRGBAChanged;
 
             // Hue
-            _cHue = new FloatValueBox(0, PickerMargin + HSVMargin + ChannelTextWidth, _cSelector.Bottom + PickerMargin, 100, 0, 360)
+            _cHue = new FloatValueBox(0, PickerMargin + HSVMargin + ChannelTextWidth, _cSelector.Bottom + PickerMargin, 100)
             {
                 Parent = this
             };
@@ -306,6 +306,7 @@ namespace FlaxEditor.GUI.Dialogs
             if (_disableEvents)
                 return;
 
+            _cHue.Value = Mathf.Wrap(_cHue.Value, 0f, 360f);
             SelectedColor = Color.FromHSV(_cHue.Value, _cSaturation.Value / 100.0f, _cValue.Value / 100.0f, _cAlpha.Value);
         }
 
