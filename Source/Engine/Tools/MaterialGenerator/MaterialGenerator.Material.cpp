@@ -55,7 +55,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         if (layer && layer->Domain == MaterialDomain::Surface && node->Values.Count() > 0 && node->Values[0].AsBool)
         {
             // Transform world position into main viewport texcoord space
-            Value clipPosition = writeLocal(VariantType::Float4, TEXT("mul(float4(input.WorldPosition.xyz, 1), MainViewProjectionMatrix)"), node);
+            Value clipPosition = writeLocal(VariantType::Float4, TEXT("PROJECT_POINT(float4(input.WorldPosition.xyz, 1), MainViewProjectionMatrix)"), node);
             Value uvPos = writeLocal(VariantType::Float2, String::Format(TEXT("(({0}.xy / {0}.w) * float2(0.5, -0.5) + float2(0.5, 0.5))"), clipPosition.Value), node);
 
             // Position
@@ -263,14 +263,14 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
 
         // Sample scene depth buffer
         auto sceneDepthTexture = findOrAddSceneTexture(MaterialSceneTextures::SceneDepth);
-        auto depthSample = writeLocal(VariantType::Float, String::Format(TEXT("{0}.SampleLevel(SamplerPointClamp, {1}, 0).x"), sceneDepthTexture.ShaderName, screenUVs.Value), node);
+        auto depthSample = writeLocal(VariantType::Float, String::Format(TEXT("SAMPLE_RT_DEPTH({0}, {1})"), sceneDepthTexture.ShaderName, screenUVs.Value), node);
 
         // Linearize raw device depth
         Value sceneDepth;
         linearizeSceneDepth(node, depthSample, sceneDepth);
 
         // Calculate pixel depth
-        auto posVS = writeLocal(VariantType::Float, TEXT("mul(float4(input.WorldPosition.xyz, 1), ViewMatrix).z"), node);
+        auto posVS = writeLocal(VariantType::Float, TEXT("PROJECT_POINT(float4(input.WorldPosition.xyz, 1), ViewMatrix).z"), node);
 
         // Compute depth difference
         auto depthDiff = writeLocal(VariantType::Float, String::Format(TEXT("{0} * ViewFar - {1}"), sceneDepth.Value, posVS.Value), node);
