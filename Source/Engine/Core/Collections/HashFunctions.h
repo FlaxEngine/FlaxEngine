@@ -66,8 +66,12 @@ inline uint32 GetHash(const double key)
 
 inline uint32 GetHash(const void* key)
 {
+#if PLATFORM_64BITS
     static const int64 shift = 3;
     return (uint32)((int64)(key) >> shift);
+#else
+    return (uint32)key;
+#endif
 }
 
 template<typename EnumType>
