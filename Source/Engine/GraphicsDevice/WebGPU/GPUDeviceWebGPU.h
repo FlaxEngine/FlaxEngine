@@ -132,6 +132,7 @@ struct GPUResourceViewPtrWebGPU
 {
     class GPUBufferViewWebGPU* BufferView;
     class GPUTextureViewWebGPU* TextureView;
+    uint8 Version;
 };
 
 extern GPUDevice* CreateGPUDeviceWebGPU();

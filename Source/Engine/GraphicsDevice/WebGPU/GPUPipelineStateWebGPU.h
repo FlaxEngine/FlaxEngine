@@ -16,7 +16,7 @@ class GPUPipelineStateWebGPU : public GPUResourceWebGPU<GPUPipelineState>
 {
 public:
     // Batches render context state for the pipeline state. Used as a key for caching created pipelines.
-    struct Key
+    struct PipelineKey
     {
         union
         {
@@ -31,10 +31,23 @@ public:
             uint64 Packed[2];
         };
 
-        FORCE_INLINE bool operator==(const Key& other) const
+        FORCE_INLINE bool operator==(const PipelineKey& other) const
         {
             return Platform::MemoryCompare(&Packed, &other.Packed, sizeof(Packed)) == 0;
         }
+    };
+
+    // Batches bind group description for the pipeline state. Used as a key for caching created bind groups.
+    struct BindGroupKey
+    {
+        uint32 Hash;
+        WGPUBindGroupLayout Layout;
+        mutable uint64 LastFrameUsed;
+        WGPUBindGroupEntry Entries[64];
+        uint8 EntriesCount;
+        uint8 Versions[64]; // Versions of descriptors used to differentiate when texture residency gets changed
+
+        bool operator==(const BindGroupKey& other) const;
     };
 
 private:
@@ -46,7 +59,9 @@ private:
     WGPUBlendState _blendState;
     WGPUColorTargetState _colorTargets[GPU_MAX_RT_BINDED];
     WGPUVertexBufferLayout _vertexBuffers[GPU_MAX_VB_BINDED];
-    Dictionary<Key, WGPURenderPipeline> _pipelines;
+    Dictionary<PipelineKey, WGPURenderPipeline> _pipelines;
+    Dictionary<BindGroupKey, WGPUBindGroup> _bindGroups;
+    uint64 _lastFrameBindGroupsGC = 0;
 
 public:
     GPUShaderProgramVSWebGPU* VS = nullptr;
@@ -63,7 +78,10 @@ public:
 
 public:
     // Gets the pipeline for the given rendering state. Pipelines are cached and reused for the same key.
-    WGPURenderPipeline GetPipeline(const Key& key, GPUResourceView* shaderResources[GPU_MAX_SR_BINDED]);
+    WGPURenderPipeline GetPipeline(const PipelineKey& key, GPUResourceView* shaderResources[GPU_MAX_SR_BINDED]);
+
+    // Gets the bind group for the given key (unhashed). Bind groups are cached and reused for the same key.
+    WGPUBindGroup GetBindGroup(BindGroupKey& desc);
 
 private:
     void InitLayout(GPUResourceView* shaderResources[GPU_MAX_SR_BINDED]);
@@ -78,6 +96,7 @@ protected:
     void OnReleaseGPU() final override;
 };
 
-uint32 GetHash(const GPUPipelineStateWebGPU::Key& key);
+uint32 GetHash(const GPUPipelineStateWebGPU::PipelineKey& key);
+uint32 GetHash(const GPUPipelineStateWebGPU::BindGroupKey& key);
 
 #endif

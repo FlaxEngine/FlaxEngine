@@ -14,6 +14,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Core/Math/Rectangle.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/RenderStats.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
@@ -504,10 +505,6 @@ void GPUContextWebGPU::Flush()
         wgpuQueueSubmit(_device->Queue, 1, &commandBuffer);
         wgpuCommandBufferRelease(commandBuffer);
     }
-
-    for (auto e : _unusedBindGroups)
-        wgpuBindGroupRelease(e);
-    _unusedBindGroups.Clear();
 }
 
 void GPUContextWebGPU::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 size, uint32 offset)
@@ -962,20 +959,24 @@ void GPUContextWebGPU::FlushBindGroup()
     _bindGroupDirty = false;
 
     // Each shader stage (Vertex, Pixel) uses a separate bind group
-    WGPUBindGroupDescriptor bindGroupDesc = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
+    GPUPipelineStateWebGPU::BindGroupKey key;
     for (int32 groupIndex = 0; groupIndex < GPUBindGroupsWebGPU::GraphicsMax; groupIndex++)
     {
         auto descriptors = _pipelineState->BindGroupDescriptors[groupIndex];
-        bindGroupDesc.layout = _pipelineState->BindGroupLayouts[groupIndex];
-        if (!descriptors || !bindGroupDesc.layout)
+        key.Layout = _pipelineState->BindGroupLayouts[groupIndex];
+        if (!descriptors || !key.Layout)
             continue;
 
         // Build descriptors for the bind group
         auto entriesCount = descriptors->DescriptorTypesCount;
         _dynamicOffsets.Clear();
-        _bindGroupEntries.Resize(entriesCount);
-        auto entriesPtr = _bindGroupEntries.Get();
+        static_assert(ARRAY_COUNT(key.Entries) == SpirvShaderDescriptorInfo::MaxDescriptors, "Invalid size of bind group entries array.");
+        static_assert(ARRAY_COUNT(key.Versions) == SpirvShaderDescriptorInfo::MaxDescriptors, "Invalid size of bind group versions array.");
+        key.EntriesCount = entriesCount;
+        auto entriesPtr = key.Entries;
+        auto versionsPtr = key.Versions;
         Platform::MemoryClear(entriesPtr, entriesCount * sizeof(WGPUBindGroupEntry));
+        Platform::MemoryClear(versionsPtr, ((entriesCount + 3) & ~0x3) * sizeof(uint8));
         for (int32 index = 0; index < entriesCount; index++)
         {
             auto& descriptor = descriptors->DescriptorTypes[index];
@@ -999,7 +1000,10 @@ void GPUContextWebGPU::FlushBindGroup()
                 auto view = _shaderResources[descriptor.Slot];
                 auto ptr = view ? (GPUResourceViewPtrWebGPU*)view->GetNativePtr() : nullptr;
                 if (ptr && ptr->TextureView)
+                {
                     entry.textureView = ptr->TextureView->View;
+                    versionsPtr[index] = ptr->Version;
+                }
                 if (!entry.textureView)
                 {
                     // Fallback
@@ -1036,7 +1040,11 @@ void GPUContextWebGPU::FlushBindGroup()
                 GPUResourceView* view = _resourceTables[(int32)descriptor.BindingType][descriptor.Slot];
                 auto ptr = view ? (GPUResourceViewPtrWebGPU*)view->GetNativePtr() : nullptr;
                 if (ptr && ptr->BufferView)
+                {
                     entry.buffer = ptr->BufferView->Buffer;
+                    entry.size = ((GPUBufferWebGPU*)view->GetParent())->GetSize();
+                    versionsPtr[index] = (uint64)ptr->Version;
+                }
                 if (!entry.buffer)
                     entry.buffer = _device->DefaultBuffer; // Fallback
                 break;
@@ -1068,13 +1076,11 @@ void GPUContextWebGPU::FlushBindGroup()
             }
         }
 
-        // Create a bind group
-        bindGroupDesc.entryCount = _bindGroupEntries.Count();
-        bindGroupDesc.entries = entriesPtr;
 #if BUILD_DEBUG
-        for (int32 i = 0; i < bindGroupDesc.entryCount; i++)
+        // Validate
+        for (int32 i = 0; i < entriesCount; i++)
         {
-            auto& e = bindGroupDesc.entries[i];
+            auto& e = entriesPtr[i];
             if ((e.buffer != nullptr) + (e.sampler != nullptr) + (e.textureView != nullptr) != 1)
             {
                 LOG(Error, "Invalid binding in group {} at index {} ({})", groupIndex, i, _pipelineState->GetName());
@@ -1084,10 +1090,9 @@ void GPUContextWebGPU::FlushBindGroup()
             }
         }
 #endif
-        WGPUBindGroup bindGroup = wgpuDeviceCreateBindGroup(_device->Device, &bindGroupDesc);
-        _unusedBindGroups.Add(bindGroup);
 
         // Bind group
+        WGPUBindGroup bindGroup = _pipelineState->GetBindGroup(key);
         wgpuRenderPassEncoderSetBindGroup(_renderPass, groupIndex, bindGroup, _dynamicOffsets.Count(), _dynamicOffsets.Get());
     }
 }

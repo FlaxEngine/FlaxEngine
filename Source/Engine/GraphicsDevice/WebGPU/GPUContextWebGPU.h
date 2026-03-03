@@ -43,9 +43,7 @@ private:
 
     GPUDeviceWebGPU* _device;
     uint32 _minUniformBufferOffsetAlignment;
-    Array<WGPUBindGroupEntry> _bindGroupEntries;
     Array<uint32> _dynamicOffsets;
-    Array<WGPUBindGroup> _unusedBindGroups;
 
     // State tracking
     int32 _renderPassDirty : 1;
@@ -70,7 +68,7 @@ private:
     BufferBind _indexBuffer;
     BufferBind _vertexBuffers[GPU_MAX_VB_BINDED];
     GPUPipelineStateWebGPU* _pipelineState;
-    GPUPipelineStateWebGPU::Key _pipelineKey;
+    GPUPipelineStateWebGPU::PipelineKey _pipelineKey;
     Array<PendingClear, FixedAllocation<16>> _pendingClears;
     GPUResourceView* _shaderResources[GPU_MAX_SR_BINDED];
     GPUResourceView* _storageResources[GPU_MAX_SR_BINDED];

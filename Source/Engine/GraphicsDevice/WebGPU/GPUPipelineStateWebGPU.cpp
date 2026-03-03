@@ -7,11 +7,14 @@
 #include "GPUVertexLayoutWebGPU.h"
 #include "RenderToolsWebGPU.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
+#include "Engine/Utilities/Crc.h"
 
 #define WEBGPU_LOG_PSO 0
+#define WEBGPU_LOG_BIND_GROUPS 0
 
 WGPUCompareFunction ToCompareFunction(ComparisonFunc value)
 {
@@ -139,6 +142,9 @@ void GPUPipelineStateWebGPU::OnReleaseGPU()
 {
     VS = nullptr;
     PS = nullptr;
+    for (auto& e : _bindGroups)
+        wgpuBindGroupRelease(e.Value);
+    _bindGroups.Clear();
     for (auto& e : _pipelines)
         wgpuRenderPipelineRelease(e.Value);
     _pipelines.Clear();
@@ -158,15 +164,29 @@ void GPUPipelineStateWebGPU::OnReleaseGPU()
     Platform::MemoryClear(&BindGroupDescriptors, sizeof(BindGroupDescriptors));
 }
 
-uint32 GetHash(const GPUPipelineStateWebGPU::Key& key)
+uint32 GetHash(const GPUPipelineStateWebGPU::PipelineKey& key)
 {
-    static_assert(sizeof(GPUPipelineStateWebGPU::Key) == sizeof(uint64) * 2, "Invalid PSO key size.");
+    static_assert(sizeof(GPUPipelineStateWebGPU::PipelineKey) == sizeof(uint64) * 2, "Invalid PSO key size.");
     uint32 hash = GetHash(key.Packed[0]);
     CombineHash(hash, GetHash(key.Packed[1]));
     return hash;
 }
 
-WGPURenderPipeline GPUPipelineStateWebGPU::GetPipeline(const Key& key, GPUResourceView* shaderResources[GPU_MAX_SR_BINDED])
+uint32 GetHash(const GPUPipelineStateWebGPU::BindGroupKey& key)
+{
+    return key.Hash;
+}
+
+bool GPUPipelineStateWebGPU::BindGroupKey::operator==(const BindGroupKey& other) const
+{
+    return Hash == other.Hash
+        && Layout == other.Layout
+        && EntriesCount == other.EntriesCount
+        && Platform::MemoryCompare(&Entries, &other.Entries, EntriesCount * sizeof(WGPUBindGroupEntry)) == 0
+        && Platform::MemoryCompare(&Versions, &other.Versions, EntriesCount * sizeof(uint8)) == 0;
+}
+
+WGPURenderPipeline GPUPipelineStateWebGPU::GetPipeline(const PipelineKey& key, GPUResourceView* shaderResources[GPU_MAX_SR_BINDED])
 {
     WGPURenderPipeline pipeline;
     if (_pipelines.TryGet(key, pipeline))
@@ -255,8 +275,103 @@ WGPURenderPipeline GPUPipelineStateWebGPU::GetPipeline(const Key& key, GPUResour
 
     // Cache it
     _pipelines.Add(key, pipeline);
-
     return pipeline;
+}
+
+WGPUBindGroup GPUPipelineStateWebGPU::GetBindGroup(BindGroupKey& key)
+{
+    // Generate a hash for the key
+    key.LastFrameUsed = Engine::FrameCount;
+    key.Hash = Crc::MemCrc32(&key.Entries, key.EntriesCount * sizeof(WGPUBindGroupEntry));
+    CombineHash(key.Hash, GetHash(key.EntriesCount));
+    CombineHash(key.Hash, GetHash(key.Layout));
+    CombineHash(key.Hash, Crc::MemCrc32(&key.Versions, key.EntriesCount * sizeof(uint8)));
+
+    // Lookup for existing bind group
+    WGPUBindGroup bindGroup;
+    auto found = _bindGroups.Find(key);
+    if (found.IsNotEnd())
+    {
+        // Get cached bind group and update the last usage frame
+        bindGroup = found->Value;
+        found->Key.LastFrameUsed = key.LastFrameUsed;
+
+        // Periodically remove old bind groups (unused for some time)
+        if (key.LastFrameUsed - _lastFrameBindGroupsGC > 100)
+        {
+            _lastFrameBindGroupsGC = key.LastFrameUsed;
+            int32 freed = 0;
+            for (auto it = _bindGroups.Begin(); it.IsNotEnd(); ++it)
+            {
+                if (key.LastFrameUsed - it->Key.LastFrameUsed > 50)
+                {
+                    freed++;
+                    wgpuBindGroupRelease(it->Value);
+                    _bindGroups.Remove(it);
+                }
+            }
+#if WEBGPU_LOG_BIND_GROUPS
+            if (freed > 0)
+            {
+                LOG(Info, "[WebGPU] Removed {} old entries from '{}'", freed, String(_debugName.Get(), _debugName.Count() - 1));
+            }
+#endif
+        }
+
+        return bindGroup;
+    }
+    PROFILE_CPU();
+    PROFILE_MEM(GraphicsCommands);
+#if GPU_ENABLE_RESOURCE_NAMING
+    ZoneText(_debugName.Get(), _debugName.Count() - 1);
+#endif
+#if WEBGPU_LOG_BIND_GROUPS
+    LOG(Info, "[WebGPU] GetBindGroup: '{}', hash: {}", String(_debugName.Get(), _debugName.Count() - 1), key.Hash);
+#endif
+
+    // Build description
+    WGPUBindGroupDescriptor desc = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
+#if GPU_ENABLE_RESOURCE_NAMING
+    desc.label = PipelineDesc.label;
+#endif
+    desc.layout = key.Layout;
+    desc.entryCount = key.EntriesCount;
+    desc.entries = key.Entries;
+
+    // Create object
+    bindGroup = wgpuDeviceCreateBindGroup(_device->Device, &desc);
+    if (!bindGroup)
+    {
+#if GPU_ENABLE_RESOURCE_NAMING
+        LOG(Error, "wgpuDeviceCreateBindGroup failed for {}", String(_debugName.Get(), _debugName.Count() - 1));
+#endif
+        return nullptr;
+    }
+
+#if WEBGPU_LOG_BIND_GROUPS
+    // Debug detection of hash collisions
+    int32 collisions = 0, equalLayout = 0, equalEntries = 0, equalVersions = 0;
+    for (auto& e : _bindGroups)
+    {
+        auto& other = e.Key;
+        if (key.Hash == other.Hash)
+        {
+            collisions++;
+            if (key.Layout == other.Layout)
+                equalLayout++;
+            if (key.EntriesCount == other.EntriesCount && Platform::MemoryCompare(&key.Entries, &other.Entries, key.EntriesCount * sizeof(WGPUBindGroupEntry)) == 0)
+                equalEntries++;
+            if (key.EntriesCount == other.EntriesCount && Platform::MemoryCompare(&key.Versions, &other.Versions, key.EntriesCount * sizeof(uint8)) == 0)
+                equalVersions++;
+        }
+    }
+    if (collisions > 1)
+        LOG(Error, "> Hash colllision! {}/{} (capacity: {}), equalLayout: {}, equalEntries: {}, equalVersions: {}", collisions, _bindGroups.Count(), _bindGroups.Capacity(), equalLayout, equalEntries, equalVersions);
+#endif
+
+    // Cache it
+    _bindGroups.Add(key, bindGroup);
+    return bindGroup;
 }
 
 void GPUPipelineStateWebGPU::InitLayout(GPUResourceView* shaderResources[GPU_MAX_SR_BINDED])

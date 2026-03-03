@@ -39,6 +39,7 @@ void SetWebGPUTextureViewSampler(GPUTextureView* view, uint32 samplerType)
 
 void GPUTextureViewWebGPU::Create(WGPUTexture texture, const WGPUTextureViewDescriptor& desc)
 {
+    Ptr.Version++;
     if (View)
         wgpuTextureViewRelease(View);
     Texture = texture;
