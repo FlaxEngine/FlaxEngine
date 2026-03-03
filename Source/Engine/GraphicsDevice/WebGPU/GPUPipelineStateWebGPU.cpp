@@ -2,6 +2,10 @@
 
 #if GRAPHICS_API_WEBGPU
 
+#define WEBGPU_LOG_PSO 0
+//#define WEBGPU_LOG_PSO_NAME "PS_GBuffer" // Debug log for PSOs with specific name
+#define WEBGPU_LOG_BIND_GROUPS 0
+
 #include "GPUPipelineStateWebGPU.h"
 #include "GPUTextureWebGPU.h"
 #include "GPUVertexLayoutWebGPU.h"
@@ -12,9 +16,9 @@
 #include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Utilities/Crc.h"
-
-#define WEBGPU_LOG_PSO 0
-#define WEBGPU_LOG_BIND_GROUPS 0
+#if WEBGPU_LOG_PSO
+#include "Engine/Scripting/Enums.h"
+#endif
 
 WGPUCompareFunction ToCompareFunction(ComparisonFunc value)
 {
@@ -198,6 +202,11 @@ WGPURenderPipeline GPUPipelineStateWebGPU::GetPipeline(const PipelineKey& key, G
 #endif
 #if WEBGPU_LOG_PSO
     LOG(Info, "[WebGPU] GetPipeline: '{}'", String(_debugName.Get(), _debugName.Count() - 1));
+#ifdef WEBGPU_LOG_PSO_NAME
+    const bool log = StringAnsiView(_debugName.Get(), _debugName.Count() - 1).Contains(WEBGPU_LOG_PSO_NAME);
+#else
+    const bool log = true;
+#endif
 #endif
 
     // Lazy-init layout (cannot do it during Init as texture samplers that access eg. depth need to explicitly use UnfilterableFloat)
@@ -222,7 +231,7 @@ WGPURenderPipeline GPUPipelineStateWebGPU::GetPipeline(const PipelineKey& key, G
         if (!mergedVertexLayout)
             mergedVertexLayout = (GPUVertexLayoutWebGPU*)VS->Layout; // Fallback to shader-specified layout (if using old APIs)
         if (VS->InputLayout)
-            mergedVertexLayout = (GPUVertexLayoutWebGPU*)GPUVertexLayout::Merge(mergedVertexLayout, VS->InputLayout, false, true, -1, true);
+            mergedVertexLayout = (GPUVertexLayoutWebGPU*)GPUVertexLayout::Merge(mergedVertexLayout, VS->InputLayout, true, true, -1, true);
 
         // Build attributes list
         WGPUVertexAttribute attributes[GPU_MAX_VS_ELEMENTS];
@@ -230,6 +239,10 @@ WGPURenderPipeline GPUPipelineStateWebGPU::GetPipeline(const PipelineKey& key, G
         PipelineDesc.vertex.buffers = buffers;
         int32 attributeIndex = 0;
         auto& elements = mergedVertexLayout->GetElements();
+#if WEBGPU_LOG_PSO
+        if (log)
+            LOG(Info, " > Vertex elements: {}", elements.Count());
+#endif
         for (int32 bufferIndex = 0; bufferIndex < GPU_MAX_VB_BINDED; bufferIndex++)
         {
             auto& buffer = buffers[bufferIndex];
@@ -253,6 +266,10 @@ WGPURenderPipeline GPUPipelineStateWebGPU::GetPipeline(const PipelineKey& key, G
                     buffer.stepMode = WGPUVertexStepMode_Instance;
                 buffer.arrayStride = Math::Max<uint64>(buffer.arrayStride, element.Offset + PixelFormatExtensions::SizeInBytes(element.Format));
                 PipelineDesc.vertex.bufferCount = Math::Max<size_t>(PipelineDesc.vertex.bufferCount, bufferIndex + 1);
+#if WEBGPU_LOG_PSO
+                if (log)
+                    LOG(Info, "   > [{}] slot {}: {} ({} bytes at offset {}) at shader location: {} (per-instance: {})", attributeIndex - 1, element.Slot, ScriptingEnum::ToString(element.Format), PixelFormatExtensions::SizeInBytes(element.Format), element.Offset, dst.shaderLocation, element.PerInstance);
+#endif
             }
         }
     }
@@ -366,7 +383,7 @@ WGPUBindGroup GPUPipelineStateWebGPU::GetBindGroup(BindGroupKey& key)
         }
     }
     if (collisions > 1)
-        LOG(Error, "> Hash colllision! {}/{} (capacity: {}), equalLayout: {}, equalEntries: {}, equalVersions: {}", collisions, _bindGroups.Count(), _bindGroups.Capacity(), equalLayout, equalEntries, equalVersions);
+        LOG(Error, "> Hash collision! {}/{} (capacity: {}), equalLayout: {}, equalEntries: {}, equalVersions: {}", collisions, _bindGroups.Count(), _bindGroups.Capacity(), equalLayout, equalEntries, equalVersions);
 #endif
 
     // Cache it
@@ -377,8 +394,11 @@ WGPUBindGroup GPUPipelineStateWebGPU::GetBindGroup(BindGroupKey& key)
 void GPUPipelineStateWebGPU::InitLayout(GPUResourceView* shaderResources[GPU_MAX_SR_BINDED])
 {
 #if WEBGPU_LOG_PSO
-    // Debug log for PSOs with specific name
-    const bool log = true;// StringAnsiView(_debugName.Get(), _debugName.Count() - 1).Contains("PS_HalfDepth");
+#ifdef WEBGPU_LOG_PSO_NAME
+    const bool log = StringAnsiView(_debugName.Get(), _debugName.Count() - 1).Contains(WEBGPU_LOG_PSO_NAME);
+#else
+    const bool log = true;
+#endif
 #endif
 
     // Count the biggest bind group entries (for all shaders) to allocate reused memory

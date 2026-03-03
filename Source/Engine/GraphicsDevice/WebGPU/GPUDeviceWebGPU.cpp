@@ -167,6 +167,7 @@ bool GPUDeviceWebGPU::Init()
     if (wgpuAdapterGetLimits(Adapter->Adapter, &limits) == WGPUStatus_Success)
     {
         MinUniformBufferOffsetAlignment = limits.minUniformBufferOffsetAlignment;
+        Limits.HasInstancing = true;
         Limits.HasDrawIndirect = true;
         Limits.HasDepthAsSRV = true;
         Limits.HasReadOnlyDepth = true;
@@ -446,7 +447,7 @@ bool GPUDeviceWebGPU::Init()
         }
         static int32 LogSpamLeft = 20;
         if (LogSpamLeft-- < 0)
-            CRASH; // Too many errors
+            LOG(Fatal, "Too many WebGPU errors");
 #endif
     };
 
@@ -500,7 +501,7 @@ bool GPUDeviceWebGPU::Init()
 #if GPU_ENABLE_RESOURCE_NAMING
         bufferDesc.label = WEBGPU_STR("DefaultBuffer");
 #endif
-        bufferDesc.usage = WGPUBufferUsage_Storage;
+        bufferDesc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_Vertex;
         bufferDesc.size = 64;
         DefaultBuffer = wgpuDeviceCreateBuffer(Device, &bufferDesc);
     }

@@ -13,6 +13,7 @@
 #include "Engine/Platform/CPUInfo.h"
 #include "Engine/Platform/MemoryStats.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Engine/Web/WebGame.h"
 #include "Engine/Utilities/StringConverter.h"
 #include <chrono>
@@ -252,6 +253,9 @@ void WebPlatform::Tick()
 
 void WebPlatform::Exit()
 {
+    // Exit runtime
+    emscripten_cancel_main_loop();
+    emscripten_force_exit(Engine::ExitCode);
 }
 
 extern char** environ;

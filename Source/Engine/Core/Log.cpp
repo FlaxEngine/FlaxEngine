@@ -155,6 +155,7 @@ void Log::Logger::Write(const StringView& msg, LogType type)
     Platform::Log(msg, (int32)type);
 #endif
 
+#if LOG_ENABLE_FILE
     // Write message to log file
     constexpr int32 LogMaxWriteSize = 1 * 1024 * 1024; // 1GB
     if (LogAfterInit && LogTotalWriteSize < LogMaxWriteSize)
@@ -171,6 +172,7 @@ void Log::Logger::Write(const StringView& msg, LogType type)
         LogFile->Flush();
 #endif
     }
+#endif
 
     IsDuringLog = false;
     LogLocker.Unlock();
@@ -187,7 +189,11 @@ void Log::Logger::Dispose()
 
     // Write ending info
     WriteFloor();
+#if LOG_ENABLE_FILE
     Write(String::Format(TEXT(" Total errors: {0}\n Closing file"), LogTotalErrorsCnt, DateTime::Now().ToString()));
+#else
+    Write(String::Format(TEXT(" Total errors: {0}"), LogTotalErrorsCnt));
+#endif
     WriteFloor();
 
     // Close
@@ -213,10 +219,12 @@ bool Log::Logger::IsLogEnabled()
 
 void Log::Logger::Flush()
 {
+#if LOG_ENABLE_FILE
     LogLocker.Lock();
     if (LogFile)
         LogFile->Flush();
     LogLocker.Unlock();
+#endif
 }
 
 void Log::Logger::WriteFloor()

@@ -43,19 +43,18 @@ private:
 
     GPUDeviceWebGPU* _device;
     uint32 _minUniformBufferOffsetAlignment;
-    Array<uint32> _dynamicOffsets;
 
     // State tracking
-    int32 _renderPassDirty : 1;
-    int32 _pipelineDirty : 1;
-    int32 _bindGroupDirty : 1;
-    int32 _vertexBufferDirty : 1;
-    int32 _indexBufferDirty : 1;
-    int32 _indexBuffer32Bit : 1;
-    int32 _blendFactorDirty : 1;
-    int32 _blendFactorSet : 1;
-    int32 _renderTargetCount : 4;
-    int32 _vertexBufferCount : 3;
+    uint32 _renderPassDirty : 1;
+    uint32 _pipelineDirty : 1;
+    uint32 _bindGroupDirty : 1;
+    uint32 _vertexBufferDirty : 1;
+    uint32 _indexBufferDirty : 1;
+    uint32 _indexBuffer32Bit : 1;
+    uint32 _blendFactorDirty : 1;
+    uint32 _blendFactorSet : 1;
+    uint32 _renderTargetCount : 4;
+    uint32 _vertexBufferCount : 4;
     uint32 _stencilRef;
     Float4 _blendFactor;
     Viewport _viewport;

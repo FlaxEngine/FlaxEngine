@@ -265,22 +265,16 @@ void GPUTextureWebGPU::InitHandles()
 
         // Init per slice views
         _handlesPerSlice.Resize(Depth(), false);
-        //viewDesc.dimension = WGPUTextureViewDimension_2DArray;
         if (_desc.HasPerSliceViews() && IsRenderTarget())
         {
             for (int32 sliceIndex = 0; sliceIndex < Depth(); sliceIndex++)
             {
-                //viewDesc.baseArrayLayer = sliceIndex;
-                //viewDesc.arrayLayerCount = 1;
                 auto& view = _handlesPerSlice[sliceIndex];
                 view.Init(this, format, msaa);
                 view.Create(Texture, viewDesc);
                 view.DepthSlice = sliceIndex;
             }
         }
-        //viewDesc.baseArrayLayer = 0;
-        //viewDesc.arrayLayerCount = MipLevels();
-        //viewDesc.dimension = _viewDimension;
     }
     else if (IsArray())
     {
@@ -370,7 +364,7 @@ void GPUTextureWebGPU::InitHandles()
 
 bool GPUTextureWebGPU::GetData(int32 arrayIndex, int32 mipMapIndex, TextureMipData& data, uint32 mipRowPitch)
 {
-    // TODO: no implemented
+    // TODO: not implemented
     return true;
 }
 

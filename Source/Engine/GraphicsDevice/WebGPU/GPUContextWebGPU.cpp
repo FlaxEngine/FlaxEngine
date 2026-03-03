@@ -319,9 +319,10 @@ void GPUContextWebGPU::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint3
     for (int32 i = 0; i < vertexBuffers.Length(); i++)
     {
         auto vbWebGPU = (GPUBufferWebGPU*)vertexBuffers.Get()[i];
-        _vertexBuffers[i].Buffer = vbWebGPU ? vbWebGPU->Buffer : nullptr;
-        _vertexBuffers[i].Offset = vertexBuffersOffsets ? vertexBuffersOffsets[i] : 0;
-        _vertexBuffers[i].Size = vbWebGPU ? vbWebGPU->GetSize() : 0;
+        if (vbWebGPU)
+            _vertexBuffers[i] = { vbWebGPU->Buffer, vbWebGPU->GetSize(), vertexBuffersOffsets ? vertexBuffersOffsets[i] : 0 };
+        else
+            _vertexBuffers[i] = { _device->DefaultBuffer, 64, 0 }; // Fallback
     }
 }
 
@@ -969,7 +970,8 @@ void GPUContextWebGPU::FlushBindGroup()
 
         // Build descriptors for the bind group
         auto entriesCount = descriptors->DescriptorTypesCount;
-        _dynamicOffsets.Clear();
+        uint32 dynamicOffsets[4];
+        uint32 dynamicOffsetsCount = 0;
         static_assert(ARRAY_COUNT(key.Entries) == SpirvShaderDescriptorInfo::MaxDescriptors, "Invalid size of bind group entries array.");
         static_assert(ARRAY_COUNT(key.Versions) == SpirvShaderDescriptorInfo::MaxDescriptors, "Invalid size of bind group versions array.");
         key.EntriesCount = entriesCount;
@@ -1060,7 +1062,7 @@ void GPUContextWebGPU::FlushBindGroup()
                     if (descriptor.DescriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
                         entry.offset = uniform->Allocation.Offset;
                     else
-                        _dynamicOffsets.Add(uniform->Allocation.Offset);
+                        dynamicOffsets[dynamicOffsetsCount++] = uniform->Allocation.Offset;
                 }
                 else
                     LOG(Fatal, "Missing constant buffer at slot {}", descriptor.Slot);
@@ -1089,11 +1091,12 @@ void GPUContextWebGPU::FlushBindGroup()
                 LOG(Error, " > buffer: {}", (uint32)e.buffer);
             }
         }
+        ASSERT(dynamicOffsetsCount <= ARRAY_COUNT(dynamicOffsets));
 #endif
 
         // Bind group
         WGPUBindGroup bindGroup = _pipelineState->GetBindGroup(key);
-        wgpuRenderPassEncoderSetBindGroup(_renderPass, groupIndex, bindGroup, _dynamicOffsets.Count(), _dynamicOffsets.Get());
+        wgpuRenderPassEncoderSetBindGroup(_renderPass, groupIndex, bindGroup, dynamicOffsetsCount, dynamicOffsets);
     }
 }
 

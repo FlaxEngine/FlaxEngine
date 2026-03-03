@@ -9,7 +9,7 @@
 #include "Engine/GraphicsDevice/Vulkan/Types.h"
 #include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Platform/File.h"
-#include "Engine/Platform/Windows/WindowsFileSystem.h"
+#include "Engine/Platform/FileSystem.h"
 #include <ThirdParty/glslang/SPIRV/SpvTools.h>
 #include <ThirdParty/spirv-tools/libspirv.hpp>
 
