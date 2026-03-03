@@ -12,6 +12,8 @@ namespace FlaxEditor.GUI.Dialogs
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
     public class ColorSelector : ContainerControl
     {
+        private const String GrayedOutParamName = "GrayedOut";
+
         /// <summary>
         /// The color.
         /// </summary>
@@ -22,7 +24,7 @@ namespace FlaxEditor.GUI.Dialogs
         /// </summary>
         protected Rectangle _wheelRect;
 
-        private readonly SpriteHandle _colorWheelSprite;
+        private readonly MaterialBase _hsWheelMaterial;
         private bool _isMouseDownWheel;
 
         /// <summary>
@@ -78,7 +80,8 @@ namespace FlaxEditor.GUI.Dialogs
         {
             AutoFocus = true;
 
-            _colorWheelSprite = Editor.Instance.Icons.ColorWheel128;
+            _hsWheelMaterial = FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.HSWheelMaterial);
+            _hsWheelMaterial = _hsWheelMaterial.CreateVirtualInstance();
             _wheelRect = new Rectangle(0, 0, wheelSize, wheelSize);
         }
 
@@ -168,9 +171,12 @@ namespace FlaxEditor.GUI.Dialogs
             var hsv = _color.ToHSV();
             bool enabled = EnabledInHierarchy;
 
+            _hsWheelMaterial.SetParameterValue(GrayedOutParamName, enabled ? 1.0f : 0.5f);
+            Render2D.DrawMaterial(_hsWheelMaterial, _wheelRect, enabled ? Color.White : Color.Gray);
+
             // Wheel
             float boxExpand = (2.0f * 4.0f / 128.0f) * _wheelRect.Width;
-            Render2D.DrawSprite(_colorWheelSprite, _wheelRect.MakeExpanded(boxExpand), enabled ? Color.White : Color.Gray);
+            Render2D.DrawMaterial(_hsWheelMaterial, _wheelRect, enabled ? Color.White : Color.Gray);
             float hAngle = hsv.X * Mathf.DegreesToRadians;
             float hRadius = hsv.Y * _wheelRect.Width * 0.5f;
             var hsPos = new Float2(hRadius * Mathf.Cos(hAngle), -hRadius * Mathf.Sin(hAngle));
