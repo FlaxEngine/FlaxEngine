@@ -43,6 +43,10 @@ private:
 
     GPUDeviceWebGPU* _device;
     uint32 _minUniformBufferOffsetAlignment;
+    int32 _activeOcclusionQuerySet = -1;
+    int32 _pendingOcclusionQuerySet = -1;
+    uint32 _usedQuerySets = 0;
+    Array<WGPUPassTimestampWrites> _pendingTimestampWrites;
 
     // State tracking
     uint32 _renderPassDirty : 1;
@@ -85,6 +89,7 @@ public:
     WGPUCommandEncoder Encoder = nullptr;
 
 private:
+    void WriteTimestamp(GPUQuerySetWebGPU* set, uint32 index);
     bool FindClear(const GPUTextureViewWebGPU* view, PendingClear& clear);
     void ManualClear(const PendingClear& clear);
     void OnDrawCall();
@@ -92,6 +97,7 @@ private:
     void EndRenderPass();
     void FlushRenderPass();
     void FlushBindGroup();
+    void FlushTimestamps(int32 skipLast = 0);
 
 public:
     // [GPUContext]

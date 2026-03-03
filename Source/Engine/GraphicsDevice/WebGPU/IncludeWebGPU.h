@@ -23,4 +23,6 @@
 // Utiltiy macro to get WGPUStringView for a text constant
 #define WEBGPU_STR(str) { str, ARRAY_COUNT(str) - 1 }
 
+#define WEBGPU_MAX_QUERY_SETS 8
+
 #endif

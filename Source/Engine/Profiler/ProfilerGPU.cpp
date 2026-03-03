@@ -398,6 +398,7 @@ void GraphicsDumping::Print()
     auto& draw = Items[0];
     {
         // The root item is always the drawing by engine
+        draw.Time = Math::Max(draw.Time, 0.000001f);
         if (draw.Count == 1)
             sb.AppendFormat(TEXT("  Frame time: {} ms ({} FPS)"), Utilities::RoundTo2DecimalPlaces(draw.Time), (int32)(1000.0f / draw.Time)).AppendLine();
         else

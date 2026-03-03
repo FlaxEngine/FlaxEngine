@@ -72,6 +72,7 @@ void GPUContextWebGPU::FrameBegin()
     GPUContext::FrameBegin();
 
     // Setup
+    _usedQuerySets = 0;
     _renderPassDirty = false;
     _pipelineDirty = false;
     _bindGroupDirty = false;
@@ -424,12 +425,53 @@ void GPUContextWebGPU::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, ui
 
 uint64 GPUContextWebGPU::BeginQuery(GPUQueryType type)
 {
-    // TODO: impl timer/occlusion queries
-    return 0;
+    auto query = _device->AllocateQuery(type);
+    if (query.Raw)
+    {
+        ASSERT_LOW_LAYER(query.Set < WEBGPU_MAX_QUERY_SETS);
+        auto set = _device->QuerySets[query.Set];
+        if (set->Type == GPUQueryType::Timer)
+        {
+            // Put a new timestamp write
+            WriteTimestamp(set, query.Index);
+        }
+        else if (_activeOcclusionQuerySet == query.Set && _renderPass)
+        {
+            // Begin occlusion query on the active set
+            wgpuRenderPassEncoderBeginOcclusionQuery(_renderPass, query.Index);
+        }
+        else
+        {
+            // Set the next pending occlusion query set to use for the next pass (or frame)
+            _pendingOcclusionQuerySet = query.Set;
+        }
+
+        // Mark query set as used (to be resolved on the frame end)
+        static_assert(sizeof(_usedQuerySets) * 8 >= WEBGPU_MAX_QUERY_SETS, "Not enough bits in flags of used queries set.");
+        _usedQuerySets |= 1u << query.Set;
+
+    }
+    return query.Raw;
 }
 
 void GPUContextWebGPU::EndQuery(uint64 queryID)
 {
+    if (queryID)
+    {
+        GPUQueryWebGPU query;
+        query.Raw = queryID;
+        auto set = _device->QuerySets[query.Set];
+        if (set->Type == GPUQueryType::Timer)
+        {
+            // Put a new timestamp write
+            WriteTimestamp(set, query.Index + 1);
+        }
+        else if (_activeOcclusionQuerySet == query.Set && _renderPass)
+        {
+            // End occlusion query on the active set
+            wgpuRenderPassEncoderEndOcclusionQuery(_renderPass);
+        }
+    }
 }
 
 void GPUContextWebGPU::SetViewport(const Viewport& viewport)
@@ -495,6 +537,18 @@ void GPUContextWebGPU::Flush()
     // End existing pass (if any)
     if (_renderPass)
         EndRenderPass();
+
+    // Flush pending actions
+    FlushTimestamps();
+    _pendingTimestampWrites.Clear();
+
+    // Resolve used queries
+    for (uint32 setIndex = 0; setIndex < _device->QuerySetsCount; setIndex++)
+    {
+        if (_usedQuerySets & (1u << setIndex))
+            _device->QuerySets[setIndex]->Resolve(Encoder);
+    }
+    _usedQuerySets = 0;
 
     // End commands recording
     WGPUCommandBufferDescriptor commandBufferDesc = WGPU_COMMAND_BUFFER_DESCRIPTOR_INIT;
@@ -724,6 +778,15 @@ void GPUContextWebGPU::CopySubresource(GPUResource* dstResource, uint32 dstSubre
     }
 }
 
+void GPUContextWebGPU::WriteTimestamp(GPUQuerySetWebGPU* set, uint32 index)
+{
+    WGPUPassTimestampWrites write = WGPU_PASS_TIMESTAMP_WRITES_INIT;
+    write.querySet = set->Set;
+    write.beginningOfPassWriteIndex = index;
+    write.endOfPassWriteIndex = 0; // makePassTimestampWrites doesn't pass undefined properly thus it has to be a valid query (index 0 is left as dummy)
+    _pendingTimestampWrites.Add(write);
+}
+
 bool GPUContextWebGPU::FindClear(const GPUTextureViewWebGPU* view, PendingClear& clear)
 {
     for (auto& e : _pendingClears)
@@ -928,6 +991,15 @@ void GPUContextWebGPU::FlushRenderPass()
     {
         _pipelineKey.DepthStencilFormat = WGPUTextureFormat_Undefined;
     }
+    if (_pendingOcclusionQuerySet != _activeOcclusionQuerySet)
+    {
+        _activeOcclusionQuerySet = _pendingOcclusionQuerySet;
+        renderPassDesc.occlusionQuerySet = _device->QuerySets[_activeOcclusionQuerySet]->Set;
+    }
+    FlushTimestamps(1);
+    if (_pendingTimestampWrites.HasItems())
+        renderPassDesc.timestampWrites = &_pendingTimestampWrites.Last();
+    _pendingTimestampWrites.Clear();
     ASSERT(attachmentSize.Packed != 0);
     _renderPass = wgpuCommandEncoderBeginRenderPass(Encoder, &renderPassDesc);
     ASSERT(_renderPass);
@@ -1097,6 +1169,31 @@ void GPUContextWebGPU::FlushBindGroup()
         // Bind group
         WGPUBindGroup bindGroup = _pipelineState->GetBindGroup(key);
         wgpuRenderPassEncoderSetBindGroup(_renderPass, groupIndex, bindGroup, dynamicOffsetsCount, dynamicOffsets);
+    }
+}
+
+void GPUContextWebGPU::FlushTimestamps(int32 skipLast)
+{
+    for (int32 i = 0; i < _pendingTimestampWrites.Count() - skipLast; i++)
+    {
+        // WebGPU timestamps have very bad API design made for single-file examples, not real game engines so drain writes here with dummy render passes
+        // Also, webgpu.h wrapper doesn't pass timestampWrites as array but just a single item...
+        WGPURenderPassDescriptor dummyDesc = WGPU_RENDER_PASS_DESCRIPTOR_INIT;
+        if (!_device->DefaultRenderTarget)
+        {
+            _device->DefaultRenderTarget = (GPUTextureWebGPU*)_device->CreateTexture(TEXT("DefaultRenderTarget"));
+            _device->DefaultRenderTarget->Init(GPUTextureDescription::New2D(1, 1, PixelFormat::R8G8B8A8_UNorm, GPUTextureFlags::RenderTarget));
+        }
+        WGPURenderPassColorAttachment dummyAttachment = WGPU_RENDER_PASS_COLOR_ATTACHMENT_INIT;
+        dummyAttachment.view = ((GPUTextureViewWebGPU*)_device->DefaultRenderTarget->View(0))->ViewRender;
+        dummyAttachment.loadOp = WGPULoadOp_Clear;
+        dummyAttachment.storeOp = WGPUStoreOp_Discard;
+        dummyDesc.colorAttachmentCount = 1;
+        dummyDesc.colorAttachments = &dummyAttachment;
+        dummyDesc.timestampWrites = &_pendingTimestampWrites[i];
+        auto renderPass = wgpuCommandEncoderBeginRenderPass(Encoder, &dummyDesc);
+        wgpuRenderPassEncoderEnd(renderPass);
+        wgpuRenderPassEncoderRelease(renderPass);
     }
 }
 

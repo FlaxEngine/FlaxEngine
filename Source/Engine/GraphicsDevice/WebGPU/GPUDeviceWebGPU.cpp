@@ -30,6 +30,132 @@ GPUVertexLayoutWebGPU::GPUVertexLayoutWebGPU(GPUDeviceWebGPU* device, const Elem
     SetElements(elements, explicitOffsets);
 }
 
+GPUQuerySetWebGPU::GPUQuerySetWebGPU(WGPUDevice device, GPUQueryType type, uint32 count)
+    : _device(device)
+    , _count(count)
+    , Type(type)
+{
+    // Timer queries use 2 items for begin/end timestamps
+    ASSERT_LOW_LAYER(count % 2 == 0 || type != GPUQueryType::Timer);
+    if (type == GPUQueryType::Timer)
+        _index = 2; // Skip first item in timer queries due to bug in makePassTimestampWrites that cannot pass undefined value properly
+
+    // Create query set
+    WGPUQuerySetDescriptor desc = WGPU_QUERY_SET_DESCRIPTOR_INIT;
+    desc.type = type == GPUQueryType::Timer ? WGPUQueryType_Timestamp : WGPUQueryType_Occlusion;
+    desc.count = count;
+    Set = wgpuDeviceCreateQuerySet(device, &desc);
+    ASSERT(Set);
+
+    // Create buffer for queries data
+    WGPUBufferDescriptor bufferDesc = WGPU_BUFFER_DESCRIPTOR_INIT;
+    bufferDesc.size = count * sizeof(uint64);
+    bufferDesc.usage = WGPUBufferUsage_QueryResolve | WGPUBufferUsage_CopySrc;
+    _queryBuffer = wgpuDeviceCreateBuffer(device, &bufferDesc);
+    ASSERT(_queryBuffer);
+
+    // Create buffer for reading copied queries data on CPU
+    bufferDesc.usage = WGPUBufferUsage_MapRead | WGPUBufferUsage_CopyDst;
+    _readBuffer = wgpuDeviceCreateBuffer(device, &bufferDesc);
+    ASSERT(_readBuffer);
+
+#if COMPILE_WITH_PROFILER
+    _memorySize = bufferDesc.size * 3; // Set + QueryBuffer + ReadBuffer
+    PROFILE_MEM_INC(GraphicsCommands, _memorySize);
+#endif
+}
+
+GPUQuerySetWebGPU::~GPUQuerySetWebGPU()
+{
+    PROFILE_MEM_DEC(GraphicsCommands, _memorySize);
+    wgpuBufferDestroy(_readBuffer);
+    wgpuBufferRelease(_readBuffer);
+    wgpuBufferDestroy(_queryBuffer);
+    wgpuBufferRelease(_queryBuffer);
+    wgpuQuerySetDestroy(Set);
+    wgpuQuerySetRelease(Set);
+}
+
+bool GPUQuerySetWebGPU::CanAllocate() const
+{
+    return _index < _count && (_state == Active || _state == Mapped);
+}
+
+uint32 GPUQuerySetWebGPU::Allocate()
+{
+    if (_state == Mapped)
+    {
+        // Start a new batch from the beginning
+        wgpuBufferUnmap(_readBuffer);
+        _state = Active;
+        _index = 2;
+        _mapped = nullptr;
+    }
+    uint32 index = _index;
+    _index += Type == GPUQueryType::Timer ? 2 : 1;
+    return index;
+}
+
+void GPUQuerySetWebGPU::Resolve(WGPUCommandEncoder encoder)
+{
+    ASSERT(_index != 0 && _state == Active);
+    wgpuCommandEncoderResolveQuerySet(encoder, Set, 0, _index, _queryBuffer, 0);
+    wgpuCommandEncoderCopyBufferToBuffer(encoder, _queryBuffer, 0, _readBuffer, 0, _index * sizeof(uint64));
+    _state = Resolved;
+}
+
+bool GPUQuerySetWebGPU::Read(uint32 index, uint64& result, bool wait)
+{
+    if (_state == Resolved)
+    {
+        // Start mapping the buffer
+        ASSERT(!wait); // TODO: impl wgpuBufferMapAsync with waiting (see GPUBufferWebGPU::Map)
+        WGPUBufferMapCallbackInfo callback = WGPU_BUFFER_MAP_CALLBACK_INFO_INIT;
+        callback.mode = WGPUCallbackMode_AllowSpontaneous;
+        callback.userdata1 = this;
+        callback.callback = [](WGPUMapAsyncStatus status, WGPUStringView message, WGPU_NULLABLE void* userdata1, WGPU_NULLABLE void* userdata2)
+        {
+            if (status == WGPUMapAsyncStatus_Success)
+            {
+                auto set = (GPUQuerySetWebGPU*)userdata1;
+                set->OnRead();
+            }
+#if !BUILD_RELEASE
+            else
+            {
+                LOG(Error, "Query Set map failed with status {}, {}", (uint32)status, WEBGPU_TO_STR(message));
+            }
+#endif
+        };
+        wgpuBufferMapAsync(_readBuffer, WGPUMapMode_Read, 0, _index * sizeof(uint64), callback);
+        _state = Mapping;
+    }
+    else if (_state == Mapped)
+    {
+        // Read the results from mapped buffer
+        if (Type == GPUQueryType::Timer)
+        {
+            // Timestamp calculates a difference between two queries (begin/end) in nanoseconds (result is in microseconds)
+            result = Math::Max(_mapped[index + 1] - _mapped[index], 0ull) / 1000;
+        }
+        else
+        {
+            // Occlusion outputs number of fragment samples that pass all the tests (scissor, stencil, depth, etc.)
+            result = _mapped[index];
+        }
+        return true;
+    }
+    return false;
+}
+
+void GPUQuerySetWebGPU::OnRead()
+{
+    // Get mapped buffer pointer
+    ASSERT(_state == Mapping);
+    _state = Mapped;
+    _mapped = (const uint64*)wgpuBufferGetConstMappedRange(_readBuffer, 0, _index * sizeof(uint64));
+}
+
 GPUDataUploaderWebGPU::Allocation GPUDataUploaderWebGPU::Allocate(uint32 size, WGPUBufferUsage usage, uint32 alignment)
 {
     // Find a free buffer from the current frame
@@ -167,6 +293,7 @@ bool GPUDeviceWebGPU::Init()
     if (wgpuAdapterGetLimits(Adapter->Adapter, &limits) == WGPUStatus_Success)
     {
         MinUniformBufferOffsetAlignment = limits.minUniformBufferOffsetAlignment;
+        TimestampQuery = features.Contains(WGPUFeatureName_TimestampQuery);
         Limits.HasInstancing = true;
         Limits.HasDrawIndirect = true;
         Limits.HasDepthAsSRV = true;
@@ -174,11 +301,11 @@ bool GPUDeviceWebGPU::Init()
         Limits.HasDepthClip = features.Contains(WGPUFeatureName_DepthClipControl);
         Limits.HasReadOnlyDepth = true;
         Limits.MaximumSamplerAnisotropy = 4;
-        Limits.MaximumTexture1DSize = Math::Min<int32>(GPU_MAX_TEXTURE_SIZE, limits.maxTextureDimension1D);
-        Limits.MaximumTexture2DSize = Math::Min<int32>(GPU_MAX_TEXTURE_SIZE, limits.maxTextureDimension2D);
-        Limits.MaximumTexture3DSize = Math::Min<int32>(GPU_MAX_TEXTURE_SIZE, limits.maxTextureDimension3D);
-        Limits.MaximumMipLevelsCount = Math::Min<int32>(GPU_MAX_TEXTURE_MIP_LEVELS, (int32)log2(limits.maxTextureDimension2D));
-        Limits.MaximumTexture1DArraySize = Limits.MaximumTexture2DArraySize = Math::Min<int32>(GPU_MAX_TEXTURE_ARRAY_SIZE, limits.maxTextureArrayLayers);
+        Limits.MaximumTexture1DSize = limits.maxTextureDimension1D;
+        Limits.MaximumTexture2DSize = limits.maxTextureDimension2D;
+        Limits.MaximumTexture3DSize = limits.maxTextureDimension3D;
+        Limits.MaximumMipLevelsCount = (int32)log2(limits.maxTextureDimension2D);
+        Limits.MaximumTexture1DArraySize = Limits.MaximumTexture2DArraySize = limits.maxTextureArrayLayers;
         if (limits.maxTextureArrayLayers >= 6)
             Limits.MaximumTextureCubeSize = Limits.MaximumTexture2DSize;
 
@@ -624,7 +751,11 @@ void GPUDeviceWebGPU::Dispose()
     preDispose();
 
     // Clear device resources
+    for (int32 i = 0; i < QuerySetsCount; i++)
+        Delete(QuerySets[i]);
+    QuerySetsCount = 0;
     DataUploader.ReleaseGPU();
+    SAFE_DELETE_GPU_RESOURCE(DefaultRenderTarget);
     SAFE_DELETE_GPU_RESOURCES(DefaultTexture);
     SAFE_DELETE_GPU_RESOURCES(DefaultSamplers);
     SAFE_DELETE(_mainContext);
@@ -653,12 +784,68 @@ void GPUDeviceWebGPU::Dispose()
 
 void GPUDeviceWebGPU::WaitForGPU()
 {
+    // TODO: this could use onSubmittedWorkDone (assuming any submit has been already done)
+}
+
+GPUQueryWebGPU GPUDeviceWebGPU::AllocateQuery(GPUQueryType type)
+{
+    // Ignore if device doesn't support timer queries
+    if (type == GPUQueryType::Timer && !TimestampQuery)
+        return {};
+
+    // Get query set with free space
+    int32 setIndex = 0;
+    for (; setIndex < QuerySetsCount; setIndex++)
+    {
+        auto heap = QuerySets[setIndex];
+        if (heap->Type == type && heap->CanAllocate())
+            break;
+    }
+    if (setIndex == QuerySetsCount)
+    {
+        if (setIndex == WEBGPU_MAX_QUERY_SETS)
+        {
+#if !BUILD_RELEASE
+            static bool SingleTimeLog = true;
+            if (SingleTimeLog)
+            {
+                SingleTimeLog = false;
+                LOG(Error, "Run out of the query sets capacity.");
+            }
+#endif
+            return {};
+        }
+
+        // Allocate a new query heap
+        PROFILE_MEM(GraphicsCommands);
+        uint32 size = type == GPUQueryType::Occlusion ? 4096 : 1024;
+        auto set = New<GPUQuerySetWebGPU>(Device, type, size);
+        QuerySets[QuerySetsCount++] = set;
+    }
+
+    // Allocate query from the set
+    GPUQueryWebGPU query;
+    {
+        static_assert(sizeof(GPUQueryWebGPU) == sizeof(uint64), "Invalid WebGPU query size.");
+        query.Set = setIndex;
+        query.Index = QuerySets[setIndex]->Allocate();
+    }
+    return query;
 }
 
 bool GPUDeviceWebGPU::GetQueryResult(uint64 queryID, uint64& result, bool wait)
 {
-    // TODO: impl queries
-    return false;
+    if (queryID == 0)
+    {
+        // Invalid query
+        result = 0;
+        return true;
+    }
+
+    GPUQueryWebGPU query;
+    query.Raw = queryID;
+    auto set = QuerySets[query.Set];
+    return set->Read(query.Index, result, wait);
 }
 
 GPUTexture* GPUDeviceWebGPU::CreateTexture(const StringView& name)

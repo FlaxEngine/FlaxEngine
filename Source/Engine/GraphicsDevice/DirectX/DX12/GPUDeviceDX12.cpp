@@ -985,6 +985,7 @@ GPUQueryDX12 GPUDeviceDX12::AllocQuery(GPUQueryType type)
     if (heapIndex == QueryHeaps.Count())
     {
         // Allocate a new query heap
+        PROFILE_MEM(GraphicsCommands);
         auto heap = New<QueryHeapDX12>();
         int32 size = type == GPUQueryType::Occlusion ? 4096 : 1024;
         if (heap->Init(this, type, size))

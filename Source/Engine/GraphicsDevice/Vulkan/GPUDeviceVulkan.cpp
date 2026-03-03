@@ -1245,6 +1245,7 @@ int32 GPUDeviceVulkan::GetOrCreateQueryPool(GPUQueryType type)
     }
 
     PROFILE_CPU_NAMED("Create Create Pool");
+    PROFILE_MEM(GraphicsCommands);
     auto pool = New<BufferedQueryPoolVulkan>(this, type == GPUQueryType::Occlusion ? 4096 : 1024, type);
     QueryPools.Add(pool);
     return QueryPools.Count() - 1;
@@ -1257,6 +1258,7 @@ RenderPassVulkan* GPUDeviceVulkan::GetOrCreateRenderPass(RenderTargetLayoutVulka
         return renderPass;
 
     PROFILE_CPU_NAMED("Create Render Pass");
+    PROFILE_MEM(GraphicsCommands);
     renderPass = New<RenderPassVulkan>(this, layout);
     _renderPasses.Add(layout, renderPass);
     return renderPass;
@@ -1269,6 +1271,7 @@ FramebufferVulkan* GPUDeviceVulkan::GetOrCreateFramebuffer(FramebufferVulkan::Ke
         return framebuffer;
 
     PROFILE_CPU_NAMED("Create Framebuffer");
+    PROFILE_MEM(GraphicsCommands);
     framebuffer = New<FramebufferVulkan>(this, key, extent, layers);
     _framebuffers.Add(key, framebuffer);
     return framebuffer;
@@ -1281,6 +1284,7 @@ PipelineLayoutVulkan* GPUDeviceVulkan::GetOrCreateLayout(DescriptorSetLayoutInfo
         return layout;
 
     PROFILE_CPU_NAMED("Create Pipeline Layout");
+    PROFILE_MEM(GraphicsCommands);
     layout = New<PipelineLayoutVulkan>(this, key);
     _layouts.Add(key, layout);
     return layout;
@@ -2237,6 +2241,7 @@ FenceVulkan* FenceManagerVulkan::AllocateFence(bool createSignaled)
     }
     else
     {
+        PROFILE_MEM(GraphicsCommands);
         fence = New<FenceVulkan>();
         fence->IsSignaled = createSignaled;
         VkFenceCreateInfo info;

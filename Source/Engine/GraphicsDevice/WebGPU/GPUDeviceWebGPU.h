@@ -31,6 +31,62 @@ namespace GPUBindGroupsWebGPU
 };
 
 /// <summary>
+/// GPU query ID packed into 64-bits.
+/// </summary>
+struct GPUQueryWebGPU
+{
+    union
+    {
+        struct
+        {
+            uint32 Set;
+            uint32 Index;
+        };
+        uint64 Raw;
+    };
+};
+
+/// <summary>
+/// Set of GPU queries allocated in batch with functionality to read results via a separate CPU buffer.
+/// </summary>
+class GPUQuerySetWebGPU
+{
+private:
+    WGPUDevice _device;
+    uint32 _count;
+    uint32 _index = 0;
+    enum States
+    {
+        Active,
+        Resolved,
+        Mapping,
+        Mapped,
+    } _state = Active;
+#if COMPILE_WITH_PROFILER
+    uint64 _memorySize;
+#endif
+    WGPUBuffer _queryBuffer;
+    WGPUBuffer _readBuffer;
+    const uint64* _mapped = nullptr;
+
+public:
+    const GPUQueryType Type;
+    WGPUQuerySet Set;
+
+public:
+    GPUQuerySetWebGPU(WGPUDevice device, GPUQueryType type, uint32 count);
+    ~GPUQuerySetWebGPU();
+
+    bool CanAllocate() const;
+    uint32 Allocate();
+    void Resolve(WGPUCommandEncoder encoder);
+    bool Read(uint32 index, uint64& result, bool wait);
+
+private:
+    void OnRead();
+};
+
+/// <summary>
 /// Pool for uploading data to GPU buffers. It manages large buffers and suballocates for multiple small updates, minimizing the number of buffer creations and copies.
 /// </summary>
 class GPUDataUploaderWebGPU
@@ -79,11 +135,17 @@ public:
     WGPUInstance WebGPUInstance;
     WGPUDevice Device = nullptr;
     WGPUQueue Queue = nullptr;
+    GPUTextureWebGPU* DefaultRenderTarget = nullptr;
     GPUSamplerWebGPU* DefaultSamplers[6] = {};
     GPUTextureWebGPU* DefaultTexture[10] = {};
     WGPUBuffer DefaultBuffer = nullptr;
     GPUDataUploaderWebGPU DataUploader;
     uint32 MinUniformBufferOffsetAlignment = 1;
+    bool TimestampQuery = false;
+    uint32 QuerySetsCount = 0;
+    GPUQuerySetWebGPU* QuerySets[WEBGPU_MAX_QUERY_SETS] = {};
+
+    GPUQueryWebGPU AllocateQuery(GPUQueryType type);
 
 public:
     // [GPUDeviceDX]

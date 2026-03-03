@@ -230,6 +230,9 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
         Math::Min(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight()) < 16 ||
         checkIfSkipPass())
         return;
+    auto device = GPUDevice::Instance;
+    if (device->Limits.MaximumTexture2DArraySize < 4)
+        return;
     PROFILE_GPU_CPU("Ambient Occlusion");
 
     settings = ASSAO_Settings();
@@ -270,7 +273,6 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
     settings.SkipHalfPixels = true;
 
     // Cache data
-    auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
     int32 m_sizeX = renderContext.Buffers->GetWidth();
     int32 m_sizeY = renderContext.Buffers->GetHeight();
