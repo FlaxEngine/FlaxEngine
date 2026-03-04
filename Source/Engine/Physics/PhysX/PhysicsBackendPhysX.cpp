@@ -1973,6 +1973,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         PxActor** activeActors = scenePhysX->Scene->getActiveActors(activeActorsCount);
 
         // Update changed transformations
+#if PLATFORM_THREADS_LIMIT > 1
         if (activeActorsCount > 50 && JobSystem::GetThreadsCount() > 1)
         {
             // Run in async via job system
@@ -1982,6 +1983,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
             JobSystem::Execute(FlushActiveTransforms, JobSystem::GetThreadsCount());
         }
         else
+#endif
         {
             for (uint32 i = 0; i < activeActorsCount; i++)
             {
