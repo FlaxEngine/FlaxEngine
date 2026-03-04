@@ -19,6 +19,8 @@ public:
     ArchitectureType GetArchitecture() const override;
     DotNetAOTModes UseAOT() const override;
     PixelFormat GetTextureFormat(CookingData& data, TextureBase* texture, PixelFormat format) override;
+    void LoadCache(CookingData& data, IBuildCache* cache, const Span<byte>& bytes) override;
+    Array<byte> SaveCache(CookingData& data, IBuildCache* cache) override;
     bool IsNativeCodeFile(CookingData& data, const String& file) override;
     void OnBuildStarted(CookingData& data) override;
     bool OnPostProcess(CookingData& data) override;

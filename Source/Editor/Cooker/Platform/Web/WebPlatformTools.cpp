@@ -7,6 +7,7 @@
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Platform/Web/WebPlatformSettings.h"
+#include "Engine/Core/Types/Span.h"
 #include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Core/Config/BuildSettings.h"
 #include "Engine/Content/Content.h"
@@ -15,6 +16,14 @@
 #include "Editor/Cooker/GameCooker.h"
 
 IMPLEMENT_SETTINGS_GETTER(WebPlatformSettings, WebPlatform);
+
+namespace
+{
+    struct WebPlatformCache
+    {
+        WebPlatformSettings::TextureQuality TexturesQuality;
+    };
+}
 
 const Char* WebPlatformTools::GetDisplayName() const
 {
@@ -43,8 +52,58 @@ DotNetAOTModes WebPlatformTools::UseAOT() const
 
 PixelFormat WebPlatformTools::GetTextureFormat(CookingData& data, TextureBase* texture, PixelFormat format)
 {
-    // Bundle raw textures
-    return PixelFormatExtensions::FindUncompressedFormat(format);
+    const auto platformSettings = WebPlatformSettings::Get();
+    switch (platformSettings->TexturesQuality)
+    {
+    case WebPlatformSettings::TextureQuality::Uncompressed:
+        return PixelFormatExtensions::FindUncompressedFormat(format);
+    case WebPlatformSettings::TextureQuality::BC:
+        return format;
+    case WebPlatformSettings::TextureQuality::ASTC:
+        switch (format)
+        {
+        case PixelFormat::BC4_SNorm:
+            return PixelFormat::R8_SNorm;
+        case PixelFormat::BC5_SNorm:
+            return PixelFormat::R16G16_SNorm;
+        case PixelFormat::BC6H_Typeless:
+        case PixelFormat::BC6H_Uf16:
+        case PixelFormat::BC6H_Sf16:
+        case PixelFormat::BC7_Typeless:
+        case PixelFormat::BC7_UNorm:
+            return PixelFormat::R16G16B16A16_Float; // TODO: ASTC HDR
+    default:
+            return PixelFormatExtensions::IsSRGB(format) ? PixelFormat::ASTC_6x6_UNorm_sRGB : PixelFormat::ASTC_6x6_UNorm;
+        }
+    default:
+        return format;
+    }
+}
+
+void WebPlatformTools::LoadCache(CookingData& data, IBuildCache* cache, const Span<byte>& bytes)
+{
+    const auto platformSettings = WebPlatformSettings::Get();
+    bool invalidTextures = true;
+    if (bytes.Length() == sizeof(WebPlatformCache))
+    {
+        auto* platformCache = (WebPlatformCache*)bytes.Get();
+        invalidTextures = platformCache->TexturesQuality != platformSettings->TexturesQuality;
+    }
+    if (invalidTextures)
+    {
+        LOG(Info, "{0} option has been modified.", TEXT("TexturesQuality"));
+        cache->InvalidateCacheTextures();
+    }
+}
+
+Array<byte> WebPlatformTools::SaveCache(CookingData& data, IBuildCache* cache)
+{
+    const auto platformSettings = WebPlatformSettings::Get();
+    WebPlatformCache platformCache;
+    platformCache.TexturesQuality = platformSettings->TexturesQuality;
+    Array<byte> result;
+    result.Add((const byte*)&platformCache, sizeof(platformCache));
+    return result;
 }
 
 bool WebPlatformTools::IsNativeCodeFile(CookingData& data, const String& file)
