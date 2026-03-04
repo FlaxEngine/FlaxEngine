@@ -59,7 +59,7 @@
 #else
 #define CAN_USE_GATHER 0
 #endif
-#if FEATURE_LEVEL >= FEATURE_LEVEL_SM5
+#if FEATURE_LEVEL >= FEATURE_LEVEL_SM5 || defined(WGSL)
 #define CAN_USE_COMPUTE_SHADER 1
 #else
 #define CAN_USE_COMPUTE_SHADER 0
@@ -79,6 +79,7 @@
 // Alias read-only Buffer binded as shader resource into StructuredBuffer to be used as storage on WebGPU (not supported)
 #define CAN_USE_TYPED_BUFFER_LOADS 0
 #define Buffer StructuredBuffer
+#define RWBuffer RWStructuredBuffer
 
 // Hack matrix multiplication order for WebGPU (row-major vs column-major bug?)
 #define PROJECT_POINT(p, m) mul(m, p)

@@ -67,7 +67,7 @@ float Rand(inout uint seed)
 float3 ReprojectPosition(float2 uv, float rawDepth)
 {
 	uv = uv * float2(2.0, -2.0) + float2(-1.0, 1.0);
-	float4 pos = mul(float4(uv.x, uv.y, rawDepth, 1.0f), InvViewProjectionMatrix);
+	float4 pos = PROJECT_POINT(float4(uv.x, uv.y, rawDepth, 1.0f), InvViewProjectionMatrix);
 	return pos.xyz / pos.w;
 }
 
@@ -158,7 +158,7 @@ void SpawnParticle(Context context)
 @4}
 
 // Main entry point for the particles simulation and spawning
-META_CS(true, FEATURE_LEVEL_SM5)
+META_CS(true, AUTO)
 [numthreads(THREAD_GROUP_SIZE, 1, 1)]
 void CS_Main(uint3 dispatchThreadId : SV_DispatchThreadID)
 {

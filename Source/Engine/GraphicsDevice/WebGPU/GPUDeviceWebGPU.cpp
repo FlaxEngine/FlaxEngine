@@ -294,6 +294,14 @@ bool GPUDeviceWebGPU::Init()
     {
         MinUniformBufferOffsetAlignment = limits.minUniformBufferOffsetAlignment;
         TimestampQuery = features.Contains(WGPUFeatureName_TimestampQuery);
+        Limits.HasCompute =
+            limits.maxStorageBuffersPerShaderStage >= GPU_MAX_UA_BINDED &&
+            limits.maxStorageTexturesPerShaderStage >= GPU_MAX_UA_BINDED &&
+            limits.maxComputeWorkgroupsPerDimension >= GPU_MAX_CS_DISPATCH_THREAD_GROUPS &&
+            limits.maxComputeWorkgroupSizeX >= 1024 &&
+            limits.maxComputeWorkgroupSizeY >= 256 &&
+            limits.maxComputeWorkgroupSizeZ >= 8 &&
+            limits.maxBufferSize >= 64 * 1024 * 1024; // 64MB
         Limits.HasInstancing = true;
         Limits.HasDrawIndirect = true;
         Limits.HasDepthAsSRV = true;

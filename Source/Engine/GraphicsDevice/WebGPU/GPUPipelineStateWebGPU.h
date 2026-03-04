@@ -38,17 +38,7 @@ public:
     };
 
     // Batches bind group description for the pipeline state. Used as a key for caching created bind groups.
-    struct BindGroupKey
-    {
-        uint32 Hash;
-        WGPUBindGroupLayout Layout;
-        mutable uint64 LastFrameUsed;
-        WGPUBindGroupEntry Entries[64];
-        uint8 EntriesCount;
-        uint8 Versions[64]; // Versions of descriptors used to differentiate when texture residency gets changed
-
-        bool operator==(const BindGroupKey& other) const;
-    };
+    typedef GPUBindGroupKeyWebGPU BindGroupKey;
 
 private:
 #if GPU_ENABLE_RESOURCE_NAMING
@@ -61,7 +51,7 @@ private:
     WGPUVertexBufferLayout _vertexBuffers[GPU_MAX_VB_BINDED];
     Dictionary<PipelineKey, WGPURenderPipeline> _pipelines;
     Dictionary<BindGroupKey, WGPUBindGroup> _bindGroups;
-    uint64 _lastFrameBindGroupsGC = 0;
+    GPUBindGroupCacheWebGPU _bindGroupCache;
 
 public:
     GPUShaderProgramVSWebGPU* VS = nullptr;
@@ -78,13 +68,21 @@ public:
 
 public:
     // Gets the pipeline for the given rendering state. Pipelines are cached and reused for the same key.
-    WGPURenderPipeline GetPipeline(const PipelineKey& key, GPUResourceView* shaderResources[GPU_MAX_SR_BINDED]);
+    WGPURenderPipeline GetPipeline(const PipelineKey& key, const GPUContextBindingsWebGPU& bindings);
 
     // Gets the bind group for the given key (unhashed). Bind groups are cached and reused for the same key.
-    WGPUBindGroup GetBindGroup(BindGroupKey& desc);
+    FORCE_INLINE WGPUBindGroup GetBindGroup(BindGroupKey& key)
+    {
+#if GPU_ENABLE_RESOURCE_NAMING
+        StringAnsiView debugName(_debugName.Get(), _debugName.Count() - 1);
+#else
+        StringAnsiView debugName;
+#endif
+        return _bindGroupCache.Get(_device->Device, key, debugName);
+    }
 
 private:
-    void InitLayout(GPUResourceView* shaderResources[GPU_MAX_SR_BINDED]);
+    void InitLayout(const GPUContextBindingsWebGPU& bindings);
 
 public:
     // [GPUPipelineState]
@@ -97,6 +95,6 @@ protected:
 };
 
 uint32 GetHash(const GPUPipelineStateWebGPU::PipelineKey& key);
-uint32 GetHash(const GPUPipelineStateWebGPU::BindGroupKey& key);
+uint32 GetHash(const GPUBindGroupKeyWebGPU& key);
 
 #endif

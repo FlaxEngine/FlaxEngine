@@ -20,7 +20,7 @@ META_CB_END
 RWStructuredBuffer<uint> HistogramBuffer : register(u0);
 
 // Clears the histogram
-META_CS(true, FEATURE_LEVEL_SM5)
+META_CS(true, AUTO)
 [numthreads(THREADGROUP_SIZE_X, 1, 1)]
 void CS_ClearHistogram(uint dispatchThreadId : SV_DispatchThreadID)
 {
@@ -44,7 +44,7 @@ float ComputeHistogramPositionFromLuminance(float luminance)
 groupshared uint SharedHistogram[HISTOGRAM_SIZE];
 
 // Generates the histogram
-META_CS(true, FEATURE_LEVEL_SM5)
+META_CS(true, AUTO)
 [numthreads(THREADGROUP_SIZE_X, THREADGROUP_SIZE_Y, 1)]
 void CS_GenerateHistogram(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupThreadId : SV_GroupThreadID)
 {

@@ -142,6 +142,229 @@ WGPUBlendComponent ToBlendComponent(BlendingMode::Operation blendOp, BlendingMod
     return result;
 }
 
+typedef Array<WGPUBindGroupLayoutEntry, InlinedAllocation<16>> BindGroupEntries;
+
+WGPUBindGroupLayout CreateBindGroupLayout(WGPUDevice device, const GPUContextBindingsWebGPU& bindings, int32 groupIndex, const SpirvShaderDescriptorInfo& descriptors, BindGroupEntries& entries, const StringAnsiView& debugName, bool log, bool compute = false)
+{
+    int32 entriesCount = descriptors.DescriptorTypesCount;
+    if (entriesCount == 0)
+        return nullptr;
+    auto entriesPtr = entries.Get();
+    ASSERT_LOW_LAYER(entries.Count() >= entriesCount);
+    Platform::MemoryClear(entries.Get(), sizeof(WGPUBindGroupLayoutEntry) * entriesCount);
+    auto visibility = compute ? WGPUShaderStage_Compute : (groupIndex == 0 ? WGPUShaderStage_Vertex : WGPUShaderStage_Fragment);
+#if WEBGPU_LOG_PSO
+    if (log)
+        LOG(Info, " > group {} - {}", groupIndex, compute ? TEXT("Compute") : (groupIndex == 0 ? TEXT("Vertex") : TEXT("Fragment")));
+    const Char* samplerType = TEXT("?");
+#endif
+    for (int32 index = 0; index < entriesCount; index++)
+    {
+        auto& descriptor = descriptors.DescriptorTypes[index];
+        auto& entry = entriesPtr[index];
+        entry.binding = descriptor.Binding;
+        entry.bindingArraySize = descriptor.Count;
+        entry.visibility = visibility;
+        switch (descriptor.DescriptorType)
+        {
+        case VK_DESCRIPTOR_TYPE_SAMPLER:
+            entry.sampler.type = WGPUSamplerBindingType_Undefined;
+            if (descriptor.Slot == 4 || descriptor.Slot == 5) // Hack for ShadowSampler and ShadowSamplerLinear (this could get binded samplers table just like for shaderResources)
+                entry.sampler.type = WGPUSamplerBindingType_Comparison;
+#if WEBGPU_LOG_PSO
+            switch (entry.sampler.type)
+            {
+            case WGPUSamplerBindingType_BindingNotUsed:
+                samplerType = TEXT("BindingNotUsed");
+                break;
+            case WGPUSamplerBindingType_Undefined:
+                samplerType = TEXT("Undefined");
+                break;
+            case WGPUSamplerBindingType_Filtering:
+                samplerType = TEXT("Filtering");
+                break;
+            case WGPUSamplerBindingType_NonFiltering:
+                samplerType = TEXT("NonFiltering");
+                break;
+            case WGPUSamplerBindingType_Comparison:
+                samplerType = TEXT("Comparison");
+                break;
+            }
+            if (log)
+                LOG(Info, "   > [{}] sampler ({})", entry.binding, samplerType);
+#endif
+            break;
+        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+            entry.texture.sampleType = WGPUTextureSampleType_Undefined;
+            if (bindings.ShaderResources[descriptor.Slot])
+            {
+                // Hack to use the sample type directly from the view which allows to fix incorrect Depth Buffer reading that allows only manual Load when UnfilterableFloat is used (see SAMPLE_RT_DEPTH)
+                auto ptr = (GPUResourceViewPtrWebGPU*)bindings.ShaderResources[descriptor.Slot]->GetNativePtr();
+                if (ptr && ptr->TextureView)
+                    entry.texture.sampleType = ptr->TextureView->SampleType;
+            }
+#if WEBGPU_LOG_PSO
+            if (log)
+            {
+                switch (entry.texture.sampleType)
+                {
+                case WGPUTextureSampleType_BindingNotUsed:
+                    samplerType = TEXT("BindingNotUsed");
+                    break;
+                case WGPUTextureSampleType_Undefined:
+                    samplerType = TEXT("Undefined");
+                    break;
+                case WGPUTextureSampleType_Float:
+                    samplerType = TEXT("Float");
+                    break;
+                case WGPUTextureSampleType_UnfilterableFloat:
+                    samplerType = TEXT("UnfilterableFloat");
+                    break;
+                case WGPUTextureSampleType_Depth:
+                    samplerType = TEXT("Depth");
+                    break;
+                case WGPUTextureSampleType_Sint:
+                    samplerType = TEXT("Sint");
+                    break;
+                case WGPUTextureSampleType_Uint:
+                    samplerType = TEXT("Uint");
+                    break;
+                }
+                switch (descriptor.ResourceType)
+                {
+                case SpirvShaderResourceType::Texture1D:
+                    LOG(Info, "   > [{}] texture 1D ({})", entry.binding, samplerType);
+                    break;
+                case SpirvShaderResourceType::Texture2D:
+                    LOG(Info, "   > [{}] texture 2D ({})", entry.binding, samplerType);
+                    break;
+                case SpirvShaderResourceType::Texture3D:
+                    LOG(Info, "   > [{}] texture 3D ({})", entry.binding, samplerType);
+                    break;
+                case SpirvShaderResourceType::TextureCube:
+                    LOG(Info, "   > [{}] texture Cube ({})", entry.binding, samplerType);
+                    break;
+                case SpirvShaderResourceType::Texture2DArray:
+                    LOG(Info, "   > [{}] texture 2D array ({})", entry.binding, samplerType);
+                    break;
+                }
+            }
+#endif
+            switch (descriptor.ResourceType)
+            {
+            case SpirvShaderResourceType::Texture1D:
+                entry.texture.viewDimension = WGPUTextureViewDimension_1D;
+                break;
+            case SpirvShaderResourceType::Texture2D:
+                entry.texture.viewDimension = WGPUTextureViewDimension_2D;
+                break;
+            case SpirvShaderResourceType::Texture3D:
+                entry.texture.viewDimension = WGPUTextureViewDimension_3D;
+                break;
+            case SpirvShaderResourceType::TextureCube:
+                entry.texture.viewDimension = WGPUTextureViewDimension_Cube;
+                break;
+            case SpirvShaderResourceType::Texture1DArray:
+                CRASH; // Not supported TODO: add error at compile time (in ShaderCompilerWebGPU::Write)
+                break;
+            case SpirvShaderResourceType::Texture2DArray:
+                entry.texture.viewDimension = WGPUTextureViewDimension_2DArray;
+                break;
+            }
+            break;
+        case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+            entry.buffer.hasDynamicOffset = true;
+        case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+            if (descriptor.BindingType == SpirvShaderResourceBindingType::SRV)
+                entry.buffer.type = WGPUBufferBindingType_ReadOnlyStorage;
+            else
+                entry.buffer.type = WGPUBufferBindingType_Storage;
+#if WEBGPU_LOG_PSO
+            if (log)
+                LOG(Info, "   > [{}] storage buffer (read-only = {}, dynamic = {})", entry.binding, entry.buffer.type == WGPUBufferBindingType_ReadOnlyStorage, entry.buffer.hasDynamicOffset);
+#endif
+            break;
+        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+            entry.buffer.hasDynamicOffset = true;
+        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+            entry.buffer.type = WGPUBufferBindingType_Uniform;
+#if WEBGPU_LOG_PSO
+            if (log)
+                LOG(Info, "   > [{}] uniform buffer (dynamic = {})", entry.binding, entry.buffer.hasDynamicOffset);
+#endif
+            break;
+        default:
+#if GPU_ENABLE_DIAGNOSTICS
+            LOG(Fatal, "Unknown descriptor type: {} used as {} in '{}'", (uint32)descriptor.DescriptorType, (uint32)descriptor.BindingType, String(debugName));
+#else
+            CRASH;
+#endif
+            return nullptr;
+        }
+    }
+
+    // Create a bind group layout
+    WGPUBindGroupLayoutDescriptor bindGroupLayoutDesc = WGPU_BIND_GROUP_LAYOUT_DESCRIPTOR_INIT;
+    bindGroupLayoutDesc.entryCount = entriesCount;
+    bindGroupLayoutDesc.entries = entriesPtr;
+    return wgpuDeviceCreateBindGroupLayout(device, &bindGroupLayoutDesc);
+}
+
+WGPUComputePipeline GPUShaderProgramCSWebGPU::GetPipeline(WGPUDevice device, const GPUContextBindingsWebGPU& bindings, WGPUBindGroupLayout& resultBindGroupLayout)
+{
+    resultBindGroupLayout = _bindGroupLayout;
+    if (_pipeline)
+        return _pipeline;
+    PROFILE_CPU();
+    ZoneText(*_name, _name.Length());
+#if WEBGPU_LOG_PSO
+#ifdef WEBGPU_LOG_PSO_NAME
+    const bool log = _name.Contains(WEBGPU_LOG_PSO_NAME);
+#else
+    const bool log = true;
+#endif
+    if (log)
+        LOG(Info, "[WebGPU] GetPipeline: '{}'", String(_name));
+#endif
+
+    // Create layout bind group
+    BindGroupEntries entries;
+    entries.Resize(DescriptorInfo.DescriptorTypesCount);
+    _bindGroupLayout = CreateBindGroupLayout(device, bindings, 0, DescriptorInfo, entries, _name, log, true);
+    resultBindGroupLayout = _bindGroupLayout;
+
+    // Create the pipeline layout
+    WGPUPipelineLayoutDescriptor layoutDesc = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
+#if GPU_ENABLE_RESOURCE_NAMING
+    layoutDesc.label = { _name.Get(), (size_t)_name.Length() };
+#endif
+    layoutDesc.bindGroupLayoutCount = 1;
+    layoutDesc.bindGroupLayouts = &_bindGroupLayout;
+    auto layout = wgpuDeviceCreatePipelineLayout(device, &layoutDesc);
+    if (!layout)
+    {
+        LOG(Error, "wgpuDeviceCreatePipelineLayout failed");
+        return nullptr;
+    }
+
+    // Create pipeline
+    WGPUComputePipelineDescriptor desc = WGPU_COMPUTE_PIPELINE_DESCRIPTOR_INIT;
+#if GPU_ENABLE_RESOURCE_NAMING
+    desc.label = layoutDesc.label;
+#endif
+    desc.layout = layout;
+    desc.compute.module = ShaderModule;
+    _pipeline = wgpuDeviceCreateComputePipeline(device , &desc);
+    if (!_pipeline)
+    {
+#if GPU_ENABLE_RESOURCE_NAMING
+        LOG(Error, "wgpuDeviceCreateComputePipeline failed for {}", String(_name));
+#endif
+    }
+
+    return _pipeline;
+}
+
 void GPUPipelineStateWebGPU::OnReleaseGPU()
 {
     VS = nullptr;
@@ -176,12 +399,12 @@ uint32 GetHash(const GPUPipelineStateWebGPU::PipelineKey& key)
     return hash;
 }
 
-uint32 GetHash(const GPUPipelineStateWebGPU::BindGroupKey& key)
+uint32 GetHash(const GPUBindGroupKeyWebGPU& key)
 {
     return key.Hash;
 }
 
-bool GPUPipelineStateWebGPU::BindGroupKey::operator==(const BindGroupKey& other) const
+bool GPUBindGroupKeyWebGPU::operator==(const GPUBindGroupKeyWebGPU& other) const
 {
     return Hash == other.Hash
         && Layout == other.Layout
@@ -190,28 +413,132 @@ bool GPUPipelineStateWebGPU::BindGroupKey::operator==(const BindGroupKey& other)
         && Platform::MemoryCompare(&Versions, &other.Versions, EntriesCount * sizeof(uint8)) == 0;
 }
 
-WGPURenderPipeline GPUPipelineStateWebGPU::GetPipeline(const PipelineKey& key, GPUResourceView* shaderResources[GPU_MAX_SR_BINDED])
+WGPUBindGroup GPUBindGroupCacheWebGPU::Get(WGPUDevice device, GPUBindGroupKeyWebGPU& key, const StringAnsiView& debugName, uint64 gcFrames)
 {
-    WGPURenderPipeline pipeline;
-    if (_pipelines.TryGet(key, pipeline))
-        return pipeline;
-    PROFILE_CPU();
-    PROFILE_MEM(GraphicsCommands);
-#if GPU_ENABLE_RESOURCE_NAMING
-    ZoneText(_debugName.Get(), _debugName.Count() - 1);
-#endif
-#if WEBGPU_LOG_PSO
-    LOG(Info, "[WebGPU] GetPipeline: '{}'", String(_debugName.Get(), _debugName.Count() - 1));
+#if WEBGPU_LOG_BIND_GROUPS
 #ifdef WEBGPU_LOG_PSO_NAME
-    const bool log = StringAnsiView(_debugName.Get(), _debugName.Count() - 1).Contains(WEBGPU_LOG_PSO_NAME);
+    const bool log = debugName.Contains(WEBGPU_LOG_PSO_NAME);
 #else
     const bool log = true;
 #endif
 #endif
 
+    // Generate a hash for the key
+    key.LastFrameUsed = Engine::FrameCount;
+    key.Hash = Crc::MemCrc32(&key.Entries, key.EntriesCount * sizeof(WGPUBindGroupEntry));
+    CombineHash(key.Hash, GetHash(key.EntriesCount));
+    CombineHash(key.Hash, GetHash(key.Layout));
+    CombineHash(key.Hash, Crc::MemCrc32(&key.Versions, key.EntriesCount * sizeof(uint8)));
+
+    // Lookup for existing bind group
+    WGPUBindGroup bindGroup;
+    auto found = _bindGroups.Find(key);
+    if (found.IsNotEnd())
+    {
+        // Get cached bind group and update the last usage frame
+        bindGroup = found->Value;
+        found->Key.LastFrameUsed = key.LastFrameUsed;
+
+        // Periodically remove old bind groups (unused for some time)
+        if (key.LastFrameUsed - _lastFrameBindGroupsGC > gcFrames * 2)
+        {
+            _lastFrameBindGroupsGC = key.LastFrameUsed;
+            int32 freed = 0;
+            for (auto it = _bindGroups.Begin(); it.IsNotEnd(); ++it)
+            {
+                if (key.LastFrameUsed - it->Key.LastFrameUsed > gcFrames)
+                {
+                    freed++;
+                    wgpuBindGroupRelease(it->Value);
+                    _bindGroups.Remove(it);
+                }
+            }
+#if WEBGPU_LOG_BIND_GROUPS
+            if (freed > 0 && log)
+                LOG(Info, "[WebGPU] Removed {} old entries from '{}'", freed, String(debugName));
+#endif
+        }
+
+        return bindGroup;
+    }
+    PROFILE_CPU();
+    PROFILE_MEM(GraphicsShaders);
+#if GPU_ENABLE_RESOURCE_NAMING
+    ZoneText(debugName.Get(), debugName.Length());
+#endif
+#if WEBGPU_LOG_BIND_GROUPS
+    if (log)
+        LOG(Info, "[WebGPU] GetBindGroup: '{}', hash: {}", String(debugName), key.Hash);
+#endif
+
+    // Build description
+    WGPUBindGroupDescriptor desc = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
+#if GPU_ENABLE_RESOURCE_NAMING
+    desc.label = { debugName.Get(), (size_t)debugName.Length() };
+#endif
+    desc.layout = key.Layout;
+    desc.entryCount = key.EntriesCount;
+    desc.entries = key.Entries;
+
+    // Create object
+    bindGroup = wgpuDeviceCreateBindGroup(device, &desc);
+    if (!bindGroup)
+    {
+#if GPU_ENABLE_RESOURCE_NAMING
+        LOG(Error, "wgpuDeviceCreateBindGroup failed for {}", String(debugName));
+#endif
+        return nullptr;
+    }
+
+#if WEBGPU_LOG_BIND_GROUPS
+    // Debug detection of hash collisions
+    int32 collisions = 0, equalLayout = 0, equalEntries = 0, equalVersions = 0;
+    for (auto& e : _bindGroups)
+    {
+        auto& other = e.Key;
+        if (key.Hash == other.Hash)
+        {
+            collisions++;
+            if (key.Layout == other.Layout)
+                equalLayout++;
+            if (key.EntriesCount == other.EntriesCount && Platform::MemoryCompare(&key.Entries, &other.Entries, key.EntriesCount * sizeof(WGPUBindGroupEntry)) == 0)
+                equalEntries++;
+            if (key.EntriesCount == other.EntriesCount && Platform::MemoryCompare(&key.Versions, &other.Versions, key.EntriesCount * sizeof(uint8)) == 0)
+                equalVersions++;
+        }
+    }
+    if (collisions > 1 && log)
+        LOG(Error, "> Hash collision! {}/{} (capacity: {}), equalLayout: {}, equalEntries: {}, equalVersions: {}", collisions, _bindGroups.Count(), _bindGroups.Capacity(), equalLayout, equalEntries, equalVersions);
+#endif
+
+    // Cache it
+    _bindGroups.Add(key, bindGroup);
+    return bindGroup;
+}
+
+WGPURenderPipeline GPUPipelineStateWebGPU::GetPipeline(const PipelineKey& key, const GPUContextBindingsWebGPU& bindings)
+{
+    WGPURenderPipeline pipeline;
+    if (_pipelines.TryGet(key, pipeline))
+        return pipeline;
+    PROFILE_CPU();
+    PROFILE_MEM(GraphicsShaders);
+#if GPU_ENABLE_RESOURCE_NAMING
+    ZoneText(_debugName.Get(), _debugName.Count() - 1);
+#endif
+#if WEBGPU_LOG_PSO
+#ifdef WEBGPU_LOG_PSO_NAME
+    const bool log = StringAnsiView(_debugName.Get(), _debugName.Count() - 1).Contains(WEBGPU_LOG_PSO_NAME);
+#else
+    const bool log = true;
+#endif
+    if (log)
+        LOG(Info, "[WebGPU] GetPipeline: '{}'", String(_debugName.Get(), _debugName.Count() - 1));
+#endif
+
     // Lazy-init layout (cannot do it during Init as texture samplers that access eg. depth need to explicitly use UnfilterableFloat)
     if (!PipelineDesc.layout)
-        InitLayout(shaderResources);
+        InitLayout(bindings);
 
     // Build final pipeline description
     _depthStencilDesc.format = (WGPUTextureFormat)key.DepthStencilFormat;
@@ -295,107 +622,16 @@ WGPURenderPipeline GPUPipelineStateWebGPU::GetPipeline(const PipelineKey& key, G
     return pipeline;
 }
 
-WGPUBindGroup GPUPipelineStateWebGPU::GetBindGroup(BindGroupKey& key)
+void GPUPipelineStateWebGPU::InitLayout(const GPUContextBindingsWebGPU& bindings)
 {
-    // Generate a hash for the key
-    key.LastFrameUsed = Engine::FrameCount;
-    key.Hash = Crc::MemCrc32(&key.Entries, key.EntriesCount * sizeof(WGPUBindGroupEntry));
-    CombineHash(key.Hash, GetHash(key.EntriesCount));
-    CombineHash(key.Hash, GetHash(key.Layout));
-    CombineHash(key.Hash, Crc::MemCrc32(&key.Versions, key.EntriesCount * sizeof(uint8)));
-
-    // Lookup for existing bind group
-    WGPUBindGroup bindGroup;
-    auto found = _bindGroups.Find(key);
-    if (found.IsNotEnd())
-    {
-        // Get cached bind group and update the last usage frame
-        bindGroup = found->Value;
-        found->Key.LastFrameUsed = key.LastFrameUsed;
-
-        // Periodically remove old bind groups (unused for some time)
-        if (key.LastFrameUsed - _lastFrameBindGroupsGC > 100)
-        {
-            _lastFrameBindGroupsGC = key.LastFrameUsed;
-            int32 freed = 0;
-            for (auto it = _bindGroups.Begin(); it.IsNotEnd(); ++it)
-            {
-                if (key.LastFrameUsed - it->Key.LastFrameUsed > 50)
-                {
-                    freed++;
-                    wgpuBindGroupRelease(it->Value);
-                    _bindGroups.Remove(it);
-                }
-            }
-#if WEBGPU_LOG_BIND_GROUPS
-            if (freed > 0)
-            {
-                LOG(Info, "[WebGPU] Removed {} old entries from '{}'", freed, String(_debugName.Get(), _debugName.Count() - 1));
-            }
-#endif
-        }
-
-        return bindGroup;
-    }
-    PROFILE_CPU();
-    PROFILE_MEM(GraphicsCommands);
 #if GPU_ENABLE_RESOURCE_NAMING
-    ZoneText(_debugName.Get(), _debugName.Count() - 1);
+    StringAnsiView debugName(_debugName.Get(), _debugName.Count() - 1);
+#else
+    StringAnsiView debugName;
 #endif
-#if WEBGPU_LOG_BIND_GROUPS
-    LOG(Info, "[WebGPU] GetBindGroup: '{}', hash: {}", String(_debugName.Get(), _debugName.Count() - 1), key.Hash);
-#endif
-
-    // Build description
-    WGPUBindGroupDescriptor desc = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
-#if GPU_ENABLE_RESOURCE_NAMING
-    desc.label = PipelineDesc.label;
-#endif
-    desc.layout = key.Layout;
-    desc.entryCount = key.EntriesCount;
-    desc.entries = key.Entries;
-
-    // Create object
-    bindGroup = wgpuDeviceCreateBindGroup(_device->Device, &desc);
-    if (!bindGroup)
-    {
-#if GPU_ENABLE_RESOURCE_NAMING
-        LOG(Error, "wgpuDeviceCreateBindGroup failed for {}", String(_debugName.Get(), _debugName.Count() - 1));
-#endif
-        return nullptr;
-    }
-
-#if WEBGPU_LOG_BIND_GROUPS
-    // Debug detection of hash collisions
-    int32 collisions = 0, equalLayout = 0, equalEntries = 0, equalVersions = 0;
-    for (auto& e : _bindGroups)
-    {
-        auto& other = e.Key;
-        if (key.Hash == other.Hash)
-        {
-            collisions++;
-            if (key.Layout == other.Layout)
-                equalLayout++;
-            if (key.EntriesCount == other.EntriesCount && Platform::MemoryCompare(&key.Entries, &other.Entries, key.EntriesCount * sizeof(WGPUBindGroupEntry)) == 0)
-                equalEntries++;
-            if (key.EntriesCount == other.EntriesCount && Platform::MemoryCompare(&key.Versions, &other.Versions, key.EntriesCount * sizeof(uint8)) == 0)
-                equalVersions++;
-        }
-    }
-    if (collisions > 1)
-        LOG(Error, "> Hash collision! {}/{} (capacity: {}), equalLayout: {}, equalEntries: {}, equalVersions: {}", collisions, _bindGroups.Count(), _bindGroups.Capacity(), equalLayout, equalEntries, equalVersions);
-#endif
-
-    // Cache it
-    _bindGroups.Add(key, bindGroup);
-    return bindGroup;
-}
-
-void GPUPipelineStateWebGPU::InitLayout(GPUResourceView* shaderResources[GPU_MAX_SR_BINDED])
-{
 #if WEBGPU_LOG_PSO
 #ifdef WEBGPU_LOG_PSO_NAME
-    const bool log = StringAnsiView(_debugName.Get(), _debugName.Count() - 1).Contains(WEBGPU_LOG_PSO_NAME);
+    const bool log = debugName.Contains(WEBGPU_LOG_PSO_NAME);
 #else
     const bool log = true;
 #endif
@@ -409,175 +645,15 @@ void GPUPipelineStateWebGPU::InitLayout(GPUResourceView* shaderResources[GPU_MAX
         if (descriptors && maxEntriesCount < descriptors->DescriptorTypesCount)
             maxEntriesCount = (int32)descriptors->DescriptorTypesCount;
     }
-    Array<WGPUBindGroupLayoutEntry, InlinedAllocation<8>> entries;
+    BindGroupEntries entries;
     entries.Resize(maxEntriesCount);
 
     // Setup bind groups
-    WGPUBindGroupLayoutEntry* entriesPtr = entries.Get();
     for (int32 groupIndex = 0; groupIndex < ARRAY_COUNT(BindGroupDescriptors); groupIndex++)
     {
         auto descriptors = BindGroupDescriptors[groupIndex];
-        if (!descriptors || descriptors->DescriptorTypesCount == 0)
-            continue;
-
-        int32 entriesCount = descriptors->DescriptorTypesCount;
-        Platform::MemoryClear(entries.Get(), sizeof(WGPUBindGroupLayoutEntry) * entriesCount);
-        auto visibility = groupIndex == 0 ? WGPUShaderStage_Vertex : WGPUShaderStage_Fragment;
-#if WEBGPU_LOG_PSO
-        if (log)
-            LOG(Info, " > group {} - {}", groupIndex, groupIndex == 0 ? TEXT("Vertex") : TEXT("Fragment"));
-        const Char* samplerType = TEXT("?");
-#endif
-        for (int32 index = 0; index < entriesCount; index++)
-        {
-            auto& descriptor = descriptors->DescriptorTypes[index];
-            auto& entry = entriesPtr[index];
-            entry.binding = descriptor.Binding;
-            entry.bindingArraySize = descriptor.Count;
-            entry.visibility = visibility;
-            switch (descriptor.DescriptorType)
-            {
-            case VK_DESCRIPTOR_TYPE_SAMPLER:
-                entry.sampler.type = WGPUSamplerBindingType_Undefined;
-                if (descriptor.Slot == 4 || descriptor.Slot == 5) // Hack for ShadowSampler and ShadowSamplerLinear (this could get binded samplers table just like for shaderResources)
-                    entry.sampler.type = WGPUSamplerBindingType_Comparison;
-#if WEBGPU_LOG_PSO
-                switch (entry.sampler.type)
-                {
-                case WGPUSamplerBindingType_BindingNotUsed:
-                    samplerType = TEXT("BindingNotUsed");
-                    break;
-                case WGPUSamplerBindingType_Undefined:
-                    samplerType = TEXT("Undefined");
-                    break;
-                case WGPUSamplerBindingType_Filtering:
-                    samplerType = TEXT("Filtering");
-                    break;
-                case WGPUSamplerBindingType_NonFiltering:
-                    samplerType = TEXT("NonFiltering");
-                    break;
-                case WGPUSamplerBindingType_Comparison:
-                    samplerType = TEXT("Comparison");
-                    break;
-                }
-                if (log)
-                    LOG(Info, "   > [{}] sampler ({})", entry.binding, samplerType);
-#endif
-                break;
-            case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-                entry.texture.sampleType = WGPUTextureSampleType_Undefined;
-                if (shaderResources[descriptor.Slot])
-                {
-                    // Hack to use the sample type directly from the view which allows to fix incorrect Depth Buffer reading that allows only manual Load when UnfilterableFloat is used (see SAMPLE_RT_DEPTH)
-                    auto ptr = (GPUResourceViewPtrWebGPU*)shaderResources[descriptor.Slot]->GetNativePtr();
-                    if (ptr && ptr->TextureView)
-                        entry.texture.sampleType = ptr->TextureView->SampleType;
-                }
-#if WEBGPU_LOG_PSO
-                if (log)
-                {
-                    switch (entry.texture.sampleType)
-                    {
-                    case WGPUTextureSampleType_BindingNotUsed:
-                        samplerType = TEXT("BindingNotUsed");
-                        break;
-                    case WGPUTextureSampleType_Undefined:
-                        samplerType = TEXT("Undefined");
-                        break;
-                    case WGPUTextureSampleType_Float:
-                        samplerType = TEXT("Float");
-                        break;
-                    case WGPUTextureSampleType_UnfilterableFloat:
-                        samplerType = TEXT("UnfilterableFloat");
-                        break;
-                    case WGPUTextureSampleType_Depth:
-                        samplerType = TEXT("Depth");
-                        break;
-                    case WGPUTextureSampleType_Sint:
-                        samplerType = TEXT("Sint");
-                        break;
-                    case WGPUTextureSampleType_Uint:
-                        samplerType = TEXT("Uint");
-                        break;
-                    }
-                    switch (descriptor.ResourceType)
-                    {
-                    case SpirvShaderResourceType::Texture1D:
-                        LOG(Info, "   > [{}] texture 1D ({})", entry.binding, samplerType);
-                        break;
-                    case SpirvShaderResourceType::Texture2D:
-                        LOG(Info, "   > [{}] texture 2D ({})", entry.binding, samplerType);
-                        break;
-                    case SpirvShaderResourceType::Texture3D:
-                        LOG(Info, "   > [{}] texture 3D ({})", entry.binding, samplerType);
-                        break;
-                    case SpirvShaderResourceType::TextureCube:
-                        LOG(Info, "   > [{}] texture Cube ({})", entry.binding, samplerType);
-                        break;
-                    case SpirvShaderResourceType::Texture2DArray:
-                        LOG(Info, "   > [{}] texture 2D array ({})", entry.binding, samplerType);
-                        break;
-                    }
-                }
-#endif
-                switch (descriptor.ResourceType)
-                {
-                case SpirvShaderResourceType::Texture1D:
-                    entry.texture.viewDimension = WGPUTextureViewDimension_1D;
-                    break;
-                case SpirvShaderResourceType::Texture2D:
-                    entry.texture.viewDimension = WGPUTextureViewDimension_2D;
-                    break;
-                case SpirvShaderResourceType::Texture3D:
-                    entry.texture.viewDimension = WGPUTextureViewDimension_3D;
-                    break;
-                case SpirvShaderResourceType::TextureCube:
-                    entry.texture.viewDimension = WGPUTextureViewDimension_Cube;
-                    break;
-                case SpirvShaderResourceType::Texture1DArray:
-                    CRASH; // Not supported TODO: add error at compile time (in ShaderCompilerWebGPU::Write)
-                    break;
-                case SpirvShaderResourceType::Texture2DArray:
-                    entry.texture.viewDimension = WGPUTextureViewDimension_2DArray;
-                    break;
-                }
-                break;
-            case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
-                entry.buffer.hasDynamicOffset = true;
-            case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-                if (descriptor.BindingType == SpirvShaderResourceBindingType::SRV)
-                    entry.buffer.type = WGPUBufferBindingType_ReadOnlyStorage;
-                else
-                    entry.buffer.type = WGPUBufferBindingType_Storage;
-#if WEBGPU_LOG_PSO
-                if (log)
-                    LOG(Info, "   > [{}] storage buffer (read-only = {}, dynamic = {})", entry.binding, entry.buffer.type == WGPUBufferBindingType_ReadOnlyStorage, entry.buffer.hasDynamicOffset);
-#endif
-                break;
-            case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-                entry.buffer.hasDynamicOffset = true;
-            case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-                entry.buffer.type = WGPUBufferBindingType_Uniform;
-#if WEBGPU_LOG_PSO
-                if (log)
-                    LOG(Info, "   > [{}] uniform buffer (dynamic = {})", entry.binding, entry.buffer.hasDynamicOffset);
-#endif
-                break;
-            default:
-#if GPU_ENABLE_DIAGNOSTICS
-                LOG(Fatal, "Unknown descriptor type: {} used as {} in '{}'", (uint32)descriptor.DescriptorType, (uint32)descriptor.BindingType, String(_debugName.Get(), _debugName.Count() - 1));
-#else
-                CRASH;
-#endif
-                return;
-            }
-        }
-
-        // Create a bind group layout
-        WGPUBindGroupLayoutDescriptor bindGroupLayoutDesc = WGPU_BIND_GROUP_LAYOUT_DESCRIPTOR_INIT;
-        bindGroupLayoutDesc.entryCount = entriesCount;
-        bindGroupLayoutDesc.entries = entriesPtr;
-        BindGroupLayouts[groupIndex] = wgpuDeviceCreateBindGroupLayout(_device->Device, &bindGroupLayoutDesc);
+        if (descriptors)
+            BindGroupLayouts[groupIndex] = CreateBindGroupLayout(_device->Device, bindings, groupIndex, *descriptors, entries, debugName, log);
     }
 
     // Create the pipeline layout
@@ -591,7 +667,6 @@ void GPUPipelineStateWebGPU::InitLayout(GPUResourceView* shaderResources[GPU_MAX
     if (!PipelineDesc.layout)
     {
         LOG(Error, "wgpuDeviceCreatePipelineLayout failed");
-        return;
     }
 }
 

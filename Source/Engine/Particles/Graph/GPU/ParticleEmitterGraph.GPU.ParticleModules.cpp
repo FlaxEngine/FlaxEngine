@@ -843,10 +843,10 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
                 "	{{\n"
                 "		// Collision (depth)\n"
                 "		float3 nextPos = {0} + {1} * DeltaTime;\n"
-                "		nextPos = mul(float4(nextPos, 1), WorldMatrix).xyz;\n" // TODO: don't transform by WorldMatrix if particle system uses World Space simulation
+                "		nextPos = PROJECT_POINT(float4(nextPos, 1), WorldMatrix).xyz;\n" // TODO: don't transform by WorldMatrix if particle system uses World Space simulation
 
-                "		float3 viewPos = mul(float4(nextPos, 1), ViewMatrix);\n"
-                "		float4 projPos = mul(float4(nextPos, 1), ViewProjectionMatrix);\n"
+                "		float3 viewPos = PROJECT_POINT(float4(nextPos, 1), ViewMatrix);\n"
+                "		float4 projPos = PROJECT_POINT(float4(nextPos, 1), ViewProjectionMatrix);\n"
                 "		projPos.xyz /= projPos.w;\n"
                 "		if (all(abs(projPos.xy) < 1.0f))\n"
                 "		{{\n"
@@ -871,8 +871,8 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
                 "				viewPos.z = linearDepth;\n"
                 "				\n"
 
-                "				{0} = mul(float4(viewPos, 1), InvViewMatrix).xyz;\n" // TODO: don't transform by WorldMatrix if particle system uses World Space simulation
-                "				{0} = mul(float4({0}, 1), InvWorldMatrix).xyz;\n" // TODO: don't transform by WorldMatrix if particle system uses World Space simulation
+                "				{0} = PROJECT_POINT(float4(viewPos, 1), InvViewMatrix).xyz;\n" // TODO: don't transform by WorldMatrix if particle system uses World Space simulation
+                "				{0} = PROJECT_POINT(float4({0}, 1), InvWorldMatrix).xyz;\n" // TODO: don't transform by WorldMatrix if particle system uses World Space simulation
                 COLLISION_LOGIC()
 
                 "		}}\n"

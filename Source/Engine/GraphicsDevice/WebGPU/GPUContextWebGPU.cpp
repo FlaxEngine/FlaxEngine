@@ -368,8 +368,9 @@ void GPUContextWebGPU::UpdateCB(GPUConstantBuffer* cb, const void* data)
 
 void GPUContextWebGPU::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ)
 {
-    OnDispatch(shader);
-    MISSING_CODE("GPUContextWebGPU::Dispatch");
+    auto computePass = OnDispatch(shader);
+    wgpuComputePassEncoderDispatchWorkgroups(computePass, threadGroupCountX, threadGroupCountY, threadGroupCountZ);
+    EndComputePass(computePass);
     RENDER_STAT_DISPATCH_CALL();
 }
 
@@ -377,8 +378,9 @@ void GPUContextWebGPU::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* b
 {
     ASSERT(bufferForArgs && EnumHasAnyFlags(bufferForArgs->GetFlags(), GPUBufferFlags::Argument));
     auto bufferForArgsWebGPU = (GPUBufferWebGPU*)bufferForArgs;
-    OnDispatch(shader);
-    MISSING_CODE("GPUContextWebGPU::Dispatch");
+    auto computePass = OnDispatch(shader);
+    wgpuComputePassEncoderDispatchWorkgroupsIndirect(computePass, bufferForArgsWebGPU->Buffer, offsetForArgs);
+    EndComputePass(computePass);
     RENDER_STAT_DISPATCH_CALL();
 }
 
@@ -865,7 +867,7 @@ void GPUContextWebGPU::OnDrawCall()
     if (_pipelineDirty)
     {
         _pipelineDirty = false;
-        WGPURenderPipeline pipeline = _pipelineState ? _pipelineState->GetPipeline(_pipelineKey, _shaderResources) : nullptr;
+        WGPURenderPipeline pipeline = _pipelineState ? _pipelineState->GetPipeline(_pipelineKey, { _shaderResources }) : nullptr;
         wgpuRenderPassEncoderSetPipeline(_renderPass, pipeline);
         RENDER_STAT_PS_STATE_CHANGE();
 
@@ -898,9 +900,38 @@ void GPUContextWebGPU::OnDrawCall()
     }
 }
 
-void GPUContextWebGPU::OnDispatch(GPUShaderProgramCS* shader)
+WGPUComputePassEncoder GPUContextWebGPU::OnDispatch(GPUShaderProgramCS* shader)
 {
-    // TODO: add compute shaders support
+    // End existing render pass (if any)
+    if (_renderPass)
+        EndRenderPass();
+
+    // Flush pending clears
+    FlushState();
+
+    // Start a new compute pass
+    WGPUComputePassDescriptor computePassDesc = WGPU_COMPUTE_PASS_DESCRIPTOR_INIT;
+    FlushTimestamps(1);
+    if (_pendingTimestampWrites.HasItems())
+        computePassDesc.timestampWrites = &_pendingTimestampWrites.Last();
+    _pendingTimestampWrites.Clear();
+    auto computePass = wgpuCommandEncoderBeginComputePass(Encoder, &computePassDesc);
+    ASSERT(computePass);
+
+    // Set pipeline
+    GPUPipelineStateWebGPU::BindGroupKey key;
+    auto shaderWebGPU = (GPUShaderProgramCSWebGPU*)shader;
+    WGPUComputePipeline pipeline = shaderWebGPU->GetPipeline(_device->Device, { _shaderResources }, key.Layout);
+    wgpuComputePassEncoderSetPipeline(computePass, pipeline);
+
+    // Set bind group
+    uint32 dynamicOffsets[DynamicOffsetsMax];
+    uint32 dynamicOffsetsCount = 0;
+    BuildBindGroup(0, shaderWebGPU->DescriptorInfo, key, dynamicOffsets, dynamicOffsetsCount);
+    WGPUBindGroup bindGroup = shaderWebGPU->GetBindGroup(_device->Device, key);
+    wgpuComputePassEncoderSetBindGroup(computePass, 0, bindGroup, dynamicOffsetsCount, dynamicOffsets);
+
+    return computePass;
 }
 
 void GPUContextWebGPU::EndRenderPass()
@@ -908,6 +939,13 @@ void GPUContextWebGPU::EndRenderPass()
     wgpuRenderPassEncoderEnd(_renderPass);
     wgpuRenderPassEncoderRelease(_renderPass);
     _renderPass = nullptr;
+}
+
+void GPUContextWebGPU::EndComputePass(WGPUComputePassEncoder computePass)
+{
+    wgpuComputePassEncoderEnd(computePass);
+    wgpuComputePassEncoderRelease(computePass);
+    computePass = nullptr;
 }
 
 void GPUContextWebGPU::FlushRenderPass()
@@ -1033,138 +1071,17 @@ void GPUContextWebGPU::FlushBindGroup()
 
     // Each shader stage (Vertex, Pixel) uses a separate bind group
     GPUPipelineStateWebGPU::BindGroupKey key;
-    for (int32 groupIndex = 0; groupIndex < GPUBindGroupsWebGPU::GraphicsMax; groupIndex++)
+    uint32 dynamicOffsets[DynamicOffsetsMax];
+    for (uint32 groupIndex = 0; groupIndex < GPUBindGroupsWebGPU::GraphicsMax; groupIndex++)
     {
         auto descriptors = _pipelineState->BindGroupDescriptors[groupIndex];
         key.Layout = _pipelineState->BindGroupLayouts[groupIndex];
         if (!descriptors || !key.Layout)
             continue;
 
-        // Build descriptors for the bind group
-        auto entriesCount = descriptors->DescriptorTypesCount;
-        uint32 dynamicOffsets[4];
+        // Build descriptors
         uint32 dynamicOffsetsCount = 0;
-        static_assert(ARRAY_COUNT(key.Entries) == SpirvShaderDescriptorInfo::MaxDescriptors, "Invalid size of bind group entries array.");
-        static_assert(ARRAY_COUNT(key.Versions) == SpirvShaderDescriptorInfo::MaxDescriptors, "Invalid size of bind group versions array.");
-        key.EntriesCount = entriesCount;
-        auto entriesPtr = key.Entries;
-        auto versionsPtr = key.Versions;
-        Platform::MemoryClear(entriesPtr, entriesCount * sizeof(WGPUBindGroupEntry));
-        Platform::MemoryClear(versionsPtr, ((entriesCount + 3) & ~0x3) * sizeof(uint8));
-        for (int32 index = 0; index < entriesCount; index++)
-        {
-            auto& descriptor = descriptors->DescriptorTypes[index];
-            auto& entry = entriesPtr[index];
-            entry.binding = descriptor.Binding;
-            entry.size = WGPU_WHOLE_SIZE;
-            switch (descriptor.DescriptorType)
-            {
-            case VK_DESCRIPTOR_TYPE_SAMPLER:
-            {
-                GPUSamplerWebGPU* sampler = _samplers[descriptor.Slot];
-                if (!sampler)
-                    sampler = _device->DefaultSamplers[0]; // Fallback
-                entry.sampler = sampler->Sampler;
-                break;
-            }
-            case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-            case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-            {
-                ASSERT_LOW_LAYER(descriptor.BindingType == SpirvShaderResourceBindingType::SRV);
-                auto view = _shaderResources[descriptor.Slot];
-                auto ptr = view ? (GPUResourceViewPtrWebGPU*)view->GetNativePtr() : nullptr;
-                if (ptr && ptr->TextureView)
-                {
-                    entry.textureView = ptr->TextureView->View;
-                    versionsPtr[index] = ptr->Version;
-                }
-                if (!entry.textureView)
-                {
-                    // Fallback
-                    auto defaultTexture = _device->DefaultTexture[(int32)descriptor.ResourceType];
-                    if (!defaultTexture)
-                    {
-                        LOG(Error, "Missing default resource {} at slot {} of binding space {}", (int32)descriptor.ResourceType, descriptor.Slot, (int32)descriptor.BindingType);
-                        CRASH;
-                    }
-                    switch (descriptor.ResourceType)
-                    {
-                    case SpirvShaderResourceType::Texture3D:
-                        view = defaultTexture->ViewVolume();
-                        break;
-                    case SpirvShaderResourceType::Texture1DArray:
-                    case SpirvShaderResourceType::Texture2DArray:
-                        view = defaultTexture->ViewArray();
-                        break;
-                    default:
-                        view = defaultTexture->View(0);
-                        break;
-                    }
-                    ptr = (GPUResourceViewPtrWebGPU*)view->GetNativePtr();
-                    entry.textureView = ptr->TextureView->View;
-                }
-                break;
-            }
-            case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-            case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
-            case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-            case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-            {
-                ASSERT(descriptor.Slot < _resourceTableSizes[(int32)descriptor.BindingType]);
-                GPUResourceView* view = _resourceTables[(int32)descriptor.BindingType][descriptor.Slot];
-                auto ptr = view ? (GPUResourceViewPtrWebGPU*)view->GetNativePtr() : nullptr;
-                if (ptr && ptr->BufferView)
-                {
-                    entry.buffer = ptr->BufferView->Buffer;
-                    entry.size = ((GPUBufferWebGPU*)view->GetParent())->GetSize();
-                    versionsPtr[index] = (uint64)ptr->Version;
-                }
-                if (!entry.buffer)
-                    entry.buffer = _device->DefaultBuffer; // Fallback
-                break;
-            }
-            case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-            case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-            {
-                GPUConstantBufferWebGPU* uniform = _constantBuffers[descriptor.Slot];
-                if (uniform && uniform->Allocation.Buffer)
-                {
-                    entry.buffer = uniform->Allocation.Buffer;
-                    entry.size = uniform->AllocationSize;
-                    if (descriptor.DescriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-                        entry.offset = uniform->Allocation.Offset;
-                    else
-                        dynamicOffsets[dynamicOffsetsCount++] = uniform->Allocation.Offset;
-                }
-                else
-                    LOG(Fatal, "Missing constant buffer at slot {}", descriptor.Slot);
-                break;
-            }
-            default:
-#if GPU_ENABLE_DIAGNOSTICS
-                LOG(Fatal, "Unknown descriptor type: {} used as {}", (uint32)descriptor.DescriptorType, (uint32)descriptor.BindingType);
-#else
-                CRASH;
-#endif
-                return;
-            }
-        }
-
-#if BUILD_DEBUG
-        // Validate
-        for (int32 i = 0; i < entriesCount; i++)
-        {
-            auto& e = entriesPtr[i];
-            if ((e.buffer != nullptr) + (e.sampler != nullptr) + (e.textureView != nullptr) != 1)
-            {
-                LOG(Error, "Invalid binding in group {} at index {} ({})", groupIndex, i, _pipelineState->GetName());
-                LOG(Error, " > sampler: {}", (uint32)e.sampler);
-                LOG(Error, " > textureView: {}", (uint32)e.textureView);
-                LOG(Error, " > buffer: {}", (uint32)e.buffer);
-            }
-        }
-        ASSERT(dynamicOffsetsCount <= ARRAY_COUNT(dynamicOffsets));
-#endif
+        BuildBindGroup(groupIndex, *descriptors, key, dynamicOffsets, dynamicOffsetsCount);
 
         // Bind group
         WGPUBindGroup bindGroup = _pipelineState->GetBindGroup(key);
@@ -1195,6 +1112,133 @@ void GPUContextWebGPU::FlushTimestamps(int32 skipLast)
         wgpuRenderPassEncoderEnd(renderPass);
         wgpuRenderPassEncoderRelease(renderPass);
     }
+}
+
+void GPUContextWebGPU::BuildBindGroup(uint32 groupIndex, const SpirvShaderDescriptorInfo& descriptors, GPUPipelineStateWebGPU::BindGroupKey& key, uint32 dynamicOffsets[DynamicOffsetsMax], uint32& dynamicOffsetsCount)
+{
+    // Build descriptors for the bind group
+    auto entriesCount = descriptors.DescriptorTypesCount;
+    static_assert(ARRAY_COUNT(key.Entries) == SpirvShaderDescriptorInfo::MaxDescriptors, "Invalid size of bind group entries array.");
+    static_assert(ARRAY_COUNT(key.Versions) == SpirvShaderDescriptorInfo::MaxDescriptors, "Invalid size of bind group versions array.");
+    key.EntriesCount = entriesCount;
+    auto entriesPtr = key.Entries;
+    auto versionsPtr = key.Versions;
+    Platform::MemoryClear(entriesPtr, entriesCount * sizeof(WGPUBindGroupEntry));
+    Platform::MemoryClear(versionsPtr, ((entriesCount + 3) & ~0x3) * sizeof(uint8));
+    for (int32 index = 0; index < entriesCount; index++)
+    {
+        auto& descriptor = descriptors.DescriptorTypes[index];
+        auto& entry = entriesPtr[index];
+        entry.binding = descriptor.Binding;
+        entry.size = WGPU_WHOLE_SIZE;
+        switch (descriptor.DescriptorType)
+        {
+        case VK_DESCRIPTOR_TYPE_SAMPLER:
+        {
+            GPUSamplerWebGPU* sampler = _samplers[descriptor.Slot];
+            if (!sampler)
+                sampler = _device->DefaultSamplers[0]; // Fallback
+            entry.sampler = sampler->Sampler;
+            break;
+        }
+        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+        case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+        {
+            ASSERT_LOW_LAYER(descriptor.BindingType == SpirvShaderResourceBindingType::SRV);
+            auto view = _shaderResources[descriptor.Slot];
+            auto ptr = view ? (GPUResourceViewPtrWebGPU*)view->GetNativePtr() : nullptr;
+            if (ptr && ptr->TextureView)
+            {
+                entry.textureView = ptr->TextureView->View;
+                versionsPtr[index] = ptr->Version;
+            }
+            if (!entry.textureView)
+            {
+                // Fallback
+                auto defaultTexture = _device->DefaultTexture[(int32)descriptor.ResourceType];
+                if (!defaultTexture)
+                {
+                    LOG(Error, "Missing default resource {} at slot {} of binding space {}", (int32)descriptor.ResourceType, descriptor.Slot, (int32)descriptor.BindingType);
+                    CRASH;
+                }
+                switch (descriptor.ResourceType)
+                {
+                case SpirvShaderResourceType::Texture3D:
+                    view = defaultTexture->ViewVolume();
+                    break;
+                case SpirvShaderResourceType::Texture1DArray:
+                case SpirvShaderResourceType::Texture2DArray:
+                    view = defaultTexture->ViewArray();
+                    break;
+                default:
+                    view = defaultTexture->View(0);
+                    break;
+                }
+                ptr = (GPUResourceViewPtrWebGPU*)view->GetNativePtr();
+                entry.textureView = ptr->TextureView->View;
+            }
+            break;
+        }
+        case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+        case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+        case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+        case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+        {
+            ASSERT(descriptor.Slot < _resourceTableSizes[(int32)descriptor.BindingType]);
+            GPUResourceView* view = _resourceTables[(int32)descriptor.BindingType][descriptor.Slot];
+            auto ptr = view ? (GPUResourceViewPtrWebGPU*)view->GetNativePtr() : nullptr;
+            if (ptr && ptr->BufferView)
+            {
+                entry.buffer = ptr->BufferView->Buffer;
+                entry.size = ((GPUBufferWebGPU*)view->GetParent())->GetSize();
+                versionsPtr[index] = (uint64)ptr->Version;
+            }
+            if (!entry.buffer)
+                entry.buffer = _device->DefaultBuffer; // Fallback
+            break;
+        }
+        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+        {
+            GPUConstantBufferWebGPU* uniform = _constantBuffers[descriptor.Slot];
+            if (uniform && uniform->Allocation.Buffer)
+            {
+                entry.buffer = uniform->Allocation.Buffer;
+                entry.size = uniform->AllocationSize;
+                if (descriptor.DescriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+                    entry.offset = uniform->Allocation.Offset;
+                else
+                    dynamicOffsets[dynamicOffsetsCount++] = uniform->Allocation.Offset;
+            }
+            else
+                LOG(Fatal, "Missing constant buffer at slot {}", descriptor.Slot);
+            break;
+        }
+        default:
+#if GPU_ENABLE_DIAGNOSTICS
+            LOG(Fatal, "Unknown descriptor type: {} used as {}", (uint32)descriptor.DescriptorType, (uint32)descriptor.BindingType);
+#else
+            CRASH;
+#endif
+            return;
+        }
+    }
+
+#if BUILD_DEBUG
+    // Validate
+    for (int32 i = 0; i < entriesCount; i++)
+    {
+        auto& e = entriesPtr[i];
+        if ((e.buffer != nullptr) + (e.sampler != nullptr) + (e.textureView != nullptr) != 1)
+        {
+            LOG(Error, "Invalid binding in group {} at index {} ({})", groupIndex, i, _pipelineState->GetName());
+            LOG(Error, " > sampler: {}", (uint32)e.sampler);
+            LOG(Error, " > textureView: {}", (uint32)e.textureView);
+            LOG(Error, " > buffer: {}", (uint32)e.buffer);
+        }
+    }
+    ASSERT(dynamicOffsetsCount <= DynamicOffsetsMax);
+#endif
 }
 
 #endif

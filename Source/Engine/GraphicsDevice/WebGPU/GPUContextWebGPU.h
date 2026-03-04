@@ -93,11 +93,14 @@ private:
     bool FindClear(const GPUTextureViewWebGPU* view, PendingClear& clear);
     void ManualClear(const PendingClear& clear);
     void OnDrawCall();
-    void OnDispatch(GPUShaderProgramCS* shader);
+    WGPUComputePassEncoder OnDispatch(GPUShaderProgramCS* shader);
     void EndRenderPass();
+    void EndComputePass(WGPUComputePassEncoder computePass);
     void FlushRenderPass();
     void FlushBindGroup();
     void FlushTimestamps(int32 skipLast = 0);
+    constexpr static int32 DynamicOffsetsMax = 4;
+    void BuildBindGroup(uint32 groupIndex, const SpirvShaderDescriptorInfo& descriptors, GPUPipelineStateWebGPU::BindGroupKey& key, uint32 dynamicOffsets[DynamicOffsetsMax], uint32& dynamicOffsetsCount);
 
 public:
     // [GPUContext]

@@ -72,6 +72,8 @@ bool GPUBufferWebGPU::OnInit()
     {
     case GPUResourceUsage::Default:
         bufferDesc.usage |= WGPUBufferUsage_CopyDst;
+        if (IsUnorderedAccess())
+            bufferDesc.usage |= WGPUBufferUsage_CopySrc; // eg. GPU particles copy particle counter between buffers
         break;
     case GPUResourceUsage::Dynamic:
         if (bufferDesc.usage == 0) // WebGPU doesn't allow to map-write Index/Vertex/Storage buffers

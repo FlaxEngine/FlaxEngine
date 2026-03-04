@@ -79,10 +79,11 @@ GPUShaderProgram* GPUShaderWebGPU::CreateGPUShaderProgram(ShaderStage type, cons
         break;
     }
     case ShaderStage::Pixel:
-    {
         shader = New<GPUShaderProgramPSWebGPU>(initializer, header->DescriptorInfo, shaderModule);
         break;
-    }
+    case ShaderStage::Compute:
+        shader = New<GPUShaderProgramCSWebGPU>(initializer, header->DescriptorInfo, shaderModule);
+        break;
     }
     return shader;
 }

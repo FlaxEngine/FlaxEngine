@@ -54,7 +54,7 @@ bool ShouldSwap(float a, float b)
 
 RWByteAddressBuffer IndirectArgsBuffer : register(u0);
 
-META_CS(true, FEATURE_LEVEL_SM5)
+META_CS(true, AUTO)
 [numthreads(22, 1, 1)]
 void CS_IndirectArgs(uint groupIndex : SV_GroupIndex)
 {
@@ -129,7 +129,7 @@ void StoreItem(uint element, uint count)
 
 #ifdef _CS_PreSort
 
-META_CS(true, FEATURE_LEVEL_SM5)
+META_CS(true, AUTO)
 META_PERMUTATION_1(THREAD_GROUP_SIZE=1024)
 META_PERMUTATION_1(THREAD_GROUP_SIZE=64)
 [numthreads(THREAD_GROUP_SIZE, 1, 1)]
@@ -177,7 +177,7 @@ void CS_PreSort(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 
 #ifdef _CS_InnerSort
 
-META_CS(true, FEATURE_LEVEL_SM5)
+META_CS(true, AUTO)
 [numthreads(THREAD_GROUP_SIZE, 1, 1)]
 void CS_InnerSort(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 {
@@ -222,7 +222,7 @@ void CS_InnerSort(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 RWBuffer<uint> SortedIndices : register(u0);
 RWBuffer<float> SortingKeys : register(u1);
 
-META_CS(true, FEATURE_LEVEL_SM5)
+META_CS(true, AUTO)
 [numthreads(1024, 1, 1)]
 void CS_OuterSort(uint3 dispatchThreadId : SV_DispatchThreadID)
 {

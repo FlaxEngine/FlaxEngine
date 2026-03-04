@@ -274,7 +274,7 @@ FeatureLevel RenderTools::GetFeatureLevel(ShaderProfile profile)
     case ShaderProfile::GLSL_410:
     case ShaderProfile::Unknown:
     case ShaderProfile::WebGPU:
-        return FeatureLevel::ES2;
+        return FeatureLevel::ES3_1;
     default:
         return FeatureLevel::ES2;
     }
@@ -293,6 +293,8 @@ ShaderProfileFeatures RenderTools::GetShaderProfileFeatures(ShaderProfile profil
         return ShaderProfileFeatures::ComputeShaders | ShaderProfileFeatures::GeometryShaders;
     case ShaderProfile::DirectX_SM4:
         return ShaderProfileFeatures::GeometryShaders;
+    case ShaderProfile::WebGPU:
+        return ShaderProfileFeatures::ComputeShaders;
     default:
         return ShaderProfileFeatures::None;
     }

@@ -10,6 +10,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Pair.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 
 static VkStencilOp ToVulkanStencilOp(const StencilOperation value)
@@ -91,6 +92,7 @@ ComputePipelineStateVulkan* GPUShaderProgramCSVulkan::GetOrCreateState()
     if (_pipelineState)
         return _pipelineState;
     PROFILE_CPU();
+    PROFILE_MEM(GraphicsShaders);
     ZoneText(*_name, _name.Length());
 
     // Create pipeline layout
@@ -224,6 +226,7 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVer
         return pipeline;
     }
     PROFILE_CPU();
+    PROFILE_MEM(GraphicsShaders);
 #if !BUILD_RELEASE
     DebugName name;
     GetDebugName(name);
