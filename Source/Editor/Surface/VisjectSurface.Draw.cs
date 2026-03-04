@@ -69,7 +69,6 @@ namespace FlaxEditor.Surface
             DrawGridBackground(Width, Height);
         }
 
-        // TODO: Rename (and get rid of old texture based draw background?)
         internal static void DrawBackgroundSolidColor(Color color, float width, float height)
         {
             Rectangle backgroundRect = new Rectangle(0f, 0f, width, height);

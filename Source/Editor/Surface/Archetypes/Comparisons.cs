@@ -39,7 +39,7 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     NodeElementArchetype.Factory.Input(0, string.Empty, true, null, 0, 0),
                     NodeElementArchetype.Factory.Input(1, string.Empty, true, null, 1, 1),
-                    NodeElementArchetype.Factory.Output(0, "Result", typeof(bool), 2)
+                    NodeElementArchetype.Factory.Output(0, title, typeof(bool), 2)
                 }
             };
         }

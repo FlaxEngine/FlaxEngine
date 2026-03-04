@@ -341,7 +341,6 @@ namespace FlaxEditor.Surface
             if (element is Control control)
                 AddChild(control);
 
-            // TODO: Perform this at a better time instead of every time an element gets added.
             if (!Archetype.UseFixedSize)
                 ResizeAuto();
         }

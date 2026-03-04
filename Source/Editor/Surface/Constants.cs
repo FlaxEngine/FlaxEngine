@@ -78,6 +78,6 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// The scale of text of boxes.
         /// </summary>
-        public const float BoxTextScale = 1f;//1.175f;
+        public const float BoxTextScale = 1f;
     }
 }
