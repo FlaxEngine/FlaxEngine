@@ -23,12 +23,12 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// The node header height.
         /// </summary>
-        public const float NodeHeaderHeight = 20.0f;
+        public const float NodeHeaderHeight = 23.0f;
 
         /// <summary>
         /// The scale of the header text.
         /// </summary>
-        public const float NodeHeaderTextScale = 0.65f;
+        public const float NodeHeaderTextScale = 0.8f;
 
         /// <summary>
         /// The node footer height.
@@ -38,12 +38,12 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// The horizontal node margin.
         /// </summary>
-        public const float NodeMarginX = 8.0f;
+        public const float NodeMarginX = 6.0f;
 
         /// <summary>
         /// The vertical node right margin.
         /// </summary>
-        public const float NodeMarginY = 7.0f;
+        public const float NodeMarginY = 8.0f;
 
         /// <summary>
         /// The box position offset on the x axis.
@@ -58,7 +58,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// The box size (with and height).
         /// </summary>
-        public const float BoxSize = 13.0f;
+        public const float BoxSize = 15.0f;
 
         /// <summary>
         /// The node layout offset on the y axis (height of the boxes rows, etc.). It's used to make the design more consistent.
@@ -68,7 +68,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// The offset between the box text and the box
         /// </summary>
-        public const float BoxTextOffset = 4.0f;
+        public const float BoxTextOffset = 2.0f;
 
         /// <summary>
         /// The width of the rectangle used to draw the box text.
@@ -78,6 +78,6 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// The scale of text of boxes.
         /// </summary>
-        public const float BoxTextScale = 1.175f;
+        public const float BoxTextScale = 1f;//1.175f;
     }
 }

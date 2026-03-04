@@ -39,7 +39,7 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     NodeElementArchetype.Factory.Input(0, string.Empty, true, null, 0, 0),
                     NodeElementArchetype.Factory.Input(1, string.Empty, true, null, 1, 1),
-                    NodeElementArchetype.Factory.Output(0, title, typeof(bool), 2)
+                    NodeElementArchetype.Factory.Output(0, "Result", typeof(bool), 2)
                 }
             };
         }
@@ -173,10 +173,10 @@ namespace FlaxEditor.Surface.Archetypes
         {
             Op(1, "==", "Determines whether two values are equal", new[] { "equals" }),
             Op(2, "!=", "Determines whether two values are not equal", new[] { "not equals" }),
-            Op(3, ">", "Determines whether the first value is greater than the other", new[] { "greater than", "larger than", "bigger than" }),
-            Op(4, "<", "Determines whether the first value is less than the other", new[] { "less than", "smaller than" }),
-            Op(5, "<=", "Determines whether the first value is less or equal to the other", new[] { "less equals than", "smaller equals than" }),
-            Op(6, ">=", "Determines whether the first value is greater or equal to the other", new[] { "greater equals than", "larger equals than", "bigger equals than" }),
+            Op(3, ">", "Determines whether the first value is greater than the other", new[] { "greater than", "larger than", "bigger than", "more than" }),
+            Op(4, "<", "Determines whether the first value is less than the other", new[] { "less than", "smaller than", "tinier than" }),
+            Op(5, "<=", "Determines whether the first value is less or equal to the other", new[] { "less equals than", "smaller equals than", "tinier equals than" }),
+            Op(6, ">=", "Determines whether the first value is greater or equal to the other", new[] { "greater equals than", "larger equals than", "bigger equals than", "more equals than" }),
             new NodeArchetype
             {
                 TypeID = 7,

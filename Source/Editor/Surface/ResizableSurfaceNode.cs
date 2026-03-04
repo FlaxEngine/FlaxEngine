@@ -75,6 +75,12 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
+        public override void ResizeAuto()
+        {
+            // Do nothing, we want to put full control of node size into the users hands
+        }
+
+        /// <inheritdoc />
         public override void Draw()
         {
             base.Draw();

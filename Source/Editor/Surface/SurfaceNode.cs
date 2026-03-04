@@ -938,6 +938,9 @@ namespace FlaxEditor.Surface
                 if (Elements[i] is Box box)
                     box.OnConnectionsChanged();
             }
+
+            if (!Archetype.UseFixedSize)
+                ResizeAuto();
         }
 
         /// <inheritdoc />
@@ -975,6 +978,9 @@ namespace FlaxEditor.Surface
                 Surface.AddBatchedUndoAction(new EditNodeValuesAction(this, before, graphEdited));
 
             _isDuringValuesEditing = false;
+
+            if (!Archetype.UseFixedSize)
+                ResizeAuto();
         }
 
         /// <summary>
@@ -1009,6 +1015,9 @@ namespace FlaxEditor.Surface
             }
 
             _isDuringValuesEditing = false;
+
+            if (!Archetype.UseFixedSize)
+                ResizeAuto();
         }
 
         internal void SetIsDuringValuesEditing(bool value)
@@ -1041,6 +1050,8 @@ namespace FlaxEditor.Surface
         public virtual void ConnectionTick(Box box)
         {
             UpdateBoxesTypes();
+            if (!Archetype.UseFixedSize)
+                ResizeAuto();
         }
 
         /// <inheritdoc />

@@ -57,7 +57,7 @@ namespace FlaxEditor.Surface.Archetypes
                     {
                         _textureGroupPicker = new ComboBox
                         {
-                            Location = new Float2(FlaxEditor.Surface.Constants.NodeMarginX + 50, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize + FlaxEditor.Surface.Constants.LayoutOffsetY * _level),
+                            Location = new Float2(FlaxEditor.Surface.Constants.NodeMarginX + 50, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight + FlaxEditor.Surface.Constants.LayoutOffsetY * _level),
                             Width = 100,
                             Parent = this,
                         };
@@ -134,7 +134,8 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new Constants.ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(Texture))),
                 Description = "Two dimensional texture object",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(140, 120),
+                UseFixedSize = true,
+                Size = new Float2(140, 140),
                 DefaultValues = new object[]
                 {
                     Guid.Empty
@@ -493,7 +494,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 18,
                 Title = "Lightmap UV",
-                AlternativeTitles = new string[] { "Lightmap TexCoord" }, 
+                AlternativeTitles = new string[] { "Lightmap TexCoord" },
                 Description = "Lightmap UVs",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(110, 20),
