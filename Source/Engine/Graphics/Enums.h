@@ -148,6 +148,37 @@ API_ENUM() enum class ShaderProfile
 const Char* ToString(ShaderProfile value);
 
 /// <summary>
+/// Shader profile feature flags. Defines a set of features supported by a shader profile.
+/// </summary>
+API_ENUM() enum class ShaderProfileFeatures
+{
+    /// <summary>
+    /// Nothing.
+    /// </summary>
+    None = 0,
+
+    /// <summary>
+    /// Compute shaders are supported.
+    /// </summary>
+    ComputeShaders = 1,
+
+    /// <summary>
+    /// Geometry shaders are supported.
+    /// </summary>
+    GeometryShaders = 2,
+
+    /// <summary>
+    /// Tessellation shaders are supported (Hull and Domain).
+    /// </summary>
+    TessellationShaders = 4,
+
+    API_ENUM(Attributes = "HideInEditor")
+    MAX
+};
+
+DECLARE_ENUM_OPERATORS(ShaderProfileFeatures);
+
+/// <summary>
 /// Graphics feature levels indicates what level of support can be relied upon. 
 /// They are named after the graphics API to indicate the minimum level of the features set to support. 
 /// Feature levels are ordered from the lowest to the most high-end so feature level enum can be used to switch between feature levels (e.g. don't use geometry shader if not supported).

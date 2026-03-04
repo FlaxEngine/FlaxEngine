@@ -152,19 +152,13 @@ bool ShadersCompilation::Compile(ShaderCompilationOptions& options)
         options.SourceLength--;
 
     const DateTime startTime = DateTime::NowUTC();
-    const FeatureLevel featureLevel = RenderTools::GetFeatureLevel(options.Profile);
 
     // Process shader source to collect metadata
     ShaderMeta meta;
-    if (ShaderProcessing::Parser::Process(options.TargetName, options.Source, options.SourceLength, options.Macros, featureLevel, &meta))
+    if (ShaderProcessing::Parser::Process(options.TargetName, options.Source, options.SourceLength, options.Macros, options.Profile, &meta))
     {
         LOG(Warning, "Failed to parse source code.");
         return true;
-    }
-    const int32 shadersCount = meta.GetShadersCount();
-    if (shadersCount == 0 && featureLevel > FeatureLevel::ES2)
-    {
-        LOG(Warning, "Shader has no valid functions.");
     }
 
     // Perform actual compilation

@@ -9,8 +9,6 @@ TextProcessing::TextProcessing(const char* input, int32 length)
     , _cursor(const_cast<char*>(input))
     , _position(0)
     , _line(1)
-    , Separators(32)
-    , Whitespaces(8)
 {
 }
 

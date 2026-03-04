@@ -32,14 +32,14 @@
 #endif
 
 // Meta macros used by shaders parser
-#define META_VS(isVisible, minFeatureLevel)
+#define META_VS(isVisible, minFeatures)
 #define META_VS_IN_ELEMENT(type, index, format, slot, offset, slotClass, stepRate, isVisible) // [Deprecated in v1.10]
-#define META_HS(isVisible, minFeatureLevel)
+#define META_HS(isVisible, minFeatures)
 #define META_HS_PATCH(inControlPoints)
-#define META_DS(isVisible, minFeatureLevel)
-#define META_GS(isVisible, minFeatureLevel)
-#define META_PS(isVisible, minFeatureLevel)
-#define META_CS(isVisible, minFeatureLevel)
+#define META_DS(isVisible, minFeatures)
+#define META_GS(isVisible, minFeatures)
+#define META_PS(isVisible, minFeatures)
+#define META_CS(isVisible, minFeatures)
 #define META_FLAG(flag)
 #define META_PERMUTATION_1(param0)
 #define META_PERMUTATION_2(param0, param1)

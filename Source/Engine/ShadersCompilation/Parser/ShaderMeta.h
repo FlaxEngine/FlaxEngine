@@ -44,12 +44,17 @@ public:
     /// <summary>
     /// Function flags.
     /// </summary>
-    ShaderFlags Flags;
+    ShaderFlags Flags = ShaderFlags::Default;
 
     /// <summary>
-    /// The minimum graphics platform feature level to support this shader.
+    /// The minimum graphics platform feature level to support for this shader.
     /// </summary>
-    FeatureLevel MinFeatureLevel;
+    FeatureLevel MinFeatureLevel = FeatureLevel::ES2;
+
+    /// <summary>
+    /// The minimum shader profile feature to support for this shader.
+    /// </summary>
+    ShaderProfileFeatures MinFeatures = ShaderProfileFeatures::None;
 
     /// <summary>
     /// All possible values for the permutations and it's values to generate different permutation of this function
@@ -220,6 +225,11 @@ public:
     int32 ControlPointsCount;
 
 public:
+    HullShaderMeta()
+    {
+        MinFeatures = ShaderProfileFeatures::TessellationShaders;
+    }
+
     // [ShaderFunctionMeta]
     ShaderStage GetStage() const override
     {
@@ -233,6 +243,11 @@ public:
 class DomainShaderMeta : public ShaderFunctionMeta
 {
 public:
+    DomainShaderMeta()
+    {
+        MinFeatures = ShaderProfileFeatures::TessellationShaders;
+    }
+
     // [ShaderFunctionMeta]
     ShaderStage GetStage() const override
     {
@@ -246,6 +261,11 @@ public:
 class GeometryShaderMeta : public ShaderFunctionMeta
 {
 public:
+    GeometryShaderMeta()
+    {
+        MinFeatures = ShaderProfileFeatures::GeometryShaders;
+    }
+
     // [ShaderFunctionMeta]
     ShaderStage GetStage() const override
     {
@@ -272,6 +292,11 @@ public:
 class ComputeShaderMeta : public ShaderFunctionMeta
 {
 public:
+    ComputeShaderMeta()
+    {
+        MinFeatures = ShaderProfileFeatures::ComputeShaders;
+    }
+
     // [ShaderFunctionMeta]
     ShaderStage GetStage() const override
     {

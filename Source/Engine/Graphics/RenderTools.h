@@ -48,11 +48,19 @@ public:
     static FeatureLevel GetFeatureLevel(ShaderProfile profile);
 
     /// <summary>
+    /// Gets the features for the given shader profile. Runtime device might not support all of them.
+    /// </summary>
+    /// <param name="profile">The shader profile.</param>
+    /// <returns>The feature flags for the given shader profile.</returns>
+    static ShaderProfileFeatures GetShaderProfileFeatures(ShaderProfile profile);
+
+    /// <summary>
     /// Check if the given shader profile supports the tessellation. Runtime can reject tessellation support but it defines if given shader profile CAN support tessellation.
+    /// [Deprecated in v1.12]
     /// </summary>
     /// <param name="profile">The profile.</param>
     /// <returns>True if can support tessellation shaders, otherwise false.</returns>
-    static bool CanSupportTessellation(ShaderProfile profile);
+    DEPRECATED("Use GetShaderProfileFeatures instead") static bool CanSupportTessellation(ShaderProfile profile);
 
     /// <summary>
     /// Computes the image row pitch in bytes, and the slice pitch (size in bytes of the image) based on format, width, and height.

@@ -9,7 +9,6 @@
 #include "RenderTask.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Assets/SkinnedModel.h"
-#include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Packed.h"
 #include "Engine/Core/Math/OrientedBoundingBox.h"
 #include "Engine/Engine/Time.h"
@@ -278,6 +277,24 @@ FeatureLevel RenderTools::GetFeatureLevel(ShaderProfile profile)
         return FeatureLevel::ES2;
     default:
         return FeatureLevel::ES2;
+    }
+}
+
+ShaderProfileFeatures RenderTools::GetShaderProfileFeatures(ShaderProfile profile)
+{
+    switch (profile)
+    {
+    case ShaderProfile::DirectX_SM6:
+    case ShaderProfile::DirectX_SM5:
+    case ShaderProfile::Vulkan_SM5:
+        return ShaderProfileFeatures::ComputeShaders | ShaderProfileFeatures::GeometryShaders | ShaderProfileFeatures::TessellationShaders;
+    case ShaderProfile::PS4:
+    case ShaderProfile::PS5:
+        return ShaderProfileFeatures::ComputeShaders | ShaderProfileFeatures::GeometryShaders;
+    case ShaderProfile::DirectX_SM4:
+        return ShaderProfileFeatures::GeometryShaders;
+    default:
+        return ShaderProfileFeatures::None;
     }
 }
 
