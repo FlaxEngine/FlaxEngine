@@ -136,6 +136,7 @@ public:
     void EndEvent();
 #endif
 
+    void Wait(float timeoutSeconds = VULKAN_WAIT_TIMEOUT);
     void RefreshFenceStatus();
 };
 
@@ -206,7 +207,6 @@ public:
 
 public:
     void SubmitActiveCmdBuffer(SemaphoreVulkan* signalSemaphore = nullptr);
-    void WaitForCmdBuffer(CmdBufferVulkan* cmdBuffer, float timeInSecondsToWait = 1.0f);
     void RefreshFenceStatus(CmdBufferVulkan* skipCmdBuffer = nullptr)
     {
         _pool.RefreshFenceStatus(skipCmdBuffer);
