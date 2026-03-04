@@ -27,10 +27,15 @@ namespace FlaxEditor.Windows
     public sealed partial class ContentWindow : EditorWindow
     {
         private const string ProjectDataLastViewedFolder = "LastViewedFolder";
+        private const string ProjectDataExpandedFolders = "ExpandedFolders";
         private bool _isWorkspaceDirty;
         private string _workspaceRebuildLocation;
         private string _lastViewedFolderBeforeReload;
         private SplitPanel _split;
+        private Panel _treeOnlyPanel;
+        private ContainerControl _treePanelRoot;
+        private ContainerControl _treeHeaderPanel;
+        private Panel _contentItemsSearchPanel;
         private Panel _contentViewPanel;
         private Panel _contentTreePanel;
         private ContentView _view;
@@ -42,18 +47,23 @@ namespace FlaxEditor.Windows
         private readonly ToolStripButton _navigateUpButton;
 
         private NavigationBar _navigationBar;
+        private Panel _viewDropdownPanel;
         private Tree _tree;
         private TextBox _foldersSearchBox;
         private TextBox _itemsSearchBox;
         private ViewDropdown _viewDropdown;
         private SortType _sortType;
         private bool _showEngineFiles = true, _showPluginsFiles = true, _showAllFiles = true, _showGeneratedFiles = false;
+        private bool _showAllContentInTree;
+        private bool _suppressExpandedStateSave;
+        private readonly HashSet<string> _expandedFolderPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private bool _renameInTree;
 
-        private RootContentTreeNode _root;
+        private RootContentFolderTreeNode _root;
 
         private bool _navigationUnlocked;
-        private readonly Stack<ContentTreeNode> _navigationUndo = new Stack<ContentTreeNode>(32);
-        private readonly Stack<ContentTreeNode> _navigationRedo = new Stack<ContentTreeNode>(32);
+        private readonly Stack<ContentFolderTreeNode> _navigationUndo = new Stack<ContentFolderTreeNode>(32);
+        private readonly Stack<ContentFolderTreeNode> _navigationRedo = new Stack<ContentFolderTreeNode>(32);
 
         private NewItem _newElement;
 
@@ -133,6 +143,9 @@ namespace FlaxEditor.Windows
             }
         }
 
+        internal bool IsTreeOnlyMode => _showAllContentInTree;
+        internal SortType CurrentSortType => _sortType;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ContentWindow"/> class.
         /// </summary>
@@ -161,14 +174,6 @@ namespace FlaxEditor.Windows
             _navigateUpButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Up64, NavigateUp).LinkTooltip("Navigate up");
             _toolStrip.AddSeparator();
 
-            // Navigation bar
-            _navigationBar = new NavigationBar
-            {
-                Parent = _toolStrip,
-                ScrollbarTrackColor = style.Background,
-                ScrollbarThumbColor = style.ForegroundGrey,
-            };
-
             // Split panel
             _split = new SplitPanel(options.Options.Interface.ContentWindowOrientation, ScrollBars.None, ScrollBars.None)
             {
@@ -178,19 +183,38 @@ namespace FlaxEditor.Windows
                 Parent = this,
             };
 
+            // Tree-only panel (used when showing all content in the tree)
+            _treeOnlyPanel = new Panel(ScrollBars.None)
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = new Margin(0, 0, _toolStrip.Bottom, 0),
+                Visible = false,
+                Parent = this,
+            };
+
+            // Tree host panel
+            _treePanelRoot = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = Margin.Zero,
+                Parent = _split.Panel1,
+            };
+
             // Content structure tree searching query input box
-            var headerPanel = new ContainerControl
+            _treeHeaderPanel = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 BackgroundColor = style.Background,
                 IsScrollable = false,
                 Offsets = new Margin(0, 0, 0, 18 + 6),
+                Parent = _treePanelRoot,
             };
+
             _foldersSearchBox = new SearchBox
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
-                Parent = headerPanel,
-                Bounds = new Rectangle(4, 4, headerPanel.Width - 8, 18),
+                Parent = _treeHeaderPanel,
+                Bounds = new Rectangle(4, 4, _treeHeaderPanel.Width - 8, 18),
             };
             _foldersSearchBox.TextChanged += OnFoldersSearchBoxTextChanged;
 
@@ -198,55 +222,74 @@ namespace FlaxEditor.Windows
             _contentTreePanel = new Panel
             {
                 AnchorPreset = AnchorPresets.StretchAll,
-                Offsets = new Margin(0, 0, headerPanel.Bottom, 0),
+                Offsets = new Margin(0, 0, _treeHeaderPanel.Bottom, 0),
                 IsScrollable = true,
                 ScrollBars = ScrollBars.Both,
-                Parent = _split.Panel1,
+                Parent = _treePanelRoot,
             };
 
             // Content structure tree
-            _tree = new Tree(false)
+            _tree = new Tree(true)
             {
                 DrawRootTreeLine = false,
                 Parent = _contentTreePanel,
             };
             _tree.SelectedChanged += OnTreeSelectionChanged;
-            headerPanel.Parent = _split.Panel1;
 
             // Content items searching query input box and filters selector
-            var contentItemsSearchPanel = new ContainerControl
+            _contentItemsSearchPanel = new Panel
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 IsScrollable = true,
                 Offsets = new Margin(0, 0, 0, 18 + 8),
                 Parent = _split.Panel2,
             };
-            const float viewDropdownWidth = 50.0f;
+
             _itemsSearchBox = new SearchBox
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
-                Parent = contentItemsSearchPanel,
-                Bounds = new Rectangle(viewDropdownWidth + 8, 4, contentItemsSearchPanel.Width - 12 - viewDropdownWidth, 18),
+                Parent = _contentItemsSearchPanel,
+                Bounds = new Rectangle(4, 4, _contentItemsSearchPanel.Width - 8, 18),
             };
             _itemsSearchBox.TextChanged += UpdateItemsSearch;
+
+            _viewDropdownPanel = new Panel
+            {
+                Width = 50.0f,
+                Parent = this,
+                AnchorPreset = AnchorPresets.TopLeft,
+                BackgroundColor = Color.Transparent,
+            };
+
             _viewDropdown = new ViewDropdown
             {
-                AnchorPreset = AnchorPresets.MiddleLeft,
                 SupportMultiSelect = true,
                 TooltipText = "Change content view and filter options",
-                Parent = contentItemsSearchPanel,
-                Offsets = new Margin(4, viewDropdownWidth, -9, 18),
+                Offsets = Margin.Zero,
+                Width = 46.0f,
+                Height = 18.0f,
+                Parent = _viewDropdownPanel,
             };
+            _viewDropdown.LocalX += 2.0f;
+            _viewDropdown.LocalY += _toolStrip.ItemsHeight * 0.5f - 9.0f;
             _viewDropdown.SelectedIndexChanged += e => UpdateItemsSearch();
             for (int i = 0; i <= (int)ContentItemSearchFilter.Other; i++)
                 _viewDropdown.Items.Add(((ContentItemSearchFilter)i).ToString());
             _viewDropdown.PopupCreate += OnViewDropdownPopupCreate;
 
+            // Navigation bar (after view dropdown so layout order stays stable)
+            _navigationBar = new NavigationBar
+            {
+                Parent = _toolStrip,
+                ScrollbarTrackColor = style.Background,
+                ScrollbarThumbColor = style.ForegroundGrey,
+            };
+
             // Content view panel
             _contentViewPanel = new Panel
             {
                 AnchorPreset = AnchorPresets.StretchAll,
-                Offsets = new Margin(0, 0, contentItemsSearchPanel.Bottom + 4, 0),
+                Offsets = new Margin(0, 0, _contentItemsSearchPanel.Bottom + 4, 0),
                 IsScrollable = true,
                 ScrollBars = ScrollBars.Vertical,
                 Parent = _split.Panel2,
@@ -266,9 +309,14 @@ namespace FlaxEditor.Windows
             _view.OnDelete += Delete;
             _view.OnDuplicate += Duplicate;
             _view.OnPaste += Paste;
+            _view.ViewScaleChanged += ApplyTreeViewScale;
 
             _view.InputActions.Add(options => options.Search, () => _itemsSearchBox.Focus());
             InputActions.Add(options => options.Search, () => _itemsSearchBox.Focus());
+
+            LoadExpandedFolders();
+            UpdateViewDropdownBounds();
+            ApplyTreeViewScale();
         }
 
         private ContextMenu OnViewDropdownPopupCreate(ComboBox comboBox)
@@ -287,6 +335,7 @@ namespace FlaxEditor.Windows
             var viewType = menu.AddChildMenu("View Type");
             viewType.ContextMenu.AddButton("Tiles", OnViewTypeButtonClicked).Tag = ContentViewType.Tiles;
             viewType.ContextMenu.AddButton("List", OnViewTypeButtonClicked).Tag = ContentViewType.List;
+            viewType.ContextMenu.AddButton("Tree View", OnViewTypeButtonClicked).Tag = "Tree";
             viewType.ContextMenu.VisibleChanged += control =>
             {
                 if (!control.Visible)
@@ -294,13 +343,23 @@ namespace FlaxEditor.Windows
                 foreach (var item in ((ContextMenu)control).Items)
                 {
                     if (item is ContextMenuButton button)
-                        button.Checked = View.ViewType == (ContentViewType)button.Tag;
+                    {
+                        if (button.Tag is ContentViewType type)
+                            button.Checked = View.ViewType == type && !_showAllContentInTree;
+                        else
+                            button.Checked = _showAllContentInTree;
+                    }
                 }
             };
 
             var show = menu.AddChildMenu("Show");
             {
-                var b = show.ContextMenu.AddButton("File extensions", () => View.ShowFileExtensions = !View.ShowFileExtensions);
+                var b = show.ContextMenu.AddButton("File extensions", () =>
+                {
+                    View.ShowFileExtensions = !View.ShowFileExtensions;
+                    if (_showAllContentInTree)
+                        UpdateTreeItemNames(_root);
+                });
                 b.TooltipText = "Shows all files with extensions";
                 b.Checked = View.ShowFileExtensions;
                 b.CloseMenuOnClick = false;
@@ -381,9 +440,63 @@ namespace FlaxEditor.Windows
             RefreshView();
         }
 
+        private void SetShowAllContentInTree(bool value)
+        {
+            if (_showAllContentInTree == value)
+                return;
+
+            _showAllContentInTree = value;
+            ApplyTreeViewMode();
+        }
+
+        private void ApplyTreeViewMode()
+        {
+            if (_treeOnlyPanel == null || _split == null || _treePanelRoot == null)
+                return;
+
+            if (_showAllContentInTree)
+            {
+                _split.Visible = false;
+                _treeOnlyPanel.Visible = true;
+                _treePanelRoot.Parent = _treeOnlyPanel;
+                _treePanelRoot.Offsets = Margin.Zero;
+                _contentItemsSearchPanel.Visible = false;
+                _itemsSearchBox.Visible = false;
+                _contentViewPanel.Visible = false;
+                RefreshTreeItems();
+            }
+            else
+            {
+                _treeOnlyPanel.Visible = false;
+                _split.Visible = true;
+                _treePanelRoot.Parent = _split.Panel1;
+                _treePanelRoot.Offsets = Margin.Zero;
+                _contentItemsSearchPanel.Visible = true;
+                _itemsSearchBox.Visible = true;
+                _contentViewPanel.Visible = true;
+                if (_tree.SelectedNode is ContentItemTreeNode itemNode && itemNode.Parent is TreeNode parentNode)
+                    _tree.Select(parentNode);
+                if (_root != null)
+                    RemoveTreeAssetNodes(_root);
+                RefreshView(SelectedNode);
+            }
+
+            PerformLayout();
+            ApplyTreeViewScale();
+            _tree.PerformLayout();
+        }
+
         private void OnViewTypeButtonClicked(ContextMenuButton button)
         {
-            View.ViewType = (ContentViewType)button.Tag;
+            if (button.Tag is ContentViewType viewType)
+            {
+                SetShowAllContentInTree(false);
+                View.ViewType = viewType;
+            }
+            else
+            {
+                SetShowAllContentInTree(true);
+            }
         }
 
         private void OnFilterClicked(ContextMenuButton filterButton)
@@ -443,15 +556,58 @@ namespace FlaxEditor.Windows
             // Show element in the view
             Select(item, true);
 
-            // Disable scrolling in content view
-            if (_contentViewPanel.VScrollBar != null)
-                _contentViewPanel.VScrollBar.ThumbEnabled = false;
-            if (_contentViewPanel.HScrollBar != null)
-                _contentViewPanel.HScrollBar.ThumbEnabled = false;
-            ScrollingOnContentView(false);
+            // Disable scrolling in proper view
+            _renameInTree = _showAllContentInTree;
+            if (_renameInTree)
+            {
+                if (_contentTreePanel.VScrollBar != null)
+                    _contentTreePanel.VScrollBar.ThumbEnabled = false;
+                if (_contentTreePanel.HScrollBar != null)
+                    _contentTreePanel.HScrollBar.ThumbEnabled = false;
+                ScrollingOnTreeView(false);
+            }
+            else
+            {
+                if (_contentViewPanel.VScrollBar != null)
+                    _contentViewPanel.VScrollBar.ThumbEnabled = false;
+                if (_contentViewPanel.HScrollBar != null)
+                    _contentViewPanel.HScrollBar.ThumbEnabled = false;
+                ScrollingOnContentView(false);
+            }
 
             // Show rename popup
-            var popup = RenamePopup.Show(item, item.TextRectangle, item.ShortName, true);
+            RenamePopup popup;
+            if (_renameInTree)
+            {
+                TreeNode node = null;
+                if (item is ContentFolder folder)
+                    node = folder.Node;
+                else if (item.ParentFolder != null)
+                    node = FindTreeItemNode(item.ParentFolder.Node, item);
+                if (node == null)
+                {
+                    // Fallback to content view rename
+                    popup = RenamePopup.Show(item, item.TextRectangle, item.ShortName, true);
+                }
+                else
+                {
+                    var area = node.TextRect;
+                    const float minRenameWidth = 220.0f;
+                    if (area.Width < minRenameWidth)
+                    {
+                        float expand = minRenameWidth - area.Width;
+                        area.X -= expand * 0.5f;
+                        area.Width = minRenameWidth;
+                    }
+                    area.Y -= 2;
+                    area.Height += 4.0f;
+                    popup = RenamePopup.Show(node, area, item.ShortName, true);
+                }
+            }
+            else
+            {
+                popup = RenamePopup.Show(item, item.TextRectangle, item.ShortName, true);
+            }
             popup.Tag = item;
             popup.Validate += OnRenameValidate;
             popup.Renamed += renamePopup => Rename((ContentItem)renamePopup.Tag, renamePopup.Text);
@@ -471,12 +627,24 @@ namespace FlaxEditor.Windows
 
         private void OnRenameClosed(RenamePopup popup)
         {
-            // Restore scrolling in content view
-            if (_contentViewPanel.VScrollBar != null)
-                _contentViewPanel.VScrollBar.ThumbEnabled = true;
-            if (_contentViewPanel.HScrollBar != null)
-                _contentViewPanel.HScrollBar.ThumbEnabled = true;
-            ScrollingOnContentView(true);
+            // Restore scrolling in proper view
+            if (_renameInTree)
+            {
+                if (_contentTreePanel.VScrollBar != null)
+                    _contentTreePanel.VScrollBar.ThumbEnabled = true;
+                if (_contentTreePanel.HScrollBar != null)
+                    _contentTreePanel.HScrollBar.ThumbEnabled = true;
+                ScrollingOnTreeView(true);
+            }
+            else
+            {
+                if (_contentViewPanel.VScrollBar != null)
+                    _contentViewPanel.VScrollBar.ThumbEnabled = true;
+                if (_contentViewPanel.HScrollBar != null)
+                    _contentViewPanel.HScrollBar.ThumbEnabled = true;
+                ScrollingOnContentView(true);
+            }
+            _renameInTree = false;
 
             // Check if was creating new element
             if (_newElement != null)
@@ -889,6 +1057,16 @@ namespace FlaxEditor.Windows
             }
         }
 
+        private void OnContentDatabaseItemAdded(ContentItem contentItem)
+        {
+            if (contentItem is ContentFolder folder && _expandedFolderPaths.Contains(StringUtils.NormalizePath(folder.Path)))
+            {
+                _suppressExpandedStateSave = true;
+                folder.Node?.Expand(true);
+                _suppressExpandedStateSave = false;
+            }
+        }
+
         /// <summary>
         /// Opens the specified content item.
         /// </summary>
@@ -905,7 +1083,8 @@ namespace FlaxEditor.Windows
                 var folder = (ContentFolder)item;
                 folder.Node.Expand();
                 _tree.Select(folder.Node);
-                _view.SelectFirstItem();
+                if (!_showAllContentInTree)
+                    _view.SelectFirstItem();
                 return;
             }
 
@@ -946,6 +1125,36 @@ namespace FlaxEditor.Windows
             // Ensure that window is visible
             FocusOrShow();
 
+            if (_showAllContentInTree)
+            {
+                var targetNode = item is ContentFolder folder ? folder.Node : parent.Node;
+                if (targetNode != null)
+                {
+                    targetNode.ExpandAllParents();
+                    if (item is ContentFolder)
+                    {
+                        _tree.Select(targetNode);
+                        _contentTreePanel.ScrollViewTo(targetNode, fastScroll);
+                        targetNode.Focus();
+                    }
+                    else
+                    {
+                        var itemNode = FindTreeItemNode(targetNode, item);
+                        if (itemNode != null)
+                        {
+                            _tree.Select(itemNode);
+                            _contentTreePanel.ScrollViewTo(itemNode, fastScroll);
+                            itemNode.Focus();
+                        }
+                        else
+                        {
+                            _tree.Select(targetNode);
+                        }
+                    }
+                }
+                return;
+            }
+
             // Navigate to the parent directory
             Navigate(parent.Node);
 
@@ -957,23 +1166,45 @@ namespace FlaxEditor.Windows
             _view.Focus();
         }
 
+        private ContentItemTreeNode FindTreeItemNode(ContentFolderTreeNode parentNode, ContentItem item)
+        {
+            if (parentNode == null || item == null)
+                return null;
+            for (int i = 0; i < parentNode.ChildrenCount; i++)
+            {
+                if (parentNode.GetChild(i) is ContentItemTreeNode itemNode && itemNode.Item == item)
+                    return itemNode;
+            }
+            return null;
+        }
+
         /// <summary>
         /// Refreshes the current view items collection.
         /// </summary>
         public void RefreshView()
         {
-            if (_view.IsSearching)
+            if (_showAllContentInTree)
+                RefreshTreeItems();
+            else if (_view.IsSearching)
                 UpdateItemsSearch();
             else
                 RefreshView(SelectedNode);
+
+            return;
         }
 
         /// <summary>
         /// Refreshes the view.
         /// </summary>
         /// <param name="target">The target location.</param>
-        public void RefreshView(ContentTreeNode target)
+        public void RefreshView(ContentFolderTreeNode target)
         {
+            if (_showAllContentInTree)
+            {
+                RefreshTreeItems();
+                return;
+            }
+
             _view.IsSearching = false;
             if (target == _root)
             {
@@ -981,7 +1212,7 @@ namespace FlaxEditor.Windows
                 var items = new List<ContentItem>(8);
                 for (int i = 0; i < _root.ChildrenCount; i++)
                 {
-                    if (_root.GetChild(i) is ContentTreeNode node)
+                    if (_root.GetChild(i) is ContentFolderTreeNode node)
                     {
                         items.Add(node.Folder);
                     }
@@ -1000,10 +1231,260 @@ namespace FlaxEditor.Windows
             }
         }
 
+        private void RefreshTreeItems()
+        {
+            if (!_showAllContentInTree || _root == null)
+                return;
+
+            _root.LockChildrenRecursive();
+            RemoveTreeAssetNodes(_root);
+            AddTreeAssetNodes(_root);
+            _root.UnlockChildrenRecursive();
+            _tree.PerformLayout();
+        }
+
+        private void UpdateTreeItemNames(ContentFolderTreeNode node)
+        {
+            if (node == null)
+                return;
+
+            for (int i = 0; i < node.ChildrenCount; i++)
+            {
+                if (node.GetChild(i) is ContentFolderTreeNode childFolder)
+                {
+                    UpdateTreeItemNames(childFolder);
+                }
+                else if (node.GetChild(i) is ContentItemTreeNode itemNode)
+                {
+                    itemNode.UpdateDisplayedName();
+                }
+            }
+        }
+
+        internal void OnContentTreeNodeExpandedChanged(ContentFolderTreeNode node, bool isExpanded)
+        {
+            if (_suppressExpandedStateSave || node == null || node == _root)
+                return;
+
+            var path = node.Path;
+            if (string.IsNullOrEmpty(path))
+                return;
+            path = StringUtils.NormalizePath(path);
+
+            if (isExpanded)
+                _expandedFolderPaths.Add(path);
+            else
+                // Remove all sub paths if parent folder is closed.
+                _expandedFolderPaths.RemoveWhere(x => x.Contains(path));
+
+            SaveExpandedFolders();
+        }
+
+        internal void TryAutoExpandContentNode(ContentFolderTreeNode node)
+        {
+            if (node == null || node == _root)
+                return;
+
+            var path = node.Path;
+            if (string.IsNullOrEmpty(path))
+                return;
+            path = StringUtils.NormalizePath(path);
+
+            if (!_expandedFolderPaths.Contains(path))
+                return;
+
+            _suppressExpandedStateSave = true;
+            node.Expand(true);
+            _suppressExpandedStateSave = false;
+        }
+
+        private void LoadExpandedFolders()
+        {
+            _expandedFolderPaths.Clear();
+            if (Editor.ProjectCache.TryGetCustomData(ProjectDataExpandedFolders, out string data) && !string.IsNullOrWhiteSpace(data))
+            {
+                var entries = data.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                for (int i = 0; i < entries.Length; i++)
+                {
+                    var path = entries[i].Trim();
+                    if (path.Length == 0)
+                        continue;
+                    _expandedFolderPaths.Add(StringUtils.NormalizePath(path));
+                }
+            }
+        }
+
+        private void SaveExpandedFolders()
+        {
+            if (_expandedFolderPaths.Count == 0)
+            {
+                Editor.ProjectCache.RemoveCustomData(ProjectDataExpandedFolders);
+                return;
+            }
+
+            var data = string.Join("\n", _expandedFolderPaths);
+            Editor.ProjectCache.SetCustomData(ProjectDataExpandedFolders, data);
+        }
+
+        private void ApplyExpandedFolders()
+        {
+            if (_root == null || _expandedFolderPaths.Count == 0)
+                return;
+
+            _suppressExpandedStateSave = true;
+            foreach (var path in _expandedFolderPaths)
+            {
+                if (Editor.ContentDatabase.Find(path) is ContentFolder folder)
+                {
+                    folder.Node.ExpandAllParents(true);
+                    folder.Node.Expand(true);
+                }
+            }
+            _suppressExpandedStateSave = false;
+        }
+
+        private void RemoveTreeAssetNodes(ContentFolderTreeNode node)
+        {
+            for (int i = node.ChildrenCount - 1; i >= 0; i--)
+            {
+                if (node.GetChild(i) is ContentItemTreeNode itemNode)
+                {
+                    node.RemoveChild(itemNode);
+                    itemNode.Dispose();
+                }
+                else if (node.GetChild(i) is ContentFolderTreeNode childFolder)
+                {
+                    RemoveTreeAssetNodes(childFolder);
+                }
+            }
+        }
+
+        private void AddTreeAssetNodes(ContentFolderTreeNode node)
+        {
+            if (node.Folder != null)
+            {
+                var children = node.Folder.Children;
+                for (int i = 0; i < children.Count; i++)
+                {
+                    var child = children[i];
+                    if (child is ContentFolder)
+                        continue;
+                    if (!ShouldShowTreeItem(child))
+                        continue;
+
+                    var itemNode = new ContentItemTreeNode(child)
+                    {
+                        Parent = node,
+                    };
+                }
+            }
+
+            for (int i = 0; i < node.ChildrenCount; i++)
+            {
+                if (node.GetChild(i) is ContentFolderTreeNode childFolder)
+                {
+                    AddTreeAssetNodes(childFolder);
+                }
+            }
+
+            node.SortChildren();
+        }
+
+        private bool ShouldShowTreeItem(ContentItem item)
+        {
+            if (item == null || !item.Visible)
+                return false;
+            if (_viewDropdown != null && _viewDropdown.HasSelection)
+            {
+                var filterIndex = (int)item.SearchFilter;
+                if (!_viewDropdown.Selection.Contains(filterIndex))
+                    return false;
+            }
+            if (!_showAllFiles && item is FileItem)
+                return false;
+            if (!_showGeneratedFiles && IsGeneratedFile(item.Path))
+                return false;
+            return true;
+        }
+
+        private static bool IsGeneratedFile(string path)
+        {
+            return path.EndsWith(".Gen.cs", StringComparison.Ordinal) ||
+                   path.EndsWith(".Gen.h", StringComparison.Ordinal) ||
+                   path.EndsWith(".Gen.cpp", StringComparison.Ordinal) ||
+                   path.EndsWith(".csproj", StringComparison.Ordinal) ||
+                   path.Contains(".CSharp");
+        }
+
         private void UpdateUI()
         {
             UpdateToolstrip();
             UpdateNavigationBar();
+        }
+
+        private void ApplyTreeViewScale()
+        {
+            if (_tree == null)
+                return;
+
+            var scale = _showAllContentInTree ? View.ViewScale : 1.0f;
+            var headerHeight = Mathf.Clamp(16.0f * scale, 12.0f, 28.0f);
+            var style = Style.Current;
+            var fontSize = Mathf.Clamp(style.FontSmall.Size * scale, 8.0f, 28.0f);
+            var fontRef = new FontReference(style.FontSmall.Asset, fontSize);
+            var iconSize = Mathf.Clamp(16.0f * scale, 12.0f, 28.0f);
+            var textMarginLeft = 2.0f + Mathf.Max(0.0f, iconSize - 16.0f);
+            ApplyTreeNodeScale(_root, headerHeight, fontRef, textMarginLeft);
+            _tree.PerformLayout();
+        }
+
+        private void ApplyTreeNodeScale(ContentFolderTreeNode node, float headerHeight, FontReference fontRef, float textMarginLeft)
+        {
+            if (node == null)
+                return;
+
+            var margin = node.TextMargin;
+            margin.Left = textMarginLeft;
+            margin.Top = 2.0f;
+            margin.Right = 2.0f;
+            margin.Bottom = 2.0f;
+            node.TextMargin = margin;
+            node.CustomArrowRect = GetTreeArrowRect(node, headerHeight);
+            node.HeaderHeight = headerHeight;
+            node.TextFont = fontRef;
+            for (int i = 0; i < node.ChildrenCount; i++)
+            {
+                if (node.GetChild(i) is ContentFolderTreeNode child)
+                    ApplyTreeNodeScale(child, headerHeight, fontRef, textMarginLeft);
+                else if (node.GetChild(i) is ContentItemTreeNode itemNode)
+                {
+                    var itemMargin = itemNode.TextMargin;
+                    itemMargin.Left = textMarginLeft;
+                    itemMargin.Top = 2.0f;
+                    itemMargin.Right = 2.0f;
+                    itemMargin.Bottom = 2.0f;
+                    itemNode.TextMargin = itemMargin;
+                    itemNode.HeaderHeight = headerHeight;
+                    itemNode.TextFont = fontRef;
+                }
+            }
+        }
+
+        private static Rectangle GetTreeArrowRect(ContentFolderTreeNode node, float headerHeight)
+        {
+            if (node == null)
+                return Rectangle.Empty;
+
+            var scale = Editor.Instance?.Windows?.ContentWin?.IsTreeOnlyMode == true
+                ? Editor.Instance.Windows.ContentWin.View.ViewScale
+                : 1.0f;
+            var arrowSize = Mathf.Clamp(12.0f * scale, 10.0f, 20.0f);
+            var iconSize = Mathf.Clamp(16.0f * scale, 12.0f, 28.0f);
+            var textRect = node.TextRect;
+            var iconLeft = textRect.Left - iconSize - 2.0f;
+            var x = iconLeft - arrowSize - 2.0f;
+            var y = (headerHeight - arrowSize) * 0.5f;
+            return new Rectangle(Mathf.Max(x, 0.0f), Mathf.Max(y, 0.0f), arrowSize, arrowSize);
         }
 
         private void UpdateToolstrip()
@@ -1025,13 +1506,34 @@ namespace FlaxEditor.Windows
             {
                 var bottomPrev = _toolStrip.Bottom;
                 _navigationBar.UpdateBounds(_toolStrip);
+                if (_viewDropdownPanel != null && _viewDropdownPanel.Visible)
+                {
+                    var reserved = _viewDropdownPanel.Width + 8.0f;
+                    _navigationBar.Width = Mathf.Max(_navigationBar.Width - reserved, 0.0f);
+                }
                 if (bottomPrev != _toolStrip.Bottom)
                 {
                     // Navigation bar changed toolstrip height
                     _split.Offsets = new Margin(0, 0, _toolStrip.Bottom, 0);
+                    if (_treeOnlyPanel != null)
+                        _treeOnlyPanel.Offsets = new Margin(0, 0, _toolStrip.Bottom, 0);
                     PerformLayout();
                 }
+                UpdateViewDropdownBounds();
             }
+        }
+
+        private void UpdateViewDropdownBounds()
+        {
+            if (_viewDropdownPanel == null || _toolStrip == null)
+                return;
+
+            var margin = _toolStrip.ItemsMargin;
+            var height = _toolStrip.ItemsHeight;
+            var y = _toolStrip.Y + (_toolStrip.Height - height) * 0.5f;
+            var width = _viewDropdownPanel.Width;
+            var x = _toolStrip.Right - width - margin.Right;
+            _viewDropdownPanel.Bounds = new Rectangle(x, y, width, height);
         }
 
         /// <inheritdoc />
@@ -1039,6 +1541,7 @@ namespace FlaxEditor.Windows
         {
             // Content database events
             Editor.ContentDatabase.WorkspaceModified += () => _isWorkspaceDirty = true;
+            Editor.ContentDatabase.ItemAdded += OnContentDatabaseItemAdded;
             Editor.ContentDatabase.ItemRemoved += OnContentDatabaseItemRemoved;
             Editor.ContentDatabase.WorkspaceRebuilding += () => { _workspaceRebuildLocation = SelectedNode?.Path; };
             Editor.ContentDatabase.WorkspaceRebuilt += () =>
@@ -1057,6 +1560,7 @@ namespace FlaxEditor.Windows
                     ShowRoot();
             };
 
+            LoadExpandedFolders();
             Refresh();
 
             // Load last viewed folder
@@ -1072,7 +1576,7 @@ namespace FlaxEditor.Windows
 
         private void OnScriptsReloadBegin()
         {
-            var lastViewedFolder = _tree.Selection.Count == 1 ? _tree.SelectedNode as ContentTreeNode : null;
+            var lastViewedFolder = _tree.Selection.Count == 1 ? _tree.SelectedNode as ContentFolderTreeNode : null;
             _lastViewedFolderBeforeReload = lastViewedFolder?.Path ?? string.Empty;
 
             _tree.RemoveChild(_root);
@@ -1093,7 +1597,7 @@ namespace FlaxEditor.Windows
         private void Refresh()
         {
             // Setup content root node
-            _root = new RootContentTreeNode
+            _root = new RootContentFolderTreeNode
             {
                 ChildrenIndent = 0
             };
@@ -1116,7 +1620,7 @@ namespace FlaxEditor.Windows
             _root.AddChild(Editor.ContentDatabase.Engine);
 
             Editor.ContentDatabase.Game?.Expand(true);
-            _tree.Margin = new Margin(0.0f, 0.0f, -16.0f, 2.0f); // Hide root node
+            _tree.Margin = new Margin(0.0f, 0.0f, -16.0f, ScrollBar.DefaultSize + 2); // Hide root node
             _tree.AddChild(_root);
 
             // Setup navigation
@@ -1127,6 +1631,8 @@ namespace FlaxEditor.Windows
             // Update UI layout
             _isLayoutLocked = false;
             PerformLayout();
+            ApplyExpandedFolders();
+            ApplyTreeViewMode();
         }
 
         /// <inheritdoc />
@@ -1136,7 +1642,10 @@ namespace FlaxEditor.Windows
             if (_isWorkspaceDirty)
             {
                 _isWorkspaceDirty = false;
-                RefreshView();
+                if (_showAllContentInTree)
+                    RefreshTreeItems();
+                else
+                    RefreshView();
             }
 
             base.Update(deltaTime);
@@ -1146,7 +1655,15 @@ namespace FlaxEditor.Windows
         public override void OnExit()
         {
             // Save last viewed folder
-            var lastViewedFolder = _tree.Selection.Count == 1 ? _tree.SelectedNode as ContentTreeNode : null;
+            ContentFolderTreeNode lastViewedFolder = null;
+            if (_tree.Selection.Count == 1)
+            {
+                var selectedNode = _tree.SelectedNode;
+                if (selectedNode is ContentItemTreeNode itemNode)
+                    lastViewedFolder = itemNode.Item?.ParentFolder?.Node;
+                else
+                    lastViewedFolder = selectedNode as ContentFolderTreeNode;
+            }
             Editor.ProjectCache.SetCustomData(ProjectDataLastViewedFolder, lastViewedFolder?.Path ?? string.Empty);
 
             // Clear view
@@ -1157,7 +1674,7 @@ namespace FlaxEditor.Windows
             {
                 while (_root.HasChildren)
                 {
-                    _root.RemoveChild((ContentTreeNode)_root.GetChild(0));
+                    _root.RemoveChild((ContentFolderTreeNode)_root.GetChild(0));
                 }
             }
         }
@@ -1192,7 +1709,12 @@ namespace FlaxEditor.Windows
                 {
                     ShowContextMenuForItem(null, ref location, false);
                 }
-                else if (c is ContentTreeNode node)
+                else if (c is ContentItemTreeNode itemNode)
+                {
+                    _tree.Select(itemNode);
+                    ShowContextMenuForItem(itemNode.Item, ref location, false);
+                }
+                else if (c is ContentFolderTreeNode node)
                 {
                     _tree.Select(node);
                     ShowContextMenuForItem(node.Folder, ref location, true);
@@ -1218,9 +1740,14 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         protected override void PerformLayoutBeforeChildren()
         {
-            UpdateNavigationBarBounds();
-
             base.PerformLayoutBeforeChildren();
+        }
+
+        /// <inheritdoc />
+        protected override void PerformLayoutAfterChildren()
+        {
+            base.PerformLayoutAfterChildren();
+            UpdateNavigationBarBounds();
         }
 
         /// <inheritdoc />
@@ -1237,6 +1764,7 @@ namespace FlaxEditor.Windows
             writer.WriteAttributeString("ShowAllFiles", ShowAllFiles.ToString());
             writer.WriteAttributeString("ShowGeneratedFiles", ShowGeneratedFiles.ToString());
             writer.WriteAttributeString("ViewType", _view.ViewType.ToString());
+            writer.WriteAttributeString("TreeViewAllContent", _showAllContentInTree.ToString());
         }
 
         /// <inheritdoc />
@@ -1257,6 +1785,9 @@ namespace FlaxEditor.Windows
                 ShowGeneratedFiles = value2;
             if (Enum.TryParse(node.GetAttribute("ViewType"), out ContentViewType viewType))
                 _view.ViewType = viewType;
+            if (bool.TryParse(node.GetAttribute("TreeViewAllContent"), out value2))
+                _showAllContentInTree = value2;
+            ApplyTreeViewMode();
         }
 
         /// <inheritdoc />
@@ -1264,6 +1795,7 @@ namespace FlaxEditor.Windows
         {
             _split.SplitterValue = 0.2f;
             _view.ViewScale = 1.0f;
+            _showAllContentInTree = false;
         }
 
         /// <inheritdoc />
@@ -1272,10 +1804,17 @@ namespace FlaxEditor.Windows
             _foldersSearchBox = null;
             _itemsSearchBox = null;
             _viewDropdown = null;
+            _viewDropdownPanel = null;
+            _treePanelRoot = null;
+            _treeHeaderPanel = null;
+            _treeOnlyPanel = null;
+            _contentItemsSearchPanel = null;
 
             Editor.Options.OptionsChanged -= OnOptionsChanged;
             ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
             ScriptsBuilder.ScriptsReloadEnd -= OnScriptsReloadEnd;
+            if (Editor?.ContentDatabase != null)
+                Editor.ContentDatabase.ItemAdded -= OnContentDatabaseItemAdded;
 
             base.OnDestroy();
         }

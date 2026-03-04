@@ -1,5 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
 using FlaxEngine.GUI;
 
 namespace FlaxEditor.Content
@@ -7,8 +8,8 @@ namespace FlaxEditor.Content
     /// <summary>
     /// Root tree node for the project workspace.
     /// </summary>
-    /// <seealso cref="FlaxEditor.Content.ContentTreeNode" />
-    public sealed class ProjectTreeNode : ContentTreeNode
+    /// <seealso cref="ContentFolderTreeNode" />
+    public sealed class ProjectFolderTreeNode : ContentFolderTreeNode
     {
         /// <summary>
         /// The project/
@@ -18,18 +19,18 @@ namespace FlaxEditor.Content
         /// <summary>
         /// The project content directory.
         /// </summary>
-        public MainContentTreeNode Content;
+        public MainContentFolderTreeNode Content;
 
         /// <summary>
         /// The project source code directory.
         /// </summary>
-        public MainContentTreeNode Source;
+        public MainContentFolderTreeNode Source;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ProjectTreeNode"/> class.
+        /// Initializes a new instance of the <see cref="ProjectFolderTreeNode"/> class.
         /// </summary>
         /// <param name="project">The project.</param>
-        public ProjectTreeNode(ProjectInfo project)
+        public ProjectFolderTreeNode(ProjectInfo project)
         : base(null, project.ProjectFolderPath)
         {
             Project = project;
@@ -48,9 +49,29 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override int Compare(Control other)
         {
-            // Move the main game project to the top
-            if (Project.Name == Editor.Instance.GameProject.Name)
-                return -1;
+            if (other is ProjectFolderTreeNode otherProject)
+            {
+                var gameProject = Editor.Instance.GameProject;
+                var engineProject = Editor.Instance.EngineProject;
+                bool isGame = Project == gameProject;
+                bool isEngine = Project == engineProject;
+                bool otherIsGame = otherProject.Project == gameProject;
+                bool otherIsEngine = otherProject.Project == engineProject;
+
+                // Main game project at the top
+                if (isGame && !otherIsGame)
+                    return -1;
+                if (!isGame && otherIsGame)
+                    return 1;
+
+                // Engine project at the bottom (when distinct)
+                if (isEngine && !otherIsEngine)
+                    return 1;
+                if (!isEngine && otherIsEngine)
+                    return -1;
+
+                return string.CompareOrdinal(Project.Name, otherProject.Project.Name);
+            }
             return base.Compare(other);
         }
     }

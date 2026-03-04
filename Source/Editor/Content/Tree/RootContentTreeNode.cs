@@ -5,13 +5,13 @@ namespace FlaxEditor.Content
     /// <summary>
     /// Root tree node for the content workspace.
     /// </summary>
-    /// <seealso cref="FlaxEditor.Content.ContentTreeNode" />
-    public sealed class RootContentTreeNode : ContentTreeNode
+    /// <seealso cref="ContentFolderTreeNode" />
+    public sealed class RootContentFolderTreeNode : ContentFolderTreeNode
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="RootContentTreeNode"/> class.
+        /// Initializes a new instance of the <see cref="RootContentFolderTreeNode"/> class.
         /// </summary>
-        public RootContentTreeNode()
+        public RootContentFolderTreeNode()
         : base(null, string.Empty)
         {
         }

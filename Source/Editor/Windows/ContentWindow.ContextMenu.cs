@@ -59,7 +59,7 @@ namespace FlaxEditor.Windows
                 cm.AddSeparator();
             }
 
-            if (item is ContentFolder contentFolder && contentFolder.Node is ProjectTreeNode)
+            if (item is ContentFolder contentFolder && contentFolder.Node is ProjectFolderTreeNode)
             {
                 cm.AddButton(Utilities.Constants.ShowInExplorer, () => FileSystem.ShowFileExplorer(CurrentViewFolder.Path));
             }
@@ -77,7 +77,7 @@ namespace FlaxEditor.Windows
 
                 cm.AddButton(Utilities.Constants.ShowInExplorer, () => FileSystem.ShowFileExplorer(System.IO.Path.GetDirectoryName(item.Path)));
                 
-                if (!String.IsNullOrEmpty(Editor.Instance.Windows.ContentWin._itemsSearchBox.Text))
+                if (!_showAllContentInTree && !String.IsNullOrEmpty(Editor.Instance.Windows.ContentWin._itemsSearchBox.Text))
                 {
                     cm.AddButton("Show in Content Panel", () =>
                     {
@@ -130,7 +130,7 @@ namespace FlaxEditor.Windows
                     }
                 }
 
-                if (isFolder && folder.Node is MainContentTreeNode)
+                if (isFolder && folder.Node is MainContentFolderTreeNode)
                 {
                     cm.AddSeparator();
                 }
@@ -146,7 +146,7 @@ namespace FlaxEditor.Windows
                 b = cm.AddButton("Paste", _view.Paste);
                 b.Enabled = _view.CanPaste();
 
-                if (isFolder && folder.Node is MainContentTreeNode)
+                if (isFolder && folder.Node is MainContentFolderTreeNode)
                 {
                     // Do nothing
                 }
@@ -179,14 +179,14 @@ namespace FlaxEditor.Windows
             cm.AddSeparator();
 
             // Check if is source folder to add new module
-            if (folder?.ParentFolder?.Node is ProjectTreeNode parentFolderNode && folder.Node == parentFolderNode.Source)
+            if (folder?.ParentFolder?.Node is ProjectFolderTreeNode parentFolderNode && folder.Node == parentFolderNode.Source)
             {
                 var button = cm.AddButton("New module");
                 button.CloseMenuOnClick = false;
                 button.Clicked += () => NewModule(button, parentFolderNode.Source.Path);
             }
 
-            if (!isRootFolder && !(item is ContentFolder projectFolder && projectFolder.Node is ProjectTreeNode))
+            if (!isRootFolder && !(item is ContentFolder projectFolder && projectFolder.Node is ProjectFolderTreeNode))
             {
                 cm.AddButton("New folder", NewFolder);
             }
