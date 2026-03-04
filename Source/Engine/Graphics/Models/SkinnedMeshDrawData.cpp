@@ -5,11 +5,6 @@
 #include "Engine/Animations/Config.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Matrix.h"
-#include "Engine/Core/Math/Matrix3x4.h"
-
-SkinnedMeshDrawData::SkinnedMeshDrawData()
-{
-}
 
 SkinnedMeshDrawData::~SkinnedMeshDrawData()
 {
@@ -33,7 +28,7 @@ void SkinnedMeshDrawData::Setup(int32 bonesCount)
 
     BonesCount = bonesCount;
     _hasValidData = false;
-    _isDirty = false;
+    _isDirty = true;
     Data.Resize(BoneMatrices->GetSize());
     SAFE_DELETE_GPU_RESOURCE(PrevBoneMatrices);
 }

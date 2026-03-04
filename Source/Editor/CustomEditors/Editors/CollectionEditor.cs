@@ -450,6 +450,7 @@ namespace FlaxEditor.CustomEditors.Editors
         protected bool NotNullItems;
 
         private IntValueBox _sizeBox;
+        private Label _label;
         private Color _background;
         private int _elementsCount, _minCount, _maxCount;
         private bool _readOnly;
@@ -566,7 +567,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     Parent = dropPanel,
                 };
 
-                var label = new Label
+                _label = new Label
                 {
                     Text = "Size",
                     AnchorPreset = AnchorPresets.TopRight,
@@ -592,11 +593,12 @@ namespace FlaxEditor.CustomEditors.Editors
                 panel.Panel.Offsets = new Margin(7, 7, 0, 0);
                 panel.Panel.BackgroundColor = _background;
                 var elementType = ElementType;
+                var bindingAttr = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public;
                 bool single = elementType.IsPrimitive ||
                               elementType.Equals(new ScriptType(typeof(string))) ||
                               elementType.IsEnum ||
-                              (elementType.GetFields().Length == 1 && elementType.GetProperties().Length == 0) ||
-                              (elementType.GetProperties().Length == 1 && elementType.GetFields().Length == 0) ||
+                              (elementType.GetFields(bindingAttr).Length == 1 && elementType.GetProperties(bindingAttr).Length == 0) ||
+                              (elementType.GetProperties(bindingAttr).Length == 1 && elementType.GetFields(bindingAttr).Length == 0) ||
                               elementType.Equals(new ScriptType(typeof(JsonAsset))) ||
                               elementType.Equals(new ScriptType(typeof(SettingsBase)));
                 if (_cachedDropPanels == null)
@@ -672,8 +674,10 @@ namespace FlaxEditor.CustomEditors.Editors
                     Resize(Count + 1);
                 };
             }
-        }
 
+            Layout.ContainerControl.SizeChanged += OnLayoutSizeChanged;
+        }
+        
         private void OnSetupContextMenu(ContextMenu menu, DropPanel panel)
         {
             if (menu.Items.Any(x => x is ContextMenuButton b && b.Text.Equals("Open All", StringComparison.Ordinal)))
@@ -696,10 +700,24 @@ namespace FlaxEditor.CustomEditors.Editors
             });
         }
 
+        private void OnLayoutSizeChanged(Control control)
+        {
+            if (Layout.ContainerControl is DropPanel dropPanel)
+            {
+                // Hide "Size" text when array editor title overlaps
+                var headerTextSize = dropPanel.HeaderTextFont.GetFont().MeasureText(dropPanel.HeaderText);
+                if (headerTextSize.X + DropPanel.DropDownIconSize >= _label.Left)
+                    _label.TextColor = _label.TextColorHighlighted = Color.Transparent;
+                else
+                    _label.TextColor = _label.TextColorHighlighted = FlaxEngine.GUI.Style.Current.Foreground;
+            }
+        }
+
         /// <inheritdoc />
         protected override void Deinitialize()
         {
             _sizeBox = null;
+            Layout.ContainerControl.SizeChanged -= OnLayoutSizeChanged;
 
             base.Deinitialize();
         }

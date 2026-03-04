@@ -449,8 +449,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool RayCast(ref Float2 location, out Control hit)
         {
-            var p = location / _scale;
-            if (RayCastChildren(ref p, out hit))
+            if (RayCastChildren(ref location, out hit))
                 return true;
             return base.RayCast(ref location, out hit);
         }

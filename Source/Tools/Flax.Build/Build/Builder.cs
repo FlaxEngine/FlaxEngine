@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
 
@@ -423,6 +424,121 @@ namespace Flax.Build
             }
 
             return failed;
+        }
+
+        private static void DeployFiles(TaskGraph graph, Target target, BuildOptions targetBuildOptions, string outputPath)
+        {
+            using (new ProfileEventScope("DeployFiles"))
+            {
+                foreach (var srcFile in targetBuildOptions.OptionalDependencyFiles.Where(File.Exists).Union(targetBuildOptions.DependencyFiles))
+                {
+                    var dstFile = Path.Combine(outputPath, Path.GetFileName(srcFile));
+                    graph.AddCopyFile(dstFile, srcFile);
+                }
+
+                if (targetBuildOptions.NugetPackageReferences.Any())
+                {
+                    // Find all packages to deploy (incl. dependencies) and restore if needed
+                    var nugetPath = Utilities.GetNugetPackagesPath();
+                    Log.Verbose($"Deploying NuGet packages from {nugetPath}");
+                    var restoreOnce = true;
+                    var nugetFiles = new HashSet<string>();
+                    foreach (var reference in targetBuildOptions.NugetPackageReferences)
+                    {
+                        var folder = reference.GetLibFolder(nugetPath);
+                        if (!Directory.Exists(folder) && restoreOnce)
+                        {
+                            // Package binaries folder is missing so restore packages (incl. dependency packages)
+                            RestoreNugetPackages(graph, target, targetBuildOptions);
+                            restoreOnce = false;
+                        }
+
+                        DeployNuGetPackage(nugetPath, targetBuildOptions, nugetFiles, reference, folder);
+                    }
+
+                    // Copy libraries from all referenced packages to the output folder
+                    foreach (var file in nugetFiles)
+                    {
+                        var dstFile = Path.Combine(outputPath, Path.GetFileName(file));
+                        graph.AddCopyFile(dstFile, file);
+                    }
+                }
+            }
+        }
+
+        private static void RestoreNugetPackages(TaskGraph graph, Target target, BuildOptions targetBuildOptions)
+        {
+            // Generate a dummy csproj file to restore package from it
+            var csprojPath = Path.Combine(targetBuildOptions.IntermediateFolder, "nuget.restore.csproj");
+            var dotnetSdk = DotNetSdk.Instance;
+            var csProjectFileContent = new StringBuilder();
+            csProjectFileContent.AppendLine("<Project Sdk=\"Microsoft.NET.Sdk\">");
+            csProjectFileContent.AppendLine("  <PropertyGroup>");
+            csProjectFileContent.AppendLine($"    <TargetFramework>net{dotnetSdk.Version.Major}.{dotnetSdk.Version.Minor}</TargetFramework>");
+            csProjectFileContent.AppendLine("    <IsPackable>false</IsPackable>");
+            csProjectFileContent.AppendLine("    <EnableDefaultItems>false</EnableDefaultItems>");
+            csProjectFileContent.AppendLine("    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>");
+            csProjectFileContent.AppendLine("    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>");
+            csProjectFileContent.AppendLine("    <EnableBaseIntermediateOutputPathMismatchWarning>false</EnableBaseIntermediateOutputPathMismatchWarning>");
+            csProjectFileContent.AppendLine("    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>");
+            csProjectFileContent.AppendLine($"    <LangVersion>{dotnetSdk.CSharpLanguageVersion}</LangVersion>");
+            csProjectFileContent.AppendLine("    <FileAlignment>512</FileAlignment>");
+            csProjectFileContent.AppendLine("    <RestorePackages>true</RestorePackages>");
+            csProjectFileContent.AppendLine("  </PropertyGroup>");
+            csProjectFileContent.AppendLine("  <ItemGroup>");
+            foreach (var reference in targetBuildOptions.NugetPackageReferences)
+                csProjectFileContent.AppendLine($"    <PackageReference Include=\"{reference.Name}\" Version=\"{reference.Version}\" />");
+            csProjectFileContent.AppendLine("  </ItemGroup>");
+            csProjectFileContent.AppendLine("</Project>");
+            Utilities.WriteFileIfChanged(csprojPath, csProjectFileContent.ToString());
+
+            // Restore packages using dotnet CLI (synchronous to prevent task ordering issues on C# library building)
+            Log.Info($"Restoring NuGet packages for target {target.Name}");
+            Utilities.Run(Utilities.GetDotNetPath(), $"restore \"{csprojPath}\"", null, null, Utilities.RunOptions.DefaultTool);
+        }
+
+        private static void DeployNuGetPackage(string nugetPath, BuildOptions targetBuildOptions, HashSet<string> nugetFiles, NugetPackage package, string folder = null)
+        {
+            // Deploy library
+            var path = package.GetLibPath(nugetPath, folder);
+            if (!File.Exists(path))
+                return;
+            Log.Verbose($"Deploying NuGet package {package.Name}, {package.Version}, {package.Framework}");
+            nugetFiles.Add(path);
+
+            // Copy additional files (if included)
+            path = Path.ChangeExtension(path, "xml");
+            if (File.Exists(path))
+                nugetFiles.Add(path);
+            path = Path.ChangeExtension(path, "pdb");
+            if (targetBuildOptions.Configuration != TargetConfiguration.Release && File.Exists(path))
+                nugetFiles.Add(path);
+
+            // Read package dependencies
+            var nuspecFile = package.GetNuspecPath(nugetPath);
+            if (File.Exists(nuspecFile))
+            {
+                var doc = System.Xml.Linq.XDocument.Load(nuspecFile);
+                var root = (System.Xml.Linq.XElement)doc.FirstNode;
+                var metadataNode = root.Descendants().First(x => x.Name.LocalName== "metadata");
+                var dependenciesNode = metadataNode.Descendants().First(x => x.Name.LocalName == "dependencies");
+                var groupNode = dependenciesNode.Descendants().FirstOrDefault(x => x.Attribute("targetFramework")?.Value == package.Framework);
+                if (groupNode == null)
+                {
+                    Log.Warning($"Cannot find framework {package.Framework} inside NuGet package {package.Name}, {package.Version}");
+                    return;
+                }
+                foreach (var dependency in groupNode.Descendants())
+                {
+                    if (dependency.Name.LocalName != "dependency")
+                        continue;
+
+                    // Deploy dependency package
+                    var dependencyId = dependency.Attribute("id").Value;
+                    var dependencyVersion = dependency.Attribute("version").Value;
+                    DeployNuGetPackage(nugetPath, targetBuildOptions, nugetFiles, new NugetPackage { Name = dependencyId, Version = dependencyVersion, Framework = package.Framework } );
+                }
+            }
         }
     }
 }

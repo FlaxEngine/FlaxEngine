@@ -13,6 +13,7 @@ namespace FlaxEditor.Gizmo
     public abstract class GizmoBase
     {
         private IGizmoOwner _owner;
+        private bool _visible = true;
 
         /// <summary>
         /// Gets the gizmo owner.
@@ -33,6 +34,11 @@ namespace FlaxEditor.Gizmo
         /// Gets the custom world-space bounds for current gizmo mode focus for used (eg. selected object part bounds). Returns <see cref="BoundingSphere.Empty"/> if not used.
         /// </summary>
         public virtual BoundingSphere FocusBounds => BoundingSphere.Empty;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this gizmo is visible.
+        /// </summary>
+        public bool Visible { get { return _visible; } set { _visible = value; } }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GizmoBase"/> class.

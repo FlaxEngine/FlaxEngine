@@ -478,16 +478,23 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
     }
 
     // Check if restore local changes on asset reimport
+    constexpr bool RestoreModelOptionsOnReimport = true;
     constexpr bool RestoreAnimEventsOnReimport = true;
+    const bool restoreModelOptions = RestoreModelOptionsOnReimport && (options.Type == ModelTool::ModelType::Model || options.Type == ModelTool::ModelType::SkinnedModel);
     const bool restoreMaterials = options.RestoreMaterialsOnReimport && data->Materials.HasItems();
     const bool restoreAnimEvents = RestoreAnimEventsOnReimport && options.Type == ModelTool::ModelType::Animation && data->Animations.HasItems();
-    if ((restoreMaterials || restoreAnimEvents) && FileSystem::FileExists(context.TargetAssetPath))
+    if ((restoreModelOptions || restoreMaterials || restoreAnimEvents) && FileSystem::FileExists(context.TargetAssetPath))
     {
         AssetReference<Asset> asset = Content::LoadAsync<Asset>(context.TargetAssetPath);
         if (asset && !asset->WaitForLoaded())
         {
             auto* model = ScriptingObject::Cast<ModelBase>(asset);
             auto* animation = ScriptingObject::Cast<Animation>(asset);
+            if (restoreModelOptions && model)
+            {
+                // Copy general properties
+                data->MinScreenSize = model->MinScreenSize;
+            }
             if (restoreMaterials && model)
             {
                 // Copy material settings

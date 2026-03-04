@@ -109,86 +109,84 @@ namespace
             nodes->RootMotion.Orientation.Normalize();
         }
     }
-
-    Matrix ComputeWorldMatrixRecursive(const SkeletonData& skeleton, int32 index, Matrix localMatrix)
-    {
-        const auto& node = skeleton.Nodes[index];
-        index = node.ParentIndex;
-        while (index != -1)
-        {
-            const auto& parent = skeleton.Nodes[index];
-            localMatrix *= parent.LocalTransform.GetWorld();
-            index = parent.ParentIndex;
-        }
-        return localMatrix;
-    }
-
-    Matrix ComputeInverseParentMatrixRecursive(const SkeletonData& skeleton, int32 index)
-    {
-        Matrix inverseParentMatrix = Matrix::Identity;
-        const auto& node = skeleton.Nodes[index];
-        if (node.ParentIndex != -1)
-        {
-            inverseParentMatrix = ComputeWorldMatrixRecursive(skeleton, index, inverseParentMatrix);
-            inverseParentMatrix = Matrix::Invert(inverseParentMatrix);
-        }
-        return inverseParentMatrix;
-    }
 }
 
-void RetargetSkeletonNode(const SkeletonData& sourceSkeleton, const SkeletonData& targetSkeleton, const SkinnedModel::SkeletonMapping& sourceMapping, Transform& node, int32 targetIndex)
+// Utility for retargeting animation poses between skeletons.
+struct Retargeting
 {
-    // sourceSkeleton - skeleton of Anim Graph (Base Locomotion pack)
-    // targetSkeleton - visual mesh skeleton (City Characters pack)
-    // target - anim graph input/output transformation of that node
-    const auto& targetNode = targetSkeleton.Nodes[targetIndex];
-    const int32 sourceIndex = sourceMapping.NodesMapping[targetIndex];
-    if (sourceIndex == -1)
+private:
+    const Matrix* _sourcePosePtr, * _targetPosePtr;
+    const SkeletonData* _sourceSkeleton, *_targetSkeleton;
+    const SkinnedModel::SkeletonMapping* _sourceMapping;
+
+public:
+    void Init(const SkeletonData& sourceSkeleton, const SkeletonData& targetSkeleton, const SkinnedModel::SkeletonMapping& sourceMapping)
     {
-        // Use T-pose
-        node = targetNode.LocalTransform;
-        return;
+        ASSERT_LOW_LAYER(targetSkeleton.Nodes.Count() == sourceMapping.NodesMapping.Length());
+        
+        // Cache world-space poses for source and target skeletons to avoid redundant calculations during retargeting
+        _sourcePosePtr = sourceSkeleton.GetNodesPose().Get();
+        _targetPosePtr = targetSkeleton.GetNodesPose().Get();
+
+        _sourceSkeleton = &sourceSkeleton;
+        _targetSkeleton = &targetSkeleton;
+        _sourceMapping = &sourceMapping;
     }
-    const auto& sourceNode = sourceSkeleton.Nodes[sourceIndex];
 
-    // [Reference: https://wickedengine.net/2022/09/animation-retargeting/comment-page-1/]
-
-    // Calculate T-Pose of source node, target node and target parent node
-    Matrix bindMatrix = ComputeWorldMatrixRecursive(sourceSkeleton, sourceIndex, sourceNode.LocalTransform.GetWorld());
-    Matrix inverseBindMatrix = Matrix::Invert(bindMatrix);
-    Matrix targetMatrix = ComputeWorldMatrixRecursive(targetSkeleton, targetIndex, targetNode.LocalTransform.GetWorld());
-    Matrix inverseParentMatrix = ComputeInverseParentMatrixRecursive(targetSkeleton, targetIndex);
-
-    // Target node animation is world-space difference of the animated source node inside the target's parent node world-space
-    Matrix localMatrix = inverseBindMatrix * ComputeWorldMatrixRecursive(sourceSkeleton, sourceIndex, node.GetWorld());
-    localMatrix = targetMatrix * localMatrix * inverseParentMatrix;
-
-    // Extract local node transformation
-    localMatrix.Decompose(node);
-}
-
-void RetargetSkeletonPose(const SkeletonData& sourceSkeleton, const SkeletonData& targetSkeleton, const SkinnedModel::SkeletonMapping& mapping, const Transform* sourceNodes, Transform* targetNodes)
-{
-    // TODO: cache source and target skeletons world-space poses for faster retargeting (use some pooled memory)
-    ASSERT_LOW_LAYER(targetSkeleton.Nodes.Count() == mapping.NodesMapping.Length());
-    for (int32 targetIndex = 0; targetIndex < targetSkeleton.Nodes.Count(); targetIndex++)
+    void RetargetNode(const Transform& source, Transform& target, int32 sourceIndex, int32 targetIndex)
     {
-        auto& targetNode = targetSkeleton.Nodes.Get()[targetIndex];
-        const int32 sourceIndex = mapping.NodesMapping.Get()[targetIndex];
-        Transform node;
+        // sourceSkeleton - skeleton of Anim Graph
+        // targetSkeleton - visual mesh skeleton
+        // target - anim graph input/output transformation of that node
+        const SkeletonNode& targetNode = _targetSkeleton->Nodes.Get()[targetIndex];
         if (sourceIndex == -1)
         {
             // Use T-pose
-            node = targetNode.LocalTransform;
+            target = targetNode.LocalTransform;
         }
         else
         {
-            // Retarget
-            node = sourceNodes[sourceIndex];
-            RetargetSkeletonNode(sourceSkeleton, targetSkeleton, mapping, node, targetIndex);
+            // [Reference: https://wickedengine.net/2022/09/animation-retargeting/comment-page-1/]
+
+            // Calculate T-Pose of source node, target node and target parent node
+            const Matrix* sourcePosePtr = _sourcePosePtr;
+            const Matrix* targetPosePtr = _targetPosePtr;
+            const Matrix& bindMatrix = sourcePosePtr[sourceIndex];
+            const Matrix& targetMatrix = targetPosePtr[targetIndex];
+            Matrix inverseParentMatrix;
+            if (targetNode.ParentIndex != -1)
+                Matrix::Invert(targetPosePtr[targetNode.ParentIndex], inverseParentMatrix);
+            else
+                inverseParentMatrix = Matrix::Identity;
+
+            // Target node animation is world-space difference of the animated source node inside the target's parent node world-space
+            const SkeletonNode& sourceNode = _sourceSkeleton->Nodes.Get()[sourceIndex];
+            Matrix localMatrix = source.GetWorld();
+            if (sourceNode.ParentIndex != -1)
+                localMatrix = localMatrix * sourcePosePtr[sourceNode.ParentIndex];
+            localMatrix = Matrix::Invert(bindMatrix) * localMatrix;
+            localMatrix = targetMatrix * localMatrix * inverseParentMatrix;
+
+            // Extract local node transformation
+            localMatrix.Decompose(target);
         }
-        targetNodes[targetIndex] = node;
     }
+
+    FORCE_INLINE void RetargetPose(const Transform* sourceNodes, Transform* targetNodes)
+    {
+        for (int32 targetIndex = 0; targetIndex < _targetSkeleton->Nodes.Count(); targetIndex++)
+        {
+            const int32 sourceIndex = _sourceMapping->NodesMapping.Get()[targetIndex];
+            RetargetNode(sourceNodes[sourceIndex], targetNodes[targetIndex], sourceIndex, targetIndex);
+        }
+    }
+};
+
+void RetargetSkeletonPose(const SkeletonData& sourceSkeleton, const SkeletonData& targetSkeleton, const SkinnedModel::SkeletonMapping& mapping, const Transform* sourceNodes, Transform* targetNodes)
+{
+    Retargeting retargeting;
+    retargeting.Init(sourceSkeleton, targetSkeleton, mapping);
+    retargeting.RetargetPose(sourceNodes, targetNodes);
 }
 
 AnimGraphTraceEvent& AnimGraphContext::AddTraceEvent(const AnimGraphNode* node)
@@ -431,9 +429,13 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
     const bool weighted = weight < 1.0f;
     const bool retarget = mapping.SourceSkeleton && mapping.SourceSkeleton != mapping.TargetSkeleton;
     const auto emptyNodes = GetEmptyNodes();
+    Retargeting retargeting;
     SkinnedModel::SkeletonMapping sourceMapping;
     if (retarget)
+    {
         sourceMapping = _graph.BaseModel->GetSkeletonMapping(mapping.SourceSkeleton);
+        retargeting.Init(mapping.SourceSkeleton->Skeleton, mapping.TargetSkeleton->Skeleton, mapping);
+    }
     for (int32 nodeIndex = 0; nodeIndex < nodes->Nodes.Count(); nodeIndex++)
     {
         const int32 nodeToChannel = mapping.NodesMapping[nodeIndex];
@@ -447,7 +449,8 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
             // Optionally retarget animation into the skeleton used by the Anim Graph
             if (retarget)
             {
-                RetargetSkeletonNode(mapping.SourceSkeleton->Skeleton, mapping.TargetSkeleton->Skeleton, sourceMapping, srcNode, nodeIndex);
+                const int32 sourceIndex = sourceMapping.NodesMapping[nodeIndex];
+                retargeting.RetargetNode(srcNode, srcNode, sourceIndex, nodeIndex);
             }
 
             // Mark node as used
@@ -956,6 +959,21 @@ void AnimGraphExecutor::ProcessGroupParameters(Box* box, Node* node, Value& valu
             // TODO: add warning that no parameter selected
             value = Value::Zero;
         }
+        break;
+    }
+    // Set Parameter
+    case 5:
+    {
+        // Set parameter value
+        int32 paramIndex;
+        const auto param = _graph.GetParameter((Guid)node->Values[0], paramIndex);
+        if (param)
+        {
+            context.Data->Parameters[paramIndex].Value = tryGetValue(node->GetBox(1), 1, Value::Null);
+        }
+
+        // Pass over the pose
+        value = tryGetValue(node->GetBox(2), Value::Null);
         break;
     }
     default:

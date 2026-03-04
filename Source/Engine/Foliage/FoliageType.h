@@ -47,6 +47,7 @@ API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API FoliageType : public ScriptingOb
     friend Foliage;
 private:
     uint8 _isReady : 1;
+    uint8 _canDraw : 1;
 
 public:
     /// <summary>

@@ -15,6 +15,7 @@ class FLAXENGINE_API VideoPlayer : public Actor
 {
     DECLARE_SCENE_OBJECT(VideoPlayer);
     API_AUTO_SERIALIZATION();
+    friend class AudioBackendOAL;
 
 public:
     /// <summary>

@@ -13,7 +13,7 @@ namespace FlaxEngine
             public bool ValueEquals(object other)
             {
                 var o = (MeshReference)other;
-                return JsonSerializer.ValueEquals(Actor, o.Actor) &&
+                return JsonSerializer.SceneObjectEquals(Actor, o.Actor) &&
                        LODIndex == o.LODIndex &&
                        MeshIndex == o.MeshIndex;
             }

@@ -12,25 +12,25 @@
 
 bool FileSystemBase::ShowOpenFileDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& filter, bool multiSelect, const StringView& title, Array<String, HeapAllocation>& filenames)
 {
-    // No supported
+    // Not supported
     return true;
 }
 
 bool FileSystemBase::ShowSaveFileDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& filter, bool multiSelect, const StringView& title, Array<String, HeapAllocation>& filenames)
 {
-    // No supported
+    // Not supported
     return true;
 }
 
 bool FileSystemBase::ShowBrowseFolderDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& title, String& path)
 {
-    // No supported
+    // Not supported
     return true;
 }
 
 bool FileSystemBase::ShowFileExplorer(const StringView& path)
 {
-    // No supported
+    // Not supported
     return true;
 }
 

@@ -133,7 +133,9 @@ void VideoPlayer::SetTime(float time)
     if (_state == States::Stopped || _player.Backend == nullptr)
         return;
     TimeSpan timeSpan = TimeSpan::FromSeconds(time);
-    timeSpan.Ticks = Math::Clamp<int64>(timeSpan.Ticks, 0, _player.Duration.Ticks);
+    timeSpan.Ticks = Math::Max<int64>(timeSpan.Ticks, 0);
+    if (_player.Duration.Ticks > 0)
+        timeSpan.Ticks = Math::Min<int64>(timeSpan.Ticks, _player.Duration.Ticks);
     _player.Backend->Player_Seek(_player, timeSpan);
 }
 

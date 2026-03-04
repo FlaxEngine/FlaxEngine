@@ -1700,6 +1700,8 @@ void VisualScript::CacheScriptingType()
 VisualScriptingBinaryModule::VisualScriptingBinaryModule()
     : _name("Visual Scripting")
 {
+    // Visual Scripts can be unloaded and loaded again even in game
+    CanReload = true;
 }
 
 ScriptingObject* VisualScriptingBinaryModule::VisualScriptObjectSpawn(const ScriptingObjectSpawnParams& params)

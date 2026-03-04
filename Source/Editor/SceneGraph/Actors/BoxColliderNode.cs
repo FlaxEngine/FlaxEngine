@@ -42,6 +42,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 if (value is BoxCollider collider)
                     collider.AutoResize(!_keepLocalOrientation);
             }
+            Presenter.OnModified();
         }
     }
 

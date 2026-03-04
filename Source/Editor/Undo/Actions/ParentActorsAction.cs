@@ -134,7 +134,8 @@ namespace FlaxEditor.Actions
                 var obj = Object.Find<SceneObject>(ref item.ID);
                 if (obj != null)
                 {
-                    scenes.Add(obj.Parent.Scene);
+                    if (obj.Parent != null)
+                        scenes.Add(obj.Parent.Scene);
                     if (obj is Actor actor)
                         actor.SetParent(newParent, _worldPositionsStays, true);
                     else

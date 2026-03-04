@@ -11,6 +11,7 @@
 #include "Engine/Core/Math/Quaternion.h"
 #include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Engine/Units.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Debug/DebugDraw.h"
 #include "Engine/Graphics/GPUContext.h"
@@ -41,6 +42,7 @@
 #define DDGI_PROBE_RESOLUTION_DISTANCE 14 // Resolution (in texels) for probe distance data (excluding 1px padding on each side)
 #define DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE 8
 #define DDGI_PROBE_CLASSIFY_GROUP_SIZE 32
+#define DDGI_PROBE_EMPTY_AREA_DENSITY 8 // Spacing (in probe grid) between fallback probes placed into empty areas to provide valid GI for nearby dynamic objects or transparency
 #define DDGI_DEBUG_STATS 0 // Enables additional GPU-driven stats for probe/rays count
 #define DDGI_DEBUG_INSTABILITY 0 // Enables additional probe irradiance instability debugging
 
@@ -68,11 +70,14 @@ GPU_CB_STRUCT(Data0 {
     Int4 ProbeScrollClears[4];
     Float3 ViewDir;
     float Padding1;
+    Float3 QuantizationError;
+    int32 FrameIndexMod8;
     });
 
 GPU_CB_STRUCT(Data1 {
     // TODO: use push constants on Vulkan or root signature data on DX12 to reduce overhead of changing single DWORD
-    Float2 Padding2;
+    float Padding2;
+    int32 StepSize;
     uint32 CascadeIndex;
     uint32 ProbeIndexOffset;
     });
@@ -214,6 +219,7 @@ bool DynamicDiffuseGlobalIlluminationPass::setupResources()
         return true;
     _csClassify = shader->GetCS("CS_Classify");
     _csUpdateProbesInitArgs = shader->GetCS("CS_UpdateProbesInitArgs");
+    _csUpdateInactiveProbes = shader->GetCS("CS_UpdateInactiveProbes");
     _csTraceRays[0] = shader->GetCS("CS_TraceRays", 0);
     _csTraceRays[1] = shader->GetCS("CS_TraceRays", 1);
     _csTraceRays[2] = shader->GetCS("CS_TraceRays", 2);
@@ -245,6 +251,7 @@ void DynamicDiffuseGlobalIlluminationPass::OnShaderReloading(Asset* obj)
     LastFrameShaderReload = Engine::FrameCount;
     _csClassify = nullptr;
     _csUpdateProbesInitArgs = nullptr;
+    _csUpdateInactiveProbes = nullptr;
     _csTraceRays[0] = nullptr;
     _csTraceRays[1] = nullptr;
     _csTraceRays[2] = nullptr;
@@ -322,7 +329,6 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
     const float indirectLightingIntensity = settings.Intensity;
     const float probeHistoryWeight = Math::Clamp(settings.TemporalResponse, 0.0f, 0.98f);
     const float distance = settings.Distance;
-    const Color fallbackIrradiance = settings.FallbackIrradiance;
 
     // Automatically calculate amount of cascades to cover the GI distance at the current probes spacing
     const int32 idealProbesCount = 20; // Ideal amount of probes per-cascade to try to fit in order to cover whole distance
@@ -335,7 +341,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
     }
 
     // Calculate the probes count based on the amount of cascades and the distance to cover
-    const float cascadesDistanceScales[] = { 1.0f, 3.0f, 6.0f, 10.0f }; // Scales each cascade further away from the camera origin
+    const float cascadesDistanceScales[] = { 1.0f, 3.0f, 5.0f, 10.0f }; // Scales each cascade further away from the camera origin
     const float distanceExtent = distance / cascadesDistanceScales[cascadesCount - 1];
     const float verticalRangeScale = 0.8f; // Scales the probes volume size at Y axis (horizontal aspect ratio makes the DDGI use less probes vertically to cover whole screen)
     Int3 probesCounts(Float3::Ceil(Float3(distanceExtent, distanceExtent * verticalRangeScale, distanceExtent) / probesSpacing));
@@ -351,6 +357,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
     // Initialize cascades
     float probesSpacings[4];
     Float3 viewOrigins[4];
+    Float3 blendOrigins[4];
     for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
     {
         // Each cascade has higher spacing between probes
@@ -361,14 +368,15 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         // Calculate view origin for cascade by shifting it towards the view direction to account for better view frustum coverage
         Float3 viewOrigin = renderContext.View.Position;
         Float3 viewDirection = renderContext.View.Direction;
-        const Float3 probesDistance = Float3(probesCounts) * cascadeProbesSpacing;
+        const Float3 probesDistance = Float3(probesCounts - 1) * cascadeProbesSpacing;
         const float probesDistanceMax = probesDistance.MaxValue();
         const Float3 viewRayHit = CollisionsHelper::LineHitsBox(viewOrigin, viewOrigin + viewDirection * (probesDistanceMax * 2.0f), viewOrigin - probesDistance, viewOrigin + probesDistance);
         const float viewOriginOffset = viewRayHit.Y * probesDistanceMax * 0.6f;
         viewOrigin += viewDirection * viewOriginOffset;
+        //viewOrigin = Float3::Zero;
+        blendOrigins[cascadeIndex] = viewOrigin;
         const float viewOriginSnapping = cascadeProbesSpacing;
         viewOrigin = Float3::Floor(viewOrigin / viewOriginSnapping) * viewOriginSnapping;
-        //viewOrigin = Float3::Zero;
         viewOrigins[cascadeIndex] = viewOrigin;
     }
 
@@ -500,6 +508,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         {
             auto& cascade = ddgiData.Cascades[cascadeIndex];
             ddgiData.Result.Constants.ProbesOriginAndSpacing[cascadeIndex] = Float4(cascade.ProbesOrigin, cascade.ProbesSpacing);
+            ddgiData.Result.Constants.BlendOrigin[cascadeIndex] = Float4(blendOrigins[cascadeIndex], 0.0f);
             ddgiData.Result.Constants.ProbesScrollOffsets[cascadeIndex] = Int4(cascade.ProbeScrollOffsets, 0);
         }
         ddgiData.Result.Constants.RayMaxDistance = distance;
@@ -508,7 +517,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         ddgiData.Result.Constants.ProbeHistoryWeight = probeHistoryWeight;
         ddgiData.Result.Constants.IrradianceGamma = 1.5f;
         ddgiData.Result.Constants.IndirectLightingIntensity = indirectLightingIntensity;
-        ddgiData.Result.Constants.FallbackIrradiance = fallbackIrradiance.ToFloat3() * fallbackIrradiance.A;
+        ddgiData.Result.Constants.FallbackIrradiance = settings.FallbackIrradiance.ToFloat4();
         ddgiData.Result.ProbesData = ddgiData.ProbesData->View();
         ddgiData.Result.ProbesDistance = ddgiData.ProbesDistance->View();
         ddgiData.Result.ProbesIrradiance = ddgiData.ProbesIrradiance->View();
@@ -535,6 +544,8 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         data.TemporalTime = renderContext.List->Setup.UseTemporalAAJitter ? RenderTools::ComputeTemporalTime() : 0.0f;
         data.ViewDir = renderContext.View.Direction;
         data.SkyboxIntensity = renderContext.List->Sky ? renderContext.List->Sky->GetIndirectLightingIntensity() : 1.0f;
+        data.QuantizationError = RenderTools::GetColorQuantizationError(ddgiData.ProbesIrradiance->Format());
+        data.FrameIndexMod8 = (int32)(Engine::FrameCount % 8);
         GBufferPass::SetInputs(renderContext.View, data.GBuffer);
         context->UpdateCB(_cb0, &data);
         context->BindCB(0, _cb0);
@@ -578,6 +589,23 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
                 context->BindSR(0, ddgiData.ActiveProbes->View());
                 context->BindUA(0, ddgiData.UpdateProbesInitArgs->View());
                 context->Dispatch(_csUpdateProbesInitArgs, 1, 1, 1);
+                context->ResetUA();
+            }
+
+            // For inactive probes, search nearby ones to find the closest valid for quick fallback when sampling irradiance
+            {
+                PROFILE_GPU_CPU_NAMED("Update Inactive Probes");
+                // TODO: this could run within GPUComputePass during Trace Rays or Update Probes to overlap compute works
+                context->BindUA(0, ddgiData.Result.ProbesData);
+                Data1 data;
+                data.CascadeIndex = cascadeIndex;
+                int32 iterations = Math::CeilToInt(Math::Log2((float)Math::Min(probesCounts.MaxValue(), DDGI_PROBE_EMPTY_AREA_DENSITY) + 1.0f));
+                for (int32 i = iterations - 1; i >= 0; i--)
+                {
+                    data.StepSize = Math::FloorToInt(Math::Pow(2, (float)i) + 0.5f); // Jump Flood step size
+                    context->UpdateCB(_cb1, &data);
+                    context->Dispatch(_csUpdateInactiveProbes, threadGroupsX, 1, 1);
+                }
                 context->ResetUA();
             }
 

@@ -553,7 +553,7 @@ void GPUTextureDX11::initHandles()
     if (useDSV && useSRV && PixelFormatExtensions::HasStencil(format))
     {
         PixelFormat stencilFormat;
-        switch (_dxgiFormatDSV)
+        switch (static_cast<PixelFormat>(_dxgiFormatDSV))
         {
         case PixelFormat::D24_UNorm_S8_UInt:
             srDesc.Format = DXGI_FORMAT_X24_TYPELESS_G8_UINT;

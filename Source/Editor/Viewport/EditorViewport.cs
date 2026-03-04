@@ -584,7 +584,7 @@ namespace FlaxEditor.Viewport
                 _cameraButton = new ViewportWidgetButton(string.Format(MovementSpeedTextFormat, _movementSpeed), _editor.Icons.Camera64, cameraCM, false, cameraSpeedTextWidth)
                 {
                     Tag = this,
-                    TooltipText = "Camera Settings",
+                    TooltipText = "Camera Settings.",
                     Parent = _cameraWidget
                 };
                 _cameraWidget.Parent = this;
@@ -593,7 +593,7 @@ namespace FlaxEditor.Viewport
                 _orthographicModeButton = new ViewportWidgetButton(string.Empty, _editor.Icons.CamSpeed32, null, true)
                 {
                     Checked = !_isOrtho,
-                    TooltipText = "Toggle Orthographic/Perspective Mode",
+                    TooltipText = "Toggle Orthographic/Perspective Mode.",
                     Parent = _cameraWidget
                 };
                 _orthographicModeButton.Toggled += OnOrthographicModeToggled;
@@ -832,7 +832,7 @@ namespace FlaxEditor.Viewport
                 ViewWidgetButtonMenu = new ContextMenu();
                 var viewModeButton = new ViewportWidgetButton("View", SpriteHandle.Invalid, ViewWidgetButtonMenu)
                 {
-                    TooltipText = "View properties",
+                    TooltipText = "View properties.",
                     Parent = viewMode
                 };
                 viewMode.Parent = this;
@@ -863,8 +863,10 @@ namespace FlaxEditor.Viewport
                         {
                         }
                     });
-                    viewLayers.AddButton("Reset layers", () => Task.ViewLayersMask = LayersMask.Default).Icon = _editor.Icons.Rotate32;
-                    viewLayers.AddButton("Disable layers", () => Task.ViewLayersMask = new LayersMask(0));
+                    viewLayers.AddButton("Reset layers", () => Task.ViewLayersMask = LayersMask.Default).Icon = Editor.Instance.Icons.Rotate32;
+                    viewLayers.AddSeparator();
+                    viewLayers.AddButton("Enable all", () => Task.ViewLayersMask = new LayersMask(-1)).Icon = Editor.Instance.Icons.CheckBoxTick12;
+                    viewLayers.AddButton("Disable all", () => Task.ViewLayersMask = new LayersMask(0)).Icon = Editor.Instance.Icons.Cross12;
                     viewLayers.AddSeparator();
                     var layers = LayersAndTagsSettings.GetCurrentLayers();
                     if (layers != null && layers.Length > 0)
@@ -904,8 +906,10 @@ namespace FlaxEditor.Viewport
                         {
                         }
                     });
-                    viewFlags.AddButton("Reset flags", () => Task.ViewFlags = ViewFlags.DefaultEditor).Icon = _editor.Icons.Rotate32;
-                    viewFlags.AddButton("Disable flags", () => Task.ViewFlags = ViewFlags.None);
+                    viewFlags.AddButton("Reset flags", () => Task.ViewFlags = ViewFlags.DefaultEditor).Icon = Editor.Instance.Icons.Rotate32;
+                    viewFlags.AddSeparator();
+                    viewFlags.AddButton("Enable all", () => Task.ViewFlags = ViewFlags.All).Icon = Editor.Instance.Icons.CheckBoxTick12;
+                    viewFlags.AddButton("Disable all", () => Task.ViewFlags = ViewFlags.None).Icon = Editor.Instance.Icons.Cross12;
                     viewFlags.AddSeparator();
                     for (int i = 0; i < ViewFlagsValues.Length; i++)
                     {
@@ -1063,6 +1067,7 @@ namespace FlaxEditor.Viewport
             InputActions.Add(options => options.Fog, () => Task.ViewFlags ^= ViewFlags.Fog);
             InputActions.Add(options => options.SpecularLight, () => Task.ViewFlags ^= ViewFlags.SpecularLight);
             InputActions.Add(options => options.Decals, () => Task.ViewFlags ^= ViewFlags.Decals);
+            InputActions.Add(options => options.Particles, () => Task.ViewFlags ^= ViewFlags.Particles);
             InputActions.Add(options => options.CustomPostProcess, () => Task.ViewFlags ^= ViewFlags.CustomPostProcess);
             InputActions.Add(options => options.Bloom, () => Task.ViewFlags ^= ViewFlags.Bloom);
             InputActions.Add(options => options.ToneMapping, () => Task.ViewFlags ^= ViewFlags.ToneMapping);
@@ -2115,6 +2120,7 @@ namespace FlaxEditor.Viewport
             new ViewFlagOptions(ViewFlags.Fog, "Fog", Editor.Instance.Options.Options.Input.Fog),
             new ViewFlagOptions(ViewFlags.SpecularLight, "Specular Light", Editor.Instance.Options.Options.Input.SpecularLight),
             new ViewFlagOptions(ViewFlags.Decals, "Decals", Editor.Instance.Options.Options.Input.Decals),
+            new ViewFlagOptions(ViewFlags.Particles, "Particles", Editor.Instance.Options.Options.Input.Particles),
             new ViewFlagOptions(ViewFlags.CustomPostProcess, "Custom Post Process", Editor.Instance.Options.Options.Input.CustomPostProcess),
             new ViewFlagOptions(ViewFlags.Bloom, "Bloom", Editor.Instance.Options.Options.Input.Bloom),
             new ViewFlagOptions(ViewFlags.ToneMapping, "Tone Mapping", Editor.Instance.Options.Options.Input.ToneMapping),
@@ -2134,12 +2140,13 @@ namespace FlaxEditor.Viewport
             if (cm.Visible == false)
                 return;
             var ccm = (ContextMenu)cm;
+            var flags = Task.View.Flags;
             foreach (var e in ccm.Items)
             {
                 if (e is ContextMenuButton b && b.Tag != null)
                 {
                     var v = (ViewFlags)b.Tag;
-                    b.Icon = (Task.View.Flags & v) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                    b.Icon = (flags & v) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
                 }
             }
         }

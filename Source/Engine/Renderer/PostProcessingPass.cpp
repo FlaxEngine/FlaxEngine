@@ -269,7 +269,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     int32 bloomMipCount = CalculateBloomMipCount(w1, h1);
 
     // Ensure to have valid data and if at least one effect should be applied
-    if (!(useBloom || useToneMapping || useCameraArtifacts) || checkIfSkipPass() || w8 <= 1 || h8 <= 1)
+    if (!(useBloom || useToneMapping || useCameraArtifacts || colorGradingLUT) || checkIfSkipPass() || w8 <= 1 || h8 <= 1)
     {
         // Resources are missing. Do not perform rendering. Just copy raw frame
         context->SetViewportAndScissors((float)output->Width(), (float)output->Height());

@@ -31,26 +31,44 @@ namespace Flax.Deps.Dependencies
         }
 
         /// <inheritdoc />
+        public override TargetArchitecture[] Architectures
+        {
+            get
+            {
+                switch (BuildPlatform)
+                {
+                case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                default: return new TargetArchitecture[0];
+                }
+            }
+        }
+
+        /// <inheritdoc />
         public override void Build(BuildOptions options)
         {
             foreach (var platform in options.Platforms)
             {
-                BuildStarted(platform);
-                switch (platform)
+                foreach (var architecture in options.Architectures)
                 {
-                case TargetPlatform.Windows:
-                {
-                    var sdk = WindowsPlatformBase.GetSDKs().Last();
-                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    BuildStarted(platform, architecture);
+                    switch (platform)
                     {
+                    case TargetPlatform.Windows:
+                    {
+                        var sdk = WindowsPlatformBase.GetSDKs().Last();
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         var libLocation = @$"{sdk.Value}Debuggers\lib\{architecture}\dbghelp.lib";
                         var dllLocation = @$"{sdk.Value}Debuggers\{architecture}\dbghelp.dll";
                         Utilities.FileCopy(libLocation, Path.Combine(depsFolder, Path.GetFileName(libLocation)));
                         Utilities.FileCopy(dllLocation, Path.Combine(depsFolder, Path.GetFileName(dllLocation)));
+                        break;
                     }
-                    break;
-                }
+                    }
                 }
             }
         }

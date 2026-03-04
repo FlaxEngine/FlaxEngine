@@ -99,7 +99,14 @@ namespace FlaxEditor.Windows.Assets
                 Window = window;
                 var surfaceParam = window.Surface.GetParameter(BaseModelId);
                 if (surfaceParam != null)
-                    BaseModel = FlaxEngine.Content.LoadAsync<SkinnedModel>((Guid)surfaceParam.Value);
+                {
+                    if (surfaceParam.Value is Guid asGuid)
+                        BaseModel = FlaxEngine.Content.LoadAsync<SkinnedModel>(asGuid);
+                    else if (surfaceParam.Value is SkinnedModel asModel)
+                        BaseModel = asModel;
+                    else
+                        BaseModel = null;
+                }
                 else
                     BaseModel = window.PreviewActor.GetParameterValue(BaseModelId) as SkinnedModel;
             }

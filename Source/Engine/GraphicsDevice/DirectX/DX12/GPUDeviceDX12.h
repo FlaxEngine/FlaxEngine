@@ -210,7 +210,7 @@ public:
     /// <param name="device">The graphics device.</param>
     /// <param name="name">The resource name.</param>
     GPUResourceDX12(GPUDeviceDX12* device, const StringView& name)
-        : GPUResourceBase(device, name)
+        : GPUResourceBase<GPUDeviceDX12, BaseType>(device, name)
     {
     }
 };

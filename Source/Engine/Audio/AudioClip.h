@@ -18,6 +18,7 @@ class AudioSource;
 API_CLASS(NoSpawn) class FLAXENGINE_API AudioClip : public BinaryAsset, public StreamableResource
 {
     DECLARE_BINARY_ASSET_HEADER(AudioClip, 2);
+    friend class AudioBackendOAL;
 
 public:
     /// <summary>

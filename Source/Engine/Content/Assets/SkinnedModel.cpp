@@ -61,16 +61,24 @@ Array<String> SkinnedModel::GetBlendShapes()
 
 SkinnedModel::SkeletonMapping SkinnedModel::GetSkeletonMapping(Asset* source, bool autoRetarget)
 {
+    // Fast-path to use cached mapping
     SkeletonMapping mapping;
     mapping.TargetSkeleton = this;
+    SkeletonMappingData mappingData;
+    if (_skeletonMappingCache.TryGet(source, mappingData))
+    {
+        mapping.SourceSkeleton = mappingData.SourceSkeleton;
+        mapping.NodesMapping = mappingData.NodesMapping;
+        return mapping;
+    }
+    mapping.SourceSkeleton = nullptr;
+
     if (WaitForLoaded() || !source || source->WaitForLoaded())
         return mapping;
+    PROFILE_CPU();
     ScopeLock lock(Locker);
-    SkeletonMappingData mappingData;
     if (!_skeletonMappingCache.TryGet(source, mappingData))
     {
-        PROFILE_CPU();
-
         // Initialize the mapping
         SkeletonRetarget* retarget = nullptr;
         const Guid sourceId = source->GetID();
@@ -370,6 +378,7 @@ bool SkinnedModel::SetupSkeleton(const Array<SkeletonNode>& nodes)
         model->Skeleton.Bones[i].LocalTransform = node.LocalTransform;
         model->Skeleton.Bones[i].NodeIndex = i;
     }
+    model->Skeleton.Dirty();
     ClearSkeletonMapping();
 
     // Calculate offset matrix (inverse bind pose transform) for every bone manually
@@ -427,6 +436,7 @@ bool SkinnedModel::SetupSkeleton(const Array<SkeletonNode>& nodes, const Array<S
     // Setup
     model->Skeleton.Nodes = nodes;
     model->Skeleton.Bones = bones;
+    model->Skeleton.Dirty();
     ClearSkeletonMapping();
 
     // Calculate offset matrix (inverse bind pose transform) for every bone manually
@@ -823,13 +833,13 @@ bool SkinnedModel::SaveMesh(WriteStream& stream, const ModelData& modelData, int
 
 void SkinnedModel::ClearSkeletonMapping()
 {
-    for (auto& e : _skeletonMappingCache)
+    for (const auto& e : _skeletonMappingCache)
     {
         e.Key->OnUnloaded.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
 #if USE_EDITOR
         e.Key->OnReloading.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
 #endif
-        Allocator::Free(e.Value.NodesMapping.Get());
+        Allocator::Free((void*)e.Value.NodesMapping.Get());
     }
     _skeletonMappingCache.Clear();
 }
@@ -837,8 +847,9 @@ void SkinnedModel::ClearSkeletonMapping()
 void SkinnedModel::OnSkeletonMappingSourceAssetUnloaded(Asset* obj)
 {
     ScopeLock lock(Locker);
-    auto i = _skeletonMappingCache.Find(obj);
-    ASSERT(i != _skeletonMappingCache.End());
+    SkeletonMappingData mappingData;
+    bool found = _skeletonMappingCache.TryGet(obj, mappingData);
+    ASSERT(found);
 
     // Unlink event
     obj->OnUnloaded.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
@@ -847,8 +858,8 @@ void SkinnedModel::OnSkeletonMappingSourceAssetUnloaded(Asset* obj)
 #endif
 
     // Clear cache
-    Allocator::Free(i->Value.NodesMapping.Get());
-    _skeletonMappingCache.Remove(i);
+    Allocator::Free(mappingData.NodesMapping.Get());
+    _skeletonMappingCache.Remove(obj);
 }
 
 uint64 SkinnedModel::GetMemoryUsage() const

@@ -146,6 +146,10 @@ bool BinaryAssetFactoryBase::UpgradeAsset(const AssetInfo& info, FlaxStorage* st
         context.Input = context.Output;
     } while (upgrader->ShouldUpgrade(context.Input.SerializedVersion));
 
+    // Prevent other threads from loading the storage when it is upgrading
+    // It works because CriticalSection allows recursion
+    ScopeLock upgradeLock(storage->_loadLocker);
+
     // Release storage internal data (should also close file handles)
     {
         // HACK: file is locked by some tasks: the current one that called asset data upgrade (LoadAssetTask)

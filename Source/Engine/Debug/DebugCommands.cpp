@@ -8,6 +8,7 @@
 #include "Engine/Threading/Threading.h"
 #include "Engine/Threading/Task.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Scripting/BinaryModule.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
@@ -219,6 +220,7 @@ namespace
         if (module == GetBinaryModuleCorlib())
             return;
         PROFILE_CPU();
+        PROFILE_MEM(EngineDebug);
 
 #if USE_CSHARP
         if (auto* managedModule = dynamic_cast<ManagedBinaryModule*>(module))
@@ -381,6 +383,7 @@ DebugCommandsService DebugCommandsServiceInstance;
 
 void DebugCommands::Execute(StringView command)
 {
+    PROFILE_MEM(EngineDebug);
     // TODO: fix missing string handle on 1st command execution (command gets invalid after InitCommands due to dotnet GC or dotnet interop handles flush)
     String commandCopy = command;
     command = commandCopy;
@@ -423,6 +426,7 @@ void DebugCommands::Search(StringView searchText, Array<StringView>& matches, bo
 {
     if (searchText.IsEmpty())
         return;
+    PROFILE_MEM(EngineDebug);
     // TODO: fix missing string handle on 1st command execution (command gets invalid after InitCommands due to dotnet GC or dotnet interop handles flush)
     String searchTextCopy = searchText;
     searchText = searchTextCopy;

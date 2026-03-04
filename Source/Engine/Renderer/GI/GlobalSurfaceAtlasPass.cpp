@@ -428,6 +428,7 @@ public:
             // Write to objects buffer (this must match unpacking logic in HLSL)
             uint32 objectAddress = ObjectsBuffer.Data.Count() / sizeof(Float4);
             ObjectsListBuffer.Write(objectAddress);
+            ObjectsBuffer.Data.EnsureCapacity(ObjectsBuffer.Data.Count() + sizeof(Float4) * (GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE + 6 * GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE));
             auto* objectData = ObjectsBuffer.WriteReserve<Float4>(GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE);
             objectData[0] = Float4(object.Position, object.Radius);
             objectData[1] = Float4::Zero;
@@ -511,6 +512,7 @@ public:
             {
                 // Dirty object to redraw
                 object->LastFrameUpdated = 0;
+                return;
             }
             GlobalSurfaceAtlasLight* light = Lights.TryGet(a->GetID());
             if (light)

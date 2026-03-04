@@ -1,7 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
-using System.Reflection.Emit;
 using FlaxEditor.CustomEditors.GUI;
 using FlaxEngine;
 using FlaxEngine.GUI;

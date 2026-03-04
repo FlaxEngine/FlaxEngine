@@ -78,7 +78,10 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
             v.Type = VariantType::Null;
         const auto mTypeName = SERIALIZE_FIND_MEMBER(stream, "TypeName");
         if (mTypeName != stream.MemberEnd() && mTypeName->value.IsString())
+        {
             v.SetTypeName(StringAnsiView(mTypeName->value.GetStringAnsiView()));
+            v.Inline();
+        }
     }
     else
     {
