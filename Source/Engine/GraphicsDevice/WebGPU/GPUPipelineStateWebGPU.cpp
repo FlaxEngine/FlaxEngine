@@ -325,6 +325,8 @@ WGPUComputePipeline GPUShaderProgramCSWebGPU::GetPipeline(WGPUDevice device, con
 #endif
     if (log)
         LOG(Info, "[WebGPU] GetPipeline: '{}'", String(_name));
+#else
+    const bool log = false;
 #endif
 
     // Create layout bind group
@@ -635,6 +637,8 @@ void GPUPipelineStateWebGPU::InitLayout(const GPUContextBindingsWebGPU& bindings
 #else
     const bool log = true;
 #endif
+#else
+    const bool log = false;
 #endif
 
     // Count the biggest bind group entries (for all shaders) to allocate reused memory

@@ -616,6 +616,12 @@ void GPUContextWebGPU::UpdateTexture(GPUTexture* texture, int32 arrayIndex, int3
     int32 mipWidth, mipHeight, mipDepth;
     texture->GetMipSize(mipIndex, mipWidth, mipHeight, mipDepth);
 
+    const int32 blockSize = PixelFormatExtensions::ComputeBlockSize(textureWebGPU->Format());
+    mipWidth = Math::Max(mipWidth, blockSize);
+    mipHeight = Math::Max(mipHeight, blockSize);
+    if (textureWebGPU->Dimensions() == TextureDimensions::VolumeTexture)
+        mipDepth = Math::Max(mipDepth, blockSize);
+
     WGPUTexelCopyTextureInfo copyInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     copyInfo.texture = textureWebGPU->Texture;
     copyInfo.mipLevel = mipIndex;
