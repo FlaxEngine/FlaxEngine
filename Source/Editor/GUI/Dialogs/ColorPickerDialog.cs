@@ -124,7 +124,7 @@ namespace FlaxEditor.GUI.Dialogs
                 _savedColors = JsonSerializer.Deserialize<List<Color>>(savedColors);
 
             // Selector
-            _cSelector = new ColorSelectorWithSliders(180, 18)
+            _cSelector = new ColorSelectorWithSliders(180, 21)
             {
                 Location = new Float2(PickerMargin, PickerMargin),
                 Parent = this
@@ -421,9 +421,7 @@ namespace FlaxEditor.GUI.Dialogs
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (base.OnMouseUp(location, button))
-            {
                 return true;
-            }
 
             var child = GetChildAtRecursive(location);
             if (button == MouseButton.Right && child is Button b && b.Tag is Color c)
