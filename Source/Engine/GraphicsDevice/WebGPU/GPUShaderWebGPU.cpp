@@ -9,6 +9,7 @@
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/GraphicsDevice/Vulkan/Types.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#include <ThirdParty/LZ4/lz4.h>
 
 GPUConstantBufferWebGPU::GPUConstantBufferWebGPU(GPUDeviceWebGPU* device, uint32 size, const StringView& name) noexcept
     : GPUResourceWebGPU(device, name)
@@ -25,8 +26,28 @@ GPUShaderProgram* GPUShaderWebGPU::CreateGPUShaderProgram(ShaderStage type, cons
 
     // Extract the WGSL shader
     BytesContainer wgsl;
-    ASSERT(header->Type == SpirvShaderHeader::Types::WGSL);
-    wgsl.Link(bytecode);
+    switch (header->Type)
+    {
+    case SpirvShaderHeader::Types::WGSL:
+        wgsl.Link(bytecode);
+        break;
+    case SpirvShaderHeader::Types::WGSL_LZ4:
+    {
+        int32 originalSize = *(int32*)bytecode.Get();
+        bytecode = bytecode.Slice(sizeof(int32));
+        wgsl.Allocate(originalSize);
+        const int32 res = LZ4_decompress_safe((const char*)bytecode.Get(), (char*)wgsl.Get(), bytecode.Length(), originalSize);
+        if (res <= 0)
+        {
+            LOG(Error, "Failed to decompress shader");
+            return nullptr;
+        }
+        break;
+    }
+    default:
+        LOG(Error, "Invalid shader program format");
+        return nullptr;
+    }
 
     // Create a shader module
     WGPUShaderSourceWGSL shaderCodeDesc = WGPU_SHADER_SOURCE_WGSL_INIT;

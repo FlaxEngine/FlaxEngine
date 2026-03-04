@@ -33,6 +33,9 @@ public class ShaderCompilerWebGPU : ShaderCompiler
 
         options.PublicDefinitions.Add("COMPILE_WITH_WEBGPU_SHADER_COMPILER");
         options.PublicDependencies.Add("ShaderCompilerVulkan");
+        options.PrivateDependencies.Add("glslang");
+        options.PrivateDependencies.Add("spirv-tools");
+        options.PrivateDependencies.Add("lz4");
 
         // Deploy tint executable as a dependency for the shader compilation from SPIR-V into WGSL
         // Tint compiler from: https://github.com/google/dawn/releases

@@ -12,6 +12,7 @@
 #include "Engine/Platform/FileSystem.h"
 #include <ThirdParty/glslang/SPIRV/SpvTools.h>
 #include <ThirdParty/spirv-tools/libspirv.hpp>
+#include <ThirdParty/LZ4/lz4.h>
 
 ShaderCompilerWebGPU::ShaderCompilerWebGPU(ShaderProfile profile)
     : ShaderCompilerVulkan(profile)
@@ -89,6 +90,21 @@ bool ShaderCompilerWebGPU::Write(ShaderCompilationContext* context, ShaderFuncti
     // Cleanup files
     FileSystem::DeleteFile(inputFile);
     FileSystem::DeleteFile(outputFile);
+
+    // Compress
+    const int32 srcSize = wgsl.Length() + 1;
+    const int32 maxSize = LZ4_compressBound(srcSize);
+    Array<byte> wgslCompressed;
+    wgslCompressed.Resize(maxSize + sizeof(int32));
+    const int32 dstSize = LZ4_compress_default(wgsl.Get(), (char*)wgslCompressed.Get() + sizeof(int32), srcSize, maxSize);
+    if (dstSize > 0)
+    {
+        wgslCompressed.Resize(dstSize + sizeof(int32));
+        *(int32*)wgslCompressed.Get() = srcSize; // Store original size in the beginning to decompress it
+        header.Type = SpirvShaderHeader::Types::WGSL_LZ4;
+        return WriteShaderFunctionPermutation(_context, meta, permutationIndex, bindings, &header, sizeof(header), wgslCompressed.Get(), wgslCompressed.Count());
+    }
+
 
     header.Type = SpirvShaderHeader::Types::WGSL;
     return WriteShaderFunctionPermutation(_context, meta, permutationIndex, bindings, &header, sizeof(header), wgsl.Get(), wgsl.Length() + 1);

@@ -127,6 +127,11 @@ struct SpirvShaderHeader
         /// The raw WGSL shader code.
         /// </summary>
         WGSL = 1,
+
+        /// <summary>
+        /// The WGSL shader code compressed with LZ4.
+        /// </summary>
+        WGSL_LZ4 = 2,
     };
 
     /// <summary>

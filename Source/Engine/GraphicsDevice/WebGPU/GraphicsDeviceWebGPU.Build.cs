@@ -20,5 +20,6 @@ public class GraphicsDeviceWebGPU : GraphicsDeviceBaseModule
         options.OutputFiles.Add(port);
         options.PublicDefinitions.Add("GRAPHICS_API_WEBGPU");
         options.PrivateIncludePaths.Add(Path.Combine(EmscriptenSdk.Instance.EmscriptenPath, "emscripten/cache/ports/emdawnwebgpu/emdawnwebgpu_pkg/webgpu/include"));
+        options.PrivateDependencies.Add("lz4");
     }
 }
