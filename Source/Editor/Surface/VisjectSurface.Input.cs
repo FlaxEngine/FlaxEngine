@@ -24,6 +24,16 @@ namespace FlaxEditor.Surface
         /// </summary>
         public bool PanWithMiddleMouse = false;
 
+        /// <summary>
+        /// Distance for the mouse to be considered above the connection.
+        /// </summary>
+        public float MouseOverConnectionDistance => 100f / ViewScale;
+
+        /// <summary>
+        /// Distance of a node from which it is able to be slotted into an existing connection.
+        /// </summary>
+        public float SlotNodeIntoConnectionDistance => 250f / ViewScale;
+
         private string _currentInputText = string.Empty;
         private Float2 _movingNodesDelta;
         private Float2 _gridRoundingDelta;
@@ -456,7 +466,7 @@ namespace FlaxEditor.Surface
             if (!handled && CanEdit && CanUseNodeType(7, 29))
             {
                 var mousePos = _rootControl.PointFromParent(ref _mousePos);
-                if (IntersectsConnection(mousePos, out InputBox inputBox, out OutputBox outputBox) && GetControlUnderMouse() == null)
+                if (IntersectsConnection(mousePos, out InputBox inputBox, out OutputBox outputBox, MouseOverConnectionDistance) && GetControlUnderMouse() == null)
                 {
                     if (Undo != null)
                     {
@@ -653,7 +663,7 @@ namespace FlaxEditor.Surface
                             var mousePos = _rootControl.PointFromParent(ref _mousePos);
                             InputBox intersectedConnectionInputBox;
                             OutputBox intersectedConnectionOutputBox;
-                            if (IntersectsConnection(mousePos, out intersectedConnectionInputBox, out intersectedConnectionOutputBox))
+                            if (IntersectsConnection(mousePos, out intersectedConnectionInputBox, out intersectedConnectionOutputBox, SlotNodeIntoConnectionDistance))
                             {
                                 SurfaceNode node = _movingNodes.First();
                                 InputBox nodeInputBox = (InputBox)node.GetBoxes().First(b => !b.IsOutput);
@@ -783,7 +793,7 @@ namespace FlaxEditor.Surface
                 {
                     // Surface was not moved with MMB so try to remove connection underneath
                     var mousePos = _rootControl.PointFromParent(ref location);
-                    if (IntersectsConnection(mousePos, out InputBox inputBox, out OutputBox outputBox))
+                    if (IntersectsConnection(mousePos, out InputBox inputBox, out OutputBox outputBox, MouseOverConnectionDistance))
                     {
                         var action = new EditNodeConnections(inputBox.ParentNode.Context, inputBox.ParentNode);
                         inputBox.BreakConnection(outputBox);
@@ -1180,7 +1190,7 @@ namespace FlaxEditor.Surface
             return new Float2(xLocation, yLocation);
         }
 
-        private bool IntersectsConnection(Float2 mousePosition, out InputBox inputBox, out OutputBox outputBox)
+        private bool IntersectsConnection(Float2 mousePosition, out InputBox inputBox, out OutputBox outputBox, float distance)
         {
             for (int i = 0; i < Nodes.Count; i++)
             {
@@ -1190,7 +1200,7 @@ namespace FlaxEditor.Surface
                     {
                         for (int k = 0; k < ob.Connections.Count; k++)
                         {
-                            if (ob.IntersectsConnection(ob.Connections[k], ref mousePosition))
+                            if (ob.IntersectsConnection(ob.Connections[k], ref mousePosition, distance))
                             {
                                 outputBox = ob;
                                 inputBox = ob.Connections[k] as InputBox;
