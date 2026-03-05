@@ -116,7 +116,7 @@ namespace FlaxEditor.Surface
             {
                 GroupID = 9,
                 Name = "Animations",
-                Color = new Color(105, 179, 160),
+                Color = new Color(72, 125, 107),
                 Archetypes = Archetypes.Animation.Nodes
             },
             new GroupArchetype
@@ -145,7 +145,7 @@ namespace FlaxEditor.Surface
             {
                 GroupID = 14,
                 Name = "Particles",
-                Color = new Color(121, 210, 176),
+                Color = new Color(72, 125, 107),
                 Archetypes = Archetypes.Particles.Nodes
             },
             new GroupArchetype
