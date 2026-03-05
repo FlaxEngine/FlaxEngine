@@ -194,10 +194,11 @@ namespace FlaxEditor.GUI.Dialogs
             // Wheel
             float boxExpand = (2.0f * 4.0f / 128.0f) * _wheelRect.Width;
             Render2D.DrawMaterial(_hsWheelMaterial, _wheelRect, enabled ? Color.White : Color.Gray);
-            Color hsColor = Color.FromHSV(new Float3(Color.ToHSV().X, 1, 1));
+            Float3 hsv = _color.ToHSV();
+            Color hsColor = Color.FromHSV(new Float3(hsv.X, hsv.Y, 1));
             Rectangle wheelRect = wheelDragRect;
             Render2D.FillRectangle(wheelRect, hsColor);
-            Render2D.DrawRectangle(wheelRect, _isMouseDownWheel ? Color.Gray : Color.Black, _isMouseDownWheel ? 3.0f : 1.0f);
+            Render2D.DrawRectangle(wheelRect, Color.Black, _isMouseDownWheel ? 2.0f : 1.0f);
         }
 
         /// <inheritdoc />
