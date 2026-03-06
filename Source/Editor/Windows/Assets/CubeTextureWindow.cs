@@ -46,7 +46,9 @@ namespace FlaxEditor.Windows.Assets
                         var texture = window.Asset;
 
                         var group = layout.Group("General");
-                        group.Label("Format: " + texture.Format);
+                        var textureFormat = texture.Format;
+                        var gpuFormat = texture.Texture?.Format ?? textureFormat;
+                        group.Label(textureFormat != gpuFormat && gpuFormat != PixelFormat.Unknown ? $"Format: {textureFormat} ({gpuFormat})" : $"Format: {textureFormat}");
                         group.Label(string.Format("Size: {0}x{1}", texture.Width, texture.Height)).AddCopyContextMenu();
                         group.Label("Mip levels: " + texture.MipLevels);
                         group.Label("Memory usage: " + Utilities.Utils.FormatBytesCount(texture.TotalMemoryUsage));
@@ -117,7 +119,7 @@ namespace FlaxEditor.Windows.Assets
         private readonly CustomEditorPresenter _propertiesEditor;
 
         private readonly PropertiesProxy _properties;
-        private bool _isWaitingForLoad;
+        private bool _isWaitingForLoad, _isWaitingForTexture;
 
         /// <inheritdoc />
         public CubeTextureWindow(Editor editor, AssetItem item)
@@ -193,8 +195,8 @@ namespace FlaxEditor.Windows.Assets
             // Check if need to load
             if (_isWaitingForLoad && _asset.IsLoaded)
             {
-                // Clear flag
                 _isWaitingForLoad = false;
+                _isWaitingForTexture = true;
 
                 // Init properties and parameters proxy
                 _properties.OnLoad(this);
@@ -202,6 +204,12 @@ namespace FlaxEditor.Windows.Assets
 
                 // Setup
                 ClearEditedFlag();
+            }
+            if (_isWaitingForTexture && _asset.Texture.IsAllocated)
+            {
+                // Refresh properties to display GPU texture info
+                _isWaitingForTexture = false;
+                _propertiesEditor.BuildLayout();
             }
         }
 

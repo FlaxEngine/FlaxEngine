@@ -217,6 +217,9 @@ public:
 
 public:
     static PixelFormat ToPixelFormat(TextureFormatType format, int32 width, int32 height, bool canCompress = true);
+#if USE_EDITOR
+    static bool WriteTextureData(BytesContainer& result, const TextureData& textureData, int32 mipIndex);
+#endif
 
 private:
     enum class ImageType

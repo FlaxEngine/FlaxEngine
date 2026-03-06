@@ -184,48 +184,12 @@ CreateAssetResult ImportTexture::Create(CreateAssetContext& context, const Textu
     }
 
     // Save mip maps
-    if (!isCubeMap)
+    for (int32 mipIndex = 0; mipIndex < textureHeader.MipLevels; mipIndex++)
     {
-        for (int32 mipIndex = 0; mipIndex < textureHeader.MipLevels; mipIndex++)
-        {
-            auto mipData = textureData.GetData(0, mipIndex);
-
-            if (context.AllocateChunk(mipIndex))
-                return CreateAssetResult::CannotAllocateChunk;
-            context.Data.Header.Chunks[mipIndex]->Data.Copy(mipData->Data.Get(), static_cast<uint32>(mipData->DepthPitch));
-        }
-    }
-    else
-    {
-        // Allocate memory for a temporary buffer
-        const uint32 imageSize = textureData.GetData(0, 0)->DepthPitch * 6;
-        MemoryWriteStream imageData(imageSize);
-
-        // Copy cube sides for every mip into separate chunks
-        for (int32 mipLevelIndex = 0; mipLevelIndex < textureHeader.MipLevels; mipLevelIndex++)
-        {
-            // Write array slices to the stream
-            imageData.SetPosition(0);
-            for (int32 cubeFaceIndex = 0; cubeFaceIndex < 6; cubeFaceIndex++)
-            {
-                // Get image
-                const auto image = textureData.GetData(cubeFaceIndex, mipLevelIndex);
-                if (image == nullptr)
-                {
-                    LOG(Warning, "Cannot create cube texture '{0}'. Missing image slice.", context.InputPath);
-                    return CreateAssetResult::Error;
-                }
-                ASSERT(image->DepthPitch < MAX_int32);
-
-                // Copy data
-                imageData.WriteBytes(image->Data.Get(), image->Data.Length());
-            }
-
-            // Copy mip
-            if (context.AllocateChunk(mipLevelIndex))
-                return CreateAssetResult::CannotAllocateChunk;
-            context.Data.Header.Chunks[mipLevelIndex]->Data.Copy(imageData.GetHandle(), imageData.GetPosition());
-        }
+        if (context.AllocateChunk(mipIndex))
+            return CreateAssetResult::CannotAllocateChunk;
+        if (TextureTool::WriteTextureData(context.Data.Header.Chunks[mipIndex]->Data, textureData, mipIndex))
+            return CreateAssetResult::Error;
     }
 
 #if IMPORT_TEXTURE_CACHE_OPTIONS

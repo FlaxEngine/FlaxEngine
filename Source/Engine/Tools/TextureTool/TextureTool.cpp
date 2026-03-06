@@ -14,6 +14,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/PixelFormatSampler.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
@@ -525,6 +526,66 @@ PixelFormat TextureTool::ToPixelFormat(TextureFormatType format, int32 width, in
         return PixelFormat::Unknown;
     }
 }
+
+#if USE_EDITOR
+
+bool TextureTool::WriteTextureData(BytesContainer& result, const TextureData& textureData, int32 mipIndex)
+{
+    if (textureData.Format == PixelFormat::Basis)
+    {
+        // Store as-is, each slice is stored in a separate block with the same size
+        int32 maxDataSize = 0;
+        for (int32 arrayIndex = 0; arrayIndex < textureData.Items.Count(); arrayIndex++)
+        {
+            auto& mipData = textureData.Items[arrayIndex].Mips[mipIndex];
+            maxDataSize = Math::Max(maxDataSize, mipData.Data.Length());
+        }
+        result.Allocate(maxDataSize * textureData.GetArraySize());
+        for (int32 arrayIndex = 0; arrayIndex < textureData.Items.Count(); arrayIndex++)
+        {
+            auto& mipData = textureData.Items[arrayIndex].Mips[mipIndex];
+            byte* dst = result.Get() + maxDataSize * arrayIndex;
+            Platform::MemoryCopy(dst, mipData.Data.Get(), mipData.Data.Length());
+            Platform::MemoryClear(dst + mipData.Data.Length(), maxDataSize - mipData.Data.Length());
+        }
+        return false;
+    }
+
+    // Calculate the texture data storage layout
+    uint32 rowPitch, slicePitch;
+    const int32 mipWidth = Math::Max(1, textureData.Width >> mipIndex);
+    const int32 mipHeight = Math::Max(1, textureData.Height >> mipIndex);
+    RenderTools::ComputePitch(textureData.Format, mipWidth, mipHeight, rowPitch, slicePitch);
+    result.Allocate(slicePitch * textureData.GetArraySize());
+
+    // Copy array slices into mip data (sequential)
+    for (int32 arrayIndex = 0; arrayIndex < textureData.Items.Count(); arrayIndex++)
+    {
+        auto& mipData = textureData.Items[arrayIndex].Mips[mipIndex];
+        const byte* src = mipData.Data.Get();
+        byte* dst = result.Get() + (slicePitch * arrayIndex);
+
+        // Faster path if source and destination data layout matches
+        if (rowPitch == mipData.RowPitch && slicePitch == mipData.DepthPitch)
+        {
+            Platform::MemoryCopy(dst, src, slicePitch);
+        }
+        else
+        {
+            const uint32 copyRowSize = Math::Min(mipData.RowPitch, rowPitch);
+            for (uint32 line = 0; line < mipData.Lines; line++)
+            {
+                Platform::MemoryCopy(dst, src, copyRowSize);
+                src += mipData.RowPitch;
+                dst += rowPitch;
+            }
+        }
+    }
+
+    return false;
+}
+
+#endif
 
 bool TextureTool::GetImageType(const StringView& path, ImageType& type)
 {

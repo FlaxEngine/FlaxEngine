@@ -221,7 +221,7 @@ namespace FlaxEditor.Windows.Assets
         private readonly SplitPanel _split;
         private readonly TexturePreview _preview;
         private readonly ToolStripButton _saveButton;
-        private bool _isWaitingForLoad;
+        private bool _isWaitingForLoad, _isWaitingForTexture;
 
         /// <inheritdoc />
         public TextureWindow(Editor editor, AssetItem item)
@@ -328,8 +328,8 @@ namespace FlaxEditor.Windows.Assets
             // Check if need to load
             if (_isWaitingForLoad && _asset.IsLoaded)
             {
-                // Clear flag
                 _isWaitingForLoad = false;
+                _isWaitingForTexture = true;
 
                 // Init properties and parameters proxy
                 foreach (var child in _tabs.Children)
@@ -343,6 +343,16 @@ namespace FlaxEditor.Windows.Assets
 
                 // Setup
                 ClearEditedFlag();
+            }
+            if (_isWaitingForTexture && _asset.Texture.IsAllocated)
+            {
+                // Refresh properties to display GPU texture info
+                _isWaitingForTexture = false;
+                foreach (var child in _tabs.Children)
+                {
+                    if (child is Tab tab && tab.Proxy != null)
+                        tab.Presenter.BuildLayout();
+                }
             }
         }
 
