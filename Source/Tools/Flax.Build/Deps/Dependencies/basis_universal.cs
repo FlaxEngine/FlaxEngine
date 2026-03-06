@@ -25,6 +25,11 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.Windows,
                         TargetPlatform.Web,
                     };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetPlatform.Linux,
+                    };
                 default:
                     return new TargetPlatform[0];
                 }
@@ -44,6 +49,11 @@ namespace Flax.Deps.Dependencies
                         TargetArchitecture.x86,
                         TargetArchitecture.x64,
                         TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
                     };
                 default:
                     return new TargetArchitecture[0];
@@ -119,6 +129,14 @@ namespace Flax.Deps.Dependencies
                     case TargetPlatform.Web:
                     {
                         cmakeArgs = ".. -DBASISU_BUILD_WASM=ON -DBASISU_WASM_THREADING=OFF " + cmakeArgs;
+                        RunCmake(buildDir, platform, architecture, cmakeArgs);
+                        BuildCmake(buildDir, configuration, options:Utilities.RunOptions.ConsoleLogOutput);
+                        CopyLib(platform, buildDir, depsFolder, "basisu_encoder");
+                        break;
+                    }
+                    case TargetPlatform.Linux:
+                    {
+                        cmakeArgs = ".. " + cmakeArgs;
                         RunCmake(buildDir, platform, architecture, cmakeArgs);
                         BuildCmake(buildDir, configuration, options:Utilities.RunOptions.ConsoleLogOutput);
                         CopyLib(platform, buildDir, depsFolder, "basisu_encoder");
