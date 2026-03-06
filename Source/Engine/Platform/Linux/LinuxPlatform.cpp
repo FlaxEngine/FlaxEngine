@@ -3178,7 +3178,7 @@ Array<LinuxPlatform::StackFrame> LinuxPlatform::GetStackFrames(int32 skipCount, 
 #include "Engine/Platform/Linux/IncludeX11.h"
 
 #if PLATFORM_SDL
-#include <libportal/portal-enums.h>
+#include <portal-enums.h>
 #include <libportal/screenshot.h>
 
 namespace PortalImpl

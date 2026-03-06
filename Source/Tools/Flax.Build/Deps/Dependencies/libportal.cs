@@ -1,6 +1,5 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System.Collections.Generic;
 using System.IO;
 using Flax.Build;
 
