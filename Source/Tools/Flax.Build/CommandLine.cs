@@ -462,9 +462,13 @@ namespace Flax.Build
                 try
                 {
                     // Implicit casting to boolean value
-                    if (type == typeof(bool) && string.IsNullOrEmpty(option.Value))
+                    if (type == typeof(bool) && (string.IsNullOrEmpty(option.Value) || option.Value == "1"))
                     {
                         value = true;
+                    }
+                    else if (type == typeof(bool) && option.Value == "0")
+                    {
+                        value = false;
                     }
                     // Arrays handling
                     else if (type.IsArray)
