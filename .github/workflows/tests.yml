@@ -32,8 +32,8 @@ jobs:
         sudo apt-get install -y --fix-missing libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev libwayland-dev
     - name: Build
       run: |
-        ./GenerateProjectFiles.sh -vs2022 -log -verbose -printSDKs -dotnet=8
-        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -dotnet=8 -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget
+        ./GenerateProjectFiles.sh -vs2022 -log -verbose -printSDKs -dotnet=8 -useSdl=0
+        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -dotnet=8 -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget -useSdl=0
         dotnet msbuild Source/Tools/Flax.Build.Tests/Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
         dotnet msbuild Source/Tools/Flax.Build.Tests/Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
     - name: Test
@@ -46,7 +46,7 @@ jobs:
         dotnet test -f net8.0 Binaries/Tests/FlaxEngine.CSharp.dll
     - name: Test UseLargeWorlds
       run: |
-        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -dotnet=8 -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget -UseLargeWorlds=true
+        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -dotnet=8 -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget -UseLargeWorlds=true -useSdl=0
         ${GITHUB_WORKSPACE}/Binaries/Editor/Linux/Development/FlaxTests
 
   # Tests on Windows
