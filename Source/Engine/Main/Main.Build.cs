@@ -41,7 +41,8 @@ public class Main : EngineModule
             /*{
                 options.PrivateDefinitions.Add("USE_VS_MEM_LEAKS_CHECK");
             }*/
-
+            if (options.LinkEnv.LinkAsConsoleProgram)
+                options.CompileEnv.PreprocessorDefinitions.Add("PLAIN_MAIN");
             break;
         case TargetPlatform.UWP:
             options.SourcePaths.Add(Path.Combine(FolderPath, "UWP"));

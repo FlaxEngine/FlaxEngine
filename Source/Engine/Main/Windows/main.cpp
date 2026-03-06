@@ -25,13 +25,13 @@ extern "C" {
 __declspec(dllexport) int32 AmdPowerXpressRequestHighPerformance = 1;
 }
 
-#if FLAX_TESTS
+#if PLAIN_MAIN
 int main(int argc, char* argv[])
 #else
 int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 #endif
 {
-#if FLAX_TESTS
+#if PLAIN_MAIN
     HINSTANCE hInstance = GetModuleHandle(NULL);
     LPTSTR lpCmdLine = GetCommandLineW();
 #endif

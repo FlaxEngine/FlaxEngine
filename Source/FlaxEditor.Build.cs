@@ -44,6 +44,9 @@ public class FlaxEditor : EngineTarget
     {
         base.SetupTargetEnvironment(options);
 
+        // Uncomment to get console
+        //options.LinkEnv.LinkAsConsoleProgram = true;
+
         // Setup output folder for Editor binaries
         switch (options.Platform.Target)
         {
