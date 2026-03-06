@@ -543,9 +543,10 @@ WGPURenderPipeline GPUPipelineStateWebGPU::GetPipeline(const PipelineKey& key, c
         InitLayout(bindings);
 
     // Build final pipeline description
+    auto desc = PipelineDesc;
     _depthStencilDesc.format = (WGPUTextureFormat)key.DepthStencilFormat;
-    PipelineDesc.depthStencil = key.DepthStencilFormat ? &_depthStencilDesc : nullptr; // Unbind depth stencil state when no debug buffer is bound
-    PipelineDesc.multisample.count = key.MultiSampleCount;
+    desc.depthStencil = key.DepthStencilFormat ? PipelineDesc.depthStencil : nullptr; // Unbind depth stencil state when no debug buffer is bound
+    desc.multisample.count = key.MultiSampleCount;
     if (PS)
     {
         _fragmentDesc.targetCount = key.RenderTargetCount;
@@ -564,8 +565,8 @@ WGPURenderPipeline GPUPipelineStateWebGPU::GetPipeline(const PipelineKey& key, c
 
         // Build attributes list
         WGPUVertexAttribute attributes[GPU_MAX_VS_ELEMENTS];
-        PipelineDesc.vertex.bufferCount = 0;
-        PipelineDesc.vertex.buffers = buffers;
+        desc.vertex.bufferCount = 0;
+        desc.vertex.buffers = buffers;
         int32 attributeIndex = 0;
         auto& elements = mergedVertexLayout->GetElements();
 #if WEBGPU_LOG_PSO
@@ -594,7 +595,7 @@ WGPURenderPipeline GPUPipelineStateWebGPU::GetPipeline(const PipelineKey& key, c
                 if (element.PerInstance)
                     buffer.stepMode = WGPUVertexStepMode_Instance;
                 buffer.arrayStride = Math::Max<uint64>(buffer.arrayStride, element.Offset + PixelFormatExtensions::SizeInBytes(element.Format));
-                PipelineDesc.vertex.bufferCount = Math::Max<size_t>(PipelineDesc.vertex.bufferCount, bufferIndex + 1);
+                desc.vertex.bufferCount = Math::Max<size_t>(desc.vertex.bufferCount, bufferIndex + 1);
 #if WEBGPU_LOG_PSO
                 if (log)
                     LOG(Info, "   > [{}] slot {}: {} ({} bytes at offset {}) at shader location: {} (per-instance: {})", attributeIndex - 1, element.Slot, ScriptingEnum::ToString(element.Format), PixelFormatExtensions::SizeInBytes(element.Format), element.Offset, dst.shaderLocation, element.PerInstance);
@@ -605,12 +606,12 @@ WGPURenderPipeline GPUPipelineStateWebGPU::GetPipeline(const PipelineKey& key, c
     else
     {
         // No vertex input
-        PipelineDesc.vertex.bufferCount = 0;
-        PipelineDesc.vertex.buffers = nullptr;
+        desc.vertex.bufferCount = 0;
+        desc.vertex.buffers = nullptr;
     }
 
     // Create object
-    pipeline = wgpuDeviceCreateRenderPipeline(_device->Device, &PipelineDesc);
+    pipeline = wgpuDeviceCreateRenderPipeline(_device->Device, &desc);
     if (!pipeline)
     {
 #if GPU_ENABLE_RESOURCE_NAMING
@@ -706,22 +707,19 @@ bool GPUPipelineStateWebGPU::Init(const Description& desc)
         break;
     }
     PipelineDesc.primitive.unclippedDepth = !desc.DepthClipEnable && _device->Limits.HasDepthClip;
-    if (desc.DepthEnable || desc.StencilEnable)
+    PipelineDesc.depthStencil = &_depthStencilDesc;
+    _depthStencilDesc = WGPU_DEPTH_STENCIL_STATE_INIT;
+    _depthStencilDesc.depthWriteEnabled = desc.DepthEnable && desc.DepthWriteEnable ? WGPUOptionalBool_True : WGPUOptionalBool_False;
+    _depthStencilDesc.depthCompare = ToCompareFunction(desc.DepthFunc);
+    if (desc.StencilEnable)
     {
-        PipelineDesc.depthStencil = &_depthStencilDesc;
-        _depthStencilDesc = WGPU_DEPTH_STENCIL_STATE_INIT;
-        _depthStencilDesc.depthWriteEnabled = desc.DepthEnable && desc.DepthWriteEnable ? WGPUOptionalBool_True : WGPUOptionalBool_False;
-        _depthStencilDesc.depthCompare = ToCompareFunction(desc.DepthFunc);
-        if (desc.StencilEnable)
-        {
-            _depthStencilDesc.stencilFront.compare = ToCompareFunction(desc.StencilFunc);
-            _depthStencilDesc.stencilFront.failOp = ToStencilOperation(desc.StencilFailOp);
-            _depthStencilDesc.stencilFront.depthFailOp = ToStencilOperation(desc.StencilDepthFailOp);
-            _depthStencilDesc.stencilFront.passOp = ToStencilOperation(desc.StencilPassOp);
-            _depthStencilDesc.stencilBack = _depthStencilDesc.stencilFront;
-            _depthStencilDesc.stencilReadMask = desc.StencilReadMask;
-            _depthStencilDesc.stencilWriteMask = desc.StencilWriteMask;
-        }
+        _depthStencilDesc.stencilFront.compare = ToCompareFunction(desc.StencilFunc);
+        _depthStencilDesc.stencilFront.failOp = ToStencilOperation(desc.StencilFailOp);
+        _depthStencilDesc.stencilFront.depthFailOp = ToStencilOperation(desc.StencilDepthFailOp);
+        _depthStencilDesc.stencilFront.passOp = ToStencilOperation(desc.StencilPassOp);
+        _depthStencilDesc.stencilBack = _depthStencilDesc.stencilFront;
+        _depthStencilDesc.stencilReadMask = desc.StencilReadMask;
+        _depthStencilDesc.stencilWriteMask = desc.StencilWriteMask;
     }
     PipelineDesc.multisample.alphaToCoverageEnabled = desc.BlendMode.AlphaToCoverageEnable;
     if (desc.PS)

@@ -76,11 +76,8 @@ bool LightPass::setupResources()
         psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
         psDesc.BlendMode = BlendingMode::Add;
         psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
-        if (_depthBounds)
-        {
-            psDesc.DepthEnable = psDesc.DepthBoundsEnable = true;
-            psDesc.DepthWriteEnable = false;
-        }
+        psDesc.DepthWriteEnable = false;
+        psDesc.DepthEnable = psDesc.DepthBoundsEnable = _depthBounds;
         if (_psLightDir.Create(psDesc, shader, "PS_Directional"))
             return true;
     }

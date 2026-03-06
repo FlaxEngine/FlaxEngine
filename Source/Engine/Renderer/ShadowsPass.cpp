@@ -519,11 +519,8 @@ bool ShadowsPass::setupResources()
     {
         psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
         psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RG;
-        if (_depthBounds)
-        {
-            psDesc.DepthEnable = psDesc.DepthBoundsEnable = true;
-            psDesc.DepthWriteEnable = false;
-        }
+        psDesc.DepthWriteEnable = false;
+        psDesc.DepthEnable = psDesc.DepthBoundsEnable = _depthBounds;
         if (_psShadowDir.Create(psDesc, shader, "PS_DirLight"))
             return true;
     }

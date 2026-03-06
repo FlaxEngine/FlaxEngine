@@ -11,6 +11,7 @@
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Platform/CPUInfo.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include <ThirdParty/basis_universal/transcoder/basisu_transcoder.h>
 #if USE_EDITOR
 #include <ThirdParty/basis_universal/encoder/basisu_comp.h>

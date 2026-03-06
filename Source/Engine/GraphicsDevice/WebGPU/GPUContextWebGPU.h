@@ -52,6 +52,8 @@ private:
     uint32 _renderPassDirty : 1;
     uint32 _pipelineDirty : 1;
     uint32 _bindGroupDirty : 1;
+    uint32 _viewportDirty : 1;
+    uint32 _scissorRectDirty : 1;
     uint32 _vertexBufferDirty : 1;
     uint32 _indexBufferDirty : 1;
     uint32 _indexBuffer32Bit : 1;

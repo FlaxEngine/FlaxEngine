@@ -76,6 +76,8 @@ void GPUContextWebGPU::FrameBegin()
     _renderPassDirty = false;
     _pipelineDirty = false;
     _bindGroupDirty = false;
+    _viewportDirty = false;
+    _scissorRectDirty = false;
     _indexBufferDirty = false;
     _vertexBufferDirty = false;
     _indexBuffer32Bit = false;
@@ -479,15 +481,13 @@ void GPUContextWebGPU::EndQuery(uint64 queryID)
 void GPUContextWebGPU::SetViewport(const Viewport& viewport)
 {
     _viewport = viewport;
-    if (_renderPass && !_renderPassDirty)
-        wgpuRenderPassEncoderSetViewport(_renderPass, viewport.X, viewport.Y, viewport.Width, viewport.Height, viewport.MinDepth, viewport.MaxDepth);
+    _viewportDirty = true;
 }
 
 void GPUContextWebGPU::SetScissor(const Rectangle& scissorRect)
 {
     _scissorRect = scissorRect;
-    if (_renderPass && !_renderPassDirty)
-        wgpuRenderPassEncoderSetScissorRect(_renderPass, (uint32_t)scissorRect.GetX(), (uint32_t)scissorRect.GetY(), (uint32_t)scissorRect.GetWidth(), (uint32_t)scissorRect.GetHeight());
+    _scissorRectDirty = true;
 }
 
 void GPUContextWebGPU::SetDepthBounds(float minDepth, float maxDepth)
@@ -880,6 +880,16 @@ void GPUContextWebGPU::OnDrawCall()
         // Invalidate bind groups (layout might change)
         _bindGroupDirty = true;
     }
+    if (_scissorRectDirty)
+    {
+        _scissorRectDirty = false;
+        wgpuRenderPassEncoderSetScissorRect(_renderPass, (uint32_t)_scissorRect.GetX(), (uint32_t)_scissorRect.GetY(), (uint32_t)_scissorRect.GetWidth(), (uint32_t)_scissorRect.GetHeight());
+    }
+    if (_viewportDirty)
+    {
+        _viewportDirty = false;
+        wgpuRenderPassEncoderSetViewport(_renderPass, _viewport.X, _viewport.Y, _viewport.Width, _viewport.Height, _viewport.MinDepth, _viewport.MaxDepth);
+    }
     if (_indexBufferDirty && _indexBuffer.Buffer)
     {
         _indexBufferDirty = false;
@@ -1054,12 +1064,6 @@ void GPUContextWebGPU::FlushRenderPass()
     // Apply pending state
     if (_stencilRef != 0)
         wgpuRenderPassEncoderSetStencilReference(_renderPass, _stencilRef);
-    auto scissorRect = _scissorRect;
-    if (scissorRect != Rectangle(0, 0, attachmentSize.Width, attachmentSize.Height))
-        wgpuRenderPassEncoderSetScissorRect(_renderPass, (uint32_t)scissorRect.GetX(), (uint32_t)scissorRect.GetY(), (uint32_t)scissorRect.GetWidth(), (uint32_t)scissorRect.GetHeight());
-    auto viewport = _viewport;
-    if (viewport != Viewport(Float2(attachmentSize.Width, attachmentSize.Height)))
-        wgpuRenderPassEncoderSetViewport(_renderPass, viewport.X, viewport.Y, viewport.Width, viewport.Height, viewport.MinDepth, viewport.MaxDepth);
 
     // Auto-dirty pipeline when new render pass starts
     if (_pipelineState)
@@ -1069,6 +1073,8 @@ void GPUContextWebGPU::FlushRenderPass()
     _bindGroupDirty = true;
     if (_blendFactorSet)
         _blendFactorDirty = true;
+    _scissorRectDirty |= _scissorRect != Rectangle(0, 0, attachmentSize.Width, attachmentSize.Height);
+    _viewportDirty |= _viewport != Viewport(Float2(attachmentSize.Width, attachmentSize.Height));
 }
 
 void GPUContextWebGPU::FlushBindGroup()
