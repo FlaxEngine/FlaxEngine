@@ -196,7 +196,7 @@ namespace Flax.Build
         /// <returns><c>true</c> if this platform can build the specified architecture; otherwise, <c>false</c>.</returns>
         public virtual bool CanBuildArchitecture(TargetArchitecture targetArchitecture)
         {
-            return IsPlatformSupported(Target, targetArchitecture);
+            return IsPlatformSupported(Target, targetArchitecture) && HasRequiredSDKsInstalled;
         }
 
         /// <summary>
@@ -332,7 +332,7 @@ namespace Flax.Build
 
             switch (targetPlatform)
             {
-            case TargetPlatform.Windows: return targetArchitecture == TargetArchitecture.x64 || targetArchitecture == TargetArchitecture.x86 || targetArchitecture == TargetArchitecture.ARM64;
+            case TargetPlatform.Windows: return targetArchitecture == TargetArchitecture.x64 || targetArchitecture == TargetArchitecture.ARM64;
             case TargetPlatform.XboxScarlett: return targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.XboxOne: return targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.UWP: return targetArchitecture == TargetArchitecture.x64;

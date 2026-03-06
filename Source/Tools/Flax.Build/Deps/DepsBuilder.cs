@@ -42,7 +42,7 @@ namespace Flax.Deps
             var architectures = Globals.AllArchitectures;
             if (Configuration.BuildArchitectures != null && Configuration.BuildArchitectures.Length != 0)
                 architectures = Configuration.BuildArchitectures;
-            architectures = architectures.Where(buildPlatform.CanBuildArchitecture).ToArray();
+            architectures = architectures.Where(x => platforms.Any(y => Platform.GetPlatform(y, true)?.CanBuildArchitecture(x) ?? false)).ToArray();
             Log.Verbose($"Building deps for platforms {string.Join(',', platforms)}, {string.Join(',', architectures)}:");
             foreach (var platform in platforms)
             {
