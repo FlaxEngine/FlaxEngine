@@ -91,6 +91,7 @@ public:
     /// Flag set to indicate that chunk is during loading (atomic access to sync multiple reading threads).
     /// </summary>
     int64 IsLoading = 0;
+
     /// <summary>
     /// The chunk data.
     /// </summary>
