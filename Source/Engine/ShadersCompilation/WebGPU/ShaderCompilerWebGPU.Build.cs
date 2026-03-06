@@ -18,7 +18,8 @@ public class ShaderCompilerWebGPU : ShaderCompiler
         {
         case TargetPlatform.Windows:
             return options.Architecture == TargetArchitecture.x64;
-        case TargetPlatform.Linux: // TODO: add Linux binary with tint
+        case TargetPlatform.Linux:
+            return options.Architecture == TargetArchitecture.x64;
         case TargetPlatform.Mac:
             return options.Architecture == TargetArchitecture.ARM64;
         default:

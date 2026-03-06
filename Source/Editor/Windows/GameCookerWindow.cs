@@ -123,6 +123,7 @@ namespace FlaxEditor.Windows
                     {
                     case BuildPlatform.LinuxX64:
                     case BuildPlatform.AndroidARM64:
+                    case BuildPlatform.Web:
                         IsSupported = true;
                         break;
                     default:
