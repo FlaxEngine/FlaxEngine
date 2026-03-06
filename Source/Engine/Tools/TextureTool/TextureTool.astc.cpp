@@ -11,7 +11,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include <ThirdParty/astc/astcenc.h>
 
-bool TextureTool::ConvertAstc(TextureData& dst, const TextureData& src, const PixelFormat dstFormat)
+bool TextureTool::ConvertAstc(TextureData& dst, const TextureData& src, PixelFormat dstFormat)
 {
     PROFILE_CPU();
     ASSERT(PixelFormatExtensions::IsCompressedASTC(dstFormat));
@@ -21,7 +21,7 @@ bool TextureTool::ConvertAstc(TextureData& dst, const TextureData& src, const Pi
     // Configure the compressor run
     const bool isSRGB = PixelFormatExtensions::IsSRGB(dstFormat);
     const bool isHDR = PixelFormatExtensions::IsHDR(src.Format);
-    astcenc_profile astcProfile = isHDR ? ASTCENC_PRF_HDR_RGB_LDR_A : (isSRGB ? ASTCENC_PRF_LDR_SRGB : ASTCENC_PRF_LDR);
+    astcenc_profile astcProfile = isHDR ? ASTCENC_PRF_HDR : (isSRGB ? ASTCENC_PRF_LDR_SRGB : ASTCENC_PRF_LDR);
     float astcQuality = ASTCENC_PRE_MEDIUM;
     unsigned int astcFlags = 0; // TODO: add custom flags support for converter to handle ASTCENC_FLG_MAP_NORMAL
     astcenc_config astcConfig;

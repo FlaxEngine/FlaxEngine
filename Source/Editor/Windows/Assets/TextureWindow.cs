@@ -63,7 +63,9 @@ namespace FlaxEditor.Windows.Assets
 
                     // Texture info
                     var general = layout.Group("General");
-                    general.Label("Format: " + texture.Format);
+                    var textureFormat = texture.Format;
+                    var gpuFormat = texture.Texture?.Format ?? textureFormat;
+                    general.Label(textureFormat != gpuFormat && gpuFormat != PixelFormat.Unknown ? $"Format: {textureFormat} ({gpuFormat})" : $"Format: {textureFormat}");
                     general.Label(string.Format("Size: {0}x{1}", texture.Width, texture.Height)).AddCopyContextMenu();
                     general.Label("Mip levels: " + texture.MipLevels);
                     general.Label("Memory usage: " + Utilities.Utils.FormatBytesCount(texture.TotalMemoryUsage)).AddCopyContextMenu();

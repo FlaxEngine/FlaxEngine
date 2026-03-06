@@ -763,6 +763,17 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
             return true;
         }
     }
+    else if (dstFormat == PixelFormat::Basis)
+    {
+#if COMPILE_WITH_BASISU
+        if (ConvertBasisUniversal(dst, *textureData))
+#else
+        LOG(Error, "Missing Basis Universal texture format compression lib.");
+#endif
+        {
+            return true;
+        }
+    }
     else
 #endif
     {

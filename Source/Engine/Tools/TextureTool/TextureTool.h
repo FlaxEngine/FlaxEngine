@@ -139,7 +139,7 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
 public:
 #if USE_EDITOR
     /// <summary>
-    /// Checks whenever the given texture file contains alpha channel data with values different than solid fill of 1 (non fully opaque).
+    /// Checks whenever the given texture file contains alpha channel data with values different from solid fill of 1 (non fully opaque).
     /// </summary>
     /// <param name="path">The file path.</param>
     /// <returns>True if has alpha channel, otherwise false.</returns>
@@ -173,7 +173,7 @@ public:
     static bool ExportTexture(const StringView& path, const TextureData& textureData);
 
     /// <summary>
-    /// Converts the specified source texture data into an another format.
+    /// Converts the specified source texture data into another format.
     /// </summary>
     /// <param name="dst">The destination data.</param>
     /// <param name="src">The source data.</param>
@@ -182,7 +182,7 @@ public:
     static bool Convert(TextureData& dst, const TextureData& src, const PixelFormat dstFormat);
 
     /// <summary>
-    /// Resizes the specified source texture data into an another dimensions.
+    /// Resizes the specified source texture data into another dimensions.
     /// </summary>
     /// <param name="dst">The destination data.</param>
     /// <param name="src">The source data.</param>
@@ -191,8 +191,32 @@ public:
     /// <returns>True if fails, otherwise false.</returns>
     static bool Resize(TextureData& dst, const TextureData& src, int32 dstWidth, int32 dstHeight);
 
+    /// <summary>
+    /// Updates the texture data. Supports transcoding source data (eg. Basis).
+    /// </summary>
+    /// <param name="context">The GPU context.</param>
+    /// <param name="texture">The destination GPU texture. It has to be allocated.</param>
+    /// <param name="arrayIndex">The destination surface index in the texture array.</param>
+    /// <param name="mipIndex">The absolute index of the mip map to update.</param>
+    /// <param name="data">The buffer with texture the data.</param>
+    /// <param name="rowPitch">The row pitch (in bytes) of the input data.</param>
+    /// <param name="slicePitch">The slice pitch (in bytes) of the input data.</param>
+    /// <param name="dataFormat">The format of the data. If different then GPU texture format then runtime conversion might happen.</param>
+    static bool UpdateTexture(GPUContext* context, GPUTexture* texture, int32 arrayIndex, int32 mipIndex, Span<byte> data, uint32 rowPitch, uint32 slicePitch, PixelFormat dataFormat);
+
+    /// <summary>
+    /// Calculates the runtime format for the texture pixels based on the texture type and input texture data (format and size). Checks the current GPUDevice formats support.
+    /// </summary>
+    /// <param name="textureType">Type fo the texture that hints it's usage.</param>
+    /// <param name="dataFormat">The existing texture data format (ideally to preserve to avoid conversions).</param>
+    /// <param name="width">Width of the texture (in pixels).</param>
+    /// <param name="height">Height of the texture (in pixels).</param>
+    /// <param name="sRGB">Indicates that texture data is stored in sRGB color space.</param>
+    /// <returns>Resolved pixel format for the GPU Texture.</returns>
+    static PixelFormat GetTextureFormat(TextureFormatType textureType, PixelFormat dataFormat, int32 width, int32 height, bool sRGB);
+
 public:
-    static PixelFormat ToPixelFormat(TextureFormatType format, int32 width, int32 height, bool canCompress);
+    static PixelFormat ToPixelFormat(TextureFormatType format, int32 width, int32 height, bool canCompress = true);
 
 private:
     enum class ImageType
@@ -229,7 +253,11 @@ private:
     static bool ResizeStb(TextureData& dst, const TextureData& src, int32 dstWidth, int32 dstHeight);
 #endif
 #if COMPILE_WITH_ASTC
-    static bool ConvertAstc(TextureData& dst, const TextureData& src, const PixelFormat dstFormat);
+    static bool ConvertAstc(TextureData& dst, const TextureData& src, PixelFormat dstFormat);
+#endif
+#if COMPILE_WITH_BASISU
+    static bool ConvertBasisUniversal(TextureData& dst, const TextureData& src);
+    static bool UpdateTextureBasisUniversal(GPUContext* context, GPUTexture* texture, int32 arrayIndex, int32 mipIndex, Span<byte> data, uint32 rowPitch, uint32 slicePitch, PixelFormat dataFormat);
 #endif
 };
 

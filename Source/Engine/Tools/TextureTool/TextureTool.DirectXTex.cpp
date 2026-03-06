@@ -1082,6 +1082,15 @@ bool TextureTool::ConvertDirectXTex(TextureData& dst, const TextureData& src, co
         return true;
 #endif
     }
+    if (dstFormat == PixelFormat::Basis)
+    {
+#if COMPILE_WITH_BASISU
+        return ConvertBasisUniversal(dst, src);
+#else
+        LOG(Error, "Missing Basis Universal texture format compression lib.");
+        return true;
+#endif
+    }
 
     HRESULT result;
     DirectX::ScratchImage dstImage;

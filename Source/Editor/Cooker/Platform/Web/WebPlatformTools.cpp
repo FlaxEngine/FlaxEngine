@@ -8,11 +8,13 @@
 #include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Platform/Web/WebPlatformSettings.h"
 #include "Engine/Core/Types/Span.h"
+#include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Core/Config/BuildSettings.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/JsonAsset.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
+#include "Engine/Graphics/Textures/TextureBase.h"
 #include "Editor/Cooker/GameCooker.h"
 
 IMPLEMENT_SETTINGS_GETTER(WebPlatformSettings, WebPlatform);
@@ -21,7 +23,7 @@ namespace
 {
     struct WebPlatformCache
     {
-        WebPlatformSettings::TextureQuality TexturesQuality;
+        WebPlatformSettings::TextureCompression TexturesCompression;
     };
 }
 
@@ -53,13 +55,14 @@ DotNetAOTModes WebPlatformTools::UseAOT() const
 PixelFormat WebPlatformTools::GetTextureFormat(CookingData& data, TextureBase* texture, PixelFormat format)
 {
     const auto platformSettings = WebPlatformSettings::Get();
-    switch (platformSettings->TexturesQuality)
+    const auto uncompressed = PixelFormatExtensions::FindUncompressedFormat(format);
+    switch (platformSettings->TexturesCompression)
     {
-    case WebPlatformSettings::TextureQuality::Uncompressed:
-        return PixelFormatExtensions::FindUncompressedFormat(format);
-    case WebPlatformSettings::TextureQuality::BC:
+    case WebPlatformSettings::TextureCompression::Uncompressed:
+        return uncompressed;
+    case WebPlatformSettings::TextureCompression::BC:
         return format;
-    case WebPlatformSettings::TextureQuality::ASTC:
+    case WebPlatformSettings::TextureCompression::ASTC:
         switch (format)
         {
         case PixelFormat::BC4_SNorm:
@@ -71,9 +74,22 @@ PixelFormat WebPlatformTools::GetTextureFormat(CookingData& data, TextureBase* t
         case PixelFormat::BC6H_Sf16:
         case PixelFormat::BC7_Typeless:
         case PixelFormat::BC7_UNorm:
+        case PixelFormat::BC7_UNorm_sRGB:
             return PixelFormat::R16G16B16A16_Float; // TODO: ASTC HDR
-    default:
+        default:
             return PixelFormatExtensions::IsSRGB(format) ? PixelFormat::ASTC_6x6_UNorm_sRGB : PixelFormat::ASTC_6x6_UNorm;
+        }
+    case WebPlatformSettings::TextureCompression::Basis:
+        switch (format)
+        {
+        case PixelFormat::BC7_Typeless:
+        case PixelFormat::BC7_UNorm:
+        case PixelFormat::BC7_UNorm_sRGB:
+            return PixelFormat::R16G16B16A16_Float; // Basic Universal doesn't support alpha in BC7 (and it can be loaded only from LDR formats)
+        default:
+            if (uncompressed != format && texture->Size().MinValue() >= 16)
+                return PixelFormat::Basis;
+            return uncompressed;
         }
     default:
         return format;
@@ -87,7 +103,7 @@ void WebPlatformTools::LoadCache(CookingData& data, IBuildCache* cache, const Sp
     if (bytes.Length() == sizeof(WebPlatformCache))
     {
         auto* platformCache = (WebPlatformCache*)bytes.Get();
-        invalidTextures = platformCache->TexturesQuality != platformSettings->TexturesQuality;
+        invalidTextures = platformCache->TexturesCompression != platformSettings->TexturesCompression;
     }
     if (invalidTextures)
     {
@@ -100,7 +116,7 @@ Array<byte> WebPlatformTools::SaveCache(CookingData& data, IBuildCache* cache)
 {
     const auto platformSettings = WebPlatformSettings::Get();
     WebPlatformCache platformCache;
-    platformCache.TexturesQuality = platformSettings->TexturesQuality;
+    platformCache.TexturesCompression = platformSettings->TexturesCompression;
     Array<byte> result;
     result.Add((const byte*)&platformCache, sizeof(platformCache));
     return result;

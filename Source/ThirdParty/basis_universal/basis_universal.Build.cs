@@ -4,21 +4,20 @@ using Flax.Build;
 using Flax.Build.NativeCpp;
 
 /// <summary>
-/// https://github.com/ARM-software/astc-encoder
+/// https://github.com/BinomialLLC/basis_universal
 /// </summary>
-public class astc : DepsModule
+public class basis_universal : DepsModule
 {
     /// <summary>
-    /// Returns true if can use astc lib for a given build setup.
+    /// Returns true if can use basis_universal lib for a given build setup.
     /// </summary>
     public static bool Use(BuildOptions options)
     {
         switch (options.Platform.Target)
         {
         case TargetPlatform.Windows:
+        case TargetPlatform.Web:
             return true;
-        case TargetPlatform.Mac:
-            return options.Architecture == TargetArchitecture.ARM64;
         default:
             return false;
         }
@@ -30,7 +29,7 @@ public class astc : DepsModule
         base.Init();
 
         LicenseType = LicenseTypes.Apache2;
-        LicenseFilePath = "LICENSE.txt";
+        LicenseFilePath = "LICENSE";
 
         // Merge third-party modules into engine binary
         BinaryModuleName = "FlaxEngine";
@@ -41,7 +40,7 @@ public class astc : DepsModule
     {
         base.Setup(options);
 
-        options.PublicDefinitions.Add("COMPILE_WITH_ASTC");
-        AddLib(options, options.DepsFolder, "astcenc");
+        options.PublicDefinitions.Add("COMPILE_WITH_BASISU");
+        AddLib(options, options.DepsFolder, "basisu_encoder");
     }
 }

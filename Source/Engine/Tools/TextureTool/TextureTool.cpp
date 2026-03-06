@@ -11,6 +11,8 @@
 #include "Engine/Serialization/JsonWriter.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Scripting/Enums.h"
+#include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/PixelFormatSampler.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -389,6 +391,91 @@ bool TextureTool::Resize(TextureData& dst, const TextureData& src, int32 dstWidt
     LOG(Warning, "Resizing textures is not supported on this platform.");
     return true;
 #endif
+}
+
+bool TextureTool::UpdateTexture(GPUContext* context, GPUTexture* texture, int32 arrayIndex, int32 mipIndex, Span<byte> data, uint32 rowPitch, uint32 slicePitch, PixelFormat dataFormat)
+{
+    PixelFormat textureFormat = texture->Format();
+
+    // Basis Universal data transcoded into the runtime GPU format (supercompressed texture)
+    if (dataFormat == PixelFormat::Basis)
+    {
+#if COMPILE_WITH_BASISU
+        return UpdateTextureBasisUniversal(context, texture, arrayIndex, mipIndex, data, rowPitch, slicePitch, dataFormat);
+#else
+        LOG(Error, "Loading Basis Universal textures is not supported on this platform.");
+#endif
+    }
+
+    // Update texture (if format matches)
+    if (textureFormat == dataFormat)
+    {
+        context->UpdateTexture(texture, arrayIndex, mipIndex, data.Get(), rowPitch, slicePitch);
+    }
+    return textureFormat != dataFormat;
+}
+
+PixelFormat TextureTool::GetTextureFormat(TextureFormatType textureType, PixelFormat dataFormat, int32 width, int32 height, bool sRGB)
+{
+#define CHECK_BLOCK_SIZE(x, y) (width % x == 0 && height % y == 0)
+
+    // Basis Universal data transcoded into the runtime GPU format (supercompressed texture)
+    if (dataFormat == PixelFormat::Basis)
+    {
+        ASSERT(GPUDevice::Instance);
+        auto minSupport = FormatSupport::Texture2D | FormatSupport::ShaderSample | FormatSupport::Mip;
+
+        // Check ASTC formats
+        if (EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::ASTC_4x4_UNorm).Support, minSupport) && CHECK_BLOCK_SIZE(4, 4))
+            return sRGB ? PixelFormat::ASTC_4x4_UNorm_sRGB : PixelFormat::ASTC_4x4_UNorm;
+        if (EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::ASTC_6x6_UNorm).Support, minSupport) && CHECK_BLOCK_SIZE(6, 6))
+            return sRGB ? PixelFormat::ASTC_6x6_UNorm_sRGB : PixelFormat::ASTC_6x6_UNorm;
+        if (EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::ASTC_8x8_UNorm).Support, minSupport) && CHECK_BLOCK_SIZE(8, 8))
+            return sRGB ? PixelFormat::ASTC_8x8_UNorm_sRGB : PixelFormat::ASTC_8x8_UNorm;
+        if (EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::ASTC_10x10_UNorm).Support, minSupport) && CHECK_BLOCK_SIZE(10, 10))
+            return sRGB ? PixelFormat::ASTC_10x10_UNorm_sRGB : PixelFormat::ASTC_10x10_UNorm;
+
+        // Check BCn formats
+        if (EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::BC3_UNorm).Support, minSupport) && CHECK_BLOCK_SIZE(4, 4))
+        {
+            switch (textureType)
+            {
+            case TextureFormatType::ColorRGB:
+                return sRGB ? PixelFormat::BC1_UNorm_sRGB : PixelFormat::BC1_UNorm;
+            case TextureFormatType::ColorRGBA:
+                return sRGB ? PixelFormat::BC3_UNorm_sRGB : PixelFormat::BC3_UNorm;
+            case TextureFormatType::NormalMap:
+                return PixelFormat::BC5_UNorm;
+            case TextureFormatType::GrayScale:
+                return PixelFormat::BC4_UNorm;
+            // Basic Universal doesn't support alpha in BC7 (and it can be loaded only from LDR formats)
+            /*case TextureFormatType::HdrRGBA:
+                return PixelFormat::BC7_UNorm;*/
+            case TextureFormatType::HdrRGB:
+                return PixelFormat::BC6H_Uf16;
+            }
+        }
+
+        // Use raw uncompressed as fallback
+        switch (textureType)
+        {
+        case TextureFormatType::ColorRGB:
+        case TextureFormatType::ColorRGBA:
+            return sRGB ? PixelFormat::R8G8B8A8_UNorm_sRGB : PixelFormat::R8G8B8A8_UNorm;
+        case TextureFormatType::NormalMap:
+            return PixelFormat::R8G8B8A8_UNorm;
+        case TextureFormatType::GrayScale:
+            return PixelFormat::R8G8B8A8_UNorm;
+        case TextureFormatType::HdrRGBA:
+        case TextureFormatType::HdrRGB:
+            return PixelFormat::R16G16B16A16_Float;
+        default:
+            return PixelFormat::Unknown;
+        }
+    }
+
+#undef CHECK_BLOCK_SIZE
+    return dataFormat;
 }
 
 PixelFormat TextureTool::ToPixelFormat(TextureFormatType format, int32 width, int32 height, bool canCompress)

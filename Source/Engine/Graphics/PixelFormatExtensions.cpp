@@ -419,14 +419,21 @@ bool PixelFormatExtensions::IsHDR(const PixelFormat format)
 {
     switch (format)
     {
-    case PixelFormat::R11G11B10_Float:
-    case PixelFormat::R10G10B10A2_UNorm:
-    case PixelFormat::R16G16B16A16_Float:
-    case PixelFormat::R32G32B32A32_Float:
-    case PixelFormat::R16G16_Float:
     case PixelFormat::R16_Float:
-    case PixelFormat::BC6H_Sf16:
+    case PixelFormat::R16G16_Float:
+    case PixelFormat::R16G16B16A16_Float:
+    case PixelFormat::R32_Float:
+    case PixelFormat::R32G32_Float:
+    case PixelFormat::R32G32B32_Float:
+    case PixelFormat::R32G32B32A32_Float:
+    case PixelFormat::R11G11B10_Float:
+    case PixelFormat::R9G9B9E5_SharedExp:
+    case PixelFormat::BC6H_Typeless:
     case PixelFormat::BC6H_Uf16:
+    case PixelFormat::BC6H_Sf16:
+    case PixelFormat::BC7_Typeless:
+    case PixelFormat::BC7_UNorm:
+    case PixelFormat::BC7_UNorm_sRGB:
         return true;
     default:
         return false;

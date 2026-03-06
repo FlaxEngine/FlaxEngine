@@ -185,9 +185,12 @@ namespace Flax.Deps
         /// Logs build process start.
         /// </summary>
         /// <param name="platform">Target platform.</param>
-        protected void BuildStarted(TargetPlatform platform, TargetArchitecture architecture)
+        /// <param name="architecture">Target architecture.</param>
+        /// <returns>True if build for the target platform, otherwise false if that architecture should be skipped.</returns>
+        protected bool BuildStarted(TargetPlatform platform, TargetArchitecture architecture)
         {
             Log.Info($"Building {GetType().Name} for {platform}{(architecture != TargetArchitecture.AnyCPU ? $" ({architecture})" : "")}");
+            return Platform.IsPlatformSupported(platform, architecture);
         }
 
         /// <summary>
@@ -248,6 +251,42 @@ namespace Flax.Deps
             if (Directory.Exists(dst))
                 Utilities.DirectoryDelete(dst);
             Utilities.DirectoryCopy(src, dst);
+        }
+
+        /// <summary>
+        /// Copies the library to the deps files (handles platform specific switches). Matches <see cref="DepsModule.AddLib"/>.
+        /// </summary>
+        /// <param name="platform">The build platform.</param>
+        /// <param name="srcFolder">The path fo the source folder with library (build output).</param>
+        /// <param name="dstFolder">The path fo the source folder with library.</param>
+        /// <param name="name">The library name.</param>
+        public static void CopyLib(TargetPlatform platform, string srcFolder, string dstFolder, string name)
+        {
+            string filename, pdbPath;
+            switch (platform)
+            {
+            case TargetPlatform.Windows:
+            case TargetPlatform.XboxOne:
+            case TargetPlatform.UWP:
+            case TargetPlatform.XboxScarlett:
+                filename = string.Format("{0}.lib", name);
+                pdbPath = Path.Combine(srcFolder, string.Format("{0}.pdb", name));
+                if (File.Exists(pdbPath))
+                    Utilities.FileCopy(pdbPath, Path.Combine(dstFolder, string.Format("{0}.pdb", name)), true);
+                break;
+            case TargetPlatform.Linux:
+            case TargetPlatform.PS4:
+            case TargetPlatform.PS5:
+            case TargetPlatform.Android:
+            case TargetPlatform.Switch:
+            case TargetPlatform.Mac:
+            case TargetPlatform.iOS:
+            case TargetPlatform.Web:
+                filename = string.Format("lib{0}.a", name);
+                break;
+            default: throw new InvalidPlatformException(platform);
+            }
+            Utilities.FileCopy(Path.Combine(srcFolder, filename), Path.Combine(dstFolder, filename), true);
         }
 
         /// <summary>
@@ -429,9 +468,10 @@ namespace Flax.Deps
         /// <param name="path">The path.</param>
         /// <param name="config">The configuration preset.</param>
         /// <param name="envVars">Custom environment variables to pass to the child process.</param>
-        public static void BuildCmake(string path, string config = "Release", Dictionary<string, string> envVars = null)
+        /// <param name="options">Defines the options how to run. See RunOptions.</param>
+        public static void BuildCmake(string path, string config = "Release", Dictionary<string, string> envVars = null, Utilities.RunOptions options = Utilities.RunOptions.DefaultTool)
         {
-            Utilities.Run("cmake", $"--build .  --config {config}", null, path, Utilities.RunOptions.DefaultTool, envVars);
+            Utilities.Run("cmake", $"--build .  --config {config}", null, path, options, envVars);
         }
 
         /// <summary>
@@ -512,6 +552,13 @@ namespace Flax.Deps
             {
                 var arch = GetAppleArchName(architecture);
                 cmdLine = string.Format("CMakeLists.txt -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_DEPLOYMENT_TARGET=\"{0}\" -DCMAKE_OSX_ARCHITECTURES={1}", Configuration.iOSMinVer, arch);
+                break;
+            }
+            case TargetPlatform.Web:
+            {
+                cmdLine = string.Format("CMakeLists.txt -DCMAKE_TOOLCHAIN_FILE=\"{0}/emscripten/cmake/Modules/Platform/Emscripten.cmake\"", EmscriptenSdk.Instance.EmscriptenPath);
+                if (BuildPlatform == TargetPlatform.Windows)
+                    cmdLine += " -G \"Ninja\"";
                 break;
             }
             default: throw new InvalidPlatformException(platform);

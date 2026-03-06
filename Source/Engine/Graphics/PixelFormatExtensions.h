@@ -117,10 +117,10 @@ public:
     API_FUNCTION() static bool IsSRGB(PixelFormat format);
 
     /// <summary>
-    /// Determines whether the specified <see cref="PixelFormat"/> is HDR (either 16 or 32bits Float)
+    /// Determines whether the specified <see cref="PixelFormat"/> is High Dynamic Range (HDR) - can store color values larger than 1.
     /// </summary>
     /// <param name="format">The format.</param>
-    /// <returns><c>true</c> if the specified pixel format is HDR (Floating poInt); otherwise, <c>false</c>.</returns>
+    /// <returns><c>true</c> if the specified pixel format is High Dynamic Range (HDR); otherwise, <c>false</c>.</returns>
     API_FUNCTION() static bool IsHDR(PixelFormat format);
 
     /// <summary>

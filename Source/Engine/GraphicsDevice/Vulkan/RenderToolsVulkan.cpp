@@ -9,7 +9,7 @@
 
 // @formatter:off
 
-VkFormat RenderToolsVulkan::PixelFormatToVkFormat[110] =
+VkFormat RenderToolsVulkan::PixelFormatToVkFormat[111] =
 {
     VK_FORMAT_UNDEFINED,
     VK_FORMAT_R32G32B32A32_SFLOAT,
@@ -121,6 +121,7 @@ VkFormat RenderToolsVulkan::PixelFormatToVkFormat[110] =
     VK_FORMAT_ASTC_10x10_SRGB_BLOCK,
     VK_FORMAT_G8B8G8R8_422_UNORM, // YUY2
     VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, // NV12
+    VK_FORMAT_UNDEFINED, // Basis
 };
 
 VkBlendOp RenderToolsVulkan::OperationToVkBlendOp[6] =
@@ -140,9 +141,9 @@ VkCompareOp RenderToolsVulkan::ComparisonFuncToVkCompareOp[9] =
     VK_COMPARE_OP_LESS, // Less
     VK_COMPARE_OP_EQUAL, // Equal
     VK_COMPARE_OP_LESS_OR_EQUAL, // LessEqual
-    VK_COMPARE_OP_GREATER, // Grather
+    VK_COMPARE_OP_GREATER, // Greater
     VK_COMPARE_OP_NOT_EQUAL, // NotEqual
-    VK_COMPARE_OP_GREATER_OR_EQUAL, // GratherEqual
+    VK_COMPARE_OP_GREATER_OR_EQUAL, // GreaterEqual
     VK_COMPARE_OP_ALWAYS, // Always
 };
 

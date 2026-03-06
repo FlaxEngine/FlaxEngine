@@ -743,6 +743,26 @@ bool ProcessTextureBase(CookAssetsStep::AssetCookData& data)
         auto chunk = New<FlaxChunk>();
         data.InitData.Header.Chunks[mipIndex] = chunk;
 
+        if (header.Format == PixelFormat::Basis)
+        {
+            // Store as-is
+            int32 maxDataSize = 0;
+            for (int32 arrayIndex = 0; arrayIndex < textureData->Items.Count(); arrayIndex++)
+            {
+                auto& mipData = textureData->Items[arrayIndex].Mips[mipIndex];
+                maxDataSize = Math::Max(maxDataSize, mipData.Data.Length());
+            }
+            chunk->Data.Allocate(maxDataSize * textureData->GetArraySize());
+            for (int32 arrayIndex = 0; arrayIndex < textureData->Items.Count(); arrayIndex++)
+            {
+                auto& mipData = textureData->Items[arrayIndex].Mips[mipIndex];
+                byte* dst = chunk->Data.Get() + maxDataSize * arrayIndex;
+                Platform::MemoryCopy(dst, mipData.Data.Get(), mipData.Data.Length());
+                Platform::MemoryClear(dst + mipData.Data.Length(), maxDataSize - mipData.Data.Length());
+            }
+            continue;
+        }
+
         // Calculate the texture data storage layout
         uint32 rowPitch, slicePitch;
         const int32 mipWidth = Math::Max(1, textureData->Width >> mipIndex);

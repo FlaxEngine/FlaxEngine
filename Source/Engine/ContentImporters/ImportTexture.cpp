@@ -159,6 +159,8 @@ CreateAssetResult ImportTexture::Create(CreateAssetContext& context, const Textu
     textureHeader.IsSRGB = PixelFormatExtensions::IsSRGB(textureHeader.Format);
     textureHeader.IsCubeMap = isCubeMap;
     textureHeader.TextureGroup = options.TextureGroup;
+    if (textureHeader.Format == PixelFormat::Basis)
+        textureHeader.IsSRGB = options.sRGB; // Basis format can be either sRGB or linear, so use option to decide that
     ASSERT(textureHeader.MipLevels <= GPU_MAX_TEXTURE_MIP_LEVELS);
 
     // Save header

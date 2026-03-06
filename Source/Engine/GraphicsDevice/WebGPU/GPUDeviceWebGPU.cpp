@@ -471,7 +471,9 @@ bool GPUDeviceWebGPU::Init()
         if (features.Contains(WGPUFeatureName_TextureCompressionBC))
         {
             auto supportBc =
+                    FormatSupport::Texture1D |
                     FormatSupport::Texture2D |
+                    FormatSupport::TextureCube |
                     FormatSupport::ShaderLoad |
                     FormatSupport::ShaderSample |
                     FormatSupport::Mip;
@@ -495,7 +497,9 @@ bool GPUDeviceWebGPU::Init()
         if (features.Contains(WGPUFeatureName_TextureCompressionASTC))
         {
             auto supportAstc =
+                    FormatSupport::Texture1D |
                     FormatSupport::Texture2D |
+                    FormatSupport::TextureCube |
                     FormatSupport::ShaderLoad |
                     FormatSupport::ShaderSample |
                     FormatSupport::Mip;

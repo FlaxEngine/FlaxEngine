@@ -64,11 +64,17 @@ public class TextureTool : EngineModule
         {
             options.PrivateDependencies.Add("tinyexr");
         }
-        if (options.Target.IsEditor && astc.IsSupported(options))
+        if (options.Target.IsEditor && astc.Use(options))
         {
             // ASTC for mobile (iOS and Android)
             options.SourceFiles.Add(Path.Combine(FolderPath, "TextureTool.astc.cpp"));
             options.PrivateDependencies.Add("astc");
+        }
+        if ((options.Target.IsEditor || options.Platform.Target == TargetPlatform.Web) && basis_universal.Use(options))
+        {
+            // Universal texture compression for Web
+            options.SourceFiles.Add(Path.Combine(FolderPath, "TextureTool.basis_universal.cpp"));
+            options.PrivateDependencies.Add("basis_universal");
         }
 
         options.PublicDefinitions.Add("COMPILE_WITH_TEXTURE_TOOL");
