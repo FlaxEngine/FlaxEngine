@@ -19,7 +19,7 @@
 
 bool IsSpriteAtlasOrTexture(const String& typeName)
 {
-    return typeName == Texture::TypeName || typeName == SpriteAtlas::TypeName;
+    return typeName == Texture::TypeName || typeName == CubeTexture::TypeName || typeName == SpriteAtlas::TypeName;
 }
 
 bool ImportTexture::TryGetImportOptions(const StringView& path, Options& options)
