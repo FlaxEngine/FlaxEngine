@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Flax Engine. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 namespace Flax.Build
 {

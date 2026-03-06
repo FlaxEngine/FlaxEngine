@@ -8,7 +8,7 @@ using Flax.Build.NativeCpp;
 /// <summary>
 /// https://github.com/NVIDIA-Omniverse/PhysX
 /// </summary>
-public class PhysX : DepsModule
+public class PhysX : EngineDepsModule
 {
     /// <inheritdoc />
     public override void Init()
@@ -17,9 +17,6 @@ public class PhysX : DepsModule
 
         LicenseType = LicenseTypes.BSD3Clause;
         LicenseFilePath = "License.txt";
-
-        // Merge third-party modules into engine binary
-        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />

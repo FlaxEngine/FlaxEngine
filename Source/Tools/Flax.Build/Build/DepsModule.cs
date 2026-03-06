@@ -42,4 +42,18 @@ namespace Flax.Build
             }
         }
     }
+
+    /// <summary>
+    /// The engine dependency module.
+    /// </summary>
+    /// <seealso cref="Flax.Build.DepsModule" />
+    public abstract class EngineDepsModule : DepsModule
+    {
+        /// <inheritdoc />
+        public EngineDepsModule()
+        {
+            // Merge third-party modules into engine binary
+            BinaryModuleName = "FlaxEngine";
+        }
+    }
 }

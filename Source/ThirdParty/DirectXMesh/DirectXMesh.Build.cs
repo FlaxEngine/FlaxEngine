@@ -7,7 +7,7 @@ using Flax.Build.NativeCpp;
 /// <summary>
 /// https://github.com/microsoft/DirectXMesh
 /// </summary>
-public class DirectXMesh : DepsModule
+public class DirectXMesh : EngineDepsModule
 {
     /// <inheritdoc />
     public override void Init()
@@ -16,9 +16,6 @@ public class DirectXMesh : DepsModule
 
         LicenseType = LicenseTypes.MIT;
         LicenseFilePath = "LICENSE";
-
-        // Merge third-party modules into engine binary
-        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />

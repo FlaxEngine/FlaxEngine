@@ -8,7 +8,7 @@ using Flax.Build.NativeCpp;
 /// <summary>
 /// https://www.mono-project.com/
 /// </summary>
-public class mono : DepsModule
+public class mono : EngineDepsModule
 {
     /// <inheritdoc />
     public override void Init()
@@ -17,9 +17,6 @@ public class mono : DepsModule
 
         LicenseType = LicenseTypes.Custom;
         LicenseFilePath = "LICENSE";
-
-        // Merge third-party modules into engine binary
-        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />

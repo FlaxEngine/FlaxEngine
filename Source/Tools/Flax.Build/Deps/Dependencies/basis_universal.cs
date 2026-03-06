@@ -83,6 +83,7 @@ namespace Flax.Deps.Dependencies
             Utilities.ReplaceInFile(cmakeListsPath, "if (CMAKE_SYSTEM_NAME STREQUAL \"WASI\")", "if (CMAKE_SYSTEM_NAME STREQUAL \"WASI\" OR BASISU_BUILD_WASM)");
             Utilities.ReplaceInFile(cmakeListsPath, "set(BASISU_STATIC OFF CACHE BOOL \"\" FORCE)", "");
 
+            foreach (var platform in options.Platforms)
             {
                 foreach (var architecture in options.Architectures)
                 {

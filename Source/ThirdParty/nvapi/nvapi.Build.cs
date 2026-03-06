@@ -7,7 +7,7 @@ using Flax.Build.NativeCpp;
 /// <summary>
 /// https://github.com/NVIDIA/nvapi
 /// </summary>
-public class nvapi : DepsModule
+public class nvapi : EngineDepsModule
 {
     public static bool Use(BuildOptions options)
     {
@@ -21,9 +21,6 @@ public class nvapi : DepsModule
 
         LicenseType = LicenseTypes.MIT;
         LicenseFilePath = "License.txt";
-
-        // Merge third-party modules into engine binary
-        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />

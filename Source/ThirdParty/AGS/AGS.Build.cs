@@ -7,7 +7,7 @@ using Flax.Build.NativeCpp;
 /// <summary>
 /// https://github.com/GPUOpen-LibrariesAndSDKs/AGS_SDK
 /// </summary>
-public class AGS : DepsModule
+public class AGS : EngineDepsModule
 {
     public static bool Use(BuildOptions options)
     {
@@ -21,9 +21,6 @@ public class AGS : DepsModule
 
         LicenseType = LicenseTypes.MIT;
         LicenseFilePath = "LICENSE.txt";
-
-        // Merge third-party modules into engine binary
-        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />

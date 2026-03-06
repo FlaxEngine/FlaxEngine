@@ -7,7 +7,7 @@ using Flax.Build.NativeCpp;
 /// <summary>
 /// https://github.com/xiph/ogg
 /// </summary>
-public class ogg : DepsModule
+public class ogg : EngineDepsModule
 {
     /// <inheritdoc />
     public override void Init()
@@ -16,9 +16,6 @@ public class ogg : DepsModule
 
         LicenseType = LicenseTypes.Custom;
         LicenseFilePath = "COPYING";
-
-        // Merge third-party modules into engine binary
-        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />

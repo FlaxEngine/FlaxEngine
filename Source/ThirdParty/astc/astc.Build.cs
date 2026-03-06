@@ -6,7 +6,7 @@ using Flax.Build.NativeCpp;
 /// <summary>
 /// https://github.com/ARM-software/astc-encoder
 /// </summary>
-public class astc : DepsModule
+public class astc : EngineDepsModule
 {
     /// <summary>
     /// Returns true if can use astc lib for a given build setup.
@@ -31,9 +31,6 @@ public class astc : DepsModule
 
         LicenseType = LicenseTypes.Apache2;
         LicenseFilePath = "LICENSE.txt";
-
-        // Merge third-party modules into engine binary
-        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />

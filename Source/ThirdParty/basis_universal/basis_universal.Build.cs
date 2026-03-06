@@ -6,7 +6,7 @@ using Flax.Build.NativeCpp;
 /// <summary>
 /// https://github.com/BinomialLLC/basis_universal
 /// </summary>
-public class basis_universal : DepsModule
+public class basis_universal : EngineDepsModule
 {
     /// <summary>
     /// Returns true if can use basis_universal lib for a given build setup.
@@ -30,9 +30,6 @@ public class basis_universal : DepsModule
 
         LicenseType = LicenseTypes.Apache2;
         LicenseFilePath = "LICENSE";
-
-        // Merge third-party modules into engine binary
-        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />

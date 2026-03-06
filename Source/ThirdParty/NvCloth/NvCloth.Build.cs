@@ -7,7 +7,7 @@ using Flax.Build.NativeCpp;
 /// <summary>
 /// https://github.com/NVIDIAGameWorks/NvCloth
 /// </summary>
-public class NvCloth : DepsModule
+public class NvCloth : EngineDepsModule
 {
     /// <inheritdoc />
     public override void Init()
@@ -16,9 +16,6 @@ public class NvCloth : DepsModule
 
         LicenseType = LicenseTypes.Custom;
         LicenseFilePath = "License.txt";
-
-        // Merge third-party modules into engine binary
-        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />

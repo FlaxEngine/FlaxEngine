@@ -7,7 +7,7 @@ using Flax.Build.NativeCpp;
 /// <summary>
 /// https://curl.haxx.se/
 /// </summary>
-public class curl : DepsModule
+public class curl : EngineDepsModule
 {
     /// <inheritdoc />
     public override void Init()
@@ -16,9 +16,6 @@ public class curl : DepsModule
 
         LicenseType = LicenseTypes.Custom;
         LicenseFilePath = "curl License.txt";
-
-        // Merge third-party modules into engine binary
-        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />
