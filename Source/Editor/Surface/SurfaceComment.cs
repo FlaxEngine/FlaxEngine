@@ -130,7 +130,7 @@ namespace FlaxEditor.Surface
             _headerRect = new Rectangle(0, 0, Width, headerSize);
             _closeButtonRect = new Rectangle(Width - buttonSize - buttonMargin, buttonMargin, buttonSize, buttonSize);
             _colorButtonRect = new Rectangle(_closeButtonRect.Left - buttonSize - buttonMargin, buttonMargin, buttonSize, buttonSize);
-            _resizeButtonRect = new Rectangle(_closeButtonRect.Left, Height - buttonSize - buttonMargin, buttonSize, buttonSize);
+            //_resizeButtonRect = new Rectangle(_closeButtonRect.Left, Height - buttonSize - buttonMargin, buttonSize, buttonSize);
             _renameTextBox.Width = Width;
             _renameTextBox.Height = headerSize;
         }
@@ -189,12 +189,12 @@ namespace FlaxEditor.Surface
                 Render2D.DrawSprite(style.Settings, _colorButtonRect, _colorButtonRect.Contains(_mousePosition) && Surface.CanEdit ? style.Foreground : style.ForegroundGrey);
 
                 // Resize button
-                if (_isResizing)
-                {
-                    Render2D.FillRectangle(_resizeButtonRect, style.Selection);
-                    Render2D.DrawRectangle(_resizeButtonRect, style.SelectionBorder);
-                }
-                Render2D.DrawSprite(style.Scale, _resizeButtonRect, _resizeButtonRect.Contains(_mousePosition) ? style.Foreground : style.ForegroundGrey);
+                //if (_isResizing)
+                //{
+                //    Render2D.FillRectangle(_resizeButtonRect, style.Selection);
+                //    Render2D.DrawRectangle(_resizeButtonRect, style.SelectionBorder);
+                //}
+                //Render2D.DrawSprite(style.Scale, _resizeButtonRect, _resizeButtonRect.Contains(_mousePosition) ? style.Foreground : style.ForegroundGrey);
             }
 
             // Selection outline
@@ -229,7 +229,7 @@ namespace FlaxEditor.Surface
         /// <inheritdoc />
         public override bool ContainsPoint(ref Float2 location, bool precise)
         {
-            return _headerRect.Contains(ref location) || _resizeButtonRect.Contains(ref location);
+            return _headerRect.Contains(ref location);// || _resizeButtonRect.Contains(ref location);
         }
 
         /// <inheritdoc />
