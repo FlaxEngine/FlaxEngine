@@ -45,6 +45,8 @@ namespace FlaxEditor.Content.Thumbnails
         {
             if (item == null)
                 throw new ArgumentNullException();
+            if (_task == null)
+                return;
 
             // Check if use default icon
             var defaultThumbnail = item.DefaultThumbnail;
@@ -223,11 +225,12 @@ namespace FlaxEditor.Content.Thumbnails
         /// <inheritdoc />
         public override void OnInit()
         {
+            if (Editor.IsHeadlessMode || (GPUDevice.Instance != null && GPUDevice.Instance.RendererType == RendererType.Null))
+                return;
+
             // Create cache folder
             if (!Directory.Exists(_cacheFolder))
-            {
                 Directory.CreateDirectory(_cacheFolder);
-            }
 
             // Find atlases in a Editor cache directory
             var files = Directory.GetFiles(_cacheFolder, "cache_*.flax", SearchOption.TopDirectoryOnly);
@@ -482,7 +485,7 @@ namespace FlaxEditor.Content.Thumbnails
         public override void OnUpdate()
         {
             // Wait some frames before start generating previews (late init feature)
-            if (Time.TimeSinceStartup < 1.0f || HasAllAtlasesLoaded() == false)
+            if (Time.TimeSinceStartup < 1.0f || HasAllAtlasesLoaded() == false || _task == null)
                 return;
 
             lock (_requests)

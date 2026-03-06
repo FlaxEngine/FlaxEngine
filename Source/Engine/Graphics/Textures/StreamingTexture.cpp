@@ -121,6 +121,8 @@ bool StreamingTexture::Create(const TextureHeader& header)
     }
 
     // Request resource streaming
+    if (GPUDevice::Instance && GPUDevice::Instance->GetRendererType() == RendererType::Null)
+        return false;
 #if GPU_ENABLE_TEXTURES_STREAMING
     bool isDynamic = !_header.NeverStream;
 #else
