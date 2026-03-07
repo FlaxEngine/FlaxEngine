@@ -13,58 +13,73 @@ namespace FlaxEditor.Surface
     [HideInEditor]
     public class ResizableSurfaceNode : SurfaceNode
     {
-        private class ResizeBorder : Control
+        /// <summary>
+        /// Helper class for <see cref="ResizableSurfaceNode"/> that handles mouse interactions resizing the node itself.
+        /// </summary>
+        protected class ResizeBorder : Control
         {
+            /// <summary>
+            /// Distance to each of the 4 node edges that the cursor has to be so the user can resize along the direction of the edge.
+            /// </summary>
             private const float BorderWidth = 15f;
-            private const float ResizeOnAxisThreshold = 0.85f;
 
-            public VisjectSurface Surface;
-            public ResizableSurfaceNode ResizeableNode;
-
+            private readonly VisjectSurface Surface;
+            private readonly ResizableSurfaceNode ResizableNode;
             private Float2 _surfaceMouseLocation;
             private Float2 startResizingSize;
 
+            /// <summary>
+            /// True if the mouse is at the border of the resizable node and not further away from the border than <see cref="BorderWidth"/>.
+            /// </summary>
             public bool IsMouseOverResizeBorder { get; private set; }
+
+            /// <summary>
+            /// True if <see cref="ResizableNode"/> is being resized.
+            /// </summary>
             public bool IsResizing { get; private set; }
 
-            public Action StartResize;
-            public Action EndResize;
+            /// <summary>
+            /// The direction in which to resize the node. Should be either -1, 0 or 1 on both axes.
+            /// </summary>
+            public Float2 ResizeDirection { get; private set; }
 
-            public Float2 ResizeWeight { get; private set; }
+            /// <summary>
+            /// The type of cursor to show to hint to the user that they can resize the node in a given direction.
+            /// </summary>
             public CursorType CursorType
             {
                 get
                 {
-                    if ((ResizeWeight.X == 1 && ResizeWeight.Y == 0) || (ResizeWeight.X == -1 && ResizeWeight.Y == 0))
+                    if ((ResizeDirection.X == 1 && ResizeDirection.Y == 0) || (ResizeDirection.X == -1 && ResizeDirection.Y == 0))
                         return CursorType.SizeWE;
-                    if ((ResizeWeight.X == 0 && ResizeWeight.Y == 1) || (ResizeWeight.X == 0 && ResizeWeight.Y == -1))
+                    if ((ResizeDirection.X == 0 && ResizeDirection.Y == 1) || (ResizeDirection.X == 0 && ResizeDirection.Y == -1))
                         return CursorType.SizeNS;
-                    if ((ResizeWeight.X == -1 && ResizeWeight.Y == -1) || (ResizeWeight.X == 1 && ResizeWeight.Y == 1))
+                    if ((ResizeDirection.X == -1 && ResizeDirection.Y == -1) || (ResizeDirection.X == 1 && ResizeDirection.Y == 1))
                         return CursorType.SizeNWSE;
-                    if ((ResizeWeight.X == 1 && ResizeWeight.Y == -1) || (ResizeWeight.X == -1 && ResizeWeight.Y == 1))
+                    if ((ResizeDirection.X == 1 && ResizeDirection.Y == -1) || (ResizeDirection.X == -1 && ResizeDirection.Y == 1))
                         return CursorType.SizeNESW;
 
                     return CursorType.Default;
                 }
             }
-            
 
 
-            public ResizeBorder(VisjectSurface surface, ResizableSurfaceNode resizeableNode)
+            /// <inheritdoc />
+            public ResizeBorder(VisjectSurface surface, ResizableSurfaceNode resizableNode)
             {
                 Surface = surface;
-                ResizeableNode = resizeableNode;
+                ResizableNode = resizableNode;
             }
 
             /// <summary>
-            /// Updates location and size to match the resizeable node with the additional padding.
+            /// Updates location and size to match the resizable node with the additional padding.
             /// </summary>
             /// <param name="nodeSize">The node size.</param>
             /// <param name="nodeLocation">The node location.</param>
-            public void MatchResizeableNode(Float2 nodeSize, Float2 nodeLocation)
+            public void MatchResizableNode(Float2 nodeSize, Float2 nodeLocation)
             {
-                Size = nodeSize + new Float2(BorderWidth);
-                Location = nodeLocation - new Float2(BorderWidth * 0.5f);
+                Size = nodeSize + new Float2(BorderWidth * 2);
+                Location = nodeLocation - new Float2(BorderWidth);
             }
 
             private void UpdateSurfaceMouseLocation()
@@ -72,23 +87,27 @@ namespace FlaxEditor.Surface
                 _surfaceMouseLocation = Surface.PointFromScreen(Input.MouseScreenPosition);
             }
 
-            private void UpdateResizeFlags(Float2 location)
+            private void UpdateResizeFlags(Float2 mouseLocation)
             {
                 var borderRect = Bounds with { Location = Float2.Zero };
-                bool onBorder = borderRect.Contains(location);
+                bool onBorder = borderRect.Contains(mouseLocation);
+                // Check this the way we do because some resizeable nodes (like comments) have an implementation of `Control.ContainsPoint`
+                // that does not check for the size you would think they have based on their visual appearance
+                bool inNode = borderRect.MakeExpanded(-BorderWidth * 2f).Contains(mouseLocation);
 
-                Float2 rawResizeWeight = (location - borderRect.Center) / (borderRect.Size * 0.5f);
-                ResizeWeight = new Float2(Mathf.Abs(rawResizeWeight.X) >= ResizeOnAxisThreshold ? Mathf.Sign(rawResizeWeight.X) : 0,
-                                        Mathf.Abs(rawResizeWeight.Y) >= ResizeOnAxisThreshold ? Mathf.Sign(rawResizeWeight.Y) : 0);
+                Float2 rawResizeDirection = (mouseLocation - borderRect.Center);
+                var nodeHalfSizeNoBorder = ResizableNode.Size * 0.5f - BorderWidth;
+                ResizeDirection = new Float2(Mathf.Abs(rawResizeDirection.X) >= nodeHalfSizeNoBorder.X ? Mathf.Sign(rawResizeDirection.X) : 0,
+                                             Mathf.Abs(rawResizeDirection.Y) >= nodeHalfSizeNoBorder.Y ? Mathf.Sign(rawResizeDirection.Y) : 0);
 
-                IsMouseOverResizeBorder = onBorder && !ResizeableNode.IsMouseOver;
+                IsMouseOverResizeBorder = false;// onBorder && !inNode;
             }
 
             private Float2 GetControlDelta(Control control, ref Float2 start, ref Float2 end)
             {
                 var pointOrigin = control.Parent ?? control;
-                var startPos = pointOrigin.PointFromParent(ResizeableNode, start);
-                var endPos = pointOrigin.PointFromParent(ResizeableNode, end);
+                var startPos = pointOrigin.PointFromParent(ResizableNode, start);
+                var endPos = pointOrigin.PointFromParent(ResizableNode, end);
                 return endPos - startPos;
             }
 
@@ -96,14 +115,15 @@ namespace FlaxEditor.Surface
             {
                 EndMouseCapture();
                 IsResizing = false;
-                if (startResizingSize != ResizeableNode.Size)
+                if (startResizingSize != ResizableNode.Size)
                 {
-                    var emptySize = ResizeableNode.CalculateNodeSize(0, 0);
-                    ResizeableNode.SizeValue = ResizeableNode.Size - emptySize;
+                    var emptySize = ResizableNode.CalculateNodeSize(0, 0);
+                    ResizableNode.SizeValue = ResizableNode.Size - emptySize;
                     Surface.MarkAsEdited(false);
                 }
             }
 
+            /// <inheritdoc />
             public override void OnMouseLeave()
             {
                 Cursor = CursorType.Default;
@@ -120,44 +140,53 @@ namespace FlaxEditor.Surface
                 }
                 else
                 {
-                    var resizeAxisAbs = ResizeWeight.Absolute;
-                    var resizeAxisPos = Float2.Clamp(ResizeWeight, Float2.Zero, Float2.One);
-                    var resizeAxisNeg = Float2.Clamp(-ResizeWeight, Float2.Zero, Float2.One);
+                    var resizeAxisAbs = ResizeDirection.Absolute;
+                    var resizeAxisPos = Float2.Clamp(ResizeDirection, Float2.Zero, Float2.One);
+                    var resizeAxisNeg = Float2.Clamp(-ResizeDirection, Float2.Zero, Float2.One);
 
                     var currentSurfaceMouse = Surface.PointFromScreen(Input.MouseScreenPosition);
                     var delta = currentSurfaceMouse - _surfaceMouseLocation;
+
                     // TODO: scale/size snapping?
                     delta *= resizeAxisAbs;
 
                     var moveLocation = _surfaceMouseLocation + delta;
 
-                    // TODO: Do I need GetControlDelta?
                     var uiControlDelta = GetControlDelta(this, ref _surfaceMouseLocation, ref moveLocation);
-                    var emptySize = ResizeableNode.CalculateNodeSize(0, 0);
-                    ResizeableNode.Size += uiControlDelta * resizeAxisPos - uiControlDelta * resizeAxisNeg;
-                    Float2 oldSize = ResizeableNode.Size;
-                    ResizeableNode.Size = new Float2(Mathf.Max(ResizeableNode.Size.X, ResizeableNode.sizeMin.X), Mathf.Max(ResizeableNode.Size.Y, ResizeableNode.sizeMin.Y));
-                    if (oldSize == ResizeableNode.Size) // Only move if size wasn't clamped
-                    {
-                        ResizeableNode.Location += uiControlDelta * resizeAxisNeg;
-                    }
-                    ResizeableNode.SizeValue = ResizeableNode.Size - emptySize;
-                    ResizeableNode.SizeValue = new Float2(Mathf.Max(ResizeableNode.SizeValue.X, ResizeableNode.sizeMin.X), Mathf.Max(ResizeableNode.SizeValue.Y, ResizeableNode.sizeMin.Y));
-                    ResizeableNode.CalculateNodeSize(ResizeableNode.Size.X, ResizeableNode.Size.Y);
+                    var emptySize = ResizableNode.CalculateNodeSize(0, 0);
+
+
+                    // TODO: Fix: Can't move comments anymore
+
+                    // TODO: If resize is blocked by min size and the user tries to increase the size again, wait until !blocked by min size to apply delta again
+                    // To do this, just record pos when starting to block by min size and if (cursorLocation > min) { ResizeAgain() }
+
+                    ResizableNode.Size += uiControlDelta * resizeAxisPos - uiControlDelta * resizeAxisNeg;
+                    ResizableNode.Size = new Float2(Mathf.Max(ResizableNode.Size.X, ResizableNode.sizeMin.X), Mathf.Max(ResizableNode.Size.Y, ResizableNode.sizeMin.Y));
+                    ResizableNode.Location += uiControlDelta * resizeAxisNeg;
+
+                    // Only move if size wasn't clamped
+
+
+                    //Debug.Log($"OLD: {oldSize} NEW: {ResizableNode.Size}");
+
+                    ResizableNode.SizeValue = ResizableNode.Size - emptySize;
+                    ResizableNode.SizeValue = new Float2(Mathf.Max(ResizableNode.SizeValue.X, ResizableNode.sizeMin.X), Mathf.Max(ResizableNode.SizeValue.Y, ResizableNode.sizeMin.Y));
+                    ResizableNode.CalculateNodeSize(ResizableNode.Size.X, ResizableNode.Size.Y);
+
                     UpdateSurfaceMouseLocation();
-                    MatchResizeableNode(ResizeableNode.Size, ResizeableNode.Location);
+                    MatchResizableNode(ResizableNode.Size, ResizableNode.Location);
                 }
 
                 if (IsMouseOverResizeBorder)
                     Cursor = CursorType;
                 else
                     Cursor = CursorType.Default;
-                
-
 
                 base.OnMouseMove(location);
             }
 
+            /// <inheritdoc />
             public override bool OnMouseDown(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left && IsMouseOverResizeBorder && !IsResizing)
@@ -165,7 +194,7 @@ namespace FlaxEditor.Surface
                     // Start resizing
                     UpdateSurfaceMouseLocation();
                     IsResizing = true;
-                    startResizingSize = ResizeableNode.Size;
+                    startResizingSize = ResizableNode.Size;
                     StartMouseCapture();
                     return true;
                 }
@@ -173,6 +202,7 @@ namespace FlaxEditor.Surface
                 return base.OnMouseDown(location, button);
             }
 
+            /// <inheritdoc />
             public override bool OnMouseUp(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left && IsResizing)
@@ -203,14 +233,17 @@ namespace FlaxEditor.Surface
                 base.OnEndMouseCapture();
             }
 
-            //public override void Draw()
-            //{
-            //    Render2D.DrawRectangle(new Rectangle(Float2.Zero, Size), Color.Blue, 1f);
-            //}
+            /// <inheritdoc />
+            public override void Draw()
+            {
+                Render2D.DrawRectangle(Bounds with { Location = Float2.Zero }, Color.Green, 1f);
+            }
         }
 
-
-        private ResizeBorder resizeBorder;
+        /// <summary>
+        /// Represents the border control used for resizing the associated element.
+        /// </summary>
+        protected ResizeBorder ResizeBorderControl;
 
         /// <summary>
         /// Index of the Float2 value in the node values list to store node size.
@@ -232,28 +265,26 @@ namespace FlaxEditor.Surface
         public ResizableSurfaceNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
         : base(id, context, nodeArch, groupArch)
         {
-            CullChildren = false;
-            ClipChildren = false;
-            resizeBorder = new ResizeBorder(Surface, this)
+            ResizeBorderControl = new ResizeBorder(Surface, this)
             {
                 Parent = Surface.SurfaceRoot,
             };
 
-            resizeBorder.MatchResizeableNode(Size, Location);
+            ResizeBorderControl.MatchResizableNode(Size, Location);
         }
 
         /// <inheritdoc />
         protected override void OnLocationChanged()
         {
-            resizeBorder.MatchResizeableNode(Size, Location);
+            ResizeBorderControl.MatchResizableNode(Size, Location);
             base.OnLocationChanged();
         }
 
-        /// <inheritdoc />
-        public override bool CanSelect(ref Float2 location)
-        {
-            return base.CanSelect(ref location);
-        }
+        ///// <inheritdoc />
+        //public override bool CanSelect(ref Float2 location)
+        //{
+        //    return base.CanSelect(ref location);
+        //}
 
         /// <inheritdoc />
         public override void OnSurfaceLoaded(SurfaceNodeActions action)
@@ -263,7 +294,7 @@ namespace FlaxEditor.Surface
             if (Surface != null && Surface.GridSnappingEnabled)
                 size = Surface.SnapToGrid(size, true);
             Resize(size.X, size.Y);
-            resizeBorder.MatchResizeableNode(Size, Location);
+            ResizeBorderControl.MatchResizableNode(Size, Location);
 
             base.OnSurfaceLoaded(action);
         }
@@ -282,9 +313,9 @@ namespace FlaxEditor.Surface
         {
             base.Draw();
 
-            if (Surface.CanEdit && (resizeBorder.IsResizing || resizeBorder.IsMouseOverResizeBorder))
+            if (Surface.CanEdit && (ResizeBorderControl.IsResizing || ResizeBorderControl.IsMouseOverResizeBorder))
             {
-                Render2D.DrawRectangle(new Rectangle(Float2.Zero, Size), Style.Current.Foreground, 2f);
+                Render2D.DrawRectangle(new Rectangle(Float2.Zero, Size), Style.Current.Foreground, 0.5f);
             }
         }
     }
