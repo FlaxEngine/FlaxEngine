@@ -142,7 +142,7 @@ namespace Flax.Build.Platforms
             args.Add("-lX11");
             args.Add("-lXcursor");
             args.Add("-lXinerama");
-            /*args.Add("-lXfixes");
+            args.Add("-lXfixes");
 
             if (EngineConfiguration.WithSDL(options))
             {
@@ -153,7 +153,7 @@ namespace Flax.Build.Platforms
                 args.Add("-lglib-2.0");
                 args.Add("-lgio-2.0");
                 args.Add("-lgobject-2.0");
-            }*/
+            }
         }
 
         /// <inheritdoc />
