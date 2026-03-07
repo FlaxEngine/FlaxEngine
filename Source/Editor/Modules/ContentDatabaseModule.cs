@@ -754,6 +754,10 @@ namespace FlaxEditor.Modules
                     // Delete asset by using content pool
                     FlaxEngine.Content.DeleteAsset(path);
                 }
+                else if (item is ScriptItem)
+                {
+                    FlaxEngine.Content.DeleteScript(path);
+                }
                 else if (deletedByUser)
                 {
                     // Delete file
@@ -901,7 +905,7 @@ namespace FlaxEditor.Modules
                     {
                         // Item doesn't exist anymore
                         Editor.Log(string.Format($"Content item \'{child.Path}\' has been removed"));
-                        Delete(child, false);
+                        Delete(child);
                         i--;
                     }
                     else if (canHaveAssets && child is AssetItem childAsset)
