@@ -9,6 +9,7 @@
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Graphics/Config.h"
 #include "Engine/GraphicsDevice/Vulkan/Types.h"
+#include <ThirdParty/LZ4/lz4.h>
 
 // Use glslang for HLSL to SPIR-V translation
 // Source: https://github.com/KhronosGroup/glslang
@@ -939,8 +940,6 @@ bool ShaderCompilerVulkan::OnCompileBegin()
 
     //_globalMacros.Add({ "VULKAN", "1" }); // glslang compiler adds VULKAN define if EShMsgVulkanRules flag is specified
 
-    // TODO: handle options->TreatWarningsAsErrors
-
     return false;
 }
 
@@ -967,9 +966,22 @@ void ShaderCompilerVulkan::InitCodegen(ShaderCompilationContext* context, glslan
 
 bool ShaderCompilerVulkan::Write(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const ShaderBindings& bindings, struct SpirvShaderHeader& header, std::vector<unsigned int>& spirv)
 {
-    int32 spirvBytesCount = (int32)spirv.size() * sizeof(unsigned);
+    // Compress
+    const int32 srcSize = (int32)spirv.size() * sizeof(unsigned);
+    const int32 maxSize = LZ4_compressBound(srcSize);
+    Array<byte> spirvCompressed;
+    spirvCompressed.Resize(maxSize + sizeof(int32));
+    const int32 dstSize = LZ4_compress_default((const char*)&spirv[0], (char*)spirvCompressed.Get() + sizeof(int32), srcSize, maxSize);
+    if (dstSize > 0 && dstSize < (int32)(srcSize * 0.8f)) // Expect 20% or more compression ratio to use it (to avoid decompressing if the gain is not big enough)
+    {
+        spirvCompressed.Resize(dstSize + sizeof(int32));
+        *(int32*)spirvCompressed.Get() = srcSize; // Store original size in the beginning to decompress it
+        header.Type = SpirvShaderHeader::Types::SPIRV_LZ4;
+        return WriteShaderFunctionPermutation(_context, meta, permutationIndex, bindings, &header, sizeof(header), spirvCompressed.Get(), spirvCompressed.Count());
+    }
+
     header.Type = SpirvShaderHeader::Types::SPIRV;
-    return WriteShaderFunctionPermutation(_context, meta, permutationIndex, bindings, &header, sizeof(header), &spirv[0], spirvBytesCount);
+    return WriteShaderFunctionPermutation(_context, meta, permutationIndex, bindings, &header, sizeof(header), &spirv[0], srcSize);
 }
 
 #endif

@@ -105,7 +105,6 @@ bool ShaderCompilerWebGPU::Write(ShaderCompilationContext* context, ShaderFuncti
         return WriteShaderFunctionPermutation(_context, meta, permutationIndex, bindings, &header, sizeof(header), wgslCompressed.Get(), wgslCompressed.Count());
     }
 
-
     header.Type = SpirvShaderHeader::Types::WGSL;
     return WriteShaderFunctionPermutation(_context, meta, permutationIndex, bindings, &header, sizeof(header), wgsl.Get(), wgsl.Length() + 1);
 }

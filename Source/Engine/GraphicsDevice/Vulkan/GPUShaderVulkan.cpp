@@ -12,6 +12,7 @@
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Profiler/ProfilerMemory.h"
+#include <ThirdParty/LZ4/lz4.h>
 
 #if PLATFORM_DESKTOP
 #define VULKAN_UNIFORM_RING_BUFFER_SIZE (24 * 1024 * 1024)
@@ -108,8 +109,28 @@ GPUShaderProgram* GPUShaderVulkan::CreateGPUShaderProgram(ShaderStage type, cons
 
     // Extract the SPIR-V bytecode
     BytesContainer spirv;
-    ASSERT(header->Type == SpirvShaderHeader::Types::SPIRV);
-    spirv.Link(bytecode);
+    switch (header->Type)
+    {
+    case SpirvShaderHeader::Types::SPIRV:
+        spirv.Link(bytecode);
+        break;
+    case SpirvShaderHeader::Types::SPIRV_LZ4:
+    {
+        int32 originalSize = *(int32*)bytecode.Get();
+        bytecode = bytecode.Slice(sizeof(int32));
+        spirv.Allocate(originalSize);
+        const int32 res = LZ4_decompress_safe((const char*)bytecode.Get(), (char*)spirv.Get(), bytecode.Length(), originalSize);
+        if (res <= 0)
+        {
+            LOG(Error, "Failed to decompress shader");
+            return nullptr;
+        }
+        break;
+    }
+    default:
+        LOG(Error, "Invalid shader program format");
+        return nullptr;
+    }
 
     // Create shader module from SPIR-V bytecode
     VkShaderModule shaderModule = VK_NULL_HANDLE;
