@@ -148,7 +148,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(CreateWindowSettings);
     /// True if it's a regular window, false for tooltips, context menu and other utility windows.
     /// [Deprecated in v1.12]
     /// </summary>
-    API_FIELD() DEPRECATED("Use Type instead") bool IsRegularWindow = true;
+    API_FIELD() DEPRECATED("Use Type instead") bool IsRegularWindow;
 
     /// <summary>
     /// The type of window. The type affects the behaviour of the window in system level.
@@ -170,4 +170,16 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(CreateWindowSettings);
     /// The custom data (platform dependant).
     /// </summary>
     API_FIELD() void* Data = nullptr;
+
+public:
+    // Ignore deprecation warnings in defaults
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
+    CreateWindowSettings()
+    {
+        IsRegularWindow = true;
+    }
+    CreateWindowSettings(const CreateWindowSettings& other) = default;
+    CreateWindowSettings(CreateWindowSettings&& other) = default;
+    CreateWindowSettings& operator=(const CreateWindowSettings& other) = default;
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS
 };
