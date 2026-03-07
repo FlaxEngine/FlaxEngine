@@ -56,7 +56,7 @@ namespace FlaxEditor.Surface
         : base(id, context, nodeArch, groupArch)
         {
             _sizeValueIndex = 2; // Index of the Size stored in Values array
-            _sizeMin = new Float2(140.0f, Constants.NodeHeaderSize);
+            sizeMin = new Float2(140.0f, Constants.NodeHeaderSize);
             _renameTextBox = new TextBox(false, 0, 0, Width)
             {
                 Height = Constants.NodeHeaderSize,
