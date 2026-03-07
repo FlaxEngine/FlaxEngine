@@ -38,7 +38,7 @@ jobs:
         dotnet msbuild Source/Tools/Flax.Build.Tests/Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
     - name: Test
       run: |
-        ${GITHUB_WORKSPACE}/Binaries/Editor/Linux/Development/FlaxTests
+        gdb ${GITHUB_WORKSPACE}/Binaries/Editor/Linux/Development/FlaxTests
         dotnet test -f net8.0 Binaries/Tests/Flax.Build.Tests.dll
         cp Binaries/Editor/Linux/Development/FlaxEngine.CSharp.dll Binaries/Tests
         cp Binaries/Editor/Linux/Development/FlaxEngine.CSharp.runtimeconfig.json Binaries/Tests
