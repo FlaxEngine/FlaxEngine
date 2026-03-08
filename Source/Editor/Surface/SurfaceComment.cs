@@ -81,12 +81,16 @@ namespace FlaxEditor.Surface
             if (Values.Length < 4)
             {
                 if (IndexInParent > 0)
+                {
                     IndexInParent = 0;
+                    ResizeBorderControl.IndexInParent = - 1;
+                }
                 OrderValue = IndexInParent;
             }
             else if (OrderValue != -1)
             {
                 IndexInParent = OrderValue;
+                ResizeBorderControl.IndexInParent = OrderValue - 1;
             }
         }
 
