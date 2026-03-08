@@ -81,16 +81,12 @@ namespace FlaxEditor.Surface
             if (Values.Length < 4)
             {
                 if (IndexInParent > 0)
-                {
                     IndexInParent = 0;
-                    ResizeBorderControl.IndexInParent = - 1;
-                }
                 OrderValue = IndexInParent;
             }
             else if (OrderValue != -1)
             {
-                IndexInParent = OrderValue;
-                ResizeBorderControl.IndexInParent = OrderValue - 1;
+                ResizeBorderControl.IndexInParent = OrderValue;
             }
         }
 
@@ -103,8 +99,8 @@ namespace FlaxEditor.Surface
             Color = ColorValue = Color.FromHSV(new Random().NextFloat(0, 360), 0.7f, 0.25f, 0.8f);
 
             if (OrderValue == -1)
-                OrderValue = Context.CommentCount - 1;
-            IndexInParent = OrderValue;
+                OrderValue = Context.CommentCount;
+            ResizeBorderControl.IndexInParent = OrderValue;
         }
 
         /// <inheritdoc />
@@ -333,25 +329,25 @@ namespace FlaxEditor.Surface
             {
                 cmOrder.ContextMenu.AddButton("Bring Forward", () =>
                 {
-                    if (IndexInParent < Context.CommentCount - 1)
-                        IndexInParent++;
-                    OrderValue = IndexInParent;
+                    if (ResizeBorderControl.IndexInParent < Context.CommentCount - 1)
+                        ResizeBorderControl.IndexInParent++;
+                    OrderValue = ResizeBorderControl.IndexInParent;
                 });
                 cmOrder.ContextMenu.AddButton("Bring to Front", () =>
                 {
-                    IndexInParent = Context.CommentCount - 1;
-                    OrderValue = IndexInParent;
+                    ResizeBorderControl.IndexInParent = Context.CommentCount - 1;
+                    OrderValue = ResizeBorderControl.IndexInParent;
                 });
                 cmOrder.ContextMenu.AddButton("Send Backward", () =>
                 {
-                    if (IndexInParent > 0)
-                        IndexInParent--;
-                    OrderValue = IndexInParent;
+                    if (ResizeBorderControl.IndexInParent > 0)
+                        ResizeBorderControl.IndexInParent--;
+                    OrderValue = ResizeBorderControl.IndexInParent;
                 });
                 cmOrder.ContextMenu.AddButton("Send to Back", () =>
                 {
-                    IndexInParent = 0;
-                    OrderValue = IndexInParent;
+                    ResizeBorderControl.IndexInParent = 0;
+                    OrderValue = ResizeBorderControl.IndexInParent;
                 });
             }
         }

@@ -46,10 +46,10 @@ namespace FlaxEditor.Surface
             {
                 var child = _children[i];
 
-                if (child is SurfaceComment && child.Visible)
+                if (child is ResizableSurfaceNode.ResizeBorder border && border.ResizableNode is SurfaceComment comment2 && comment2.Visible)
                 {
-                    Render2D.PushTransform(ref child._cachedTransform);
-                    child.Draw();
+                    Render2D.PushTransform(ref comment2._cachedTransform);
+                    comment2.Draw();
                     Render2D.PopTransform();
                 }
             }

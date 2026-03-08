@@ -16,7 +16,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Helper class for <see cref="ResizableSurfaceNode"/> that handles mouse interactions resizing the node itself.
         /// </summary>
-        protected class ResizeBorder : Control
+        public class ResizeBorder : ContainerControl
         {
             /// <summary>
             /// Distance to each of the 4 node edges that the cursor has to be so the user can resize along the direction of the edge.
@@ -24,9 +24,13 @@ namespace FlaxEditor.Surface
             private const float BorderWidth = 15f;
 
             private readonly VisjectSurface Surface;
-            private readonly ResizableSurfaceNode ResizableNode;
             private Float2 _surfaceMouseLocation;
             private Float2 startResizingSize;
+
+            /// <summary>
+            /// The resizable node that this <see cref="ResizeBorder"/> controls.
+            /// </summary>
+            public readonly ResizableSurfaceNode ResizableNode;
 
             /// <summary>
             /// True if the mouse is at the border of the resizable node and not further away from the border than <see cref="BorderWidth"/>.
@@ -62,7 +66,6 @@ namespace FlaxEditor.Surface
                     return CursorType.Default;
                 }
             }
-
 
             /// <inheritdoc />
             public ResizeBorder(VisjectSurface surface, ResizableSurfaceNode resizableNode)
@@ -100,7 +103,7 @@ namespace FlaxEditor.Surface
                 ResizeDirection = new Float2(Mathf.Abs(rawResizeDirection.X) >= nodeHalfSizeNoBorder.X ? Mathf.Sign(rawResizeDirection.X) : 0,
                                              Mathf.Abs(rawResizeDirection.Y) >= nodeHalfSizeNoBorder.Y ? Mathf.Sign(rawResizeDirection.Y) : 0);
 
-                IsMouseOverResizeBorder = false;// onBorder && !inNode;
+                IsMouseOverResizeBorder = onBorder && !inNode;
             }
 
             private Float2 GetControlDelta(Control control, ref Float2 start, ref Float2 end)
@@ -187,6 +190,13 @@ namespace FlaxEditor.Surface
             }
 
             /// <inheritdoc />
+            public override void OnMouseEnter(Float2 location)
+            {
+                Cursor = CursorType.Default;
+                base.OnMouseEnter(location);
+            }
+
+            /// <inheritdoc />
             public override bool OnMouseDown(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left && IsMouseOverResizeBorder && !IsResizing)
@@ -243,7 +253,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Represents the border control used for resizing the associated element.
         /// </summary>
-        protected ResizeBorder ResizeBorderControl;
+        public ResizeBorder ResizeBorderControl;
 
         /// <summary>
         /// Index of the Float2 value in the node values list to store node size.
@@ -270,6 +280,7 @@ namespace FlaxEditor.Surface
                 Parent = Surface.SurfaceRoot,
             };
 
+            Parent = ResizeBorderControl;
             ResizeBorderControl.MatchResizableNode(Size, Location);
         }
 
@@ -280,13 +291,7 @@ namespace FlaxEditor.Surface
             base.OnLocationChanged();
         }
 
-        ///// <inheritdoc />
-        //public override bool CanSelect(ref Float2 location)
-        //{
-        //    return base.CanSelect(ref location);
-        //}
-
-        /// <inheritdoc />
+         /// <inheritdoc />
         public override void OnSurfaceLoaded(SurfaceNodeActions action)
         {
             // Reapply the curve node size
@@ -314,9 +319,14 @@ namespace FlaxEditor.Surface
             base.Draw();
 
             if (Surface.CanEdit && (ResizeBorderControl.IsResizing || ResizeBorderControl.IsMouseOverResizeBorder))
-            {
                 Render2D.DrawRectangle(new Rectangle(Float2.Zero, Size), Style.Current.Foreground, 0.5f);
-            }
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            ResizeBorderControl.Parent = null;
+            base.OnDestroy();
         }
     }
 }
