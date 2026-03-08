@@ -739,7 +739,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
-            var _style = FlaxEngine.GUI.Style.Current;
+            var style = FlaxEngine.GUI.Style.Current;
 
             // Area for drag&drop scripts
             var dragArea = layout.CustomContainer<DragAreaControl>();
@@ -802,17 +802,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 bool hasAllRequirements = true;
                 if (scriptType.HasAttribute(typeof(RequireScriptAttribute), false))
                 {
-                    RequireScriptAttribute scriptAttribute = null;
-                    foreach (var e in scriptType.GetAttributes(false))
+                    var attribute = (RequireScriptAttribute)scriptType.GetAttributes(false).FirstOrDefault(x => x is RequireScriptAttribute);
+                    if (attribute != null)
                     {
-                        if (e is not RequireScriptAttribute requireScriptAttribute)
-                            continue;
-                        scriptAttribute = requireScriptAttribute;
-                    }
-
-                    if (scriptAttribute != null)
-                    {
-                        foreach (var type in scriptAttribute.RequiredTypes)
+                        foreach (var type in attribute.RequiredTypes)
                         {
                             if (!type.IsSubclassOf(typeof(Script)))
                                 continue;
@@ -827,15 +820,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 }
                 if (scriptType.HasAttribute(typeof(RequireActorAttribute), false))
                 {
-                    RequireActorAttribute attribute = null;
-                    foreach (var e in scriptType.GetAttributes(false))
-                    {
-                        if (e is not RequireActorAttribute requireActorAttribute)
-                            continue;
-                        attribute = requireActorAttribute;
-                        break;
-                    }
-
+                    var attribute = (RequireActorAttribute)scriptType.GetAttributes(false).FirstOrDefault(x => x is RequireActorAttribute);
                     if (attribute != null)
                     {
                         var actor = script.Actor;
@@ -852,7 +837,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 var title = Utilities.Utils.GetPropertyNameUI(scriptType.Name);
                 var group = layout.Group(title, editor);
                 if (!hasAllRequirements)
-                    group.Panel.HeaderTextColor = _style.Statusbar.Failed;
+                    group.Panel.HeaderTextColor = style.Statusbar.Failed;
                 if ((Presenter.Features & FeatureFlags.CacheExpandedGroups) != 0)
                 {
                     if (Editor.Instance.ProjectCache.IsGroupToggled(title))
@@ -868,7 +853,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 float totalHeaderButtonsOffset = 0f;
                 group.Panel.TooltipText = Editor.Instance.CodeDocs.GetTooltip(scriptType);
                 if (script.HasPrefabLink)
-                    group.Panel.HeaderTextColor = _style.ProgressNormal;
+                    group.Panel.HeaderTextColor = style.ProgressNormal;
 
                 // Add toggle button to the group
                 var headerHeight = group.Panel.HeaderHeight;
@@ -892,7 +877,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     TooltipText = "Script reference.",
                     AutoFocus = true,
                     IsScrollable = false,
-                    Color = _style.ForegroundGrey,
+                    Color = style.ForegroundGrey,
                     Parent = group.Panel,
                     Bounds = new Rectangle(scriptToggle.Right, 0.5f, headerHeight, headerHeight),
                     Margin = new Margin(1),
@@ -916,9 +901,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 // Add script obsolete icon to the group
                 if (scriptType.HasAttribute(typeof(ObsoleteAttribute), false))
                 {
-                    ObsoleteAttribute attribute = (ObsoleteAttribute)scriptType.GetAttributes(false).First(x => x is ObsoleteAttribute);
-
-                    string tooltip = "Script marked as obsolete." +
+                    var attribute = (ObsoleteAttribute)scriptType.GetAttributes(false).First(x => x is ObsoleteAttribute);
+                    var tooltip = "Script marked as obsolete." +
                         (string.IsNullOrEmpty(attribute.Message) ? "" : $"\n{attribute.Message}") +
                         (string.IsNullOrEmpty(attribute.DiagnosticId) ? "" : $"\n{attribute.DiagnosticId}");
                     var obsoleteButton = group.AddHeaderButton(tooltip, totalHeaderButtonsOffset, Editor.Instance.Icons.Info32);
@@ -932,14 +916,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 if (isPrefabActor && script.PrefabID == Guid.Empty)
                 {
                     var prefabInstanceButton = group.AddHeaderButton("Script only exists in this prefab instance.", totalHeaderButtonsOffset, Editor.Instance.Icons.Add32);
-                    prefabInstanceButton.Color = _style.ProgressNormal;
-                    prefabInstanceButton.MouseOverColor = _style.ProgressNormal * 0.9f;
+                    prefabInstanceButton.Color = style.ProgressNormal;
+                    prefabInstanceButton.MouseOverColor = style.ProgressNormal * 0.9f;
                     totalHeaderButtonsOffset += prefabInstanceButton.Width;
                 }
 
                 // Adjust margin to not overlap with other ui elements in the header
                 group.Panel.HeaderTextMargin = group.Panel.HeaderTextMargin with { Left = scriptDrag.Right - 12, Right = settingsButton.Width + Utilities.Constants.UIMargin };
                 group.Object(values, editor);
+
                 // Remove drop down arrows and containment lines if no objects in the group
                 if (group.Children.Count == 0)
                 {
