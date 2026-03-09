@@ -190,7 +190,7 @@ namespace FlaxEditor.Surface
                 Render2D.DrawSprite(style.Settings, _colorButtonRect, _colorButtonRect.Contains(_mousePosition) && Surface.CanEdit ? style.Foreground : style.ForegroundGrey);
 
                 // Resize 
-                if (ResizeBorderControl.IsResizing || ResizeBorderControl.IsMouseOverResizeBorder)
+                if ((ResizeBorderControl.IsResizing || ResizeBorderControl.IsMouseOverResizeBorder) && !Surface.IsConnecting)
                     Render2D.DrawRectangle(new Rectangle(Float2.Zero, Size), Style.Current.Foreground, 0.5f);
             }
 

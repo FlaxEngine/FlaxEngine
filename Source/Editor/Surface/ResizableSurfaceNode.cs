@@ -177,7 +177,7 @@ namespace FlaxEditor.Surface
                 }
 
                 // Update the cursor shape
-                if (_surface.resizeableNodeIndexInParent <= IndexInParent || IgnoreSurfaceIndex)
+                if ((_surface.resizeableNodeIndexInParent <= IndexInParent || IgnoreSurfaceIndex) && !_surface.IsConnecting)
                 {
                     if (!IgnoreSurfaceIndex)
                         _surface.resizeableNodeIndexInParent = IndexInParent;
@@ -329,7 +329,7 @@ namespace FlaxEditor.Surface
         {
             base.Draw();
 
-            if (Surface.CanEdit && (ResizeBorderControl.IsResizing || ResizeBorderControl.IsMouseOverResizeBorder))
+            if (Surface.CanEdit && !Surface.IsConnecting && (ResizeBorderControl.IsResizing || ResizeBorderControl.IsMouseOverResizeBorder))
                 Render2D.DrawRectangle(new Rectangle(Float2.Zero, Size), Style.Current.Foreground, 0.5f);
         }
 
