@@ -191,14 +191,18 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the maximum number of characters the user can type into the text box control.
         /// </summary>
-        [EditorOrder(50), Tooltip("The maximum number of characters the user can type into the text box control.")]
+        [EditorOrder(50), Limit(-1), Tooltip("The maximum number of characters the user can type into the text box control.")]
         public int MaxLength
         {
             get => _maxLength;
             set
             {
-                if (_maxLength <= 0)
-                    throw new ArgumentOutOfRangeException(nameof(MaxLength));
+                // Cap at min of -1 for no max length
+                if (value <= 0)
+                {
+                    _maxLength = -1;
+                    return;
+                }
 
                 if (_maxLength != value)
                 {
@@ -381,7 +385,7 @@ namespace FlaxEngine.GUI
                 value = value.Replace(DelChar.ToString(), "");
 
             // Clamp length
-            if (value.Length > MaxLength)
+            if (value.Length > MaxLength && MaxLength != -1)
                 value = value.Substring(0, MaxLength);
 
             // Ensure to use only single line
@@ -514,7 +518,7 @@ namespace FlaxEngine.GUI
             AutoFocus = true;
 
             _isMultiline = isMultiline;
-            _maxLength = 2147483646;
+            _maxLength = -1;
             _selectionStart = _selectionEnd = -1;
 
             var style = Style.Current;
@@ -710,7 +714,7 @@ namespace FlaxEngine.GUI
                 str = str.Replace("\n", "");
 
             int selectionLength = SelectionLength;
-            int charactersLeft = MaxLength - _text.Length + selectionLength;
+            int charactersLeft = (MaxLength != -1 ? MaxLength : int.MaxValue) - _text.Length + selectionLength;
             Assert.IsTrue(charactersLeft >= 0);
             if (charactersLeft == 0)
                 return;

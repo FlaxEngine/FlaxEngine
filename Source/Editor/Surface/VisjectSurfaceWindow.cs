@@ -708,10 +708,28 @@ namespace FlaxEditor.Surface
         {
             var index = (int)label.Tag;
             menu.AddSeparator();
+            menu.AddButton("Copy name", () => Clipboard.Text = ((IVisjectSurfaceWindow)Values[0]).VisjectSurface.Parameters[index].Name);
+            // TODO: move 'Copy all names' to context menu of the Properties category (as it's not item-specific)
+            menu.AddButton("Copy all names", CopyAllParameterNamesAsConstantCSharpCode);
+            menu.AddSeparator();
             menu.AddButton("Rename", () => StartParameterRenaming(index, label));
             menu.AddButton("Edit attributes...", () => EditAttributesParameter(index, label));
             menu.AddButton("Delete", () => DeleteParameter(index));
             OnParamContextMenu(index, menu);
+        }
+
+        private void CopyAllParameterNamesAsConstantCSharpCode()
+        {
+            string allParamNames = "";
+            foreach (var param in ((IVisjectSurfaceWindow)Values[0]).VisjectSurface.Parameters)
+            {
+                string cleanParamName = param.Name.Replace(" ", "");
+                // Filter out headers and other non-parameter entries that can be present in the parameters list
+                if (string.IsNullOrEmpty(cleanParamName))
+                    continue;
+                allParamNames += $"private const string {cleanParamName}ParameterName = \"{param.Name}\";\n";
+            }
+            Clipboard.Text = allParamNames;
         }
 
         private void StartParameterRenaming(int index, Control label)
