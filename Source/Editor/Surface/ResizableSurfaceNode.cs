@@ -23,9 +23,14 @@ namespace FlaxEditor.Surface
             /// </summary>
             private const float BorderWidth = 15f;
 
-            private readonly VisjectSurface Surface;
+            private readonly VisjectSurface _surface;
             private Float2 _surfaceMouseLocation;
             private Float2 startResizingSize;
+
+            /// <summary>
+            /// Wether to ignore the surface index in parent when updating the cursor type. Set to <code>false</code> for nodes that have order like <see cref="SurfaceComment"/>.
+            /// </summary>
+            internal bool IgnoreSurfaceIndex = true;
 
             /// <summary>
             /// The resizable node that this <see cref="ResizeBorder"/> controls.
@@ -67,10 +72,14 @@ namespace FlaxEditor.Surface
                 }
             }
 
-            /// <inheritdoc />
+            /// <summary>
+            /// Creates a new instance of <see cref="ResizeBorder"/>.
+            /// </summary>
+            /// <param name="surface">The surface.</param>
+            /// <param name="resizableNode">The <see cref="ResizableSurfaceNode "/> this controls.</param>
             public ResizeBorder(VisjectSurface surface, ResizableSurfaceNode resizableNode)
             {
-                Surface = surface;
+                _surface = surface;
                 ResizableNode = resizableNode;
             }
 
@@ -87,7 +96,7 @@ namespace FlaxEditor.Surface
 
             private void UpdateSurfaceMouseLocation()
             {
-                _surfaceMouseLocation = Surface.PointFromScreen(Input.MouseScreenPosition);
+                _surfaceMouseLocation = _surface.PointFromScreen(Input.MouseScreenPosition);
             }
 
             private void UpdateResizeFlags(Float2 mouseLocation)
@@ -122,16 +131,8 @@ namespace FlaxEditor.Surface
                 {
                     var emptySize = ResizableNode.CalculateNodeSize(0, 0);
                     ResizableNode.SizeValue = ResizableNode.Size - emptySize;
-                    Surface.MarkAsEdited(false);
+                    _surface.MarkAsEdited(false);
                 }
-            }
-
-            /// <inheritdoc />
-            public override void OnMouseLeave()
-            {
-                Cursor = CursorType.Default;
-                IsMouseOverResizeBorder = false;
-                base.OnMouseLeave();
             }
 
             /// <inheritdoc />
@@ -147,7 +148,7 @@ namespace FlaxEditor.Surface
                     var resizeAxisPos = Float2.Clamp(ResizeDirection, Float2.Zero, Float2.One);
                     var resizeAxisNeg = Float2.Clamp(-ResizeDirection, Float2.Zero, Float2.One);
 
-                    var currentSurfaceMouse = Surface.PointFromScreen(Input.MouseScreenPosition);
+                    var currentSurfaceMouse = _surface.PointFromScreen(Input.MouseScreenPosition);
                     var delta = currentSurfaceMouse - _surfaceMouseLocation;
 
                     // TODO: scale/size snapping?
@@ -159,8 +160,6 @@ namespace FlaxEditor.Surface
                     var emptySize = ResizableNode.CalculateNodeSize(0, 0);
 
 
-                    // TODO: Fix: Can't move comments anymore
-
                     // TODO: If resize is blocked by min size and the user tries to increase the size again, wait until !blocked by min size to apply delta again
                     // To do this, just record pos when starting to block by min size and if (cursorLocation > min) { ResizeAgain() }
 
@@ -168,23 +167,26 @@ namespace FlaxEditor.Surface
                     ResizableNode.Size = new Float2(Mathf.Max(ResizableNode.Size.X, ResizableNode.sizeMin.X), Mathf.Max(ResizableNode.Size.Y, ResizableNode.sizeMin.Y));
                     ResizableNode.Location += uiControlDelta * resizeAxisNeg;
 
-                    // Only move if size wasn't clamped
-
-
-                    //Debug.Log($"OLD: {oldSize} NEW: {ResizableNode.Size}");
-
                     ResizableNode.SizeValue = ResizableNode.Size - emptySize;
                     ResizableNode.SizeValue = new Float2(Mathf.Max(ResizableNode.SizeValue.X, ResizableNode.sizeMin.X), Mathf.Max(ResizableNode.SizeValue.Y, ResizableNode.sizeMin.Y));
+
                     ResizableNode.CalculateNodeSize(ResizableNode.Size.X, ResizableNode.Size.Y);
 
                     UpdateSurfaceMouseLocation();
                     MatchResizableNode(ResizableNode.Size, ResizableNode.Location);
                 }
 
-                if (IsMouseOverResizeBorder)
-                    Cursor = CursorType;
-                else
-                    Cursor = CursorType.Default;
+                // Update the cursor shape
+                if (_surface.resizeableNodeIndexInParent <= IndexInParent || IgnoreSurfaceIndex)
+                {
+                    if (!IgnoreSurfaceIndex)
+                        _surface.resizeableNodeIndexInParent = IndexInParent;
+
+                    if (IsMouseOverResizeBorder)
+                        Cursor = CursorType;
+                    else
+                        Cursor = CursorType.Default;
+                }
 
                 base.OnMouseMove(location);
             }
@@ -194,6 +196,15 @@ namespace FlaxEditor.Surface
             {
                 Cursor = CursorType.Default;
                 base.OnMouseEnter(location);
+            }
+
+            /// <inheritdoc />
+            public override void OnMouseLeave()
+            {
+                Cursor = CursorType.Default;
+                IsMouseOverResizeBorder = false;
+                _surface.resizeableNodeIndexInParent = -1; // Will get updated by MouseMove again to match current index
+                base.OnMouseLeave();
             }
 
             /// <inheritdoc />
@@ -291,10 +302,10 @@ namespace FlaxEditor.Surface
             base.OnLocationChanged();
         }
 
-         /// <inheritdoc />
+        /// <inheritdoc />
         public override void OnSurfaceLoaded(SurfaceNodeActions action)
         {
-            // Reapply the curve node size
+            // Reapply the node size
             var size = SizeValue;
             if (Surface != null && Surface.GridSnappingEnabled)
                 size = Surface.SnapToGrid(size, true);

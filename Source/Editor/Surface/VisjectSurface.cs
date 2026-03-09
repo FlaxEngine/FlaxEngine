@@ -62,6 +62,7 @@ namespace FlaxEditor.Surface
         private int _selectedConnectionIndex;
 
         internal int _isUpdatingBoxTypes;
+        internal int resizeableNodeIndexInParent = -1;
 
         /// <summary>
         /// True if surface supports implicit casting of the FlaxEngine.Object types into Boolean value (as simple validate check).

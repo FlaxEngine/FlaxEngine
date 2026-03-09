@@ -65,6 +65,8 @@ namespace FlaxEditor.Surface
                 EndEditOnClick = false, // We have to handle this ourselves, otherwise the textbox instantly loses focus when double-clicking the header
                 HorizontalAlignment = TextAlignment.Center,
             };
+
+            ResizeBorderControl.IgnoreSurfaceIndex = false;
         }
 
         /// <inheritdoc />
