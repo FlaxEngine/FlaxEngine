@@ -205,6 +205,19 @@ namespace FlaxEditor.Surface.Elements
             {
                 var hints = parentNode.Archetype.ConnectionsHints;
                 Surface.Style.GetConnectionColor(_currentType, hints, out _currentTypeColor);
+
+                if (_currentType == new ScriptType(typeof(Single)))
+                {
+                    if (archetype.Text == "R")
+                        _currentTypeColor = Color.FromHex("#D91414");
+                    if (archetype.Text == "G")
+                        _currentTypeColor = Color.FromHex("#17D11C");
+                    if (archetype.Text == "B")
+                        _currentTypeColor = Color.FromHex("#346CC7");
+                    if (archetype.Text == "A")
+                        _currentTypeColor = Color.FromHex("#AEADAD");
+                }
+
                 TooltipText = Surface.GetTypeName(CurrentType) ?? GetConnectionHintTypeName(hints);
             }
         }
