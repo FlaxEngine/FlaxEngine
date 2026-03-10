@@ -758,36 +758,39 @@ namespace FlaxEditor.Modules
 
             _windowsLayoutPath = StringUtils.CombinePaths(Globals.ProjectCacheFolder, "WindowsLayout.xml");
 
-            // Create main window
-            var settings = CreateWindowSettings.Default;
-            settings.Title = "Flax Editor";
-            settings.Size = Platform.DesktopSize * 0.75f;
-            settings.MinimumSize = new Float2(200, 150);
-            settings.StartPosition = WindowStartPosition.CenterScreen;
-            settings.ShowAfterFirstPaint = true;
-            
-            if (Utilities.Utils.UseCustomWindowDecorations(isMainWindow: true))
+            if (!Editor.IsHeadlessMode)
             {
-                settings.HasBorder = false;
-#if PLATFORM_WINDOWS && !PLATFORM_SDL
-                // Skip OS sizing frame and implement it using LeftButtonHit
-                settings.HasSizingFrame = false;
-#endif
-            }
-#if PLATFORM_LINUX && !PLATFORM_SDL
-            settings.HasBorder = false;
-#endif
-            MainWindow = Platform.CreateWindow(ref settings);
-            if (MainWindow == null)
-            {
-                Editor.LogError("Failed to create editor main window!");
-                return;
-            }
-            UpdateWindowTitle();
+                // Create main window
+                var settings = CreateWindowSettings.Default;
+                settings.Title = "Flax Editor";
+                settings.Size = Platform.DesktopSize * 0.75f;
+                settings.MinimumSize = new Float2(200, 150);
+                settings.StartPosition = WindowStartPosition.CenterScreen;
+                settings.ShowAfterFirstPaint = true;
 
-            // Link for main window events
-            MainWindow.Closing += MainWindow_OnClosing;
-            MainWindow.Closed += MainWindow_OnClosed;
+                if (Utilities.Utils.UseCustomWindowDecorations(isMainWindow: true))
+                {
+                    settings.HasBorder = false;
+#if PLATFORM_WINDOWS && !PLATFORM_SDL
+                    // Skip OS sizing frame and implement it using LeftButtonHit
+                    settings.HasSizingFrame = false;
+#endif
+                }
+#if PLATFORM_LINUX && !PLATFORM_SDL
+                settings.HasBorder = false;
+#endif
+                MainWindow = Platform.CreateWindow(ref settings);
+                if (MainWindow == null)
+                {
+                    Editor.LogError("Failed to create editor main window!");
+                    return;
+                }
+                UpdateWindowTitle();
+
+                // Link for main window events
+                MainWindow.Closing += MainWindow_OnClosing;
+                MainWindow.Closed += MainWindow_OnClosed;
+            }
 
             // Create default editor windows
             ContentWin = new ContentWindow(Editor);

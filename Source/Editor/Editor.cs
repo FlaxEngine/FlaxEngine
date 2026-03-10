@@ -407,7 +407,6 @@ namespace FlaxEditor
 
             // Close splash and show main window
             CloseSplashScreen();
-            Assert.IsNotNull(Windows.MainWindow);
             if (!IsHeadlessMode)
             {
                 Windows.MainWindow.Show();

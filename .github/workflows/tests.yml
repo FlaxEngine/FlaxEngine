@@ -38,7 +38,7 @@ jobs:
         dotnet msbuild Source/Tools/Flax.Build.Tests/Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
     - name: Test
       run: |
-        ${GITHUB_WORKSPACE}/Binaries/Editor/Linux/Development/FlaxTests
+        ${GITHUB_WORKSPACE}/Binaries/Editor/Linux/Development/FlaxTests -headless
         dotnet test -f net8.0 Binaries/Tests/Flax.Build.Tests.dll
         cp Binaries/Editor/Linux/Development/FlaxEngine.CSharp.dll Binaries/Tests
         cp Binaries/Editor/Linux/Development/FlaxEngine.CSharp.runtimeconfig.json Binaries/Tests
@@ -73,7 +73,7 @@ jobs:
       shell: pwsh
       run: |
         $ErrorActionPreference = "Stop"
-        .\Binaries\Editor\Win64\Development\FlaxTests.exe
+        .\Binaries\Editor\Win64\Development\FlaxTests.exe -headless
         if(!$?) { Write-Host "Tests failed with exit code $LastExitCode" -ForegroundColor Red; Exit $LastExitCode }
         dotnet test -f net8.0 Binaries\Tests\Flax.Build.Tests.dll
         xcopy /y Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll Binaries\Tests

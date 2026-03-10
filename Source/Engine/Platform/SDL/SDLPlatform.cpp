@@ -23,10 +23,6 @@
 #include <SDL3/SDL_system.h>
 #include <SDL3/SDL_version.h>
 
-#if PLATFORM_LINUX
-#include "Engine/Engine/CommandLine.h"
-#endif
-
 #define DefaultDPI 96
 
 namespace SDLImpl
@@ -106,10 +102,16 @@ bool SDLPlatform::Init()
     SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "1"); // Allow screensaver in Editor when idle
 #endif
 
+    SDL_InitFlags initFlags = SDL_INIT_VIDEO | SDL_INIT_GAMEPAD;
+#if PLATFORM_HAS_HEADLESS_MODE
+    if (CommandLine::Options.Headless.GetValue())
+        initFlags &= ~SDL_INIT_VIDEO;
+#endif
+
     //if (InitInternal())
     //    return true;
 
-    if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
+    if (!SDL_InitSubSystem(initFlags))
         Platform::Fatal(String::Format(TEXT("Failed to initialize SDL: {0}."), String(SDL_GetError())));
 
 #if PLATFORM_LINUX || PLATFORM_WEB

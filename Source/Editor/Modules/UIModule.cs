@@ -481,6 +481,8 @@ namespace FlaxEditor.Modules
         /// <inheritdoc />
         public override void OnInit()
         {
+            if (Editor.IsHeadlessMode)
+                return;
             Editor.Windows.MainWindowClosing += OnMainWindowClosing;
             var mainWindow = Editor.Windows.MainWindow.GUI;
 
