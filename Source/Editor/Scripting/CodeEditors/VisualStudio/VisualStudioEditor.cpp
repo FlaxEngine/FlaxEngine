@@ -148,12 +148,17 @@ String VisualStudioEditor::GetName() const
     return String(ToString(_version));
 }
 
+String VisualStudioEditor::GetGenerateProjectCustomArgs() const
+{
+    return String::Format(TEXT("-{0}"), String(ToString(_version)).ToLower());
+}
+
 void VisualStudioEditor::OpenFile(const String& path, int32 line)
 {
     // Generate project files if solution is missing
     if (!FileSystem::FileExists(_solutionPath))
     {
-        ScriptsBuilder::GenerateProject();
+        ScriptsBuilder::GenerateProject(GetGenerateProjectCustomArgs());
     }
 
     // Open file
@@ -172,7 +177,7 @@ void VisualStudioEditor::OpenSolution()
     // Generate project files if solution is missing
     if (!FileSystem::FileExists(_solutionPath))
     {
-        ScriptsBuilder::GenerateProject();
+        ScriptsBuilder::GenerateProject(GetGenerateProjectCustomArgs());
     }
 
     // Open solution
@@ -187,7 +192,7 @@ void VisualStudioEditor::OpenSolution()
 void VisualStudioEditor::OnFileAdded(const String& path)
 {
     // TODO: finish dynamic files adding to the project - for now just regenerate it
-    ScriptsBuilder::GenerateProject();
+    ScriptsBuilder::GenerateProject(GetGenerateProjectCustomArgs());
     return;
     if (!FileSystem::FileExists(_solutionPath))
     {
