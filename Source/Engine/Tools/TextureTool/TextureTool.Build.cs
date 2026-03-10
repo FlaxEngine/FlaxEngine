@@ -56,6 +56,7 @@ public class TextureTool : EngineModule
             if (options.Target.IsEditor)
             {
                 // Use helper lib for decompression
+                options.PrivateDependencies.Add("ddspp");
                 options.PrivateDependencies.Add("detex");
                 options.PrivateDependencies.Add("bc7enc16");
             }

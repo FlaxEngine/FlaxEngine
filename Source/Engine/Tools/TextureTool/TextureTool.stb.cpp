@@ -520,26 +520,11 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
             textureData.Format = PixelFormat::R8G8B8A8_UNorm_sRGB;
             break;
         default:
-            LOG(Warning, "Unsupported DDS format.");
+            LOG(Warning, "Unsupported DDS format {}.", (int32)desc.format);
             return true;
         }
-        if (desc.arraySize != 1)
-        {
-            // TODO: Implement DDS support for 2D arrays or volume textures
-            MessageBox::Show(TEXT("Unsupported DDS file."), TEXT("Import warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning);
-            LOG(Warning, "Unsupported DDS file. Contains {0} Array Slices.", desc.arraySize);
-            return true;
-        }
-        else
-        {
-            if (desc.type == ddspp::Cubemap)
-            {
-                LOG(Info, "Texture is Cubemap.");
-                textureData.Items.Resize(6); // 6 Cubemap faces
-            }
-            else
-                textureData.Items.Resize(1); // 2D Texture
-        }
+        int32 slicesPerItem = desc.type == ddspp::Cubemap ? 6 : (desc.type == ddspp::Texture3D ? desc.depth : 1);
+        textureData.Items.Resize(slicesPerItem * desc.arraySize);
 
         for (int32 itemIndex = 0; itemIndex < textureData.Items.Count(); itemIndex++)
         {
