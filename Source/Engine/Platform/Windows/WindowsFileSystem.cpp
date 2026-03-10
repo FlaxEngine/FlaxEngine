@@ -17,7 +17,7 @@
 #define __shobjidl_h__
 #define LPFNADDPROPSHEETPAGE void*
 #include <ShlObj.h>
-#include <ShellAPI.h>
+#include <shellapi.h>
 #include <KnownFolders.h>
 #undef ShellExecute
 
@@ -111,7 +111,7 @@ bool WindowsFileSystem::MoveFileToRecycleBin(const StringView& path)
     op.wFunc = FO_DELETE;
     op.pFrom = pathNullNull;
     op.pTo = nullptr;
-    op.fFlags = FOF_ALLOWUNDO | FOF_NO_UI;
+    op.fFlags = FOF_ALLOWUNDO | FOF_NO_UI | FOF_NOCONFIRMATION;
     op.fAnyOperationsAborted = FALSE;
     op.hNameMappings = nullptr;
     op.lpszProgressTitle = nullptr;
