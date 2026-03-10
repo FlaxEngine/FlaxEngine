@@ -104,7 +104,7 @@ bool SDLPlatform::Init()
 
     SDL_InitFlags initFlags = SDL_INIT_VIDEO | SDL_INIT_GAMEPAD;
 #if PLATFORM_HAS_HEADLESS_MODE
-    if (CommandLine::Options.Headless.GetValue())
+    if (CommandLine::Options.Headless.IsTrue())
         initFlags &= ~SDL_INIT_VIDEO;
 #endif
 

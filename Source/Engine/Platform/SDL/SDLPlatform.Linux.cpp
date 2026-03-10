@@ -1713,8 +1713,9 @@ bool SDLPlatform::UsesWayland()
 {
     if (X11Impl::xDisplay == nullptr && WaylandImpl::WaylandDisplay == nullptr)
     {
-        // In case the X11 display pointer has not been updated yet
-        return strcmp(SDL_GetCurrentVideoDriver(), "wayland") == 0;
+        // In case the X11 display pointer has not been updated yet (or running headless)
+        auto driver = SDL_GetCurrentVideoDriver();
+        return driver && strcmp(driver, "wayland") == 0;
     }
     return WaylandImpl::WaylandDisplay != nullptr;
 }
@@ -1723,8 +1724,9 @@ bool SDLPlatform::UsesX11()
 {
     if (X11Impl::xDisplay == nullptr && WaylandImpl::WaylandDisplay == nullptr)
     {
-        // In case the X11 display pointer has not been updated yet
-        return strcmp(SDL_GetCurrentVideoDriver(), "x11") == 0;
+        // In case the X11 display pointer has not been updated yet (or running headless)
+        auto driver = SDL_GetCurrentVideoDriver();
+        return driver && strcmp(driver, "x11") == 0;
     }
     return X11Impl::xDisplay != nullptr;
 }
