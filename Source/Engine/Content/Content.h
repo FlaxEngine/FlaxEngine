@@ -395,7 +395,7 @@ private:
     static void onAssetLoaded(Asset* asset);
     static void onAssetUnload(Asset* asset);
     static void onAssetChangeId(Asset* asset, const Guid& oldId, const Guid& newId);
-    static void deleteFileSafety(const StringView& path, const Guid& id, bool useId = true);
+    static void deleteFileSafety(const StringView& path, const Guid* id = nullptr);
 
     // Internal bindings
 #if !COMPILE_WITHOUT_CSHARP
