@@ -30,6 +30,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y --fix-missing libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev libwayland-dev
+        chmox +x .github/data/bt.sh
     - name: Build
       run: |
         ./GenerateProjectFiles.sh -vs2022 -log -verbose -printSDKs -dotnet=8
@@ -38,7 +39,7 @@ jobs:
         dotnet msbuild Source/Tools/Flax.Build.Tests/Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
     - name: Test
       run: |
-        ${GITHUB_WORKSPACE}/Binaries/Editor/Linux/Development/FlaxTests -headless
+        ${GITHUB_WORKSPACE}/.github/data/bt.sh ./Binaries/Editor/Linux/Development/FlaxTests -headless
         dotnet test -f net8.0 Binaries/Tests/Flax.Build.Tests.dll
         cp Binaries/Editor/Linux/Development/FlaxEngine.CSharp.dll Binaries/Tests
         cp Binaries/Editor/Linux/Development/FlaxEngine.CSharp.runtimeconfig.json Binaries/Tests
