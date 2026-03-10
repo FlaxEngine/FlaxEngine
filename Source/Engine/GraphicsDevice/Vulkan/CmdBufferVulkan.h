@@ -119,7 +119,6 @@ public:
 
 public:
     void AddWaitSemaphore(VkPipelineStageFlags waitFlags, SemaphoreVulkan* waitSemaphore);
-    void Wait(float timeInSecondsToWait = 1.0f);
 
     void Begin();
     void End();
@@ -137,6 +136,7 @@ public:
     void EndEvent();
 #endif
 
+    void Wait(float timeoutSeconds = VULKAN_WAIT_TIMEOUT);
     void RefreshFenceStatus();
 };
 
@@ -210,8 +210,7 @@ public:
 
 public:
     void SubmitActiveCmdBuffer(SemaphoreVulkan* signalSemaphore = nullptr);
-    void WaitForCmdBuffer(CmdBufferVulkan* cmdBuffer, float timeInSecondsToWait = 1.0f);
-    void RefreshFenceStatus(const CmdBufferVulkan* skipCmdBuffer = nullptr)
+    void RefreshFenceStatus(CmdBufferVulkan* skipCmdBuffer = nullptr)
     {
         _pool.RefreshFenceStatus(skipCmdBuffer);
     }

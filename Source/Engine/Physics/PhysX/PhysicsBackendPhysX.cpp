@@ -2485,7 +2485,7 @@ void PhysicsBackend::SetRigidActorPose(void* actor, const Vector3& position, con
     if (kinematic)
     {
         auto actorPhysX = (PxRigidDynamic*)actor;
-        if (actorPhysX->getActorFlags() & PxActorFlag::eDISABLE_SIMULATION)
+        if (actorPhysX->getActorFlags() & PxActorFlag::eDISABLE_SIMULATION || !(actorPhysX->getRigidBodyFlags() & PxRigidBodyFlag::eKINEMATIC))
         {
             // Ensures the disabled kinematic actor ends up in the correct pose after enabling simulation
             actorPhysX->setGlobalPose(trans, wakeUp);

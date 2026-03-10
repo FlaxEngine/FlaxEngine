@@ -1300,10 +1300,10 @@ namespace Flax.Build.Bindings
                 else if (parameterInfo.Type.IsRef && !parameterInfo.Type.IsConst)
                 {
                     // Non-const lvalue reference parameters needs to be passed via temporary value
-                    if (parameterInfo.IsOut || parameterInfo.IsRef)
-                        contents.Append(indent).AppendFormat("{2}& {0}Temp = {1};", parameterInfo.Name, param, parameterInfo.Type.ToString(false)).AppendLine();
-                    else
+                    if (parameterInfo.Type.Type is "String" or "StringView" or "StringAnsi" or "StringAnsiView" && parameterInfo.Type.GenericArgs == null)
                         contents.Append(indent).AppendFormat("{2} {0}Temp = {1};", parameterInfo.Name, param, parameterInfo.Type.ToString(false)).AppendLine();
+                    else
+                        contents.Append(indent).AppendFormat("{2}& {0}Temp = {1};", parameterInfo.Name, param, parameterInfo.Type.ToString(false)).AppendLine();
                     callParams += parameterInfo.Name;
                     callParams += "Temp";
                 }

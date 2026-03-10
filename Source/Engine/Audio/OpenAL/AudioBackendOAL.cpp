@@ -848,6 +848,13 @@ bool AudioBackendOAL::Base_Init()
     }
 
     // Init
+    alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED); // Default attenuation model
+    if (Audio::GetActiveDeviceIndex() == Math::Clamp(activeDeviceIndex, -1, Audio::Devices.Count() - 1))
+    {
+        // Manually create context if SetActiveDeviceIndex won't call it
+        Base_OnActiveDeviceChanged();
+    }
+    Audio::SetActiveDeviceIndex(activeDeviceIndex);
 #ifdef AL_SOFT_source_spatialize
     if (ALC::IsExtensionSupported("AL_SOFT_source_spatialize"))
         ALC::Features = EnumAddFlags(ALC::Features, FeatureFlags::SpatialMultiChannel);
@@ -856,13 +863,6 @@ bool AudioBackendOAL::Base_Init()
     ALC::Features = EnumAddFlags(ALC::Features, FeatureFlags::HRTF);
 #endif
     Base_SetDopplerFactor(AudioSettings::Get()->DopplerFactor);
-    alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED); // Default attenuation model
-    if (Audio::GetActiveDeviceIndex() == Math::Clamp(activeDeviceIndex, -1, Audio::Devices.Count() - 1))
-    {
-        // Manually create context if SetActiveDeviceIndex won't call it
-        Base_OnActiveDeviceChanged();
-    }
-    Audio::SetActiveDeviceIndex(activeDeviceIndex);
     ALC::Inited = true;
 
     // Log service info

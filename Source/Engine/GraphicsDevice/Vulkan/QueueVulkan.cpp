@@ -62,10 +62,7 @@ void QueueVulkan::Submit(CmdBufferVulkan* cmdBuffer, uint32 signalSemaphoresCoun
 	const bool WaitForIdleOnSubmit = false;
 	if (WaitForIdleOnSubmit)
 	{
-		bool success = _device->FenceManager.WaitForFence(fence);
-		ASSERT(success);
-		ASSERT(_device->FenceManager.IsFenceSignaled(fence));
-		cmdBuffer->GetOwner()->RefreshFenceStatus();
+        cmdBuffer->Wait();
 	}
 #endif
 

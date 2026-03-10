@@ -32,6 +32,7 @@ bool Graphics::SpreadWorkload = true;
 #if !BUILD_RELEASE || USE_EDITOR
 float Graphics::TestValue = 0.0f;
 #endif
+float Graphics::Shadows::MinObjectPixelSize = 2.0f;
 bool Graphics::PostProcessing::ColorGradingVolumeLUT = true;
 
 #if GRAPHICS_API_NULL

@@ -246,7 +246,7 @@ VariantType::VariantType(VariantType&& other) noexcept
 VariantType& VariantType::operator=(const Types& type)
 {
     Type = type;
-    if (StaticName)
+    if (!StaticName)
         Allocator::Free(TypeName);
     TypeName = nullptr;
     StaticName = 0;
@@ -265,7 +265,7 @@ VariantType& VariantType::operator=(const VariantType& other)
 {
     ASSERT(this != &other);
     Type = other.Type;
-    if (StaticName)
+    if (!StaticName)
         Allocator::Free(TypeName);
     StaticName = other.StaticName;
     if (StaticName)
@@ -315,7 +315,7 @@ void VariantType::SetTypeName(const StringView& typeName)
 {
     if (StringUtils::Length(TypeName) != typeName.Length())
     {
-        if (StaticName)
+        if (!StaticName)
             Allocator::Free(TypeName);
         StaticName = 0;
         TypeName = static_cast<char*>(Allocator::Allocate(typeName.Length() + 1));
@@ -328,7 +328,7 @@ void VariantType::SetTypeName(const StringAnsiView& typeName, bool staticName)
 {
     if (StringUtils::Length(TypeName) != typeName.Length() || StaticName != staticName)
     {
-        if (StaticName)
+        if (!StaticName)
             Allocator::Free(TypeName);
         StaticName = staticName;
         if (staticName)

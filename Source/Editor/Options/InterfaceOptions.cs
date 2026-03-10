@@ -161,7 +161,7 @@ namespace FlaxEditor.Options
         }
 
         /// <summary>
-        /// Options focus Game Window behaviour when play mode is entered.
+        /// Options for focus Game Window behaviour when play mode is entered.
         /// </summary>
         public enum PlayModeFocus
         {
@@ -207,6 +207,22 @@ namespace FlaxEditor.Options
             /// </summary>
             [EditorDisplay(Name = "Client-side")]
             ClientSide,
+        }
+
+        /// <summary>
+        /// Generic options for a disabled or hidden state. Used for example in create content button.
+        /// </summary>
+        public enum DisabledHidden
+        {
+            /// <summary>
+            /// Disabled state.
+            /// </summary>
+            Disabled,
+
+            /// <summary>
+            /// Hidden state.
+            /// </summary>
+            Hidden,
         }
 
         /// <summary>
@@ -561,6 +577,13 @@ namespace FlaxEditor.Options
         [DefaultValue(true)]
         [EditorDisplay("Visject", "Warn when deleting used parameter"), EditorOrder(552)]
         public bool WarnOnDeletingUsedVisjectParameter { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating what should happen to unavaliable options in the content create menu.
+        /// </summary>
+        [DefaultValue(DisabledHidden.Hidden)]
+        [EditorDisplay("Content"), EditorOrder(600)]
+        public DisabledHidden UnavaliableContentCreateOptions { get; set; } = DisabledHidden.Hidden;
 
         private static FontAsset DefaultFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.PrimaryFont);
         private static FontAsset ConsoleFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.InconsolataRegularFont);

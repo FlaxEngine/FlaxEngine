@@ -49,6 +49,11 @@
 #define VULKAN_USE_TIMER_QUERIES 1
 #endif
 
+// Fence wait operation timeout in seconds
+#ifndef VULKAN_WAIT_TIMEOUT
+#define VULKAN_WAIT_TIMEOUT 5.0f
+#endif
+
 // Toggles GPUTimerQueryVulkan to use BeginQuery/EndQuery via GPuContext rather than old custom implementation
 #define GPU_VULKAN_QUERY_NEW 1
 
