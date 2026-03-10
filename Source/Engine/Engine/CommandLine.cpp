@@ -63,6 +63,14 @@ bool CommandLine::Parse(const Char* cmdLine)
 {
     Options.CmdLine = cmdLine;
 
+#if FLAX_TESTS
+    // Configure engine for test running environment
+    Options.Headless = true;
+    Options.Null = true;
+    Options.Mute = true;
+    Options.Std = true;
+#endif
+
     int32 length = StringUtils::Length(cmdLine);
     if (length == 0)
         return false;
@@ -168,14 +176,6 @@ bool CommandLine::Parse(const Char* cmdLine)
 #endif
 #if USE_EDITOR || !BUILD_RELEASE
     PARSE_BOOL_SWITCH("-shaderprofile ", ShaderProfile);
-#endif
-
-#if FLAX_TESTS
-    // Configure engine for test running environment
-    Options.Headless = true;
-    Options.Null = true;
-    Options.Mute = true;
-    Options.Std = true;
 #endif
 
     return false;

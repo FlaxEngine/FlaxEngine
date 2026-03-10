@@ -27,9 +27,7 @@ public:
     static Rectangle GetVirtualDesktopBounds();
     static String GetMainDirectory();
     static Window* CreateWindow(const CreateWindowSettings& settings);
-#if !PLATFORM_SDL
     static int32 CreateProcess(CreateProcessSettings& settings);
-#endif
 };
 
 #endif

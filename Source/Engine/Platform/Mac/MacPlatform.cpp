@@ -437,7 +437,6 @@ Window* MacPlatform::CreateWindow(const CreateWindowSettings& settings)
 
 #endif
 
-#if !PLATFORM_SDL
 int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
 {
     LOG(Info, "Command: {0} {1}", settings.FileName, settings.Arguments);
@@ -577,6 +576,5 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
 
 	return returnCode;
 }
-#endif
 
 #endif
