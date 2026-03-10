@@ -10,6 +10,7 @@ gdb -q --batch \
                -ex 'handle SIGUSR2 nostop pass' \
                -ex 'handle SIGCHLD nostop pass' \
                -ex 'set print thread-events off' \
+               -return-child-result \
                -ex 'run' \
                -ex 'thread apply all bt' \
                --tty=/dev/stdout \
