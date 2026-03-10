@@ -84,6 +84,8 @@ namespace FlaxEditor.Viewport.Widgets
             Float2[] currentStart = Checked ? iconPointsOrtho : iconPointsPerspective;
             Float2[] currentTarget = Checked ? iconPointsPerspective : iconPointsOrtho;
 
+            var features = Render2D.Features;
+            Render2D.Features = features & ~Render2D.RenderingFeatures.VertexSnapping;
             for (int i = 1; i < iconPointCount + 1; i++)
             {
                 int endPointIndex = Mathf.Wrap(i, 0, iconPointCount - 1);
@@ -95,6 +97,7 @@ namespace FlaxEditor.Viewport.Widgets
 
                 Render2D.DrawLine(lineStart, lineEnd, Color.White);
             }
+            Render2D.Features = features;
         }
     }
 
