@@ -30,7 +30,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y --fix-missing libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev libwayland-dev
-        chmox +x .github/data/bt.sh
+        chmod +x .github/data/bt.sh
     - name: Build
       run: |
         ./GenerateProjectFiles.sh -vs2022 -log -verbose -printSDKs -dotnet=8
