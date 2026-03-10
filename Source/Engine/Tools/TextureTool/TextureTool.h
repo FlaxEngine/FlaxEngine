@@ -37,7 +37,7 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
         API_FIELD(Attributes="EditorOrder(20)")
         bool NeverStream = false;
 
-        // True if disable dynamic texture streaming.
+        // True if texture should be compressed.
         API_FIELD(Attributes="EditorOrder(30)")
         bool Compress = true;
 
