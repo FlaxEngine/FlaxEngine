@@ -145,7 +145,41 @@ CodeEditorTypes VisualStudioEditor::GetType() const
 
 String VisualStudioEditor::GetName() const
 {
-    return String(ToString(_version));
+    const Char* name;
+    switch (_version)
+    {
+    case VisualStudioVersion::VS2008:
+        name = TEXT("Visual Studio 2008");
+        break;
+    case VisualStudioVersion::VS2010:
+        name = TEXT("Visual Studio 2010");
+        break;
+    case VisualStudioVersion::VS2012:
+        name = TEXT("Visual Studio 2012");
+        break;
+    case VisualStudioVersion::VS2013:
+        name = TEXT("Visual Studio 2013");
+        break;
+    case VisualStudioVersion::VS2015:
+        name = TEXT("Visual Studio 2015");
+        break;
+    case VisualStudioVersion::VS2017:
+        name = TEXT("Visual Studio 2017");
+        break;
+    case VisualStudioVersion::VS2019:
+        name = TEXT("Visual Studio 2019");
+        break;
+    case VisualStudioVersion::VS2022:
+        name = TEXT("Visual Studio 2022");
+        break;
+    case VisualStudioVersion::VS2026:
+        name = TEXT("Visual Studio 2026");
+        break;
+    default:
+        name = ToString(_version);
+        break;
+    }
+    return String(name);
 }
 
 String VisualStudioEditor::GetGenerateProjectCustomArgs() const
