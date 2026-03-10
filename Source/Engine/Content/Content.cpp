@@ -791,6 +791,27 @@ void Content::DeleteAsset(Asset* asset)
     asset->DeleteObject();
 }
 
+void Content::DeleteScript(const StringView& path)
+{
+    PROFILE_CPU();
+    if (path.IsEmpty())
+        return;
+    
+    // Return if asset
+    Asset* asset = GetAsset(path);
+    if (asset != nullptr)
+    {
+        return;
+    }
+    
+#if USE_EDITOR
+    LOG(Info, "Deleting script '{0}'", path);
+
+    // Delete file
+    deleteFileSafety(path);
+#endif
+}
+
 void Content::DeleteAsset(const StringView& path)
 {
     PROFILE_CPU();
@@ -819,13 +840,13 @@ void Content::DeleteAsset(const StringView& path)
     }
 
     // Delete file
-    deleteFileSafety(path, info.ID);
+    deleteFileSafety(path, &info.ID);
 #endif
 }
 
-void Content::deleteFileSafety(const StringView& path, const Guid& id)
+void Content::deleteFileSafety(const StringView& path, const Guid* id)
 {
-    if (!id.IsValid())
+    if (id && !id->IsValid())
     {
         LOG(Warning, "Cannot remove file \'{0}\'. Given ID is invalid.", path);
         return;
@@ -834,12 +855,12 @@ void Content::deleteFileSafety(const StringView& path, const Guid& id)
 
     // Ensure that file has the same ID (prevent from deleting different assets)
     auto storage = ContentStorageManager::TryGetStorage(path);
-    if (storage)
+    if (storage && id)
     {
         storage->CloseFileHandles(); // Close file handle to allow removing it
-        if (!storage->HasAsset(id))
+        if (!storage->HasAsset(*id))
         {
-            LOG(Warning, "Cannot remove file \'{0}\'. It doesn\'t contain asset {1}.", path, id);
+            LOG(Warning, "Cannot remove file \'{0}\'. It doesn\'t contain asset {1}.", path, *id);
             return;
         }
     }
