@@ -408,7 +408,8 @@ public:
         if (GLOBAL_SDF_ACTOR_IS_STATIC(a) && ObjectTypes.Contains(a->GetTypeHandle()))
         {
             ScopeWriteLock lock(Locker);
-            OnSceneRenderingDirty(BoundingBox::FromSphere(prevBounds));
+            if (flags != DrawModes && flags != Layer && flags != StaticFlags)
+                OnSceneRenderingDirty(BoundingBox::FromSphere(prevBounds));
             OnSceneRenderingDirty(a->GetBox());
         }
     }
