@@ -131,6 +131,7 @@ SamplerComparisonState ShadowSamplerLinear : register(s5);
 #define SAMPLE_RT_LINEAR(rt, texCoord) rt.SampleLevel(SamplerLinearClamp, texCoord, 0)
 #define HDR_CLAMP_MAX 65472.0
 #define PI 3.1415926535897932
+#define UNITS_TO_METERS_SCALE 0.01f
 
 // Structure that contains information about GBuffer
 struct GBufferData

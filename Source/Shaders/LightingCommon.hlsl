@@ -68,8 +68,8 @@ void GetRadialLightAttenuation(
     // Distance attenuation
     if (lightData.InverseSquared)
     {
-        // Convert cm-based scene units to meters for inverse-squared falloff.
-        const float distanceScale = 0.01f;
+        // Convert scene units to meters for inverse-squared falloff
+        const float distanceScale = UNITS_TO_METERS_SCALE;
         const float distanceScaleSqr = distanceScale * distanceScale;
         float distanceSqrScaled = distanceSqr * distanceScaleSqr;
         float distanceBiasSqrScaled = distanceBiasSqr * distanceScaleSqr;
