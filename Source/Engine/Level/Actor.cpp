@@ -178,20 +178,19 @@ void Actor::OnDeleteObject()
             _scene = nullptr;
         }
     }
-    else if (_parent)
+    else
     {
-        // Unlink from the parent
-        _parent->Children.RemoveKeepOrder(this);
-        _parent->_isHierarchyDirty = true;
-        _parent = nullptr;
-        _scene = nullptr;
+        if (_isEnabled)
+            OnDisable();
+        if (_parent)
+        {
+            // Unlink from the parent
+            _parent->Children.RemoveKeepOrder(this);
+            _parent->_isHierarchyDirty = true;
+            _parent = nullptr;
+            _scene = nullptr;
+        }
     }
-
-    // Ensure to exit gameplay in a valid way
-    ASSERT(!IsDuringPlay());
-#if BUILD_DEBUG || BUILD_DEVELOPMENT
-    ASSERT(!_isEnabled);
-#endif
 
     // Fire event
     Deleted(this);

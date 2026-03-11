@@ -120,6 +120,7 @@ void InputSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* m
                 config.MouseButton = JsonTools::GetEnum(v, "MouseButton", MouseButton::None);
                 config.GamepadButton = JsonTools::GetEnum(v, "GamepadButton", GamepadButton::None);
                 config.Gamepad = JsonTools::GetEnum(v, "Gamepad", InputGamepadIndex::All);
+                config.DeadZone = JsonTools::GetFloat(v, "DeadZone", 0.5f);
             }
         }
         else
@@ -499,24 +500,24 @@ float Input::GetGamepadAxis(int32 gamepadIndex, GamepadAxis axis)
     return 0.0f;
 }
 
-bool Input::GetGamepadButton(int32 gamepadIndex, GamepadButton button)
+bool Input::GetGamepadButton(int32 gamepadIndex, GamepadButton button, float deadZone)
 {
     if (gamepadIndex >= 0 && gamepadIndex < Gamepads.Count())
-        return Gamepads[gamepadIndex]->GetButton(button);
+        return Gamepads[gamepadIndex]->GetButton(button, deadZone);
     return false;
 }
 
-bool Input::GetGamepadButtonDown(int32 gamepadIndex, GamepadButton button)
+bool Input::GetGamepadButtonDown(int32 gamepadIndex, GamepadButton button, float deadZone)
 {
     if (gamepadIndex >= 0 && gamepadIndex < Gamepads.Count())
-        return Gamepads[gamepadIndex]->GetButtonDown(button);
+        return Gamepads[gamepadIndex]->GetButtonDown(button, deadZone);
     return false;
 }
 
-bool Input::GetGamepadButtonUp(int32 gamepadIndex, GamepadButton button)
+bool Input::GetGamepadButtonUp(int32 gamepadIndex, GamepadButton button, float deadZone)
 {
     if (gamepadIndex >= 0 && gamepadIndex < Gamepads.Count())
-        return Gamepads[gamepadIndex]->GetButtonUp(button);
+        return Gamepads[gamepadIndex]->GetButtonUp(button, deadZone);
     return false;
 }
 
@@ -542,13 +543,13 @@ float Input::GetGamepadAxis(InputGamepadIndex gamepad, GamepadAxis axis)
     return false;
 }
 
-bool Input::GetGamepadButton(InputGamepadIndex gamepad, GamepadButton button)
+bool Input::GetGamepadButton(InputGamepadIndex gamepad, GamepadButton button, float deadZone)
 {
     if (gamepad == InputGamepadIndex::All)
     {
         for (auto g : Gamepads)
         {
-            if (g->GetButton(button))
+            if (g->GetButton(button, deadZone))
                 return true;
         }
     }
@@ -556,18 +557,18 @@ bool Input::GetGamepadButton(InputGamepadIndex gamepad, GamepadButton button)
     {
         const auto index = static_cast<int32>(gamepad);
         if (index < Gamepads.Count())
-            return Gamepads[index]->GetButton(button);
+            return Gamepads[index]->GetButton(button, deadZone);
     }
     return false;
 }
 
-bool Input::GetGamepadButtonDown(InputGamepadIndex gamepad, GamepadButton button)
+bool Input::GetGamepadButtonDown(InputGamepadIndex gamepad, GamepadButton button, float deadZone)
 {
     if (gamepad == InputGamepadIndex::All)
     {
         for (auto g : Gamepads)
         {
-            if (g->GetButtonDown(button))
+            if (g->GetButtonDown(button, deadZone))
                 return true;
         }
     }
@@ -575,18 +576,18 @@ bool Input::GetGamepadButtonDown(InputGamepadIndex gamepad, GamepadButton button
     {
         const auto index = static_cast<int32>(gamepad);
         if (index < Gamepads.Count())
-            return Gamepads[index]->GetButtonDown(button);
+            return Gamepads[index]->GetButtonDown(button, deadZone);
     }
     return false;
 }
 
-bool Input::GetGamepadButtonUp(InputGamepadIndex gamepad, GamepadButton button)
+bool Input::GetGamepadButtonUp(InputGamepadIndex gamepad, GamepadButton button, float deadZone)
 {
     if (gamepad == InputGamepadIndex::All)
     {
         for (auto g : Gamepads)
         {
-            if (g->GetButtonUp(button))
+            if (g->GetButtonUp(button, deadZone))
                 return true;
         }
     }
@@ -594,7 +595,7 @@ bool Input::GetGamepadButtonUp(InputGamepadIndex gamepad, GamepadButton button)
     {
         const auto index = static_cast<int32>(gamepad);
         if (index < Gamepads.Count())
-            return Gamepads[index]->GetButtonUp(button);
+            return Gamepads[index]->GetButtonUp(button, deadZone);
     }
     return false;
 }
@@ -1065,26 +1066,26 @@ void InputService::Update()
         bool isActive;
         if (config.Mode == InputActionMode::Pressing)
         {
-            isActive = Input::GetKey(config.Key) || Input::GetMouseButton(config.MouseButton) || Input::GetGamepadButton(config.Gamepad, config.GamepadButton);
+            isActive = Input::GetKey(config.Key) || Input::GetMouseButton(config.MouseButton) || Input::GetGamepadButton(config.Gamepad, config.GamepadButton, config.DeadZone);
         }
         else if (config.Mode == InputActionMode::Press)
         {
-            isActive = Input::GetKeyDown(config.Key) || Input::GetMouseButtonDown(config.MouseButton) || Input::GetGamepadButtonDown(config.Gamepad, config.GamepadButton);
+            isActive = Input::GetKeyDown(config.Key) || Input::GetMouseButtonDown(config.MouseButton) || Input::GetGamepadButtonDown(config.Gamepad, config.GamepadButton, config.DeadZone);
         }
         else
         {
-            isActive = Input::GetKeyUp(config.Key) || Input::GetMouseButtonUp(config.MouseButton) || Input::GetGamepadButtonUp(config.Gamepad, config.GamepadButton);
+            isActive = Input::GetKeyUp(config.Key) || Input::GetMouseButtonUp(config.MouseButton) || Input::GetGamepadButtonUp(config.Gamepad, config.GamepadButton, config.DeadZone);
         }
 
-        if (Input::GetKeyDown(config.Key) || Input::GetMouseButtonDown(config.MouseButton) || Input::GetGamepadButtonDown(config.Gamepad, config.GamepadButton))
+        if (Input::GetKeyDown(config.Key) || Input::GetMouseButtonDown(config.MouseButton) || Input::GetGamepadButtonDown(config.Gamepad, config.GamepadButton, config.DeadZone))
         {
             data.State = InputActionState::Press;
         }
-        else if (Input::GetKey(config.Key) || Input::GetMouseButton(config.MouseButton) || Input::GetGamepadButton(config.Gamepad, config.GamepadButton))
+        else if (Input::GetKey(config.Key) || Input::GetMouseButton(config.MouseButton) || Input::GetGamepadButton(config.Gamepad, config.GamepadButton, config.DeadZone))
         {
             data.State = InputActionState::Pressing;
         }
-        else if (Input::GetKeyUp(config.Key) || Input::GetMouseButtonUp(config.MouseButton) || Input::GetGamepadButtonUp(config.Gamepad, config.GamepadButton))
+        else if (Input::GetKeyUp(config.Key) || Input::GetMouseButtonUp(config.MouseButton) || Input::GetGamepadButtonUp(config.Gamepad, config.GamepadButton, config.DeadZone))
         {
             data.State = InputActionState::Release;
         }
