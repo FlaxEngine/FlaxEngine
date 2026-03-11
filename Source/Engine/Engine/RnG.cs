@@ -33,6 +33,10 @@ public static class Rng
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Condition(Chance chance = Chance.Even) => Rng.Condition(Float, chance);
 
+        /// <inheritdoc cref="Rng.Condition(float)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Condition(float chance) => Rng.Condition(Float, chance);
+
         /// <inheritdoc cref="Rng.Fluctuate{T}(T, T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Fluctuate<T>(T value, T maxDeviation) where T : INumberBase<T> => Rng.Fluctuate(value, maxDeviation, Float);
@@ -260,7 +264,7 @@ public static class Rng
     }
 
     /// <summary>
-    /// Evaluates a probabilistic condition based on the specified <see cref="Chance"/>.
+    /// Evaluates a probabilistic condition based on the specified <paramref name="chance"/>.
     /// </summary>
     /// <param name="chance">
     /// The probability of the condition being <see langword="true"/>. 
@@ -272,7 +276,9 @@ public static class Rng
     /// </returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool Condition(Chance chance = Chance.Even) => Condition(Float(), chance);
-
+    /// <param name="chance">The probability of the condition being <see langword="true"/>.</param>
+    /// <inheritdoc cref="Condition(Chance)"/>
+    public static bool Condition(float chance) => Condition(chance, Chance.Even);
     private static bool Condition(float value, Chance chance) => chance switch
     {
         Chance.Impossible => false,
@@ -284,7 +290,6 @@ public static class Rng
         Chance.Certain => true,
         _ => throw new ArgumentOutOfRangeException(nameof(chance), chance, null)
     };
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool Condition(float value, float threshold) => value < threshold;
 
