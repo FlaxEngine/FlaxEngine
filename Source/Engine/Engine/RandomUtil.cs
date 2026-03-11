@@ -20,6 +20,6 @@ namespace FlaxEngine
         /// </summary>
         /// <returns>The random number.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Rand() => RnG.Float();
+        public static float Rand() => Rng.Float();
     }
 }

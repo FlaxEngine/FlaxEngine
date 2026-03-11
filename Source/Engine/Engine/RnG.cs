@@ -10,7 +10,7 @@ namespace FlaxEngine;
 /// <summary>
 /// Provides thread-safe utilities for generating random values, selecting collection elements, and managing state with various distribution biases.
 /// </summary>
-public static class RnG
+public static class Rng
 {
     /// <summary>
     /// Represents a snapshot of the random state at a given point in time.
@@ -25,61 +25,61 @@ public static class RnG
         /// <summary>
         /// Gets a single-precision floating-point number greater than or equal to 0.0 and less than 1.0.
         /// </summary>
-        public float Float => RnG.Float(Integer);
+        public float Float => Rng.Float(Integer);
 
         internal State(int value) => Integer = value;
 
-        /// <inheritdoc cref="RnG.Condition(Chance)"/>
+        /// <inheritdoc cref="Rng.Condition(Chance)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Condition(Chance chance = Chance.Even) => RnG.Condition(Float, chance);
+        public bool Condition(Chance chance = Chance.Even) => Rng.Condition(Float, chance);
 
-        /// <inheritdoc cref="RnG.Fluctuate{T}(T, T)"/>
+        /// <inheritdoc cref="Rng.Fluctuate{T}(T, T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T Fluctuate<T>(T value, T maxDeviation) where T : INumberBase<T> => RnG.Fluctuate(value, maxDeviation, Float);
+        public T Fluctuate<T>(T value, T maxDeviation) where T : INumberBase<T> => Rng.Fluctuate(value, maxDeviation, Float);
 
-        /// <inheritdoc cref="RnG.UniformRange{T}(T, T)"/>
+        /// <inheritdoc cref="Rng.UniformRange{T}(T, T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T UniformRange<T>(T min, T max) where T : INumberBase<T> => Range(min, max, Float);
 
-        /// <inheritdoc cref="RnG.MedianBiasedRange{T}(T, T)"/>
+        /// <inheritdoc cref="Rng.MedianBiasedRange{T}(T, T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T MedianBiasedRange<T>(T min, T max) where T : INumberBase<T> => RnG.MedianBiasedRange(min, max, Float);
+        public T MedianBiasedRange<T>(T min, T max) where T : INumberBase<T> => Rng.MedianBiasedRange(min, max, Float);
 
-        /// <inheritdoc cref="RnG.ExtremesBiasedRange{T}(T, T)"/>
+        /// <inheritdoc cref="Rng.ExtremesBiasedRange{T}(T, T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T ExtremesBiasedRange<T>(T min, T max) where T : INumberBase<T> => RnG.ExtremesBiasedRange(min, max, Float);
+        public T ExtremesBiasedRange<T>(T min, T max) where T : INumberBase<T> => Rng.ExtremesBiasedRange(min, max, Float);
 
-        /// <inheritdoc cref="RnG.MaxBiasedRange{T}(T, T)"/>
+        /// <inheritdoc cref="Rng.MaxBiasedRange{T}(T, T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T MaxBiasedRange<T>(T min, T max) where T : INumberBase<T> => RnG.MaxBiasedRange(min, max, Float);
+        public T MaxBiasedRange<T>(T min, T max) where T : INumberBase<T> => Rng.MaxBiasedRange(min, max, Float);
 
-        /// <inheritdoc cref="RnG.MinBiasedRange{T}(T, T)"/>
+        /// <inheritdoc cref="Rng.MinBiasedRange{T}(T, T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T MinBiasedRange<T>(T min, T max) where T : INumberBase<T> => RnG.MinBiasedRange(min, max, Float);
+        public T MinBiasedRange<T>(T min, T max) where T : INumberBase<T> => Rng.MinBiasedRange(min, max, Float);
 
-        /// <inheritdoc cref="RnG.TryChoose{T}(ReadOnlySpan{T}, out T)"/>
+        /// <inheritdoc cref="Rng.TryChoose{T}(ReadOnlySpan{T}, out T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryChoose<T>(ReadOnlySpan<T> items, [MaybeNullWhen(false)] out T result) => RnG.TryChoose(items, Float, out result);
+        public bool TryChoose<T>(ReadOnlySpan<T> items, [MaybeNullWhen(false)] out T result) => Rng.TryChoose(items, Float, out result);
 
-        /// <inheritdoc cref="RnG.TryChoose{T}(IList{T}, out T)"/>
+        /// <inheritdoc cref="Rng.TryChoose{T}(IList{T}, out T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryChoose<T>(IList<T> items, [MaybeNullWhen(false)] out T result) => RnG.TryChoose(items, Float, out result);
+        public bool TryChoose<T>(IList<T> items, [MaybeNullWhen(false)] out T result) => Rng.TryChoose(items, Float, out result);
 
-        /// <inheritdoc cref="RnG.TryChoose{T}(IReadOnlyList{T}, out T)"/>
+        /// <inheritdoc cref="Rng.TryChoose{T}(IReadOnlyList{T}, out T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryChoose<T>(IReadOnlyList<T> items, [MaybeNullWhen(false)] out T result) => RnG.TryChoose(items, Float, out result);
+        public bool TryChoose<T>(IReadOnlyList<T> items, [MaybeNullWhen(false)] out T result) => Rng.TryChoose(items, Float, out result);
 
-        /// <inheritdoc cref="RnG.Choose{T}(ReadOnlySpan{T})"/>
+        /// <inheritdoc cref="Rng.Choose{T}(ReadOnlySpan{T})"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T Choose<T>(ReadOnlySpan<T> items) => RnG.Choose(items, Float);
+        public T Choose<T>(ReadOnlySpan<T> items) => Rng.Choose(items, Float);
 
-        /// <inheritdoc cref="RnG.Choose{T}(IList{T})"/>
+        /// <inheritdoc cref="Rng.Choose{T}(IList{T})"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T Choose<T>(IList<T> items) => RnG.Choose(items, Float);
+        public T Choose<T>(IList<T> items) => Rng.Choose(items, Float);
 
-        /// <inheritdoc cref="RnG.Choose{T}(IReadOnlyList{T})"/>
+        /// <inheritdoc cref="Rng.Choose{T}(IReadOnlyList{T})"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T Choose<T>(IReadOnlyList<T> items) => RnG.Choose(items, Float);
+        public T Choose<T>(IReadOnlyList<T> items) => Rng.Choose(items, Float);
     }
 
     private const string EmptyCollectionMessage = "The collection must contain at least one item.";
