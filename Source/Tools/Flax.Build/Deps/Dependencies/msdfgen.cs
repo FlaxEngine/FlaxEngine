@@ -7,7 +7,7 @@ using Flax.Build;
 namespace Flax.Deps.Dependencies
 {
     /// <summary>
-    /// Official Open Asset Import Library Repository. Loads 40+ 3D file formats into one unified and clean data structure. http://www.assimp.org
+    /// Multi-channel signed distance field generator. https://github.com/Chlumsky/msdfgen
     /// </summary>
     /// <seealso cref="Flax.Deps.Dependency" />
     class msdfgen : Dependency
@@ -23,6 +23,7 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Windows,
+                        TargetPlatform.Android,
                     };
                 case TargetPlatform.Linux:
                     return new[]
@@ -73,6 +74,7 @@ namespace Flax.Deps.Dependencies
         public override void Build(BuildOptions options)
         {
             var root = options.IntermediateFolder;
+            var configuration = "Release";
             string includeDir = null;
             var filesToKeep = new[]
             {
@@ -87,86 +89,50 @@ namespace Flax.Deps.Dependencies
                 "-DBUILD_SHARED_LIBS=OFF",
                 "-DMSDFGEN_INSTALL=ON"
             };
-            var cmakeArgs = string.Join(" ", args);
 
             // Get the source
-            CloneGitRepoSingleBranch(root, "https://github.com/Chlumsky/msdfgen.git", "master", "1874bcf7d9624ccc85b4bc9a85d78116f690f35b");
+            var commit = "1874bcf7d9624ccc85b4bc9a85d78116f690f35b"; // Version 1.13
+            CloneGitRepoSingleBranch(root, "https://github.com/Chlumsky/msdfgen.git", "master", commit);
 
             foreach (var platform in options.Platforms)
             {
                 foreach (var architecture in options.Architectures)
                 {
                     BuildStarted(platform, architecture);
+
+                    var buildDir = Path.Combine(root, "build-" + architecture);
+                    var installDir = Path.Combine(root, "install-" + architecture);
+                    var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                    includeDir = Path.Combine(installDir, "include");
+                    SetupDirectory(buildDir, true);
+                    File.Delete(Path.Combine(root, "CMakeCache.txt"));
+
+                    Dictionary<string, string> envVars = null;
+                    var libName = "libmsdfgen-core.a";
+                    var cmakeArgs = string.Join(" ", args);
                     switch (platform)
                     {
                     case TargetPlatform.Windows:
-                    {
-                        var configuration = "Release";
-
-                        // Build for Windows
-                        File.Delete(Path.Combine(root, "CMakeCache.txt"));
-                        
-                        var buildDir = Path.Combine(root, "build-" + architecture);
-                        var installDir = Path.Combine(root, "install-" + architecture);
-                        SetupDirectory(buildDir, true);
-                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" " + cmakeArgs);
-                        BuildCmake(buildDir);
-                        Utilities.Run("cmake", $"--install {buildDir} --prefix {installDir} --config {configuration}", null, root, Utilities.RunOptions.DefaultTool);
-                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
-                        Utilities.FileCopy(Path.Combine(installDir, "lib", "msdfgen-core.lib"), Path.Combine(depsFolder, "msdfgen-core.lib"));
-                        // This will be set multiple times, but the headers are the same anyway.
-                        includeDir = Path.Combine(installDir, "include");
-
+                    case TargetPlatform.XboxOne:
+                    case TargetPlatform.XboxScarlett:
+                        libName = "msdfgen-core.lib";
                         break;
-                    }
                     case TargetPlatform.Linux:
-                    {
-                        var configuration = "Release";
-                        var envVars = new Dictionary<string, string>
+                        envVars = new Dictionary<string, string>
                         {
                             { "CC", "clang-" + Configuration.LinuxClangMinVer },
                             { "CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer },
                             { "CXX", "clang++-" + Configuration.LinuxClangMinVer },
                             { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
                         };
-
-                        // Build for Linux
-                        File.Delete(Path.Combine(root, "CMakeCache.txt"));
-
-                        var buildDir = Path.Combine(root, "build-" + architecture);
-                        var installDir = Path.Combine(root, "install-" + architecture);
-                        SetupDirectory(buildDir, true);
-                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" " + cmakeArgs + " -DCMAKE_POSITION_INDEPENDENT_CODE=ON", envVars);
-                        BuildCmake(buildDir);
-                        Utilities.Run("cmake", $"--install {buildDir} --prefix {installDir} --config {configuration}", null, root, Utilities.RunOptions.DefaultTool);
-                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
-                        Utilities.FileCopy(Path.Combine(installDir, "lib", "libmsdfgen-core.a"), Path.Combine(depsFolder, "libmsdfgen-core.a"));
-                        // This will be set multiple times, but the headers are the same anyway.
-                        includeDir = Path.Combine(installDir, "include");
-                        
+                        cmakeArgs += " -DCMAKE_POSITION_INDEPENDENT_CODE=ON";
                         break;
                     }
-                    case TargetPlatform.Mac:
-                    {
-                        var configuration = "Release";
 
-                        // Build for Mac
-                        File.Delete(Path.Combine(root, "CMakeCache.txt"));
-
-                        var buildDir = Path.Combine(root, "build-" + architecture);
-                        var installDir = Path.Combine(root, "install-" + architecture);
-                        SetupDirectory(buildDir, true);
-                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" " + cmakeArgs);
-                        BuildCmake(buildDir);
-                        Utilities.Run("cmake", $"--install {buildDir} --prefix {installDir} --config {configuration}", null, root, Utilities.RunOptions.DefaultTool);
-                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
-                        Utilities.FileCopy(Path.Combine(installDir, "lib", "libmsdfgen-core.a"), Path.Combine(depsFolder, "libmsdfgen-core.a"));
-                        // This will be set multiple times, but the headers are the same anyway.
-                        includeDir = Path.Combine(installDir, "include");
-                        
-                        break;
-                    }
-                    }
+                    RunCmake(root, platform, architecture, $"-B\"{buildDir}\" " + cmakeArgs, envVars);
+                    BuildCmake(buildDir);
+                    Utilities.Run("cmake", $"--install {buildDir} --prefix {installDir} --config {configuration}", null, root, Utilities.RunOptions.DefaultTool);
+                    Utilities.FileCopy(Path.Combine(installDir, "lib", libName), Path.Combine(depsFolder, libName));
                 }
             }
 
