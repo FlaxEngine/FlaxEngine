@@ -20,7 +20,7 @@ public static class Rng
         /// <summary>
         /// Gets the underlying signed 32-bit integer of the current state.
         /// </summary>
-        public int Integer { get; }
+        public int Integer { get; init; }
 
         /// <summary>
         /// Gets a single-precision floating-point number greater than or equal to 0.0 and less than 1.0.
