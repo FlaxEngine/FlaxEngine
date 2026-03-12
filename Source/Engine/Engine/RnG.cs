@@ -148,8 +148,14 @@ public static class Rng
             _initialized = true;
             _localState = Interlocked.Add(ref _sharedState, 1_013_904_223);
         }
-        _localState = unchecked((int)((uint)_localState * 1_664_525U + 1_013_904_223U));
+        _localState = AdvanceState((uint)_localState);
         return _localState;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static int AdvanceState(uint state)
+    {
+        return unchecked((int)(state * 1_664_525U + 1_013_904_223U));
     }
 
     /// <summary>
