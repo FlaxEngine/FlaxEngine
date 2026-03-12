@@ -3289,6 +3289,10 @@ namespace Flax.Build.Bindings
             contents.AppendLine($"#define {binaryModuleNameUpper}_VERSION_REVISION {version.Revision}");
             contents.AppendLine($"#define {binaryModuleNameUpper}_COMPANY \"{project.Company}\"");
             contents.AppendLine($"#define {binaryModuleNameUpper}_COPYRIGHT \"{project.Copyright}\"");
+            if (project.VersionControlBranch.Length != 0)
+                contents.AppendLine($"#define {binaryModuleNameUpper}_BRANCH \"{project.VersionControlBranch}\"");
+            if (project.VersionControlCommit.Length != 0)
+                contents.AppendLine($"#define {binaryModuleNameUpper}_COMMIT \"{project.VersionControlCommit}\"");
             contents.AppendLine();
             contents.AppendLine("class BinaryModule;");
             contents.AppendLine($"extern \"C\" {binaryModuleNameUpper}_API BinaryModule* GetBinaryModule{binaryModuleName}();");
