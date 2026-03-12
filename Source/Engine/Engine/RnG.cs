@@ -18,7 +18,7 @@ public static class Rng
     public readonly struct State
     {
         /// <summary>
-        /// Gets a signed 32-bit integer representing the current state of the random number generator.
+        /// Gets the underlying signed 32-bit integer of the current state.
         /// </summary>
         public int Integer { get; }
 
@@ -26,6 +26,16 @@ public static class Rng
         /// Gets a single-precision floating-point number greater than or equal to 0.0 and less than 1.0.
         /// </summary>
         public float Float => Rng.Float(Integer);
+
+        /// <summary>
+        /// Gets the next <see cref="State"/> in the sequence.
+        /// </summary>
+        /// <remarks>
+        /// The next state is computed from <see cref="Integer"/> using the same algorithm 
+        /// as the static <see cref="Rng.Integer()"/> method, ensuring that each state leads to a unique 
+        /// subsequent state in the random sequence.
+        /// </remarks>
+        public State Next => new(AdvanceState(unchecked((uint)Integer)));
 
         internal State(int value) => Integer = value;
 
