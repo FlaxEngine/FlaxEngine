@@ -169,10 +169,6 @@ namespace FlaxEngine
         /// <summary>
         /// Mutates the current seed into the next seed.
         /// </summary>
-        protected void MutateSeed()
-        {
-            int seed = Rng.AdvanceState((uint)_currentState.Integer);
-            _currentState = new Rng.State(seed);
-        }
+        protected void MutateSeed() => _currentState = _currentState.Next;
     }
 }

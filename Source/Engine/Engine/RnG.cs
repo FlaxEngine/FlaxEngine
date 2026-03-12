@@ -35,7 +35,7 @@ public static class Rng
         /// as the static <see cref="Rng.Integer()"/> method, ensuring that each state leads to a unique 
         /// subsequent state in the random sequence.
         /// </remarks>
-        public State Next => new(AdvanceState(unchecked((uint)Integer)));
+        public State Next => new(AdvanceState(Integer));
 
         internal State(int value) => Integer = value;
 
@@ -158,14 +158,14 @@ public static class Rng
             _initialized = true;
             _localState = Interlocked.Add(ref _sharedState, 1_013_904_223);
         }
-        _localState = AdvanceState((uint)_localState);
+        _localState = AdvanceState(_localState);
         return _localState;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static int AdvanceState(uint state)
+    private static int AdvanceState(int state)
     {
-        return unchecked((int)(state * 1_664_525U + 1_013_904_223U));
+        return unchecked((int)((uint)state * 1_664_525U + 1_013_904_223U));
     }
 
     /// <summary>
