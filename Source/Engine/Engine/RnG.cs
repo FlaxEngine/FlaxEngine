@@ -16,13 +16,17 @@ public static class Rng
     /// <summary>
     /// Represents a snapshot of the random state at a given point in time.
     /// </summary>
+    /// <remarks>
+    /// Creates a new <see cref="State"/> with the specified integer value.
+    /// </remarks>
+    /// <param name="value">The integer value to initialize the state with.</param>
     [StructLayout(LayoutKind.Sequential)]
-    public readonly struct State : IEquatable<State>, IEqualityOperators<State, State, bool>
+    public readonly struct State(int value) : IEquatable<State>, IEqualityOperators<State, State, bool>
     {
         /// <summary>
         /// Gets the underlying signed 32-bit integer of the current state.
         /// </summary>
-        public int Integer { get; init; }
+        public int Integer { get; init; } = value;
 
         /// <summary>
         /// Gets a single-precision floating-point number greater than or equal to 0.0 and less than 1.0.
@@ -38,8 +42,6 @@ public static class Rng
         /// subsequent state in the random sequence.
         /// </remarks>
         public State Next => new(AdvanceState(Integer));
-
-        internal State(int value) => Integer = value;
 
         /// <inheritdoc/>
         public bool Equals(State other) => Integer == other.Integer;
