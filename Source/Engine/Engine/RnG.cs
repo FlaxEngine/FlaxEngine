@@ -31,7 +31,7 @@ public static class Rng
 
         /// <inheritdoc cref="Rng.Condition(Chance)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Condition(Chance chance = Chance.Even) => Rng.Condition(Float, chance);
+        public bool Condition(Chance chance = Chance.Even) => Rng.Condition(Integer, chance);
 
         /// <inheritdoc cref="Rng.Fluctuate{T}(T, T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
