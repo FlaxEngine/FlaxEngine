@@ -2,6 +2,7 @@
 
 #include "Render2D.h"
 #include "Font.h"
+#include "FontAsset.h"
 #include "FontManager.h"
 #include "FontTextureAtlas.h"
 #include "RotatedRectangle.h"
@@ -74,6 +75,7 @@ enum class DrawCallType : byte
     FillTexture,
     FillTexturePoint,
     DrawChar,
+    DrawCharMSDF,
     DrawCharMaterial,
     Custom,
     Material,
@@ -164,6 +166,7 @@ struct CachedPSO
     GPUPipelineState* PS_Color_NoAlpha;
 
     GPUPipelineState* PS_Font;
+    GPUPipelineState* PS_FontMSDF;
 
     GPUPipelineState* PS_BlurH;
     GPUPipelineState* PS_BlurV;
@@ -455,6 +458,7 @@ CanDrawCallCallback CanDrawCallBatch[] =
     CanDrawCallCallbackTexture, // FillTexture,
     CanDrawCallCallbackTexture, // FillTexturePoint,
     CanDrawCallCallbackChar, // DrawChar,
+    CanDrawCallCallbackChar, // DrawCharMSDF,
     CanDrawCallCallbackCharMaterial, // DrawCharMaterial,
     CanDrawCallCallbackFalse, // Custom,
     CanDrawCallCallbackMaterial, // Material,
@@ -515,6 +519,12 @@ bool CachedPSO::Init(GPUShader* shader, bool useDepth)
     desc.PS = shader->GetPS("PS_Font");
     PS_Font = GPUDevice::Instance->CreatePipelineState();
     if (PS_Font->Init(desc))
+        return true;
+    //
+    desc.BlendMode = BlendingMode::AlphaBlend;
+    desc.PS = shader->GetPS("PS_FontMSDF");
+    PS_FontMSDF = GPUDevice::Instance->CreatePipelineState();
+    if (PS_FontMSDF->Init(desc))
         return true;
     //
     desc.PS = shader->GetPS("PS_LineAA");
@@ -994,6 +1004,10 @@ void DrawBatch(int32 startIndex, int32 count)
         Context->BindSR(0, d.AsChar.Tex);
         Context->SetState(CurrentPso->PS_Font);
         break;
+    case DrawCallType::DrawCharMSDF:
+        Context->BindSR(0, d.AsChar.Tex);
+        Context->SetState(CurrentPso->PS_FontMSDF);
+        break;
     case DrawCallType::DrawCharMaterial:
     {
         // Apply and bind material
@@ -1176,6 +1190,10 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     float scale = 1.0f / FontManager::FontScale;
     const bool enableFallbackFonts = EnumHasAllFlags(Features, RenderingFeatures::FallbackFonts);
 
+    const FontAsset* asset = font->GetAsset();
+    const FontOptions& options = asset->GetOptions();
+    const bool useMSDF = options.RasterMode == FontRasterMode::MSDF;
+
     // Render all characters
     FontCharacterEntry entry;
     Render2DDrawCall drawCall;
@@ -1186,7 +1204,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     }
     else
     {
-        drawCall.Type = DrawCallType::DrawChar;
+        drawCall.Type = useMSDF ? DrawCallType::DrawCharMSDF : DrawCallType::DrawChar;
         drawCall.AsChar.Mat = nullptr;
     }
     Float2 pointer = location;
@@ -1291,6 +1309,10 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     float scale = layout.Scale / FontManager::FontScale;
     const bool enableFallbackFonts = EnumHasAllFlags(Features, RenderingFeatures::FallbackFonts);
 
+    const FontAsset* asset = font->GetAsset();
+    const FontOptions& options = asset->GetOptions();
+    const bool useMSDF = options.RasterMode == FontRasterMode::MSDF;
+
     // Process text to get lines
     Lines.Clear();
     font->ProcessText(text, Lines, layout);
@@ -1305,7 +1327,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     }
     else
     {
-        drawCall.Type = DrawCallType::DrawChar;
+        drawCall.Type = useMSDF ? DrawCallType::DrawCharMSDF : DrawCallType::DrawChar;
         drawCall.AsChar.Mat = nullptr;
     }
     for (int32 lineIndex = 0; lineIndex < Lines.Count(); lineIndex++)

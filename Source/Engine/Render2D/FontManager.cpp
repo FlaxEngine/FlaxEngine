@@ -13,6 +13,7 @@
 #include <ThirdParty/freetype/ftsynth.h>
 #include <ThirdParty/freetype/ftbitmap.h>
 #include <ThirdParty/freetype/internal/ftdrv.h>
+#include "Engine/Render2D/MSDFGenerator.h"
 
 namespace FontManagerImpl
 {
@@ -125,7 +126,11 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
     // Set load flags
     uint32 glyphFlags = FT_LOAD_NO_BITMAP;
     const bool useAA = EnumHasAnyFlags(options.Flags, FontFlags::AntiAliasing);
-    if (useAA)
+    if (options.RasterMode == FontRasterMode::MSDF)
+    {
+        glyphFlags |= FT_LOAD_NO_AUTOHINT | FT_LOAD_NO_HINTING;
+    }
+    else if (useAA)
     {
         switch (options.Hinting)
         {
@@ -185,75 +190,105 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
         FT_GlyphSlot_Oblique(face->glyph);
     }
 
-    // Render glyph to the bitmap
-    FT_GlyphSlot glyph = face->glyph;
-    FT_Render_Glyph(glyph, useAA ? FT_RENDER_MODE_NORMAL : FT_RENDER_MODE_MONO);
-
-    FT_Bitmap* bitmap = &glyph->bitmap;
-    FT_Bitmap tmpBitmap;
-    if (bitmap->pixel_mode != FT_PIXEL_MODE_GRAY)
+    int32 glyphWidth = 0;
+    int32 glyphHeight = 0;
+    if (options.RasterMode == FontRasterMode::Bitmap)
     {
-        // Convert the bitmap to 8bpp grayscale
-        FT_Bitmap_New(&tmpBitmap);
-        FT_Bitmap_Convert(Library, bitmap, &tmpBitmap, 4);
-        bitmap = &tmpBitmap;
-    }
-    ASSERT(bitmap && bitmap->pixel_mode == FT_PIXEL_MODE_GRAY);
+        // Render glyph to the bitmap
+        FT_GlyphSlot glyph = face->glyph;
+        FT_Render_Glyph(glyph, useAA ? FT_RENDER_MODE_NORMAL : FT_RENDER_MODE_MONO);
 
-    // Fill the character data
-    entry.AdvanceX = Convert26Dot6ToRoundedPixel<int16>(glyph->advance.x);
-    entry.OffsetY = glyph->bitmap_top;
-    entry.OffsetX = glyph->bitmap_left;
-    entry.IsValid = true;
-    entry.BearingY = Convert26Dot6ToRoundedPixel<int16>(glyph->metrics.horiBearingY);
-    entry.Height = Convert26Dot6ToRoundedPixel<int16>(glyph->metrics.height);
+        FT_Bitmap* bitmap = &glyph->bitmap;
+        FT_Bitmap tmpBitmap;
+        if (bitmap->pixel_mode != FT_PIXEL_MODE_GRAY) {
+            // Convert the bitmap to 8bpp grayscale
+            FT_Bitmap_New(&tmpBitmap);
+            FT_Bitmap_Convert(Library, bitmap, &tmpBitmap, 4);
+            bitmap = &tmpBitmap;
+        }
+        ASSERT(bitmap && bitmap->pixel_mode == FT_PIXEL_MODE_GRAY);
 
-    // Allocate memory
-    const int32 glyphWidth = bitmap->width;
-    const int32 glyphHeight = bitmap->rows;
-    GlyphImageData.Clear();
-    GlyphImageData.Resize(glyphWidth * glyphHeight);
+        // Fill the character data
+        entry.AdvanceX = Convert26Dot6ToRoundedPixel<int16>(glyph->advance.x);
+        entry.OffsetY = glyph->bitmap_top;
+        entry.OffsetX = glyph->bitmap_left;
+        entry.IsValid = true;
+        entry.BearingY = Convert26Dot6ToRoundedPixel<int16>(glyph->metrics.horiBearingY);
+        entry.Height = Convert26Dot6ToRoundedPixel<int16>(glyph->metrics.height);
 
-    // End for empty glyphs
-    if (GlyphImageData.IsEmpty())
-    {
-        entry.TextureIndex = MAX_uint8;
-        if (bitmap == &tmpBitmap)
+        // Allocate memory
+        glyphWidth = bitmap->width;
+        glyphHeight = bitmap->rows;
+        GlyphImageData.Clear();
+        GlyphImageData.Resize(glyphWidth * glyphHeight);
+
+        // End for empty glyphs
+        if (GlyphImageData.IsEmpty())
         {
+            entry.TextureIndex = MAX_uint8;
+            if (bitmap == &tmpBitmap)
+            {
+                FT_Bitmap_Done(Library, bitmap);
+                bitmap = nullptr;
+            }
+            return false;
+        }
+        
+        // Copy glyph data after rasterization (row by row)
+        for (int32 row = 0; row < glyphHeight; row++)
+        {
+            Platform::MemoryCopy(&GlyphImageData[row * glyphWidth], &bitmap->buffer[row * bitmap->pitch], glyphWidth);
+        }
+
+        // Normalize gray scale images not using 256 colors
+        if (bitmap->num_grays != 256) {
+            const int32 scale = 255 / (bitmap->num_grays - 1);
+            for (byte& pixel : GlyphImageData) {
+                pixel *= scale;
+            }
+        }
+
+        // Free temporary bitmap if used
+        if (bitmap == &tmpBitmap) {
             FT_Bitmap_Done(Library, bitmap);
             bitmap = nullptr;
         }
-        return false;
     }
-
-    // Copy glyph data after rasterization (row by row)
-    for (int32 row = 0; row < glyphHeight; row++)
+    else
     {
-        Platform::MemoryCopy(&GlyphImageData[row * glyphWidth], &bitmap->buffer[row * bitmap->pitch], glyphWidth);
-    }
+        // Generate bitmap for MSDF
+        FT_GlyphSlot glyph = face->glyph;
 
-    // Normalize gray scale images not using 256 colors
-    if (bitmap->num_grays != 256)
-    {
-        const int32 scale = 255 / (bitmap->num_grays - 1);
-        for (byte& pixel : GlyphImageData)
-        {
-            pixel *= scale;
+        // Set advance in advance
+        entry.AdvanceX = Convert26Dot6ToRoundedPixel<int16>(glyph->advance.x);
+
+        int16 msdf_top = 0;
+        int16 msdf_left = 0;
+        MSDFGenerator::GenerateMSDF(glyph, GlyphImageData, glyphWidth, glyphHeight, msdf_top, msdf_left);
+
+        // End for empty glyphs
+        if (GlyphImageData.IsEmpty()) {
+            entry.TextureIndex = MAX_uint8;
+            return false;
         }
-    }
 
-    // Free temporary bitmap if used
-    if (bitmap == &tmpBitmap)
-    {
-        FT_Bitmap_Done(Library, bitmap);
-        bitmap = nullptr;
+        // Fill the remaining character data
+        entry.OffsetY = msdf_top;
+        entry.OffsetX = msdf_left;
+        entry.IsValid = true;
+        entry.BearingY = Convert26Dot6ToRoundedPixel<int16>(glyph->metrics.horiBearingY);
+        entry.Height = Convert26Dot6ToRoundedPixel<int16>(glyph->metrics.height);
     }
 
     // Find atlas for the character texture
+    PixelFormat requiredFormat = options.RasterMode == FontRasterMode::MSDF ? PixelFormat::R8G8B8A8_UNorm : PixelFormat::R8_UNorm;
     int32 atlasIndex = 0;
     const FontTextureAtlasSlot* slot = nullptr;
-    for (; atlasIndex < Atlases.Count() && slot == nullptr; atlasIndex++)
+    for (; atlasIndex < Atlases.Count() && slot == nullptr; atlasIndex++) {
+        if (Atlases[atlasIndex]->GetPixelFormat() != requiredFormat)
+            continue;
         slot = Atlases[atlasIndex]->AddEntry(glyphWidth, glyphHeight, GlyphImageData);
+    }
     atlasIndex--;
 
     // Check if there is no atlas for this character
@@ -261,7 +296,7 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
     {
         // Create new atlas
         auto atlas = Content::CreateVirtualAsset<FontTextureAtlas>();
-        atlas->Setup(PixelFormat::R8_UNorm, FontTextureAtlas::PaddingStyle::PadWithZero);
+        atlas->Setup(requiredFormat, FontTextureAtlas::PaddingStyle::PadWithZero);
         Atlases.Add(atlas);
         atlasIndex++;
 

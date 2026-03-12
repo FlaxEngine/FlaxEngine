@@ -21,6 +21,10 @@ namespace FlaxEditor.Windows.Assets
         /// </summary>
         private sealed class PropertiesProxy
         {
+            [DefaultValue(FontRasterMode.Bitmap)]
+            [EditorOrder(5), EditorDisplay("Properties"), Tooltip("The rasterization mode used when generating font atlases.")]
+            public FontRasterMode RasterMode;
+
             [DefaultValue(FontHinting.Default)]
             [EditorOrder(10), EditorDisplay("Properties"), Tooltip("The font hinting used when rendering characters.")]
             public FontHinting Hinting;
@@ -41,7 +45,8 @@ namespace FlaxEditor.Windows.Assets
             {
                 options = new FontOptions
                 {
-                    Hinting = Hinting
+                    Hinting = Hinting,
+                    RasterMode = RasterMode
                 };
                 if (AntiAliasing)
                     options.Flags |= FontFlags.AntiAliasing;
@@ -57,6 +62,7 @@ namespace FlaxEditor.Windows.Assets
                 AntiAliasing = (options.Flags & FontFlags.AntiAliasing) == FontFlags.AntiAliasing;
                 Bold = (options.Flags & FontFlags.Bold) == FontFlags.Bold;
                 Italic = (options.Flags & FontFlags.Italic) == FontFlags.Italic;
+                RasterMode = options.RasterMode;
             }
         }
 
