@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace FlaxEngine;
@@ -15,7 +16,8 @@ public static class Rng
     /// <summary>
     /// Represents a snapshot of the random state at a given point in time.
     /// </summary>
-    public readonly struct State
+    [StructLayout(LayoutKind.Sequential)]
+    public readonly struct State : IEquatable<State>, IEqualityOperators<State, State, bool>
     {
         /// <summary>
         /// Gets the underlying signed 32-bit integer of the current state.
@@ -38,6 +40,15 @@ public static class Rng
         public State Next => new(AdvanceState(Integer));
 
         internal State(int value) => Integer = value;
+
+        /// <inheritdoc/>
+        public bool Equals(State other) => Integer == other.Integer;
+
+        /// <inheritdoc/>
+        public override bool Equals([NotNullWhen(true)] object obj) => obj is State other && Equals(other);
+
+        /// <inheritdoc/>
+        public override int GetHashCode() => Integer.GetHashCode();
 
         /// <inheritdoc cref="Rng.Condition(Chance)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -90,6 +101,37 @@ public static class Rng
         /// <inheritdoc cref="Rng.Choose{T}(IReadOnlyList{T})"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Choose<T>(IReadOnlyList<T> items) => Rng.Choose(items, Float);
+
+        /// <summary>
+        /// Sets a <see cref="State"/> to a specified value and returns the original value, as an atomic operation.
+        /// </summary>
+        /// <inheritdoc cref="Interlocked.Exchange(ref int, int)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static State Exchange(ref State location1, State value)
+        {
+            int result = Interlocked.Exchange(ref Unsafe.As<State, int>(ref location1), Unsafe.BitCast<State, int>(value));
+            return Unsafe.BitCast<int, State>(result);
+        }
+
+        /// <summary>
+        /// Compares two <see cref="State"/> values for equality and, if they are equal, replaces the first value.
+        /// </summary>
+        /// <inheritdoc cref="Interlocked.CompareExchange(ref int, int, int)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static State CompareExchange(ref State location1, State value, State comparand)
+        {
+            ref int intLocation = ref Unsafe.As<State, int>(ref location1);
+            int intValue = Unsafe.BitCast<State, int>(value);
+            int intComparand = Unsafe.BitCast<State, int>(comparand);
+            int result = Interlocked.CompareExchange(ref intLocation, intValue, intComparand);
+            return Unsafe.BitCast<int, State>(result);
+        }
+
+        /// <inheritdoc/>
+        public static bool operator ==(State left, State right) => left.Equals(right);
+
+        /// <inheritdoc/>
+        public static bool operator !=(State left, State right) => !(left == right);
     }
 
     private const string EmptyCollectionMessage = "The collection must contain at least one item.";
