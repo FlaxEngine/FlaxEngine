@@ -5,6 +5,7 @@
 #include "Level.h"
 #include "SceneQuery.h"
 #include "SceneObjectsFactory.h"
+#include "FlaxEngine.Gen.h"
 #include "Scene/Scene.h"
 #include "Prefabs/Prefab.h"
 #include "Prefabs/PrefabManager.h"

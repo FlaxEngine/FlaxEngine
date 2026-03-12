@@ -596,7 +596,7 @@ void EngineImpl::InitLog()
     LOG(Info, "Compiled for Dev Environment");
 #endif
 #if defined(FLAXENGINE_BRANCH) && defined(FLAXENGINE_COMMIT)
-    LOG(Info, "Version " FLAXENGINE_VERSION_TEXT ", " FLAXENGINE_BRANCH ", " FLAXENGINE_COMMIT);
+    LOG(Info, "Version " FLAXENGINE_VERSION_TEXT ", {}, {}", StringAsUTF16<>(FLAXENGINE_BRANCH).Get(), StringAsUTF16<>(FLAXENGINE_COMMIT).Get());
 #else
     LOG(Info, "Version " FLAXENGINE_VERSION_TEXT);
 #endif

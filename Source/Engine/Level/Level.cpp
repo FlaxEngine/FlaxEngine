@@ -5,6 +5,7 @@
 #include "LargeWorlds.h"
 #include "SceneQuery.h"
 #include "SceneObjectsFactory.h"
+#include "FlaxEngine.Gen.h"
 #include "Scene/Scene.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Deprecated.h"

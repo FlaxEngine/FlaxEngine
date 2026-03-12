@@ -3290,12 +3290,16 @@ namespace Flax.Build.Bindings
             contents.AppendLine($"#define {binaryModuleNameUpper}_COMPANY \"{project.Company}\"");
             contents.AppendLine($"#define {binaryModuleNameUpper}_COPYRIGHT \"{project.Copyright}\"");
             if (project.VersionControlBranch.Length != 0)
-                contents.AppendLine($"#define {binaryModuleNameUpper}_BRANCH \"{project.VersionControlBranch}\"");
+                contents.AppendLine($"#define {binaryModuleNameUpper}_BRANCH {binaryModuleName}Branch");
             if (project.VersionControlCommit.Length != 0)
-                contents.AppendLine($"#define {binaryModuleNameUpper}_COMMIT \"{project.VersionControlCommit}\"");
+                contents.AppendLine($"#define {binaryModuleNameUpper}_COMMIT {binaryModuleName}Commit");
             contents.AppendLine();
             contents.AppendLine("class BinaryModule;");
             contents.AppendLine($"extern \"C\" {binaryModuleNameUpper}_API BinaryModule* GetBinaryModule{binaryModuleName}();");
+            if (project.VersionControlBranch.Length != 0)
+                contents.AppendLine($"extern \"C\" {binaryModuleNameUpper}_API const char* {binaryModuleName}Branch;");
+            if (project.VersionControlCommit.Length != 0)
+                contents.AppendLine($"extern \"C\" {binaryModuleNameUpper}_API const char* {binaryModuleName}Commit;");
             GenerateCppBinaryModuleHeader?.Invoke(buildData, binaryModule, contents);
             Utilities.WriteFileIfChanged(binaryModuleHeaderPath, contents.ToString());
 
@@ -3321,6 +3325,10 @@ namespace Flax.Build.Bindings
             }
             contents.AppendLine("    return &module;");
             contents.AppendLine("}");
+            if (project.VersionControlBranch.Length != 0)
+                contents.AppendLine($"extern \"C\" const char* {binaryModuleName}Branch = \"{project.VersionControlBranch}\";");
+            if (project.VersionControlCommit.Length != 0)
+                contents.AppendLine($"extern \"C\" const char* {binaryModuleName}Commit = \"{project.VersionControlCommit}\";");
             GenerateCppBinaryModuleSource?.Invoke(buildData, binaryModule, contents);
             Utilities.WriteFileIfChanged(binaryModuleSourcePath, contents.ToString());
             PutStringBuilder(contents);
