@@ -181,6 +181,11 @@ namespace FlaxEditor
         public bool EnableCamera => _view != null && EnableBackground;
 
         /// <summary>
+        /// True if enable grid drawing.
+        /// </summary>
+        public bool ShowGrid { get; set; } = true;
+
+        /// <summary>
         /// Transform gizmo to use sync with (selection, snapping, transformation settings).
         /// </summary>
         public virtual TransformGizmo TransformGizmo => null;
@@ -492,17 +497,20 @@ namespace FlaxEditor
                 // Draw background
                 Surface.VisjectSurface.DrawBackgroundDefault(Editor.Instance.UI.VisjectSurfaceBackground, Width, Height);
 
-                // Draw grid
-                var viewRect = GetClientArea();
-                var upperLeft = _view.PointFromParent(viewRect.Location);
-                var bottomRight = _view.PointFromParent(viewRect.Size);
-                var min = Float2.Min(upperLeft, bottomRight);
-                var max = Float2.Max(upperLeft, bottomRight);
-                var pixelRange = (max - min) * ViewScale;
-                Render2D.PushClip(ref viewRect);
-                DrawAxis(Float2.UnitX, viewRect, min.X, max.X, pixelRange.X);
-                DrawAxis(Float2.UnitY, viewRect, min.Y, max.Y, pixelRange.Y);
-                Render2D.PopClip();
+                if (ShowGrid)
+                {
+                    // Draw grid
+                    var viewRect = GetClientArea();
+                    var upperLeft = _view.PointFromParent(viewRect.Location);
+                    var bottomRight = _view.PointFromParent(viewRect.Size);
+                    var min = Float2.Min(upperLeft, bottomRight);
+                    var max = Float2.Max(upperLeft, bottomRight);
+                    var pixelRange = (max - min) * ViewScale;
+                    Render2D.PushClip(ref viewRect);
+                    DrawAxis(Float2.UnitX, viewRect, min.X, max.X, pixelRange.X);
+                    DrawAxis(Float2.UnitY, viewRect, min.Y, max.Y, pixelRange.Y);
+                    Render2D.PopClip();
+                }
             }
 
             base.Draw();
