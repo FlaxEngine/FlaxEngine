@@ -166,9 +166,9 @@ public static class Rng
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Float3 Vector3()
     {
-        const float InverseComponentCount = 1.0f / 3.0f;
-        Float3 vector = new(Float(), Float(), Float());
-        return ((vector * 2.0f) - Float3.One) * InverseComponentCount;
+        Float3 vector = (new Float3(Float(), Float(), Float()) * 2.0f) - Float3.One;
+        vector.Normalize();
+        return vector;
     }
 
     /// <summary>
@@ -181,9 +181,9 @@ public static class Rng
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Float2 Vector2()
     {
-        const float InverseComponentCount = 1.0f / 2.0f;
-        Float2 vector = new(Float(), Float());
-        return ((vector * 2.0f) - Float2.One) * InverseComponentCount;
+        Float2 vector = (new Float2(Float(), Float()) * 2.0f) - Float2.One;
+        vector.Normalize();
+        return vector;
     }
 
     /// <summary>
