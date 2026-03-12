@@ -92,7 +92,17 @@ float4 PS_Font(VS2PS input) : SV_Target0
 	PerformClipping(input);
 
 	float4 color = input.Color;
-	color.a *= Image.Sample(SamplerLinearClamp, input.TexCoord).r;
+    color.a *= SampleFont(Image, input.TexCoord);
+	return color;
+}
+
+META_PS(true, FEATURE_LEVEL_ES2)
+float4 PS_FontMSDF(VS2PS input) : SV_Target0
+{
+	PerformClipping(input);
+
+	float4 color = input.Color;
+    color.a *= SampleFontMSDF(Image, input.TexCoord);
 	return color;
 }
 

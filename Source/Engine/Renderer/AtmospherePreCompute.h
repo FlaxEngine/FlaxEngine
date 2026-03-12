@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include "FlaxEngine.Gen.h"
-
 class GPUTexture;
 
 /// <summary>
