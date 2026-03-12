@@ -114,7 +114,7 @@ public static class Rng
         }
 
         /// <summary>
-        /// Compares two <see cref="State"/> values for equality and, if they are equal, replaces the first value.
+        /// Compares two <see cref="State"/> values for equality and, if they are equal, replaces the first value, as an atomic operation.
         /// </summary>
         /// <inheritdoc cref="Interlocked.CompareExchange(ref int, int, int)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
