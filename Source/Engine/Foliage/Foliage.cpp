@@ -22,7 +22,7 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Utilities/Encryption.h"
 
-#define FOLIAGE_GET_DRAW_MODES(renderContext, type) (type.DrawModes & renderContext.View.Pass & renderContext.View.GetShadowsDrawPassMask(type.ShadowsMode))
+#define FOLIAGE_GET_DRAW_MODES(renderContext, type) (type._drawModes & renderContext.View.Pass & renderContext.View.GetShadowsDrawPassMask(type.ShadowsMode))
 #define FOLIAGE_CAN_DRAW(renderContext, type) (type.IsReady() && FOLIAGE_GET_DRAW_MODES(renderContext, type) != DrawPass::None && type.Model->CanBeRendered())
 
 Foliage::Foliage(const SpawnParams& params)
@@ -360,7 +360,7 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, Mesh::D
                 draw.DrawState = &instance.DrawState;
                 draw.Bounds = sphere;
                 draw.PerInstanceRandom = instance.Random;
-                draw.DrawModes = type.DrawModes;
+                draw.DrawModes = type._drawModes;
                 draw.SetStencilValue(_layer);
                 type.Model->Draw(context.RenderContext, draw);
 
@@ -597,14 +597,22 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Me
 
 void Foliage::InitType(const RenderView& view, FoliageType& type)
 {
-    const DrawPass drawModes = type.DrawModes & view.Pass & view.GetShadowsDrawPassMask(type.ShadowsMode);
+    const DrawPass drawModes = type._drawModes & view.Pass & view.GetShadowsDrawPassMask(type.ShadowsMode);
     type._canDraw = type.IsReady() && drawModes != DrawPass::None && type.Model && type.Model->CanBeRendered();
+    bool drawModesDirty = false;
     for (int32 j = 0; j < type.Entries.Count(); j++)
     {
         auto& e = type.Entries[j];
         e.ReceiveDecals = type.ReceiveDecals != 0;
         e.ShadowsMode = type.ShadowsMode;
+        if (type._drawModesDirty)
+        {
+            type._drawModesDirty = 0;
+            drawModesDirty = true;
+        }
     }
+    if (drawModesDirty)
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::DrawModes);
 }
 
 int32 Foliage::GetInstancesCount() const
@@ -1250,7 +1258,7 @@ void Foliage::Draw(RenderContext& renderContext)
         draw.Deformation = nullptr;
         draw.Bounds = instance.Bounds;
         draw.PerInstanceRandom = instance.Random;
-        draw.DrawModes = type.DrawModes & view.Pass & view.GetShadowsDrawPassMask(type.ShadowsMode);
+        draw.DrawModes = type._drawModes & view.Pass & view.GetShadowsDrawPassMask(type.ShadowsMode);
         draw.SetStencilValue(_layer);
         type.Model->Draw(renderContext, draw);
         return;

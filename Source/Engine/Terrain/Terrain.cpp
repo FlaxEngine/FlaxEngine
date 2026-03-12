@@ -549,19 +549,22 @@ bool Terrain::DrawSetup(RenderContext& renderContext)
     const DrawPass drawModes = DrawModes & renderContext.View.Pass;
     if (drawModes == DrawPass::GlobalSDF)
     {
-        const float chunkSize = TERRAIN_UNITS_PER_VERTEX * (float)_chunkSize;
-        const float posToUV = 0.25f / chunkSize;
-        Float4 localToUV(posToUV, posToUV, 0.0f, 0.0f);
+        const float chunkScale = 0.25f / (TERRAIN_UNITS_PER_VERTEX * (float)_chunkSize); // Patch heightfield is divided into 4x4 chunks
         for (const TerrainPatch* patch : _patches)
         {
             if (!patch->Heightmap)
                 continue;
+            GPUTexture* heightfield = patch->Heightmap->GetTexture();
+            float size = (float)heightfield->Width();
+            Float4 localToUV;
+            localToUV.X = localToUV.Y = chunkScale * (size - 1) / size; // Skip the last edge texel
+            localToUV.Z = localToUV.W = 0.5f / size; // Include half-texel offset
             Transform patchTransform;
             patchTransform.Translation = patch->_offset + Vector3(0, patch->_yOffset, 0);
             patchTransform.Orientation = Quaternion::Identity;
             patchTransform.Scale = Float3(1.0f, patch->_yHeight, 1.0f);
             patchTransform = _transform.LocalToWorld(patchTransform);
-            GlobalSignDistanceFieldPass::Instance()->RasterizeHeightfield(this, patch->Heightmap->GetTexture(), patchTransform, patch->_bounds, localToUV);
+            GlobalSignDistanceFieldPass::Instance()->RasterizeHeightfield(this, heightfield, patchTransform, patch->_bounds, localToUV);
         }
         return true;
     }
