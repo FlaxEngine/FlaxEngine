@@ -1190,10 +1190,6 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     float scale = 1.0f / FontManager::FontScale;
     const bool enableFallbackFonts = EnumHasAllFlags(Features, RenderingFeatures::FallbackFonts);
 
-    const FontAsset* asset = font->GetAsset();
-    const FontOptions& options = asset->GetOptions();
-    const bool useMSDF = options.RasterMode == FontRasterMode::MSDF;
-
     // Render all characters
     FontCharacterEntry entry;
     Render2DDrawCall drawCall;
@@ -1204,7 +1200,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     }
     else
     {
-        drawCall.Type = useMSDF ? DrawCallType::DrawCharMSDF : DrawCallType::DrawChar;
+        drawCall.Type = font->GetAsset()->GetOptions().RasterMode == FontRasterMode::MSDF ? DrawCallType::DrawCharMSDF : DrawCallType::DrawChar;
         drawCall.AsChar.Mat = nullptr;
     }
     Float2 pointer = location;
@@ -1309,10 +1305,6 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     float scale = layout.Scale / FontManager::FontScale;
     const bool enableFallbackFonts = EnumHasAllFlags(Features, RenderingFeatures::FallbackFonts);
 
-    const FontAsset* asset = font->GetAsset();
-    const FontOptions& options = asset->GetOptions();
-    const bool useMSDF = options.RasterMode == FontRasterMode::MSDF;
-
     // Process text to get lines
     Lines.Clear();
     font->ProcessText(text, Lines, layout);
@@ -1327,7 +1319,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     }
     else
     {
-        drawCall.Type = useMSDF ? DrawCallType::DrawCharMSDF : DrawCallType::DrawChar;
+        drawCall.Type = font->GetAsset()->GetOptions().RasterMode == FontRasterMode::MSDF ? DrawCallType::DrawCharMSDF : DrawCallType::DrawChar;
         drawCall.AsChar.Mat = nullptr;
     }
     for (int32 lineIndex = 0; lineIndex < Lines.Count(); lineIndex++)

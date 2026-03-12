@@ -9,11 +9,11 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Render2D/MSDFGenerator.h"
 #include "IncludeFreeType.h"
 #include <ThirdParty/freetype/ftsynth.h>
 #include <ThirdParty/freetype/ftbitmap.h>
 #include <ThirdParty/freetype/internal/ftdrv.h>
-#include "Engine/Render2D/MSDFGenerator.h"
 
 namespace FontManagerImpl
 {
@@ -200,7 +200,8 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
 
         FT_Bitmap* bitmap = &glyph->bitmap;
         FT_Bitmap tmpBitmap;
-        if (bitmap->pixel_mode != FT_PIXEL_MODE_GRAY) {
+        if (bitmap->pixel_mode != FT_PIXEL_MODE_GRAY)
+        {
             // Convert the bitmap to 8bpp grayscale
             FT_Bitmap_New(&tmpBitmap);
             FT_Bitmap_Convert(Library, bitmap, &tmpBitmap, 4);
@@ -233,7 +234,7 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
             }
             return false;
         }
-        
+
         // Copy glyph data after rasterization (row by row)
         for (int32 row = 0; row < glyphHeight; row++)
         {
@@ -241,15 +242,16 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
         }
 
         // Normalize gray scale images not using 256 colors
-        if (bitmap->num_grays != 256) {
+        if (bitmap->num_grays != 256)
+        {
             const int32 scale = 255 / (bitmap->num_grays - 1);
-            for (byte& pixel : GlyphImageData) {
+            for (byte& pixel : GlyphImageData)
                 pixel *= scale;
-            }
         }
 
         // Free temporary bitmap if used
-        if (bitmap == &tmpBitmap) {
+        if (bitmap == &tmpBitmap)
+        {
             FT_Bitmap_Done(Library, bitmap);
             bitmap = nullptr;
         }
@@ -267,7 +269,8 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
         MSDFGenerator::GenerateMSDF(glyph, GlyphImageData, glyphWidth, glyphHeight, msdf_top, msdf_left);
 
         // End for empty glyphs
-        if (GlyphImageData.IsEmpty()) {
+        if (GlyphImageData.IsEmpty())
+        {
             entry.TextureIndex = MAX_uint8;
             return false;
         }
@@ -281,11 +284,12 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
     }
 
     // Find atlas for the character texture
-    PixelFormat requiredFormat = options.RasterMode == FontRasterMode::MSDF ? PixelFormat::R8G8B8A8_UNorm : PixelFormat::R8_UNorm;
+    PixelFormat atlasFormat = options.RasterMode == FontRasterMode::MSDF ? PixelFormat::R8G8B8A8_UNorm : PixelFormat::R8_UNorm;
     int32 atlasIndex = 0;
     const FontTextureAtlasSlot* slot = nullptr;
-    for (; atlasIndex < Atlases.Count() && slot == nullptr; atlasIndex++) {
-        if (Atlases[atlasIndex]->GetPixelFormat() != requiredFormat)
+    for (; atlasIndex < Atlases.Count() && slot == nullptr; atlasIndex++)
+    {
+        if (Atlases[atlasIndex]->GetFormat() != atlasFormat)
             continue;
         slot = Atlases[atlasIndex]->AddEntry(glyphWidth, glyphHeight, GlyphImageData);
     }
@@ -296,7 +300,7 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
     {
         // Create new atlas
         auto atlas = Content::CreateVirtualAsset<FontTextureAtlas>();
-        atlas->Setup(requiredFormat, FontTextureAtlas::PaddingStyle::PadWithZero);
+        atlas->Setup(atlasFormat, FontTextureAtlas::PaddingStyle::PadWithZero);
         Atlases.Add(atlas);
         atlasIndex++;
 

@@ -108,7 +108,7 @@ public:
     /// <summary>
     /// Gets the atlas pixel format.
     /// </summary>
-    FORCE_INLINE PixelFormat GetPixelFormat() const
+    FORCE_INLINE PixelFormat GetFormat() const
     {
         return _format;
     }

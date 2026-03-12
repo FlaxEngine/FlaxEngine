@@ -40,6 +40,6 @@ public class msdfgen : DepsModule
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
 
-        options.PublicIncludePaths.Add(Path.Combine(Globals.EngineRoot, @"Source\ThirdParty\msdfgen"));
+        options.PublicIncludePaths.Add(Path.Combine(Globals.EngineRoot, "Source/ThirdParty/msdfgen"));
     }
 }

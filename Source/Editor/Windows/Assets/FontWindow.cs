@@ -46,7 +46,7 @@ namespace FlaxEditor.Windows.Assets
                 options = new FontOptions
                 {
                     Hinting = Hinting,
-                    RasterMode = RasterMode
+                    RasterMode = RasterMode,
                 };
                 if (AntiAliasing)
                     options.Flags |= FontFlags.AntiAliasing;
