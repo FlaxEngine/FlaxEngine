@@ -34,6 +34,7 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Mac,
+                        TargetPlatform.iOS,
                     };
                 default: return new TargetPlatform[0];
                 }

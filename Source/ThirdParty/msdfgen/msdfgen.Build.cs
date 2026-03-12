@@ -34,6 +34,7 @@ public class msdfgen : DepsModule
             break;
         case TargetPlatform.Linux:
         case TargetPlatform.Mac:
+        case TargetPlatform.iOS:
         case TargetPlatform.Android:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libmsdfgen-core.a"));
             break;
