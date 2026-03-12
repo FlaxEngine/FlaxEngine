@@ -157,6 +157,36 @@ public static class Rng
     }
 
     /// <summary>
+    /// Generates a pseudo-random, three-dimensional vector and updates the local state for the current thread.
+    /// </summary>
+    /// <returns>
+    /// A new <see cref="Float3"/> instance with a length of 1, where each component is a random 
+    /// floating-point value.
+    /// </returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Float3 Vector3()
+    {
+        const float InverseComponentCount = 1.0f / 3.0f;
+        Float3 vector = new(Float(), Float(), Float());
+        return ((vector * 2.0f) - Float3.One) * InverseComponentCount;
+    }
+
+    /// <summary>
+    /// Generates a pseudo-random, two-dimensional vector and updates the local state for the current thread.
+    /// </summary>
+    /// <returns>
+    /// A new <see cref="Float2"/> instance with a length of 1, where each component is a random 
+    /// floating-point value.
+    /// </returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Float2 Vector2()
+    {
+        const float InverseComponentCount = 1.0f / 2.0f;
+        Float2 vector = new(Float(), Float());
+        return ((vector * 2.0f) - Float2.One) * InverseComponentCount;
+    }
+
+    /// <summary>
     /// Generates a pseudo-random color and updates the local state for the current thread.
     /// </summary>
     /// <returns>A <see cref="Color"/> with random hue, saturation, and value components.</returns>
