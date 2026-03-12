@@ -54,4 +54,47 @@ void PerformClipping(VS2PS input)
     PerformClipping(input.ClipOriginAndPos.xy, input.ClipOriginAndPos.zw, input.ClipExtents);
 }
 
+float SampleFont(Texture2D font, float2 uv)
+{
+    return font.Sample(SamplerLinearClamp, uv).r;
+}
+
+float GetFontMSDFMedian(Texture2D font, float2 uv)
+{
+    float4 msd = font.Sample(SamplerLinearClamp, uv);
+    return max(min(msd.r, msd.g), min(max(msd.r, msd.g), msd.b));
+}
+
+float GetFontMSDFPixelRange(Texture2D font, float2 uv)
+{
+    uint width, height;
+    font.GetDimensions(width, height);
+    float pxRange = 4.0f; // Must match C++ code
+    float unitRange = float2(pxRange, pxRange) / float2(width, height);
+
+    float2 dx = ddx(uv);
+    float2 dy = ddy(uv);
+    float2 screenTexSize = rsqrt(dx * dx + dy * dy);
+    return max(0.5f * dot(screenTexSize, unitRange), 1.0f);
+}
+
+float SampleFontMSDF(Texture2D font, float2 uv)
+{
+    float sd = GetFontMSDFMedian(font, uv);
+    float screenPxRange = GetFontMSDFPixelRange(font, uv);
+    float screenPxDist = screenPxRange * (sd - 0.5f);
+    return saturate(screenPxDist + 0.5f);
+}
+
+float SampleFontMSDFOutline(Texture2D font, float2 uv, float thickness)
+{
+    float4 msd = font.Sample(SamplerLinearClamp, uv);
+    float sd = max(min(msd.r, msd.g), min(max(msd.r, msd.g), msd.b));
+    float screenPxRange = GetFontMSDFPixelRange(font, uv);
+    float thick = clamp(thickness, 0.0, screenPxRange * 0.5 - 1.0) / screenPxRange;
+    float outline = saturate((min(sd, msd.a) - 0.5 + thick) * screenPxRange + 0.5);
+    outline *= 1 - saturate(screenPxRange * (sd - 0.5f) + 0.5f);
+    return outline;
+}
+
 #endif

@@ -77,7 +77,7 @@ API_ENUM() enum class FontRasterMode : byte
     Bitmap,
 
     /// <summary>
-    /// Use the MSDF generator to render font atlases. Need to be rendered with a compatible material.
+    /// Use the Multi-channel Signed Distance Field (MSDF) generator to render font atlases. Need to be rendered with a compatible material.
     /// </summary>
     MSDF,
 };
@@ -92,7 +92,7 @@ API_STRUCT() struct FontOptions
     DECLARE_SCRIPTING_TYPE_MINIMAL(FontOptions);
 
     /// <summary>
-    /// The hinting.
+    /// The font hinting used when rendering characters.
     /// </summary>
     API_FIELD() FontHinting Hinting;
 
@@ -102,7 +102,7 @@ API_STRUCT() struct FontOptions
     API_FIELD() FontFlags Flags;
 
     /// <summary>
-    /// The rasterization mode.
+    /// The font rasterization mode.
     /// </summary>
     API_FIELD() FontRasterMode RasterMode;
 };
