@@ -18,7 +18,7 @@ public static class Rng
     public readonly struct State
     {
         /// <summary>
-        /// Gets a integer value representing the current state of the random number generator.
+        /// Gets a signed 32-bit integer representing the current state of the random number generator.
         /// </summary>
         public int Integer { get; }
 
