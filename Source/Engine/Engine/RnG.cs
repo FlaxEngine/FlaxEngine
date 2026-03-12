@@ -333,9 +333,9 @@ public static class Rng
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T Fluctuate<T>(T value, T maxDeviation) where T : INumberBase<T> => Fluctuate(value, maxDeviation, Float());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static T Fluctuate<T>(T value, T maxDeviation, float seed) where T : INumberBase<T>
+    private static T Fluctuate<T>(T value, T maxDeviation, float state) where T : INumberBase<T>
     {
-        return value + (T.CreateTruncating(seed.ToSignedRange()) * maxDeviation);
+        return value + (T.CreateTruncating(state.ToSignedRange()) * maxDeviation);
     }
 
     /// <summary>
@@ -412,9 +412,9 @@ public static class Rng
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T ExtremesBiasedRange<T>(T min, T max) where T : INumberBase<T> => ExtremesBiasedRange(min, max, Float());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static T ExtremesBiasedRange<T>(T min, T max, float seed) where T : INumberBase<T>
+    private static T ExtremesBiasedRange<T>(T min, T max, float state) where T : INumberBase<T>
     {
-        float s = seed.ToSignedRange();
+        float s = state.ToSignedRange();
         float abs = Mathf.Abs(s);
         float outward = 1.0f - ((1.0f - abs) * (1.0f - abs));
         float biasedSeed = MathF.CopySign(outward, s);
@@ -429,9 +429,9 @@ public static class Rng
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T MaxBiasedRange<T>(T min, T max) where T : INumberBase<T> => MaxBiasedRange(min, max, Float());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static T MaxBiasedRange<T>(T min, T max, float seed) where T : INumberBase<T>
+    private static T MaxBiasedRange<T>(T min, T max, float state) where T : INumberBase<T>
     {
-        return Range(max, min, seed * seed);
+        return Range(max, min, state * state);
     }
 
     /// <summary>
@@ -440,20 +440,20 @@ public static class Rng
     /// <inheritdoc cref="UniformRange{T}(T, T)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T MinBiasedRange<T>(T min, T max) where T : INumberBase<T> => MinBiasedRange(min, max, Float());
-    private static T MinBiasedRange<T>(T min, T max, float seed) where T : INumberBase<T>
+    private static T MinBiasedRange<T>(T min, T max, float state) where T : INumberBase<T>
     {
-        return Range(min, max, seed * seed);
+        return Range(min, max, state * state);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static T Range<T>(T min, T max, float seed) where T : INumberBase<T>
+    private static T Range<T>(T min, T max, float state) where T : INumberBase<T>
     {
         double dMin = double.CreateTruncating(min);
         double dMax = double.CreateTruncating(max);
-        double result = dMin + (seed * (dMax - dMin));
+        double result = dMin + (state * (dMax - dMin));
         return T.CreateTruncating(result);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static float ToSignedRange(this float seed) => (seed * 2.0f) - 1.0f;
+    private static float ToSignedRange(this float state) => (state * 2.0f) - 1.0f;
 }
