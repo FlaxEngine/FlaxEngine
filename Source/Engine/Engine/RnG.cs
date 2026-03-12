@@ -33,10 +33,6 @@ public static class Rng
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Condition(Chance chance = Chance.Even) => Rng.Condition(Float, chance);
 
-        /// <inheritdoc cref="Rng.Condition(float)"/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Condition(float chance) => Rng.Condition(Float, chance);
-
         /// <inheritdoc cref="Rng.Fluctuate{T}(T, T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Fluctuate<T>(T value, T maxDeviation) where T : INumberBase<T> => Rng.Fluctuate(value, maxDeviation, Float);
@@ -305,23 +301,9 @@ public static class Rng
     /// otherwise, <see langword="false"/>.
     /// </returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool Condition(Chance chance = Chance.Even) => Condition(Float(), chance);
-    /// <param name="chance">The probability of the condition being <see langword="true"/>.</param>
-    /// <inheritdoc cref="Condition(Chance)"/>
-    public static bool Condition(float chance) => Condition(chance, Chance.Even);
-    private static bool Condition(float value, Chance chance) => chance switch
-    {
-        Chance.Impossible => false,
-        Chance.Remote => Condition(value, 0.01f),
-        Chance.Unlikely => Condition(value, 0.25f),
-        Chance.Even => Condition(value, 0.5f),
-        Chance.Likely => Condition(value, 0.75f),
-        Chance.Expected => Condition(value, 0.99f),
-        Chance.Certain => true,
-        _ => throw new ArgumentOutOfRangeException(nameof(chance), chance, null)
-    };
+    public static bool Condition(Chance chance = Chance.Even) => Condition(Integer(), chance);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool Condition(float value, float threshold) => value < threshold;
+    private static bool Condition(int value, Chance chance) => unchecked((uint)value) < (uint)chance;
 
     /// <summary>
     /// Applies a random fluctuation to the specified value within the range defined by the maximum deviation.
