@@ -65,6 +65,11 @@ float GetFontMSDFMedian(Texture2D font, float2 uv)
     return max(min(msd.r, msd.g), min(max(msd.r, msd.g), msd.b));
 }
 
+float GetFontMSDFMedian(float4 msd)
+{
+    return max(min(msd.r, msd.g), min(max(msd.r, msd.g), msd.b));
+}
+
 float GetFontMSDFPixelRange(Texture2D font, float2 uv)
 {
     uint width, height;
