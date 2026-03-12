@@ -102,31 +102,6 @@ public static class Rng
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Choose<T>(IReadOnlyList<T> items) => Rng.Choose(items, Float);
 
-        /// <summary>
-        /// Sets a <see cref="State"/> to a specified value and returns the original value, as an atomic operation.
-        /// </summary>
-        /// <inheritdoc cref="Interlocked.Exchange(ref int, int)"/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static State Exchange(ref State location1, State value)
-        {
-            int result = Interlocked.Exchange(ref Unsafe.As<State, int>(ref location1), Unsafe.BitCast<State, int>(value));
-            return Unsafe.BitCast<int, State>(result);
-        }
-
-        /// <summary>
-        /// Compares two <see cref="State"/> values for equality and, if they are equal, replaces the first value, as an atomic operation.
-        /// </summary>
-        /// <inheritdoc cref="Interlocked.CompareExchange(ref int, int, int)"/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static State CompareExchange(ref State location1, State value, State comparand)
-        {
-            ref int intLocation = ref Unsafe.As<State, int>(ref location1);
-            int intValue = Unsafe.BitCast<State, int>(value);
-            int intComparand = Unsafe.BitCast<State, int>(comparand);
-            int result = Interlocked.CompareExchange(ref intLocation, intValue, intComparand);
-            return Unsafe.BitCast<int, State>(result);
-        }
-
         /// <inheritdoc/>
         public static bool operator ==(State left, State right) => left.Equals(right);
 
@@ -496,4 +471,29 @@ public static class Rng
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static float ToSignedRange(this float state) => (state * 2.0f) - 1.0f;
+
+    /// <summary>
+    /// Sets a <see cref="State"/> to a specified value and returns the original value, as an atomic operation.
+    /// </summary>
+    /// <inheritdoc cref="Interlocked.Exchange(ref int, int)"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static State Exchange(ref State location1, State value)
+    {
+        int result = Interlocked.Exchange(ref Unsafe.As<State, int>(ref location1), Unsafe.BitCast<State, int>(value));
+        return Unsafe.BitCast<int, State>(result);
+    }
+
+    /// <summary>
+    /// Compares two <see cref="State"/> values for equality and, if they are equal, replaces the first value, as an atomic operation.
+    /// </summary>
+    /// <inheritdoc cref="Interlocked.CompareExchange(ref int, int, int)"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static State CompareExchange(ref State location1, State value, State comparand)
+    {
+        ref int intLocation = ref Unsafe.As<State, int>(ref location1);
+        int intValue = Unsafe.BitCast<State, int>(value);
+        int intComparand = Unsafe.BitCast<State, int>(comparand);
+        int result = Interlocked.CompareExchange(ref intLocation, intValue, intComparand);
+        return Unsafe.BitCast<int, State>(result);
+    }
 }
