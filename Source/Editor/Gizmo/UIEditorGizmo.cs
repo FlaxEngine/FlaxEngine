@@ -401,7 +401,7 @@ namespace FlaxEditor
                 var uiControlDelta = GetControlDelta(control, ref _mouseMovesPos, ref moveLocation);
 
                 // Transform delta to control local space
-                var rotation = control.Rotation * Mathf.DegreesToRadians; // TODO: use total parent rotation
+                var rotation = GetTotalRotation(control) * Mathf.DegreesToRadians;
                 var cos = Mathf.Cos(rotation);
                 var sin = Mathf.Sin(rotation);
                 var localDeltaX = uiControlDelta.X * cos + uiControlDelta.Y * sin;
