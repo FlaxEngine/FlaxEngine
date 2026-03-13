@@ -35,11 +35,11 @@ float3 SampleHeightmap(Texture2D<float4> heightmap, float3 localPosition, float4
 {
     // Sample heightmap
 	float2 uv = localPosition.xz * localToUV.xy + localToUV.zw;
-	float4 value = heightmap.SampleLevel(SamplerPointClamp, uv, mipOffset);
+	float4 value = heightmap.SampleLevel(SamplerLinearClamp, uv, mipOffset);
 
     // Decode heightmap
     normal = DecodeHeightmapNormal(value, isHole);
-	float height = DecodeHeightmapHeight(value);;
+	float height = DecodeHeightmapHeight(value);
 	float3 position = float3(localPosition.x, height, localPosition.z);
 
     // UVs outside the heightmap are empty

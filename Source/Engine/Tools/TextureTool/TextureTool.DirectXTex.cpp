@@ -722,6 +722,10 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         errorMsg = String::Format(TEXT("Imported texture has not full mip chain, loaded mips count: {0}, expected: {1}"), sourceMipLevels, mipLevels);
         return true;
     }
+    if (options.GenerateMipMaps && !isPowerOfTwo)
+    {
+        LOG(Warning, "Cannot generate mip maps for texture '{}' that size is not power of two. Use Resize or Max Size to change dimensions.", StringUtils::GetFileName(path), width, height);
+    }
 
     // Allocate memory for texture data
     auto& data = textureData.Items;

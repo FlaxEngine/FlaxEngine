@@ -2,6 +2,7 @@
 //#define USE_AUTODESK_FBX_SDK
 
 using System.Collections.Generic;
+using System.Reflection;
 using FlaxEditor.GUI.Dialogs;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -45,9 +46,16 @@ namespace FlaxEditor.Windows
                 VerticalAlignment = TextAlignment.Center,
                 Parent = this
             };
+            var assembly = typeof(Editor).Assembly;
+            var assemblyCopyright = assembly.GetCustomAttribute<AssemblyCopyrightAttribute>();
+            var assemblyInformationalVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+            var versionParts = assemblyInformationalVersion.InformationalVersion.Split('+');
+            string versionInfo = string.Empty;
+            if (versionParts.Length == 3)
+                versionInfo = $"\nBranch: {versionParts[1]}+{(versionParts[2].Length == 40 ? versionParts[2].Substring(0, 8) : versionParts[2])}";
             new Label(nameLabel.Left, nameLabel.Bottom + 4, nameLabel.Width, 50)
             {
-                Text = string.Format("Version: {0}\nCopyright (c) 2012-2026 Wojciech Figat.\nAll rights reserved.", Globals.EngineVersion),
+                Text = $"Version: {Globals.EngineVersion}{versionInfo}\n{assemblyCopyright.Copyright.Replace(". ", ".\n")}",
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Near,
                 Parent = this
@@ -98,6 +106,7 @@ namespace FlaxEditor.Windows
                 "Chandler Cox",
                 "Ari Vuollet",
                 "Vincent Saarmann",
+                "Michael Salvini",
             });
             authors.Sort();
             var authorsLabel = new Label(4, topParentControl.Bottom + 20, Width - 8, 70)

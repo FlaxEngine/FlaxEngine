@@ -36,6 +36,30 @@
 #include "CreateAnimation.h"
 #include "CreateBehaviorTree.h"
 #include "CreateJson.h"
+#include "Engine/Content/Assets/Model.h"
+
+namespace
+{
+    bool IsAssetTypeNameTextureFile(const String& typeName)
+    {
+        return typeName == Texture::TypeName || typeName == SpriteAtlas::TypeName;
+    }
+
+    bool IsAssetTypeNameModelFile(const String& typeName)
+    {
+        return typeName == Model::TypeName || typeName == SkinnedModel::TypeName || typeName == Animation::TypeName;
+    }
+
+    bool IsAssetTypeNameMatch(const String& a, const String& b)
+    {
+        // Special case when reimporting model/texture but different type
+        if (IsAssetTypeNameTextureFile(a) && IsAssetTypeNameTextureFile(b))
+            return true;
+        if (IsAssetTypeNameModelFile(a) && IsAssetTypeNameModelFile(b))
+            return true;
+        return a == b;
+    }
+}
 
 // Tags used to detect asset creation mode
 const String AssetsImportingManager::CreateTextureTag(TEXT("Texture"));
@@ -84,8 +108,6 @@ CreateAssetContext::CreateAssetContext(const StringView& inputPath, const String
     CustomArg = arg;
     Data.Header.ID = id;
     SkipMetadata = false;
-
-    // TODO: we should use ASNI only chars path (Assimp can use only that kind)
     OutputPath = Content::CreateTemporaryAssetPath();
 }
 
@@ -120,6 +142,24 @@ CreateAssetResult CreateAssetContext::Run(const CreateAssetFunction& callback)
         }
         writer.EndObject();
         Data.Metadata.Copy((const byte*)buffer.GetString(), (uint32)buffer.GetSize());
+    }
+
+    // Check if target asset already exists but has different type
+    AssetInfo targetAssetInfo;
+    if (Content::GetAssetInfo(TargetAssetPath, targetAssetInfo) && !IsAssetTypeNameMatch(targetAssetInfo.TypeName, Data.Header.TypeName))
+    {
+        // Change path
+        int32 index = 0;
+        String newTargetAssetPath;
+        do
+        {
+            newTargetAssetPath = StringUtils::GetDirectoryName(TargetAssetPath);
+            newTargetAssetPath /= StringUtils::GetFileNameWithoutExtension(TargetAssetPath) + String::Format(TEXT(" ({})."), index++) + FileSystem::GetExtension(TargetAssetPath);
+        } while (index < 100 && FileSystem::FileExists(newTargetAssetPath));
+        TargetAssetPath = newTargetAssetPath;
+
+        // Change id
+        Data.Header.ID = Guid::New();
     }
 
     // Save file

@@ -595,8 +595,9 @@ namespace Flax.Build
         /// </summary>
         /// <param name="filename">The executable file path.</param>
         /// <param name="args">The custom arguments.</param>
+        /// <param name="workspace">The custom folder to run program in it.</param>
         /// <returns>Returned process output.</returns>
-        public static string ReadProcessOutput(string filename, string args = null)
+        public static string ReadProcessOutput(string filename, string args = null, string workspace = null)
         {
             Process p = new Process
             {
@@ -607,6 +608,7 @@ namespace Flax.Build
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
+                    WorkingDirectory = workspace,
                 }
             };
             p.Start();

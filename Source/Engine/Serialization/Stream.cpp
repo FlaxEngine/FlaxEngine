@@ -5,6 +5,7 @@
 #include "JsonWriters.h"
 #include "JsonSerializer.h"
 #include "MemoryReadStream.h"
+#include "FlaxEngine.Gen.h"
 #include "Engine/Core/Types/Variant.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Core/Math/Vector2.h"

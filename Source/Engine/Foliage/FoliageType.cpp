@@ -13,6 +13,7 @@ FoliageType::FoliageType()
     , Index(-1)
 {
     _isReady = 0;
+    _drawModesDirty = 0;
 
     ReceiveDecals = true;
     UseDensityScaling = false;
@@ -32,7 +33,7 @@ FoliageType& FoliageType::operator=(const FoliageType& other)
     CullDistance = other.CullDistance;
     CullDistanceRandomRange = other.CullDistanceRandomRange;
     ScaleInLightmap = other.ScaleInLightmap;
-    DrawModes = other.DrawModes;
+    SetDrawModes(other._drawModes);
     ShadowsMode = other.ShadowsMode;
     PaintDensity = other.PaintDensity;
     PaintRadius = other.PaintRadius;
@@ -67,6 +68,19 @@ void FoliageType::SetMaterials(const Array<MaterialBase*>& value)
     CHECK(value.Count() == Entries.Count());
     for (int32 i = 0; i < value.Count(); i++)
         Entries[i].Material = value[i];
+}
+
+DrawPass FoliageType::GetDrawModes() const
+{
+    return _drawModes;
+}
+
+void FoliageType::SetDrawModes(DrawPass value)
+{
+    if (_drawModes == value)
+        return;
+    _drawModes = value;
+    _drawModesDirty = 1;
 }
 
 Float3 FoliageType::GetRandomScale() const
@@ -150,7 +164,7 @@ void FoliageType::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(CullDistance);
     SERIALIZE(CullDistanceRandomRange);
     SERIALIZE(ScaleInLightmap);
-    SERIALIZE(DrawModes);
+    SERIALIZE_MEMBER(DrawModes, _drawModes);
     SERIALIZE(ShadowsMode);
     SERIALIZE_BIT(ReceiveDecals);
     SERIALIZE_BIT(UseDensityScaling);
@@ -191,7 +205,7 @@ void FoliageType::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     DESERIALIZE(CullDistance);
     DESERIALIZE(CullDistanceRandomRange);
     DESERIALIZE(ScaleInLightmap);
-    DESERIALIZE(DrawModes);
+    DESERIALIZE_MEMBER(DrawModes, _drawModes);
     DESERIALIZE(ShadowsMode);
     DESERIALIZE_BIT(ReceiveDecals);
     DESERIALIZE_BIT(UseDensityScaling);
