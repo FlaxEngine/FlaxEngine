@@ -1334,6 +1334,14 @@ void GPUContextDX12::Flush()
     Reset();
 }
 
+void GPUContextDX12::FinishGPUCommands()
+{
+    FenceDX12 fence(_device);
+    fence.Init();
+    fence.Signal(_device->_commandQueue);
+    fence.WaitCPU(0);
+}
+
 void GPUContextDX12::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 size, uint32 offset)
 {
     ASSERT(data);
