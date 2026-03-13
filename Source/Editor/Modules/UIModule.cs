@@ -721,6 +721,7 @@ namespace FlaxEditor.Modules
             _menuToolsCancelBuilding = cm.AddButton("Cancel building game", () => GameCooker.Cancel());
             cm.AddSeparator();
             _menuToolsProfilerWindow = cm.AddButton("Profiler", inputOptions.ProfilerWindow, () => Editor.Windows.ProfilerWin.FocusOrShow());
+            cm.AddButton("Asset Reference Locator", () => (new ReferenceLocatorWindow(Editor.Instance)).Show());
             cm.AddSeparator();
             _menuToolsSetTheCurrentSceneViewAsDefault = cm.AddButton("Set current scene view as project default", SetTheCurrentSceneViewAsDefault);
             _menuToolsTakeScreenshot = cm.AddButton("Take screenshot", inputOptions.TakeScreenshot, Editor.Windows.TakeScreenshot);
