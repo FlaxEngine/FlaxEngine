@@ -95,7 +95,7 @@ namespace Flax.Build.Platforms
             options.CompileEnv.PreprocessorDefinitions.Add("PLATFORM_UNIX");
             options.CompileEnv.PreprocessorDefinitions.Add("__EMSCRIPTEN__");
             options.CompileEnv.EnableExceptions = false;
-            options.CompileEnv.CpuArchitecture = CpuArchitecture.None; // TODO: try SIMD support in Emscripten
+            options.CompileEnv.CpuArchitecture = CpuArchitecture.SSE4_2;
         }
 
         private void AddSharedArgs(List<string> args, BuildOptions options, bool debugInformation, bool optimization)
@@ -128,6 +128,27 @@ namespace Flax.Build.Platforms
                 args.Add("-fexceptions");
             else
                 args.Add("-fno-exceptions");
+
+            if (options.CompileEnv.CpuArchitecture != CpuArchitecture.None)
+                args.Add("-msimd128 -mno-nontrapping-fptoint");
+            switch (options.CompileEnv.CpuArchitecture)
+            {
+            case CpuArchitecture.AVX:
+                args.Add("-mavx");
+                break;
+            case CpuArchitecture.AVX2:
+                args.Add("-mavx2");
+                break;
+            case CpuArchitecture.SSE2:
+                args.Add("-msse2");
+                break;
+            case CpuArchitecture.SSE4_2:
+                args.Add("-msse4.2");
+                break;
+            case CpuArchitecture.NEON:
+                args.Add("-mfpu=neon");
+                break;
+            }
 
             if (options.LinkEnv.LinkTimeCodeGeneration)
                 args.Add("-flto");

@@ -5,7 +5,9 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/StringView.h"
 
-#if PLATFORM_SIMD_SSE4_2
+#if PLATFORM_WEB
+#define RAPIDJSON_SSE2
+#elif PLATFORM_SIMD_SSE4_2
 #define RAPIDJSON_SSE42
 #elif PLATFORM_SIMD_SSE2
 #define RAPIDJSON_SSE2
