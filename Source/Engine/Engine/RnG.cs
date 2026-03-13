@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace FlaxEngine;
 
@@ -13,232 +11,160 @@ namespace FlaxEngine;
 /// </summary>
 public static class Rng
 {
-    /// <summary>
-    /// Represents a snapshot of the random state at a given point in time.
-    /// </summary>
-    /// <remarks>
-    /// Creates a new <see cref="State"/> with the specified integer value.
-    /// </remarks>
-    /// <param name="value">The integer value to initialize the state with.</param>
-    [StructLayout(LayoutKind.Sequential)]
-    public readonly struct State(int value) : IEquatable<State>, IEqualityOperators<State, State, bool>
-    {
-        /// <summary>
-        /// Gets the underlying signed 32-bit integer of the current state.
-        /// </summary>
-        public int Integer { get; init; } = value;
-
-        /// <summary>
-        /// Gets a single-precision floating-point number greater than or equal to 0.0 and less than 1.0.
-        /// </summary>
-        public float Float => Rng.Float(Integer);
-
-        /// <summary>
-        /// Gets the next <see cref="State"/> in the sequence.
-        /// </summary>
-        /// <remarks>
-        /// The next state is computed from <see cref="Integer"/> using the same algorithm 
-        /// as the static <see cref="Rng.Integer()"/> method, ensuring that each state leads to a unique 
-        /// subsequent state in the random sequence.
-        /// </remarks>
-        public State Next => new(AdvanceState(Integer));
-
-        /// <inheritdoc/>
-        public bool Equals(State other) => Integer == other.Integer;
-
-        /// <inheritdoc/>
-        public override bool Equals([NotNullWhen(true)] object obj) => obj is State other && Equals(other);
-
-        /// <inheritdoc/>
-        public override int GetHashCode() => Integer.GetHashCode();
-
-        /// <inheritdoc cref="Rng.Condition(Chance)"/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Condition(Chance chance = Chance.Even) => Rng.Condition(Integer, chance);
-
-        /// <inheritdoc cref="Rng.Fluctuate{T}(T, T)"/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T Fluctuate<T>(T value, T maxDeviation) where T : INumberBase<T> => Rng.Fluctuate(value, maxDeviation, Float);
-
-        /// <inheritdoc cref="Rng.UniformRange{T}(T, T)"/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T UniformRange<T>(T min, T max) where T : INumberBase<T> => Range(min, max, Float);
-
-        /// <inheritdoc cref="Rng.MedianBiasedRange{T}(T, T)"/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T MedianBiasedRange<T>(T min, T max) where T : INumberBase<T> => Rng.MedianBiasedRange(min, max, Float);
-
-        /// <inheritdoc cref="Rng.ExtremesBiasedRange{T}(T, T)"/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T ExtremesBiasedRange<T>(T min, T max) where T : INumberBase<T> => Rng.ExtremesBiasedRange(min, max, Float);
-
-        /// <inheritdoc cref="Rng.MaxBiasedRange{T}(T, T)"/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T MaxBiasedRange<T>(T min, T max) where T : INumberBase<T> => Rng.MaxBiasedRange(min, max, Float);
-
-        /// <inheritdoc cref="Rng.MinBiasedRange{T}(T, T)"/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T MinBiasedRange<T>(T min, T max) where T : INumberBase<T> => Rng.MinBiasedRange(min, max, Float);
-
-        /// <inheritdoc cref="Rng.TryChoose{T}(ReadOnlySpan{T}, out T)"/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryChoose<T>(ReadOnlySpan<T> items, [MaybeNullWhen(false)] out T result) => Rng.TryChoose(items, Float, out result);
-
-        /// <inheritdoc cref="Rng.TryChoose{T}(IList{T}, out T)"/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryChoose<T>(IList<T> items, [MaybeNullWhen(false)] out T result) => Rng.TryChoose(items, Float, out result);
-
-        /// <inheritdoc cref="Rng.TryChoose{T}(IReadOnlyList{T}, out T)"/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryChoose<T>(IReadOnlyList<T> items, [MaybeNullWhen(false)] out T result) => Rng.TryChoose(items, Float, out result);
-
-        /// <inheritdoc cref="Rng.Choose{T}(ReadOnlySpan{T})"/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T Choose<T>(ReadOnlySpan<T> items) => Rng.Choose(items, Float);
-
-        /// <inheritdoc cref="Rng.Choose{T}(IList{T})"/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T Choose<T>(IList<T> items) => Rng.Choose(items, Float);
-
-        /// <inheritdoc cref="Rng.Choose{T}(IReadOnlyList{T})"/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T Choose<T>(IReadOnlyList<T> items) => Rng.Choose(items, Float);
-
-        /// <inheritdoc/>
-        public static bool operator ==(State left, State right) => left.Equals(right);
-
-        /// <inheritdoc/>
-        public static bool operator !=(State left, State right) => !(left == right);
-    }
-
     private const string EmptyCollectionMessage = "The collection must contain at least one item.";
 
-    private static int _sharedState = Environment.TickCount;
-    /// <summary>
-    /// Gets or sets the shared state used for random number generation across all threads.
-    /// </summary>
-    /// <remarks>
-    /// This state is modified atomically to ensure thread safety when accessed concurrently.
-    /// </remarks>
-    public static int SharedState
-    {
-        get => Volatile.Read(ref _sharedState);
-        set => Interlocked.Exchange(ref _sharedState, value);
-    }
-
     [ThreadStatic]
-    private static int _localState;
-
-    [ThreadStatic]
-    private static bool _initialized;
-
-    /// <summary>
-    /// Captures a snapshot of the current random state for the calling thread, allowing for consistent random value generation based on that state.
-    /// </summary>
-    /// <returns>A new instance of <see cref="State"/> representing the current random state.</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static State Snapshot() => new(Integer());
+    private static Seed _threadLocal;
 
     /// <summary>
     /// Generates a pseudo-random floating-point number and updates the local state for the current thread.
     /// </summary>
-    /// <returns>A single-precision floating-point value greater than or equal to 0.0 and less than 1.0.</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static float Float() => Float(Integer());
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static float Float(int state)
-    {
-        uint bits = unchecked((uint)state >> 9 | 0x3F800000U);
-        return Unsafe.As<uint, float>(ref bits) - 1.0f;
-    }
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <returns>A new <see cref="float"/> with a value greater than or equal to 0.0 and less than 1.0.</returns>
+    public static float Float() => (float)++_threadLocal;
+
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="Gaussian(ref Seed, float, float)"/>
+    public static float Gaussian(float mean = 0.0f, float standardDeviation = 1.0f) => Gaussian(ref _threadLocal, mean, standardDeviation);
 
     /// <summary>
-    /// Generates a random floating-point value that follows a Gaussian (normal) distribution 
-    /// and updates the local state for the current thread.
+    /// Generates a random floating-point value that follows a Gaussian (normal) distribution.
     /// </summary>
     /// <param name="mean">The mean value around which the Gaussian distribution is centered. Defaults to 0.0.</param>
     /// <param name="standardDeviation">The standard deviation that determines the spread of the distribution. Defaults to 1.0.</param>
-    /// <returns>A random float sampled from the Gaussian distribution defined by the specified mean and standard deviation.</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static float Gaussian(float mean = 0.0f, float standardDeviation = 1.0f)
-    {
-        return mean + Mathf.Sqrt(-2.0f * Mathf.Log(Float())) * Mathf.Cos(Mathf.TwoPi * Float()) * standardDeviation;
-    }
-
-    /// <summary>
-    /// Generates a pseudo-random integer and updates the local state for the current thread.
-    /// </summary>
-    /// <returns>A 32-bit signed integer.</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int Integer()
-    {
-        if (!_initialized)
-        {
-            _initialized = true;
-            _localState = Interlocked.Add(ref _sharedState, 1_013_904_223);
-        }
-        _localState = AdvanceState(_localState);
-        return _localState;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static int AdvanceState(int state)
-    {
-        return unchecked((int)((uint)state * 1_664_525U + 1_013_904_223U));
-    }
-
-    /// <summary>
-    /// Generates a pseudo-random, three-dimensional vector and updates the local state for the current thread.
-    /// </summary>
     /// <returns>
-    /// A new <see cref="Float3"/> instance with a length of 1, where each component is a random 
-    /// floating-point value.
+    /// A new <see cref="float"/> sampled from the Gaussian distribution defined by the specified <paramref name="mean"/> 
+    /// and <paramref name="standardDeviation"/>.
     /// </returns>
+    /// <inheritdoc cref="Vector3(ref Seed)"/>
+    /// <param name="seed"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Float3 Vector3()
+    public static float Gaussian(ref Seed seed, float mean = 0.0f, float standardDeviation = 1.0f)
     {
-        Float3 vector = (new Float3(Float(), Float(), Float()) * 2.0f) - Float3.One;
+        return mean + Mathf.Sqrt(-2.0f * Mathf.Log((float)++seed)) * Mathf.Cos(Mathf.TwoPi * (float)++seed) * standardDeviation;
+    }
+
+    /// <summary>
+    /// Generates a pseudo-random integer.
+    /// </summary>
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <returns>A new 32-bit signed integer set to a random value.</returns>
+    public static int Integer() => (int)++_threadLocal;
+
+    /// <summary>
+    /// Generates a pseudo-random <see cref="Float3"/>.
+    /// </summary>
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="Vector3(ref Seed)"/>
+    public static Float3 Vector3() => Vector3(ref _threadLocal);
+
+    /// <summary>
+    /// Generates a pseudo-random, three-dimensional vector.
+    /// </summary>
+    /// <remarks>
+    /// This method may advance the value of the specified <paramref name="seed"/> to the 
+    /// next state in the sequence.
+    /// </remarks>
+    /// <returns>
+    /// A new <see cref="Float3"/>, where each component is a random floating-point value. 
+    /// The vector is normalized to ensure it has a length of 1.
+    /// </returns>
+    /// <inheritdoc cref="Condition(Seed, Chance)"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Float3 Vector3(ref Seed seed)
+    {
+        Float3 vector = (new Float3((float)++seed, (float)++seed, (float)++seed) * 2.0f) - Float3.One;
         vector.Normalize();
         return vector;
     }
 
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="Vector2(ref Seed)"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Float2 Vector2() => Vector2(ref _threadLocal);
+
     /// <summary>
-    /// Generates a pseudo-random, two-dimensional vector and updates the local state for the current thread.
+    /// Generates a pseudo-random, two-dimensional vector.
     /// </summary>
     /// <returns>
-    /// A new <see cref="Float2"/> instance with a length of 1, where each component is a random 
-    /// floating-point value.
+    /// A new <see cref="Float2"/>, where each component is a random floating-point value. 
+    /// The vector is normalized to ensure it has a length of 1.
     /// </returns>
+    /// <inheritdoc cref="Vector3(ref Seed)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Float2 Vector2()
+    public static Float2 Vector2(ref Seed seed)
     {
-        Float2 vector = (new Float2(Float(), Float()) * 2.0f) - Float2.One;
+        Float2 vector = (new Float2((float)++seed, (float)++seed) * 2.0f) - Float2.One;
         vector.Normalize();
         return vector;
     }
 
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="ColorHSV(ref Seed)"/>
+    public static Color ColorHSV() => ColorHSV(ref _threadLocal);
+
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="ColorHSV(ref Seed, float, float, float)"/>
+    public static Color ColorHSV(float hue = -1.0f, float saturation = -1.0f, float value = -1.0f)
+    {
+        return ColorHSV(ref _threadLocal, hue, saturation, value);
+    }
+
     /// <summary>
-    /// Generates a pseudo-random color and updates the local state for the current thread.
+    /// Generates a <see cref="Color"/> in the HSV color space using the specified 
+    /// <paramref name="hue"/>, <paramref name="saturation"/>, and 
+    /// <paramref name="value"/> components.
+    /// </summary>
+    /// <param name="hue">
+    /// <para>The hue component of the color, specified in degrees from 0.0 to 360.0.</para>
+    /// <para>A negative value will be replaced with a random hue.</para>
+    /// </param>
+    /// <param name="saturation">
+    /// <para>The saturation component of the color, specified as a value from 0.0 to 1.0.</para>
+    /// <para>A negative value will be replaced with a random saturation.</para>
+    /// </param>
+    /// <param name="value">
+    /// <para>The value (brightness) component of the color, specified as a value from 0.0 to 1.0.</para>
+    /// <para>A negative value will be replaced with a random value.</para>
+    /// </param>
+    /// <returns>A new <see cref="Color"/> with the specified <paramref name="hue"/>, 
+    /// <paramref name="saturation"/>, and <paramref name="value"/> components.
+    /// </returns>
+    /// <inheritdoc cref="Vector3(ref Seed)"/>
+    /// <param name="seed"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Color ColorHSV(ref Seed seed, float hue = -1.0f, float saturation = -1.0f, float value = -1.0f)
+    {
+        hue = hue < 0.0f ? Hue(ref seed) : hue;
+        saturation = saturation < 0.0f ? (float)++seed : saturation;
+        value = value < 0.0f ? (float)++seed : value;
+        return Color.FromHSV(hue, saturation, value);
+    }
+
+    /// <summary>
+    /// Generates a pseudo-random <see cref="Color"/> in the HSV color space.
     /// </summary>
     /// <returns>A <see cref="Color"/> with random hue, saturation, and value components.</returns>
+    /// <inheritdoc cref="Vector3(ref Seed)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Color ColorHSV() => ColorHSV(Float(), Float());
+    public static Color ColorHSV(ref Seed seed)
+    {
+        float hue = Hue(ref seed);
+        float saturation = (float)++seed;
+        float value = (float)++seed;
+        return Color.FromHSV(hue, saturation, value);
+    }
 
-    /// <returns>A <see cref="Color"/> with a random hue and value, but a specified saturation.</returns>
-    /// <inheritdoc cref="ColorHSV()"/>
-    /// <inheritdoc cref="Color.FromHSV(float, float, float, float)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Color ColorHSV(float saturation) => ColorHSV(saturation, Float());
+    private static float Hue(ref Seed seed) => (float)++seed * 360.0f;
 
-    /// <returns>A <see cref="Color"/> with a random hue, the specified saturation and value.</returns>
-    /// <inheritdoc cref="ColorHSV()"/>
-    /// <inheritdoc cref="Color.FromHSV(float, float, float, float)"/>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Color ColorHSV(float saturation, float value) => Color.FromHSV(Float() * 360.0f, saturation, value);
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="TryChoose{T}(Seed, ReadOnlySpan{T}, out T)"/>
+    public static bool TryChoose<T>(ReadOnlySpan<T> items, [MaybeNullWhen(false)] out T result) => TryChoose(++_threadLocal, items, out result);
 
     /// <summary>
-    /// Attempts to select a random <typeparamref name="T"/> from the specified collection using 
-    /// a uniformly distributed random float value.
+    /// Attempts to select a <typeparamref name="T"/> from <paramref name="items"/> using 
+    /// a uniformly distributed, pseudo-random, floating-point number.
     /// </summary>
     /// <typeparam name="T">The type of the elements contained in the span.</typeparam>
     /// <param name="items">The collection of items from which to select a random element.</param>
@@ -246,9 +172,10 @@ public static class Rng
     /// When the method returns <see langword="true"/>, contains the selected item; otherwise, is set to the default
     /// value for type <typeparamref name="T"/>.</param>
     /// <returns><see langword="true"/> if an item was successfully chosen; otherwise, <see langword="false"/>.</returns>
+    /// <inheritdoc cref="Condition(Seed, Chance)"/>
+    /// <param name="seed"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryChoose<T>(ReadOnlySpan<T> items, [MaybeNullWhen(false)] out T result) => TryChoose(items, Float(), out result);
-    private static bool TryChoose<T>(ReadOnlySpan<T> items, float value, [MaybeNullWhen(false)] out T result)
+    public static bool TryChoose<T>(Seed seed, ReadOnlySpan<T> items, [MaybeNullWhen(false)] out T result)
     {
         if (items.IsEmpty)
         {
@@ -256,14 +183,48 @@ public static class Rng
             return false;
         }
 
-        result = items[Range(0, items.Length, value)];
+        result = items[Range(0, items.Length, (float)++seed)];
         return true;
     }
 
     /// <inheritdoc cref="TryChoose{T}(ReadOnlySpan{T}, out T)"/>
+    public static bool TryChoose<T>(IList<T> items, [MaybeNullWhen(false)] out T result) => TryChoose(++_threadLocal, items, out result);
+
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="TryChoose{T}(Seed, IList{T}, int, int, out T)"/>
+    public static bool TryChoose<T>(IList<T> items, int offset, int length, [MaybeNullWhen(false)] out T result)
+    {
+        return TryChoose(++_threadLocal, items, offset, length, out result);
+    }
+
+    /// <param name="offset">
+    /// The zero-based index at which to start the selection range within 
+    /// the <paramref name="items"/> collection.
+    /// </param>
+    /// <param name="length">
+    /// The number of elements in the selection range starting from the 
+    /// <paramref name="offset"/>.
+    /// </param>
+    /// <inheritdoc cref="TryChoose{T}(Seed, ReadOnlySpan{T}, out T)"/>
+    /// <param name="seed"/>
+    /// <param name="items"/>
+    /// <param name="result"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryChoose<T>(IList<T> items, [MaybeNullWhen(false)] out T result) => TryChoose(items, Float(), out result);
-    private static bool TryChoose<T>(IList<T> items, float value, [MaybeNullWhen(false)] out T result)
+    public static bool TryChoose<T>(Seed seed, IList<T> items, int offset, int length, [MaybeNullWhen(false)] out T result)
+    {
+        if (items is null or { Count: 0 } || !IsRangeWithinBounds(offset, length, items.Count, out int end))
+        {
+            result = default;
+            return false;
+        }
+
+        result = items[Range(offset, end, (float)seed)];
+        return true;
+    }
+
+    /// <inheritdoc cref="TryChoose{T}(Seed, ReadOnlySpan{T}, out T)"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryChoose<T>(Seed seed, IList<T> items, [MaybeNullWhen(false)] out T result)
     {
         if (items is null or { Count: 0 })
         {
@@ -271,14 +232,39 @@ public static class Rng
             return false;
         }
 
-        result = items[Range(0, items.Count, value)];
+        result = items[Range(0, items.Count, (float)seed)];
         return true;
     }
 
-    /// <inheritdoc cref="TryChoose{T}(ReadOnlySpan{T}, out T)"/>
+    /// <inheritdoc cref="TryChoose{T}(IList{T}, out T)"/>
+    public static bool TryChoose<T>(IReadOnlyList<T> items, [MaybeNullWhen(false)] out T result)
+    {
+        return TryChoose(++_threadLocal, items, out result);
+    }
+
+    /// <inheritdoc cref="TryChoose{T}(IList{T}, int, int, out T)"/>
+    public static bool TryChoose<T>(IReadOnlyList<T> items, int offset, int length, [MaybeNullWhen(false)] out T result)
+    {
+        return TryChoose(++_threadLocal, items, offset, length, out result);
+    }
+
+    /// <inheritdoc cref="TryChoose{T}(Seed, IList{T}, int, int, out T)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryChoose<T>(IReadOnlyList<T> items, [MaybeNullWhen(false)] out T result) => TryChoose(items, Float(), out result);
-    private static bool TryChoose<T>(IReadOnlyList<T> items, float value, [MaybeNullWhen(false)] out T result)
+    public static bool TryChoose<T>(Seed seed, IReadOnlyList<T> items, int offset, int length, [MaybeNullWhen(false)] out T result)
+    {
+        if (items is null or { Count: 0 } || !IsRangeWithinBounds(offset, length, items.Count, out int end))
+        {
+            result = default;
+            return false;
+        }
+
+        result = items[Range(offset, end, (float)seed)];
+        return true;
+    }
+
+    /// <inheritdoc cref="TryChoose{T}(Seed, ReadOnlySpan{T}, out T)"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryChoose<T>(Seed seed, IReadOnlyList<T> items, [MaybeNullWhen(false)] out T result)
     {
         if (items is null or { Count: 0 })
         {
@@ -286,43 +272,141 @@ public static class Rng
             return false;
         }
 
-        result = items[Range(0, items.Count, value)];
+        result = items[Range(0, items.Count, (float)seed)];
         return true;
     }
+
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="Choose{T}(Seed, ReadOnlySpan{T})"/>
+    public static T Choose<T>(ReadOnlySpan<T> items) => Choose(++_threadLocal, items);
 
     /// <summary>
-    /// Selects a random <typeparamref name="T"/> from the specified collection using a uniformly distributed random float value.
+    /// Selects a <typeparamref name="T"/> from <paramref name="items"/> using 
+    /// a uniformly distributed, pseudo-random, floating-point number.
     /// </summary>
     /// <typeparam name="T">The type of elements contained in the collection.</typeparam>
-    /// <param name="items">The collection of items from which to select a random element. Cannot be <see langword="null"/> or empty.</param>
+    /// <param name="items">The collection of items from which to select a random element. Cannot be empty.</param>
     /// <returns>A randomly selected <typeparamref name="T"/> from the collection.</returns>
     /// <exception cref="ArgumentException">Thrown when the <paramref name="items"/> collection is empty.</exception>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static T Choose<T>(ReadOnlySpan<T> items) => Choose(items, Float());
-    private static T Choose<T>(ReadOnlySpan<T> items, float value)
+    /// <inheritdoc cref="Vector3(ref Seed)"/>
+    /// <param name="seed"/>
+    public static T Choose<T>(Seed seed, ReadOnlySpan<T> items)
     {
-        return items.IsEmpty ? throw new ArgumentException(EmptyCollectionMessage, nameof(items)) : items[Range(0, items.Length, value)];
+        return items.IsEmpty ? throw new ArgumentException(EmptyCollectionMessage, nameof(items)) : items[Range(0, items.Length, (float)seed)];
     }
 
-    /// <inheritdoc cref="Choose{T}(ReadOnlySpan{T})"/>
-    /// <exception cref="ArgumentNullException">Thrown when the <paramref name="items"/> collection is <see langword="null"/>.</exception>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static T Choose<T>(IList<T> items) => Choose(items, Float());
-    private static T Choose<T>(IList<T> items, float value)
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="Choose{T}(Seed, IList{T})"/>
+    public static T Choose<T>(IList<T> items) => Choose(++_threadLocal, items);
+
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="Choose{T}(Seed, IList{T}, int, int)"/>
+    public static T Choose<T>(IList<T> items, int offset, int length)
     {
-        int count = items?.Count ?? throw new ArgumentNullException(nameof(items));
-        return count > 0 ? items[Range(0, items.Count, value)] : throw new ArgumentException(EmptyCollectionMessage, nameof(items));
+        return Choose(++_threadLocal, items, offset, length);
     }
 
-    /// <inheritdoc cref="Choose{T}(ReadOnlySpan{T})"/>
+    /// <param name="offset">
+    /// The zero-based index at which to start the selection range within 
+    /// the <paramref name="items"/> collection.
+    /// </param>
+    /// <param name="length">
+    /// The number of elements in the selection range starting from the 
+    /// <paramref name="offset"/>.
+    /// </param>
+    /// <inheritdoc cref="Choose{T}(Seed, ReadOnlySpan{T})"/>
+    /// <param name="seed"/>
+    /// <param name="items"/>
+    /// <exception cref="ArgumentNullException">Thrown when the <paramref name="items"/> collection is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the offset and length are out of bounds.</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static T Choose<T>(Seed seed, IList<T> items, int offset, int length)
+    {
+        ThrowIfNullOrEmpty(items, out int count);
+        ThrowIfOutOfRange(offset, length, count, out int end);
+        return items[Range(offset, end, (float)seed)];
+    }
+
+    /// <inheritdoc cref="Choose{T}(Seed, ReadOnlySpan{T})"/>
     /// <exception cref="ArgumentNullException">Thrown when the <paramref name="items"/> collection is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static T Choose<T>(IReadOnlyList<T> items) => Choose(items, Float());
-    private static T Choose<T>(IReadOnlyList<T> items, float value)
+    public static T Choose<T>(Seed seed, IList<T> items)
     {
-        int count = items?.Count ?? throw new ArgumentNullException(nameof(items));
-        return count > 0 ? items[Range(0, items.Count, value)] : throw new ArgumentException(EmptyCollectionMessage, nameof(items));
+        ThrowIfNullOrEmpty(items, out int count);
+        return items[Range(0, count, (float)seed)];
     }
+
+    /// <inheritdoc cref="Choose{T}(IList{T})"/>
+    public static T Choose<T>(IReadOnlyList<T> items) => Choose(++_threadLocal, items);
+
+    /// <inheritdoc cref="Choose{T}(IList{T}, int, int)"/>
+    public static T Choose<T>(IReadOnlyList<T> items, int offset, int length) => Choose(++_threadLocal, items, offset, length);
+
+    /// <inheritdoc cref="Choose{T}(Seed, IList{T}, int, int)"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static T Choose<T>(Seed seed, IReadOnlyList<T> items, int offset, int length)
+    {
+        ThrowIfNullOrEmpty(items, out int count);
+        ThrowIfOutOfRange(offset, length, count, out int end);
+        return items[Range(offset, end, (float)++seed)];
+    }
+
+    /// <inheritdoc cref="Choose{T}(Seed, ReadOnlySpan{T})"/>
+    /// <exception cref="ArgumentNullException">Thrown when the <paramref name="items"/> collection is <see langword="null"/>.</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static T Choose<T>(Seed seed, IReadOnlyList<T> items)
+    {
+        ThrowIfNullOrEmpty(items, out int count);
+        return items[Range(0, count, (float)++seed)];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsRangeWithinBounds(int start, int length, int count, out int end)
+    {
+        uint uEnd = unchecked((uint)start + (uint)length);
+        end = (int)uEnd;
+        return uEnd <= count;
+    }
+
+    [DoesNotReturn, MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void ThrowIfOutOfRange(int start, int length, int count, out int end,
+        [CallerArgumentExpression(nameof(start))] string startName = "",
+        [CallerArgumentExpression(nameof(length))] string lengthName = "")
+    {
+        if (IsRangeWithinBounds(start, length, count, out end))
+        {
+            return;
+        }
+
+        string message = $"The specified {startName} and {lengthName} must define a valid range within the collection.";
+        throw new ArgumentOutOfRangeException(lengthName, message);
+    }
+
+    [DoesNotReturn, MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void ThrowIfNullOrEmpty<T>([MaybeNull] IList<T> list, out int count, 
+        [CallerArgumentExpression(nameof(list))] string parameterName = "")
+    {
+        count = list?.Count ?? throw new ArgumentNullException(parameterName);
+        if (count == 0)
+        {
+            throw new ArgumentException(EmptyCollectionMessage, parameterName);
+        }
+    }
+
+    [DoesNotReturn, MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void ThrowIfNullOrEmpty<T>([MaybeNull] IReadOnlyList<T> list, out int count, 
+        [CallerArgumentExpression(nameof(list))] string parameterName = "")
+    {
+        count = list?.Count ?? throw new ArgumentNullException(parameterName);
+        if (count == 0)
+        {
+            throw new ArgumentException(EmptyCollectionMessage, parameterName);
+        }
+    }
+
+    /// <inheritdoc cref="Condition(Seed, Chance)"/>
+    /// <inheritdoc cref="Integer()"/>
+    public static bool Condition(Chance chance = Chance.Even) => Condition(++_threadLocal, chance);
 
     /// <summary>
     /// Evaluates a probabilistic condition based on the specified <paramref name="chance"/>.
@@ -331,14 +415,17 @@ public static class Rng
     /// The probability of the condition being <see langword="true"/>. 
     /// Defaults to <see cref="Chance.Even"/> if not specified.
     /// </param>
+    /// <param name="seed">The <see cref="Seed"/> instance to use for generating the random value(s).</param>
     /// <returns>
     /// <see langword="true"/> if the condition is met according to the evaluated chance; 
     /// otherwise, <see langword="false"/>.
     /// </returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool Condition(Chance chance = Chance.Even) => Condition(Integer(), chance);
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool Condition(int value, Chance chance) => unchecked((uint)value) < (uint)chance;
+    public static bool Condition(Seed seed, Chance chance = Chance.Even) => unchecked((uint)seed.Current) < (uint)chance;
+
+    /// <inheritdoc cref="Fluctuate{T}(Seed, T, T)"/>
+    /// <inheritdoc cref="Integer()"/>
+    public static T Fluctuate<T>(T value, T maxDeviation) where T : INumberBase<T> => Fluctuate(++_threadLocal, value, maxDeviation);
 
     /// <summary>
     /// Applies a random fluctuation to the specified value within the range defined by the maximum deviation.
@@ -347,39 +434,62 @@ public static class Rng
     /// <param name="maxDeviation">The maximum allowable deviation from the base value. Determines the range within which the value may fluctuate.</param>
     /// <returns>A value that is randomly adjusted from the original value by an amount within the specified maximum deviation.</returns>
     /// <typeparam name="T">Specifies the numeric type of the value and maximum deviation. Must implement <see cref="INumberBase{TSelf}"/>.</typeparam>
+    /// <inheritdoc cref="Condition(Seed, Chance)"/>
+    /// <param name="seed"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static T Fluctuate<T>(T value, T maxDeviation) where T : INumberBase<T> => Fluctuate(value, maxDeviation, Float());
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static T Fluctuate<T>(T value, T maxDeviation, float state) where T : INumberBase<T>
+    public static T Fluctuate<T>(Seed seed, T value, T maxDeviation) where T : INumberBase<T>
     {
-        return value + (T.CreateTruncating(state.ToSignedRange()) * maxDeviation);
+        float factor = ToSignedRange((float)seed);
+        return value + (T.CreateTruncating(factor) * maxDeviation);
     }
+
+
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="Shuffle{T}(Span{T}, ref Seed)"/>
+    public static void Shuffle<T>(this Span<T> items) => Shuffle(items, ref _threadLocal);
 
     /// <summary>
     /// Randomly rearranges the elements within the specified collection in place.
     /// </summary>
     /// <typeparam name="T">The type of elements contained in the collection.</typeparam>
     /// <param name="items">A span of items to shuffle. The span must contain at least one element.</param>
+    /// <returns/>
+    /// <inheritdoc cref="Vector3(ref Seed)"/>
+    /// <param name="seed"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void Shuffle<T>(this Span<T> items)
+    public static void Shuffle<T>(this Span<T> items, ref Seed seed)
     {
         for (int i = items.Length - 1; i > 0; i--)
         {
-            int j = Range(0, i + 1, Float());
+            int j = Range(0, i + 1, (float)++seed);
             (items[i], items[j]) = (items[j], items[i]);
         }
     }
 
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="Shuffle{T}(IList{T}, ref Seed)"/>
+    public static void Shuffle<T>(this IList<T> items) => Shuffle(items, ref _threadLocal);
+
     /// <inheritdoc cref="Shuffle{T}(Span{T})"/>
+    /// <returns/>
+    /// <inheritdoc cref="Vector3(ref Seed)"/>
     /// <exception cref="ArgumentNullException">Thrown when the <paramref name="items"/> collection is <see langword="null"/>.</exception>
-    public static void Shuffle<T>(this IList<T> items)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void Shuffle<T>(this IList<T> items, ref Seed seed)
     {
         ArgumentNullException.ThrowIfNull(items);
         for (int i = items.Count - 1; i > 0; i--)
         {
-            int j = Range(0, i + 1, Float());
+            int j = Range(0, i + 1, (float)++seed);
             (items[i], items[j]) = (items[j], items[i]);
         }
+    }
+
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="UniformRange{T}(T, T, Seed)"/>
+    public static T UniformRange<T>(T min, T max) where T : INumberBase<T>
+    {
+        return UniformRange(min, max, ++_threadLocal);
     }
 
     /// <summary>
@@ -401,37 +511,46 @@ public static class Rng
     /// A random <typeparamref name="T"/> that is greater than or equal to <paramref name="min"/> 
     /// and less than <paramref name="max"/>.
     /// </returns>
+    /// <inheritdoc cref="Condition(Seed, Chance)"/>
+    /// <param name="seed"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static T UniformRange<T>(T min, T max) where T : INumberBase<T>
+    public static T UniformRange<T>(T min, T max, Seed seed) where T : INumberBase<T>
     {
-        return Range(min, max, Float());
+        return Range(min, max, (float)seed);
+    }
+
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="MedianBiasedRange{T}(T, T, Seed)"/>
+    public static T MedianBiasedRange<T>(T min, T max) where T : INumberBase<T>
+    {
+        return MedianBiasedRange(min, max, ++_threadLocal);
     }
 
     /// <summary>
     /// Generates a random <typeparamref name="T"/> that is biased towards the median of the specified range.
     /// </summary>
-    /// <inheritdoc cref="UniformRange{T}(T, T)"/>
+    /// <inheritdoc cref="UniformRange{T}(T, T, Seed)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static T MedianBiasedRange<T>(T min, T max) where T : INumberBase<T> => MedianBiasedRange(min, max, Float());
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static T MedianBiasedRange<T>(T min, T max, float seed) where T : INumberBase<T>
+    private static T MedianBiasedRange<T>(T min, T max, Seed seed) where T : INumberBase<T>
     {
-        float s = seed.ToSignedRange();
+        float s = ToSignedRange((float)seed);
         float biasedSeed = s * Mathf.Abs(s);
         float normalizedSeed = (biasedSeed + 1.0f) * 0.5f;
         return Range(min, max, normalizedSeed);
     }
 
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="ExtremesBiasedRange{T}(T, T, Seed)"/>
+    public static T ExtremesBiasedRange<T>(T min, T max) where T : INumberBase<T> => ExtremesBiasedRange(min, max, ++_threadLocal);
+
     /// <summary>
     /// Generates a random <typeparamref name="T"/> that is biased towards the extremes (minimum and maximum) of the specified range.
     /// </summary>
-    /// <inheritdoc cref="UniformRange{T}(T, T)"/>
+    /// <inheritdoc cref="UniformRange{T}(T, T, Seed)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static T ExtremesBiasedRange<T>(T min, T max) where T : INumberBase<T> => ExtremesBiasedRange(min, max, Float());
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static T ExtremesBiasedRange<T>(T min, T max, float state) where T : INumberBase<T>
+    public static T ExtremesBiasedRange<T>(T min, T max, Seed seed) where T : INumberBase<T>
     {
-        float s = state.ToSignedRange();
+        float s = ToSignedRange((float)seed);
         float abs = Mathf.Abs(s);
         float outward = 1.0f - ((1.0f - abs) * (1.0f - abs));
         float biasedSeed = MathF.CopySign(outward, s);
@@ -439,63 +558,45 @@ public static class Rng
         return Range(min, max, normalizedSeed);
     }
 
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="MaxBiasedRange{T}(T, T, Seed)"/>
+    public static T MaxBiasedRange<T>(T min, T max) where T : INumberBase<T> => MaxBiasedRange(min, max, ++_threadLocal);
+
     /// <summary>
     /// Generates a random <typeparamref name="T"/> that is biased towards the maximum value of the specified range.
     /// </summary>
-    /// <inheritdoc cref="UniformRange{T}(T, T)"/>
+    /// <inheritdoc cref="UniformRange{T}(T, T, Seed)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static T MaxBiasedRange<T>(T min, T max) where T : INumberBase<T> => MaxBiasedRange(min, max, Float());
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static T MaxBiasedRange<T>(T min, T max, float state) where T : INumberBase<T>
+    public static T MaxBiasedRange<T>(T min, T max, Seed seed) where T : INumberBase<T>
     {
-        return Range(max, min, state * state);
+        float factor = (float)seed; 
+        return Range(max, min, factor * factor);
     }
+
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="MinBiasedRange{T}(T, T, Seed)"/>
+    public static T MinBiasedRange<T>(T min, T max) where T : INumberBase<T> => MinBiasedRange(min, max, ++_threadLocal);
 
     /// <summary>
     /// Generates a random <typeparamref name="T"/> that is biased towards the minimum value of the specified range.
     /// </summary>
-    /// <inheritdoc cref="UniformRange{T}(T, T)"/>
+    /// <inheritdoc cref="UniformRange{T}(T, T, Seed)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static T MinBiasedRange<T>(T min, T max) where T : INumberBase<T> => MinBiasedRange(min, max, Float());
-    private static T MinBiasedRange<T>(T min, T max, float state) where T : INumberBase<T>
+    public static T MinBiasedRange<T>(T min, T max, Seed seed) where T : INumberBase<T>
     {
-        return Range(min, max, state * state);
+        float factor = (float)seed;
+        return Range(min, max, factor * factor);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static T Range<T>(T min, T max, float state) where T : INumberBase<T>
+    private static T Range<T>(T min, T max, float factor) where T : INumberBase<T>
     {
         double dMin = double.CreateTruncating(min);
         double dMax = double.CreateTruncating(max);
-        double result = dMin + (state * (dMax - dMin));
+        double result = dMin + (factor * (dMax - dMin));
         return T.CreateTruncating(result);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static float ToSignedRange(this float state) => (state * 2.0f) - 1.0f;
-
-    /// <summary>
-    /// Sets a <see cref="State"/> to a specified value and returns the original value, as an atomic operation.
-    /// </summary>
-    /// <inheritdoc cref="Interlocked.Exchange(ref int, int)"/>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static State Exchange(ref State location1, State value)
-    {
-        int result = Interlocked.Exchange(ref Unsafe.As<State, int>(ref location1), Unsafe.BitCast<State, int>(value));
-        return Unsafe.BitCast<int, State>(result);
-    }
-
-    /// <summary>
-    /// Compares two <see cref="State"/> values for equality and, if they are equal, replaces the first value, as an atomic operation.
-    /// </summary>
-    /// <inheritdoc cref="Interlocked.CompareExchange(ref int, int, int)"/>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static State CompareExchange(ref State location1, State value, State comparand)
-    {
-        ref int intLocation = ref Unsafe.As<State, int>(ref location1);
-        int intValue = Unsafe.BitCast<State, int>(value);
-        int intComparand = Unsafe.BitCast<State, int>(comparand);
-        int result = Interlocked.CompareExchange(ref intLocation, intValue, intComparand);
-        return Unsafe.BitCast<int, State>(result);
-    }
 }
