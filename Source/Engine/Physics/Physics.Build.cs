@@ -39,12 +39,6 @@ public class Physics : EngineModule
     {
         base.Setup(options);
 
-        if (options.Platform.Target == TargetPlatform.Web) // TODO: build PhysX for Web
-        {
-            options.PrivateDefinitions.Add("COMPILE_WITH_EMPTY_PHYSICS");
-            return;
-        }
-
         SetupPhysicsBackend(this, options);
 
         if (WithCooking)
@@ -58,7 +52,7 @@ public class Physics : EngineModule
         if (WithPhysX)
         {
             options.PrivateDependencies.Add("PhysX");
-            if (WithCloth && options.Platform.Target != TargetPlatform.PS4) // TODO: build nvcloth for ps4 with vs2017
+            if (WithCloth)
                 options.PrivateDependencies.Add("NvCloth");
         }
         else

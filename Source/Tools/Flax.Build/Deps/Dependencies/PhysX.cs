@@ -185,6 +185,11 @@ namespace Flax.Deps.Dependencies
                 binariesPrefix = "lib";
                 envVars.Add("IPHONEOS_DEPLOYMENT_TARGET", Configuration.iOSMinVer);
                 break;
+            case TargetPlatform.Web:
+                binariesSubDir = "web32";
+                binariesPrefix = "lib";
+                envVars.Add("CMAKE_TOOLCHAIN_FILE", EmscriptenSdk.Instance.CMakeToolchainPath);
+                break;
             default: throw new InvalidPlatformException(targetPlatform);
             }
 
@@ -206,7 +211,6 @@ namespace Flax.Deps.Dependencies
                 envVars.Add("CC", "clang-" + Configuration.LinuxClangMinVer);
                 envVars.Add("CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer);
                 envVars.Add("CXX", "clang++-" + Configuration.LinuxClangMinVer);
-                envVars.Add("CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel);
                 break;
             case TargetPlatform.Mac: break;
             default: throw new InvalidPlatformException(BuildPlatform);
@@ -259,6 +263,8 @@ namespace Flax.Deps.Dependencies
             };
             var dstBinaries = GetThirdPartyFolder(options, targetPlatform, architecture);
             var srcBinaries = Path.Combine(root, "physx", "bin", binariesSubDir, configuration);
+            if (targetPlatform == TargetPlatform.Web)
+                srcBinaries = Path.Combine(root, "physx", "compiler", binariesSubDir, "sdk_source_bin");
             switch (BuildPlatform)
             {
             case TargetPlatform.Windows:
@@ -266,6 +272,9 @@ namespace Flax.Deps.Dependencies
                 {
                 case TargetPlatform.Android:
                     Utilities.Run("cmake", "--build .", null, Path.Combine(root, "physx\\compiler\\android-" + configuration), Utilities.RunOptions.ConsoleLogOutput, envVars);
+                    break;
+                case TargetPlatform.Web:
+                    Utilities.Run("cmake", "--build .", null, Path.Combine(root, "physx\\compiler\\" + preset), Utilities.RunOptions.DefaultTool, envVars);
                     break;
                 default:
                     VCEnvironment.BuildSolution(Path.Combine(solutionFilesRoot, preset, "PhysXSDK.sln"), configuration, buildPlatform, msBuildProps, msBuild);
@@ -287,6 +296,8 @@ namespace Flax.Deps.Dependencies
             foreach (var physXLib in defaultPhysXLibs)
             {
                 var filename = suppressBitsPostfix ? string.Format("{0}{1}_static", binariesPrefix, physXLib) : string.Format("{0}{1}_static_{2}", binariesPrefix, physXLib, bits);
+                if (targetPlatform == TargetPlatform.Web)
+                    filename = binariesPrefix + physXLib;
                 filename += binariesExtension;
                 Utilities.FileCopy(Path.Combine(srcBinaries, filename), Path.Combine(dstBinaries, filename));
 
@@ -427,6 +438,11 @@ namespace Flax.Deps.Dependencies
                     case TargetPlatform.iOS:
                     {
                         Build(options, "ios64", platform, TargetArchitecture.ARM64);
+                        break;
+                    }
+                    case TargetPlatform.Web:
+                    {
+                        Build(options, "web32", platform, TargetArchitecture.x86);
                         break;
                     }
                     }

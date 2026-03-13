@@ -97,6 +97,7 @@ namespace Flax.Deps
                         TargetPlatform.PS5,
                         TargetPlatform.Android,
                         TargetPlatform.Switch,
+                        TargetPlatform.Web,
                     };
                 case TargetPlatform.Linux:
                     return new[]
@@ -127,6 +128,7 @@ namespace Flax.Deps
                 case TargetPlatform.Windows:
                     return new[]
                     {
+                        TargetArchitecture.x86,
                         TargetArchitecture.x64,
                         TargetArchitecture.ARM64,
                     };
@@ -562,7 +564,7 @@ namespace Flax.Deps
             }
             case TargetPlatform.Web:
             {
-                cmdLine = string.Format("CMakeLists.txt -DCMAKE_TOOLCHAIN_FILE=\"{0}/emscripten/cmake/Modules/Platform/Emscripten.cmake\"", EmscriptenSdk.Instance.EmscriptenPath);
+                cmdLine = $"CMakeLists.txt -DCMAKE_TOOLCHAIN_FILE=\"{EmscriptenSdk.Instance.CMakeToolchainPath}\"";
                 if (BuildPlatform == TargetPlatform.Windows)
                     cmdLine += " -G \"Ninja\"";
                 break;

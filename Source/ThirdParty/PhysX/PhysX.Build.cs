@@ -89,27 +89,29 @@ public class PhysX : EngineDepsModule
         else
         {
             options.PublicDefinitions.Add("PX_PHYSX_STATIC_LIB");
+            if (options.Platform.Target != TargetPlatform.Web)
+                archPostFix = "_static" + archPostFix;
 
-            AddLib(options, depsRoot, string.Format("PhysX_static{0}", archPostFix));
-            AddLib(options, depsRoot, string.Format("PhysXCharacterKinematic_static{0}", archPostFix));
-            AddLib(options, depsRoot, string.Format("PhysXCommon_static{0}", archPostFix));
-            AddLib(options, depsRoot, string.Format("PhysXExtensions_static{0}", archPostFix));
-            AddLib(options, depsRoot, string.Format("PhysXFoundation_static{0}", archPostFix));
+            AddLib(options, depsRoot, string.Format("PhysX{0}", archPostFix));
+            AddLib(options, depsRoot, string.Format("PhysXCharacterKinematic{0}", archPostFix));
+            AddLib(options, depsRoot, string.Format("PhysXCommon{0}", archPostFix));
+            AddLib(options, depsRoot, string.Format("PhysXExtensions{0}", archPostFix));
+            AddLib(options, depsRoot, string.Format("PhysXFoundation{0}", archPostFix));
 
             if (usePhysicsCooking)
             {
-                AddLib(options, depsRoot, string.Format("PhysXCooking_static{0}", archPostFix));
+                AddLib(options, depsRoot, string.Format("PhysXCooking{0}", archPostFix));
             }
 
             if (usePVD)
             {
-                AddLib(options, depsRoot, string.Format("PhysXPvdSDK_static{0}", archPostFix));
+                AddLib(options, depsRoot, string.Format("PhysXPvdSDK{0}", archPostFix));
             }
 
             if (useVehicle)
             {
-                AddLib(options, depsRoot, string.Format("PhysXVehicle_static{0}", archPostFix));
-                //AddLib(options, depsRoot, string.Format("PhysXVehicle2_static{0}", archPostFix));
+                AddLib(options, depsRoot, string.Format("PhysXVehicle{0}", archPostFix));
+                //AddLib(options, depsRoot, string.Format("PhysXVehicle2{0}", archPostFix));
             }
         }
     }

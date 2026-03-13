@@ -31,6 +31,11 @@ namespace Flax.Build.Platforms
         public string EmscriptenPath;
 
         /// <summary>
+        /// Full path to the CMake toolchain file (eg. '%EMSDK%\upstream\emscripten\cmake\Modules\Platform\Emscripten.cmake').
+        /// </summary>
+        public string CMakeToolchainPath;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="AndroidSdk"/> class.
         /// </summary>
         public EmscriptenSdk()
@@ -52,6 +57,7 @@ namespace Flax.Build.Platforms
             {
                 RootPath = sdkPath;
                 EmscriptenPath = Path.Combine(sdkPath, "upstream");
+                CMakeToolchainPath = Path.Combine(EmscriptenPath, "emscripten/cmake/Modules/Platform/Emscripten.cmake");
                 var versionPath = Path.Combine(EmscriptenPath, "emscripten", "emscripten-version.txt");
                 if (File.Exists(versionPath))
                 {
