@@ -30,6 +30,10 @@
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 
+#if NESTED_PHYSICS_BODIES
+#include "Engine/Physics/Actors/IPhysicsActor.h"
+#endif
+
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #define CHECK_EXECUTE_IN_EDITOR if (Editor::IsPlayMode || script->_executeInEditor)
@@ -257,6 +261,42 @@ const Guid& Actor::GetSceneObjectId() const
     return GetID();
 }
 
+#if NESTED_PHYSICS_BODIES
+static void PropagateSolverDepth(Actor* actor, int parentDepth)
+{
+    auto physicsActor = dynamic_cast<IPhysicsActor*>(actor);
+    if (physicsActor)
+    {
+        parentDepth++;
+        physicsActor->SolverDepth = parentDepth;
+    }
+
+    // Propagate downwards to update solver depth for nested physics actors
+    for (auto child : actor->Children)
+    {
+        PropagateSolverDepth(child, parentDepth);
+    }
+}
+
+static void CalculateSolverDepth(Actor* actor)
+{
+    // find the depth of the closest ancestor that is a physics actor
+    auto parent = actor->GetParent();
+    int depth = -1;
+    while (parent)
+    {
+        auto physicsActor = dynamic_cast<IPhysicsActor*>(parent);
+        if (physicsActor)
+        {
+            depth = physicsActor->SolverDepth;
+            break;
+        }
+        parent = parent->GetParent();
+    }
+    PropagateSolverDepth(actor, depth);
+}
+#endif
+
 void Actor::SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefabLink)
 {
     if (_parent == value)
@@ -366,6 +406,10 @@ void Actor::SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefa
         }
         Level::callActorEvent(Level::ActorEventType::OnActorSpawned, this, nullptr);
     }
+
+#if NESTED_PHYSICS_BODIES
+    CalculateSolverDepth(this);
+#endif
 }
 
 void Actor::SetParent(Actor* value, bool canBreakPrefabLink)
@@ -982,6 +1026,11 @@ void Actor::BeginPlay(SceneBeginData* data)
 
     // Set flag
     Flags |= ObjectFlags::IsDuringPlay;
+
+#if NESTED_PHYSICS_BODIES
+    // set up initial depth values for nested bodies
+    CalculateSolverDepth(this);
+#endif
 
     OnBeginPlay();
 
