@@ -64,6 +64,10 @@ Follow the instructions below to compile and run the engine from source.
   * Ubuntu: `sudo apt-get install clang lldb lld`
   * Fedora: `sudo dnf install clang llvm lldb lld`
   * Arch: `sudo pacman -S clang lldb lld`
+* Install GCC-12:
+  * Ubuntu: `sudo apt install g++-12`
+    * Update alternative if required `sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 200`
+    * Or do a symlink `sudo ln -sf /usr/bin/gcc-12 /usr/bin/gcc && sudo ln -sf /usr/bin/g++-12 /usr/bin/g++`
 * Clone the repository (with LFS)
   * git-lfs clone https://github.com/FlaxEngine/FlaxEngine.git
 * Run `./GenerateProjectFiles.sh`
