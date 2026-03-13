@@ -318,9 +318,18 @@ namespace FlaxEditor.Options
         /// <summary>
         /// Gets or sets a value indicating whether use native window title bar decorations in child windows. Editor restart required.
         /// </summary>
+#if PLATFORM_WINDOWS
+        [DefaultValue(WindowDecorationsType.ClientSide)]
+#else
         [DefaultValue(WindowDecorationsType.AutoChildOnly)]
-        [EditorDisplay("Interface"), EditorOrder(70), Tooltip("Determines whether use native window title bar decorations. Editor restart required.")]
-        public WindowDecorationsType WindowDecorations { get; set; } = WindowDecorationsType.AutoChildOnly;
+#endif
+        [EditorDisplay("Tabs & Windows"), EditorOrder(70), Tooltip("Determines whether use native window title bar decorations. Editor restart required.")]
+        public WindowDecorationsType WindowDecorations { get; set; } =
+#if PLATFORM_WINDOWS
+            WindowDecorationsType.ClientSide;
+#else
+            WindowDecorationsType.AutoChildOnly;
+#endif
 #elif PLATFORM_WINDOWS
         /// <summary>
         /// Gets or sets a value indicating whether use native window title bar. Editor restart required.
