@@ -24,7 +24,7 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <summary>
         /// The Z axis color.
         /// </summary>
-        public static Color AxisColorZ = new Color(0.0f, 0.0235294f, 0.9f, 1.0f);
+        public static Color AxisColorZ = new Color(0.0f, 0.42352f, 0.8f, 1.0f);
 
         /// <summary>
         /// Custom editor for actor position property.
