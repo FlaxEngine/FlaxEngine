@@ -519,10 +519,16 @@ namespace Flax.Deps
                 break;
             }
             case TargetPlatform.PS4:
-                cmdLine = "CMakeLists.txt -DCMAKE_GENERATOR_PLATFORM=ORBIS -G \"Visual Studio 15 2017\"";
+                if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2017))
+                    cmdLine = "CMakeLists.txt -DCMAKE_GENERATOR_PLATFORM=ORBIS -G \"Visual Studio 15 2017\"";
+                else
+                    cmdLine = string.Format("CMakeLists.txt -G \"Ninja\" -DCMAKE_TOOLCHAIN_FILE=\"{0}/Source/Platforms/PS4/Binaries/Data/nethost/src/ps4/PS4Toolchain.txt\"", Globals.EngineRoot);
                 break;
             case TargetPlatform.PS5:
-                cmdLine = "CMakeLists.txt -DCMAKE_GENERATOR_PLATFORM=PROSPERO -G \"Visual Studio 16 2019\"";
+                if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2019))
+                    cmdLine = "CMakeLists.txt -DCMAKE_GENERATOR_PLATFORM=PROSPERO -G \"Visual Studio 16 2019\"";
+                else
+                    cmdLine = string.Format("CMakeLists.txt -G \"Ninja\" -DCMAKE_TOOLCHAIN_FILE=\"{0}/Source/Platforms/PS5/Binaries/Data/nethost/src/ps5/PS5Toolchain.txt\"", Globals.EngineRoot);
                 break;
             case TargetPlatform.Linux:
                 cmdLine = "CMakeLists.txt";

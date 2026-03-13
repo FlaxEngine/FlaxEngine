@@ -24,6 +24,12 @@ namespace Flax.Deps.Dependencies
                     {
                         TargetPlatform.Windows,
                         TargetPlatform.Android,
+                        TargetPlatform.XboxOne,
+                        TargetPlatform.XboxScarlett,
+                        TargetPlatform.Switch,
+                        TargetPlatform.PS4,
+                        TargetPlatform.PS5,
+                        TargetPlatform.Web,
                     };
                 case TargetPlatform.Linux:
                     return new[]
@@ -51,6 +57,7 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.Windows:
                     return new[]
                     {
+                        TargetArchitecture.x86,
                         TargetArchitecture.x64,
                         TargetArchitecture.ARM64,
                     };
@@ -83,12 +90,17 @@ namespace Flax.Deps.Dependencies
             };
             var args = new string[]
             {
+                "-DMSDFGEN_BUILD_STANDALONE=OFF",
                 "-DMSDFGEN_USE_VCPKG=OFF",
                 "-DMSDFGEN_CORE_ONLY=ON",
                 "-DMSDFGEN_DYNAMIC_RUNTIME=ON",
                 "-DMSDFGEN_USE_SKIA=OFF",
+                "-DMSDFGEN_INSTALL=ON",
+                "-DMSDFGEN_USE_SKIA=OFF",
+                "-DMSDFGEN_DISABLE_SVG=ON",
+                "-DMSDFGEN_DISABLE_PNG=ON",
+                "-DMSDFGEN_DYNAMIC_RUNTIME=ON",
                 "-DBUILD_SHARED_LIBS=OFF",
-                "-DMSDFGEN_INSTALL=ON"
             };
 
             // Get the source
@@ -130,7 +142,7 @@ namespace Flax.Deps.Dependencies
                         break;
                     }
 
-                    RunCmake(root, platform, architecture, $"-B\"{buildDir}\" " + cmakeArgs, envVars);
+                    RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -Wno-dev " + cmakeArgs, envVars);
                     BuildCmake(buildDir);
                     Utilities.Run("cmake", $"--install {buildDir} --prefix {installDir} --config {configuration}", null, root, Utilities.RunOptions.DefaultTool);
                     Utilities.FileCopy(Path.Combine(installDir, "lib", libName), Path.Combine(depsFolder, libName));
