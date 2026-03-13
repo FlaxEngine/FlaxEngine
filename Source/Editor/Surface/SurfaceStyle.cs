@@ -222,7 +222,7 @@ namespace FlaxEditor.Surface
 
         private static void DefaultDrawBox(Elements.Box box)
         {
-            var rect = new Rectangle(0.0f, box.Height * 0.5f - Constants.BoxSize * 0.5f, new Float2(Constants.BoxSize));
+            var rect = new Rectangle(box.Width * 0.5f - Constants.BoxSize * 0.5f, box.Height * 0.5f - Constants.BoxSize * 0.5f, new Float2(Constants.BoxSize));
 
             // Size culling
             const float minBoxSize = 5.0f;

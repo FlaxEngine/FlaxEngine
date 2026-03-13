@@ -199,7 +199,7 @@ namespace FlaxEditor.Surface
             {
                 if (Elements[i] is OutputBox box)
                 {
-                    box.Location = box.Archetype.Position + new Float2(width, 0);
+                    box.Location = box.Archetype.Position + new Float2(width - Constants.NodeMarginX, 0);
                 }
             }
 

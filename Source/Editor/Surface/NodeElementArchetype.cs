@@ -106,7 +106,7 @@ namespace FlaxEditor.Surface
                 {
                     Type = NodeElementType.Input,
                     Position = new Float2(
-                                          Constants.NodeMarginX - Constants.BoxOffsetX,
+                                          Constants.NodeMarginX,
                                           Constants.NodeMarginY + Constants.NodeHeaderHeight + yLevel * Constants.LayoutOffsetY),
                     Text = text,
                     Single = single,
@@ -132,7 +132,7 @@ namespace FlaxEditor.Surface
                 {
                     Type = NodeElementType.Input,
                     Position = new Float2(
-                                          Constants.NodeMarginX - Constants.BoxOffsetX,
+                                          Constants.NodeMarginX,
                                           Constants.NodeMarginY + Constants.NodeHeaderHeight + yLevel * Constants.LayoutOffsetY),
                     Text = text,
                     Single = single,
@@ -157,7 +157,7 @@ namespace FlaxEditor.Surface
                 {
                     Type = NodeElementType.Output,
                     Position = new Float2(
-                                          Constants.NodeMarginX - Constants.BoxRowHeight + Constants.BoxOffsetX,
+                                          -Constants.NodeMarginX,
                                           Constants.NodeMarginY + Constants.NodeHeaderHeight + yLevel * Constants.LayoutOffsetY),
                     Text = text,
                     Single = single,
@@ -182,7 +182,7 @@ namespace FlaxEditor.Surface
                 {
                     Type = NodeElementType.Output,
                     Position = new Float2(
-                                          Constants.NodeMarginX - Constants.BoxSize + Constants.BoxOffsetX,
+                                          -Constants.NodeMarginX,
                                           Constants.NodeMarginY + Constants.NodeHeaderHeight + yLevel * Constants.LayoutOffsetY),
                     Text = text,
                     Single = single,

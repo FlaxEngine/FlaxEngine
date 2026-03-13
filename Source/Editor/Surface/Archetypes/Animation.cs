@@ -243,7 +243,7 @@ namespace FlaxEditor.Surface.Archetypes
                     {
                         Type = NodeElementType.Input,
                         Position = new Float2(
-                                              FlaxEditor.Surface.Constants.NodeMarginX - FlaxEditor.Surface.Constants.BoxOffsetX,
+                                              FlaxEditor.Surface.Constants.NodeMarginX,
                                               FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight + ylevel * FlaxEditor.Surface.Constants.LayoutOffsetY),
                         Text = "Pose " + _blendPoses.Count,
                         Single = true,
