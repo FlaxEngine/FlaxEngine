@@ -137,8 +137,20 @@ namespace Flax.Build.Platforms
                 foreach (var definition in options.CompileEnv.PreprocessorDefinitions)
                     args.Add(string.Format("/D \"{0}\"", definition));
                 args.Add(string.Format("/D \"ORIGINAL_FILENAME=\\\"{0}\\\"\"", Path.GetFileName(outputFilePath)));
-                args.Add(string.Format("/D \"PRODUCT_NAME=\\\"{0}\\\"\"", options.Target.ProjectName + " " + options.Target.ConfigurationName));
-                args.Add(string.Format("/D \"PRODUCT_NAME_INTERNAL=\\\"{0}\\\"\"", options.Target.Name));
+                if (TryGetGameProductName(options, out var productName))
+                {
+                    if (!HasDefinition(options.CompileEnv.PreprocessorDefinitions, "PRODUCT_NAME"))
+                        args.Add(string.Format("/D \"PRODUCT_NAME=\\\"{0}\\\"\"", productName));
+                    if (!HasDefinition(options.CompileEnv.PreprocessorDefinitions, "PRODUCT_NAME_INTERNAL"))
+                        args.Add(string.Format("/D \"PRODUCT_NAME_INTERNAL=\\\"{0}\\\"\"", productName));
+                }
+                else
+                {
+                    if (!HasDefinition(options.CompileEnv.PreprocessorDefinitions, "PRODUCT_NAME"))
+                        args.Add(string.Format("/D \"PRODUCT_NAME=\\\"{0}\\\"\"", options.Target.ProjectName));
+                    if (!HasDefinition(options.CompileEnv.PreprocessorDefinitions, "PRODUCT_NAME_INTERNAL"))
+                        args.Add(string.Format("/D \"PRODUCT_NAME_INTERNAL=\\\"{0}\\\"\"", options.Target.Name));
+                }
 
                 // Add include paths
                 foreach (var includePath in options.CompileEnv.IncludePaths)
@@ -164,6 +176,101 @@ namespace Flax.Build.Platforms
             }
 
             base.LinkFiles(graph, options, outputFilePath);
+        }
+
+        private static bool HasDefinition(IEnumerable<string> definitions, string name)
+        {
+            var prefix = name + "=";
+            foreach (var definition in definitions)
+            {
+                if (definition.StartsWith(prefix, StringComparison.Ordinal))
+                    return true;
+            }
+            return false;
+        }
+
+        private static bool TryGetGameProductName(BuildOptions options, out string finalName)
+        {
+            finalName = null;
+            if (options.LinkEnv.Output != LinkerOutput.Executable)
+                return false;
+            if (!string.Equals(options.Target.ConfigurationName, "Game", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            // Prefer the workspace project (game), fallback to target project.
+            ProjectInfo project = Globals.Project;
+            if (project == null || string.Equals(project.Name, "Flax", StringComparison.OrdinalIgnoreCase))
+            {
+                if (options.Target is ProjectTarget projectTarget && projectTarget.Project != null)
+                    project = projectTarget.Project;
+            }
+            if (project == null)
+                return false;
+
+            // Default values
+            string productName = project.Name;
+            string companyName = string.IsNullOrEmpty(project.Company) ? "MyCompany" : project.Company;
+            string outputNameTemplate = "${PROJECT_NAME}";
+
+            // Parse GameSettings.json
+            var gameSettingsPath = Path.Combine(project.ProjectFolderPath, "Content", "GameSettings.json");
+            var jsonProductName = GetJsonValue(gameSettingsPath, "ProductName");
+            if (!string.IsNullOrEmpty(jsonProductName))
+                productName = jsonProductName;
+            var jsonCompanyName = GetJsonValue(gameSettingsPath, "CompanyName");
+            if (!string.IsNullOrEmpty(jsonCompanyName))
+                companyName = jsonCompanyName;
+
+            // Parse Build Settings.json
+            var buildSettingsPath = Path.Combine(project.ProjectFolderPath, "Content", "Settings", "Build Settings.json");
+            var jsonOutputName = GetJsonValue(buildSettingsPath, "OutputName");
+            if (!string.IsNullOrEmpty(jsonOutputName))
+                outputNameTemplate = jsonOutputName;
+
+            if (string.IsNullOrEmpty(outputNameTemplate))
+                outputNameTemplate = "FlaxGame";
+
+            // Token replacement matching EditorUtilities.cpp behavior
+            string resolvedName = outputNameTemplate
+                .Replace("${PROJECT_NAME}", productName, StringComparison.OrdinalIgnoreCase)
+                .Replace("${COMPANY_NAME}", companyName, StringComparison.OrdinalIgnoreCase);
+
+            // Strip invalid filename characters
+            foreach (char c in Path.GetInvalidFileNameChars())
+                resolvedName = resolvedName.Replace(c.ToString(), "");
+
+            if (string.IsNullOrEmpty(resolvedName))
+                return false;
+
+            finalName = resolvedName;
+            return true;
+        }
+
+        private static string GetJsonValue(string path, string propertyName)
+        {
+            if (!File.Exists(path))
+                return null;
+            var content = File.ReadAllText(path);
+
+            // Search for "PropertyName": "Value" or "PropertyName":"Value"
+            var search = $"\"{propertyName}\"";
+            int keyIdx = content.IndexOf(search, StringComparison.Ordinal);
+            if (keyIdx == -1)
+                return null;
+
+            int colonIdx = content.IndexOf(':', keyIdx + search.Length);
+            if (colonIdx == -1)
+                return null;
+
+            int quoteStart = content.IndexOf('"', colonIdx + 1);
+            if (quoteStart == -1)
+                return null;
+
+            int quoteEnd = content.IndexOf('"', quoteStart + 1);
+            if (quoteEnd == -1)
+                return null;
+
+            return content.Substring(quoteStart + 1, quoteEnd - quoteStart - 1);
         }
     }
 }
