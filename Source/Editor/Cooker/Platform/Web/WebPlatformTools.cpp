@@ -198,6 +198,13 @@ bool WebPlatformTools::OnPostProcess(CookingData& data)
         }
     }
 
+    // Copy icon file
+    {
+        String dstIcon = data.OriginalOutputPath / TEXT("favicon.ico");
+        if (!FileSystem::FileExists(dstIcon))
+            FileSystem::CopyFile(dstIcon, platformDataPath / TEXT("favicon.ico"));
+    }
+
     // TODO: customizable HTML templates
 
     // Insert packaged file system with game data
