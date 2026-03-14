@@ -585,7 +585,7 @@ namespace FlaxEditor.Surface.ContextMenu
 
         private void UpdateFilters()
         {
-            if (string.IsNullOrEmpty(_searchBox.Text) && _selectedBoxes[0] == null)
+            if (string.IsNullOrEmpty(_searchBox.Text) && _selectedBoxes.Count == 0)
             {
                 ResetView();
                 Profiler.EndEvent();
