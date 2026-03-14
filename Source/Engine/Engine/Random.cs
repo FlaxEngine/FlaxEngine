@@ -29,11 +29,11 @@ public static class Random
     /// <summary>
     /// Generates a pseudo-random floating-point number and updates the local state for the current thread.
     /// </summary>
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <returns>A new <see cref="float"/> with a value greater than or equal to 0.0 and less than 1.0.</returns>
     public static float Float() => (float)++_threadLocal;
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="Gaussian(ref Seed, float, float)"/>
     public static float Gaussian(float mean = 0.0f, float standardDeviation = 1.0f) => Gaussian(ref _threadLocal, mean, standardDeviation);
 
@@ -55,11 +55,11 @@ public static class Random
     }
 
     /// <summary>Generates a pseudo-random integer.</summary>
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <returns>A new 32-bit signed integer set to a random value.</returns>
     public static int Integer() => (int)++_threadLocal;
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="Long(ref Seed)"/>
     public static long Long() => Long(ref _threadLocal);
 
@@ -77,7 +77,7 @@ public static class Random
     /// <inheritdoc cref="Integer()"/>
     public static byte Byte() => (byte)++_threadLocal;
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="Enum{T}(Seed)"/>
     public static T Enum<T>() where T : unmanaged, Enum => Enum<T>(++_threadLocal);
 
@@ -94,7 +94,7 @@ public static class Random
         return EnumValueProvider<T>.Normalize((uint)seed.Current);
     }
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="Rotation(ref Seed)"/>
     public static Quaternion Rotation() => Rotation(ref _threadLocal);
 
@@ -113,7 +113,7 @@ public static class Random
     /// <summary>
     /// Generates a pseudo-random <see cref="Float3"/>.
     /// </summary>
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="Vector3(ref Seed)"/>
     public static Float3 Vector3() => Vector3(ref _threadLocal);
 
@@ -137,7 +137,7 @@ public static class Random
         return vector;
     }
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="Vector2(ref Seed)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Float2 Vector2() => Vector2(ref _threadLocal);
@@ -158,11 +158,11 @@ public static class Random
         return vector;
     }
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="ColorHSV(ref Seed)"/>
     public static Color ColorHSV() => ColorHSV(ref _threadLocal);
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="ColorHSV(ref Seed, float, float, float, float)"/>
     public static Color ColorHSV(float hue = -1.0f, float saturation = -1.0f, float value = -1.0f, float alpha = 1.0f)
     {
@@ -222,7 +222,7 @@ public static class Random
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static float Hue(ref Seed seed) => (float)++seed * 360.0f;
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="TryChoose{T}(Seed, ReadOnlySpan{T}, out T)"/>
     public static bool TryChoose<T>(ReadOnlySpan<T> items, [MaybeNullWhen(false)] out T result) => TryChoose(++_threadLocal, items, out result);
 
@@ -254,7 +254,7 @@ public static class Random
     /// <inheritdoc cref="TryChoose{T}(ReadOnlySpan{T}, out T)"/>
     public static bool TryChoose<T>(IList<T> items, [MaybeNullWhen(false)] out T result) => TryChoose(++_threadLocal, items, out result);
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="TryChoose{T}(Seed, IList{T}, int, int, out T)"/>
     public static bool TryChoose<T>(IList<T> items, int offset, int length, [MaybeNullWhen(false)] out T result)
     {
@@ -340,7 +340,7 @@ public static class Random
         return true;
     }
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="Choose{T}(Seed, ReadOnlySpan{T})"/>
     public static T Choose<T>(ReadOnlySpan<T> items) => Choose(++_threadLocal, items);
 
@@ -359,11 +359,11 @@ public static class Random
         return items.IsEmpty ? throw new ArgumentException(EmptyCollectionMessage, nameof(items)) : items[UniformRange(seed, items.Length)];
     }
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="Choose{T}(Seed, IList{T})"/>
     public static T Choose<T>(IList<T> items) => Choose(++_threadLocal, items);
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="Choose{T}(Seed, IList{T}, int, int)"/>
     public static T Choose<T>(IList<T> items, int offset, int length)
     {
@@ -508,7 +508,7 @@ public static class Random
     }
 
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="Shuffle{T}(Span{T}, ref Seed)"/>
     public static void Shuffle<T>(this Span<T> items) => Shuffle(items, ref _threadLocal);
 
@@ -530,7 +530,7 @@ public static class Random
         }
     }
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="Shuffle{T}(IList{T}, ref Seed)"/>
     public static void Shuffle<T>(this IList<T> items) => Shuffle(items, ref _threadLocal);
 
@@ -549,7 +549,7 @@ public static class Random
         }
     }
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="UniformRange{T}(Seed, T, T)"/>
     public static T UniformRange<T>(T min, T max) where T : IFloatingPoint<T>
     {
@@ -583,7 +583,7 @@ public static class Random
         return Range(min, max, T.CreateTruncating((float)seed));
     }
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="UniformRange(Seed, int, int)"/>
     public static int UniformRange(int max, int min = default) => UniformRange(++_threadLocal, max, min);
 
@@ -600,7 +600,7 @@ public static class Random
         return UniformRange(randomValue, min, max, 32);
     }
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="UniformRange(ref Seed, long, long)"/>
     public static long UniformRange(long max, long min = default) => UniformRange(ref _threadLocal, max, min);
 
@@ -613,7 +613,7 @@ public static class Random
         return UniformRange(randomValue, min, max, 64);
     }
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="UniformRange(Seed, short, short)"/>
     public static short UniformRange(short max, short min = default) => UniformRange(++_threadLocal, max, min);
 
@@ -625,7 +625,7 @@ public static class Random
         return UniformRange(randomValue, min, max, 16);
     }
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="UniformRange(Seed, byte, byte)"/>
     public static byte UniformRange(byte max, byte min = default) => UniformRange(++_threadLocal, max, min);
 
@@ -647,7 +647,7 @@ public static class Random
         return min + TValue.CreateTruncating((random * range) >> shift);
     }
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="MedianBiasedRange{T}(T, T, Seed)"/>
     public static T MedianBiasedRange<T>(T min, T max) where T : IFloatingPoint<T>
     {
@@ -667,7 +667,7 @@ public static class Random
         return Range(min, max, normalizedSeed);
     }
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="ExtremesBiasedRange{T}(T, T, Seed)"/>
     public static T ExtremesBiasedRange<T>(T min, T max) where T : IFloatingPoint<T> => ExtremesBiasedRange(min, max, ++_threadLocal);
 
@@ -686,7 +686,7 @@ public static class Random
         return Range(min, max, normalizedSeed);
     }
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="MaxBiasedRange{T}(T, T, Seed)"/>
     public static T MaxBiasedRange<T>(T min, T max) where T : IFloatingPoint<T> => MaxBiasedRange(min, max, ++_threadLocal);
 
@@ -701,7 +701,7 @@ public static class Random
         return Range(max, min, T.CreateTruncating(factor * factor));
     }
 
-    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="MinBiasedRange{T}(T, T, Seed)"/>
     public static T MinBiasedRange<T>(T min, T max) where T : IFloatingPoint<T> => MinBiasedRange(min, max, ++_threadLocal);
 
