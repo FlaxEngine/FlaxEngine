@@ -12,7 +12,7 @@ namespace FlaxEngine
     [HideInEditor]
     public class RandomStream
     {
-        private Rng.State _currentState;
+        private Random.State _currentState;
         /// <summary>
         /// Holds the initial seed.
         /// </summary>
@@ -23,7 +23,7 @@ namespace FlaxEngine
         /// </summary>
         public RandomStream()
         {
-            _currentState = Rng.Snapshot();
+            _currentState = Random.Snapshot();
             _initialSeed = _currentState.Integer;
         }
 
@@ -34,7 +34,7 @@ namespace FlaxEngine
         public RandomStream(int seed)
         {
             _initialSeed = seed;
-            _currentState = new Rng.State(seed);
+            _currentState = new Random.State(seed);
         }
 
         /// <summary>
@@ -55,18 +55,18 @@ namespace FlaxEngine
         public void Initialize(int seed)
         {
             _initialSeed = seed;
-            _currentState = new Rng.State(seed);
+            _currentState = new Random.State(seed);
         }
 
         /// <summary>
         /// Resets this random stream to the initial seed value.
         /// </summary>
-        public void Reset() => _currentState = new Rng.State(_initialSeed);
+        public void Reset() => _currentState = new Random.State(_initialSeed);
 
         /// <summary>
         /// Generates a new random seed.
         /// </summary>
-        public void GenerateNewSeed() => Initialize(Rng.Integer());
+        public void GenerateNewSeed() => Initialize(Random.Integer());
 
         /// <summary>
         /// Returns a random boolean.

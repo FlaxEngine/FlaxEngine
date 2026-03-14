@@ -9,7 +9,7 @@ namespace FlaxEngine;
 /// <summary>
 /// Provides thread-safe utilities for generating random values, selecting collection elements, and managing state with various distribution biases.
 /// </summary>
-public static class Rng
+public static class Random
 {
     private const string EmptyCollectionMessage = "The collection must contain at least one item.";
 

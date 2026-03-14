@@ -13,13 +13,13 @@ namespace FlaxEngine
         /// <summary>
         /// Random numbers generator.
         /// </summary>
-        public static readonly Random Random = new Random();
+        public static readonly System.Random Random = new System.Random();
 
         /// <summary>
         /// Generates a pseudo-random number from normalized range [0;1].
         /// </summary>
         /// <returns>The random number.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Rand() => Rng.Float();
+        public static float Rand() => Random.Float();
     }
 }
