@@ -329,13 +329,11 @@ namespace FlaxEditor.Surface
             {
                 var dir = sub / length;
                 var arrowRect = new Rectangle(0, 0, 16.0f, 16.0f);
-                float rotation = Float2.Dot(dir, Float2.UnitY);
-                if (endPos.X < startPos.X)
-                    rotation = 2 - rotation;
+                float rotation = Mathf.Atan2(dir.Y, dir.X);
                 var sprite = Editor.Instance.Icons.VisjectArrowClosed32;
                 var arrowTransform =
                     Matrix3x3.Translation2D(-6.5f, -8) *
-                    Matrix3x3.RotationZ(rotation * Mathf.PiOverTwo) * 
+                    Matrix3x3.RotationZ(rotation) * 
                     Matrix3x3.Translation2D(endPos - dir * 8);
 
                 Render2D.PushTransform(ref arrowTransform);
