@@ -183,7 +183,7 @@ public static class Rng
             return false;
         }
 
-        result = items[Range(0, items.Length, (float)++seed)];
+        result = items[Range(0, items.Length, ++seed)];
         return true;
     }
 
@@ -218,7 +218,7 @@ public static class Rng
             return false;
         }
 
-        result = items[Range(offset, end, (float)seed)];
+        result = items[Range(offset, end, seed)];
         return true;
     }
 
@@ -232,7 +232,7 @@ public static class Rng
             return false;
         }
 
-        result = items[Range(0, items.Count, (float)seed)];
+        result = items[Range(0, items.Count, seed)];
         return true;
     }
 
@@ -258,7 +258,7 @@ public static class Rng
             return false;
         }
 
-        result = items[Range(offset, end, (float)seed)];
+        result = items[Range(offset, end, seed)];
         return true;
     }
 
@@ -272,7 +272,7 @@ public static class Rng
             return false;
         }
 
-        result = items[Range(0, items.Count, (float)seed)];
+        result = items[Range(0, items.Count, seed)];
         return true;
     }
 
@@ -292,7 +292,7 @@ public static class Rng
     /// <param name="seed"/>
     public static T Choose<T>(Seed seed, ReadOnlySpan<T> items)
     {
-        return items.IsEmpty ? throw new ArgumentException(EmptyCollectionMessage, nameof(items)) : items[Range(0, items.Length, (float)seed)];
+        return items.IsEmpty ? throw new ArgumentException(EmptyCollectionMessage, nameof(items)) : items[Range(0, items.Length, seed)];
     }
 
     /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
@@ -324,7 +324,7 @@ public static class Rng
     {
         ThrowIfNullOrEmpty(items, out int count);
         ThrowIfOutOfRange(offset, length, count, out int end);
-        return items[Range(offset, end, (float)seed)];
+        return items[Range(offset, end, seed)];
     }
 
     /// <inheritdoc cref="Choose{T}(Seed, ReadOnlySpan{T})"/>
@@ -333,7 +333,7 @@ public static class Rng
     public static T Choose<T>(Seed seed, IList<T> items)
     {
         ThrowIfNullOrEmpty(items, out int count);
-        return items[Range(0, count, (float)seed)];
+        return items[Range(0, count, seed)];
     }
 
     /// <inheritdoc cref="Choose{T}(IList{T})"/>
@@ -348,7 +348,7 @@ public static class Rng
     {
         ThrowIfNullOrEmpty(items, out int count);
         ThrowIfOutOfRange(offset, length, count, out int end);
-        return items[Range(offset, end, (float)++seed)];
+        return items[Range(offset, end, seed)];
     }
 
     /// <inheritdoc cref="Choose{T}(Seed, ReadOnlySpan{T})"/>
@@ -357,7 +357,7 @@ public static class Rng
     public static T Choose<T>(Seed seed, IReadOnlyList<T> items)
     {
         ThrowIfNullOrEmpty(items, out int count);
-        return items[Range(0, count, (float)++seed)];
+        return items[Range(0, count, seed)];
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -461,7 +461,7 @@ public static class Rng
     {
         for (int i = items.Length - 1; i > 0; i--)
         {
-            int j = Range(0, i + 1, (float)++seed);
+            int j = Range(0, i + 1, ++seed);
             (items[i], items[j]) = (items[j], items[i]);
         }
     }
@@ -480,14 +480,14 @@ public static class Rng
         ArgumentNullException.ThrowIfNull(items);
         for (int i = items.Count - 1; i > 0; i--)
         {
-            int j = Range(0, i + 1, (float)++seed);
+            int j = Range(0, i + 1, ++seed);
             (items[i], items[j]) = (items[j], items[i]);
         }
     }
 
     /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
     /// <inheritdoc cref="UniformRange{T}(T, T, Seed)"/>
-    public static T UniformRange<T>(T min, T max) where T : INumberBase<T>
+    public static T UniformRange<T>(T min, T max) where T : IFloatingPoint<T>
     {
         return UniformRange(min, max, ++_threadLocal);
     }
@@ -514,14 +514,14 @@ public static class Rng
     /// <inheritdoc cref="Condition(Seed, Chance)"/>
     /// <param name="seed"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static T UniformRange<T>(T min, T max, Seed seed) where T : INumberBase<T>
+    public static T UniformRange<T>(T min, T max, Seed seed) where T : IFloatingPoint<T>
     {
-        return Range(min, max, (float)seed);
+        return Range(min, max, T.CreateTruncating((float)seed));
     }
 
     /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
     /// <inheritdoc cref="MedianBiasedRange{T}(T, T, Seed)"/>
-    public static T MedianBiasedRange<T>(T min, T max) where T : INumberBase<T>
+    public static T MedianBiasedRange<T>(T min, T max) where T : IFloatingPoint<T>
     {
         return MedianBiasedRange(min, max, ++_threadLocal);
     }
@@ -531,71 +531,73 @@ public static class Rng
     /// </summary>
     /// <inheritdoc cref="UniformRange{T}(T, T, Seed)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static T MedianBiasedRange<T>(T min, T max, Seed seed) where T : INumberBase<T>
+    private static T MedianBiasedRange<T>(T min, T max, Seed seed) where T : IFloatingPoint<T>
     {
         float s = ToSignedRange((float)seed);
         float biasedSeed = s * Mathf.Abs(s);
-        float normalizedSeed = (biasedSeed + 1.0f) * 0.5f;
+        T normalizedSeed = T.CreateTruncating((biasedSeed + 1.0f) * 0.5f);
         return Range(min, max, normalizedSeed);
     }
 
     /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
     /// <inheritdoc cref="ExtremesBiasedRange{T}(T, T, Seed)"/>
-    public static T ExtremesBiasedRange<T>(T min, T max) where T : INumberBase<T> => ExtremesBiasedRange(min, max, ++_threadLocal);
+    public static T ExtremesBiasedRange<T>(T min, T max) where T : IFloatingPoint<T> => ExtremesBiasedRange(min, max, ++_threadLocal);
 
     /// <summary>
     /// Generates a random <typeparamref name="T"/> that is biased towards the extremes (minimum and maximum) of the specified range.
     /// </summary>
     /// <inheritdoc cref="UniformRange{T}(T, T, Seed)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static T ExtremesBiasedRange<T>(T min, T max, Seed seed) where T : INumberBase<T>
+    public static T ExtremesBiasedRange<T>(T min, T max, Seed seed) where T : IFloatingPoint<T>
     {
         float s = ToSignedRange((float)seed);
         float abs = Mathf.Abs(s);
         float outward = 1.0f - ((1.0f - abs) * (1.0f - abs));
         float biasedSeed = MathF.CopySign(outward, s);
-        float normalizedSeed = (biasedSeed + 1.0f) * 0.5f;
+        T normalizedSeed = T.CreateTruncating((biasedSeed + 1.0f) * 0.5f);
         return Range(min, max, normalizedSeed);
     }
 
     /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
     /// <inheritdoc cref="MaxBiasedRange{T}(T, T, Seed)"/>
-    public static T MaxBiasedRange<T>(T min, T max) where T : INumberBase<T> => MaxBiasedRange(min, max, ++_threadLocal);
+    public static T MaxBiasedRange<T>(T min, T max) where T : IFloatingPoint<T> => MaxBiasedRange(min, max, ++_threadLocal);
 
     /// <summary>
     /// Generates a random <typeparamref name="T"/> that is biased towards the maximum value of the specified range.
     /// </summary>
     /// <inheritdoc cref="UniformRange{T}(T, T, Seed)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static T MaxBiasedRange<T>(T min, T max, Seed seed) where T : INumberBase<T>
+    public static T MaxBiasedRange<T>(T min, T max, Seed seed) where T : IFloatingPoint<T>
     {
         float factor = (float)seed; 
-        return Range(max, min, factor * factor);
+        return Range(max, min, T.CreateTruncating(factor * factor));
     }
 
     /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
     /// <inheritdoc cref="MinBiasedRange{T}(T, T, Seed)"/>
-    public static T MinBiasedRange<T>(T min, T max) where T : INumberBase<T> => MinBiasedRange(min, max, ++_threadLocal);
+    public static T MinBiasedRange<T>(T min, T max) where T : IFloatingPoint<T> => MinBiasedRange(min, max, ++_threadLocal);
 
     /// <summary>
     /// Generates a random <typeparamref name="T"/> that is biased towards the minimum value of the specified range.
     /// </summary>
     /// <inheritdoc cref="UniformRange{T}(T, T, Seed)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static T MinBiasedRange<T>(T min, T max, Seed seed) where T : INumberBase<T>
+    public static T MinBiasedRange<T>(T min, T max, Seed seed) where T : IFloatingPoint<T>
     {
         float factor = (float)seed;
-        return Range(min, max, factor * factor);
+        return Range(min, max, T.CreateTruncating(factor * factor));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static T Range<T>(T min, T max, float factor) where T : INumberBase<T>
+    private static int Range(int min, int max, Seed seed)
     {
-        double dMin = double.CreateTruncating(min);
-        double dMax = double.CreateTruncating(max);
-        double result = dMin + (factor * (dMax - dMin));
-        return T.CreateTruncating(result);
+        uint range = unchecked((uint)(max - min));
+        uint randomValue = unchecked((uint)seed.Current);
+        return min + (int)((randomValue * (ulong)range) >> 32);
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static T Range<T>(T min, T max, T factor) where T : IFloatingPoint<T> => min + (factor * (max - min));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static float ToSignedRange(this float state) => (state * 2.0f) - 1.0f;
