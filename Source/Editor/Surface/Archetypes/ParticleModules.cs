@@ -138,6 +138,12 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             }
 
+            /// <inheritdoc />
+            public override void Resize(float width, float height)
+            {
+                // Do nothing so module does not change size
+            }
+
             private bool ArrangeAreaCheck(out int index, out Rectangle rect)
             {
                 var barSidesExtend = 20.0f;
