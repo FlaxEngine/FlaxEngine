@@ -159,7 +159,8 @@ namespace FlaxEditor.Surface.Archetypes
                 AlternativeTitles = new string[] { "UV", "UVs" },
                 Description = "Texture coordinates",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(150, 30),
+                UseFixedSize = true,
+                Size = new Float2(160, 20),
                 DefaultValues = new object[]
                 {
                     0u

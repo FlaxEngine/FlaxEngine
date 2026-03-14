@@ -343,6 +343,8 @@ namespace FlaxEditor.Surface
 
             if (!Archetype.UseFixedSize)
                 ResizeAuto();
+            else
+                Resize(Archetype.Size.X, Archetype.Size.Y);
         }
 
         /// <summary>
@@ -940,6 +942,8 @@ namespace FlaxEditor.Surface
 
             if (!Archetype.UseFixedSize)
                 ResizeAuto();
+            else
+                Resize(Archetype.Size.X, Archetype.Size.Y);
         }
 
         /// <inheritdoc />
@@ -980,6 +984,8 @@ namespace FlaxEditor.Surface
 
             if (!Archetype.UseFixedSize)
                 ResizeAuto();
+            else
+                Resize(Archetype.Size.X, Archetype.Size.Y);
         }
 
         /// <summary>
@@ -1017,6 +1023,8 @@ namespace FlaxEditor.Surface
 
             if (!Archetype.UseFixedSize)
                 ResizeAuto();
+            else
+                Resize(Archetype.Size.X, Archetype.Size.Y);
         }
 
         internal void SetIsDuringValuesEditing(bool value)
@@ -1051,6 +1059,8 @@ namespace FlaxEditor.Surface
             UpdateBoxesTypes();
             if (!Archetype.UseFixedSize)
                 ResizeAuto();
+            else
+                Resize(Archetype.Size.X, Archetype.Size.Y);
         }
 
         /// <inheritdoc />
