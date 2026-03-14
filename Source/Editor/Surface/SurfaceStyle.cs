@@ -244,6 +244,10 @@ namespace FlaxEditor.Surface
             else
                 icon = hasConnections ? style.Icons.BoxClose : style.Icons.BoxOpen;
             color *= box.ConnectionsHighlightIntensity + 1;
+            
+            var features = Render2D.Features;
+            Render2D.Features = features & ~Render2D.RenderingFeatures.VertexSnapping;
+            
             Render2D.DrawSprite(icon, rect, color);
 
             // Draw connected hint with color from connected output box
@@ -264,6 +268,8 @@ namespace FlaxEditor.Surface
                 Color selectionColor = FlaxEngine.GUI.Style.Current.BorderSelected.RGBMultiplied(1.0f + outlineAlpha * 0.4f);
                 Render2D.DrawSprite(icon, outlineRect, selectionColor.AlphaMultiplied(0.4f));
             }
+
+            Render2D.Features = features;
         }
 
         /// <summary>
