@@ -701,6 +701,8 @@ namespace FlaxEditor.Surface.Archetypes
             private DragDecorator _dragDecorator;
             private float _dragLocation = -1;
 
+            internal override bool DrawBasicShadow => false;
+
             internal Decorator(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
