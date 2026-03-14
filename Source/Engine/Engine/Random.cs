@@ -1,4 +1,3 @@
-using FlaxEditor.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -177,6 +176,79 @@ public static class Random
         float invLength = MathF.ReciprocalSqrtEstimate(unit.LengthSquared);
         return unit * invLength;
     }
+
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
+    /// <inheritdoc cref="UnitCircleVector2(Seed, float)"/>
+    public static Float2 UnitCircleVector2(float radius = 1.0f) => UnitCircleVector2(++_threadLocal, radius);
+
+    /// <summary>
+    /// Generates a random <see cref="Float2"/> point on a circle of a given radius.
+    /// </summary>
+    /// <param name="radius">Radius of circle. Default 1.0.</param>
+    /// <returns>A random <see cref="Float2"/>.</returns>
+    /// <inheritdoc cref="Condition(Seed, Chance)"/>
+    /// <param name="seed"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Float2 UnitCircleVector2(Seed seed, float radius = 1.0f)
+    {
+        float randomRadian = (float)seed * Mathf.RevolutionsToRadians;
+        return new Float2(Mathf.Cos(randomRadian) * radius, Mathf.Sin(randomRadian) * radius);
+    }
+
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
+    /// <inheritdoc cref="ColorRgba(ref Seed)"/>
+    public static Color ColorRgba() => ColorRgba(ref _threadLocal);
+
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
+    /// <inheritdoc cref="ColorRgba(ref Seed, float, float, float, float)"/>
+    public static Color ColorRgba(float red = -1.0f, float green = -1.0f, float blue = -1.0f, float alpha = 1.0f)
+    {
+        return ColorRgba(ref _threadLocal, red, green, blue, alpha);
+    }
+
+    /// <summary>
+    /// Generates a <see cref="Color"/> in the HSV color space using the specified 
+    /// <paramref name="red"/>, <paramref name="green"/>, and 
+    /// <paramref name="blue"/> components.
+    /// </summary>
+    /// <param name="red">
+    /// <para>The red component of the color, specified as a value from 0.0 to 1.0.</para>
+    /// <para>A negative value will be replaced with a random hue.</para>
+    /// </param>
+    /// <param name="green">
+    /// <para>The green component of the color, specified as a value from 0.0 to 1.0.</para>
+    /// <para>A negative value will be replaced with a random saturation.</para>
+    /// </param>
+    /// <param name="blue">
+    /// <para>The blue component of the color, specified as a value from 0.0 to 1.0.</para>
+    /// <para>A negative value will be replaced with a random value.</para>
+    /// </param>
+    /// <param name="alpha">
+    /// <para>The alpha (opacity) component of the color, specified as a value from 0.0 to 1.0.</para>
+    /// <para>A negative value will be replaced with a random alpha.</para>
+    /// </param>
+    /// <returns>A new <see cref="Color"/> with the specified <paramref name="red"/>, 
+    /// <paramref name="green"/>, and <paramref name="blue"/> components.
+    /// </returns>
+    /// <inheritdoc cref="UnitVector3(ref Seed)"/>
+    /// <param name="seed"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Color ColorRgba(ref Seed seed, float red = -1.0f, float green = -1.0f, float blue = -1.0f, float alpha = 1.0f)
+    {
+        red = red < 0.0f ? (float)++seed : red;
+        green = green < 0.0f ? (float)++seed : green;
+        blue = blue < 0.0f ? (float)++seed : blue;
+        alpha = alpha < 0.0f ? (float)++seed : alpha;
+        return new Color(red, green, blue, alpha);
+    }
+
+    /// <summary>
+    /// Generates a pseudo-random <see cref="Color"/> in the HSV color space.
+    /// </summary>
+    /// <returns>A <see cref="Color"/> with random hue, saturation, and value components.</returns>
+    /// <inheritdoc cref="UnitVector3(ref Seed)"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Color ColorRgba(ref Seed seed) => new((float)++seed, (float)++seed, (float)++seed);
 
     /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="ColorHSV(ref Seed)"/>
