@@ -16,6 +16,12 @@ namespace Flax.Build
         /// </summary>
         [CommandLine("webInitialMemory", "<size_mb>", "Specifies the initial memory size (in MB) to use by Web app.")]
         public static int WebInitialMemory = 32;
+
+        /// <summary>
+        /// Enables pthreads support for multithreading using SharedArrayBuffer in browsers. Changing it requires rebuilding deps for Web.
+        /// </summary>
+        [CommandLine("webThreads", "0/1", "Enables pthreads support for multithreading using SharedArrayBuffer in browsers. Changing it requires rebuilding deps for Web.")]
+        public static bool WebThreads = false;
     }
 }
 
@@ -94,6 +100,8 @@ namespace Flax.Build.Platforms
             options.CompileEnv.PreprocessorDefinitions.Add("PLATFORM_WEB");
             options.CompileEnv.PreprocessorDefinitions.Add("PLATFORM_UNIX");
             options.CompileEnv.PreprocessorDefinitions.Add("__EMSCRIPTEN__");
+            if (Configuration.WebThreads)
+                options.CompileEnv.PreprocessorDefinitions.Add("__EMSCRIPTEN_PTHREADS__");
             options.CompileEnv.EnableExceptions = false;
             options.CompileEnv.CpuArchitecture = CpuArchitecture.SSE4_2;
         }
@@ -163,6 +171,9 @@ namespace Flax.Build.Platforms
                 args.Add("-fsanitize=undefined");
             if (sanitizers == Sanitizer.None)
                 args.Add("-fsanitize=null -fsanitize-minimal-runtime"); // Minimal Runtime
+
+            if (Configuration.WebThreads)
+                args.Add("-pthread");
         }
 
         /// <inheritdoc />

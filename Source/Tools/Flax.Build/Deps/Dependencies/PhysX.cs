@@ -86,6 +86,9 @@ namespace Flax.Deps.Dependencies
                 ConfigureCmakeSwitch(cmakeParams, "CMAKE_OSX_DEPLOYMENT_TARGET", Configuration.iOSMinVer);
                 ConfigureCmakeSwitch(cmakeParams, "CMAKE_XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET", Configuration.iOSMinVer);
                 break;
+            case TargetPlatform.Web:
+                ConfigureCmakeSwitch(cmakeParams, "PHYSX_CXX_FLAGS", Configuration.WebThreads ? "\"-pthread\"" : "");
+                break;
             }
 
             // Save preset

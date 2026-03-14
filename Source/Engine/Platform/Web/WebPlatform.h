@@ -54,23 +54,39 @@ public:
     }
     FORCE_INLINE static int32 AtomicRead(int32 const volatile* dst)
     {
+#ifdef __EMSCRIPTEN_PTHREADS__
         int32 result;
         __atomic_load(dst, &result, __ATOMIC_SEQ_CST);
         return result;
+#else
+        return *dst;
+#endif
     }
     FORCE_INLINE static int64 AtomicRead(int64 const volatile* dst)
     {
+#ifdef __EMSCRIPTEN_PTHREADS__
         int64 result;
         __atomic_load(dst, &result, __ATOMIC_SEQ_CST);
         return result;
+#else
+        return *dst;
+#endif
     }
     FORCE_INLINE static void AtomicStore(int32 volatile* dst, int32 value)
     {
+#ifdef __EMSCRIPTEN_PTHREADS__
         __atomic_store(dst, &value, __ATOMIC_SEQ_CST);
+#else
+        *dst = value;
+#endif
     }
     FORCE_INLINE static void AtomicStore(int64 volatile* dst, int64 value)
     {
+#ifdef __EMSCRIPTEN_PTHREADS__
         __atomic_store(dst, &value, __ATOMIC_SEQ_CST);
+#else
+        *dst = value;
+#endif
     }
     FORCE_INLINE static uint64 GetCurrentThreadID()
     {

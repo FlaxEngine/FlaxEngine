@@ -112,6 +112,8 @@ namespace Flax.Deps.Dependencies
                         foreach (var define in defines)
                             cmakeArgs += $"-D{define.Key}={define.Value} ";
                     }
+                    if (platform == TargetPlatform.Web && Configuration.WebThreads)
+                        cmakeArgs += "-pthread ";
                     cmakeArgs += "\"";
 
                     var depsFolder = GetThirdPartyFolder(options, platform, architecture);

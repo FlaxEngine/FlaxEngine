@@ -37,3 +37,5 @@ FIND_PACKAGE(PxShared REQUIRED)
 
 # Include all of the projects
 INCLUDE(NvCloth.cmake)
+
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${NVCLOTH_CXX_FLAGS}")

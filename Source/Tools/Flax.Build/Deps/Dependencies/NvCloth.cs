@@ -154,6 +154,8 @@ namespace Flax.Deps.Dependencies
             case TargetPlatform.Web:
                 cmakeArgs += " -DTARGET_BUILD_PLATFORM=web";
                 cmakeArgs += $" -DCMAKE_TOOLCHAIN_FILE=\"{EmscriptenSdk.Instance.CMakeToolchainPath}\"";
+                if (Configuration.WebThreads)
+                    cmakeArgs += " -DNVCLOTH_CXX_FLAGS=\"-pthread\"";
                 cmakeName = "web";
                 binariesPrefix = "lib";
 
