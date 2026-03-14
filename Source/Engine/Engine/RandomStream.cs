@@ -12,41 +12,37 @@ namespace FlaxEngine
     [HideInEditor]
     public class RandomStream
     {
-        private Random.State _currentState;
+        private Seed _currentSeed;
         /// <summary>
         /// Holds the initial seed.
         /// </summary>
-        private int _initialSeed;
+        private Seed _initialSeed;
 
         /// <summary>
         /// Init
         /// </summary>
         public RandomStream()
         {
-            _currentState = Random.Snapshot();
-            _initialSeed = _currentState.Integer;
+            _initialSeed = Random.CurrentSeed;
+            _currentSeed = _initialSeed;
         }
 
         /// <summary>
         /// Creates and initializes a new random stream from the specified seed value.
         /// </summary>
         /// <param name="seed">The seed value.</param>
-        public RandomStream(int seed)
-        {
-            _initialSeed = seed;
-            _currentState = new Random.State(seed);
-        }
+        public RandomStream(int seed) => Initialize(seed);
 
         /// <summary>
         /// Gets initial seed value
         /// </summary>
-        public int GetInitialSeed() => _initialSeed;
+        public int GetInitialSeed() => (int)_initialSeed;
 
 
         /// <summary>
         /// Gets the current seed.
         /// </summary>
-        public int GetCurrentSeed() => _currentState.Integer;
+        public int GetCurrentSeed() => (int)_currentSeed;
 
         /// <summary>
         /// Initializes this random stream with the specified seed value.
@@ -54,14 +50,14 @@ namespace FlaxEngine
         /// <param name="seed">The seed value.</param>
         public void Initialize(int seed)
         {
-            _initialSeed = seed;
-            _currentState = new Random.State(seed);
+            _initialSeed = new(seed);
+            _currentSeed = _initialSeed;
         }
 
         /// <summary>
         /// Resets this random stream to the initial seed value.
         /// </summary>
-        public void Reset() => _currentState = new Random.State(_initialSeed);
+        public void Reset() => _currentSeed = _initialSeed;
 
         /// <summary>
         /// Generates a new random seed.
@@ -74,7 +70,7 @@ namespace FlaxEngine
         public bool GetBool()
         {
             MutateSeed();
-            return _currentState.Condition();
+            return Random.Condition(_currentSeed);
         }
 
         /// <summary>
@@ -83,7 +79,7 @@ namespace FlaxEngine
         public uint GetUnsignedInt()
         {
             MutateSeed();
-            return unchecked((uint)_currentState.Integer);
+            return unchecked((uint)_currentSeed.Current);
         }
 
         /// <summary>
@@ -92,7 +88,7 @@ namespace FlaxEngine
         public float GetFraction()
         {
             MutateSeed();
-            return _currentState.Float;
+            return (float)_currentSeed;
         }
 
         /// <summary>
@@ -126,7 +122,7 @@ namespace FlaxEngine
         /// </summary>
         public Vector3 GetVector3()
         {
-            return new Vector3(GetFraction(), GetFraction(), GetFraction());
+            return Random.Vector3(ref _currentSeed);
         }
 
         /// <summary>
@@ -150,7 +146,7 @@ namespace FlaxEngine
         public int RandRange(int min, int max)
         {
             MutateSeed();
-            return _currentState.UniformRange(min, max);
+            return Random.UniformRange(_currentSeed, max, min);
         }
 
         /// <summary>
@@ -163,12 +159,12 @@ namespace FlaxEngine
         public float RandRange(float min, float max)
         {
             MutateSeed();
-            return _currentState.UniformRange(min, max);
+            return Random.UniformRange(min, max, _currentSeed);
         }
 
         /// <summary>
         /// Mutates the current seed into the next seed.
         /// </summary>
-        protected void MutateSeed() => _currentState = _currentState.Next;
+        protected void MutateSeed() => _currentSeed++;
     }
 }
