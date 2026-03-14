@@ -47,7 +47,7 @@ public static class Random
     /// A new <see cref="float"/> sampled from the Gaussian distribution defined by the specified <paramref name="mean"/> 
     /// and <paramref name="standardDeviation"/>.
     /// </returns>
-    /// <inheritdoc cref="Vector3(ref Seed)"/>
+    /// <inheritdoc cref="UnitVector3(ref Seed)"/>
     /// <param name="seed"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static float Gaussian(ref Seed seed, float mean = 0.0f, float standardDeviation = 1.0f)
@@ -66,7 +66,7 @@ public static class Random
 
     /// <summary>Generates a pseudo-random integer.</summary>
     /// <returns>A new 64-bit signed integer set to a random value.</returns>
-    /// <inheritdoc cref="Vector3(ref Seed)"/>
+    /// <inheritdoc cref="UnitVector3(ref Seed)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static long Long(ref Seed seed) => ((int)++seed << 32) | (long)++seed;
 
@@ -103,25 +103,25 @@ public static class Random
     /// Generates a pseudo-random rotation as a quaternion.
     /// </summary>
     /// <returns>A <see cref="Quaternion"/> representing a rotation derived from random values.</returns>
-    /// <inheritdoc cref="Vector3(ref Seed)"/>
+    /// <inheritdoc cref="UnitVector3(ref Seed)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Quaternion Rotation(ref Seed seed)
     {
-        Float3 euler = (Vector3(ref seed) * 360.0f) - 180.0f;
+        Float3 euler = (UnitVector3(ref seed) * 360.0f) - 180.0f;
         return Quaternion.Euler(euler);
     }
 
     /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
-    /// <inheritdoc cref="Vector4(ref Seed)"/>
-    public static Float4 Vector4() => Vector4(ref _threadLocal);
+    /// <inheritdoc cref="UnitVector4(ref Seed)"/>
+    public static Float4 UnitVector4() => UnitVector4(ref _threadLocal);
 
     /// <summary>
     /// Generates a pseudo-random, four-dimensional vector.
     /// </summary>
     /// <returns>A new <see cref="Float4"/>, where each component is a random floating-point value.</returns>
-    /// <inheritdoc cref="Vector3(ref Seed)"/>
+    /// <inheritdoc cref="UnitVector3(ref Seed)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Float4 Vector4(ref Seed seed) // SIMD via System.Numerics.Vector4
+    public static Float4 UnitVector4(ref Seed seed) // SIMD via System.Numerics.Vector4
     {
         System.Numerics.Vector4 abs = new((float)++seed, (float)++seed, (float)++seed, (float)++seed);
         System.Numerics.Vector4 unit = (abs * 2.0f) - System.Numerics.Vector4.One;
@@ -134,8 +134,8 @@ public static class Random
     /// Generates a pseudo-random, three-dimensional vector.
     /// </summary>
     /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
-    /// <inheritdoc cref="Vector3(ref Seed)"/>
-    public static Float3 Vector3() => Vector3(ref _threadLocal);
+    /// <inheritdoc cref="UnitVector3(ref Seed)"/>
+    public static Float3 UnitVector3() => UnitVector3(ref _threadLocal);
 
     /// <summary>
     /// Generates a pseudo-random, three-dimensional vector.
@@ -150,7 +150,7 @@ public static class Random
     /// </returns>
     /// <inheritdoc cref="Condition(Seed, Chance)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Float3 Vector3(ref Seed seed)
+    public static Float3 UnitVector3(ref Seed seed)
     {
         Float3 unit = (new Float3((float)++seed, (float)++seed, (float)++seed) * 2.0f) - Float3.One;
         float invLength = MathF.ReciprocalSqrtEstimate(unit.LengthSquared);
@@ -158,9 +158,9 @@ public static class Random
     }
 
     /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
-    /// <inheritdoc cref="Vector2(ref Seed)"/>
+    /// <inheritdoc cref="UnitVector2(ref Seed)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Float2 Vector2() => Vector2(ref _threadLocal);
+    public static Float2 UnitVector2() => UnitVector2(ref _threadLocal);
 
     /// <summary>
     /// Generates a pseudo-random, two-dimensional vector.
@@ -169,9 +169,9 @@ public static class Random
     /// A new <see cref="Float2"/>, where each component is a random floating-point value. 
     /// The vector is normalized to ensure it has a length of 1.
     /// </returns>
-    /// <inheritdoc cref="Vector3(ref Seed)"/>
+    /// <inheritdoc cref="UnitVector3(ref Seed)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Float2 Vector2(ref Seed seed)
+    public static Float2 UnitVector2(ref Seed seed)
     {
         Float2 unit = (new Float2((float)++seed, (float)++seed) * 2.0f) - Float2.One;
         float invLength = MathF.ReciprocalSqrtEstimate(unit.LengthSquared);
@@ -213,7 +213,7 @@ public static class Random
     /// <returns>A new <see cref="Color"/> with the specified <paramref name="hue"/>, 
     /// <paramref name="saturation"/>, and <paramref name="value"/> components.
     /// </returns>
-    /// <inheritdoc cref="Vector3(ref Seed)"/>
+    /// <inheritdoc cref="UnitVector3(ref Seed)"/>
     /// <param name="seed"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Color ColorHSV(ref Seed seed, float hue = -1.0f, float saturation = -1.0f, float value = -1.0f, float alpha = 1.0f)
@@ -229,7 +229,7 @@ public static class Random
     /// Generates a pseudo-random <see cref="Color"/> in the HSV color space.
     /// </summary>
     /// <returns>A <see cref="Color"/> with random hue, saturation, and value components.</returns>
-    /// <inheritdoc cref="Vector3(ref Seed)"/>
+    /// <inheritdoc cref="UnitVector3(ref Seed)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Color ColorHSV(ref Seed seed)
     {
@@ -372,7 +372,7 @@ public static class Random
     /// <param name="items">The collection of items from which to select a random element. Cannot be empty.</param>
     /// <returns>A randomly selected <typeparamref name="T"/> from the collection.</returns>
     /// <exception cref="ArgumentException">Thrown when the <paramref name="items"/> collection is empty.</exception>
-    /// <inheritdoc cref="Vector3(ref Seed)"/>
+    /// <inheritdoc cref="UnitVector3(ref Seed)"/>
     /// <param name="seed"/>
     public static T Choose<T>(Seed seed, ReadOnlySpan<T> items)
     {
@@ -538,7 +538,7 @@ public static class Random
     /// <typeparam name="T">The type of elements contained in the collection.</typeparam>
     /// <param name="items">A span of items to shuffle. The span must contain at least one element.</param>
     /// <returns/>
-    /// <inheritdoc cref="Vector3(ref Seed)"/>
+    /// <inheritdoc cref="UnitVector3(ref Seed)"/>
     /// <param name="seed"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Shuffle<T>(this Span<T> items, ref Seed seed)
@@ -556,7 +556,7 @@ public static class Random
 
     /// <inheritdoc cref="Shuffle{T}(Span{T})"/>
     /// <returns/>
-    /// <inheritdoc cref="Vector3(ref Seed)"/>
+    /// <inheritdoc cref="UnitVector3(ref Seed)"/>
     /// <exception cref="ArgumentNullException">Thrown when the <paramref name="items"/> collection is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Shuffle<T>(this IList<T> items, ref Seed seed)
@@ -625,7 +625,7 @@ public static class Random
     public static long UniformRange(long max, long min = default) => UniformRange(ref _threadLocal, max, min);
 
     /// <inheritdoc cref="UniformRange(Seed, int, int)"/>
-    /// <inheritdoc cref="Vector2(ref Seed)"/>
+    /// <inheritdoc cref="UnitVector2(ref Seed)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static long UniformRange(ref Seed seed, long max, long min = default)
     {

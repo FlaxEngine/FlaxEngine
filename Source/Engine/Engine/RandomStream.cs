@@ -122,7 +122,7 @@ namespace FlaxEngine
         /// </summary>
         public Vector3 GetVector3()
         {
-            return Random.Vector3(ref _currentSeed);
+            return Random.UnitVector3(ref _currentSeed);
         }
 
         /// <summary>
