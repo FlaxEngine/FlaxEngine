@@ -181,7 +181,7 @@ namespace FlaxEditor.Surface
         /// </summary>
         /// <param name="width">The width.</param>
         /// <param name="height">The height.</param>
-        public void Resize(float width, float height)
+        public virtual void Resize(float width, float height)
         {
             if (Surface == null)
                 return;

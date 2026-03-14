@@ -1180,6 +1180,12 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
+            public override void Resize(float width, float height)
+            {
+                // Do nothing so the input and output boxes do not change position
+            }
+
+            /// <inheritdoc />
             public override void Draw()
             {
                 // Update active state of input
