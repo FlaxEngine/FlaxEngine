@@ -217,10 +217,22 @@ public struct Seed : IEquatable<Seed>, ISpanFormattable, IUtf8SpanFormattable, I
     }
 
     /// <summary>
-    /// Explicitly converts a <see cref="Seed"/> instance to an integer, representing the current state of the seed.
+    /// Explicitly converts a <see cref="Seed"/> instance to a signed, 32-bit integer.
     /// </summary>
     /// <param name="value">The <see cref="Seed"/> instance to convert to an integer.</param>
     public static explicit operator int(Seed value) => value._current;
+
+    /// <summary>
+    /// Explicitly converts a <see cref="Seed"/> instance to a signed, 16-bit integer.
+    /// </summary>
+    /// <param name="value">The <see cref="Seed"/> instance to convert to an integer.</param>
+    public static explicit operator short(Seed value) => (short)(value._current >> 16);
+
+    /// <summary>
+    /// Explicitly converts a <see cref="Seed"/> instance to an unsigned, 8-bit integer.
+    /// </summary>
+    /// <param name="value">The <see cref="Seed"/> instance to convert to an integer.</param>
+    public static explicit operator byte(Seed value) => (byte)(value._current >> 24);
 
     /// <summary>
     /// Explicitly converts an integer to a <see cref="Seed"/> instance, initializing the seed with the specified integer value.

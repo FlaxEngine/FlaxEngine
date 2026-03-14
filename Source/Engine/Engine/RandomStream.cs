@@ -159,7 +159,7 @@ namespace FlaxEngine
         public float RandRange(float min, float max)
         {
             MutateSeed();
-            return Random.UniformRange(min, max, _currentSeed);
+            return Random.UniformRange(_currentSeed, max, min);
         }
 
         /// <summary>

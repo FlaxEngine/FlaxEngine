@@ -11,6 +11,12 @@ namespace FlaxEngine;
 /// </summary>
 public static class Random
 {
+    private readonly struct EnumValueProvider<T> where T : struct, Enum
+    {
+        private static readonly T[] _values = System.Enum.GetValues<T>();
+        public static T Normalize(uint random) => _values[random % (uint)_values.Length];
+    }
+
     private const string EmptyCollectionMessage = "The collection must contain at least one item.";
 
     [ThreadStatic]
@@ -48,12 +54,61 @@ public static class Random
         return mean + Mathf.Sqrt(-2.0f * Mathf.Log((float)++seed)) * Mathf.Cos(Mathf.TwoPi * (float)++seed) * standardDeviation;
     }
 
-    /// <summary>
-    /// Generates a pseudo-random integer.
-    /// </summary>
+    /// <summary>Generates a pseudo-random integer.</summary>
     /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
     /// <returns>A new 32-bit signed integer set to a random value.</returns>
     public static int Integer() => (int)++_threadLocal;
+
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="Long(ref Seed)"/>
+    public static long Long() => Long(ref _threadLocal);
+
+    /// <summary>Generates a pseudo-random integer.</summary>
+    /// <returns>A new 64-bit signed integer set to a random value.</returns>
+    /// <inheritdoc cref="Vector3(ref Seed)"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static long Long(ref Seed seed) => ((int)++seed << 32) | (long)++seed;
+
+    /// <returns>A new 16-bit signed integer set to a random value.</returns>
+    /// <inheritdoc cref="Integer()"/>
+    public static short Short() => (short)++_threadLocal;
+
+    /// <returns>A new 8-bit unsigned integer set to a random value.</returns>
+    /// <inheritdoc cref="Integer()"/>
+    public static byte Byte() => (byte)++_threadLocal;
+
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="Enum{T}(Seed)"/>
+    public static T Enum<T>() where T : unmanaged, Enum => Enum<T>(++_threadLocal);
+
+    /// <summary>
+    /// Generates a pseudo-random value of the specified enum type.
+    /// </summary>
+    /// <typeparam name="T">
+    /// The enum type for which to generate a random value. Must be an enum.
+    /// </typeparam>
+    /// <returns>A new <typeparamref name="T"/> set to a random value.</returns>
+    /// <inheritdoc cref="Condition(Seed, Chance)"/>
+    public static T Enum<T>(Seed seed) where T : struct, Enum
+    {
+        return EnumValueProvider<T>.Normalize((uint)seed.Current);
+    }
+
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="Rotation(ref Seed)"/>
+    public static Quaternion Rotation() => Rotation(ref _threadLocal);
+
+    /// <summary>
+    /// Generates a pseudo-random rotation as a quaternion.
+    /// </summary>
+    /// <returns>A <see cref="Quaternion"/> representing a rotation derived from random values.</returns>
+    /// <inheritdoc cref="Vector3(ref Seed)"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Quaternion Rotation(ref Seed seed)
+    {
+        Float3 euler = (Vector3(ref seed) * 360.0f) - 180.0f;
+        return Quaternion.Euler(euler);
+    }
 
     /// <summary>
     /// Generates a pseudo-random <see cref="Float3"/>.
@@ -108,10 +163,10 @@ public static class Random
     public static Color ColorHSV() => ColorHSV(ref _threadLocal);
 
     /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
-    /// <inheritdoc cref="ColorHSV(ref Seed, float, float, float)"/>
-    public static Color ColorHSV(float hue = -1.0f, float saturation = -1.0f, float value = -1.0f)
+    /// <inheritdoc cref="ColorHSV(ref Seed, float, float, float, float)"/>
+    public static Color ColorHSV(float hue = -1.0f, float saturation = -1.0f, float value = -1.0f, float alpha = 1.0f)
     {
-        return ColorHSV(ref _threadLocal, hue, saturation, value);
+        return ColorHSV(ref _threadLocal, hue, saturation, value, alpha);
     }
 
     /// <summary>
@@ -131,18 +186,23 @@ public static class Random
     /// <para>The value (brightness) component of the color, specified as a value from 0.0 to 1.0.</para>
     /// <para>A negative value will be replaced with a random value.</para>
     /// </param>
+    /// <param name="alpha">
+    /// <para>The alpha (opacity) component of the color, specified as a value from 0.0 to 1.0.</para>
+    /// <para>A negative value will be replaced with a random alpha.</para>
+    /// </param>
     /// <returns>A new <see cref="Color"/> with the specified <paramref name="hue"/>, 
     /// <paramref name="saturation"/>, and <paramref name="value"/> components.
     /// </returns>
     /// <inheritdoc cref="Vector3(ref Seed)"/>
     /// <param name="seed"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Color ColorHSV(ref Seed seed, float hue = -1.0f, float saturation = -1.0f, float value = -1.0f)
+    public static Color ColorHSV(ref Seed seed, float hue = -1.0f, float saturation = -1.0f, float value = -1.0f, float alpha = 1.0f)
     {
         hue = hue < 0.0f ? Hue(ref seed) : hue;
         saturation = saturation < 0.0f ? (float)++seed : saturation;
         value = value < 0.0f ? (float)++seed : value;
-        return Color.FromHSV(hue, saturation, value);
+        alpha = alpha < 0.0f ? (float)++seed : alpha;
+        return Color.FromHSV(hue, saturation, value, alpha);
     }
 
     /// <summary>
@@ -187,7 +247,7 @@ public static class Random
             return false;
         }
 
-        result = items[Range(0, items.Length, ++seed)];
+        result = items[UniformRange(++seed, items.Length)];
         return true;
     }
 
@@ -222,7 +282,7 @@ public static class Random
             return false;
         }
 
-        result = items[Range(offset, end, seed)];
+        result = items[UniformRange(seed, end, offset)];
         return true;
     }
 
@@ -236,7 +296,7 @@ public static class Random
             return false;
         }
 
-        result = items[Range(0, items.Count, seed)];
+        result = items[UniformRange(seed, items.Count)];
         return true;
     }
 
@@ -262,7 +322,7 @@ public static class Random
             return false;
         }
 
-        result = items[Range(offset, end, seed)];
+        result = items[UniformRange(seed, end, offset)];
         return true;
     }
 
@@ -276,7 +336,7 @@ public static class Random
             return false;
         }
 
-        result = items[Range(0, items.Count, seed)];
+        result = items[UniformRange(seed, items.Count)];
         return true;
     }
 
@@ -296,7 +356,7 @@ public static class Random
     /// <param name="seed"/>
     public static T Choose<T>(Seed seed, ReadOnlySpan<T> items)
     {
-        return items.IsEmpty ? throw new ArgumentException(EmptyCollectionMessage, nameof(items)) : items[Range(0, items.Length, seed)];
+        return items.IsEmpty ? throw new ArgumentException(EmptyCollectionMessage, nameof(items)) : items[UniformRange(seed, items.Length)];
     }
 
     /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
@@ -328,7 +388,7 @@ public static class Random
     {
         ThrowIfNullOrEmpty(items, out int count);
         ThrowIfOutOfRange(offset, length, count, out int end);
-        return items[Range(offset, end, seed)];
+        return items[UniformRange(seed, end, offset)];
     }
 
     /// <inheritdoc cref="Choose{T}(Seed, ReadOnlySpan{T})"/>
@@ -337,7 +397,7 @@ public static class Random
     public static T Choose<T>(Seed seed, IList<T> items)
     {
         ThrowIfNullOrEmpty(items, out int count);
-        return items[Range(0, count, seed)];
+        return items[UniformRange(seed, count)];
     }
 
     /// <inheritdoc cref="Choose{T}(IList{T})"/>
@@ -352,7 +412,7 @@ public static class Random
     {
         ThrowIfNullOrEmpty(items, out int count);
         ThrowIfOutOfRange(offset, length, count, out int end);
-        return items[Range(offset, end, seed)];
+        return items[UniformRange(seed, end, offset)];
     }
 
     /// <inheritdoc cref="Choose{T}(Seed, ReadOnlySpan{T})"/>
@@ -361,7 +421,7 @@ public static class Random
     public static T Choose<T>(Seed seed, IReadOnlyList<T> items)
     {
         ThrowIfNullOrEmpty(items, out int count);
-        return items[Range(0, count, seed)];
+        return items[UniformRange(seed, count)];
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -419,7 +479,7 @@ public static class Random
     /// The probability of the condition being <see langword="true"/>. 
     /// Defaults to <see cref="Chance.Even"/> if not specified.
     /// </param>
-    /// <param name="seed">The <see cref="Seed"/> instance to use for generating the random value(s).</param>
+    /// <param name="seed">The <see cref="Seed"/> instance to use for generating the random value.</param>
     /// <returns>
     /// <see langword="true"/> if the condition is met according to the evaluated chance; 
     /// otherwise, <see langword="false"/>.
@@ -465,7 +525,7 @@ public static class Random
     {
         for (int i = items.Length - 1; i > 0; i--)
         {
-            int j = Range(0, i + 1, ++seed);
+            int j = UniformRange(++seed, i + 1);
             (items[i], items[j]) = (items[j], items[i]);
         }
     }
@@ -484,16 +544,16 @@ public static class Random
         ArgumentNullException.ThrowIfNull(items);
         for (int i = items.Count - 1; i > 0; i--)
         {
-            int j = Range(0, i + 1, ++seed);
+            int j = UniformRange(++seed, i + 1);
             (items[i], items[j]) = (items[j], items[i]);
         }
     }
 
     /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
-    /// <inheritdoc cref="UniformRange{T}(T, T, Seed)"/>
+    /// <inheritdoc cref="UniformRange{T}(Seed, T, T)"/>
     public static T UniformRange<T>(T min, T max) where T : IFloatingPoint<T>
     {
-        return UniformRange(min, max, ++_threadLocal);
+        return UniformRange(++_threadLocal, max, min);
     }
 
     /// <summary>
@@ -518,9 +578,73 @@ public static class Random
     /// <inheritdoc cref="Condition(Seed, Chance)"/>
     /// <param name="seed"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static T UniformRange<T>(T min, T max, Seed seed) where T : IFloatingPoint<T>
+    public static T UniformRange<T>(Seed seed, T max, T min = default) where T : IFloatingPoint<T>
     {
         return Range(min, max, T.CreateTruncating((float)seed));
+    }
+
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="UniformRange(Seed, int, int)"/>
+    public static int UniformRange(int max, int min = default) => UniformRange(++_threadLocal, max, min);
+
+    /// <summary>
+    /// Generates a pseudo-random integer that is uniformly distributed within the specified range.
+    /// </summary>
+    /// <returns>An integer greater than or equal to <paramref name="min"/> and less than <paramref name="max"/>.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="min"/> is greater than or equal to <paramref name="max"/>.</exception>
+    /// <inheritdoc cref="UniformRange{T}(Seed, T, T)"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int UniformRange(Seed seed, int max, int min = default)
+    {
+        uint randomValue = unchecked((uint)seed.Current);
+        return UniformRange(randomValue, min, max, 32);
+    }
+
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="UniformRange(ref Seed, long, long)"/>
+    public static long UniformRange(long max, long min = default) => UniformRange(ref _threadLocal, max, min);
+
+    /// <inheritdoc cref="UniformRange(Seed, int, int)"/>
+    /// <inheritdoc cref="Vector2(ref Seed)"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static long UniformRange(ref Seed seed, long max, long min = default)
+    {
+        ulong randomValue = unchecked((ulong)Long(ref seed));
+        return UniformRange(randomValue, min, max, 64);
+    }
+
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="UniformRange(Seed, short, short)"/>
+    public static short UniformRange(short max, short min = default) => UniformRange(++_threadLocal, max, min);
+
+    /// <inheritdoc cref="UniformRange(Seed, int, int)"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static short UniformRange(Seed seed, short max, short min = default)
+    {
+        ushort randomValue = unchecked((ushort)(short)seed);
+        return UniformRange(randomValue, min, max, 16);
+    }
+
+    /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
+    /// <inheritdoc cref="UniformRange(Seed, byte, byte)"/>
+    public static byte UniformRange(byte max, byte min = default) => UniformRange(++_threadLocal, max, min);
+
+    /// <inheritdoc cref="UniformRange(Seed, int, int)"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static byte UniformRange(Seed seed, byte max, byte min = default)
+    {
+        byte randomValue = (byte)seed;
+        return UniformRange<byte, ushort>(randomValue, min, max, 8);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static TValue UniformRange<TValue, TWidened>(TWidened random, TValue min, TValue max, int shift)
+        where TValue : struct, IBinaryInteger<TValue>
+        where TWidened : struct, IBinaryInteger<TWidened>
+    {
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(min, max);
+        TWidened range = TWidened.CreateTruncating(++max - min);
+        return min + TValue.CreateTruncating((random * range) >> shift);
     }
 
     /// <remarks>This method will mutate the local <see cref="Seed"/> for the current thread.</remarks>
@@ -533,7 +657,7 @@ public static class Random
     /// <summary>
     /// Generates a random <typeparamref name="T"/> that is biased towards the median of the specified range.
     /// </summary>
-    /// <inheritdoc cref="UniformRange{T}(T, T, Seed)"/>
+    /// <inheritdoc cref="UniformRange{T}(Seed, T, T)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static T MedianBiasedRange<T>(T min, T max, Seed seed) where T : IFloatingPoint<T>
     {
@@ -550,7 +674,7 @@ public static class Random
     /// <summary>
     /// Generates a random <typeparamref name="T"/> that is biased towards the extremes (minimum and maximum) of the specified range.
     /// </summary>
-    /// <inheritdoc cref="UniformRange{T}(T, T, Seed)"/>
+    /// <inheritdoc cref="UniformRange{T}(Seed, T, T)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T ExtremesBiasedRange<T>(T min, T max, Seed seed) where T : IFloatingPoint<T>
     {
@@ -569,7 +693,7 @@ public static class Random
     /// <summary>
     /// Generates a random <typeparamref name="T"/> that is biased towards the maximum value of the specified range.
     /// </summary>
-    /// <inheritdoc cref="UniformRange{T}(T, T, Seed)"/>
+    /// <inheritdoc cref="UniformRange{T}(Seed, T, T)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T MaxBiasedRange<T>(T min, T max, Seed seed) where T : IFloatingPoint<T>
     {
@@ -584,7 +708,7 @@ public static class Random
     /// <summary>
     /// Generates a random <typeparamref name="T"/> that is biased towards the minimum value of the specified range.
     /// </summary>
-    /// <inheritdoc cref="UniformRange{T}(T, T, Seed)"/>
+    /// <inheritdoc cref="UniformRange{T}(Seed, T, T)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T MinBiasedRange<T>(T min, T max, Seed seed) where T : IFloatingPoint<T>
     {
@@ -593,15 +717,7 @@ public static class Random
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static int Range(int min, int max, Seed seed)
-    {
-        uint range = unchecked((uint)(max - min));
-        uint randomValue = unchecked((uint)seed.Current);
-        return min + (int)((randomValue * (ulong)range) >> 32);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static T Range<T>(T min, T max, T factor) where T : IFloatingPoint<T> => min + (factor * (max - min));
+    private static T Range<T>(T min, T max, T factor) where T : IFloatingPoint<T> => min + (factor * (++max - min));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static float ToSignedRange(this float state) => (state * 2.0f) - 1.0f;
