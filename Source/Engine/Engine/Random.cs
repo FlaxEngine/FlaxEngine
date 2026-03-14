@@ -16,9 +16,9 @@ public static class Random
     [ThreadStatic]
     private static Seed _threadLocal;
     /// <summary>
-    /// Gets the default seed instance for the current thread.
+    /// Gets the default <see cref="Seed"/> instance for the current thread.
     /// </summary>
-    public static Seed Default => _threadLocal;
+    public static Seed CurrentSeed => _threadLocal;
 
     /// <summary>
     /// Generates a pseudo-random floating-point number and updates the local state for the current thread.
