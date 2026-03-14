@@ -249,7 +249,11 @@ namespace FlaxEditor.Surface.Archetypes
 
                 // Debug Info
                 if (!string.IsNullOrEmpty(_debugInfo))
-                    Render2D.DrawText(style.FontSmall, _debugInfo, new Rectangle(4, _headerRect.Bottom + 4, _debugInfoSize), style.Foreground);
+                {
+                    // Draw an extra background to cover the archetype color colored node background and make text more legible
+                    Render2D.FillRectangle(new Rectangle(0, _headerRect.Bottom + 4, Width, Height - _headerRect.Bottom - 4), style.BackgroundHighlighted);
+                    Render2D.DrawText(style.FontSmall, _debugInfo, new Rectangle(4, _headerRect.Bottom + 7, _debugInfoSize), style.Foreground, scale: 0.8f);
+                }
 
                 // Debug relevancy outline
                 if (_debugRelevant)
