@@ -1,3 +1,4 @@
+using FlaxEditor.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -110,8 +111,27 @@ public static class Random
         return Quaternion.Euler(euler);
     }
 
+    /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
+    /// <inheritdoc cref="Vector4(ref Seed)"/>
+    public static Float4 Vector4() => Vector4(ref _threadLocal);
+
     /// <summary>
-    /// Generates a pseudo-random <see cref="Float3"/>.
+    /// Generates a pseudo-random, four-dimensional vector.
+    /// </summary>
+    /// <returns>A new <see cref="Float4"/>, where each component is a random floating-point value.</returns>
+    /// <inheritdoc cref="Vector3(ref Seed)"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Float4 Vector4(ref Seed seed) // SIMD via System.Numerics.Vector4
+    {
+        System.Numerics.Vector4 abs = new((float)++seed, (float)++seed, (float)++seed, (float)++seed);
+        System.Numerics.Vector4 unit = (abs * 2.0f) - System.Numerics.Vector4.One;
+        float lengthSqr = unit.LengthSquared();
+        float invLength = MathF.ReciprocalSqrtEstimate(lengthSqr);
+        return Unsafe.BitCast<System.Numerics.Vector4, Float4>(unit * invLength);
+    }
+
+    /// <summary>
+    /// Generates a pseudo-random, three-dimensional vector.
     /// </summary>
     /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
     /// <inheritdoc cref="Vector3(ref Seed)"/>
@@ -132,9 +152,9 @@ public static class Random
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Float3 Vector3(ref Seed seed)
     {
-        Float3 vector = (new Float3((float)++seed, (float)++seed, (float)++seed) * 2.0f) - Float3.One;
-        vector.Normalize();
-        return vector;
+        Float3 unit = (new Float3((float)++seed, (float)++seed, (float)++seed) * 2.0f) - Float3.One;
+        float invLength = MathF.ReciprocalSqrtEstimate(unit.LengthSquared);
+        return unit * invLength;
     }
 
     /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
@@ -153,9 +173,9 @@ public static class Random
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Float2 Vector2(ref Seed seed)
     {
-        Float2 vector = (new Float2((float)++seed, (float)++seed) * 2.0f) - Float2.One;
-        vector.Normalize();
-        return vector;
+        Float2 unit = (new Float2((float)++seed, (float)++seed) * 2.0f) - Float2.One;
+        float invLength = MathF.ReciprocalSqrtEstimate(unit.LengthSquared);
+        return unit * invLength;
     }
 
     /// <remarks>This method may advance the local <see cref="Seed"/> for the current thread to the next state in the sequence.</remarks>
