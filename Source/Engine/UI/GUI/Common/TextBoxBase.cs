@@ -1,6 +1,8 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 #if FLAX_EDITOR
 using FlaxEditor.Options;
 #endif
@@ -41,6 +43,38 @@ namespace FlaxEngine.GUI
             '>',
             '<',
         };
+
+        /// <summary>
+        /// The allowable characters to use for the text.
+        /// </summary>
+        [Flags]
+        public enum AllowableCharacters
+        {
+            /// <summary>
+            /// Wether to not allow any character in the text.
+            /// </summary>
+            None = 0,
+            
+            /// <summary>
+            /// Whether to use letters in the text.
+            /// </summary>
+            Letters = 1 << 0,
+
+            /// <summary>
+            /// Whether to use numbers in the text.
+            /// </summary>
+            Numbers = 1 << 1,
+
+            /// <summary>
+            /// Whether to use symbols in the text.
+            /// </summary>
+            Symbols = 1 << 2,
+            
+            /// <summary>
+            /// Whether to use all characters in the text.
+            /// </summary>
+            All = Letters | Numbers | Symbols,
+        }
 
         /// <summary>
         /// Default height of the text box
@@ -86,6 +120,11 @@ namespace FlaxEngine.GUI
         /// Flag used to indicate whenever text can contain multiple lines.
         /// </summary>
         protected bool _isMultiline;
+        
+        /// <summary>
+        /// The characters to allow in the text.
+        /// </summary>
+        protected AllowableCharacters _charactersToAllow = AllowableCharacters.All;
 
         /// <summary>
         /// Flag used to indicate whenever text is read-only and cannot be modified by the user.
@@ -189,16 +228,30 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// The character to allow in the text.
+        /// </summary>
+        [EditorOrder(41), Tooltip("The character to allow in the text.")]
+        public AllowableCharacters CharactersToAllow
+        { 
+            get => _charactersToAllow;
+            set => _charactersToAllow = value;
+        }
+
+        /// <summary>
         /// Gets or sets the maximum number of characters the user can type into the text box control.
         /// </summary>
-        [EditorOrder(50), Tooltip("The maximum number of characters the user can type into the text box control.")]
+        [EditorOrder(50), Limit(-1), Tooltip("The maximum number of characters the user can type into the text box control.")]
         public int MaxLength
         {
             get => _maxLength;
             set
             {
-                if (_maxLength <= 0)
-                    throw new ArgumentOutOfRangeException(nameof(MaxLength));
+                // Cap at min of -1 for no max length
+                if (value <= 0)
+                {
+                    _maxLength = -1;
+                    return;
+                }
 
                 if (_maxLength != value)
                 {
@@ -381,7 +434,7 @@ namespace FlaxEngine.GUI
                 value = value.Replace(DelChar.ToString(), "");
 
             // Clamp length
-            if (value.Length > MaxLength)
+            if (value.Length > MaxLength && MaxLength != -1)
                 value = value.Substring(0, MaxLength);
 
             // Ensure to use only single line
@@ -391,15 +444,42 @@ namespace FlaxEngine.GUI
                 value = value.GetLines()[0];
             }
 
-            if (_text != value)
+            if (_text.Equals(value, StringComparison.Ordinal))
+                return;
+
+            if (CharactersToAllow != AllowableCharacters.All)
             {
-                Deselect();
-                ResetViewOffset();
-
-                _text = value;
-
-                OnTextChanged();
+                if (CharactersToAllow == AllowableCharacters.None)
+                {
+                    value = string.Empty;
+                }
+                else
+                {
+                    if (!CharactersToAllow.HasFlag(AllowableCharacters.Letters))
+                    {
+                        if (value != null)
+                            value = new string(value.Where(c => !char.IsLetter(c)).ToArray());
+                    }
+                    if (!CharactersToAllow.HasFlag(AllowableCharacters.Numbers))
+                    {
+                        if (value != null)
+                            value = new string(value.Where(c => !char.IsNumber(c)).ToArray());
+                    }
+                    if (!CharactersToAllow.HasFlag(AllowableCharacters.Symbols))
+                    {
+                        if (value != null)
+                            value = new string(value.Where(c => !char.IsSymbol(c)).ToArray());
+                    }
+                    value ??= string.Empty;
+                }
             }
+                
+            Deselect();
+            ResetViewOffset();
+
+            _text = value;
+
+            OnTextChanged();
         }
 
         /// <summary>
@@ -514,7 +594,7 @@ namespace FlaxEngine.GUI
             AutoFocus = true;
 
             _isMultiline = isMultiline;
-            _maxLength = 2147483646;
+            _maxLength = -1;
             _selectionStart = _selectionEnd = -1;
 
             var style = Style.Current;
@@ -710,7 +790,7 @@ namespace FlaxEngine.GUI
                 str = str.Replace("\n", "");
 
             int selectionLength = SelectionLength;
-            int charactersLeft = MaxLength - _text.Length + selectionLength;
+            int charactersLeft = (MaxLength != -1 ? MaxLength : int.MaxValue) - _text.Length + selectionLength;
             Assert.IsTrue(charactersLeft >= 0);
             if (charactersLeft == 0)
                 return;

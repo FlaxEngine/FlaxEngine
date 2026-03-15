@@ -66,6 +66,22 @@ API_ENUM(Attributes="Flags") enum class FontFlags : byte
     Italic = 4,
 };
 
+/// <summary>
+/// The font rasterization mode.
+/// </summary>
+API_ENUM() enum class FontRasterMode : byte
+{
+    /// <summary>
+    /// Use the default FreeType rasterizer to render font atlases.
+    /// </summary>
+    Bitmap,
+
+    /// <summary>
+    /// Use the Multi-channel Signed Distance Field (MSDF) generator to render font atlases. Need to be rendered with a compatible material.
+    /// </summary>
+    MSDF,
+};
+
 DECLARE_ENUM_OPERATORS(FontFlags);
 
 /// <summary>
@@ -76,7 +92,7 @@ API_STRUCT() struct FontOptions
     DECLARE_SCRIPTING_TYPE_MINIMAL(FontOptions);
 
     /// <summary>
-    /// The hinting.
+    /// The font hinting used when rendering characters.
     /// </summary>
     API_FIELD() FontHinting Hinting;
 
@@ -84,6 +100,11 @@ API_STRUCT() struct FontOptions
     /// The flags.
     /// </summary>
     API_FIELD() FontFlags Flags;
+
+    /// <summary>
+    /// The font rasterization mode.
+    /// </summary>
+    API_FIELD() FontRasterMode RasterMode;
 };
 
 /// <summary>
@@ -91,7 +112,7 @@ API_STRUCT() struct FontOptions
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API FontAsset : public BinaryAsset
 {
-    DECLARE_BINARY_ASSET_HEADER(FontAsset, 3);
+    DECLARE_BINARY_ASSET_HEADER(FontAsset, 4);
     friend Font;
 
 private:
