@@ -134,7 +134,6 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new Constants.ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(Texture))),
                 Description = "Two dimensional texture object",
                 Flags = NodeFlags.MaterialGraph,
-                UseFixedSize = true,
                 Size = new Float2(140, 140),
                 DefaultValues = new object[]
                 {
@@ -159,7 +158,6 @@ namespace FlaxEditor.Surface.Archetypes
                 AlternativeTitles = new string[] { "UV", "UVs" },
                 Description = "Texture coordinates",
                 Flags = NodeFlags.MaterialGraph,
-                UseFixedSize = true,
                 Size = new Float2(160, 20),
                 DefaultValues = new object[]
                 {

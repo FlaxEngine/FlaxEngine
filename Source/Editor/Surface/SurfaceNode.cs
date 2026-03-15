@@ -242,6 +242,17 @@ namespace FlaxEditor.Surface
                     rightWidth = Mathf.Max(rightWidth, boxLabelFont.MeasureText(outputBox.Text).X + 20);
                     rightHeight = Mathf.Max(rightHeight, outputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderHeight + 20.0f);
                 }
+                // Elements (Float-, int-, uint- value boxes, asset pickers, etc.)
+                else if (child is ISurfaceNodeElement surfaceElement)
+                {
+                    leftWidth = Mathf.Max(leftWidth, surfaceElement.Archetype.Size.X + 8f);
+                    leftHeight = Mathf.Max(leftHeight, surfaceElement.Archetype.Size.Y + 8f);
+                }
+                else if (child is SurfaceNodeElementControl elementControl)
+                {
+                    leftWidth = Mathf.Max(leftWidth, elementControl.Width + 8f);
+                    leftHeight = Mathf.Max(leftHeight, elementControl.Height + 8f);
+                }
                 // Other controls in the node
                 else if (child is Control control)
                 {

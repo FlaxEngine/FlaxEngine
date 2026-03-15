@@ -3,8 +3,9 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using FlaxEditor.CustomEditors;
+using FlaxEditor.GUI.Input;
 using FlaxEditor.Scripting;
+using FlaxEditor.Surface.Elements;
 using FlaxEngine;
 
 namespace FlaxEditor.Surface
@@ -205,6 +206,7 @@ namespace FlaxEditor.Surface
                 {
                     Type = NodeElementType.BoolValue,
                     Position = new Float2(x, y),
+                    Size = new Float2(16f),
                     Text = null,
                     Single = false,
                     ValueIndex = valueIndex,
@@ -229,6 +231,7 @@ namespace FlaxEditor.Surface
                 {
                     Type = NodeElementType.IntegerValue,
                     Position = new Float2(Constants.NodeMarginX + x, Constants.NodeMarginY + Constants.NodeHeaderHeight + y),
+                    Size = new Float2(50f, IntegerValue.DefaultHeight),
                     Text = null,
                     Single = false,
                     ValueIndex = valueIndex,
@@ -255,6 +258,7 @@ namespace FlaxEditor.Surface
                 {
                     Type = NodeElementType.UnsignedIntegerValue,
                     Position = new Float2(Constants.NodeMarginX + x, Constants.NodeMarginY + Constants.NodeHeaderHeight + y),
+                    Size = new Float2(50f, UnsignedIntegerValue.DefaultHeight),
                     Text = null,
                     Single = false,
                     ValueIndex = valueIndex,
@@ -281,6 +285,7 @@ namespace FlaxEditor.Surface
                 {
                     Type = NodeElementType.FloatValue,
                     Position = new Float2(Constants.NodeMarginX + x, Constants.NodeMarginY + Constants.NodeHeaderHeight + y),
+                    Size = new Float2(50f, FloatValueBox.DefaultHeight),
                     Text = null,
                     Single = false,
                     ValueIndex = valueIndex,
@@ -360,6 +365,7 @@ namespace FlaxEditor.Surface
                 {
                     Type = NodeElementType.ColorValue,
                     Position = new Float2(Constants.NodeMarginX + x, Constants.NodeMarginY + Constants.NodeHeaderHeight + y),
+                    Size = new Float2(32, 18),
                     Text = null,
                     Single = false,
                     ValueIndex = valueIndex,
@@ -382,6 +388,7 @@ namespace FlaxEditor.Surface
                 {
                     Type = NodeElementType.Asset,
                     Position = new Float2(x, y),
+                    Size = new Float2(78f, 90f),
                     Text = type.FullName,
                     Single = false,
                     ValueIndex = valueIndex,

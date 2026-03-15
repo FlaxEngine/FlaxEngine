@@ -482,7 +482,6 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(bool))),
                 Description = "Constant boolean value",
                 Flags = NodeFlags.AllGraphs,
-                UseFixedSize = true,
                 Size = new Float2(90, 20),
                 DefaultValues = new object[]
                 {
@@ -516,7 +515,6 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(int))),
                 Description = "Constant integer value",
                 Flags = NodeFlags.AllGraphs,
-                UseFixedSize = true,
                 Size = new Float2(120, 20),
                 DefaultValues = new object[]
                 {
@@ -545,7 +543,6 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(float))),
                 Description = "Constant floating point",
                 Flags = NodeFlags.AllGraphs,
-                UseFixedSize = true,
                 Size = new Float2(120, 20),
                 DefaultValues = new object[]
                 {
@@ -753,7 +750,6 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "PI",
                 Description = "A value specifying the approximation of π which is 180 degrees",
                 Flags = NodeFlags.AllGraphs,
-                UseFixedSize = true,
                 Size = new Float2(45, 20),
                 Elements = new[]
                 {
@@ -786,7 +782,6 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(uint))),
                 Description = "Constant unsigned integer value",
                 Flags = NodeFlags.AllGraphs,
-                UseFixedSize = true,
                 Size = new Float2(130, 20),
                 DefaultValues = new object[]
                 {
@@ -829,7 +824,6 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(double))),
                 Description = "Constant floating point",
                 Flags = NodeFlags.AllGraphs,
-                UseFixedSize = true,
                 Size = new Float2(120, 20),
                 DefaultValues = new object[]
                 {
