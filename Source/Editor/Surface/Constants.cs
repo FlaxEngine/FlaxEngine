@@ -13,12 +13,12 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// The node close button size.
         /// </summary>
-        public const float NodeCloseButtonSize = 16.0f;
+        public const float NodeCloseButtonSize = 10.0f;
 
         /// <summary>
         /// The node close button margin from the edges.
         /// </summary>
-        public const float NodeCloseButtonMargin = 2.0f;
+        public const float NodeCloseButtonMargin = 5.0f;
 
         /// <summary>
         /// The node header height.

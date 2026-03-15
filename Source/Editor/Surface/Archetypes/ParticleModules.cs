@@ -121,7 +121,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Render2D.DrawRectangle(new Rectangle(1, 0, Width - 2, Height - 1), Colors[idx]);
 
                 // Close button
-                Render2D.DrawSprite(style.Cross, _closeButtonRect, _closeButtonRect.Contains(_mousePosition) ? style.Foreground : style.ForegroundGrey);
+                DrawCloseButton(_closeButtonRect, _closeButtonRect.Contains(_mousePosition) ? style.Foreground : style.ForegroundGrey);
 
                 // Arrange button
                 var dragBarColor = _arrangeButtonRect.Contains(_mousePosition) ? style.Foreground : style.ForegroundGrey;
@@ -267,9 +267,9 @@ namespace FlaxEditor.Surface.Archetypes
                 const float closeButtonMargin = FlaxEditor.Surface.Constants.NodeCloseButtonMargin;
                 const float closeButtonSize = FlaxEditor.Surface.Constants.NodeCloseButtonSize;
                 _headerRect = new Rectangle(0, 0, Width, headerSize);
-                _closeButtonRect = new Rectangle(Width - closeButtonSize - closeButtonMargin, closeButtonMargin, closeButtonSize, closeButtonSize);
+                _closeButtonRect = new Rectangle(Width - closeButtonSize * 0.75f - closeButtonMargin, closeButtonMargin + 0.25f, closeButtonSize * 0.75f, closeButtonSize * 0.75f);
                 _footerRect = Rectangle.Empty;
-                _enabled.Location = new Float2(_closeButtonRect.X - _enabled.Width - 2, _closeButtonRect.Y);
+                _enabled.Location = new Float2(_closeButtonRect.X - _enabled.Width - 2, _closeButtonRect.Y - 0.25f);
                 _arrangeButtonRect = new Rectangle(_enabled.X - closeButtonSize - closeButtonMargin, closeButtonMargin, closeButtonSize, closeButtonSize);
             }
 

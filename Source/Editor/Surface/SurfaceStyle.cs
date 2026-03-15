@@ -245,6 +245,7 @@ namespace FlaxEditor.Surface
                 icon = hasConnections ? style.Icons.BoxClose : style.Icons.BoxOpen;
             color *= box.ConnectionsHighlightIntensity + 1;
             
+            // Disable vertex snapping to prevent position jitter/ snapping artefacts for the boxes when zooming the surface
             var features = Render2D.Features;
             Render2D.Features = features & ~Render2D.RenderingFeatures.VertexSnapping;
             
@@ -273,7 +274,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <summary>
-        ///  Function used to create style for the given surface type. Can be overriden to provide some customization via user plugin.
+        ///  Function used to create style for the given surface type. Can be overridden to provide some customization via user plugin.
         /// </summary>
         public static Func<Editor, SurfaceStyle> CreateStyleHandler = CreateDefault;
 

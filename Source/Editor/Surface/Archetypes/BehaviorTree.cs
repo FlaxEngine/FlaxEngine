@@ -223,7 +223,7 @@ namespace FlaxEditor.Surface.Archetypes
                 if ((Archetype.Flags & NodeFlags.NoCloseButton) == 0 && Surface.CanEdit)
                 {
                     bool highlightClose = _closeButtonRect.Contains(_mousePosition) && !Surface.IsConnecting && !Surface.IsSelecting;
-                    Render2D.DrawSprite(style.Cross, _closeButtonRect, highlightClose ? style.Foreground : style.ForegroundGrey);
+                    DrawCloseButton(_closeButtonRect, highlightClose ? style.Foreground : style.ForegroundGrey);
                 }
 
                 DrawChildren();
@@ -596,7 +596,7 @@ namespace FlaxEditor.Surface.Archetypes
 
                 const float headerHeight = FlaxEditor.Surface.Constants.NodeHeaderHeight;
                 const float closeButtonMargin = FlaxEditor.Surface.Constants.NodeCloseButtonMargin;
-                float closeButtonSize = FlaxEditor.Surface.Constants.NodeCloseButtonSize * 0.65f;
+                float closeButtonSize = FlaxEditor.Surface.Constants.NodeCloseButtonSize * 0.75f;
                 _headerRect = new Rectangle(0, bounds.Y - Y, bounds.Width, headerHeight);
                 _headerTextRect = _headerRect with { X = 5f, Width = Width - closeButtonSize - closeButtonMargin * 4f };
                 _closeButtonRect = new Rectangle(bounds.Width - closeButtonSize - closeButtonMargin, _headerRect.Y + closeButtonMargin, closeButtonSize, closeButtonSize);
@@ -744,10 +744,13 @@ namespace FlaxEditor.Surface.Archetypes
 
                 _footerRect = Rectangle.Empty;
                 const float closeButtonMargin = FlaxEditor.Surface.Constants.NodeCloseButtonMargin;
-                float closeButtonSize = FlaxEditor.Surface.Constants.NodeCloseButtonSize * 0.65f;
+                float closeButtonSize = FlaxEditor.Surface.Constants.NodeCloseButtonSize * 0.75f;
                 _closeButtonRect = new Rectangle(Bounds.Width - closeButtonSize - closeButtonMargin, _headerRect.Y + closeButtonMargin, closeButtonSize, closeButtonSize);
                 if (_dragIcon != null)
-                    _dragIcon.Bounds = new Rectangle(_closeButtonRect.X - _closeButtonRect.Width, _closeButtonRect.Y, _closeButtonRect.Size);
+                {
+                    var dragIconRect = _closeButtonRect.MakeExpanded(5f);
+                    _dragIcon.Bounds = new Rectangle(dragIconRect.X - dragIconRect.Width, dragIconRect.Y, dragIconRect.Size);
+                }
             }
 
             protected override void UpdateTitle()
