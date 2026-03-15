@@ -1442,8 +1442,8 @@ namespace FlaxEditor.Surface.Elements
 
             // Draw text
             var style = Style.Current;
-            var rect = new Rectangle(Width + 4, 0, 1410, Height);
-            Render2D.DrawText(style.FontSmall, Text, rect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
+            var rect = new Rectangle(Width + Constants.BoxTextOffset, 0, Constants.BoxTextRectWidth, Height);
+            Render2D.DrawText(style.FontMedium, Text, rect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
         }
 
         /// <inheritdoc />

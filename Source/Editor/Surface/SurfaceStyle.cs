@@ -2,6 +2,7 @@
 
 using System;
 using FlaxEditor.Scripting;
+using FlaxEditor.Surface.Elements;
 using FlaxEngine;
 using FlaxEngine.Utilities;
 
@@ -141,6 +142,11 @@ namespace FlaxEditor.Surface
         public Texture Background;
 
         /// <summary>
+        /// The color used as a surface background.
+        /// </summary>
+        public Color BackgroundColor;
+
+        /// <summary>
         /// Boxes drawing callback.
         /// </summary>
         public Action<Elements.Box> DrawBox = DefaultDrawBox;
@@ -216,19 +222,20 @@ namespace FlaxEditor.Surface
 
         private static void DefaultDrawBox(Elements.Box box)
         {
-            var rect = new Rectangle(Float2.Zero, box.Size);
+            var rect = new Rectangle(box.Width * 0.5f - Constants.BoxSize * 0.5f, box.Height * 0.5f - Constants.BoxSize * 0.5f, new Float2(Constants.BoxSize));
 
             // Size culling
             const float minBoxSize = 5.0f;
             if (rect.Size.LengthSquared < minBoxSize * minBoxSize)
                 return;
 
-            // Debugging boxes size
+            // Debugging boxes size and bounds
             //Render2D.DrawRectangle(rect, Color.Orange); return;
+            //Render2D.DrawRectangle(box.Bounds, Color.Green);
 
             // Draw icon
             bool hasConnections = box.HasAnyConnection;
-            float alpha = box.Enabled && box.IsActive ? 1.0f : 0.6f;
+            float alpha = box.IsDisabled ? 0.6f : 1.0f;
             Color color = box.CurrentTypeColor * alpha;
             var style = box.Surface.Style;
             SpriteHandle icon;
@@ -237,7 +244,21 @@ namespace FlaxEditor.Surface
             else
                 icon = hasConnections ? style.Icons.BoxClose : style.Icons.BoxOpen;
             color *= box.ConnectionsHighlightIntensity + 1;
+            
+            // Disable vertex snapping to prevent position jitter/ snapping artefacts for the boxes when zooming the surface
+            var features = Render2D.Features;
+            Render2D.Features = features & ~Render2D.RenderingFeatures.VertexSnapping;
+            
             Render2D.DrawSprite(icon, rect, color);
+
+            // Draw connected hint with color from connected output box
+            if (hasConnections && box.Connections[0] is OutputBox connectedOutputBox)
+            {
+                bool connectedSameColor = connectedOutputBox.CurrentTypeColor == box.CurrentTypeColor;
+                Color innerColor = connectedSameColor ? color.RGBMultiplied(0.4f) : connectedOutputBox.CurrentTypeColor;
+                innerColor = innerColor * alpha;
+                Render2D.DrawSprite(icon, rect.MakeExpanded(-5.0f), innerColor);
+            }
 
             // Draw selection hint
             if (box.IsSelected)
@@ -245,12 +266,15 @@ namespace FlaxEditor.Surface
                 float outlineAlpha = Mathf.Sin(Time.TimeSinceStartup * 4.0f) * 0.5f + 0.5f;
                 float outlineWidth = Mathf.Lerp(1.5f, 4.0f, outlineAlpha);
                 var outlineRect = new Rectangle(rect.X - outlineWidth, rect.Y - outlineWidth, rect.Width + outlineWidth * 2, rect.Height + outlineWidth * 2);
-                Render2D.DrawSprite(icon, outlineRect, FlaxEngine.GUI.Style.Current.BorderSelected.RGBMultiplied(1.0f + outlineAlpha * 0.4f));
+                Color selectionColor = FlaxEngine.GUI.Style.Current.BorderSelected.RGBMultiplied(1.0f + outlineAlpha * 0.4f);
+                Render2D.DrawSprite(icon, outlineRect, selectionColor.AlphaMultiplied(0.4f));
             }
+
+            Render2D.Features = features;
         }
 
         /// <summary>
-        ///  Function used to create style for the given surface type. Can be overriden to provide some customization via user plugin.
+        ///  Function used to create style for the given surface type. Can be overridden to provide some customization via user plugin.
         /// </summary>
         public static Func<Editor, SurfaceStyle> CreateStyleHandler = CreateDefault;
 
@@ -293,6 +317,7 @@ namespace FlaxEditor.Surface
                     ArrowClose = editor.Icons.VisjectArrowClosed32,
                 },
                 Background = editor.UI.VisjectSurfaceBackground,
+                BackgroundColor = new Color(31, 31, 31),
             };
         }
 
@@ -311,13 +336,11 @@ namespace FlaxEditor.Surface
             {
                 var dir = sub / length;
                 var arrowRect = new Rectangle(0, 0, 16.0f, 16.0f);
-                float rotation = Float2.Dot(dir, Float2.UnitY);
-                if (endPos.X < startPos.X)
-                    rotation = 2 - rotation;
+                float rotation = Mathf.Atan2(dir.Y, dir.X);
                 var sprite = Editor.Instance.Icons.VisjectArrowClosed32;
                 var arrowTransform =
                     Matrix3x3.Translation2D(-6.5f, -8) *
-                    Matrix3x3.RotationZ(rotation * Mathf.PiOverTwo) * 
+                    Matrix3x3.RotationZ(rotation) * 
                     Matrix3x3.Translation2D(endPos - dir * 8);
 
                 Render2D.PushTransform(ref arrowTransform);

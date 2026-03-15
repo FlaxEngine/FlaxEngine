@@ -189,13 +189,70 @@ namespace FlaxEditor.Surface.Archetypes
 
             public override void Draw()
             {
-                base.Draw();
+                var style = Style.Current;
+
+                var backgroundRect = new Rectangle(Float2.Zero, Size);
+
+                // Shadow
+                if (DrawBasicShadow)
+                {
+                    var shadowRect = backgroundRect.MakeOffsetted(ShadowOffset);
+                    Render2D.FillRectangle(shadowRect, Color.Black.AlphaMultiplied(0.125f));
+                }
+
+                // Background
+                Render2D.FillRectangle(backgroundRect, ArchetypeColor);
+
+                // Breakpoint hit
+                if (Breakpoint.Hit)
+                {
+                    var colorTop = Color.OrangeRed;
+                    var colorBottom = Color.Red;
+                    var time = DateTime.Now - Engine.StartupTime;
+                    Render2D.DrawRectangle(backgroundRect.MakeExpanded(Mathf.Lerp(3.0f, 12.0f, Mathf.Sin((float)time.TotalSeconds * 10.0f) * 0.5f + 0.5f)), colorTop, colorTop, colorBottom, colorBottom, 2.0f);
+                }
+
+                // Header
+                var headerColor = style.BackgroundHighlighted;
+                if (_headerRect.Contains(ref _mousePosition) && !Surface.IsConnecting && !Surface.IsSelecting)
+                    headerColor *= 1.07f;
+                Render2D.FillRectangle(_headerRect, style.BackgroundHighlighted);
+                Render2D.DrawText(style.FontLarge, Title, _headerTextRect, style.Foreground, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1f, FlaxEditor.Surface.Constants.NodeHeaderTextScale);
+
+                // Close button
+                if ((Archetype.Flags & NodeFlags.NoCloseButton) == 0 && Surface.CanEdit)
+                {
+                    bool highlightClose = _closeButtonRect.Contains(_mousePosition) && !Surface.IsConnecting && !Surface.IsSelecting;
+                    DrawCloseButton(_closeButtonRect, highlightClose ? style.Foreground : style.ForegroundGrey);
+                }
+
+                DrawChildren();
+
+                // Selection outline
+                if (_isSelected)
+                {
+                    var colorTop = Color.Orange;
+                    var colorBottom = Color.OrangeRed;
+                    Render2D.DrawRectangle(backgroundRect, colorTop, colorTop, colorBottom, colorBottom, 2.5f);
+                }
+
+                // Breakpoint dot
+                if (Breakpoint.Set)
+                {
+                    var icon = Breakpoint.Enabled ? Surface.Style.Icons.BoxClose : Surface.Style.Icons.BoxOpen;
+                    Render2D.DrawSprite(icon, new Rectangle(-7, -7, 16, 16), new Color(0.9f, 0.9f, 0.9f));
+                    Render2D.DrawSprite(icon, new Rectangle(-6, -6, 14, 14), new Color(0.894117647f, 0.0784313725f, 0.0f));
+                }
+
+                if (highlightBox != null)
+                    Render2D.DrawRectangle(highlightBox.Bounds, style.BorderHighlighted, 2f);
 
                 // Debug Info
                 if (!string.IsNullOrEmpty(_debugInfo))
                 {
-                    var style = Style.Current;
-                    Render2D.DrawText(style.FontSmall, _debugInfo, new Rectangle(4, _headerRect.Bottom + 4, _debugInfoSize), style.Foreground);
+                    // Draw an extra background to cover the archetype color colored node background and make text more legible
+                    Render2D.FillRectangle(new Rectangle(0, _headerRect.Bottom + 4, Width, Height - _headerRect.Bottom - 4), style.BackgroundHighlighted);
+                    Render2D.DrawText(style.FontSmall, _debugInfo, new Rectangle(4, _headerRect.Bottom + 7, _debugInfoSize), style.Foreground, scale: 0.8f);
                 }
 
                 // Debug relevancy outline
@@ -203,7 +260,7 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     var colorTop = Color.LightYellow;
                     var colorBottom = Color.Yellow;
-                    var backgroundRect = new Rectangle(Float2.One, Size - new Float2(2.0f));
+                    backgroundRect = new Rectangle(Float2.One, Size - new Float2(2.0f));
                     Render2D.DrawRectangle(backgroundRect, colorTop, colorTop, colorBottom, colorBottom);
                 }
             }
@@ -415,8 +472,8 @@ namespace FlaxEditor.Surface.Archetypes
                 // Setup boxes
                 _input = (InputBox)GetBox(0);
                 _output = (OutputBox)GetBox(1);
-                _input.ConnectionOffset = new Float2(0, FlaxEditor.Surface.Constants.BoxSize * -0.5f);
-                _output.ConnectionOffset = new Float2(0, FlaxEditor.Surface.Constants.BoxSize * 0.5f);
+                _input.ConnectionOffset = new Float2(0, FlaxEditor.Surface.Constants.BoxRowHeight * -0.5f);
+                _output.ConnectionOffset = new Float2(0, FlaxEditor.Surface.Constants.BoxRowHeight * 0.5f);
 
                 // Setup node type and data
                 var flagsRoot = NodeFlags.NoRemove | NodeFlags.NoCloseButton | NodeFlags.NoSpawnViaPaste;
@@ -515,7 +572,7 @@ namespace FlaxEditor.Surface.Archetypes
                     height += decorator.Height + DecoratorsMarginY;
                     width = Mathf.Max(width, decorator.Width - FlaxEditor.Surface.Constants.NodeCloseButtonSize - 2 * DecoratorsMarginX);
                 }
-                Size = new Float2(width + FlaxEditor.Surface.Constants.NodeMarginX * 2 + FlaxEditor.Surface.Constants.NodeCloseButtonSize, height + FlaxEditor.Surface.Constants.NodeHeaderSize + FlaxEditor.Surface.Constants.NodeFooterSize);
+                Size = new Float2(width + FlaxEditor.Surface.Constants.NodeMarginX * 2 + FlaxEditor.Surface.Constants.NodeCloseButtonSize, height + FlaxEditor.Surface.Constants.NodeHeaderHeight);
                 UpdateRectangles();
             }
 
@@ -536,13 +593,13 @@ namespace FlaxEditor.Surface.Archetypes
                     if (decorator.IndexInParent < indexInParent)
                         decorator.IndexInParent = indexInParent + 1; // Push elements above the node
                 }
-                const float footerSize = FlaxEditor.Surface.Constants.NodeFooterSize;
-                const float headerSize = FlaxEditor.Surface.Constants.NodeHeaderSize;
+
+                const float headerHeight = FlaxEditor.Surface.Constants.NodeHeaderHeight;
                 const float closeButtonMargin = FlaxEditor.Surface.Constants.NodeCloseButtonMargin;
-                const float closeButtonSize = FlaxEditor.Surface.Constants.NodeCloseButtonSize;
-                _headerRect = new Rectangle(0, bounds.Y - Y, bounds.Width, headerSize);
+                float closeButtonSize = FlaxEditor.Surface.Constants.NodeCloseButtonSize * 0.75f;
+                _headerRect = new Rectangle(0, bounds.Y - Y, bounds.Width, headerHeight);
+                _headerTextRect = _headerRect with { X = 5f, Width = Width - closeButtonSize - closeButtonMargin * 4f };
                 _closeButtonRect = new Rectangle(bounds.Width - closeButtonSize - closeButtonMargin, _headerRect.Y + closeButtonMargin, closeButtonSize, closeButtonSize);
-                _footerRect = new Rectangle(0, bounds.Height - footerSize, bounds.Width, footerSize);
                 if (_output != null && _output.Visible)
                 {
                     _footerRect.Y -= ConnectionAreaHeight;
@@ -648,6 +705,8 @@ namespace FlaxEditor.Surface.Archetypes
             private DragDecorator _dragDecorator;
             private float _dragLocation = -1;
 
+            internal override bool DrawBasicShadow => false;
+
             internal Decorator(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
@@ -667,7 +726,7 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             }
 
-            protected override Color FooterColor => Color.Transparent;
+            protected override Color ArchetypeColor => Color.Transparent;
 
             protected override Float2 CalculateNodeSize(float width, float height)
             {
@@ -676,7 +735,7 @@ namespace FlaxEditor.Surface.Archetypes
                     width = Mathf.Max(width, _debugInfoSize.X + 8.0f);
                     height += _debugInfoSize.Y + 8.0f;
                 }
-                return new Float2(width + FlaxEditor.Surface.Constants.NodeCloseButtonSize * 2 + DecoratorsMarginX * 2, height + FlaxEditor.Surface.Constants.NodeHeaderSize);
+                return new Float2(width + FlaxEditor.Surface.Constants.NodeCloseButtonSize * 2 + DecoratorsMarginX * 2, height + FlaxEditor.Surface.Constants.NodeHeaderHeight);
             }
 
             protected override void UpdateRectangles()
@@ -684,8 +743,14 @@ namespace FlaxEditor.Surface.Archetypes
                 base.UpdateRectangles();
 
                 _footerRect = Rectangle.Empty;
+                const float closeButtonMargin = FlaxEditor.Surface.Constants.NodeCloseButtonMargin;
+                float closeButtonSize = FlaxEditor.Surface.Constants.NodeCloseButtonSize * 0.75f;
+                _closeButtonRect = new Rectangle(Bounds.Width - closeButtonSize - closeButtonMargin, _headerRect.Y + closeButtonMargin, closeButtonSize, closeButtonSize);
                 if (_dragIcon != null)
-                    _dragIcon.Bounds = new Rectangle(_closeButtonRect.X - _closeButtonRect.Width, _closeButtonRect.Y, _closeButtonRect.Size);
+                {
+                    var dragIconRect = _closeButtonRect.MakeExpanded(5f);
+                    _dragIcon.Bounds = new Rectangle(dragIconRect.X - dragIconRect.Width, dragIconRect.Y, dragIconRect.Size);
+                }
             }
 
             protected override void UpdateTitle()

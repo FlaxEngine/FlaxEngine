@@ -57,7 +57,7 @@ namespace FlaxEditor.Surface.Archetypes
                     {
                         _textureGroupPicker = new ComboBox
                         {
-                            Location = new Float2(FlaxEditor.Surface.Constants.NodeMarginX + 50, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize + FlaxEditor.Surface.Constants.LayoutOffsetY * _level),
+                            Location = new Float2(FlaxEditor.Surface.Constants.NodeMarginX + 50, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight + FlaxEditor.Surface.Constants.LayoutOffsetY * _level),
                             Width = 100,
                             Parent = this,
                         };
@@ -134,7 +134,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new Constants.ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(Texture))),
                 Description = "Two dimensional texture object",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(140, 120),
+                Size = new Float2(140, 140),
                 DefaultValues = new object[]
                 {
                     Guid.Empty
@@ -158,7 +158,7 @@ namespace FlaxEditor.Surface.Archetypes
                 AlternativeTitles = new string[] { "UV", "UVs" },
                 Description = "Texture coordinates",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(150, 30),
+                Size = new Float2(160, 20),
                 DefaultValues = new object[]
                 {
                     0u
@@ -239,7 +239,7 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(3, "Max Steps", true, typeof(float), 3, 2),
                     NodeElementArchetype.Factory.Input(4, "Heightmap Texture", true, typeof(FlaxEngine.Object), 4),
                     NodeElementArchetype.Factory.Output(0, "Parallax UVs", typeof(Float2), 5),
-                    NodeElementArchetype.Factory.Text(Surface.Constants.BoxSize + 4, 5 * Surface.Constants.LayoutOffsetY, "Channel"),
+                    NodeElementArchetype.Factory.Text(Surface.Constants.BoxRowHeight + 4, 5 * Surface.Constants.LayoutOffsetY, "Channel"),
                     NodeElementArchetype.Factory.ComboBox(70, 5 * Surface.Constants.LayoutOffsetY, 50, 3, new[]
                     {
                         "R",
@@ -493,7 +493,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 18,
                 Title = "Lightmap UV",
-                AlternativeTitles = new string[] { "Lightmap TexCoord" }, 
+                AlternativeTitles = new string[] { "Lightmap TexCoord" },
                 Description = "Lightmap UVs",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(110, 20),

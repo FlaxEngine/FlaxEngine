@@ -40,6 +40,13 @@ namespace FlaxEditor.Surface
     [HideInEditor]
     public class SurfaceNode : SurfaceControl
     {
+        internal const float ShadowOffset = 2.25f;
+
+        /// <summary>
+        /// If true, draws a basic rectangle shadow behind the node. Disable to hide shadow or if the node is drawing a custom shadow.
+        /// </summary>
+        internal virtual bool DrawBasicShadow => true;
+
         /// <summary>
         /// The box to draw a highlight around. Drawing will be skipped if null.
         /// </summary>
@@ -54,6 +61,11 @@ namespace FlaxEditor.Surface
         /// The header rectangle (local space).
         /// </summary>
         protected Rectangle _headerRect;
+
+        /// <summary>
+        /// The header text rectangle (local space).
+        /// </summary>
+        protected Rectangle _headerTextRect;
 
         /// <summary>
         /// The close button rectangle (local space).
@@ -123,7 +135,7 @@ namespace FlaxEditor.Surface
         /// <param name="nodeArch">The node archetype.</param>
         /// <param name="groupArch">The group archetype.</param>
         public SurfaceNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
-        : base(context, nodeArch.Size.X + Constants.NodeMarginX * 2, nodeArch.Size.Y + Constants.NodeMarginY * 2 + Constants.NodeHeaderSize + Constants.NodeFooterSize)
+        : base(context, nodeArch.Size.X + Constants.NodeMarginX * 2, nodeArch.Size.Y + Constants.NodeMarginY * 2 + Constants.NodeHeaderHeight + Constants.NodeFooterSize)
         {
             Title = nodeArch.Title;
             ID = id;
@@ -132,7 +144,7 @@ namespace FlaxEditor.Surface
             AutoFocus = false;
             TooltipText = GetTooltip();
             CullChildren = false;
-            BackgroundColor = Style.Current.BackgroundNormal;
+            BackgroundColor = Color.Lerp(Style.Current.Background, Style.Current.BackgroundHighlighted, 0.55f);
 
             if (Archetype.DefaultValues != null)
             {
@@ -147,9 +159,9 @@ namespace FlaxEditor.Surface
         public virtual string ContentSearchText => null;
 
         /// <summary>
-        /// Gets the color of the footer of the node.
+        /// Gets the color of the header of the node.
         /// </summary>
-        protected virtual Color FooterColor => GroupArchetype.Color;
+        protected virtual Color ArchetypeColor => GroupArchetype.Color;
 
         private Float2 mouseDownMousePosition;
 
@@ -161,7 +173,7 @@ namespace FlaxEditor.Surface
         /// <returns>The node control total size.</returns>
         protected virtual Float2 CalculateNodeSize(float width, float height)
         {
-            return new Float2(width + Constants.NodeMarginX * 2, height + Constants.NodeMarginY * 2 + Constants.NodeHeaderSize + Constants.NodeFooterSize);
+            return new Float2(width + Constants.NodeMarginX * 2, height + Constants.NodeMarginY * 2 + Constants.NodeHeaderHeight + Constants.NodeFooterSize);
         }
 
         /// <summary>
@@ -169,7 +181,7 @@ namespace FlaxEditor.Surface
         /// </summary>
         /// <param name="width">The width.</param>
         /// <param name="height">The height.</param>
-        public void Resize(float width, float height)
+        public virtual void Resize(float width, float height)
         {
             if (Surface == null)
                 return;
@@ -187,7 +199,7 @@ namespace FlaxEditor.Surface
             {
                 if (Elements[i] is OutputBox box)
                 {
-                    box.Location = box.Archetype.Position + new Float2(width, 0);
+                    box.Location = box.Archetype.Position + new Float2(width - Constants.NodeMarginX, 0);
                 }
             }
 
@@ -215,29 +227,44 @@ namespace FlaxEditor.Surface
                 var child = Children[i];
                 if (!child.Visible)
                     continue;
+                // Input boxes
                 if (child is InputBox inputBox)
                 {
                     var boxWidth = boxLabelFont.MeasureText(inputBox.Text).X + 20;
                     if (inputBox.DefaultValueEditor != null)
                         boxWidth += inputBox.DefaultValueEditor.Width + 4;
                     leftWidth = Mathf.Max(leftWidth, boxWidth);
-                    leftHeight = Mathf.Max(leftHeight, inputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderSize + 20.0f);
+                    leftHeight = Mathf.Max(leftHeight, inputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderHeight + 20.0f);
                 }
+                // Output boxes
                 else if (child is OutputBox outputBox)
                 {
                     rightWidth = Mathf.Max(rightWidth, boxLabelFont.MeasureText(outputBox.Text).X + 20);
-                    rightHeight = Mathf.Max(rightHeight, outputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderSize + 20.0f);
+                    rightHeight = Mathf.Max(rightHeight, outputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderHeight + 20.0f);
                 }
+                // Elements (Float-, int-, uint- value boxes, asset pickers, etc.)
+                // These will only ever be on the left side of the node, so we only adjust left width and height
+                else if (child is ISurfaceNodeElement surfaceElement)
+                {
+                    leftWidth = Mathf.Max(leftWidth, surfaceElement.Archetype.Size.X + 8f);
+                    leftHeight = Mathf.Max(leftHeight, surfaceElement.Archetype.Size.Y + 8f);
+                }
+                else if (child is SurfaceNodeElementControl elementControl)
+                {
+                    leftWidth = Mathf.Max(leftWidth, elementControl.Width + 8f);
+                    leftHeight = Mathf.Max(leftHeight, elementControl.Height + 8f);
+                }
+                // Other controls in the node
                 else if (child is Control control)
                 {
                     if (control.AnchorPreset == AnchorPresets.TopLeft)
                     {
-                        width = Mathf.Max(width, control.Right + 4 - Constants.NodeMarginX);
-                        height = Mathf.Max(height, control.Bottom + 4 - Constants.NodeMarginY - Constants.NodeHeaderSize);
+                        width = Mathf.Max(width, control.Right + 15 + Constants.NodeMarginX);
+                        height = Mathf.Max(height, control.Bottom + 4 - Constants.NodeMarginY - Constants.NodeHeaderHeight);
                     }
                     else if (!_headerRect.Intersects(control.Bounds))
                     {
-                        width = Mathf.Max(width, control.Width + 4);
+                        width = Mathf.Max(width, control.Width + 15 + Constants.NodeMarginX);
                         height = Mathf.Max(height, control.Height + 4);
                     }
                 }
@@ -325,6 +352,11 @@ namespace FlaxEditor.Surface
             Elements.Add(element);
             if (element is Control control)
                 AddChild(control);
+
+            if (!Archetype.UseFixedSize)
+                ResizeAuto();
+            else
+                Resize(Archetype.Size.X, Archetype.Size.Y);
         }
 
         /// <summary>
@@ -365,7 +397,7 @@ namespace FlaxEditor.Surface
                 // Sync properties for exiting box
                 box.Text = text;
                 box.CurrentType = type;
-                box.Y = Constants.NodeMarginY + Constants.NodeHeaderSize + yLevel * Constants.LayoutOffsetY;
+                box.Y = Constants.NodeMarginY + Constants.NodeHeaderHeight + yLevel * Constants.LayoutOffsetY;
             }
 
             // Update box
@@ -434,7 +466,7 @@ namespace FlaxEditor.Surface
         private static readonly List<SurfaceNode> UpdateStack = new List<SurfaceNode>();
 
         /// <summary>
-        /// Updates dependant/independent boxes types.
+        /// Updates dependent/independent boxes types.
         /// </summary>
         public void UpdateBoxesTypes()
         {
@@ -777,6 +809,24 @@ namespace FlaxEditor.Surface
         }
 
         /// <summary>
+        /// Draws the close button inside of the <paramref name="rect"/>.
+        /// </summary>
+        /// <param name="rect">The rectangle to draw the close button in.</param>
+        /// <param name="color">The color of the close button.</param>
+        public void DrawCloseButton(Rectangle rect, Color color)
+        {
+            // Disable vertex snapping to reduce artefacts at the line ends
+            var features = Render2D.Features;
+            Render2D.Features = features & ~Render2D.RenderingFeatures.VertexSnapping;
+
+            rect.Expand(-2f); // Don't overshoot the rectangle because of the thickness
+            Render2D.DrawLine(rect.TopLeft, rect.BottomRight, color, 2f);
+            Render2D.DrawLine(rect.BottomLeft, rect.TopRight, color, 2f);
+
+            Render2D.Features = features;
+        }
+
+        /// <summary>
         /// Draws all the connections between surface objects related to this node.
         /// </summary>
         /// <param name="mousePosition">The current mouse position (in surface-space).</param>
@@ -919,6 +969,11 @@ namespace FlaxEditor.Surface
                 if (Elements[i] is Box box)
                     box.OnConnectionsChanged();
             }
+
+            if (!Archetype.UseFixedSize)
+                ResizeAuto();
+            else
+                Resize(Archetype.Size.X, Archetype.Size.Y);
         }
 
         /// <inheritdoc />
@@ -956,6 +1011,11 @@ namespace FlaxEditor.Surface
                 Surface.AddBatchedUndoAction(new EditNodeValuesAction(this, before, graphEdited));
 
             _isDuringValuesEditing = false;
+
+            if (!Archetype.UseFixedSize)
+                ResizeAuto();
+            else
+                Resize(Archetype.Size.X, Archetype.Size.Y);
         }
 
         /// <summary>
@@ -990,6 +1050,11 @@ namespace FlaxEditor.Surface
             }
 
             _isDuringValuesEditing = false;
+
+            if (!Archetype.UseFixedSize)
+                ResizeAuto();
+            else
+                Resize(Archetype.Size.X, Archetype.Size.Y);
         }
 
         internal void SetIsDuringValuesEditing(bool value)
@@ -1022,16 +1087,21 @@ namespace FlaxEditor.Surface
         public virtual void ConnectionTick(Box box)
         {
             UpdateBoxesTypes();
+            if (!Archetype.UseFixedSize)
+                ResizeAuto();
+            else
+                Resize(Archetype.Size.X, Archetype.Size.Y);
         }
 
         /// <inheritdoc />
         protected override void UpdateRectangles()
         {
             const float footerSize = Constants.NodeFooterSize;
-            const float headerSize = Constants.NodeHeaderSize;
+            const float headerSize = Constants.NodeHeaderHeight;
             const float closeButtonMargin = Constants.NodeCloseButtonMargin;
             const float closeButtonSize = Constants.NodeCloseButtonSize;
             _headerRect = new Rectangle(0, 0, Width, headerSize);
+            _headerTextRect = _headerRect with { X = 5f, Width = Width - closeButtonSize - closeButtonMargin * 4f };
             _closeButtonRect = new Rectangle(Width - closeButtonSize - closeButtonMargin, closeButtonMargin, closeButtonSize, closeButtonSize);
             _footerRect = new Rectangle(0, Height - footerSize, Width, footerSize);
         }
@@ -1041,8 +1111,16 @@ namespace FlaxEditor.Surface
         {
             var style = Style.Current;
 
-            // Background
             var backgroundRect = new Rectangle(Float2.Zero, Size);
+
+            // Shadow
+            if (DrawBasicShadow)
+            {
+                var shadowRect = backgroundRect.MakeOffsetted(ShadowOffset);
+                Render2D.FillRectangle(shadowRect, Color.Black.AlphaMultiplied(0.125f));
+            }
+
+            // Background
             Render2D.FillRectangle(backgroundRect, BackgroundColor);
 
             // Breakpoint hit
@@ -1058,18 +1136,18 @@ namespace FlaxEditor.Surface
             var headerColor = style.BackgroundHighlighted;
             if (_headerRect.Contains(ref _mousePosition) && !Surface.IsConnecting && !Surface.IsSelecting)
                 headerColor *= 1.07f;
-            Render2D.FillRectangle(_headerRect, headerColor);
-            Render2D.DrawText(style.FontLarge, Title, _headerRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
+            Render2D.FillRectangle(_headerRect, ArchetypeColor);
+            Render2D.DrawText(style.FontLarge, Title, _headerTextRect, style.Foreground, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1f, Constants.NodeHeaderTextScale);
 
             // Close button
             if ((Archetype.Flags & NodeFlags.NoCloseButton) == 0 && Surface.CanEdit)
             {
                 bool highlightClose = _closeButtonRect.Contains(_mousePosition) && !Surface.IsConnecting && !Surface.IsSelecting;
-                Render2D.DrawSprite(style.Cross, _closeButtonRect, highlightClose ? style.Foreground : style.ForegroundGrey);
+                DrawCloseButton(_closeButtonRect, highlightClose ? style.Foreground : style.ForegroundGrey);
             }
 
             // Footer
-            Render2D.FillRectangle(_footerRect, FooterColor);
+            Render2D.FillRectangle(_footerRect, ArchetypeColor);
 
             DrawChildren();
 
@@ -1078,7 +1156,7 @@ namespace FlaxEditor.Surface
             {
                 var colorTop = Color.Orange;
                 var colorBottom = Color.OrangeRed;
-                Render2D.DrawRectangle(backgroundRect, colorTop, colorTop, colorBottom, colorBottom);
+                Render2D.DrawRectangle(backgroundRect, colorTop, colorTop, colorBottom, colorBottom, 2.5f);
             }
 
             // Breakpoint dot

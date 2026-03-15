@@ -256,6 +256,16 @@ namespace FlaxEngine
         /// <summary>
         /// Make offseted rectangle
         /// </summary>
+        /// <param name="offset">Offset (will be applied to X- and Y- axis).</param>
+        /// <returns>Offseted rectangle.</returns>
+        public Rectangle MakeOffsetted(float offset)
+        {
+            return new Rectangle(Location + new Float2(offset, offset), Size);
+        }
+
+        /// <summary>
+        /// Make offseted rectangle
+        /// </summary>
         /// <param name="offset">X and Y coordinate offset</param>
         /// <returns>Offseted rectangle</returns>
         public Rectangle MakeOffsetted(Float2 offset)

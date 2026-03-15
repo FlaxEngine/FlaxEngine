@@ -166,7 +166,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _picker = new EnumComboBox(type)
                 {
                     EnumTypeValue = Values[0],
-                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize, 160, 16),
+                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight, 160, 16),
                     Parent = this,
                 };
                 _picker.ValueChanged += () => SetValue(0, _picker.EnumTypeValue);
@@ -218,7 +218,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _output = (OutputBox)Elements[0];
                 _typePicker = new TypePickerControl
                 {
-                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize, 160, 16),
+                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight, 160, 16),
                     Parent = this,
                 };
                 _typePicker.ValueChanged += () => Set(3);
@@ -362,7 +362,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _output = (OutputBox)Elements[0];
                 _keyTypePicker = new TypePickerControl
                 {
-                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize, 160, 16),
+                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight, 160, 16),
                     Parent = this,
                 };
                 _keyTypePicker.ValueChanged += OnKeyTypeChanged;
@@ -482,7 +482,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(bool))),
                 Description = "Constant boolean value",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Float2(110, 20),
+                Size = new Float2(90, 20),
                 DefaultValues = new object[]
                 {
                     false
@@ -515,7 +515,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(int))),
                 Description = "Constant integer value",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Float2(110, 20),
+                Size = new Float2(120, 20),
                 DefaultValues = new object[]
                 {
                     0
@@ -543,7 +543,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(float))),
                 Description = "Constant floating point",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Float2(110, 20),
+                Size = new Float2(120, 20),
                 DefaultValues = new object[]
                 {
                     0.0f
@@ -750,7 +750,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "PI",
                 Description = "A value specifying the approximation of π which is 180 degrees",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Float2(50, 20),
+                Size = new Float2(45, 20),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, "π", typeof(float), 0),
@@ -782,7 +782,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(uint))),
                 Description = "Constant unsigned integer value",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Float2(170, 20),
+                Size = new Float2(130, 20),
                 DefaultValues = new object[]
                 {
                     0u
@@ -824,7 +824,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(double))),
                 Description = "Constant floating point",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Float2(110, 20),
+                Size = new Float2(120, 20),
                 DefaultValues = new object[]
                 {
                     0.0d
