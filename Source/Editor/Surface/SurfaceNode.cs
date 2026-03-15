@@ -243,6 +243,7 @@ namespace FlaxEditor.Surface
                     rightHeight = Mathf.Max(rightHeight, outputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderHeight + 20.0f);
                 }
                 // Elements (Float-, int-, uint- value boxes, asset pickers, etc.)
+                // These will only ever be on the left side of the node, so we only adjust left width and height
                 else if (child is ISurfaceNodeElement surfaceElement)
                 {
                     leftWidth = Mathf.Max(leftWidth, surfaceElement.Archetype.Size.X + 8f);
@@ -258,12 +259,12 @@ namespace FlaxEditor.Surface
                 {
                     if (control.AnchorPreset == AnchorPresets.TopLeft)
                     {
-                        width = Mathf.Max(width, control.Right + 4 - Constants.NodeMarginX);
+                        width = Mathf.Max(width, control.Right + 15 + Constants.NodeMarginX);
                         height = Mathf.Max(height, control.Bottom + 4 - Constants.NodeMarginY - Constants.NodeHeaderHeight);
                     }
                     else if (!_headerRect.Intersects(control.Bounds))
                     {
-                        width = Mathf.Max(width, control.Width + 4);
+                        width = Mathf.Max(width, control.Width + 15 + Constants.NodeMarginX);
                         height = Mathf.Max(height, control.Height + 4);
                     }
                 }
