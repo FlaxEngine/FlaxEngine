@@ -29,6 +29,7 @@ namespace FlaxEditor.Surface
         private HashSet<SurfaceNode> _movingNodes;
         private HashSet<SurfaceNode> _temporarySelectedNodes;
         private readonly Stack<InputBracket> _inputBrackets = new Stack<InputBracket>();
+        private InputBinding _focusSelectedNodeBinding;
 
         private class InputBracket
         {
@@ -704,13 +705,21 @@ namespace FlaxEditor.Surface
 
         private void MoveSelectedNodes(Float2 delta)
         {
-            // TODO: undo
+            List<MoveNodesAction> undoActions = new List<MoveNodesAction>();
+
             delta /= _targetScale;
             OnGetNodesToMove();
             foreach (var node in _movingNodes)
+            {
                 node.Location += delta;
+                if (Undo != null)
+                    undoActions.Add(new MoveNodesAction(Context, new[] { node.ID }, delta));
+            }
             _isMovingSelection = false;
             MarkAsEdited(false);
+
+            if (undoActions.Count > 0)
+                Undo?.AddAction(new MultiUndoAction(undoActions, "Moved "));
         }
 
         /// <inheritdoc />
@@ -845,7 +854,8 @@ namespace FlaxEditor.Surface
 
         private void CurrentInputTextChanged(string currentInputText)
         {
-            if (string.IsNullOrEmpty(currentInputText))
+            // Check if focus selected nodes binding is being pressed to prevent it triggering primary menu 
+            if (string.IsNullOrEmpty(currentInputText) || _focusSelectedNodeBinding.Process(RootWindow))
                 return;
             if (IsPrimaryMenuOpened || !CanEdit)
             {
