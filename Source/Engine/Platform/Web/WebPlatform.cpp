@@ -14,6 +14,7 @@
 #include "Engine/Platform/MemoryStats.h"
 #include "Engine/Platform/MessageBox.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/Web/WebGame.h"
 #include "Engine/Utilities/StringConverter.h"
@@ -219,6 +220,12 @@ bool WebPlatform::Init()
     if (PlatformBase::Init())
         return true;
 
+#if COMPILE_WITH_PROFILER
+    // Setup platform-specific memory profiler tags
+    ProfilerMemory::RenameGroup(ProfilerMemory::Groups::WEB_MEM_TAG_HEAP_SIZE, TEXT("Emscripten/HeapSize"));
+    ProfilerMemory::RenameGroup(ProfilerMemory::Groups::WEB_MEM_TAG_HEAP_MAX, TEXT("Emscripten/HeapMax"));
+#endif
+
     // Set info about the CPU
     Platform::MemoryClear(&Cpu, sizeof(Cpu));
     Cpu.ProcessorPackageCount = 1;
@@ -249,6 +256,10 @@ void WebPlatform::LogInfo()
 
 void WebPlatform::Tick()
 {
+#if COMPILE_WITH_PROFILER
+    ProfilerMemory::OnGroupSet(ProfilerMemory::Groups::WEB_MEM_TAG_HEAP_SIZE, (int64)emscripten_get_heap_size(), 1);
+    ProfilerMemory::OnGroupSet(ProfilerMemory::Groups::WEB_MEM_TAG_HEAP_MAX, (int64)emscripten_get_heap_max(), 1);
+#endif
 }
 
 void WebPlatform::Exit()

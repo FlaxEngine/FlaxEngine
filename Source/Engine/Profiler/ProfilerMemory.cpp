@@ -489,4 +489,11 @@ void ProfilerMemory::OnGroupUpdate(Groups group, int64 sizeDelta, int64 countDel
     UPDATE_PEEK(group);
 }
 
+void ProfilerMemory::OnGroupSet(Groups group, int64 size, int64 count)
+{
+    Platform::AtomicStore(&GroupMemory[(int32)group], size);
+    Platform::AtomicStore(&GroupMemoryCount[(int32)group], count);
+    UPDATE_PEEK(group);
+}
+
 #endif

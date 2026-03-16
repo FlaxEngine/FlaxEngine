@@ -9,6 +9,10 @@
 #include <pthread.h>
 #endif
 
+// Platform memory profiler categories mapping
+#define WEB_MEM_TAG_HEAP_SIZE CustomPlatform0
+#define WEB_MEM_TAG_HEAP_MAX CustomPlatform1
+
 /// <summary>
 /// The Web platform implementation and application management utilities.
 /// </summary>

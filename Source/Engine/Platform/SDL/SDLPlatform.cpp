@@ -175,6 +175,7 @@ void SDLPlatform::LogInfo()
 
 void SDLPlatform::Tick()
 {
+    SDLPlatformBase::Tick();
     SDLInput::Update();
 
     PreHandleEvents();
