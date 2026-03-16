@@ -1,6 +1,4 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
-
-using System;
 using System.Runtime.CompilerServices;
 
 namespace FlaxEngine
@@ -20,6 +18,6 @@ namespace FlaxEngine
         /// </summary>
         /// <returns>The random number.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Rand() => Random.Float();
+        public static float Rand() => FlaxEngine.Random.Float();
     }
 }
