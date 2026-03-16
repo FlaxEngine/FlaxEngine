@@ -142,7 +142,7 @@ void RenderAntiAliasingPass(RenderContext& renderContext, GPUTexture* input, GPU
             // AA -> CAS -> Output
             auto tmpImage = RenderTargetPool::Get(input->GetDescription());
             RENDER_TARGET_POOL_SET_NAME(tmpImage, "TmpImage");
-            context->SetViewportAndScissors((float)input->Width(), (float)input->Height());
+            context->SetViewportAndScissors((float)tmpImage->Width(), (float)tmpImage->Height());
             if (aaMode == AntialiasingMode::FastApproximateAntialiasing)
                 FXAA::Instance()->Render(renderContext, input, tmpImage->View());
             else

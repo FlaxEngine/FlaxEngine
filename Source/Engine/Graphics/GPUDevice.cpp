@@ -256,8 +256,6 @@ uint64 GPUResource::GetMemoryUsage() const
     return _memoryUsage;
 }
 
-static_assert((GPU_ENABLE_RESOURCE_NAMING) == (!BUILD_RELEASE), "Update build condition on around GPUResource Name property getter/setter.");
-
 #if GPU_ENABLE_RESOURCE_NAMING
 
 StringView GPUResource::GetName() const
@@ -280,6 +278,17 @@ void GPUResource::SetName(const StringView& name)
         Platform::MemoryCopy(_namePtr, name.Get(), _nameSize * sizeof(Char));
         _namePtr[_nameSize] = 0;
     }
+}
+
+#elif !BUILD_RELEASE
+
+StringView GPUResource::GetName() const
+{
+    return StringView::Empty;
+}
+
+void GPUResource::SetName(const StringView& name)
+{
 }
 
 #endif

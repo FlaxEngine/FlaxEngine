@@ -11,7 +11,6 @@
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
-#include "Engine/Scripting/Enums.h"
 
 GPUSwapChainWebGPU::GPUSwapChainWebGPU(GPUDeviceWebGPU* device, Window* window)
     : GPUResourceWebGPU(device, StringView::Empty)
@@ -58,6 +57,18 @@ GPUTextureView* GPUSwapChainWebGPU::GetBackBufferView()
         bool hasSurfaceTexture = surfaceTexture.status == WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal || surfaceTexture.status == WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal;
         ASSERT(hasSurfaceTexture);
         _surfaceView.Texture = surfaceTexture.texture;
+
+        // Fix up the size (in case underlying texture is different than the engine resize it to)
+        const uint32 width = wgpuTextureGetWidth(surfaceTexture.texture);
+        const uint32 height = wgpuTextureGetHeight(surfaceTexture.texture);
+        if (_width != width || _height != height)
+        {
+            PROFILE_MEM_DEC(Graphics, _memoryUsage);
+            _width = width;
+            _height = height;
+            _memoryUsage = RenderTools::CalculateTextureMemoryUsage(_format, _width, _height, 1);
+            PROFILE_MEM_INC(Graphics, _memoryUsage);
+        }
 
         // Create view
         WGPUTextureViewDescriptor viewDesc = WGPU_TEXTURE_VIEW_DESCRIPTOR_INIT;

@@ -244,3 +244,10 @@ void GraphicsService::Dispose()
 {
     // Device is disposed AFTER Content (faster and safer because there is no assets so there is less gpu resources to cleanup)
 }
+
+#if PLATFORM_WEB && !GRAPHICS_API_WEBGPU
+// Fix missing method when using Null backend on Web
+void SetWebGPUTextureViewSampler(GPUTextureView* view, uint32 samplerType)
+{
+}
+#endif

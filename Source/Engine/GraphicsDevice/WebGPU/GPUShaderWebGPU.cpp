@@ -20,6 +20,16 @@ GPUConstantBufferWebGPU::GPUConstantBufferWebGPU(GPUDeviceWebGPU* device, uint32
 
 GPUShaderProgram* GPUShaderWebGPU::CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, Span<byte> bytecode, MemoryReadStream& stream)
 {
+    // Fix issue with unaligned loads if bytecode
+    // TODO: fix issue at cook time by adding padding before shader bytecode to ensure it's aligned (eg. to 8 bytes)
+    BytesContainer bytecoddAligned;
+    uintptr align = (uintptr)bytecode.Get() % sizeof(uintptr);
+    if (align != 0)
+    {
+        bytecoddAligned.Copy(bytecode);
+        bytecode = bytecoddAligned;
+    }
+
     // Extract the SPIR-V shader header from the cache
     SpirvShaderHeader* header = (SpirvShaderHeader*)bytecode.Get();
     bytecode = bytecode.Slice(sizeof(SpirvShaderHeader));

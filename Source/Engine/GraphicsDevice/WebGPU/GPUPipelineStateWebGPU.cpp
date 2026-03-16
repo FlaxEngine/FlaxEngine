@@ -554,6 +554,7 @@ WGPURenderPipeline GPUPipelineStateWebGPU::GetPipeline(const PipelineKey& key, c
             _colorTargets[i].format = (WGPUTextureFormat)key.RenderTargetFormats[i];
     }
     WGPUVertexBufferLayout buffers[GPU_MAX_VB_BINDED];
+    WGPUVertexAttribute attributes[GPU_MAX_VS_ELEMENTS];
     if (key.VertexLayout)
     {
         // Combine input layout of Vertex Buffers with the destination layout used by the Vertex Shader
@@ -564,7 +565,6 @@ WGPURenderPipeline GPUPipelineStateWebGPU::GetPipeline(const PipelineKey& key, c
             mergedVertexLayout = (GPUVertexLayoutWebGPU*)GPUVertexLayout::Merge(mergedVertexLayout, VS->InputLayout, true, true, -1, true);
 
         // Build attributes list
-        WGPUVertexAttribute attributes[GPU_MAX_VS_ELEMENTS];
         desc.vertex.bufferCount = 0;
         desc.vertex.buffers = buffers;
         int32 attributeIndex = 0;

@@ -362,7 +362,13 @@ Viewport SceneRenderTask::GetOutputViewport() const
     if (Output && Output->IsAllocated())
         return Viewport(0, 0, static_cast<float>(Output->Width()), static_cast<float>(Output->Height()));
     if (SwapChain)
+    {
+#if PLATFORM_WEB
+        // Hack fix for Web where swapchain texture might have different size than actual current size of the backbuffer, just precache it (GetBackBufferView might resize internally)
+        SwapChain->GetBackBufferView();
+#endif
         return Viewport(0, 0, static_cast<float>(SwapChain->GetWidth()), static_cast<float>(SwapChain->GetHeight()));
+    }
     return GetViewport();
 }
 

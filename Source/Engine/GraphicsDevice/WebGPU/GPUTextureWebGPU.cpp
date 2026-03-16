@@ -115,6 +115,10 @@ void GPUTextureViewWebGPU::Release()
         View = nullptr;
     }
     Texture = nullptr;
+    HasStencil = false;
+    ReadOnly = false;
+    DepthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+    Ptr.Version++;
 }
 
 bool GPUTextureWebGPU::OnInit()

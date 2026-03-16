@@ -128,6 +128,7 @@ void GPUBufferWebGPU::OnReleaseGPU()
 #if GPU_ENABLE_RESOURCE_NAMING
     _name.Clear();
 #endif
+    _view.Ptr.Version++;
 
     // Base
     GPUBuffer::OnReleaseGPU();
