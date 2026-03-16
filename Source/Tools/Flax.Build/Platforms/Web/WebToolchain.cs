@@ -313,6 +313,10 @@ namespace Flax.Build.Platforms
                 {
                     args.Add("-sSIDE_MODULE");
                 }
+
+                // Customize output HTML shell
+                if (options.LinkEnv.Output == LinkerOutput.Executable)
+                    args.Add($"--shell-file \"{Globals.EngineRoot}/Source/Platforms/Web/Binaries/Data/shell.html\"");
             }
 
             args.Add("-Wl,--start-group");

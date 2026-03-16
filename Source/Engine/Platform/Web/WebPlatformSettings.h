@@ -30,6 +30,12 @@ API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     };
 
     /// <summary>
+    /// The custom HTML template for the game page.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(100), DefaultValue(\"\"), EditorDisplay(\"HTML\"), AssetReference(\".html\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.FilePathEditor\")")
+    String CustomHtml;
+
+    /// <summary>
     /// The output textures compression mode.
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(500), EditorDisplay(\"General\")")

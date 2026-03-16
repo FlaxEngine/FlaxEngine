@@ -135,6 +135,11 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     if (_settings.Parent != nullptr && (_settings.Type != WindowType::Tooltip && _settings.Type != WindowType::Popup))
         _settings.Parent = nullptr;
 #endif
+#if PLATFORM_WEB
+    // Control canvas size
+    // TODO: try using SDL_SetWindowFillDocument (min SDL 3.4)
+    flags |= SDL_WINDOW_RESIZABLE;
+#endif
 
     // The window position needs to be relative to the parent window
     Int2 relativePosition(Math::TruncToInt(settings.Position.X), Math::TruncToInt(settings.Position.Y));

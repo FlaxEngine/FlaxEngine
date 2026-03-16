@@ -205,7 +205,15 @@ bool WebPlatformTools::OnPostProcess(CookingData& data)
             FileSystem::CopyFile(dstIcon, platformDataPath / TEXT("favicon.ico"));
     }
 
-    // TODO: customizable HTML templates
+    // Copy custom HTMl template
+    auto customHtml = platformSettings->CustomHtml.TrimTrailing();
+    if (customHtml.HasChars())
+    {
+        FileSystem::CopyFile(data.OriginalOutputPath / TEXT("FlaxGame.html"), customHtml);
+    }
+
+    // Rename game website main HTML file to match the most common name used by web servers (index.html)
+    FileSystem::MoveFile(data.OriginalOutputPath / TEXT("index.html"), data.OriginalOutputPath / TEXT("FlaxGame.html"), true);
 
     // Insert packaged file system with game data
     {
@@ -253,8 +261,6 @@ bool WebPlatformTools::OnPostProcess(CookingData& data)
     if (buildSettings->SkipPackaging)
         return false;
     GameCooker::PackageFiles();
-
-    // TODO: minify/compress output JS files (in Release builds)
 
     LOG(Info, "Output website size: {0} MB", FileSystem::GetDirectorySize(data.OriginalOutputPath) / 1024 / 1024);
 
