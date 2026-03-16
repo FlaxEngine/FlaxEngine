@@ -179,15 +179,6 @@ void WebPlatform::Log(const StringView& msg, int32 logType)
     emscripten_log(flags, buffer);
 }
 
-#if !BUILD_RELEASE
-
-bool WebPlatform::IsDebuggerPresent()
-{
-    return false;
-}
-
-#endif
-
 String WebPlatform::GetComputerName()
 {
     return TEXT("Web");
@@ -335,7 +326,7 @@ Array<PlatformBase::StackFrame> WebPlatform::GetStackFrames(int32 skipCount, int
     Array<StackFrame> result;
 #if CRASH_LOG_ENABLE
     // Get callstack
-    char callstack[1024];
+    char callstack[2000];
     emscripten_get_callstack(EM_LOG_JS_STACK, callstack, sizeof(callstack));
 
     // Parse callstack

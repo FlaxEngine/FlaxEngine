@@ -169,8 +169,10 @@ namespace Flax.Build.Platforms
                 args.Add("-fsanitize=address");
             if (sanitizers.HasFlag(Sanitizer.Undefined))
                 args.Add("-fsanitize=undefined");
-            if (sanitizers == Sanitizer.None)
-                args.Add("-fsanitize=null -fsanitize-minimal-runtime"); // Minimal Runtime
+            //if (sanitizers == Sanitizer.None && options.Configuration != TargetConfiguration.Release)
+            //    args.Add("-fsanitize=null -fsanitize-minimal-runtime"); // Minimal Runtime
+            if (sanitizers == Sanitizer.None) // TODO: fix random memory issues around malloc (eg. when resizing canvas) that are not happening when using Address sanitizer (wierd)
+                args.Add("-fsanitize=address");
 
             if (Configuration.WebThreads)
                 args.Add("-pthread");
@@ -289,7 +291,12 @@ namespace Flax.Build.Platforms
                     initialMemory = Math.Max(initialMemory, 64); // Address Sanitizer needs more memory
                 args.Add($"-sINITIAL_MEMORY={initialMemory}MB");
                 args.Add("-sSTACK_SIZE=4MB");
+                args.Add("-sASYNCIFY_STACK_SIZE=8192");
                 args.Add("-sALLOW_MEMORY_GROWTH=1");
+                //args.Add("-sSAFE_HEAP=1");
+                args.Add("-sABORTING_MALLOC=0");
+                //args.Add("-sMALLOC=emmalloc-memvalidate");
+                //args.Add("-sMALLOC=emmalloc");
 
                 // Setup file access (Game Cooker packs files with file_packager tool)
                 args.Add("-sFORCE_FILESYSTEM");

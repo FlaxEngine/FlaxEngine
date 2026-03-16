@@ -111,7 +111,10 @@ public:
     static void GetUTCTime(int32& year, int32& month, int32& dayOfWeek, int32& day, int32& hour, int32& minute, int32& second, int32& millisecond);
     static void Log(const StringView& msg, int32 logType = 1);
 #if !BUILD_RELEASE
-    static bool IsDebuggerPresent();
+    static bool IsDebuggerPresent()
+    {
+        return false;
+    }
 #endif
     static String GetComputerName();
     static bool GetHasFocus();
