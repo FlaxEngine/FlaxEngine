@@ -3,6 +3,7 @@
 #if PLATFORM_WEB
 
 #include "WebPlatform.h"
+#include "WebThread.h"
 #include "WebFileSystem.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/String.h"
@@ -48,6 +49,28 @@ DialogResult MessageBox::Show(Window* parent, const StringView& text, const Stri
     StringAnsi captionAnsi(caption);
     EM_ASM({ alert(UTF8ToString($0) + "\n\n" + UTF8ToString($1)); }, captionAnsi.Get(), textAnsi.Get());
     return DialogResult::None;
+}
+
+WebThread* WebThread::Create(IRunnable* runnable, const String& name, ThreadPriority priority, uint32 stackSize)
+{
+#ifdef __EMSCRIPTEN_PTHREADS__
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    if (stackSize != 0)
+        pthread_attr_setstacksize(&attr, stackSize);
+    auto thread = New<WebThread>(runnable, name, priority);
+    const int result = pthread_create(&thread->_thread, &attr, ThreadProc, thread);
+    if (result != 0)
+    {
+        LOG(Warning, "Failed to spawn a thread. Result code: {0}", result);
+        Delete(thread);
+        return nullptr;
+    }
+    return thread;
+#else
+    LOG(Fatal, "Threading is not supported.");
+    return nullptr;
+#endif
 }
 
 void WebFileSystem::GetSpecialFolderPath(const SpecialFolder type, String& result)
