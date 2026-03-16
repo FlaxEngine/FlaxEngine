@@ -141,6 +141,7 @@ public:
     WGPUBuffer DefaultBuffer = nullptr;
     GPUDataUploaderWebGPU DataUploader;
     uint32 MinUniformBufferOffsetAlignment = 1;
+    uint32 QueueSubmits = 0;
     bool TimestampQuery = false;
     uint32 QuerySetsCount = 0;
     GPUQuerySetWebGPU* QuerySets[WEBGPU_MAX_QUERY_SETS] = {};

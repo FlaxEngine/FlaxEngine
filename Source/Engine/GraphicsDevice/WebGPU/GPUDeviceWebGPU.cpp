@@ -796,7 +796,27 @@ void GPUDeviceWebGPU::Dispose()
 
 void GPUDeviceWebGPU::WaitForGPU()
 {
-    // TODO: this could use onSubmittedWorkDone (assuming any submit has been already done)
+    if (QueueSubmits == 0)
+        return;
+    QueueSubmits = 0;
+    AsyncCallbackWebGPU<WGPUQueueWorkDoneCallbackInfo> workDone(WGPU_QUEUE_WORK_DONE_CALLBACK_INFO_INIT);
+    workDone.Info.callback = [](WGPUQueueWorkDoneStatus status, WGPUStringView message, WGPU_NULLABLE void* userdata1, WGPU_NULLABLE void* userdata2)
+    {
+        AsyncCallbackDataWebGPU& userData = *reinterpret_cast<AsyncCallbackDataWebGPU*>(userdata1);
+        userData.Call(status == WGPUQueueWorkDoneStatus_Success, status, message);
+    };
+    wgpuQueueOnSubmittedWorkDone(Queue, workDone.Info);
+    auto workDoneResult = workDone.Wait();
+    if (workDoneResult == WGPUWaitStatus_TimedOut)
+    {
+        LOG(Error, "WebGPU queue wait has timed out after {}s", workDone.Data.WaitTime);
+        return;
+    }
+    if (workDoneResult == WGPUWaitStatus_Error)
+    {
+        LOG(Error, "Failed to wait for WebGPU queue. Error: {}, 0x{:x}", workDone.Data.Message, workDone.Data.Status);
+        return;
+    }
 }
 
 GPUQueryWebGPU GPUDeviceWebGPU::AllocateQuery(GPUQueryType type)

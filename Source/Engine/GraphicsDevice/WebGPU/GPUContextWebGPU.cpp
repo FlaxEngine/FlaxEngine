@@ -561,6 +561,7 @@ void GPUContextWebGPU::Flush()
     {
         wgpuQueueSubmit(_device->Queue, 1, &commandBuffer);
         wgpuCommandBufferRelease(commandBuffer);
+        _device->QueueSubmits++;
     }
 }
 
@@ -1075,6 +1076,7 @@ void GPUContextWebGPU::FlushRenderPass()
         _blendFactorDirty = true;
     _scissorRectDirty |= _scissorRect != Rectangle(0, 0, attachmentSize.Width, attachmentSize.Height);
     _viewportDirty |= _viewport != Viewport(Float2(attachmentSize.Width, attachmentSize.Height));
+    ASSERT_LOW_LAYER(_scissorRect.GetWidth() <= attachmentSize.Width && _scissorRect.GetHeight() <= attachmentSize.Height);
 }
 
 void GPUContextWebGPU::FlushBindGroup()
