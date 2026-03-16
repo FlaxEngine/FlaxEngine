@@ -120,13 +120,11 @@ public static class Random
     /// <returns>A new <see cref="Float4"/>, where each component is a random floating-point value.</returns>
     /// <inheritdoc cref="UnitVector3(ref Seed)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Float4 UnitVector4(ref Seed seed) // SIMD via System.Numerics.Vector4
+    public static Float4 UnitVector4(ref Seed seed)
     {
-        System.Numerics.Vector4 abs = new((float)++seed, (float)++seed, (float)++seed, (float)++seed);
-        System.Numerics.Vector4 unit = (abs * 2.0f) - System.Numerics.Vector4.One;
-        float lengthSqr = unit.LengthSquared();
-        float invLength = MathF.ReciprocalSqrtEstimate(lengthSqr);
-        return Unsafe.BitCast<System.Numerics.Vector4, Float4>(unit * invLength);
+        Float4 abs = new((float)++seed, (float)++seed, (float)++seed, (float)++seed);
+        Float4 unit = (abs * 2.0f) - Float4.One;
+        return unit * MathF.ReciprocalSqrtEstimate(unit.LengthSquared);
     }
 
     /// <summary>
