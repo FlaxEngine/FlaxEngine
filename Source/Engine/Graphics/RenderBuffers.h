@@ -54,6 +54,7 @@ protected:
     int32 _height = 0;
     float _aspectRatio = 0.0f;
     bool _useAlpha = false;
+    bool _useNull = false;
     Viewport _viewport;
     Array<GPUTexture*, FixedAllocation<32>> _resources;
 

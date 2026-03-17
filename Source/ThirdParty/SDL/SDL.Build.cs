@@ -47,6 +47,11 @@ public class SDL : EngineDepsModule
             break;
         case TargetPlatform.Web:
             options.OutputFiles.Add("--use-port=sdl3");
+            options.LinkEnv.CustomArgs.Add("-sUSE_SDL_IMAGE=0");
+            options.LinkEnv.CustomArgs.Add("-sUSE_SDL_TTF=0");
+            options.LinkEnv.CustomArgs.Add("-sUSE_SDL_NET=0");
+            options.LinkEnv.CustomArgs.Add("-sUSE_SDL_NET=0");
+            options.LinkEnv.CustomArgs.Add("-sUSE_SDL_MIXER=0");
             return;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }

@@ -12,7 +12,7 @@ IF(NOT ${TARGET_BUILD_PLATFORM} IN_LIST PLATFORM_LIST)
 	MESSAGE(FATAL_ERROR "Invalid platform:" ${TARGET_BUILD_PLATFORM})
 ENDIF()
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fno-exceptions -ffunction-sections -fdata-sections -fstrict-aliasing -Wstrict-aliasing=2")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fno-exceptions -ffunction-sections -fdata-sections -fstrict-aliasing -Wstrict-aliasing=2 -Wno-nontrivial-memcall")
 
 # Enable SIMD
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msimd128 -msse4.2 -mno-nontrapping-fptoint")
@@ -23,7 +23,7 @@ SET(CMAKE_SHARED_LINKER_FLAGS "")
 SET(CMAKE_CXX_FLAGS_DEBUG "-O0 -g2")
 SET(CMAKE_CXX_FLAGS_CHECKED "-g2 -O2")
 SET(CMAKE_CXX_FLAGS_PROFILE "-O3 -g")
-SET(CMAKE_CXX_FLAGS_RELEASE "-O3")
+SET(CMAKE_CXX_FLAGS_RELEASE "-Os")
 
 # Disable cuda and dx for all projects on web
 SET(PHYSX_WEB_COMPILE_DEFS DISABLE_COMPUTE_PHYSX)

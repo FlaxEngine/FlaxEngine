@@ -401,4 +401,27 @@ Array<PlatformBase::StackFrame> WebPlatform::GetStackFrames(int32 skipCount, int
     return result;
 }
 
+#if 1
+// Fix linker errors when using '-sAUTO_JS_LIBRARIES=0' due to unused WebGL functions (referenced by SDL3 port itself from emscripten: SDL_emscriptenopengles.c)
+extern "C" EMSCRIPTEN_WEBGL_CONTEXT_HANDLE emscripten_webgl_create_context(const char* target, const EmscriptenWebGLContextAttributes* attributes)
+{
+    return 0;
+}
+
+extern "C" EMSCRIPTEN_RESULT emscripten_webgl_make_context_current(EMSCRIPTEN_WEBGL_CONTEXT_HANDLE context)
+{
+    return 0;
+}
+
+extern "C" EMSCRIPTEN_RESULT emscripten_webgl_destroy_context(EMSCRIPTEN_WEBGL_CONTEXT_HANDLE context)
+{
+    return 0;
+}
+
+extern "C" void* emscripten_webgl_get_proc_address(const char* name)
+{
+    return nullptr;
+}
+#endif
+
 #endif

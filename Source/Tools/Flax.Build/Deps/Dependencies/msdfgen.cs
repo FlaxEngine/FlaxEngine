@@ -113,6 +113,7 @@ namespace Flax.Deps.Dependencies
                 {
                     BuildStarted(platform, architecture);
 
+                    var isMSVC = Platform.GetPlatform(platform, true) is Build.Platforms.WindowsPlatformBase;
                     var buildDir = Path.Combine(root, "build-" + architecture);
                     var installDir = Path.Combine(root, "install-" + architecture);
                     var depsFolder = GetThirdPartyFolder(options, platform, architecture);
@@ -120,7 +121,11 @@ namespace Flax.Deps.Dependencies
                     SetupDirectory(buildDir, true);
                     File.Delete(Path.Combine(root, "CMakeCache.txt"));
 
-                    Dictionary<string, string> envVars = null;
+                    var envVars = new Dictionary<string, string>
+                    {
+                        { "CXXFLAGS", isMSVC ? "/EH- /GR-" : "-fno-exceptions -fno-rtti" }, // Disable exceptions and RTTI
+                        { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
+                    };
                     var libName = "libmsdfgen-core.a";
                     var cmakeArgs = string.Join(" ", args);
                     switch (platform)
@@ -131,13 +136,9 @@ namespace Flax.Deps.Dependencies
                         libName = "msdfgen-core.lib";
                         break;
                     case TargetPlatform.Linux:
-                        envVars = new Dictionary<string, string>
-                        {
-                            { "CC", "clang-" + Configuration.LinuxClangMinVer },
-                            { "CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer },
-                            { "CXX", "clang++-" + Configuration.LinuxClangMinVer },
-                            { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
-                        };
+                        envVars["CC"] = "clang-" + Configuration.LinuxClangMinVer;
+                        envVars["CC_FOR_BUILD"] = "clang-" + Configuration.LinuxClangMinVer;
+                        envVars["CXX"] = "clang++-" + Configuration.LinuxClangMinVer;
                         cmakeArgs += " -DCMAKE_POSITION_INDEPENDENT_CODE=ON";
                         break;
                     }

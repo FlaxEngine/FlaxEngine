@@ -437,8 +437,16 @@ Use these macro definitions to create warnings for deprecated functions
 General defines
 */
 
+// Customization to exclude serialization code
+#define PX_SERIALIZATION 0
+
+// Customization to exclude soft-bodies (incl. tetrahedral meshes)
+#define PX_SOFT_BODY 0
+
 // static assert
-#if(defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 7))) || (PX_APPLE_FAMILY) || (PX_SWITCH || PX_PS4 || PX_PS5) || (PX_CLANG && PX_ARM) || (PX_CLANG && PX_A64)
+#if PX_EMSCRIPTEN
+	#define PX_COMPILE_TIME_ASSERT(exp)
+#elif(defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 7))) || (PX_APPLE_FAMILY) || (PX_SWITCH || PX_PS4 || PX_PS5) || (PX_CLANG && PX_ARM) || (PX_CLANG && PX_A64)
 	#define PX_COMPILE_TIME_ASSERT(exp) typedef char PX_CONCAT(PxCompileTimeAssert_Dummy, __COUNTER__)[(exp) ? 1 : -1] __attribute__((unused))
 #else
 	#define PX_COMPILE_TIME_ASSERT(exp) typedef char PxCompileTimeAssert_Dummy[(exp) ? 1 : -1]

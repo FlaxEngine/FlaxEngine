@@ -35,6 +35,8 @@
 #include "common/PxBase.h"
 #include "extensions/PxRepXSimpleType.h"
 
+#if PX_SERIALIZATION
+
 #if !PX_DOXYGEN
 namespace physx
 {
@@ -147,3 +149,4 @@ PX_INLINE physx::PxRepXObject PxCreateRepXObject(const TDataType* inType)
 /** @} */
 #endif
 
+#endif

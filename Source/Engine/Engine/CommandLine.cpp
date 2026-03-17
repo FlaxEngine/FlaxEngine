@@ -88,6 +88,12 @@ bool CommandLine::Parse(const Char* cmdLine)
     (void)argStart;
     (void)argEnd;
 
+#if PLATFORM_HAS_HEADLESS_MODE
+#define PARSE_ERROR(msg) std::cout << msg << std::endl
+#else
+#define PARSE_ERROR(msg) // Ignore
+#endif
+
 #define PARSE_BOOL_SWITCH(text, field) \
 		pos = (Char*)StringUtils::FindIgnoreCase(buffer.Get(), TEXT(text)); \
 		if (pos) \
@@ -105,7 +111,7 @@ bool CommandLine::Parse(const Char* cmdLine)
 			len = ARRAY_COUNT(text) - 1; \
 			if (ParseArg(pos + len, argStart, argEnd)) \
 			{ \
-				std::cout << "Failed to parse argument." << std::endl; \
+				PARSE_ERROR("Failed to parse argument."); \
 				return true; \
 			} \
 			Options.field = String(argStart, static_cast<int32>(argEnd - argStart)); \

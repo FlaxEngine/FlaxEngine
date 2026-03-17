@@ -276,7 +276,6 @@ namespace Flax.Build
             case TargetPlatform.Linux:
             case TargetPlatform.iOS:
             case TargetPlatform.Mac:
-                // TODO: try to disable this on more platforms! (eg. LocalizationService::OnLocalizationChanged uses it)
                 options.CompileEnv.EnableExceptions = true;
                 break;
             }
@@ -288,7 +287,6 @@ namespace Flax.Build
                 options.CompileEnv.PreprocessorDefinitions.Add("BUILD_DEBUG");
                 options.CompileEnv.FunctionLevelLinking = false;
                 options.CompileEnv.Optimization = false;
-                options.CompileEnv.FavorSizeOrSpeed = FavorSizeOrSpeed.Neither;
                 options.CompileEnv.DebugInformation = true;
                 options.CompileEnv.RuntimeChecks = true;
                 options.CompileEnv.StringPooling = false;
@@ -306,7 +304,8 @@ namespace Flax.Build
                 options.CompileEnv.PreprocessorDefinitions.Add("BUILD_DEVELOPMENT");
                 options.CompileEnv.FunctionLevelLinking = true;
                 options.CompileEnv.Optimization = true;
-                options.CompileEnv.FavorSizeOrSpeed = FavorSizeOrSpeed.FastCode;
+                if (options.CompileEnv.FavorSizeOrSpeed == FavorSizeOrSpeed.Neither)
+                    options.CompileEnv.FavorSizeOrSpeed = FavorSizeOrSpeed.FastCode;
                 options.CompileEnv.DebugInformation = true;
                 options.CompileEnv.RuntimeChecks = false;
                 options.CompileEnv.StringPooling = true;
@@ -324,7 +323,8 @@ namespace Flax.Build
                 options.CompileEnv.PreprocessorDefinitions.Add("BUILD_RELEASE");
                 options.CompileEnv.FunctionLevelLinking = true;
                 options.CompileEnv.Optimization = true;
-                options.CompileEnv.FavorSizeOrSpeed = FavorSizeOrSpeed.FastCode;
+                if (options.CompileEnv.FavorSizeOrSpeed == FavorSizeOrSpeed.Neither)
+                    options.CompileEnv.FavorSizeOrSpeed = FavorSizeOrSpeed.FastCode;
                 options.CompileEnv.DebugInformation = false;
                 options.CompileEnv.RuntimeChecks = false;
                 options.CompileEnv.StringPooling = true;

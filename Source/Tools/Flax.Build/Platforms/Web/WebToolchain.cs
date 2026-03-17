@@ -37,6 +37,11 @@ namespace Flax.Build.Platforms
         private string _compilerPath;
         private Version _compilerVersion;
 
+        public static bool WithExceptions(NativeCpp.BuildOptions options)
+        {
+            return EngineConfiguration.WithCSharp(options);
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="WebToolchain"/> class.
         /// </summary>
@@ -102,8 +107,10 @@ namespace Flax.Build.Platforms
             options.CompileEnv.PreprocessorDefinitions.Add("__EMSCRIPTEN__");
             if (Configuration.WebThreads)
                 options.CompileEnv.PreprocessorDefinitions.Add("__EMSCRIPTEN_PTHREADS__");
-            options.CompileEnv.EnableExceptions = false;
+            options.CompileEnv.EnableExceptions = WithExceptions(options);
             options.CompileEnv.CpuArchitecture = CpuArchitecture.SSE4_2;
+            if (options.Configuration == TargetConfiguration.Release)
+                options.CompileEnv.FavorSizeOrSpeed = FavorSizeOrSpeed.SmallCode;
         }
 
         private void AddSharedArgs(List<string> args, BuildOptions options, bool debugInformation, bool optimization)
@@ -114,15 +121,17 @@ namespace Flax.Build.Platforms
                 args.Add("-g0");
 
             if (options.CompileEnv.FavorSizeOrSpeed == FavorSizeOrSpeed.SmallCode)
-                args.Add("-Os");
+                args.Add("-Oz");
             if (options.CompileEnv.FavorSizeOrSpeed == FavorSizeOrSpeed.FastCode)
                 args.Add("-O3");
             else if (optimization && options.Configuration == TargetConfiguration.Release)
                 args.Add("-O3");
             else if (optimization)
                 args.Add("-O2");
+            else if (options.CompileEnv.DebugInformation)
+                args.Add("-Og");
             else
-                args.Add("-O0");
+                args.Add("-O1");
 
             if (options.CompileEnv.RuntimeTypeInfo)
                 args.Add("-frtti");
@@ -169,10 +178,8 @@ namespace Flax.Build.Platforms
                 args.Add("-fsanitize=address");
             if (sanitizers.HasFlag(Sanitizer.Undefined))
                 args.Add("-fsanitize=undefined");
-            //if (sanitizers == Sanitizer.None && options.Configuration != TargetConfiguration.Release)
-            //    args.Add("-fsanitize=null -fsanitize-minimal-runtime"); // Minimal Runtime
-            if (sanitizers == Sanitizer.None) // TODO: fix random memory issues around malloc (eg. when resizing canvas) that are not happening when using Address sanitizer (wierd)
-                args.Add("-fsanitize=address");
+            if (sanitizers == Sanitizer.None && options.Configuration != TargetConfiguration.Release)
+                args.Add("-fsanitize=null -fsanitize-minimal-runtime"); // Minimal Runtime
 
             if (Configuration.WebThreads)
                 args.Add("-pthread");
@@ -283,7 +290,16 @@ namespace Flax.Build.Platforms
             {
                 args.Add(string.Format("-o \"{0}\"", outputFilePath.Replace('\\', '/')));
 
+                //args.Add("--minify=0");
+
                 AddSharedArgs(args, options, options.LinkEnv.DebugInformation, options.LinkEnv.Optimization);
+
+                // Strip unused things
+                args.Add("-sAUTO_JS_LIBRARIES=0");
+                args.Add("-sGL_ENABLE_GET_PROC_ADDRESS=0");
+                args.Add("-sUSE_GLFW=0");
+                args.Add("-sUSE_WEBGL2=0");
+                args.Add("-sERROR_ON_UNDEFINED_SYMBOLS=0");
 
                 // Setup memory
                 var initialMemory = Configuration.WebInitialMemory;
@@ -303,11 +319,18 @@ namespace Flax.Build.Platforms
                 args.Add("-sLZ4");
 
                 // https://emscripten.org/docs/compiling/Dynamic-Linking.html#dynamic-linking
-                // TODO: use -sMAIN_MODULE=2 and -sSIDE_MODULE=2 to strip unused code (mark public APIs with EMSCRIPTEN_KEEPALIVE)
-                if (options.LinkEnv.Output == LinkerOutput.Executable)
+                if (!options.Target.UseSymbolsExports)
+                {
+                    // Strip unused code
+                    args.Add("-sMAIN_MODULE=2");
+                }
+                else if (options.LinkEnv.Output == LinkerOutput.Executable)
                 {
                     args.Add("-sMAIN_MODULE");
-                    args.Add("-sEXPORT_ALL");
+                    //args.Add("-sEXPORT_ALL");
+
+                    // Uncomment to debug dynamic library loading issues
+                    //args.Add("-sDYLINK_DEBUG=1");
                 }
                 else
                 {

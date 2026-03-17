@@ -15,6 +15,7 @@
 RenderBuffers::RenderBuffers(const SpawnParams& params)
     : ScriptingObject(params)
 {
+    _useNull = GPUDevice::Instance->GetRendererType() == RendererType::Null;
 #define CREATE_TEXTURE(name) name = GPUDevice::Instance->CreateTexture(TEXT(#name)); _resources.Add(name)
     CREATE_TEXTURE(DepthBuffer);
     CREATE_TEXTURE(MotionVectors);
@@ -210,16 +211,17 @@ uint64 RenderBuffers::GetMemoryUsage() const
 bool RenderBuffers::Init(int32 width, int32 height)
 {
     // Skip if resolution won't change
-    if (width == _width && height == _height)
+    if ((width == _width && height == _height) || _useNull)
         return false;
     CHECK_RETURN(width > 0 && height > 0, true);
 
     bool result = false;
 
-    // Debug Buffer
+    // Depth Buffer
     GPUTextureDescription desc = GPUTextureDescription::New2D(width, height, GPU_DEPTH_BUFFER_PIXEL_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil);
     if (GPUDevice::Instance->Limits.HasReadOnlyDepth)
         desc.Flags |= GPUTextureFlags::ReadOnlyDepthView;
+    
     result |= DepthBuffer->Init(desc);
 
     // MotionBlurPass initializes MotionVectors texture if needed (lazy init - not every game needs it)
