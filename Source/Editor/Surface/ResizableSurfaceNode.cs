@@ -138,7 +138,7 @@ namespace FlaxEditor.Surface
                 {
                     UpdateResizeFlags(location);
                 }
-                else
+                else if (_surface.CanEdit)
                 {
                     var resizeAxisAbs = ResizeDirection.Absolute;
                     var resizeAxisPos = Float2.Clamp(ResizeDirection, Float2.Zero, Float2.One);
@@ -172,7 +172,7 @@ namespace FlaxEditor.Surface
                 }
 
                 // Update the cursor shape
-                if ((_surface.resizeableNodeIndexInParent <= IndexInParent || IgnoreSurfaceIndex) && !_surface.IsConnecting)
+                if ((_surface.resizeableNodeIndexInParent <= IndexInParent || IgnoreSurfaceIndex) && !_surface.IsConnecting && _surface.CanEdit)
                 {
                     if (!IgnoreSurfaceIndex)
                         _surface.resizeableNodeIndexInParent = IndexInParent;
