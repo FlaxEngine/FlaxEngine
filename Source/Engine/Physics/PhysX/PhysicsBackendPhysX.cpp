@@ -1903,9 +1903,25 @@ void PhysicsBackend::StartSimulateScene(void* scene, float dt)
     scenePhysX->Stepper.renderDone();
 }
 
-PxActor** CachedActiveActors;
+int CachedBucketIndex;
 int64 CachedActiveActorsCount;
 volatile int64 CachedActiveActorIndex;
+#if NESTED_PHYSICS_BODIES
+// if the nesting is greater than this max depth then there could potentially be ordering issues
+#define MAX_SOLVER_DEPTH 32
+Array<Array<IPhysicsActor*>, FixedAllocation<MAX_SOLVER_DEPTH>> SolverDepthBuckets;
+void FlushActiveTransforms(int32 i)
+{
+    PROFILE_CPU();
+    int64 index;
+    auto bucket = SolverDepthBuckets[CachedBucketIndex];
+    while ((index = Platform::InterlockedIncrement(&CachedActiveActorIndex)) < CachedActiveActorsCount)
+    {
+        bucket[index]->OnActiveTransformChanged();
+    }
+}
+#else
+PxActor** CachedActiveActors;
 
 void FlushActiveTransforms(int32 i)
 {
@@ -1919,6 +1935,7 @@ void FlushActiveTransforms(int32 i)
             actor->OnActiveTransformChanged();
     }
 }
+#endif
 
 void PhysicsBackend::EndSimulateScene(void* scene)
 {
@@ -1939,6 +1956,57 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         PxU32 activeActorsCount;
         PxActor** activeActors = scenePhysX->Scene->getActiveActors(activeActorsCount);
 
+#if NESTED_PHYSICS_BODIES
+        if (activeActorsCount > 0)
+        {
+            // initialize buckets
+            if (SolverDepthBuckets.IsEmpty())
+            {
+                SolverDepthBuckets.AddDefault(MAX_SOLVER_DEPTH);
+            }
+
+            // load buckets
+            int maxDepth = 0;
+            for (uint32 i = 0; i < activeActorsCount; i++)
+            {
+                const auto pxActor = (PxRigidActor*)*activeActors++;
+                auto actor = static_cast<IPhysicsActor*>(pxActor->userData);
+                if (actor)
+                {
+                    int depth = Math::Min(actor->SolverDepth, MAX_SOLVER_DEPTH - 1);
+                    SolverDepthBuckets[depth].Add(actor);
+                    maxDepth = Math::Max(depth, maxDepth);
+                }
+            }
+
+            // process buckets, deepest first
+            for (int32 i = maxDepth; i >= 0; i--)
+            {
+                auto bucket = SolverDepthBuckets[i];
+                if (bucket.Count() > 25 && JobSystem::GetThreadsCount() > 1)
+                {
+                    // Run in async via job system if there a lot of items
+                    CachedBucketIndex = i;
+                    CachedActiveActorsCount = bucket.Count();
+                    CachedActiveActorIndex = -1;
+                    JobSystem::Execute(FlushActiveTransforms, JobSystem::GetThreadsCount());
+                }
+                else
+                {
+                    for (auto actor : bucket)
+                    {
+                        actor->OnActiveTransformChanged();
+                    }
+                }
+            }
+
+            // clear buckets
+            for (uint32 i = 0; i <= maxDepth; i++)
+            {
+                SolverDepthBuckets[i].Clear();
+            }
+        }
+#else
         // Update changed transformations
         if (activeActorsCount > 50 && JobSystem::GetThreadsCount() > 1)
         {
@@ -1958,6 +2026,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                     actor->OnActiveTransformChanged();
             }
         }
+#endif
     }
 
 #if WITH_CLOTH
