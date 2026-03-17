@@ -62,6 +62,7 @@ namespace FlaxEditor.Surface
         private int _selectedConnectionIndex;
 
         internal int _isUpdatingBoxTypes;
+        internal int resizeableNodeIndexInParent = -1;
 
         /// <summary>
         /// True if surface supports implicit casting of the FlaxEngine.Object types into Boolean value (as simple validate check).
@@ -810,10 +811,11 @@ namespace FlaxEditor.Surface
             int lowestCommentOrder = int.MaxValue;
             for (int i = 0; i < selection.Count; i++)
             {
-                if (selection[i] is not SurfaceComment || selection[i].IndexInParent >= lowestCommentOrder)
-                    continue;
-                hasCommentsSelected = true;
-                lowestCommentOrder = selection[i].IndexInParent;
+                if (selection[i] is ResizableSurfaceNode node && node is SurfaceComment && node.ResizeBorderControl.IndexInParent < lowestCommentOrder)
+                {
+                    hasCommentsSelected = true;
+                    lowestCommentOrder = node.ResizeBorderControl.IndexInParent;
+                }
             }
 
             return _context.CreateComment(ref surfaceArea, string.IsNullOrEmpty(text) ? "Comment" : text, new Color(1.0f, 1.0f, 1.0f, 0.2f), hasCommentsSelected ? lowestCommentOrder : -1);

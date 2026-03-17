@@ -56,7 +56,7 @@ namespace FlaxEditor.Surface
         : base(id, context, nodeArch, groupArch)
         {
             _sizeValueIndex = 2; // Index of the Size stored in Values array
-            _sizeMin = new Float2(140.0f, Constants.NodeHeaderSize);
+            sizeMin = new Float2(140.0f, Constants.NodeHeaderSize);
             _renameTextBox = new TextBox(false, 0, 0, Width)
             {
                 Height = Constants.NodeHeaderSize,
@@ -65,6 +65,8 @@ namespace FlaxEditor.Surface
                 EndEditOnClick = false, // We have to handle this ourselves, otherwise the textbox instantly loses focus when double-clicking the header
                 HorizontalAlignment = TextAlignment.Center,
             };
+
+            ResizeBorderControl.IgnoreSurfaceIndex = false;
         }
 
         /// <inheritdoc />
@@ -86,7 +88,7 @@ namespace FlaxEditor.Surface
             }
             else if (OrderValue != -1)
             {
-                IndexInParent = OrderValue;
+                ResizeBorderControl.IndexInParent = OrderValue;
             }
         }
 
@@ -99,8 +101,8 @@ namespace FlaxEditor.Surface
             Color = ColorValue = Color.FromHSV(new Random().NextFloat(0, 360), 0.7f, 0.25f, 0.8f);
 
             if (OrderValue == -1)
-                OrderValue = Context.CommentCount - 1;
-            IndexInParent = OrderValue;
+                OrderValue = Context.CommentCount;
+            ResizeBorderControl.IndexInParent = OrderValue;
         }
 
         /// <inheritdoc />
@@ -130,7 +132,6 @@ namespace FlaxEditor.Surface
             _headerRect = new Rectangle(0, 0, Width, headerSize);
             _closeButtonRect = new Rectangle(Width - buttonSize - buttonMargin, buttonMargin, buttonSize, buttonSize);
             _colorButtonRect = new Rectangle(_closeButtonRect.Left - buttonSize - buttonMargin, buttonMargin, buttonSize, buttonSize);
-            _resizeButtonRect = new Rectangle(_closeButtonRect.Left, Height - buttonSize - buttonMargin, buttonSize, buttonSize);
             _renameTextBox.Width = Width;
             _renameTextBox.Height = headerSize;
         }
@@ -188,13 +189,9 @@ namespace FlaxEditor.Surface
                 // Color button
                 Render2D.DrawSprite(style.Settings, _colorButtonRect, _colorButtonRect.Contains(_mousePosition) && Surface.CanEdit ? style.Foreground : style.ForegroundGrey);
 
-                // Resize button
-                if (_isResizing)
-                {
-                    Render2D.FillRectangle(_resizeButtonRect, style.Selection);
-                    Render2D.DrawRectangle(_resizeButtonRect, style.SelectionBorder);
-                }
-                Render2D.DrawSprite(style.Scale, _resizeButtonRect, _resizeButtonRect.Contains(_mousePosition) ? style.Foreground : style.ForegroundGrey);
+                // Resize 
+                if ((ResizeBorderControl.IsResizing || ResizeBorderControl.IsMouseOverResizeBorder) && !Surface.IsConnecting)
+                    Render2D.DrawRectangle(new Rectangle(Float2.Zero, Size), Style.Current.Foreground, 0.5f);
             }
 
             // Selection outline
@@ -229,7 +226,7 @@ namespace FlaxEditor.Surface
         /// <inheritdoc />
         public override bool ContainsPoint(ref Float2 location, bool precise)
         {
-            return _headerRect.Contains(ref location) || _resizeButtonRect.Contains(ref location);
+            return _headerRect.Contains(ref location);
         }
 
         /// <inheritdoc />
@@ -334,25 +331,25 @@ namespace FlaxEditor.Surface
             {
                 cmOrder.ContextMenu.AddButton("Bring Forward", () =>
                 {
-                    if (IndexInParent < Context.CommentCount - 1)
-                        IndexInParent++;
-                    OrderValue = IndexInParent;
+                    if (ResizeBorderControl.IndexInParent < Context.CommentCount - 1)
+                        ResizeBorderControl.IndexInParent++;
+                    OrderValue = ResizeBorderControl.IndexInParent;
                 });
                 cmOrder.ContextMenu.AddButton("Bring to Front", () =>
                 {
-                    IndexInParent = Context.CommentCount - 1;
-                    OrderValue = IndexInParent;
+                    ResizeBorderControl.IndexInParent = Context.CommentCount - 1;
+                    OrderValue = ResizeBorderControl.IndexInParent;
                 });
                 cmOrder.ContextMenu.AddButton("Send Backward", () =>
                 {
-                    if (IndexInParent > 0)
-                        IndexInParent--;
-                    OrderValue = IndexInParent;
+                    if (ResizeBorderControl.IndexInParent > 0)
+                        ResizeBorderControl.IndexInParent--;
+                    OrderValue = ResizeBorderControl.IndexInParent;
                 });
                 cmOrder.ContextMenu.AddButton("Send to Back", () =>
                 {
-                    IndexInParent = 0;
-                    OrderValue = IndexInParent;
+                    ResizeBorderControl.IndexInParent = 0;
+                    OrderValue = ResizeBorderControl.IndexInParent;
                 });
             }
         }
