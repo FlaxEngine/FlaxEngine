@@ -24,11 +24,12 @@ namespace FlaxEditor.Surface
             private const float BorderWidth = 15f;
 
             private readonly VisjectSurface _surface;
-            private Float2 _surfaceMouseLocation;
+            private Float2 _lastSurfaceMouseLoc;
             private Float2 startResizingSize;
+            private Float2 noClampedSize;
 
             /// <summary>
-            /// Wether to ignore the surface index in parent when updating the cursor type. Set to <code>false</code> for nodes that have order like <see cref="SurfaceComment"/>.
+            /// Whether to ignore the surface index in parent when updating the cursor type. Set to <code>false</code> for nodes that have order like <see cref="SurfaceComment"/>.
             /// </summary>
             internal bool IgnoreSurfaceIndex = true;
 
@@ -94,16 +95,11 @@ namespace FlaxEditor.Surface
                 Location = nodeLocation - new Float2(BorderWidth);
             }
 
-            private void UpdateSurfaceMouseLocation()
-            {
-                _surfaceMouseLocation = _surface.PointFromScreen(Input.MouseScreenPosition);
-            }
-
             private void UpdateResizeFlags(Float2 mouseLocation)
             {
                 var borderRect = Bounds with { Location = Float2.Zero };
                 bool onBorder = borderRect.Contains(mouseLocation);
-                // Check this the way we do because some resizeable nodes (like comments) have an implementation of `Control.ContainsPoint`
+                // Check this the way we do because some resizable nodes (like comments) have an implementation of `Control.ContainsPoint`
                 // that does not check for the size you would think they have based on their visual appearance
                 bool inNode = borderRect.MakeExpanded(-BorderWidth * 2f).Contains(mouseLocation);
 
@@ -115,7 +111,7 @@ namespace FlaxEditor.Surface
                 IsMouseOverResizeBorder = onBorder && !inNode;
             }
 
-            private Float2 GetControlDelta(Control control, ref Float2 start, ref Float2 end)
+            private Float2 GetControlDelta(Control control, Float2 start, Float2 end)
             {
                 var pointOrigin = control.Parent ?? control;
                 var startPos = pointOrigin.PointFromParent(ResizableNode, start);
@@ -148,32 +144,30 @@ namespace FlaxEditor.Surface
                     var resizeAxisPos = Float2.Clamp(ResizeDirection, Float2.Zero, Float2.One);
                     var resizeAxisNeg = Float2.Clamp(-ResizeDirection, Float2.Zero, Float2.One);
 
-                    var currentSurfaceMouse = _surface.PointFromScreen(Input.MouseScreenPosition);
-                    var delta = currentSurfaceMouse - _surfaceMouseLocation;
+                    var currentSurfaceMouseLoc = _surface.PointFromScreen(Input.MouseScreenPosition);
+                    var delta = currentSurfaceMouseLoc - _lastSurfaceMouseLoc;
 
-                    // TODO: scale/size snapping?
+                    // TODO: Snapping
                     delta *= resizeAxisAbs;
+                    var moveLocation = currentSurfaceMouseLoc;
+                    var uiControlDelta = GetControlDelta(this, _lastSurfaceMouseLoc, moveLocation);
 
-                    var moveLocation = _surfaceMouseLocation + delta;
-
-                    var uiControlDelta = GetControlDelta(this, ref _surfaceMouseLocation, ref moveLocation);
+                    // This ensures that the node is not resized below min size, but also keeps the resize behavior like expected (which just Max() -ing the value does not)
                     var emptySize = ResizableNode.CalculateNodeSize(0, 0);
+                    var minSize = ResizableNode.sizeMin;
+                    noClampedSize = noClampedSize + uiControlDelta * resizeAxisPos - uiControlDelta * resizeAxisNeg;
+                    if (noClampedSize.X < minSize.X && noClampedSize.X < ResizableNode.Size.X)
+                        resizeAxisAbs.X = resizeAxisPos.X = resizeAxisNeg.X = 0f;
+                    if (noClampedSize.Y < minSize.Y && noClampedSize.Y < ResizableNode.Size.Y)
+                        resizeAxisAbs.Y = resizeAxisPos.Y = resizeAxisNeg.Y = 0f;
 
-
-                    // TODO: If resize is blocked by min size and the user tries to increase the size again, wait until !blocked by min size to apply delta again
-                    // To do this, just record pos when starting to block by min size and if (cursorLocation > min) { ResizeAgain() }
-
-                    ResizableNode.Size += uiControlDelta * resizeAxisPos - uiControlDelta * resizeAxisNeg;
-                    ResizableNode.Size = new Float2(Mathf.Max(ResizableNode.Size.X, ResizableNode.sizeMin.X), Mathf.Max(ResizableNode.Size.Y, ResizableNode.sizeMin.Y));
                     ResizableNode.Location += uiControlDelta * resizeAxisNeg;
-
                     ResizableNode.SizeValue = ResizableNode.Size - emptySize;
-                    ResizableNode.SizeValue = new Float2(Mathf.Max(ResizableNode.SizeValue.X, ResizableNode.sizeMin.X), Mathf.Max(ResizableNode.SizeValue.Y, ResizableNode.sizeMin.Y));
 
                     ResizableNode.CalculateNodeSize(ResizableNode.Size.X, ResizableNode.Size.Y);
-
-                    UpdateSurfaceMouseLocation();
                     MatchResizableNode(ResizableNode.Size, ResizableNode.Location);
+
+                    _lastSurfaceMouseLoc = currentSurfaceMouseLoc;
                 }
 
                 // Update the cursor shape
@@ -213,7 +207,8 @@ namespace FlaxEditor.Surface
                 if (button == MouseButton.Left && IsMouseOverResizeBorder && !IsResizing)
                 {
                     // Start resizing
-                    UpdateSurfaceMouseLocation();
+                    _lastSurfaceMouseLoc = _surface.PointFromScreen(Input.MouseScreenPosition);
+                    noClampedSize = ResizableNode.Size;
                     IsResizing = true;
                     startResizingSize = ResizableNode.Size;
                     StartMouseCapture();
