@@ -248,12 +248,6 @@ namespace FlaxEditor.Surface
 
                 base.OnEndMouseCapture();
             }
-
-            /// <inheritdoc />
-            public override void Draw()
-            {
-                Render2D.DrawRectangle(Bounds with { Location = Float2.Zero }, Color.Green, 1f);
-            }
         }
 
         /// <summary>
