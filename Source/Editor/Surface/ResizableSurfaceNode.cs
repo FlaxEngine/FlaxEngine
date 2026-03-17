@@ -161,6 +161,7 @@ namespace FlaxEditor.Surface
                     if (noClampedSize.Y < minSize.Y && noClampedSize.Y < ResizableNode.Size.Y)
                         resizeAxisAbs.Y = resizeAxisPos.Y = resizeAxisNeg.Y = 0f;
 
+                    ResizableNode.Size += uiControlDelta * resizeAxisPos - uiControlDelta * resizeAxisNeg;
                     ResizableNode.Location += uiControlDelta * resizeAxisNeg;
                     ResizableNode.SizeValue = ResizableNode.Size - emptySize;
 
