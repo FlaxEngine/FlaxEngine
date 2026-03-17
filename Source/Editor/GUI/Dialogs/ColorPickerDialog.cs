@@ -1,10 +1,11 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
 using FlaxEditor.GUI.Input;
+using FlaxEditor.GUI.Tabs;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
-using System.Collections.Generic;
 
 namespace FlaxEditor.GUI.Dialogs
 {
@@ -25,15 +26,16 @@ namespace FlaxEditor.GUI.Dialogs
     /// <seealso cref="FlaxEditor.GUI.Dialogs.Dialog" />
     public class ColorPickerDialog : Dialog, IColorPickerDialog
     {
-        private const float ButtonsWidth = 60.0f;
         private const float PickerMargin = 6.0f;
-        private const float EyedropperMargin = 8.0f;
-        private const float RGBAMargin = 12.0f;
-        private const float HSVMargin = 0.0f;
         private const float ChannelsMargin = 4.0f;
         private const float ChannelTextWidth = 12.0f;
         private const float SavedColorButtonWidth = 20.0f;
         private const float SavedColorButtonHeight = 20.0f;
+        private const float TabHeight = 20;
+        private const float ValueBoxesWidth = 100.0f;
+        private const float HSVRGBTextWidth = 15.0f;
+        private const float ColorPreviewHeight = 50.0f;
+        private const int SavedColorsAmount = 10;
 
         private Color _initialValue;
         private Color _value;
@@ -45,16 +47,19 @@ namespace FlaxEditor.GUI.Dialogs
         private ColorValueBox.ColorPickerClosedEvent _onClosed;
 
         private ColorSelectorWithSliders _cSelector;
+        private Tabs.Tabs _hsvRGBTabs;
+        private Tab _RGBTab;
+        private Panel _rgbPanel;
         private FloatValueBox _cRed;
         private FloatValueBox _cGreen;
         private FloatValueBox _cBlue;
-        private FloatValueBox _cAlpha;
+        private Tab _hsvTab;
+        private Panel _hsvPanel;
         private FloatValueBox _cHue;
         private FloatValueBox _cSaturation;
         private FloatValueBox _cValue;
         private TextBox _cHex;
-        private Button _cCancel;
-        private Button _cOK;
+        private FloatValueBox _cAlpha;
         private Button _cEyedropper;
 
         private List<Color> _savedColors = new List<Color>();
@@ -124,97 +129,110 @@ namespace FlaxEditor.GUI.Dialogs
                 _savedColors = JsonSerializer.Deserialize<List<Color>>(savedColors);
 
             // Selector
-            _cSelector = new ColorSelectorWithSliders(180, 18)
+            _cSelector = new ColorSelectorWithSliders(180, 21)
             {
                 Location = new Float2(PickerMargin, PickerMargin),
                 Parent = this
             };
             _cSelector.ColorChanged += x => SelectedColor = x;
 
-            // Red
-            _cRed = new FloatValueBox(0, _cSelector.Right + PickerMargin + RGBAMargin + ChannelTextWidth, PickerMargin, 100, 0, float.MaxValue, 0.001f)
+            _hsvRGBTabs = new Tabs.Tabs
             {
-                Parent = this
+                Location = new Float2(_cSelector.Right + 30.0f, PickerMargin),
+                TabsTextHorizontalAlignment = TextAlignment.Center,
+                Width = ValueBoxesWidth + HSVRGBTextWidth * 2.0f + ChannelsMargin * 2.0f,
+                Height = (FloatValueBox.DefaultHeight + ChannelsMargin) * 4 + ChannelsMargin,
+                Parent = this,
+            };
+            _hsvRGBTabs.TabsSize = new Float2(_hsvRGBTabs.Width * 0.5f, TabHeight);
+            _hsvRGBTabs.SelectedTabChanged += SelectedTabChanged;
+
+            // RGB Tab
+            _RGBTab = _hsvRGBTabs.AddTab(new Tab("RGB"));
+            _rgbPanel = new Panel(ScrollBars.Vertical)
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = Margin.Zero,
+                Parent = _RGBTab,
+            };
+
+            // HSV Tab
+            _hsvTab = _hsvRGBTabs.AddTab(new Tab("HSV"));
+            _hsvPanel = new Panel(ScrollBars.Vertical)
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = Margin.Zero,
+                Parent = _hsvTab,
+            };
+
+            // Red
+            _cRed = new FloatValueBox(0, HSVRGBTextWidth + ChannelsMargin, PickerMargin, ValueBoxesWidth, 0, float.MaxValue, 0.001f)
+            {
+                Parent = _rgbPanel,
             };
             _cRed.ValueChanged += OnRGBAChanged;
 
             // Green
             _cGreen = new FloatValueBox(0, _cRed.X, _cRed.Bottom + ChannelsMargin, _cRed.Width, 0, float.MaxValue, 0.001f)
             {
-                Parent = this
+                Parent = _rgbPanel,
             };
             _cGreen.ValueChanged += OnRGBAChanged;
 
             // Blue
             _cBlue = new FloatValueBox(0, _cRed.X, _cGreen.Bottom + ChannelsMargin, _cRed.Width, 0, float.MaxValue, 0.001f)
             {
-                Parent = this
+                Parent = _rgbPanel,
             };
             _cBlue.ValueChanged += OnRGBAChanged;
 
-            // Alpha
-            _cAlpha = new FloatValueBox(0, _cRed.X, _cBlue.Bottom + ChannelsMargin, _cRed.Width, 0, float.MaxValue, 0.001f)
-            {
-                Parent = this
-            };
-            _cAlpha.ValueChanged += OnRGBAChanged;
-
             // Hue
-            _cHue = new FloatValueBox(0, PickerMargin + HSVMargin + ChannelTextWidth, _cSelector.Bottom + PickerMargin, 100, 0, 360)
+            _cHue = new FloatValueBox(0, HSVRGBTextWidth + ChannelsMargin, PickerMargin, ValueBoxesWidth)
             {
-                Parent = this
+                Parent = _hsvPanel,
+                Category = Utils.ValueCategory.Angle,
             };
             _cHue.ValueChanged += OnHSVChanged;
 
             // Saturation
             _cSaturation = new FloatValueBox(0, _cHue.X, _cHue.Bottom + ChannelsMargin, _cHue.Width, 0, 100.0f, 0.1f)
             {
-                Parent = this
+                Parent = _hsvPanel,
             };
             _cSaturation.ValueChanged += OnHSVChanged;
 
             // Value
             _cValue = new FloatValueBox(0, _cHue.X, _cSaturation.Bottom + ChannelsMargin, _cHue.Width, 0, float.MaxValue, 0.1f)
             {
-                Parent = this
+                Parent = _hsvPanel,
             };
             _cValue.ValueChanged += OnHSVChanged;
 
-            // Set valid dialog size based on UI content
-            _dialogSize = Size = new Float2(_cRed.Right + PickerMargin, 300);
+            // Alpha
+            _cAlpha = new FloatValueBox(0, _hsvRGBTabs.Left + HSVRGBTextWidth + ChannelsMargin, _hsvRGBTabs.Bottom + ChannelsMargin * 4.0f, ValueBoxesWidth, 0, float.MaxValue, 0.001f)
+            {
+                Parent = this,
+            };
+            _cAlpha.ValueChanged += OnRGBAChanged;
 
             // Hex
-            const float hexTextBoxWidth = 80;
-            _cHex = new TextBox(false, Width - hexTextBoxWidth - PickerMargin, _cSelector.Bottom + PickerMargin, hexTextBoxWidth)
+            _cHex = new TextBox(false, _hsvRGBTabs.Left + HSVRGBTextWidth + ChannelsMargin, _cAlpha.Bottom + ChannelsMargin * 2.0f, ValueBoxesWidth)
             {
-                Parent = this
+                Parent = this,
             };
             _cHex.EditEnd += OnHexChanged;
 
-            // Cancel
-            _cCancel = new Button(Width - ButtonsWidth - PickerMargin, Height - Button.DefaultHeight - PickerMargin, ButtonsWidth)
-            {
-                Text = "Cancel",
-                Parent = this
-            };
-            _cCancel.Clicked += OnCancel;
-
-            // OK
-            _cOK = new Button(_cCancel.Left - ButtonsWidth - PickerMargin, _cCancel.Y, ButtonsWidth)
-            {
-                Text = "Ok",
-                Parent = this
-            };
-            _cOK.Clicked += OnSubmit;
+            // Set valid dialog size based on UI content
+            _dialogSize = Size = new Float2(_hsvRGBTabs.Right + PickerMargin, _cHex.Bottom + 40.0f + ColorPreviewHeight + PickerMargin);
 
             // Create saved color buttons
-            CreateAllSaveButtons();
+            CreateAllSavedColorsButtons();
 
             // Eyedropper button
             var style = Style.Current;
-            _cEyedropper = new Button(_cOK.X - EyedropperMargin, _cHex.Bottom + PickerMargin)
+            _cEyedropper = new Button(_cSelector.BottomLeft.X, _cSelector.BottomLeft.Y - 25.0f, 25.0f, 25.0f)
             {
-                TooltipText = "Eyedropper tool to pick a color directly from the screen",
+                TooltipText = "Eyedropper tool to pick a color directly from the screen.",
                 BackgroundBrush = new SpriteBrush(Editor.Instance.Icons.Search32),
                 BackgroundColor = style.Foreground,
                 BackgroundColorHighlighted = style.Foreground.RGBMultiplied(0.9f),
@@ -223,9 +241,6 @@ namespace FlaxEditor.GUI.Dialogs
                 Parent = this,
             };
             _cEyedropper.Clicked += OnEyedropStart;
-            _cEyedropper.Height = (_cValue.Bottom - _cEyedropper.Y) * 0.5f;
-            _cEyedropper.Width = _cEyedropper.Height;
-            _cEyedropper.X -= _cEyedropper.Width;
 
             // Set initial color
             SelectedColor = initialValue;
@@ -244,7 +259,7 @@ namespace FlaxEditor.GUI.Dialogs
                     }
                 }
 
-                // Set color of button to current value;
+                // Set color of button to current value
                 button.BackgroundColor = _value;
                 button.BackgroundColorHighlighted = _value;
                 button.BackgroundColorSelected = _value.RGBMultiplied(0.8f);
@@ -256,10 +271,10 @@ namespace FlaxEditor.GUI.Dialogs
                 var savedColors = JsonSerializer.Serialize(_savedColors, typeof(List<Color>));
                 Editor.Instance.ProjectCache.SetCustomData("ColorPickerSavedColors", savedColors);
 
-                // create new + button
-                if (_savedColorButtons.Count < 8)
+                // Create new + button
+                if (_savedColorButtons.Count < SavedColorsAmount)
                 {
-                    var savedColorButton = new Button(PickerMargin * (_savedColorButtons.Count + 1) + SavedColorButtonWidth * _savedColorButtons.Count, Height - SavedColorButtonHeight - PickerMargin, SavedColorButtonWidth, SavedColorButtonHeight)
+                    var savedColorButton = new Button(PickerMargin * (_savedColorButtons.Count + 1) + SavedColorButtonWidth * _savedColorButtons.Count, _cHex.Bottom + 40.0f + ColorPreviewHeight * 0.5f, SavedColorButtonWidth, SavedColorButtonHeight)
                     {
                         Text = "+",
                         Parent = this,
@@ -276,11 +291,32 @@ namespace FlaxEditor.GUI.Dialogs
             }
         }
 
+        private void SelectedTabChanged(Tabs.Tabs tabs)
+        {
+            if (_rgbPanel == null || _hsvPanel == null)
+                return;
+
+            switch (tabs.SelectedTabIndex)
+            {
+                // RGB
+                case 0:
+                    _rgbPanel.Visible = true;
+                    _hsvPanel.Visible = false;
+                    break;
+                // HSV
+                case 1:
+                    _rgbPanel.Visible = false;
+                    _hsvPanel.Visible = true;
+                    break;
+            }
+        }
+
         private void OnColorPicked(Color32 colorPicked)
         {
             if (_activeEyedropper)
             {
                 _activeEyedropper = false;
+                _cEyedropper.BackgroundColor = _cEyedropper.BackgroundColorHighlighted = Style.Current.Foreground;
                 SelectedColor = colorPicked;
                 ScreenUtilities.PickColorDone -= OnColorPicked;
             }
@@ -289,6 +325,7 @@ namespace FlaxEditor.GUI.Dialogs
         private void OnEyedropStart()
         {
             _activeEyedropper = true;
+            _cEyedropper.BackgroundColor = _cEyedropper.BackgroundColorHighlighted = Style.Current.BackgroundHighlighted;
             ScreenUtilities.PickColor();
             ScreenUtilities.PickColorDone += OnColorPicked;
         }
@@ -306,6 +343,7 @@ namespace FlaxEditor.GUI.Dialogs
             if (_disableEvents)
                 return;
 
+            _cHue.Value = Mathf.Wrap(_cHue.Value, 0f, 360f);
             SelectedColor = Color.FromHSV(_cHue.Value, _cSaturation.Value / 100.0f, _cValue.Value / 100.0f, _cAlpha.Value);
         }
 
@@ -339,64 +377,76 @@ namespace FlaxEditor.GUI.Dialogs
 
             base.Draw();
 
-            // RGBA
-            var rgbaR = new Rectangle(_cRed.Left - ChannelTextWidth, _cRed.Y, 10000, _cRed.Height);
-            Render2D.DrawText(style.FontMedium, "R", rgbaR, textColor, TextAlignment.Near, TextAlignment.Center);
-            rgbaR.Location.Y = _cGreen.Y;
-            Render2D.DrawText(style.FontMedium, "G", rgbaR, textColor, TextAlignment.Near, TextAlignment.Center);
-            rgbaR.Location.Y = _cBlue.Y;
-            Render2D.DrawText(style.FontMedium, "B", rgbaR, textColor, TextAlignment.Near, TextAlignment.Center);
-            rgbaR.Location.Y = _cAlpha.Y;
-            Render2D.DrawText(style.FontMedium, "A", rgbaR, textColor, TextAlignment.Near, TextAlignment.Center);
+            switch (_hsvRGBTabs.SelectedTabIndex)
+            {
+                // RGB
+                case 0:
+                    var rgbRect = new Rectangle(_hsvRGBTabs.Left + PickerMargin, _hsvRGBTabs.Top + TabHeight + PickerMargin, 10000, _cRed.Height);
+                    Render2D.DrawText(style.FontMedium, "R", rgbRect, textColor, TextAlignment.Near, TextAlignment.Center);
+                    rgbRect.Location.Y += _cRed.Height + ChannelsMargin;
+                    Render2D.DrawText(style.FontMedium, "G", rgbRect, textColor, TextAlignment.Near, TextAlignment.Center);
+                    rgbRect.Location.Y += _cRed.Height + ChannelsMargin;
+                    Render2D.DrawText(style.FontMedium, "B", rgbRect, textColor, TextAlignment.Near, TextAlignment.Center);
+                    break;
+                // HSV
+                case 1:
+                    // Left
+                    var hsvLeftRect = new Rectangle(_hsvRGBTabs.Left + PickerMargin, _hsvRGBTabs.Top + TabHeight + PickerMargin, 10000, _cHue.Height);
+                    Render2D.DrawText(style.FontMedium, "H", hsvLeftRect, textColor, TextAlignment.Near, TextAlignment.Center);
+                    hsvLeftRect.Location.Y += _cHue.Height + ChannelsMargin;
+                    Render2D.DrawText(style.FontMedium, "S", hsvLeftRect, textColor, TextAlignment.Near, TextAlignment.Center);
+                    hsvLeftRect.Location.Y += _cHue.Height + ChannelsMargin;
+                    Render2D.DrawText(style.FontMedium, "V", hsvLeftRect, textColor, TextAlignment.Near, TextAlignment.Center);
 
-            // HSV left
-            var hsvHl = new Rectangle(_cHue.Left - ChannelTextWidth, _cHue.Y, 10000, _cHue.Height);
-            Render2D.DrawText(style.FontMedium, "H", hsvHl, textColor, TextAlignment.Near, TextAlignment.Center);
-            hsvHl.Location.Y = _cSaturation.Y;
-            Render2D.DrawText(style.FontMedium, "S", hsvHl, textColor, TextAlignment.Near, TextAlignment.Center);
-            hsvHl.Location.Y = _cValue.Y;
-            Render2D.DrawText(style.FontMedium, "V", hsvHl, textColor, TextAlignment.Near, TextAlignment.Center);
+                    // Right
+                    var hsvRightRect = new Rectangle(_hsvRGBTabs.Right - HSVRGBTextWidth, _hsvRGBTabs.Top + TabHeight + PickerMargin, ChannelTextWidth, _cHue.Height);
+                    Render2D.DrawText(style.FontMedium, "°", hsvRightRect, textColor, TextAlignment.Near, TextAlignment.Center);
+                    hsvRightRect.Location.Y += _cHue.Height + ChannelsMargin;
+                    Render2D.DrawText(style.FontMedium, "%", hsvRightRect, textColor, TextAlignment.Near, TextAlignment.Center);
+                    hsvRightRect.Location.Y += _cHue.Height + ChannelsMargin;
+                    Render2D.DrawText(style.FontMedium, "%", hsvRightRect, textColor, TextAlignment.Near, TextAlignment.Center);
+                    break;
+            }
 
-            // HSV right
-            var hsvHr = new Rectangle(_cHue.Right + 2, _cHue.Y, 10000, _cHue.Height);
-            Render2D.DrawText(style.FontMedium, "°", hsvHr, textColor, TextAlignment.Near, TextAlignment.Center);
-            hsvHr.Location.Y = _cSaturation.Y;
-            Render2D.DrawText(style.FontMedium, "%", hsvHr, textColor, TextAlignment.Near, TextAlignment.Center);
-            hsvHr.Location.Y = _cValue.Y;
-            Render2D.DrawText(style.FontMedium, "%", hsvHr, textColor, TextAlignment.Near, TextAlignment.Center);
+            // A
+            var alphaHexRect = new Rectangle(_hsvRGBTabs.Left + PickerMargin, _cAlpha.Top, ChannelTextWidth, _cAlpha.Height);
+            Render2D.DrawText(style.FontMedium, "A", alphaHexRect, textColor, TextAlignment.Near, TextAlignment.Center);
 
             // Hex
-            var hex = new Rectangle(_cHex.Left - 26, _cHex.Y, 10000, _cHex.Height);
-            Render2D.DrawText(style.FontMedium, "Hex", hex, textColor, TextAlignment.Near, TextAlignment.Center);
+            alphaHexRect.Y += _cAlpha.Height + ChannelsMargin * 2.0f;
+            alphaHexRect.X -= 5.0f; // "Hex" is two characters wider than the other labels so we need to adjust for that
+            Render2D.DrawText(style.FontMedium, "Hex", alphaHexRect, textColor, TextAlignment.Far, TextAlignment.Center);
 
             // Color difference
-            var newRect = new Rectangle(_cOK.X - 3, _cHex.Bottom + PickerMargin, 130, 0);
-            newRect.Size.Y = 50;
-            Render2D.FillRectangle(newRect, Color.White);
-            var smallRectSize = 10;
-            var numHor = Mathf.FloorToInt(newRect.Width / smallRectSize);
-            var numVer = Mathf.FloorToInt(newRect.Height / smallRectSize);
+            var differenceRect = new Rectangle(_hsvRGBTabs.Left, _cHex.Bottom + 40.0f, _hsvRGBTabs.Width, ColorPreviewHeight);
+
             // Draw checkerboard for background of color to help with transparency
+            Render2D.FillRectangle(differenceRect, Color.White);
+            var smallRectSize = 10;
+            var numHor = Mathf.CeilToInt(differenceRect.Width / smallRectSize);
+            var numVer = Mathf.CeilToInt(differenceRect.Height / smallRectSize);
+            Render2D.PushClip(differenceRect);
             for (int i = 0; i < numHor; i++)
             {
                 for (int j = 0; j < numVer; j++)
                 {
                     if ((i + j) % 2 == 0)
                     {
-                        var rect = new Rectangle(newRect.X + smallRectSize * i, newRect.Y + smallRectSize * j, new Float2(smallRectSize));
+                        var rect = new Rectangle(differenceRect.X + smallRectSize * i, differenceRect.Y + smallRectSize * j, new Float2(smallRectSize));
                         Render2D.FillRectangle(rect, Color.Gray);
                     }
                 }
             }
-            Render2D.FillRectangle(newRect, _value);
+            Render2D.PopClip();
+            Render2D.FillRectangle(differenceRect, _value);
         }
 
         /// <inheritdoc />
         protected override void OnShow()
         {
-            // Auto cancel on lost focus
+            // Apply changes on lost focus
 #if !PLATFORM_LINUX
-            ((WindowRootControl)Root).Window.LostFocus += OnWindowLostFocus;
+            ((WindowRootControl)Root).Window.LostFocus += OnSubmit;
 #endif
 
             base.OnShow();
@@ -409,6 +459,7 @@ namespace FlaxEditor.GUI.Dialogs
             {
                 // Cancel eye dropping
                 _activeEyedropper = false;
+                _cEyedropper.BackgroundColor = _cEyedropper.BackgroundColorHighlighted = Style.Current.Foreground;
                 ScreenUtilities.PickColorDone -= OnColorPicked;
                 return true;
             }
@@ -420,9 +471,7 @@ namespace FlaxEditor.GUI.Dialogs
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (base.OnMouseUp(location, button))
-            {
                 return true;
-            }
 
             var child = GetChildAtRecursive(location);
             if (button == MouseButton.Right && child is Button b && b.Tag is Color c)
@@ -484,20 +533,20 @@ namespace FlaxEditor.GUI.Dialogs
             }
             _savedColorButtons.Clear();
 
-            CreateAllSaveButtons();
+            CreateAllSavedColorsButtons();
 
             // Save new colors
             var savedColors = JsonSerializer.Serialize(_savedColors, typeof(List<Color>));
             Editor.Instance.ProjectCache.SetCustomData("ColorPickerSavedColors", savedColors);
         }
 
-        private void CreateAllSaveButtons()
+        private void CreateAllSavedColorsButtons()
         {
             // Create saved color buttons
             for (int i = 0; i < _savedColors.Count; i++)
             {
                 var savedColor = _savedColors[i];
-                var savedColorButton = new Button(PickerMargin * (i + 1) + SavedColorButtonWidth * i, Height - SavedColorButtonHeight - PickerMargin, SavedColorButtonWidth, SavedColorButtonHeight)
+                var savedColorButton = new Button(PickerMargin * (i + 1) + SavedColorButtonWidth * i, _cHex.Bottom + 40.0f + ColorPreviewHeight * 0.5f, SavedColorButtonWidth, SavedColorButtonHeight)
                 {
                     Parent = this,
                     Tag = savedColor,
@@ -508,9 +557,9 @@ namespace FlaxEditor.GUI.Dialogs
                 savedColorButton.ButtonClicked += OnSavedColorButtonClicked;
                 _savedColorButtons.Add(savedColorButton);
             }
-            if (_savedColors.Count < 8)
+            if (_savedColors.Count < SavedColorsAmount)
             {
-                var savedColorButton = new Button(PickerMargin * (_savedColors.Count + 1) + SavedColorButtonWidth * _savedColors.Count, Height - SavedColorButtonHeight - PickerMargin, SavedColorButtonWidth, SavedColorButtonHeight)
+                var savedColorButton = new Button(PickerMargin * (_savedColors.Count + 1) + SavedColorButtonWidth * _savedColors.Count, _cHex.Bottom + 40.0f + ColorPreviewHeight * 0.5f, SavedColorButtonWidth, SavedColorButtonHeight)
                 {
                     Text = "+",
                     Parent = this,
@@ -522,25 +571,15 @@ namespace FlaxEditor.GUI.Dialogs
             }
         }
 
-        private void OnWindowLostFocus()
-        {
-            // Auto apply color on defocus
-            var autoAcceptColorPickerChange = Editor.Instance.Options.Options.Interface.AutoAcceptColorPickerChange;
-            if (_useDynamicEditing && _initialValue != _value && _canPassLastChangeEvent && autoAcceptColorPickerChange)
-            {
-                _canPassLastChangeEvent = false;
-                _onChanged?.Invoke(_value, false);
-            }
-
-            OnCancel();
-        }
-
         /// <inheritdoc />
         public override void OnSubmit()
         {
             if (_disableEvents)
                 return;
             _disableEvents = true;
+
+            // Ensure the cursor is restored
+            Cursor = CursorType.Default;
 
             // Send color event if modified
             if (_value != _initialValue)
@@ -557,6 +596,9 @@ namespace FlaxEditor.GUI.Dialogs
             if (_disableEvents)
                 return;
             _disableEvents = true;
+
+            // Ensure the cursor is restored
+            Cursor = CursorType.Default;
 
             // Restore color if modified
             if (_useDynamicEditing && _initialValue != _value && _canPassLastChangeEvent)
