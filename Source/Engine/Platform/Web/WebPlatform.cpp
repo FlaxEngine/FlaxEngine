@@ -125,7 +125,6 @@ void WebPlatform::SetThreadAffinityMask(uint64 affinityMask)
 
 void WebPlatform::Sleep(int32 milliseconds)
 {
-    //emscripten_sleep(milliseconds);
     emscripten_thread_sleep(milliseconds);
 }
 

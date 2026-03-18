@@ -123,7 +123,7 @@ namespace Flax.Build.Platforms
             if (options.CompileEnv.FavorSizeOrSpeed == FavorSizeOrSpeed.SmallCode)
                 args.Add("-Oz");
             if (options.CompileEnv.FavorSizeOrSpeed == FavorSizeOrSpeed.FastCode)
-                args.Add("-O3");
+                args.Add(debugInformation ? "-O2" : "-O3");
             else if (optimization && options.Configuration == TargetConfiguration.Release)
                 args.Add("-O3");
             else if (optimization)
@@ -290,7 +290,9 @@ namespace Flax.Build.Platforms
             {
                 args.Add(string.Format("-o \"{0}\"", outputFilePath.Replace('\\', '/')));
 
+                // Debug options
                 //args.Add("--minify=0");
+                //args.Add("-sASSERTIONS=2");
 
                 AddSharedArgs(args, options, options.LinkEnv.DebugInformation, options.LinkEnv.Optimization);
 
@@ -307,7 +309,6 @@ namespace Flax.Build.Platforms
                     initialMemory = Math.Max(initialMemory, 64); // Address Sanitizer needs more memory
                 args.Add($"-sINITIAL_MEMORY={initialMemory}MB");
                 args.Add("-sSTACK_SIZE=4MB");
-                args.Add("-sASYNCIFY_STACK_SIZE=8192");
                 args.Add("-sALLOW_MEMORY_GROWTH=1");
                 //args.Add("-sSAFE_HEAP=1");
                 args.Add("-sABORTING_MALLOC=0");

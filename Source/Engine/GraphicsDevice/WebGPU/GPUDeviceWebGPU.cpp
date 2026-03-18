@@ -618,10 +618,10 @@ bool GPUDeviceWebGPU::Init()
         userData.Call(status == WGPURequestDeviceStatus_Success, status, message);
     };
     wgpuAdapterRequestDevice(Adapter->Adapter, &deviceDesc, deviceRequest.Info);
-    auto deviceRequestResult = deviceRequest.Wait();
+    auto deviceRequestResult = deviceRequest.Wait(WebGPUInstance);
     if (deviceRequestResult == WGPUWaitStatus_TimedOut)
     {
-        LOG(Fatal, "WebGPU device request has timed out after {}s", deviceRequest.Data.WaitTime);
+        LOG(Fatal, "WebGPU device request has timed out after {}s", (int32)deviceRequest.Data.WaitTime);
         return true;
     }
     if (deviceRequestResult == WGPUWaitStatus_Error)
@@ -701,6 +701,11 @@ GPUDevice* CreateGPUDeviceWebGPU()
 {
     // Create instance
     WGPUInstanceDescriptor instanceDesc = WGPU_INSTANCE_DESCRIPTOR_INIT;
+#if !WEBGPU_ASYNCIFY && 0
+    WGPUInstanceFeatureName instanceFeatures[1] = { WGPUInstanceFeatureName_TimedWaitAny };
+    instanceDesc.requiredFeatureCount = 1;
+    instanceDesc.requiredFeatures = instanceFeatures;
+#endif
     WGPUInstance instance = wgpuCreateInstance(&instanceDesc);
     if (!instance)
     {
@@ -727,10 +732,10 @@ GPUDevice* CreateGPUDeviceWebGPU()
         userData.Call(status == WGPURequestAdapterStatus_Success, status, message);
     };
     wgpuInstanceRequestAdapter(instance, &adapterOptions, adapterRequest.Info);
-    auto adapterRequestResult = adapterRequest.Wait();
+    auto adapterRequestResult = adapterRequest.Wait(instance);
     if (adapterRequestResult == WGPUWaitStatus_TimedOut)
     {
-        LOG(Fatal, "WebGPU adapter request has timed out after {}s", adapterRequest.Data.WaitTime);
+        LOG(Fatal, "WebGPU adapter request has timed out after {}s", (int32)adapterRequest.Data.WaitTime);
         return nullptr;
     }
     if (adapterRequestResult == WGPUWaitStatus_Error)
@@ -796,7 +801,7 @@ void GPUDeviceWebGPU::Dispose()
 
 void GPUDeviceWebGPU::WaitForGPU()
 {
-    if (QueueSubmits == 0)
+    if (QueueSubmits == 0 || Engine::FatalError != FatalErrorType::None)
         return;
     QueueSubmits = 0;
     AsyncCallbackWebGPU<WGPUQueueWorkDoneCallbackInfo> workDone(WGPU_QUEUE_WORK_DONE_CALLBACK_INFO_INIT);
@@ -806,10 +811,10 @@ void GPUDeviceWebGPU::WaitForGPU()
         userData.Call(status == WGPUQueueWorkDoneStatus_Success, status, message);
     };
     wgpuQueueOnSubmittedWorkDone(Queue, workDone.Info);
-    auto workDoneResult = workDone.Wait();
+    auto workDoneResult = workDone.Wait(WebGPUInstance);
     if (workDoneResult == WGPUWaitStatus_TimedOut)
     {
-        LOG(Error, "WebGPU queue wait has timed out after {}s", workDone.Data.WaitTime);
+        LOG(Error, "WebGPU queue wait has timed out after {}s", (int32)workDone.Data.WaitTime);
         return;
     }
     if (workDoneResult == WGPUWaitStatus_Error)

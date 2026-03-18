@@ -4,6 +4,36 @@
 
 #include "RenderToolsWebGPU.h"
 #include "Engine/Graphics/PixelFormat.h"
+#include <emscripten/emscripten.h>
+
+WGPUWaitStatus WebGPUAsyncWait(AsyncWaitParamsWebGPU params)
+{
+#if 0
+    // This needs WGPUInstanceFeatureName_TimedWaitAny which works only with ASYNCIFY enabled
+    WGPUFutureWaitInfo futureWaitInfo;
+    futureWaitInfo.future = future;
+    futureWaitInfo.completed = WGPU_FALSE;
+    uint64 timeoutNS = 5000000000ull; // Wait max 5 second
+    return wgpuInstanceWaitAny(params.Instance, 1, &futureWaitInfo, timeoutNS);
+#endif
+
+#if WEBGPU_ASYNCIFY
+    auto startTime = Platform::GetTimeSeconds();
+    int32 ticksLeft = 500; // Wait max 5 second
+    while (Platform::AtomicRead(&params.Data->Result) == 0 && ticksLeft-- > 0)
+        emscripten_sleep(10);
+    if (ticksLeft <= 0)
+    {
+        params.Data->WaitTime = Platform::GetTimeSeconds() - startTime;
+        return WGPUWaitStatus_TimedOut;
+    }
+    return params.Data->Result == 1 ? WGPUWaitStatus_Success : WGPUWaitStatus_Error;
+#else
+    // Not possible to implement it here with stack preservation (need to go back with main thread to the browser)
+    // Make GPU adapter/device requests register custom retry via emscripten_set_main_loop with coroutine or something like that to make it work without ASYNCIFY
+    return WGPUWaitStatus_Error;
+#endif
+}
 
 WGPUVertexFormat RenderToolsWebGPU::ToVertexFormat(PixelFormat format)
 {

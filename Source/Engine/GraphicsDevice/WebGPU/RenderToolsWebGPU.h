@@ -6,7 +6,6 @@
 
 #include "Engine/Core/Types/String.h"
 #include "IncludeWebGPU.h"
-#include <emscripten/emscripten.h>
 
 enum class PixelFormat : unsigned;
 
@@ -29,6 +28,13 @@ struct AsyncCallbackDataWebGPU
     }
 };
 
+struct AsyncWaitParamsWebGPU
+{
+    WGPUInstance Instance;
+    AsyncCallbackDataWebGPU* Data;
+};
+WGPUWaitStatus WebGPUAsyncWait(AsyncWaitParamsWebGPU params);
+
 /// <summary>
 /// Helper utility to run WebGPU APIs that use async callback in sync by waiting on the spontaneous call back with an active-waiting loop.
 /// </summary>
@@ -45,18 +51,9 @@ struct AsyncCallbackWebGPU
         Info.userdata1 = &Data;
     }
 
-    WGPUWaitStatus Wait()
+    FORCE_INLINE WGPUWaitStatus Wait(WGPUInstance instance)
     {
-        auto startTime = Platform::GetTimeSeconds();
-        int32 ticksLeft = 500; // Wait max 5 second
-        while (Platform::AtomicRead(&Data.Result) == 0 && ticksLeft-- > 0)
-            emscripten_sleep(10);
-        if (ticksLeft <= 0)
-        {
-            Data.WaitTime = Platform::GetTimeSeconds() - startTime;
-            return WGPUWaitStatus_TimedOut;
-        }
-        return Data.Result == 1 ? WGPUWaitStatus_Success : WGPUWaitStatus_Error;
+        return WebGPUAsyncWait({ instance, &Data });
     }
 };
 

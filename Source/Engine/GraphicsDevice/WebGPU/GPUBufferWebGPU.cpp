@@ -31,10 +31,10 @@ void* GPUBufferWebGPU::Map(GPUResourceMapMode mode)
         userData.Call(status == WGPUMapAsyncStatus_Success, status, message);
     };
     wgpuBufferMapAsync(Buffer, mapMode, 0, _desc.Size, mapRequest.Info);
-    auto mapRequestResult = mapRequest.Wait();
+    auto mapRequestResult = mapRequest.Wait(_device->WebGPUInstance);
     if (mapRequestResult == WGPUWaitStatus_TimedOut)
     {
-        LOG(Error, "WebGPU buffer map request has timed out after {}s", mapRequest.Data.WaitTime);
+        LOG(Error, "WebGPU buffer map request has timed out after {}s", (int32)mapRequest.Data.WaitTime);
         return nullptr;
     }
     if (mapRequestResult == WGPUWaitStatus_Error)
