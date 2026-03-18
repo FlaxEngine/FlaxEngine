@@ -455,6 +455,7 @@ namespace FlaxEditor.Windows.Assets
                 _timeline.Enabled = true;
                 _timeline.SetNoTracksText(null);
                 ClearEditedFlag();
+                _timeline.ShowWholeTimeline();
             }
         }
 
