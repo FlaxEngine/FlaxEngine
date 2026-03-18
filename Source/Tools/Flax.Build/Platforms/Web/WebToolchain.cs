@@ -297,6 +297,8 @@ namespace Flax.Build.Platforms
                 AddSharedArgs(args, options, options.LinkEnv.DebugInformation, options.LinkEnv.Optimization);
 
                 // Strip unused things
+                args.Add("-sENVIRONMENT=web,webview");
+                args.Add("-sAUTO_NATIVE_LIBRARIES=0");
                 args.Add("-sAUTO_JS_LIBRARIES=0");
                 args.Add("-sGL_ENABLE_GET_PROC_ADDRESS=0");
                 args.Add("-sUSE_GLFW=0");
