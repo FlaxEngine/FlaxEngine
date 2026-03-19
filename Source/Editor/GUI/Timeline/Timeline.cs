@@ -229,7 +229,7 @@ namespace FlaxEditor.GUI.Timeline
         private List<Track> _mediaMoveStartTracks;
         private byte[][] _mediaMoveStartData;
         private float _zoom = 1.0f;
-        private float _tracksVScrollTarget = 0f;
+        private float _tracksVScrollTarget;
         private bool _isMovingPositionHandle;
         private bool _canPlayPause = true, _canStop = true;
         private List<IUndoAction> _batchedUndoActions;
@@ -899,8 +899,6 @@ namespace FlaxEditor.GUI.Timeline
             };
             UpdatePositionHandle();
             PlaybackState = PlaybackStates.Disabled;
-
-            _tracksVScrollTarget = _tracksPanelArea.VScrollBar.TargetValue;
         }
 
         private void UpdatePositionHandle()
@@ -2042,14 +2040,20 @@ namespace FlaxEditor.GUI.Timeline
             // Synchronize scroll vertical bars for tracks and media panels to keep the view in sync
             var tracksVScroll = _tracksPanelArea.VScrollBar;
             var backgroundVScroll = _backgroundArea.VScrollBar;
-            bool forceBackgroundToTracksScroll = !Mathf.WithinEpsilon(_tracksVScrollTarget - tracksVScroll.Value, 0f, 5f);
-            if (tracksVScroll.IsThumbClicked || _tracksPanelArea.IsMouseOver || forceBackgroundToTracksScroll)
+            bool forceBackgroundToTracksScroll = _tracksVScrollTarget > 0;
+            if (forceBackgroundToTracksScroll)
+            {
+                backgroundVScroll.TargetValue = tracksVScroll.Value;
+
+                if (Mathf.Abs(tracksVScroll.Value - _tracksVScrollTarget) < 0.5f)
+                    _tracksVScrollTarget = 0f;
+            }
+            else if (tracksVScroll.IsThumbClicked || _tracksPanelArea.IsMouseOver)
             {
                 backgroundVScroll.TargetValue = tracksVScroll.Value;
             }
             else
             {
-                _tracksVScrollTarget = 0f;
                 tracksVScroll.TargetValue = backgroundVScroll.Value;
             }
 
