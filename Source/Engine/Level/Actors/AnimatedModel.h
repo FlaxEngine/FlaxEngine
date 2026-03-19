@@ -440,6 +440,7 @@ public:
     API_FUNCTION() bool IsPlayingSlotAnimation(const StringView& slotName, Animation* anim = nullptr);
 
 private:
+#if USE_EDITOR
     /// <summary>
     /// Used to hide <paramref name="ShowDebugDrawSkeleton"/> options if when the skinned model or animation graph is null.
     /// </summary>
@@ -447,6 +448,7 @@ private:
     {
         return SkinnedModel != nullptr && AnimationGraph != nullptr;
     }
+#endif
 
     void ApplyRootMotion(const Transform& rootMotionDelta);
     void SyncParameters();
