@@ -98,99 +98,99 @@ public:
     /// <summary>
     /// The skinned model asset used for rendering.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(10), DefaultValue(null), EditorDisplay(\"Skinned Model\")")
+    API_FIELD(Attributes="EditorOrder(10), DefaultValue(null), EditorDisplay(\"Skeleton\")")
     AssetReference<SkinnedModel> SkinnedModel;
 
     /// <summary>
     /// The animation graph asset used for the skinned mesh skeleton bones evaluation (controls the animation).
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(15), DefaultValue(null), EditorDisplay(\"Skinned Model\")")
+    API_FIELD(Attributes="EditorOrder(15), DefaultValue(null), EditorDisplay(\"Skeleton\")")
     AssetReference<AnimationGraph> AnimationGraph;
 
     /// <summary>
     /// If true, use per-bone motion blur on this skeletal model. It requires additional rendering, can be disabled to save performance.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(20), DefaultValue(true), EditorDisplay(\"Skinned Model\")")
+    API_FIELD(Attributes="EditorOrder(20), DefaultValue(true), EditorDisplay(\"Rendering\")")
     bool PerBoneMotionBlur = true;
 
     /// <summary>
     /// If true, animation speed will be affected by the global timescale parameter.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(30), DefaultValue(true), EditorDisplay(\"Skinned Model\")")
+    API_FIELD(Attributes="EditorOrder(30), DefaultValue(true), EditorDisplay(\"Update\")")
     bool UseTimeScale = true;
 
     /// <summary>
     /// If true, the animation will be updated even when an actor cannot be seen by any camera. Otherwise, the animations themselves will also stop running when the actor is off-screen.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(40), DefaultValue(false), EditorDisplay(\"Skinned Model\")")
+    API_FIELD(Attributes="EditorOrder(40), DefaultValue(false), EditorDisplay(\"Update\")")
     bool UpdateWhenOffscreen = false;
 
     /// <summary>
     /// The animation update delta timescale. Can be used to speed up animation playback or create slow motion effect.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(45), Limit(0, float.MaxValue, 0.025f), EditorDisplay(\"Skinned Model\")")
+    API_FIELD(Attributes="EditorOrder(45), Limit(0, float.MaxValue, 0.025f), EditorDisplay(\"Update\")")
     float UpdateSpeed = 1.0f;
 
     /// <summary>
     /// The animation update mode. Can be used to optimize the performance.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(50), DefaultValue(AnimationUpdateMode.Auto), EditorDisplay(\"Skinned Model\")")
+    API_FIELD(Attributes="EditorOrder(50), DefaultValue(AnimationUpdateMode.Auto), EditorDisplay(\"Update\")")
     AnimationUpdateMode UpdateMode = AnimationUpdateMode::Auto;
 
     /// <summary>
     /// The master scale parameter for the actor bounding box. Helps to reduce mesh flickering effect on screen edges.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(60), DefaultValue(1.5f), Limit(0, float.MaxValue, 0.025f), EditorDisplay(\"Skinned Model\")")
+    API_FIELD(Attributes="EditorOrder(60), DefaultValue(1.5f), Limit(0, float.MaxValue, 0.025f), EditorDisplay(\"Rendering\")")
     float BoundsScale = 1.5f;
 
     /// <summary>
     /// The custom bounds(in actor local space). If set to empty bounds then source skinned model bind pose bounds will be used.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(70), EditorDisplay(\"Skinned Model\")")
+    API_FIELD(Attributes="EditorOrder(70), EditorDisplay(\"Rendering\")")
     BoundingBox CustomBounds = BoundingBox::Zero;
 
     /// <summary>
     /// The model Level Of Detail bias value. Allows to increase or decrease rendered model quality.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(80), DefaultValue(0), Limit(-100, 100, 0.1f), EditorDisplay(\"Skinned Model\", \"LOD Bias\")")
+    API_FIELD(Attributes="EditorOrder(80), DefaultValue(0), Limit(-100, 100, 0.1f), EditorDisplay(\"Rendering\", \"LOD Bias\")")
     int32 LODBias = 0;
 
     /// <summary>
     /// Gets the model forced Level Of Detail index. Allows to bind the given model LOD to show. Value -1 disables this feature.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(90), DefaultValue(-1), Limit(-1, 100, 0.1f), EditorDisplay(\"Skinned Model\", \"Forced LOD\")")
+    API_FIELD(Attributes="EditorOrder(90), DefaultValue(-1), Limit(-1, 100, 0.1f), EditorDisplay(\"Rendering\", \"Forced LOD\")")
     int32 ForcedLOD = -1;
 
     /// <summary>
     /// The draw passes to use for rendering this object.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(100), DefaultValue(DrawPass.Default), EditorDisplay(\"Skinned Model\")")
+    API_FIELD(Attributes="EditorOrder(100), DefaultValue(DrawPass.Default), EditorDisplay(\"Rendering\")")
     DrawPass DrawModes = DrawPass::Default;
 
     /// <summary>
     /// The object sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be used to control transparency drawing.
     /// </summary>
-    API_FIELD(Attributes="EditorDisplay(\"Skinned Model\"), EditorOrder(110), DefaultValue(0)")
+    API_FIELD(Attributes="EditorOrder(110), DefaultValue(0), EditorDisplay(\"Rendering\")")
     int8 SortOrder = 0;
 
     /// <summary>
     /// The shadows casting mode.
     /// [Deprecated on 26.10.2022, expires on 26.10.2024]
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(110), DefaultValue(ShadowsCastingMode.All), EditorDisplay(\"Skinned Model\")")
+    API_FIELD(Attributes="EditorOrder(110), DefaultValue(ShadowsCastingMode.All), EditorDisplay(\"Rendering\")")
     DEPRECATED() ShadowsCastingMode ShadowsMode = ShadowsCastingMode::All;
 
     /// <summary>
     /// The animation root motion apply target. If not specified the animated model will apply it itself.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(120), DefaultValue(null), EditorDisplay(\"Skinned Model\")")
+    API_FIELD(Attributes="EditorOrder(120), DefaultValue(null), EditorDisplay(\"Skeleton\")")
     ScriptingObjectReference<Actor> RootMotionTarget;
 
 #if USE_EDITOR
     /// <summary>
-    /// If checked, the skeleton pose will be shawn during debug shapes drawing.
+    /// If checked, the skeleton pose will be shown during debug shapes drawing.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(200), EditorDisplay(\"Skinned Model\")") bool ShowDebugDrawSkeleton = false;
+    API_FIELD(Attributes="EditorOrder(200), EditorDisplay(\"Debug\"), VisibleIf(nameof(ShowDebugDrawOptions))") bool ShowDebugDrawSkeleton = false;
 #endif
 
 public:
@@ -440,6 +440,14 @@ public:
     API_FUNCTION() bool IsPlayingSlotAnimation(const StringView& slotName, Animation* anim = nullptr);
 
 private:
+    /// <summary>
+    /// Used to hide <paramref name="ShowDebugDrawSkeleton"/> options if when the skinned model or animation graph is null.
+    /// </summary>
+    API_PROPERTY(Attributes = "HideInEditor, NoSerialize") bool GetShowDebugDrawOptions() const
+    {
+        return SkinnedModel != nullptr && AnimationGraph != nullptr;
+    }
+
     void ApplyRootMotion(const Transform& rootMotionDelta);
     void SyncParameters();
     void RunBlendShapeDeformer(const MeshBase* mesh, struct MeshDeformationData& deformation);
