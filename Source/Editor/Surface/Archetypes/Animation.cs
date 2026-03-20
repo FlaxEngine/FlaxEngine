@@ -932,6 +932,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Copy Node",
                 Description = "Copies the skeleton node transformation data (in local space)",
                 Flags = NodeFlags.AnimGraph,
+                UseFixedSize = true,
                 Size = new Float2(260, 140),
                 DefaultValues = new object[]
                 {
