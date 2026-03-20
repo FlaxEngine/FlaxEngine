@@ -244,11 +244,6 @@ namespace FlaxEditor.Surface
                 }
                 // Elements (Float-, int-, uint- value boxes, asset pickers, etc.)
                 // These will only ever be on the left side of the node, so we only adjust left width and height
-                else if (child is ISurfaceNodeElement surfaceElement)
-                {
-                    leftWidth = Mathf.Max(leftWidth, surfaceElement.Archetype.Size.X + 8f);
-                    leftHeight = Mathf.Max(leftHeight, surfaceElement.Archetype.Size.Y + 8f);
-                }
                 else if (child is SurfaceNodeElementControl elementControl)
                 {
                     leftWidth = Mathf.Max(leftWidth, elementControl.Width + 8f);
