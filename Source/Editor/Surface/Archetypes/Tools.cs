@@ -1727,7 +1727,6 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new AsNode(id, context, arch, groupArch),
                 Description = "Casts the object to a different type. Returns null if cast fails.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
-                //UseFixedSize = true,
                 Size = new Float2(200, 20),
                 DefaultValues = new object[]
                 {
