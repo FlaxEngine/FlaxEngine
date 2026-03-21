@@ -130,6 +130,11 @@ namespace FlaxEditor.Surface
         public NodeFlags Flags;
 
         /// <summary>
+        /// If the node should use the <see cref="Size"/> as node size. If false, the node will auto resize based on its elements.
+        /// </summary>
+        public bool UseFixedSize = false;
+
+        /// <summary>
         /// Title text.
         /// </summary>
         public string Title;

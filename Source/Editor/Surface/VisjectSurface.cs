@@ -217,7 +217,7 @@ namespace FlaxEditor.Surface
             set
             {
                 // Clamp
-                value = Mathf.Clamp(value, 0.05f, 1.6f);
+                value = Mathf.Clamp(value, 0.05f, 1.85f);
 
                 // Check if value will change
                 if (Mathf.Abs(value - _targetScale) > 0.0001f)

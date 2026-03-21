@@ -59,7 +59,7 @@ namespace FlaxEditor.Surface
             var width = _rootNode.Width;
             var rootPos = _rootNode.Location;
             var pos = rootPos;
-            pos.Y += Constants.NodeHeaderSize + 1.0f + 7 * Constants.LayoutOffsetY + 6.0f + 4.0f;
+            pos.Y += Constants.NodeHeaderHeight + 1.0f + 7 * Constants.LayoutOffsetY + 6.0f + 4.0f;
 
             for (int i = 0; i < _rootNode.Headers.Length; i++)
             {
@@ -67,7 +67,7 @@ namespace FlaxEditor.Surface
 
                 var modulesStart = pos - rootPos;
                 var modules = modulesGroups.FirstOrDefault(x => x.Key == header.ModuleType);
-                pos.Y += Constants.NodeHeaderSize + 2.0f;
+                pos.Y += Constants.NodeHeaderHeight + 2.0f;
                 if (modules != null)
                 {
                     foreach (var module in modules)
