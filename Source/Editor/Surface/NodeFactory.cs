@@ -166,7 +166,7 @@ namespace FlaxEditor.Surface
             {
                 GroupID = 17,
                 Name = "Flow",
-                Color = new Color(237, 136, 64),
+                Color = new Color(181, 91, 33),
                 Archetypes = Archetypes.Flow.Nodes
             },
             new GroupArchetype
