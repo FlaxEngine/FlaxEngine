@@ -51,6 +51,16 @@ namespace FlaxEditor.Viewport
             public bool IsOrbiting;
 
             /// <summary>
+            /// The zoom in state.
+            /// </summary>
+            public bool ZoomInDown;
+
+            /// <summary>
+            /// The zoom out state.
+            /// </summary>
+            public bool ZoomOutDown;
+
+            /// <summary>
             /// The is control down flag.
             /// </summary>
             public bool IsControlDown;
@@ -107,6 +117,10 @@ namespace FlaxEditor.Viewport
                 IsShiftDown = window.GetKey(KeyboardKeys.Shift);
                 IsAltDown = window.GetKey(KeyboardKeys.Alt);
                 WasAltDownBefore = prevInput.WasAltDownBefore || prevInput.IsAltDown;
+
+                InputOptions inputOptions = Editor.Instance.Options.Options.Input;
+                ZoomInDown = window.GetKey(inputOptions.ZoomIn.Key);
+                ZoomOutDown = window.GetKey(inputOptions.ZoomOut.Key);
 
                 IsMouseRightDown = useMouse && window.GetMouseButton(MouseButton.Right);
                 IsMouseMiddleDown = useMouse && window.GetMouseButton(MouseButton.Middle);
@@ -1428,7 +1442,10 @@ namespace FlaxEditor.Viewport
             else
             {
                 float aspect = Width / Height;
-                Matrix.PerspectiveFov(_fieldOfView * Mathf.DegreesToRadians, aspect, _nearPlane, _farPlane, out result);
+                float fov = _fieldOfView;
+                if (_camera is FPSCamera fpsCam)
+                    fov += fpsCam.AdditionalZoomFOV;
+                Matrix.PerspectiveFov(fov * Mathf.DegreesToRadians, aspect, _nearPlane, _farPlane, out result);
             }
         }
 
