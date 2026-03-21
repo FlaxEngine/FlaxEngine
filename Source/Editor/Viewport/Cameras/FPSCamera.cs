@@ -21,6 +21,7 @@ namespace FlaxEditor.Viewport.Cameras
         private Transform _startMove;
         private Transform _endMove;
         private float _moveStartTime = -1;
+        private float _additionalFOV;
 
         /// <summary>
         /// Gets a value indicating whether this viewport is animating movement.
@@ -31,6 +32,15 @@ namespace FlaxEditor.Viewport.Cameras
         /// The target point location. It's used to orbit around it when user clicks Alt+LMB.
         /// </summary>
         public Vector3 TargetPoint = new Vector3(-200);
+
+        /// <summary>
+        /// Additional field of view used for zooming the camera in and out.
+        /// </summary>
+        public float AdditionalZoomFOV
+        {
+            get => _additionalFOV;
+            private set => _additionalFOV = Mathf.Clamp(value, 5 - Viewport.FieldOfView, 160f - Viewport.FieldOfView);
+        }
 
         /// <summary>
         /// Sets view.
@@ -216,7 +226,7 @@ namespace FlaxEditor.Viewport.Cameras
                 pitch += mouseDelta.Y;
             }
 
-            // Zoom in/out
+            // Zoom in/out with mouse wheel
             if (input.IsZooming && !input.IsRotating)
             {
                 position += forward * (Viewport.MouseWheelZoomSpeedFactor * input.MouseWheelDelta * 25.0f);
@@ -224,6 +234,17 @@ namespace FlaxEditor.Viewport.Cameras
                 {
                     position += forward * (Viewport.MouseSpeed * 40 * Viewport.MousePositionDelta.ValuesSum);
                 }
+            }
+
+            // Zoom in and out by changing FOV
+            if (input.IsRotating && (input.ZoomInDown || input.ZoomOutDown))
+            {
+                float delta = (input.ZoomInDown ? -0.8f : 0.8f);
+                AdditionalZoomFOV += delta;
+            }
+            else if (!input.IsRotating)
+            {
+                AdditionalZoomFOV = 0f;
             }
 
             // Move camera with the gizmo
