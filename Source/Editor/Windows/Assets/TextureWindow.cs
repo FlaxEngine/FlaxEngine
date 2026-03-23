@@ -260,9 +260,11 @@ namespace FlaxEditor.Windows.Assets
             _saveButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save", ref inputOptions.Save);
             _toolstrip.AddButton(Editor.Icons.Import64, () => Editor.ContentImporting.Reimport((BinaryAssetItem)Item)).LinkTooltip("Reimport");
             _toolstrip.AddSeparator();
-            _toolstrip.AddButton(Editor.Icons.CenterView64, _preview.CenterView).LinkTooltip("Center view");
+            _toolstrip.AddButton(Editor.Icons.CenterView64, _preview.CenterView).LinkTooltip("Center view", ref editor.Options.Options.Input.ShowEditorContents);
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/graphics/textures/index.html")).LinkTooltip("See documentation to learn more");
+
+            InputActions.Add(options => options.ShowEditorContents, _preview.CenterView);
         }
 
         /// <inheritdoc />
