@@ -66,6 +66,20 @@ void StaticModel::SetBoundsScale(float value)
     UpdateBounds();
 }
 
+DrawPass StaticModel::GetDrawModes() const
+{
+    return _drawModes;
+}
+
+void StaticModel::SetDrawModes(DrawPass value)
+{
+    if (_drawModes == value)
+        return;
+    _drawModes = value;
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::DrawModes);
+}
+
 int32 StaticModel::GetLODBias() const
 {
     return _lodBias;
@@ -330,13 +344,13 @@ void StaticModel::Draw(RenderContext& renderContext)
         return;
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
     {
-        if (EnumHasAnyFlags(DrawModes, DrawPass::GlobalSDF) && Model->SDF.Texture)
+        if (EnumHasAnyFlags(_drawModes, DrawPass::GlobalSDF) && Model->SDF.Texture)
             GlobalSignDistanceFieldPass::Instance()->RasterizeModelSDF(this, Model->SDF, _transform, _box);
         return;
     }
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
     {
-        if (EnumHasAnyFlags(DrawModes, DrawPass::GlobalSurfaceAtlas) && Model->SDF.Texture)
+        if (EnumHasAnyFlags(_drawModes, DrawPass::GlobalSurfaceAtlas) && Model->SDF.Texture)
             GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, this, _sphere, _transform, Model->LODs.Last().GetBox());
         return;
     }
@@ -353,7 +367,7 @@ void StaticModel::Draw(RenderContext& renderContext)
     draw.Lightmap = _scene ? _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex) : nullptr;
     draw.LightmapUVs = &Lightmap.UVsArea;
     draw.Flags = _staticFlags;
-    draw.DrawModes = DrawModes;
+    draw.DrawModes = _drawModes;
     draw.Bounds = _sphere;
     draw.Bounds.Center -= renderContext.View.Origin;
     draw.PerInstanceRandom = GetPerInstanceRandom();
@@ -390,7 +404,7 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
     draw.Lightmap = _scene ? _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex) : nullptr;
     draw.LightmapUVs = &Lightmap.UVsArea;
     draw.Flags = _staticFlags;
-    draw.DrawModes = DrawModes;
+    draw.DrawModes = _drawModes;
     draw.Bounds = _sphere;
     draw.Bounds.Center -= renderContext.View.Origin;
     draw.PerInstanceRandom = GetPerInstanceRandom();
@@ -435,7 +449,7 @@ void StaticModel::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(LODBias, _lodBias);
     SERIALIZE_MEMBER(ForcedLOD, _forcedLod);
     SERIALIZE_MEMBER(SortOrder, _sortOrder);
-    SERIALIZE(DrawModes);
+    SERIALIZE_MEMBER(DrawModes, _drawModes);
 
     if (HasLightmap()
 #if USE_EDITOR
@@ -487,7 +501,7 @@ void StaticModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     DESERIALIZE_MEMBER(LODBias, _lodBias);
     DESERIALIZE_MEMBER(ForcedLOD, _forcedLod);
     DESERIALIZE_MEMBER(SortOrder, _sortOrder);
-    DESERIALIZE(DrawModes);
+    DESERIALIZE_MEMBER(DrawModes, _drawModes);
     DESERIALIZE_MEMBER(LightmapIndex, Lightmap.TextureIndex);
     DESERIALIZE_MEMBER(LightmapArea, Lightmap.UVsArea);
 
@@ -537,27 +551,27 @@ void StaticModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
         if (member != stream.MemberEnd() && member->value.IsBool() && member->value.GetBool())
         {
             MARK_CONTENT_DEPRECATED();
-            DrawModes = DrawPass::Depth;
+            _drawModes = DrawPass::Depth;
         }
     }
     // [Deprecated on 07.02.2022, expires on 07.02.2024]
     if (modifier->EngineBuild <= 6330)
     {
         MARK_CONTENT_DEPRECATED();
-        DrawModes |= DrawPass::GlobalSDF;
+        _drawModes |= DrawPass::GlobalSDF;
     }
     // [Deprecated on 27.04.2022, expires on 27.04.2024]
     if (modifier->EngineBuild <= 6331)
     {
         MARK_CONTENT_DEPRECATED();
-        DrawModes |= DrawPass::GlobalSurfaceAtlas;
+        _drawModes |= DrawPass::GlobalSurfaceAtlas;
     }
 
     {
         const auto member = stream.FindMember("RenderPasses");
         if (member != stream.MemberEnd() && member->value.IsInt())
         {
-            DrawModes = (DrawPass)member->value.GetInt();
+            _drawModes = (DrawPass)member->value.GetInt();
         }
     }
 }

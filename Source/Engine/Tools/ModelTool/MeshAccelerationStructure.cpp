@@ -9,6 +9,7 @@
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/Models/ModelData.h"
+#include "Engine/Graphics/Models/MeshAccessor.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 
 PACK_STRUCT(struct GPUBVH {
@@ -321,7 +322,6 @@ void MeshAccelerationStructure::Add(Model* model, int32 lodIndex)
     lodIndex = Math::Clamp(lodIndex, model->HighestResidentLODIndex(), model->LODs.Count() - 1);
     ModelLOD& lod = model->LODs[lodIndex];
     _meshes.EnsureCapacity(_meshes.Count() + lod.Meshes.Count());
-    bool failed = false;
     for (int32 i = 0; i < lod.Meshes.Count(); i++)
     {
         auto& mesh = lod.Meshes[i];
@@ -336,25 +336,19 @@ void MeshAccelerationStructure::Add(Model* model, int32 lodIndex)
         auto& meshData = _meshes.AddOne();
         meshData.Asset = model;
         model->AddReference();
-        if (model->IsVirtual())
-        {
-            meshData.Indices = mesh.GetTriangleCount() * 3;
-            meshData.Vertices = mesh.GetVertexCount();
-            failed |= mesh.DownloadDataGPU(MeshBufferType::Index, meshData.IndexBuffer);
-            failed |= mesh.DownloadDataGPU(MeshBufferType::Vertex0, meshData.VertexBuffer);
-        }
-        else
-        {
-            failed |= mesh.DownloadDataCPU(MeshBufferType::Index, meshData.IndexBuffer, meshData.Indices);
-            failed |= mesh.DownloadDataCPU(MeshBufferType::Vertex0, meshData.VertexBuffer, meshData.Vertices);
-        }
-        if (failed)
+        MeshAccessor accessor;
+        MeshBufferType bufferTypes[2] = { MeshBufferType::Index, MeshBufferType::Vertex0 };
+        if (accessor.LoadMesh(&mesh, false, ToSpan(bufferTypes, 2)))
             return;
-        if (!meshData.IndexBuffer.IsAllocated() && meshData.IndexBuffer.Length() != 0)
-        {
-            // BVH nodes modifies index buffer (sorts data in-place) so clone it
-            meshData.IndexBuffer.Copy(meshData.IndexBuffer.Get(), meshData.IndexBuffer.Length());
-        }
+        auto indexStream = accessor.Index();
+        auto positionStream = accessor.Position();
+        if (!indexStream.IsValid() || !positionStream.IsValid())
+            return;
+        meshData.Indices = indexStream.GetCount();
+        meshData.Vertices = positionStream.GetCount();
+        meshData.IndexBuffer.Copy(indexStream.GetData());
+        meshData.VertexBuffer.Allocate(meshData.Vertices * sizeof(Float3));
+        positionStream.CopyTo(ToSpan(meshData.VertexBuffer.Get<Float3>(), meshData.Vertices));
         meshData.Use16BitIndexBuffer = mesh.Use16BitIndexBuffer();
         meshData.Bounds = mesh.GetBox();
     }

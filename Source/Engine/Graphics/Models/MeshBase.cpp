@@ -158,6 +158,14 @@ void MeshAccessor::Stream::CopyTo(Span<Float3> dst) const
     {
         Platform::MemoryCopy(dst.Get(), _data.Get(), _data.Length());
     }
+    else if (IsLinear(PixelFormat::R16G16B16A16_Float))
+    {
+        for (int32 i = 0; i < count; i++)
+        {
+            auto v = *(Half4*)(_data.Get() + i * _stride);
+            dst.Get()[i] = Float3(Float16Compressor::Decompress(v.X), Float16Compressor::Decompress(v.Y), Float16Compressor::Decompress(v.Z));
+        }
+    }
     else
     {
         for (int32 i = 0; i < count; i++)

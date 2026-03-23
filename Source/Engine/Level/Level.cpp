@@ -5,6 +5,7 @@
 #include "LargeWorlds.h"
 #include "SceneQuery.h"
 #include "SceneObjectsFactory.h"
+#include "FlaxEngine.Gen.h"
 #include "Scene/Scene.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Deprecated.h"
@@ -957,9 +958,6 @@ bool LevelImpl::unloadScene(Scene* scene)
 
     // Simple enqueue scene root object to be deleted
     scene->DeleteObject();
-
-    // Force flush deleted objects so we actually delete unloaded scene objects (prevent from reloading their managed objects, etc.)
-    ObjectsRemovalService::Flush();
 
     return false;
 }

@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "PointLight.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/RenderView.h"
@@ -196,6 +197,14 @@ void PointLight::Deserialize(DeserializeStream& stream, ISerializeModifier* modi
     DESERIALIZE(UseInverseSquaredFalloff);
     DESERIALIZE(UseIESBrightness);
     DESERIALIZE(IESBrightnessScale);
+
+    // [Deprecated on 12.03.2026, expires on 12.03.2028]
+    if (modifier->EngineBuild <= 6807 && SERIALIZE_FIND_MEMBER(stream, "UseInverseSquaredFalloff") != stream.MemberEnd() && UseInverseSquaredFalloff)
+    {
+        // Convert old non-physical brightness value that was used for Inverse Squared Falloff which wasn't based on proper cm/m units calculations
+        MARK_CONTENT_DEPRECATED();
+        Brightness = Math::Sqrt(Brightness * 0.01f);
+    }
 }
 
 bool PointLight::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)

@@ -90,6 +90,7 @@ public:
         Float3 ProbesOrigin;
         float ProbesSpacing = 0.0f;
         Int3 ProbeScrollOffsets;
+        bool PendingUpdate = true;
         Int3 ProbeScrollClears;
 
         void Clear()
@@ -97,6 +98,7 @@ public:
             ProbesOrigin = Float3::Zero;
             ProbeScrollOffsets = Int3::Zero;
             ProbeScrollClears = Int3::Zero;
+            PendingUpdate = true;
         }
     } Cascades[4];
 
@@ -457,9 +459,12 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
     //const uint64 cascadeFrequencies[] = { 1, 1, 1, 1 };
     //const uint64 cascadeFrequencies[] = { 10, 10, 10, 10 };
     bool cascadeSkipUpdate[4];
+    int32 maxCascadesPerFrame = renderContext.View.IsSingleFrame ? cascadesCount : 2;
     for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
     {
-        cascadeSkipUpdate[cascadeIndex] = !clear && (ddgiData.LastFrameUsed % cascadeFrequencies[cascadeIndex]) != 0 && GPU_SPREAD_WORKLOAD;
+        auto& cascade = ddgiData.Cascades[cascadeIndex];
+        cascade.PendingUpdate |= !clear && (ddgiData.LastFrameUsed % cascadeFrequencies[cascadeIndex]) != 0 && GPU_SPREAD_WORKLOAD;
+        cascadeSkipUpdate[cascadeIndex] = !cascade.PendingUpdate || maxCascadesPerFrame-- <= 0;
     }
 
     // Compute scrolling (probes are placed around camera but are scrolling to increase stability during movement)
@@ -468,6 +473,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         if (cascadeSkipUpdate[cascadeIndex])
             continue;
         auto& cascade = ddgiData.Cascades[cascadeIndex];
+        cascade.PendingUpdate = false;
 
         // Calculate the count of grid cells between the view origin and the scroll anchor
         const Float3 volumeOrigin = cascade.ProbesOrigin + Float3(cascade.ProbeScrollOffsets) * cascade.ProbesSpacing;

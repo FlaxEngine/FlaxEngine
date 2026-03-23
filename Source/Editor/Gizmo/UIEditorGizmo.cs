@@ -181,6 +181,11 @@ namespace FlaxEditor
         public bool EnableCamera => _view != null && EnableBackground;
 
         /// <summary>
+        /// True if enable grid drawing.
+        /// </summary>
+        public bool ShowGrid { get; set; } = true;
+
+        /// <summary>
         /// Transform gizmo to use sync with (selection, snapping, transformation settings).
         /// </summary>
         public virtual TransformGizmo TransformGizmo => null;
@@ -387,19 +392,53 @@ namespace FlaxEditor
             if (_mouseMovesWidget && _activeWidget.UIControl)
             {
                 // Calculate transform delta
-                var resizeAxisAbs = _activeWidget.ResizeAxis.Absolute;
-                var resizeAxisPos = Float2.Clamp(_activeWidget.ResizeAxis, Float2.Zero, Float2.One);
-                var resizeAxisNeg = Float2.Clamp(-_activeWidget.ResizeAxis, Float2.Zero, Float2.One);
                 var delta = location - _mouseMovesPos;
                 // TODO: scale/size snapping?
-                delta *= resizeAxisAbs;
 
                 // Resize control via widget
                 var moveLocation = _mouseMovesPos + delta;
                 var control = _activeWidget.UIControl.Control;
                 var uiControlDelta = GetControlDelta(control, ref _mouseMovesPos, ref moveLocation);
-                control.LocalLocation += uiControlDelta * resizeAxisNeg;
-                control.Size += uiControlDelta * resizeAxisPos - uiControlDelta * resizeAxisNeg;
+
+                // Transform delta to control local space
+                var rotation = GetTotalRotation(control) * Mathf.DegreesToRadians;
+                var cos = Mathf.Cos(rotation);
+                var sin = Mathf.Sin(rotation);
+                var localDeltaX = uiControlDelta.X * cos + uiControlDelta.Y * sin;
+                var localDeltaY = uiControlDelta.Y * cos - uiControlDelta.X * sin;
+                var localDelta = new Float2(localDeltaX, localDeltaY);
+                localDelta *= _activeWidget.ResizeAxis.Absolute;
+
+                // Calculate size change
+                var resizeAxisPos = Float2.Clamp(_activeWidget.ResizeAxis, Float2.Zero, Float2.One);
+                var resizeAxisNeg = Float2.Clamp(-_activeWidget.ResizeAxis, Float2.Zero, Float2.One);
+                var dSizeScaled = localDelta * resizeAxisPos - localDelta * resizeAxisNeg;
+                var scale = control.Scale;
+                var dSize = new Float2(
+                    Mathf.Abs(scale.X) > Mathf.Epsilon ? dSizeScaled.X / scale.X : 0,
+                    Mathf.Abs(scale.Y) > Mathf.Epsilon ? dSizeScaled.Y / scale.Y : 0);
+
+                // Apply size change
+                control.Size += dSize;
+
+                // Calculate location offset to keep the opposite edge stationary
+                // When PivotRelative is false, resizing keeps Top-Left (Location) constant,
+                // so we only need to slide back if we are resizing Left or Top edges.
+                if (!control.PivotRelative)
+                {
+                    var pivotOffset = Float2.Zero;
+                    if (_activeWidget.ResizeAxis.X < 0 && Mathf.Abs(dSize.X) > Mathf.Epsilon)
+                        pivotOffset.X = -dSize.X * scale.X;
+                    if (_activeWidget.ResizeAxis.Y < 0 && Mathf.Abs(dSize.Y) > Mathf.Epsilon)
+                        pivotOffset.Y = -dSize.Y * scale.Y;
+
+                    // Transform offset back to parent space and apply
+                    var dLocationX = pivotOffset.X * cos - pivotOffset.Y * sin;
+                    var dLocationY = pivotOffset.X * sin + pivotOffset.Y * cos;
+                    var dLocation = new Float2(dLocationX, dLocationY);
+                    
+                    control.LocalLocation += dLocation;
+                }
 
                 // Don't move if layout doesn't allow it
                 if (control.Parent != null)
@@ -492,17 +531,20 @@ namespace FlaxEditor
                 // Draw background
                 Surface.VisjectSurface.DrawBackgroundDefault(Editor.Instance.UI.VisjectSurfaceBackground, Width, Height);
 
-                // Draw grid
-                var viewRect = GetClientArea();
-                var upperLeft = _view.PointFromParent(viewRect.Location);
-                var bottomRight = _view.PointFromParent(viewRect.Size);
-                var min = Float2.Min(upperLeft, bottomRight);
-                var max = Float2.Max(upperLeft, bottomRight);
-                var pixelRange = (max - min) * ViewScale;
-                Render2D.PushClip(ref viewRect);
-                DrawAxis(Float2.UnitX, viewRect, min.X, max.X, pixelRange.X);
-                DrawAxis(Float2.UnitY, viewRect, min.Y, max.Y, pixelRange.Y);
-                Render2D.PopClip();
+                if (ShowGrid)
+                {
+                    // Draw grid
+                    var viewRect = GetClientArea();
+                    var upperLeft = _view.PointFromParent(viewRect.Location);
+                    var bottomRight = _view.PointFromParent(viewRect.Size);
+                    var min = Float2.Min(upperLeft, bottomRight);
+                    var max = Float2.Max(upperLeft, bottomRight);
+                    var pixelRange = (max - min) * ViewScale;
+                    Render2D.PushClip(ref viewRect);
+                    DrawAxis(Float2.UnitX, viewRect, min.X, max.X, pixelRange.X);
+                    DrawAxis(Float2.UnitY, viewRect, min.Y, max.Y, pixelRange.Y);
+                    Render2D.PopClip();
+                }
             }
 
             base.Draw();
@@ -634,7 +676,7 @@ namespace FlaxEditor
                 // Draw sizing widgets
                 if (_widgets == null)
                     _widgets = new List<Widget>();
-                var widgetSize = 10.0f;
+                var widgetSize = 8.0f;
                 var viewScale = ViewScale;
                 if (viewScale < 0.7f)
                     widgetSize *= viewScale;
@@ -685,7 +727,7 @@ namespace FlaxEditor
                         anchorRectSize *= viewScale;
 
                     // Make anchor rects and rotate if parent is rotated.
-                    var parentRotation = controlParent.Rotation * Mathf.DegreesToRadians;
+                    var parentRotation = GetTotalRotation(controlParent) * Mathf.DegreesToRadians;
 
                     var rect1Axis = new Float2(-1, -1);
                     var rect1 = new Rectangle(anchorUpperLeft + 
@@ -717,17 +759,25 @@ namespace FlaxEditor
             }
         }
 
+        private float GetTotalRotation(Control control)
+        {
+            if (control.Parent != null)
+                return control.Rotation + GetTotalRotation(control.Parent);
+            return control.Rotation;
+        }
+
         private void DrawControlWidget(UIControl uiControl, ref Float2 pos, ref Float2 mousePos, ref Float2 size, float scale, Float2 resizeAxis, CursorType cursor)
         {
             var style = Style.Current;
             var control = uiControl.Control;
-            var rotation = control.Rotation;
+            var rotation = GetTotalRotation(control);
             var rotationInRadians = rotation * Mathf.DegreesToRadians;
-            var rect = new Rectangle((pos + 
-                                      new Float2(resizeAxis.X * Mathf.Cos(rotationInRadians) - resizeAxis.Y * Mathf.Sin(rotationInRadians), 
-                                                 resizeAxis.Y * Mathf.Cos(rotationInRadians) + resizeAxis.X * Mathf.Sin(rotationInRadians)) * 10 * scale) - size * 0.5f,
-                                     size);
-            
+            var position = (pos + new Float2(resizeAxis.X * Mathf.Cos(rotationInRadians) - resizeAxis.Y * Mathf.Sin(rotationInRadians), 
+                                             resizeAxis.Y * Mathf.Cos(rotationInRadians) + resizeAxis.X * Mathf.Sin(rotationInRadians)) * 4 * (scale < 0.7f ? scale : 1));
+            var halfSize = size * 0.5f;
+            // Keep at 0, 0 rect position until later to correctly render rotation.
+            var rect = new Rectangle(0, 0, size);
+
             // Find more correct cursor at different angles
             var unwindRotation = Mathf.UnwindDegrees(rotation);
             if (unwindRotation is (>= 45 and < 135) or (> -135 and <= -45) )
@@ -749,6 +799,10 @@ namespace FlaxEditor
                 default: break;
                 }
             }
+
+            Render2D.PushTransform(Matrix3x3.Translation2D(position));
+            Render2D.PushTransform(Matrix3x3.RotationZ(rotationInRadians));
+            Render2D.PushTransform(Matrix3x3.Translation2D(-1 * halfSize));
             if (rect.Contains(ref mousePos))
             {
                 Render2D.FillRectangle(rect, style.Foreground);
@@ -759,9 +813,14 @@ namespace FlaxEditor
                 Render2D.FillRectangle(rect, style.ForegroundGrey);
                 Render2D.DrawRectangle(rect, style.Foreground);
             }
+            Render2D.PopTransform();
+            Render2D.PopTransform();
+            Render2D.PopTransform();
+
             if (!_mouseMovesWidget && uiControl != null)
             {
                 // Collect widget
+                rect.Location = position - halfSize;
                 _widgets.Add(new Widget
                 {
                     UIControl = uiControl,

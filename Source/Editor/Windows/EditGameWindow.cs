@@ -257,7 +257,7 @@ namespace FlaxEditor.Windows
         private void UpdateCameraPreview()
         {
             // Disable rendering preview during GI baking
-            if (Editor.StateMachine.CurrentState.IsPerformanceHeavy)
+            if (Editor == null || Editor.StateMachine.CurrentState.IsPerformanceHeavy)
             {
                 HideAllCameraPreviews();
                 return;
@@ -404,6 +404,14 @@ namespace FlaxEditor.Windows
                 transform.Scale = _pilotActor.Scale;
                 _pilotActor.Transform = transform;
             }
+        }
+
+        /// <inheritdoc />
+        protected override void OnSizeChanged()
+        {
+            base.OnSizeChanged();
+
+            UpdateCameraPreview();
         }
 
         /// <inheritdoc />

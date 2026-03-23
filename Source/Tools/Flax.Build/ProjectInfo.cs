@@ -145,6 +145,7 @@ namespace Flax.Build
     public sealed class ProjectInfo
     {
         private static List<ProjectInfo> _projectsCache;
+        private string _versionControlCommit, _versionControlBranch;
 
         /// <summary>
         /// The project reference.
@@ -233,6 +234,51 @@ namespace Flax.Build
         public Dictionary<string, string> Configuration;
 
         /// <summary>
+        /// Gets the name of the branch from Version Control System (VCS) used by the project. Empty when unused.
+        /// </summary>
+        public string VersionControlBranch
+        {
+            get
+            {
+                if (_versionControlBranch == null)
+                    InitVersionControlInfo();
+                return _versionControlBranch;
+            }
+        }
+
+        /// <summary>
+        /// Gets the commit hash/changeset identifier from Version Control System (VCS) used by the project. Empty when unused.
+        /// </summary>
+        public string VersionControlCommit
+        {
+            get
+            {
+                if (_versionControlCommit == null)
+                    InitVersionControlInfo();
+                return _versionControlCommit;
+            }
+        }
+
+        /// <summary>
+        /// Gets the informative version of the project including any Version Control System (VCS) information such as branch name, commit hash or changeset identifier.
+        /// </summary>
+        public string VersionControlInfo
+        {
+
+            get
+            {
+                if (_versionControlCommit == null)
+                    InitVersionControlInfo();
+                var version = Version.ToString();
+                if (_versionControlBranch.Length != 0)
+                    version += "+" + _versionControlBranch;
+                if (_versionControlCommit.Length != 0)
+                    version += "+" + _versionControlCommit;
+                return version;
+            }
+        }
+
+        /// <summary>
         /// True if project is using C#-only and no native toolsets is required to build and use scripts.
         /// </summary>
         public bool IsCSharpOnlyProject
@@ -265,6 +311,26 @@ namespace Flax.Build
                 var module = rules.GetModule(moduleName);
                 return module != null && !module.BuildNativeCode;
             });
+        }
+
+        private void InitVersionControlInfo()
+        {
+            _versionControlBranch = string.Empty;
+            _versionControlCommit = string.Empty;
+
+            // Git
+            if (Directory.Exists(Path.Combine(ProjectFolderPath, ".git")))
+            {
+                try
+                {
+                    _versionControlBranch = Utilities.ReadProcessOutput("git", "rev-parse --abbrev-ref HEAD", ProjectFolderPath);
+                    _versionControlCommit = Utilities.ReadProcessOutput("git", "rev-parse HEAD", ProjectFolderPath);
+                }
+                catch (Exception)
+                {
+                    // Ignored
+                }
+            }
         }
 
         /// <summary>
