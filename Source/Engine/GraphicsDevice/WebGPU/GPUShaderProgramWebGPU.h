@@ -26,7 +26,7 @@ struct GPUBindGroupKeyWebGPU
     mutable uint64 LastFrameUsed;
     WGPUBindGroupEntry Entries[64];
     uint8 EntriesCount;
-    uint8 Versions[64]; // Versions of descriptors used to differentiate when texture residency gets changed
+    uint32 Versions[64]; // Versions of descriptors used to differentiate when texture residency gets changed
 
     bool operator==(const GPUBindGroupKeyWebGPU& other) const;
 };

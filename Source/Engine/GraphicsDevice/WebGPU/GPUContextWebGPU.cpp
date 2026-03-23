@@ -1138,7 +1138,7 @@ void GPUContextWebGPU::BuildBindGroup(uint32 groupIndex, const SpirvShaderDescri
     auto entriesPtr = key.Entries;
     auto versionsPtr = key.Versions;
     Platform::MemoryClear(entriesPtr, entriesCount * sizeof(WGPUBindGroupEntry));
-    Platform::MemoryClear(versionsPtr, ((entriesCount + 3) & ~0x3) * sizeof(uint8));
+    Platform::MemoryClear(versionsPtr, entriesCount * sizeof(uint32));
     for (int32 index = 0; index < entriesCount; index++)
     {
         auto& descriptor = descriptors.DescriptorTypes[index];
@@ -1205,7 +1205,7 @@ void GPUContextWebGPU::BuildBindGroup(uint32 groupIndex, const SpirvShaderDescri
             {
                 entry.buffer = ptr->BufferView->Buffer;
                 entry.size = ((GPUBufferWebGPU*)view->GetParent())->GetSize();
-                versionsPtr[index] = (uint64)ptr->Version;
+                versionsPtr[index] = ptr->Version;
             }
             if (!entry.buffer)
                 entry.buffer = _device->DefaultBuffer; // Fallback

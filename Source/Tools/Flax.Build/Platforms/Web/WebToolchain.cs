@@ -289,6 +289,7 @@ namespace Flax.Build.Platforms
             args.AddRange(options.LinkEnv.CustomArgs);
             {
                 args.Add(string.Format("-o \"{0}\"", outputFilePath.Replace('\\', '/')));
+                args.Add("-Wno-experimental");
 
                 // Debug options
                 //args.Add("--minify=0");

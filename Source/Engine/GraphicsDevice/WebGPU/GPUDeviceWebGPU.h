@@ -148,6 +148,21 @@ public:
 
     GPUQueryWebGPU AllocateQuery(GPUQueryType type);
 
+    // Object version counter used to track resource view permutations (to avoid pointer collisions on WGPUTexture/WGPUBuffer inside Bind Group cache)
+#ifndef __EMSCRIPTEN_PTHREADS__
+    mutable uint16 ObjectVersionCounter = 0;
+    FORCE_INLINE uint16 GetObjectVersion() const
+    {
+        return ++ObjectVersionCounter;
+    }
+#else
+    mutable volatile int64 ObjectVersionCounter = 0;
+    FORCE_INLINE uint16 GetObjectVersion() const
+    {
+        return (uint16)(Platform::InterlockedIncrement(&ObjectVersionCounter) % MAX_uint16);
+    }
+#endif
+
 public:
     // [GPUDeviceDX]
     GPUContext* GetMainContext() override
@@ -195,7 +210,15 @@ struct GPUResourceViewPtrWebGPU
 {
     class GPUBufferViewWebGPU* BufferView;
     class GPUTextureViewWebGPU* TextureView;
-    uint8 Version;
+    union
+    {
+        struct
+        {
+            uint16 ObjectVersion; // Object instance permutation
+            uint16 ViewVersion; // Specific view permutation
+        };
+        uint32 Version;
+    };
 };
 
 extern GPUDevice* CreateGPUDeviceWebGPU();

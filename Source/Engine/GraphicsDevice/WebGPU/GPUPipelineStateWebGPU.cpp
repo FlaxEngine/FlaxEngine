@@ -5,6 +5,7 @@
 #define WEBGPU_LOG_PSO 0
 //#define WEBGPU_LOG_PSO_NAME "PS_GBuffer" // Debug log for PSOs with specific name
 #define WEBGPU_LOG_BIND_GROUPS 0
+#define WEBGPU_CACHE_BIND_GROUPS 1
 
 #include "GPUPipelineStateWebGPU.h"
 #include "GPUTextureWebGPU.h"
@@ -371,9 +372,11 @@ void GPUPipelineStateWebGPU::OnReleaseGPU()
 {
     VS = nullptr;
     PS = nullptr;
+#if WEBGPU_CACHE_BIND_GROUPS
     for (auto& e : _bindGroups)
         wgpuBindGroupRelease(e.Value);
     _bindGroups.Clear();
+#endif
     for (auto& e : _pipelines)
         wgpuRenderPipelineRelease(e.Value);
     _pipelines.Clear();
@@ -412,7 +415,7 @@ bool GPUBindGroupKeyWebGPU::operator==(const GPUBindGroupKeyWebGPU& other) const
         && Layout == other.Layout
         && EntriesCount == other.EntriesCount
         && Platform::MemoryCompare(&Entries, &other.Entries, EntriesCount * sizeof(WGPUBindGroupEntry)) == 0
-        && Platform::MemoryCompare(&Versions, &other.Versions, EntriesCount * sizeof(uint8)) == 0;
+        && Platform::MemoryCompare(&Versions, &other.Versions, EntriesCount * sizeof(uint32)) == 0;
 }
 
 WGPUBindGroup GPUBindGroupCacheWebGPU::Get(WGPUDevice device, GPUBindGroupKeyWebGPU& key, const StringAnsiView& debugName, uint64 gcFrames)
@@ -434,6 +437,7 @@ WGPUBindGroup GPUBindGroupCacheWebGPU::Get(WGPUDevice device, GPUBindGroupKeyWeb
 
     // Lookup for existing bind group
     WGPUBindGroup bindGroup;
+#if WEBGPU_CACHE_BIND_GROUPS
     auto found = _bindGroups.Find(key);
     if (found.IsNotEnd())
     {
@@ -463,6 +467,7 @@ WGPUBindGroup GPUBindGroupCacheWebGPU::Get(WGPUDevice device, GPUBindGroupKeyWeb
 
         return bindGroup;
     }
+#endif
     PROFILE_CPU();
     PROFILE_MEM(GraphicsShaders);
 #if GPU_ENABLE_RESOURCE_NAMING
@@ -505,7 +510,7 @@ WGPUBindGroup GPUBindGroupCacheWebGPU::Get(WGPUDevice device, GPUBindGroupKeyWeb
                 equalLayout++;
             if (key.EntriesCount == other.EntriesCount && Platform::MemoryCompare(&key.Entries, &other.Entries, key.EntriesCount * sizeof(WGPUBindGroupEntry)) == 0)
                 equalEntries++;
-            if (key.EntriesCount == other.EntriesCount && Platform::MemoryCompare(&key.Versions, &other.Versions, key.EntriesCount * sizeof(uint8)) == 0)
+            if (key.EntriesCount == other.EntriesCount && Platform::MemoryCompare(&key.Versions, &other.Versions, key.EntriesCount * sizeof(uint32)) == 0)
                 equalVersions++;
         }
     }
@@ -513,8 +518,10 @@ WGPUBindGroup GPUBindGroupCacheWebGPU::Get(WGPUDevice device, GPUBindGroupKeyWeb
         LOG(Error, "> Hash collision! {}/{} (capacity: {}), equalLayout: {}, equalEntries: {}, equalVersions: {}", collisions, _bindGroups.Count(), _bindGroups.Capacity(), equalLayout, equalEntries, equalVersions);
 #endif
 
+#if WEBGPU_CACHE_BIND_GROUPS
     // Cache it
     _bindGroups.Add(key, bindGroup);
+#endif
     return bindGroup;
 }
 

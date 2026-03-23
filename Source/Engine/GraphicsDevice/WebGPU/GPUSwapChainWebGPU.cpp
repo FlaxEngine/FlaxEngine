@@ -81,7 +81,7 @@ GPUTextureView* GPUSwapChainWebGPU::GetBackBufferView()
         viewDesc.arrayLayerCount = 1;
         viewDesc.aspect = WGPUTextureAspect_All;
         viewDesc.usage = wgpuTextureGetUsage(surfaceTexture.texture);
-        _surfaceView.Create(surfaceTexture.texture, viewDesc);
+        _surfaceView.Create(surfaceTexture.texture, viewDesc, _surfaceView.Ptr.Version + 1);
     }
     return &_surfaceView;
 }

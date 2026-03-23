@@ -37,9 +37,12 @@ void SetWebGPUTextureViewSampler(GPUTextureView* view, uint32 samplerType)
     ((GPUTextureViewWebGPU*)view)->SampleType = (WGPUTextureSampleType)samplerType;
 }
 
-void GPUTextureViewWebGPU::Create(WGPUTexture texture, const WGPUTextureViewDescriptor& desc)
+void GPUTextureViewWebGPU::Create(WGPUTexture texture, const WGPUTextureViewDescriptor& desc, uint16 version)
 {
-    Ptr.Version++;
+    Ptr.ObjectVersion = version;
+    Ptr.ViewVersion++;
+    if (ViewRender && View != ViewRender)
+        wgpuTextureViewRelease(ViewRender);
     if (View)
         wgpuTextureViewRelease(View);
     Texture = texture;
@@ -104,21 +107,23 @@ void GPUTextureViewWebGPU::Create(WGPUTexture texture, const WGPUTextureViewDesc
 
 void GPUTextureViewWebGPU::Release()
 {
-    if (View != ViewRender)
-    {
-        wgpuTextureViewRelease(ViewRender);
-        ViewRender = nullptr;
-    }
     if (View)
     {
         wgpuTextureViewRelease(View);
+        if (View == ViewRender)
+            ViewRender = nullptr;
         View = nullptr;
+    }
+    if (ViewRender)
+    {
+        wgpuTextureViewRelease(ViewRender);
+        ViewRender = nullptr;
     }
     Texture = nullptr;
     HasStencil = false;
     ReadOnly = false;
     DepthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
-    Ptr.Version++;
+    Ptr.ViewVersion++;
 }
 
 bool GPUTextureWebGPU::OnInit()
@@ -169,6 +174,7 @@ bool GPUTextureWebGPU::OnInit()
     Texture = wgpuDeviceCreateTexture(_device->Device, &textureDesc);
     if (!Texture)
         return true;
+    _version = _device->GetObjectVersion();
 
     // Update memory usage
     _memoryUsage = calculateMemoryUsage();
@@ -217,7 +223,7 @@ void GPUTextureWebGPU::OnResidentMipsChanged()
     GPUTextureViewWebGPU& view = IsVolume() ? _handleVolume : _handlesPerSlice[0];
     if (view.GetParent() == nullptr)
         view.Init(this, _desc.Format, _desc.MultiSampleLevel);
-    view.Create(Texture, viewDesc);
+    view.Create(Texture, viewDesc, _version);
 }
 
 void GPUTextureWebGPU::OnReleaseGPU()
@@ -277,7 +283,7 @@ void GPUTextureWebGPU::InitHandles()
         {
             auto& view = _handleVolume;
             view.Init(this, format, msaa);
-            view.Create(Texture, viewDesc);
+            view.Create(Texture, viewDesc, _version);
         }
 
         // Init per slice views
@@ -288,7 +294,7 @@ void GPUTextureWebGPU::InitHandles()
             {
                 auto& view = _handlesPerSlice[sliceIndex];
                 view.Init(this, format, msaa);
-                view.Create(Texture, viewDesc);
+                view.Create(Texture, viewDesc, _version);
                 view.DepthSlice = sliceIndex;
             }
         }
@@ -299,7 +305,7 @@ void GPUTextureWebGPU::InitHandles()
         {
             auto& view = _handleArray;
             view.Init(this, format, msaa);
-            view.Create(Texture, viewDesc);
+            view.Create(Texture, viewDesc, _version);
         }
 
         // Create per array slice handles
@@ -311,7 +317,7 @@ void GPUTextureWebGPU::InitHandles()
             viewDesc.arrayLayerCount = 1;
             auto& view = _handlesPerSlice[arrayIndex];
             view.Init(this, format, msaa);
-            view.Create(Texture, viewDesc);
+            view.Create(Texture, viewDesc, _version);
         }
         viewDesc.baseArrayLayer = 0;
         viewDesc.arrayLayerCount = MipLevels();
@@ -323,7 +329,7 @@ void GPUTextureWebGPU::InitHandles()
         _handlesPerSlice.Resize(1, false);
         auto& view = _handlesPerSlice[0];
         view.Init(this, format, msaa);
-        view.Create(Texture, viewDesc);
+        view.Create(Texture, viewDesc, _version);
     }
 
     // Init per mip map handles
@@ -344,7 +350,7 @@ void GPUTextureWebGPU::InitHandles()
                 auto& view = slice[mipIndex];
                 viewDesc.baseMipLevel = mipIndex;
                 view.Init(this, format, msaa);
-                view.Create(Texture, viewDesc);
+                view.Create(Texture, viewDesc, _version);
             }
         }
         viewDesc.dimension = _viewDimension;
@@ -355,7 +361,7 @@ void GPUTextureWebGPU::InitHandles()
     {
         auto& view = _handleReadOnlyDepth;
         view.Init(this, format, msaa);
-        view.Create(Texture, viewDesc);
+        view.Create(Texture, viewDesc, _version);
         view.ReadOnly = true;
     }
 
@@ -375,7 +381,7 @@ void GPUTextureWebGPU::InitHandles()
         viewDesc.aspect = WGPUTextureAspect_StencilOnly;
         viewDesc.format = WGPUTextureFormat_Stencil8;
         _handleStencil.Init(this, stencilFormat, msaa);
-        _handleStencil.Create(Texture, viewDesc);
+        _handleStencil.Create(Texture, viewDesc, _version);
     }
 }
 

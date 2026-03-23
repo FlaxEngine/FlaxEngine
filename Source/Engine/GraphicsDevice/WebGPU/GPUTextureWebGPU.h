@@ -65,7 +65,7 @@ public:
 
 public:
     using GPUTextureView::Init;
-    void Create(WGPUTexture texture, const WGPUTextureViewDescriptor& desc);
+    void Create(WGPUTexture texture, const WGPUTextureViewDescriptor& desc, uint16 version);
     void Release();
 
 public:
@@ -93,6 +93,7 @@ private:
 #endif
     WGPUTextureFormat _format = WGPUTextureFormat_Undefined;
     WGPUTextureViewDimension _viewDimension = WGPUTextureViewDimension_Undefined;
+    uint16 _version = 0;
 
 public:
     GPUTextureWebGPU(GPUDeviceWebGPU* device, const StringView& name)

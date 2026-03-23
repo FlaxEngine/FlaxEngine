@@ -98,6 +98,7 @@ bool GPUBufferWebGPU::OnInit()
         return true;
     _memoryUsage = bufferDesc.size;
     Usage = bufferDesc.usage;
+    _view.Ptr.ObjectVersion = _device->GetObjectVersion();
 
     // Initialize with a data if provided
     if (bufferDesc.mappedAtCreation)
@@ -128,7 +129,7 @@ void GPUBufferWebGPU::OnReleaseGPU()
 #if GPU_ENABLE_RESOURCE_NAMING
     _name.Clear();
 #endif
-    _view.Ptr.Version++;
+    _view.Ptr.ViewVersion++;
 
     // Base
     GPUBuffer::OnReleaseGPU();
