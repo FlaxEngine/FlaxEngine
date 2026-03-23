@@ -143,6 +143,10 @@ GPUTexture* RenderBuffers::RequestHiZ(GPUContext* context, bool fullRes, int32 m
     {
         HiZ = RenderTargetPool::Get(desc);
         RENDER_TARGET_POOL_SET_NAME(HiZ, "HiZ");
+#if PLATFORM_WEB
+        // Hack to fix WebGPU limitation that requires to specify different sampler type manually to load 32-bit float texture
+        SetWebGPUTextureViewSampler(HiZ->View(), GPU_WEBGPU_SAMPLER_TYPE_UNFILTERABLE_FLOAT);
+#endif
     }
 
     // Downscale

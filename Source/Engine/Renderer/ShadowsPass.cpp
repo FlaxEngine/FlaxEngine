@@ -1177,8 +1177,7 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
         }
 #if PLATFORM_WEB
         // Hack to fix WebGPU limitation that requires to specify different sampler type manually to sample depth texture
-        void SetWebGPUTextureViewSampler(GPUTextureView * view, uint32 samplerType);
-        SetWebGPUTextureViewSampler(shadows.ShadowMapAtlas->View(), 0x00000004); // WGPUTextureSampleType_Depth
+        SetWebGPUTextureViewSampler(shadows.ShadowMapAtlas->View(), GPU_WEBGPU_SAMPLER_TYPE_DEPTH);
 #endif
         shadows.ClearShadowMapAtlas = true;
         shadows.Resolution = atlasResolution;

@@ -275,15 +275,13 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
 
-    // Bind GBuffer inputs
-    context->BindSR(0, buffers->GBuffer0);
-    context->BindSR(1, buffers->GBuffer1);
-    context->BindSR(2, buffers->GBuffer2);
-    context->BindSR(3, depthBufferTrace);
-
     // Combine pass
     {
         PROFILE_GPU("Combine");
+        context->BindSR(0, buffers->GBuffer0);
+        context->BindSR(1, buffers->GBuffer1);
+        context->BindSR(2, buffers->GBuffer2);
+        context->BindSR(3, buffers->DepthBuffer);
         context->BindSR(TEXTURE0, lightBuffer);
         context->BindSR(TEXTURE1, reflectionsRT);
         context->BindSR(TEXTURE2, _preIntegratedGF->GetTexture());
@@ -328,6 +326,7 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
         PROFILE_GPU("RayTrace");
         context->SetViewportAndScissors((float)traceWidth, (float)traceHeight);
         context->SetRenderTarget(*traceBuffer);
+        context->BindSR(3, depthBufferTrace);
         context->BindSR(TEXTURE0, colorBuffer0->View());
         if (useGlobalSurfaceAtlas)
         {

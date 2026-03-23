@@ -103,3 +103,10 @@ class RendererPass : public Singleton<T>, public RendererPassBase
 
 #define REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, index, dataType) LOG(Fatal, "Shader {0} has incorrect constant buffer {1} size: {2} bytes. Expected: {3} bytes", shader->ToString(), index, shader->GetCB(index)->GetSize(), sizeof(dataType));
 #define CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, index, dataType) ASSERT(shader && shader->GetCB(index)); if (shader->GetCB(index)->GetSize() != sizeof(dataType) && shader->GetCB(index)->GetSize() != 0) { REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, index, dataType); return true; }
+
+#if PLATFORM_WEB
+// Hack to fix WebGPU limitation that requires to specify different sampler type manually (eg. to sample depth texture without filtering)
+void SetWebGPUTextureViewSampler(GPUTextureView* view, uint32 samplerType);
+#define GPU_WEBGPU_SAMPLER_TYPE_UNFILTERABLE_FLOAT 0x00000003 // WGPUTextureSampleType_UnfilterableFloat
+#define GPU_WEBGPU_SAMPLER_TYPE_DEPTH 0x00000004 // WGPUTextureSampleType_Depth
+#endif
