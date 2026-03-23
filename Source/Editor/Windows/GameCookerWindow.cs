@@ -602,6 +602,7 @@ namespace FlaxEditor.Windows
                             break;
                         case PlatformType.Web:
                             name = "Web";
+                            layout.Label("Web platform is experimental and some features are not finished yet (eg. C# scripting)", TextAlignment.Center).Label.TextColor = Color.Yellow;
                             break;
                         default:
                             name = Utilities.Utils.GetPropertyNameUI(_platform.ToString());
