@@ -96,9 +96,9 @@ namespace
         }
     };
 
-    Dictionary<Guid, ScriptingObjectData> _objectsDictionary(1024 * 16);
+    Dictionary<Guid, ScriptingObjectData> _objectsDictionary;
 #else
-    Dictionary<Guid, ScriptingObject*> _objectsDictionary(1024 * 16);
+    Dictionary<Guid, ScriptingObject*> _objectsDictionary;
 #endif
     bool _isEngineAssemblyLoaded = false;
     bool _hasGameModulesLoaded = false;
@@ -178,6 +178,8 @@ bool ScriptingService::Init()
 {
     PROFILE_MEM(Scripting);
     Stopwatch stopwatch;
+
+    _objectsDictionary.EnsureCapacity(16 * 1024);
 
     // Initialize managed runtime
     if (MCore::LoadEngine())

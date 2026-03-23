@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <emscripten/emscripten.h>
 #include <emscripten/threading.h>
+#include <emscripten/emmalloc.h>
 #include <emscripten/version.h>
 #include <emscripten/heap.h>
 
@@ -77,6 +78,38 @@ void WebFileSystem::GetSpecialFolderPath(const SpecialFolder type, String& resul
 {
     result = TEXT("/");
 }
+
+#if 0
+
+void* WebPlatform::Allocate(uint64 size, uint64 alignment)
+{
+    void* ptr = nullptr;
+    if (alignment && size)
+    {
+        // Alignment always has to be power of two
+        ASSERT_LOW_LAYER((alignment & (alignment - 1)) == 0);
+        ptr = emscripten_builtin_memalign(alignment, size);
+        if (!ptr)
+            OutOfMemory();
+#if COMPILE_WITH_PROFILER
+        OnMemoryAlloc(ptr, size);
+#endif
+    }
+    return ptr;
+}
+
+void WebPlatform::Free(void* ptr)
+{
+    if (ptr)
+    {
+#if COMPILE_WITH_PROFILER
+        OnMemoryFree(ptr);
+#endif
+        emscripten_builtin_free(ptr);
+    }
+}
+
+#endif
 
 String WebPlatform::GetSystemName()
 {

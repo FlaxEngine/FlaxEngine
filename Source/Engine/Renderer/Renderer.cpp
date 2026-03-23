@@ -50,7 +50,7 @@ bool IsBakingLightmaps = false;
 bool EnableLightmapsUsage = true;
 #endif
 
-Array<RendererPassBase*> PassList(64);
+Array<RendererPassBase*> PassList;
 
 class RendererService : public EngineService
 {
@@ -73,6 +73,7 @@ bool RendererService::Init()
     PROFILE_MEM(Graphics);
 
     // Register passes
+    PassList.EnsureCapacity(64);
     PassList.Add(GBufferPass::Instance());
     PassList.Add(ShadowsPass::Instance());
     PassList.Add(LightPass::Instance());

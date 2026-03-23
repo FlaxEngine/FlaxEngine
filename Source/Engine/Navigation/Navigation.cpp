@@ -164,9 +164,6 @@ public:
     NavigationService()
         : EngineService(TEXT("Navigation"), 60)
     {
-#if COMPILE_WITH_NAV_MESH_BUILDER
-        NavMeshBuilder::Init();
-#endif
     }
 
     bool Init() override;
@@ -305,6 +302,11 @@ void NavigationSettings::Deserialize(DeserializeStream& stream, ISerializeModifi
 
 bool NavigationService::Init()
 {
+    PROFILE_MEM(Navigation);
+#if COMPILE_WITH_NAV_MESH_BUILDER
+    NavMeshBuilder::Init();
+#endif
+
     // Link memory allocation calls to use engine default allocator
     dtAllocSetCustom(dtAllocDefault, Allocator::Free);
     rcAllocSetCustom(rcAllocDefault, Allocator::Free);

@@ -92,6 +92,10 @@ public:
         *dst = value;
 #endif
     }
+#if 0
+    static void* Allocate(uint64 size, uint64 alignment);
+    static void Free(void* ptr);
+#endif
     FORCE_INLINE static uint64 GetCurrentThreadID()
     {
 #ifdef __EMSCRIPTEN_PTHREADS__

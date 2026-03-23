@@ -227,8 +227,8 @@ namespace
     CachedPSO PsoDepth;
     CachedPSO PsoNoDepth;
     CachedPSO* CurrentPso = nullptr;
-    DynamicVertexBuffer VB(RENDER2D_INITIAL_VB_CAPACITY, (uint32)sizeof(Render2DVertex), TEXT("Render2D.VB"));
-    DynamicIndexBuffer IB(RENDER2D_INITIAL_IB_CAPACITY, sizeof(uint32), TEXT("Render2D.IB"));
+    DynamicVertexBuffer VB(0, (uint32)sizeof(Render2DVertex), TEXT("Render2D.VB"));
+    DynamicIndexBuffer IB(0, sizeof(uint32), TEXT("Render2D.IB"));
     uint32 VBIndex = 0;
     uint32 IBIndex = 0;
 }
@@ -633,6 +633,8 @@ bool Render2DService::Init()
     }));
 
     DrawCalls.EnsureCapacity(RENDER2D_INITIAL_DRAW_CALL_CAPACITY);
+    VB.Data.EnsureCapacity(RENDER2D_INITIAL_VB_CAPACITY);
+    IB.Data.EnsureCapacity(RENDER2D_INITIAL_IB_CAPACITY);
 
     return false;
 }

@@ -68,10 +68,9 @@ namespace
 {
     // Assets
     CriticalSection AssetsLocker;
-    Dictionary<Guid, Asset*> Assets(2048);
-    Array<Guid> LoadCallAssets(PLATFORM_THREADS_LIMIT);
+    Dictionary<Guid, Asset*> Assets;
     CriticalSection LoadedAssetsToInvokeLocker;
-    Array<Asset*> LoadedAssetsToInvoke(64);
+    Array<Asset*> LoadedAssetsToInvoke;
     Array<Asset*> ToUnload;
 
     // Assets Registry Stuff
@@ -85,6 +84,7 @@ namespace
     ConcurrentTaskQueue<ContentLoadTask> LoadTasks;
     ConditionVariable LoadTasksSignal;
     CriticalSection LoadTasksMutex;
+    Array<Guid> LoadCallAssets;
 #else
     Array<ContentLoadTask*> LoadTasks;
 #endif
@@ -124,6 +124,13 @@ ContentService ContentServiceInstance;
 bool ContentService::Init()
 {
     PROFILE_MEM(Content);
+
+    // Init memory containers
+    Assets.EnsureCapacity(2048);
+    LoadedAssetsToInvoke.EnsureCapacity(64);
+#if PLATFORM_THREADS_LIMIT > 1
+    LoadCallAssets.EnsureCapacity(PLATFORM_THREADS_LIMIT);
+#endif
 
     // Load assets registry
     Cache.Init();
@@ -294,6 +301,7 @@ void ContentService::Dispose()
     for (auto* e : LoadTasks)
         e->Cancel();
     LoadTasks.Clear();
+    LoadTasks.SetCapacity(0);
 #endif
 }
 
@@ -1381,6 +1389,7 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
         return result;
     }
 
+#if PLATFORM_THREADS_LIMIT > 1
     // Check if that asset is during loading
     if (LoadCallAssets.Contains(id))
     {
@@ -1401,9 +1410,12 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
 
     // Mark asset as loading and release lock so other threads can load other assets
     LoadCallAssets.Add(id);
-    AssetsLocker.Unlock();
-
 #define LOAD_FAILED() AssetsLocker.Lock(); LoadCallAssets.Remove(id); AssetsLocker.Unlock(); return nullptr
+#else
+#define LOAD_FAILED() return nullptr
+#endif
+
+    AssetsLocker.Unlock();
 
     // Get cached asset info (from registry)
     AssetInfo assetInfo;
@@ -1461,7 +1473,9 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
     result->startLoading();
 
     // Remove from the loading queue and release lock
+#if PLATFORM_THREADS_LIMIT > 1
     LoadCallAssets.Remove(id);
+#endif
     AssetsLocker.Unlock();
 
 #undef LOAD_FAILED
