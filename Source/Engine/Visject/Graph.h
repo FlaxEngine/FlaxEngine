@@ -27,9 +27,8 @@ public:
     typedef ParameterType Parameter;
 
 private:
-    struct PendingConnectionHint
+    struct TmpConnectionHint
     {
-        GraphBox** Target;
         Node* Node;
         byte BoxID;
     };
@@ -178,7 +177,7 @@ public:
         uint32 version;
         stream->ReadUint32(&version);
 
-        Array<PendingConnectionHint> tmpHints;
+        Array<TmpConnectionHint> tmpHints;
         if (version < 7000)
         {
             LOG(Warning, "Not supported Visject Surface version. Open and re-save asset with Flax 1.11.");
@@ -253,12 +252,12 @@ public:
                         uint32 targetNodeID;
                         stream->ReadUint32(&targetNodeID);
                         byte targetBoxID = stream->ReadByte();
-                        PendingConnectionHint hint;
+                        TmpConnectionHint hint;
                         hint.Node = GetNode(targetNodeID);
                         if (hint.Node == nullptr)
                             return true;
                         hint.BoxID = targetBoxID;
-                        hint.Target = &box->Connections[k];
+                        box->Connections[k] = (Box*)(intptr)tmpHints.Count();
                         tmpHints.Add(hint);
                     }
                 }
@@ -276,10 +275,21 @@ public:
                 return true;
 
             // Setup connections
-            for (int32 hintIndex = 0; hintIndex < tmpHints.Count(); hintIndex++)
+            for (int32 i = 0; i < Nodes.Count(); i++)
             {
-                PendingConnectionHint hint = tmpHints[hintIndex];
-                *hint.Target = hint.Node->GetBox(hint.BoxID);
+                auto node = &Nodes[i];
+                for (int32 j = 0; j < node->Boxes.Count(); j++)
+                {
+                    Box* box = &node->Boxes[j];
+                    if (box->Parent == nullptr)
+                        continue;
+                    for (int32 k = 0; k < box->Connections.Count(); k++)
+                    {
+                        int32 hintIndex = (int32)(intptr)box->Connections[k];
+                        TmpConnectionHint hint = tmpHints[hintIndex];
+                        box->Connections[k] = hint.Node->GetBox(hint.BoxID);
+                    }
+                }
             }
 
             // Ending char
