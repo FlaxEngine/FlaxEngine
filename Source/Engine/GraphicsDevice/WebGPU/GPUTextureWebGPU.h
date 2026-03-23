@@ -147,6 +147,9 @@ protected:
     bool OnInit() override;
     void OnResidentMipsChanged() override;
     void OnReleaseGPU() override;
+#if GPU_ENABLE_RESOURCE_NAMING
+    void OnRenamed() override;
+#endif
 
 private:
     void InitHandles();

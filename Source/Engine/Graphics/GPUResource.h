@@ -120,6 +120,10 @@ protected:
     /// </summary>
     virtual void OnReleaseGPU();
 
+#if !BUILD_RELEASE
+    virtual void OnRenamed();
+#endif
+
 public:
     // [ScriptingObject]
     String ToString() const override;

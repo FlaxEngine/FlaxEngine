@@ -278,6 +278,11 @@ void GPUResource::SetName(const StringView& name)
         Platform::MemoryCopy(_namePtr, name.Get(), _nameSize * sizeof(Char));
         _namePtr[_nameSize] = 0;
     }
+    OnRenamed();
+}
+
+void GPUResource::OnRenamed()
+{
 }
 
 #elif !BUILD_RELEASE

@@ -242,6 +242,19 @@ void GPUTextureWebGPU::OnReleaseGPU()
     GPUTexture::OnReleaseGPU();
 }
 
+#if GPU_ENABLE_RESOURCE_NAMING
+
+void GPUTextureWebGPU::OnRenamed()
+{
+    if (Texture)
+    {
+        _name.Set(_namePtr, _nameSize);
+        wgpuTextureSetLabel(Texture, { _name.Get(), (size_t)_name.Length() });
+    }
+}
+
+#endif
+
 void GPUTextureWebGPU::InitHandles()
 {
     WGPUTextureViewDescriptor viewDesc = WGPU_TEXTURE_VIEW_DESCRIPTOR_INIT;

@@ -241,6 +241,18 @@ void GPUTextureDX12::OnReleaseGPU()
     GPUTexture::OnReleaseGPU();
 }
 
+#if GPU_ENABLE_RESOURCE_NAMING
+
+void GPUTextureDX12::OnRenamed()
+{
+    if (_resource)
+    {
+        DX_SET_DEBUG_NAME(_resource, GetName());
+    }
+}
+
+#endif
+
 void GPUTextureViewDX12::Release()
 {
     _rtv.Release();

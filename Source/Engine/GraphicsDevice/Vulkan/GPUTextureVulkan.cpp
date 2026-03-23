@@ -522,4 +522,16 @@ void GPUTextureVulkan::OnReleaseGPU()
     GPUTexture::OnReleaseGPU();
 }
 
+#if GPU_ENABLE_RESOURCE_NAMING
+
+void GPUTextureVulkan::OnRenamed()
+{
+    if (_image)
+    {
+        VK_SET_DEBUG_NAME(_device, _image, VK_OBJECT_TYPE_IMAGE, GetName());
+    }
+}
+
+#endif
+
 #endif

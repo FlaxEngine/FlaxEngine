@@ -157,6 +157,18 @@ void GPUTextureDX11::OnReleaseGPU()
     GPUTexture::OnReleaseGPU();
 }
 
+#if GPU_ENABLE_RESOURCE_NAMING
+
+void GPUTextureDX11::OnRenamed()
+{
+    if (_resource)
+    {
+        DX_SET_DEBUG_NAME(_resource, GetName());
+    }
+}
+
+#endif
+
 #define CLEAR_VIEWS() rtView = nullptr; srView = nullptr; dsView = nullptr; uaView = nullptr
 
 void GPUTextureDX11::initHandles()
