@@ -341,6 +341,43 @@ namespace Flax.Build.Platforms
                     args.Add("-sSIDE_MODULE");
                 }
 
+                // Setup minimum browser versions
+                // https://webassembly.org/features/?categories=browsers#feature-note-3
+                uint minChrome = 0, minFirefox = 0, minSafari = 0;
+                bool addJSPI = false;
+                if (args.Any(arg => arg.Contains("-sJSPI") || arg.Contains("-sASYNCIFY=2")))
+                {
+                    // JS Promise Integration
+                    minChrome = 137; // May 2025
+                    minFirefox  = 147; // Jan 2026 (requires flag javascript.options.wasm_js_promise_integration in about:config)
+                    minSafari = 260000; // Feb 2026 (Safari Technical Preview 238)
+                    addJSPI = true; // Run check_jspi after check_browser_version
+                }
+                else
+                {
+                    // Fixed-width SIMD, WebGPU support
+                    minChrome = 91; // May 2021
+                    minFirefox = 89; // Jun 2021
+                    minSafari = 160400; // March 2023
+                }
+                args.Add("-sMIN_CHROME_VERSION=" + minChrome);
+                args.Add("-sMIN_FIREFOX_VERSION=" + minFirefox);
+                args.Add("-sMIN_SAFARI_VERSION=" + minSafari);
+                if (args.All(arg => !arg.Contains("-sASSERTIONS")))
+                {
+                    // minimum_runtime_check.js from Emscripten checks min browser versions only with ASSERTIONS enabled so use custom check
+                    var checkBrowserVersion = File.ReadAllText(Path.Combine(Globals.EngineRoot, "Source/Platforms/Web/Binaries/Data/check_browser_version.js"));
+                    checkBrowserVersion = checkBrowserVersion.Replace("TARGET_NOT_SUPPORTED", "0x7fffffff");
+                    checkBrowserVersion = checkBrowserVersion.Replace("MIN_CHROME_VERSION", minChrome.ToString());
+                    checkBrowserVersion = checkBrowserVersion.Replace("MIN_FIREFOX_VERSION", minFirefox.ToString());
+                    checkBrowserVersion = checkBrowserVersion.Replace("MIN_SAFARI_VERSION", minSafari.ToString());
+                    var path = Utilities.NormalizePath(Path.Combine(options.IntermediateFolder, "check_browser_version.js"));
+                    File.WriteAllText(path, checkBrowserVersion);
+                    args.Add($"--pre-js \"{path}\"");
+                }
+                if (addJSPI)
+                    args.Add($"--pre-js \"{Globals.EngineRoot}/Source/Platforms/Web/Binaries/Data/check_jspi.js\"");
+
                 // Customize output HTML shell
                 if (options.LinkEnv.Output == LinkerOutput.Executable)
                     args.Add($"--shell-file \"{Globals.EngineRoot}/Source/Platforms/Web/Binaries/Data/shell.html\"");
