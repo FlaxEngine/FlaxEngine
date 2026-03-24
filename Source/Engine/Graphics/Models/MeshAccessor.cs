@@ -413,10 +413,16 @@ namespace FlaxEngine
                 return true;
             for (int i = 0; i < buffersLocal.Length; i++)
             {
-                _data[(int)buffersLocal[i]] = meshBuffers[i];
-                _layouts[(int)buffersLocal[i]] = meshLayouts[i];
+                int buffer = (int)buffersLocal[i];
+                _data[buffer] = meshBuffers[i];
+                _layouts[buffer] = meshLayouts[i];
+
+                // Get format if using a single item (eg. index buffer type)
+                var format = PixelFormat.Unknown;
+                if (meshLayouts[i] && meshLayouts[i].Elements.Length == 1)
+                    format = meshLayouts[i].Elements[0].Format;
+                _formats[buffer] = format;
             }
-            _formats[(int)MeshBufferType.Index] = mesh.Use16BitIndexBuffer ? PixelFormat.R16_UInt : PixelFormat.R32_UInt;
             return false;
         }
 

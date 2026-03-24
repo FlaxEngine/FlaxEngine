@@ -50,7 +50,7 @@ protected:
     GPUBuffer* _indexBuffer = nullptr;
 
     mutable BytesContainer _cachedVertexBuffers[MODEL_MAX_VB];
-    mutable GPUVertexLayout* _cachedVertexLayouts[MODEL_MAX_VB] = {};
+    mutable GPUVertexLayout* _cachedVertexLayouts[MODEL_MAX_VB + 1] = {};
     mutable BytesContainer _cachedIndexBuffer;
     mutable int32 _cachedIndexBufferCount = 0, _cachedVertexBufferCount = 0;
 
