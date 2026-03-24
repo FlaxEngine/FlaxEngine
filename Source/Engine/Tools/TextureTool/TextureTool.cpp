@@ -13,6 +13,7 @@
 #include "Engine/Scripting/Enums.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/PixelFormatSampler.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Textures/TextureData.h"
@@ -396,6 +397,7 @@ bool TextureTool::Resize(TextureData& dst, const TextureData& src, int32 dstWidt
 
 bool TextureTool::UpdateTexture(GPUContext* context, GPUTexture* texture, int32 arrayIndex, int32 mipIndex, Span<byte> data, uint32 rowPitch, uint32 slicePitch, PixelFormat dataFormat)
 {
+    PROFILE_MEM(GraphicsTextures);
     PixelFormat textureFormat = texture->Format();
 
     // Basis Universal data transcoded into the runtime GPU format (supercompressed texture)
@@ -408,24 +410,51 @@ bool TextureTool::UpdateTexture(GPUContext* context, GPUTexture* texture, int32 
 #endif
     }
 
-    // Update texture (if format matches)
-    if (textureFormat == dataFormat)
+    // Try converting texture on the fly (slow)
+    Array<byte> tempData;
+    if (textureFormat != dataFormat)
     {
-        context->UpdateTexture(texture, arrayIndex, mipIndex, data.Get(), rowPitch, slicePitch);
+        auto dataSampler = PixelFormatSampler::Get(dataFormat);
+        auto textureSampler = PixelFormatSampler::Get(textureFormat);
+        if (!dataSampler || !textureSampler)
+            return true;
+        auto bytesPerPixel = PixelFormatExtensions::SizeInBytes(textureFormat);
+
+        int32 mipWidth, mipHeight, mipDepth;
+        texture->GetMipSize(mipIndex, mipWidth, mipHeight, mipDepth);
+
+        auto tempRowPitch = mipWidth * bytesPerPixel;
+        auto tempSlicePitch = tempRowPitch * mipHeight;
+        tempData.Resize(tempSlicePitch * mipDepth);
+
+        for (int32 y = 0; y < mipHeight; y++)
+        {
+            for (int32 x = 0; x < mipWidth; x++)
+            {
+                Color color = dataSampler->SamplePoint(data.Get(), x, y, rowPitch);
+                textureSampler->Store(tempData.Get(), x, y, tempRowPitch, color);
+            }
+        }
+
+        data = ToSpan(tempData);
+        rowPitch = tempRowPitch;
+        slicePitch = tempSlicePitch;
     }
-    return textureFormat != dataFormat;
+
+    // Update texture
+    context->UpdateTexture(texture, arrayIndex, mipIndex, data.Get(), rowPitch, slicePitch);
+    return false;
 }
 
 PixelFormat TextureTool::GetTextureFormat(TextureFormatType textureType, PixelFormat dataFormat, int32 width, int32 height, bool sRGB)
 {
+    ASSERT(GPUDevice::Instance);
+    constexpr auto minSupport = FormatSupport::Texture2D | FormatSupport::ShaderSample | FormatSupport::Mip;
 #define CHECK_BLOCK_SIZE(x, y) (width % x == 0 && height % y == 0)
 
     // Basis Universal data transcoded into the runtime GPU format (supercompressed texture)
     if (dataFormat == PixelFormat::Basis)
     {
-        ASSERT(GPUDevice::Instance);
-        auto minSupport = FormatSupport::Texture2D | FormatSupport::ShaderSample | FormatSupport::Mip;
-
         // Check ASTC formats
         if (EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::ASTC_4x4_UNorm).Support, minSupport) && CHECK_BLOCK_SIZE(4, 4))
             return sRGB ? PixelFormat::ASTC_4x4_UNorm_sRGB : PixelFormat::ASTC_4x4_UNorm;
@@ -475,8 +504,26 @@ PixelFormat TextureTool::GetTextureFormat(TextureFormatType textureType, PixelFo
         }
     }
 
+    // Check if the data format can be used 'as-is'
+    if (EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(dataFormat).Support, minSupport))
+        return dataFormat;
+
+    // Check if data can be converted at runtime (with perf cost)
+    if ((dataFormat == PixelFormat::R16_UNorm || dataFormat == PixelFormat::R16_SNorm || dataFormat == PixelFormat::R16_Float) &&
+        EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R32_Float).Support, minSupport) &&
+        PixelFormatSampler::Get(dataFormat))
+        return PixelFormat::R32_Float;
+    if (dataFormat == PixelFormat::R16G16_UNorm && EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R32G32_UInt).Support, minSupport))
+        return PixelFormat::R32G32_Float;
+    if ((dataFormat == PixelFormat::R16G16B16A16_UNorm || dataFormat == PixelFormat::R16G16B16A16_Float) &&
+        EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R32G32B32A32_Float).Support, minSupport) &&
+        PixelFormatSampler::Get(dataFormat))
+        return PixelFormat::R32G32B32A32_Float;
+
 #undef CHECK_BLOCK_SIZE
-    return dataFormat;
+
+    // Every potato supports rgba8
+    return sRGB ? PixelFormat::R8G8B8A8_UNorm_sRGB : PixelFormat::R8G8B8A8_UNorm;
 }
 
 PixelFormat TextureTool::ToPixelFormat(TextureFormatType format, int32 width, int32 height, bool canCompress)
