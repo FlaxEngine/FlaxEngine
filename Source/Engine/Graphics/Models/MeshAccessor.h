@@ -126,8 +126,11 @@ private:
     BytesContainer _data[(int32)MeshBufferType::MAX];
     PixelFormat _formats[(int32)MeshBufferType::MAX] = {};
     GPUVertexLayout* _layouts[(int32)MeshBufferType::MAX] = {};
+    Array<ModelBase*, InlinedAllocation<4>> _usedModels;
 
 public:
+    ~MeshAccessor();
+
     /// <summary>
     /// Loads the data from the mesh.
     /// </summary>

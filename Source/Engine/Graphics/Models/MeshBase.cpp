@@ -188,6 +188,16 @@ void MeshAccessor::Stream::CopyTo(Span<::Color> dst) const
     }
 }
 
+MeshAccessor::~MeshAccessor()
+{
+    for (ModelBase* model : _usedModels)
+    {
+        if (model->Storage)
+            model->Storage->UnlockChunks();
+        model->RemoveReference();
+    }
+}
+
 bool MeshAccessor::LoadMesh(const MeshBase* mesh, bool forceGpu, Span<MeshBufferType> buffers)
 {
     CHECK_RETURN(mesh, true);
@@ -196,6 +206,14 @@ bool MeshAccessor::LoadMesh(const MeshBase* mesh, bool forceGpu, Span<MeshBuffer
         buffers = Span<MeshBufferType>(allBuffers, ARRAY_COUNT(allBuffers));
     Array<BytesContainer, FixedAllocation<4>> meshBuffers;
     Array<GPUVertexLayout*, FixedAllocation<4>> meshLayouts;
+    if (ModelBase* model = mesh->GetModelBase())
+    {
+        // Maintain reference to mesh data (it's buffers might be referenced, not copied)
+        model->AddReference();
+        if (model->Storage)
+            model->Storage->LockChunks();
+        _usedModels.Add(model);
+    }
     if (mesh->DownloadData(buffers, meshBuffers, meshLayouts, forceGpu))
         return true;
     for (int32 i = 0; i < buffers.Length(); i++)
