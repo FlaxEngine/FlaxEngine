@@ -133,7 +133,7 @@ Array<Float3> Cloth::GetParticles() const
     if (_cloth)
     {
         PROFILE_CPU();
-        PROFILE_MEM(Physics);
+        PROFILE_MEM(PhysicsCloth);
         PhysicsBackend::LockClothParticles(_cloth);
         const Span<const Float4> particles = PhysicsBackend::GetClothParticles(_cloth);
         result.Resize(particles.Length());
@@ -150,7 +150,7 @@ Array<Float3> Cloth::GetParticles() const
 void Cloth::SetParticles(Span<const Float3> value)
 {
     PROFILE_CPU();
-    PROFILE_MEM(Physics);
+    PROFILE_MEM(PhysicsCloth);
 #if USE_CLOTH_SANITY_CHECKS
     {
         // Sanity check
@@ -180,7 +180,7 @@ Span<float> Cloth::GetPaint() const
 void Cloth::SetPaint(Span<const float> value)
 {
     PROFILE_CPU();
-    PROFILE_MEM(Physics);
+    PROFILE_MEM(PhysicsCloth);
 #if USE_CLOTH_SANITY_CHECKS
     {
         // Sanity check
@@ -312,7 +312,7 @@ void Cloth::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
     Actor::Deserialize(stream, modifier);
 
-    PROFILE_MEM(Physics);
+    PROFILE_MEM(PhysicsCloth);
     DESERIALIZE_MEMBER(Mesh, _mesh);
     _mesh.Actor = nullptr; // Don't store this reference
     DESERIALIZE_MEMBER(Force, _forceSettings);
@@ -552,7 +552,7 @@ bool Cloth::CreateCloth()
 {
 #if WITH_CLOTH
     PROFILE_CPU();
-    PROFILE_MEM(Physics);
+    PROFILE_MEM(PhysicsCloth);
 
     // Skip if all vertices are fixed so cloth sim doesn't make sense
     if (_paint.HasItems())
@@ -658,7 +658,7 @@ void Cloth::CalculateInvMasses(MeshAccessor& accessor, Array<float>& invMasses)
     if (_paint.IsEmpty())
         return;
     PROFILE_CPU();
-    PROFILE_MEM(Physics);
+    PROFILE_MEM(PhysicsCloth);
 
     // Get mesh data
     auto positions = accessor.Position();
@@ -929,7 +929,7 @@ void Cloth::RunClothDeformer(const MeshBase* mesh, MeshDeformationData& deformat
         return;
 #if WITH_CLOTH
     PROFILE_CPU_NAMED("Cloth");
-    PROFILE_MEM(Physics);
+    PROFILE_MEM(PhysicsCloth);
     PhysicsBackend::LockClothParticles(_cloth);
     const Span<const Float4> particles = PhysicsBackend::GetClothParticles(_cloth);
     auto vbCount = (uint32)mesh->GetVertexCount();
