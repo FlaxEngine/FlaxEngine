@@ -1201,6 +1201,7 @@ void ScenePhysX::UpdateVehicles(float dt)
 void ScenePhysX::PreSimulateCloth(int32 i)
 {
     PROFILE_CPU();
+    PROFILE_MEM(PhysicsCloth);
     auto clothPhysX = ClothsList[i];
     auto& clothSettings = Cloths[clothPhysX];
 
@@ -1403,6 +1404,7 @@ void ScenePhysX::UpdateCloths(float dt)
     if (!clothSolver || ClothsList.IsEmpty())
         return;
     PROFILE_CPU_NAMED("Physics.Cloth");
+    PROFILE_MEM(PhysicsCloth);
 
     {
         PROFILE_CPU_NAMED("Pre");
@@ -4029,7 +4031,7 @@ void PhysicsBackend::RemoveVehicle(void* scene, WheeledVehicle* actor)
 void* PhysicsBackend::CreateCloth(const PhysicsClothDesc& desc)
 {
     PROFILE_CPU();
-    PROFILE_MEM(Physics);
+    PROFILE_MEM(PhysicsCloth);
 #if USE_CLOTH_SANITY_CHECKS
     {
         // Sanity check

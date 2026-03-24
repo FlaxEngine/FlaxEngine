@@ -2148,10 +2148,9 @@ namespace FlaxEditor.GUI.Timeline
         /// </summary>
         public void ShowWholeTimeline()
         {
-            var viewWidth = Width;
-            var timelineWidth = Duration * UnitsPerSecond * Zoom + 8 * StartOffset;
-            _backgroundArea.ViewOffset = Float2.Zero;
-            Zoom = viewWidth / timelineWidth;
+            const float padding = 40f;
+            Zoom = (_backgroundArea.Width - padding * 2f) / (Duration * UnitsPerSecond);
+            _backgroundArea.ViewOffset = new Float2(-_leftEdge.X + padding, _backgroundArea.ViewOffset.Y);
         }
 
         /// <summary>

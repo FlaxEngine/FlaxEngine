@@ -691,11 +691,7 @@ Asset::LoadResult Animation::load()
                     continue;
                 }
 #if USE_EDITOR
-                if (!_registeredForScriptingReload)
-                {
-                    _registeredForScriptingReload = true;
-                    Level::ScriptsReloadStart.Bind<Animation, &Animation::OnScriptsReloadStart>(this);
-                }
+                _registerForScriptingReload = true;
 #endif
             }
         }
@@ -733,6 +729,7 @@ void Animation::unload(bool isReloading)
 {
     ScopeWriteLock systemScope(Animations::SystemLocker);
 #if USE_EDITOR
+    _registerForScriptingReload = false;
     if (_registeredForScriptingReload)
     {
         _registeredForScriptingReload = false;
@@ -751,6 +748,22 @@ void Animation::unload(bool isReloading)
     Events.Clear();
     NestedAnims.Clear();
 }
+
+#if USE_EDITOR
+
+void Animation::onLoaded_MainThread()
+{
+    if (_registerForScriptingReload && !_registeredForScriptingReload)
+    {
+        _registeredForScriptingReload = true;
+        Level::ScriptsReloadStart.Bind<Animation, &Animation::OnScriptsReloadStart>(this);
+    }
+    _registerForScriptingReload = false;
+
+    BinaryAsset::onLoaded_MainThread();
+}
+
+#endif
 
 AssetChunksFlag Animation::getChunksToPreload() const
 {

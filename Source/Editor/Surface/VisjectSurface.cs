@@ -584,6 +584,11 @@ namespace FlaxEditor.Surface
         public virtual bool CanSetParameters => false;
 
         /// <summary>
+        /// Gets a value indicating whether surface private parameters can be used, otherwise they will remain hidden.
+        /// </summary>
+        public virtual bool CanShowPrivateParameters => false;
+
+        /// <summary>
         /// True of the context menu should make use of a description panel drawn at the bottom of the menu
         /// </summary>
         public virtual bool UseContextMenuDescriptionPanel => false;

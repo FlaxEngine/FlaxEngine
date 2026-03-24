@@ -14,6 +14,12 @@ String ModelInstanceActor::MeshReference::ToString() const
     return String::Format(TEXT("Actor={},LOD={},Mesh={}"), Actor ? Actor->GetNamePath() : String::Empty, LODIndex, MeshIndex);
 }
 
+MeshBase* ModelInstanceActor::MeshReference::Get() const
+{
+    auto actor = Actor.Get();
+    return actor ? actor->GetMesh(*this) : nullptr;
+}
+
 void ModelInstanceActor::SetEntries(const Array<ModelInstanceEntry>& value)
 {
     WaitForModelLoad();
