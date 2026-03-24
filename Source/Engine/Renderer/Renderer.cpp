@@ -542,7 +542,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     // Get the light accumulation buffer
     auto outputFormat = renderContext.Buffers->GetOutputFormat();
     auto tempFlags = GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget;
-    if (GPUDevice::Instance->Limits.HasCompute)
+    if (GPUDevice::Instance->Limits.HasCompute && EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(outputFormat).Support, FormatSupport::UnorderedAccessReadOnly | FormatSupport::UnorderedAccessWriteOnly))
         tempFlags |= GPUTextureFlags::UnorderedAccess;
     auto tempDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), outputFormat, tempFlags);
     auto lightBuffer = RenderTargetPool::Get(tempDesc);
