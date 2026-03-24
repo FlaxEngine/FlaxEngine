@@ -44,6 +44,10 @@ namespace Flax.Deploy
                 {
                     DeployFolder(platformsRoot, Deployer.PackageOutputPath, platformName);
 
+                    // Strip internal engine data
+                    Utilities.DirectoryDelete(Path.Combine(dst, "Binaries", "ThirdParty"));
+                    Utilities.DirectoryDelete(Path.Combine(dst, "Binaries", "Data"));
+
                     // For Linux don't deploy engine libs used by C++ scripting linking (engine source required)
                     if (platform == TargetPlatform.Linux)
                     {
