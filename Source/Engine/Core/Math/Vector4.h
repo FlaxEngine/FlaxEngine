@@ -152,6 +152,12 @@ public:
     {
         return Math::IsOne(X) && Math::IsOne(Y) && Math::IsOne(Z) && Math::IsOne(W);
     }
+  
+    // Calculates the length of the vector.
+    T Length() const
+    {
+        return Math::Sqrt(X * X + Y * Y + Z * Z + W * W);
+    }
 
     /// <summary>
     /// Returns the average arithmetic of all the components.
@@ -241,7 +247,7 @@ public:
     /// </summary>
     void Normalize()
     {
-        const T length = Math::Sqrt(X * X + Y * Y + Z * Z + W * W);
+        const T length = Length();
         if (length >= ZeroTolerance)
         {
             const T inv = (T)1.0f / length;
@@ -518,7 +524,7 @@ public:
     static Vector4Base Normalize(const Vector4Base& v)
     {
         Vector4Base r = v;
-        const T length = Math::Sqrt(r.X * r.X + r.Y * r.Y + r.Z * r.Z + r.W * r.W);
+        const T length = r.Length();
         if (length >= ZeroTolerance)
         {
             const T inv = (T)1.0f / length;
