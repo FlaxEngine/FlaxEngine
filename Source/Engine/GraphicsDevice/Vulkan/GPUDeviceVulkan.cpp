@@ -1773,7 +1773,7 @@ bool GPUDeviceVulkan::Init()
                 // Query image format features support flags
 #define CHECK_IMAGE_FORMAT(bit, feature) if (((properties.linearTilingFeatures & bit) == bit) || ((properties.optimalTilingFeatures & bit) == bit)) support |= feature
                 if (properties.linearTilingFeatures != 0 || properties.optimalTilingFeatures != 0)
-                    support |= FormatSupport::Texture1D | FormatSupport::Texture2D | FormatSupport::Texture3D | FormatSupport::TextureCube;
+                    support |= FormatSupport::Texture1D | FormatSupport::Texture2D | FormatSupport::Texture3D | FormatSupport::TextureCube | FormatSupport::Mip;
                 CHECK_IMAGE_FORMAT(VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT, FormatSupport::ShaderLoad);
                 CHECK_IMAGE_FORMAT(VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT, FormatSupport::UnorderedAccess);
                 //VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT
@@ -1789,21 +1789,10 @@ bool GPUDeviceVulkan::Init()
                     support |= FormatSupport::Buffer;
                 CHECK_BUFFER_FORMAT(VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT, FormatSupport::UnorderedAccess);
                 //VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT
-                CHECK_BUFFER_FORMAT(VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT, FormatSupport::InputAssemblyVertexBuffer);
+                CHECK_BUFFER_FORMAT(VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT, FormatSupport::VertexBuffer);
 #undef CHECK_BUFFER_FORMAT
-
-                // Unused bits
                 //VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
                 //VK_FORMAT_FEATURE_TRANSFER_DST_BIT
-                //VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT
-                //VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT
-                //VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT
-                //VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT
-                //VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT
-                //VK_FORMAT_FEATURE_DISJOINT_BIT
-                //VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT
-                //VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG
-                //VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_EXT
 
                 // Multi-sampling support
                 if (EnumHasAnyFlags(support, FormatSupport::Texture2D))
