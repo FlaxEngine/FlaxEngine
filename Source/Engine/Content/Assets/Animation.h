@@ -78,6 +78,7 @@ API_CLASS(NoSpawn) class FLAXENGINE_API Animation : public BinaryAsset
 
 private:
 #if USE_EDITOR
+    bool _registerForScriptingReload = false;
     bool _registeredForScriptingReload = false;
     void OnScriptsReloadStart();
 #endif
@@ -163,5 +164,8 @@ protected:
     // [BinaryAsset]
     LoadResult load() override;
     void unload(bool isReloading) override;
+#if USE_EDITOR
+    void onLoaded_MainThread() override;
+#endif
     AssetChunksFlag getChunksToPreload() const override;
 };
