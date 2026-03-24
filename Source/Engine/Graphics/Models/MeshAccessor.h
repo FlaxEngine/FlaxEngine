@@ -4,6 +4,7 @@
 
 #include "Types.h"
 #include "Engine/Core/Types/DataContainer.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Graphics/PixelFormat.h"
 #include "Engine/Graphics/PixelFormatSampler.h"
 #include "Engine/Graphics/Shaders/VertexElement.h"
@@ -104,8 +105,8 @@ public:
         void Set(Span<Float2> src);
         void Set(Span<Float3> src);
         void Set(Span<Color> src);
-        template<typename T>
-        void Set(const Array<T>& dst) const
+        template<typename T, typename AllocationType = HeapAllocation>
+        void Set(const Array<T, AllocationType>& dst) const
         {
             Set(Span<T>(dst.Get(), dst.Count()));
         }
@@ -114,8 +115,8 @@ public:
         void CopyTo(Span<Float2> dst) const;
         void CopyTo(Span<Float3> dst) const;
         void CopyTo(Span<Color> dst) const;
-        template<typename T>
-        void CopyTo(Array<T>& dst) const
+        template<typename T, typename AllocationType = HeapAllocation>
+        void CopyTo(Array<T, AllocationType>& dst) const
         {
             dst.Resize(GetCount());
             CopyTo(Span<T>(dst.Get(), dst.Count()));
