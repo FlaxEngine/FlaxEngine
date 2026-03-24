@@ -2241,11 +2241,11 @@ void TerrainPatch::DestroyCollision()
     _physicsHeightField = nullptr;
 #if TERRAIN_USE_PHYSICS_DEBUG
     _debugLinesDirty = true;
-    SAFE_DELETE(_debugLines);
+    SAFE_DELETE_GPU_RESOURCE(_debugLines);
 #endif
 #if USE_EDITOR
     _collisionTriangles.Resize(0);
-    SAFE_DELETE(_collisionTrianglesBuffer);
+    SAFE_DELETE_GPU_RESOURCE(_collisionTrianglesBuffer);
     _collisionTrianglesBufferDirty = true;
 #endif
     _collisionVertices.Resize(0);
