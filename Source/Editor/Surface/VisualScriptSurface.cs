@@ -188,6 +188,9 @@ namespace FlaxEditor.Surface
         public override bool CanSetParameters => true;
 
         /// <inheritdoc />
+        public override bool CanShowPrivateParameters => true;
+
+        /// <inheritdoc />
         public override bool UseContextMenuDescriptionPanel => true;
 
         /// <inheritdoc />
