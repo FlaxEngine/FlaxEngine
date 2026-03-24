@@ -70,6 +70,11 @@ namespace FlaxEditor
         public static string WindowIcon = "Editor/EditorIcon";
 
         /// <summary>
+        /// The material used for the HS color wheel.
+        /// </summary>
+        public static string HSWheelMaterial = "Editor/HSWheel";
+
+        /// <summary>
         /// The window icons font.
         /// </summary>
         public static string WindowIconsFont = "Editor/Fonts/SegMDL2";
