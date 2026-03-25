@@ -20,6 +20,7 @@ internal class DirectionGizmo : ContainerControl
     private ViewportProjection _viewportProjection;
     private EditorViewport _viewport;
     private Vector3 _gizmoCenter;
+    private float _gizmoBrightness;
     private float _gizmoOpacity;
     private float _backgroundOpacity;
     private float _axisLength;
@@ -99,11 +100,11 @@ internal class DirectionGizmo : ContainerControl
 
         _xAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "X", AxisColor = new Color(1.0f, 0.0f, 0.02745f, 1.0f), Negative = false, Direction = AxisDirection.PosX };
         _yAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "Y", AxisColor = new Color(0.239215f, 1.0f, 0.047058f, 1.0f), Negative = false, Direction = AxisDirection.PosY };
-        _zAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "Z", AxisColor = new Color(0.0f, 0.0235294f, 1.0f, 1.0f), Negative = false, Direction = AxisDirection.PosZ };
+        _zAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "Z", AxisColor = new Color(0.0f, 0.3607f, 0.9f, 1.0f), Negative = false, Direction = AxisDirection.PosZ };
 
         _negXAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "-X", AxisColor = new Color(1.0f, 0.0f, 0.02745f, 1.0f), Negative = true, Direction = AxisDirection.NegX };
         _negYAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "-Y", AxisColor = new Color(0.239215f, 1.0f, 0.047058f, 1.0f), Negative = true, Direction = AxisDirection.NegY };
-        _negZAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "-Z", AxisColor = new Color(0.0f, 0.0235294f, 1.0f, 1.0f), Negative = true, Direction = AxisDirection.NegZ };
+        _negZAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "-Z", AxisColor = new Color(0.0f, 0.3607f, 0.9f, 1.0f), Negative = true, Direction = AxisDirection.NegZ };
         _axisData.EnsureCapacity(6);
         _spritePositions.EnsureCapacity(6);
 
@@ -122,7 +123,7 @@ internal class DirectionGizmo : ContainerControl
         float gizmoScale = options.Viewport.DirectionGizmoScale;
         _axisLength = AxisLength * gizmoScale;
         _spriteRadius = SpriteRadius * gizmoScale;
-
+        _gizmoBrightness = options.Viewport.DirectionGizmoBrightness;
         _gizmoOpacity = options.Viewport.DirectionGizmoOpacity;
         _backgroundOpacity = options.Viewport.DirectionGizmoBackgroundOpacity;
 
@@ -267,7 +268,7 @@ internal class DirectionGizmo : ContainerControl
             _spritePositions.Add((tipScreen, axis.Direction));
 
             var axisColor = isHovered ? new Color(1.0f, 0.8980392f, 0.039215688f) : axis.AxisColor;
-            axisColor.A *= _gizmoOpacity;
+            axisColor = axisColor.RGBMultiplied(_gizmoBrightness).AlphaMultiplied(_gizmoOpacity);
             var font = _fontReference.GetFont();
             if (!axis.Negative)
             {

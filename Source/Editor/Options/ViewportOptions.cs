@@ -189,9 +189,9 @@ namespace FlaxEditor.Options
         /// <summary>
         /// Gets or sets a value for the opacity of the main viewports <see cref="Gizmo.DirectionGizmo"/> background.
         /// </summary>
-        [DefaultValue(0.05f), Limit(0.0f, 1.0f)]
+        [DefaultValue(0.1f), Limit(0.0f, 1.0f)]
         [EditorDisplay("Direction Gizmo"), EditorOrder(502), Tooltip("The background opacity of the of the direction gizmo in the main viewport.")]
-        public float DirectionGizmoBackgroundOpacity { get; set; } = 0.05f;
+        public float DirectionGizmoBackgroundOpacity { get; set; } = 0.1f;
 
         /// <summary>
         /// Gets or sets a value for the opacity of the main viewports <see cref="Gizmo.DirectionGizmo"/>.
@@ -199,5 +199,12 @@ namespace FlaxEditor.Options
         [DefaultValue(0.6f), Limit(0.0f, 1.0f)]
         [EditorDisplay("Direction Gizmo"), EditorOrder(503), Tooltip("The opacity of the of the direction gizmo in the main viewport.")]
         public float DirectionGizmoOpacity { get; set; } = 0.6f;
+
+        /// <summary>
+        /// Gets or sets a value for the opacity of the main viewports <see cref="Gizmo.DirectionGizmo"/>.
+        /// </summary>
+        [DefaultValue(1f), Limit(0.0f, 2.0f)]
+        [EditorDisplay("Direction Gizmo"), EditorOrder(504), Tooltip("The brightness of the of the direction gizmo in the main viewport.")]
+        public float DirectionGizmoBrightness{ get; set; } = 1f;
     }
 }
