@@ -7,7 +7,7 @@ on:
 env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: false
-  DOTNET_ROLL_FORWARD: 'disable'
+  DOTNET_ROLL_FORWARD: 'latestFeature'
   GIT_LFS_PULL_OPTIONS: '-c lfs.concurrenttransfers=1 -c lfs.transfer.maxretries=2 -c http.version="HTTP/1.1" -c lfs.activitytimeout=60'
 
 jobs:
@@ -35,9 +35,9 @@ jobs:
         dotnet workload --info
     - name: Build
       run: |
-        PowerShell "(Get-Content global.json).Replace('latestMajor', 'disable') | Set-Content global.json"
-        PowerShell "(Get-Content Source/Tools/Flax.Build/global.json).Replace('latestMajor', 'disable') | Set-Content Source/Tools/Flax.Build/global.json"
-        PowerShell "(Get-Content Source/Tools/Flax.Build/Flax.Build.csproj).Replace('LatestMajor', 'Disable') | Set-Content Source/Tools/Flax.Build/Flax.Build.csproj"
+        PowerShell "(Get-Content global.json).Replace('latestMajor', 'latestFeature') | Set-Content global.json"
+        PowerShell "(Get-Content Source/Tools/Flax.Build/global.json).Replace('latestMajor', 'latestFeature') | Set-Content Source/Tools/Flax.Build/global.json"
+        PowerShell "(Get-Content Source/Tools/Flax.Build/Flax.Build.csproj).Replace('LatestMajor', 'LatestFeature') | Set-Content Source/Tools/Flax.Build/Flax.Build.csproj"
         .\PackageEditor.bat -arch=x64 -platform=Windows -deployOutput=Output -dotnet=8
     - name: Upload
       uses: actions/upload-artifact@v4
@@ -71,9 +71,9 @@ jobs:
         dotnet workload --info
     - name: Build
       run: |
-        PowerShell "(Get-Content global.json).Replace('latestMajor', 'disable') | Set-Content global.json"
-        PowerShell "(Get-Content Source/Tools/Flax.Build/global.json).Replace('latestMajor', 'disable') | Set-Content Source/Tools/Flax.Build/global.json"
-        PowerShell "(Get-Content Source/Tools/Flax.Build/Flax.Build.csproj).Replace('LatestMajor', 'Disable') | Set-Content Source/Tools/Flax.Build/Flax.Build.csproj"
+        PowerShell "(Get-Content global.json).Replace('latestMajor', 'latestFeature') | Set-Content global.json"
+        PowerShell "(Get-Content Source/Tools/Flax.Build/global.json).Replace('latestMajor', 'latestFeature') | Set-Content Source/Tools/Flax.Build/global.json"
+        PowerShell "(Get-Content Source/Tools/Flax.Build/Flax.Build.csproj).Replace('LatestMajor', 'LatestFeature') | Set-Content Source/Tools/Flax.Build/Flax.Build.csproj"
         .\PackagePlatforms.bat -arch=x64 -platform=Windows -deployOutput=Output -dotnet=8
     - name: Upload
       uses: actions/upload-artifact@v4

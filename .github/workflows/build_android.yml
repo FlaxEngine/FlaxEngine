@@ -4,7 +4,7 @@ on: [push, pull_request]
 env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: false
-  DOTNET_ROLL_FORWARD: 'disable'
+  DOTNET_ROLL_FORWARD: 'latestFeature'
 
 jobs:
 
@@ -34,7 +34,7 @@ jobs:
         git lfs pull
     - name: Build
       run: |
-        PowerShell "(Get-Content global.json).Replace('latestMajor', 'disable') | Set-Content global.json"
-        PowerShell "(Get-Content Source/Tools/Flax.Build/global.json).Replace('latestMajor', 'disable') | Set-Content Source/Tools/Flax.Build/global.json"
-        PowerShell "(Get-Content Source/Tools/Flax.Build/Flax.Build.csproj).Replace('LatestMajor', 'Disable') | Set-Content Source/Tools/Flax.Build/Flax.Build.csproj"
+        PowerShell "(Get-Content global.json).Replace('latestMajor', 'latestFeature') | Set-Content global.json"
+        PowerShell "(Get-Content Source/Tools/Flax.Build/global.json).Replace('latestMajor', 'latestFeature') | Set-Content Source/Tools/Flax.Build/global.json"
+        PowerShell "(Get-Content Source/Tools/Flax.Build/Flax.Build.csproj).Replace('LatestMajor', 'LatestFeature') | Set-Content Source/Tools/Flax.Build/Flax.Build.csproj"
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -printSDKs -dotnet=8 -arch=ARM64 -platform=Android -configuration=Release -buildtargets=FlaxGame
