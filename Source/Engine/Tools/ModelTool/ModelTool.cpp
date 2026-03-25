@@ -593,6 +593,7 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(SloppyOptimization);
     SERIALIZE(LODTargetError);
     SERIALIZE(ImportMaterials);
+    SERIALIZE(CreateEmptyMaterialSlots);
     SERIALIZE(ImportMaterialsAsInstances);
     SERIALIZE(InstanceToImportAs);
     SERIALIZE(ImportTextures);
@@ -648,6 +649,7 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(SloppyOptimization);
     DESERIALIZE(LODTargetError);
     DESERIALIZE(ImportMaterials);
+    DESERIALIZE(CreateEmptyMaterialSlots);
     DESERIALIZE(ImportMaterialsAsInstances);
     DESERIALIZE(InstanceToImportAs);
     DESERIALIZE(ImportTextures);
@@ -1335,7 +1337,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         auto& texture = data.Textures[i];
 
         // Auto-import textures
-        if (autoImportOutput.IsEmpty() || EnumHasNoneFlags(options.ImportTypes, ImportDataTypes::Textures) || texture.FilePath.IsEmpty())
+        if (autoImportOutput.IsEmpty() || EnumHasNoneFlags(options.ImportTypes, ImportDataTypes::Textures) || texture.FilePath.IsEmpty() || options.CreateEmptyMaterialSlots)
             continue;
         String assetPath = GetAdditionalImportPath(autoImportOutput, importedFileNames, StringUtils::GetFileNameWithoutExtension(texture.FilePath));
 #if COMPILE_WITH_ASSETS_IMPORTER
@@ -1390,6 +1392,10 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                 continue;
             }
         }
+
+        // The rest of the steps this function performs become irrelevant when we're only creating slots.
+        if (options.CreateEmptyMaterialSlots)
+            continue;
 
         if (options.ImportMaterialsAsInstances)
         {
