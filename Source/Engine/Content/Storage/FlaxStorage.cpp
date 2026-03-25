@@ -286,14 +286,14 @@ FlaxStorage::LockData FlaxStorage::LockSafe()
 
 uint32 FlaxStorage::GetRefCount() const
 {
-    return (uint32)Platform::AtomicRead((int64*)&_refCount);
+    return (uint32)Platform::AtomicRead(&_refCount);
 }
 
 bool FlaxStorage::ShouldDispose() const
 {
-    return Platform::AtomicRead((int64*)&_refCount) == 0 &&
-            Platform::AtomicRead((int64*)&_chunksLock) == 0 &&
-            Platform::GetTimeSeconds() - _lastRefLostTime >= 0.5; // TTL in seconds
+    return Platform::AtomicRead(&_refCount) == 0 &&
+            Platform::AtomicRead(&_chunksLock) == 0 &&
+            Platform::GetTimeSeconds() - _lastRefLostTime >= ContentStorageManager::UnusedStorageLifetime.GetTotalSeconds();
 }
 
 uint32 FlaxStorage::GetMemoryUsage() const
