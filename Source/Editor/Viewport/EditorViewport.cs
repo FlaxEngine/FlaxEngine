@@ -1223,7 +1223,7 @@ namespace FlaxEditor.Viewport
         /// Orients the viewport.
         /// </summary>
         /// <param name="orientation">The orientation.</param>
-        protected void OrientViewport(Quaternion orientation)
+        public void OrientViewport(Quaternion orientation)
         {
             OrientViewport(ref orientation);
         }
@@ -1232,7 +1232,7 @@ namespace FlaxEditor.Viewport
         /// Orients the viewport.
         /// </summary>
         /// <param name="orientation">The orientation.</param>
-        protected virtual void OrientViewport(ref Quaternion orientation)
+        public virtual void OrientViewport(ref Quaternion orientation)
         {
             if (ViewportCamera is FPSCamera fpsCamera)
             {

@@ -164,8 +164,7 @@ internal class DirectionGizmo : ContainerControl
             AxisDirection.NegZ => Quaternion.Euler(0, 180, 0),
             _ => Quaternion.Identity
         };
-
-        _viewport.ViewOrientation = orientation;
+        _viewport.OrientViewport(ref orientation);
     }
 
     /// <summary>
