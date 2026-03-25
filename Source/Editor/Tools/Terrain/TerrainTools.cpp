@@ -382,7 +382,8 @@ bool TerrainTools::ExportTerrain(Terrain* terrain, String outputFolder)
     const Int2 heightmapSize = size * Terrain::ChunksCountEdge * terrain->GetChunkSize() + 1;
     Array<float> heightmap;
     heightmap.Resize(heightmapSize.X * heightmapSize.Y);
-    heightmap.SetAll(firstPatch->GetHeightmapData()[0]);
+    if (const float* heightmapData = firstPatch->GetHeightmapData())
+        heightmap.SetAll(heightmapData[0]);
 
     // Fill heightmap with data from all patches
     const int32 rowSize = terrain->GetChunkSize() * Terrain::ChunksCountEdge + 1;
@@ -392,8 +393,16 @@ bool TerrainTools::ExportTerrain(Terrain* terrain, String outputFolder)
         const Int2 pos(patch->GetX() - start.X, patch->GetZ() - start.Y);
         const float* src = patch->GetHeightmapData();
         float* dst = heightmap.Get() + pos.X * (rowSize - 1) + pos.Y * heightmapSize.X * (rowSize - 1);
-        for (int32 row = 0; row < rowSize; row++)
-            Platform::MemoryCopy(dst + row * heightmapSize.X, src + row * rowSize, rowSize * sizeof(float));
+        if (src)
+        {
+            for (int32 row = 0; row < rowSize; row++)
+                Platform::MemoryCopy(dst + row * heightmapSize.X, src + row * rowSize, rowSize * sizeof(float));
+        }
+        else
+        {
+            for (int32 row = 0; row < rowSize; row++)
+                Platform::MemoryClear(dst + row * heightmapSize.X, rowSize * sizeof(float));
+        }
     }
 
     // Interpolate to 16-bit int
