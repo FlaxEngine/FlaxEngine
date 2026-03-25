@@ -68,6 +68,12 @@ jobs:
       run: |
         git lfs version
         git lfs pull
+    - name: Configure .NET version
+      uses: richardrigutins/replace-in-files@v2
+      with:
+        files: 'global.json'
+        search-text: 'latestMajor'
+        replacement-text: 'latestMinor'
     - name: Build
       run: |
         .\GenerateProjectFiles.bat -vs2022 -log -verbose -printSDKs -dotnet=8

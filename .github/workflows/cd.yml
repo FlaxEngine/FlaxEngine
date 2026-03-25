@@ -32,6 +32,12 @@ jobs:
       run: |
         dotnet --info
         dotnet workload --info
+    - name: Configure .NET version
+      uses: richardrigutins/replace-in-files@v2
+      with:
+        files: 'global.json'
+        search-text: 'latestMajor'
+        replacement-text: 'latestMinor'
     - name: Build
       run: |
         .\PackageEditor.bat -arch=x64 -platform=Windows -deployOutput=Output -dotnet=8
@@ -65,6 +71,12 @@ jobs:
       run: |
         dotnet --info
         dotnet workload --info
+    - name: Configure .NET version
+      uses: richardrigutins/replace-in-files@v2
+      with:
+        files: 'global.json'
+        search-text: 'latestMajor'
+        replacement-text: 'latestMinor'
     - name: Build
       run: |
         .\PackagePlatforms.bat -arch=x64 -platform=Windows -deployOutput=Output -dotnet=8
