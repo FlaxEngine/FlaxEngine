@@ -1,6 +1,8 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
+using FlaxEditor.Options;
 using FlaxEditor.Viewport;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -10,13 +12,19 @@ namespace FlaxEditor.Gizmo;
 [HideInEditor]
 internal class DirectionGizmo : ContainerControl
 {
+    public const float DefaultGizmoSize = 112.5f;
+
+    private const float AxisLength = 71.25f;
+    private const float SpriteRadius = 10.85f;
+
     private IGizmoOwner _owner;
     private ViewportProjection _viewportProjection;
     private EditorViewport _viewport;
     private Vector3 _gizmoCenter;
-    private float _axisLength = 75.0f;
-    private float _textAxisLength = 95.0f;
-    private float _spriteRadius = 12.0f;
+    private float _gizmoOpacity;
+    private float _backgroundOpacity;
+    private float _axisLength;
+    private float _spriteRadius;
 
     private AxisData _xAxisData;
     private AxisData _yAxisData;
@@ -100,11 +108,26 @@ internal class DirectionGizmo : ContainerControl
         _axisData.EnsureCapacity(6);
         _spritePositions.EnsureCapacity(6);
 
-        _posHandle = Editor.Instance.Icons.VisjectBoxClosed32;
-        _negHandle = Editor.Instance.Icons.VisjectBoxOpen32;
+        var editor = Editor.Instance;
+        _posHandle = editor.Icons.VisjectBoxClosed32;
+        _negHandle = editor.Icons.VisjectBoxOpen32;
 
         _fontReference = new FontReference(Style.Current.FontSmall);
-        _fontReference.Size = 8;
+
+        editor.Options.OptionsChanged += OnEditorOptionsChanged;
+        OnEditorOptionsChanged(editor.Options.Options);
+    }
+
+    private void OnEditorOptionsChanged(EditorOptions options)
+    {
+        float gizmoScale = options.Viewport.DirectionGizmoScale;
+        _axisLength = AxisLength * gizmoScale;
+        _spriteRadius = SpriteRadius * gizmoScale;
+
+        _gizmoOpacity = options.Viewport.DirectionGizmoOpacity;
+        _backgroundOpacity = options.Viewport.DirectionGizmoBackgroundOpacity;
+
+        _fontReference.Size = 8.25f * gizmoScale;
     }
 
     private bool IsPointInSprite(Float2 point, Float2 spriteCenter)
@@ -232,33 +255,32 @@ internal class DirectionGizmo : ContainerControl
         // Rebuild sprite positions list for hover detection
         _spritePositions.Clear();
 
-        Render2D.DrawSprite(_posHandle, new Rectangle(0, 0, Size), Color.Black.AlphaMultiplied(0.1f));
+        Render2D.DrawSprite(_posHandle, new Rectangle(0, 0, Size), Color.Black.AlphaMultiplied(_backgroundOpacity));
 
         // Draw in order from farthest to closest
         for (int i = 0; i < _axisData.Count; i++)
         {
             var axis = _axisData[i];
             Float2 tipScreen = relativeCenter + axis.Delta * _axisLength;
-            Float2 tipTextScreen = relativeCenter + axis.Delta * _textAxisLength;
             bool isHovered = _hoveredAxisIndex == i;
 
             // Store sprite position for hover detection
-            _spritePositions.Add((tipTextScreen, axis.Direction));
+            _spritePositions.Add((tipScreen, axis.Direction));
 
             var axisColor = isHovered ? new Color(1.0f, 0.8980392f, 0.039215688f) : axis.AxisColor;
+            axisColor.A *= _gizmoOpacity;
             var font = _fontReference.GetFont();
             if (!axis.Negative)
             {
-                Render2D.DrawLine(relativeCenter, tipScreen, axisColor, 2.0f);
-                Render2D.DrawSprite(_posHandle, new Rectangle(tipTextScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axisColor);
-                Render2D.DrawText(font, axis.Label, isHovered ? Color.Gray : Color.Black, tipTextScreen - font.MeasureText(axis.Label) * 0.5f);
+                Render2D.DrawLine(relativeCenter, tipScreen, axisColor, 1.5f);
+                Render2D.DrawSprite(_posHandle, new Rectangle(tipScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axisColor);
+                Render2D.DrawText(font, axis.Label, Color.Black, tipScreen - font.MeasureText(axis.Label) * 0.5f);
             }
             else
             {
-                Render2D.DrawSprite(_posHandle, new Rectangle(tipTextScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axisColor.RGBMultiplied(0.65f));
-                Render2D.DrawSprite(_negHandle, new Rectangle(tipTextScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axisColor);
+                Render2D.DrawSprite(_posHandle, new Rectangle(tipScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axisColor.RGBMultiplied(0.85f).AlphaMultiplied(0.8f));
                 if (isHovered)
-                    Render2D.DrawText(font, axis.Label, Color.Black, tipTextScreen - font.MeasureText(axis.Label) * 0.5f);
+                    Render2D.DrawText(font, axis.Label, Color.Black, tipScreen - font.MeasureText(axis.Label) * 0.5f);
             }
         }
 
