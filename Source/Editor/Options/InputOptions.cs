@@ -123,6 +123,10 @@ namespace FlaxEditor.Options
         [EditorDisplay("Common"), EditorOrder(200)]
         public InputBinding LockFocusSelection = new InputBinding(KeyboardKeys.F, KeyboardKeys.Shift);
 
+        [DefaultValue(typeof(InputBinding), "Ctrl+Alpha0")]
+        [EditorDisplay("Common"), EditorOrder(201)]
+        public InputBinding ShowEditorContents = new InputBinding(KeyboardKeys.Alpha0, KeyboardKeys.Control);
+
         [DefaultValue(typeof(InputBinding), "Ctrl+F")]
         [EditorDisplay("Common"), EditorOrder(210)]
         public InputBinding Search = new InputBinding(KeyboardKeys.F, KeyboardKeys.Control);

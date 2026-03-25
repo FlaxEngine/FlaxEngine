@@ -579,7 +579,7 @@ namespace FlaxEditor.Surface
             redoButton = toolStrip.AddButton(editor.Icons.Redo64, undo.PerformRedo).LinkTooltip("Redo", ref inputOptions.Redo);
             toolStrip.AddSeparator();
             toolStrip.AddButton(editor.Icons.Search64, showSearch).LinkTooltip("Open content search tool",  ref inputOptions.Search);
-            toolStrip.AddButton(editor.Icons.CenterView64, surface.ShowWholeGraph).LinkTooltip("Show whole graph");
+            toolStrip.AddButton(editor.Icons.CenterView64, surface.ShowWholeGraph).LinkTooltip("Show whole graph", ref inputOptions.ShowEditorContents);
             var gridSnapButton = toolStrip.AddButton(editor.Icons.Grid32, surface.ToggleGridSnapping);
             gridSnapButton.LinkTooltip("Toggle grid snapping for nodes.");
             gridSnapButton.AutoCheck = true;
@@ -590,6 +590,7 @@ namespace FlaxEditor.Surface
             window.InputActions.Add(options => options.Undo, undo.PerformUndo);
             window.InputActions.Add(options => options.Redo, undo.PerformRedo);
             window.InputActions.Add(options => options.Search, showSearch);
+            window.InputActions.Add(options => options.ShowEditorContents, surface.ShowWholeGraph);
         }
     }
 }
