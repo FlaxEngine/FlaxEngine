@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
-using FlaxEditor.Gizmo;
+// Copyright (c) Wojciech Figat. All rights reserved.
+
+using System.Collections.Generic;
 using FlaxEditor.Viewport;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -7,7 +8,7 @@ using FlaxEngine.GUI;
 namespace FlaxEditor.Gizmo;
 
 [HideInEditor]
-public class DirectionGizmo : ContainerControl
+internal class DirectionGizmo : ContainerControl
 {
     private IGizmoOwner _owner;
     private ViewportProjection _viewportProjection;
@@ -88,11 +89,11 @@ public class DirectionGizmo : ContainerControl
         _owner = owner;
         _viewport = owner.Viewport;
         _viewportProjection.Init(owner.Viewport);
-        
+
         _xAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "X", AxisColor = new Color(1.0f, 0.0f, 0.02745f, 1.0f), Negative = false, Direction = AxisDirection.PosX };
         _yAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "Y", AxisColor = new Color(0.239215f, 1.0f, 0.047058f, 1.0f), Negative = false, Direction = AxisDirection.PosY };
         _zAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "Z", AxisColor = new Color(0.0f, 0.0235294f, 1.0f, 1.0f), Negative = false, Direction = AxisDirection.PosZ };
-        
+
         _negXAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "-X", AxisColor = new Color(1.0f, 0.0f, 0.02745f, 1.0f), Negative = true, Direction = AxisDirection.NegX };
         _negYAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "-Y", AxisColor = new Color(0.239215f, 1.0f, 0.047058f, 1.0f), Negative = true, Direction = AxisDirection.NegY };
         _negZAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "-Z", AxisColor = new Color(0.0f, 0.0235294f, 1.0f, 1.0f), Negative = true, Direction = AxisDirection.NegZ };
@@ -101,7 +102,7 @@ public class DirectionGizmo : ContainerControl
 
         _posHandle = Editor.Instance.Icons.VisjectBoxClosed32;
         _negHandle = Editor.Instance.Icons.VisjectBoxOpen32;
-        
+
         _fontReference = new FontReference(Style.Current.FontSmall);
         _fontReference.Size = 8;
     }
@@ -128,7 +129,7 @@ public class DirectionGizmo : ContainerControl
                 break;
             }
         }
-        
+
         base.OnMouseMove(location);
     }
 
@@ -147,7 +148,7 @@ public class DirectionGizmo : ContainerControl
                 return true;
             }
         }
-        
+
         return false;
     }
 
@@ -166,14 +167,14 @@ public class DirectionGizmo : ContainerControl
 
         _viewport.ViewOrientation = orientation;
     }
-    
+
     /// <summary>
     /// Used to Draw the gizmo.
     /// </summary>
     public override void DrawSelf()
     {
         base.DrawSelf();
- 
+
         _viewportProjection.Init(_owner.Viewport);
         _gizmoCenter = _viewport.Task.View.WorldPosition + _viewport.Task.View.Direction * 1500;
         _viewportProjection.ProjectPoint(_gizmoCenter, out var gizmoCenterScreen);
@@ -223,7 +224,7 @@ public class DirectionGizmo : ContainerControl
         // Sort for correct draw order.
         _axisData.Clear();
         _axisData.AddRange([_xAxisData, _yAxisData, _zAxisData, _negXAxisData, _negYAxisData, _negZAxisData]);
-        _axisData.Sort( (a, b) => -a.Distance.CompareTo(b.Distance));
+        _axisData.Sort((a, b) => -a.Distance.CompareTo(b.Distance));
 
         // Rebuild sprite positions list for hover detection
         _spritePositions.Clear();
@@ -245,7 +246,7 @@ public class DirectionGizmo : ContainerControl
             {
                 Render2D.DrawLine(relativeCenter, tipScreen, axis.AxisColor, 2.0f);
                 Render2D.DrawSprite(_posHandle, new Rectangle(tipTextScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axis.AxisColor);
-                
+
                 var font = _fontReference.GetFont();
                 Color textColor = isHovered ? Color.White : Color.Black;
                 Render2D.DrawText(font, axis.Label, textColor, tipTextScreen - font.MeasureText(axis.Label) * 0.5f);
