@@ -69,14 +69,10 @@ jobs:
       run: |
         git lfs version
         git lfs pull
-    - name: Configure .NET version
-      uses: MathieuSoysal/replace-string-in-file@v1.1.0
-      with:
-        old-string: "LatestMajor"
-        new-string: "LatestMinor"
-        file: Source/Tools/Flax.Build/Flax.Build.csproj
     - name: Build
       run: |
+        PowerShell "(Get-Content global.json).Replace('latestMajor', 'latestMinor') | Set-Content global.json"
+        PowerShell "(Get-Content Source/Tools/Flax.Build/Flax.Build.csproj).Replace('LatestMajor', 'LatestMinor') | Set-Content Source/Tools/Flax.Build/Flax.Build.csproj"
         .\GenerateProjectFiles.bat -vs2022 -log -verbose -printSDKs -dotnet=8
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -dotnet=8 -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxTestsTarget
         dotnet msbuild Source\Tools\Flax.Build.Tests\Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
