@@ -52,6 +52,7 @@ namespace FlaxEditor.CustomEditors
         private readonly List<CustomEditor> _children = new List<CustomEditor>();
         private ValueContainer _values;
         private bool _isSetBlocked;
+        private bool _isRebuilding;
         private bool _skipChildrenRefresh;
         private bool _hasValueDirty;
         private bool _rebuildOnRefresh;
@@ -178,7 +179,7 @@ namespace FlaxEditor.CustomEditors
         public void RebuildLayout()
         {
             // Skip rebuilding during init
-            if (CurrentCustomEditor == this)
+            if (CurrentCustomEditor == this || _isRebuilding)
                 return;
 
             // Special case for root objects to run normal layout build
@@ -197,6 +198,7 @@ namespace FlaxEditor.CustomEditors
                 _parent?.RebuildLayout();
                 return;
             }
+            _isRebuilding = true;
             var control = layout.ContainerControl;
             var parent = _parent;
             var parentScrollV = (_presenter?.Panel.Parent as Panel)?.VScrollBar?.Value ?? -1;
@@ -216,6 +218,7 @@ namespace FlaxEditor.CustomEditors
             // Restore scroll value
             if (parentScrollV > -1 && _presenter != null && _presenter.Panel.Parent is Panel panel && panel.VScrollBar != null)
                 panel.VScrollBar.Value = parentScrollV;
+            _isRebuilding = false;
         }
 
         /// <summary>
