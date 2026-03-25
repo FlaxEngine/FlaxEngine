@@ -448,8 +448,7 @@ void SceneObjectsFactory::PrefabSyncData::InitNewObjects()
 void SceneObjectsFactory::SetupPrefabInstances(Context& context, const PrefabSyncData& data)
 {
     PROFILE_CPU_NAMED("SetupPrefabInstances");
-    const int32 count = data.Data.Size();
-    ASSERT(count <= data.SceneObjects.Count());
+    const int32 count = Math::Min<int32>(data.Data.Size(), data.SceneObjects.Count());
     Dictionary<Guid, Guid> parentIdsLookup;
     for (int32 i = 0; i < count; i++)
     {
