@@ -108,6 +108,7 @@ namespace FlaxEditor.Viewport
         private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
         private EditorSpritesRenderer _editorSpritesRenderer;
         private ViewportRubberBandSelector _rubberBandSelector;
+        private DirectionGizmo _directionGizmo;
 
         private bool _gameViewActive;
         private ViewFlags _preGameViewFlags;
@@ -225,6 +226,12 @@ namespace FlaxEditor.Viewport
 
             // Add rubber band selector
             _rubberBandSelector = new ViewportRubberBandSelector(this);
+            _directionGizmo = new DirectionGizmo(this);
+            _directionGizmo.AnchorPreset = AnchorPresets.TopRight;
+            _directionGizmo.Parent = this;
+            _directionGizmo.LocalY += 25;
+            _directionGizmo.LocalX -= 150;
+            _directionGizmo.Size = new Float2(150, 150);
 
             // Add grid
             Grid = new GridGizmo(this);
