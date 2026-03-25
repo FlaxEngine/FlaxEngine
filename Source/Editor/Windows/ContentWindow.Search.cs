@@ -115,6 +115,7 @@ namespace FlaxEditor.Windows
 
             var root = _root;
             root.LockChildrenRecursive();
+            PerformLayout();
 
             // Update tree
             var query = _foldersSearchBox.Text;
