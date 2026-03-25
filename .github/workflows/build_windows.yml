@@ -31,7 +31,7 @@ jobs:
     - name: Configure .NET version
       uses: richardrigutins/replace-in-files@v2
       with:
-        files: 'Source\Tools\Flax.Build\Flax.Build.csproj'
+        files: '*.csproj'
         search-text: 'LatestMajor'
         replacement-text: 'LatestMinor'
     - name: Build
@@ -62,7 +62,7 @@ jobs:
     - name: Configure .NET version
       uses: richardrigutins/replace-in-files@v2
       with:
-        files: 'Source\Tools\Flax.Build\Flax.Build.csproj'
+        files: '*.csproj'
         search-text: 'LatestMajor'
         replacement-text: 'LatestMinor'
     - name: Build
