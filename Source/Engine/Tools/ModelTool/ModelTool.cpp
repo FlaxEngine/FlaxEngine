@@ -1012,12 +1012,6 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             options.ImportTypes |= ImportDataTypes::Textures;
         break;
     case ModelType::SkinnedModel:
-        if (!data.Skeleton.Bones.HasItems())
-        {
-            LOG(Warning, "Model is not Skinned, it will be imported as Static");
-            options.ImportTypes = ImportDataTypes::Geometry | ImportDataTypes::Nodes;
-            options.Type = ModelType::Model;
-        }
         options.ImportTypes = ImportDataTypes::Geometry | ImportDataTypes::Nodes | ImportDataTypes::Skeleton;
         if (options.ImportMaterials)
             options.ImportTypes |= ImportDataTypes::Materials;
@@ -1058,7 +1052,6 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             {
                 if (mesh->BlendShapes.IsEmpty())
                     continue;
-                
                 for (int32 blendShapeIndex = mesh->BlendShapes.Count() - 1; blendShapeIndex >= 0; blendShapeIndex--)
                 {
                     auto& blendShape = mesh->BlendShapes[blendShapeIndex];
@@ -1083,8 +1076,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             }
         }
     }
-    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton) 
-        && (data.Skeleton.Bones.HasItems() || data.LODs[0].Meshes[0]->BlendShapes.HasItems()))
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton))
     {
         LOG(Info, "Imported skeleton has {0} bones and {1} nodes", data.Skeleton.Bones.Count(), data.Nodes.Count());
 
@@ -1224,7 +1216,9 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         for (int32 i = 0; i < meshesCount; i++)
         {
             const auto mesh = data.LODs[0].Meshes[i];
-            if ((mesh->BlendIndices.IsEmpty() || mesh->BlendWeights.IsEmpty()) && data.Skeleton.Bones.HasItems())
+
+            // If imported mesh has skeleton but no indices or weights then need to setup those (except in Prefab mode when we conditionally import meshes based on type)
+            if ((mesh->BlendIndices.IsEmpty() || mesh->BlendWeights.IsEmpty()) && data.Skeleton.Bones.HasItems() && (options.Type != ModelType::Prefab))
             {
                 auto indices = Int4::Zero;
                 auto weights = Float4::UnitX;
@@ -2101,7 +2095,6 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         {
             if (mesh->BlendShapes.IsEmpty())
                 continue;
-
             for (auto& blendShape : mesh->BlendShapes)
             {
                 // Compute min/max for used vertex indices

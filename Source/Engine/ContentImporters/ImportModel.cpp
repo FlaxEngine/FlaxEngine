@@ -83,10 +83,14 @@ bool ImportModel::TryGetImportOptions(const StringView& path, Options& options)
 
 struct PrefabObject
 {
+    enum
+    {
+        Model,
+        SkinnedModel,
+    } Type;
     int32 NodeIndex;
     String Name;
     String AssetPath;
-    bool IsSkinned = false;
 };
 
 void RepackMeshLightmapUVs(ModelData& data)
@@ -282,7 +286,7 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
         options.SplitObjects = false;
         options.ObjectIndex = -1;
 
-        // Import all of the objects recursive but use current model data to skip loading file again
+        // Import all the objects recursive but use current model data to skip loading file again
         options.Cached = &cached;
         HashSet<String> objectNames;
         Function<bool(Options& splitOptions, const StringView& objectName, String& outputPath, MeshData* meshData)> splitImport = [&context, &autoImportOutput, &objectNames](Options& splitOptions, const StringView& objectName, String& outputPath, MeshData* meshData)
@@ -329,32 +333,32 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
 
             return AssetsImportingManager::Import(context.InputPath, outputPath, &splitOptions);
         };
-
         auto splitOptions = options;
         LOG(Info, "Splitting imported {0} meshes", meshesByName.Count());
-        
         PrefabObject prefabObject;
         for (int32 groupIndex = 0; groupIndex < meshesByName.Count(); groupIndex++)
         {
             auto& group = meshesByName[groupIndex];
 
             // Cache object options (nested sub-object import removes the meshes)
-            prefabObject.NodeIndex = group.First()->NodeIndex;
-            prefabObject.Name = group.First()->Name;
+            MeshData* firstMesh = group.First();
+            prefabObject.NodeIndex = firstMesh->NodeIndex;
+            prefabObject.Name = firstMesh->Name;
 
-            // Defaul value for ModelType
-            splitOptions.Type = ModelTool::ModelType::Model;
-
-            // Search for Skinned Model
-            if (group.First()->BlendWeights.HasItems() || group.First()->BlendShapes.HasItems() )
+            // Detect model type
+            if ((firstMesh->BlendIndices.HasItems() && firstMesh->BlendWeights.HasItems()) || firstMesh->BlendShapes.HasItems())
             {
-                LOG(Info, "Mesh {0} is Skinned", prefabObject.Name);
                 splitOptions.Type = ModelTool::ModelType::SkinnedModel;
-                prefabObject.IsSkinned = true;
+                prefabObject.Type = PrefabObject::SkinnedModel;
+            }
+            else
+            {
+                splitOptions.Type = ModelTool::ModelType::Model;
+                prefabObject.Type = PrefabObject::Model;
             }
             
             splitOptions.ObjectIndex = groupIndex;
-            if (!splitImport(splitOptions, group.GetKey(), prefabObject.AssetPath, group.First()))
+            if (!splitImport(splitOptions, group.GetKey(), prefabObject.AssetPath, firstMesh))
             {
                 prefabObjects.Add(prefabObject);
             }
@@ -748,26 +752,32 @@ CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, const M
         nodeActors.Clear();
         for (const PrefabObject& e : prefabObjects)
         {
-            if (e.NodeIndex == nodeIndex)
+            if (e.NodeIndex != nodeIndex)
+                continue;
+            Actor* a = nullptr;
+            switch (e.Type)
             {
-                if(e.IsSkinned)
-                {
-                    LOG(Info,"Creating animated model prefab {0}.", e.Name);
-                    auto* actor = New<AnimatedModel>();    
-                    actor->SetName(e.Name);  
-                    if (auto* skinnedModel = Content::LoadAsync<SkinnedModel>(e.AssetPath))
-                        actor->SkinnedModel = skinnedModel;
-                    nodeActors.Add(actor);   
-                }
-                else
-                {
-                    auto* actor = New<StaticModel>();
-                    actor->SetName(e.Name);
-                    if (auto* model = Content::LoadAsync<Model>(e.AssetPath))
-                        actor->Model = model;
-                    nodeActors.Add(actor);
-                }
+            case PrefabObject::Model:
+            {
+                auto* actor = New<StaticModel>();
+                if (auto* model = Content::LoadAsync<Model>(e.AssetPath))
+                    actor->Model = model;
+                a = actor;
+                break;
             }
+            case PrefabObject::SkinnedModel:
+            {
+                auto* actor = New<AnimatedModel>();
+                if (auto* skinnedModel = Content::LoadAsync<SkinnedModel>(e.AssetPath))
+                    actor->SkinnedModel = skinnedModel;
+                a = actor;
+                break;
+            }
+            default:
+                continue;
+            }
+            a->SetName(e.Name);
+            nodeActors.Add(a);
         }
         Actor* nodeActor = nodeActors.Count() == 1 ? nodeActors[0] : New<EmptyActor>();
         if (nodeActors.Count() > 1)
