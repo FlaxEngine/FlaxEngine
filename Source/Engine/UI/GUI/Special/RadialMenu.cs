@@ -5,14 +5,14 @@ using System;
 namespace FlaxEngine.GUI
 {
     /// <summary>
-    /// Radial menu control that arranges child controls (of type Image) in a circle.
+    /// Radial menu control that arranges child controls (of type <see cref="FlaxEngine.GUI.Image"/>) in a circle.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
     public class RadialMenu : ContainerControl
     {
         private bool _materialIsDirty = true;
         private float _angle;
-        private float _selectedSegment;
+        private int _selectedSegment;
         private int _highlightSegment = -1;
         private MaterialBase _material;
         private MaterialInstance _materialInstance;
@@ -27,7 +27,7 @@ namespace FlaxEngine.GUI
         private bool ShowMatProp => _material != null;
 
         /// <summary>
-        /// The material to use for menu background drawing.
+        /// The material used for menu background drawing.
         /// </summary>
         [EditorOrder(1)]
         public MaterialBase Material
@@ -44,7 +44,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Gets or sets the edge offset.
+        /// Gets or sets the offset of the outer edge from the bounds of the Control.
         /// </summary>
         [EditorOrder(2), Range(0, 1)]
         public float EdgeOffset
@@ -59,7 +59,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Gets or sets the thickness.
+        /// Gets or sets the thickness of the menu.
         /// </summary>
         [EditorOrder(3), Range(0, 1), VisibleIf(nameof(ShowMatProp))]
         public float Thickness
@@ -74,7 +74,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Gets or sets control background color (transparent color (alpha=0) means no background rendering).
+        /// Gets or sets control background color (transparent color means no background rendering).
         /// </summary>
         [VisibleIf(nameof(ShowMatProp))]
         public new Color BackgroundColor
@@ -88,7 +88,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Gets or sets the color of the highlight.
+        /// Gets or sets the color of the outer edge highlight.
         /// </summary>
         [VisibleIf(nameof(ShowMatProp))]
         public Color HighlightColor
@@ -130,19 +130,43 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// The selected callback
+        /// The material instance of <paramref name="Material"/> used to draw the menu.
+        /// </summary>
+        [HideInEditor]
+        public MaterialInstance MaterialInstance => _materialInstance;
+
+        /// <summary>
+        /// The selected callback.
         /// </summary>
         [HideInEditor]
         public Action<int> Selected;
 
         /// <summary>
-        /// The allow change selection when inside
+        /// Invoked when the hovered segment is changed.
+        /// </summary>
+        [HideInEditor]
+        public Action<int> HoveredSelectionChanged;
+
+        /// <summary>
+        /// The selected segment.
+        /// </summary>
+        [HideInEditor]
+        public int SelectedSegment => _selectedSegment;
+
+        /// <summary>
+        /// Allows the selected to change when the mouse is moved in the empty center of the menu.
         /// </summary>
         [VisibleIf(nameof(ShowMatProp))]
         public bool AllowChangeSelectionWhenInside;
 
         /// <summary>
-        /// The center as button
+        /// Allows the selected to change when the mouse is moved outside of the menu.
+        /// </summary>
+        [VisibleIf(nameof(ShowMatProp))]
+        public bool AllowChangeSelectionWhenOutside;
+
+        /// <summary>
+        /// Wether the center is a button.
         /// </summary>
         [VisibleIf(nameof(ShowMatProp))]
         public bool CenterAsButton;
@@ -225,7 +249,7 @@ namespace FlaxEngine.GUI
                     var min = ((1 - _edgeOffset) - _thickness) * USize * 0.5f;
                     var max = (1 - _edgeOffset) * USize * 0.5f;
                     var val = ((USize * 0.5f) - location).Length;
-                    if (Mathf.IsInRange(val, min, max) || val < min && AllowChangeSelectionWhenInside)
+                    if (Mathf.IsInRange(val, min, max) || val < min && AllowChangeSelectionWhenInside || val > max && AllowChangeSelectionWhenOutside)
                     {
                         UpdateAngle(ref location);
                     }
@@ -276,7 +300,7 @@ namespace FlaxEngine.GUI
                 var min = ((1 - _edgeOffset) - _thickness) * USize * 0.5f;
                 var max = (1 - _edgeOffset) * USize * 0.5f;
                 var val = ((USize * 0.5f) - location).Length;
-                if (Mathf.IsInRange(val, min, max) || val < min && AllowChangeSelectionWhenInside)
+                if (Mathf.IsInRange(val, min, max) || val < min && AllowChangeSelectionWhenInside || val > max && AllowChangeSelectionWhenOutside)
                 {
                     UpdateAngle(ref location);
                 }
@@ -347,6 +371,28 @@ namespace FlaxEngine.GUI
             base.PerformLayout(force);
         }
 
+        /// <summary>
+        /// Updates the current angle and selected segment of the radial menu based on the specified location inside of the control.
+        /// </summary>
+        /// <param name="location">The position used to determine the angle and segment selection within the radial menu.</param>
+        public void UpdateAngle(ref Float2 location)
+        {
+            float previousSelectedSegment = _selectedSegment;
+            
+            var size = new Float2(USize);
+            var p = (size * 0.5f) - location;
+            var sa = (1.0f / _segmentCount) * Mathf.TwoPi;
+            _angle = Mathf.Atan2(p.X, p.Y);
+            _angle = Mathf.Ceil((_angle - (sa * 0.5f)) / sa) * sa;
+            _selectedSegment = Mathf.RoundToInt((_angle < 0 ? Mathf.TwoPi + _angle : _angle) / sa);
+            if (float.IsNaN(_angle) || float.IsInfinity(_angle))
+                _angle = 0;
+            _materialInstance.SetParameterValue("RadialMenu_Rotation", -_angle + Mathf.Pi);
+
+            if (previousSelectedSegment != _selectedSegment)
+                HoveredSelectionChanged?.Invoke((int)_selectedSegment);
+        }
+
         private void UpdateSelectionColor()
         {
             Color color;
@@ -366,20 +412,6 @@ namespace FlaxEngine.GUI
                 }
             }
             _materialInstance.SetParameterValue("RadialMenu_SelectionColor", color);
-        }
-
-        private void UpdateAngle(ref Float2 location)
-        {
-            var size = new Float2(USize);
-            var p = (size * 0.5f) - location;
-            var sa = (1.0f / _segmentCount) * Mathf.TwoPi;
-            _angle = Mathf.Atan2(p.X, p.Y);
-            _angle = Mathf.Ceil((_angle - (sa * 0.5f)) / sa) * sa;
-            _selectedSegment = _angle;
-            _selectedSegment = Mathf.RoundToInt((_selectedSegment < 0 ? Mathf.TwoPi + _selectedSegment : _selectedSegment) / sa);
-            if (float.IsNaN(_angle) || float.IsInfinity(_angle))
-                _angle = 0;
-            _materialInstance.SetParameterValue("RadialMenu_Rotation", -_angle + Mathf.Pi);
         }
 
         private static Float2 Rotate2D(Float2 point, float angle)
