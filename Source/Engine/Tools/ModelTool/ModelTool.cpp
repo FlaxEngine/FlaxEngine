@@ -593,6 +593,7 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(SloppyOptimization);
     SERIALIZE(LODTargetError);
     SERIALIZE(ImportMaterials);
+    SERIALIZE(CreateEmptyMaterialSlots);
     SERIALIZE(ImportMaterialsAsInstances);
     SERIALIZE(InstanceToImportAs);
     SERIALIZE(ImportTextures);
@@ -648,6 +649,7 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(SloppyOptimization);
     DESERIALIZE(LODTargetError);
     DESERIALIZE(ImportMaterials);
+    DESERIALIZE(CreateEmptyMaterialSlots);
     DESERIALIZE(ImportMaterialsAsInstances);
     DESERIALIZE(InstanceToImportAs);
     DESERIALIZE(ImportTextures);

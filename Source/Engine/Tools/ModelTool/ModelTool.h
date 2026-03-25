@@ -313,9 +313,9 @@ public:
         // If checked, the importer will create materials for model meshes as specified in the file.
         API_FIELD(Attributes="EditorOrder(399), EditorDisplay(\"Materials\"), VisibleIf(nameof(ShowGeometry))")
         bool ImportMaterials = true;
-        // If checked, the importer will create empty material slots for every material.
+        // If checked, the importer will create empty material slots for every material without importing materials nor textures.
         API_FIELD(Attributes="EditorOrder(400), EditorDisplay(\"Materials\"), VisibleIf(nameof(ShowGeometry))")
-        bool CreateEmptyMaterialSlots;
+        bool CreateEmptyMaterialSlots = false;
         // If checked, the importer will create the model's materials as instances of a base material.
         API_FIELD(Attributes="EditorOrder(401), EditorDisplay(\"Materials\"), VisibleIf(nameof(ImportMaterials)), VisibleIf(nameof(ShowGeometry)), VisibleIf(nameof(CreateEmptyMaterialSlots), true)")
         bool ImportMaterialsAsInstances = false;
