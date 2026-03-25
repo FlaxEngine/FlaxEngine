@@ -174,6 +174,8 @@ internal class DirectionGizmo : ContainerControl
     {
         base.DrawSelf();
 
+        var features = Render2D.Features;
+        Render2D.Features = features & ~Render2D.RenderingFeatures.VertexSnapping;
         _viewportProjection.Init(_owner.Viewport);
         _gizmoCenter = _viewport.Task.View.WorldPosition + _viewport.Task.View.Direction * 1500;
         _viewportProjection.ProjectPoint(_gizmoCenter, out var gizmoCenterScreen);
@@ -241,26 +243,23 @@ internal class DirectionGizmo : ContainerControl
             // Store sprite position for hover detection
             _spritePositions.Add((tipTextScreen, axis.Direction));
 
+            var axisColor = isHovered ? new Color(1.0f, 0.8980392f, 0.039215688f) : axis.AxisColor;
+            var font = _fontReference.GetFont();
             if (!axis.Negative)
             {
-                Render2D.DrawLine(relativeCenter, tipScreen, axis.AxisColor, 2.0f);
-                Render2D.DrawSprite(_posHandle, new Rectangle(tipTextScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axis.AxisColor);
-
-                var font = _fontReference.GetFont();
-                Color textColor = isHovered ? Color.White : Color.Black;
-                Render2D.DrawText(font, axis.Label, textColor, tipTextScreen - font.MeasureText(axis.Label) * 0.5f);
+                Render2D.DrawLine(relativeCenter, tipScreen, axisColor, 2.0f);
+                Render2D.DrawSprite(_posHandle, new Rectangle(tipTextScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axisColor);
+                Render2D.DrawText(font, axis.Label, isHovered ? Color.Gray : Color.Black, tipTextScreen - font.MeasureText(axis.Label) * 0.5f);
             }
             else
             {
-                Render2D.DrawSprite(_posHandle, new Rectangle(tipTextScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axis.AxisColor.RGBMultiplied(0.65f));
-                Render2D.DrawSprite(_negHandle, new Rectangle(tipTextScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axis.AxisColor);
-
+                Render2D.DrawSprite(_posHandle, new Rectangle(tipTextScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axisColor.RGBMultiplied(0.65f));
+                Render2D.DrawSprite(_negHandle, new Rectangle(tipTextScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axisColor);
                 if (isHovered)
-                {
-                    var font = _fontReference.GetFont();
-                    Render2D.DrawText(font, axis.Label, Color.White, tipTextScreen - font.MeasureText(axis.Label) * 0.5f);
-                }
+                    Render2D.DrawText(font, axis.Label, Color.Black, tipTextScreen - font.MeasureText(axis.Label) * 0.5f);
             }
         }
+
+        Render2D.Features = features;
     }
 }
