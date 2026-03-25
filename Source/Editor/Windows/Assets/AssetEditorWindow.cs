@@ -527,6 +527,16 @@ namespace FlaxEditor.Windows.Assets
             return false;
         }
 
+        /// <summary>
+        /// Loads the asset from the original location to reflect the state (eg. after original asset reimport).
+        /// </summary>
+        protected virtual void LoadFromOriginal()
+        {
+            _asset = LoadAsset();
+            OnAssetLoaded();
+            ClearEditedFlag();
+        }
+
         /// <inheritdoc />
         protected override T LoadAsset()
         {
