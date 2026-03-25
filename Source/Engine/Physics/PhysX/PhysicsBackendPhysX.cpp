@@ -1180,6 +1180,8 @@ void ScenePhysX::PreSimulateCloth(int32 i)
     PROFILE_MEM(PhysicsCloth);
     auto clothPhysX = ClothsList[i];
     auto& clothSettings = Cloths[clothPhysX];
+    if (!clothSettings.Actor)
+        return;
 
     if (clothSettings.Actor->OnPreUpdate())
     {
