@@ -19,7 +19,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 8.0.419
     - name: Print .NET info
       run: |
         dotnet --info
@@ -28,12 +28,6 @@ jobs:
       run: |
         git lfs version
         git lfs pull
-    - name: Configure .NET version
-      uses: richardrigutins/replace-in-files@v2
-      with:
-        files: 'global.json'
-        search-text: 'latestMajor'
-        replacement-text: 'latestMinor'
     - name: Build
       run: |
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -printSDKs -dotnet=8 -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxEditor
@@ -50,7 +44,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 8.0.419
     - name: Print .NET info
       run: |
         dotnet --info
@@ -59,12 +53,6 @@ jobs:
       run: |
         git lfs version
         git lfs pull
-    - name: Configure .NET version
-      uses: richardrigutins/replace-in-files@v2
-      with:
-        files: 'global.json'
-        search-text: 'latestMajor'
-        replacement-text: 'latestMinor'
     - name: Build
       run: |
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -printSDKs -dotnet=8 -arch=x64 -platform=Windows -configuration=Release -buildtargets=FlaxGame
