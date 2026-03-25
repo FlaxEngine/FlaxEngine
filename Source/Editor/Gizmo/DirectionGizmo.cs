@@ -192,6 +192,8 @@ internal class DirectionGizmo : ContainerControl
 
         // Normalize by viewport height to keep size independent of FOV and viewport dimensions
         float heightNormalization = _viewport.Height / 720.0f; // 720 = reference height
+        if (_owner.Viewport.UseOrthographicProjection)
+            heightNormalization /= _owner.Viewport.OrthographicScale * 0.5f; // Fix in ortho view to keep consistent size regardless of zoom level
 
         Float2 xDelta = (xProjected - gizmoCenterScreen) / heightNormalization;
         Float2 yDelta = (yProjected - gizmoCenterScreen) / heightNormalization;
