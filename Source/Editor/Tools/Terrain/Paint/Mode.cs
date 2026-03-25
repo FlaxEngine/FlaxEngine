@@ -69,9 +69,9 @@ namespace FlaxEditor.Tools.Terrain.Paint
             var splatmapIndex = ActiveSplatmapIndex;
             var splatmapIndexOther = (splatmapIndex + 1) % 2;
             var chunkSize = terrain.ChunkSize;
-            var heightmapSize = chunkSize * FlaxEngine.Terrain.PatchEdgeChunksCount + 1;
+            var heightmapSize = terrain.HeightmapSize;
             var heightmapLength = heightmapSize * heightmapSize;
-            var patchSize = chunkSize * FlaxEngine.Terrain.UnitsPerVertex * FlaxEngine.Terrain.PatchEdgeChunksCount;
+            var patchSize = terrain.PatchSize;
             var tempBuffer = (Color32*)gizmo.GetSplatmapTempBuffer(heightmapLength * Color32.SizeInBytes, splatmapIndex).ToPointer();
             var tempBufferOther = (Color32*)gizmo.GetSplatmapTempBuffer(heightmapLength * Color32.SizeInBytes, (splatmapIndex + 1) % 2).ToPointer();
             var unitsPerVertexInv = 1.0f / FlaxEngine.Terrain.UnitsPerVertex;

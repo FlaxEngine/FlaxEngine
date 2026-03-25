@@ -89,7 +89,7 @@ namespace FlaxEditor.Tools.Terrain
                 if (!terrain.HasPatch(ref patchCoord) && _planeModel)
                 {
                     var planeSize = 100.0f;
-                    var patchSize = terrain.ChunkSize * FlaxEngine.Terrain.UnitsPerVertex * FlaxEngine.Terrain.PatchEdgeChunksCount;
+                    var patchSize = terrain.PatchSize;
                     Matrix world = Matrix.RotationX(-Mathf.PiOverTwo) *
                                    Matrix.Scaling(patchSize / planeSize) *
                                    Matrix.Translation(patchSize * (0.5f + patchCoord.X), 0, patchSize * (0.5f + patchCoord.Y)) *

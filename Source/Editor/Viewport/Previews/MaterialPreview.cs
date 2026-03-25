@@ -303,8 +303,7 @@ namespace FlaxEditor.Viewport.Previews
             {
                 _terrain = new Terrain();
                 _terrain.Setup(1, 63);
-                var chunkSize = _terrain.ChunkSize;
-                var heightMapSize = chunkSize * Terrain.PatchEdgeChunksCount + 1;
+                var heightMapSize = _terrain.HeightmapSize;
                 var heightMapLength = heightMapSize * heightMapSize;
                 var heightmap = new float[heightMapLength];
                 var patchCoord = new Int2(0, 0);

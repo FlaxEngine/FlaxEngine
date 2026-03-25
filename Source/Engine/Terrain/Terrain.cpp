@@ -306,6 +306,16 @@ void Terrain::SetPhysicalMaterials(const Array<JsonAssetReference<PhysicalMateri
     }
 }
 
+int32 Terrain::GetHeightmapSize() const
+{
+    return GetChunkSize() * ChunksCountEdge + 1;
+}
+
+float Terrain::GetPatchSize() const
+{
+    return TERRAIN_UNITS_PER_VERTEX * ChunksCountEdge * GetChunkSize();
+}
+
 TerrainPatch* Terrain::GetPatch(const Int2& patchCoord) const
 {
     return GetPatch(patchCoord.X, patchCoord.Y);

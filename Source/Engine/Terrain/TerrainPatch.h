@@ -12,6 +12,10 @@
 struct RayCastHit;
 class TerrainMaterialShader;
 
+#ifndef TERRAIN_EDITING
+#define TERRAIN_EDITING 1
+#endif
+
 /// <summary>
 /// Represents single terrain patch made of 16 terrain chunks.
 /// </summary>
@@ -34,7 +38,7 @@ private:
     void* _physicsHeightField;
     CriticalSection _collisionLocker;
     float _collisionScaleXZ;
-#if TERRAIN_UPDATING
+#if TERRAIN_EDITING
     Array<float> _cachedHeightMap;
     Array<byte> _cachedHolesMask;
     Array<Color32> _cachedSplatMap[TERRAIN_MAX_SPLATMAPS_COUNT];
@@ -189,6 +193,8 @@ public:
         return _bounds;
     }
 
+    void GetTextures(GPUTexture*& heightmap, GPUTexture*& splatmap0, GPUTexture*& splatmap1) const;
+
 public:
     /// <summary>
     /// Removes the lightmap data from the terrain patch.
@@ -220,7 +226,7 @@ public:
     /// <param name="holesMask">The holes mask (optional). Normalized to 0-1 range values with holes mask per-vertex. Must match the heightmap dimensions.</param>
     /// <param name="forceUseVirtualStorage">If set to <c>true</c> patch will use virtual storage by force. Otherwise it can use normal texture asset storage on drive (valid only during Editor). Runtime-created terrain can only use virtual storage (in RAM).</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() bool SetupHeightMap(int32 heightMapLength, API_PARAM(Ref) const float* heightMap, API_PARAM(Ref) const byte* holesMask = nullptr, bool forceUseVirtualStorage = false);
+    API_FUNCTION() bool SetupHeightMap(int32 heightMapLength, const float* heightMap, const byte* holesMask = nullptr, bool forceUseVirtualStorage = false);
 
     /// <summary>
     /// Setups the terrain patch layer weights using the specified splatmaps data.
@@ -230,14 +236,12 @@ public:
     /// <param name="splatMap">The splat map. Each array item contains 4 layer weights.</param>
     /// <param name="forceUseVirtualStorage">If set to <c>true</c> patch will use virtual storage by force. Otherwise it can use normal texture asset storage on drive (valid only during Editor). Runtime-created terrain can only use virtual storage (in RAM).</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() bool SetupSplatMap(int32 index, int32 splatMapLength, API_PARAM(Ref) const Color32* splatMap, bool forceUseVirtualStorage = false);
-#endif
+    API_FUNCTION() bool SetupSplatMap(int32 index, int32 splatMapLength, const Color32* splatMap, bool forceUseVirtualStorage = false);
 
-#if TERRAIN_UPDATING
     /// <summary>
-    /// Gets the raw pointer to the heightmap data.
+    /// Gets the raw pointer to the heightmap data. Array size is square of Terrain.HeightmapSize.
     /// </summary>
-    /// <returns>The heightmap data.</returns>
+    /// <returns>The heightmap data. Null if empty or failed to access it.</returns>
     API_FUNCTION() float* GetHeightmapData();
 
     /// <summary>
@@ -246,9 +250,9 @@ public:
     API_FUNCTION() void ClearHeightmapCache();
 
     /// <summary>
-    /// Gets the raw pointer to the holes mask data.
+    /// Gets the raw pointer to the holes mask data. Array size is square of Terrain.HeightmapSize.
     /// </summary>
-    /// <returns>The holes mask data.</returns>
+    /// <returns>The holes mask data. Null if empty/unused or failed to access it.</returns>
     API_FUNCTION() byte* GetHolesMaskData();
 
     /// <summary>
@@ -257,10 +261,10 @@ public:
     API_FUNCTION() void ClearHolesMaskCache();
 
     /// <summary>
-    /// Gets the raw pointer to the splat map data.
+    /// Gets the raw pointer to the splat map data. Array size is square of Terrain.HeightmapSize.
     /// </summary>
     /// <param name="index">The zero-based index of the splatmap texture.</param>
-    /// <returns>The splat map data.</returns>
+    /// <returns>The splat map data. Null if empty/unused or failed to access it.</returns>
     API_FUNCTION() Color32* GetSplatMapData(int32 index);
 
     /// <summary>
@@ -280,7 +284,7 @@ public:
     /// <param name="modifiedOffset">The offset from the first row and column of the heightmap data (offset destination x and z start position).</param>
     /// <param name="modifiedSize">The size of the heightmap to modify (x and z). Amount of samples in each direction.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() bool ModifyHeightMap(API_PARAM(Ref) const float* samples, API_PARAM(Ref) const Int2& modifiedOffset, API_PARAM(Ref) const Int2& modifiedSize);
+    API_FUNCTION() bool ModifyHeightMap(const float* samples, const Int2& modifiedOffset, const Int2& modifiedSize);
 
     /// <summary>
     /// Modifies the terrain patch holes mask with the given samples.
@@ -289,7 +293,7 @@ public:
     /// <param name="modifiedOffset">The offset from the first row and column of the holes map data (offset destination x and z start position).</param>
     /// <param name="modifiedSize">The size of the holes map to modify (x and z). Amount of samples in each direction.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() bool ModifyHolesMask(API_PARAM(Ref) const byte* samples, API_PARAM(Ref) const Int2& modifiedOffset, API_PARAM(Ref) const Int2& modifiedSize);
+    API_FUNCTION() bool ModifyHolesMask(const byte* samples, const Int2& modifiedOffset, const Int2& modifiedSize);
 
     /// <summary>
     /// Modifies the terrain patch splat map (layers mask) with the given samples.
@@ -299,7 +303,7 @@ public:
     /// <param name="modifiedOffset">The offset from the first row and column of the splat map data (offset destination x and z start position).</param>
     /// <param name="modifiedSize">The size of the splat map to modify (x and z). Amount of samples in each direction.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() bool ModifySplatMap(int32 index, API_PARAM(Ref) const Color32* samples, API_PARAM(Ref) const Int2& modifiedOffset, API_PARAM(Ref) const Int2& modifiedSize);
+    API_FUNCTION() bool ModifySplatMap(int32 index, const Color32* samples, const Int2& modifiedOffset, const Int2& modifiedSize);
 
 private:
     bool UpdateHeightData(struct TerrainDataUpdateInfo& info, const Int2& modifiedOffset, const Int2& modifiedSize, bool wasHeightRangeChanged, bool wasHeightChanged);
