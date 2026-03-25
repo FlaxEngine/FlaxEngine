@@ -4,6 +4,7 @@ on: [push, pull_request]
 env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: false
+  DOTNET_ROLL_FORWARD: 'LatestMinor'
 
 jobs:
 
@@ -32,11 +33,11 @@ jobs:
         git lfs version
         git lfs pull
     - name: Configure .NET version
-      uses: richardrigutins/replace-in-files@v2
+      uses: jacobtomlinson/gha-find-replace@3.0.5
       with:
-        files: '*.csproj'
-        search-text: 'LatestMajor'
-        replacement-text: 'LatestMinor'
+        find: "LatestMajor"
+        replace: "LatestMinor"
+        include: "**/*.csproj"
     - name: Build
       run: |
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -printSDKs -dotnet=8 -arch=ARM64 -platform=Android -configuration=Release -buildtargets=FlaxGame
