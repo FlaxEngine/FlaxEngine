@@ -1024,7 +1024,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             options.ImportTypes |= ImportDataTypes::Skeleton;
         break;
     case ModelType::Prefab:
-        options.ImportTypes = ImportDataTypes::Geometry | ImportDataTypes::Nodes | ImportDataTypes::Animations;
+        options.ImportTypes = ImportDataTypes::Geometry | ImportDataTypes::Nodes | ImportDataTypes::Skeleton | ImportDataTypes::Animations;
         if (options.ImportMaterials)
             options.ImportTypes |= ImportDataTypes::Materials;
         if (options.ImportTextures)
@@ -1050,6 +1050,8 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         {
             for (auto& mesh : lod.Meshes)
             {
+                if (mesh->BlendShapes.IsEmpty())
+                    continue;
                 for (int32 blendShapeIndex = mesh->BlendShapes.Count() - 1; blendShapeIndex >= 0; blendShapeIndex--)
                 {
                     auto& blendShape = mesh->BlendShapes[blendShapeIndex];
@@ -1214,7 +1216,9 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         for (int32 i = 0; i < meshesCount; i++)
         {
             const auto mesh = data.LODs[0].Meshes[i];
-            if (mesh->BlendIndices.IsEmpty() || mesh->BlendWeights.IsEmpty())
+
+            // If imported mesh has skeleton but no indices or weights then need to setup those (except in Prefab mode when we conditionally import meshes based on type)
+            if ((mesh->BlendIndices.IsEmpty() || mesh->BlendWeights.IsEmpty()) && data.Skeleton.Bones.HasItems() && (options.Type != ModelType::Prefab))
             {
                 auto indices = Int4::Zero;
                 auto weights = Float4::UnitX;
@@ -2024,12 +2028,11 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
 #undef REMAP_VERTEX_BUFFER
 
                 // Remap blend shapes
-                dstMesh->BlendShapes.Resize(srcMesh->BlendShapes.Count());
+                dstMesh->BlendShapes.EnsureCapacity(srcMesh->BlendShapes.Count(), false);
                 for (int32 blendShapeIndex = 0; blendShapeIndex < srcMesh->BlendShapes.Count(); blendShapeIndex++)
                 {
                     const auto& srcBlendShape = srcMesh->BlendShapes[blendShapeIndex];
-                    auto& dstBlendShape = dstMesh->BlendShapes[blendShapeIndex];
-
+                    BlendShape dstBlendShape;
                     dstBlendShape.Name = srcBlendShape.Name;
                     dstBlendShape.Weight = srcBlendShape.Weight;
                     dstBlendShape.Vertices.EnsureCapacity(srcBlendShape.Vertices.Count());
@@ -2038,17 +2041,12 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                         auto v = srcBlendShape.Vertices[i];
                         v.VertexIndex = remap[v.VertexIndex];
                         if (v.VertexIndex != ~0u)
-                        {
                             dstBlendShape.Vertices.Add(v);
-                        }
                     }
-                }
 
-                // Remove empty blend shapes
-                for (int32 blendShapeIndex = dstMesh->BlendShapes.Count() - 1; blendShapeIndex >= 0; blendShapeIndex--)
-                {
-                    if (dstMesh->BlendShapes[blendShapeIndex].Vertices.IsEmpty())
-                        dstMesh->BlendShapes.RemoveAt(blendShapeIndex);
+                    // Add only valid blend shapes 
+                    if (dstBlendShape.Vertices.HasItems())
+                        dstMesh->BlendShapes.Add(dstBlendShape);
                 }
 
                 // Optimize generated LOD
@@ -2095,6 +2093,8 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
     {
         for (auto& mesh : lod.Meshes)
         {
+            if (mesh->BlendShapes.IsEmpty())
+                continue;
             for (auto& blendShape : mesh->BlendShapes)
             {
                 // Compute min/max for used vertex indices
