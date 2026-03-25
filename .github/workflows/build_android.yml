@@ -4,7 +4,7 @@ on: [push, pull_request]
 env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: false
-  DOTNET_ROLL_FORWARD: 'LatestMinor'
+  DOTNET_ROLL_FORWARD: 'disable'
 
 jobs:
 
@@ -20,7 +20,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 8.0.419
     - name: Setup .NET Workload
       run: |
         dotnet workload install android
@@ -34,6 +34,7 @@ jobs:
         git lfs pull
     - name: Build
       run: |
-        PowerShell "(Get-Content global.json).Replace('latestMajor', 'latestMinor') | Set-Content global.json"
-        PowerShell "(Get-Content Source/Tools/Flax.Build/Flax.Build.csproj).Replace('LatestMajor', 'LatestMinor') | Set-Content Source/Tools/Flax.Build/Flax.Build.csproj"
+        PowerShell "(Get-Content global.json).Replace('latestMajor', 'disable') | Set-Content global.json"
+        PowerShell "(Get-Content Source/Tools/Flax.Build/global.json).Replace('latestMajor', 'disable') | Set-Content Source/Tools/Flax.Build/global.json"
+        PowerShell "(Get-Content Source/Tools/Flax.Build/Flax.Build.csproj).Replace('LatestMajor', 'Disable') | Set-Content Source/Tools/Flax.Build/Flax.Build.csproj"
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -printSDKs -dotnet=8 -arch=ARM64 -platform=Android -configuration=Release -buildtargets=FlaxGame
