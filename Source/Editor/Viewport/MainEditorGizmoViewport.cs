@@ -1,5 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
+using Object = FlaxEngine.Object;
 using FlaxEditor.Content;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
@@ -12,9 +14,6 @@ using FlaxEditor.Windows;
 using FlaxEngine;
 using FlaxEngine.Gizmo;
 using FlaxEngine.GUI;
-using System;
-using System.Collections.Generic;
-using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Viewport
 {

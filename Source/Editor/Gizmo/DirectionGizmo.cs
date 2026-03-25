@@ -1,6 +1,5 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System;
 using System.Collections.Generic;
 using FlaxEditor.Options;
 using FlaxEditor.Viewport;
@@ -179,12 +178,12 @@ internal class DirectionGizmo : ContainerControl
     {
         Quaternion orientation = direction switch
         {
-            AxisDirection.PosX => Quaternion.Euler(0, 90, 0),
-            AxisDirection.NegX => Quaternion.Euler(0, -90, 0),
-            AxisDirection.PosY => Quaternion.Euler(-90, 0, 0),
-            AxisDirection.NegY => Quaternion.Euler(90, 0, 0),
-            AxisDirection.PosZ => Quaternion.Euler(0, 0, 0),
-            AxisDirection.NegZ => Quaternion.Euler(0, 180, 0),
+            AxisDirection.PosX => Quaternion.Euler(0, -90, 0),
+            AxisDirection.NegX => Quaternion.Euler(0, 90, 0),
+            AxisDirection.PosY => Quaternion.Euler(90, 0, 0),
+            AxisDirection.NegY => Quaternion.Euler(-90, 0, 0),
+            AxisDirection.PosZ => Quaternion.Euler(0, 180, 0),
+            AxisDirection.NegZ => Quaternion.Euler(0, 0, 0),
             _ => Quaternion.Identity
         };
         _viewport.OrientViewport(ref orientation);
