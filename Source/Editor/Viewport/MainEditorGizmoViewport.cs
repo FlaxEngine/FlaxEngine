@@ -115,7 +115,7 @@ namespace FlaxEditor.Viewport
         private ViewMode _preGameViewViewMode;
         private bool _gameViewWasGridShown;
         private bool _gameViewWasFpsCounterShown;
-        private bool _gameViewWasNagivationShown;
+        private bool _gameViewWasNavigationShown;
 
         /// <summary>
         /// Drag and drop handlers
@@ -250,6 +250,12 @@ namespace FlaxEditor.Viewport
             // Show navigation widget
             _showNavigationButton = ViewWidgetShowMenu.AddButton("Navigation", inputOptions.ToggleNavMeshVisibility, () => ShowNavigation = !ShowNavigation);
             _showNavigationButton.CloseMenuOnClick = false;
+
+            // Show direction gizmo widget
+            var showDirectionGizmoButton = ViewWidgetShowMenu.AddButton("Direction Gizmo", () => _directionGizmo.Visible = !_directionGizmo.Visible);
+            showDirectionGizmoButton.AutoCheck = true;
+            showDirectionGizmoButton.CloseMenuOnClick = false;
+            showDirectionGizmoButton.Checked = _directionGizmo.Visible;
 
             // Game View
             ViewWidgetButtonMenu.AddSeparator();
@@ -521,14 +527,14 @@ namespace FlaxEditor.Viewport
                 _preGameViewViewMode = Task.ViewMode;
                 _gameViewWasGridShown = Grid.Enabled;
                 _gameViewWasFpsCounterShown = ShowFpsCounter;
-                _gameViewWasNagivationShown = ShowNavigation;
+                _gameViewWasNavigationShown = ShowNavigation;
             }
 
             // Set flags & values
             Task.ViewFlags = _gameViewActive ? _preGameViewFlags : ViewFlags.DefaultGame;
             Task.ViewMode = _gameViewActive ? _preGameViewViewMode : ViewMode.Default;
             ShowFpsCounter = _gameViewActive ? _gameViewWasFpsCounterShown : false;
-            ShowNavigation = _gameViewActive ? _gameViewWasNagivationShown : false;
+            ShowNavigation = _gameViewActive ? _gameViewWasNavigationShown : false;
             Grid.Enabled = _gameViewActive ? _gameViewWasGridShown : false;
 
             _gameViewActive = !_gameViewActive;
