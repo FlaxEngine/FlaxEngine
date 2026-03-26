@@ -371,6 +371,6 @@ private:
     ImplementPhysicsDebug;
     bool CreateCloth();
     void DestroyCloth();
-    void CalculateInvMasses(Array<float>& invMasses);
+    void CalculateInvMasses(class MeshAccessor& accessor, Array<float>& invMasses);
     void RunClothDeformer(const MeshBase* mesh, struct MeshDeformationData& deformation);
 };

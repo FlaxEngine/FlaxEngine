@@ -45,7 +45,7 @@
 #pragma warning(pop)
 #endif
 
-#if (PX_LINUX_FAMILY && !PX_ARM_FAMILY)
+#if (PX_LINUX_FAMILY && !PX_ARM_FAMILY && !PX_EMSCRIPTEN)
 // Force linking against nothing newer than glibc v2.17 to remain compatible with platforms with older glibc versions
 __asm__(".symver expf,expf@GLIBC_2.2.5");
 __asm__(".symver powf,powf@GLIBC_2.2.5");

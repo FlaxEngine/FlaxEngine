@@ -1397,6 +1397,16 @@ bool AnimatedModel::GetMeshData(const MeshReference& ref, MeshBufferType type, B
     return mesh.DownloadDataCPU(type, result, count, layout);
 }
 
+MeshBase* AnimatedModel::GetMesh(const MeshReference& ref) const
+{
+    const auto model = SkinnedModel.Get();
+    if (!model || model->WaitForLoaded())
+        return nullptr;
+    auto& lod = model->LODs[Math::Min(ref.LODIndex, model->LODs.Count() - 1)];
+    auto& mesh = lod.Meshes[Math::Min(ref.MeshIndex, lod.Meshes.Count() - 1)];
+    return &mesh;
+}
+
 MeshDeformation* AnimatedModel::GetMeshDeformation() const
 {
     if (!_deformation)

@@ -201,7 +201,7 @@ namespace Flax.Deploy
                     Log.Info("Building disk image...");
                     if (File.Exists(dmgPath))
                         File.Delete(dmgPath);
-                    Utilities.Run("hdiutil", $"create -srcFolder \"{appPath}\" -o \"{dmgPath}\"", null, null, Utilities.RunOptions.Default | Utilities.RunOptions.ThrowExceptionOnError);
+                    Utilities.Run("hdiutil", $"create -srcFolder \"{appPath}\" -o \"{dmgPath}\" -force", null, null, Utilities.RunOptions.Default | Utilities.RunOptions.ThrowExceptionOnError);
                     CodeSign(dmgPath);
                     Log.Info("Output disk image size: " + Utilities.GetFileSize(dmgPath));
 
