@@ -38,6 +38,11 @@ public:
         bool IsValid() const;
         bool IsLinear(PixelFormat expectedFormat) const;
 
+        FORCE_INLINE operator bool() const
+        {
+            return IsValid();
+        }
+
         FORCE_INLINE int32 GetInt(int32 index) const
         {
             ASSERT_LOW_LAYER(index * _stride < _data.Length());

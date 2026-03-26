@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace FlaxEngine
@@ -466,6 +467,17 @@ namespace FlaxEngine
                     }
                 }
             }
+
+            /// <summary>
+            /// Checks if stream is valid.
+            /// </summary>
+            /// <param name="stream">The stream to check.</param>
+            /// <returns>True if stream is valid, otherwise false.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static implicit operator bool(Stream stream)
+            {
+                return stream.IsValid;
+            }
         }
 
         private byte[][] _data = new byte[(int)MeshBufferType.MAX][];
@@ -586,19 +598,19 @@ namespace FlaxEngine
                 bool use16BitIndexBuffer = false;
                 IntPtr[] vbData = new IntPtr[3];
                 GPUVertexLayout[] vbLayout = new GPUVertexLayout[3];
-                if (_data[VB0] != null)
+                if (_data[VB0] != null && _data[VB0].Length != 0)
                 {
                     vbData[0] = dataPtr[VB0];
                     vbLayout[0] = _layouts[VB0];
                     vertices = (uint)_data[VB0].Length / _layouts[VB0].Stride;
                 }
-                if (_data[VB1] != null)
+                if (_data[VB1] != null && _data[VB1].Length != 0)
                 {
                     vbData[1] = dataPtr[VB1];
                     vbLayout[1] = _layouts[VB1];
                     vertices = (uint)_data[VB1].Length / _layouts[VB1].Stride;
                 }
-                if (_data[VB2] != null)
+                if (_data[VB2] != null && _data[VB2].Length != 0)
                 {
                     vbData[2] = dataPtr[VB2];
                     vbLayout[2] = _layouts[VB2];
@@ -799,6 +811,16 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Gets or sets the vertex tangent vectors (unpacked, normalized). Null if <see cref="VertexElement.Types.Tangent"/> does not exist in vertex buffers of the mesh.
+        /// </summary>
+        /// <remarks>Uses <see cref="Tangent"/> stream to read or write data to the vertex buffer.</remarks>
+        public Float3[] Tangents
+        {
+            get => GetStreamFloat3(VertexElement.Types.Tangent, UnpackNormal);
+            set => SetStreamFloat3(VertexElement.Types.Tangent, value, PackNormal);
+        }
+
+        /// <summary>
         /// Gets or sets the vertex UVs (texcoord channel 0). Null if <see cref="VertexElement.Types.TexCoord"/> does not exist in vertex buffers of the mesh.
         /// </summary>
         /// <remarks>Uses <see cref="TexCoord"/> stream to read or write data to the vertex buffer.</remarks>
@@ -806,6 +828,70 @@ namespace FlaxEngine
         {
             get => GetStreamFloat2(VertexElement.Types.TexCoord);
             set => SetStreamFloat2(VertexElement.Types.TexCoord, value);
+        }
+
+        /// <summary>
+        /// Recalculates normal vectors for all vertices.
+        /// </summary>
+        public void ComputeNormals()
+        {
+            var positions = Position();
+            var indices = Index();
+            if (!positions)
+                throw new Exception("Cannot compute tangents without positions.");
+            if (!indices)
+                throw new Exception("Cannot compute tangents without indices.");
+            if (!Normal())
+                throw new Exception("Cannot compute tangents without Normal vertex element.");
+            var vertexCount = positions.Count;
+            if (vertexCount == 0)
+                return;
+            var indexCount = indices.Count;
+
+            // Compute per-face normals but store them per-vertex
+            var normals = new Float3[vertexCount];
+            for (int i = 0; i < indexCount; i += 3)
+            {
+                var i1 = indices.GetInt(i + 0);
+                var i2 = indices.GetInt(i + 1);
+                var i3 = indices.GetInt(i + 2);
+                Float3 v1 = positions.GetFloat3(i1);
+                Float3 v2 = positions.GetFloat3(i2);
+                Float3 v3 = positions.GetFloat3(i3);
+                Float3 n = Float3.Cross((v2 - v1), (v3 - v1)).Normalized;
+
+                normals[i1] += n;
+                normals[i2] += n;
+                normals[i3] += n;
+            }
+
+            // Average normals
+            for (int i = 0; i < normals.Length; i++)
+                normals[i] = normals[i].Normalized;
+
+            // Write back to the buffer
+            Normals = normals;
+        }
+
+        /// <summary>
+        /// Recalculates tangent vectors for all vertices based on normals.
+        /// </summary>
+        public void ComputeTangents()
+        {
+            var normals = Normal();
+            var tangents = Tangent();
+            if (!normals)
+                throw new Exception("Cannot compute tangents without normals.");
+            if (!tangents)
+                throw new Exception("Cannot compute tangents without Tangent vertex element.");
+            var count = normals.Count;
+            for (int i = 0; i < count; i++)
+            {
+                Float3 normal = normals.GetFloat3(i);
+                UnpackNormal(ref normal);
+                RenderTools.CalculateTangentFrame(out var n, out var t, ref normal);
+                tangents.SetFloat4(i, t);
+            }
         }
 
         private uint[] GetStreamUInt(Stream stream)
