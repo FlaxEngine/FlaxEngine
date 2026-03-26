@@ -439,7 +439,7 @@ void UpdateNormalsAndHoles(const TerrainDataUpdateInfo& info, const float* heigh
             // Calculate normals for quad two vertices
             Float3 n0 = Float3::Normalize((v00 - v01) ^ (v01 - v10));
             Float3 n1 = Float3::Normalize((v11 - v10) ^ (v10 - v01));
-            Float3 n2 = n0 + n1;
+            Float3 n2 = Float3::Normalize(n0 + n1);
 
             // Apply normal to each vertex using it
             normalsPerVertex[i00] += n1;
