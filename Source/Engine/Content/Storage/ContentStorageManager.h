@@ -15,7 +15,12 @@ class FLAXENGINE_API ContentStorageManager
 {
 public:
     /// <summary>
-    /// Auto-release timeout for unused asset chunks.
+    /// Auto-release timeout for unused asset files.
+    /// </summary>
+    static TimeSpan UnusedStorageLifetime;
+
+    /// <summary>
+    /// Auto-release timeout for unused asset data chunks.
     /// </summary>
     static TimeSpan UnusedDataChunksLifetime;
 

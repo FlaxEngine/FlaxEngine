@@ -7,6 +7,7 @@ on:
 env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: false
+  DOTNET_ROLL_FORWARD: 'minor'
   GIT_LFS_PULL_OPTIONS: '-c lfs.concurrenttransfers=1 -c lfs.transfer.maxretries=2 -c http.version="HTTP/1.1" -c lfs.activitytimeout=60'
 
 jobs:
@@ -27,13 +28,16 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 8.0.419
     - name: Print .NET info
       run: |
         dotnet --info
         dotnet workload --info
     - name: Build
       run: |
+        PowerShell "(Get-Content global.json).Replace('latestMajor', 'minor') | Set-Content global.json"
+        PowerShell "(Get-Content Source/Tools/Flax.Build/global.json).Replace('latestMajor', 'minor') | Set-Content Source/Tools/Flax.Build/global.json"
+        PowerShell "(Get-Content Source/Tools/Flax.Build/Flax.Build.csproj).Replace('LatestMajor', 'Minor') | Set-Content Source/Tools/Flax.Build/Flax.Build.csproj"
         .\PackageEditor.bat -arch=x64 -platform=Windows -deployOutput=Output -dotnet=8
     - name: Upload
       uses: actions/upload-artifact@v4
@@ -60,13 +64,16 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 8.0.419
     - name: Print .NET info
       run: |
         dotnet --info
         dotnet workload --info
     - name: Build
       run: |
+        PowerShell "(Get-Content global.json).Replace('latestMajor', 'minor') | Set-Content global.json"
+        PowerShell "(Get-Content Source/Tools/Flax.Build/global.json).Replace('latestMajor', 'minor') | Set-Content Source/Tools/Flax.Build/global.json"
+        PowerShell "(Get-Content Source/Tools/Flax.Build/Flax.Build.csproj).Replace('LatestMajor', 'Minor') | Set-Content Source/Tools/Flax.Build/Flax.Build.csproj"
         .\PackagePlatforms.bat -arch=x64 -platform=Windows -deployOutput=Output -dotnet=8
     - name: Upload
       uses: actions/upload-artifact@v4

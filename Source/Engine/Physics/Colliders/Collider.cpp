@@ -209,6 +209,13 @@ void Collider::CreateShape()
     // Create shape
     const bool isTrigger = _isTrigger && CanBeTrigger();
     _shape = PhysicsBackend::CreateShape(this, shape, Material, IsActiveInHierarchy(), isTrigger);
+    if (!_shape)
+    {
+        LOG(Error, "Failed to create physics shape for actor '{}'", GetNamePath());
+        if (shape.Type == CollisionShape::Types::ConvexMesh && Float3(shape.ConvexMesh.Scale).MinValue() <= 0)
+            LOG(Warning, "Convex Mesh colliders cannot have negative scale");
+        return;
+    }
     PhysicsBackend::SetShapeContactOffset(_shape, _contactOffset);
     UpdateLayerBits();
 }
@@ -293,18 +300,20 @@ void Collider::BeginPlay(SceneBeginData* data)
     if (_shape == nullptr)
     {
         CreateShape();
-
-        // Check if parent is a rigidbody
-        const auto rigidBody = dynamic_cast<RigidBody*>(GetParent());
-        if (rigidBody && CanAttach(rigidBody))
+        if (_shape)
         {
-            // Attach to the rigidbody
-            Attach(rigidBody);
-        }
-        else
-        {
-            // Be a static collider
-            CreateStaticActor();
+            // Check if parent is a rigidbody
+            const auto rigidBody = dynamic_cast<RigidBody*>(GetParent());
+            if (rigidBody && CanAttach(rigidBody))
+            {
+                // Attach to the rigidbody
+                Attach(rigidBody);
+            }
+            else
+            {
+                // Be a static collider
+                CreateStaticActor();
+            }
         }
     }
 

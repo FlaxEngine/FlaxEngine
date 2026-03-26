@@ -85,8 +85,7 @@ namespace FlaxEditor.Tools.Terrain.Undo
         {
             _terrain = terrain.ID;
             _patches = new List<PatchData>(4);
-            var chunkSize = terrain.ChunkSize;
-            var heightmapSize = chunkSize * FlaxEngine.Terrain.PatchEdgeChunksCount + 1;
+            var heightmapSize = terrain.HeightmapSize;
             _heightmapLength = heightmapSize * heightmapSize;
             _heightmapDataSize = _heightmapLength * stride;
 

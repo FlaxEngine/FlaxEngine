@@ -19,10 +19,10 @@ Variant MaterialBase::GetParameterValue(const StringView& name)
     if (!IsLoaded() && WaitForLoaded())
         return Variant::Null;
     const auto param = Params.Get(name);
+    if (IsMaterialInstance() && param && !param->IsOverride() && ((MaterialInstance*)this)->GetBaseMaterial())
+        return ((MaterialInstance*)this)->GetBaseMaterial()->GetParameterValue(name);
     if (param)
-    {
         return param->GetValue();
-    }
     LOG(Warning, "Missing material parameter '{0}' in material {1}", String(name), ToString());
     return Variant::Null;
 }
