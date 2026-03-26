@@ -74,6 +74,7 @@ namespace FlaxEditor.SceneGraph
             CustomNodesTypes.Add(typeof(NavMesh), typeof(ActorNode));
             CustomNodesTypes.Add(typeof(SpriteRender), typeof(SpriteRenderNode));
             CustomNodesTypes.Add(typeof(Joint), typeof(JointNode));
+            CustomNodesTypes.Add(typeof(RigidBody), typeof(RigidBodyNode));
         }
 
         /// <summary>
