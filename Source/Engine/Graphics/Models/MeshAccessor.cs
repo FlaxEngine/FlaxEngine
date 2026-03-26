@@ -18,13 +18,14 @@ namespace FlaxEngine
         {
             private Span<byte> _data;
             private PixelFormat _format;
-            private int _stride;
+            private int _stride, _count;
             private readonly PixelFormatSampler _sampler;
 
-            internal Stream(Span<byte> data, PixelFormat format, int stride)
+            internal Stream(Span<byte> data, PixelFormat format, int stride, int count)
             {
                 _data = data;
                 _stride = stride;
+                _count = count;
                 if (PixelFormatSampler.Get(format, out _sampler))
                 {
                     _format = format;
@@ -53,7 +54,7 @@ namespace FlaxEngine
             /// <summary>
             /// Gets the count of the items in the stride.
             /// </summary>
-            public int Count => _data.Length / _stride;
+            public int Count => _count;
 
             /// <summary>
             /// Returns true if stream is valid.
@@ -664,15 +665,16 @@ namespace FlaxEngine
         {
             Span<byte> data = new Span<byte>();
             PixelFormat format = PixelFormat.Unknown;
-            int stride = 0;
+            int stride = 0, count = 0;
             var ib = _data[(int)MeshBufferType.Index];
             if (ib != null)
             {
                 data = ib;
                 format = _formats[(int)MeshBufferType.Index];
                 stride = PixelFormatExtensions.SizeInBytes(format);
+                count = data.Length / stride;
             }
-            return new Stream(data, format, stride);
+            return new Stream(data, format, stride, count);
         }
 
         /// <summary>
@@ -684,7 +686,7 @@ namespace FlaxEngine
         {
             Span<byte> data = new Span<byte>();
             PixelFormat format = PixelFormat.Unknown;
-            int stride = 0;
+            int stride = 0, count = 0;
             for (int vbIndex = 0; vbIndex < 3 && format == PixelFormat.Unknown; vbIndex++)
             {
                 int idx = vbIndex + 1;
@@ -699,11 +701,12 @@ namespace FlaxEngine
                         data = new Span<byte>(vb).Slice(e.Offset);
                         format = e.Format;
                         stride = (int)layout.Stride;
+                        count = vb.Length / stride;
                         break;
                     }
                 }
             }
-            return new Stream(data, format, stride);
+            return new Stream(data, format, stride, count);
         }
 
         /// <summary>

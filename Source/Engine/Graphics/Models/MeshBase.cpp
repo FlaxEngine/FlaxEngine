@@ -38,10 +38,11 @@ namespace
 #endif
 }
 
-MeshAccessor::Stream::Stream(Span<byte> data, PixelFormat format, int32 stride)
+MeshAccessor::Stream::Stream(Span<byte> data, PixelFormat format, int32 stride, int32 count)
     : _data(data)
     , _format(PixelFormat::Unknown)
     , _stride(stride)
+    , _count(count)
 {
     auto sampler = PixelFormatSampler::Get(format);
     if (sampler)
@@ -72,7 +73,7 @@ int32 MeshAccessor::Stream::GetStride() const
 
 int32 MeshAccessor::Stream::GetCount() const
 {
-    return _data.Length() / _stride;
+    return _count;
 }
 
 bool MeshAccessor::Stream::IsValid() const
@@ -368,22 +369,23 @@ MeshAccessor::Stream MeshAccessor::Index()
 {
     Span<byte> data;
     PixelFormat format = PixelFormat::Unknown;
-    int32 stride = 0;
+    int32 stride = 0, count = 0;
     auto& ib = _data[(int32)MeshBufferType::Index];
     if (ib.IsValid())
     {
         data = ib;
         format = _formats[(int32)MeshBufferType::Index];
         stride = PixelFormatExtensions::SizeInBytes(format);
+        count = data.Length() / stride;
     }
-    return Stream(data, format, stride);
+    return Stream(data, format, stride, count);
 }
 
 MeshAccessor::Stream MeshAccessor::Attribute(VertexElement::Types attribute)
 {
     Span<byte> data;
     PixelFormat format = PixelFormat::Unknown;
-    int32 stride = 0;
+    int32 stride = 0, count = 0;
     for (int32 vbIndex = 0; vbIndex < 3 && format == PixelFormat::Unknown; vbIndex++)
     {
         static_assert((int32)MeshBufferType::Vertex0 == 1, "Update code.");
@@ -399,11 +401,12 @@ MeshAccessor::Stream MeshAccessor::Attribute(VertexElement::Types attribute)
                 data = vb.Slice(e.Offset);
                 format = e.Format;
                 stride = layout->GetStride();
+                count = vb.Length() / stride;
                 break;
             }
         }
     }
-    return Stream(data, format, stride);
+    return Stream(data, format, stride, count);
 }
 
 MeshBase::~MeshBase()
