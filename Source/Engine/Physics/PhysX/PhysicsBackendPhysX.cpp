@@ -2653,10 +2653,13 @@ void* PhysicsBackend::CreateShape(PhysicsColliderActor* collider, const Collisio
     PxGeometryHolder geometryPhysX;
     GetShapeGeometry(geometry, geometryPhysX);
     PxShape* shapePhysX = PhysX->createShape(geometryPhysX.any(), materialsPhysX.Get(), materialsPhysX.Count(), true, shapeFlags);
-    shapePhysX->userData = collider;
+    if (shapePhysX)
+    {
+        shapePhysX->userData = collider;
 #if PHYSX_DEBUG_NAMING
-    shapePhysX->setName("Shape");
+        shapePhysX->setName("Shape");
 #endif
+    }
     return shapePhysX;
 }
 
