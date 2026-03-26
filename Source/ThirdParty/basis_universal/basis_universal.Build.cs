@@ -18,6 +18,7 @@ public class basis_universal : EngineDepsModule
         case TargetPlatform.Windows:
         case TargetPlatform.Web:
         case TargetPlatform.Linux:
+        case TargetPlatform.Mac:
             return true;
         default:
             return false;

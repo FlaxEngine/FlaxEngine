@@ -137,6 +137,7 @@ namespace FlaxEditor.Windows
                     case BuildPlatform.MacOSARM64:
                     case BuildPlatform.iOSARM64:
                     case BuildPlatform.AndroidARM64:
+                    case BuildPlatform.Web:
                         IsSupported = true;
                         break;
                     default:

@@ -30,6 +30,11 @@ namespace Flax.Deps.Dependencies
                     {
                         TargetPlatform.Linux,
                     };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetPlatform.Mac,
+                    };
                 default:
                     return new TargetPlatform[0];
                 }
@@ -54,6 +59,12 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetArchitecture.x64,
+                    };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
                     };
                 default:
                     return new TargetArchitecture[0];
@@ -137,6 +148,7 @@ namespace Flax.Deps.Dependencies
                         break;
                     }
                     case TargetPlatform.Linux:
+                    case TargetPlatform.Mac:
                     {
                         cmakeArgs = ".. " + cmakeArgs;
                         RunCmake(buildDir, platform, architecture, cmakeArgs);

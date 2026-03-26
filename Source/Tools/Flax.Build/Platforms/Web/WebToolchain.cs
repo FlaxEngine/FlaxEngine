@@ -115,6 +115,8 @@ namespace Flax.Build.Platforms
 
         private void AddSharedArgs(List<string> args, BuildOptions options, bool debugInformation, bool optimization)
         {
+            args.Add("-Wno-experimental");
+
             if (debugInformation)
                 args.Add("-g2");
             else
@@ -289,7 +291,6 @@ namespace Flax.Build.Platforms
             args.AddRange(options.LinkEnv.CustomArgs);
             {
                 args.Add(string.Format("-o \"{0}\"", outputFilePath.Replace('\\', '/')));
-                args.Add("-Wno-experimental");
 
                 // Debug options
                 //args.Add("--minify=0");
