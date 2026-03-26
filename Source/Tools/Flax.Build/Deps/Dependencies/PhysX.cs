@@ -48,6 +48,7 @@ namespace Flax.Deps.Dependencies
                 throw new Exception(string.Format("Missing PhysX preset {0} (file: {1})", preset, presetPath));
             var presetXml = new XmlDocument();
             presetXml.Load(presetPath);
+            var usePVD = false;
 
             // Configure preset
             var cmakeSwitches = presetXml["preset"]["CMakeSwitches"];
@@ -59,6 +60,11 @@ namespace Flax.Deps.Dependencies
             ConfigureCmakeSwitch(cmakeSwitches, "NV_USE_STATIC_WINCRT", "False");
             ConfigureCmakeSwitch(cmakeSwitches, "NV_USE_DEBUG_WINCRT", "False");
             ConfigureCmakeSwitch(cmakeSwitches, "PX_FLOAT_POINT_PRECISE_MATH", "False");
+            if (usePVD)
+            {
+                // PVD depends on metadata and serialization code striped from shipping builds
+                ConfigureCmakeSwitch(cmakeSwitches, "PX_SERIALIZATION", "True");
+            }
             var cmakeParams = presetXml["preset"]["CMakeParams"];
             switch (targetPlatform)
             {
@@ -286,12 +292,18 @@ namespace Flax.Deps.Dependencies
             Log.Verbose("Copy PhysX binaries from " + srcBinaries);
             foreach (var physXLib in defaultPhysXLibs)
             {
+                var remove = !usePVD && physXLib.Contains("Pvd");
                 var filename = suppressBitsPostfix ? string.Format("{0}{1}_static", binariesPrefix, physXLib) : string.Format("{0}{1}_static_{2}", binariesPrefix, physXLib, bits);
                 filename += binariesExtension;
-                Utilities.FileCopy(Path.Combine(srcBinaries, filename), Path.Combine(dstBinaries, filename));
+                if (remove)
+                    Utilities.FileDelete(Path.Combine(dstBinaries, filename));
+                else
+                    Utilities.FileCopy(Path.Combine(srcBinaries, filename), Path.Combine(dstBinaries, filename));
 
                 var filenamePdb = Path.ChangeExtension(filename, "pdb");
-                if (File.Exists(Path.Combine(srcBinaries, filenamePdb)))
+                if (remove)
+                    Utilities.FileDelete(Path.Combine(dstBinaries, filenamePdb));
+                else if (File.Exists(Path.Combine(srcBinaries, filenamePdb)))
                     Utilities.FileCopy(Path.Combine(srcBinaries, filenamePdb), Path.Combine(dstBinaries, filenamePdb));
 
                 // Strip debug symbols to reduce binaries size
