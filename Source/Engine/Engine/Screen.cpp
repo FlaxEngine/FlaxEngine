@@ -155,6 +155,7 @@ void Screen::SetCursorLock(CursorLockMode mode)
         bool inRelativeMode = Input::Mouse->IsRelative();
         if (mode == CursorLockMode::Clipped)
             win->StartClippingCursor(bounds);
+#if PLATFORM_SDL
         else if (mode == CursorLockMode::Locked)
         {
             // Use mouse clip region to restrict the cursor in one spot
@@ -162,6 +163,10 @@ void Screen::SetCursorLock(CursorLockMode mode)
         }
         else if (CursorLock == CursorLockMode::Locked || CursorLock == CursorLockMode::Clipped)
             win->EndClippingCursor();
+#else
+        else if (CursorLock == CursorLockMode::Clipped)
+            win->EndClippingCursor();
+#endif
 
         // Enable relative mode when cursor is restricted
         if (mode != CursorLockMode::None)
