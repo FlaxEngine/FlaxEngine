@@ -535,7 +535,8 @@ bool GameCooker::Build(BuildPlatform platform, BuildConfiguration configuration,
     {
         Function<int32()> f;
         f.Bind(ThreadFunction);
-        const auto thread = ThreadSpawner::Start(f, GameCookerServiceInstance.Name, ThreadPriority::Highest);
+        uint32 stackSize = 4 * 1024 * 1024; // Larger stack
+        const auto thread = ThreadSpawner::Start(f, GameCookerServiceInstance.Name, ThreadPriority::Highest, stackSize);
         if (thread == nullptr)
         {
             GameCookerImpl::IsRunning = false;
