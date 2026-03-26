@@ -157,7 +157,7 @@ namespace FlaxEngine
 #endif
                 var v = new Float4(value);
                 fixed (byte* data = _data)
-                    _sampler.Write(data + index * _stride, ref v);
+                    _sampler.Write(data + index * _stride, &v);
             }
 
             /// <summary>
@@ -173,7 +173,7 @@ namespace FlaxEngine
 #endif
                 var v = new Float4(value);
                 fixed (byte* data = _data)
-                    _sampler.Write(data + index * _stride, ref v);
+                    _sampler.Write(data + index * _stride, &v);
             }
 
             /// <summary>
@@ -189,7 +189,7 @@ namespace FlaxEngine
 #endif
                 var v = new Float4(value, 0.0f, 0.0f);
                 fixed (byte* data = _data)
-                    _sampler.Write(data + index * _stride, ref v);
+                    _sampler.Write(data + index * _stride, &v);
             }
 
             /// <summary>
@@ -205,7 +205,7 @@ namespace FlaxEngine
 #endif
                 var v = new Float4(value, 0.0f);
                 fixed (byte* data = _data)
-                    _sampler.Write(data + index * _stride, ref v);
+                    _sampler.Write(data + index * _stride, &v);
             }
 
             /// <summary>
@@ -220,7 +220,7 @@ namespace FlaxEngine
                     throw new NullReferenceException("Missing stream data. Ensure to allocate mesh buffer or check for its existence.");
 #endif
                 fixed (byte* data = _data)
-                    _sampler.Write(data + index * _stride, ref value);
+                    _sampler.Write(data + index * _stride, &value);
             }
 
             /// <summary>
@@ -259,7 +259,7 @@ namespace FlaxEngine
                         for (int i = 0; i < count; i++)
                         {
                             var v = new Float4(src[i], 0.0f, 0.0f);
-                            _sampler.Write(data + i * _stride, ref v);
+                            _sampler.Write(data + i * _stride, &v);
                         }
                     }
                 }
@@ -287,7 +287,7 @@ namespace FlaxEngine
                         for (int i = 0; i < count; i++)
                         {
                             var v = new Float4(src[i], 0.0f);
-                            _sampler.Write(data + i * _stride, ref v);
+                            _sampler.Write(data + i * _stride, &v);
                         }
                     }
                 }
@@ -315,7 +315,7 @@ namespace FlaxEngine
                         for (int i = 0; i < count; i++)
                         {
                             var v = (Float4)src[i];
-                            _sampler.Write(data + i * _stride, ref v);
+                            _sampler.Write(data + i * _stride, &v);
                         }
                     }
                 }
@@ -352,7 +352,7 @@ namespace FlaxEngine
                         for (int i = 0; i < count; i++)
                         {
                             var v = new Float4(src[i]);
-                            _sampler.Write(data + i * _stride, ref v);
+                            _sampler.Write(data + i * _stride, &v);
                         }
                     }
                 }
