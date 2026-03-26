@@ -8,13 +8,13 @@ using System.IO;
 
 namespace Flax.Build
 {
-    partial class Configuration
+    partial class LinuxConfiguration
     {
         /// <summary>
         /// Specifies the minimum Clang compiler version to use on Linux (eg. 10).
         /// </summary>
-        [CommandLine("linuxClangMinVer", "<version>", "Specifies the minimum Clang compiler version to use on Linux (eg. 10).")]
-        public static string LinuxClangMinVer = "14";
+        [CommandLine("clangMinVer", "<version>", "Specifies the minimum Clang compiler version to use on Linux (eg. 10).")]
+        public static string ClangMinVer = "14";
     }
 }
 
@@ -36,7 +36,7 @@ namespace Flax.Build.Platforms
         : base(platform, architecture, platform.ToolchainRoot, platform.Compiler)
         {
             // Check version
-            if (Utilities.ParseVersion(Configuration.LinuxClangMinVer, out var minClangVer) && ClangVersion < minClangVer)
+            if (Utilities.ParseVersion(LinuxConfiguration.ClangMinVer, out var minClangVer) && ClangVersion < minClangVer)
                 Log.Error($"Old Clang version {ClangVersion}. Minimum supported is {minClangVer}.");
 
             // Setup system paths
