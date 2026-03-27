@@ -650,6 +650,11 @@ bool Prefab::ApplyAll(Actor* targetActor)
         LOG(Warning, "Failed to create default prefab instance for the prefab asset.");
         return true;
     }
+    if (targetActor == _defaultInstance || targetActor->HasActorInHierarchy(_defaultInstance) || _defaultInstance->HasActorInHierarchy(targetActor))
+    {
+        LOG(Error, "Cannot apply changes to the prefab using default instance. Use manually spawned prefab instance instead.");
+        return true;
+    }
     if (targetActor->GetPrefabObjectID() != GetRootObjectId())
     {
         LOG(Warning, "Applying prefab changes with modified root object. Root object id: {0}, new root: {1} (prefab object id: {2})", GetRootObjectId().ToString(), targetActor->ToString(), targetActor->GetPrefabObjectID());
