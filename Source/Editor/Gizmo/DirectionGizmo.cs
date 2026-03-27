@@ -157,9 +157,9 @@ internal class DirectionGizmo : ContainerControl
     }
 
     /// <inheritdoc />
-    public override bool OnMouseDown(Float2 location, MouseButton button)
+    public override bool OnMouseUp(Float2 location, MouseButton button)
     {
-        if (base.OnMouseDown(location, button))
+        if (base.OnMouseUp(location, button))
             return true;
 
         // Check which axis is being clicked - check from closest to farthest for proper layering
@@ -215,8 +215,19 @@ internal class DirectionGizmo : ContainerControl
 
         // Normalize by viewport height to keep size independent of FOV and viewport dimensions
         float heightNormalization = _viewport.Height / 720.0f; // 720 = reference height
+
+        // Fix in axes distance no matter FOV/OrthoScale to keep consistent size regardless of zoom level
         if (_owner.Viewport.UseOrthographicProjection)
-            heightNormalization /= _owner.Viewport.OrthographicScale * 0.5f; // Fix in ortho view to keep consistent size regardless of zoom level
+            heightNormalization /= _owner.Viewport.OrthographicScale * 0.5f;
+        else
+        {
+            // This could be some actual math expression, not that hack
+            var fov = _owner.Viewport.FieldOfView / 60.0f;
+            float scaleAt30 = 0.1f, scaleAt60 = 1.0f, scaleAt120 = 1.5f, scaleAt180 = 3.0f;
+            heightNormalization /= Mathf.Lerp(scaleAt30, scaleAt60, fov);
+            heightNormalization /= Mathf.Lerp(scaleAt60, scaleAt120, Mathf.Saturate(fov - 1));
+            heightNormalization /= Mathf.Lerp(scaleAt60, scaleAt180, Mathf.Saturate(fov - 2));
+        }
 
         Float2 xDelta = (xProjected - gizmoCenterScreen) / heightNormalization;
         Float2 yDelta = (yProjected - gizmoCenterScreen) / heightNormalization;
