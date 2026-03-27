@@ -102,7 +102,7 @@ namespace Flax.Deps.Dependencies
                     Utilities.Run("git", "submodule update --recursive", null, root, Utilities.RunOptions.ConsoleLogOutput);
             }
 
-            // Build tint (get rid of unused stuff)
+            // Build tint
             foreach (var platform in options.Platforms)
             {
                 foreach (var architecture in options.Architectures)
@@ -126,9 +126,12 @@ namespace Flax.Deps.Dependencies
                         Utilities.FileCopy(Path.Combine(buildDir, config, "tint.exe"), Path.Combine(depsFolder, "tint.exe"));
                         break;
                     default:
-                        Utilities.FileCopy(Path.Combine(buildDir, config, "tint"), Path.Combine(depsFolder, "tint"));
+                        Utilities.FileCopy(Path.Combine(buildDir, "tint"), Path.Combine(depsFolder, "tint"));
                         if (BuildPlatform != TargetPlatform.Windows)
+                        {
                             Utilities.Run("chmod", "+x tint", null, depsFolder, Utilities.RunOptions.ConsoleLogOutput);
+                            Utilities.Run("strip", "tint", null, depsFolder, Utilities.RunOptions.ConsoleLogOutput);
+                        }
                         break;
                     }
                 }
