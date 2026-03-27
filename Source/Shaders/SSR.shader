@@ -229,6 +229,10 @@ float4 PS_ResolvePass(Quad_VS2PS input) : SV_Target0
 	result.rgb /= 1 - Luminance(result.rgb);
 #endif
 
+    // Normalize alpha
+    result.rgb *= max(1, result.a);
+    result.a = min(result, 1);
+
 	//return float4(abs(Luminance(result) - Luminance(saturate(result))).xxx, 1);
 	//return saturate(result);
 	return result;
