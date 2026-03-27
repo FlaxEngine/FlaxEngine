@@ -5,7 +5,7 @@ using Flax.Build.NativeCpp;
 
 namespace Flax.Build
 {
-    partial class Configuration
+    partial class MacConfiguration
     {
         /// <summary>
         /// Specifies the minimum Mac OSX version to use (eg. 10.14).
@@ -69,7 +69,7 @@ namespace Flax.Build.Platforms
         {
             base.AddArgsCommon(options, args);
 
-            args.Add("-mmacosx-version-min=" + Configuration.MacOSXMinVer);
+            args.Add("-mmacosx-version-min=" + MacConfiguration.MacOSXMinVer);
         }
     }
 }

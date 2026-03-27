@@ -269,8 +269,9 @@ namespace FlaxEditor.GUI.Docking
             if (_toDock == null)
                 return;
 
-            if (_toDock.RootWindow.Window != _dragSourceWindow)
-                _toDock.RootWindow.Window.MouseUp -= OnMouseUp;
+            var window = _toDock.RootWindow?.Window;
+            if (window != null && window != _dragSourceWindow)
+                window.MouseUp -= OnMouseUp;
 
             _dockHintDown?.Parent.RemoveChild(_dockHintDown);
             _dockHintUp?.Parent.RemoveChild(_dockHintUp);
@@ -327,10 +328,10 @@ namespace FlaxEditor.GUI.Docking
                     _toDock?.RootWindow.Window.BringToFront();
                 //_toDock?.RootWindow.Window.Focus();
 
-#if PLATFORM_SDL
                 // Make the dragged window transparent when dock hints are visible
                 _toMove.Window.Window.Opacity = _toDock == null ? 1.0f : DragWindowOpacity;
-#else
+
+#if !PLATFORM_SDL
                 // Bring the drop source always to the top
                 if (_dragSourceWindow != null)
                     _dragSourceWindow.BringToFront();

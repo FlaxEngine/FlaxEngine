@@ -936,7 +936,9 @@ void InputService::Update()
             break;
         }
     }
+#if PLATFORM_SDL
     WindowsManager::WindowsLocker.Unlock();
+#endif
 
     // Send input events for the focused window
     for (const auto& e : InputEvents)
@@ -990,6 +992,9 @@ void InputService::Update()
             break;
         }
     }
+#if !PLATFORM_SDL
+    WindowsManager::WindowsLocker.Unlock();
+#endif
 
     // Skip if game has no focus to handle the input
     if (!Engine::HasGameViewportFocus())

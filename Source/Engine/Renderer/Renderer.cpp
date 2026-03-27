@@ -178,6 +178,27 @@ void RenderAntiAliasingPass(RenderContext& renderContext, GPUTexture* input, GPU
     }
 }
 
+void RenderLightBuffer(const SceneRenderTask* task, GPUContext* context, RenderContext& renderContext, GPUTexture* lightBuffer, const GPUTextureDescription& tempDesc)
+{
+    context->ResetRenderTarget();
+    auto colorGradingLUT = ColorGradingPass::Instance()->RenderLUT(renderContext);
+    auto tempBuffer = RenderTargetPool::Get(tempDesc);
+    RENDER_TARGET_POOL_SET_NAME(tempBuffer, "TempBuffer");
+    EyeAdaptationPass::Instance()->Render(renderContext, lightBuffer);
+    PostProcessingPass::Instance()->Render(renderContext, lightBuffer, tempBuffer, colorGradingLUT);
+    context->ResetRenderTarget();
+    if (renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing)
+    {
+        TAA::Instance()->Render(renderContext, tempBuffer, lightBuffer->View());
+        Swap(lightBuffer, tempBuffer);
+    }
+    RenderTargetPool::Release(lightBuffer);
+    context->SetRenderTarget(task->GetOutputView());
+    context->SetViewportAndScissors(task->GetOutputViewport());
+    context->Draw(tempBuffer);
+    RenderTargetPool::Release(tempBuffer);
+}
+
 bool Renderer::IsReady()
 {
     // Warm up first (state getters initialize content loading so do it for all first)
@@ -350,10 +371,12 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     // Perform postFx volumes blending and query before rendering
     task->CollectPostFxVolumes(renderContext);
     renderContext.List->BlendSettings();
-    auto aaMode = EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::AntiAliasing) ? renderContext.List->Settings.AntiAliasing.Mode : AntialiasingMode::None;
-    if (aaMode == AntialiasingMode::TemporalAntialiasing && view.IsOrthographicProjection())
-        aaMode = AntialiasingMode::None; // TODO: support TAA in ortho projection (see RenderView::Prepare to jitter projection matrix better)
-    renderContext.List->Settings.AntiAliasing.Mode = aaMode;
+    {
+        auto aaMode = EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::AntiAliasing) ? renderContext.List->Settings.AntiAliasing.Mode : AntialiasingMode::None;
+        if (aaMode == AntialiasingMode::TemporalAntialiasing && view.IsOrthographicProjection())
+            aaMode = AntialiasingMode::None; // TODO: support TAA in ortho projection (see RenderView::Prepare to jitter projection matrix better)
+        renderContext.List->Settings.AntiAliasing.Mode = aaMode;
+    }
 
     // Initialize setup
     RenderSetup& setup = renderContext.List->Setup;
@@ -375,7 +398,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
                     (ssrSettings.Intensity > ZeroTolerance && ssrSettings.TemporalEffect && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::SSR)) ||
                     renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing;
         }
-        setup.UseTemporalAAJitter = aaMode == AntialiasingMode::TemporalAntialiasing;
+        setup.UseTemporalAAJitter = renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing;
         setup.UseGlobalSurfaceAtlas = renderContext.View.Mode == ViewMode::GlobalSurfaceAtlas ||
                 (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::GI) && renderContext.List->Settings.GlobalIllumination.Mode == GlobalIlluminationMode::DDGI);
         setup.UseGlobalSDF = (graphicsSettings->EnableGlobalSDF && EnumHasAnyFlags(view.Flags, ViewFlags::GlobalSDF)) ||
@@ -630,22 +653,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     }
     if (renderContext.View.Mode == ViewMode::LightBuffer)
     {
-        auto colorGradingLUT = ColorGradingPass::Instance()->RenderLUT(renderContext);
-        auto tempBuffer = RenderTargetPool::Get(tempDesc);
-        RENDER_TARGET_POOL_SET_NAME(tempBuffer, "TempBuffer");
-        EyeAdaptationPass::Instance()->Render(renderContext, lightBuffer);
-        PostProcessingPass::Instance()->Render(renderContext, lightBuffer, tempBuffer, colorGradingLUT);
-        context->ResetRenderTarget();
-        if (aaMode == AntialiasingMode::TemporalAntialiasing)
-        {
-            TAA::Instance()->Render(renderContext, tempBuffer, lightBuffer->View());
-            Swap(lightBuffer, tempBuffer);
-        }
-        RenderTargetPool::Release(lightBuffer);
-        context->SetRenderTarget(task->GetOutputView());
-        context->SetViewportAndScissors(task->GetOutputViewport());
-        context->Draw(tempBuffer);
-        RenderTargetPool::Release(tempBuffer);
+        RenderLightBuffer(task, context, renderContext, lightBuffer, tempDesc);
         return;
     }
 
@@ -656,11 +664,13 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     ReflectionsPass::Instance()->Render(renderContext, *lightBuffer);
     if (renderContext.View.Mode == ViewMode::Reflections)
     {
-        context->ResetRenderTarget();
-        context->SetRenderTarget(task->GetOutputView());
-        context->SetViewportAndScissors(task->GetOutputViewport());
-        context->Draw(lightBuffer);
-        RenderTargetPool::Release(lightBuffer);
+        renderContext.List->Settings.ToneMapping.Mode = ToneMappingMode::Neutral;
+        renderContext.List->Settings.Bloom.Enabled = false;
+        renderContext.List->Settings.LensFlares.Intensity = 0.0f;
+        renderContext.List->Settings.CameraArtifacts.GrainAmount = 0.0f;
+        renderContext.List->Settings.CameraArtifacts.ChromaticDistortion = 0.0f;
+        renderContext.List->Settings.CameraArtifacts.VignetteIntensity = 0.0f;
+        RenderLightBuffer(task, context, renderContext, lightBuffer, tempDesc);
         return;
     }
 
@@ -716,7 +726,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::BeforePostProcessingPass, frameBuffer, tempBuffer);
 
     // Temporal Anti-Aliasing (goes before post processing)
-    if (aaMode == AntialiasingMode::TemporalAntialiasing)
+    if (renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing)
     {
         TAA::Instance()->Render(renderContext, frameBuffer, tempBuffer->View());
         Swap(frameBuffer, tempBuffer);

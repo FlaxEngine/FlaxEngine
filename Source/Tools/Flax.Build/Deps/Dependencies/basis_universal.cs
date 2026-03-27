@@ -123,7 +123,7 @@ namespace Flax.Deps.Dependencies
                         foreach (var define in defines)
                             cmakeArgs += $"-D{define.Key}={define.Value} ";
                     }
-                    if (platform == TargetPlatform.Web && Configuration.WebThreads)
+                    if (platform == TargetPlatform.Web && WebConfiguration.Threads)
                         cmakeArgs += "-pthread ";
                     cmakeArgs += "\"";
 

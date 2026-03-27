@@ -148,13 +148,13 @@ namespace Flax.Deps.Dependencies
                 cmakeArgs += " -DTARGET_BUILD_PLATFORM=linux -DNVCLOTH_CXX_FLAGS=\"-Wno-error=poison-system-directories -Wno-error=missing-include-dirs\"";
                 cmakeName = "linux";
                 binariesPrefix = "lib";
-                envVars.Add("CC", "clang-" + Configuration.LinuxClangMinVer);
-                envVars.Add("CXX", "clang++-" + Configuration.LinuxClangMinVer);
+                envVars.Add("CC", "clang-" + LinuxConfiguration.ClangMinVer);
+                envVars.Add("CXX", "clang++-" + LinuxConfiguration.ClangMinVer);
                 break;
             case TargetPlatform.Web:
                 cmakeArgs += " -DTARGET_BUILD_PLATFORM=web";
                 cmakeArgs += $" -DCMAKE_TOOLCHAIN_FILE=\"{EmscriptenSdk.Instance.CMakeToolchainPath}\"";
-                if (Configuration.WebThreads)
+                if (WebConfiguration.Threads)
                     cmakeArgs += " -DNVCLOTH_CXX_FLAGS=\"-pthread\"";
                 cmakeName = "web";
                 binariesPrefix = "lib";

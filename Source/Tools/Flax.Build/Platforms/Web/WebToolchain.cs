@@ -9,19 +9,19 @@ using Flax.Build.NativeCpp;
 
 namespace Flax.Build
 {
-    partial class Configuration
+    partial class WebConfiguration
     {
         /// <summary>
         /// Specifies the initial memory size (in MB) to use by Web app.
         /// </summary>
-        [CommandLine("webInitialMemory", "<size_mb>", "Specifies the initial memory size (in MB) to use by Web app.")]
-        public static int WebInitialMemory = 32;
+        [CommandLine("initialMemory", "<size_mb>", "Specifies the initial memory size (in MB) to use by Web app.")]
+        public static int InitialMemory = 32;
 
         /// <summary>
         /// Enables pthreads support for multithreading using SharedArrayBuffer in browsers. Changing it requires rebuilding deps for Web.
         /// </summary>
-        [CommandLine("webThreads", "0/1", "Enables pthreads support for multithreading using SharedArrayBuffer in browsers. Changing it requires rebuilding deps for Web.")]
-        public static bool WebThreads = false;
+        [CommandLine("threads", "0/1", "Enables pthreads support for multithreading using SharedArrayBuffer in browsers. Changing it requires rebuilding deps for Web.")]
+        public static bool Threads = false;
     }
 }
 
@@ -105,7 +105,7 @@ namespace Flax.Build.Platforms
             options.CompileEnv.PreprocessorDefinitions.Add("PLATFORM_WEB");
             options.CompileEnv.PreprocessorDefinitions.Add("PLATFORM_UNIX");
             options.CompileEnv.PreprocessorDefinitions.Add("__EMSCRIPTEN__");
-            if (Configuration.WebThreads)
+            if (WebConfiguration.Threads)
                 options.CompileEnv.PreprocessorDefinitions.Add("__EMSCRIPTEN_PTHREADS__");
             options.CompileEnv.EnableExceptions = WithExceptions(options);
             options.CompileEnv.CpuArchitecture = CpuArchitecture.SSE4_2;
@@ -183,7 +183,7 @@ namespace Flax.Build.Platforms
             if (sanitizers == Sanitizer.None && options.Configuration != TargetConfiguration.Release)
                 args.Add("-fsanitize=null -fsanitize-minimal-runtime"); // Minimal Runtime
 
-            if (Configuration.WebThreads)
+            if (WebConfiguration.Threads)
                 args.Add("-pthread");
         }
 
@@ -308,7 +308,7 @@ namespace Flax.Build.Platforms
                 args.Add("-sERROR_ON_UNDEFINED_SYMBOLS=0");
 
                 // Setup memory
-                var initialMemory = Configuration.WebInitialMemory;
+                var initialMemory = WebConfiguration.InitialMemory;
                 if (options.CompileEnv.Sanitizers.HasFlag(Sanitizer.Address))
                     initialMemory = Math.Max(initialMemory, 64); // Address Sanitizer needs more memory
                 args.Add($"-sINITIAL_MEMORY={initialMemory}MB");

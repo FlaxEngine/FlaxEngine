@@ -20,6 +20,7 @@
 #define RAPIDJSON_NEW(x) New<x>
 #define RAPIDJSON_DELETE(x) Delete(x)
 #define RAPIDJSON_NOMEMBERITERATORCLASS
+#define RAPIDJSON_PARSE_DEFAULT_FLAGS kParseTrailingCommasFlag
 //#define RAPIDJSON_MALLOC(size) ::malloc(size)
 //#define RAPIDJSON_REALLOC(ptr, new_size) ::realloc(ptr, new_size)
 //#define RAPIDJSON_FREE(ptr) ::free(ptr)

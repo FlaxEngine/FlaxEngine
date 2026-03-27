@@ -9,6 +9,7 @@ gdb -q --batch \
                -ex 'handle SIGUSR1 nostop pass' \
                -ex 'handle SIGUSR2 nostop pass' \
                -ex 'handle SIGCHLD nostop pass' \
+               -ex 'handle SIG34 nostop pass' \
                -ex 'set print thread-events off' \
                -return-child-result \
                -ex 'run' \

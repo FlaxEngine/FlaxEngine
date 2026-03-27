@@ -324,13 +324,12 @@ namespace FlaxEditor.SceneGraph.GUI
                 isExpanded = Editor.Instance.ProjectCache.IsExpandedActor(ref id);
             }
 
-            if (isExpanded)
+            if (!noFilter)
             {
-                Expand(true);
-            }
-            else
-            {
-                Collapse(true);
+                if (isExpanded)
+                    Expand(true);
+                else
+                    Collapse(true);
             }
 
             Visible = isThisVisible | isAnyChildVisible;

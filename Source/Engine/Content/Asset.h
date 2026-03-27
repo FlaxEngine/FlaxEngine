@@ -285,6 +285,10 @@ protected:
     virtual void onRename(const StringView& newPath) = 0;
 #endif
 
+    // Utilities to ensure specific engine systems are initialized before loading asset (eg. assets can be loaded during engine startup).
+    static bool WaitForInitGraphics();
+    static bool WaitForInitPhysics();
+
 public:
     // [ManagedScriptingObject]
     String ToString() const override;

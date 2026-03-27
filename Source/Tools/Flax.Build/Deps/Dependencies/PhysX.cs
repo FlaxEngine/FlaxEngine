@@ -48,6 +48,7 @@ namespace Flax.Deps.Dependencies
                 throw new Exception(string.Format("Missing PhysX preset {0} (file: {1})", preset, presetPath));
             var presetXml = new XmlDocument();
             presetXml.Load(presetPath);
+            var usePVD = false;
 
             // Configure preset
             var cmakeSwitches = presetXml["preset"]["CMakeSwitches"];
@@ -59,6 +60,11 @@ namespace Flax.Deps.Dependencies
             ConfigureCmakeSwitch(cmakeSwitches, "NV_USE_STATIC_WINCRT", "False");
             ConfigureCmakeSwitch(cmakeSwitches, "NV_USE_DEBUG_WINCRT", "False");
             ConfigureCmakeSwitch(cmakeSwitches, "PX_FLOAT_POINT_PRECISE_MATH", "False");
+            if (usePVD)
+            {
+                // PVD depends on metadata and serialization code striped from shipping builds
+                ConfigureCmakeSwitch(cmakeSwitches, "PX_SERIALIZATION", "True");
+            }
             var cmakeParams = presetXml["preset"]["CMakeParams"];
             switch (targetPlatform)
             {
@@ -74,20 +80,20 @@ namespace Flax.Deps.Dependencies
                 ConfigureCmakeSwitch(cmakeParams, "PHYSX_CXX_FLAGS", "\"-Wno-error=format -Wno-error=unused-but-set-variable -Wno-error=switch-default -Wno-error=invalid-offsetof -Wno-error=unsafe-buffer-usage -Wno-error=unsafe-buffer-usage-in-libc-call -Wno-error=missing-include-dirs\"");
                 break;
             case TargetPlatform.Android:
-                ConfigureCmakeSwitch(cmakeParams, "CMAKE_INSTALL_PREFIX", $"install/android-{Configuration.AndroidPlatformApi}/PhysX");
-                ConfigureCmakeSwitch(cmakeParams, "ANDROID_NATIVE_API_LEVEL", $"android-{Configuration.AndroidPlatformApi}");
+                ConfigureCmakeSwitch(cmakeParams, "CMAKE_INSTALL_PREFIX", $"install/android-{AndroidConfiguration.PlatformApi}/PhysX");
+                ConfigureCmakeSwitch(cmakeParams, "ANDROID_NATIVE_API_LEVEL", $"android-{AndroidConfiguration.PlatformApi}");
                 ConfigureCmakeSwitch(cmakeParams, "ANDROID_ABI", AndroidToolchain.GetAbiName(architecture));
                 break;
             case TargetPlatform.Mac:
-                ConfigureCmakeSwitch(cmakeParams, "CMAKE_OSX_DEPLOYMENT_TARGET", Configuration.MacOSXMinVer);
+                ConfigureCmakeSwitch(cmakeParams, "CMAKE_OSX_DEPLOYMENT_TARGET", MacConfiguration.MacOSXMinVer);
                 ConfigureCmakeSwitch(cmakeParams, "PHYSX_CXX_FLAGS", "\"-Wno-error=format -Wno-error=unused-but-set-variable -Wno-error=switch-default -Wno-error=invalid-offsetof -Wno-error=unsafe-buffer-usage -Wno-error=unsafe-buffer-usage-in-libc-call -Wno-error=missing-include-dirs\"");
                 break;
             case TargetPlatform.iOS:
-                ConfigureCmakeSwitch(cmakeParams, "CMAKE_OSX_DEPLOYMENT_TARGET", Configuration.iOSMinVer);
-                ConfigureCmakeSwitch(cmakeParams, "CMAKE_XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET", Configuration.iOSMinVer);
+                ConfigureCmakeSwitch(cmakeParams, "CMAKE_OSX_DEPLOYMENT_TARGET", iOSConfiguration.MinVer);
+                ConfigureCmakeSwitch(cmakeParams, "CMAKE_XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET", iOSConfiguration.MinVer);
                 break;
             case TargetPlatform.Web:
-                ConfigureCmakeSwitch(cmakeParams, "PHYSX_CXX_FLAGS", Configuration.WebThreads ? "\"-pthread\"" : "");
+                ConfigureCmakeSwitch(cmakeParams, "PHYSX_CXX_FLAGS", WebConfiguration.Threads ? "\"-pthread\"" : "");
                 break;
             }
 
@@ -181,12 +187,12 @@ namespace Flax.Deps.Dependencies
                 default: throw new InvalidArchitectureException(architecture);
                 }
                 binariesPrefix = "lib";
-                envVars.Add("MACOSX_DEPLOYMENT_TARGET", Configuration.MacOSXMinVer);
+                envVars.Add("MACOSX_DEPLOYMENT_TARGET", MacConfiguration.MacOSXMinVer);
                 break;
             case TargetPlatform.iOS:
                 binariesSubDir = "ios.arm_64";
                 binariesPrefix = "lib";
-                envVars.Add("IPHONEOS_DEPLOYMENT_TARGET", Configuration.iOSMinVer);
+                envVars.Add("IPHONEOS_DEPLOYMENT_TARGET", iOSConfiguration.MinVer);
                 break;
             case TargetPlatform.Web:
                 binariesSubDir = "web32";
@@ -211,9 +217,9 @@ namespace Flax.Deps.Dependencies
                 break;
             }
             case TargetPlatform.Linux:
-                envVars.Add("CC", "clang-" + Configuration.LinuxClangMinVer);
-                envVars.Add("CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer);
-                envVars.Add("CXX", "clang++-" + Configuration.LinuxClangMinVer);
+                envVars.Add("CC", "clang-" + LinuxConfiguration.ClangMinVer);
+                envVars.Add("CC_FOR_BUILD", "clang-" + LinuxConfiguration.ClangMinVer);
+                envVars.Add("CXX", "clang++-" + LinuxConfiguration.ClangMinVer);
                 break;
             case TargetPlatform.Mac: break;
             default: throw new InvalidPlatformException(BuildPlatform);
@@ -298,14 +304,20 @@ namespace Flax.Deps.Dependencies
             Log.Verbose("Copy PhysX binaries from " + srcBinaries);
             foreach (var physXLib in defaultPhysXLibs)
             {
+                var remove = !usePVD && physXLib.Contains("Pvd");
                 var filename = suppressBitsPostfix ? string.Format("{0}{1}_static", binariesPrefix, physXLib) : string.Format("{0}{1}_static_{2}", binariesPrefix, physXLib, bits);
                 if (targetPlatform == TargetPlatform.Web)
                     filename = binariesPrefix + physXLib;
                 filename += binariesExtension;
-                Utilities.FileCopy(Path.Combine(srcBinaries, filename), Path.Combine(dstBinaries, filename));
+                if (remove)
+                    Utilities.FileDelete(Path.Combine(dstBinaries, filename));
+                else
+                    Utilities.FileCopy(Path.Combine(srcBinaries, filename), Path.Combine(dstBinaries, filename));
 
                 var filenamePdb = Path.ChangeExtension(filename, "pdb");
-                if (File.Exists(Path.Combine(srcBinaries, filenamePdb)))
+                if (remove)
+                    Utilities.FileDelete(Path.Combine(dstBinaries, filenamePdb));
+                else if (File.Exists(Path.Combine(srcBinaries, filenamePdb)))
                     Utilities.FileCopy(Path.Combine(srcBinaries, filenamePdb), Path.Combine(dstBinaries, filenamePdb));
 
                 // Strip debug symbols to reduce binaries size

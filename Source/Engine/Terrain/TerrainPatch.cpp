@@ -17,6 +17,7 @@
 #include "Engine/Threading/Threading.h"
 #if TERRAIN_EDITING
 #include "Engine/Core/Math/Packed.h"
+#include "Engine/Core/Collections/ArrayExtensions.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/RenderView.h"
@@ -27,11 +28,6 @@
 #include "Editor/Editor.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #endif
-#endif
-#if TERRAIN_EDITING || TERRAIN_UPDATING
-#include "Engine/Core/Collections/ArrayExtensions.h"
-#endif
-#if USE_EDITOR
 #include "Engine/Debug/DebugDraw.h"
 #endif
 #if TERRAIN_USE_PHYSICS_DEBUG
@@ -90,7 +86,7 @@ void TerrainPatch::Init(Terrain* terrain, int16 x, int16 z)
         Splatmap[i] = nullptr;
     }
     _heightfield = nullptr;
-#if TERRAIN_UPDATING
+#if TERRAIN_EDITING
     _cachedHeightMap.Resize(0);
     _cachedHolesMask.Resize(0);
     _wasHeightModified = false;
@@ -114,7 +110,7 @@ void TerrainPatch::Init(Terrain* terrain, int16 x, int16 z)
 
 TerrainPatch::~TerrainPatch()
 {
-#if TERRAIN_UPDATING
+#if TERRAIN_EDITING
     SAFE_DELETE(_dataHeightmap);
     for (int32 i = 0; i < TERRAIN_MAX_SPLATMAPS_COUNT; i++)
     {
@@ -132,6 +128,13 @@ TerrainPatch::~TerrainPatch()
 RawDataAsset* TerrainPatch::GetHeightfield() const
 {
     return _heightfield.Get();
+}
+
+void TerrainPatch::GetTextures(GPUTexture*& heightmap, GPUTexture*& splatmap0, GPUTexture*& splatmap1) const
+{
+    heightmap = Heightmap->GetTexture();
+    splatmap0 = Splatmap[0] ? Splatmap[0]->GetTexture() : nullptr;
+    splatmap1 = Splatmap[1] ? Splatmap[1]->GetTexture() : nullptr;
 }
 
 void TerrainPatch::RemoveLightmap()
@@ -178,7 +181,7 @@ void TerrainPatch::UpdateTransform()
     _collisionVertices.Resize(0);
 }
 
-#if TERRAIN_EDITING || TERRAIN_UPDATING
+#if TERRAIN_EDITING
 
 bool IsValidMaterial(const JsonAssetReference<PhysicalMaterial>& e)
 {
@@ -217,7 +220,7 @@ struct TerrainDataUpdateInfo
     // When using physical materials, then get splatmaps data required for per-triangle material indices
     void GetSplatMaps()
     {
-#if TERRAIN_UPDATING
+#if TERRAIN_EDITING
         if (SplatMaps[0])
             return;
         if (UsePhysicalMaterials())
@@ -1021,7 +1024,7 @@ bool TerrainPatch::SetupHeightMap(int32 heightMapLength, const float* heightMap,
     _terrain->UpdateBounds();
     _terrain->UpdateLayerBits();
 
-#if TERRAIN_UPDATING
+#if TERRAIN_EDITING
     // Invalidate cache
     _cachedHeightMap.Resize(0);
     _cachedHolesMask.Resize(0);
@@ -1169,7 +1172,7 @@ bool TerrainPatch::SetupSplatMap(int32 index, int32 splatMapLength, const Color3
     }
 #endif
 
-#if TERRAIN_UPDATING
+#if TERRAIN_EDITING
     // Invalidate cache
     _cachedSplatMap[index].Resize(0);
     _wasSplatmapModified[index] = false;
@@ -1191,7 +1194,7 @@ bool TerrainPatch::InitializeHeightMap()
     return SetupHeightMap(heightmap.Count(), heightmap.Get());
 }
 
-#if TERRAIN_UPDATING
+#if TERRAIN_EDITING
 
 float* TerrainPatch::GetHeightmapData()
 {
@@ -2631,7 +2634,7 @@ void TerrainPatch::Serialize(SerializeStream& stream, const void* otherObj)
     }
     stream.EndArray();
 
-#if TERRAIN_UPDATING
+#if TERRAIN_EDITING
     SaveHeightData();
     SaveSplatData();
 #endif

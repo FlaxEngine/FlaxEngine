@@ -135,11 +135,7 @@ namespace FlaxEditor.GUI.Docking
             settings.MaximumSize = Float2.Zero; // Unlimited size
             settings.Fullscreen = false;
             settings.HasBorder = true;
-#if PLATFORM_SDL
             settings.SupportsTransparency = true;
-#else
-            settings.SupportsTransparency = false;
-#endif
             settings.ActivateWhenFirstShown = true;
             settings.AllowInput = true;
             settings.AllowMinimize = true;
@@ -211,6 +207,7 @@ namespace FlaxEditor.GUI.Docking
         {
             if (ChildPanelsCount > 0)
                 return;
+
             // Close window
             _window?.Close();
         }

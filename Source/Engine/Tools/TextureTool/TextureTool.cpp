@@ -414,6 +414,7 @@ bool TextureTool::UpdateTexture(GPUContext* context, GPUTexture* texture, int32 
     Array<byte> tempData;
     if (textureFormat != dataFormat)
     {
+        PROFILE_CPU_NAMED("ConvertTexture");
         auto dataSampler = PixelFormatSampler::Get(dataFormat);
         auto textureSampler = PixelFormatSampler::Get(textureFormat);
         if (!dataSampler || !textureSampler)

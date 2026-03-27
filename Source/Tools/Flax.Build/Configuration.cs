@@ -260,6 +260,42 @@ namespace Flax.Build
     }
 
     /// <summary>
+    /// Platform-specific configuration for Windows.
+    /// </summary>
+    public static partial class WindowsConfiguration
+    {
+        /// <summary>
+        /// [Windows] True if SDL support should be enabled.
+        /// </summary>
+        [CommandLine("useSdl", "1 to enable SDL support in build on Windows")]
+        public static bool UseSDL = false;
+    }
+
+    /// <summary>
+    /// Platform-specific configuration for Linux.
+    /// </summary>
+    public static partial class LinuxConfiguration
+    {
+        /// <summary>
+        /// [Linux] True if SDL support should be enabled.
+        /// </summary>
+        [CommandLine("useSdl", "1 to enable SDL support in build on Linux")]
+        public static bool UseSDL = false;
+    }
+
+    /// <summary>
+    /// Platform-specific configuration for Mac.
+    /// </summary>
+    public static partial class MacConfiguration
+    {
+        /// <summary>
+        /// [Mac] True if SDL support should be enabled.
+        /// </summary>
+        [CommandLine("useSdl", "1 to enable SDL support in build on Mac")]
+        public static bool UseSDL = false;
+    }
+
+    /// <summary>
     /// The engine configuration options.
     /// </summary>
     public static partial class EngineConfiguration
@@ -317,9 +353,11 @@ namespace Flax.Build
             switch (options.Platform.Target)
             {
             case TargetPlatform.Windows:
-            case TargetPlatform.Linux:
+                return UseSDL && WindowsConfiguration.UseSDL;
             case TargetPlatform.Mac:
-                return UseSDL;
+                return UseSDL && MacConfiguration.UseSDL;
+            case TargetPlatform.Linux:
+                return UseSDL && LinuxConfiguration.UseSDL;
             case TargetPlatform.Web:
                 return true;
             default: return false;

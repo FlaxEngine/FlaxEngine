@@ -6,6 +6,8 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Flax.Build
 {
@@ -405,6 +407,15 @@ namespace Flax.Build
         public static void Configure(object obj, Dictionary<string, string> configuration)
         {
             Configure(GetMembers(obj), obj, configuration);
+        }
+
+        internal static void ConfigureChild(Type type, Dictionary<string, string> configuration, string name = null)
+        {
+            if (configuration.TryGetValue(name ?? type.Name, out var subConfig) && subConfig?.Length != 0)
+            {
+                var child = JsonSerializer.Deserialize<Dictionary<string, string>>(subConfig.AsSpan(), ProjectInfo.JsonOptions);
+                Configure(type, child);
+            }
         }
 
         private static void Configure(Dictionary<CommandLineAttribute, MemberInfo> members, object instance, string commandLine)
