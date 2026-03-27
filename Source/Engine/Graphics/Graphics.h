@@ -85,8 +85,17 @@ public:
     API_FIELD() static bool SpreadWorkload;
 
 public:
+    // Shadows rendering configuration.
+    API_CLASS(Static, Attributes="DebugCommand") class FLAXENGINE_API Shadows
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(Shadows);
+
+        // The minimum size in pixels of objects to cast shadows. Improves performance by skipping too small objects (eg. sub-pixel) from rendering into shadow maps.
+        API_FIELD() static float MinObjectPixelSize;
+    };
+
     // Post Processing effects rendering configuration.
-    API_CLASS(Static, Attributes = "DebugCommand") class FLAXENGINE_API PostProcessing
+    API_CLASS(Static, Attributes="DebugCommand") class FLAXENGINE_API PostProcessing
     {
         DECLARE_SCRIPTING_TYPE_MINIMAL(PostProcessing);
 

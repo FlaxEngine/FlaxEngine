@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace FlaxEngine
@@ -17,13 +18,14 @@ namespace FlaxEngine
         {
             private Span<byte> _data;
             private PixelFormat _format;
-            private int _stride;
+            private int _stride, _count;
             private readonly PixelFormatSampler _sampler;
 
-            internal Stream(Span<byte> data, PixelFormat format, int stride)
+            internal Stream(Span<byte> data, PixelFormat format, int stride, int count)
             {
                 _data = data;
                 _stride = stride;
+                _count = count;
                 if (PixelFormatSampler.Get(format, out _sampler))
                 {
                     _format = format;
@@ -52,7 +54,7 @@ namespace FlaxEngine
             /// <summary>
             /// Gets the count of the items in the stride.
             /// </summary>
-            public int Count => _data.Length / _stride;
+            public int Count => _count;
 
             /// <summary>
             /// Returns true if stream is valid.
@@ -76,6 +78,10 @@ namespace FlaxEngine
             /// <returns>Loaded value.</returns>
             public int GetInt(int index)
             {
+#if !BUILD_RELEASE
+                if (_data == null)
+                    throw new NullReferenceException("Missing stream data. Ensure to allocate mesh buffer or check for its existence.");
+#endif
                 fixed (byte* data = _data)
                     return (int)_sampler.Read(data + index * _stride).X;
             }
@@ -87,6 +93,10 @@ namespace FlaxEngine
             /// <returns>Loaded value.</returns>
             public float GetFloat(int index)
             {
+#if !BUILD_RELEASE
+                if (_data == null)
+                    throw new NullReferenceException("Missing stream data. Ensure to allocate mesh buffer or check for its existence.");
+#endif
                 fixed (byte* data = _data)
                     return _sampler.Read(data + index * _stride).X;
             }
@@ -98,6 +108,10 @@ namespace FlaxEngine
             /// <returns>Loaded value.</returns>
             public Float2 GetFloat2(int index)
             {
+#if !BUILD_RELEASE
+                if (_data == null)
+                    throw new NullReferenceException("Missing stream data. Ensure to allocate mesh buffer or check for its existence.");
+#endif
                 fixed (byte* data = _data)
                     return new Float2(_sampler.Read(data + index * _stride));
             }
@@ -109,6 +123,10 @@ namespace FlaxEngine
             /// <returns>Loaded value.</returns>
             public Float3 GetFloat3(int index)
             {
+#if !BUILD_RELEASE
+                if (_data == null)
+                    throw new NullReferenceException("Missing stream data. Ensure to allocate mesh buffer or check for its existence.");
+#endif
                 fixed (byte* data = _data)
                     return new Float3(_sampler.Read(data + index * _stride));
             }
@@ -120,6 +138,10 @@ namespace FlaxEngine
             /// <returns>Loaded value.</returns>
             public Float4 GetFloat4(int index)
             {
+#if !BUILD_RELEASE
+                if (_data == null)
+                    throw new NullReferenceException("Missing stream data. Ensure to allocate mesh buffer or check for its existence.");
+#endif
                 fixed (byte* data = _data)
                     return _sampler.Read(data + index * _stride);
             }
@@ -131,9 +153,13 @@ namespace FlaxEngine
             /// <param name="value">Value to assign.</param>
             public void SetInt(int index, int value)
             {
+#if !BUILD_RELEASE
+                if (_data == null)
+                    throw new NullReferenceException("Missing stream data. Ensure to allocate mesh buffer or check for its existence.");
+#endif
                 var v = new Float4(value);
                 fixed (byte* data = _data)
-                    _sampler.Write(data + index * _stride, ref v);
+                    _sampler.Write(data + index * _stride, &v);
             }
 
             /// <summary>
@@ -143,9 +169,13 @@ namespace FlaxEngine
             /// <param name="value">Value to assign.</param>
             public void SetFloat(int index, float value)
             {
+#if !BUILD_RELEASE
+                if (_data == null)
+                    throw new NullReferenceException("Missing stream data. Ensure to allocate mesh buffer or check for its existence.");
+#endif
                 var v = new Float4(value);
                 fixed (byte* data = _data)
-                    _sampler.Write(data + index * _stride, ref v);
+                    _sampler.Write(data + index * _stride, &v);
             }
 
             /// <summary>
@@ -155,9 +185,13 @@ namespace FlaxEngine
             /// <param name="value">Value to assign.</param>
             public void SetFloat2(int index, Float2 value)
             {
+#if !BUILD_RELEASE
+                if (_data == null)
+                    throw new NullReferenceException("Missing stream data. Ensure to allocate mesh buffer or check for its existence.");
+#endif
                 var v = new Float4(value, 0.0f, 0.0f);
                 fixed (byte* data = _data)
-                    _sampler.Write(data + index * _stride, ref v);
+                    _sampler.Write(data + index * _stride, &v);
             }
 
             /// <summary>
@@ -167,9 +201,13 @@ namespace FlaxEngine
             /// <param name="value">Value to assign.</param>
             public void SetFloat3(int index, Float3 value)
             {
+#if !BUILD_RELEASE
+                if (_data == null)
+                    throw new NullReferenceException("Missing stream data. Ensure to allocate mesh buffer or check for its existence.");
+#endif
                 var v = new Float4(value, 0.0f);
                 fixed (byte* data = _data)
-                    _sampler.Write(data + index * _stride, ref v);
+                    _sampler.Write(data + index * _stride, &v);
             }
 
             /// <summary>
@@ -179,8 +217,12 @@ namespace FlaxEngine
             /// <param name="value">Value to assign.</param>
             public void SetFloat4(int index, Float4 value)
             {
+#if !BUILD_RELEASE
+                if (_data == null)
+                    throw new NullReferenceException("Missing stream data. Ensure to allocate mesh buffer or check for its existence.");
+#endif
                 fixed (byte* data = _data)
-                    _sampler.Write(data + index * _stride, ref value);
+                    _sampler.Write(data + index * _stride, &value);
             }
 
             /// <summary>
@@ -190,6 +232,10 @@ namespace FlaxEngine
             /// <param name="data">Pointer to the source data.</param>
             public void SetLinear(IntPtr data)
             {
+#if !BUILD_RELEASE
+                if (_data == null)
+                    throw new NullReferenceException("Missing stream data. Ensure to allocate mesh buffer or check for its existence.");
+#endif
                 new Span<byte>(data.ToPointer(), _data.Length).CopyTo(_data);
             }
 
@@ -199,6 +245,10 @@ namespace FlaxEngine
             /// <param name="src">The source <see cref="T:System.Span`1"/>.</param>
             public void Set(Span<Float2> src)
             {
+#if !BUILD_RELEASE
+                if (_data == null)
+                    throw new NullReferenceException("Missing stream data. Ensure to allocate mesh buffer or check for its existence.");
+#endif
                 if (IsLinear(PixelFormat.R32G32_Float))
                 {
                     src.CopyTo(MemoryMarshal.Cast<byte, Float2>(_data));
@@ -211,7 +261,7 @@ namespace FlaxEngine
                         for (int i = 0; i < count; i++)
                         {
                             var v = new Float4(src[i], 0.0f, 0.0f);
-                            _sampler.Write(data + i * _stride, ref v);
+                            _sampler.Write(data + i * _stride, &v);
                         }
                     }
                 }
@@ -223,6 +273,10 @@ namespace FlaxEngine
             /// <param name="src">The source <see cref="T:System.Span`1"/>.</param>
             public void Set(Span<Float3> src)
             {
+#if !BUILD_RELEASE
+                if (_data == null)
+                    throw new NullReferenceException("Missing stream data. Ensure to allocate mesh buffer or check for its existence.");
+#endif
                 if (IsLinear(PixelFormat.R32G32B32_Float))
                 {
                     src.CopyTo(MemoryMarshal.Cast<byte, Float3>(_data));
@@ -235,7 +289,7 @@ namespace FlaxEngine
                         for (int i = 0; i < count; i++)
                         {
                             var v = new Float4(src[i], 0.0f);
-                            _sampler.Write(data + i * _stride, ref v);
+                            _sampler.Write(data + i * _stride, &v);
                         }
                     }
                 }
@@ -247,6 +301,10 @@ namespace FlaxEngine
             /// <param name="src">The source <see cref="T:System.Span`1"/>.</param>
             public void Set(Span<Color> src)
             {
+#if !BUILD_RELEASE
+                if (_data == null)
+                    throw new NullReferenceException("Missing stream data. Ensure to allocate mesh buffer or check for its existence.");
+#endif
                 if (IsLinear(PixelFormat.R32G32B32A32_Float))
                 {
                     src.CopyTo(MemoryMarshal.Cast<byte, Color>(_data));
@@ -259,7 +317,7 @@ namespace FlaxEngine
                         for (int i = 0; i < count; i++)
                         {
                             var v = (Float4)src[i];
-                            _sampler.Write(data + i * _stride, ref v);
+                            _sampler.Write(data + i * _stride, &v);
                         }
                     }
                 }
@@ -271,6 +329,10 @@ namespace FlaxEngine
             /// <param name="src">The source <see cref="T:System.Span`1"/>.</param>
             public void Set(Span<uint> src)
             {
+#if !BUILD_RELEASE
+                if (_data == null)
+                    throw new NullReferenceException("Missing stream data. Ensure to allocate mesh buffer or check for its existence.");
+#endif
                 if (IsLinear(PixelFormat.R32_UInt))
                 {
                     src.CopyTo(MemoryMarshal.Cast<byte, uint>(_data));
@@ -292,7 +354,7 @@ namespace FlaxEngine
                         for (int i = 0; i < count; i++)
                         {
                             var v = new Float4(src[i]);
-                            _sampler.Write(data + i * _stride, ref v);
+                            _sampler.Write(data + i * _stride, &v);
                         }
                     }
                 }
@@ -304,6 +366,10 @@ namespace FlaxEngine
             /// <param name="dst">The destination <see cref="T:System.Span`1" />.</param>
             public void CopyTo(Span<Float2> dst)
             {
+#if !BUILD_RELEASE
+                if (_data == null)
+                    throw new NullReferenceException("Missing stream data. Ensure to allocate mesh buffer or check for its existence.");
+#endif
                 if (IsLinear(PixelFormat.R32G32_Float))
                 {
                     _data.CopyTo(MemoryMarshal.Cast<Float2, byte>(dst));
@@ -325,6 +391,10 @@ namespace FlaxEngine
             /// <param name="dst">The destination <see cref="T:System.Span`1" />.</param>
             public void CopyTo(Span<Float3> dst)
             {
+#if !BUILD_RELEASE
+                if (_data == null)
+                    throw new NullReferenceException("Missing stream data. Ensure to allocate mesh buffer or check for its existence.");
+#endif
                 if (IsLinear(PixelFormat.R32G32B32_Float))
                 {
                     _data.CopyTo(MemoryMarshal.Cast<Float3, byte>(dst));
@@ -346,6 +416,10 @@ namespace FlaxEngine
             /// <param name="dst">The destination <see cref="T:System.Span`1" />.</param>
             public void CopyTo(Span<Color> dst)
             {
+#if !BUILD_RELEASE
+                if (_data == null)
+                    throw new NullReferenceException("Missing stream data. Ensure to allocate mesh buffer or check for its existence.");
+#endif
                 if (IsLinear(PixelFormat.R32G32B32A32_Float))
                 {
                     _data.CopyTo(MemoryMarshal.Cast<Color, byte>(dst));
@@ -367,6 +441,10 @@ namespace FlaxEngine
             /// <param name="dst">The destination <see cref="T:System.Span`1" />.</param>
             public void CopyTo(Span<uint> dst)
             {
+#if !BUILD_RELEASE
+                if (_data == null)
+                    throw new NullReferenceException("Missing stream data. Ensure to allocate mesh buffer or check for its existence.");
+#endif
                 if (IsLinear(PixelFormat.R32_UInt))
                 {
                     _data.CopyTo(MemoryMarshal.Cast<uint, byte>(dst));
@@ -389,6 +467,17 @@ namespace FlaxEngine
                             dst[i] = (uint)_sampler.Read(data + i * _stride).X;
                     }
                 }
+            }
+
+            /// <summary>
+            /// Checks if stream is valid.
+            /// </summary>
+            /// <param name="stream">The stream to check.</param>
+            /// <returns>True if stream is valid, otherwise false.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static implicit operator bool(Stream stream)
+            {
+                return stream.IsValid;
             }
         }
 
@@ -413,10 +502,16 @@ namespace FlaxEngine
                 return true;
             for (int i = 0; i < buffersLocal.Length; i++)
             {
-                _data[(int)buffersLocal[i]] = meshBuffers[i];
-                _layouts[(int)buffersLocal[i]] = meshLayouts[i];
+                int buffer = (int)buffersLocal[i];
+                _data[buffer] = meshBuffers[i];
+                _layouts[buffer] = meshLayouts[i];
+
+                // Get format if using a single item (eg. index buffer type)
+                var format = PixelFormat.Unknown;
+                if (meshLayouts[i] && meshLayouts[i].Elements.Length == 1)
+                    format = meshLayouts[i].Elements[0].Format;
+                _formats[buffer] = format;
             }
-            _formats[(int)MeshBufferType.Index] = mesh.Use16BitIndexBuffer ? PixelFormat.R16_UInt : PixelFormat.R32_UInt;
             return false;
         }
 
@@ -504,19 +599,19 @@ namespace FlaxEngine
                 bool use16BitIndexBuffer = false;
                 IntPtr[] vbData = new IntPtr[3];
                 GPUVertexLayout[] vbLayout = new GPUVertexLayout[3];
-                if (_data[VB0] != null)
+                if (_data[VB0] != null && _data[VB0].Length != 0)
                 {
                     vbData[0] = dataPtr[VB0];
                     vbLayout[0] = _layouts[VB0];
                     vertices = (uint)_data[VB0].Length / _layouts[VB0].Stride;
                 }
-                if (_data[VB1] != null)
+                if (_data[VB1] != null && _data[VB1].Length != 0)
                 {
                     vbData[1] = dataPtr[VB1];
                     vbLayout[1] = _layouts[VB1];
                     vertices = (uint)_data[VB1].Length / _layouts[VB1].Stride;
                 }
-                if (_data[VB2] != null)
+                if (_data[VB2] != null && _data[VB2].Length != 0)
                 {
                     vbData[2] = dataPtr[VB2];
                     vbLayout[2] = _layouts[VB2];
@@ -570,15 +665,16 @@ namespace FlaxEngine
         {
             Span<byte> data = new Span<byte>();
             PixelFormat format = PixelFormat.Unknown;
-            int stride = 0;
+            int stride = 0, count = 0;
             var ib = _data[(int)MeshBufferType.Index];
             if (ib != null)
             {
                 data = ib;
                 format = _formats[(int)MeshBufferType.Index];
                 stride = PixelFormatExtensions.SizeInBytes(format);
+                count = data.Length / stride;
             }
-            return new Stream(data, format, stride);
+            return new Stream(data, format, stride, count);
         }
 
         /// <summary>
@@ -590,7 +686,7 @@ namespace FlaxEngine
         {
             Span<byte> data = new Span<byte>();
             PixelFormat format = PixelFormat.Unknown;
-            int stride = 0;
+            int stride = 0, count = 0;
             for (int vbIndex = 0; vbIndex < 3 && format == PixelFormat.Unknown; vbIndex++)
             {
                 int idx = vbIndex + 1;
@@ -605,11 +701,12 @@ namespace FlaxEngine
                         data = new Span<byte>(vb).Slice(e.Offset);
                         format = e.Format;
                         stride = (int)layout.Stride;
+                        count = vb.Length / stride;
                         break;
                     }
                 }
             }
-            return new Stream(data, format, stride);
+            return new Stream(data, format, stride, count);
         }
 
         /// <summary>
@@ -717,6 +814,16 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Gets or sets the vertex tangent vectors (unpacked, normalized). Null if <see cref="VertexElement.Types.Tangent"/> does not exist in vertex buffers of the mesh.
+        /// </summary>
+        /// <remarks>Uses <see cref="Tangent"/> stream to read or write data to the vertex buffer.</remarks>
+        public Float3[] Tangents
+        {
+            get => GetStreamFloat3(VertexElement.Types.Tangent, UnpackNormal);
+            set => SetStreamFloat3(VertexElement.Types.Tangent, value, PackNormal);
+        }
+
+        /// <summary>
         /// Gets or sets the vertex UVs (texcoord channel 0). Null if <see cref="VertexElement.Types.TexCoord"/> does not exist in vertex buffers of the mesh.
         /// </summary>
         /// <remarks>Uses <see cref="TexCoord"/> stream to read or write data to the vertex buffer.</remarks>
@@ -724,6 +831,70 @@ namespace FlaxEngine
         {
             get => GetStreamFloat2(VertexElement.Types.TexCoord);
             set => SetStreamFloat2(VertexElement.Types.TexCoord, value);
+        }
+
+        /// <summary>
+        /// Recalculates normal vectors for all vertices.
+        /// </summary>
+        public void ComputeNormals()
+        {
+            var positions = Position();
+            var indices = Index();
+            if (!positions)
+                throw new Exception("Cannot compute tangents without positions.");
+            if (!indices)
+                throw new Exception("Cannot compute tangents without indices.");
+            if (!Normal())
+                throw new Exception("Cannot compute tangents without Normal vertex element.");
+            var vertexCount = positions.Count;
+            if (vertexCount == 0)
+                return;
+            var indexCount = indices.Count;
+
+            // Compute per-face normals but store them per-vertex
+            var normals = new Float3[vertexCount];
+            for (int i = 0; i < indexCount; i += 3)
+            {
+                var i1 = indices.GetInt(i + 0);
+                var i2 = indices.GetInt(i + 1);
+                var i3 = indices.GetInt(i + 2);
+                Float3 v1 = positions.GetFloat3(i1);
+                Float3 v2 = positions.GetFloat3(i2);
+                Float3 v3 = positions.GetFloat3(i3);
+                Float3 n = Float3.Cross((v2 - v1), (v3 - v1)).Normalized;
+
+                normals[i1] += n;
+                normals[i2] += n;
+                normals[i3] += n;
+            }
+
+            // Average normals
+            for (int i = 0; i < normals.Length; i++)
+                normals[i] = normals[i].Normalized;
+
+            // Write back to the buffer
+            Normals = normals;
+        }
+
+        /// <summary>
+        /// Recalculates tangent vectors for all vertices based on normals.
+        /// </summary>
+        public void ComputeTangents()
+        {
+            var normals = Normal();
+            var tangents = Tangent();
+            if (!normals)
+                throw new Exception("Cannot compute tangents without normals.");
+            if (!tangents)
+                throw new Exception("Cannot compute tangents without Tangent vertex element.");
+            var count = normals.Count;
+            for (int i = 0; i < count; i++)
+            {
+                Float3 normal = normals.GetFloat3(i);
+                UnpackNormal(ref normal);
+                RenderTools.CalculateTangentFrame(out var n, out var t, ref normal);
+                tangents.SetFloat4(i, t);
+            }
         }
 
         private uint[] GetStreamUInt(Stream stream)

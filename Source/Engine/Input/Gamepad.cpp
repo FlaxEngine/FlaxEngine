@@ -2,6 +2,71 @@
 
 #include "Gamepad.h"
 
+namespace
+{
+    GamepadAxis GetButtonAxis(GamepadButton button, bool& positive)
+    {
+        positive = true;
+        switch (button)
+        {
+        case GamepadButton::LeftTrigger:
+            return GamepadAxis::LeftTrigger;
+        case GamepadButton::RightTrigger:
+            return GamepadAxis::RightTrigger;
+        case GamepadButton::LeftStickUp:
+            return GamepadAxis::LeftStickY;
+        case GamepadButton::LeftStickDown:
+            positive = false;
+            return GamepadAxis::LeftStickY;
+        case GamepadButton::LeftStickLeft:
+            positive = false;
+            return GamepadAxis::LeftStickX;
+        case GamepadButton::LeftStickRight:
+            return GamepadAxis::LeftStickX;
+        case GamepadButton::RightStickUp:
+            return GamepadAxis::RightStickY;
+        case GamepadButton::RightStickDown:
+            positive = false;
+            return GamepadAxis::RightStickY;
+        case GamepadButton::RightStickLeft:
+            positive = false;
+            return GamepadAxis::RightStickX;
+        case GamepadButton::RightStickRight:
+            return GamepadAxis::RightStickX;
+        default:
+            return GamepadAxis::None;
+        }
+    }
+
+    bool GetButtonState(const Gamepad::State& state, GamepadButton button, float deadZone)
+    {
+        if (deadZone > 0.01f)
+        {
+            switch (button)
+            {
+            case GamepadButton::LeftTrigger:
+            case GamepadButton::RightTrigger:
+            case GamepadButton::LeftStickUp:
+            case GamepadButton::LeftStickDown:
+            case GamepadButton::LeftStickLeft:
+            case GamepadButton::LeftStickRight:
+            case GamepadButton::RightStickUp:
+            case GamepadButton::RightStickDown:
+            case GamepadButton::RightStickLeft:
+            case GamepadButton::RightStickRight:
+            {
+                bool positive;
+                float axis = state.Axis[(int32)GetButtonAxis(button, positive)];
+                return positive ? axis >= deadZone : axis <= -deadZone;
+            }
+            default:
+                break;
+            }
+        }
+        return state.Buttons[(int32)button];
+    }
+}
+
 void GamepadLayout::Init()
 {
     for (int32 i = 0; i < (int32)GamepadButton::MAX; i++)
@@ -29,6 +94,21 @@ void Gamepad::ResetState()
     _state.Clear();
     _mappedState.Clear();
     _mappedPrevState.Clear();
+}
+
+bool Gamepad::GetButton(GamepadButton button, float deadZone) const
+{
+    return GetButtonState(_mappedState, button, deadZone);
+}
+
+bool Gamepad::GetButtonDown(GamepadButton button, float deadZone) const
+{
+    return GetButtonState(_mappedState, button, deadZone) && !GetButtonState(_mappedPrevState, button, deadZone);
+}
+
+bool Gamepad::GetButtonUp(GamepadButton button, float deadZone) const
+{
+    return !GetButtonState(_mappedState, button, deadZone) && GetButtonState(_mappedPrevState, button, deadZone);
 }
 
 bool Gamepad::IsAnyButtonDown() const

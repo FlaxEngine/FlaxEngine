@@ -238,24 +238,27 @@ public:
     /// </summary>
     /// <param name="gamepadIndex">The gamepad index</param>
     /// <param name="button">Gamepad button to check</param>
+    /// <param name="deadZone">Custom dead-zone value to detect gamepad button usage for non-binary buttons such as left/right thumbs that can move freely. By default, any movement is registered.</param>
     /// <returns>True if user holds down the button, otherwise false.</returns>
-    API_FUNCTION() static bool GetGamepadButton(int32 gamepadIndex, GamepadButton button);
+    API_FUNCTION() static bool GetGamepadButton(int32 gamepadIndex, GamepadButton button, float deadZone = 0.0f);
 
     /// <summary>
     /// Gets the gamepad button down state (true if was pressed during the current frame).
     /// </summary>
     /// <param name="gamepadIndex">The gamepad index</param>
     /// <param name="button">Gamepad button to check</param>
+    /// <param name="deadZone">Custom dead-zone value to detect gamepad button usage for non-binary buttons such as left/right thumbs that can move freely. By default, any movement is registered.</param>
     /// <returns>True if user starts pressing down the button, otherwise false.</returns>
-    API_FUNCTION() static bool GetGamepadButtonDown(int32 gamepadIndex, GamepadButton button);
+    API_FUNCTION() static bool GetGamepadButtonDown(int32 gamepadIndex, GamepadButton button, float deadZone = 0.0f);
 
     /// <summary>
     /// Gets the gamepad button up state (true if was released during the current frame).
     /// </summary>
     /// <param name="gamepadIndex">The gamepad index</param>
     /// <param name="button">Gamepad button to check</param>
+    /// <param name="deadZone">Custom dead-zone value to detect gamepad button usage for non-binary buttons such as left/right thumbs that can move freely. By default, any movement is registered.</param>
     /// <returns>True if user releases the button, otherwise false.</returns>
-    API_FUNCTION() static bool GetGamepadButtonUp(int32 gamepadIndex, GamepadButton button);
+    API_FUNCTION() static bool GetGamepadButtonUp(int32 gamepadIndex, GamepadButton button, float deadZone = 0.0f);
 
     /// <summary>
     /// Gets the gamepad axis value.
@@ -270,24 +273,27 @@ public:
     /// </summary>
     /// <param name="gamepad">The gamepad</param>
     /// <param name="button">Gamepad button to check</param>
+    /// <param name="deadZone">Custom dead-zone value to detect gamepad button usage for non-binary buttons such as left/right thumbs that can move freely. By default, any movement is registered.</param>
     /// <returns>True if user holds down the button, otherwise false.</returns>
-    API_FUNCTION() static bool GetGamepadButton(InputGamepadIndex gamepad, GamepadButton button);
+    API_FUNCTION() static bool GetGamepadButton(InputGamepadIndex gamepad, GamepadButton button, float deadZone = 0.0f);
 
     /// <summary>
     /// Gets the gamepad button down state (true if was pressed during the current frame).
     /// </summary>
     /// <param name="gamepad">The gamepad</param>
     /// <param name="button">Gamepad button to check</param>
+    /// <param name="deadZone">Custom dead-zone value to detect gamepad button usage for non-binary buttons such as left/right thumbs that can move freely. By default, any movement is registered.</param>
     /// <returns>True if user starts pressing down the button, otherwise false.</returns>
-    API_FUNCTION() static bool GetGamepadButtonDown(InputGamepadIndex gamepad, GamepadButton button);
+    API_FUNCTION() static bool GetGamepadButtonDown(InputGamepadIndex gamepad, GamepadButton button, float deadZone = 0.0f);
 
     /// <summary>
     /// Gets the gamepad button up state (true if was released during the current frame).
     /// </summary>
     /// <param name="gamepad">The gamepad</param>
     /// <param name="button">Gamepad button to check</param>
+    /// <param name="deadZone">Custom dead-zone value to detect gamepad button usage for non-binary buttons such as left/right thumbs that can move freely. By default, any movement is registered.</param>
     /// <returns>True if user releases the button, otherwise false.</returns>
-    API_FUNCTION() static bool GetGamepadButtonUp(InputGamepadIndex gamepad, GamepadButton button);
+    API_FUNCTION() static bool GetGamepadButtonUp(InputGamepadIndex gamepad, GamepadButton button, float deadZone = 0.0f);
 
 public:
     /// <summary>

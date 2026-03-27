@@ -389,11 +389,14 @@ void Scene::BeginPlay(SceneBeginData* data)
         if (model == nullptr)
             CreateCsgModel();
     }
+
+    Ticking.SetTicking(true);
 }
 
 void Scene::EndPlay()
 {
     // Improve scene cleanup performance by removing all data from scene rendering and ticking containers
+    Ticking.SetTicking(false);
     Ticking.Clear();
     Rendering.Clear();
     Navigation.Clear();

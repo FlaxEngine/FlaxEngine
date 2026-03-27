@@ -47,6 +47,9 @@ API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API FoliageType : public ScriptingOb
     friend Foliage;
 private:
     uint8 _isReady : 1;
+    uint8 _canDraw : 1;
+    uint8 _drawModesDirty : 1;
+    DrawPass _drawModes = DrawPass::Depth | DrawPass::GBuffer | DrawPass::Forward;
 
 public:
     /// <summary>
@@ -123,9 +126,15 @@ public:
     API_FIELD() float ScaleInLightmap = 1.0f;
 
     /// <summary>
-    /// The draw passes to use for rendering this foliage type.
+    /// Gets the draw passes to use for rendering this foliage type.
     /// </summary>
-    API_FIELD() DrawPass DrawModes = DrawPass::Depth | DrawPass::GBuffer | DrawPass::Forward;
+    API_PROPERTY(Attributes="DefaultValue(DrawPass.Depth | DrawPass.GBuffer | DrawPass.Forward)")
+    DrawPass GetDrawModes() const;
+
+    /// <summary>
+    /// Sets the draw passes to use for rendering this foliage type.
+    /// </summary>
+    API_PROPERTY() void SetDrawModes(DrawPass value);
 
     /// <summary>
     /// The shadows casting mode.
@@ -183,7 +192,7 @@ public:
     API_FIELD() float PlacementRandomRollAngle = 0.0f;
 
     /// <summary>
-    /// The density scaling scale applied to the global scale for the foliage instances of this type. Can be used to boost or reduce density scaling effect on this foliage type. Default is 1.
+    /// The density scale factor applied to the global scale for the foliage instances of this type. Can be used to boost or reduce density scaling effect on this foliage type. Default is 1. Lower to reduce density scaling effect when downscaling foliage via global quality/scalability.
     /// </summary>
     API_FIELD() float DensityScalingScale = 1.0f;
 

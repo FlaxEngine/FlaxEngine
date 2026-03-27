@@ -96,6 +96,10 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeRootNode : public BehaviorTre
     // The target amount of the behavior logic updates per second.
     API_FIELD(Attributes="EditorOrder(100)")
     float UpdateFPS = 10.0f;
+
+    // Whether to loop the root node.
+    API_FIELD(Attributes="EditorOrder(200)")
+    bool Loop = true;
 };
 
 /// <summary>

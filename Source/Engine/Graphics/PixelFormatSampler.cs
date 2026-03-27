@@ -22,7 +22,7 @@ namespace FlaxEngine
         /// <summary>
         /// Write data function.
         /// </summary>
-        public delegate* unmanaged<void*, ref Float4, void> Write;
+        public delegate* unmanaged<void*, Float4*, void> Write;
 
         /// <summary>
         /// Tries to get a sampler tool for the specified format to read pixels.
@@ -38,7 +38,7 @@ namespace FlaxEngine
                 Format = format,
                 PixelSize = pixelSize,
                 Read = (delegate* unmanaged<void*, Float4>)read.ToPointer(),
-                Write = (delegate* unmanaged<void*, ref Float4, void>)write.ToPointer(),
+                Write = (delegate* unmanaged<void*, Float4*, void>)write.ToPointer(),
             };
             return pixelSize != 0;
         }

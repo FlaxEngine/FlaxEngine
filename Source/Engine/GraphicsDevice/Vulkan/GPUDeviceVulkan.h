@@ -88,7 +88,7 @@ public:
     }
 
     // Returns true if waiting timed out or failed, false otherwise.
-    bool WaitForFence(FenceVulkan* fence, uint64 timeInNanoseconds) const;
+    bool WaitForFence(FenceVulkan* fence, float timeoutSeconds = VULKAN_WAIT_TIMEOUT) const;
 
     void ResetFence(FenceVulkan* fence) const;
 
@@ -96,7 +96,7 @@ public:
     void ReleaseFence(FenceVulkan*& fence);
 
     // Sets the fence handle to null
-    void WaitAndReleaseFence(FenceVulkan*& fence, uint64 timeInNanoseconds);
+    void WaitAndReleaseFence(FenceVulkan*& fence, float timeoutSeconds = VULKAN_WAIT_TIMEOUT);
 
 private:
     // Returns true if fence was signaled, otherwise false.

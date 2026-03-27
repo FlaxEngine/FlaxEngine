@@ -543,6 +543,10 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
         errorMsg = String::Format(TEXT("Imported texture has not full mip chain, loaded mips count: {0}, expected: {1}"), sourceMipLevels, mipLevels);
         return true;
     }
+    if (options.GenerateMipMaps && !isPowerOfTwo)
+    {
+        LOG(Warning, "Cannot generate mip maps for texture '{}' that size is not power of two. Use Resize or Max Size to change dimensions.", StringUtils::GetFileName(path), width, height);
+    }
 
     // Decompress if texture is compressed (next steps need decompressed input data, for eg. mip maps generation or format changing)
     if (PixelFormatExtensions::IsCompressed(textureDataSrc->Format))

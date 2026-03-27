@@ -148,7 +148,6 @@ void ShadowsOfMordor::Builder::Dispose()
 #include "Engine/Serialization/FileWriteStream.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Scripting/Scripting.h"
-#include "FlaxEngine.Gen.h"
 
 namespace ShadowsOfMordor
 {

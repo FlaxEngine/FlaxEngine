@@ -14,6 +14,7 @@ public class Render2D : EngineModule
         base.Setup(options);
 
         options.PrivateDependencies.Add("freetype");
+        options.PrivateDependencies.Add("msdfgen");
 
         options.PrivateDefinitions.Add("RENDER2D_USE_LINE_AA");
     }

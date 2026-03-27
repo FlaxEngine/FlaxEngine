@@ -21,11 +21,14 @@ struct RenderView;
 // Amount of units per terrain geometry vertex (can be adjusted per terrain instance using non-uniform scale factor)
 #define TERRAIN_UNITS_PER_VERTEX 100.0f
 
-// Enable/disable terrain editing and changing at runtime. If your game doesn't use procedural terrain in game then disable this option to reduce build size.
+#ifndef TERRAIN_EDITING
+// Enables terrain editing and changing at runtime. If your game doesn't use procedural terrain in game then disable this option to reduce build size.
 #define TERRAIN_EDITING 1
+#endif
 
 // Enable/disable terrain heightmap samples modification and gather. Used by the editor to modify the terrain with the brushes.
-#define TERRAIN_UPDATING 1
+// [Deprecated in 1.12, use TERRAIN_EDITING instead]
+#define TERRAIN_UPDATING (TERRAIN_EDITING)
 
 // Enable/disable terrain physics collision drawing
 #define TERRAIN_USE_PHYSICS_DEBUG (USE_EDITOR && 1)
@@ -241,6 +244,18 @@ public:
     }
 
     /// <summary>
+    /// Gets the heightmap texture size (square) used by a single patch (shared by all chunks within that patch).
+    /// </summary>
+    /// <remarks>ChunkSize * ChunksCountEdge + 1</remarks>
+    API_PROPERTY() int32 GetHeightmapSize() const;
+
+    /// <summary>
+    /// Gets the size of the patch in world-units (square) without actor scale.
+    /// </summary>
+    /// <remarks>UnitsPerVertex * ChunksCountEdge * ChunkSize</remarks>
+    API_PROPERTY() float GetPatchSize() const;
+
+    /// <summary>
     /// Gets the terrain patches count. Each patch contains 16 chunks arranged into a 4x4 square.
     /// </summary>
     API_PROPERTY() FORCE_INLINE int32 GetPatchesCount() const
@@ -329,7 +344,6 @@ public:
     API_FUNCTION() void SetChunkOverrideMaterial(API_PARAM(Ref) const Int2& patchCoord, API_PARAM(Ref) const Int2& chunkCoord, MaterialBase* value);
 
 #if TERRAIN_EDITING
-
     /// <summary>
     /// Setups the terrain patch using the specified heightmap data.
     /// </summary>
@@ -352,10 +366,6 @@ public:
     /// <returns>True if failed, otherwise false.</returns>
     API_FUNCTION() bool SetupPatchSplatMap(API_PARAM(Ref) const Int2& patchCoord, int32 index, int32 splatMapLength, const Color32* splatMap, bool forceUseVirtualStorage = false);
 
-#endif
-
-public:
-#if TERRAIN_EDITING
     /// <summary>
     /// Setups the terrain. Clears the existing data.
     /// </summary>

@@ -207,16 +207,16 @@ public:
     API_PROPERTY() void SetAttenuation(float value);
 
     /// <summary>
-    /// Gets the doppler effect factor. Scale for source velocity. Default is 1.
+    /// Gets the doppler effect factor. Scale for source velocity. Default is 1. Used by spatial sources only. Cannot scale the effect up (only dim it).
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(75), DefaultValue(1.0f), Limit(0, float.MaxValue, 0.1f), EditorDisplay(\"Audio Source\")")
+    API_PROPERTY(Attributes="EditorOrder(75), DefaultValue(1.0f), Limit(0, 1.0f, 0.1f), EditorDisplay(\"Audio Source\")")
     FORCE_INLINE float GetDopplerFactor() const
     {
         return _dopplerFactor;
     }
 
     /// <summary>
-    /// Sets the doppler effect factor. Scale for source velocity. Default is 1.
+    /// Sets the doppler effect factor. Scale for source velocity. Default is 1. Used by spatial sources only. Cannot scale the effect up (only dim it).
     /// </summary>
     API_PROPERTY() void SetDopplerFactor(float value);
 

@@ -158,6 +158,7 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTexture* lightBuffer)
         renderContext.Buffers->GBuffer3->View(),
     };
     renderContext.View.Pass = DrawPass::GBuffer;
+    context->SetViewportAndScissors(renderContext.Buffers->GetViewport());
 
     // Clear GBuffer
     {

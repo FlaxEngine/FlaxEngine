@@ -338,17 +338,35 @@ void LinuxFileSystem::GetSpecialFolderPath(const SpecialFolder type, String& res
     switch (type)
     {
     case SpecialFolder::Desktop:
-        result = home / TEXT("Desktop");
+    {
+        String desktopDir;
+        if (!Platform::GetEnvironmentVariable(TEXT("XDG_DESKTOP_DIR"), desktopDir))
+            result = desktopDir;
+        else
+            result = home / TEXT("Desktop");
         break;
+    }
     case SpecialFolder::Documents:
         result = String::Empty;
         break;
     case SpecialFolder::Pictures:
-        result = home / TEXT("Pictures");
+    {
+        String picturesDir;
+        if (!Platform::GetEnvironmentVariable(TEXT("XDG_PICTURES_DIR"), picturesDir))
+            result = picturesDir;
+        else
+            result = home / TEXT("Pictures");
         break;
+    }
     case SpecialFolder::AppData:
-        result = TEXT("/usr/share");
+    {
+        String configHome;
+        if (!Platform::GetEnvironmentVariable(TEXT("XDG_CONFIG_HOME"), configHome))
+            result = configHome;
+        else
+            result = home / TEXT(".config");
         break;
+    }
     case SpecialFolder::LocalAppData:
     {
         String dataHome;

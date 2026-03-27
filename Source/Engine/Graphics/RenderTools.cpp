@@ -548,6 +548,13 @@ void RenderTools::ComputeCascadeUpdateFrequency(int32 cascadeIndex, int32 cascad
     }
 }
 
+bool RenderTools::ShouldUpdateCascade(int32 frameIndex, int32 cascadeIndex, int32 cascadeCount, int32 updateMaxCountPerFrame, bool updateForce)
+{
+    int32 updateFrequency, updatePhrase;
+    ComputeCascadeUpdateFrequency(cascadeIndex, cascadeCount, updateFrequency, updatePhrase, updateMaxCountPerFrame);
+    return (frameIndex % updateFrequency == updatePhrase) || updateForce;
+}
+
 float RenderTools::ComputeTemporalTime()
 {
     const float time = Time::Draw.UnscaledTime.GetTotalSeconds();

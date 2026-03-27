@@ -432,6 +432,20 @@ namespace FlaxEngine
         /// Creates the vertex element description.
         /// </summary>
         /// <param name="type">Element type.</param>
+        /// <param name="format">Data format.</param>
+        public VertexElement(Types type, PixelFormat format)
+        {
+            Type = type;
+            Slot = 0;
+            Offset = 0;
+            PerInstance = 0;
+            Format = format;
+        }
+
+        /// <summary>
+        /// Creates the vertex element description.
+        /// </summary>
+        /// <param name="type">Element type.</param>
         /// <param name="slot">Vertex buffer bind slot.</param>
         /// <param name="offset">Data byte offset.</param>
         /// <param name="perInstance">True if element data is instanced.</param>

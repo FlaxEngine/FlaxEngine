@@ -2184,11 +2184,12 @@ FenceVulkan* FenceManagerVulkan::AllocateFence(bool createSignaled)
     return fence;
 }
 
-bool FenceManagerVulkan::WaitForFence(FenceVulkan* fence, uint64 timeInNanoseconds) const
+bool FenceManagerVulkan::WaitForFence(FenceVulkan* fence, float timeoutSeconds) const
 {
     ASSERT(_usedFences.Contains(fence));
     ASSERT(!fence->IsSignaled);
-    const VkResult result = vkWaitForFences(_device->Device, 1, &fence->Handle, true, timeInNanoseconds);
+    uint64 timeNanoseconds = (uint64)((double)timeoutSeconds * 1000000000.0);
+    const VkResult result = vkWaitForFences(_device->Device, 1, &fence->Handle, true, timeNanoseconds);
     LOG_VULKAN_RESULT(result);
     if (result == VK_SUCCESS)
     {
@@ -2216,11 +2217,11 @@ void FenceManagerVulkan::ReleaseFence(FenceVulkan*& fence)
     fence = nullptr;
 }
 
-void FenceManagerVulkan::WaitAndReleaseFence(FenceVulkan*& fence, uint64 timeInNanoseconds)
+void FenceManagerVulkan::WaitAndReleaseFence(FenceVulkan*& fence, float timeoutSeconds)
 {
     ScopeLock lock(_device->_fenceLock);
     if (!fence->IsSignaled)
-        WaitForFence(fence, timeInNanoseconds);
+        WaitForFence(fence, timeoutSeconds);
     ResetFence(fence);
     _usedFences.Remove(fence);
     _freeFences.Add(fence);

@@ -351,6 +351,7 @@ META_CS(true, FEATURE_LEVEL_SM5)
 void CS_UpdateProbesInitArgs()
 {
     uint activeProbesCount = ActiveProbes.Load(0); // Counter at 0
+    activeProbesCount = min(activeProbesCount, ProbesCount);
     uint arg = 0;
     for (uint probesOffset = 0; probesOffset < activeProbesCount; probesOffset += DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT)
     {

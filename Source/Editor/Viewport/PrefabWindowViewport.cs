@@ -6,7 +6,6 @@ using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
-using FlaxEditor.GUI.Input;
 using FlaxEditor.Modules;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
@@ -15,7 +14,6 @@ using FlaxEditor.Viewport.Previews;
 using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using FlaxEngine.Json;
 using Utils = FlaxEditor.Utilities.Utils;
 
 namespace FlaxEditor.Viewport
@@ -185,6 +183,7 @@ namespace FlaxEditor.Viewport
             showGridButton.Clicked += () =>
             {
                 _gridGizmo.Enabled = !_gridGizmo.Enabled;
+                _uiRoot.ShowGrid = _gridGizmo.Enabled;
                 showGridButton.Checked = _gridGizmo.Enabled;
             };
             showGridButton.Checked = true;
@@ -682,7 +681,7 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
-        protected override void OrientViewport(ref Quaternion orientation)
+        public override void OrientViewport(ref Quaternion orientation)
         {
             if (TransformGizmo.SelectedParents.Count != 0)
                 FocusSelection(ref orientation);

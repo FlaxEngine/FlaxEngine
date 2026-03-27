@@ -158,6 +158,15 @@ public:
 
 private:
     void AddToCluster(ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_SIZE>& clusters, FoliageCluster* cluster, FoliageInstance& instance);
+    struct DrawContext
+    {
+        RenderContext& RenderContext;
+        const RenderView& LodView;
+        const FoliageType& FoliageType;
+        Vector3 ViewOrigin;
+        float MinObjectPixelSizeSq;
+        float ViewScreenSizeSq;
+    };
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE && FOLIAGE_USE_DRAW_CALLS_BATCHING
     struct DrawKey
     {
@@ -181,10 +190,12 @@ private:
 
     typedef Array<struct DrawCall, InlinedAllocation<8>> DrawCallsList;
     typedef Dictionary<DrawKey, struct BatchedDrawCall, ConcurrentArenaAllocation> BatchedDrawCalls;
-    void DrawInstance(RenderContext& renderContext, FoliageInstance& instance, const FoliageType& type, Model* model, int32 lod, float lodDitherFactor, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const;
-    void DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, const FoliageType& type, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const;
+    void DrawInstance(DrawContext& context, FoliageInstance& instance, Model* model, int32 lod, float lodDitherFactor, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const;
+    void DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const;
+    void DrawType(RenderContext& renderContext, const FoliageType& type, DrawCallsList* drawCallsLists);
 #else
-    void DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, Mesh::DrawInfo& draw);
+    void DrawCluster(DrawContext& context, FoliageCluster* cluster, Mesh::DrawInfo& draw);
+    void DrawType(RenderContext& renderContext, const FoliageType& type, Mesh::DrawInfo& draw);
 #endif
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE
     void DrawClusterGlobalSDF(class GlobalSignDistanceFieldPass* globalSDF, const BoundingBox& globalSDFBounds, FoliageCluster* cluster, const FoliageType& type);
@@ -192,7 +203,8 @@ private:
     void DrawFoliageJob(int32 i);
     RenderContextBatch* _renderContextBatch;
 #endif
-    void DrawType(RenderContext& renderContext, const FoliageType& type, DrawCallsList* drawCallsLists);
+
+    void InitType(const RenderView& view, FoliageType& type);
 
 public:
     /// <summary>

@@ -166,8 +166,26 @@ namespace FlaxEngine.GUI
         [NoSerialize, HideInEditor]
         public Float2 LocalLocation
         {
-            get => _bounds.Location - (_parent != null ? _parent._bounds.Size * (_anchorMax + _anchorMin) * 0.5f : Float2.Zero) + _bounds.Size * _pivot;
-            set => Bounds = new Rectangle(value + (_parent != null ? _parent.Bounds.Size * (_anchorMax + _anchorMin) * 0.5f : Float2.Zero) - _bounds.Size * _pivot, _bounds.Size);
+            get
+            {
+                var anchor = Float2.Zero;
+                if (_parent != null)
+                {
+                    _parent.GetDesireClientArea(out var parentBounds);
+                    anchor = parentBounds.Location + parentBounds.Size * (_anchorMin + _anchorMax) * 0.5f;
+                }
+                return _bounds.Location - anchor + _bounds.Size * _pivot;
+            }
+            set
+            {
+                var anchor = Float2.Zero;
+                if (_parent != null)
+                {
+                    _parent.GetDesireClientArea(out var parentBounds);
+                    anchor = parentBounds.Location + parentBounds.Size * (_anchorMin + _anchorMax) * 0.5f;
+                }
+                Bounds = new Rectangle(value + anchor - _bounds.Size * _pivot, _bounds.Size);
+            }
         }
 
         /// <summary>

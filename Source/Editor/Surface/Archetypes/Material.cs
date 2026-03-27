@@ -586,8 +586,9 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 13,
                 Title = "Pre-skinned Local Position",
                 Description = "Per vertex local position (before skinning)",
+                AlternativeTitles = new[] { "Vertex Position", "Pre skinning Local Vertex Position" },
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(230, 40),
+                Size = new Float2(270, 40),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float3), 0),
@@ -598,8 +599,9 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 14,
                 Title = "Pre-skinned Local Normal",
                 Description = "Per vertex local normal (before skinning)",
+                AlternativeTitles = new[] { "Vertex Normal", "Pre skinning Local Normal" },
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(230, 40),
+                Size = new Float2(270, 40),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float3), 0),

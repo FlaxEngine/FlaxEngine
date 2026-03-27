@@ -70,9 +70,9 @@ namespace FlaxEditor.CustomEditors.GUI
             UpdateSplitRect();
         }
 
-        private void AutoSizeSplitter()
+        private void AutoSizeSplitter(bool ignoreCustomSplitterValue = false)
         {
-            if (_hasCustomSplitterValue || !Editor.Instance.Options.Options.Interface.AutoSizePropertiesPanelSplitter)
+            if (_hasCustomSplitterValue && !ignoreCustomSplitterValue)
                 return;
 
             Font font = Style.Current.FontMedium;
@@ -179,6 +179,21 @@ namespace FlaxEditor.CustomEditors.GUI
         }
 
         /// <inheritdoc />
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
+        {
+            if (button == MouseButton.Left && _splitterRect.Contains(location))
+            {
+                if (_splitterClicked)
+                    EndTracking();
+
+                AutoSizeSplitter(true);
+                return true;
+            }
+
+            return base.OnMouseDoubleClick(location, button);
+        }
+
+        /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (_splitterClicked)
@@ -220,7 +235,8 @@ namespace FlaxEditor.CustomEditors.GUI
             // Refresh
             UpdateSplitRect();
             PerformLayout(true);
-            AutoSizeSplitter();
+            if (Editor.Instance.Options.Options.Interface.AutoSizePropertiesPanelSplitter)
+                AutoSizeSplitter();
         }
 
         /// <inheritdoc />

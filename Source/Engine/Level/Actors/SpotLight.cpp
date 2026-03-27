@@ -1,6 +1,8 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "SpotLight.h"
+
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Content/Assets/IESProfile.h"
@@ -282,6 +284,14 @@ void SpotLight::Deserialize(DeserializeStream& stream, ISerializeModifier* modif
     DESERIALIZE(UseInverseSquaredFalloff);
     DESERIALIZE(UseIESBrightness);
     DESERIALIZE(IESBrightnessScale);
+
+    // [Deprecated on 12.03.2026, expires on 12.03.2028]
+    if (modifier->EngineBuild <= 6807 && SERIALIZE_FIND_MEMBER(stream, "UseInverseSquaredFalloff") != stream.MemberEnd() && UseInverseSquaredFalloff)
+    {
+        // Convert old non-physical brightness value that was used for Inverse Squared Falloff which wasn't based on proper cm/m units calculations
+        MARK_CONTENT_DEPRECATED();
+        Brightness = Math::Sqrt(Brightness * 0.01f);
+    }
 }
 
 bool SpotLight::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)

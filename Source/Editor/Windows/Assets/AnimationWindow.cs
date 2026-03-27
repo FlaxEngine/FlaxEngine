@@ -431,6 +431,9 @@ namespace FlaxEditor.Windows.Assets
             _isWaitingForTimelineLoad = true;
 
             base.OnItemReimported(item);
+
+            // Drop virtual asset state and get a new one from the reimported file
+            LoadFromOriginal();
         }
 
         /// <inheritdoc />
@@ -455,6 +458,7 @@ namespace FlaxEditor.Windows.Assets
                 _timeline.Enabled = true;
                 _timeline.SetNoTracksText(null);
                 ClearEditedFlag();
+                _timeline.ShowWholeTimeline();
             }
         }
 

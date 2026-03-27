@@ -298,6 +298,7 @@ namespace FlaxEngine.GUI
                 {
                 case CanvasRenderMode.WorldSpace:
                 case CanvasRenderMode.WorldSpaceFaceCamera:
+                case CanvasRenderMode.GPUTexture:
                     scale = 1.0f;
                     break;
                 default:

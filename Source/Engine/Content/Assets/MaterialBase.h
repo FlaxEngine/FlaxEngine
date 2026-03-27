@@ -57,6 +57,8 @@ public:
     /// <summary>
     /// Gets the material parameter value.
     /// </summary>
+    /// <remarks>For material instances that inherit a base material, returned value might come from base material if the current one doesn't override it.</remarks>
+    /// <param name="name">The parameter name.</param>
     /// <returns>The parameter value.</returns>
     API_FUNCTION() Variant GetParameterValue(const StringView& name);
 

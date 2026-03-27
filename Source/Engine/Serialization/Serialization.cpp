@@ -25,6 +25,13 @@
 #include "Engine/Content/Asset.h"
 #include "Engine/Level/SceneObject.h"
 #include "Engine/Utilities/Encryption.h"
+#include "FlaxEngine.Gen.h"
+
+ISerializeModifier::ISerializeModifier()
+{
+    EngineBuild = FLAXENGINE_VERSION_BUILD;
+    CurrentInstance = -1;
+}
 
 void ISerializable::DeserializeIfExists(DeserializeStream& stream, const char* memberName, ISerializeModifier* modifier)
 {

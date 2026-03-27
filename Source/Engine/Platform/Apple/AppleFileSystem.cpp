@@ -83,17 +83,19 @@ void AppleFileSystem::GetSpecialFolderPath(const SpecialFolder type, String& res
     switch (type)
     {
     case SpecialFolder::Desktop:
-        result = home / TEXT("/Desktop");
+        result = home / TEXT("/Desktop"); // TODO: should be NSDesktopDirectory
         break;
     case SpecialFolder::Documents:
-        result = home / TEXT("/Documents");
+        result = home / TEXT("/Documents"); // TODO: should be NSDocumentDirectory
         break;
     case SpecialFolder::Pictures:
-        result = home / TEXT("/Pictures");
+        result = home / TEXT("/Pictures"); // TODO: should be NSPicturesDirectory
         break;
     case SpecialFolder::AppData:
+        result = home / TEXT("/Library/Application Support"); // TODO: should be NSApplicationSupportDirectory
+        break;
     case SpecialFolder::LocalAppData:
-        result = home / TEXT("/Library/Caches");
+        result = home / TEXT("/Library/Caches"); // TODO: should be NSApplicationSupportDirectory
         break;
     case SpecialFolder::ProgramData:
         result = home / TEXT("/Library/Application Support");

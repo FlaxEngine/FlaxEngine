@@ -46,6 +46,9 @@ public:
     /// </summary>
     class FLAXENGINE_API TickData
     {
+    protected:
+        friend SceneTicking;
+        bool _canTick = true;
     public:
         Array<Script*> Scripts;
         Array<Tick> Ticks;
@@ -133,6 +136,11 @@ public:
     /// Clears this instance data.
     /// </summary>
     void Clear();
+
+    /// <summary>
+    /// Changes the ability to tick. When disabled, the ticking functions won't be called. Can be called during ticking (eg. when scene is unloaded) to stp performing any more ticks.
+    /// </summary>
+    void SetTicking(bool enable);
 
 public:
     /// <summary>

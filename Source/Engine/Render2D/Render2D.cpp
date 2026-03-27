@@ -2,6 +2,7 @@
 
 #include "Render2D.h"
 #include "Font.h"
+#include "FontAsset.h"
 #include "FontManager.h"
 #include "FontTextureAtlas.h"
 #include "RotatedRectangle.h"
@@ -74,6 +75,7 @@ enum class DrawCallType : byte
     FillTexture,
     FillTexturePoint,
     DrawChar,
+    DrawCharMSDF,
     DrawCharMaterial,
     Custom,
     Material,
@@ -164,6 +166,7 @@ struct CachedPSO
     GPUPipelineState* PS_Color_NoAlpha;
 
     GPUPipelineState* PS_Font;
+    GPUPipelineState* PS_FontMSDF;
 
     GPUPipelineState* PS_BlurH;
     GPUPipelineState* PS_BlurV;
@@ -455,6 +458,7 @@ CanDrawCallCallback CanDrawCallBatch[] =
     CanDrawCallCallbackTexture, // FillTexture,
     CanDrawCallCallbackTexture, // FillTexturePoint,
     CanDrawCallCallbackChar, // DrawChar,
+    CanDrawCallCallbackChar, // DrawCharMSDF,
     CanDrawCallCallbackCharMaterial, // DrawCharMaterial,
     CanDrawCallCallbackFalse, // Custom,
     CanDrawCallCallbackMaterial, // Material,
@@ -515,6 +519,12 @@ bool CachedPSO::Init(GPUShader* shader, bool useDepth)
     desc.PS = shader->GetPS("PS_Font");
     PS_Font = GPUDevice::Instance->CreatePipelineState();
     if (PS_Font->Init(desc))
+        return true;
+    //
+    desc.BlendMode = BlendingMode::AlphaBlend;
+    desc.PS = shader->GetPS("PS_FontMSDF");
+    PS_FontMSDF = GPUDevice::Instance->CreatePipelineState();
+    if (PS_FontMSDF->Init(desc))
         return true;
     //
     desc.PS = shader->GetPS("PS_LineAA");
@@ -994,6 +1004,10 @@ void DrawBatch(int32 startIndex, int32 count)
         Context->BindSR(0, d.AsChar.Tex);
         Context->SetState(CurrentPso->PS_Font);
         break;
+    case DrawCallType::DrawCharMSDF:
+        Context->BindSR(0, d.AsChar.Tex);
+        Context->SetState(CurrentPso->PS_FontMSDF);
+        break;
     case DrawCallType::DrawCharMaterial:
     {
         // Apply and bind material
@@ -1186,7 +1200,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     }
     else
     {
-        drawCall.Type = DrawCallType::DrawChar;
+        drawCall.Type = font->GetAsset()->GetOptions().RasterMode == FontRasterMode::MSDF ? DrawCallType::DrawCharMSDF : DrawCallType::DrawChar;
         drawCall.AsChar.Mat = nullptr;
     }
     Float2 pointer = location;
@@ -1305,7 +1319,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     }
     else
     {
-        drawCall.Type = DrawCallType::DrawChar;
+        drawCall.Type = font->GetAsset()->GetOptions().RasterMode == FontRasterMode::MSDF ? DrawCallType::DrawCharMSDF : DrawCallType::DrawChar;
         drawCall.AsChar.Mat = nullptr;
     }
     for (int32 lineIndex = 0; lineIndex < Lines.Count(); lineIndex++)
@@ -1440,7 +1454,27 @@ void Render2D::DrawRectangle(const Rectangle& rect, const Color& color1, const C
     RENDER2D_CHECK_RENDERING_STATE;
 
     const auto& mask = ClipLayersStack.Peek().Mask;
+    float thick = thickness;
     thickness *= (TransformCached.M11 + TransformCached.M22 + TransformCached.M33) * 0.3333333f;
+
+    // When lines thickness is very large, don't use corner caps and place line ends to not overlap
+    if (thickness > 4.0f)
+    {
+        thick *= Math::Lerp(0.6f, 1.0f, Math::Saturate(thick - 4.0f)); // Smooth transition between soft LineAA and harsh FillRect
+        Float2 totalMin = rect.GetUpperLeft() - Float2(thick * 0.5f);
+        Float2 totalMax = rect.GetBottomRight() + Float2(thick * 0.5f);
+        Float2 size = totalMax - totalMin;
+        Render2DDrawCall& drawCall = DrawCalls.AddOne();
+        drawCall.Type = NeedAlphaWithTint(color1, color2, color3, color4) ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
+        drawCall.StartIB = IBIndex;
+        drawCall.CountIB = 6 * 4;
+        // TODO: interpolate colors from corners to extended rectangle edges properly
+        WriteRect(Rectangle(totalMin.X, totalMin.Y, size.X, thick), color1, color2, color2, color1);
+        WriteRect(Rectangle(totalMin.X, totalMin.Y + rect.Size.Y, size.X, thick), color4, color3, color3, color4);
+        WriteRect(Rectangle(totalMin.X, totalMin.Y + thick, thick, rect.Size.Y - thick), color1, color1, color4, color4);
+        WriteRect(Rectangle(totalMax.X - thick, totalMin.Y + thick, thick, rect.Size.Y - thick), color2, color2, color3, color3);
+        return;
+    }
 
     Float2 points[5];
     ApplyTransform(rect.GetUpperLeft(), points[0]);

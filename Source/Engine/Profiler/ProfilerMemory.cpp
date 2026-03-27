@@ -263,6 +263,7 @@ void InitProfilerMemory(const Char* cmdLine, int32 stage)
     INIT_PARENT(Level, LevelTerrain);
     INIT_PARENT(Navigation, NavigationMesh);
     INIT_PARENT(Navigation, NavigationBuilding);
+    INIT_PARENT(Physics, PhysicsCloth);
     INIT_PARENT(Scripting, ScriptingVisual);
     INIT_PARENT(Scripting, ScriptingCSharp);
     INIT_PARENT(ScriptingCSharp, ScriptingCSharpGCCommitted);

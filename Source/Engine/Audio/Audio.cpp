@@ -3,7 +3,6 @@
 #include "Audio.h"
 #include "AudioBackend.h"
 #include "AudioSettings.h"
-#include "FlaxEngine.Gen.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Scripting/BinaryModule.h"
 #include "Engine/Level/Level.h"

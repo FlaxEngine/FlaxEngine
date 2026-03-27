@@ -163,7 +163,6 @@ namespace FlaxEditor.Viewport
         private bool _useMouseAcceleration;
 
         // Input
-
         internal bool _disableInputUpdate;
         private bool _isControllingMouse, _isViewportControllingMouse, _wasVirtualMouseRightDown, _isVirtualMouseRightDown;
         private int _deltaFilteringStep;
@@ -247,8 +246,8 @@ namespace FlaxEditor.Viewport
             {
                 _movementSpeed = value;
 
-                if (_cameraButton != null)
-                    _cameraButton.Text = string.Format(MovementSpeedTextFormat, _movementSpeed);
+                if (_orthographicModeButton != null)
+                    _orthographicModeButton.Text = string.Format(MovementSpeedTextFormat, _movementSpeed);
             }
         }
 
@@ -581,7 +580,7 @@ namespace FlaxEditor.Viewport
 
                 // Camera Settings Menu
                 var cameraCM = new ContextMenu();
-                _cameraButton = new ViewportWidgetButton(string.Format(MovementSpeedTextFormat, _movementSpeed), _editor.Icons.Camera64, cameraCM, false, cameraSpeedTextWidth)
+                _cameraButton = new ViewportWidgetButton("", _editor.Icons.Camera64, cameraCM)
                 {
                     Tag = this,
                     TooltipText = "Camera Settings.",
@@ -590,7 +589,7 @@ namespace FlaxEditor.Viewport
                 _cameraWidget.Parent = this;
 
                 // Orthographic/Perspective Mode Widget
-                _orthographicModeButton = new ViewportWidgetButton(string.Empty, _editor.Icons.CamSpeed32, null, true)
+                _orthographicModeButton = new OrthoCamToggleViewportWidgetButton(cameraSpeedTextWidth)
                 {
                     Checked = !_isOrtho,
                     TooltipText = "Toggle Orthographic/Perspective Mode.",
@@ -1223,7 +1222,7 @@ namespace FlaxEditor.Viewport
         /// Orients the viewport.
         /// </summary>
         /// <param name="orientation">The orientation.</param>
-        protected void OrientViewport(Quaternion orientation)
+        public void OrientViewport(Quaternion orientation)
         {
             OrientViewport(ref orientation);
         }
@@ -1232,7 +1231,7 @@ namespace FlaxEditor.Viewport
         /// Orients the viewport.
         /// </summary>
         /// <param name="orientation">The orientation.</param>
-        protected virtual void OrientViewport(ref Quaternion orientation)
+        public virtual void OrientViewport(ref Quaternion orientation)
         {
             if (ViewportCamera is FPSCamera fpsCamera)
             {

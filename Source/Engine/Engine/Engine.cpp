@@ -595,7 +595,11 @@ void EngineImpl::InitLog()
 #if COMPILE_WITH_DEV_ENV
     LOG(Info, "Compiled for Dev Environment");
 #endif
+#if defined(FLAXENGINE_BRANCH) && defined(FLAXENGINE_COMMIT)
+    LOG(Info, "Version " FLAXENGINE_VERSION_TEXT ", {}, {}", StringAsUTF16<>(FLAXENGINE_BRANCH).Get(), StringAsUTF16<>(FLAXENGINE_COMMIT).Get());
+#else
     LOG(Info, "Version " FLAXENGINE_VERSION_TEXT);
+#endif
     const Char* cpp = TEXT("?");
     if (__cplusplus == 202101L) cpp = TEXT("C++23");
     else if (__cplusplus == 202002L) cpp = TEXT("C++20");

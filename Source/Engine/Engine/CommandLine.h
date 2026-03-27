@@ -134,6 +134,11 @@ public:
         String Project;
 
         /// <summary>
+        /// -lastproject (Opens the last project)
+        /// </summary>
+        Nullable<bool> LastProject;
+
+        /// <summary>
         /// -new (generates the project files inside the specified project folder or uses current workspace folder)
         /// </summary>
         Nullable<bool> NewProject;

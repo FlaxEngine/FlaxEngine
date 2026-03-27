@@ -128,6 +128,11 @@ String VisualStudioCodeEditor::GetName() const
     return _isInsiders ? TEXT("Visual Studio Code - Insiders") : TEXT("Visual Studio Code");
 }
 
+String VisualStudioCodeEditor::GetGenerateProjectCustomArgs() const
+{
+    return TEXT("-vs2022 -vscode");
+}
+
 void VisualStudioCodeEditor::OpenFile(const String& path, int32 line)
 {
     // Generate VS solution files for intellisense

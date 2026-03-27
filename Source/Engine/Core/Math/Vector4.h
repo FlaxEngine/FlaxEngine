@@ -153,6 +153,12 @@ public:
         return Math::IsOne(X) && Math::IsOne(Y) && Math::IsOne(Z) && Math::IsOne(W);
     }
 
+    // Calculates the length of the vector.
+    T Length() const
+    {
+        return Math::Sqrt(X * X + Y * Y + Z * Z + W * W);
+    }
+
     /// <summary>
     /// Returns the average arithmetic of all the components.
     /// </summary>

@@ -184,15 +184,13 @@ public class ContentFolderTreeNode : TreeNode
             }
         }
 
-        bool isExpanded = isAnyChildVisible;
-
-        if (isExpanded)
+        if (!noFilter)
         {
-            Expand(true);
-        }
-        else
-        {
-            Collapse(true);
+            bool isExpanded = isAnyChildVisible;
+            if (isExpanded)
+                Expand(true);
+            else
+                Collapse(true);
         }
 
         Visible = isThisVisible | isAnyChildVisible;

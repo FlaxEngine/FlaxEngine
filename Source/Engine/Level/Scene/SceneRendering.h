@@ -56,6 +56,7 @@ public:
         Layer = 4,
         StaticFlags = 8,
         AutoDelayDuringRendering = 16, // Conditionally allow updating data during rendering when writes are locked
+        DrawModes = 32,
         Auto = Visual | Bounds | Layer,
     };
 

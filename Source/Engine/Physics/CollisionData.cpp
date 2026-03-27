@@ -257,6 +257,8 @@ Asset::LoadResult CollisionData::load()
 
 CollisionData::LoadResult CollisionData::load(const SerializedOptions* options, byte* dataPtr, int32 dataSize)
 {
+    if (WaitForInitPhysics())
+        return LoadResult::CannotLoadData;
     PROFILE_MEM(Physics);
 
     // Load options

@@ -310,8 +310,8 @@ namespace FlaxEngine.GUI
             // Caret
             if (IsFocused && CaretPosition > -1)
             {
-                float alpha = Mathf.Saturate(Mathf.Cos(_animateTime * CaretFlashSpeed) * 0.5f + 0.7f);
-                alpha = alpha * alpha * alpha * alpha * alpha * alpha;
+                float alpha = Mathf.Saturate(Mathf.Cos(_animateTime * CaretFlashSpeed) * 0.5f + 0.8f);
+                alpha = alpha * alpha;
                 Render2D.FillRectangle(CaretBounds, CaretColor * alpha);
             }
 

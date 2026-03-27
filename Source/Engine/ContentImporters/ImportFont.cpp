@@ -12,12 +12,13 @@
 CreateAssetResult ImportFont::Import(CreateAssetContext& context)
 {
     // Base
-    IMPORT_SETUP(FontAsset, 3);
+    IMPORT_SETUP(FontAsset, 4);
 
     // Setup header
     FontOptions options;
     options.Hinting = FontHinting::Default;
     options.Flags = FontFlags::AntiAliasing;
+    options.RasterMode = FontRasterMode::Bitmap;
     context.Data.CustomData.Copy(&options);
 
     // Open the file

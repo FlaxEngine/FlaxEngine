@@ -46,6 +46,7 @@ namespace
 
 ContentStorageService ContentStorageServiceInstance;
 
+TimeSpan ContentStorageManager::UnusedStorageLifetime = TimeSpan::FromSeconds(0.5f);
 TimeSpan ContentStorageManager::UnusedDataChunksLifetime = TimeSpan::FromSeconds(10);
 
 FlaxStorageReference ContentStorageManager::GetStorage(const StringView& path, bool loadIt)

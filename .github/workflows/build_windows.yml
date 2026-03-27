@@ -4,6 +4,7 @@ on: [push, pull_request]
 env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: false
+  DOTNET_ROLL_FORWARD: 'minor'
 
 jobs:
 
@@ -19,7 +20,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 8.0.419
     - name: Print .NET info
       run: |
         dotnet --info
@@ -30,6 +31,9 @@ jobs:
         git lfs pull
     - name: Build
       run: |
+        PowerShell "(Get-Content global.json).Replace('latestMajor', 'minor') | Set-Content global.json"
+        PowerShell "(Get-Content Source/Tools/Flax.Build/global.json).Replace('latestMajor', 'minor') | Set-Content Source/Tools/Flax.Build/global.json"
+        PowerShell "(Get-Content Source/Tools/Flax.Build/Flax.Build.csproj).Replace('LatestMajor', 'Minor') | Set-Content Source/Tools/Flax.Build/Flax.Build.csproj"
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -printSDKs -dotnet=8 -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxEditor
 
   # Game
@@ -44,7 +48,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 8.0.419
     - name: Print .NET info
       run: |
         dotnet --info
@@ -55,4 +59,7 @@ jobs:
         git lfs pull
     - name: Build
       run: |
+        PowerShell "(Get-Content global.json).Replace('latestMajor', 'minor') | Set-Content global.json"
+        PowerShell "(Get-Content Source/Tools/Flax.Build/global.json).Replace('latestMajor', 'minor') | Set-Content Source/Tools/Flax.Build/global.json"
+        PowerShell "(Get-Content Source/Tools/Flax.Build/Flax.Build.csproj).Replace('LatestMajor', 'Minor') | Set-Content Source/Tools/Flax.Build/Flax.Build.csproj"
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -printSDKs -dotnet=8 -arch=x64 -platform=Windows -configuration=Release -buildtargets=FlaxGame

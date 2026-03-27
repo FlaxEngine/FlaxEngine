@@ -325,7 +325,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             var codeEditor = options.SourceCode.SourceCodeEditor;
             if (codeEditor != "None")
             {
-                foreach (var e in Editor.Instance.CodeEditing.Editors)
+                foreach (var e in _editors)
                 {
                     if (string.Equals(codeEditor, e.Name, StringComparison.OrdinalIgnoreCase))
                     {
@@ -334,7 +334,10 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                     }
                 }
             }
-            Editor.Instance.CodeEditing.SelectedEditor = editor;
+            if (editor == null && _editors.Count != 0)
+                editor = _editors[0];
+
+            SelectedEditor = editor;
         }
 
         /// <summary>

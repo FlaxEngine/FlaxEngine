@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Threading;
 using Flax.Build;
 using Flax.Build.Platforms;
 
@@ -199,8 +200,13 @@ namespace Flax.Deploy
                     var dmgPath = Path.Combine(Deployer.PackageOutputPath, "FlaxEditor.dmg");
                     Log.Info(string.Empty);
                     Log.Info("Building disk image...");
+                    Thread.Sleep(100);
                     if (File.Exists(dmgPath))
+                    {
+                        Log.Verbose("Removing old image");
                         File.Delete(dmgPath);
+                        Thread.Sleep(100);
+                    }
                     Utilities.Run("hdiutil", $"create -srcFolder \"{appPath}\" -o \"{dmgPath}\"", null, null, Utilities.RunOptions.Default | Utilities.RunOptions.ThrowExceptionOnError);
                     CodeSign(dmgPath);
                     Log.Info("Output disk image size: " + Utilities.GetFileSize(dmgPath));
