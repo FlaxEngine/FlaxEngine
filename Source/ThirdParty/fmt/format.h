@@ -566,12 +566,6 @@ FMT_CONSTEXPR20 auto fill_n(T* out, Size count, char value) -> T* {
   return out + count;
 }
 
-#ifdef __cpp_char8_t
-using char8_type = char8_t;
-#else
-enum char8_type : unsigned char {};
-#endif
-
 template <typename OutChar, typename InputIt, typename OutputIt>
 FMT_CONSTEXPR FMT_NOINLINE auto copy_str_noinline(InputIt begin, InputIt end,
                                                   OutputIt out) -> OutputIt {
@@ -705,11 +699,6 @@ FMT_CONSTEXPR inline size_t compute_width(string_view s) {
   return num_code_points;
 }
 
-inline auto compute_width(basic_string_view<char8_type> s) -> size_t {
-  return compute_width(
-      string_view(reinterpret_cast<const char*>(s.data()), s.size()));
-}
-
 template <typename Char>
 inline auto code_point_index(basic_string_view<Char> s, size_t n) -> size_t {
   size_t size = s.size();
@@ -724,12 +713,6 @@ inline auto code_point_index(string_view s, size_t n) -> size_t {
     if ((data[i] & 0xc0) != 0x80 && ++num_code_points > n) return i;
   }
   return s.size();
-}
-
-inline auto code_point_index(basic_string_view<char8_type> s, size_t n)
-    -> size_t {
-  return code_point_index(
-      string_view(reinterpret_cast<const char*>(s.data()), s.size()), n);
 }
 
 #ifndef FMT_USE_FLOAT128
