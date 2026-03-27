@@ -202,6 +202,9 @@ public sealed class ContentItemTreeNode : TreeNode, IContentItemOwner
         base.OnDestroy();
     }
 
+    /// <summary>
+    /// Updates the text of the node.
+    /// </summary>
     public void UpdateDisplayedName()
     {
         var contentWindow = Editor.Instance?.Windows?.ContentWin;
