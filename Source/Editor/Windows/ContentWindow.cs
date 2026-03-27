@@ -1473,6 +1473,7 @@ namespace FlaxEditor.Windows
             var iconSize = Mathf.Clamp(16.0f * scale, 12.0f, 28.0f);
             var textMarginLeft = 2.0f + Mathf.Max(0.0f, iconSize - 16.0f);
             ApplyTreeNodeScale(_root, headerHeight, fontRef, textMarginLeft);
+            _root?.PerformLayout(true);
             _tree.PerformLayout();
         }
 

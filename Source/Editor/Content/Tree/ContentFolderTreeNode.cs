@@ -100,7 +100,34 @@ public class ContentFolderTreeNode : TreeNode
             Parent = parent;
         }
         IconColor = Color.Transparent; // Hide default icon, we draw scaled icon manually
+        UpdateCustomArrowRect();
         Editor.Instance?.Windows?.ContentWin?.TryAutoExpandContentNode(this);
+    }
+    
+    /// <summary>
+    /// Updates the custom arrow rectangle so it stays aligned with the current layout.
+    /// </summary>
+    private void UpdateCustomArrowRect()
+    {
+        var contentWindow = Editor.Instance?.Windows?.ContentWin;
+        var scale = contentWindow != null && contentWindow.IsTreeOnlyMode ? contentWindow.View.ViewScale : 1.0f;
+        var arrowSize = Mathf.Clamp(12.0f * scale, 10.0f, 20.0f);
+        var iconSize = Mathf.Clamp(16.0f * scale, 12.0f, 28.0f);
+
+        // Use the current text layout, not just cached values.
+        var textRect = TextRect;
+        var iconLeft = textRect.Left - iconSize - 2.0f;
+        var x = Mathf.Max(iconLeft - arrowSize - 2.0f, 0.0f);
+        var y = Mathf.Max((HeaderHeight - arrowSize) * 0.5f, 0.0f);
+
+        CustomArrowRect = new Rectangle(x, y, arrowSize, arrowSize);
+    }
+    
+    /// <inheritdoc />
+    public override void PerformLayout(bool force = false)
+    {
+        base.PerformLayout(force);
+        UpdateCustomArrowRect();
     }
 
     /// <summary>
