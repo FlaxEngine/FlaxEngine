@@ -163,7 +163,6 @@ namespace FlaxEditor.Viewport
         private bool _useMouseAcceleration;
 
         // Input
-
         internal bool _disableInputUpdate;
         private bool _isControllingMouse, _isViewportControllingMouse, _wasVirtualMouseRightDown, _isVirtualMouseRightDown;
         private int _deltaFilteringStep;
