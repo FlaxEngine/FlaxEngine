@@ -13,6 +13,9 @@ namespace Flax.Deps.Dependencies
     class tint : Dependency
     {
         /// <inheritdoc />
+        public override bool BuildByDefault => false; // Too big to build without explicit need
+
+        /// <inheritdoc />
         public override TargetPlatform[] Platforms
         {
             get
