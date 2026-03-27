@@ -55,9 +55,13 @@ internal class DirectionGizmo : ContainerControl
         {
             // Inline EditorViewport.ProjectPoint to save on calculation for large set of points
             _viewport = new FlaxEngine.Viewport(0, 0, editorViewport.Width, editorViewport.Height);
+            // Force the FOV to 60° (viewport default) to keep the gizmo size consistent regardless of the editor viewport FOV setting
+            float fieldOfView = editorViewport.FieldOfView; 
+            editorViewport.FieldOfView = 60f;
             _frustum = editorViewport.ViewFrustum;
             _viewProjection = _frustum.Matrix;
             _origin = editorViewport.Task.View.Origin;
+            editorViewport.FieldOfView = fieldOfView;
         }
 
         public void ProjectPoint(Vector3 worldSpaceLocation, out Float2 viewportSpaceLocation)
@@ -157,9 +161,9 @@ internal class DirectionGizmo : ContainerControl
     }
 
     /// <inheritdoc />
-    public override bool OnMouseDown(Float2 location, MouseButton button)
+    public override bool OnMouseUp(Float2 location, MouseButton button)
     {
-        if (base.OnMouseDown(location, button))
+        if (base.OnMouseUp(location, button))
             return true;
 
         // Check which axis is being clicked - check from closest to farthest for proper layering
