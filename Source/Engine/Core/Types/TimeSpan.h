@@ -253,7 +253,7 @@ public:
     /// </summary>
     FORCE_INLINE float GetTotalSeconds() const
     {
-        return static_cast<float>(Ticks) / TicksPerSecond;
+        return (float)((double)Ticks / TicksPerSecond);
     }
 
 public:

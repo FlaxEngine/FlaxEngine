@@ -50,13 +50,10 @@ IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderC
 }
 
 IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderContext& renderContext, const ::DrawCall& drawCall, bool instanced)
-    : GPUContext(context)
-    , RenderContext(renderContext)
-    , DrawCall(&drawCall)
-    , Time(Time::Draw.UnscaledTime.GetTotalSeconds())
-    , ScaledTime(Time::Draw.Time.GetTotalSeconds())
-    , Instanced(instanced)
+    : BindParameters(context, renderContext)
 {
+    DrawCall = &drawCall;
+    Instanced = instanced;
 }
 
 GPUConstantBuffer* IMaterial::BindParameters::PerViewConstants = nullptr;
