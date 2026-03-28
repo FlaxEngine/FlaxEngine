@@ -829,6 +829,11 @@ namespace FlaxEditor.Surface.Archetypes
                         node.ResizeAuto();
                     }
                 }
+                else
+                {
+                    // Correctly size decorators when surface is loaded
+                    Node.ResizeAuto();
+                }
             }
 
             /// <inheritdoc />
