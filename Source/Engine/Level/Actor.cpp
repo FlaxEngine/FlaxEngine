@@ -1729,7 +1729,6 @@ void WriteObjectToBytes(SceneObject* obj, rapidjson_flax::StringBuffer& buffer, 
 {
     // Create JSON
     CompactJsonWriter writer(buffer);
-
     writer.SceneObject(obj);
 
     // Write json to output
@@ -1737,28 +1736,24 @@ void WriteObjectToBytes(SceneObject* obj, rapidjson_flax::StringBuffer& buffer, 
     output.WriteInt32((int32)buffer.GetSize());
     output.WriteBytes((byte*)buffer.GetString(), (int32)buffer.GetSize());
 
-    // Store order in parent. Makes life easier for editor to sync objects order on undo/redo actions.
-    output.WriteInt32(obj->GetOrderInParent());
-
     // Reuse string buffer
     buffer.Clear();
 }
 
 bool Actor::ToBytes(const Array<Actor*>& actors, MemoryWriteStream& output)
 {
-    PROFILE_CPU();
     if (actors.IsEmpty())
     {
         // Cannot serialize empty list
         return true;
     }
+    PROFILE_CPU();
+    PROFILE_MEM(Level);
 
     // Collect object ids that exist in the serialized data to allow references mapping later
     Array<Guid> ids(actors.Count());
     for (int32 i = 0; i < actors.Count(); i++)
     {
-        // By default we collect actors and scripts (they are ManagedObjects recognized by the id)
-
         auto actor = actors[i];
         if (!actor)
             continue;
@@ -1766,7 +1761,8 @@ bool Actor::ToBytes(const Array<Actor*>& actors, MemoryWriteStream& output)
         for (int32 j = 0; j < actor->Scripts.Count(); j++)
         {
             const auto script = actor->Scripts[j];
-            ids.Add(script->GetID());
+            if (script)
+                ids.Add(script->GetID());
         }
     }
 
@@ -1776,23 +1772,28 @@ bool Actor::ToBytes(const Array<Actor*>& actors, MemoryWriteStream& output)
     // Serialized objects ids (for references mapping)
     output.Write(ids);
 
-    // Objects data
+    // Objects data (JSON)
     rapidjson_flax::StringBuffer buffer;
+    CompactJsonWriter writer(buffer);
+    writer.StartArray();
     for (int32 i = 0; i < actors.Count(); i++)
     {
         Actor* actor = actors[i];
         if (!actor)
             continue;
-
-        WriteObjectToBytes(actor, buffer, output);
-
+        writer.SceneObject(actor);
         for (int32 j = 0; j < actor->Scripts.Count(); j++)
         {
             Script* script = actor->Scripts[j];
-
-            WriteObjectToBytes(script, buffer, output);
+            if (!script)
+                continue;
+            writer.SceneObject(script);
         }
     }
+    writer.EndArray();
+    // TODO: compress json (LZ4) if it's big enough
+    output.WriteInt32((int32)buffer.GetSize());
+    output.WriteBytes((byte*)buffer.GetString(), (int32)buffer.GetSize());
 
     return false;
 }
@@ -1811,8 +1812,8 @@ Array<byte> Actor::ToBytes(const Array<Actor*>& actors)
 bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeModifier* modifier)
 {
     PROFILE_CPU();
+    PROFILE_MEM(Level);
     output.Clear();
-
     ASSERT(modifier);
     if (data.Length() <= 0)
         return true;
@@ -1828,15 +1829,34 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
     }
 
     // Serialized objects ids (for references mapping)
+#if 0
     Array<Guid> ids;
     stream.Read(ids);
     int32 objectsCount = ids.Count();
+#else
+    int32 objectsCount;
+    stream.ReadInt32(&objectsCount);
+    stream.Move<Guid>(objectsCount);
+#endif
     if (objectsCount < 0)
         return true;
 
+    // Load objects data (JSON)
+    int32 bufferSize;
+    stream.ReadInt32(&bufferSize);
+    const char* buffer = (const char*)stream.Move(bufferSize);
+    rapidjson_flax::Document document;
+    {
+        PROFILE_CPU_NAMED("Json.Parse");
+        document.Parse(buffer, bufferSize);
+    }
+    if (document.HasParseError())
+    {
+        Log::JsonParseException(document.GetParseError(), document.GetErrorOffset());
+        return true;
+    }
+
     // Prepare
-    Array<int32> order;
-    order.Resize(objectsCount);
     modifier->EngineBuild = engineBuild;
     CollectionPoolCache<ActorsCache::SceneObjectsListType>::ScopeCache sceneObjects = ActorsCache::SceneObjectsListCache.Get();
     sceneObjects->Resize(objectsCount);
@@ -1844,34 +1864,10 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
 
     // Deserialize objects
     Scripting::ObjectsLookupIdMapping.Set(&modifier->IdsMapping);
-    auto startPos = stream.GetPosition();
     for (int32 i = 0; i < objectsCount; i++)
     {
-        // Buffer
-        int32 bufferSize;
-        stream.ReadInt32(&bufferSize);
-        const char* buffer = (const char*)stream.GetPositionHandle();
-        stream.Move(bufferSize);
-
-        // Order in parent
-        int32 orderInParent;
-        stream.ReadInt32(&orderInParent);
-        order[i] = orderInParent;
-
-        // Load JSON 
-        rapidjson_flax::Document document;
-        {
-            PROFILE_CPU_NAMED("Json.Parse");
-            document.Parse(buffer, bufferSize);
-        }
-        if (document.HasParseError())
-        {
-            Log::JsonParseException(document.GetParseError(), document.GetErrorOffset());
-            return true;
-        }
-
-        // Create object
-        auto obj = SceneObjectsFactory::Spawn(context, document);
+        auto& objData = document[i];
+        auto obj = SceneObjectsFactory::Spawn(context, objData);
         sceneObjects->At(i) = obj;
         if (obj == nullptr)
         {
@@ -1879,56 +1875,20 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
             continue;
         }
         obj->RegisterObject();
-
-        // Add to results
         Actor* actor = dynamic_cast<Actor*>(obj);
         if (actor)
-        {
             output.Add(actor);
-        }
     }
-    // TODO: optimize this to call json parsing only once per-object instead of twice (spawn + load)
-    stream.SetPosition(startPos);
     for (int32 i = 0; i < objectsCount; i++)
     {
-        // Buffer
-        int32 bufferSize;
-        stream.ReadInt32(&bufferSize);
-        const char* buffer = (const char*)stream.GetPositionHandle();
-        stream.Move(bufferSize);
-
-        // Order in parent
-        int32 orderInParent;
-        stream.ReadInt32(&orderInParent);
-
-        // Load JSON
-        rapidjson_flax::Document document;
-        {
-            PROFILE_CPU_NAMED("Json.Parse");
-            document.Parse(buffer, bufferSize);
-        }
-        if (document.HasParseError())
-        {
-            Log::JsonParseException(document.GetParseError(), document.GetErrorOffset());
-            return true;
-        }
-
-        // Deserialize object
+        auto& objData = document[i];
         auto obj = sceneObjects->At(i);
         if (obj)
-            SceneObjectsFactory::Deserialize(context, obj, document);
+            SceneObjectsFactory::Deserialize(context, obj, objData);
         else
-            SceneObjectsFactory::HandleObjectDeserializationError(document);
+            SceneObjectsFactory::HandleObjectDeserializationError(objData);
     }
     Scripting::ObjectsLookupIdMapping.Set(nullptr);
-
-    // Update objects order
-    //for (int32 i = 0; i < objectsCount; i++)
-    {
-        //SceneObject* obj = sceneObjects->At(i);
-        // TODO: remove order from saved data?
-        //obj->SetOrderInParent(order[i]);
-    }
 
     // Call events (only for parents because they will propagate events down the tree)
     CollectionPoolCache<ActorsCache::ActorsListType>::ScopeCache parents = ActorsCache::ActorsListCache.Get();
@@ -1949,8 +1909,7 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
     }
     for (int32 i = 0; i < parents->Count(); i++)
     {
-        Actor* actor = parents->At(i);
-        actor->OnTransformChanged();
+        parents->At(i)->OnTransformChanged();
     }
 
     // Initialize actor that are spawned to scene or create managed instanced for others
