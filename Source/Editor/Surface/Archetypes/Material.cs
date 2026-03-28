@@ -317,6 +317,7 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     pos += new Float2(65, 0);
                     size = new Float2(160, 185);
+                    _sizeMin = new Float2(240, 185);
                 }
                 else
                 {
@@ -969,7 +970,6 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Custom Global Code",
                 Description = "Custom global HLSL shader code expression (placed before material shader code). Can contain includes to shader utilities or declare functions to reuse later.",
                 Flags = NodeFlags.MaterialGraph,
-                UseFixedSize = true,
                 Size = new Float2(300, 240),
                 DefaultValues = new object[]
                 {
