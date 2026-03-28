@@ -14,6 +14,7 @@ namespace FlaxEditor.Windows
 
         private void OnTreeSelectionChanged(List<TreeNode> from, List<TreeNode> to)
         {
+            bool setLastViewFolder = !IsLayoutLocked;
             if (!_showAllContentInTree && to.Count > 1)
             {
                 _tree.Select(to[^1]);
@@ -21,11 +22,14 @@ namespace FlaxEditor.Windows
             }
             if (_showAllContentInTree && to.Count > 1)
             {
-                var activeNode = GetActiveTreeSelection(to);
-                if (activeNode is ContentItemTreeNode itemNode)
-                    SaveLastViewedFolder(itemNode.Item?.ParentFolder?.Node);
-                else
-                    SaveLastViewedFolder(activeNode as ContentFolderTreeNode);
+                if (setLastViewFolder)
+                {
+                    var activeNode = GetActiveTreeSelection(to);
+                    if (activeNode is ContentItemTreeNode itemNode)
+                        SaveLastViewedFolder(itemNode.Item?.ParentFolder?.Node);
+                    else
+                        SaveLastViewedFolder(activeNode as ContentFolderTreeNode);
+                }
                 UpdateUI();
                 return;
             }
@@ -35,7 +39,8 @@ namespace FlaxEditor.Windows
             var targetNode = GetActiveTreeSelection(to);
             if (targetNode is ContentItemTreeNode itemNode2)
             {
-                SaveLastViewedFolder(itemNode2.Item?.ParentFolder?.Node);
+                if (setLastViewFolder)
+                    SaveLastViewedFolder(itemNode2.Item?.ParentFolder?.Node);
                 UpdateUI();
                 itemNode2.Focus();
                 return;
@@ -44,7 +49,8 @@ namespace FlaxEditor.Windows
             var target = targetNode as ContentFolderTreeNode;
             Navigate(source, target);
 
-            SaveLastViewedFolder(target);
+            if (setLastViewFolder)
+                SaveLastViewedFolder(target);
             target?.Focus();
         }
 

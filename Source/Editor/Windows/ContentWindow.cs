@@ -1227,8 +1227,6 @@ namespace FlaxEditor.Windows
                 UpdateItemsSearch();
             else
                 RefreshView(SelectedNode);
-
-            return;
         }
 
         /// <summary>
