@@ -486,7 +486,7 @@ namespace FlaxEditor.Surface.Archetypes
                         zero, // Tangent In
                         zero, // Tangent Out
 
-                        // Empty keys zero-6
+                        // Empty keys 0-6
                         0.0f, zero, zero, zero,
                         0.0f, zero, zero, zero,
                         0.0f, zero, zero, zero,

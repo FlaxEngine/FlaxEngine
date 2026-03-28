@@ -312,16 +312,16 @@ namespace FlaxEditor.Surface.Archetypes
             : base(id, context, nodeArch, groupArch)
             {
                 _sizeValueIndex = Archetype.TypeID == 8 ? 1 : 3; // Index of the Size stored in Values array
-                Float2 pos = new Float2(FlaxEditor.Surface.Constants.NodeMarginX + 25f, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight), size;
+                Float2 pos = new Float2(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight), size;
                 if (nodeArch.TypeID == 8)
                 {
-                    pos += new Float2(60, 0);
-                    size = new Float2(125, 200);
+                    pos += new Float2(65, 0);
+                    size = new Float2(160, 185);
                 }
                 else
                 {
-                    pos += new Float2(0, 40);
-                    size = new Float2(300, 200);
+                    pos += new Float2(0, 40 + FlaxEditor.Utilities.Constants.UIMargin * 2f);
+                    size = new Float2(300, 180);
                 }
                 _textBox = new CustomCodeTextBox
                 {
@@ -506,8 +506,8 @@ namespace FlaxEditor.Surface.Archetypes
                 Size = new Float2(300, 200),
                 DefaultValues = new object[]
                 {
-                    "// Here you can add HLSL code\nOutput0 = Input0;",
-                    new Float2(300, 200),
+                    "// You can add HLSL code here\nOutput0 = Input0;",
+                    new Float2(350, 200),
                 },
                 Elements = new[]
                 {
@@ -969,10 +969,11 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Custom Global Code",
                 Description = "Custom global HLSL shader code expression (placed before material shader code). Can contain includes to shader utilities or declare functions to reuse later.",
                 Flags = NodeFlags.MaterialGraph,
+                UseFixedSize = true,
                 Size = new Float2(300, 240),
                 DefaultValues = new object[]
                 {
-                    "// Here you can add HLSL code\nfloat4 GetCustomColor()\n{\n\treturn float4(1, 0, 0, 1);\n}",
+                    "// You can add HLSL code here\nfloat4 GetCustomColor()\n{\n\treturn float4(1, 0, 0, 1);\n}",
                     true,
                     (int)MaterialTemplateInputsMapping.Utilities,
                     new Float2(300, 240),
