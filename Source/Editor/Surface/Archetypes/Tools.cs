@@ -467,7 +467,6 @@ namespace FlaxEditor.Surface.Archetypes
                     Create = (id, context, arch, groupArch) => new CurveNode<T>(id, context, arch, groupArch),
                     Description = "An animation spline represented by a set of keyframes, each representing an endpoint of a Bezier curve.",
                     Flags = NodeFlags.AllGraphs,
-                    UseFixedSize = true,
                     Size = new Float2(400, 180.0f),
                     DefaultValues = new object[]
                     {
@@ -516,13 +515,12 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnLoaded(action);
 
                 // Create curve editor
-                var upperLeft = GetBox(0).BottomLeft;
-                var upperRight = GetBox(1).BottomRight;
-                float curveMargin = 20.0f;
+                var upperLeft = GetBox(0).BottomRight;
+                var upperRight = GetBox(1).BottomLeft;
                 _curve = new BezierCurveEditor<T>
                 {
                     MaxKeyframes = 7,
-                    Bounds = new Rectangle(upperLeft + new Float2(curveMargin, 10.0f), upperRight.X - upperLeft.X - curveMargin * 2.0f, 140.0f),
+                    Bounds = new Rectangle(upperLeft + new Float2(0f, 10.0f), upperRight.X - upperLeft.X - 8.0f, 135.0f),
                     Parent = this,
                     AnchorMax = Float2.One,
                 };
