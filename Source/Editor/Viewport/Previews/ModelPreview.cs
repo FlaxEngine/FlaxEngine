@@ -367,7 +367,6 @@ namespace FlaxEditor.Viewport.Previews
             }
         }
 
-
         private int ComputeLODIndex(Model model, out float screenSize)
         {
             screenSize = 1.0f;
