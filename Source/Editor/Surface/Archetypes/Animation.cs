@@ -70,6 +70,9 @@ namespace FlaxEditor.Surface.Archetypes
                 if (box.ID != _assetBox.ID)
                     return;
                 _assetSelect.Visible = !box.HasAnyConnection;
+
+                if (!Archetype.UseFixedSize)
+                    ResizeAuto();
             }
         }
 

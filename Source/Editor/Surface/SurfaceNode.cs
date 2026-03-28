@@ -1058,7 +1058,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <summary>
-        /// Sets teh node values from the given pasted source. Can be overriden to perform validation or custom values processing.
+        /// Sets teh node values from the given pasted source. Can be overridden to perform validation or custom values processing.
         /// </summary>
         /// <param name="values">The input values array.</param>
         public virtual void SetValuesPaste(object[] values)
