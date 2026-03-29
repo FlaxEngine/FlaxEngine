@@ -61,6 +61,9 @@ namespace FlaxEngine
         /// <inheritdoc />
         public override bool CanRender()
         {
+            if (!Canvas)
+                return false;
+
             // Sync with canvas options
             Location = Canvas.RenderLocation;
             Order = Canvas.Order;
