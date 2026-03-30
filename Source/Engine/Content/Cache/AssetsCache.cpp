@@ -415,9 +415,7 @@ void AssetsCache::RegisterAssets(FlaxStorage* storage)
     // Check if need to resolve any collisions
     if (duplicatedEntries.HasItems())
     {
-        // Check if cannot resolve collision for that container (it must allow to write to)
-        // TODO: we could support packages as well but don't have to do it now, maybe in future
-        if (storage->AllowDataModifications() == false)
+        if (storage->IsReadOnly())
         {
             LOG(Error, "Cannot register \'{0}\'. Founded duplicated asset at \'{1}\' but storage container doesn't allow data modifications.", storagePath, info.Path);
             return;

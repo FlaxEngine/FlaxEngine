@@ -336,9 +336,7 @@ bool BinaryAsset::SaveToAsset(const StringView& path, AssetInitData& data, bool 
         // Force-resolve storage (asset at that path could be not yet loaded into registry)
         storage = ContentStorageManager::GetStorage(filePath);
     }
-
-    // Check if can perform write operation to the asset container
-    if (storage && !storage->AllowDataModifications())
+    if (storage && storage->IsReadOnly())
     {
         LOG(Warning, "Cannot write to the asset storage container.");
         return true;
@@ -635,7 +633,7 @@ void BinaryAsset::onRename(const StringView& newPath)
     ScopeLock lock(Locker);
 
     // We don't support packages now
-    ASSERT(!Storage->IsPackage() && Storage->AllowDataModifications() && Storage->GetEntriesCount() == 1);
+    ASSERT(!Storage->IsPackage() && !Storage->IsReadOnly() && Storage->GetEntriesCount() == 1);
 
     // Rename storage
     Storage->OnRename(newPath);
