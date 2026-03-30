@@ -230,7 +230,7 @@ namespace Flax.Build.Bindings
             case "uint32": return "VariantType(VariantType::Uint)";
             case "int64": return "VariantType(VariantType::Int64)";
             case "uint64": return "VariantType(VariantType::Uint64)";
-            case "Real":
+            case "Real": return "VariantType(VariantType::Real)";
             case "float": return "VariantType(VariantType::Float)";
             case "double": return "VariantType(VariantType::Double)";
             case "StringAnsiView":

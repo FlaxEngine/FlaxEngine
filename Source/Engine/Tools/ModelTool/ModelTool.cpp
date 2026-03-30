@@ -443,7 +443,7 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, const ModelData* modelData, 
                         minDistance *= -1; // Voxel is inside the geometry so turn it into negative distance to the surface
 
                     const int32 xAddress = x + yAddress;
-                    formatWrite(voxels.Get() + xAddress * formatStride, minDistance * encodeMAD.X + encodeMAD.Y);
+                    formatWrite(voxels.Get() + xAddress * formatStride, (float)minDistance * encodeMAD.X + encodeMAD.Y);
                 }
             }
         };

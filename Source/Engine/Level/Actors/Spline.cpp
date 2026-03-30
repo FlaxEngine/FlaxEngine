@@ -507,7 +507,7 @@ namespace
             return;
         Spline::Keyframe* prev = spline->Curve.GetKeyframes().Get();
         Vector3 prevPos = transform.LocalToWorld(prev->Value.Translation);
-        float distance = Vector3::Distance(prevPos, DebugDraw::GetViewPos());
+        Real distance = Vector3::Distance(prevPos, DebugDraw::GetViewPos());
         if (distance < METERS_TO_UNITS(800)) // 800m
         {
             // Bezier curve
