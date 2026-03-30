@@ -26,6 +26,7 @@
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Serialization/ISerializeModifier.h"
 #include "Engine/Serialization/Serialization.h"
+#include "Engine/Serialization/JsonTools.h"
 #include "Engine/Serialization/JsonWriters.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
@@ -69,6 +70,44 @@ namespace
             }
         }
         return result;
+    }
+
+    void LinkPrefab(SceneObject* object, Prefab* linkPrefab)
+    {
+        // Find prefab object that is used by this object in a given prefab
+        Guid currentPrefabId = object->GetPrefabID(), currentObjectId = object->GetPrefabObjectID();
+    RETRY:
+        auto prefab = Content::Load<Prefab>(currentPrefabId);
+        Guid nestedPrefabId, nestedObjectId;
+        if (prefab && prefab->GetNestedObject(currentObjectId, nestedPrefabId, nestedObjectId))
+        {
+            auto nestedPrefab = Content::Load<Prefab>(nestedPrefabId);
+            if (nestedPrefab)
+            {
+                auto nestedObject = (Actor*)nestedPrefab->GetDefaultInstance(nestedObjectId);
+                if (nestedObject && nestedPrefab == linkPrefab)
+                {
+                    object->LinkPrefab(nestedPrefabId, nestedObjectId);
+                    return;
+                }
+            }
+
+            // Try deeper
+            currentPrefabId = nestedPrefabId;
+            currentObjectId = nestedObjectId;
+            goto RETRY;
+        }
+
+        // Failed to resolve properly object from a given prefab
+        object->BreakPrefabLink();
+    }
+
+    void LinkPrefabRecursive(Actor* actor, Prefab* linkPrefab)
+    {
+        for (auto script : actor->Scripts)
+            LinkPrefab(script, linkPrefab);
+        for (auto child : actor->Children)
+            LinkPrefab(child, linkPrefab);
     }
 }
 
@@ -1930,6 +1969,32 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
         Actor* actor = parents->At(i);
         if (actor->HasPrefabLink() && !actor->IsPrefabRoot())
         {
+            // Find a prefab in which that object is a root to establish a new linkage
+            Guid currentPrefabId = actor->GetPrefabID(), currentObjectId = actor->GetPrefabObjectID();
+        RETRY:
+            auto prefab = Content::Load<Prefab>(currentPrefabId);
+            Guid nestedPrefabId, nestedObjectId;
+            if (prefab && prefab->GetNestedObject(currentObjectId, nestedPrefabId, nestedObjectId))
+            {
+                auto nestedPrefab = Content::Load<Prefab>(nestedPrefabId);
+                if (nestedPrefab)
+                {
+                    auto nestedObject = (Actor*)nestedPrefab->GetDefaultInstance(nestedObjectId);
+                    if (nestedObject && nestedObject->IsPrefabRoot())
+                    {
+                        // Change link to the nested prefab
+                        actor->LinkPrefab(nestedPrefabId, nestedObjectId);
+                        LinkPrefabRecursive(actor, nestedPrefab);
+                        continue;
+                    }
+                }
+
+                // Try deeper
+                currentPrefabId = nestedPrefabId;
+                currentObjectId = nestedObjectId;
+                goto RETRY;
+            }
+
             actor->BreakPrefabLink();
         }
     }
