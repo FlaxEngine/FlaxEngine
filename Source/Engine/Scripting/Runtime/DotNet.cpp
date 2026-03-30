@@ -1062,10 +1062,39 @@ MClass* MClass::GetElementClass() const
 MMethod* MClass::GetMethod(const char* name, int32 numParams) const
 {
     GetMethods();
-    for (int32 i = 0; i < _methods.Count(); i++)
+    for (MMethod* method : _methods)
     {
-        if (_methods[i]->GetParametersCount() == numParams && _methods[i]->GetName() == name)
-            return _methods[i];
+        if (method->GetParametersCount() == numParams && method->GetName() == name)
+            return method;
+    }
+    return nullptr;
+}
+
+MMethod* MClass::GetMethod(const ScriptingTypeMethodSignature& signature) const
+{
+    GetMethods();
+    for (MMethod* method : _methods)
+    {
+        if (method->IsStatic() != signature.IsStatic)
+            continue;
+        if (method->GetName() != signature.Name)
+            continue;
+        if (method->GetParametersCount() != signature.Params.Count())
+            continue;
+        bool isValid = true;
+        for (int32 paramIdx = 0; paramIdx < signature.Params.Count(); paramIdx++)
+        {
+            auto& param = signature.Params[paramIdx];
+            MType* type = method->GetParameterType(paramIdx);
+            if (param.IsOut != method->GetParameterIsOut(paramIdx) ||
+                !MUtils::VariantTypeEquals(param.Type, type, param.IsOut))
+            {
+                isValid = false;
+                break;
+            }
+        }
+        if (isValid && (signature.ReturnType.Type == VariantType::Null || MUtils::VariantTypeEquals(signature.ReturnType, method->GetReturnType())))
+            return method;
     }
     return nullptr;
 }

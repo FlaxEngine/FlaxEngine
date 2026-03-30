@@ -621,6 +621,7 @@ namespace MUtils
 #endif
 
     extern void* VariantToManagedArgPtr(Variant& value, MType* type, bool& failed);
+    extern bool VariantTypeEquals(const VariantType& type, MType* mType, bool isOut = false);
 
     extern MObject* ToManaged(const Version& value);
     extern Version ToNative(MObject* value);

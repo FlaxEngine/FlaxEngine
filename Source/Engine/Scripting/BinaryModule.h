@@ -23,7 +23,7 @@ struct ScriptingTypeMethodSignature
 
     StringAnsiView Name;
     VariantType ReturnType;
-    bool IsStatic;
+    bool IsStatic = false;
     Array<Param, InlinedAllocation<16>> Params;
 };
 
@@ -322,7 +322,7 @@ public:
 #endif
 
     static ScriptingObject* ManagedObjectSpawn(const ScriptingObjectSpawnParams& params);
-    static MMethod* FindMethod(MClass* mclass, const ScriptingTypeMethodSignature& signature);
+    static MMethod* FindMethod(const MClass* mclass, const ScriptingTypeMethodSignature& signature);
 #if USE_CSHARP
     static ManagedBinaryModule* FindModule(const MClass* klass);
     static ScriptingTypeHandle FindType(const MClass* klass);
