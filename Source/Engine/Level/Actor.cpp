@@ -1185,11 +1185,15 @@ void Actor::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
             }
             else if (!parent && parentId.IsValid())
             {
+                // Skip warning if object was mapped to empty id (intentionally ignored)
                 Guid tmpId;
-                if (_prefabObjectID.IsValid())
-                    LOG(Warning, "Missing parent actor {0} for \'{1}\', prefab object {2}", parentId, ToString(), _prefabObjectID);
-                else if (!modifier->IdsMapping.TryGet(parentId, tmpId) || tmpId.IsValid()) // Skip warning if object was mapped to empty id (intentionally ignored)
-                    LOG(Warning, "Missing parent actor {0} for \'{1}\'", parentId, ToString());
+                if (!modifier->IdsMapping.TryGet(parentId, tmpId) || tmpId.IsValid())
+                {
+                    if (_prefabObjectID.IsValid())
+                        LOG(Warning, "Missing parent actor {0} for \'{1}\', prefab object {2}", parentId, ToString(), _prefabObjectID);
+                    else
+                        LOG(Warning, "Missing parent actor {0} for \'{1}\'", parentId, ToString());
+                }
             }
         }
     }
@@ -1861,6 +1865,32 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
     CollectionPoolCache<ActorsCache::SceneObjectsListType>::ScopeCache sceneObjects = ActorsCache::SceneObjectsListCache.Get();
     sceneObjects->Resize(objectsCount);
     SceneObjectsFactory::Context context(modifier);
+
+    // Fix root linkage for prefab instances (eg. when user duplicates a sub-prefab actor but not a root one)
+    SceneObjectsFactory::PrefabSyncData prefabSyncData(*sceneObjects.Value, document, modifier);
+    SceneObjectsFactory::SetupPrefabInstances(context, prefabSyncData);
+    for (auto& instance : context.Instances)
+    {
+        Guid prefabObjectId;
+        if (!JsonTools::GetGuidIfValid(prefabObjectId, document[instance.RootIndex], "PrefabObjectID"))
+            continue;
+
+        // Get the original object from prefab
+        SceneObject* prefabObject = instance.Prefab->GetDefaultInstance(prefabObjectId);
+        if (prefabObject && prefabObject->GetParent())
+        {
+            // Add empty mapping to parent object in prefab to prevent linking to it
+            auto prefabObjectParentId = prefabObject->GetParent()->GetPrefabObjectID();
+            instance.IdsMapping[prefabObjectParentId] = Guid::Empty;
+            modifier->IdsMapping[prefabObjectParentId] = Guid::Empty;
+            Guid nestedPrefabId, nestedPrefabObjectId;
+            if (instance.Prefab->GetNestedObject(prefabObjectParentId, nestedPrefabId, nestedPrefabObjectId))
+            {
+                instance.IdsMapping[nestedPrefabObjectId] = Guid::Empty;
+                modifier->IdsMapping[nestedPrefabObjectId] = Guid::Empty;
+            }
+        }
+    }
 
     // Deserialize objects
     Scripting::ObjectsLookupIdMapping.Set(&modifier->IdsMapping);
