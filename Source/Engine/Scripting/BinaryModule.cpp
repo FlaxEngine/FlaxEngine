@@ -17,7 +17,6 @@
 #include "FlaxEngine.Gen.h"
 #include "Scripting.h"
 #include "Events.h"
-#include "Internal/StdTypesContainer.h"
 
 Dictionary<Pair<ScriptingTypeHandle, StringView>, void(*)(ScriptingObject*, void*, bool)> ScriptingEvents::EventsTable;
 Delegate<ScriptingObject*, Span<Variant>, ScriptingTypeHandle, StringView> ScriptingEvents::Event;

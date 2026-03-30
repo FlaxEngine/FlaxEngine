@@ -201,13 +201,15 @@ namespace Flax.Build.Bindings
                 if (apiType.IsStruct && !apiType.IsPod && !CppUsedNonPodTypes.Contains(apiType))
                     CppUsedNonPodTypes.Add(apiType);
 
+                var fullname = apiType.FullNameManaged;
                 if (apiType.IsEnum)
-                    return $"Variant::Enum(VariantType(VariantType::Enum, StringAnsiView(\"{apiType.FullNameManaged}\", {apiType.FullNameManaged.Length})), {value})";
+                    return $"Variant::Enum(VariantType(VariantType::Enum, StringAnsiView(\"{fullname}\", {fullname.Length})), {value})";
                 if (apiType.IsStruct && !CppInBuildVariantStructures.Contains(apiType.Name))
-                    if (typeInfo.IsPtr)
-                        return $"Variant::Structure(VariantType(VariantType::Structure, StringAnsiView(\"{apiType.FullNameManaged}\", {apiType.FullNameManaged.Length})), *{value})";
-                    else
-                        return $"Variant::Structure(VariantType(VariantType::Structure, StringAnsiView(\"{apiType.FullNameManaged}\", {apiType.FullNameManaged.Length})), {value})";
+                {
+                    if (apiType.IsInBuild)
+                        return $"Variant::Structure(VariantType(VariantType::Structure, StringAnsiView(\"{fullname}\", {fullname.Length})), {(typeInfo.IsPtr ? "*" + value : value)})";
+                    return $"Variant::Structure(VariantType(VariantType::Structure, {apiType.FullNameNative}::TypeInitializer.GetType()), {(typeInfo.IsPtr ? "*" + value : value)})";
+                }
             }
 
             if (typeInfo.IsPtr && typeInfo.IsConst)
@@ -276,14 +278,17 @@ namespace Flax.Build.Bindings
             var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
             if (apiType != null)
             {
-                // TODO: optimize VariantType for explicitly defined types to use static name and less mem/allocs
                 var fullname = apiType.FullNameManaged;
                 if (apiType.IsEnum)
                     return $"VariantType(VariantType::Enum, StringAnsiView(\"{fullname}\", {fullname.Length}))";
                 if (apiType.IsStruct)
-                    return $"VariantType(VariantType::Structure, StringAnsiView(\"{fullname}\", {fullname.Length}))";
+                {
+                    if (apiType.IsInBuild)
+                        return $"VariantType(VariantType::Structure, StringAnsiView(\"{fullname}\", {fullname.Length}))";
+                    return $"VariantType(VariantType::Structure, {apiType.FullNameNative}::TypeInitializer.GetType())";
+                }
                 if (apiType.IsClass)
-                    return $"VariantType(VariantType::Object, StringAnsiView(\"{fullname}\", {fullname.Length}))";
+                    return $"VariantType(VariantType::Object, {apiType.FullNameNative}::TypeInitializer.GetType())";
             }
 
             // Unknown
