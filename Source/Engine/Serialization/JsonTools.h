@@ -37,13 +37,7 @@ public:
         MergeObjects(target, source, target.GetAllocator());
     }
 
-    static void MergeObjects(Value& target, Value& source, Value::AllocatorType& allocator)
-    {
-        ASSERT(target.IsObject() && source.IsObject());
-        for (auto itr = source.MemberBegin(); itr != source.MemberEnd(); ++itr)
-            target.AddMember(itr->name, itr->value, allocator);
-    }
-
+    static void MergeObjects(Value& target, Value& source, Value::AllocatorType& allocator);
     static void ChangeIds(Document& doc, const Dictionary<Guid, Guid, HeapAllocation>& mapping);
 
 public:
@@ -77,11 +71,9 @@ public:
     static Float2 GetFloat2(const Value& value);
     static Float3 GetFloat3(const Value& value);
     static Float4 GetFloat4(const Value& value);
-
     static Double2 GetDouble2(const Value& value);
     static Double3 GetDouble3(const Value& value);
     static Double4 GetDouble4(const Value& value);
-
     static Color GetColor(const Value& value);
     static Quaternion GetQuaternion(const Value& value);
     static Ray GetRay(const Value& value);
@@ -89,15 +81,7 @@ public:
     static Transform GetTransform(const Value& value);
     static void GetTransform(Transform& result, const Value& value);
     static Plane GetPlane(const Value& value);
-
-    static Rectangle GetRectangle(const Value& value)
-    {
-        return Rectangle(
-            GetVector2(value, "Location", Vector2::Zero),
-            GetVector2(value, "Size", Vector2::Zero)
-        );
-    }
-
+    static Rectangle GetRectangle(const Value& value);
     static BoundingSphere GetBoundingSphere(const Value& value);
     static BoundingBox GetBoundingBox(const Value& value);
     static Guid GetGuid(const Value& value);
@@ -179,16 +163,7 @@ public:
         return member != node.MemberEnd() ? GetGuid(member->value) : Guid::Empty;
     }
 
-    FORCE_INLINE static bool GetGuidIfValid(Guid& result, const Value& node, const char* name)
-    {
-        auto member = node.FindMember(name);
-        if (member != node.MemberEnd())
-        {
-            result = GetGuid(member->value);
-            return result.IsValid();
-        }
-        return false;
-    }
+    static bool GetGuidIfValid(Guid& result, const Value& node, const char* name);
 
 public:
     FORCE_INLINE static void GetBool(bool& result, const Value& node, const char* name)
