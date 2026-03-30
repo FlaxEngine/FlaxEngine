@@ -997,6 +997,22 @@ namespace Flax.Build.Bindings
             if (typeInfo.Type == "BytesContainer" && typeInfo.GenericArgs == null)
                 return $"MUtils::ToArray({value})";
 
+            // Dictionary
+            if (typeInfo.Type == "Dictionary" && typeInfo.GenericArgs != null)
+            {
+                CppIncludeFiles.Add("Engine/Scripting/Internal/ManagedDictionary.h");
+                var keyClass = GenerateCppGetNativeType(buildData, typeInfo.GenericArgs[0], caller);
+                var valueClass = GenerateCppGetNativeType(buildData, typeInfo.GenericArgs[1], caller);
+                return $"ManagedDictionary::ToManaged({value}, {keyClass}, {valueClass})";
+            }
+
+            // HashSet
+            if (typeInfo.Type == "HashSet" && typeInfo.GenericArgs != null)
+            {
+                // TODO: automatic converting managed-native for HashSet
+                throw new NotImplementedException("TODO: converting managed HashSet to native");
+            }
+
             // Construct native typename for MUtils template argument
             var nativeType = new StringBuilder(64);
             nativeType.Append(typeInfo.Type);
