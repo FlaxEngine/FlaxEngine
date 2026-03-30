@@ -41,7 +41,7 @@ namespace FlaxEditor.Actions
             ActionString = name;
 
             _pasteParent = pasteParent;
-            _idsMapping = new Dictionary<Guid, Guid>(objectIds.Length * 4);
+            _idsMapping = new Dictionary<Guid, Guid>(objectIds.Length);
             for (int i = 0; i < objectIds.Length; i++)
             {
                 _idsMapping[objectIds[i]] = Guid.NewGuid();
@@ -72,13 +72,24 @@ namespace FlaxEditor.Actions
         /// <summary>
         /// Links the broken parent reference (missing parent). By default links the actor to the first scene.
         /// </summary>
-        /// <param name="actor">The actor.</param>
-        protected virtual void LinkBrokenParentReference(Actor actor)
+        /// <param name="actorNode">The actor node.</param>
+        protected virtual void LinkBrokenParentReference(ActorNode actorNode)
         {
             // Link to the first scene root
             if (Level.ScenesCount == 0)
                 throw new Exception("Failed to paste actor with a broken reference. No loaded scenes.");
-            actor.SetParent(Level.GetScene(0), false);
+            actorNode.Actor.SetParent(Level.GetScene(0), false);
+        }
+
+        /// <summary>
+        /// Checks if actor has a broken parent reference. For example, it's linked to the parent that is indie prefab editor while it should be pasted into scene.
+        /// </summary>
+        /// <param name="actorNode">The actor node.</param>
+        protected virtual void CheckBrokenParentReference(ActorNode actorNode)
+        {
+            // Ensure pasted object ends up on a scene
+            if (actorNode.Actor.Scene == null)
+                LinkBrokenParentReference(actorNode);
         }
 
         /// <inheritdoc />
@@ -103,16 +114,13 @@ namespace FlaxEditor.Actions
             for (int i = 0; i < actors.Length; i++)
             {
                 var actor = actors[i];
-
-                // Check if has no parent linked (broken reference eg. old parent not existing)
-                if (actor.Parent == null)
-                {
-                    LinkBrokenParentReference(actor);
-                }
-
                 var node = GetNode(actor.ID);
                 if (node is ActorNode actorNode)
                 {
+                    // Check if has no parent linked (broken reference eg. old parent not existing)
+                    if (actor.Parent == null)
+                        LinkBrokenParentReference(actorNode);
+
                     nodes.Add(actorNode);
                 }
             }
@@ -135,6 +143,12 @@ namespace FlaxEditor.Actions
                 {
                     nodeParents[i].Actor.SetParent(pasteParentNode.Actor, false);
                 }
+            }
+            else
+            {
+                // Sanity check on pasted actor to ensure they end up i na proper context (scene editor or specific prefab editor)
+                foreach (var node in nodeParents)
+                    CheckBrokenParentReference(node);
             }
 
             // Store previously looked up names and the results
