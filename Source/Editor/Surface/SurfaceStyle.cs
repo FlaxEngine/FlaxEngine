@@ -244,8 +244,13 @@ namespace FlaxEditor.Surface
             else
                 icon = hasConnections ? style.Icons.BoxClose : style.Icons.BoxOpen;
             color *= box.ConnectionsHighlightIntensity + 1;
-            
-            // Disable vertex snapping to prevent position jitter/ snapping artefacts for the boxes when zooming the surface
+            if (box.IsMouseOver)
+            {
+                color *= 1.3f;
+                rect = rect.MakeExpanded(1.0f);
+            }
+
+            // Disable vertex snapping to prevent position jitter/snapping artefacts for the boxes when zooming the surface
             var features = Render2D.Features;
             Render2D.Features = features & ~Render2D.RenderingFeatures.VertexSnapping;
             
