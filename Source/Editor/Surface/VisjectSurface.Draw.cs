@@ -65,8 +65,9 @@ namespace FlaxEditor.Surface
         /// </summary>
         protected virtual void DrawBackground()
         {
-            DrawBackgroundSolidColor(Style.BackgroundColor, Width, Height);
-            DrawGridBackground(Width, Height);
+            DrawBackgroundDefault(Style.Background, Size, _rootControl.Location);
+            //DrawBackgroundSolidColor(Style.BackgroundColor, Width, Height);
+            DrawGridBackground();
         }
 
         internal static void DrawBackgroundSolidColor(Color color, float width, float height)
@@ -75,7 +76,7 @@ namespace FlaxEditor.Surface
             Render2D.FillRectangle(backgroundRect, color);
         }
 
-        internal void DrawGridBackground(float width, float height)
+        internal void DrawGridBackground()
         {
             var viewRect = GetClientArea();
             var upperLeft = _rootControl.PointFromParent(viewRect.Location);
@@ -92,7 +93,7 @@ namespace FlaxEditor.Surface
         private void DrawAxis(Float2 axis, Rectangle viewRect, float min, float max, float pixelRange)
         {
             var linesColor = Style.BackgroundColor.RGBMultiplied(1.2f);
-            float[] _gridTickStrengths = { 0f };
+            float[] gridTickStrengths = null;
             Utilities.Utils.DrawCurveTicks((decimal tick, double step, float strength) =>
             {
                 var p = _rootControl.PointToParent(axis * (float)tick); ;
@@ -105,31 +106,27 @@ namespace FlaxEditor.Surface
                 );
                 Render2D.FillRectangle(lineRect, linesColor.AlphaMultiplied(strength));
 
-            }, Utilities.Utils.CurveTickSteps, ref _gridTickStrengths, min, max, pixelRange);
+            }, Utilities.Utils.CurveTickSteps, ref gridTickStrengths, min, max, pixelRange);
         }
 
-        internal static void DrawBackgroundDefault(Texture background, float width, float height)
+        internal static void DrawBackgroundDefault(Texture background, Float2 size, Float2 offset)
         {
             if (background && background.ResidentMipLevels > 0)
             {
                 var bSize = background.Size;
-                float bw = bSize.X;
-                float bh = bSize.Y;
-                var pos = Float2.Mod(bSize);
+                var pos = Float2.Mod(offset / bSize) * bSize;
+                var max = Float2.Ceil(size / bSize + 1.0f);
 
                 if (pos.X > 0)
-                    pos.X -= bw;
+                    pos.X -= bSize.X;
                 if (pos.Y > 0)
-                    pos.Y -= bh;
+                    pos.Y -= bSize.Y;
 
-                int maxI = Mathf.CeilToInt(width / bw + 1.0f);
-                int maxJ = Mathf.CeilToInt(height / bh + 1.0f);
-
-                for (int i = 0; i < maxI; i++)
+                for (int i = 0; i < max.X; i++)
                 {
-                    for (int j = 0; j < maxJ; j++)
+                    for (int j = 0; j < max.Y; j++)
                     {
-                        Render2D.DrawTexture(background, new Rectangle(pos.X + i * bw, pos.Y + j * bh, bw, bh), Color.White);
+                        Render2D.DrawTexture(background, new Rectangle(pos.X + i * bSize.X, pos.Y + j * bSize.Y, bSize), Color.White);
                     }
                 }
             }
