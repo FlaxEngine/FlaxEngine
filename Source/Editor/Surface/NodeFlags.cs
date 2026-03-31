@@ -79,6 +79,11 @@ namespace FlaxEditor.Surface
         VariableValuesSize = 2048,
 
         /// <summary>
+        /// Node has fixed size defined and should not use automatic layout.
+        /// </summary>
+        FixedSize = 4096,
+
+        /// <summary>
         /// Node can be used in the all visual graphs.
         /// </summary>
         AllGraphs = MaterialGraph | ParticleEmitterGraph | AnimGraph | VisualScriptGraph | BehaviorTreeGraph,

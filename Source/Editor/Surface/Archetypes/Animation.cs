@@ -71,7 +71,7 @@ namespace FlaxEditor.Surface.Archetypes
                     return;
                 _assetSelect.Visible = !box.HasAnyConnection;
 
-                if (!Archetype.UseFixedSize)
+                if (!Archetype.Flags.HasFlag(NodeFlags.FixedSize))
                     ResizeAuto();
             }
         }
@@ -934,8 +934,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 27,
                 Title = "Copy Node",
                 Description = "Copies the skeleton node transformation data (in local space)",
-                Flags = NodeFlags.AnimGraph,
-                UseFixedSize = true,
+                Flags = NodeFlags.AnimGraph | NodeFlags.FixedSize,
                 Size = new Float2(260, 140),
                 DefaultValues = new object[]
                 {

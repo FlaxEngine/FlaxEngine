@@ -348,10 +348,8 @@ namespace FlaxEditor.Surface
             if (element is Control control)
                 AddChild(control);
 
-            if (!Archetype.UseFixedSize)
-                ResizeAuto();
-            else
-                Resize(Archetype.Size.X, Archetype.Size.Y);
+            if (!IsLayoutLocked)
+                UpdateSize();
         }
 
         /// <summary>
@@ -912,6 +910,14 @@ namespace FlaxEditor.Surface
             return sb.ToString();
         }
 
+        private void UpdateSize()
+        {
+            if (Archetype.Flags.HasFlag(NodeFlags.FixedSize))
+                Resize(Archetype.Size.X, Archetype.Size.Y);
+            else
+                ResizeAuto();
+        }
+
         /// <inheritdoc />
         protected override bool ShowTooltip => base.ShowTooltip && _headerRect.Contains(ref _mousePosition) && !Surface.IsLeftMouseButtonDown && !Surface.IsRightMouseButtonDown && !Surface.IsPrimaryMenuOpened;
 
@@ -965,10 +971,7 @@ namespace FlaxEditor.Surface
                     box.OnConnectionsChanged();
             }
 
-            if (!Archetype.UseFixedSize)
-                ResizeAuto();
-            else
-                Resize(Archetype.Size.X, Archetype.Size.Y);
+            UpdateSize();
         }
 
         /// <inheritdoc />
@@ -1007,10 +1010,7 @@ namespace FlaxEditor.Surface
 
             _isDuringValuesEditing = false;
 
-            if (!Archetype.UseFixedSize)
-                ResizeAuto();
-            else
-                Resize(Archetype.Size.X, Archetype.Size.Y);
+            UpdateSize();
         }
 
         /// <summary>
@@ -1046,10 +1046,7 @@ namespace FlaxEditor.Surface
 
             _isDuringValuesEditing = false;
 
-            if (!Archetype.UseFixedSize)
-                ResizeAuto();
-            else
-                Resize(Archetype.Size.X, Archetype.Size.Y);
+            UpdateSize();
         }
 
         internal void SetIsDuringValuesEditing(bool value)
@@ -1082,10 +1079,7 @@ namespace FlaxEditor.Surface
         public virtual void ConnectionTick(Box box)
         {
             UpdateBoxesTypes();
-            if (!Archetype.UseFixedSize)
-                ResizeAuto();
-            else
-                Resize(Archetype.Size.X, Archetype.Size.Y);
+            UpdateSize();
         }
 
         /// <inheritdoc />
