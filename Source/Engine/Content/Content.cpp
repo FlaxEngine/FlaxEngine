@@ -94,6 +94,9 @@ namespace
     DateTime LastWorkspaceDiscovery;
     CriticalSection WorkspaceDiscoveryLocker;
 #endif
+#if USE_EDITOR
+    Dictionary<Guid, HashSet<BinaryAsset*>> PendingDependencies;
+#endif
 }
 
 #if ENABLE_ASSETS_DISCOVERY
@@ -157,6 +160,9 @@ void ContentService::Update()
     {
         auto asset = LoadedAssetsToInvoke.Dequeue();
         asset->onLoaded_MainThread();
+#if USE_EDITOR
+        Content::onAddDependencies(asset);
+#endif
     }
 }
 
@@ -1027,9 +1033,16 @@ bool Content::CloneAssetFile(const StringView& dstPath, const StringView& srcPat
             FileSystem::DeleteFile(tmpPath);
 
             // Reload storage
-            if (auto storage = ContentStorageManager::GetStorage(dstPath, false))
+            auto storage = ContentStorageManager::GetStorage(dstPath, false);
+            if (storage && storage->IsLoaded())
             {
                 storage->Reload();
+            }
+            else if (auto dependencies = PendingDependencies.TryGet(dstId))
+            {
+                // Destination storage is not loaded but there are other assets that depend on it so update them
+                for (const auto& e : *dependencies)
+                    e.Item->OnDependencyModified(nullptr);
             }
         }
     }
@@ -1218,6 +1231,9 @@ void Content::tryCallOnLoaded(Asset* asset)
     {
         LoadedAssetsToInvoke.RemoveAtKeepOrder(index);
         asset->onLoaded_MainThread();
+#if USE_EDITOR
+        onAddDependencies(asset);
+#endif
     }
 }
 
@@ -1235,6 +1251,10 @@ void Content::onAssetUnload(Asset* asset)
     Assets.Remove(asset->GetID());
     UnloadQueue.Remove(asset);
     LoadedAssetsToInvoke.Remove(asset);
+#if USE_EDITOR
+    for (auto& e : PendingDependencies)
+        e.Value.Remove(asset);
+#endif
 }
 
 void Content::onAssetChangeId(Asset* asset, const Guid& oldId, const Guid& newId)
@@ -1242,7 +1262,41 @@ void Content::onAssetChangeId(Asset* asset, const Guid& oldId, const Guid& newId
     ScopeLock locker(AssetsLocker);
     Assets.Remove(oldId);
     Assets.Add(newId, asset);
+#if USE_EDITOR
+    if (PendingDependencies.ContainsKey(oldId))
+    {
+        auto deps = MoveTemp(PendingDependencies[oldId]);
+        PendingDependencies.Remove(oldId);
+        PendingDependencies.Add(newId, MoveTemp(deps));
+    }
+#endif
 }
+
+#if USE_EDITOR
+
+void Content::onAssetDepend(BinaryAsset* asset, const Guid& otherId)
+{
+    ScopeLock locker(AssetsLocker);
+    PendingDependencies[otherId].Add(asset);
+}
+
+void Content::onAddDependencies(Asset* asset)
+{
+    auto it = PendingDependencies.Find(asset->GetID());
+    if (it.IsNotEnd())
+    {
+        auto& dependencies = it->Value;
+        auto binaryAsset = Asset::Cast<BinaryAsset>(asset);
+        if (binaryAsset)
+        {
+            for (const auto& e : dependencies)
+                binaryAsset->_dependantAssets.Add(e.Item);
+        }
+        PendingDependencies.Remove(it);
+    }
+}
+
+#endif
 
 bool Content::IsAssetTypeIdInvalid(const ScriptingTypeHandle& type, const ScriptingTypeHandle& assetType)
 {

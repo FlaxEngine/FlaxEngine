@@ -389,6 +389,12 @@ private:
     static void onAssetLoaded(Asset* asset);
     static void onAssetUnload(Asset* asset);
     static void onAssetChangeId(Asset* asset, const Guid& oldId, const Guid& newId);
+#if USE_EDITOR
+    friend class BinaryAsset;
+    friend class ContentService;
+    static void onAssetDepend(BinaryAsset* asset, const Guid& otherId);
+    static void onAddDependencies(Asset* asset);
+#endif
     static void deleteFileSafety(const StringView& path, const Guid& id);
 
     // Internal bindings

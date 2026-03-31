@@ -84,6 +84,11 @@ bool BinaryAsset::Init(AssetInitData& initData)
         {
             asset->_dependantAssets.Add(this);
         }
+        else
+        {
+            // Dependency is not yet loaded to keep track this link to act when it's loaded
+            Content::onAssetDepend(this, e.First);
+        }
     }
 #endif
 

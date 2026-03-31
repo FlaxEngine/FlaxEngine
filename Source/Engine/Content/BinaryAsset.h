@@ -22,6 +22,7 @@
 API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API BinaryAsset : public Asset
 {
     DECLARE_ASSET_HEADER(BinaryAsset);
+    friend Content;
 protected:
     AssetHeader _header;
     FlaxStorageReference _storageRef; // Allow asset to have missing storage reference but only before asset is loaded or if it's virtual
