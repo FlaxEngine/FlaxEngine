@@ -1863,7 +1863,7 @@ void NetworkInternal::NetworkReplicatorClientConnected(NetworkClient* client)
         {
             auto& item = it->Item;
             ScriptingObject* obj = item.Object.Get();
-            if (!obj || !item.Spawned || item.Role != NetworkObjectRole::OwnedAuthoritative)
+            if (!obj || item.Role != NetworkObjectRole::OwnedAuthoritative)
                 continue;
 
             // Mark this client as missing cached data
