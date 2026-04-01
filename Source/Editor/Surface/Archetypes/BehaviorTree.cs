@@ -190,7 +190,6 @@ namespace FlaxEditor.Surface.Archetypes
             public override void Draw()
             {
                 var style = Style.Current;
-
                 var backgroundRect = new Rectangle(Float2.Zero, Size);
 
                 // Shadow
@@ -201,7 +200,7 @@ namespace FlaxEditor.Surface.Archetypes
                 }
 
                 // Background
-                Render2D.FillRectangle(backgroundRect, ArchetypeColor);
+                Render2D.FillRectangle(backgroundRect, BackgroundColor);
 
                 // Breakpoint hit
                 if (Breakpoint.Hit)
@@ -819,10 +818,10 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnSurfaceLoaded(action);
 
+                var node = Node;
                 if (action == SurfaceNodeActions.Undo)
                 {
                     // Update parent node layout when restoring decorator from undo
-                    var node = Node;
                     if (node != null)
                     {
                         node._decorators = null;
@@ -832,7 +831,7 @@ namespace FlaxEditor.Surface.Archetypes
                 else
                 {
                     // Correctly size decorators when surface is loaded
-                    Node.ResizeAuto();
+                    node?.ResizeAuto();
                 }
             }
 

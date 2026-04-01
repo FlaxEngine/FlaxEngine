@@ -46,7 +46,7 @@ namespace FlaxEditor.Surface
         public const float NodeMarginY = 8.0f;
 
         /// <summary>
-        /// The width of the row that is started by a box.
+        /// The size of the row that is started by a box.
         /// </summary>
         public const float BoxRowHeight = 19.0f;
 

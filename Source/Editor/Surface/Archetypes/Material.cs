@@ -932,7 +932,7 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 36,
-                Title = "HSVToRGB",
+                Title = "HSV To RGB",
                 Description = "Converts a HSV value to linear RGB [X = 0/360, Y = 0/1, Z = 0/1]",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(160, 25),
@@ -949,7 +949,7 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 37,
-                Title = "RGBToHSV",
+                Title = "RGB To HSV",
                 Description = "Converts a linear RGB value to HSV [X = 0/360, Y = 0/1, Z = 0/1]",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(160, 25),

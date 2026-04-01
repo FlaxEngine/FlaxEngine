@@ -260,7 +260,7 @@ namespace FlaxEngine
         /// <returns>Offseted rectangle.</returns>
         public Rectangle MakeOffsetted(float offset)
         {
-            return new Rectangle(Location + new Float2(offset, offset), Size);
+            return new Rectangle(Location + offset, Size);
         }
 
         /// <summary>

@@ -511,7 +511,7 @@ namespace FlaxEditor.Surface
                 {
                     GroupID = Custom.GroupID,
                     Name = "Custom",
-                    Color = Color.Wheat
+                    Color = Color.Wheat.RGBMultiplied(0.4f),
                 };
             }
             else
