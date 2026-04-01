@@ -12,6 +12,7 @@
 
 class Engine;
 class FlaxFile;
+class BinaryAsset;
 class IAssetFactory;
 class AssetsCache;
 
@@ -390,7 +391,7 @@ private:
     static void onAssetUnload(Asset* asset);
     static void onAssetChangeId(Asset* asset, const Guid& oldId, const Guid& newId);
 #if USE_EDITOR
-    friend class BinaryAsset;
+    friend BinaryAsset;
     friend class ContentService;
     static void onAssetDepend(BinaryAsset* asset, const Guid& otherId);
     static void onAddDependencies(Asset* asset);
