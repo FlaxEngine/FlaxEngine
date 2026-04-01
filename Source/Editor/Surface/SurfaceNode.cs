@@ -232,7 +232,7 @@ namespace FlaxEditor.Surface
                 if (child is InputBox inputBox)
                 {
                     var boxWidth = boxLabelFont.MeasureText(inputBox.Text).X + 25;
-                    if (inputBox.DefaultValueEditor != null)
+                    if (inputBox.DefaultValueEditor != null && inputBox.DefaultValueEditor.Visible)
                         boxWidth += inputBox.DefaultValueEditor.Width + 4;
                     leftWidth = Mathf.Max(leftWidth, boxWidth);
                     leftHeight = Mathf.Max(leftHeight, inputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderHeight + Constants.BoxRowHeight);
