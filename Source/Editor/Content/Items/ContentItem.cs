@@ -438,6 +438,33 @@ namespace FlaxEditor.Content
         protected virtual bool DrawShadow => false;
 
         /// <summary>
+        /// Gets the local space rectangle for the thumbnail.
+        /// </summary>
+        public Rectangle ThumbnailRect
+        {
+            get
+            {
+                // Skip when hidden
+                if (!Visible)
+                    return Rectangle.Empty;
+
+                var view = Parent as ContentView;
+                switch (view?.ViewType ?? ContentViewType.Tiles)
+                {
+                    case ContentViewType.Tiles:
+                        return new Rectangle(0, 0, Size.X, Size.X);
+                    case ContentViewType.List:
+                        // Decrease the thumbnail margin when zoomed out (favor bigger thumbnail over vertical margin)
+                        float marginScale = view.ViewScale * 0.65f;
+                        var thumbnailSize = Size.Y - 2 * DefaultMarginSize * marginScale;
+                        return new Rectangle(DefaultMarginSize, DefaultMarginSize * marginScale, thumbnailSize, thumbnailSize);
+                    default: throw new ArgumentOutOfRangeException();
+                }
+            }
+        }
+
+
+        /// <summary>
         /// Gets the local space rectangle for element name text area.
         /// </summary>
         public Rectangle TextRectangle
@@ -451,18 +478,18 @@ namespace FlaxEditor.Content
                 var size = Size;
                 switch (view?.ViewType ?? ContentViewType.Tiles)
                 {
-                case ContentViewType.Tiles:
-                {
-                    var textHeight = DefaultTextHeight * size.X / DefaultWidth;
-                    return new Rectangle(0, size.Y - textHeight, size.X, textHeight);
-                }
-                case ContentViewType.List:
-                {
-                    var thumbnailSize = size.Y - 2 * DefaultMarginSize;
-                    var textHeight = Mathf.Min(size.Y, 24.0f);
-                    return new Rectangle(thumbnailSize + DefaultMarginSize * 2, (size.Y - textHeight) * 0.5f, size.X - textHeight - DefaultMarginSize * 3.0f, textHeight);
-                }
-                default: throw new ArgumentOutOfRangeException();
+                    case ContentViewType.Tiles:
+                    {
+                        var textHeight = DefaultTextHeight * size.X / DefaultWidth;
+                        return new Rectangle(0, size.Y - textHeight, size.X, textHeight);
+                    }
+                    case ContentViewType.List:
+                    {
+                        var thumbnailSize = ThumbnailRect.Width;
+                        var textHeight = Mathf.Min(size.Y, 24.0f);
+                        return new Rectangle(thumbnailSize + DefaultMarginSize * 2, (size.Y - textHeight) * 0.5f, size.X - textHeight - DefaultMarginSize * 3.0f, textHeight);
+                    }
+                    default: throw new ArgumentOutOfRangeException();
                 }
             }
         }
@@ -487,7 +514,10 @@ namespace FlaxEditor.Content
             if (_thumbnail.IsValid)
                 Render2D.DrawSprite(_thumbnail, rectangle);
             else
+            {
                 Render2D.FillRectangle(rectangle, Color.Black);
+                Render2D.DrawText(Style.Current.FontTitle, "?", rectangle, Color.White, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap, 1f, rectangle.Width * 0.035f);
+            }
         }
 
         /// <summary>
@@ -511,7 +541,10 @@ namespace FlaxEditor.Content
             if (_thumbnail.IsValid)
                 Render2D.DrawSprite(_thumbnail, rectangle);
             else
+            {
                 Render2D.FillRectangle(rectangle, Color.Black);
+                Render2D.DrawText(Style.Current.FontTitle, "?", rectangle, Color.White, TextAlignment.Center, TextAlignment.Center, TextWrapping.WrapWords, 1f, rectangle.Width * 0.035f);
+            }
         }
 
         /// <summary>
@@ -678,79 +711,76 @@ namespace FlaxEditor.Content
             var isSelected = view.IsSelected(this);
             var clientRect = new Rectangle(Float2.Zero, size);
             var textRect = TextRectangle;
-            Rectangle thumbnailRect;
+            Rectangle thumbnailRect = ThumbnailRect;
             TextAlignment nameAlignment;
             switch (view.ViewType)
             {
-            case ContentViewType.Tiles:
-            {
-                var thumbnailSize = size.X;
-                thumbnailRect = new Rectangle(0, 0, thumbnailSize, thumbnailSize);
-                nameAlignment = TextAlignment.Center;
-
-                if (this is ContentFolder)
+                case ContentViewType.Tiles:
                 {
-                    // Small shadow
-                    var shadowRect = new Rectangle(2, 2, clientRect.Width + 1, clientRect.Height + 1);
-                    var color = Color.Black.AlphaMultiplied(0.2f);
-                    Render2D.FillRectangle(shadowRect, color);
-                    Render2D.FillRectangle(clientRect, style.Background.RGBMultiplied(1.25f));
+                    nameAlignment = TextAlignment.Center;
+
+                    if (this is ContentFolder)
+                    {
+                        // Small shadow
+                        var shadowRect = new Rectangle(2, 2, clientRect.Width + 1, clientRect.Height + 1);
+                        var color = Color.Black.AlphaMultiplied(0.2f);
+                        Render2D.FillRectangle(shadowRect, color);
+                        Render2D.FillRectangle(clientRect, style.Background.RGBMultiplied(1.25f));
+
+                        if (isSelected)
+                            Render2D.FillRectangle(clientRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
+                        else if (IsMouseOver)
+                            Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
+
+                        DrawThumbnail(ref thumbnailRect, false);
+                    }
+                    else
+                    {
+                        // Small shadow
+                        var shadowRect = new Rectangle(2, 2, clientRect.Width + 1, clientRect.Height + 1);
+                        var color = Color.Black.AlphaMultiplied(0.2f);
+                        Render2D.FillRectangle(shadowRect, color);
+
+                        Render2D.FillRectangle(clientRect, style.Background.RGBMultiplied(1.25f));
+                        Render2D.FillRectangle(TextRectangle, style.LightBackground);
+
+                        var accentHeight = 2 * view.ViewScale;
+                        var barRect = new Rectangle(0, thumbnailRect.Height - accentHeight, clientRect.Width, accentHeight);
+                        Render2D.FillRectangle(barRect, Color.DimGray);
+
+                        DrawThumbnail(ref thumbnailRect, false);
+                        if (isSelected)
+                        {
+                            Render2D.FillRectangle(textRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
+                            Render2D.DrawRectangle(clientRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
+                        }
+                        else if (IsMouseOver)
+                        {
+                            Render2D.FillRectangle(textRect, style.BackgroundHighlighted);
+                            Render2D.DrawRectangle(clientRect, style.BackgroundHighlighted);
+                        }
+                    }
+                    break;
+                }
+                case ContentViewType.List:
+                {
+                    nameAlignment = TextAlignment.Near;
 
                     if (isSelected)
                         Render2D.FillRectangle(clientRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
                     else if (IsMouseOver)
                         Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
 
-                    DrawThumbnail(ref thumbnailRect, false);
+                    DrawThumbnail(ref thumbnailRect);
+                    break;
                 }
-                else
-                {
-                    // Small shadow
-                    var shadowRect = new Rectangle(2, 2, clientRect.Width + 1, clientRect.Height + 1);
-                    var color = Color.Black.AlphaMultiplied(0.2f);
-                    Render2D.FillRectangle(shadowRect, color);
-
-                    Render2D.FillRectangle(clientRect, style.Background.RGBMultiplied(1.25f));
-                    Render2D.FillRectangle(TextRectangle, style.LightBackground);
-
-                    var accentHeight = 2 * view.ViewScale;
-                    var barRect = new Rectangle(0, thumbnailRect.Height - accentHeight, clientRect.Width, accentHeight);
-                    Render2D.FillRectangle(barRect, Color.DimGray);
-
-                    DrawThumbnail(ref thumbnailRect, false);
-                    if (isSelected)
-                    {
-                        Render2D.FillRectangle(textRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
-                        Render2D.DrawRectangle(clientRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
-                    }
-                    else if (IsMouseOver)
-                    {
-                        Render2D.FillRectangle(textRect, style.BackgroundHighlighted);
-                        Render2D.DrawRectangle(clientRect, style.BackgroundHighlighted);
-                    }
-                }
-                break;
-            }
-            case ContentViewType.List:
-            {
-                var thumbnailSize = size.Y - 2 * DefaultMarginSize;
-                thumbnailRect = new Rectangle(DefaultMarginSize, DefaultMarginSize, thumbnailSize, thumbnailSize);
-                nameAlignment = TextAlignment.Near;
-
-                if (isSelected)
-                    Render2D.FillRectangle(clientRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
-                else if (IsMouseOver)
-                    Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
-
-                DrawThumbnail(ref thumbnailRect);
-                break;
-            }
-            default: throw new ArgumentOutOfRangeException();
+                default: throw new ArgumentOutOfRangeException();
             }
 
-            // Draw short name
+            // Render the name of the file
             Render2D.PushClip(ref textRect);
-            var scale = 0.95f * view.ViewScale;
+            // Scale the text in tiles view, but make sure it does not get too small. Don't scale it in list view
+            var scale = view.ViewType == ContentViewType.Tiles ? Mathf.Max(0.95f * view.ViewScale, 0.6f) : 1;
             Render2D.DrawText(style.FontMedium, ShowFileExtension || view.ShowFileExtensions ? FileName : ShortName, textRect, style.Foreground, nameAlignment, TextAlignment.Center, TextWrapping.WrapWords, 1f, scale);
             Render2D.PopClip();
 

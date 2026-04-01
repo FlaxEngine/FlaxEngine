@@ -370,7 +370,7 @@ namespace FlaxEditor.Windows
             scaleValue.ValueChanged += () => View.ViewScale = scaleValue.Value;
             menu.VisibleChanged += control => { scaleValue.Value = View.ViewScale; };
 
-            var viewType = menu.AddChildMenu("View Type");
+            var viewType = menu.AddChildMenu("View Type Override");
             viewType.ContextMenu.AddButton("Tiles", OnViewTypeButtonClicked).Tag = ContentViewType.Tiles;
             viewType.ContextMenu.AddButton("List", OnViewTypeButtonClicked).Tag = ContentViewType.List;
             viewType.ContextMenu.AddButton("Tree View", OnViewTypeButtonClicked).Tag = "Tree";
@@ -918,7 +918,7 @@ namespace FlaxEditor.Windows
             }
             else
             {
-                // TODO: remove items that depend on different items in the list: use wants to remove `folderA` and `folderA/asset.x`, we should just remove `folderA`
+                // TODO: remove items that depend on different items in the list: user wants to remove `folderA` and `folderA/asset.x`, we should just remove `folderA`
                 var toDuplicate = new List<ContentItem>(items);
 
                 // Duplicate every item
