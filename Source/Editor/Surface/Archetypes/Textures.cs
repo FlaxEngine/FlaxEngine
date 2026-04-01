@@ -133,7 +133,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Texture",
                 Create = (id, context, arch, groupArch) => new Constants.ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(Texture))),
                 Description = "Two dimensional texture object",
-                Flags = NodeFlags.MaterialGraph,
+                Flags = NodeFlags.MaterialGraph | NodeFlags.FixedSize,
                 Size = new Float2(140, 140),
                 DefaultValues = new object[]
                 {
@@ -176,8 +176,8 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Cube Texture",
                 Create = (id, context, arch, groupArch) => new Constants.ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(CubeTexture))),
                 Description = "Set of 6 textures arranged in a cube",
-                Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(140, 120),
+                Flags = NodeFlags.MaterialGraph | NodeFlags.FixedSize,
+                Size = new Float2(140, 140),
                 DefaultValues = new object[]
                 {
                     Guid.Empty

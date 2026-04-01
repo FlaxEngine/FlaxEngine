@@ -624,8 +624,8 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new MultiBlend1D(id, context, arch, groupArch),
                 Title = "Multi Blend 1D",
                 Description = "Animation blending in 1D",
-                Flags = NodeFlags.AnimGraph | NodeFlags.VariableValuesSize,
-                Size = new Float2(420, 300),
+                Flags = NodeFlags.AnimGraph | NodeFlags.VariableValuesSize | NodeFlags.FixedSize,
+                Size = new Float2(420, 320),
                 DefaultValues = new object[]
                 {
                     // Node data
@@ -649,9 +649,9 @@ namespace FlaxEditor.Surface.Archetypes
 
                     // Axis X
                     NodeElementArchetype.Factory.Input(3, "X", true, typeof(float), 4),
-                    NodeElementArchetype.Factory.Text(30, 3 * Surface.Constants.LayoutOffsetY + 2, "(min:                   max:                   )"),
-                    NodeElementArchetype.Factory.Vector_X(60, 3 * Surface.Constants.LayoutOffsetY + 2, 0),
-                    NodeElementArchetype.Factory.Vector_Y(145, 3 * Surface.Constants.LayoutOffsetY + 2, 0),
+                    NodeElementArchetype.Factory.Text(30, 3 * Surface.Constants.LayoutOffsetY, "(min:                   max:                   )"),
+                    NodeElementArchetype.Factory.Vector_X(60, 3 * Surface.Constants.LayoutOffsetY, 0),
+                    NodeElementArchetype.Factory.Vector_Y(145, 3 * Surface.Constants.LayoutOffsetY, 0),
                 }
             },
             new NodeArchetype
@@ -660,8 +660,8 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new MultiBlend2D(id, context, arch, groupArch),
                 Title = "Multi Blend 2D",
                 Description = "Animation blending in 2D",
-                Flags = NodeFlags.AnimGraph | NodeFlags.VariableValuesSize,
-                Size = new Float2(420, 620),
+                Flags = NodeFlags.AnimGraph | NodeFlags.VariableValuesSize | NodeFlags.FixedSize,
+                Size = new Float2(420, 640),
                 DefaultValues = new object[]
                 {
                     // Node data
@@ -685,15 +685,15 @@ namespace FlaxEditor.Surface.Archetypes
 
                     // Axis X
                     NodeElementArchetype.Factory.Input(3, "X", true, typeof(float), 4),
-                    NodeElementArchetype.Factory.Text(30, 3 * Surface.Constants.LayoutOffsetY + 2, "(min:                   max:                   )"),
-                    NodeElementArchetype.Factory.Vector_X(60, 3 * Surface.Constants.LayoutOffsetY + 2, 0),
-                    NodeElementArchetype.Factory.Vector_Y(145, 3 * Surface.Constants.LayoutOffsetY + 2, 0),
+                    NodeElementArchetype.Factory.Text(30, 3 * Surface.Constants.LayoutOffsetY, "(min:                   max:                   )"),
+                    NodeElementArchetype.Factory.Vector_X(60, 3 * Surface.Constants.LayoutOffsetY, 0),
+                    NodeElementArchetype.Factory.Vector_Y(145, 3 * Surface.Constants.LayoutOffsetY, 0),
 
                     // Axis Y
                     NodeElementArchetype.Factory.Input(4, "Y", true, typeof(float), 5),
-                    NodeElementArchetype.Factory.Text(30, 4 * Surface.Constants.LayoutOffsetY + 2, "(min:                   max:                   )"),
-                    NodeElementArchetype.Factory.Vector_Z(60, 4 * Surface.Constants.LayoutOffsetY + 2, 0),
-                    NodeElementArchetype.Factory.Vector_W(145, 4 * Surface.Constants.LayoutOffsetY + 2, 0),
+                    NodeElementArchetype.Factory.Text(30, 4 * Surface.Constants.LayoutOffsetY, "(min:                   max:                   )"),
+                    NodeElementArchetype.Factory.Vector_Z(60, 4 * Surface.Constants.LayoutOffsetY, 0),
+                    NodeElementArchetype.Factory.Vector_W(145, 4 * Surface.Constants.LayoutOffsetY, 0),
                 }
             },
             new NodeArchetype

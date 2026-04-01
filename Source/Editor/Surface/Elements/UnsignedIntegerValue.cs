@@ -24,6 +24,7 @@ namespace FlaxEditor.Surface.Elements
         public UnsignedIntegerValue(SurfaceNode parentNode, NodeElementArchetype archetype)
         : base(Get(parentNode, archetype), archetype.Position.X, archetype.Position.Y, 50, (uint)archetype.ValueMin, (uint)archetype.ValueMax, 0.05f)
         {
+            Height = Constants.BoxRowHeight;
             ParentNode = parentNode;
             Archetype = archetype;
 

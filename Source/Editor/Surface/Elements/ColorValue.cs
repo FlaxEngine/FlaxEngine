@@ -28,6 +28,7 @@ namespace FlaxEditor.Surface.Elements
         public ColorValue(SurfaceNode parentNode, NodeElementArchetype archetype)
         : base(Get(parentNode, archetype), archetype.Position.X, archetype.Position.Y)
         {
+            Height = Constants.BoxRowHeight;
             ParentNode = parentNode;
             Archetype = archetype;
             UseDynamicEditing = false;

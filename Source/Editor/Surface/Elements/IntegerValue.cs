@@ -32,6 +32,7 @@ namespace FlaxEditor.Surface.Elements
         public IntegerValue(SurfaceNode parentNode, NodeElementArchetype archetype)
         : base(Get(parentNode, archetype), archetype.Position.X, archetype.Position.Y, 50, (int)archetype.ValueMin, (int)archetype.ValueMax, 0.05f)
         {
+            Height = Constants.BoxRowHeight;
             ParentNode = parentNode;
             Archetype = archetype;
 

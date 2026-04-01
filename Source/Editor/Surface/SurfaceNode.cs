@@ -227,27 +227,28 @@ namespace FlaxEditor.Surface
                 var child = Children[i];
                 if (!child.Visible)
                     continue;
+
                 // Input boxes
                 if (child is InputBox inputBox)
                 {
-                    var boxWidth = boxLabelFont.MeasureText(inputBox.Text).X + 20;
+                    var boxWidth = boxLabelFont.MeasureText(inputBox.Text).X + 25;
                     if (inputBox.DefaultValueEditor != null)
                         boxWidth += inputBox.DefaultValueEditor.Width + 4;
                     leftWidth = Mathf.Max(leftWidth, boxWidth);
-                    leftHeight = Mathf.Max(leftHeight, inputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderHeight + 20.0f);
+                    leftHeight = Mathf.Max(leftHeight, inputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderHeight + Constants.BoxRowHeight);
                 }
                 // Output boxes
                 else if (child is OutputBox outputBox)
                 {
-                    rightWidth = Mathf.Max(rightWidth, boxLabelFont.MeasureText(outputBox.Text).X + 20);
-                    rightHeight = Mathf.Max(rightHeight, outputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderHeight + 20.0f);
+                    rightWidth = Mathf.Max(rightWidth, boxLabelFont.MeasureText(outputBox.Text).X + 25);
+                    rightHeight = Mathf.Max(rightHeight, outputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderHeight + Constants.BoxRowHeight);
                 }
                 // Elements (Float-, int-, uint- value boxes, asset pickers, etc.)
                 // These will only ever be on the left side of the node, so we only adjust left width and height
                 else if (child is SurfaceNodeElementControl elementControl)
                 {
                     leftWidth = Mathf.Max(leftWidth, elementControl.Width + 8f);
-                    leftHeight = Mathf.Max(leftHeight, elementControl.Height + 8f);
+                    leftHeight = Mathf.Max(leftHeight, elementControl.Height);
                 }
                 // Other controls in the node
                 else if (child is Control control)
@@ -255,12 +256,12 @@ namespace FlaxEditor.Surface
                     if (control.AnchorPreset == AnchorPresets.TopLeft)
                     {
                         width = Mathf.Max(width, control.Right + 15 + Constants.NodeMarginX);
-                        height = Mathf.Max(height, control.Bottom + 4 - Constants.NodeMarginY - Constants.NodeHeaderHeight);
+                        height = Mathf.Max(height, control.Bottom - Constants.NodeMarginY - Constants.NodeHeaderHeight);
                     }
                     else if (!_headerRect.Intersects(control.Bounds))
                     {
                         width = Mathf.Max(width, control.Width + 15 + Constants.NodeMarginX);
-                        height = Mathf.Max(height, control.Height + 4);
+                        height = Mathf.Max(height, control.Height);
                     }
                 }
             }
@@ -1099,7 +1100,6 @@ namespace FlaxEditor.Surface
         public override void Draw()
         {
             var style = Style.Current;
-
             var backgroundRect = new Rectangle(Float2.Zero, Size);
 
             // Shadow

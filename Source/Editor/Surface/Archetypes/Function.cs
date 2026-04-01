@@ -267,7 +267,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 _nameField = new Label
                 {
-                    Width = 140.0f,
+                    Size = new Float2(140, FlaxEditor.Surface.Constants.BoxRowHeight),
                     TextColorHighlighted = Style.Current.ForegroundGrey,
                     HorizontalAlignment = TextAlignment.Near,
                     Parent = this,
@@ -386,8 +386,7 @@ namespace FlaxEditor.Surface.Archetypes
                     _types = surface.FunctionTypes;
                     _typePicker = new ComboBox
                     {
-                        Location = new Float2(4, 32),
-                        Width = 80.0f,
+                        Bounds = new Rectangle(4, 34, 80, FlaxEditor.Surface.Constants.BoxRowHeight),
                         Parent = this,
                     };
                     for (int i = 0; i < _types.Length; i++)
@@ -455,8 +454,7 @@ namespace FlaxEditor.Surface.Archetypes
                     _types = surface.FunctionTypes;
                     _typePicker = new ComboBox
                     {
-                        Location = new Float2(24, 32),
-                        Width = 80.0f,
+                        Bounds = new Rectangle(24, 34, 80, FlaxEditor.Surface.Constants.BoxRowHeight),
                         Parent = this,
                     };
                     for (int i = 0; i < _types.Length; i++)

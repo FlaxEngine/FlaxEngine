@@ -506,7 +506,7 @@ namespace FlaxEditor.Surface
             /// <param name="height">The control height.</param>
             /// <param name="tooltip">The control tooltip text.</param>
             /// <returns>The archetype.</returns>
-            public static NodeElementArchetype Text(float x, float y, string text, float width = 100.0f, float height = 16.0f, string tooltip = null)
+            public static NodeElementArchetype Text(float x, float y, string text, float width = 100.0f, float height = 19.0f, string tooltip = null)
             {
                 return new NodeElementArchetype
                 {

@@ -166,7 +166,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _picker = new EnumComboBox(type)
                 {
                     EnumTypeValue = Values[0],
-                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight, 160, 16),
+                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight, 160, FlaxEditor.Surface.Constants.BoxRowHeight),
                     Parent = this,
                 };
                 _picker.ValueChanged += () => SetValue(0, _picker.EnumTypeValue);
