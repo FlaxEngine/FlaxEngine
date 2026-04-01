@@ -1,5 +1,4 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
-
 using System;
 
 namespace FlaxEngine.GUI
@@ -107,7 +106,18 @@ namespace FlaxEngine.GUI
             Visible = true;
             _window.Show();
             _showTarget.OnTooltipShown(this);
+
+#if FLAX_EDITOR
+            FlaxEditor.ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
+#endif
         }
+
+#if FLAX_EDITOR
+        private void OnScriptsReloadBegin()
+        {
+            Hide();
+        }
+#endif
 
         /// <summary>
         /// Hides the popup.
@@ -132,6 +142,9 @@ namespace FlaxEngine.GUI
 
             // Hide
             Visible = false;
+#if FLAX_EDITOR
+            FlaxEditor.ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
+#endif
         }
 
         /// <summary>

@@ -338,5 +338,14 @@ namespace FlaxEngine.GUI
 
             base.OnMouseMove(location);
         }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            base.OnDestroy();
+
+            _focusedControl = null;
+            _trackingControl = null;
+        }
     }
 }
