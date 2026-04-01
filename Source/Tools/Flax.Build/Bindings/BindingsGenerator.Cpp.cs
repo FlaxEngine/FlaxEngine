@@ -201,18 +201,98 @@ namespace Flax.Build.Bindings
                 if (apiType.IsStruct && !apiType.IsPod && !CppUsedNonPodTypes.Contains(apiType))
                     CppUsedNonPodTypes.Add(apiType);
 
+                var fullname = apiType.FullNameManaged;
                 if (apiType.IsEnum)
-                    return $"Variant::Enum(VariantType(VariantType::Enum, StringAnsiView(\"{apiType.FullNameManaged}\", {apiType.FullNameManaged.Length})), {value})";
+                    return $"Variant::Enum(VariantType(VariantType::Enum, StringAnsiView(\"{fullname}\", {fullname.Length})), {value})";
                 if (apiType.IsStruct && !CppInBuildVariantStructures.Contains(apiType.Name))
-                    if (typeInfo.IsPtr)
-                        return $"Variant::Structure(VariantType(VariantType::Structure, StringAnsiView(\"{apiType.FullNameManaged}\", {apiType.FullNameManaged.Length})), *{value})";
-                    else
-                        return $"Variant::Structure(VariantType(VariantType::Structure, StringAnsiView(\"{apiType.FullNameManaged}\", {apiType.FullNameManaged.Length})), {value})";
+                {
+                    if (apiType.IsInBuild)
+                        return $"Variant::Structure(VariantType(VariantType::Structure, StringAnsiView(\"{fullname}\", {fullname.Length})), {(typeInfo.IsPtr ? "*" + value : value)})";
+                    return $"Variant::Structure(VariantType(VariantType::Structure, {apiType.FullNameNative}::TypeInitializer.GetType()), {(typeInfo.IsPtr ? "*" + value : value)})";
+                }
             }
 
             if (typeInfo.IsPtr && typeInfo.IsConst)
                 return $"Variant(({typeInfo.Type}*){value})";
             return $"Variant({value})";
+        }
+
+        public static string GenerateCppWrapperNativeToVariantType(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller)
+        {
+            // In-built types
+            switch (typeInfo.Type)
+            {
+            case "void": return "VariantType(VariantType::Void)";
+            case "bool": return "VariantType(VariantType::Bool)";
+            case "int":
+            case "int32": return "VariantType(VariantType::Int)";
+            case "uint":
+            case "uint32": return "VariantType(VariantType::Uint)";
+            case "int64": return "VariantType(VariantType::Int64)";
+            case "uint64": return "VariantType(VariantType::Uint64)";
+            case "Real": return "VariantType(VariantType::Real)";
+            case "float": return "VariantType(VariantType::Float)";
+            case "double": return "VariantType(VariantType::Double)";
+            case "StringAnsiView":
+            case "StringAnsi":
+            case "StringView":
+            case "String": return "VariantType(VariantType::String)";
+            case "Guid": return "VariantType(VariantType::Guid)";
+            case "Asset": return "VariantType(VariantType::Asset)";
+            case "Float2": return "VariantType(VariantType::Float2)";
+            case "Float3": return "VariantType(VariantType::Float3)";
+            case "Float4": return "VariantType(VariantType::Float4)";
+            case "Double2": return "VariantType(VariantType::Double2)";
+            case "Double3": return "VariantType(VariantType::Double3)";
+            case "Double4": return "VariantType(VariantType::Double4)";
+            case "Vector2": return "VariantType(VariantType::Vector2)";
+            case "Vector3": return "VariantType(VariantType::Vector3)";
+            case "Vector4": return "VariantType(VariantType::Vector4)";
+            case "Int2": return "VariantType(VariantType::Int2)";
+            case "Int3": return "VariantType(VariantType::Int3)";
+            case "Int4": return "VariantType(VariantType::Int4)";
+            case "Color": return "VariantType(VariantType::Color)";
+            case "BoundingBox": return "VariantType(VariantType::BoundingBox)";
+            case "BoundingSphere": return "VariantType(VariantType::BoundingSphere)";
+            case "Quaternion": return "VariantType(VariantType::Quaternion)";
+            case "Transform": return "VariantType(VariantType::Transform)";
+            case "Rectangle": return "VariantType(VariantType::Rectangle)";
+            case "Ray": return "VariantType(VariantType::Ray)";
+            case "Matrix": return "VariantType(VariantType::Matrix)";
+            case "Type": return "VariantType(VariantType::Typename)";
+            }
+
+            // Array
+            if (typeInfo.IsArray)
+                return "VariantType(VariantType::Array)";
+            if ((typeInfo.Type == "Array" || typeInfo.Type == "Span") && typeInfo.GenericArgs != null)
+            {
+                var elementType = FindApiTypeInfo(buildData, typeInfo.GenericArgs[0], caller);
+                var elementName = $"{(elementType != null ? elementType.FullNameManaged : typeInfo.GenericArgs[0].Type)}[]";
+                return $"VariantType(VariantType::Array, StringAnsiView(\"{elementName}\", {elementName.Length}))";
+            }
+            if (typeInfo.Type == "Dictionary" && typeInfo.GenericArgs != null)
+                return "VariantType(VariantType::Dictionary)";
+
+            // Scripting type
+            var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
+            if (apiType != null)
+            {
+                var fullname = apiType.FullNameManaged;
+                if (apiType.IsEnum)
+                    return $"VariantType(VariantType::Enum, StringAnsiView(\"{fullname}\", {fullname.Length}))";
+                if (apiType.IsStruct)
+                {
+                    if (apiType.IsInBuild)
+                        return $"VariantType(VariantType::Structure, StringAnsiView(\"{fullname}\", {fullname.Length}))";
+                    return $"VariantType(VariantType::Structure, {apiType.FullNameNative}::TypeInitializer.GetType())";
+                }
+                if (apiType.IsClass)
+                    return $"VariantType(VariantType::Object, {apiType.FullNameNative}::TypeInitializer.GetType())";
+            }
+
+            // Unknown
+            return "VariantType()";
         }
 
         public static string GenerateCppWrapperVariantToNative(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, string value)
@@ -393,7 +473,7 @@ namespace Flax.Build.Bindings
             return "Scripting::FindClass(\"" + managedType + "\")";
         }
 
-        private static string GenerateCppGetNativeType(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, FunctionInfo functionInfo)
+        private static string GenerateCppGetNativeType(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, FunctionInfo functionInfo = null)
         {
             CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
 
@@ -921,6 +1001,22 @@ namespace Flax.Build.Bindings
             // BytesContainer
             if (typeInfo.Type == "BytesContainer" && typeInfo.GenericArgs == null)
                 return $"MUtils::ToArray({value})";
+
+            // Dictionary
+            if (typeInfo.Type == "Dictionary" && typeInfo.GenericArgs != null)
+            {
+                CppIncludeFiles.Add("Engine/Scripting/Internal/ManagedDictionary.h");
+                var keyClass = GenerateCppGetNativeType(buildData, typeInfo.GenericArgs[0], caller);
+                var valueClass = GenerateCppGetNativeType(buildData, typeInfo.GenericArgs[1], caller);
+                return $"ManagedDictionary::ToManaged({value}, {keyClass}, {valueClass})";
+            }
+
+            // HashSet
+            if (typeInfo.Type == "HashSet" && typeInfo.GenericArgs != null)
+            {
+                // TODO: automatic converting managed-native for HashSet
+                throw new NotImplementedException("TODO: converting managed HashSet to native");
+            }
 
             // Construct native typename for MUtils template argument
             var nativeType = new StringBuilder(64);
@@ -1751,7 +1847,23 @@ namespace Flax.Build.Bindings
             {
                 if (!functionInfo.IsVirtual)
                     continue;
-                contents.AppendLine($"        scriptVTable[{scriptVTableIndex++}] = mclass->GetMethod(\"{functionInfo.Name}\", {functionInfo.Parameters.Count});");
+
+                // Don't use exact signature for parameter-less methods or the ones without duplicates
+                if (functionInfo.Parameters.Count == 0 || !classInfo.Functions.Any(x => x != functionInfo && x.Parameters.Count == functionInfo.Parameters.Count && x.Name == functionInfo.Name))
+                    contents.AppendLine($"        scriptVTable[{scriptVTableIndex++}] = mclass->GetMethod(\"{functionInfo.Name}\", {functionInfo.Parameters.Count});");
+                else
+                {
+                    contents.AppendLine("        {");
+                    contents.AppendLine("            ScriptingTypeMethodSignature signature;");
+                    contents.AppendLine($"            signature.Name = StringAnsiView(\"{functionInfo.Name}\", {functionInfo.Name.Length});");
+                    contents.AppendLine($"            signature.Params.Resize({functionInfo.Parameters.Count});");
+                    for (var i = 0; i < functionInfo.Parameters.Count; i++)
+                        contents.AppendLine($"            signature.Params[{i}] = {{ {GenerateCppWrapperNativeToVariantType(buildData, functionInfo.Parameters[i].Type, classInfo)}, {(functionInfo.Parameters[i].IsOut ? "true" : "false")} }};");
+                    contents.AppendLine($"            scriptVTable[{scriptVTableIndex++}] = mclass->GetMethod(signature);");
+                    if (buildData.Configuration != TargetConfiguration.Release)
+                        contents.AppendLine($"            ASSERT(scriptVTable[{scriptVTableIndex - 1}]);");
+                    contents.AppendLine("        }");
+                }
             }
             contents.AppendLine("    }");
             contents.AppendLine("");
@@ -2701,10 +2813,22 @@ namespace Flax.Build.Bindings
                 {
                     contents.AppendLine("        Variant* parameters = nullptr;");
                 }
+                if (functionInfo.Parameters.Count != 0)
+                {
+                    // Build method signature to find method  using exact parameter types to match on name collisions
+                    contents.AppendLine("        ScriptingTypeMethodSignature signature;");
+                    contents.AppendLine($"        signature.Name = StringAnsiView(\"{functionInfo.Name}\", {functionInfo.Name.Length});");
+                    contents.AppendLine($"        signature.Params.Resize({functionInfo.Parameters.Count});");
+                    for (var i = 0; i < functionInfo.Parameters.Count; i++)
+                        contents.AppendLine($"        signature.Params[{i}] = {{ parameters[{i}].Type, {(functionInfo.Parameters[i].IsOut ? "true" : "false")} }};");
+                }
                 contents.AppendLine("        auto typeHandle = Object->GetTypeHandle();");
                 contents.AppendLine("        while (typeHandle)");
                 contents.AppendLine("        {");
-                contents.AppendLine($"            auto method = typeHandle.Module->FindMethod(typeHandle, StringAnsiView(\"{functionInfo.Name}\", {functionInfo.Name.Length}), {functionInfo.Parameters.Count});");
+                if (functionInfo.Parameters.Count == 0)
+                    contents.AppendLine($"            auto method = typeHandle.Module->FindMethod(typeHandle, StringAnsiView(\"{functionInfo.Name}\", {functionInfo.Name.Length}), {functionInfo.Parameters.Count});");
+                else
+                    contents.AppendLine("            auto method = typeHandle.Module->FindMethod(typeHandle, signature);");
                 contents.AppendLine("            if (method)");
                 contents.AppendLine("            {");
                 contents.AppendLine("                Variant __result;");
@@ -2977,7 +3101,9 @@ namespace Flax.Build.Bindings
                         header.Append($"{wrapperName}Array(const {valueType}* v, const int32 length)").AppendLine();
                         header.Append('{').AppendLine();
                         header.Append("    Variant result;").AppendLine();
-                        header.Append("    result.SetType(VariantType(VariantType::Array));").AppendLine();
+                        var apiType = FindApiTypeInfo(buildData, valueType, moduleInfo);
+                        var elementName = $"{(apiType != null ? apiType.FullNameManaged : valueType.Type)}[]";
+                        header.Append($"    result.SetType(VariantType(VariantType::Array, StringAnsiView(\"{elementName}\", {elementName.Length})));").AppendLine();
                         header.Append("    auto* array = reinterpret_cast<Array<Variant, HeapAllocation>*>(result.AsData);").AppendLine();
                         header.Append("    array->Resize(length);").AppendLine();
                         header.Append("    for (int32 i = 0; i < length; i++)").AppendLine();
@@ -3345,13 +3471,9 @@ namespace Flax.Build.Bindings
             contents.AppendLine($"extern \"C\" BinaryModule* GetBinaryModule{binaryModuleName}()");
             contents.AppendLine("{");
             if (useCSharp)
-            {
                 contents.AppendLine($"    static NativeBinaryModule module(\"{binaryModuleName}\");");
-            }
             else
-            {
                 contents.AppendLine($"    static NativeOnlyBinaryModule module(\"{binaryModuleName}\");");
-            }
             contents.AppendLine("    return &module;");
             contents.AppendLine("}");
             if (project.VersionControlBranch.Length != 0)

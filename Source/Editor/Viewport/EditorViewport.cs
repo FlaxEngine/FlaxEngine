@@ -166,7 +166,6 @@ namespace FlaxEditor.Viewport
 #endif
 
         // Input
-
         internal bool _disableInputUpdate;
         private bool _isControllingMouse, _isViewportControllingMouse, _wasVirtualMouseRightDown, _isVirtualMouseRightDown;
         private Float2 _startPos;

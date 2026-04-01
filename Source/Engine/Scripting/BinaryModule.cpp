@@ -17,7 +17,6 @@
 #include "FlaxEngine.Gen.h"
 #include "Scripting.h"
 #include "Events.h"
-#include "Internal/StdTypesContainer.h"
 
 Dictionary<Pair<ScriptingTypeHandle, StringView>, void(*)(ScriptingObject*, void*, bool)> ScriptingEvents::EventsTable;
 Delegate<ScriptingObject*, Span<Variant>, ScriptingTypeHandle, StringView> ScriptingEvents::Event;
@@ -30,6 +29,18 @@ ManagedBinaryModule* GetBinaryModuleCorlib()
     static ManagedBinaryModule assembly("corlib");
     return &assembly;
 #endif
+}
+
+MMethod* MClass::FindMethod(const char* name, int32 numParams, bool checkBaseClasses) const
+{
+    MMethod* method = GetMethod(name, numParams);
+    if (!method && checkBaseClasses)
+    {
+        MClass* base = GetBaseClass();
+        if (base)
+            method = base->FindMethod(name, numParams, true);
+    }
+    return method;
 }
 
 ScriptingTypeHandle::ScriptingTypeHandle(const ScriptingTypeInitializer& initializer)
@@ -835,61 +846,17 @@ namespace
         }
         return nullptr;
     }
-
-    bool VariantTypeEquals(const VariantType& type, MType* mType, bool isOut = false)
-    {
-        MClass* mClass = MCore::Type::GetClass(mType);
-        MClass* variantClass = MUtils::GetClass(type);
-        if (variantClass != mClass)
-        {
-            // Hack for Vector2/3/4 which alias with Float2/3/4 or Double2/3/4 (depending on USE_LARGE_WORLDS)
-            const auto& stdTypes = *StdTypesContainer::Instance();
-            if (mClass == stdTypes.Vector2Class && (type.Type == VariantType::Float2 || type.Type == VariantType::Double2))
-                return true;
-            if (mClass == stdTypes.Vector3Class && (type.Type == VariantType::Float3 || type.Type == VariantType::Double3))
-                return true;
-            if (mClass == stdTypes.Vector4Class && (type.Type == VariantType::Float4 || type.Type == VariantType::Double4))
-                return true;
-
-            return false;
-        }
-        return true;
-    }
 }
 
 #endif
 
-MMethod* ManagedBinaryModule::FindMethod(MClass* mclass, const ScriptingTypeMethodSignature& signature)
+MMethod* ManagedBinaryModule::FindMethod(const MClass* mclass, const ScriptingTypeMethodSignature& signature)
 {
 #if USE_CSHARP
-    if (!mclass)
-        return nullptr;
-    const auto& methods = mclass->GetMethods();
-    for (MMethod* method : methods)
-    {
-        if (method->IsStatic() != signature.IsStatic)
-            continue;
-        if (method->GetName() != signature.Name)
-            continue;
-        if (method->GetParametersCount() != signature.Params.Count())
-            continue;
-        bool isValid = true;
-        for (int32 paramIdx = 0; paramIdx < signature.Params.Count(); paramIdx++)
-        {
-            auto& param = signature.Params[paramIdx];
-            MType* type = method->GetParameterType(paramIdx);
-            if (param.IsOut != method->GetParameterIsOut(paramIdx) ||
-                !VariantTypeEquals(param.Type, type, param.IsOut))
-            {
-                isValid = false;
-                break;
-            }
-        }
-        if (isValid && VariantTypeEquals(signature.ReturnType, method->GetReturnType()))
-            return method;
-    }
-#endif
+    return mclass ? mclass->GetMethod(signature) : nullptr;
+#else
     return nullptr;
+#endif
 }
 
 #if USE_CSHARP

@@ -59,7 +59,7 @@ namespace FlaxEditor.Content
         /// <summary>
         /// Gets the content node.
         /// </summary>
-        public ContentTreeNode Node { get; }
+        public ContentFolderTreeNode Node { get; }
 
         /// <summary>
         /// The subitems of this folder.
@@ -72,7 +72,7 @@ namespace FlaxEditor.Content
         /// <param name="type">The folder type.</param>
         /// <param name="path">The path to the item.</param>
         /// <param name="node">The folder parent node.</param>
-        internal ContentFolder(ContentFolderType type, string path, ContentTreeNode node)
+        internal ContentFolder(ContentFolderType type, string path, ContentFolderTreeNode node)
         : base(path)
         {
             FolderType = type;
@@ -118,7 +118,7 @@ namespace FlaxEditor.Content
             get
             {
                 var hasParentFolder = ParentFolder != null;
-                var isContentFolder = Node is MainContentTreeNode;
+                var isContentFolder = Node is MainContentFolderTreeNode;
                 return hasParentFolder && !isContentFolder;
             }
         }

@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
+using FlaxEditor.Options;
 using FlaxEditor.Viewport;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -10,13 +11,20 @@ namespace FlaxEditor.Gizmo;
 [HideInEditor]
 internal class DirectionGizmo : ContainerControl
 {
+    public const float DefaultGizmoSize = 112.5f;
+
+    private const float AxisLength = 71.25f;
+    private const float SpriteRadius = 10.85f;
+
     private IGizmoOwner _owner;
     private ViewportProjection _viewportProjection;
     private EditorViewport _viewport;
     private Vector3 _gizmoCenter;
-    private float _axisLength = 75.0f;
-    private float _textAxisLength = 95.0f;
-    private float _spriteRadius = 12.0f;
+    private float _gizmoBrightness;
+    private float _gizmoOpacity;
+    private float _backgroundOpacity;
+    private float _axisLength;
+    private float _spriteRadius;
 
     private AxisData _xAxisData;
     private AxisData _yAxisData;
@@ -92,19 +100,34 @@ internal class DirectionGizmo : ContainerControl
 
         _xAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "X", AxisColor = new Color(1.0f, 0.0f, 0.02745f, 1.0f), Negative = false, Direction = AxisDirection.PosX };
         _yAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "Y", AxisColor = new Color(0.239215f, 1.0f, 0.047058f, 1.0f), Negative = false, Direction = AxisDirection.PosY };
-        _zAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "Z", AxisColor = new Color(0.0f, 0.0235294f, 1.0f, 1.0f), Negative = false, Direction = AxisDirection.PosZ };
+        _zAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "Z", AxisColor = new Color(0.0f, 0.3607f, 0.9f, 1.0f), Negative = false, Direction = AxisDirection.PosZ };
 
         _negXAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "-X", AxisColor = new Color(1.0f, 0.0f, 0.02745f, 1.0f), Negative = true, Direction = AxisDirection.NegX };
         _negYAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "-Y", AxisColor = new Color(0.239215f, 1.0f, 0.047058f, 1.0f), Negative = true, Direction = AxisDirection.NegY };
-        _negZAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "-Z", AxisColor = new Color(0.0f, 0.0235294f, 1.0f, 1.0f), Negative = true, Direction = AxisDirection.NegZ };
+        _negZAxisData = new AxisData { Delta = new Float2(0, 0), Distance = 0, Label = "-Z", AxisColor = new Color(0.0f, 0.3607f, 0.9f, 1.0f), Negative = true, Direction = AxisDirection.NegZ };
         _axisData.EnsureCapacity(6);
         _spritePositions.EnsureCapacity(6);
 
-        _posHandle = Editor.Instance.Icons.VisjectBoxClosed32;
-        _negHandle = Editor.Instance.Icons.VisjectBoxOpen32;
+        var editor = Editor.Instance;
+        _posHandle = editor.Icons.VisjectBoxClosed32;
+        _negHandle = editor.Icons.VisjectBoxOpen32;
 
         _fontReference = new FontReference(Style.Current.FontSmall);
-        _fontReference.Size = 8;
+
+        editor.Options.OptionsChanged += OnEditorOptionsChanged;
+        OnEditorOptionsChanged(editor.Options.Options);
+    }
+
+    private void OnEditorOptionsChanged(EditorOptions options)
+    {
+        float gizmoScale = options.Viewport.DirectionGizmoScale;
+        _axisLength = AxisLength * gizmoScale;
+        _spriteRadius = SpriteRadius * gizmoScale;
+        _gizmoBrightness = options.Viewport.DirectionGizmoBrightness;
+        _gizmoOpacity = options.Viewport.DirectionGizmoOpacity;
+        _backgroundOpacity = options.Viewport.DirectionGizmoBackgroundOpacity;
+
+        _fontReference.Size = 8.25f * gizmoScale;
     }
 
     private bool IsPointInSprite(Float2 point, Float2 spriteCenter)
@@ -134,9 +157,9 @@ internal class DirectionGizmo : ContainerControl
     }
 
     /// <inheritdoc />
-    public override bool OnMouseDown(Float2 location, MouseButton button)
+    public override bool OnMouseUp(Float2 location, MouseButton button)
     {
-        if (base.OnMouseDown(location, button))
+        if (base.OnMouseUp(location, button))
             return true;
 
         // Check which axis is being clicked - check from closest to farthest for proper layering
@@ -156,12 +179,12 @@ internal class DirectionGizmo : ContainerControl
     {
         Quaternion orientation = direction switch
         {
-            AxisDirection.PosX => Quaternion.Euler(0, 90, 0),
-            AxisDirection.NegX => Quaternion.Euler(0, -90, 0),
-            AxisDirection.PosY => Quaternion.Euler(-90, 0, 0),
-            AxisDirection.NegY => Quaternion.Euler(90, 0, 0),
-            AxisDirection.PosZ => Quaternion.Euler(0, 0, 0),
-            AxisDirection.NegZ => Quaternion.Euler(0, 180, 0),
+            AxisDirection.PosX => Quaternion.Euler(0, -90, 0),
+            AxisDirection.NegX => Quaternion.Euler(0, 90, 0),
+            AxisDirection.PosY => Quaternion.Euler(90, 0, 0),
+            AxisDirection.NegY => Quaternion.Euler(-90, 0, 0),
+            AxisDirection.PosZ => Quaternion.Euler(0, 180, 0),
+            AxisDirection.NegZ => Quaternion.Euler(0, 0, 0),
             _ => Quaternion.Identity
         };
         _viewport.OrientViewport(ref orientation);
@@ -192,8 +215,19 @@ internal class DirectionGizmo : ContainerControl
 
         // Normalize by viewport height to keep size independent of FOV and viewport dimensions
         float heightNormalization = _viewport.Height / 720.0f; // 720 = reference height
+
+        // Fix in axes distance no matter FOV/OrthoScale to keep consistent size regardless of zoom level
         if (_owner.Viewport.UseOrthographicProjection)
-            heightNormalization /= _owner.Viewport.OrthographicScale * 0.5f; // Fix in ortho view to keep consistent size regardless of zoom level
+            heightNormalization /= _owner.Viewport.OrthographicScale * 0.5f;
+        else
+        {
+            // This could be some actual math expression, not that hack
+            var fov = _owner.Viewport.FieldOfView / 60.0f;
+            float scaleAt30 = 0.1f, scaleAt60 = 1.0f, scaleAt120 = 1.5f, scaleAt180 = 3.0f;
+            heightNormalization /= Mathf.Lerp(scaleAt30, scaleAt60, fov);
+            heightNormalization /= Mathf.Lerp(scaleAt60, scaleAt120, Mathf.Saturate(fov - 1));
+            heightNormalization /= Mathf.Lerp(scaleAt60, scaleAt180, Mathf.Saturate(fov - 2));
+        }
 
         Float2 xDelta = (xProjected - gizmoCenterScreen) / heightNormalization;
         Float2 yDelta = (yProjected - gizmoCenterScreen) / heightNormalization;
@@ -232,33 +266,32 @@ internal class DirectionGizmo : ContainerControl
         // Rebuild sprite positions list for hover detection
         _spritePositions.Clear();
 
-        Render2D.DrawSprite(_posHandle, new Rectangle(0, 0, Size), Color.Black.AlphaMultiplied(0.1f));
+        Render2D.DrawSprite(_posHandle, new Rectangle(0, 0, Size), Color.Black.AlphaMultiplied(_backgroundOpacity));
 
         // Draw in order from farthest to closest
         for (int i = 0; i < _axisData.Count; i++)
         {
             var axis = _axisData[i];
             Float2 tipScreen = relativeCenter + axis.Delta * _axisLength;
-            Float2 tipTextScreen = relativeCenter + axis.Delta * _textAxisLength;
             bool isHovered = _hoveredAxisIndex == i;
 
             // Store sprite position for hover detection
-            _spritePositions.Add((tipTextScreen, axis.Direction));
+            _spritePositions.Add((tipScreen, axis.Direction));
 
             var axisColor = isHovered ? new Color(1.0f, 0.8980392f, 0.039215688f) : axis.AxisColor;
+            axisColor = axisColor.RGBMultiplied(_gizmoBrightness).AlphaMultiplied(_gizmoOpacity);
             var font = _fontReference.GetFont();
             if (!axis.Negative)
             {
-                Render2D.DrawLine(relativeCenter, tipScreen, axisColor, 2.0f);
-                Render2D.DrawSprite(_posHandle, new Rectangle(tipTextScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axisColor);
-                Render2D.DrawText(font, axis.Label, isHovered ? Color.Gray : Color.Black, tipTextScreen - font.MeasureText(axis.Label) * 0.5f);
+                Render2D.DrawLine(relativeCenter, tipScreen, axisColor, 1.5f);
+                Render2D.DrawSprite(_posHandle, new Rectangle(tipScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axisColor);
+                Render2D.DrawText(font, axis.Label, Color.Black, tipScreen - font.MeasureText(axis.Label) * 0.5f);
             }
             else
             {
-                Render2D.DrawSprite(_posHandle, new Rectangle(tipTextScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axisColor.RGBMultiplied(0.65f));
-                Render2D.DrawSprite(_negHandle, new Rectangle(tipTextScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axisColor);
+                Render2D.DrawSprite(_posHandle, new Rectangle(tipScreen - new Float2(_spriteRadius), new Float2(_spriteRadius * 2)), axisColor.RGBMultiplied(0.85f).AlphaMultiplied(0.8f));
                 if (isHovered)
-                    Render2D.DrawText(font, axis.Label, Color.Black, tipTextScreen - font.MeasureText(axis.Label) * 0.5f);
+                    Render2D.DrawText(font, axis.Label, Color.Black, tipScreen - font.MeasureText(axis.Label) * 0.5f);
             }
         }
 

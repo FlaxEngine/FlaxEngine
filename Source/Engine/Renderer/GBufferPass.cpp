@@ -425,7 +425,7 @@ void GBufferPass::DrawSky(RenderContext& renderContext, GPUContext* context)
         BoundingSphere frustumBounds;
         renderContext.View.CullingFrustum.GetSphere(frustumBounds);
         origin = frustumBounds.Center;
-        size = frustumBounds.Radius;
+        size = (float)frustumBounds.Radius;
     }
     Matrix::Scaling(size / ((float)box.GetSize().Y * 0.5f) * 0.95f, m1); // Scale to fit whole view frustum
     Matrix::CreateWorld(origin, Float3::Up, Float3::Backward, m2); // Rotate sphere model

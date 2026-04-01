@@ -264,10 +264,17 @@ namespace FlaxEditor.Windows.Assets
             }
 
             /// <inheritdoc />
-            protected override void LinkBrokenParentReference(Actor actor)
+            protected override void LinkBrokenParentReference(ActorNode actorNode)
             {
                 // Link to prefab root
-                actor.SetParent(_window.Graph.MainActor, false);
+                actorNode.Actor.SetParent(_window.Graph.MainActor, false);
+            }
+
+            /// <inheritdoc />
+            protected override void CheckBrokenParentReference(ActorNode actorNode)
+            {
+                if (actorNode.Actor.Scene != null || actorNode.Root != _window.Graph.Root)
+                    LinkBrokenParentReference(actorNode);
             }
 
             /// <inheritdoc />

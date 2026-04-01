@@ -33,7 +33,7 @@ namespace FlaxEditor.Surface.Elements
 
         /// <inheritdoc />
         public BoolValue(SurfaceNode parentNode, NodeElementArchetype archetype)
-        : base(parentNode, archetype, archetype.ActualPosition, new Float2(16), true)
+        : base(parentNode, archetype, archetype.ActualPosition, new Float2(Constants.BoxRowHeight), true)
         {
         }
 

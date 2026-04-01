@@ -845,7 +845,6 @@ MClass* MUtils::GetClass(const VariantType& value)
     auto mclass = Scripting::FindClass(StringAnsiView(value.TypeName));
     if (mclass)
         return mclass;
-    const auto& stdTypes = *StdTypesContainer::Instance();
     switch (value.Type)
     {
     case VariantType::Void:
@@ -891,25 +890,25 @@ MClass* MUtils::GetClass(const VariantType& value)
     case VariantType::Double4:
         return Double4::TypeInitializer.GetClass();
     case VariantType::Color:
-        return stdTypes.ColorClass;
+        return Color::TypeInitializer.GetClass();
     case VariantType::Guid:
-        return stdTypes.GuidClass;
+        return GetBinaryModuleCorlib()->Assembly->GetClass("System.Guid");
     case VariantType::Typename:
-        return stdTypes.TypeClass;
+        return GetBinaryModuleCorlib()->Assembly->GetClass("System.Type");
     case VariantType::BoundingBox:
-        return stdTypes.BoundingBoxClass;
+        return BoundingBox::TypeInitializer.GetClass();
     case VariantType::BoundingSphere:
-        return stdTypes.BoundingSphereClass;
+        return BoundingSphere::TypeInitializer.GetClass();
     case VariantType::Quaternion:
-        return stdTypes.QuaternionClass;
+        return Quaternion::TypeInitializer.GetClass();
     case VariantType::Transform:
-        return stdTypes.TransformClass;
+        return Transform::TypeInitializer.GetClass();
     case VariantType::Rectangle:
-        return stdTypes.RectangleClass;
+        return Rectangle::TypeInitializer.GetClass();
     case VariantType::Ray:
-        return stdTypes.RayClass;
+        return Ray::TypeInitializer.GetClass();
     case VariantType::Matrix:
-        return stdTypes.MatrixClass;
+        return Matrix::TypeInitializer.GetClass();
     case VariantType::Array:
         if (value.TypeName)
         {
@@ -1202,8 +1201,7 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, MType* type, bool& failed)
         if (value.Type.Type != VariantType::Array)
             return nullptr;
         MObject* object = BoxVariant(value);
-        auto typeStr = MCore::Type::ToString(type);
-        if (object && !MCore::Object::GetClass(object)->IsSubClassOf(MCore::Type::GetClass(type)))
+        if (object && MCore::Type::GetClass(type) != MCore::Array::GetArrayClass((MArray*)object))
             object = nullptr;
         return object;
     }
@@ -1236,6 +1234,29 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, MType* type, bool& failed)
     }
     failed = true;
     return nullptr;
+}
+
+bool MUtils::VariantTypeEquals(const VariantType& type, MType* mType, bool isOut)
+{
+    MClass* mClass = MCore::Type::GetClass(mType);
+    MClass* variantClass = MUtils::GetClass(type);
+    if (variantClass != mClass)
+    {
+        // Hack for Vector2/3/4 which alias with Float2/3/4 or Double2/3/4 (depending on USE_LARGE_WORLDS)
+        if (mClass->GetFullName() == StringAnsiView("FlaxEngine.Vector2", 18) && (type.Type == VariantType::Float2 || type.Type == VariantType::Double2))
+            return true;
+        if (mClass->GetFullName() == StringAnsiView("FlaxEngine.Vector3", 18) && (type.Type == VariantType::Float3 || type.Type == VariantType::Double3))
+            return true;
+        if (mClass->GetFullName() == StringAnsiView("FlaxEngine.Vector4", 18) && (type.Type == VariantType::Float4 || type.Type == VariantType::Double4))
+            return true;
+
+        // Arrays
+        if (type == VariantType::Array && type.GetElementType() == VariantType::Object)
+            return MCore::Type::GetType(mType) == MTypes::Array;
+
+        return false;
+    }
+    return true;
 }
 
 MObject* MUtils::ToManaged(const Version& value)

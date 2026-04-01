@@ -60,12 +60,14 @@ public:
     /// <summary>
     /// Requests the default prefab object instance. Deserializes the prefab objects from the asset. Skips if already done.
     /// </summary>
+    /// <remarks>Default instances of the prefab are read-only and are used internally for objects serialization (prefab diff).</remarks>
     /// <returns>The root of the prefab object loaded from the prefab. Contains the default values. It's not added to gameplay but deserialized with postLoad and init event fired.</returns>
     API_FUNCTION() Actor* GetDefaultInstance();
 
     /// <summary>
     /// Requests the default prefab object instance. Deserializes the prefab objects from the asset. Skips if already done.
     /// </summary>
+    /// <remarks>Default instances of the prefab are read-only and are used internally for objects serialization (prefab diff).</remarks>
     /// <param name="objectId">The ID of the object to get from prefab default object. It can be one of the child-actors or any script that exists in the prefab. Methods returns root if id is empty.</param>
     /// <returns>The object of the prefab loaded from the prefab. Contains the default values. It's not added to gameplay but deserialized with postLoad and init event fired.</returns>
     API_FUNCTION() SceneObject* GetDefaultInstance(API_PARAM(Ref) const Guid& objectId);

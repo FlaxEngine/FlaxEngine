@@ -67,7 +67,8 @@ namespace Flax.Build.Platforms
             if (subDirs.Length != 0)
             {
                 Utilities.SortVersionDirectories(subDirs);
-                FindNDK(subDirs.Last());
+                for (int i = subDirs.Length - 1; i >= 0 && !IsValid; i--)
+                    FindNDK(subDirs[i]);
             }
 
             if (!IsValid)
@@ -109,6 +110,14 @@ namespace Flax.Build.Platforms
             }
             if (IsValid)
             {
+                var minVersion = new Version(27, 0); // NDK 27 (and newer) contains the libc++_shared.so with 16kb alignment
+                if (Version < minVersion)
+                {
+                    IsValid = false;
+                    Log.Verbose(RootPath);
+                    Log.Error(string.Format("Unsupported Android NDK version {0}. Minimum supported is {1}.", Version, minVersion));
+                    return;
+                }
                 RootPath = sdkPath;
                 Log.Info(string.Format("Found Android NDK {1} at {0}", RootPath, Version));
             }

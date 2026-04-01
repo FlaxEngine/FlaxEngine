@@ -25,10 +25,10 @@ public:
     private:
         Span<byte> _data;
         PixelFormat _format;
-        int32 _stride;
+        int32 _stride, _count;
         PixelFormatSampler _sampler;
 
-        Stream(Span<byte> data, PixelFormat format, int32 stride);
+        Stream(Span<byte> data, PixelFormat format, int32 stride, int32 count);
 
     public:
         Span<byte> GetData() const;
@@ -37,6 +37,11 @@ public:
         int32 GetCount() const;
         bool IsValid() const;
         bool IsLinear(PixelFormat expectedFormat) const;
+
+        FORCE_INLINE operator bool() const
+        {
+            return IsValid();
+        }
 
         FORCE_INLINE int32 GetInt(int32 index) const
         {

@@ -529,7 +529,7 @@ namespace FlaxEditor
             if (EnableBackground && _view != null)
             {
                 // Draw background
-                Surface.VisjectSurface.DrawBackgroundDefault(Editor.Instance.UI.VisjectSurfaceBackground, Width, Height);
+                Surface.VisjectSurface.DrawBackgroundDefault(Editor.Instance.UI.VisjectSurfaceBackground, Size, _view.Location);
 
                 if (ShowGrid)
                 {

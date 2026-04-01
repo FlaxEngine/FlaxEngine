@@ -493,35 +493,26 @@ void ShaderGenerator::ProcessGroupPacking(Box* box, Node* node, Value& value)
     // Unpack
     case 30:
     {
-        Box* b = node->GetBox(0);
-        Value v = tryGetValue(b, Float2::Zero).AsFloat2();
-
-        int32 subIndex = box->ID - 1;
-        ASSERT(subIndex >= 0 && subIndex < 2);
-
-        value = Value(ValueType::Float, v.Value + _subs[subIndex]);
+        value = tryGetValue(node->GetBox(0), Float2::Zero).AsFloat2();
+        const int32 subIndex = box->ID - 1;
+        if (subIndex >= 0 && subIndex < 2)
+            value = Value(ValueType::Float, value.Value + _subs[subIndex]);
         break;
     }
     case 31:
     {
-        Box* b = node->GetBox(0);
-        Value v = tryGetValue(b, Float3::Zero).AsFloat3();
-
-        int32 subIndex = box->ID - 1;
-        ASSERT(subIndex >= 0 && subIndex < 3);
-
-        value = Value(ValueType::Float, v.Value + _subs[subIndex]);
+        value = tryGetValue(node->GetBox(0), Float3::Zero).AsFloat3();
+        const int32 subIndex = box->ID - 1;
+        if (subIndex >= 0 && subIndex < 3)
+            value = Value(ValueType::Float, value.Value + _subs[subIndex]);
         break;
     }
     case 32:
     {
-        Box* b = node->GetBox(0);
-        Value v = tryGetValue(b, Float4::Zero).AsFloat4();
-
-        int32 subIndex = box->ID - 1;
-        ASSERT(subIndex >= 0 && subIndex < 4);
-
-        value = Value(ValueType::Float, v.Value + _subs[subIndex]);
+        value = tryGetValue(node->GetBox(0), Float4::Zero).AsFloat4();
+        const int32 subIndex = box->ID - 1;
+        if (subIndex >= 0 && subIndex < 4)
+            value = Value(ValueType::Float, value.Value + _subs[subIndex]);
         break;
     }
     case 33:

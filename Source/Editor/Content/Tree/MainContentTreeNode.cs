@@ -7,8 +7,8 @@ namespace FlaxEditor.Content
     /// <summary>
     /// Content tree node used for main directories.
     /// </summary>
-    /// <seealso cref="FlaxEditor.Content.ContentTreeNode" />
-    public class MainContentTreeNode : ContentTreeNode
+    /// <seealso cref="ContentFolderTreeNode" />
+    public class MainContentFolderTreeNode : ContentFolderTreeNode
     {
         private FileSystemWatcher _watcher;
 
@@ -19,12 +19,12 @@ namespace FlaxEditor.Content
         public override bool CanDuplicate => false;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MainContentTreeNode"/> class.
+        /// Initializes a new instance of the <see cref="MainContentFolderTreeNode"/> class.
         /// </summary>
         /// <param name="parent">The parent project.</param>
         /// <param name="type">The folder type.</param>
         /// <param name="path">The folder path.</param>
-        public MainContentTreeNode(ProjectTreeNode parent, ContentFolderType type, string path)
+        public MainContentFolderTreeNode(ProjectFolderTreeNode parent, ContentFolderType type, string path)
         : base(parent, type, path)
         {
             _watcher = new FileSystemWatcher(path)

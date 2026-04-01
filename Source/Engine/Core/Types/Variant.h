@@ -68,10 +68,12 @@ API_STRUCT(InBuild) struct FLAXENGINE_API VariantType
 
         MAX,
 #if USE_LARGE_WORLDS
+        Real = Double,
         Vector2 = Double2,
         Vector3 = Double3,
         Vector4 = Double4,
 #else
+        Real = Float,
         Vector2 = Float2,
         Vector3 = Float3,
         Vector4 = Float4,

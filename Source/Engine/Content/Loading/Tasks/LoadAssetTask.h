@@ -80,7 +80,6 @@ private:
         auto asset = Asset.Get();
         if (asset)
         {
-            asset->Locker.Lock();
             Task* task = (Task*)Platform::AtomicRead(&asset->_loadingTask);
             if (task)
             {
@@ -99,7 +98,6 @@ private:
                     task = task->GetContinueWithTask();
                 } while (task);
             }
-            asset->Locker.Unlock();
         }
     }
 };

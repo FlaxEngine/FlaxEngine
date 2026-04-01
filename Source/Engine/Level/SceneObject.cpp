@@ -61,7 +61,7 @@ void SceneObject::BreakPrefabLink()
 
 String SceneObject::GetNamePath(Char separatorChar) const
 {
-    Array<StringView> names;
+    Array<StringView, InlinedAllocation<8>> names;
     const Actor* a = dynamic_cast<const Actor*>(this);
     if (!a)
         a = GetParent();

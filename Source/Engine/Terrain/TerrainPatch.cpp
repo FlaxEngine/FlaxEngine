@@ -439,7 +439,7 @@ void UpdateNormalsAndHoles(const TerrainDataUpdateInfo& info, const float* heigh
             // Calculate normals for quad two vertices
             Float3 n0 = Float3::Normalize((v00 - v01) ^ (v01 - v10));
             Float3 n1 = Float3::Normalize((v11 - v10) ^ (v10 - v01));
-            Float3 n2 = n0 + n1;
+            Float3 n2 = Float3::Normalize(n0 + n1);
 
             // Apply normal to each vertex using it
             normalsPerVertex[i00] += n1;
@@ -2572,9 +2572,9 @@ void TerrainPatch::ExtractCollisionGeometry(Array<Float3>& vertexBuffer, Array<i
             const int32 vertexCount = rows * cols;
             _collisionVertices.Resize(vertexCount);
             Float3* vb = _collisionVertices.Get();
-            for (int32 row = 0; row < rows; row++)
+            for (int32 col = 0; col < cols; col++)
             {
-                for (int32 col = 0; col < cols; col++)
+                for (int32 row = 0; row < rows; row++)
                 {
                     Float3 v((float)row, PhysicsBackend::GetHeightFieldHeight(_physicsHeightField, row, col) / TERRAIN_PATCH_COLLISION_QUANTIZATION, (float)col);
                     Float3::Transform(v, world, v);
@@ -2591,9 +2591,9 @@ void TerrainPatch::ExtractCollisionGeometry(Array<Float3>& vertexBuffer, Array<i
     const int32 indexCount = (rows - 1) * (cols - 1) * 6;
     indexBuffer.Resize(indexCount);
     int32* ib = indexBuffer.Get();
-    for (int32 row = 0; row < rows - 1; row++)
+    for (int32 col = 0; col < cols - 1; col++)
     {
-        for (int32 col = 0; col < cols - 1; col++)
+        for (int32 row = 0; row < rows - 1; row++)
         {
 #define GET_INDEX(x, y) *ib++ = (col + (y)) + (row + (x)) * cols
 

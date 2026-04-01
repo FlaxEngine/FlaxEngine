@@ -56,10 +56,10 @@ namespace FlaxEditor.Surface
         : base(id, context, nodeArch, groupArch)
         {
             _sizeValueIndex = 2; // Index of the Size stored in Values array
-            _sizeMin = new Float2(140.0f, Constants.NodeHeaderSize);
+            _sizeMin = new Float2(140.0f, Constants.NodeHeaderHeight);
             _renameTextBox = new TextBox(false, 0, 0, Width)
             {
-                Height = Constants.NodeHeaderSize,
+                Height = Constants.NodeHeaderHeight,
                 Visible = false,
                 Parent = this,
                 EndEditOnClick = false, // We have to handle this ourselves, otherwise the textbox instantly loses focus when double-clicking the header
@@ -124,11 +124,11 @@ namespace FlaxEditor.Surface
         {
             base.UpdateRectangles();
 
-            const float headerSize = Constants.NodeHeaderSize;
+            const float headerSize = Constants.NodeHeaderHeight;
             const float buttonMargin = Constants.NodeCloseButtonMargin;
             const float buttonSize = Constants.NodeCloseButtonSize;
             _headerRect = new Rectangle(0, 0, Width, headerSize);
-            _closeButtonRect = new Rectangle(Width - buttonSize - buttonMargin, buttonMargin, buttonSize, buttonSize);
+            _closeButtonRect = new Rectangle(Width - buttonSize * 0.75f - buttonMargin, buttonMargin, buttonSize * 0.75f, buttonSize * 0.75f);
             _colorButtonRect = new Rectangle(_closeButtonRect.Left - buttonSize - buttonMargin, buttonMargin, buttonSize, buttonSize);
             _resizeButtonRect = new Rectangle(_closeButtonRect.Left, Height - buttonSize - buttonMargin, buttonSize, buttonSize);
             _renameTextBox.Width = Width;
@@ -183,7 +183,7 @@ namespace FlaxEditor.Surface
             if (Surface.CanEdit)
             {
                 // Close button
-                Render2D.DrawSprite(style.Cross, _closeButtonRect, _closeButtonRect.Contains(_mousePosition) && Surface.CanEdit ? style.Foreground : style.ForegroundGrey);
+                DrawCloseButton(_closeButtonRect, _closeButtonRect.Contains(_mousePosition) && Surface.CanEdit ? style.Foreground : style.ForegroundGrey);
 
                 // Color button
                 Render2D.DrawSprite(style.Settings, _colorButtonRect, _colorButtonRect.Contains(_mousePosition) && Surface.CanEdit ? style.Foreground : style.ForegroundGrey);

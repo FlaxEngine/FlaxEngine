@@ -65,31 +65,68 @@ namespace FlaxEditor.Surface
         /// </summary>
         protected virtual void DrawBackground()
         {
-            DrawBackgroundDefault(Style.Background, Width, Height);
+            DrawBackgroundDefault(Style.Background, Size, _rootControl.Location);
+            //DrawBackgroundSolidColor(Style.BackgroundColor, Width, Height);
+            DrawGridBackground();
         }
 
-        internal static void DrawBackgroundDefault(Texture background, float width, float height)
+        internal static void DrawBackgroundSolidColor(Color color, float width, float height)
+        {
+            Rectangle backgroundRect = new Rectangle(0f, 0f, width, height);
+            Render2D.FillRectangle(backgroundRect, color);
+        }
+
+        internal void DrawGridBackground()
+        {
+            var viewRect = GetClientArea();
+            var upperLeft = _rootControl.PointFromParent(viewRect.Location);
+            var bottomRight = _rootControl.PointFromParent(viewRect.Size);
+            var min = Float2.Min(upperLeft, bottomRight);
+            var max = Float2.Max(upperLeft, bottomRight);
+            var pixelRange = (max - min) * ViewScale * 2.75f;
+            Render2D.PushClip(ref viewRect);
+            DrawAxis(Float2.UnitX, viewRect, min.X, max.X, pixelRange.X);
+            DrawAxis(Float2.UnitY, viewRect, min.Y, max.Y, pixelRange.Y);
+            Render2D.PopClip();
+        }
+
+        private void DrawAxis(Float2 axis, Rectangle viewRect, float min, float max, float pixelRange)
+        {
+            var linesColor = Style.BackgroundColor.RGBMultiplied(1.2f);
+            float[] gridTickStrengths = null;
+            Utilities.Utils.DrawCurveTicks((decimal tick, double step, float strength) =>
+            {
+                var p = _rootControl.PointToParent(axis * (float)tick); ;
+
+                // Draw line
+                var lineRect = new Rectangle
+                (
+                 viewRect.Location + (p - 0.5f) * axis,
+                 Float2.Lerp(viewRect.Size, Float2.One, axis)
+                );
+                Render2D.FillRectangle(lineRect, linesColor.AlphaMultiplied(strength));
+
+            }, Utilities.Utils.CurveTickSteps, ref gridTickStrengths, min, max, pixelRange);
+        }
+
+        internal static void DrawBackgroundDefault(Texture background, Float2 size, Float2 offset)
         {
             if (background && background.ResidentMipLevels > 0)
             {
                 var bSize = background.Size;
-                float bw = bSize.X;
-                float bh = bSize.Y;
-                var pos = Float2.Mod(bSize);
+                var pos = Float2.Mod(offset / bSize) * bSize;
+                var max = Float2.Ceil(size / bSize + 1.0f);
 
                 if (pos.X > 0)
-                    pos.X -= bw;
+                    pos.X -= bSize.X;
                 if (pos.Y > 0)
-                    pos.Y -= bh;
+                    pos.Y -= bSize.Y;
 
-                int maxI = Mathf.CeilToInt(width / bw + 1.0f);
-                int maxJ = Mathf.CeilToInt(height / bh + 1.0f);
-
-                for (int i = 0; i < maxI; i++)
+                for (int i = 0; i < max.X; i++)
                 {
-                    for (int j = 0; j < maxJ; j++)
+                    for (int j = 0; j < max.Y; j++)
                     {
-                        Render2D.DrawTexture(background, new Rectangle(pos.X + i * bw, pos.Y + j * bh, bw, bh), Color.White);
+                        Render2D.DrawTexture(background, new Rectangle(pos.X + i * bSize.X, pos.Y + j * bSize.Y, bSize), Color.White);
                     }
                 }
             }

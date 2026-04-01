@@ -811,7 +811,7 @@ bool FlaxStorage::ChangeAssetID(Entry& e, const Guid& newId)
 
     // TODO: validate entry
     ASSERT(newId.IsValid());
-    ASSERT(AllowDataModifications());
+    ASSERT(!IsReadOnly());
 
     LOG(Info, "Changing asset \'{0}\' id to \'{1}\' (storage: \'{2}\')", e.ID, newId, _path);
 
@@ -885,7 +885,7 @@ bool FlaxStorage::ChangeAssetID(Entry& e, const Guid& newId)
 
 FlaxChunk* FlaxStorage::AllocateChunk()
 {
-    if (AllowDataModifications())
+    if (!IsReadOnly())
     {
         PROFILE_MEM(ContentFiles);
         auto chunk = New<FlaxChunk>();
@@ -1135,7 +1135,7 @@ bool FlaxStorage::Create(WriteStream* stream, Span<AssetInitData> assets, const 
 bool FlaxStorage::Save(const AssetInitData& data, bool silentMode)
 {
     // Check if can modify the storage
-    if (!AllowDataModifications())
+    if (IsReadOnly())
         return true;
 
     // Note: we support saving only single asset, to save more assets in single package use FlaxStorage::Create(..)
@@ -1546,7 +1546,7 @@ void FlaxStorage::Tick(double time)
 
 void FlaxStorage::OnRename(const StringView& newPath)
 {
-    ASSERT(AllowDataModifications());
+    ASSERT(!IsReadOnly());
     _path = newPath;
 }
 
@@ -1568,9 +1568,9 @@ bool FlaxFile::IsPackage() const
     return false;
 }
 
-bool FlaxFile::AllowDataModifications() const
+bool FlaxFile::IsReadOnly() const
 {
-    return true;
+    return false;
 }
 
 bool FlaxFile::HasAsset(const Guid& id) const
@@ -1648,9 +1648,9 @@ bool FlaxPackage::IsPackage() const
     return true;
 }
 
-bool FlaxPackage::AllowDataModifications() const
+bool FlaxPackage::IsReadOnly() const
 {
-    return false;
+    return true;
 }
 
 bool FlaxPackage::HasAsset(const Guid& id) const

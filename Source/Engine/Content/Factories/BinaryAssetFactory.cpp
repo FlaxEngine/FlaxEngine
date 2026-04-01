@@ -28,7 +28,7 @@ bool BinaryAssetFactoryBase::Init(BinaryAsset* asset)
 #if USE_EDITOR
     // Check if need to perform data conversion to the newer version (only in Editor)
     const auto upgrader = GetUpgrader();
-    if (storage->AllowDataModifications() && upgrader && upgrader->ShouldUpgrade(initData.SerializedVersion))
+    if (!storage->IsReadOnly() && upgrader && upgrader->ShouldUpgrade(initData.SerializedVersion))
     {
         const auto startTime = DateTime::NowUTC();
         const AssetInfo info(asset->GetID(), asset->GetTypeName(), storage->GetPath());

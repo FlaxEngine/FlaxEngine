@@ -55,9 +55,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 // TODO: consider editing more than one instance of the same prefab asset at once
 
-                var prefab = FlaxEngine.Content.LoadAsync<Prefab>(actor.PrefabID);
-                // TODO: don't stall here?
-                if (prefab && !prefab.WaitForLoaded())
+                var prefab = FlaxEngine.Content.Load<Prefab>(actor.PrefabID);
+                if (prefab)
                 {
                     var prefabObjectId = actor.PrefabObjectID;
                     var prefabInstance = prefab.GetDefaultInstance(ref prefabObjectId);
@@ -203,7 +202,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 //Presenter.BuildLayoutOnUpdate();
 
                 // Better way is to just update the reference value using the new default instance of the prefab, created after changes apply
-                if (Values != null && prefab && !prefab.WaitForLoaded())
+                if (Values != null && (Actor)Values[0] && prefab && !prefab.WaitForLoaded())
                 {
                     var actor = (Actor)Values[0];
                     var prefabObjectId = actor.PrefabObjectID;

@@ -102,8 +102,14 @@ namespace FlaxEditor.Surface.Archetypes
                     outline = style.BorderHighlighted;
                 else if (_editor._node.SelectedAnimationIndex == _index)
                     outline = style.BackgroundSelected;
+
+                var features = Render2D.Features;
+                Render2D.Features = features & ~Render2D.RenderingFeatures.VertexSnapping;
+
                 Render2D.DrawSprite(icon, rect.MakeExpanded(4.0f), outline);
                 Render2D.DrawSprite(icon, rect, style.Foreground);
+
+                Render2D.Features = features;
             }
 
             /// <inheritdoc />
@@ -563,6 +569,9 @@ namespace FlaxEditor.Surface.Archetypes
             // Grid
             _node.DrawEditorGrid(ref rect);
 
+            var features = Render2D.Features;
+            Render2D.Features = features & ~Render2D.RenderingFeatures.VertexSnapping;
+
             base.Draw();
 
             // Draw debug position
@@ -577,6 +586,8 @@ namespace FlaxEditor.Surface.Archetypes
                 Render2D.DrawSprite(icon, debugRect.MakeExpanded(2.0f), outline);
                 Render2D.DrawSprite(icon, debugRect, style.ProgressNormal);
             }
+
+            Render2D.Features = features;
 
             // Frame
             var frameColor = containsFocus ? style.BackgroundSelected : (IsMouseOver ? style.ForegroundGrey : style.ForegroundDisabled);
