@@ -33,6 +33,7 @@ namespace FlaxEditor.Surface.Elements
         public ComboBoxElement(SurfaceNode parentNode, NodeElementArchetype archetype)
         : base(archetype.ActualPositionX, archetype.ActualPositionY, archetype.Size.X)
         {
+            Height = Constants.BoxRowHeight;
             ParentNode = parentNode;
             Archetype = archetype;
 
