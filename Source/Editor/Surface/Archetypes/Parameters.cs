@@ -13,6 +13,7 @@ using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEngine;
 using FlaxEngine.Utilities;
+using FlaxEditor.Surface.Undo;
 
 namespace FlaxEditor.Surface.Archetypes
 {
@@ -92,7 +93,17 @@ namespace FlaxEditor.Surface.Archetypes
                 var selected = GetSelected();
                 var selectedID = selected?.ID ?? Guid.Empty;
                 if (selectedID != (Guid)Values[0])
+                {
+                    if (Surface.Undo != null && Surface.Undo.Enabled)
+                    {
+                        // Capture node connections to support undo
+                        var action = new EditNodeConnections(Context, this);
+                        RemoveConnections();
+                        action.End();
+                        Surface.AddBatchedUndoAction(action);
+                    }
                     Set(selected, ref selectedID);
+                }
             }
 
             /// <summary>
