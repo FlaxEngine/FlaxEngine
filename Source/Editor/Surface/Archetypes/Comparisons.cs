@@ -20,7 +20,6 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = id,
                 Title = title,
-                Create = (id, context, arch, groupArch) => new ComparisonNode(id, context, arch, groupArch),
                 Description = desc,
                 Flags = NodeFlags.AllGraphs,
                 AlternativeTitles = altTitles,
@@ -43,28 +42,6 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, title, typeof(bool), 2)
                 }
             };
-        }
-
-        private class ComparisonNode : SurfaceNode
-        {
-            public ComparisonNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
-            : base(id, context, nodeArch, groupArch)
-            {
-            }
-
-            public override void OnSurfaceLoaded(SurfaceNodeActions action)
-            {
-                base.OnSurfaceLoaded(action);
-
-                ResizeAuto();
-            }
-
-            public override void ConnectionTick(Box box)
-            {
-                base.ConnectionTick(box);
-
-                ResizeAuto();
-            }
         }
 
         private class SwitchOnEnumNode : SurfaceNode
@@ -204,7 +181,6 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 7,
                 Title = "Switch On Bool",
-                Create = (id, context, arch, groupArch) => new ComparisonNode(id, context, arch, groupArch),
                 AlternativeTitles = new[] { "if", "switch" },
                 Description = "Returns one of the input values based on the condition value",
                 Flags = NodeFlags.AllGraphs,
