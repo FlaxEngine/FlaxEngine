@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using FlaxEditor.Gizmo;
 using FlaxEditor.SceneGraph;
 using FlaxEngine;
+using FlaxEditor.CustomEditors.Editors;
 
 namespace FlaxEditor.Viewport.Cameras
 {
@@ -21,6 +22,12 @@ namespace FlaxEditor.Viewport.Cameras
     public abstract class ViewportCamera : IViewportCamera
     {
         private EditorViewport _viewport;
+
+        private Quaternion viewportOrientation = new(0.424f, -0.094f, 0.044f, 0.899f);
+        //private Quaternion viewportOrientation = Quaternion.Euler(-4f, 59f, 0f);
+     
+        private Quaternion arcBallOrientation = Quaternion.Euler(15f, -45f, 0f);
+        // private Quaternion arcBallOrientation = new(-0.08f, -0.92f, 0.31f, -0.23f);
 
         /// <summary>
         /// Gets the parent viewport.
@@ -74,8 +81,7 @@ namespace FlaxEditor.Viewport.Cameras
         /// <param name="selection">The actors to show.</param>
         public void ShowActors(List<SceneGraphNode> selection)
         {
-            var q = new Quaternion(0.424461186f, -0.0940724313f, 0.0443938486f, 0.899451137f);
-            ShowActors(selection, ref q);
+            ShowActors(selection, ref viewportOrientation);
         }
 
         /// <summary>
@@ -106,8 +112,7 @@ namespace FlaxEditor.Viewport.Cameras
         /// <param name="sphere">The sphere.</param>
         public void ShowSphere(ref BoundingSphere sphere)
         {
-            var q = new Quaternion(0.424461186f, -0.0940724313f, 0.0443938486f, 0.899451137f);
-            ShowSphere(ref sphere, ref q);
+            ShowSphere(ref sphere, ref viewportOrientation);
         }
 
         /// <summary>
@@ -137,16 +142,16 @@ namespace FlaxEditor.Viewport.Cameras
         /// <param name="marginDistanceScale">The margin distance scale of the orbit radius.</param>
         public void SetArcBallView(BoundingSphere objectBounds, float marginDistanceScale = 2.0f)
         {
-            SetArcBallView(new Quaternion(-0.08f, -0.92f, 0.31f, -0.23f), objectBounds.Center, objectBounds.Radius * marginDistanceScale);
+            SetArcBallView(arcBallOrientation, objectBounds.Center, objectBounds.Radius * marginDistanceScale);
         }
 
         /// <summary>
         /// Sets view orientation and position to match the arc ball camera style view for the given orbit radius.
         /// </summary>
         /// <param name="orbitRadius">The orbit radius.</param>
-        public void SetArcBallView(float orbitRadius)
+        public void SetArcBallView(Real orbitRadius)
         {
-            SetArcBallView(new Quaternion(-0.08f, -0.92f, 0.31f, -0.23f), Vector3.Zero, orbitRadius);
+            SetArcBallView(arcBallOrientation, Vector3.Zero, orbitRadius);
         }
 
         /// <summary>

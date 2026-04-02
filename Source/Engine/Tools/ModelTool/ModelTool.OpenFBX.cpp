@@ -8,6 +8,7 @@
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Math/Plane.h"
 #include "Engine/Core/Collections/Sorting.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -15,6 +16,7 @@
 
 #define OPEN_FBX_CONVERT_SPACE 1
 #define OPEN_FBX_NAME_SIZE 256
+#define ANGLE_THRESHOLD 15
 #if BUILD_DEBUG
 #define OPEN_FBX_GET_CACHE_LIST(arrayName, varName, size) data.arrayName.Resize(size, false); auto& varName = data.arrayName
 #else
@@ -41,6 +43,11 @@ Float3 ToFloat3(const ofbx::Vec3& v)
     return Float3((float)v.x, (float)v.y, (float)v.z);
 }
 
+Float3 ToFloat3(const ofbx::DVec3& v)
+{
+    return Float3(static_cast<float>(v.x), static_cast<float>(v.y), static_cast<float>(v.z));
+}
+
 Color ToColor(const ofbx::Vec4& v)
 {
     return Color((float)v.x, (float)v.y, (float)v.z, (float)v.w);
@@ -61,6 +68,46 @@ Matrix ToMatrix(const ofbx::DMatrix& mat)
     Matrix result;
     for (int32 i = 0; i < 16; i++)
         result.Raw[i] = (float)mat.m[i];
+    return result;
+}
+
+Quaternion EulerToQuaternion(const Float3 &eulerAngle, ofbx::RotationOrder order)
+{
+    // Convert euler to radians
+    Float3 radians = eulerAngle * DegreesToRadians;
+
+    Quaternion rx, ry, rz;
+    Quaternion::RotationAxis(Vector3::UnitX, radians.X, rx);
+    Quaternion::RotationAxis(Vector3::UnitY, radians.Y, ry);
+    Quaternion::RotationAxis(Vector3::UnitZ, radians.Z, rz);
+
+    Quaternion result = Quaternion::Identity;
+
+    switch (order)
+    {
+    case ofbx::RotationOrder::EULER_XYZ:
+        result = rx * ry * rz;
+        break;
+    case ofbx::RotationOrder::EULER_XZY:
+        result = rx * rz * ry;
+        break;
+    case ofbx::RotationOrder::EULER_YXZ:
+        result = ry * rx * rz;
+        break;
+    case ofbx::RotationOrder::EULER_YZX:
+        result = ry * rz * rx;
+        break;
+    case ofbx::RotationOrder::EULER_ZXY:
+        result = rz * rx * ry;
+        break;
+    case ofbx::RotationOrder::EULER_ZYX:
+        result = rz * ry * rx;
+        break;
+    default:
+        result = Quaternion::Identity;
+        break;
+    }
+
     return result;
 }
 
@@ -86,24 +133,132 @@ struct FbxBone
     }
 };
 
-struct OpenFbxImporterData
+struct AxisSystem
 {
-    const ofbx::IScene* Scene;
-    std::unique_ptr<ofbx::IScene> ScenePtr;
-    const String Path;
-    const ModelTool::Options& Options;
-
-    ofbx::GlobalSettings GlobalSettings;
-#if OPEN_FBX_CONVERT_SPACE
-    Quaternion RootConvertRotation = Quaternion::Identity;
     Float3 Up;
     Float3 Front;
     Float3 Right;
+};
+
+AxisSystem ParseFbxAxisSystem(const ofbx::GlobalSettings& settings)
+{
+#if OPEN_FBX_CONVERT_SPACE
+    AxisSystem axis;
+    switch (settings.UpAxis)
+    {
+    case 0:
+        axis.Up = Float3((float)settings.UpAxisSign, 0, 0);
+        switch (settings.FrontAxis)
+        {
+        case 1:
+            // Up: X, Front: Y, Right: Z
+            axis.Front = Float3(0, (float)settings.FrontAxisSign, 0);
+            axis.Right = Float3(0, 0, (float)settings.CoordAxisSign);
+            break;
+        case 2:
+            // Up: X, Front: Z, Right: Y
+            axis.Front = Float3(0, 0, (float)settings.FrontAxisSign);
+            axis.Right = Float3(0, (float)settings.CoordAxisSign, 0);
+            break;
+        }
+        break;
+    case 1:
+        axis.Up = Float3(0, (float)settings.UpAxisSign, 0);
+        switch (settings.FrontAxis)
+        {
+        case 0:
+            // Up: Y, Front: X, Right: Z
+            axis.Front = Float3((float)settings.FrontAxisSign, 0, 0);
+            axis.Right = Float3(0, 0, (float)settings.CoordAxisSign);
+            break;
+        case 2:
+            // Up: Y, Front: Z, Right: X
+            axis.Front = Float3(0, 0, (float)settings.FrontAxisSign);
+            axis.Right = Float3((float)settings.CoordAxisSign, 0, 0);
+            break;
+        }
+        break;
+    case 2:
+        axis.Up = Float3(0, 0, (float)settings.UpAxisSign);
+        switch (settings.FrontAxis)
+        {
+        case 0:
+            // Up: Z, Front: X, Right: Y
+            axis.Front = Float3((float)settings.FrontAxisSign, 0, 0);
+            axis.Right = Float3(0, (float)settings.CoordAxisSign, 0);
+            break;
+        case 1:
+            // Up: Z, Front: Y, Right: X
+            axis.Front = Float3(0, (float)settings.FrontAxisSign, 0);
+            axis.Right = Float3((float)settings.CoordAxisSign, 0, 0);
+            break;
+        }
+        break;
+    }
+    return axis;
+#endif
+}
+
+struct CoordSystem
+{
+    Matrix ToFlax = Matrix::Identity;
+
+    static Matrix getMatrixFromAxis(const AxisSystem& axis)
+    {
+        return Matrix(
+            axis.Right.X,   axis.Right.Y,   axis.Right.Z,   0.0f,
+            axis.Up.X,      axis.Up.Y,      axis.Up.Z,      0.0f,
+            axis.Front.X,   axis.Front.Y,   axis.Front.Z,   0.0f, 
+            0.0f,           0.0f,           0.0f,           1.0f
+        );
+    }
+
+    CoordSystem() = default;
+
+    CoordSystem(const AxisSystem& fbxSystem)
+    {
+        Matrix fbxMatrix = getMatrixFromAxis(fbxSystem);
+
+        // Flax uses a left-handed coordinate system with identity basis
+        // If FBX system differs, set matrix conversion
+        Matrix flaxMatrix = Matrix::Identity;
+        if (fbxMatrix != flaxMatrix)
+        {
+            //ToFlax = Matrix::Invert(flaxMatrix) * fbxMatrix;
+            ToFlax = fbxMatrix;
+        }
+    }
+
+    bool EvaluateRH(const AxisSystem& axis)
+    {
+        Vector3 cross = Vector3::Cross(axis.Right, axis.Up);
+        float dot = Vector3::Dot(cross, axis.Front);
+        return dot > 0.0f;
+    }
+
+    Matrix getMatrixtoFlax() const
+    {
+        return ToFlax;
+    }
+};
+
+struct OpenFbxImporterData
+{
+    ofbx::IScene& Scene;
+    //std::unique_ptr<ofbx::IScene> ScenePtr;
+    ofbx::GlobalSettings Settings;
+    const String Path;
+    const ModelTool::Options& Options;
+#if OPEN_FBX_CONVERT_SPACE
+    AxisSystem fbxSystem;
+    CoordSystem fbxCoords;
     bool ConvertRH;
+    Matrix ToFlax;
 #else
     static constexpr bool ConvertRH = false;
 #endif
     float FrameRate;
+    float UnitScaleFactor;
 
     Array<FbxNode> Nodes;
     Array<FbxBone> Bones;
@@ -117,219 +272,28 @@ struct OpenFbxImporterData
     Array<int> TriangulateIndicesCache;
     Array<int> TriangulateEarIndicesCache;
 
-    OpenFbxImporterData(const String& path, const ModelTool::Options& options, ofbx::IScene* scene)
+    OpenFbxImporterData(const String& path, const ModelTool::Options& options, ofbx::IScene& scene)
         : Scene(scene)
-        , ScenePtr(scene)
+        , Settings(*scene.getGlobalSettings())
         , Path(path)
         , Options(options)
-        , GlobalSettings(*scene->getGlobalSettings())
 #if OPEN_FBX_CONVERT_SPACE
-        , ConvertRH(GlobalSettings.CoordAxis == ofbx::CoordSystem_RightHanded)
+        , fbxSystem(ParseFbxAxisSystem(Settings))
+        , fbxCoords(fbxSystem)
+        , ToFlax(fbxCoords.getMatrixtoFlax())
+        , ConvertRH(fbxCoords.EvaluateRH(fbxSystem))
 #endif
-        , Nodes(static_cast<int32>(scene->getMeshCount() * 4.0f))
+        , Nodes(static_cast<int32>(scene.getMeshCount() * 4.0f))
     {
-        float frameRate = scene->getSceneFrameRate();
-        if (frameRate <= 0 || GlobalSettings.TimeMode == ofbx::FrameRate_DEFAULT)
+        float frameRate = scene.getSceneFrameRate();
+        if (frameRate <= 0 || Settings.TimeMode == ofbx::FrameRate_DEFAULT)
         {
             frameRate = Options.DefaultFrameRate;
             if (frameRate <= 0)
                 frameRate = 30.0f;
         }
         FrameRate = frameRate;
-#if OPEN_FBX_CONVERT_SPACE
-        const float coordAxisSign = GlobalSettings.CoordAxis == ofbx::CoordSystem_LeftHanded ? -1.0f : +1.0f;
-        switch (GlobalSettings.UpAxis)
-        {
-        case ofbx::UpVector_AxisX:
-            Up = Float3((float)GlobalSettings.UpAxisSign, 0, 0);
-            switch (GlobalSettings.FrontAxis)
-            {
-            case ofbx::FrontVector_ParityEven:
-                // Up: X, Front: Y, Right: Z
-                Front = Float3(0, (float)GlobalSettings.FrontAxisSign, 0);
-                Right = Float3(0, 0, coordAxisSign);
-                break;
-            case ofbx::FrontVector_ParityOdd:
-                // Up: X, Front: Z, Right: Y
-                Front = Float3(0, 0, (float)GlobalSettings.FrontAxisSign);
-                Right = Float3(0, coordAxisSign, 0);
-                break;
-            default: ;
-            }
-            break;
-        case ofbx::UpVector_AxisY:
-            Up = Float3(0, (float)GlobalSettings.UpAxisSign, 0);
-            switch (GlobalSettings.FrontAxis)
-            {
-            case ofbx::FrontVector_ParityEven:
-                // Up: Y, Front: X, Right: Z
-                Front = Float3((float)GlobalSettings.FrontAxisSign, 0, 0);
-                Right = Float3(0, 0, coordAxisSign);
-                break;
-            case ofbx::FrontVector_ParityOdd:
-                // Up: Y, Front: Z, Right: X
-                Front = Float3(0, 0, (float)GlobalSettings.FrontAxisSign);
-                Right = Float3(coordAxisSign, 0, 0);
-                break;
-            default: ;
-            }
-            break;
-        case ofbx::UpVector_AxisZ:
-            Up = Float3(0, 0, (float)GlobalSettings.UpAxisSign);
-            switch (GlobalSettings.FrontAxis)
-            {
-            case ofbx::FrontVector_ParityEven:
-                // Up: Z, Front: X, Right: Y
-                Front = Float3((float)GlobalSettings.FrontAxisSign, 0, 0);
-                Right = Float3(0, coordAxisSign, 0);
-                break;
-            case ofbx::FrontVector_ParityOdd:
-                // Up: Z, Front: Y, Right: X
-                Front = Float3((float)GlobalSettings.FrontAxisSign, 0, 0);
-                Right = Float3(coordAxisSign, 0, 0);
-                break;
-            default: ;
-            }
-            break;
-        default: ;
-        }
-#endif
-    }
-
-    bool ImportMaterialTexture(ModelData& result, const ofbx::Material* mat, ofbx::Texture::TextureType textureType, int32& textureIndex, TextureEntry::TypeHint type) const
-    {
-        const ofbx::Texture* tex = mat->getTexture(textureType);
-        if (tex)
-        {
-            // Find texture file path
-            ofbx::DataView aFilename = tex->getRelativeFileName();
-            if (aFilename == "")
-                aFilename = tex->getFileName();
-            char filenameData[OPEN_FBX_NAME_SIZE];
-            aFilename.toString(filenameData);
-            const String filename(filenameData);
-            String path;
-            if (ModelTool::FindTexture(Path, filename, path))
-                return true;
-
-            // Check if already used
-            textureIndex = 0;
-            while (textureIndex < result.Textures.Count())
-            {
-                if (result.Textures[textureIndex].FilePath == path)
-                    return true;
-                textureIndex++;
-            }
-
-            // Import texture
-            auto& texture = result.Textures.AddOne();
-            texture.FilePath = path;
-            texture.Type = type;
-            texture.AssetID = Guid::Empty;
-            return true;
-        }
-        return false;
-    }
-
-    int32 AddMaterial(ModelData& result, const ofbx::Material* mat)
-    {
-        int32 index = Materials.Find(mat);
-        if (index == -1)
-        {
-            index = Materials.Count();
-            Materials.Add(mat);
-            auto& material = ImportedMaterials.AddOne();
-            material.AssetID = Guid::Empty;
-            if (mat)
-                material.Name = String(mat->name).TrimTrailing();
-
-            if (mat && EnumHasAnyFlags(Options.ImportTypes, ImportDataTypes::Materials))
-            {
-                material.Diffuse.Color = ToColor(mat->getDiffuseColor());
-                material.Emissive.Color = ToColor(mat->getEmissiveColor()) * (float)mat->getEmissiveFactor();
-                material.Roughness.Value = MaterialSlotEntry::ShininessToRoughness((float)mat->getShininess());
-
-                if (EnumHasAnyFlags(Options.ImportTypes, ImportDataTypes::Textures))
-                {
-                    ImportMaterialTexture(result, mat, ofbx::Texture::DIFFUSE, material.Diffuse.TextureIndex, TextureEntry::TypeHint::ColorRGB);
-                    ImportMaterialTexture(result, mat, ofbx::Texture::EMISSIVE, material.Emissive.TextureIndex, TextureEntry::TypeHint::ColorRGB);
-                    ImportMaterialTexture(result, mat, ofbx::Texture::NORMAL, material.Normals.TextureIndex, TextureEntry::TypeHint::Normals);
-
-                    // FBX don't always store normal maps inside the object
-                    if (material.Diffuse.TextureIndex != -1 && material.Normals.TextureIndex == -1)
-                    {
-                        // If missing, try to locate a normal map in the same path as the diffuse
-                        const String srcFolder = String(StringUtils::GetDirectoryName(result.Textures[material.Diffuse.TextureIndex].FilePath));
-                        const String srcName = StringUtils::GetFileNameWithoutExtension(result.Textures[material.Diffuse.TextureIndex].FilePath);
-                        String srcSearch;
-                        const int32 num = srcName.FindLast('_');
-                        String srcSmallName = srcName;
-                        if (num != -1)
-                            srcSmallName = srcName.Substring(0, num);
-
-                        bool isNormal = false;
-                        for (int32 iExt = 0; iExt < 6; iExt++)
-                        {
-                            String sExit = TEXT(".dds");
-                            if (iExt == 1)
-                                sExit = TEXT(".png");
-                            else if (iExt == 2)
-                                sExit = TEXT(".jpg");
-                            else if (iExt == 3)
-                                sExit = TEXT(".jpeg");
-                            else if (iExt == 4)
-                                sExit = TEXT(".tif");
-                            else if (iExt == 5)
-                                sExit = TEXT(".tga");
-                            for (int32 i = 0; i < 5; i++)
-                            {
-                                String sFind = TEXT("_normal" + sExit);
-                                if (i == 1)
-                                    sFind = TEXT("_n" + sExit);
-                                else if (i == 2)
-                                    sFind = TEXT("_nm" + sExit);
-                                else if (i == 3)
-                                    sFind = TEXT("_nmp" + sExit);
-                                else if (i == 4)
-                                    sFind = TEXT("_nor" + sExit);
-                                srcSearch = srcFolder + TEXT("/") + srcSmallName + sFind;
-                                if (FileSystem::FileExists(srcSearch))
-                                {
-                                    isNormal = true;
-                                    break;
-                                }
-                            }
-                            if (isNormal)
-                                break;
-                        }
-                        if (isNormal)
-                        {
-                            auto& texture = result.Textures.AddOne();
-                            texture.FilePath = srcSearch;
-                            texture.Type = TextureEntry::TypeHint::Normals;
-                            texture.AssetID = Guid::Empty;
-                            material.Normals.TextureIndex = result.Textures.Count() - 1;
-                        }
-                    }
-
-                    if (material.Diffuse.TextureIndex != -1)
-                    {
-                        // Detect using alpha mask in diffuse texture
-                        material.Diffuse.HasAlphaMask = TextureTool::HasAlpha(result.Textures[material.Diffuse.TextureIndex].FilePath);
-                        if (material.Diffuse.HasAlphaMask)
-                            result.Textures[material.Diffuse.TextureIndex].Type = TextureEntry::TypeHint::ColorRGBA;
-                    }
-                }
-            }
-        }
-        const auto& importedMaterial = ImportedMaterials[index];
-        for (int32 i = 0; i < result.Materials.Count(); i++)
-        {
-            if (result.Materials[i].Name == importedMaterial.Name)
-                return i;
-        }
-        result.Materials.Add(importedMaterial);
-        return result.Materials.Count() - 1;
+        UnitScaleFactor = Settings.UnitScaleFactor;
     }
 
     int32 FindNode(const ofbx::Object* link)
@@ -373,6 +337,143 @@ struct OpenFbxImporterData
     }
 };
 
+bool ImportMaterialTexture(const String& Path, ModelData& result, const ofbx::Material* mat, ofbx::Texture::TextureType textureType, int32& textureIndex, TextureEntry::TypeHint type)
+{
+    const ofbx::Texture* tex = mat->getTexture(textureType);
+    if (tex)
+    {
+        // Find texture file path
+        ofbx::DataView aFilename = tex->getRelativeFileName();
+        if (aFilename == "")
+            aFilename = tex->getFileName();
+        char filenameData[OPEN_FBX_NAME_SIZE];
+        aFilename.toString(filenameData);
+        const String filename(filenameData);
+        String path;
+        if (ModelTool::FindTexture(Path, filename, path))
+            return true;
+
+        // Check if already used
+        textureIndex = 0;
+        while (textureIndex < result.Textures.Count())
+        {
+            if (result.Textures[textureIndex].FilePath == path)
+                return true;
+            textureIndex++;
+        }
+
+        // Import texture
+        auto& texture = result.Textures.AddOne();
+        texture.FilePath = path;
+        texture.Type = type;
+        texture.AssetID = Guid::Empty;
+        return true;
+    }
+    return false;
+}
+
+int32 AddMaterial(ModelData& result, OpenFbxImporterData& data, const ofbx::Material* mat)
+{
+    const String path = data.Path;
+    int32 index = data.Materials.Find(mat);
+    if (index == -1)
+    {
+        index = data.Materials.Count();
+        data.Materials.Add(mat);
+        auto& material = data.ImportedMaterials.AddOne();
+        material.AssetID = Guid::Empty;
+        if (mat)
+            material.Name = String(mat->name).TrimTrailing();
+
+        if (mat && EnumHasAnyFlags(data.Options.ImportTypes, ImportDataTypes::Materials))
+        {
+            material.Diffuse.Color = ToColor(mat->getDiffuseColor());
+            material.Emissive.Color = ToColor(mat->getEmissiveColor()) * (float)mat->getEmissiveFactor();
+            material.Roughness.Value = MaterialSlotEntry::ShininessToRoughness((float)mat->getShininess());
+
+            if (EnumHasAnyFlags(data.Options.ImportTypes, ImportDataTypes::Textures))
+            {
+                ImportMaterialTexture(path, result, mat, ofbx::Texture::DIFFUSE, material.Diffuse.TextureIndex, TextureEntry::TypeHint::ColorRGB);
+                ImportMaterialTexture(path, result, mat, ofbx::Texture::EMISSIVE, material.Emissive.TextureIndex, TextureEntry::TypeHint::ColorRGB);
+                ImportMaterialTexture(path, result, mat, ofbx::Texture::NORMAL, material.Normals.TextureIndex, TextureEntry::TypeHint::Normals);
+
+                // FBX don't always store normal maps inside the object
+                if (material.Diffuse.TextureIndex != -1 && material.Normals.TextureIndex == -1)
+                {
+                    // If missing, try to locate a normal map in the same path as the diffuse
+                    const String srcFolder = String(StringUtils::GetDirectoryName(result.Textures[material.Diffuse.TextureIndex].FilePath));
+                    const String srcName = StringUtils::GetFileNameWithoutExtension(result.Textures[material.Diffuse.TextureIndex].FilePath);
+                    String srcSearch;
+                    const int32 num = srcName.FindLast('_');
+                    String srcSmallName = srcName;
+                    if (num != -1)
+                        srcSmallName = srcName.Substring(0, num);
+
+                    bool isNormal = false;
+                    for (int32 iExt = 0; iExt < 6; iExt++)
+                    {
+                        String sExit = TEXT(".dds");
+                        if (iExt == 1)
+                            sExit = TEXT(".png");
+                        else if (iExt == 2)
+                            sExit = TEXT(".jpg");
+                        else if (iExt == 3)
+                            sExit = TEXT(".jpeg");
+                        else if (iExt == 4)
+                            sExit = TEXT(".tif");
+                        else if (iExt == 5)
+                            sExit = TEXT(".tga");
+                        for (int32 i = 0; i < 5; i++)
+                        {
+                            String sFind = TEXT("_normal" + sExit);
+                            if (i == 1)
+                                sFind = TEXT("_n" + sExit);
+                            else if (i == 2)
+                                sFind = TEXT("_nm" + sExit);
+                            else if (i == 3)
+                                sFind = TEXT("_nmp" + sExit);
+                            else if (i == 4)
+                                sFind = TEXT("_nor" + sExit);
+                            srcSearch = srcFolder + TEXT("/") + srcSmallName + sFind;
+                            if (FileSystem::FileExists(srcSearch))
+                            {
+                                isNormal = true;
+                                break;
+                            }
+                        }
+                        if (isNormal)
+                            break;
+                    }
+                    if (isNormal)
+                    {
+                        auto& texture = result.Textures.AddOne();
+                        texture.FilePath = srcSearch;
+                        texture.Type = TextureEntry::TypeHint::Normals;
+                        texture.AssetID = Guid::Empty;
+                        material.Normals.TextureIndex = result.Textures.Count() - 1;
+                    }
+                }
+
+                if (material.Diffuse.TextureIndex != -1)
+                {
+                    // Detect using alpha mask in diffuse texture
+                    material.Diffuse.HasAlphaMask = TextureTool::HasAlpha(result.Textures[material.Diffuse.TextureIndex].FilePath);
+                    if (material.Diffuse.HasAlphaMask)
+                        result.Textures[material.Diffuse.TextureIndex].Type = TextureEntry::TypeHint::ColorRGBA;
+                }
+            }
+        }
+    }
+    const auto& importedMaterial = data.ImportedMaterials[index];
+    for (int32 i = 0; i < result.Materials.Count(); i++)
+    {
+        if (result.Materials[i].Name == importedMaterial.Name)
+            return i;
+    }
+    result.Materials.Add(importedMaterial);
+    return result.Materials.Count() - 1;
+}
+
 void ProcessNodes(OpenFbxImporterData& data, const ofbx::Object* aNode, int32 parentIndex)
 {
     const int32 nodeIndex = data.Nodes.Count();
@@ -401,24 +502,18 @@ void ProcessNodes(OpenFbxImporterData& data, const ofbx::Object* aNode, int32 pa
     if (data.ConvertRH)
     {
         // Mirror all base vectors at the local Z axis
-        transform.M31 = -transform.M31;
-        transform.M32 = -transform.M32;
-        transform.M33 = -transform.M33;
-        transform.M34 = -transform.M34;
+        transform.SetRow3(transform.GetRow3().GetNegative());
 
         // Now invert the Z axis again to keep the matrix determinant positive
         // The local meshes will be inverted accordingly so that the result should look just fine again
-        transform.M13 = -transform.M13;
-        transform.M23 = -transform.M23;
-        transform.M33 = -transform.M33;
-        transform.M43 = -transform.M43;
+        transform.SetColumn3(transform.GetColumn3().GetNegative());
     }
 #endif
     transform.Decompose(node.LocalTransform);
     data.Nodes.Add(node);
 
     // Process the children
-    int i = 0;
+    int32 i = 0;
     while (ofbx::Object* child = aNode->resolveObjectLink(i))
     {
         if (child->isNode())
@@ -433,7 +528,7 @@ Matrix GetOffsetMatrix(OpenFbxImporterData& data, const ofbx::Mesh* mesh, const 
     auto* skin = mesh ? mesh->getSkin() : nullptr;
     if (skin)
     {
-        for (int i = 0, c = skin->getClusterCount(); i < c; i++)
+        for (int32 i = 0; i < skin->getClusterCount(); i++)
         {
             const ofbx::Cluster* cluster = skin->getCluster(i);
             if (cluster->getLink() == node)
@@ -465,17 +560,17 @@ bool IsMeshInvalid(const ofbx::Mesh* aMesh)
 bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
 {
     // Check all meshes
-    const int meshCount = data.Scene->getMeshCount();
-    for (int i = 0; i < meshCount; i++)
+    const int meshCount = data.Scene.getMeshCount();
+    for (int32 i = 0; i < meshCount; i++)
     {
-        const auto aMesh = data.Scene->getMesh(i);
+        const auto aMesh = data.Scene.getMesh(i);
         const ofbx::Skin* skin = aMesh->getSkin();
         if (skin == nullptr || IsMeshInvalid(aMesh))
             continue;
 
-        for (int clusterIndex = 0, clusterCount = skin->getClusterCount(); clusterIndex < clusterCount; clusterIndex++)
+        for (int32 j = 0; j < skin->getClusterCount(); j++)
         {
-            const ofbx::Cluster* cluster = skin->getCluster(clusterIndex);
+            const ofbx::Cluster* cluster = skin->getCluster(j);
             if (cluster->getIndicesCount() == 0)
                 continue;
             const auto link = cluster->getLink();
@@ -506,33 +601,25 @@ bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
                 bone.NodeIndex = nodeIndex;
                 bone.ParentBoneIndex = -1;
                 bone.FbxObj = link;
-                bone.OffsetMatrix = GetOffsetMatrix(data, aMesh, link) * Matrix::Scaling(data.GlobalSettings.UnitScaleFactor);
+                bone.OffsetMatrix = GetOffsetMatrix(data, aMesh, link) * Matrix::Scaling(data.UnitScaleFactor);
                 bone.OffsetMatrix.Invert();
 
                 // Mirror offset matrices (RH to LH)
                 if (data.ConvertRH)
                 {
                     auto& m = bone.OffsetMatrix;
-                    m.M13 = -m.M13;
-                    m.M23 = -m.M23;
-                    m.M43 = -m.M43;
-                    m.M31 = -m.M31;
-                    m.M32 = -m.M32;
-                    m.M34 = -m.M34;
+                    m.SetColumn3(m.GetColumn3().GetNegative());
+                    m.SetRow3(m.GetRow3().GetNegative());
                 }
 
-                // Convert bone matrix if scene uses root transform
-                if (!data.RootConvertRotation.IsIdentity())
+                // Convert offset matrices to Flax coord system
+                if (!data.ToFlax.IsIdentity())
                 {
-                    Matrix m;
-                    Matrix::RotationQuaternion(data.RootConvertRotation, m);
-                    m.Invert();
-                    bone.OffsetMatrix = m * bone.OffsetMatrix;
+                    bone.OffsetMatrix = data.ToFlax * bone.OffsetMatrix;
                 }
             }
         }
     }
-
     return false;
 }
 
@@ -564,7 +651,7 @@ int Triangulate(OpenFbxImporterData& data, const ofbx::GeometryData& geom, const
     // Check if the polygon is convex
     int lastSign = 0;
     bool isConvex = true;
-    for (int i = 0; i < polygon.vertex_count; i++)
+    for (int32 i = 0; i < polygon.vertex_count; i++)
     {
         Float3 v1 = ToFloat3(positions.get(polygon.from_vertex + i));
         Float3 v2 = ToFloat3(positions.get(polygon.from_vertex + (i + 1) % polygon.vertex_count));
@@ -590,7 +677,7 @@ int Triangulate(OpenFbxImporterData& data, const ofbx::GeometryData& geom, const
     // Fast-path for convex case
     if (isConvex)
     {
-        for (int i = 0; i < polygon.vertex_count - 2; i++)
+        for (int32 i = 0; i < polygon.vertex_count - 2; i++)
         {
             triangulatedIndices[i * 3 + 0] = polygon.from_vertex;
             triangulatedIndices[i * 3 + 1] = polygon.from_vertex + (i + 1) % polygon.vertex_count;
@@ -613,7 +700,7 @@ int Triangulate(OpenFbxImporterData& data, const ofbx::GeometryData& geom, const
     // Project points to a plane, choose two arbitrary axises
     const Float3 u = Float3::Cross(normal, Math::Abs(normal.X) > Math::Abs(normal.Y) ? Float3::Up : Float3::Right).GetNormalized();
     const Float3 v = Float3::Cross(normal, u).GetNormalized();
-    for (int i = 0; i < polygon.vertex_count; i++)
+    for (int32 i = 0; i < polygon.vertex_count; i++)
     {
         const Float3 point = ToFloat3(positions.get(polygon.from_vertex + i));
         const Float3 projectedPoint = Float3::ProjectOnPlane(point, normal);
@@ -678,7 +765,7 @@ int Triangulate(OpenFbxImporterData& data, const ofbx::GeometryData& geom, const
     earIndices.Add(indices[0]);
     earIndices.Add(indices[1]);
     earIndices.Add(indices[2]);
-    
+
     // Write any degenerate triangles (eg. if points are duplicated within a list)
     for (int32 i = 3; i < indices.Count(); i += 3)
     {
@@ -720,13 +807,13 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     const ofbx::Material* aMaterial = nullptr;
     if (aMesh->getMaterialCount() > 0)
         aMaterial = aMesh->getMaterial(partitionIndex);
-    mesh.MaterialSlotIndex = data.AddMaterial(result, aMaterial);
+    mesh.MaterialSlotIndex = AddMaterial(result, data, aMaterial);
 
     // Vertex positions
     mesh.Positions.Resize(vertexCount, false);
     {
         int numIndicesTotal = 0;
-        for (int i = 0; i < partition.polygon_count; i++)
+        for (int32 i = 0; i < partition.polygon_count; i++)
         {
             int numIndices = Triangulate(data, geometryData, partition.polygons[i], &triangulatedIndices[numIndicesTotal]);
             for (int j = numIndicesTotal; j < numIndicesTotal + numIndices; j++)
@@ -738,7 +825,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
 
     // Indices (dummy index buffer)
     mesh.Indices.Resize(vertexCount, false);
-    for (int i = 0; i < vertexCount; i++)
+    for (int32 i = 0; i < vertexCount; i++)
         mesh.Indices.Get()[i] = i;
 
     // Texture coordinates
@@ -748,11 +835,11 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
         mesh.UVs.Resize(channelIndex + 1);
         auto& channel = mesh.UVs[channelIndex];
         channel.Resize(vertexCount, false);
-        for (int i = 0; i < vertexCount; i++)
+        for (int32 i = 0; i < vertexCount; i++)
             channel.Get()[i] = ToFloat2(uvs.get(triangulatedIndices[i]));
         if (data.ConvertRH)
         {
-            for (int v = 0; v < vertexCount; v++)
+            for (int32 v = 0; v < vertexCount; v++)
                 channel.Get()[v].Y = 1.0f - channel.Get()[v].Y;
         }
     }
@@ -769,13 +856,15 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     else if (normals.values)
     {
         mesh.Normals.Resize(vertexCount, false);
-        for (int i = 0; i < vertexCount; i++)
+        for (int32 i = 0; i < vertexCount; i++)
             mesh.Normals.Get()[i] = ToFloat3(normals.get(triangulatedIndices[i]));
         if (data.ConvertRH)
         {
             // Mirror normals along the Z axis
             for (int32 i = 0; i < vertexCount; i++)
+            {
                 mesh.Normals.Get()[i].Z *= -1.0f;
+            }
         }
     }
 
@@ -787,13 +876,15 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     else if (tangents.values)
     {
         mesh.Tangents.Resize(vertexCount, false);
-        for (int i = 0; i < vertexCount; i++)
+        for (int32 i = 0; i < vertexCount; i++)
             mesh.Tangents.Get()[i] = ToFloat3(tangents.get(triangulatedIndices[i]));
         if (data.ConvertRH)
         {
             // Mirror tangents along the Z axis
             for (int32 i = 0; i < vertexCount; i++)
+            {
                 mesh.Tangents.Get()[i].Z *= -1.0f;
+            }
         }
     }
 
@@ -805,7 +896,8 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
         Float3* meshNormals = mesh.Normals.HasItems() ? mesh.Normals.Get() : nullptr;
         Float3* meshTangents = mesh.Tangents.HasItems() ? mesh.Tangents.Get() : nullptr;
 
-        for (int i = 0; i < vertexCount; i += 3) {
+        for (int32 i = 0; i < vertexCount; i += 3)
+        {
             Swap(meshIndices[i + 1], meshIndices[i + 2]);
             Swap(meshPositions[i + 1], meshPositions[i + 2]);
             if (meshNormals)
@@ -822,7 +914,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     if (data.Options.ImportVertexColors && colors.values)
     {
         mesh.Colors.Resize(vertexCount, false);
-        for (int i = 0; i < vertexCount; i++)
+        for (int32 i = 0; i < vertexCount; i++)
             mesh.Colors.Get()[i] = ToColor(colors.get(triangulatedIndices[i]));
     }
 
@@ -834,9 +926,9 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
         data.BlendIndicesCache.SetAll(Int4::Zero);
         data.BlendWeightsCache.SetAll(Float4::Zero);
 
-        for (int clusterIndex = 0, clusterCount = skin->getClusterCount(); clusterIndex < clusterCount; clusterIndex++)
+        for (int32 i = 0; i < skin->getClusterCount(); i++)
         {
-            const ofbx::Cluster* cluster = skin->getCluster(clusterIndex);
+            const ofbx::Cluster* cluster = skin->getCluster(i);
             if (cluster->getIndicesCount() == 0)
                 continue;
             const auto link = cluster->getLink();
@@ -858,7 +950,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
             // Apply the bone influences
             const int* clusterIndices = cluster->getIndices();
             const double* clusterWeights = cluster->getWeights();
-            for (int j = 0; j < cluster->getIndicesCount(); j++)
+            for (int32 j = 0; j < cluster->getIndicesCount(); j++)
             {
                 int vtxIndex = clusterIndices[j];
                 float vtxWeight = (float)clusterWeights[j];
@@ -890,7 +982,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
         // Remap blend values to triangulated data
         mesh.BlendIndices.Resize(vertexCount, false);
         mesh.BlendWeights.Resize(vertexCount, false);
-        for (int i = 0; i < vertexCount; i++)
+        for (int32 i = 0; i < vertexCount; i++)
         {
             const int idx = positions.indices[triangulatedIndices[i]];
             mesh.BlendIndices.Get()[i] = blendIndices[idx];
@@ -906,7 +998,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
         mesh.BlendShapes.EnsureCapacity(blendShape->getBlendShapeChannelCount());
         for (int32 channelIndex = 0; channelIndex < blendShape->getBlendShapeChannelCount(); channelIndex++)
         {
-            const ofbx::BlendShapeChannel* channel = blendShape->getBlendShapeChannel(channelIndex);
+            const ofbx::BlendShapeChannel *channel = blendShape->getBlendShapeChannel(channelIndex);
 
             // Use the last shape
             const int targetShapeCount = channel->getShapeCount();
@@ -953,7 +1045,9 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     {
         // Mirror positions along the Z axis
         for (int32 i = 0; i < vertexCount; i++)
+        {
             mesh.Positions.Get()[i].Z *= -1.0f;
+        }
         for (auto& blendShapeData : mesh.BlendShapes)
         {
             for (auto& v : blendShapeData.Vertices)
@@ -988,28 +1082,34 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
         mesh.ImproveCacheLocality();
     }
 
-    // Apply FBX Mesh geometry transformation
-    /*const Matrix geometryTransform = ToMatrix(aMesh->getGeometricMatrix());
+    // Add Geometry transform
+    auto localTransform = ToMatrix(aMesh->getLocalTransform());
+    const auto geometryTransform = ToMatrix(aMesh->getGeometricMatrix());
     if (!geometryTransform.IsIdentity())
+        localTransform = geometryTransform * localTransform;
+
+    if (data.ConvertRH)
     {
-        mesh.TransformBuffer(geometryTransform);
-    }*/
+        // Mirror all base vectors at the local Z axis
+        localTransform.SetRow3(localTransform.GetRow3().GetNegative());
+        localTransform.SetColumn3(localTransform.GetColumn3().GetNegative());
+    }
+
+    if (!data.ToFlax.IsIdentity())
+    {
+        localTransform = localTransform * data.ToFlax;
+    }
 
     // Get local transform for origin shifting translation
-    
-    auto translation = Float3((float)aMesh->getLocalTranslation().x, (float)aMesh->getLocalTranslation().y, (float)aMesh->getLocalTranslation().z);
-    auto scale = data.GlobalSettings.UnitScaleFactor;
-    if (data.GlobalSettings.CoordAxis == ofbx::CoordSystem_RightHanded)
-        mesh.OriginTranslation = scale * Vector3(translation.X, translation.Y, -translation.Z);
-    else
-        mesh.OriginTranslation = scale * Vector3(translation.X, translation.Y, translation.Z);
+    Transform transformData;
+    localTransform.Decompose(transformData);
+    auto scale = data.UnitScaleFactor;
+    auto translation = transformData.Translation;
+    // Add local transform to mesh
+    mesh.OriginTranslation = scale * Vector3(translation.X, translation.Y, translation.Z);
+    mesh.OriginOrientation = transformData.Orientation;
+    mesh.Scaling = localTransform.GetScaleVector();
 
-    auto rot = aMesh->getLocalRotation();
-    auto quat = Quaternion::Euler(-(float)rot.x, -(float)rot.y, -(float)rot.z);
-    mesh.OriginOrientation = quat;
-
-    auto scaling = aMesh->getLocalScaling();
-    mesh.Scaling = Vector3(scale * (float)scaling.x, scale * (float)scaling.y, scale * (float)scaling.z);
     return false;
 }
 
@@ -1064,18 +1164,21 @@ bool ImportMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh* 
     if (result.LODs.Count() <= lodIndex)
         result.LODs.Resize(lodIndex + 1);
     result.LODs[lodIndex].Meshes.Add(meshData);
+    node.LocalTransform.Orientation = meshData->OriginOrientation;
+    node.LocalTransform.Translation = meshData->OriginTranslation;
+    // node.LocalTransform.Scale = meshData->Scaling;
 
     return false;
 }
 
 bool ImportMesh(int32 index, ModelData& result, OpenFbxImporterData& data, String& errorMsg)
 {
-    const auto aMesh = data.Scene->getMesh(index);
+    const auto aMesh = data.Scene.getMesh(index);
     if (IsMeshInvalid(aMesh))
         return false;
 
     const auto& geomData = aMesh->getGeometryData();
-    for (int i = 0; i < geomData.getPartitionCount(); i++)
+    for (int32 i = 0; i < geomData.getPartitionCount(); i++)
     {
         const auto& partition = geomData.getPartition(i);
         if (partition.polygon_count == 0)
@@ -1149,16 +1252,10 @@ void ImportCurve(const ofbx::AnimationCurveNode* curveNode, LinearCurve<T>& curv
 
 void ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importerData)
 {
-    const ofbx::AnimationStack* stack = importerData.Scene->getAnimationStack(index);
+    const ofbx::AnimationStack* stack = importerData.Scene.getAnimationStack(index);
     const ofbx::AnimationLayer* layer = stack->getLayer(0);
-    const ofbx::TakeInfo* takeInfo = importerData.Scene->getTakeInfo(stack->name);
+    const ofbx::TakeInfo* takeInfo = importerData.Scene.getTakeInfo(stack->name);
     if (takeInfo == nullptr)
-        return;
-
-    // Initialize animation animation keyframes sampling
-    const float frameRate = importerData.FrameRate;
-    const double localDuration = takeInfo->local_time_to - takeInfo->local_time_from;
-    if (localDuration <= ZeroTolerance)
         return;
 
     // Count valid animation channels
@@ -1177,6 +1274,12 @@ void ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importer
     if (animatedNodes.IsEmpty())
         return;
 
+    // Initialize animation keyframes sampling
+    const float frameRate = importerData.FrameRate;
+    const double localDuration = takeInfo->local_time_to - takeInfo->local_time_from;
+    if (localDuration <= ZeroTolerance)
+        return;
+
     // Setup animation descriptor
     auto& animation = data.Animations.AddOne();
     animation.Duration = (double)(int32)(localDuration * frameRate + 0.5f);
@@ -1193,6 +1296,33 @@ void ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importer
     info.TimeEnd = takeInfo->local_time_to;
     info.Duration = localDuration;
     info.FramesCount = (int32)animation.Duration + 1;
+
+    // Detect if Nodes contain PreRotation or PostRotation
+    Dictionary<int32, Quaternion> NodePreRotations;
+    Dictionary<int32, Quaternion> NodePostRotations;
+    if (importerData.Options.BakeRotations)
+    {
+        for (int32 i = 0; i < importerData.Nodes.Count(); i++)
+        {
+            auto& node = importerData.Nodes[i];
+
+            auto preRot = node.FbxObj->getPreRotation();
+            if (!Math::IsZero(preRot.x) || !Math::IsZero(preRot.y) || !Math::IsZero(preRot.z))
+            {
+                LOG(Info, "PreRotation found for Node {0}: {1}", i, String(node.FbxObj->name));
+                Quaternion preRotation = EulerToQuaternion(ToFloat3(preRot), node.FbxObj->getRotationOrder());
+                NodePreRotations.Add(i, preRotation);
+            }
+
+            auto posRot = node.FbxObj->getPostRotation();
+            if (!Math::IsZero(posRot.x) || !Math::IsZero(posRot.y) || !Math::IsZero(posRot.z))
+            {
+                LOG(Info, "PostRotation found for Node {0}: {1}", i, String(node.FbxObj->name));
+                Quaternion postRotation = EulerToQuaternion(ToFloat3(posRot), node.FbxObj->getRotationOrder());
+                NodePostRotations.Add(i, postRotation);
+            }
+        }
+    }
 
     // Import curves
     for (int32 i = 0; i < animatedNodes.Count(); i++)
@@ -1221,9 +1351,7 @@ void ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importer
             auto& rotKeys = anim.Rotation.GetKeyframes();
 
             for (int32 k = 0; k < posKeys.Count(); k++)
-            {
                 posKeys[k].Value.Z *= -1.0f;
-            }
 
             for (int32 k = 0; k < rotKeys.Count(); k++)
             {
@@ -1232,21 +1360,129 @@ void ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importer
             }
         }
     }
-}
 
-static Float3 FbxVectorFromAxisAndSign(int axis, int sign)
-{
-    switch (axis)
+    if (!importerData.ToFlax.IsIdentity())
     {
-    case 0:
-        return { sign ? 1.f : -1.f, 0.f, 0.f };
-    case 1:
-        return { 0.f, sign ? 1.f : -1.f, 0.f };
-    case 2:
-        return { 0.f, 0.f, sign ? 1.f : -1.f };
+        for (auto& anim : animation.Channels)
+        {
+            auto& posKeys = anim.Position.GetKeyframes();
+            auto& rotKeys = anim.Rotation.GetKeyframes();
+            
+            for (int32 k = 0; k < posKeys.Count(); k++)
+                posKeys[k].Value = Vector3::Transform(posKeys[k].Value, importerData.ToFlax);
+
+            for (int32 k = 0; k < rotKeys.Count(); k++)
+            {
+                Quaternion toFlax = Quaternion::Identity;
+                Quaternion::RotationMatrix(importerData.ToFlax, toFlax);
+                rotKeys[k].Value = toFlax * rotKeys[k].Value;          
+            }
+        }
     }
 
-    return { 0.f, 0.f, 0.f };
+    if (importerData.Options.BakeRotations)
+    {
+        for (auto& anim : animation.Channels)
+        {
+            int32 nodeIndex = -1;
+            for (int32 i = 0; i < importerData.Nodes.Count(); i++)   
+            {
+                if (anim.NodeName == importerData.Nodes[i].Name )
+                {
+                    nodeIndex = i;
+                    break;
+                }
+            }
+
+            if (nodeIndex == -1)
+                continue; // Node name was not found
+            
+            Quaternion preRotation = Quaternion::Identity;
+            Quaternion postRotation = Quaternion::Identity;
+
+            if (NodePreRotations.ContainsKey(nodeIndex))
+                preRotation = NodePreRotations[nodeIndex];
+            
+            if (NodePostRotations.ContainsKey(nodeIndex))
+                postRotation = NodePostRotations[nodeIndex];
+
+            // Apply rotations
+            auto& rotKeys = anim.Rotation.GetKeyframes();
+            for (int32 k = 0; k < rotKeys.Count(); k++)
+                rotKeys[k].Value = preRotation * rotKeys[k].Value * postRotation;
+
+            // Apply translation correction
+            auto& posKeys = anim.Position.GetKeyframes();
+            for (int32 k = 0; k < posKeys.Count(); k++)
+                posKeys[k].Value = preRotation * posKeys[k].Value;
+        }
+    }
+}
+
+void ExtractEmbeddedTextures(const String& path, OpenFbxImporterData& data)
+{
+    String outputPath;
+    for (int32 i = 0; i < data.Scene.getEmbeddedDataCount(); i++)
+    {
+        const ofbx::DataView aEmbedded = data.Scene.getEmbeddedData(i);
+        ofbx::DataView aFilename = data.Scene.getEmbeddedFilename(i);
+        char filenameData[OPEN_FBX_NAME_SIZE];
+        aFilename.toString(filenameData);
+        if (outputPath.IsEmpty())
+        {
+            String pathStr(path);
+            outputPath = String(StringUtils::GetDirectoryName(pathStr)) / TEXT("textures");
+            FileSystem::CreateDirectory(outputPath);
+        }
+        const String filenameStr(filenameData);
+        String embeddedPath = outputPath / StringUtils::GetFileName(filenameStr);
+        if (FileSystem::FileExists(embeddedPath))
+            continue;
+        LOG(Info, "Extracing embedded resource to {0}", embeddedPath);
+        if (File::WriteAllBytes(embeddedPath, aEmbedded.begin + 4, (int32)(aEmbedded.end - aEmbedded.begin - 4)))
+        {
+            LOG(Error, "Failed to write data to file");
+        }
+    }
+}
+
+void ImportSkeleton(ModelData& modelData, OpenFbxImporterData& data)
+{
+    modelData.Skeleton.Nodes.Resize(data.Nodes.Count(), false);
+    for (int32 i = 0; i < data.Nodes.Count(); i++)
+    {
+        auto& node = modelData.Skeleton.Nodes[i];
+        auto& aNode = data.Nodes[i];
+
+        node.Name = aNode.Name;
+        node.ParentIndex = aNode.ParentIndex;
+        node.LocalTransform = aNode.LocalTransform;
+    }
+
+    modelData.Skeleton.Bones.Resize(data.Bones.Count(), false);
+    for (int32 i = 0; i < data.Bones.Count(); i++)
+    {
+        auto& bone = modelData.Skeleton.Bones[i];
+        auto& aBone = data.Bones[i];
+        const auto boneNodeIndex = aBone.NodeIndex;
+
+        // Find the parent bone
+        int32 parentBoneIndex = -1;
+        for (int32 j = data.Nodes[boneNodeIndex].ParentIndex; j != -1; j = data.Nodes[j].ParentIndex)
+        {
+            parentBoneIndex = data.FindBone(j);
+            if (parentBoneIndex != -1)
+                break;
+        }
+        aBone.ParentBoneIndex = parentBoneIndex;
+
+        const auto parentBoneNodeIndex = aBone.ParentBoneIndex == -1 ? -1 : data.Bones[aBone.ParentBoneIndex].NodeIndex;
+
+        bone.ParentIndex = aBone.ParentBoneIndex;
+        bone.NodeIndex = aBone.NodeIndex;
+        bone.LocalTransform = ModelTool::CombineTransformsFromNodeIndices(data.Nodes, parentBoneNodeIndex, boneNodeIndex);
+        bone.OffsetMatrix = aBone.OffsetMatrix;
+    }
 }
 
 bool ModelTool::ImportDataOpenFBX(const String& path, ModelData& data, Options& options, String& errorMsg)
@@ -1274,7 +1510,8 @@ bool ModelTool::ImportDataOpenFBX(const String& path, ModelData& data, Options& 
         loadFlags |= ofbx::LoadFlags::IGNORE_TEXTURES;
     if (EnumHasNoneFlags(options.ImportTypes, ImportDataTypes::Animations))
         loadFlags |= ofbx::LoadFlags::IGNORE_ANIMATIONS;
-    ofbx::IScene* scene;
+
+    ofbx::IScene* scene = nullptr;
     {
         PROFILE_CPU_NAMED("ofbx::load");
         scene = ofbx::load(fileData.Get(), fileData.Count(), (ofbx::u16)loadFlags);
@@ -1286,100 +1523,40 @@ bool ModelTool::ImportDataOpenFBX(const String& path, ModelData& data, Options& 
     }
     fileData.Resize(0);
 
-    // Tweak scene if exported by Blender
     auto& globalInfo = *scene->getGlobalInfo();
+    /*
+    // Tweak scene if exported by Blender
     if (StringAnsiView(globalInfo.AppName).StartsWith(StringAnsiView("Blender"), StringSearchCase::IgnoreCase))
     {
         auto ptr = const_cast<ofbx::GlobalSettings*>(scene->getGlobalSettings());
         ptr->UpAxis = (ofbx::UpVector)((int32)ptr->UpAxis + 1);
     }
+    */
+
+    // Create importerData
+    OpenFbxImporterData context(path, options, *scene);
+
+    // Log scene info
+    LOG(Info, "Loaded FBX model, Frame Rate: {0}, Unit Scale Factor: {1}", context.FrameRate, context.UnitScaleFactor);
+    LOG(Info, "Software: {0}, Version: {1}, Vendor: {2}", String(globalInfo.AppName), String(globalInfo.AppVersion), String(globalInfo.AppVendor));
+    LOG(Info, "Up: {1}{0}", context.Settings.UpAxis == 1 ? TEXT("Y") : context.Settings.UpAxis == 2 ? TEXT("Z") : TEXT("X"), context.Settings.UpAxisSign == 1 ? TEXT("+") : TEXT("-"));
+    // LOG(Info, "Front: {1}{0}", context.Settings.FrontAxis == ofbx::FrontVector_ParityEven ? TEXT("ParityEven") : TEXT("ParityOdd"), context.Settings.FrontAxisSign == 1 ? TEXT("+") : TEXT("-"));
+    LOG(Info, "{0}Handed {1}", context.ConvertRH == true ? TEXT("Right") : TEXT("Left"), context.Settings.CoordAxisSign == 1 ? TEXT("") : TEXT(" (negative)"));
+#if OPEN_FBX_CONVERT_SPACE
+    LOG(Info, "Imported scene: Up={0}, Front={1}, Right={2}", context.fbxSystem.Up, context.fbxSystem.Front, context.fbxSystem.Right);
+#endif
 
     // Process imported scene
-    OpenFbxImporterData context(path, options, scene);
-    auto& globalSettings = context.GlobalSettings;
     ProcessNodes(context, scene->getRoot(), -1);
 
     // Apply model scene global scale factor
-    context.Nodes[0].LocalTransform = Transform(Vector3::Zero, Quaternion::Identity, globalSettings.UnitScaleFactor) * context.Nodes[0].LocalTransform;
-
-    // Log scene info
-    LOG(Info, "Loaded FBX model, Frame Rate: {0}, Unit Scale Factor: {1}", context.FrameRate, globalSettings.UnitScaleFactor);
-    LOG(Info, "{0}, {1}, {2}", String(globalInfo.AppName), String(globalInfo.AppVersion), String(globalInfo.AppVendor));
-    LOG(Info, "Up: {1}{0}", globalSettings.UpAxis == ofbx::UpVector_AxisX ? TEXT("X") : globalSettings.UpAxis == ofbx::UpVector_AxisY ? TEXT("Y") : TEXT("Z"), globalSettings.UpAxisSign == 1 ? TEXT("+") : TEXT("-"));
-    LOG(Info, "Front: {1}{0}", globalSettings.FrontAxis == ofbx::FrontVector_ParityEven ? TEXT("ParityEven") : TEXT("ParityOdd"), globalSettings.FrontAxisSign == 1 ? TEXT("+") : TEXT("-"));
-    LOG(Info, "{0} Handed{1}", globalSettings.CoordAxis == ofbx::CoordSystem_RightHanded ? TEXT("Right") : TEXT("Left"), globalSettings.CoordAxisSign == 1 ? TEXT("") : TEXT(" (negative)"));
-#if OPEN_FBX_CONVERT_SPACE
-    LOG(Info, "Imported scene: Up={0}, Front={1}, Right={2}", context.Up, context.Front, context.Right);
-#endif
+    context.Nodes[0].LocalTransform = Transform(Vector3::Zero, Quaternion::Identity, context.UnitScaleFactor);
 
     // Extract embedded textures
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Textures))
     {
-        String outputPath;
-        for (int i = 0, c = scene->getEmbeddedDataCount(); i < c; i++)
-        {
-            const ofbx::DataView aEmbedded = scene->getEmbeddedData(i);
-            ofbx::DataView aFilename = scene->getEmbeddedFilename(i);
-            char filenameData[OPEN_FBX_NAME_SIZE];
-            aFilename.toString(filenameData);
-            if (outputPath.IsEmpty())
-            {
-                String pathStr(path);
-                outputPath = String(StringUtils::GetDirectoryName(pathStr)) / TEXT("textures");
-                FileSystem::CreateDirectory(outputPath);
-            }
-            const String filenameStr(filenameData);
-            String embeddedPath = outputPath / StringUtils::GetFileName(filenameStr);
-            if (FileSystem::FileExists(embeddedPath))
-                continue;
-            LOG(Info, "Extracing embedded resource to {0}", embeddedPath);
-            if (File::WriteAllBytes(embeddedPath, aEmbedded.begin + 4, (int32)(aEmbedded.end - aEmbedded.begin - 4)))
-            {
-                LOG(Error, "Failed to write data to file");
-            }
-        }
+        ExtractEmbeddedTextures(path, context);
     }
-
-#if OPEN_FBX_CONVERT_SPACE
-    // Transform nodes to match the engine coordinates system - DirectX (UpVector = +Y, FrontVector = +Z, CoordSystem = -X (LeftHanded))
-    if (context.Up == Float3(1, 0, 0) && context.Front == Float3(0, 0, 1) && context.Right == Float3(0, 1, 0))
-    {
-        context.RootConvertRotation = Quaternion::Euler(0, 180, 0);
-    }
-    else if (context.Up == Float3(0, 1, 0) && context.Front == Float3(-1, 0, 0) && context.Right == Float3(0, 0, 1))
-    {
-        context.RootConvertRotation = Quaternion::Euler(90, -90, 0);
-    }
-    /*Float3 engineUp(0, 1, 0);
-    Float3 engineFront(0, 0, 1);
-    Float3 engineRight(-1, 0, 0);*/
-    /*Float3 engineUp(1, 0, 0);
-    Float3 engineFront(0, 0, 1);
-    Float3 engineRight(0, 1, 0);
-    if (context.Up != engineUp || context.Front != engineFront || context.Right != engineRight)
-    {
-        LOG(Info, "Converting imported scene nodes to match engine coordinates system");
-        context.RootConvertRotation = Quaternion::GetRotationFromTo(context.Up, engineUp, engineUp);
-        //context.RootConvertRotation *= Quaternion::GetRotationFromTo(rotation * context.Right, engineRight, engineRight);
-        //context.RootConvertRotation *= Quaternion::GetRotationFromTo(rotation * context.Front, engineFront, engineFront);
-    }*/
-    /*Float3 hackUp = FbxVectorFromAxisAndSign(globalSettings.UpAxis, globalSettings.UpAxisSign);
-    if (hackUp == Float3::UnitX)
-        context.RootConvertRotation = Quaternion::Euler(-90, 0, 0);
-    else if (hackUp == Float3::UnitZ)
-        context.RootConvertRotation = Quaternion::Euler(90, 0, 0);*/
-    if (!context.RootConvertRotation.IsIdentity())
-    {
-        for (auto& node : context.Nodes)
-        {
-            if (node.ParentIndex == -1)
-            {
-                node.LocalTransform.Orientation = context.RootConvertRotation * node.LocalTransform.Orientation;
-                break;
-            }
-        }
-    }
-#endif
 
     // Build final skeleton bones hierarchy before importing meshes
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton))
@@ -1387,66 +1564,35 @@ bool ModelTool::ImportDataOpenFBX(const String& path, ModelData& data, Options& 
         if (ImportBones(context, errorMsg))
         {
             LOG(Warning, "Failed to import skeleton bones.");
+            scene->destroy();
             return true;
         }
         Sorting::QuickSort(context.Bones);
     }
 
     // Import geometry (meshes and materials)
-    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && context.Scene->getMeshCount() > 0)
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && scene->getMeshCount() > 0)
     {
-        const int meshCount = context.Scene->getMeshCount();
-        for (int32 meshIndex = 0; meshIndex < meshCount; meshIndex++)
+        for (int32 meshIndex = 0; meshIndex < scene->getMeshCount(); meshIndex++)
         {
             if (ImportMesh(meshIndex, data, context, errorMsg))
+            {
+                scene->destroy();
                 return true;
+            }
         }
     }
 
     // Import skeleton
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton))
     {
-        data.Skeleton.Nodes.Resize(context.Nodes.Count(), false);
-        for (int32 i = 0; i < context.Nodes.Count(); i++)
-        {
-            auto& node = data.Skeleton.Nodes[i];
-            auto& aNode = context.Nodes[i];
-
-            node.Name = aNode.Name;
-            node.ParentIndex = aNode.ParentIndex;
-            node.LocalTransform = aNode.LocalTransform;
-        }
-
-        data.Skeleton.Bones.Resize(context.Bones.Count(), false);
-        for (int32 i = 0; i < context.Bones.Count(); i++)
-        {
-            auto& bone = data.Skeleton.Bones[i];
-            auto& aBone = context.Bones[i];
-            const auto boneNodeIndex = aBone.NodeIndex;
-
-            // Find the parent bone
-            int32 parentBoneIndex = -1;
-            for (int32 j = context.Nodes[boneNodeIndex].ParentIndex; j != -1; j = context.Nodes[j].ParentIndex)
-            {
-                parentBoneIndex = context.FindBone(j);
-                if (parentBoneIndex != -1)
-                    break;
-            }
-            aBone.ParentBoneIndex = parentBoneIndex;
-
-            const auto parentBoneNodeIndex = aBone.ParentBoneIndex == -1 ? -1 : context.Bones[aBone.ParentBoneIndex].NodeIndex;
-
-            bone.ParentIndex = aBone.ParentBoneIndex;
-            bone.NodeIndex = aBone.NodeIndex;
-            bone.LocalTransform = CombineTransformsFromNodeIndices(context.Nodes, parentBoneNodeIndex, boneNodeIndex);
-            bone.OffsetMatrix = aBone.OffsetMatrix;
-        }
+        ImportSkeleton(data, context);
     }
 
     // Import animations
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Animations))
     {
-        const int animCount = context.Scene->getAnimationStackCount();
+        const int animCount = scene->getAnimationStackCount();
         for (int32 animIndex = 0; animIndex < animCount; animIndex++)
         {
             ImportAnimation(animIndex, data, context);
