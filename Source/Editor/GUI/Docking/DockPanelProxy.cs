@@ -197,7 +197,7 @@ namespace FlaxEditor.GUI.Docking
                 if (_panel.ChildPanelsCount == 0 && _panel.TabsCount == 1 && _panel.IsFloating)
                 {
                     // Create docking hint window but in an async manner
-                    WindowDragHelper.StartDragging(_panel as FloatWindowDockPanel);
+                    WindowDragHelper.StartDragging(_panel as FloatWindowDockPanel, win.RootWindow.Window);
                 }
                 else
                 {
