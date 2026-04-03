@@ -198,11 +198,9 @@ RenderFogData::RenderFogData()
 {
     Renderer = nullptr;
     VolumetricFogTexture = nullptr;
+    Platform::MemoryClear(&ExponentialHeightFogData, sizeof(ExponentialHeightFogData));
     ExponentialHeightFogData.FogMinOpacity = 1.0f;
-    ExponentialHeightFogData.FogDensity = 0.0f;
     ExponentialHeightFogData.FogCutoffDistance = 0.1f;
-    ExponentialHeightFogData.StartDistance = 0.0f;
-    ExponentialHeightFogData.ApplyDirectionalInscattering = 0.0f;
     ExponentialHeightFogData.VolumetricFogMaxDistance = -1.0f;
     VolumetricFogData.GridSliceParameters = Float4::One;
     VolumetricFogData.ScreenSize = VolumetricFogData.VolumeTexelSize = Float2::Zero;
@@ -213,6 +211,10 @@ void RenderFogData::Init(const RenderView& view, IFogRenderer* renderer)
     Renderer = renderer;
     renderer->GetExponentialHeightFogData(view, ExponentialHeightFogData);
     renderer->GetVolumetricFogOptions(VolumetricFog);
+    if (!VolumetricFog.UseVolumetricFog())
+    {
+        ExponentialHeightFogData.VolumetricFogMaxDistance = -1;
+    }
 }
 
 void* RendererAllocation::Allocate(uintptr size)
