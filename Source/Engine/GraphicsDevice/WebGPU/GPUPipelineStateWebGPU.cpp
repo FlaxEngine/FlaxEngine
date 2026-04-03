@@ -670,13 +670,8 @@ void GPUPipelineStateWebGPU::InitLayout(const GPUContextBindingsWebGPU& bindings
         if (!bindGroupLayout)
         {
             // Firefox and Safari have a bug that causes pipeline creation to fail when bind group layout is empty (no entries) and used in the pipeline layout
-            static WGPUBindGroupLayout EmptyBindGroup = nullptr;
-            if (!EmptyBindGroup)
-            {
-                WGPUBindGroupLayoutDescriptor bindGroupLayoutDesc = WGPU_BIND_GROUP_LAYOUT_DESCRIPTOR_INIT;
-                EmptyBindGroup = wgpuDeviceCreateBindGroupLayout(_device->Device, &bindGroupLayoutDesc);
-            }
-            bindGroupLayout = EmptyBindGroup;
+            WGPUBindGroupLayoutDescriptor bindGroupLayoutDesc = WGPU_BIND_GROUP_LAYOUT_DESCRIPTOR_INIT;
+            bindGroupLayout = wgpuDeviceCreateBindGroupLayout(_device->Device, &bindGroupLayoutDesc);
         }
         BindGroupLayouts[groupIndex] = bindGroupLayout;
     }
