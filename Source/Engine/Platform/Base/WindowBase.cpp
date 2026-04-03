@@ -17,6 +17,8 @@
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 
+extern void ClearWindowInputs(Window* window);
+
 #if USE_CSHARP
 // Helper macros for calling C# events
 #define BEGIN_INVOKE_EVENT(name, paramsCount) \
@@ -122,6 +124,7 @@ WindowBase::WindowBase(const CreateWindowSettings& settings)
 
 WindowBase::~WindowBase()
 {
+    ClearWindowInputs((Window*)this);
     ASSERT(!RenderTask);
     ASSERT(!_swapChain);
     WindowsManager::Unregister((Window*)this);
@@ -182,15 +185,14 @@ String WindowBase::ToString() const
 
 void WindowBase::OnDeleteObject()
 {
+    // Dereference window
+    ClearWindowInputs((Window*)this);
 #if !USE_EDITOR
-
-    // Unlink main task (if was used)
     if (RenderTask && RenderTask == MainRenderTask::Instance)
     {
         MainRenderTask::Instance->SwapChain = nullptr;
         RenderTask = nullptr;
     }
-
 #endif
 
     // Release resources

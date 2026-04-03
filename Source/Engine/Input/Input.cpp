@@ -41,7 +41,7 @@ struct AxisData
     uint64 FrameIndex = 0;
 };
 
-namespace InputImpl
+namespace
 {
     Dictionary<String, ActionData> Actions;
     Dictionary<String, AxisData> Axes;
@@ -49,8 +49,6 @@ namespace InputImpl
     Array<AxisEvaluation> AxesValues;
     InputDevice::EventQueue InputEvents;
 }
-
-using namespace InputImpl;
 
 class InputService : public EngineService
 {
@@ -90,6 +88,17 @@ Delegate<StringView, InputActionState> Input::ActionTriggered;
 Delegate<StringView> Input::AxisValueChanged;
 Array<ActionConfig> Input::ActionMappings;
 Array<AxisConfig> Input::AxisMappings;
+
+void ClearWindowInputs(Window* window)
+{
+    WindowsManager::WindowsLocker.Lock();
+    for (int32 i = InputEvents.Count() - 1; i >= 0; i--)
+    {
+        if (InputEvents[i].Target == window)
+            InputEvents.RemoveAtKeepOrder(i);
+    }
+    WindowsManager::WindowsLocker.Unlock();
+}
 
 void InputSettings::Apply()
 {
@@ -926,8 +935,8 @@ void InputService::Update()
     }
 
     // Pick the first focused window for input events
-    WindowsManager::WindowsLocker.Lock();
     Window* defaultWindow = nullptr;
+    WindowsManager::WindowsLocker.Lock();
     for (auto window : WindowsManager::Windows)
     {
         if (window->IsFocused() && window->GetSettings().AllowInput)
@@ -936,9 +945,7 @@ void InputService::Update()
             break;
         }
     }
-#if PLATFORM_SDL
     WindowsManager::WindowsLocker.Unlock();
-#endif
 
     // Send input events for the focused window
     for (const auto& e : InputEvents)
@@ -992,9 +999,6 @@ void InputService::Update()
             break;
         }
     }
-#if !PLATFORM_SDL
-    WindowsManager::WindowsLocker.Unlock();
-#endif
 
     // Skip if game has no focus to handle the input
     if (!Engine::HasGameViewportFocus())
