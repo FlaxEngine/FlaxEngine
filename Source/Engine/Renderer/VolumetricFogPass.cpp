@@ -269,7 +269,8 @@ bool VolumetricFogPass::Init(FrameCache& cache, RenderContext& renderContext, GP
     fogData.MaxDistance = options.Distance;
     if (renderContext.Task->IsCameraCut ||
         renderContext.View.IsOriginTeleport() ||
-        (renderContext.Buffers->VolumetricFog && renderContext.Buffers->VolumetricFog->Size3() != cache.GridSize))
+        (renderContext.Buffers->VolumetricFog && renderContext.Buffers->VolumetricFog->Size3() != cache.GridSize) ||
+        Engine::FrameCount - renderContext.Buffers->LastFrameVolumetricFog > 4)
     {
         // Don't blend with history on camera cuts or teleport or resizes
         cache.HistoryWeight = 0.0f;
