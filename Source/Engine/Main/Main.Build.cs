@@ -77,6 +77,7 @@ public class Main : EngineModule
             break;
         case TargetPlatform.Web:
             options.SourcePaths.Add(Path.Combine(FolderPath, "Web"));
+            options.PrivateDefinitions.Add("WEB_LOOP_MODE=" + GraphicsDeviceWebGPU.WithAsyncify);
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }

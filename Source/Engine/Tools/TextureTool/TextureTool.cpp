@@ -419,15 +419,15 @@ bool TextureTool::UpdateTexture(GPUContext* context, GPUTexture* texture, int32 
         auto textureSampler = PixelFormatSampler::Get(textureFormat);
         if (!dataSampler || !textureSampler)
             return true;
-        auto bytesPerPixel = PixelFormatExtensions::SizeInBytes(textureFormat);
 
         int32 mipWidth, mipHeight, mipDepth;
         texture->GetMipSize(mipIndex, mipWidth, mipHeight, mipDepth);
 
-        auto tempRowPitch = mipWidth * bytesPerPixel;
+        auto tempRowPitch = mipWidth * textureSampler->PixelSize;
         auto tempSlicePitch = tempRowPitch * mipHeight;
         tempData.Resize(tempSlicePitch * mipDepth);
 
+        ASSERT(data.Length() / rowPitch >= mipHeight);
         for (int32 y = 0; y < mipHeight; y++)
         {
             for (int32 x = 0; x < mipWidth; x++)
@@ -514,7 +514,9 @@ PixelFormat TextureTool::GetTextureFormat(TextureFormatType textureType, PixelFo
         EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R32_Float).Support, minSupport) &&
         PixelFormatSampler::Get(dataFormat))
         return PixelFormat::R32_Float;
-    if (dataFormat == PixelFormat::R16G16_UNorm && EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R32G32_UInt).Support, minSupport))
+    if (dataFormat == PixelFormat::R16G16_UNorm && 
+        EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R32G32_Float).Support, minSupport) &&
+        PixelFormatSampler::Get(dataFormat))
         return PixelFormat::R32G32_Float;
     if ((dataFormat == PixelFormat::R16G16B16A16_UNorm || dataFormat == PixelFormat::R16G16B16A16_Float) &&
         EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R32G32B32A32_Float).Support, minSupport) &&

@@ -302,12 +302,11 @@ bool GPUDeviceWebGPU::Init()
             limits.maxComputeWorkgroupSizeY >= 256 &&
             limits.maxComputeWorkgroupSizeZ >= 8 &&
             limits.maxBufferSize >= 64 * 1024 * 1024; // 64MB
-        Limits.HasInstancing = true;
+        Limits.HasInstancing = features.Contains(WGPUFeatureName_PrimitiveIndex); // TODO: investigate why Firefox doesn't draw instanced draws (this check is kind of a hack)
         Limits.HasDrawIndirect = true;
         Limits.HasDepthAsSRV = true;
         Limits.HasReadOnlyDepth = true;
         Limits.HasDepthClip = features.Contains(WGPUFeatureName_DepthClipControl);
-        Limits.HasReadOnlyDepth = true;
         Limits.MaximumSamplerAnisotropy = 4;
         Limits.MaximumTexture1DSize = limits.maxTextureDimension1D;
         Limits.MaximumTexture2DSize = limits.maxTextureDimension2D;

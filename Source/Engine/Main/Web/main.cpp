@@ -7,17 +7,19 @@
 
 // Reference: https://github.com/kainino0x/webgpu-cross-platform-demo/blob/f5c69c6fccbb2584c1b6f9e559f9a41a38a9b5ad/main.cpp#L692-L704
 // Reference: https://github.com/kainino0x/webgpu-cross-platform-demo/blob/c26ea3e29ed9f73f9b39bddf7964b482ce3c6964/main.cpp#L737-L758
-#define WEB_LOOP_MODE 2 // 0 - default, 1 - Asyncify, 2 - JSPI
-#if WEB_LOOP_MODE != 0
+#ifndef WEB_LOOP_MODE // 0 - default, 1 - Asyncify, 2 - JSPI
+#error "Unknown WEB_LOOP_MODE"
+#endif
+#if WEB_LOOP_MODE == 2
 // Workaround for JSPI not working in emscripten_set_main_loop. Loosely based on this code:
 // https://github.com/emscripten-core/emscripten/issues/22493#issuecomment-2330275282
 // This code only works with JSPI is enabled.
 typedef bool (*FrameCallback)(); // If callback returns true, continues the loop.
-EM_JS(void, requestAnimationFrameLoopWithJSPI, (FrameCallback callback), {
+EM_JS(void, requestAnimationFrameLoopWithJSPI, (FrameCallback frame), {
 #if WEB_LOOP_MODE == 2
-    var callback = WebAssembly.promising(getWasmTableEntry(callback));
+    var callback = WebAssembly.promising(getWasmTableEntry(frame));
 #elif WEB_LOOP_MODE == 1
-    var callback = () = > globalThis['Module']['ccall']("callback", "boolean", [], [], { async: true });
+    var callback = () = > globalThis['Module']['ccall']("frame", "boolean", [], [], { async: true });
 #endif
     async function tick() {
         // Start the frame callback. 'await' means we won't call
@@ -31,7 +33,7 @@ EM_JS(void, requestAnimationFrameLoopWithJSPI, (FrameCallback callback), {
 
 class PlatformMain
 {
-#if WEB_LOOP_MODE == 0
+#if WEB_LOOP_MODE != 2
     static void Loop()
     {
         // Tick engine
@@ -75,7 +77,7 @@ public:
             return result;
 
         // Setup main loop to be called by Emscripten
-#if WEB_LOOP_MODE == 0
+#if WEB_LOOP_MODE != 2
         emscripten_set_main_loop(Loop, -1, false);
 #else
         requestAnimationFrameLoopWithJSPI(Loop);

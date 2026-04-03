@@ -1090,12 +1090,13 @@ void GPUContextWebGPU::FlushBindGroup()
     {
         auto descriptors = _pipelineState->BindGroupDescriptors[groupIndex];
         key.Layout = _pipelineState->BindGroupLayouts[groupIndex];
-        if (!descriptors || !key.Layout)
-            continue;
 
         // Build descriptors
         uint32 dynamicOffsetsCount = 0;
-        BuildBindGroup(groupIndex, *descriptors, key, dynamicOffsets, dynamicOffsetsCount);
+        if (descriptors)
+            BuildBindGroup(groupIndex, *descriptors, key, dynamicOffsets, dynamicOffsetsCount);
+        else
+            key.EntriesCount = 0;
 
         // Bind group
         WGPUBindGroup bindGroup = _pipelineState->GetBindGroup(key);

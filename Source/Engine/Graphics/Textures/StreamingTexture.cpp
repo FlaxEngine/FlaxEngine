@@ -383,12 +383,17 @@ protected:
         _streamingTexture->GetOwner()->GetMipData(absoluteMipIndex, data);
         if (data.IsInvalid())
             return Result::MissingData;
+        PixelFormat dataFormat = _streamingTexture->GetHeader()->Format;
 
         // Cache data
         const int32 arraySize = texture->ArraySize();
         uint32 rowPitch, slicePitch;
         if (!_streamingTexture->GetOwner()->GetMipDataCustomPitch(absoluteMipIndex, rowPitch, slicePitch))
-            texture->ComputePitch(_mipIndex, rowPitch, slicePitch);
+        {
+            int32 mipWidth, mipHeight;
+            texture->GetMipSize(_mipIndex, mipWidth, mipHeight);
+            RenderTools::ComputePitch(dataFormat, mipWidth, mipHeight, rowPitch, slicePitch);
+        }
         _data.Link(data);
 
         // Update all array slices
@@ -396,9 +401,9 @@ protected:
         int32 dataPerSlice = data.Length() / arraySize; // In most cases it's a slice pitch, except when using transcoding (eg. Basis), then each slice has to use the same amount of memory
         for (int32 arrayIndex = 0; arrayIndex < arraySize; arrayIndex++)
         {
-            if (TextureTool::UpdateTexture(context->GPU, texture, arrayIndex, _mipIndex, Span<byte>(dataSource, dataPerSlice), rowPitch, slicePitch, _streamingTexture->GetHeader()->Format))
+            if (TextureTool::UpdateTexture(context->GPU, texture, arrayIndex, _mipIndex, Span<byte>(dataSource, dataPerSlice), rowPitch, slicePitch, dataFormat))
             {
-                LOG(Error, "Cannot stream mip {} of texture {} (format: {})", _mipIndex, texture->ToString(), ScriptingEnum::ToString(_streamingTexture->GetHeader()->Format));
+                LOG(Error, "Cannot stream mip {} of texture {} (format: {})", _mipIndex, texture->ToString(), ScriptingEnum::ToString(dataFormat));
                 return Result::Failed;
             }
             dataSource += dataPerSlice;
