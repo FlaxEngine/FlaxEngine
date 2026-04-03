@@ -135,7 +135,9 @@ namespace FlaxEditor.GUI.Docking
             settings.MaximumSize = Float2.Zero; // Unlimited size
             settings.Fullscreen = false;
             settings.HasBorder = true;
+#if !PLATFORM_WINDOWS // Transparency requires WS_EX_LAYERED on Windows which breaks window bounds
             settings.SupportsTransparency = true;
+#endif
             settings.ActivateWhenFirstShown = true;
             settings.AllowInput = true;
             settings.AllowMinimize = true;
@@ -150,6 +152,7 @@ namespace FlaxEditor.GUI.Docking
 
             if (Utilities.Utils.UseCustomWindowDecorations())
             {
+                settings.SupportsTransparency = true;
                 settings.HasBorder = false;
                 //settings.HasSizingFrame = false;
             }

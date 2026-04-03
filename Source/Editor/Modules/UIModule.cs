@@ -823,7 +823,7 @@ namespace FlaxEditor.Modules
                 driver = $" ({driver})";
 #endif
 
-            WindowDecorations = new MainWindowDecorations(mainWindow, !Utilities.Utils.UseCustomWindowDecorations(isMainWindow: true))
+            WindowDecorations = new MainWindowDecorations(mainWindow, !Utilities.Utils.UseCustomWindowDecorations(true))
             {
                 Parent = mainWindow,
                 IconTooltipText = $"{mainWindow.RootWindow.Title}\nVersion {Globals.EngineVersion}\nConfiguration {configuration}\nGraphics {GPUDevice.Instance.RendererType}{driver}",
