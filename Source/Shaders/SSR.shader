@@ -224,14 +224,14 @@ float4 PS_ResolvePass(Quad_VS2PS input) : SV_Target0
 
 	// Calculate final result value
 	result /= RESOLVE_SAMPLES;
-	result.a *= Intensity;
+    result.a *= Intensity;
 #if SSR_REDUCE_HIGHLIGHTS
 	result.rgb /= 1 - Luminance(result.rgb);
 #endif
 
     // Normalize alpha
     result.rgb *= max(1, result.a);
-    result.a = min(result, 1);
+    result.a = min(result.a, 1);
 
 	//return float4(abs(Luminance(result) - Luminance(saturate(result))).xxx, 1);
 	//return saturate(result);

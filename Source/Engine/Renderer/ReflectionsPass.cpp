@@ -310,6 +310,8 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     context->Clear(*reflectionsBuffer, Color::Black);
 
     // Reflection Probes pass
+    if (!useSSR && renderContext.View.Mode == ViewMode::Reflections)
+        context->Clear(lightBuffer, Color::Black);
     if (renderProbes)
     {
         PROFILE_GPU_CPU("Env Probes");
