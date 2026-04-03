@@ -65,7 +65,7 @@ namespace FlaxEditor.GUI.Docking
         /// <summary>
         /// Gets the default window size (in UI units, unscaled by DPI which is handled by windowing system).
         /// </summary>
-        public virtual Float2 DefaultSize => new Float2(900, 580);
+        public virtual Float2 DefaultSize => new Float2(1200, 740);
 
         /// <summary>
         /// Gets the serialization typename.
