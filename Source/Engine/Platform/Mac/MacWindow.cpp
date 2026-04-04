@@ -283,6 +283,15 @@ NSDragOperation GetDragDropOperation(DragDropEffect dragDropEffect)
     return YES;
 }
 
+- (BOOL)canBecomeMainWindow
+{
+    if (Window && (!Window->GetSettings().AllowInput || Window->GetSettings().Type != WindowType::Regular))
+    {
+        return NO;
+    }
+    return YES;
+}
+
 - (void)windowDidBecomeKey:(NSNotification*)notification
 {
 	// Handle resizing to be sure that content has valid size when window was resized
@@ -735,6 +744,7 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     view.wantsLayer = YES;
     [view setWindow:this];
     window.title = (__bridge NSString*)AppleUtils::ToString(settings.Title);
+    window.releasedWhenClosed = NO;
     [window setWindow:this];
     [window setReleasedWhenClosed:NO];
     [window setMinSize:NSMakeSize(settings.MinimumSize.X, settings.MinimumSize.Y)];
@@ -744,6 +754,8 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     [window setContentView:view];
     if (settings.AllowInput)
         [window setAcceptsMouseMovedEvents:YES];
+    if (settings.IsTopmost)
+        [window setLevel:NSFloatingWindowLevel];
     [window setDelegate:window];
     _window = window;
     _view = view;
@@ -757,9 +769,7 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
 	if (layer)
 		layer.contentsScale = screenScale;
 
-    // TODO: impl Parent for MacWindow
     // TODO: impl ShowInTaskbar for MacWindow
-    // TODO: impl IsTopmost for MacWindow
 }
 
 MacWindow::~MacWindow()
@@ -836,8 +846,13 @@ void MacWindow::Show()
 
         // Show
         NSWindow* window = (NSWindow*)_window;
+        if (_settings.Parent)
+        {
+            NSWindow* parent = (NSWindow*)_settings.Parent->GetNativePtr();
+            [parent addChildWindow:window ordered:NSWindowAbove];
+        }
         if (_settings.AllowInput)
-            [window makeKeyAndOrderFront:window];
+            [window makeKeyAndOrderFront:nil];
         else
             [window orderFront:window];
         if (_settings.ActivateWhenFirstShown)
@@ -855,9 +870,20 @@ void MacWindow::Hide()
     {
         SetCursor(CursorType::Default);
 
-        // Hide
+        // Hide (order out doesn't work for miniaturized windows)
         NSWindow* window = (NSWindow*)_window;
-        [window orderOut:window];
+        const BOOL wasKey = [window isKeyWindow];
+        if ([window isMiniaturized])
+            [window close];
+        else
+            [window orderOut:nil];
+
+        // Transfer focus back to the parent when hiding popup
+        if (_settings.Parent && wasKey)
+        {
+            NSWindow* parent = (NSWindow*)_settings.Parent->GetNativePtr();
+            [parent makeKeyAndOrderFront:nil];
+        }
 
         // Base
         WindowBase::Hide();
