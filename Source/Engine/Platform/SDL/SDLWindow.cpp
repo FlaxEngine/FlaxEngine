@@ -18,7 +18,7 @@
 #include "Engine/Input/Mouse.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/WindowsManager.h"
-#if PLATFORM_LINUX
+#if PLATFORM_LINUX || PLATFORM_MAC
 #define COMPILE_WITH_TEXTURE_TOOL 1 // FIXME
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #endif
@@ -243,7 +243,7 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
         SDL_StartTextInput(_window);
 #endif
 
-#if PLATFORM_LINUX && COMPILE_WITH_TEXTURE_TOOL
+#if (PLATFORM_LINUX || PLATFORM_MAC) && COMPILE_WITH_TEXTURE_TOOL
     // Ensure windows other than the main window have some kind of icon
     static SDL_Surface* surface = nullptr;
     static Array<Color32> colorData;
