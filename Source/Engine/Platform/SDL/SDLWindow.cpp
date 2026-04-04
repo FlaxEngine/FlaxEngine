@@ -294,8 +294,13 @@ SDLWindow::~SDLWindow()
 
     if (Input::Mouse != nullptr && Input::Mouse->IsRelative(this))
         Input::Mouse->SetRelativeMode(false, this);
-    
-    SDL_StopTextInput(_window);
+
+    // The text input events seems to be controlled globally on macOS,
+    // calling this for closing window seems to remove keyboard focus from other windows...
+#if !PLATFORM_MAC
+    if (_settings.AllowInput && SDL_TextInputActive(_window))
+        SDL_StopTextInput(_window);
+#endif
     SDL_DestroyWindow(_window);
 
     _window = nullptr;
