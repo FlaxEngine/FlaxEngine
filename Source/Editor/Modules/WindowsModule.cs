@@ -702,6 +702,9 @@ namespace FlaxEditor.Modules
             {
                 // Check if there is a floating window that has the same size
                 var dpi = (float)Platform.Dpi / 96.0f;
+#if PLATFORM_MAC
+                dpi = 1.0f; // TODO: refactor DPI support to skip such hacks
+#endif
                 var dpiScale = Platform.CustomDpiScale;
                 var defaultSize = window.DefaultSize * dpi;
                 for (var i = 0; i < Editor.UI.MasterPanel.FloatingPanels.Count; i++)
