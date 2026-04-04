@@ -362,8 +362,8 @@ namespace FlaxEditor.GUI.Docking
 
                 // Cache dock rectangles
                 var size = _rectDock.Size / Platform.DpiScale;
-#if PLATFORM_MAC
-                size *= (float)Platform.Dpi / 96.0f; // TODO: refactor DPI support to skip such hacks
+#if PLATFORM_MAC && !PLATFORM_SDL
+                size *= (float)Platform.Dpi / 96.0f; // TODO: refactor DPI support on macOS to skip such hacks
 #endif
                 var offset = _toDock.PointFromScreen(_rectDock.Location);
                 var borderMargin = 10.0f;

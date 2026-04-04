@@ -19,6 +19,9 @@
 #include <AppKit/AppKit.h>
 #include <QuartzCore/CAMetalLayer.h>
 
+// TODO: finish this (missing mouse up when title bar drag ends)
+#define MAC_WINDOW_TITLE_BAR_CLICK 0
+
 #if USE_EDITOR
 // Data for drawing window while doing drag&drop on Mac (engine is paused during platform tick)
 CriticalSection MacDragLocker;
@@ -698,9 +701,60 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 @end
 
+#if MAC_WINDOW_TITLE_BAR_CLICK
+
+@interface MacResponderImpl : NSResponder
+{
+    MacWindow* Window;
+    bool TrackingMouseDown;
+}
+
+- (void)setWindow:(MacWindow*)window;
+
+@end
+
+@implementation MacResponderImpl
+
+- (void)setWindow:(MacWindow*)window
+{
+    Window = window;
+    TrackingMouseDown = false;
+}
+
+- (void)mouseDown:(NSEvent*)event
+{
+    if (IsWindowInvalid(Window) || TrackingMouseDown) return;
+	Float2 mousePos = GetMousePosition(Window, event);
+    if (mousePos.Y < 0)
+    {
+        // Titlebar click
+        bool result = false;
+        Window->OnLeftButtonHit(WindowHitCodes::Caption, result);
+        TrackingMouseDown = result;
+    }
+}
+
+- (void)mouseUp:(NSEvent*)event
+{
+    if (IsWindowInvalid(Window)) return;
+    //NSPoint point = [event locationInWindow];
+    //LOG(Warning, "Mouse up! at: {}x{}", point.x, point.y);
+    if (TrackingMouseDown)
+    {
+        TrackingMouseDown = false;
+        Float2 mousePos = GetMousePosition(Window, event);
+        Window->OnMouseUp(mousePos, MouseButton::Left);
+    }
+}
+
+@end
+
+#endif
+
 MacWindow::MacWindow(const CreateWindowSettings& settings)
     : WindowBase(settings)
 {
+    // Setup size and styles
     _clientSize = Float2(settings.Size.X, settings.Size.Y);
     Float2 pos = AppleUtils::PosToCoca(settings.Position);
     NSRect frame = NSMakeRect(pos.X, pos.Y - settings.Size.Y, settings.Size.X, settings.Size.Y);
@@ -736,6 +790,7 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     frame.size.width /= screenScale;
     frame.size.height /= screenScale;
 
+    // Create window
     MacWindowImpl* window = [[MacWindowImpl alloc] initWithContentRect:frame
         styleMask:(styleMask)
         backing:NSBackingStoreBuffered
@@ -764,12 +819,18 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
         [view registerForDraggedTypes:@[NSPasteboardTypeFileURL, NSPasteboardTypeString]];
     }
 
+#if MAC_WINDOW_TITLE_BAR_CLICK
+    // Plug into superview to receive mouse events for the title
+    MacResponderImpl* responder = [[MacResponderImpl alloc] init];
+    [responder setWindow:this];
+    NSView* superview = [[window contentView] superview];
+    [superview setNextResponder:responder];
+#endif
+
     // Rescale contents
 	CALayer* layer = [view layer];
 	if (layer)
 		layer.contentsScale = screenScale;
-
-    // TODO: impl ShowInTaskbar for MacWindow
 }
 
 MacWindow::~MacWindow()
