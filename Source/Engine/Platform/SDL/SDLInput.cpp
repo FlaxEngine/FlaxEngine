@@ -359,7 +359,6 @@ class SDLMouse : public Mouse
 private:
     Float2 _oldPosition = Float2::Zero;
     Window* _relativeModeWindow = nullptr;
-    const SDL_Rect* _oldScreenRect = nullptr;
 public:
 
     /// <summary>
@@ -408,13 +407,14 @@ public:
         {
             _relativeModeWindow = window;
             SDL_GetMouseState(&_oldPosition.X, &_oldPosition.Y);
+#if !PLATFORM_MAC
             if (!SDL_CursorVisible())
             {
-                // Trap the cursor in current location
+                // Trap the cursor in current location to prevent accidental interactions with other UI elements or applications
                 SDL_Rect clipRect = { (int)_oldPosition.X, (int)_oldPosition.Y, 1, 1 };
-                _oldScreenRect = SDL_GetWindowMouseRect(windowHandle);
                 SDL_SetWindowMouseRect(windowHandle, &clipRect);
             }
+#endif
         }
         else
         {
@@ -423,9 +423,10 @@ public:
                 // FIXME: When floating game window is focused and editor viewport activated, the relative mode gets stuck
                 return;
             }
-            SDL_SetWindowMouseRect(windowHandle, nullptr);//oldScreenRect);
+#if !PLATFORM_MAC
+            SDL_SetWindowMouseRect(windowHandle, nullptr);
+#endif
             SDL_WarpMouseInWindow(windowHandle, _oldPosition.X, _oldPosition.Y);
-            _oldScreenRect = nullptr;
             _relativeModeWindow = nullptr;
         }
 
@@ -433,8 +434,8 @@ public:
         if (!SDL_SetWindowRelativeMouseMode(windowHandle, relativeMode))
             LOG(Error, "Failed to set mouse relative mode: {0}", String(SDL_GetError()));
 
-#if PLATFORM_MAC
-        // Warping right before entering relative mode seems to generate motion event for relative mode
+#if false && PLATFORM_MAC
+        // Warping right before entering relative mode seems to generate motion event during relative mode
         SDL_PumpEvents();
         SDL_FlushEvent(SDL_EVENT_MOUSE_MOTION);
 #endif
