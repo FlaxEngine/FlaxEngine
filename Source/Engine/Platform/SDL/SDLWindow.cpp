@@ -38,6 +38,7 @@
 #include "Engine/Platform/Linux/IncludeX11.h"
 #elif PLATFORM_MAC
 #include <Cocoa/Cocoa.h>
+#include <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 #elif PLATFORM_WEB
 #else
 static_assert(false, "Unsupported Platform");
@@ -226,7 +227,7 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
         NSWindow* win = ((NSWindow*)_handle);
         NSView* view = win.contentView;
         [win unregisterDraggedTypes];
-        [win registerForDraggedTypes:@[NSPasteboardTypeFileURL, NSPasteboardTypeString, (NSString*)kUTTypeFileURL, (NSString*)kUTTypeUTF8PlainText]];
+        [win registerForDraggedTypes:@[NSPasteboardTypeFileURL, NSPasteboardTypeString, UTTypeFileURL.identifier, UTTypeUTF8PlainText.identifier]];
 #endif
     }
 #endif
