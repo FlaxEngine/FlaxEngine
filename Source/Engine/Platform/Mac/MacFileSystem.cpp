@@ -133,7 +133,16 @@ bool MacFileSystem::ShowBrowseFolderDialog(Window* parentWindow, const StringVie
 
 bool MacFileSystem::ShowFileExplorer(const StringView& path)
 {
-    return [[NSWorkspace sharedWorkspace] selectFile: AppleUtils::ToNSString(FileSystem::ConvertRelativePathToAbsolute(path)) inFileViewerRootedAtPath: @""];
+    String fullPath = FileSystem::ConvertRelativePathToAbsolute(path);
+    NSString* selectFile = AppleUtils::ToNSString(fullPath);
+    NSString* inFileViewerRootedAtPath = AppleUtils::ToNSString(String::Empty);
+    if (FileSystem::GetExtension(fullPath).IsEmpty())
+    {
+        // Show folder contents
+        inFileViewerRootedAtPath = selectFile;
+        selectFile = nullptr;
+    }
+    return [[NSWorkspace sharedWorkspace] selectFile: selectFile inFileViewerRootedAtPath: inFileViewerRootedAtPath];
 }
 
 #endif
