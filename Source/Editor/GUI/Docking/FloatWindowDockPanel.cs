@@ -32,7 +32,7 @@ namespace FlaxEditor.GUI.Docking
                 return base.OnMouseDown(location, button);
             }
 
-#if !PLATFORM_WINDOWS
+#if PLATFORM_LINUX
             /// <inheritdoc />
             protected override WindowHitCodes OnHitTest(ref Float2 mouse)
             {
