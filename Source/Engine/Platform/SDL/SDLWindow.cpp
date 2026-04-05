@@ -351,6 +351,20 @@ SDL_HitTestResult OnWindowHitTest(SDL_Window* win, const SDL_Point* area, void* 
     SDLWindow* window = static_cast<SDLWindow*>(data);
     const Float2 point(static_cast<float>(area->x), static_cast<float>(area->y));
     WindowHitCodes hit = window->OnWindowHit(point);
+
+#if PLATFORM_MAC
+    // HACK: Motion events are missing over special areas, try to track the mouse with hit test
+    Float2 mousePositionScreen;
+    if (hit != WindowHitCodes::Client && SDL_GetGlobalMouseState(&mousePositionScreen.X, &mousePositionScreen.Y) == 0)
+    {
+        const Float2 hitPositionScreen = window->ClientToScreen(point);
+
+        // The hit tests does not always follow mouse, so only report tests close to mouse
+        if (Float2::Distance(hitPositionScreen, mousePositionScreen) <= 3)
+            Input::Mouse->OnMouseMove(hitPositionScreen, window);
+    }
+#endif
+
     switch (hit)
     {
     case WindowHitCodes::Caption:
