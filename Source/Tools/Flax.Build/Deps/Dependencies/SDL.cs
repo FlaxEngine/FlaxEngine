@@ -53,6 +53,7 @@ namespace Flax.Deps.Dependencies
                 "-DSDL_CAMERA=OFF",
                 "-DSDL_DIALOG=OFF",
                 "-DSDL_OFFSCREEN=OFF",
+                "-DSDL_TRAY=OFF",
                 
                 "-DSDL_RENDER=OFF",
                 "-DSDL_RENDER_D3D=OFF",
@@ -88,7 +89,7 @@ namespace Flax.Deps.Dependencies
 
             CloneGitRepo(root, "https://github.com/libsdl-org/SDL");
             GitFetch(root);
-            GitResetToCommit(root, "a962f40bbba175e9716557a25d5d7965f134a3d3");  // 3.4.0
+            GitResetToCommit(root, "5848e584a1b606de26e3dbd1c7e4ecbc34f807a6");  // 3.4.4
 
             foreach (var platform in options.Platforms)
             {
