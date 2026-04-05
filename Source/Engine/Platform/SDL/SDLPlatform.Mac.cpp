@@ -421,7 +421,11 @@ DragDropEffect SDLWindow::DoDragDrop(const StringView& data)
     DragDropEffect result = DragDropEffect::None;
 
 #if USE_EDITOR
-    ASSERT(!MacImpl::MacDragSession);
+    //ASSERT(!MacImpl::MacDragSession);
+    // TODO: Dragging item from dropdown box in a floating window attempts to init dragging twice
+    if (MacImpl::MacDragSession != nullptr)
+        return result;
+
     MacImpl::MacDragSession = draggingSession;
     MacImpl::MacDragExitFlag = 0;
     MacImpl::DraggingData = data;
