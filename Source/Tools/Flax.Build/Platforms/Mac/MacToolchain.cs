@@ -52,6 +52,7 @@ namespace Flax.Build.Platforms
             options.LinkEnv.InputLibraries.Add("Cocoa.framework");
             options.LinkEnv.InputLibraries.Add("QuartzCore.framework");
             options.LinkEnv.InputLibraries.Add("AVFoundation.framework");
+            options.LinkEnv.InputLibraries.Add("UniformTypeIdentifiers.framework");
 
             if (EngineConfiguration.WithSDL(options))
             {
