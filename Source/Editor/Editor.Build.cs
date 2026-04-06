@@ -123,7 +123,6 @@ public class Editor : EditorModule
         files.Add(Path.Combine(FolderPath, "Cooker/GameCooker.h"));
         files.Add(Path.Combine(FolderPath, "Cooker/PlatformTools.h"));
         files.Add(Path.Combine(FolderPath, "Cooker/Steps/CookAssetsStep.h"));
-        files.Add(Path.Combine(FolderPath, "Utilities/ScreenUtilities.h"));
         files.Add(Path.Combine(FolderPath, "Utilities/ViewportIconsRenderer.h"));
     }
 }

@@ -41,6 +41,8 @@ public class ShaderCompilerWebGPU : ShaderCompiler
         // Deploy tint executable as a dependency for the shader compilation from SPIR-V into WGSL
         // Tint compiler from: https://github.com/google/dawn/releases
         // License: Source/ThirdParty/tint-license.txt (BSD 3-Clause)
+        if (options.Target.IsPreBuilt)
+            return;
         var depsRoot = options.DepsFolder;
         switch (options.Platform.Target)
         {
