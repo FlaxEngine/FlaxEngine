@@ -136,7 +136,7 @@ bool MacFileSystem::ShowFileExplorer(const StringView& path)
     String fullPath = FileSystem::ConvertRelativePathToAbsolute(path);
     NSString* selectFile = AppleUtils::ToNSString(fullPath);
     NSString* inFileViewerRootedAtPath = AppleUtils::ToNSString(String::Empty);
-    if (FileSystem::GetExtension(fullPath).IsEmpty())
+    if (FileSystem::DirectoryExists(fullPath))
     {
         // Show folder contents
         inFileViewerRootedAtPath = selectFile;

@@ -33,6 +33,43 @@ namespace
         productName.Replace(TEXT("-"), TEXT(""));
         return productName;
     }
+
+    bool CodeSign(const String& file, const String& signIdentity)
+    {
+        if (signIdentity.IsEmpty())
+            return false;
+        LOG(Info, "Code signing file: {}", file);
+        bool isDirectory = FileSystem::DirectoryExists(file);
+        if (!isDirectory && !FileSystem::FileExists(file))
+        {
+            LOG(Error, "Missing file to sign: {}", file);
+            return true;
+        }
+        CreateProcessSettings procSettings;
+        procSettings.HiddenWindow = true;
+        procSettings.FileName = TEXT("/usr/bin/codesign");
+        procSettings.Arguments = String::Format(TEXT("--force --timestamp -s \"{0}\" \"{1}\""), signIdentity, file);
+        if (isDirectory)
+        {
+            // Automatically sign contents
+            procSettings.Arguments += TEXT(" --deep");
+        }
+        {
+            // Enable the hardened runtime
+            procSettings.Arguments += TEXT(" --options=runtime");
+        }
+        {
+            // Add entitlements file with some settings for the app execution
+            procSettings.Arguments += String::Format(TEXT(" --entitlements \"{0}\""), Globals::StartupFolder / TEXT("Source/Platforms/Mac/Default.entitlements"));
+        }
+        const int32 result = Platform::CreateProcess(procSettings);
+        if (result != 0)
+        {
+            LOG(Error, "Failed to code sign '{1}' (result code: {0}). See log for more info.", result, file);
+            return true;
+        }
+        return false;
+    }
 }
 
 MacPlatformTools::MacPlatformTools(ArchitectureType arch)
@@ -221,7 +258,23 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
         }
     }
 
-    // TODO: sign binaries
+    // Sign binaries
+    const auto signIdentity = platformSettings->CodeSignIdentity;
+    /*if (CodeSign(data.NativeCodeOutputPath / executableName, signIdentity))
+        return true;
+    {
+        Array<String> files;
+        FileSystem::DirectoryGetFiles(files, data.NativeCodeOutputPath, TEXT("*.dylib"), DirectorySearchOption::AllDirectories);
+        for (auto& file : files)
+        {
+            if (CodeSign(file, signIdentity))
+                return true;
+        }
+    }*/
+
+    // Sign app
+    if (CodeSign(data.OriginalOutputPath / appName + TEXT(".app"), signIdentity))
+        return true;
 
     // Package application
     const auto buildSettings = BuildSettings::Get();
@@ -229,10 +282,13 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
         return false;
     GameCooker::PackageFiles();
     LOG(Info, "Building app package...");
+    const String dmgPath = data.OriginalOutputPath / appName + TEXT(".dmg");
     {
-        const String dmgPath = data.OriginalOutputPath / appName + TEXT(".dmg");
         if (FileSystem::FileExists(dmgPath))
+        {
             FileSystem::DeleteFile(dmgPath);
+            Platform::Sleep(100);
+        }
         CreateProcessSettings procSettings;
         procSettings.HiddenWindow = true;
         procSettings.WorkingDirectory = data.OriginalOutputPath;
@@ -244,10 +300,35 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
             data.Error(String::Format(TEXT("Failed to package app (result code: {0}). See log for more info."), result));
             return true;
         }
-        // TODO: sign dmg
-        LOG(Info, "Output application package: {0} (size: {1} MB)", dmgPath, FileSystem::GetFileSize(dmgPath) / 1024 / 1024);
     }
 
+    // Sign package
+    if (CodeSign(dmgPath, signIdentity))
+        return true;
+
+    // Notarize disk image
+    if (platformSettings->PackageKeychainProfile.HasChars())
+    {
+        LOG(Info, "Notarizing disk image...");
+        CreateProcessSettings procSettings;
+        procSettings.HiddenWindow = true;
+        procSettings.FileName = TEXT("/usr/bin/xcrun");
+        procSettings.Arguments = String::Format(TEXT("notarytool submit \"{0}\" --wait --keychain-profile \"{1}\""), dmgPath, platformSettings->PackageKeychainProfile);
+        int32 result = Platform::CreateProcess(procSettings);
+        if (result == 0)
+        {
+            procSettings.Arguments = String::Format(TEXT("stapler staple \"{0}\""), dmgPath);
+            result = Platform::CreateProcess(procSettings);
+        }
+        if (result != 0)
+        {
+            data.Error(String::Format(TEXT("Failed to notarize package (result code: {0}). See log for more info."), result));
+            return true;
+        }
+        LOG(Info, "App notarized for macOS distribution!");
+    }
+
+    LOG(Info, "Output application package: {0} (size: {1} MB)", dmgPath, FileSystem::GetFileSize(dmgPath) / 1024 / 1024);
     return false;
 }
 

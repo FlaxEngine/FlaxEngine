@@ -15,9 +15,9 @@ private:
     ArchitectureType _arch;
 
 public:
-
     MacPlatformTools(ArchitectureType arch);
 
+public:
     // [PlatformTools]
     const Char* GetDisplayName() const override;
     const Char* GetName() const override;

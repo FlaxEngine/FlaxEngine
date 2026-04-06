@@ -15,6 +15,18 @@ API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     API_AUTO_SERIALIZATION();
 
     /// <summary>
+    /// App code signing identity name (from local Mac keychain). Use 'security find-identity -v -p codesigning' to list possible options.    
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(53), EditorDisplay(\"Deploy\")")
+    String CodeSignIdentity;
+
+    /// <summary>
+    /// Apple keychain profile name to use for app notarize action (installed locally).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(55), EditorDisplay(\"Deploy\")")
+    String PackageKeychainProfile;
+
+    /// <summary>
     /// The default game window mode.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(110), EditorDisplay(\"Window\")")
