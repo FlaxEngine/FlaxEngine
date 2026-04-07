@@ -791,7 +791,10 @@ namespace Flax.Build.Bindings
             var separator = false;
             if (!functionInfo.IsStatic)
             {
-                contents.Append("__unmanagedPtr");
+                if (caller is StructureInfo)
+                    contents.Append("FlaxEngine.Interop.NativeInterop.GetTypeHolder(GetType()).managedClassPointer"); // TODO: put this somewhere that a struct can use it like __unmanagedPtr
+                else 
+                    contents.Append("__unmanagedPtr");
                 separator = true;
             }
             for (var i = 0; i < functionInfo.Parameters.Count; i++)
@@ -2086,6 +2089,65 @@ namespace Flax.Build.Bindings
                     contents.Append(indent).AppendLine("    this = Default;");
                     contents.Append(indent).AppendLine("}");
                 }
+            }
+
+            // Functions
+            foreach (var functionInfo in structureInfo.Functions)
+            {
+                if (functionInfo.IsHidden)
+                    continue;
+
+                if (!functionInfo.NoProxy)
+                {
+                    contents.AppendLine();
+                    GenerateCSharpComment(contents, indent, functionInfo.Comment);
+                    GenerateCSharpAttributes(buildData, contents, indent, structureInfo, functionInfo, true);
+                    contents.Append(indent).Append(GenerateCSharpAccessLevel(functionInfo.Access));
+                    if (functionInfo.IsVirtual)
+                        throw new Exception($"Not supported {"virtual"} function {functionInfo.Name} inside structure {structureInfo.Name}.");
+                    if (functionInfo.IsStatic)
+                        contents.Append("static ");
+                    var returnValueType = GenerateCSharpNativeToManaged(buildData, functionInfo.ReturnType, structureInfo);
+                    contents.Append(returnValueType).Append(' ').Append(functionInfo.Name).Append('(');
+
+                    for (var i = 0; i < functionInfo.Parameters.Count; i++)
+                    {
+                        var parameterInfo = functionInfo.Parameters[i];
+                        if (i != 0)
+                            contents.Append(", ");
+                        if (!string.IsNullOrEmpty(parameterInfo.Attributes))
+                            contents.Append('[').Append(parameterInfo.Attributes).Append(']').Append(' ');
+
+                        var managedType = GenerateCSharpNativeToManaged(buildData, parameterInfo.Type, structureInfo);
+                        if (parameterInfo.IsOut)
+                            contents.Append("out ");
+                        else if (parameterInfo.IsRef)
+                            contents.Append("ref ");
+                        else if (parameterInfo.IsThis)
+                            contents.Append("this ");
+                        else if (parameterInfo.IsParams)
+                            contents.Append("params ");
+                        contents.Append(managedType);
+                        contents.Append(' ');
+                        contents.Append(parameterInfo.Name);
+
+                        var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, structureInfo, parameterInfo.Type, false, managedType);
+                        if (!string.IsNullOrEmpty(defaultValue))
+                            contents.Append(" = ").Append(defaultValue);
+                    }
+
+                    contents.Append(')').AppendLine().AppendLine(indent + "{");
+                    indent += "    ";
+
+                    contents.Append(indent);
+                    GenerateCSharpWrapperFunctionCall(buildData, contents, structureInfo, functionInfo);
+
+                    indent = indent.Substring(0, indent.Length - 4);
+                    contents.AppendLine();
+                    contents.AppendLine(indent + "}");
+                }
+
+                GenerateCSharpWrapperFunction(buildData, contents, indent, structureInfo, functionInfo);
             }
 
             GenerateCSharpManagedTypeInternals(buildData, structureInfo, contents, indent);
