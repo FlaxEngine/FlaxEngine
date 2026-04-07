@@ -47,8 +47,8 @@ uint MissedHistorySamplesCount;
 uint3 GridSizeInt;
 float PhaseG;
 
-float2 Dummy0;
-float VolumetricFogMaxDistance;
+float2 VolumetricFogRange;
+float Dummy0;
 float InverseSquaredLightDistanceBiasScale;
 
 float4 FogParameters;
@@ -104,7 +104,8 @@ float3 GetVolumeUV(float3 worldPosition, float4x4 worldToClip)
 {
 	float4 ndcPosition = mul(float4(worldPosition, 1), worldToClip);
 	ndcPosition.xy /= ndcPosition.w;
-	return float3(ndcPosition.xy * float2(0.5f, -0.5f) + 0.5f, ndcPosition.w / VolumetricFogMaxDistance);
+    ndcPosition.w = (ndcPosition.w - VolumetricFogRange.x) / VolumetricFogRange.y; // TODO: convert into MAD
+	return float3(ndcPosition.xy * float2(0.5f, -0.5f) + 0.5f, ndcPosition.w);
 }
 
 // Vertex shader that writes to a range of slices of a volume texture
@@ -340,7 +341,7 @@ void CS_FinalIntegration(uint3 DispatchThreadId : SV_DispatchThreadID)
 	if (any(gridCoordinate.xy >= GridSizeInt.xy))
 		return;
 	float4 acc = float4(0, 0, 0, 1);
-	float3 prevPositionWS = GBuffer.ViewPos;
+	float3 prevPositionWS = GetCellPositionWS(uint3(gridCoordinate.xy, 0), 0.5f);
 
 	for (uint layerIndex = 0; layerIndex < GridSizeInt.z; layerIndex++)
 	{

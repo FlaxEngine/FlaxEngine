@@ -18,7 +18,7 @@ struct VolumetricFogData
 float GetDepthFromSlice(float4 gridSliceParameters, float zSlice)
 {
 #if VOLUMETRIC_FOG_GRID_Z_LINEAR
-	return zSlice * gridSliceParameters.x;
+	return (zSlice - gridSliceParameters.z) * gridSliceParameters.x;
 #else
     return (exp2(zSlice / gridSliceParameters.z) - gridSliceParameters.y) / gridSliceParameters.x;
 #endif
@@ -27,7 +27,7 @@ float GetDepthFromSlice(float4 gridSliceParameters, float zSlice)
 float GetSliceFromDepth(float4 gridSliceParameters, float sceneDepth)
 {
 #if VOLUMETRIC_FOG_GRID_Z_LINEAR
-    return sceneDepth * gridSliceParameters.y;
+    return sceneDepth * gridSliceParameters.y + gridSliceParameters.z;
 #else
 	return (log2(sceneDepth * gridSliceParameters.x + gridSliceParameters.y) * gridSliceParameters.z);
 #endif
