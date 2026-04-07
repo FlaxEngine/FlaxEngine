@@ -36,6 +36,7 @@
 #include "Engine/Level/Level.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Core/Config/GraphicsSettings.h"
+#include "Engine/Graphics/Graphics.h"
 #include "Engine/Threading/JobSystem.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 #if USE_EDITOR
@@ -714,7 +715,10 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     {
         context->SetRenderTarget(task->GetOutputView());
         context->SetViewportAndScissors(task->GetOutputViewport());
-        context->Draw(frameBuffer);
+        if (!Graphics::GammaColorSpace)
+            GBufferPass::Instance()->DrawLinearToSrgb(renderContext, frameBuffer);
+        else
+            context->Draw(frameBuffer);
         RenderTargetPool::Release(frameBuffer);
         return;
     }

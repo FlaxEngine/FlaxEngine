@@ -44,6 +44,7 @@ bool GBufferPass::Init()
 {
     // Create pipeline state
     _psDebug = GPUDevice::Instance->CreatePipelineState();
+    _psLinearToSrgb = GPUDevice::Instance->CreatePipelineState();
 
     // Load assets
     _gBufferShader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/GBuffer"));
@@ -81,6 +82,12 @@ bool GBufferPass::setupResources()
         if (_psDebug->Init(psDesc))
             return true;
     }
+    if (!_psLinearToSrgb->IsValid())
+    {
+        psDesc.PS = gbuffer->GetPS("PS_LinearToSrgb");
+        if (_psLinearToSrgb->Init(psDesc))
+            return true;
+    }
 
     return false;
 }
@@ -92,6 +99,7 @@ void GBufferPass::Dispose()
 
     // Cleanup
     SAFE_DELETE_GPU_RESOURCE(_psDebug);
+    SAFE_DELETE_GPU_RESOURCE(_psLinearToSrgb);
     _gBufferShader = nullptr;
     _skyModel = nullptr;
     _boxModel = nullptr;
@@ -254,6 +262,7 @@ void GBufferPass::RenderDebug(RenderContext& renderContext)
     switch (renderContext.View.Mode)
     {
     case ViewMode::Diffuse:
+    case ViewMode::Unlit:
         data.ViewLinear = !Graphics::GammaColorSpace;
         break;
     }
@@ -275,6 +284,19 @@ void GBufferPass::RenderDebug(RenderContext& renderContext)
 
     // Cleanup
     context->ResetSR();
+}
+
+void GBufferPass::DrawLinearToSrgb(RenderContext& renderContext, GPUTexture* input)
+{
+    auto context = GPUDevice::Instance->GetMainContext();
+    if (checkIfSkipPass())
+    {
+        context->Draw(input);
+        return;
+    }
+    context->BindSR(0, input);
+    context->SetState(_psLinearToSrgb);
+    context->DrawFullscreenTriangle();
 }
 
 // Custom render buffer for realtime skybox capturing (eg. used by GI).

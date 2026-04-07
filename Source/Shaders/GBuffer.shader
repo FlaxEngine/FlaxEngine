@@ -73,3 +73,12 @@ float4 PS_DebugView(Quad_VS2PS input) : SV_Target
         result = LinearToSrgb(result);
 	return float4(result, 1);
 }
+
+// Pixel shader for color space conversion
+META_PS(true, FEATURE_LEVEL_ES2)
+float4 PS_LinearToSrgb(Quad_VS2PS input) : SV_Target
+{
+	float4 result = SAMPLE_RT(GBuffer0, input.TexCoord);
+    result.rgb = LinearToSrgb(result.rgb);
+	return result;
+}
