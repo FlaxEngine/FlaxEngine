@@ -62,7 +62,7 @@ bool ShaderCompilerWebGPU::Write(ShaderCompilationContext* context, ShaderFuncti
     if (!context->Options->NoOptimize)
         procSettings.Arguments += TEXT(" --minify");
     procSettings.Arguments += TEXT(" --allow-non-uniform-derivatives"); // Fix sampling texture within non-uniform control flow
-    procSettings.FileName = Globals::StartupFolder / String::Format(TEXT("Source/Platforms/Web/Binaries/Tools/Windows/x64/tint"), ToString(PLATFORM_TYPE), ToString(PLATFORM_ARCH));
+    procSettings.FileName = Globals::StartupFolder / String::Format(TEXT("Source/Platforms/Web/Binaries/Tools/{}/{}/tint"), ToString(PLATFORM_TYPE), ToString(PLATFORM_ARCH));
 #if PLATFORM_WINDOWS
     procSettings.FileName += TEXT(".exe");
 #endif
