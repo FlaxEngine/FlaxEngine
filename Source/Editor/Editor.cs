@@ -654,7 +654,9 @@ namespace FlaxEditor
             GameSettings.Save(new WindowsPlatformSettings());
             GameSettings.Save(new LinuxPlatformSettings());
             GameSettings.Save(new AndroidPlatformSettings());
-            GameSettings.Save(new UWPPlatformSettings());
+            GameSettings.Save(new MacPlatformSettings());
+            GameSettings.Save(new iOSPlatformSettings());
+            GameSettings.Save(new WebPlatformSettings());
         }
 
         internal void OnPlayBeginning()

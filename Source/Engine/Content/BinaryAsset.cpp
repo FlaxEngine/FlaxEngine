@@ -373,15 +373,13 @@ bool BinaryAsset::SaveToAsset(const StringView& path, AssetInitData& data, bool 
     {
         // HACK: file is locked by some tasks (e.g material asset loaded some data and is updating the asset)
         // Let's hide these locks just for the saving
-        const auto locks = storage->_chunksLock;
-        storage->_chunksLock = 0;
+        const auto locks = Platform::AtomicRead(&storage->_chunksLock);
+        Platform::AtomicStore(&storage->_chunksLock, 0);
         result = storage->Save(data, silentMode);
-        ASSERT(storage->_chunksLock == 0);
-        storage->_chunksLock = locks;
+        Platform::InterlockedAdd(&storage->_chunksLock, locks);
     }
     else
     {
-        ASSERT(filePath.HasChars());
         result = FlaxStorage::Create(filePath, data, silentMode);
     }
     if (binaryAsset)

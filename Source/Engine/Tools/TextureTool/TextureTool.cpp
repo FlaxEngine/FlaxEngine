@@ -427,7 +427,7 @@ bool TextureTool::UpdateTexture(GPUContext* context, GPUTexture* texture, int32 
         auto tempSlicePitch = tempRowPitch * mipHeight;
         tempData.Resize(tempSlicePitch * mipDepth);
 
-        ASSERT(data.Length() / rowPitch >= mipHeight);
+        ASSERT(data.Length() / rowPitch >= (uint32)mipHeight);
         for (int32 y = 0; y < mipHeight; y++)
         {
             for (int32 x = 0; x < mipWidth; x++)

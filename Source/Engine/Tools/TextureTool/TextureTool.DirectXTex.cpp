@@ -744,7 +744,9 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         !options.InvertAlphaChannel &&
         !options.InvertBlueChannel &&
         !options.ReconstructZChannel &&
+        !options.sRGB &&
         options.Compress && 
+        options.InternalFormat == PixelFormat::Unknown &&
         type == ImageType::DDS && 
         mipLevels == sourceMipLevels && 
         DirectX::IsCompressed(sourceDxgiFormat) && 
