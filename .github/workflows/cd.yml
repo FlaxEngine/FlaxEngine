@@ -18,7 +18,7 @@ jobs:
     runs-on: "windows-2022"
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v6
     - name: Checkout LFS
       run: |
         git lfs version
@@ -26,7 +26,7 @@ jobs:
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.419
     - name: Print .NET info
@@ -40,12 +40,12 @@ jobs:
         PowerShell "(Get-Content Source/Tools/Flax.Build/Flax.Build.csproj).Replace('LatestMajor', 'Minor') | Set-Content Source/Tools/Flax.Build/Flax.Build.csproj"
         .\PackageEditor.bat -arch=x64 -platform=Windows -deployOutput=Output -dotnet=8
     - name: Upload
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Windows-Editor
         path: Output/Editor.zip
     - name: Upload
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Windows-EditorDebugSymbols
         path: Output/EditorDebugSymbols.zip
@@ -54,7 +54,7 @@ jobs:
     runs-on: "windows-2022"
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v6
     - name: Checkout LFS
       run: |
         git lfs version
@@ -62,7 +62,7 @@ jobs:
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.419
     - name: Print .NET info
@@ -76,7 +76,7 @@ jobs:
         PowerShell "(Get-Content Source/Tools/Flax.Build/Flax.Build.csproj).Replace('LatestMajor', 'Minor') | Set-Content Source/Tools/Flax.Build/Flax.Build.csproj"
         .\PackagePlatforms.bat -arch=x64 -platform=Windows -deployOutput=Output -dotnet=8
     - name: Upload
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Windows-Game
         path: Output/Windows.zip
@@ -87,7 +87,7 @@ jobs:
     runs-on: "ubuntu-24.04"
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v6
     - name: Checkout LFS
       run: |
         git lfs version
@@ -99,7 +99,7 @@ jobs:
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.x
     - name: Print .NET info
@@ -110,7 +110,7 @@ jobs:
       run: |
         ./PackageEditor.sh -arch=x64 -platform=Linux -deployOutput=Output -dotnet=8
     - name: Upload
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Linux-Editor
         path: Output/FlaxEditorLinux.zip
@@ -119,7 +119,7 @@ jobs:
     runs-on: "ubuntu-24.04"
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v6
     - name: Checkout LFS
       run: |
         git lfs version
@@ -131,7 +131,7 @@ jobs:
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.x
     - name: Print .NET info
@@ -142,7 +142,7 @@ jobs:
       run: |
         ./PackagePlatforms.sh -arch=x64 -platform=Linux -deployOutput=Output -dotnet=8
     - name: Upload
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Linux-Game
         path: Output/Linux.zip
@@ -153,7 +153,7 @@ jobs:
     runs-on: "macos-14"
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v6
     - name: Checkout LFS
       run: |
         git lfs version
@@ -161,7 +161,7 @@ jobs:
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.x
     - name: Print .NET info
@@ -172,7 +172,7 @@ jobs:
       run: |
         ./PackageEditor.command -arch=ARM64 -platform=Mac -deployOutput=Output -dotnet=8
     - name: Upload
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Mac-Editor
         path: Output/FlaxEditorMac.zip
@@ -181,7 +181,7 @@ jobs:
     runs-on: "macos-14"
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v6
     - name: Checkout LFS
       run: |
         git lfs version
@@ -189,7 +189,7 @@ jobs:
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.x
     - name: Print .NET info
@@ -200,7 +200,7 @@ jobs:
       run: |
         ./PackagePlatforms.command -arch=ARM64 -platform=Mac -deployOutput=Output -dotnet=8
     - name: Upload
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Mac-Game
         path: Output/Mac.zip

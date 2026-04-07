@@ -13,7 +13,7 @@ jobs:
     runs-on: "ubuntu-24.04"
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v6
     - name: Install dependencies
       run: |
         sudo apt-get update
@@ -21,7 +21,7 @@ jobs:
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.x
     - name: Print .NET info
@@ -42,7 +42,7 @@ jobs:
     runs-on: "ubuntu-24.04"
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v6
     - name: Install dependencies
       run: |
         sudo apt-get update
@@ -50,7 +50,7 @@ jobs:
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.x
     - name: Print .NET info
