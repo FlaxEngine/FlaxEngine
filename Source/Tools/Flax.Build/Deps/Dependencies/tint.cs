@@ -119,18 +119,18 @@ namespace Flax.Deps.Dependencies
                     BuildCmake(buildDir, config, options: Utilities.RunOptions.ConsoleLogOutput);
 
                     // Deploy executable
-                    var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                    var dstFolder = Path.Combine(GetBinariesFolder(options, TargetPlatform.Web), "Tools", platform.ToString(), architecture.ToString());
                     switch (platform)
                     {
                     case TargetPlatform.Windows:
-                        Utilities.FileCopy(Path.Combine(buildDir, config, "tint.exe"), Path.Combine(depsFolder, "tint.exe"));
+                        Utilities.FileCopy(Path.Combine(buildDir, config, "tint.exe"), Path.Combine(dstFolder, "tint.exe"));
                         break;
                     default:
-                        Utilities.FileCopy(Path.Combine(buildDir, "tint"), Path.Combine(depsFolder, "tint"));
+                        Utilities.FileCopy(Path.Combine(buildDir, "tint"), Path.Combine(dstFolder, "tint"));
                         if (BuildPlatform != TargetPlatform.Windows)
                         {
-                            Utilities.Run("chmod", "+x tint", null, depsFolder, Utilities.RunOptions.ConsoleLogOutput);
-                            Utilities.Run("strip", "tint", null, depsFolder, Utilities.RunOptions.ConsoleLogOutput);
+                            Utilities.Run("chmod", "+x tint", null, dstFolder, Utilities.RunOptions.ConsoleLogOutput);
+                            Utilities.Run("strip", "tint", null, dstFolder, Utilities.RunOptions.ConsoleLogOutput);
                         }
                         break;
                     }

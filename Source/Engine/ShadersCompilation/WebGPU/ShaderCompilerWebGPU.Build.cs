@@ -37,27 +37,5 @@ public class ShaderCompilerWebGPU : ShaderCompiler
         options.PrivateDependencies.Add("glslang");
         options.PrivateDependencies.Add("spirv-tools");
         options.PrivateDependencies.Add("lz4");
-
-        // Deploy tint executable as a dependency for the shader compilation from SPIR-V into WGSL
-        // Tint compiler from: https://github.com/google/dawn/releases
-        // License: Source/ThirdParty/tint-license.txt (BSD 3-Clause)
-        if (options.Target.IsPreBuilt)
-            return;
-        var depsRoot = options.DepsFolder;
-        switch (options.Platform.Target)
-        {
-        case TargetPlatform.Windows:
-            if (options.Architecture == TargetArchitecture.x64)
-                options.DependencyFiles.Add(Path.Combine(depsRoot, "tint.exe"));
-            break;
-        case TargetPlatform.Linux:
-            if (options.Architecture == TargetArchitecture.x64)
-                options.DependencyFiles.Add(Path.Combine(depsRoot, "tint"));
-            break;
-        case TargetPlatform.Mac:
-            if (options.Architecture == TargetArchitecture.ARM64)
-                options.DependencyFiles.Add(Path.Combine(depsRoot, "tint"));
-            break;
-        }
     }
 }
