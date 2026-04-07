@@ -295,10 +295,10 @@ void WebPlatform::LogInfo()
 {
     PlatformBase::LogInfo();
 
-#ifdef __EMSCRIPTEN_major__
-    LOG(Info, "Emscripten {}.{}.{}", __EMSCRIPTEN_major__, __EMSCRIPTEN_minor__, __EMSCRIPTEN_tiny__);
-#elif defined(__EMSCRIPTEN_MAJOR__)
+#ifdef __EMSCRIPTEN_MAJOR__
     LOG(Info, "Emscripten {}.{}.{}", __EMSCRIPTEN_MAJOR__, __EMSCRIPTEN_MINOR__, __EMSCRIPTEN_TINY__);
+#elif defined(__EMSCRIPTEN_major__)
+    LOG(Info, "Emscripten {}.{}.{}", __EMSCRIPTEN_major__, __EMSCRIPTEN_minor__, __EMSCRIPTEN_tiny__);
 #else
     LOG(Info, "Emscripten");
 #endif
