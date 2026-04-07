@@ -478,9 +478,7 @@ namespace FlaxEditor.GUI.Dialogs
         protected override void OnShow()
         {
             // Apply changes on lost focus
-#if !PLATFORM_LINUX
             ((WindowRootControl)Root).Window.LostFocus += OnSubmit;
-#endif
 
             base.OnShow();
         }
