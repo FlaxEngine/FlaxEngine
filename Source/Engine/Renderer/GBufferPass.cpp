@@ -21,10 +21,12 @@
 #include "Engine/Level/Actors/Decal.h"
 #include "Engine/Level/Actors/Sky.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Graphics/Graphics.h"
 
 GPU_CB_STRUCT(GBufferPassData {
     ShaderGBufferData GBuffer;
-    Float3 Dummy0;
+    Float2 Dummy0;
+    int32 ViewLinear;
     int32 ViewMode;
     });
 
@@ -248,6 +250,13 @@ void GBufferPass::RenderDebug(RenderContext& renderContext)
 
     // Set constants buffer
     SetInputs(renderContext.View, data.GBuffer);
+    data.ViewLinear = 0;
+    switch (renderContext.View.Mode)
+    {
+    case ViewMode::Diffuse:
+        data.ViewLinear = !Graphics::GammaColorSpace;
+        break;
+    }
     data.ViewMode = static_cast<int32>(renderContext.View.Mode);
     auto cb = lights->GetCB(0);
     context->UpdateCB(cb, &data);
