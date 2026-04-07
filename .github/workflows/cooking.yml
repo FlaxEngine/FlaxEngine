@@ -9,7 +9,7 @@ jobs:
   # Cook on Mac
   cook-mac:
     name: Cook (Mac)
-    runs-on: "macos-14"
+    runs-on: "macos-15"
     steps:
     - name: Checkout repo
       uses: actions/checkout@v6
