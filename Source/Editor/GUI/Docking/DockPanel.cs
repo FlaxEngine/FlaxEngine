@@ -513,19 +513,11 @@ namespace FlaxEditor.GUI.Docking
                     if (TryCollapseSplitter(_tabsProxy?.Parent as Panel))
                         return;
                 }
-                else if (!IsMaster)
-                {
-                    throw new InvalidOperationException();
-                }
             }
             else if (_childPanels.Count != 0)
             {
                 if (TryCollapseSplitter(_tabsProxy?.Parent as Panel))
                     return;
-            }
-            else if (!IsMaster)
-            {
-                throw new InvalidOperationException();
             }
         }
 
