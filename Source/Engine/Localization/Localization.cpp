@@ -328,7 +328,8 @@ bool LocalizationService::Init()
     PROFILE_MEM(Localization);
 
     // Use system language as default
-    CurrentLanguage = CurrentCulture = CultureInfo(Platform::GetUserLocaleName());
+    CurrentLanguage = CultureInfo(Platform::GetUserLanguage());
+    CurrentCulture = CultureInfo(Platform::GetUserLocaleName());
 
     // Setup localization
     Instance.OnLocalizationChanged();

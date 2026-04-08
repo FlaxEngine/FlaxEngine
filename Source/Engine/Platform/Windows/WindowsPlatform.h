@@ -71,6 +71,7 @@ public:
     static Version GetSystemVersion();
     static BatteryInfo GetBatteryInfo();
     static int32 GetDpi();
+    static String GetUserLanguage();
     static String GetUserLocaleName();
     static String GetComputerName();
     static bool GetHasFocus();
