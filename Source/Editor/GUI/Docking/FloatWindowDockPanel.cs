@@ -61,6 +61,11 @@ namespace FlaxEditor.GUI.Docking
         public WindowRootControl Window => _window;
 
         /// <summary>
+        /// True if user is dragging this panel.
+        /// </summary>
+        public bool IsDragging { get; internal set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="FloatWindowDockPanel"/> class.
         /// </summary>
         /// <param name="masterPanel">The master panel.</param>

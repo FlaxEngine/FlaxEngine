@@ -14,11 +14,10 @@ namespace FlaxEditor.GUI.Docking
     public class DockPanelProxy : ContainerControl
     {
         private DockPanel _panel;
-        private InterfaceOptions.TabCloseButtonVisibility closeButtonVisibility;
+        private InterfaceOptions.TabCloseButtonVisibility _closeButtonVisibility;
         private double _dragEnterTime = -1;
-        private float _tabHeight = Editor.Instance.Options.Options.Interface.TabHeight;
-        private bool _useMinimumTabWidth = Editor.Instance.Options.Options.Interface.UseMinimumTabWidth;
-        private float _minimumTabWidth = Editor.Instance.Options.Options.Interface.MinimumTabWidth;
+        private float _tabHeight, _minimumTabWidth;
+        private bool _useMinimumTabWidth;
         private readonly bool _hideTabForSingleTab = Utilities.Utils.HideSingleTabWindowTabBars();
 
         /// <summary>
@@ -42,6 +41,11 @@ namespace FlaxEditor.GUI.Docking
         public bool IsMouseDownOverCross;
 
         /// <summary>
+        /// The mouse cursor over window.
+        /// </summary>
+        public DockWindow MouseOverWindow;
+
+        /// <summary>
         /// The mouse down window.
         /// </summary>
         public DockWindow MouseDownWindow;
@@ -61,6 +65,7 @@ namespace FlaxEditor.GUI.Docking
         /// </summary>
         public DockWindow StartDragAsyncWindow;
 
+        internal bool IsUsingDockPanel => MouseOverWindow != null || StartDragAsyncWindow != null || (_panel is FloatWindowDockPanel floatPanel && floatPanel.IsDragging);
         private Rectangle HeaderRectangle => new Rectangle(0, 0, Width, _tabHeight);
         private bool IsSingleFloatingWindow => _hideTabForSingleTab && _panel.TabsCount == 1 && _panel.IsFloating && _panel.ChildPanelsCount == 0;
 
@@ -75,13 +80,19 @@ namespace FlaxEditor.GUI.Docking
             AnchorPreset = AnchorPresets.StretchAll;
             Offsets = Margin.Zero;
 
-            Editor.Instance.Options.OptionsChanged += OnEditorOptionsChanged;
-            OnEditorOptionsChanged(Editor.Instance.Options.Options);
+            var options = Editor.Instance.Options;
+            var interfaceOptions = options.Options.Interface;
+            _tabHeight = interfaceOptions.TabHeight;
+            _useMinimumTabWidth = interfaceOptions.UseMinimumTabWidth;
+            _minimumTabWidth = interfaceOptions.MinimumTabWidth;
+
+            options.OptionsChanged += OnEditorOptionsChanged;
+            OnEditorOptionsChanged(options.Options);
         }
 
         private void OnEditorOptionsChanged(EditorOptions options)
         {
-            closeButtonVisibility = options.Interface.ShowTabCloseButton;
+            _closeButtonVisibility = options.Interface.ShowTabCloseButton;
         }
 
         private DockWindow GetTabAtPos(Float2 position, out bool closeButton)
@@ -96,7 +107,7 @@ namespace FlaxEditor.GUI.Docking
                 if (HeaderRectangle.Contains(position))
                 {
                     result = _panel.GetTab(0);
-                    closeButton = crossRect.Contains(position) && IsCloseButtonVisible(result, closeButtonVisibility);
+                    closeButton = crossRect.Contains(position) && IsCloseButtonVisible(result, _closeButtonVisibility);
                 }
             }
             else
@@ -105,7 +116,7 @@ namespace FlaxEditor.GUI.Docking
                 for (int i = 0; i < tabsCount; i++)
                 {
                     var tab = _panel.GetTab(i);
-                    float width = CalculateTabWidth(tab, closeButtonVisibility);
+                    float width = CalculateTabWidth(tab, _closeButtonVisibility);
 
                     if (_useMinimumTabWidth && width < _minimumTabWidth)
                         width = _minimumTabWidth;
@@ -115,7 +126,7 @@ namespace FlaxEditor.GUI.Docking
                     if (isMouseOver)
                     {
                         var crossRect = new Rectangle(x + width - DockPanel.DefaultButtonsSize - DockPanel.DefaultButtonsMargin, (HeaderRectangle.Height - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize);
-                        closeButton = crossRect.Contains(position) && IsCloseButtonVisible(tab, closeButtonVisibility);
+                        closeButton = crossRect.Contains(position) && IsCloseButtonVisible(tab, _closeButtonVisibility);
                         result = tab;
                         break;
                     }
@@ -161,7 +172,7 @@ namespace FlaxEditor.GUI.Docking
                 {
                     var tab = _panel.GetTab(i);
                     var titleSize = tab.TitleSize;
-                    float width = CalculateTabWidth(tab, closeButtonVisibility);
+                    float width = CalculateTabWidth(tab, _closeButtonVisibility);
                     if (tab == win)
                     {
                         bounds = new Rectangle(x, 0, width, HeaderRectangle.Height);
@@ -177,6 +188,7 @@ namespace FlaxEditor.GUI.Docking
         private void StartDrag(DockWindow win)
         {
             // Clear cache
+            MouseOverWindow = null;
             MouseDownWindow = null;
             StartDragAsyncWindow = win;
 
@@ -258,7 +270,7 @@ namespace FlaxEditor.GUI.Docking
                     TextAlignment.Near,
                     TextAlignment.Center);
 
-                if (IsCloseButtonVisible(tab, closeButtonVisibility))
+                if (IsCloseButtonVisible(tab, _closeButtonVisibility))
                 {
                     // Draw cross
                     var crossRect = new Rectangle(Width - DockPanel.DefaultButtonsSize - DockPanel.DefaultButtonsMargin, (HeaderRectangle.Height - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize);
@@ -282,7 +294,7 @@ namespace FlaxEditor.GUI.Docking
                     var tabColor = Color.Black;
                     var iconWidth = tab.Icon.IsValid ? DockPanel.DefaultButtonsSize + DockPanel.DefaultLeftTextMargin : 0;
 
-                    float width = CalculateTabWidth(tab, closeButtonVisibility);
+                    float width = CalculateTabWidth(tab, _closeButtonVisibility);
 
                     if (_useMinimumTabWidth && width < _minimumTabWidth)
                         width = _minimumTabWidth;
@@ -329,7 +341,7 @@ namespace FlaxEditor.GUI.Docking
                         TextAlignment.Center);
 
                     // Draw cross
-                    if (IsCloseButtonVisible(tab, closeButtonVisibility))
+                    if (IsCloseButtonVisible(tab, _closeButtonVisibility))
                     {
                         var crossRect = new Rectangle(x + width - DockPanel.DefaultButtonsSize - DockPanel.DefaultButtonsMargin, (HeaderRectangle.Height - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize);
                         bool isMouseOverCross = isMouseOver && crossRect.Contains(MousePosition);
@@ -354,6 +366,7 @@ namespace FlaxEditor.GUI.Docking
             IsMouseRightButtonDown = false;
             IsMouseMiddleButtonDown = false;
             MouseDownWindow = null;
+            MouseOverWindow = null;
             MousePosition = Float2.Minimum;
 
             base.OnLostFocus();
@@ -393,7 +406,8 @@ namespace FlaxEditor.GUI.Docking
         {
             if (IsSingleFloatingWindow)
                 return base.OnMouseDown(location, button);
-            MouseDownWindow = GetTabAtPos(location, out IsMouseDownOverCross);
+            MouseOverWindow = GetTabAtPos(location, out IsMouseDownOverCross);
+            MouseDownWindow = MouseOverWindow;
             MouseStartPosition = location;
 
             // Check buttons
@@ -427,7 +441,7 @@ namespace FlaxEditor.GUI.Docking
                 return base.OnMouseUp(location, button);
 
             // Check tabs under mouse position at the beginning and at the end
-            var tab = GetTabAtPos(location, out var overCross);
+            MouseOverWindow = GetTabAtPos(location, out var overCross);
 
             // Check buttons
             if (button == MouseButton.Left && IsMouseLeftButtonDown)
@@ -436,8 +450,8 @@ namespace FlaxEditor.GUI.Docking
                 IsMouseLeftButtonDown = false;
 
                 // Check if tabs are the same and cross was pressed
-                if (tab != null && tab == MouseDownWindow && IsMouseDownOverCross && overCross)
-                    tab.Close(ClosingReason.User);
+                if (MouseOverWindow != null && MouseOverWindow == MouseDownWindow && IsMouseDownOverCross && overCross)
+                    MouseOverWindow.Close(ClosingReason.User);
                 MouseDownWindow = null;
             }
             else if (button == MouseButton.Right && IsMouseRightButtonDown)
@@ -445,20 +459,16 @@ namespace FlaxEditor.GUI.Docking
                 // Clear flag
                 IsMouseRightButtonDown = false;
 
-                if (tab != null)
-                {
-                    ShowContextMenu(tab, ref location);
-                }
+                if (MouseOverWindow != null)
+                    ShowContextMenu(MouseOverWindow, ref location);
             }
             else if (button == MouseButton.Middle && IsMouseMiddleButtonDown)
             {
                 // Clear flag
                 IsMouseMiddleButtonDown = false;
 
-                if (tab != null)
-                {
-                    tab.Close(ClosingReason.User);
-                }
+                if (MouseOverWindow != null)
+                    MouseOverWindow.Close(ClosingReason.User);
             }
 
             return base.OnMouseUp(location, button);
@@ -468,6 +478,7 @@ namespace FlaxEditor.GUI.Docking
         public override void OnMouseMove(Float2 location)
         {
             MousePosition = location;
+            MouseOverWindow = GetTabAtPos(location, out _);
             if (IsMouseLeftButtonDown && !IsSingleFloatingWindow)
             {
                 // Check if mouse is outside the header
@@ -535,8 +546,9 @@ namespace FlaxEditor.GUI.Docking
                 // Check tabs under mouse position
                 if (!IsMouseDownOverCross && MouseDownWindow != null)
                     StartDrag(MouseDownWindow);
-                MouseDownWindow = null;
             }
+            MouseDownWindow = null;
+            MouseOverWindow = null;
             IsMouseRightButtonDown = false;
             IsMouseMiddleButtonDown = false;
             MousePosition = Float2.Minimum;

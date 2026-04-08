@@ -1526,11 +1526,14 @@ namespace FlaxEditor
 
         internal bool Internal_HasGameViewportFocus()
         {
-            if (Windows.GameWin != null && Windows.GameWin.ContainsFocus)
+            var gameWin = Windows.GameWin;
+            if (gameWin != null && gameWin.ContainsFocus)
             {
-                var win = Windows.GameWin.Root;
+                var win = gameWin.Root;
                 if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
                 {
+                    if (gameWin.Parent is GUI.Docking.DockPanelProxy dockPanel && dockPanel.IsUsingDockPanel)
+                        return false;
                     if (StateMachine.IsPlayMode && StateMachine.PlayingState.IsPaused)
                         return false;
                     return true;

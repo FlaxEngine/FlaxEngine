@@ -41,6 +41,7 @@ namespace FlaxEditor.GUI.Docking
         private WindowDragHelper(FloatWindowDockPanel toMove, Window dragSourceWindow)
         {
             IsDragActive = true;
+            toMove.IsDragging = true;
             _toMove = toMove;
             _toSet = DockState.Float;
             var window = toMove.Window.Window;
@@ -107,6 +108,8 @@ namespace FlaxEditor.GUI.Docking
         public void Dispose()
         {
             IsDragActive = false;
+            if (_toMove != null)
+                _toMove.IsDragging = false;
             var window = _toMove?.Window?.Window;
 
             // Unbind events
