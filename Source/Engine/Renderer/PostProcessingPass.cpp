@@ -303,7 +303,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
         data.GrainAmount = settings.CameraArtifacts.GrainAmount;
         data.GrainParticleSize = Math::Max(0.0001f, settings.CameraArtifacts.GrainParticleSize);
         data.GrainTime = time * 0.5f * settings.CameraArtifacts.GrainSpeed;
-        data.ChromaticDistortion = Math::Saturate(settings.CameraArtifacts.ChromaticDistortion);
+        data.ChromaticDistortion = Math::Saturate(settings.CameraArtifacts.ChromaticDistortion * (float)output->Width() / 1080.0f); // Rescale based on reference 1080p resolution
         data.ScreenFadeColor = settings.CameraArtifacts.ScreenFadeColor;
     }
     else
