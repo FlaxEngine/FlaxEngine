@@ -71,49 +71,8 @@ namespace Serialization
         return !otherObj || v != *(LocalizedString*)otherObj;
     }
 
-    inline void Serialize(ISerializable::SerializeStream& stream, const LocalizedString& v, const void* otherObj)
-    {
-        if (v.Id.IsEmpty())
-        {
-            stream.String(v.Value);
-        }
-        else
-        {
-            stream.StartObject();
-            stream.JKEY("Id");
-            stream.String(v.Id);
-            if (v.Value.HasChars())
-            {
-                stream.JKEY("Value");
-                stream.String(v.Value);
-            }
-            stream.EndObject();
-        }
-    }
-
-    inline void Deserialize(ISerializable::DeserializeStream& stream, LocalizedString& v, ISerializeModifier* modifier)
-    {
-        if (stream.IsString())
-        {
-            v.Id = String::Empty;
-            v.Value = stream.GetText();
-        }
-        else if (stream.IsObject())
-        {
-            auto e = SERIALIZE_FIND_MEMBER(stream, "Id");
-            if (e != stream.MemberEnd())
-                v.Id.SetUTF8(e->value.GetString(), e->value.GetStringLength());
-            e = SERIALIZE_FIND_MEMBER(stream, "Value");
-            if (e != stream.MemberEnd())
-                v.Value.SetUTF8(e->value.GetString(), e->value.GetStringLength());
-            else if (v.Id.HasChars())
-                v.Value.Clear();
-        }
-        else
-        {
-            v = LocalizedString();
-        }
-    }
+    FLAXENGINE_API void Serialize(ISerializable::SerializeStream& stream, const LocalizedString& v, const void* otherObj);
+    FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, LocalizedString& v, ISerializeModifier* modifier);
 }
 
 DEFINE_DEFAULT_FORMATTING_VIA_TO_STRING(LocalizedString);
