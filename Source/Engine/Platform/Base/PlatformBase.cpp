@@ -609,6 +609,11 @@ ScreenOrientationType PlatformBase::GetScreenOrientationType()
     return ScreenOrientationType::Unknown;
 }
 
+String PlatformBase::GetUserLanguage()
+{
+    return Platform::GetUserLocaleName();
+}
+
 String PlatformBase::GetUserName()
 {
     return Users.Count() != 0 ? Users[0]->GetName() : String::Empty;

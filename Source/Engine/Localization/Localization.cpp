@@ -169,6 +169,50 @@ String LocalizedString::ToStringPlural(int32 n) const
     return Localization::GetPluralString(Id, n, Value);
 }
 
+void Serialization::Serialize(ISerializable::SerializeStream& stream, const LocalizedString& v, const void* otherObj)
+{
+    if (v.Id.IsEmpty())
+    {
+        stream.String(v.Value);
+    }
+    else
+    {
+        stream.StartObject();
+        stream.JKEY("Id");
+        stream.String(v.Id);
+        if (v.Value.HasChars())
+        {
+            stream.JKEY("Value");
+            stream.String(v.Value);
+        }
+        stream.EndObject();
+    }
+}
+
+void Serialization::Deserialize(ISerializable::DeserializeStream& stream, LocalizedString& v, ISerializeModifier* modifier)
+{
+    if (stream.IsString())
+    {
+        v.Id = String::Empty;
+        v.Value = stream.GetText();
+    }
+    else if (stream.IsObject())
+    {
+        auto e = SERIALIZE_FIND_MEMBER(stream, "Id");
+        if (e != stream.MemberEnd())
+            v.Id.SetUTF8(e->value.GetString(), e->value.GetStringLength());
+        e = SERIALIZE_FIND_MEMBER(stream, "Value");
+        if (e != stream.MemberEnd())
+            v.Value.SetUTF8(e->value.GetString(), e->value.GetStringLength());
+        else if (v.Id.HasChars())
+            v.Value.Clear();
+    }
+    else
+    {
+        v = LocalizedString();
+    }
+}
+
 void LocalizationService::OnLocalizationChanged()
 {
     PROFILE_CPU();
@@ -288,7 +332,8 @@ bool LocalizationService::Init()
     PROFILE_MEM(Localization);
 
     // Use system language as default
-    CurrentLanguage = CurrentCulture = CultureInfo(Platform::GetUserLocaleName());
+    CurrentLanguage = CultureInfo(Platform::GetUserLanguage());
+    CurrentCulture = CultureInfo(Platform::GetUserLocaleName());
 
     // Setup localization
     Instance.OnLocalizationChanged();
@@ -349,4 +394,17 @@ String Localization::GetPluralString(const String& id, int32 n, const String& fa
     CHECK_RETURN(n >= 1, String::Format(fallback.GetText(), n));
     const String& format = Instance.Get(id, n - 1, fallback);
     return String::Format(format.GetText(), n);
+}
+
+Array<String> Localization::GetLocales()
+{
+    Array<String> result;
+    auto& settings = *LocalizationSettings::Get();
+    for (auto& e : settings.LocalizedStringTables)
+    {
+        auto table = e.Get();
+        if (table && !table->WaitForLoaded())
+            result.AddUnique(table->Locale);
+    }
+    return result;
 }

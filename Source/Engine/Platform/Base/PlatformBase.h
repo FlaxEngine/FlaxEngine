@@ -625,7 +625,12 @@ public:
     API_PROPERTY() static ScreenOrientationType GetScreenOrientationType();
 
     /// <summary>
-    /// Gets the current locale culture (eg. "pl-PL" or "en-US").
+    /// Gets the current user display language used to localize texts. Returns name of the culture (eg. "pl-PL" or "en-US"), use CultureInfo for display name of the language.
+    /// </summary>
+    API_PROPERTY() static String GetUserLanguage();
+
+    /// <summary>
+    /// Gets the current user locale culture used to localize numbers, currency and dates. Returns name of the culture (eg. "pl-PL" or "en-US"), use CultureInfo for display name of the language.
     /// </summary>
     API_PROPERTY() static String GetUserLocaleName() = delete;
 

@@ -62,7 +62,7 @@ void FlaxDbgHelpUnlock()
 
 namespace
 {
-    String UserLocale, ComputerName, WindowsName;
+    String UserLanguage, UserLocale, ComputerName, WindowsName;
     HANDLE EngineMutex = nullptr;
     Rectangle VirtualScreenBounds(0.0f, 0.0f, 0.0f, 0.0f);
     int32 VersionMajor = 0;
@@ -774,11 +774,17 @@ bool WindowsPlatform::Init()
 
     DWORD tmp;
     Char buffer[256];
+    ULONG bufferSize = ARRAY_COUNT(buffer), languagesCount = 0;
 
-    // Get user locale string
-    if (GetUserDefaultLocaleName(buffer, LOCALE_NAME_MAX_LENGTH))
+    // Get user locale strings
+    if (GetUserDefaultLocaleName(buffer, (int)bufferSize))
     {
         UserLocale = String(buffer);
+    }
+    if (GetUserPreferredUILanguages(MUI_LANGUAGE_NAME, &languagesCount, buffer, &bufferSize))
+    {
+        // Get the first language
+        UserLanguage = String(buffer);
     }
 
     // Get computer name string
@@ -950,6 +956,11 @@ int32 WindowsPlatform::GetDpi()
     return SystemDpi;
 }
 #endif
+
+String WindowsPlatform::GetUserLanguage()
+{
+    return UserLanguage.HasChars() ? UserLanguage : UserLocale;
+}
 
 String WindowsPlatform::GetUserLocaleName()
 {

@@ -313,6 +313,12 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
         Actor* oldTargetActor = instance.TargetActor;
         if (!oldTargetActor || EnumHasAnyFlags(oldTargetActor->Flags, ObjectFlags::WasMarkedToDelete))
             continue;
+
+        // Get scene objects in the prefab instance (use old target actor to maintain actors order matching the prefab data)
+        sceneObjects->Clear();
+        SceneQuery::GetAllSerializableSceneObjects(instance.TargetActor, *sceneObjects.Value);
+
+        // Fixup prefab root when it was changed
         Actor* newTargetActor = FindActorWithPrefabObjectId(instance.TargetActor, defaultInstance->GetID());
         if (!newTargetActor)
         {
@@ -321,14 +327,16 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
         else if (oldTargetActor != newTargetActor)
         {
             LOG(Info, "Changing root object of prefab instance from {0} to {1}", oldTargetActor->ToString(), newTargetActor->ToString());
-            newTargetActor->SetParent(oldTargetActor->GetParent(), true, false);
+            Actor* oldTargetParent = oldTargetActor->GetParent();
+            if (newTargetActor == oldTargetParent || newTargetActor->GetParent() == oldTargetActor)
+            {
+                // Direct reparenting needs additional step to prevent loop in a hierarchy
+                oldTargetActor->SetParent(nullptr, true, false);
+            }
+            newTargetActor->SetParent(oldTargetParent, true, false);
             oldTargetActor->SetParent(newTargetActor, true, false);
             instance.TargetActor = newTargetActor;
         }
-
-        // Get scene objects in the prefab instance
-        sceneObjects->Clear();
-        SceneQuery::GetAllSerializableSceneObjects(instance.TargetActor, *sceneObjects.Value);
 
         int32 existingObjectsCount = sceneObjects->Count();
         modifier->IdsMapping.EnsureCapacity((existingObjectsCount + newPrefabObjectIds.Count()));
@@ -350,7 +358,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
                     continue;
                 }
 
-                modifier.Value->IdsMapping[obj->GetPrefabObjectID()] = obj->GetSceneObjectId();
+                modifier.Value->IdsMapping[obj->GetPrefabObjectID()] = obj->GetID();
             }
         }
 
@@ -820,6 +828,8 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
     PROFILE_CPU_NAMED("Prefab.Apply");
     ScopeLock lock(Locker);
     const auto prefabId = GetID();
+    const auto oldRootId = GetRootObjectId();
+    const auto newRootId = targetActor->GetPrefabObjectID();
 
     // Gather all scene objects in target instance (reused later)
     CollectionPoolCache<ActorsCache::SceneObjectsListType>::ScopeCache targetObjects = ActorsCache::SceneObjectsListCache.Get();
@@ -1121,15 +1131,14 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
 
         // Find the prefab root object (the root is usually serialized first)
         auto root = dynamic_cast<Actor*>(sceneObjects.Value->At(0));
-        if (root && root->_parent)
+        int32 targetActorIdx = oldObjectsIds.Find(newRootId);
+        if (newRootId != oldRootId && targetActorIdx > 0 && targetActorIdx < sceneObjects.Value->Count() && dynamic_cast<Actor*>(sceneObjects.Value->At(targetActorIdx)))
         {
             // When changing prefab root the target actor is a new root so try to find it in the objects
-            int32 targetActorIdx = oldObjectsIds.Find(targetActor->GetPrefabObjectID());
-            if (targetActorIdx > 0 && targetActorIdx < sceneObjects.Value->Count() && dynamic_cast<Actor*>(sceneObjects.Value->At(targetActorIdx)))
-            {
-                root = dynamic_cast<Actor*>(sceneObjects.Value->At(targetActorIdx));
-            }
-
+            root = (Actor*)sceneObjects.Value->At(targetActorIdx);
+        }
+        else if (root && root->_parent)
+        {
             // Try using the first actor without a parent as a new root
             for (int32 i = 1; i < sceneObjects->Count(); i++)
             {
@@ -1141,13 +1150,13 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
                     break;
                 }
             }
-
+        }
+        if (root && root->_parent)
+        {
             // Keep root unlinked
-            if (root->_parent)
-            {
-                root->_parent->Children.Remove(root);
-                root->_parent = nullptr;
-            }
+            root->_parent->Children.Remove(root);
+            root->_parent = nullptr;
+            root->OnParentChanged();
         }
         if (!root)
         {

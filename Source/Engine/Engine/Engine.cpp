@@ -608,7 +608,7 @@ void EngineImpl::InitLog()
 
     // Log product info
     LOG(Info, "Product: {0}, Company: {1}", Globals::ProductName, Globals::CompanyName);
-    LOG(Info, "Current culture: {0}", Platform::GetUserLocaleName());
+    LOG(Info, "Current language: {}, culture: {}", Platform::GetUserLanguage(), Platform::GetUserLocaleName());
     LOG(Info, "Command line: {0}", CommandLine);
     LOG(Info, "Base folder: {0}", Globals::StartupFolder);
     LOG(Info, "Binaries folder: {0}", Globals::BinariesFolder);

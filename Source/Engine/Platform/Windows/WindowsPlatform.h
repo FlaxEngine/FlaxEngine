@@ -68,6 +68,7 @@ public:
 #if !PLATFORM_SDL
     static int32 GetDpi();
 #endif
+    static String GetUserLanguage();
     static String GetUserLocaleName();
     static String GetComputerName();
     static bool GetHasFocus();

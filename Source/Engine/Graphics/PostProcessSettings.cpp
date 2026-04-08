@@ -220,7 +220,11 @@ void PostFxMaterialsSettings::BlendWith(PostFxMaterialsSettings& other, float we
         while (Materials.Count() != POST_PROCESS_SETTINGS_MAX_MATERIALS && indexSrc < other.Materials.Count())
         {
             if (!Materials.Contains(materialsSrc[indexSrc].GetID()))
-                Materials.Add(materialsSrc[indexSrc]);
+            {
+                auto& ref = materialsSrc[indexSrc];
+                ref.Get(); // Load asset
+                Materials.Add(ref);
+            }
             indexSrc++;
         }
     }
