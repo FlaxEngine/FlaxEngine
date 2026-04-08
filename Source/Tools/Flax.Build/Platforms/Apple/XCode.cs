@@ -50,7 +50,12 @@ namespace Flax.Build.Platforms
                     {
                         versionText = versionParts[1].Trim();
                         if (Version.TryParse(versionText, out var v))
+                        {
                             Version = v;
+                            var minVersion = new Version(16, 4);
+                            if (Version < minVersion)
+                                Log.Error(string.Format("Unsupported XCode SDK version {0}. Minimum supported is {1}.", Version, minVersion));
+                        }
                     }
                 }
             }
