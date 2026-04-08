@@ -161,7 +161,7 @@ namespace FlaxEditor.Modules
         public ContentProxy GetProxy(string extension)
         {
             if (string.IsNullOrEmpty(extension))
-                throw new ArgumentNullException();
+                return null;
             extension = StringUtils.NormalizeExtension(extension);
             for (int i = 0; i < Proxy.Count; i++)
             {
