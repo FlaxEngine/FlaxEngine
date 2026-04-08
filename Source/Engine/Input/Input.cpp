@@ -89,17 +89,6 @@ Delegate<StringView> Input::AxisValueChanged;
 Array<ActionConfig> Input::ActionMappings;
 Array<AxisConfig> Input::AxisMappings;
 
-void ClearWindowInputs(Window* window)
-{
-    WindowsManager::WindowsLocker.Lock();
-    for (int32 i = InputEvents.Count() - 1; i >= 0; i--)
-    {
-        if (InputEvents[i].Target == window)
-            InputEvents.RemoveAtKeepOrder(i);
-    }
-    WindowsManager::WindowsLocker.Unlock();
-}
-
 void InputSettings::Apply()
 {
     PROFILE_MEM(Input);
@@ -934,9 +923,10 @@ void InputService::Update()
         Input::GamepadsChanged();
     }
 
+    WindowsManager::WindowsLocker.Lock();
+
     // Pick the first focused window for input events
     Window* defaultWindow = nullptr;
-    WindowsManager::WindowsLocker.Lock();
     for (auto window : WindowsManager::Windows)
     {
         if (window->IsFocused() && window->GetSettings().AllowInput)
@@ -945,6 +935,15 @@ void InputService::Update()
             break;
         }
     }
+
+    // Remove events from destroyed windows
+    for (int32 i = InputEvents.Count() - 1; i >= 0; i--)
+    {
+        const auto& e = InputEvents[i];
+        if (e.Target && !WindowsManager::Windows.Contains(e.Target))
+            InputEvents.RemoveAtKeepOrder(i);
+    }
+
     WindowsManager::WindowsLocker.Unlock();
 
     // Send input events for the focused window

@@ -181,13 +181,7 @@ WindowsWindow::~WindowsWindow()
 {
     if (HasHWND())
     {
-        // Destroy window
-        if (DestroyWindow(_handle) == 0)
-        {
-            LOG(Warning, "DestroyWindow failed! Error: {0:#x}", GetLastError());
-        }
-
-        // Clear
+        DestroyWindow(_handle);
         _handle = nullptr;
         _visible = false;
     }
