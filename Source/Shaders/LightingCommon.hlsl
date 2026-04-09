@@ -16,6 +16,11 @@
 #define LIGHTING_NO_SPECULAR 0
 #endif
 
+// Disables shadows
+#ifndef LIGHTING_NO_SHADOW
+#define LIGHTING_NO_SHADOW 0
+#endif
+
 // Structure that contains information about light
 struct LightData
 {

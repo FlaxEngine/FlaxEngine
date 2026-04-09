@@ -506,6 +506,8 @@ void Material::InitCompilationOptions(ShaderCompilationOptions& options)
     options.Macros.Add({ "USE_REFLECTIONS", Numbers[EnumHasAnyFlags(info.FeaturesFlags, MaterialFeaturesFlags::DisableReflections) ? 0 : 1] });
     if (!(info.FeaturesFlags & MaterialFeaturesFlags::DisableReflections) && EnumHasAnyFlags(info.FeaturesFlags, MaterialFeaturesFlags::ScreenSpaceReflections))
         options.Macros.Add({ "MATERIAL_REFLECTIONS", Numbers[1] });
+    if (useForward && EnumHasAllFlags(info.FeaturesFlags, MaterialFeaturesFlags::DisableShadows))
+        options.Macros.Add({ "LIGHTING_NO_SHADOW", Numbers[1] });
     options.Macros.Add({ "USE_FOG", Numbers[EnumHasAnyFlags(info.FeaturesFlags, MaterialFeaturesFlags::DisableFog) ? 0 : 1] });
     if (useForward)
     {

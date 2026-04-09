@@ -286,6 +286,11 @@ API_ENUM(Attributes="Flags") enum class MaterialFeaturesFlags : uint32
     /// The flag used to enable sampling Global Illumination in material (eg. light probes or volumetric lightmap). The Forward Pass materials option.
     /// </summary>
     GlobalIllumination = 1 << 11,
+
+    /// <summary>
+    /// The flag used to disable shadow maps sampling when shading object with a light. The Forward Pass materials option.
+    /// </summary>
+    DisableShadows = 1 << 12,
 };
 
 DECLARE_ENUM_OPERATORS(MaterialFeaturesFlags);

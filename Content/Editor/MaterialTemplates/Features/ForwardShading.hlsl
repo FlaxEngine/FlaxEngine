@@ -88,8 +88,12 @@ void PS_Forward(
 	gBuffer.ShadingModel = MATERIAL_SHADING_MODEL;
 
 	// Calculate lighting from a single directional light
+#if LIGHTING_NO_SHADOW
+	float4 shadowMask = (float4)1;
+#else
 	ShadowSample shadow = SampleDirectionalLightShadow(DirectionalLight, ShadowsBuffer, ShadowMap, gBuffer);
 	float4 shadowMask = GetShadowMask(shadow);
+#endif
 	float4 light = GetLighting(ViewPos, DirectionalLight, gBuffer, shadowMask, false, false);
 
 	// Calculate lighting from sky light
