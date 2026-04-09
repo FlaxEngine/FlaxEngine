@@ -1175,6 +1175,8 @@ void ScenePhysX::UpdateVehicles(float dt)
             state.SteerAngle = RadiansToDegrees * perWheel.steerAngle;
             state.RotationAngle = -RadiansToDegrees * drive->mWheelsDynData.getWheelRotationAngle(j);
             state.SuspensionOffset = perWheel.suspJounce;
+            state.LongitudinalSlip = perWheel.longitudinalSlip;
+            state.LateralSlip = perWheel.lateralSlip;
 #if USE_EDITOR
             state.SuspensionTraceStart = P2C(perWheel.suspLineStart) + Origin;
             state.SuspensionTraceEnd = P2C(perWheel.suspLineStart + perWheel.suspLineDir * perWheel.suspLineLength) + Origin;
