@@ -16,8 +16,15 @@
 /// <summary>
 /// The Web platform implementation and application management utilities.
 /// </summary>
+API_CLASS(Static, Tag="NoTypeInitializer")
 class FLAXENGINE_API WebPlatform : public UnixPlatform
 {
+public:
+    // Gets user agent name string that can be used to identify browser type and version.
+    API_PROPERTY() static String GetUserAgent();
+    // Gets platform detected from the user agent provided by the browser. It's not guaranteed to be correct as it relies on the info which can be spoofed.
+    API_PROPERTY() static PlatformType GetUserAgentPlatform();
+
 public:
     // [UnixPlatform]
     FORCE_INLINE static void MemoryBarrier()

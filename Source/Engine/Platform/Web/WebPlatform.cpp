@@ -32,7 +32,15 @@ namespace
 {
     CPUInfo Cpu;
     double DateStart = emscripten_get_now();
+    String UserAgent;
 };
+
+EM_JS(char*, getUserAgent, (), {
+    var userAgent = typeof navigator !== 'undefined' && navigator.userAgent;
+    if (!userAgent)
+        return null;
+    return stringToNewUTF8(userAgent);
+    })
 
 void WebGame::InitMainWindowSettings(CreateWindowSettings& settings)
 {
@@ -111,9 +119,34 @@ void WebPlatform::Free(void* ptr)
 
 #endif
 
+String WebPlatform::GetUserAgent()
+{
+    return UserAgent;
+}
+
+PlatformType WebPlatform::GetUserAgentPlatform()
+{
+    if (UserAgent.Contains(TEXT("Windows"), StringSearchCase::IgnoreCase))
+        return PlatformType::Windows;
+    if (UserAgent.Contains(TEXT("Mac"), StringSearchCase::IgnoreCase))
+        return PlatformType::Mac;
+    if (UserAgent.Contains(TEXT("Android"), StringSearchCase::IgnoreCase))
+        return PlatformType::Android;
+    if (UserAgent.Contains(TEXT("iPhone"), StringSearchCase::IgnoreCase) ||
+        UserAgent.Contains(TEXT("iPad"), StringSearchCase::IgnoreCase) ||
+        UserAgent.Contains(TEXT("iPod"), StringSearchCase::IgnoreCase))
+        return PlatformType::iOS;
+    if (UserAgent.Contains(TEXT("Linux"), StringSearchCase::IgnoreCase) ||
+        UserAgent.Contains(TEXT("CrOS"), StringSearchCase::IgnoreCase) ||
+        UserAgent.Contains(TEXT("BSD"), StringSearchCase::IgnoreCase) ||
+        UserAgent.Contains(TEXT("X11"), StringSearchCase::IgnoreCase))
+        return PlatformType::Linux;
+    return PlatformType::Web;
+}
+
 String WebPlatform::GetSystemName()
 {
-    return TEXT("Browser");
+    return TEXT("Browser ") + UserAgent;
 }
 
 Version WebPlatform::GetSystemVersion()
@@ -288,6 +321,11 @@ bool WebPlatform::Init()
     Cpu.LogicalProcessorCount = Cpu.ProcessorCoreCount;
     Cpu.ClockSpeed = GetClockFrequency();
 
+    // Cache browser information
+    char* userAgent = getUserAgent();
+    UserAgent = String(userAgent);
+    free(userAgent);
+
     return false;
 }
 
@@ -307,6 +345,7 @@ void WebPlatform::LogInfo()
 #else
     LOG(Info, "Threading: disabled");
 #endif
+    LOG(Info, "Browser: {}, platform: {}", UserAgent, ToString(GetUserAgentPlatform()));
 }
 
 void WebPlatform::Tick()
