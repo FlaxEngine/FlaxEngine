@@ -192,6 +192,12 @@ public:
     API_FIELD(Attributes="NoSerialize, HideInEditor")
     ScriptingObjectReference<SceneRenderTask> CustomViewRenderTask;
 
+    /// <summary>
+    /// Toggles particles spawning functionality (for all emitters) at runtime.
+    /// </summary>
+    API_FIELD(Attributes="NoSerialize, HideInEditor")
+    bool CanSpawn = true;
+
 public:
     /// <summary>
     /// The particles simulation update mode. Defines how to update particles emitter.

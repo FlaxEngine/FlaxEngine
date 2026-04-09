@@ -1702,7 +1702,7 @@ void ParticlesSystem::Job(int32 index)
         // Calculate new time position
         const float startTime = (float)track.AsEmitter.StartFrame / fps;
         const float durationTime = (float)track.AsEmitter.DurationFrames / fps;
-        const bool canSpawn = startTime <= instance.Time && instance.Time <= startTime + durationTime;
+        const bool canSpawn = startTime <= instance.Time && instance.Time <= startTime + durationTime && effect->CanSpawn;
 
         // Update instance data
         data.Sync(effect->Instance, particleSystem, track.AsEmitter.Index);
