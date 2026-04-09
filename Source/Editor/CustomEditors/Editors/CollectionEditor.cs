@@ -594,9 +594,12 @@ namespace FlaxEditor.CustomEditors.Editors
                 panel.Panel.BackgroundColor = _background;
                 var elementType = ElementType;
                 var bindingAttr = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public;
+
+                // Some hardcoded types use single editor thus can be inlined inside the collection editor without grouping for more compact layout
                 bool single = elementType.IsPrimitive ||
                               elementType.Equals(new ScriptType(typeof(string))) ||
                               elementType.IsEnum ||
+                              new ScriptType(typeof(FlaxEngine.SceneObject)).IsAssignableFrom(elementType) ||
                               (elementType.GetFields(bindingAttr).Length == 1 && elementType.GetProperties(bindingAttr).Length == 0) ||
                               (elementType.GetProperties(bindingAttr).Length == 1 && elementType.GetFields(bindingAttr).Length == 0) ||
                               elementType.Equals(new ScriptType(typeof(JsonAsset))) ||
