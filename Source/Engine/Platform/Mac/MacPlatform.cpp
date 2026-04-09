@@ -446,10 +446,10 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
     String exePath = settings.FileName;
 	{
         NSString* processPath = (NSString*)AppleUtils::ToString(exePath);
-        if (![[NSFileManager defaultManager] fileExistsAtPath: processPath])
+        if (![[NSFileManager defaultManager] fileExistsAtPath:processPath])
         {
             NSString* appName = [[processPath lastPathComponent] stringByDeletingPathExtension];
-            processPath = [[NSWorkspace sharedWorkspace] fullPathForApplication:appName];
+			processPath = [[[NSWorkspace sharedWorkspace] URLForApplicationWithBundleIdentifier:appName] path];
         }
         if ([[NSFileManager defaultManager] fileExistsAtPath: processPath])
         {

@@ -18,7 +18,7 @@
 #include "Engine/Input/Mouse.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/WindowsManager.h"
-#if PLATFORM_LINUX
+#if PLATFORM_LINUX || PLATFORM_MAC
 #define COMPILE_WITH_TEXTURE_TOOL 1 // FIXME
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #endif
@@ -38,6 +38,7 @@
 #include "Engine/Platform/Linux/IncludeX11.h"
 #elif PLATFORM_MAC
 #include <Cocoa/Cocoa.h>
+#include <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 #elif PLATFORM_WEB
 #else
 static_assert(false, "Unsupported Platform");
@@ -226,7 +227,7 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
         NSWindow* win = ((NSWindow*)_handle);
         NSView* view = win.contentView;
         [win unregisterDraggedTypes];
-        [win registerForDraggedTypes:@[NSPasteboardTypeFileURL, NSPasteboardTypeString, (NSString*)kUTTypeFileURL, (NSString*)kUTTypeUTF8PlainText]];
+        [win registerForDraggedTypes:@[NSPasteboardTypeFileURL, NSPasteboardTypeString, UTTypeFileURL.identifier, UTTypeUTF8PlainText.identifier]];
 #endif
     }
 #endif
@@ -243,7 +244,7 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
         SDL_StartTextInput(_window);
 #endif
 
-#if PLATFORM_LINUX && COMPILE_WITH_TEXTURE_TOOL
+#if (PLATFORM_LINUX || PLATFORM_MAC) && COMPILE_WITH_TEXTURE_TOOL
     // Ensure windows other than the main window have some kind of icon
     static SDL_Surface* surface = nullptr;
     static Array<Color32> colorData;
@@ -294,8 +295,13 @@ SDLWindow::~SDLWindow()
 
     if (Input::Mouse != nullptr && Input::Mouse->IsRelative(this))
         Input::Mouse->SetRelativeMode(false, this);
-    
-    SDL_StopTextInput(_window);
+
+    // The text input events seems to be controlled globally on macOS,
+    // calling this for closing window seems to remove keyboard focus from other windows...
+#if !PLATFORM_MAC
+    if (_settings.AllowInput && SDL_TextInputActive(_window))
+        SDL_StopTextInput(_window);
+#endif
     SDL_DestroyWindow(_window);
 
     _window = nullptr;
@@ -346,6 +352,20 @@ SDL_HitTestResult OnWindowHitTest(SDL_Window* win, const SDL_Point* area, void* 
     SDLWindow* window = static_cast<SDLWindow*>(data);
     const Float2 point(static_cast<float>(area->x), static_cast<float>(area->y));
     WindowHitCodes hit = window->OnWindowHit(point);
+
+#if PLATFORM_MAC
+    // HACK: Motion events are missing over special areas, try to track the mouse with hit test
+    Float2 mousePositionScreen;
+    if (hit != WindowHitCodes::Client && SDL_GetGlobalMouseState(&mousePositionScreen.X, &mousePositionScreen.Y) == 0)
+    {
+        const Float2 hitPositionScreen = window->ClientToScreen(point);
+
+        // The hit tests does not always follow mouse, so only report tests close to mouse
+        if (Float2::Distance(hitPositionScreen, mousePositionScreen) <= 3)
+            Input::Mouse->OnMouseMove(hitPositionScreen, window);
+    }
+#endif
+
     switch (hit)
     {
     case WindowHitCodes::Caption:

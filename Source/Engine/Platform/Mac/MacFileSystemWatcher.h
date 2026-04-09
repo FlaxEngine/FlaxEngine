@@ -3,18 +3,20 @@
 #pragma once
 
 #if PLATFORM_MAC
+
 #include "Engine/Platform/Base/FileSystemWatcherBase.h"
-
 #include <CoreServices/CoreServices.h>
-
 
 /// <summary>
 /// Mac platform implementation of the file system watching object.
 /// </summary>
 class FLAXENGINE_API MacFileSystemWatcher : public FileSystemWatcherBase
 {
-public:
+private:
+    FSEventStreamRef _eventStream;
+    dispatch_queue_t _queue;
 
+public:
     /// <summary>
     /// Initializes a new instance of the <see cref="MacFileSystemWatcher"/> class.
     /// </summary>
@@ -26,14 +28,6 @@ public:
     /// Finalizes an instance of the <see cref="MacFileSystemWatcher"/> class.
     /// </summary>
     ~MacFileSystemWatcher();
-
-public:
-
-
-    
-private:
-
-    FSEventStreamRef	EventStream;
-    bool                IsRunning;
 };
+
 #endif
