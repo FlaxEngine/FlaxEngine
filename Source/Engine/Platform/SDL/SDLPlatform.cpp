@@ -12,6 +12,7 @@
 #include "Engine/Platform/WindowsManager.h"
 #include "Engine/Platform/SDL/SDLInput.h"
 #include "Engine/Engine/CommandLine.h"
+#include "Engine/Engine/Engine.h"
 
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_init.h>
@@ -199,6 +200,15 @@ void SDLPlatform::Tick()
 
 bool SDLPlatform::HandleEvent(SDL_Event& event)
 {
+    switch (event.type)
+    {
+    case SDL_EVENT_QUIT:
+    {
+        // Close request came from taskbar or macOS application menu
+        Engine::MainWindow->Close(ClosingReason::User);
+        break;
+    }
+    }
     return true;
 }
 
