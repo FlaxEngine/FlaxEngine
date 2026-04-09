@@ -109,7 +109,7 @@ bool GPUBufferWebGPU::OnInit()
     }
     else if (_desc.InitData)
     {
-        wgpuQueueWriteBuffer(_device->Queue, Buffer, 0, _desc.InitData, _desc.Size);
+        wgpuQueueWriteBuffer(_device->Queue, Buffer, 0, _desc.InitData, bufferDesc.size);
     }
 
     // Create view
