@@ -71,6 +71,7 @@ public class FlaxEditor : EngineTarget
             break;
         case TargetPlatform.Mac:
             options.OutputFolder = Path.Combine(options.WorkingDirectory, "Binaries", "Editor", "Mac", options.Configuration.ToString());
+            options.DependencyFiles.Add(Path.Combine(Globals.EngineRoot, "Source", "Logo.png"));
             break;
         default: throw new InvalidPlatformException(options.Platform.Target, "Not supported Editor platform.");
         }
