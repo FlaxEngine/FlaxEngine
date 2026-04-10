@@ -1212,18 +1212,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         // [Deprecated on 13.05.2020, expires on 13.05.2021]
         // Get input
         auto input = tryGetValue(node->GetBox(1), Value::Null);
-        const auto nodes = node->GetNodes(this);
-        if (ANIM_GRAPH_IS_VALID_PTR(input))
-        {
-            // Use input nodes
-            CopyNodes(nodes, input);
-        }
-        else
-        {
-            // Use default nodes
-            InitNodes(nodes);
-            input = nodes;
-        }
+        const auto nodes = node->GetNodes(this, input);
 
         // Fetch the settings
         const auto srcBoneIndex = (int32)node->Values[0];
@@ -2220,18 +2209,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
     {
         // Get input
         auto input = tryGetValue(node->GetBox(1), Value::Null);
-        const auto nodes = node->GetNodes(this);
-        if (ANIM_GRAPH_IS_VALID_PTR(input))
-        {
-            // Use input nodes
-            CopyNodes(nodes, input);
-        }
-        else
-        {
-            // Use default nodes
-            InitNodes(nodes);
-            input = nodes;
-        }
+        const auto nodes = node->GetNodes(this, input);
 
         // Fetch the settings
         const auto srcNodeIndex = node->Data.CopyNode.SrcNodeIndex;
@@ -2285,22 +2263,10 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         float weight = (float)tryGetValue(node->GetBox(3), node->Values[1]);
         if (nodeIndex < 0 || nodeIndex >= _skeletonNodesCount || weight < ANIM_GRAPH_BLEND_THRESHOLD)
         {
-            // Pass through the input
             value = input;
             break;
         }
-        const auto nodes = node->GetNodes(this);
-        if (ANIM_GRAPH_IS_VALID_PTR(input))
-        {
-            // Use input nodes
-            CopyNodes(nodes, input);
-        }
-        else
-        {
-            // Use default nodes
-            InitNodes(nodes);
-            input = nodes;
-        }
+        const auto nodes = node->GetNodes(this, input);
         const Vector3 target = (Vector3)tryGetValue(node->GetBox(2), Vector3::Zero);
         weight = Math::Saturate(weight);
 
@@ -2342,22 +2308,10 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         float weight = (float)tryGetValue(node->GetBox(4), node->Values[1]);
         if (nodeIndex < 0 || nodeIndex >= _skeletonNodesCount || weight < ANIM_GRAPH_BLEND_THRESHOLD)
         {
-            // Pass through the input
             value = input;
             break;
         }
-        const auto nodes = node->GetNodes(this);
-        if (ANIM_GRAPH_IS_VALID_PTR(input))
-        {
-            // Use input nodes
-            CopyNodes(nodes, input);
-        }
-        else
-        {
-            // Use default nodes
-            InitNodes(nodes);
-            input = nodes;
-        }
+        const auto nodes = node->GetNodes(this, input);
         const Vector3 target = (Vector3)tryGetValue(node->GetBox(2), Vector3::Zero);
         const Vector3 jointTarget = (Vector3)tryGetValue(node->GetBox(3), Vector3::Zero);
         const bool allowStretching = (bool)tryGetValue(node->GetBox(5), node->Values[2]);

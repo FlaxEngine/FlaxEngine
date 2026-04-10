@@ -555,11 +555,19 @@ public:
 
 public:
     /// <summary>
-    /// Gets the per-node node transformations cache (cached).
+    /// Gets the per-node node transformations (cached).
     /// </summary>
     /// <param name="executor">The Graph execution context.</param>
     /// <returns>Nodes data.</returns>
     AnimGraphImpulse* GetNodes(AnimGraphExecutor* executor);
+
+    /// <summary>
+    /// Gets the per-node node transformations (cached) and initializes the nodes.
+    /// </summary>
+    /// <param name="executor">The Graph execution context.</param>
+    /// <param name="input">The input nodes to copy. If input is invalid then reference is used to initialize the nodes.</param>
+    /// <returns>Nodes data.</returns>
+    AnimGraphImpulse* GetNodes(AnimGraphExecutor* executor, Variant& input);
 };
 
 /// <summary>

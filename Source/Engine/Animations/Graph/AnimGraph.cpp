@@ -142,6 +142,23 @@ AnimGraphImpulse* AnimGraphNode::GetNodes(AnimGraphExecutor* executor)
     return &nodes;
 }
 
+AnimGraphImpulse* AnimGraphNode::GetNodes(AnimGraphExecutor* executor, Variant& input)
+{
+    const auto nodes = GetNodes(executor);
+    if (ANIM_GRAPH_IS_VALID_PTR(input))
+    {
+        // Use input nodes
+        executor->CopyNodes(nodes, input);
+    }
+    else
+    {
+        // Use default nodes
+        executor->InitNodes(nodes);
+        input = nodes;
+    }
+    return nodes;
+}
+
 bool AnimGraph::Load(ReadStream* stream, bool loadMeta)
 {
     Version++;
