@@ -9,11 +9,11 @@
 
 Array<AssetReference<FontAsset>, HeapAllocation> Font::FallbackFonts;
 
-Font::Font(FontAsset* parentAsset, float size)
+Font::Font(FontAsset* parentAsset, float size, float MSDFSize)
     : ManagedScriptingObject(SpawnParams(Guid::New(), Font::TypeInitializer))
     , _asset(parentAsset)
     , _size(size)
-    , _characters(512)
+    , _MSDFSize(MSDFSize)
 {
     _asset->_fonts.Add(this);
 
@@ -36,14 +36,15 @@ Font::~Font()
 
 void Font::GetCharacter(Char c, FontCharacterEntry& result, bool enableFallback)
 {
+    const auto key = Pair<float, Char>(_asset->GetOptions().RasterMode == FontRasterMode::MSDF ? GetMSDFSize() : GetSize(), c);
     // Try to get the character or cache it if cannot be found
-    if (!_characters.TryGet(c, result))
+    if (!_asset->_fontCache.TryGet(key, result))
     {
         // This thread race condition may happen in editor but in game we usually do all stuff with fonts on main thread (chars caching)
         ScopeLock lock(_asset->Locker);
 
         // Handle situation when more than one thread wants to get the same character
-        if (_characters.TryGet(c, result))
+        if (_asset->_fontCache.TryGet(key, result))
             return;
 
         // Try to use fallback font if character is missing
@@ -54,7 +55,7 @@ void Font::GetCharacter(Char c, FontCharacterEntry& result, bool enableFallback)
                 FontAsset* fallbackFont = FallbackFonts.Get()[fallbackIndex].Get();
                 if (fallbackFont && fallbackFont->ContainsChar(c))
                 {
-                    fallbackFont->CreateFont(GetSize())->GetCharacter(c, result, enableFallback);
+                    fallbackFont->CreateFont(GetSize(), GetMSDFSize())->GetCharacter(c, result, enableFallback);
                     return;
                 }
             }
@@ -65,21 +66,21 @@ void Font::GetCharacter(Char c, FontCharacterEntry& result, bool enableFallback)
         ASSERT(result.Font);
 
         // Add to the dictionary
-        _characters.Add(c, result);
+        _asset->_fontCache.Add(key, result);
     }
 }
 
 int32 Font::GetKerning(Char first, Char second) const
 {
     int32 kerning = 0;
-    const uint32 key = (uint32)first << 16 | second;
-    if (_hasKerning && !_kerningTable.TryGet(key, kerning))
+    const auto key = Pair<float, uint32>(_asset->GetOptions().RasterMode == FontRasterMode::MSDF ? GetMSDFSize() : GetSize(), (uint32)first << 16 | second);
+    if (_hasKerning && !_asset->_kerningTable.TryGet(key, kerning))
     {
         // This thread race condition may happen in editor but in game we usually do all stuff with fonts on main thread (chars caching)
         ScopeLock lock(_asset->Locker);
 
         // Handle situation when more than one thread wants to get the same character
-        if (!_kerningTable.TryGet(key, kerning))
+        if (!_asset->_kerningTable.TryGet(key, kerning))
         {
             const FT_Face face = _asset->GetFTFace();
             ASSERT(face);
@@ -92,7 +93,7 @@ int32 Font::GetKerning(Char first, Char second) const
             FT_Get_Kerning(face, firstIndex, secondIndex, FT_KERNING_DEFAULT, &vec);
             kerning = vec.x >> 6;
 
-            _kerningTable.Add(key, kerning);
+            _asset->_kerningTable.Add(key, kerning);
         }
     }
 
@@ -108,17 +109,6 @@ void Font::CacheText(const StringView& text)
     }
 }
 
-void Font::Invalidate()
-{
-    ScopeLock lock(_asset->Locker);
-
-    for (auto i = _characters.Begin(); i.IsNotEnd(); ++i)
-    {
-        FontManager::Invalidate(i->Value);
-    }
-    _characters.Clear();
-}
-
 void Font::ProcessText(const StringView& text, Array<FontLineCache, InlinedAllocation<8>>& outputLines, const TextLayoutOptions& layout)
 {
     int32 textLength = text.Length();
@@ -130,6 +120,7 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache, InlinedAlloc
     FontCharacterEntry entry;
     FontCharacterEntry previous;
     float scale = layout.Scale / FontManager::FontScale;
+    scale *= _asset->GetOptions().RasterMode == FontRasterMode::MSDF ? _size / _MSDFSize : 1.0f;
     float boundsWidth = layout.Bounds.GetWidth();
     float baseLinesDistance = static_cast<float>(_height) * layout.BaseLinesGapScale * scale;
     tmpLine.Location = Float2::Zero;
@@ -336,6 +327,7 @@ int32 Font::HitTestText(const StringView& text, const Float2& location, const Te
     ProcessText(text, lines, layout);
     ASSERT(lines.HasItems());
     float scale = layout.Scale / FontManager::FontScale;
+    scale *= _asset->GetOptions().RasterMode == FontRasterMode::MSDF ? _size / _MSDFSize : 1.0f;
     float baseLinesDistance = static_cast<float>(_height) * layout.BaseLinesGapScale * scale;
 
     // Offset position to match lines origin space
@@ -424,6 +416,7 @@ Float2 Font::GetCharPosition(const StringView& text, int32 index, const TextLayo
     ProcessText(text, lines, layout);
     ASSERT(lines.HasItems());
     float scale = layout.Scale / FontManager::FontScale;
+    scale *= _asset->GetOptions().RasterMode == FontRasterMode::MSDF ? _size / _MSDFSize : 1.0f;
     float baseLinesDistance = static_cast<float>(_height) * layout.BaseLinesGapScale * scale;
 
     // Find line with that position
@@ -470,7 +463,8 @@ void Font::FlushFaceSize() const
 {
     // Set the character size
     const FT_Face face = _asset->GetFTFace();
-    const FT_Error error = FT_Set_Char_Size(face, 0, ConvertPixelTo26Dot6<FT_F26Dot6>(_size * FontManager::FontScale), DefaultDPI, DefaultDPI);
+    const float size = _asset->GetOptions().RasterMode == FontRasterMode::MSDF ? _MSDFSize : _size;
+    const FT_Error error = FT_Set_Char_Size(face, 0, ConvertPixelTo26Dot6<FT_F26Dot6>(size * FontManager::FontScale), DefaultDPI, DefaultDPI);
     if (error)
     {
         LOG_FT_ERROR(error);
@@ -482,5 +476,5 @@ void Font::FlushFaceSize() const
 
 String Font::ToString() const
 {
-    return String::Format(TEXT("Font {0} {1}"), _asset ? _asset->GetFamilyName() : String::Empty, _size);
+    return String::Format(TEXT("Font {0} {1} {2}"), _asset ? _asset->GetFamilyName() : String::Empty, _size, _MSDFSize);
 }

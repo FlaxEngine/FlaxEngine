@@ -111,6 +111,18 @@ void TextRender::SetFontSize(float value)
     }
 }
 
+float TextRender::GetFontMSDFSize() const {
+    return _MSDFSize;
+}
+
+void TextRender::SetFontMSDFSize(float value) {//MSDFTODO
+    value = Math::Clamp(value, 1.0f, 1024.0f);
+    if (_MSDFSize != value) {
+        _MSDFSize = value;
+        _isDirty = true;
+    }
+}
+
 void TextRender::SetLayoutOptions(TextLayoutOptions& value)
 {
     if (_layoutOptions != value)
@@ -171,8 +183,9 @@ void TextRender::UpdateLayout()
     const String& text = *textPtr;
 
     // Pick a font (remove DPI text scale as the text is being placed in the world)
-    auto font = Font->CreateFont(_size);
+    auto font = Font->CreateFont(_size, _MSDFSize);
     float scale = _layoutOptions.Scale / FontManager::FontScale;
+    scale *= Font->GetOptions().RasterMode == FontRasterMode::MSDF ? _size / _MSDFSize : 1.0f;
 
     // Prepare
     FontTextureAtlas* fontAtlas = nullptr;
@@ -459,6 +472,7 @@ void TextRender::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(Text, _text);
     SERIALIZE_MEMBER(Color, _color);
     SERIALIZE_MEMBER(Size, _size);
+    SERIALIZE_MEMBER(MSDFSize, _MSDFSize);
     SERIALIZE(Material);
     SERIALIZE(Font);
     SERIALIZE(ShadowsMode);
@@ -480,6 +494,7 @@ void TextRender::Deserialize(DeserializeStream& stream, ISerializeModifier* modi
     DESERIALIZE_MEMBER(Text, _text);
     DESERIALIZE_MEMBER(Color, _color);
     DESERIALIZE_MEMBER(Size, _size);
+    DESERIALIZE_MEMBER(MSDFSize, _MSDFSize);
     DESERIALIZE(Material);
     DESERIALIZE(Font);
     DESERIALIZE(ShadowsMode);

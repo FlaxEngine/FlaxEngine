@@ -39,6 +39,7 @@ private:
     Color _color;
     TextLayoutOptions _layoutOptions;
     float _size;
+    float _MSDFSize;
     int32 _sceneRenderingKey = -1;
 
     BoundingBox _localBox;
@@ -95,6 +96,17 @@ public:
     /// Sets the font characters size.
     /// </summary>
     API_PROPERTY() void SetFontSize(float value);
+
+    /// <summary>
+    /// MSDFTODO
+    /// </summary>
+    API_PROPERTY(Attributes = "EditorOrder(50), DefaultValue(24), Limit(1, 1000), EditorDisplay(\"Text\")")
+    float GetFontMSDFSize() const;
+
+    /// <summary>
+    /// MSDFTODO
+    /// </summary>
+    API_PROPERTY() void SetFontMSDFSize(float value);
 
     /// <summary>
     /// The draw passes to use for rendering this object.

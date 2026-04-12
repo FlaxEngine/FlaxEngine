@@ -1188,6 +1188,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     FontCharacterEntry previous;
     int32 kerning;
     float scale = 1.0f / FontManager::FontScale;
+    scale *= font->GetAsset()->GetOptions().RasterMode == FontRasterMode::MSDF ? font->GetSize() / font->GetMSDFSize() : 1.0f;
     const bool enableFallbackFonts = EnumHasAllFlags(Features, RenderingFeatures::FallbackFonts);
 
     // Render all characters
@@ -1303,6 +1304,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     FontCharacterEntry previous;
     int32 kerning;
     float scale = layout.Scale / FontManager::FontScale;
+    scale *= font->GetAsset()->GetOptions().RasterMode == FontRasterMode::MSDF ? font->GetSize() / font->GetMSDFSize() : 1.0f;
     const bool enableFallbackFonts = EnumHasAllFlags(Features, RenderingFeatures::FallbackFonts);
 
     // Process text to get lines
