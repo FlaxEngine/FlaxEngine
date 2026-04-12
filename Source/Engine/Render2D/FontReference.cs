@@ -16,6 +16,9 @@ namespace FlaxEngine
         private float _size;
 
         [NoSerialize]
+        private float _MSDFSize;
+
+        [NoSerialize]
         private Font _cachedFont;
 
         /// <summary>
@@ -25,6 +28,7 @@ namespace FlaxEngine
         {
             _font = null;
             _size = 30;
+            _MSDFSize = 24;
             _cachedFont = null;
         }
 
@@ -33,10 +37,12 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="font">The font.</param>
         /// <param name="size">The font size.</param>
-        public FontReference(FontAsset font, float size)
+        /// <param name="MSDFSize">The font size for MSDF atlas generation. MSDFTODO</param>
+        public FontReference(FontAsset font, float size, float MSDFSize = 24.0f)
         {
             _font = font;
             _size = size;
+            _MSDFSize = MSDFSize;
             _cachedFont = null;
         }
 
@@ -48,6 +54,7 @@ namespace FlaxEngine
         {
             _font = other._font;
             _size = other._size;
+            _MSDFSize = other._MSDFSize;
             _cachedFont = other._cachedFont;
         }
 
@@ -55,7 +62,8 @@ namespace FlaxEngine
         /// Initializes a new instance of the <see cref="FontReference"/> struct.
         /// </summary>
         /// <param name="font">The font.</param>
-        public FontReference(Font font)
+        /// <param name="MSDFSize">The font size for MSDF atlas generation.</param>
+        public FontReference(Font font, float MSDFSize = 24.0f)
         {
             if (font)
             {
@@ -67,6 +75,7 @@ namespace FlaxEngine
                 _font = null;
                 _size = 30;
             }
+            _MSDFSize = MSDFSize;
             _cachedFont = font;
         }
 
@@ -105,7 +114,24 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Gets the font object described by the structure.
+        /// The font size for MSDF atlas generation.
+        /// </summary>
+        [EditorOrder(20), Limit(4, 256), Tooltip("The font size for MSDF atlas generation.")]
+        public float MSDFSize
+        {
+            get => _MSDFSize;
+            set
+            {
+                if (_MSDFSize != value)
+                {
+                    _MSDFSize = value;
+                    _cachedFont = null;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the font object described by the structure. MSDFTODO
         /// </summary>
         /// <returns>The font or null if descriptor is invalid.</returns>
         public Font GetFont()
@@ -113,7 +139,7 @@ namespace FlaxEngine
             if (_cachedFont)
                 return _cachedFont;
             if (_font)
-                _cachedFont = _font.CreateFont(_size);
+                _cachedFont = _font.CreateFont(_size, _MSDFSize);
             return _cachedFont;
         }
 
@@ -143,7 +169,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(FontReference other)
         {
-            return !(other is null) && _font == other._font && _size == other._size;
+            return !(other is null) && _font == other._font && _size == other._size && _MSDFSize == other._MSDFSize;
         }
 
         /// <summary>
@@ -188,6 +214,7 @@ namespace FlaxEngine
             {
                 int hashCode = _font ? _font.GetHashCode() : 0;
                 hashCode = (hashCode * 397) ^ _size.GetHashCode();
+                hashCode = (hashCode * 397) ^ _MSDFSize.GetHashCode();
                 return hashCode;
             }
         }
@@ -195,7 +222,7 @@ namespace FlaxEngine
         /// <inheritdoc />
         public override string ToString()
         {
-            return string.Format("{0}, size {1}", _font ? _font.ToString() : string.Empty, _size);
+            return string.Format("{0}, size {1}, MSDFSize {2}", _font ? _font.ToString() : string.Empty, _size, _MSDFSize);
         }
     }
 }
