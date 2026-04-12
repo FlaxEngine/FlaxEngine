@@ -174,7 +174,7 @@ public:
     }
 
     /// <summary>
-    /// MSDFTODO
+    /// Gets font MSDF size.
     /// </summary>
     API_PROPERTY() FORCE_INLINE float GetMSDFSize() const {
         return _MSDFSize;

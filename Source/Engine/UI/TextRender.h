@@ -98,13 +98,13 @@ public:
     API_PROPERTY() void SetFontSize(float value);
 
     /// <summary>
-    /// MSDFTODO
+    /// Gets the font size for MSDF atlas generation.
     /// </summary>
-    API_PROPERTY(Attributes = "EditorOrder(50), DefaultValue(24), Limit(1, 1000), EditorDisplay(\"Text\")")
+    API_PROPERTY(Attributes = "EditorOrder(50), DefaultValue(32), Limit(4, 256), EditorDisplay(\"Text\")")
     float GetFontMSDFSize() const;
 
     /// <summary>
-    /// MSDFTODO
+    /// Sets the font size for MSDF atlas generation.
     /// </summary>
     API_PROPERTY() void SetFontMSDFSize(float value);
 

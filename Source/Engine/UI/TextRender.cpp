@@ -111,12 +111,14 @@ void TextRender::SetFontSize(float value)
     }
 }
 
-float TextRender::GetFontMSDFSize() const {
+float TextRender::GetFontMSDFSize() const
+{
     return _MSDFSize;
 }
 
-void TextRender::SetFontMSDFSize(float value) {//MSDFTODO
-    value = Math::Clamp(value, 1.0f, 1024.0f);
+void TextRender::SetFontMSDFSize(float value)
+{
+    value = Math::Clamp(value, 4.0f, 256.0f);
     if (_MSDFSize != value) {
         _MSDFSize = value;
         _isDirty = true;

@@ -28,7 +28,7 @@ namespace FlaxEngine
         {
             _font = null;
             _size = 30;
-            _MSDFSize = 24;
+            _MSDFSize = 32;
             _cachedFont = null;
         }
 
@@ -37,8 +37,8 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="font">The font.</param>
         /// <param name="size">The font size.</param>
-        /// <param name="MSDFSize">The font size for MSDF atlas generation. MSDFTODO</param>
-        public FontReference(FontAsset font, float size, float MSDFSize = 24.0f)
+        /// <param name="MSDFSize">The font size for MSDF atlas generation.</param>
+        public FontReference(FontAsset font, float size, float MSDFSize = 32.0f)
         {
             _font = font;
             _size = size;
@@ -63,7 +63,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="font">The font.</param>
         /// <param name="MSDFSize">The font size for MSDF atlas generation.</param>
-        public FontReference(Font font, float MSDFSize = 24.0f)
+        public FontReference(Font font, float MSDFSize = 32.0f)
         {
             if (font)
             {
@@ -131,7 +131,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Gets the font object described by the structure. MSDFTODO
+        /// Gets the font object described by the structure.
         /// </summary>
         /// <returns>The font or null if descriptor is invalid.</returns>
         public Font GetFont()
