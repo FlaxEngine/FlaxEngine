@@ -854,4 +854,55 @@ TEST_CASE("Prefabs")
         instanceB->DeleteObject();
         instanceC->DeleteObject();
     }
+    SECTION("Test Changing Prefab Root")
+    {
+        // https://github.com/FlaxEngine/FlaxEngine/issues/4034
+
+        // Create base prefab with 2 objects
+        AssetReference<Prefab> prefab = Content::CreateVirtualAsset<Prefab>();
+        REQUIRE(prefab);
+        SCOPE_EXIT{ Content::DeleteAsset(prefab); };
+        Guid id;
+        Guid::Parse("333334524c696dcfa93cabacd2a4f404", id);
+        prefab->ChangeID(id);
+        auto prefabInit = prefab->Init(Prefab::TypeName,
+            "["
+            "{"
+            "\"ID\": \"1111cfaa4bd1a53435129480e5bbdb3b\","
+            "\"TypeName\": \"FlaxEngine.Decal\","
+            "\"Name\": \"Old Root\""
+            "},"
+            "{"
+            "\"ID\": \"2222814f4d913e58eb35ab8b0b7e2eef\","
+            "\"TypeName\": \"FlaxEngine.Camera\","
+            "\"ParentID\": \"1111cfaa4bd1a53435129480e5bbdb3b\","
+            "\"Name\": \"New Root\""
+            "}"
+            "]");
+        REQUIRE(!prefabInit);
+
+        // Spawn test instances
+        ScriptingObjectReference<Actor> instance1 = PrefabManager::SpawnPrefab(prefab);
+        ScriptingObjectReference<Actor> instance2 = PrefabManager::SpawnPrefab(prefab);
+
+        // Change root
+        Actor* child = instance1->Children[0];
+        child->SetParent(nullptr);
+        instance1->SetParent(child);
+        bool applyResult = PrefabManager::ApplyAll(instance1);
+        REQUIRE(!applyResult);
+
+        // Verify scenario
+        REQUIRE(instance2);
+        REQUIRE(instance2->GetName() == TEXT("Old Root"));
+        REQUIRE(instance2->GetChildrenCount() == 0);
+        REQUIRE(instance2->GetParent());
+        REQUIRE(instance2->GetParent()->GetName() == TEXT("New Root"));
+        REQUIRE(instance2->GetParent()->GetChildrenCount() == 1);
+        REQUIRE(instance2->GetParent()->Children[0]->GetName() == TEXT("Old Root"));
+
+        // Cleanup
+        instance1->DeleteObject();
+        instance2->DeleteObject();
+    }
 }

@@ -349,7 +349,7 @@ void MeshAccelerationStructure::Add(Model* model, int32 lodIndex)
         meshData.IndexBuffer.Copy(indexStream.GetData());
         meshData.VertexBuffer.Allocate(meshData.Vertices * sizeof(Float3));
         positionStream.CopyTo(ToSpan(meshData.VertexBuffer.Get<Float3>(), meshData.Vertices));
-        meshData.Use16BitIndexBuffer = mesh.Use16BitIndexBuffer();
+        meshData.Use16BitIndexBuffer = indexStream.GetFormat() == PixelFormat::R16_UInt;
         meshData.Bounds = mesh.GetBox();
     }
 }

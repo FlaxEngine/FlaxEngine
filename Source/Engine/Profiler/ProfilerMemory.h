@@ -120,6 +120,8 @@ public:
 
         // Total physics memory.
         Physics,
+        // Cloth simulation and particles data.
+        PhysicsCloth,
 
         // Total scripting memory allocated by game.
         Scripting,

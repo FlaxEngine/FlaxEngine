@@ -213,7 +213,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 30,
                 Title = "Vector Transform",
                 Description = "Transform vector from source space to destination space",
-                Flags = NodeFlags.MaterialGraph,
+                Flags = NodeFlags.MaterialGraph | NodeFlags.FixedSize,
                 Size = new Float2(170, 40),
                 DefaultValues = new object[]
                 {

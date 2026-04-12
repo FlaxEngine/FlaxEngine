@@ -456,8 +456,8 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
             _writer.Write(TEXT("#define MATERIAL_REFLECTIONS_SSR_COLOR ({0})\n"), sceneColorTexture.ShaderName);
         }
         WRITE_FEATURES(Defines);
-        inputs[In_Defines] = _writer.ToString();
         WriteCustomGlobalCode(customGlobalCodeNodes, In_Defines);
+        inputs[In_Defines] = _writer.ToString();
         _writer.Clear();
     }
 

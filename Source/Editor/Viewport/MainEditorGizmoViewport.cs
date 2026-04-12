@@ -1,18 +1,19 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System;
 using System.Collections.Generic;
+using Object = FlaxEngine.Object;
 using FlaxEditor.Content;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.Options;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Modes;
+using FlaxEditor.Viewport.Widgets;
 using FlaxEditor.Windows;
 using FlaxEngine;
 using FlaxEngine.Gizmo;
 using FlaxEngine.GUI;
-using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Viewport
 {
@@ -26,6 +27,7 @@ namespace FlaxEditor.Viewport
         private readonly ContextMenuButton _showGridButton;
         private readonly ContextMenuButton _showNavigationButton;
         private readonly ContextMenuButton _toggleGameViewButton;
+        private readonly ContextMenuButton _showDirectionGizmoButton;
         private SelectionOutline _customSelectionOutline;
 
         /// <summary>
@@ -108,13 +110,14 @@ namespace FlaxEditor.Viewport
         private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
         private EditorSpritesRenderer _editorSpritesRenderer;
         private ViewportRubberBandSelector _rubberBandSelector;
+        private DirectionGizmo _directionGizmo;
 
         private bool _gameViewActive;
         private ViewFlags _preGameViewFlags;
         private ViewMode _preGameViewViewMode;
         private bool _gameViewWasGridShown;
         private bool _gameViewWasFpsCounterShown;
-        private bool _gameViewWasNagivationShown;
+        private bool _gameViewWasNavigationShown;
 
         /// <summary>
         /// Drag and drop handlers
@@ -226,6 +229,13 @@ namespace FlaxEditor.Viewport
             // Add rubber band selector
             _rubberBandSelector = new ViewportRubberBandSelector(this);
 
+            // Add direction gizmo
+            _directionGizmo = new DirectionGizmo(this)
+            {
+                AnchorPreset = AnchorPresets.TopRight,
+                Parent = this,
+            };
+
             // Add grid
             Grid = new GridGizmo(this);
             Grid.EnabledChanged += gizmo => _showGridButton.Icon = gizmo.Enabled ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
@@ -244,6 +254,11 @@ namespace FlaxEditor.Viewport
             _showNavigationButton = ViewWidgetShowMenu.AddButton("Navigation", inputOptions.ToggleNavMeshVisibility, () => ShowNavigation = !ShowNavigation);
             _showNavigationButton.CloseMenuOnClick = false;
 
+            // Show direction gizmo widget
+            _showDirectionGizmoButton = ViewWidgetShowMenu.AddButton("Direction Gizmo", () => _directionGizmo.Visible = !_directionGizmo.Visible);
+            _showDirectionGizmoButton.AutoCheck = true;
+            _showDirectionGizmoButton.CloseMenuOnClick = false;
+            
             // Game View
             ViewWidgetButtonMenu.AddSeparator();
             _toggleGameViewButton = ViewWidgetButtonMenu.AddButton("Game View", inputOptions.ToggleGameView, ToggleGameView);
@@ -277,6 +292,18 @@ namespace FlaxEditor.Viewport
 
             // Game View
             InputActions.Add(options => options.ToggleGameView, ToggleGameView);
+
+            editor.Options.OptionsChanged += OnEditorOptionsChanged;
+            OnEditorOptionsChanged(editor.Options.Options);
+        }
+
+        private void OnEditorOptionsChanged(EditorOptions options)
+        {
+            _directionGizmo.Visible = options.Viewport.ShowDirectionGizmo;
+            _showDirectionGizmoButton.Checked = _directionGizmo.Visible;
+            _directionGizmo.Size = new Float2(DirectionGizmo.DefaultGizmoSize * options.Viewport.DirectionGizmoScale);
+            _directionGizmo.LocalX = -_directionGizmo.Size.X * 0.5f;
+            _directionGizmo.LocalY = _directionGizmo.Size.Y * 0.5f + ViewportWidgetsContainer.WidgetsHeight;
         }
 
         /// <inheritdoc />
@@ -514,14 +541,14 @@ namespace FlaxEditor.Viewport
                 _preGameViewViewMode = Task.ViewMode;
                 _gameViewWasGridShown = Grid.Enabled;
                 _gameViewWasFpsCounterShown = ShowFpsCounter;
-                _gameViewWasNagivationShown = ShowNavigation;
+                _gameViewWasNavigationShown = ShowNavigation;
             }
 
             // Set flags & values
             Task.ViewFlags = _gameViewActive ? _preGameViewFlags : ViewFlags.DefaultGame;
             Task.ViewMode = _gameViewActive ? _preGameViewViewMode : ViewMode.Default;
             ShowFpsCounter = _gameViewActive ? _gameViewWasFpsCounterShown : false;
-            ShowNavigation = _gameViewActive ? _gameViewWasNagivationShown : false;
+            ShowNavigation = _gameViewActive ? _gameViewWasNavigationShown : false;
             Grid.Enabled = _gameViewActive ? _gameViewWasGridShown : false;
 
             _gameViewActive = !_gameViewActive;
@@ -647,7 +674,7 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
-        protected override void OrientViewport(ref Quaternion orientation)
+        public override void OrientViewport(ref Quaternion orientation)
         {
             if (TransformGizmo.SelectedParents.Count != 0)
                 FocusSelection(ref orientation);

@@ -23,7 +23,7 @@ public:
     // [FlaxStorage]
     String ToString() const override;
     bool IsPackage() const override;
-    bool AllowDataModifications() const override;
+    bool IsReadOnly() const override;
     bool HasAsset(const Guid& id) const override;
     bool HasAsset(const AssetInfo& info) const override;
     int32 GetEntriesCount() const override;

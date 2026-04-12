@@ -1177,8 +1177,11 @@ void ScenePhysX::UpdateVehicles(float dt)
 void ScenePhysX::PreSimulateCloth(int32 i)
 {
     PROFILE_CPU();
+    PROFILE_MEM(PhysicsCloth);
     auto clothPhysX = ClothsList[i];
     auto& clothSettings = Cloths[clothPhysX];
+    if (!clothSettings.Actor)
+        return;
 
     if (clothSettings.Actor->OnPreUpdate())
     {
@@ -1379,6 +1382,7 @@ void ScenePhysX::UpdateCloths(float dt)
     if (!clothSolver || ClothsList.IsEmpty())
         return;
     PROFILE_CPU_NAMED("Physics.Cloth");
+    PROFILE_MEM(PhysicsCloth);
 
     {
         PROFILE_CPU_NAMED("Pre");
@@ -2649,10 +2653,13 @@ void* PhysicsBackend::CreateShape(PhysicsColliderActor* collider, const Collisio
     PxGeometryHolder geometryPhysX;
     GetShapeGeometry(geometry, geometryPhysX);
     PxShape* shapePhysX = PhysX->createShape(geometryPhysX.any(), materialsPhysX.Get(), materialsPhysX.Count(), true, shapeFlags);
-    shapePhysX->userData = collider;
+    if (shapePhysX)
+    {
+        shapePhysX->userData = collider;
 #if PHYSX_DEBUG_NAMING
-    shapePhysX->setName("Shape");
+        shapePhysX->setName("Shape");
 #endif
+    }
     return shapePhysX;
 }
 
@@ -3994,7 +4001,7 @@ void PhysicsBackend::RemoveVehicle(void* scene, WheeledVehicle* actor)
 void* PhysicsBackend::CreateCloth(const PhysicsClothDesc& desc)
 {
     PROFILE_CPU();
-    PROFILE_MEM(Physics);
+    PROFILE_MEM(PhysicsCloth);
 #if USE_CLOTH_SANITY_CHECKS
     {
         // Sanity check

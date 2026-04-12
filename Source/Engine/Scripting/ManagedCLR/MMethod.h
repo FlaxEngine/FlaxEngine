@@ -29,6 +29,7 @@ protected:
     int32 _paramsCount;
     mutable void* _returnType;
     mutable Array<void*, InlinedAllocation<8>> _parameterTypes;
+    mutable uint64 _parameterOuts = 0;
     void CacheSignature() const;
 #else
     StringAnsiView _name;

@@ -59,4 +59,10 @@ public:
     /// <param name="fallback">The optional fallback string value to use if localized string is missing.</param>
     /// <returns>The localized text.</returns>
     API_FUNCTION() static String GetPluralString(const String& id, int32 n, const String& fallback = String::Empty);
+
+    /// <summary>
+    /// Gets the list of unique languages (locale names such as 'pl-PL') defined in project in Localized String Tables set in Localization Settings. Can be used to display all languages available in game.
+    /// </summary>
+    /// <returns>The list of unique languages (locale names such as 'pl-PL').</returns>
+    API_FUNCTION() static Array<String, HeapAllocation> GetLocales();
 };

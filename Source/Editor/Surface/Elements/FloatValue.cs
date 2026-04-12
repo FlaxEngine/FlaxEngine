@@ -29,6 +29,7 @@ namespace FlaxEditor.Surface.Elements
         public FloatValue(SurfaceNode parentNode, NodeElementArchetype archetype)
         : base(Get(parentNode, archetype), archetype.Position.X, archetype.Position.Y, 50, archetype.ValueMin, archetype.ValueMax, 0.01f)
         {
+            Height = Constants.BoxRowHeight;
             ParentNode = parentNode;
             Archetype = archetype;
 

@@ -34,11 +34,6 @@ namespace FlaxEditor.Surface.Elements
         /// </summary>
         public const float DefaultConnectionOffset = 24f;
 
-        /// <summary>
-        /// Distance for the mouse to be considered above the connection
-        /// </summary>
-        public float MouseOverConnectionDistance => 100f / Surface.ViewScale;
-
         /// <inheritdoc />
         public OutputBox(SurfaceNode parentNode, NodeElementArchetype archetype)
         : base(parentNode, archetype, archetype.Position + new Float2(parentNode.Archetype.Size.X, 0))
@@ -109,12 +104,13 @@ namespace FlaxEditor.Surface.Elements
         /// </summary>
         /// <param name="targetBox">The other box.</param>
         /// <param name="mousePosition">The mouse position</param>
-        public bool IntersectsConnection(Box targetBox, ref Float2 mousePosition)
+        /// <param name="distance">Distance at which its an intersection</param>
+        public bool IntersectsConnection(Box targetBox, ref Float2 mousePosition, float distance)
         {
             float connectionOffset = Mathf.Max(0f, DefaultConnectionOffset * (1 - Editor.Instance.Options.Options.Interface.ConnectionCurvature));
             Float2 start = new Float2(ConnectionOrigin.X + connectionOffset, ConnectionOrigin.Y);
             Float2 end = new Float2(targetBox.ConnectionOrigin.X - connectionOffset, targetBox.ConnectionOrigin.Y);
-            return IntersectsConnection(ref start, ref end, ref mousePosition, MouseOverConnectionDistance);
+            return IntersectsConnection(ref start, ref end, ref mousePosition, distance);
         }
 
         /// <summary>
@@ -182,7 +178,7 @@ namespace FlaxEditor.Surface.Elements
         {
             // Draw all the connections
             var style = Surface.Style;
-            var mouseOverDistance = MouseOverConnectionDistance;
+            var mouseOverDistance = Surface.MouseOverConnectionDistance;
             var startPos = ConnectionOrigin;
             var startHighlight = ConnectionsHighlightIntensity;
             for (int i = 0; i < Connections.Count; i++)
@@ -190,7 +186,7 @@ namespace FlaxEditor.Surface.Elements
                 Box targetBox = Connections[i];
                 var endPos = targetBox.ConnectionOrigin;
                 var highlight = DefaultConnectionThickness + Mathf.Max(startHighlight, targetBox.ConnectionsHighlightIntensity);
-                var alpha = targetBox.Enabled && targetBox.IsActive ? 1.0f : 0.6f;
+                var alpha = targetBox.IsDisabled ? 0.6f : 1.0f;
 
                 // We have to calculate an offset here to preserve the original color for when the default connection thickness is larger than 1
                 var highlightOffset = (highlight - (DefaultConnectionThickness - 1));
@@ -216,7 +212,7 @@ namespace FlaxEditor.Surface.Elements
             // Draw all the connections
             var startPos = ConnectionOrigin;
             var endPos = targetBox.ConnectionOrigin;
-            var alpha = targetBox.Enabled && targetBox.IsActive ? 1.0f : 0.6f;
+            var alpha = targetBox.IsDisabled ? 0.6f : 1.0f;
             var color = _currentTypeColor * alpha;
             DrawConnection(Surface.Style, ref startPos, ref endPos, ref color, SelectedConnectionThickness);
         }
@@ -234,8 +230,8 @@ namespace FlaxEditor.Surface.Elements
 
             // Draw text
             var style = Style.Current;
-            var rect = new Rectangle(-100, 0, 100 - 2, Height);
-            Render2D.DrawText(style.FontSmall, Text, rect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Far, TextAlignment.Center);
+            var rect = new Rectangle(-Constants.BoxTextRectWidth - Constants.BoxTextOffset * 2f, 0f, Constants.BoxTextRectWidth, Height);
+            Render2D.DrawText(style.FontMedium, Text, rect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Far, TextAlignment.Center);
         }
     }
 }

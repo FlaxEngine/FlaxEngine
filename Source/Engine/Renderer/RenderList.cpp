@@ -704,7 +704,7 @@ void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawP
         if (drawModes != DrawPass::None &&
             (staticFlags & renderContext.View.StaticFlagsMask) == renderContext.View.StaticFlagsCompare &&
             renderContext.View.CullingFrustum.Intersects(bounds) &&
-            RenderTools::ComputeBoundsScreenRadiusSquared(bounds.Center, bounds.Radius, renderContext.View) * (renderContext.View.ScreenSize.X * renderContext.View.ScreenSize.Y) >= minObjectPixelSizeSq)
+            RenderTools::ComputeBoundsScreenRadiusSquared(bounds.Center, (float)bounds.Radius, renderContext.View) * (renderContext.View.ScreenSize.X * renderContext.View.ScreenSize.Y) >= minObjectPixelSizeSq)
         {
             renderContext.List->ShadowDepthDrawCallsList.Indices.Add(index);
         }

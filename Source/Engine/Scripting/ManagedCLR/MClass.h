@@ -188,11 +188,11 @@ public:
     MClass* GetBaseClass() const;
 
     /// <summary>
-    /// Checks if this class is a sub class of the specified class (including any derived types).
+    /// Checks if this class is a subclass of the specified class (including any derived types).
     /// </summary>
     /// <param name="klass">The class.</param>
     /// <param name="checkInterfaces">True if check interfaces, otherwise just base class.</param>
-    /// <returns>True if this class is a sub class of the specified class.</returns>
+    /// <returns>True if this class is a subclass of the specified class.</returns>
     bool IsSubClassOf(const MClass* klass, bool checkInterfaces = false) const;
 
     /// <summary>
@@ -206,7 +206,7 @@ public:
     /// Checks is the provided object instance of this class' type.
     /// </summary>
     /// <param name="object">The object to check.</param>
-    /// <returns>True if object  is an instance the this class.</returns>
+    /// <returns>True if object is an instance this class.</returns>
     bool IsInstanceOfType(MObject* object) const;
 
     /// <summary>
@@ -227,17 +227,7 @@ public:
     /// <param name="numParams">The method parameters count.</param>
     /// <param name="checkBaseClasses">True if check base classes when searching for the given method.</param>
     /// <returns>The method or null if failed to find it.</returns>
-    MMethod* FindMethod(const char* name, int32 numParams, bool checkBaseClasses = true) const
-    {
-        MMethod* method = GetMethod(name, numParams);
-        if (!method && checkBaseClasses)
-        {
-            MClass* base = GetBaseClass();
-            if (base)
-                method = base->FindMethod(name, numParams, true);
-        }
-        return method;
-    }
+    MMethod* FindMethod(const char* name, int32 numParams, bool checkBaseClasses = true) const;
 
     /// <summary>
     /// Returns an object referencing a method with the specified name and number of parameters.
@@ -247,6 +237,13 @@ public:
     /// <param name="numParams">The method parameters count.</param>
     /// <returns>The method or null if failed to get it.</returns>
     MMethod* GetMethod(const char* name, int32 numParams = 0) const;
+
+    /// <summary>
+    /// Returns an object referencing a method with the specified signature.
+    /// </summary>
+    /// <param name="signature">The method signature.</param>
+    /// <returns>The method or null if failed to get it.</returns>
+    MMethod* GetMethod(const struct ScriptingTypeMethodSignature& signature) const;
 
     /// <summary>
     /// Returns all methods belonging to this class.
@@ -271,7 +268,7 @@ public:
     const Array<MField*, ArenaAllocation>& GetFields() const;
 
     /// <summary>
-    /// Returns an object referencing a event with the specified name.
+    /// Returns an object referencing an event with the specified name.
     /// </summary>
     /// <param name="name">The event name.</param>
     /// <returns>The event object.</returns>

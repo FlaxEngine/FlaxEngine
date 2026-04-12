@@ -1197,11 +1197,17 @@ namespace FlaxEngine.Interop
         }
 
         [UnmanagedCallersOnly]
-        internal static byte GetMethodParameterIsOut(ManagedHandle methodHandle, int parameterNum)
+        internal static UInt64 GetMethodParameterIsOut(ManagedHandle methodHandle)
         {
             MethodHolder methodHolder = Unsafe.As<MethodHolder>(methodHandle.Target);
-            ParameterInfo parameterInfo = methodHolder.method.GetParameters()[parameterNum];
-            return (byte)(parameterInfo.IsOut ? 1 : 0);
+            var parameters = methodHolder.method.GetParameters();
+            UInt64 result = 0;
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                if (parameters[i].IsOut)
+                    result |= 1ul << i;
+            }
+            return result;
         }
 
         [UnmanagedCallersOnly]

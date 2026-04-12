@@ -125,7 +125,7 @@ VariantType::VariantType(Types type, const StringAnsiView& typeName, bool static
 VariantType::VariantType(Types type, const ScriptingType& sType)
     : VariantType(type)
 {
-    SetTypeName(sType);
+    SetTypeName(sType.Fullname, sType.Module->CanReload);
 }
 
 VariantType::VariantType(Types type, const MClass* klass)
@@ -172,7 +172,7 @@ VariantType::VariantType(const StringAnsiView& typeName)
     // Check case for array
     if (typeName.EndsWith(StringAnsiView("[]"), StringSearchCase::CaseSensitive))
     {
-        new(this) VariantType(Array, StringAnsiView(typeName.Get(), typeName.Length() - 2));
+        new(this) VariantType(Array, typeName);
         return;
     }
 

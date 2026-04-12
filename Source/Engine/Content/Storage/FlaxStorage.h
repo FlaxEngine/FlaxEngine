@@ -276,9 +276,9 @@ public:
     virtual bool IsPackage() const = 0;
 
     /// <summary>
-    /// Checks whenever storage container allows the data modifications.
+    /// Checks whenever storage container doesn't allow modifications.
     /// </summary>
-    virtual bool AllowDataModifications() const = 0;
+    virtual bool IsReadOnly() const = 0;
 
     /// <summary>
     /// Determines whether the specified asset exists in this container.

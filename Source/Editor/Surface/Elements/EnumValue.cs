@@ -2,6 +2,7 @@
 
 using System;
 using FlaxEditor.GUI;
+using FlaxEngine;
 using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Surface.Elements
@@ -29,9 +30,7 @@ namespace FlaxEditor.Surface.Elements
         public EnumValue(SurfaceNode parentNode, NodeElementArchetype archetype)
         : base(TypeUtils.GetType(archetype.Text).Type)
         {
-            X = archetype.ActualPositionX;
-            Y = archetype.ActualPositionY;
-            Width = archetype.Size.X;
+            Bounds = new Rectangle(archetype.ActualPositionX, archetype.ActualPositionY, archetype.Size.X, Constants.BoxRowHeight);
             ParentNode = parentNode;
             Archetype = archetype;
             Value = Convert.ToInt32(ParentNode.Values[Archetype.ValueIndex]);

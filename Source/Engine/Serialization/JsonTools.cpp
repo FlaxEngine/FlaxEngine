@@ -73,6 +73,13 @@ void ChangeIds(rapidjson_flax::Value& obj, rapidjson_flax::Document& document, c
     }
 }
 
+void JsonTools::MergeObjects(Value& target, Value& source, Value::AllocatorType& allocator)
+{
+    ASSERT(target.IsObject() && source.IsObject());
+    for (auto itr = source.MemberBegin(); itr != source.MemberEnd(); ++itr)
+        target.AddMember(itr->name, itr->value, allocator);
+}
+
 void JsonTools::ChangeIds(Document& doc, const Dictionary<Guid, Guid>& mapping)
 {
     if (mapping.IsEmpty())
@@ -236,6 +243,14 @@ Plane JsonTools::GetPlane(const Value& value)
     return result;
 }
 
+Rectangle JsonTools::GetRectangle(const Value& value)
+{
+    return Rectangle(
+        GetVector2(value, "Location", Vector2::Zero),
+        GetVector2(value, "Size", Vector2::Zero)
+    );
+}
+
 BoundingSphere JsonTools::GetBoundingSphere(const Value& value)
 {
     BoundingSphere result;
@@ -367,4 +382,16 @@ CommonValue JsonTools::GetCommonValue(const Value& value)
     }
     return result;
 }
+
+bool JsonTools::GetGuidIfValid(Guid& result, const Value& node, const char* name)
+{
+    auto member = node.FindMember(name);
+    if (member != node.MemberEnd())
+    {
+        result = GetGuid(member->value);
+        return result.IsValid();
+    }
+    return false;
+}
+
 PRAGMA_ENABLE_DEPRECATION_WARNINGS

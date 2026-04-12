@@ -4,6 +4,7 @@
 
 #include "Types.h"
 #include "Engine/Core/Types/DataContainer.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Graphics/PixelFormat.h"
 #include "Engine/Graphics/PixelFormatSampler.h"
 #include "Engine/Graphics/Shaders/VertexElement.h"
@@ -24,10 +25,10 @@ public:
     private:
         Span<byte> _data;
         PixelFormat _format;
-        int32 _stride;
+        int32 _stride, _count;
         PixelFormatSampler _sampler;
 
-        Stream(Span<byte> data, PixelFormat format, int32 stride);
+        Stream(Span<byte> data, PixelFormat format, int32 stride, int32 count);
 
     public:
         Span<byte> GetData() const;
@@ -37,53 +38,68 @@ public:
         bool IsValid() const;
         bool IsLinear(PixelFormat expectedFormat) const;
 
+        FORCE_INLINE operator bool() const
+        {
+            return IsValid();
+        }
+
         FORCE_INLINE int32 GetInt(int32 index) const
         {
+            ASSERT_LOW_LAYER(index * _stride < _data.Length());
             return (int32)_sampler.Read(_data.Get() + index * _stride).X;
         }
 
         FORCE_INLINE float GetFloat(int32 index) const
         {
+            ASSERT_LOW_LAYER(index * _stride < _data.Length());
             return _sampler.Read(_data.Get() + index * _stride).X;
         }
 
         FORCE_INLINE Float2 GetFloat2(int32 index) const
         {
+            ASSERT_LOW_LAYER(index * _stride < _data.Length());
             return Float2(_sampler.Read(_data.Get() + index * _stride));
         }
 
         FORCE_INLINE Float3 GetFloat3(int32 index) const
         {
+            ASSERT_LOW_LAYER(index * _stride < _data.Length());
             return Float3(_sampler.Read(_data.Get() + index * _stride));
         }
 
         FORCE_INLINE Float4 GetFloat4(int32 index) const
         {
+            ASSERT_LOW_LAYER(index * _stride < _data.Length());
             return _sampler.Read(_data.Get() + index * _stride);
         }
 
         FORCE_INLINE void SetInt(int32 index, const int32 value)
         {
+            ASSERT_LOW_LAYER(index * _stride < _data.Length());
             _sampler.Write(_data.Get() + index * _stride, Float4((float)value));
         }
 
         FORCE_INLINE void SetFloat(int32 index, const float value)
         {
+            ASSERT_LOW_LAYER(index * _stride < _data.Length());
             _sampler.Write(_data.Get() + index * _stride, Float4(value));
         }
 
         FORCE_INLINE void SetFloat2(int32 index, const Float2& value)
         {
+            ASSERT_LOW_LAYER(index * _stride < _data.Length());
             _sampler.Write(_data.Get() + index * _stride, Float4(value));
         }
 
         FORCE_INLINE void SetFloat3(int32 index, const Float3& value)
         {
+            ASSERT_LOW_LAYER(index * _stride < _data.Length());
             _sampler.Write(_data.Get() + index * _stride, Float4(value));
         }
 
         FORCE_INLINE void SetFloat4(int32 index, const Float4& value)
         {
+            ASSERT_LOW_LAYER(index * _stride < _data.Length());
             _sampler.Write(_data.Get() + index * _stride, value);
         }
 
@@ -94,19 +110,33 @@ public:
         void Set(Span<Float2> src);
         void Set(Span<Float3> src);
         void Set(Span<Color> src);
+        template<typename T, typename AllocationType = HeapAllocation>
+        void Set(const Array<T, AllocationType>& dst) const
+        {
+            Set(Span<T>(dst.Get(), dst.Count()));
+        }
 
         // Copies the contents of this stream into a destination data span.
         void CopyTo(Span<Float2> dst) const;
         void CopyTo(Span<Float3> dst) const;
         void CopyTo(Span<Color> dst) const;
+        template<typename T, typename AllocationType = HeapAllocation>
+        void CopyTo(Array<T, AllocationType>& dst) const
+        {
+            dst.Resize(GetCount());
+            CopyTo(Span<T>(dst.Get(), dst.Count()));
+        }
     };
 
 private:
     BytesContainer _data[(int32)MeshBufferType::MAX];
     PixelFormat _formats[(int32)MeshBufferType::MAX] = {};
     GPUVertexLayout* _layouts[(int32)MeshBufferType::MAX] = {};
+    Array<ModelBase*, InlinedAllocation<4>> _usedModels;
 
 public:
+    ~MeshAccessor();
+
     /// <summary>
     /// Loads the data from the mesh.
     /// </summary>

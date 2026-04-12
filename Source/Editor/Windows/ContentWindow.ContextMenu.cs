@@ -58,7 +58,7 @@ namespace FlaxEditor.Windows
                 cm.AddSeparator();
             }
 
-            if (item is ContentFolder contentFolder && contentFolder.Node is ProjectTreeNode)
+            if (item is ContentFolder contentFolder && contentFolder.Node is ProjectFolderTreeNode)
             {
                 cm.AddButton(Utilities.Constants.ShowInExplorer, () => FileSystem.ShowFileExplorer(CurrentViewFolder.Path));
             }
@@ -76,8 +76,8 @@ namespace FlaxEditor.Windows
 
                 cm.AddButton(Utilities.Constants.ShowInExplorer, () => FileSystem.ShowFileExplorer(System.IO.Path.GetDirectoryName(item.Path)));
                 
-                if (!String.IsNullOrEmpty(Editor.Instance.Windows.ContentWin._itemsSearchBox.Text))
-                { 
+                if (!_showAllContentInTree && !String.IsNullOrEmpty(Editor.Instance.Windows.ContentWin._itemsSearchBox.Text))
+                {
                     cm.AddButton("Show in Content Panel", () =>
                     {
                         Editor.Instance.Windows.ContentWin.ClearItemsSearch();
@@ -129,7 +129,7 @@ namespace FlaxEditor.Windows
                     }
                 }
 
-                if (isFolder && folder.Node is MainContentTreeNode)
+                if (isFolder && folder.Node is MainContentFolderTreeNode)
                 {
                     cm.AddSeparator();
                 }
@@ -145,7 +145,7 @@ namespace FlaxEditor.Windows
                 b = cm.AddButton("Paste", _view.Paste);
                 b.Enabled = _view.CanPaste();
 
-                if (isFolder && folder.Node is MainContentTreeNode)
+                if (isFolder && folder.Node is MainContentFolderTreeNode)
                 {
                     // Do nothing
                 }
@@ -201,7 +201,7 @@ namespace FlaxEditor.Windows
         private void CreateNewModuleMenu(ContextMenu menu, ContentFolder folder, bool disableUncreatable = false)
         {
             // Check if is source folder to add new module
-            if (folder?.ParentFolder?.Node is ProjectTreeNode parentFolderNode && folder.Node == parentFolderNode.Source)
+            if (folder?.ParentFolder?.Node is ProjectFolderTreeNode parentFolderNode && folder.Node == parentFolderNode.Source)
             {
                 var button = menu.AddButton("New module");
                 button.CloseMenuOnClick = false;
@@ -216,7 +216,7 @@ namespace FlaxEditor.Windows
 
         private bool CanCreateFolder(ContentItem item = null)
         {
-            bool canCreateFolder = CurrentViewFolder != _root.Folder && !(item is ContentFolder projectFolder && projectFolder.Node is ProjectTreeNode);
+            bool canCreateFolder = CurrentViewFolder != _root.Folder && !(item is ContentFolder projectFolder && projectFolder.Node is ProjectFolderTreeNode);
             return canCreateFolder;
         }
 

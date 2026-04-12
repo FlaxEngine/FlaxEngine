@@ -115,11 +115,14 @@ namespace FlaxEditor.Windows
 
             var root = _root;
             root.LockChildrenRecursive();
+            _suppressExpandedStateSave = true;
+            PerformLayout();
 
             // Update tree
             var query = _foldersSearchBox.Text;
             root.UpdateFilter(query);
 
+            _suppressExpandedStateSave = false;
             root.UnlockChildrenRecursive();
             PerformLayout();
             PerformLayout();
@@ -160,6 +163,11 @@ namespace FlaxEditor.Windows
             // Skip events during setup or init stuff
             if (IsLayoutLocked)
                 return;
+            if (_showAllContentInTree)
+            {
+                RefreshTreeItems();
+                return;
+            }
 
             // Check if clear filters
             if (_itemsSearchBox.TextLength == 0 && !_viewDropdown.HasSelection)
@@ -199,7 +207,7 @@ namespace FlaxEditor.Windows
                     // Special case for root folder
                     for (int i = 0; i < _root.ChildrenCount; i++)
                     {
-                        if (_root.GetChild(i) is ContentTreeNode node)
+                        if (_root.GetChild(i) is ContentFolderTreeNode node)
                             UpdateItemsSearchFilter(node.Folder, items, filters, showAllFiles);
                     }
                 }
@@ -221,7 +229,7 @@ namespace FlaxEditor.Windows
                     // Special case for root folder
                     for (int i = 0; i < _root.ChildrenCount; i++)
                     {
-                        if (_root.GetChild(i) is ContentTreeNode node)
+                        if (_root.GetChild(i) is ContentFolderTreeNode node)
                             UpdateItemsSearchFilter(node.Folder, items, filters, showAllFiles, query);
                     }
                 }

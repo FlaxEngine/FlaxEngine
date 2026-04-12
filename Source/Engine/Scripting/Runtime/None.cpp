@@ -363,6 +363,11 @@ MMethod* MClass::GetMethod(const char* name, int32 numParams) const
     return nullptr;
 }
 
+MMethod* MClass::GetMethod(const ScriptingTypeMethodSignature& signature) const
+{
+    return nullptr;
+}
+
 const Array<MMethod*, ArenaAllocation>& MClass::GetMethods() const
 {
     _hasCachedMethods = true;

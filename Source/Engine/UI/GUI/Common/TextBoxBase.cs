@@ -42,6 +42,7 @@ namespace FlaxEngine.GUI
             '\\',
             '>',
             '<',
+            '=',
         };
 
         /// <summary>

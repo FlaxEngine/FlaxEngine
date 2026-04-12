@@ -53,7 +53,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 Parent = this
             };
-            _toolstrip.AddButton(editor.Icons.Search64, () => Editor.Windows.ContentWin.Select(_item)).LinkTooltip("Show and select in Content Window");
+            _toolstrip.AddButton(editor.Icons.Search64, () => Editor.Windows.ContentWin.Select(_item)).LinkTooltip("Show and select in Content Window.");
 
             InputActions.Add(options => options.Save, Save);
 
@@ -525,6 +525,16 @@ namespace FlaxEditor.Windows.Assets
             _item.RefreshThumbnail();
 
             return false;
+        }
+
+        /// <summary>
+        /// Loads the asset from the original location to reflect the state (eg. after original asset reimport).
+        /// </summary>
+        protected virtual void LoadFromOriginal()
+        {
+            _asset = LoadAsset();
+            OnAssetLoaded();
+            ClearEditedFlag();
         }
 
         /// <inheritdoc />

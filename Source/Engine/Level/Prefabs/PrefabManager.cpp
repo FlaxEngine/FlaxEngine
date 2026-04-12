@@ -584,6 +584,11 @@ bool PrefabManager::ApplyAll(Actor* instance)
         // Use the input object as fallback
         rootObjectInstance = instance;
     }
+    while (rootObjectInstance->GetParent() && rootObjectInstance->GetParent()->GetPrefabID() == rootObjectInstance->GetPrefabID())
+    {
+        // Move up to the root of the prefab instance (eg. in case of root change on instance to apply)
+        rootObjectInstance = rootObjectInstance->GetParent();
+    }
 
     return prefab->ApplyAll(rootObjectInstance);
 }

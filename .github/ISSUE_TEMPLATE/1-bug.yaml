@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to fill out this bug report! Please attach any minimal reproduction projects!
+        Thanks for taking the time to fill out this bug report! Please attach a minimal reproduction project if available!
   - type: textarea
     id: description-area
     attributes:
@@ -17,19 +17,19 @@ body:
     id: steps-area
     attributes:
       label: Steps to reproduce
-      description: Please provide reproduction steps if possible.
+      description: Please provide reproduction steps if available.
     validations:
       required: true
   - type: dropdown
     id: version
     attributes:
       label: Version
-      description: What version of Flax are you running?
+      description: What version of Flax did you experience the bug in?
       options:
-        - '1.8'
         - '1.9'
         - '1.10'
         - '1.11'
+        - '1.12'
         - master branch
       default: 3
     validations:

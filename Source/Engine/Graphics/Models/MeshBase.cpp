@@ -38,10 +38,11 @@ namespace
 #endif
 }
 
-MeshAccessor::Stream::Stream(Span<byte> data, PixelFormat format, int32 stride)
+MeshAccessor::Stream::Stream(Span<byte> data, PixelFormat format, int32 stride, int32 count)
     : _data(data)
     , _format(PixelFormat::Unknown)
     , _stride(stride)
+    , _count(count)
 {
     auto sampler = PixelFormatSampler::Get(format);
     if (sampler)
@@ -72,7 +73,7 @@ int32 MeshAccessor::Stream::GetStride() const
 
 int32 MeshAccessor::Stream::GetCount() const
 {
-    return _data.Length() / _stride;
+    return _count;
 }
 
 bool MeshAccessor::Stream::IsValid() const
@@ -188,6 +189,16 @@ void MeshAccessor::Stream::CopyTo(Span<::Color> dst) const
     }
 }
 
+MeshAccessor::~MeshAccessor()
+{
+    for (ModelBase* model : _usedModels)
+    {
+        if (model->Storage)
+            model->Storage->UnlockChunks();
+        model->RemoveReference();
+    }
+}
+
 bool MeshAccessor::LoadMesh(const MeshBase* mesh, bool forceGpu, Span<MeshBufferType> buffers)
 {
     CHECK_RETURN(mesh, true);
@@ -196,14 +207,28 @@ bool MeshAccessor::LoadMesh(const MeshBase* mesh, bool forceGpu, Span<MeshBuffer
         buffers = Span<MeshBufferType>(allBuffers, ARRAY_COUNT(allBuffers));
     Array<BytesContainer, FixedAllocation<4>> meshBuffers;
     Array<GPUVertexLayout*, FixedAllocation<4>> meshLayouts;
+    if (ModelBase* model = mesh->GetModelBase())
+    {
+        // Maintain reference to mesh data (it's buffers might be referenced, not copied)
+        model->AddReference();
+        if (model->Storage)
+            model->Storage->LockChunks();
+        _usedModels.Add(model);
+    }
     if (mesh->DownloadData(buffers, meshBuffers, meshLayouts, forceGpu))
         return true;
     for (int32 i = 0; i < buffers.Length(); i++)
     {
-        _data[(int32)buffers[i]] = MoveTemp(meshBuffers[i]);
-        _layouts[(int32)buffers[i]] = meshLayouts[i];
+        const int32 buffer = (int32)buffers[i];
+        _data[buffer] = MoveTemp(meshBuffers[i]);
+        _layouts[buffer] = meshLayouts[i];
+
+        // Get format if using a single item (eg. index buffer type)
+        PixelFormat format = PixelFormat::Unknown;
+        if (meshLayouts[i] && meshLayouts[i]->GetElements().Count() == 1)
+            format = meshLayouts[i]->GetElements()[0].Format;
+        _formats[buffer] = format;
     }
-    _formats[(int32)MeshBufferType::Index] = mesh->Use16BitIndexBuffer() ? PixelFormat::R16_UInt : PixelFormat::R32_UInt;
     return false;
 }
 
@@ -344,22 +369,23 @@ MeshAccessor::Stream MeshAccessor::Index()
 {
     Span<byte> data;
     PixelFormat format = PixelFormat::Unknown;
-    int32 stride = 0;
+    int32 stride = 0, count = 0;
     auto& ib = _data[(int32)MeshBufferType::Index];
     if (ib.IsValid())
     {
         data = ib;
         format = _formats[(int32)MeshBufferType::Index];
         stride = PixelFormatExtensions::SizeInBytes(format);
+        count = data.Length() / stride;
     }
-    return Stream(data, format, stride);
+    return Stream(data, format, stride, count);
 }
 
 MeshAccessor::Stream MeshAccessor::Attribute(VertexElement::Types attribute)
 {
     Span<byte> data;
     PixelFormat format = PixelFormat::Unknown;
-    int32 stride = 0;
+    int32 stride = 0, count = 0;
     for (int32 vbIndex = 0; vbIndex < 3 && format == PixelFormat::Unknown; vbIndex++)
     {
         static_assert((int32)MeshBufferType::Vertex0 == 1, "Update code.");
@@ -375,11 +401,12 @@ MeshAccessor::Stream MeshAccessor::Attribute(VertexElement::Types attribute)
                 data = vb.Slice(e.Offset);
                 format = e.Format;
                 stride = layout->GetStride();
+                count = vb.Length() / stride;
                 break;
             }
         }
     }
-    return Stream(data, format, stride);
+    return Stream(data, format, stride, count);
 }
 
 MeshBase::~MeshBase()
@@ -714,6 +741,9 @@ bool MeshBase::DownloadDataCPU(MeshBufferType type, BytesContainer& result, int3
             _cachedVertexBufferCount = meshData.Vertices;
             _cachedIndexBufferCount = (int32)meshData.Triangles * 3;
             _cachedIndexBuffer.Copy((const byte*)meshData.IBData, _cachedIndexBufferCount * (int32)meshData.IBStride);
+            GPUVertexLayout::Elements ibLayout;
+            ibLayout.Add({ VertexElement::Types::Attribute, 0, 0, 0, meshData.IBStride == sizeof(uint16) ? PixelFormat::R16_UInt : PixelFormat::R32_UInt });
+            _cachedVertexLayouts[3] = GPUVertexLayout::Get(ibLayout);
             for (int32 vb = 0; vb < meshData.VBData.Count(); vb++)
             {
                 _cachedVertexBuffers[vb].Copy((const byte*)meshData.VBData[vb], (int32)(meshData.VBLayout[vb]->GetStride() * meshData.Vertices));
@@ -728,6 +758,8 @@ bool MeshBase::DownloadDataCPU(MeshBufferType type, BytesContainer& result, int3
     case MeshBufferType::Index:
         result.Link(_cachedIndexBuffer);
         count = _cachedIndexBufferCount;
+        if (layout)
+            *layout = _cachedVertexLayouts[3];
         break;
     case MeshBufferType::Vertex0:
         result.Link(_cachedVertexBuffers[0]);
