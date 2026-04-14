@@ -1126,6 +1126,18 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 8, "Nodes:", tooltip:"Amount of nodes in a chain to simulate, starting from the End Node going up in the hierarchy. Excluding root node the chain is attached to."),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 36,
+                Title = "Per Instance Random",
+                Description = "Per object instance random value (normalized to range 0-1)",
+                Flags = NodeFlags.AnimGraph,
+                Size = new Float2(200, 30),
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, "", typeof(float), 0),
+                }
+            },
         };
     }
 }

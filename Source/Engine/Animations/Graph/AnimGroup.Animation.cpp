@@ -2653,6 +2653,13 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         value = nodes;
         break;
     }
+    // Per Instance Random
+    case 36:
+    {
+        auto* actor = ScriptingObject::Cast<Actor>(context.Data->Object);
+        value = actor ? actor->GetPerInstanceRandom() : 0.0f;
+        break;
+    }
     default:
         break;
     }
