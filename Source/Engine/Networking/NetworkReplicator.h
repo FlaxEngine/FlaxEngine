@@ -39,6 +39,7 @@ public:
     /// <summary>
     /// Enables verbose logging of the networking runtime. Can be used to debug problems of missing RPC invoke or object replication issues.
     /// </summary>
+    /// <remarks>Only available in Development and Debug builds.</remarks>
     API_FIELD(Attributes="DebugCommand") static bool EnableLog;
 #endif
 

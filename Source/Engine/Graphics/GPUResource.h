@@ -96,11 +96,13 @@ public:
     /// <summary>
     /// Gets the resource name.
     /// </summary>
+    /// <remarks>Only available in Development and Debug builds.</remarks>
     API_PROPERTY() StringView GetName() const;
 
     /// <summary>
     /// Sets the resource name.
     /// </summary>
+    /// <remarks>Only available in Development and Debug builds.</remarks>
     API_PROPERTY() void SetName(const StringView& name);
 #endif
 

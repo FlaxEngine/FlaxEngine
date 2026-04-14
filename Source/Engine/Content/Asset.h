@@ -161,6 +161,7 @@ public:
     /// <summary>
     /// Determines whether this asset was marked to be deleted on unload.
     /// </summary>
+    /// <remarks>Only available in Editor.</remarks>
     API_PROPERTY() bool ShouldDeleteFileOnUnload() const;
 #endif
 
