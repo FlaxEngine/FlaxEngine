@@ -232,11 +232,13 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     VkSurfaceFormatKHR result;
     Platform::MemoryClear(&result, sizeof(result));
     {
-        uint32 surfaceFormatsCount;
-        VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, _surface, &surfaceFormatsCount, nullptr));
+        uint32 surfaceFormatsCount = 0;
+        vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, _surface, &surfaceFormatsCount, nullptr);
         Array<VkSurfaceFormatKHR, InlinedAllocation<16>> surfaceFormats;
         surfaceFormats.AddZeroed(surfaceFormatsCount);
-        VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, _surface, &surfaceFormatsCount, surfaceFormats.Get()));
+        VkResult vkResult = vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, _surface, &surfaceFormatsCount, surfaceFormats.Get());
+        if (vkResult != VK_SUCCESS && vkResult != VK_INCOMPLETE)
+            RenderToolsVulkan::LogVkResult(vkResult, __FILE__, __LINE__);
 
         if (resultFormat != PixelFormat::Unknown)
         {
