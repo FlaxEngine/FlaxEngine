@@ -21,6 +21,11 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 
 #include "Engine/Platform/Linux/IncludeX11.h"
+namespace X11
+{
+#include <X11/extensions/XI2.h>
+#include <X11/extensions/XI2proto.h>
+}
 
 #include <SDL3/SDL_clipboard.h>
 #include <SDL3/SDL_events.h>
@@ -784,6 +789,32 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
     while (true)
     {
         X11::XNextEvent(xDisplay, &event);
+
+        // Hardcoded hack for SDL3 with X11 to end drag
+        if (event.type == XFixesSelectionNotifyEvent - 2)
+            break;
+            
+        if (event.type == GenericEvent)
+        {
+            X11::XGenericEventCookie& cookie = event.xcookie;
+            if (X11::XGetEventData(xDisplay, &cookie))
+            {
+                switch (cookie.evtype)
+                {
+                case XI_Motion:
+                {
+                    auto xev = (const X11::xXIDeviceEvent*)cookie.data;
+                    // TODO: implement drag over/move/leave events via XInput2 and restore it in Editor (SDL_VIDEO_X11_XINPUT2=1 in SDLPlatform.cpp)
+                    break;
+                }
+                default:
+                    //LOG(Info, "Generic event: {}", (int32)cookie.evtype);
+                    break;
+                }
+                X11::XFreeEventData(xDisplay, &cookie);
+            }
+            continue;
+        }
 
         if (event.type == SelectionClear)
             break;
