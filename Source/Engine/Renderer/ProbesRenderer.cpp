@@ -450,7 +450,7 @@ void ProbesRendererService::OnRender(RenderTask* task, GPUContext* context)
         {
             auto envProbe = (EnvironmentProbe*)_current.Actor.Get();
             Vector3 position = envProbe->GetTransform().LocalToWorld(envProbe->CaptureOffset);
-            float radius = envProbe->GetSphere().Radius;
+            float radius = (float)envProbe->GetSphere().Radius;
             float nearPlane = Math::Max(METERS_TO_UNITS(0.001f), envProbe->CaptureNearPlane);
 
             // Adjust far plane distance

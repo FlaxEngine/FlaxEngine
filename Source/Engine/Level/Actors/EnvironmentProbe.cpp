@@ -188,7 +188,7 @@ void EnvironmentProbe::Draw(RenderContext& renderContext)
     {
         // Size culling
         const Float3 position = _sphere.Center - renderContext.View.Origin;
-        const float radius = _sphere.Radius;
+        const float radius = (float)_sphere.Radius;
         const float drawMinScreenSize = 0.02f;
         const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
         const float screenRadiusSquared = RenderTools::ComputeBoundsScreenRadiusSquared(position, radius, *lodView) * renderContext.View.ModelLODDistanceFactorSqrt;

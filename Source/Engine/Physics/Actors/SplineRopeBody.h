@@ -43,7 +43,7 @@ public:
     float GravityScale = 1.0f;
 
     /// <summary>
-    /// The scale of velocity applied to rope. The greater the value, the more suppressed the movement.
+    /// The scale of velocity applied to rope. The greater the value, the more suppressed the movement. Lower values increase movement freedom.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(15), EditorDisplay(\"Rope\"), Limit(0, 0.99f, 0.001f)")
     float Drag = 0.1f;

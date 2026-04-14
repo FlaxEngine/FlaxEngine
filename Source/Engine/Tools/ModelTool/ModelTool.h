@@ -307,7 +307,7 @@ public:
         // Whether to do a sloppy mesh optimization. This is faster but does not follow the topology of the original mesh.
         API_FIELD(Attributes="EditorOrder(1140), EditorDisplay(\"Level Of Detail\"), VisibleIf(nameof(ShowGeometry))")
         bool SloppyOptimization = false;
-        // Only used if Sloppy is false. Target error is an approximate measure of the deviation from the original mesh using distance normalized to [0..1] range (e.g. 1e-2f means that simplifier will try to maintain the error to be below 1% of the mesh extents).
+        // Target error is an approximate measure of the deviation from the original mesh using distance normalized to [0,1] range (e.g. 0.01 means that simplifier will try to maintain the error to be below 1% of the mesh extents). Only used if Sloppy is unchecked.
         API_FIELD(Attributes="EditorOrder(1150), EditorDisplay(\"Level Of Detail\"), VisibleIf(nameof(SloppyOptimization), true), VisibleIf(nameof(ShowGeometry)), Limit(0.01f, 1, 0.001f)")
         float LODTargetError = 0.05f;
 
