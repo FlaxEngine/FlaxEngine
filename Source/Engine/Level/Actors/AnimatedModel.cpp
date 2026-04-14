@@ -863,6 +863,7 @@ void AnimatedModel::OnActiveInTreeChanged()
 void AnimatedModel::UpdateBounds()
 {
     const auto model = SkinnedModel.Get();
+    BoundingSphere prevSphere = _sphere;
     if (CustomBounds.GetSize().LengthSquared() > 0.01f)
     {
         BoundingBox::Transform(CustomBounds, _transform, _box);
@@ -893,7 +894,7 @@ void AnimatedModel::UpdateBounds()
         _box = BoundingBox(_transform.Translation);
     }
     BoundingSphere::FromBox(_box, _sphere);
-    if (_sceneRenderingKey != -1)
+    if (_sceneRenderingKey != -1 && prevSphere != _sphere)
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Bounds);
 }
 
@@ -940,7 +941,7 @@ void AnimatedModel::OnAnimationUpdated_Async()
         _skinningData.OnDataChanged(!PerBoneMotionBlur);
     }
 
-    if (UpdateWhenOffscreen) 
+    //if (UpdateWhenOffscreen)
     {
         UpdateBounds();
     }
