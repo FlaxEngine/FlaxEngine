@@ -227,6 +227,8 @@ void ProcessNodes(AssimpImporterData& data, aiNode* aNode, int32 parentIndex)
 
     Matrix transform = ToMatrix(aNode->mTransformation);
     transform.Decompose(node.LocalTransform);
+    if (data.Options.IgnoreNodesScale)
+        node.LocalTransform.Scale = Float3::One;
     data.Nodes.Add(node);
 
     // Process the children

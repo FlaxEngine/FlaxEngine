@@ -253,6 +253,9 @@ public:
         // If checked, the imported geometry will be shifted to the center of mass.
         API_FIELD(Attributes="EditorOrder(540), EditorDisplay(\"Transform\")")
         bool CenterGeometry = false;
+        // If checked, the importer will ignore nodes scale property.
+        API_FIELD(Attributes = "EditorOrder(545), EditorDisplay(\"Transform\")")
+        bool IgnoreNodesScale = false;
 
     public: // Animation
 

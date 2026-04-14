@@ -571,6 +571,7 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(Translation);
     SERIALIZE(UseLocalOrigin);
     SERIALIZE(CenterGeometry);
+    SERIALIZE(IgnoreNodesScale);
     SERIALIZE(Duration);
     SERIALIZE(FramesRange);
     SERIALIZE(DefaultFrameRate);
@@ -627,6 +628,7 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(Translation);
     DESERIALIZE(UseLocalOrigin);
     DESERIALIZE(CenterGeometry);
+    DESERIALIZE(IgnoreNodesScale);
     DESERIALIZE(Duration);
     DESERIALIZE(FramesRange);
     DESERIALIZE(DefaultFrameRate);

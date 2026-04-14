@@ -416,6 +416,8 @@ void ProcessNodes(OpenFbxImporterData& data, const ofbx::Object* aNode, int32 pa
     }
 #endif
     transform.Decompose(node.LocalTransform);
+    if (data.Options.IgnoreNodesScale)
+        node.LocalTransform.Scale = Float3::One;
     data.Nodes.Add(node);
 
     // Process the children
