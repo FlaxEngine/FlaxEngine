@@ -16,6 +16,7 @@
 #include "Engine/Engine/Engine.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Threading/JobSystem.h"
 #include "Engine/Threading/Threading.h"
 #if USE_EDITOR
 #include "Engine/Renderer/Lightmaps.h"
@@ -496,6 +497,7 @@ RenderContextBatch::RenderContextBatch(SceneRenderTask* task)
 {
     Buffers = task->Buffers;
     Task = task;
+    EnableAsync = JobSystem::GetThreadsCount() > 1;
 }
 
 RenderContextBatch::RenderContextBatch(const RenderContext& context)
@@ -503,4 +505,5 @@ RenderContextBatch::RenderContextBatch(const RenderContext& context)
     Buffers = context.Buffers;
     Task = context.Task;
     Contexts.Add(context);
+    EnableAsync = JobSystem::GetThreadsCount() > 1;
 }
