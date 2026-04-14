@@ -1092,6 +1092,40 @@ namespace FlaxEditor.Surface.Archetypes
                     Utils.GetEmptyArray<byte>(),
                 },
             },
+            new NodeArchetype
+            {
+                TypeID = 35,
+                Title = "Spring Bone Physics",
+                Description = "Simulates a soft physics-based trailing motion―like antennae, tails, or cloth strips―for a connected chain of skeletal bones.",
+                Flags = NodeFlags.AnimGraph,
+                Size = new Float2(250, 160),
+                DefaultValues = new object[]
+                {
+                    string.Empty, // End Node
+                    1, // Nodes
+                    1.0f, // Weight
+                    0.0f, // Stiffness
+                    0.1f, // Drag
+                    0.0f, // Stretch Limit
+                    1.0f, // Gravity Scale
+                    Vector3.Zero, // Force
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(void), 0),
+                    NodeElementArchetype.Factory.Input(0, string.Empty, true, typeof(void), 1),
+                    NodeElementArchetype.Factory.Input(1, "Weight", true, typeof(float), 2, 2),
+                    NodeElementArchetype.Factory.Input(2, "Stiffness", true, typeof(float), 3, 3),
+                    NodeElementArchetype.Factory.Input(3, "Drag", true, typeof(float), 4, 4),
+                    NodeElementArchetype.Factory.Input(4, "Stretch Limit", true, typeof(float), 5, 5),
+                    NodeElementArchetype.Factory.Input(5, "Gravity Scale", true, typeof(float), 6, 6),
+                    NodeElementArchetype.Factory.Input(6, "Force", true, typeof(Vector3), 7, 7),
+                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(60, Surface.Constants.LayoutOffsetY * 7, 140, 0),
+                    NodeElementArchetype.Factory.Integer(60, Surface.Constants.LayoutOffsetY * 8, 1, -1, 1, 32),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 7, "End Node:", tooltip:"The last (tip) node of the spring bones chain to simulate."),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 8, "Nodes:", tooltip:"Amount of nodes in a chain to simulate, starting from the End Node going up in the hierarchy. Excluding root node the chain is attached to."),
+                }
+            },
         };
     }
 }

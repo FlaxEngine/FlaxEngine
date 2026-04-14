@@ -9,6 +9,7 @@
 #include "Engine/Animations/AnimEvent.h"
 #include "Engine/Animations/InverseKinematics.h"
 #include "Engine/Level/Actors/AnimatedModel.h"
+#include "Engine/Physics/Physics.h"
 
 struct AnimSampleData
 {
@@ -2511,6 +2512,145 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             *(Float4*)bucket.Data = (Float4)tryGetValue(node->GetBox(1), Value::Zero);
         }
         value = *(Float4*)bucket.Data;
+        break;
+    }
+    // Spring Bone Physics
+    case 35:
+    {
+        // Get bucket
+        auto& bucket = context.Data->State[node->BucketIndex].SpringBonePhysics;
+        Transform objectTransform = context.Data->GetObjectTransform();
+
+        // Get input
+        auto input = tryGetValue(node->GetBox(1), Value::Null);
+        const auto endNodeIndex = node->Data.TransformNode.NodeIndex;
+        float weight = (float)tryGetValue(node->GetBox(2), node->Values[2]);
+        if (endNodeIndex < 0 || endNodeIndex >= _skeletonNodesCount || weight < ANIM_GRAPH_BLEND_THRESHOLD)
+        {
+            value = input;
+            break;
+        }
+        const auto nodes = node->GetNodes(this, input);
+
+        // Get parameters
+        weight = Math::Min(weight, 1.0f);
+        float deltaTime = context.DeltaTime;
+        int32 nodesCount = Math::Clamp((int32)node->Values[1] + 1, 1, _skeletonNodesCount);
+        float stiffness = (float)tryGetValue(node->GetBox(3), node->Values[3]);
+        float drag = (float)tryGetValue(node->GetBox(4), node->Values[4]);
+        float stretchLimit = (float)tryGetValue(node->GetBox(5), node->Values[5]) + 1.0f;
+        float gravityScale = (float)tryGetValue(node->GetBox(6), node->Values[6]);
+        Vector3 force = (Vector3)tryGetValue(node->GetBox(7), node->Values[7]) + Physics::GetGravity() * gravityScale;
+
+        // Get world-space transforms of the nodes (from root to end)
+        Array<int32, InlinedAllocation<8>> nodesIndices;
+        Array<Transform, InlinedAllocation<8>> nodesRef;
+        nodesIndices.Resize(nodesCount);
+        nodesRef.Resize(nodesCount);
+        auto& skeleton = _graph.BaseModel->Skeleton;
+        for (int32 i = nodesCount - 1, nodeIndex = endNodeIndex; i >= 0; i--)
+        {
+            nodesIndices[i] = nodeIndex;
+            nodeIndex = skeleton.Nodes[nodeIndex].ParentIndex;
+        }
+        nodesRef[0] = nodes->GetNodeWorldTransformation(context, skeleton, nodesIndices[0]); // Root comes from animation (incl. animated model movement)
+        for (int32 i = 1; i < nodesCount; i++)
+            nodesRef[i] = nodesRef[i - 1].LocalToWorld(nodes->Nodes[nodesIndices[i]]);
+
+        // Check if we reset the simulation (start from the reference pose)
+        bool reset = bucket.LastUpdateFrame < context.CurrentFrameIndex - 1 || context.CurrentFrameIndex == 1;
+        if (bucket.StateDataStart == -1)
+        {
+            // Allocate a dynamic state
+            bucket.StateDataStart = context.Data->DynamicState.Count();
+            context.Data->DynamicState.AddUninitialized(sizeof(AnimGraphInstanceData::SpringBonePhysicsDynamic) * nodesCount);
+            reset = true;
+        }
+        auto* dynamic = (AnimGraphInstanceData::SpringBonePhysicsDynamic*)&context.Data->DynamicState[bucket.StateDataStart];
+        if (reset)
+        {
+            // Initialize the simulation from the reference pose
+            for (int32 i = 0; i < nodesCount; i++)
+                dynamic[i].CurrentPosition = dynamic[i].PreviousPosition = nodesRef[i].Translation;
+        }
+        bucket.LastUpdateFrame = context.CurrentFrameIndex;
+
+        // Move each node by velocity and forces
+        dynamic[0].PreviousPosition = dynamic[0].CurrentPosition;
+        dynamic[0].CurrentPosition = nodesRef[0].Translation;
+        for (int32 i = 1; i < nodesCount; i++)
+        {
+            Vector3 position = dynamic[i].CurrentPosition;
+            Vector3 prevPosition = dynamic[i].PreviousPosition;
+            Vector3 refPosition = nodesRef[i].Translation;
+
+            // Stiffness force
+            Vector3 delta = (refPosition - position) * stiffness;
+
+            // Gravity and wind forces
+            delta += force * (deltaTime * deltaTime);
+
+            // Verlet integration
+            delta += (position - prevPosition) * (1 - drag);
+
+            dynamic[i].PreviousPosition = position;
+            dynamic[i].CurrentPosition = position + delta;
+        }
+
+        // Length constraints
+        for (int32 i = 1; i < nodesCount; i++)
+        {
+            Vector3 offset = dynamic[i].CurrentPosition - dynamic[i - 1].CurrentPosition;
+            Real dist = offset.Length();
+            Real boneLength = Vector3::Distance(nodesRef[i].Translation, nodesRef[i - 1].Translation);
+            Real maxBoneLength = boneLength * stretchLimit;
+            if (dist > maxBoneLength && dist > ANIM_GRAPH_BLEND_THRESHOLD)
+            {
+                Real scale = ((dist - maxBoneLength) / dist);
+                dynamic[i].CurrentPosition -= offset * scale;
+            }
+        }
+
+        // Update the nodes with the new transforms (move back from world-space to node-space)
+        Quaternion prevRotation = Quaternion::Identity;
+        for (int32 i = 0; i < nodesCount; i++)
+        {
+            Transform nodeTransform = nodesRef[i];
+            nodeTransform.Translation = dynamic[i].CurrentPosition;
+
+            // Move back from world-space to model-space
+            nodeTransform = objectTransform.WorldToLocal(nodeTransform);
+
+            if (i + 1 < nodesCount)
+            {
+                // Orient node to point to the next node in the chain
+                Vector3 childNewPos = objectTransform.WorldToLocal(dynamic[i + 1].CurrentPosition);
+                int32 childIndex = nodesIndices[i + 1];
+                Vector3 childRefPos = nodes->Nodes[childIndex].Translation;
+                Vector3 childOldPos = nodeTransform.LocalToWorld(childRefPos);
+                Vector3 oldDir = (childOldPos - nodeTransform.Translation).GetNormalized();
+                Vector3 newDir = (childNewPos - nodeTransform.Translation).GetNormalized();
+                nodeTransform.Orientation = Quaternion::FindBetween(oldDir, newDir) * nodeTransform.Orientation;
+                prevRotation = nodeTransform.Orientation;
+            }
+            else
+            {
+                // Tip (last) node copies the orientation of the parent
+                nodeTransform.Orientation = prevRotation;
+            }
+
+            nodes->SetNodeModelTransformation(skeleton, nodesIndices[i], nodeTransform, weight);
+        }
+
+        // When we blend between animated and simulated poses then fetch the final pose from the nodes instead of using the simulated pose directly
+        if (weight < 1.0f)
+        {
+            // TODO: optimize it by getting root node, then using LocalToWorld for following children
+            for (int32 i = 1; i < nodesCount; i++)
+                dynamic[i].CurrentPosition = nodes->GetNodeWorldTransformation(context, skeleton, nodesIndices[i]).Translation;
+        }
+
+        value = nodes;
         break;
     }
     default:
