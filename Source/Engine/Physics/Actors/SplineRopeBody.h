@@ -25,6 +25,7 @@ private:
     };
 
     Spline* _spline = nullptr;
+    Transform _splineTransform;
     float _time = 0.0f;
     Array<Mass> _masses;
 

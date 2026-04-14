@@ -56,11 +56,21 @@ void SplineRopeBody::Tick()
         if (splineTransform.LocalToWorld(keyframes.First().Value.Translation) != mass.Position)
             splineDirty = true;
     }
-    for (int32 i = 1; i < keyframesCount; i++)
+    bool syncPositions = true;
+    if (splineTransform != _splineTransform)
     {
-        auto& mass = _masses[i];
-        mass.Unconstrained = true;
-        mass.Position = splineTransform.LocalToWorld(keyframes[i].Value.Translation);
+        _splineTransform = splineTransform;
+        syncPositions = false;
+        splineDirty = true;
+    }
+    if (syncPositions)
+    {
+        for (int32 i = 1; i < keyframesCount; i++)
+        {
+            auto& mass = _masses[i];
+            mass.Unconstrained = true;
+            mass.Position = splineTransform.LocalToWorld(keyframes[i].Value.Translation);
+        }
     }
     if (AttachEnd)
     {
@@ -175,6 +185,7 @@ void SplineRopeBody::OnParentChanged()
     Actor::OnParentChanged();
 
     _spline = Cast<Spline>(_parent);
+    _splineTransform = _spline ? _spline->GetTransform() : Transform::Identity;
 }
 
 void SplineRopeBody::OnTransformChanged()
