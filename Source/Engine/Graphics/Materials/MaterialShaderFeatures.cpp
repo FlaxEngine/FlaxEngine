@@ -73,22 +73,24 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     bool noEnvProbe = true;
     // TODO: optimize env probe searching for a transparent material - use spatial cache for renderer to find it
     const BoundingSphere objectBounds(drawCall.ObjectPosition, drawCall.ObjectRadius);
+    float minDistanceSq = MAX_float;
+    GPUTexture* envProbeTexture = nullptr;
     for (int32 i = 0; i < cache->EnvironmentProbes.Count(); i++)
     {
         const RenderEnvironmentProbeData& probe = cache->EnvironmentProbes.Get()[i];
-        if (objectBounds.Intersects(BoundingSphere(probe.Position, probe.Radius)))
+        const float sphereCullDistance = objectBounds.Radius + probe.Radius;
+        const float distanceSq = Float3::DistanceSquared(probe.Position, objectBounds.Center);
+        if (distanceSq <= sphereCullDistance * sphereCullDistance && distanceSq < minDistanceSq)
         {
             noEnvProbe = false;
+            minDistanceSq = distanceSq;
+            envProbeTexture = probe.Texture;
             probe.SetShaderData(data.EnvironmentProbe);
-            params.GPUContext->BindSR(envProbeShaderRegisterIndex, probe.Texture);
-            break;
         }
     }
     if (noEnvProbe)
-    {
         Platform::MemoryClear(&data.EnvironmentProbe, sizeof(data.EnvironmentProbe));
-        params.GPUContext->UnBindSR(envProbeShaderRegisterIndex);
-    }
+    params.GPUContext->BindSR(envProbeShaderRegisterIndex, envProbeTexture);
     // TODO: find a better way to find this texture (eg. cache GPUTextureView* handle within ForwardShading cache for a whole frame)
     static AssetReference<Texture> PreIntegratedGF = Content::LoadAsyncInternal<Texture>(PRE_INTEGRATED_GF_ASSET_NAME);
     params.GPUContext->BindSR(preIntegratedGFRegisterIndex, PreIntegratedGF->GetTexture());
