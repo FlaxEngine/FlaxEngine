@@ -31,6 +31,8 @@ WIN_API HRGN WIN_API_CALLCONV CreateRectRgn(int x1, int y1, int x2, int y2);
 WIN_API HRESULT WIN_API_CALLCONV DwmExtendFrameIntoClientArea(HWND hWnd, const void* pMarInset);
 WIN_API HRESULT WIN_API_CALLCONV DwmIsCompositionEnabled(BOOL* pfEnabled);
 
+#define WINDOWS_LAZY_SET_LAYERED_FOR_TRANSPARENCY 1
+
 namespace
 {
     bool IsCompositionEnabled()
@@ -69,8 +71,10 @@ WindowsWindow::WindowsWindow(const CreateWindowSettings& settings)
 
     // Setup window style
     uint32 style = WS_POPUP, exStyle = 0;
+#if !WINDOWS_LAZY_SET_LAYERED_FOR_TRANSPARENCY
     if (settings.SupportsTransparency)
         exStyle |= WS_EX_LAYERED;
+#endif
     if (!settings.ActivateWhenFirstShown)
         exStyle |= WS_EX_NOACTIVATE;
     if (settings.ShowInTaskbar)
@@ -584,20 +588,27 @@ void WindowsWindow::GetScreenInfo(int32& x, int32& y, int32& width, int32& heigh
 
 float WindowsWindow::GetOpacity() const
 {
-    ASSERT(HasHWND());
-
-    COLORREF color;
-    BYTE alpha;
-    DWORD flags;
-    GetLayeredWindowAttributes(_handle, &color, &alpha, &flags);
-    return (float)alpha / 255.0f;
+    return _opacity;
 }
 
 void WindowsWindow::SetOpacity(const float opacity)
 {
-    ASSERT(HasHWND());
+    if (_handle == nullptr || Math::NearEqual(_opacity, opacity) || !_settings.SupportsTransparency)
+        return;
+
+#if WINDOWS_LAZY_SET_LAYERED_FOR_TRANSPARENCY
+    LONG exStyle = GetWindowLongW(_handle, GWL_EXSTYLE);
+    if (_opacity >= 1.0f)
+        SetWindowLongW(_handle, GWL_EXSTYLE, exStyle | WS_EX_LAYERED);
+#endif
 
     SetLayeredWindowAttributes(_handle, 0, static_cast<BYTE>(Math::Saturate(opacity) * 255), LWA_ALPHA);
+    _opacity = opacity;
+
+#if WINDOWS_LAZY_SET_LAYERED_FOR_TRANSPARENCY
+    if (opacity >= 1.0f)
+        SetWindowLongW(_handle, GWL_EXSTYLE, exStyle & ~WS_EX_LAYERED);
+#endif
 }
 
 void WindowsWindow::Focus()
