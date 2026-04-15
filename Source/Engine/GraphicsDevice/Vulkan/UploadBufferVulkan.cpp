@@ -107,7 +107,8 @@ UploadBufferVulkan::Allocation UploadBufferVulkan::Allocate(uint64 size, uint64 
     _currentPage->LastGen = _currentGeneration;
 
     // Create allocation result
-    const Allocation result{ (byte*)_currentPage->Mapped + _currentOffset, _currentOffset, size, _currentPage->Buffer, _currentGeneration };
+    ASSERT_LOW_LAYER(_currentPage->Mapped);
+    const Allocation result { (byte*)_currentPage->Mapped + _currentOffset, _currentOffset, size, _currentPage->Buffer, _currentGeneration };
 
     // Move within a page
     _currentOffset += size;
@@ -131,6 +132,8 @@ void UploadBufferVulkan::BeginGeneration(uint64 generation)
         auto page = _usedPages[i];
         if (page->LastGen + VULKAN_UPLOAD_PAGE_GEN_TIMEOUT < generation)
         {
+            if (_currentPage == page)
+                _currentPage = nullptr;
             _usedPages.RemoveAt(i);
             i--;
             _freePages.Add(page);
@@ -143,6 +146,8 @@ void UploadBufferVulkan::BeginGeneration(uint64 generation)
         auto page = _freePages[i];
         if (page->LastGen + VULKAN_UPLOAD_PAGE_GEN_TIMEOUT + VULKAN_UPLOAD_PAGE_NOT_USED_FRAME_TIMEOUT < generation)
         {
+            if (_currentPage == page)
+                _currentPage = nullptr;
             _freePages.RemoveAt(i);
             i--;
             page->ReleaseGPU();
@@ -174,7 +179,7 @@ UploadBufferPageVulkan::UploadBufferPageVulkan(GPUDeviceVulkan* device, uint64 s
     bufferInfo.size = size;
     bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     VmaAllocationCreateInfo allocCreateInfo = {};
-    allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+    allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_HOST;
     allocCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
     VmaAllocationInfo allocInfo;
     vmaCreateBuffer(_device->Allocator, &bufferInfo, &allocCreateInfo, &Buffer, &Allocation, &allocInfo);
