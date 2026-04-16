@@ -2660,6 +2660,28 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         value = actor ? actor->GetPerInstanceRandom() : 0.0f;
         break;
     }
+    // Instance Transform
+    case 37:
+    {
+        auto* actor = ScriptingObject::Cast<Actor>(context.Data->Object);
+        const auto& transform = actor ? actor->GetTransform() : Transform::Identity;
+        switch (box->ID)
+        {
+        case 0:
+            value = Value(transform);
+            break;
+        case 1:
+            value = transform.Translation;
+            break;
+        case 2:
+            value = transform.Orientation;
+            break;
+        case 3:
+            value = transform.Scale;
+            break;
+        }
+        break;
+    }
     default:
         break;
     }
