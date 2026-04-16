@@ -98,7 +98,7 @@ bool AmbientOcclusionPass::Init()
     _psNonSmartBlur = GPUDevice::Instance->CreatePipelineState();
     _psApply = GPUDevice::Instance->CreatePipelineState();
     _psApplyHalf = GPUDevice::Instance->CreatePipelineState();
-    _depthBounds = GPUDevice::Instance->Limits.HasDepthBounds;
+    _depthBounds = GPUDevice::Instance->Limits.HasDepthBounds && GPUDevice::Instance->Limits.HasReadOnlyDepth;
 
     // Load shader
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/SSAO"));
