@@ -111,7 +111,7 @@ FORCE_INLINE void ModelDraw(ModelType* model, const RenderContext& renderContext
     }
 
     // Draw
-    if (info.DrawState->PrevLOD == lodIndex || renderContext.View.IsSingleFrame)
+    if (info.DrawState->PrevLOD == lodIndex || info.DrawState->LODTransition == 255 || renderContext.View.IsSingleFrame)
     {
         model->LODs.Get()[lodIndex].Draw(context, info, 0.0f);
     }
