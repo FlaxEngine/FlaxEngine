@@ -23,5 +23,8 @@
     "Linux": {
       "UseSDL": true,
     },
+    "Web": {
+      "Threads": false,
+    },
   }
 }
