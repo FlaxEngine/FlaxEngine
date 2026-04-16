@@ -315,7 +315,7 @@ bool UpdateExeIcon(const String& path, const TextureData& icon)
     }
     if (icon.Width < 1 || icon.Height < 1 || icon.GetMipLevels() <= 0)
     {
-        LOG(Warning, "Inalid icon data");
+        LOG(Warning, "Invalid icon data");
         return true;
     }
 
@@ -499,27 +499,30 @@ bool WindowsPlatformTools::OnDeployBinaries(CookingData& data)
     FileSystem::DirectoryGetFiles(files, data.NativeCodeOutputPath, TEXT("*.exe"), DirectorySearchOption::TopDirectoryOnly);
     if (files.HasItems())
     {
-        // Apply executable icon
-        TextureData iconData;
-        if (!EditorUtilities::GetApplicationImage(platformSettings->OverrideIcon, iconData))
+        for (auto& file : files)
         {
-            if (UpdateExeIcon(files[0], iconData))
+            // Apply executable icon
+            TextureData iconData;
+            if (!EditorUtilities::GetApplicationImage(platformSettings->OverrideIcon, iconData))
             {
-                data.Error(TEXT("Failed to change output executable file icon."));
-                return true;
+                if (UpdateExeIcon(file, iconData))
+                {
+                    data.Error(TEXT("Failed to change output executable file icon."));
+                    return true;
+                }
             }
-        }
 
-        // Rename app
-        const String newName = EditorUtilities::GetOutputName();
-        const StringView oldName = StringUtils::GetFileNameWithoutExtension(files[0]);
-        if (newName != oldName)
-        {
-            if (FileSystem::MoveFile(data.NativeCodeOutputPath / newName + TEXT(".exe"), files[0], true))
+            // Rename app
+            const String newName = EditorUtilities::GetOutputName();
+            const StringView oldName = StringUtils::GetFileNameWithoutExtension(file);
+            if (newName != oldName)
             {
-                data.Error(String::Format(TEXT("Failed to change output executable name from '{}' to '{}'."), oldName, newName));
-                return true;
-            }
+                if (FileSystem::MoveFile(data.NativeCodeOutputPath / newName + TEXT(".exe"), file, true))
+                {
+                    data.Error(String::Format(TEXT("Failed to change output executable name from '{}' to '{}'."), oldName, newName));
+                    return true;
+                }
+            } 
         }
     }
 
