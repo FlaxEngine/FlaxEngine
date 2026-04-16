@@ -12,6 +12,7 @@
 #include "Engine/Graphics/Models/Config.h"
 #include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"
+#include "Engine/Graphics/Models/ModelDraw.h"
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
@@ -234,113 +235,14 @@ BoundingBox SkinnedModel::GetBox(int32 lodIndex) const
     return LODs[lodIndex].GetBox();
 }
 
-template<typename ContextType>
-FORCE_INLINE void SkinnedModelDraw(SkinnedModel* model, const RenderContext& renderContext, const ContextType& context, const SkinnedMesh::DrawInfo& info)
-{
-    ASSERT(info.Buffer);
-    if (!model->CanBeRendered())
-        return;
-    if (!info.Buffer->IsValidFor(model))
-        info.Buffer->Setup(model);
-    const auto frame = Engine::FrameCount;
-    const auto modelFrame = info.DrawState->PrevFrame + 1;
-
-    // Select a proper LOD index (model may be culled)
-    int32 lodIndex;
-    if (info.ForcedLOD != -1)
-    {
-        lodIndex = info.ForcedLOD;
-    }
-    else
-    {
-        lodIndex = RenderTools::ComputeSkinnedModelLOD(model, info.Bounds.Center, (float)info.Bounds.Radius, renderContext);
-        if (lodIndex == -1)
-        {
-            // Handling model fade-out transition
-            if (modelFrame == frame && info.DrawState->PrevLOD != -1 && !renderContext.View.IsSingleFrame)
-            {
-                // Check if start transition
-                if (info.DrawState->LODTransition == 255)
-                {
-                    info.DrawState->LODTransition = 0;
-                }
-
-                RenderTools::UpdateModelLODTransition(info.DrawState->LODTransition);
-
-                // Check if end transition
-                if (info.DrawState->LODTransition == 255)
-                {
-                    info.DrawState->PrevLOD = lodIndex;
-                }
-                else
-                {
-                    const auto prevLOD = model->ClampLODIndex(info.DrawState->PrevLOD);
-                    const float normalizedProgress = static_cast<float>(info.DrawState->LODTransition) * (1.0f / 255.0f);
-                    model->LODs.Get()[prevLOD].Draw(renderContext, info, normalizedProgress);
-                }
-            }
-
-            return;
-        }
-    }
-    lodIndex += info.LODBias + renderContext.View.ModelLODBias;
-    lodIndex = model->ClampLODIndex(lodIndex);
-
-    if (renderContext.View.IsSingleFrame)
-    {
-    }
-    // Check if it's the new frame and could update the drawing state (note: model instance could be rendered many times per frame to different viewports)
-    else if (modelFrame == frame)
-    {
-        // Check if start transition
-        if (info.DrawState->PrevLOD != lodIndex && info.DrawState->LODTransition == 255)
-        {
-            info.DrawState->LODTransition = 0;
-        }
-
-        RenderTools::UpdateModelLODTransition(info.DrawState->LODTransition);
-
-        // Check if end transition
-        if (info.DrawState->LODTransition == 255)
-        {
-            info.DrawState->PrevLOD = lodIndex;
-        }
-    }
-    // Check if there was a gap between frames in drawing this model instance
-    else if (modelFrame < frame || info.DrawState->PrevLOD == -1)
-    {
-        // Reset state
-        info.DrawState->PrevLOD = lodIndex;
-        info.DrawState->LODTransition = 255;
-    }
-
-    // Draw
-    if (info.DrawState->PrevLOD == lodIndex || renderContext.View.IsSingleFrame)
-    {
-        model->LODs.Get()[lodIndex].Draw(context, info, 0.0f);
-    }
-    else if (info.DrawState->PrevLOD == -1)
-    {
-        const float normalizedProgress = static_cast<float>(info.DrawState->LODTransition) * (1.0f / 255.0f);
-        model->LODs.Get()[lodIndex].Draw(context, info, 1.0f - normalizedProgress);
-    }
-    else
-    {
-        const auto prevLOD = model->ClampLODIndex(info.DrawState->PrevLOD);
-        const float normalizedProgress = static_cast<float>(info.DrawState->LODTransition) * (1.0f / 255.0f);
-        model->LODs.Get()[prevLOD].Draw(context, info, normalizedProgress);
-        model->LODs.Get()[lodIndex].Draw(context, info, normalizedProgress - 1.0f);
-    }
-}
-
 void SkinnedModel::Draw(const RenderContext& renderContext, const SkinnedMesh::DrawInfo& info)
 {
-    SkinnedModelDraw(this, renderContext, renderContext, info);
+    ModelDraw(this, renderContext, renderContext, info);
 }
 
 void SkinnedModel::Draw(const RenderContextBatch& renderContextBatch, const SkinnedMesh::DrawInfo& info)
 {
-    SkinnedModelDraw(this, renderContextBatch.GetMainContext(), renderContextBatch, info);
+    ModelDraw(this, renderContextBatch.GetMainContext(), renderContextBatch, info);
 }
 
 bool SkinnedModel::SetupLODs(const Span<int32>& meshesCountPerLod)

@@ -461,7 +461,7 @@ int32 RenderTools::ComputeModelLOD(const Model* model, const Float3& origin, flo
     return 0;
 }
 
-int32 RenderTools::ComputeSkinnedModelLOD(const SkinnedModel* model, const Float3& origin, float radius, const RenderContext& renderContext)
+int32 RenderTools::ComputeModelLOD(const SkinnedModel* model, const Float3& origin, float radius, const RenderContext& renderContext)
 {
     const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
     const float screenRadiusSquared = ComputeBoundsScreenRadiusSquared(origin, radius, *lodView) * renderContext.View.ModelLODDistanceFactorSqrt;
@@ -484,6 +484,11 @@ int32 RenderTools::ComputeSkinnedModelLOD(const SkinnedModel* model, const Float
     }
 
     return 0;
+}
+
+int32 RenderTools::ComputeSkinnedModelLOD(const SkinnedModel* model, const Float3& origin, float radius, const RenderContext& renderContext)
+{
+    return ComputeModelLOD(model, origin, radius, renderContext);
 }
 
 void RenderTools::ComputeCascadeUpdateFrequency(int32 cascadeIndex, int32 cascadeCount, int32& updateFrequency, int32& updatePhrase, int32 updateMaxCountPerFrame)
