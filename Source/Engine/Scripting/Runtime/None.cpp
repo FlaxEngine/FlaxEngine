@@ -303,6 +303,11 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
     return _classes;
 }
 
+const MAssembly::ClassesDictionary& MAssembly::GetTypeClasses() const
+{
+    return GetClasses();
+}
+
 bool MAssembly::LoadCorlib()
 {
     return false;

@@ -355,7 +355,7 @@ void MCore::UnloadScriptingAssemblyLoadContext()
         MAssembly* a = e.Value;
         if (!a->IsLoaded() || !a->_hasCachedClasses)
             continue;
-        for (const auto& q : a->GetClasses())
+        for (const auto& q : a->GetTypeClasses())
         {
             MClass* c = q.Value;
             c->_hasCachedAttributes = false;
@@ -781,6 +781,7 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
         MCore::GC::FreeMemory((void*)managedClasses[i].fullname);
         MCore::GC::FreeMemory((void*)managedClasses[i].namespace_);
     }
+    _typeClasses = _classes;
 
     static void* RegisterManagedClassNativePointersPtr = GetStaticMethodPointer(TEXT("RegisterManagedClassNativePointers"));
     CallStaticMethod<void, NativeClassDefinitions**, int>(RegisterManagedClassNativePointersPtr, &managedClasses, classCount);
@@ -797,6 +798,12 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
 
     _hasCachedClasses = true;
     return _classes;
+}
+
+MAssembly::ClassesDictionary& MAssembly::GetTypeClasses() const
+{
+    GetClasses();
+    return _typeClasses;
 }
 
 void GetAssemblyName(void* assemblyHandle, StringAnsi& name, StringAnsi& fullname)
@@ -828,7 +835,7 @@ DEFINE_INTERNAL_CALL(void) NativeInterop_CreateClass(NativeClassDefinitions* man
     MClass* klass = assembly->Memory.New<MClass>(assembly, managedClass->typeHandle, managedClass->name, managedClass->fullname, managedClass->namespace_, managedClass->typeAttributes);
     if (assembly != nullptr)
     {
-        auto& classes = const_cast<MAssembly::ClassesDictionary&>(assembly->GetClasses());
+        auto& classes = assembly->GetTypeClasses();
         MClass* oldKlass;
         if (classes.TryGet(klass->GetFullName(), oldKlass))
         {
@@ -1746,7 +1753,7 @@ MClass* GetOrCreateClass(MType* typeHandle)
         klass = assembly->Memory.New<MClass>(assembly, classInfo.typeHandle, classInfo.name, classInfo.fullname, classInfo.namespace_, classInfo.typeAttributes);
         if (assembly != nullptr)
         {
-            auto& classes = const_cast<MAssembly::ClassesDictionary&>(assembly->GetClasses());
+            auto& classes = assembly->GetTypeClasses();
             if (classes.ContainsKey(klass->GetFullName()))
             {
                 LOG(Warning, "Class '{0}' was already added to assembly '{1}'", String(klass->GetFullName()), String(assembly->GetName()));
