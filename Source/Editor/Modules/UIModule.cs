@@ -499,6 +499,7 @@ namespace FlaxEditor.Modules
             InitWindowDecorations(mainWindow);
 
             Editor.Options.OptionsChanged += OnOptionsChanged;
+            Editor.CodeEditing.SelectedEditorChanged += OnSelectedCodeEditorChanged;
 
             mainWindow.PerformLayout(true);
         }
@@ -868,6 +869,11 @@ namespace FlaxEditor.Modules
             MainMenuShortcutKeysUpdated?.Invoke();
 
             UpdateToolstrip();
+        }
+
+        private void OnSelectedCodeEditorChanged(SourceCodeEditing.ISourceCodeEditor codeEditor)
+        {
+            _menuFileOpenScriptsProject.Text = $"Open scripts project ({(codeEditor?.Name ?? "Default")})";
         }
 
         private void InitToolstrip(RootControl mainWindow)
