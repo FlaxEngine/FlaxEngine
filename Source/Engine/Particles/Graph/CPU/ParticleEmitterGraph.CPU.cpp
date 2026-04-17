@@ -437,6 +437,8 @@ void ParticleEmitterGraphCPUExecutor::DrawDebug(ParticleEmitter* emitter, Partic
         DebugDrawModule(module, transform);
     for (auto module : emitter->Graph.InitModules)
         DebugDrawModule(module, transform);
+    for (auto module : emitter->Graph.UpdateModules)
+        DebugDrawModule(module, transform);
 }
 
 #endif
