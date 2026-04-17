@@ -1091,9 +1091,9 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
     return _classes;
 }
 
-const MAssembly::ClassesDictionary& MAssembly::GetTypeClasses() const
+MAssembly::ClassesDictionary& MAssembly::GetTypeClasses() const
 {
-    return GetClasses();
+    return const_cast<ClassesDictionary&>(GetClasses());
 }
 
 bool MAssembly::Load(MonoImage* monoImage)
