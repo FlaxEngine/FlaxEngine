@@ -38,7 +38,10 @@ public class TreeViewPanel : Panel
         });
     }
 
-    private void Rename()
+    /// <summary>
+    /// Renames the selected item.
+    /// </summary>
+    public void Rename()
     {
         if (ContentTree == null || !Visible)
             return;
@@ -54,7 +57,10 @@ public class TreeViewPanel : Panel
         }
     }
 
-    private void Delete()
+    /// <summary>
+    /// Deletes the selected items.
+    /// </summary>
+    public void Delete()
     {
         if (ContentTree == null || !Visible)
             return;
@@ -75,7 +81,10 @@ public class TreeViewPanel : Panel
         }
     }
     
-    private void Duplicate()
+    /// <summary>
+    /// Duplicates the selected items.
+    /// </summary>
+    public void Duplicate()
     {
         if (ContentTree == null || !Visible)
             return;
@@ -96,7 +105,10 @@ public class TreeViewPanel : Panel
         }
     }
     
-    private void Copy()
+    /// <summary>
+    /// Copies the items.
+    /// </summary>
+    public void Copy()
     {
         if (ContentTree == null || !Visible)
             return;
@@ -113,7 +125,10 @@ public class TreeViewPanel : Panel
         UpdateContentItemCut(false);
     }
     
-    private void Paste()
+    /// <summary>
+    /// Pastes the items.
+    /// </summary>
+    public void Paste()
     {
         if (ContentTree == null || !Visible)
             return;
@@ -126,7 +141,10 @@ public class TreeViewPanel : Panel
         UpdateContentItemCut(false);
     }
 
-    private void Cut()
+    /// <summary>
+    /// Cuts the items.
+    /// </summary>
+    public void Cut()
     {
         if (ContentTree == null || !Visible)
             return;
