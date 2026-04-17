@@ -62,13 +62,16 @@ public class TreeViewPanel : Panel
         var selection = ContentTree.Selection;
         if (selection.Count > 0)
         {
+            var items = new List<ContentItem>();
             foreach (var node in selection)
             {
                 if (node is ContentItemTreeNode contentNode)
                 {
-                    Editor.Instance.Windows.ContentWin.Delete(contentNode.Item);
+                    items.Add(contentNode.Item);
                 }
             }
+
+            Editor.Instance.Windows.ContentWin.Delete(items);
         }
     }
     
@@ -80,13 +83,16 @@ public class TreeViewPanel : Panel
         var selection = ContentTree.Selection;
         if (selection.Count > 0)
         {
+            var items = new List<ContentItem>();
             foreach (var node in selection)
             {
                 if (node is ContentItemTreeNode contentNode)
                 {
-                    Editor.Instance.Windows.ContentWin.Duplicate(contentNode.Item);
+                    items.Add(contentNode.Item);
                 }
             }
+
+            Editor.Instance.Windows.ContentWin.Duplicate(items);
         }
     }
     
