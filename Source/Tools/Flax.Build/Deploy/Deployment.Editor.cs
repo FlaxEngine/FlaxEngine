@@ -348,7 +348,8 @@ namespace Flax.Deploy
                     DeployFile(src, dst, "MoltenVK_icd.json");
                     DeployFiles(src, dst, "*.dll");
                     DeployFiles(src, dst, "*.dylib");
-                    DeployFile(src, dst, "Logo.png");
+                    if (EngineConfiguration.UseSDL && MacConfiguration.UseSDL)
+                        DeployFile(src, dst, "Logo.png");
 
                     // Optimize package size
                     Utilities.Run("strip", "FlaxEditor", null, dst, Utilities.RunOptions.None);
