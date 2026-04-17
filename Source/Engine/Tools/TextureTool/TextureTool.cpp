@@ -415,31 +415,53 @@ bool TextureTool::UpdateTexture(GPUContext* context, GPUTexture* texture, int32 
     if (textureFormat != dataFormat)
     {
         PROFILE_CPU_NAMED("ConvertTexture");
-        auto dataSampler = PixelFormatSampler::Get(dataFormat);
-        auto textureSampler = PixelFormatSampler::Get(textureFormat);
-        if (!dataSampler || !textureSampler)
-            return true;
 
         int32 mipWidth, mipHeight, mipDepth;
         texture->GetMipSize(mipIndex, mipWidth, mipHeight, mipDepth);
 
-        auto tempRowPitch = mipWidth * textureSampler->PixelSize;
-        auto tempSlicePitch = tempRowPitch * mipHeight;
-        tempData.Resize(tempSlicePitch * mipDepth);
-
-        ASSERT(data.Length() / rowPitch >= (uint32)mipHeight);
-        for (int32 y = 0; y < mipHeight; y++)
+        auto dataSampler = PixelFormatSampler::Get(dataFormat);
+        auto textureSampler = PixelFormatSampler::Get(textureFormat);
+        if (dataSampler && textureSampler)
         {
-            for (int32 x = 0; x < mipWidth; x++)
+            // Conversion with an in-built samplers
+            auto tempRowPitch = mipWidth * textureSampler->PixelSize;
+            auto tempSlicePitch = tempRowPitch * mipHeight;
+            tempData.Resize(tempSlicePitch * mipDepth);
+            ASSERT(data.Length() / rowPitch >= (uint32)mipHeight);
+            for (int32 y = 0; y < mipHeight; y++)
             {
-                Color color = dataSampler->SamplePoint(data.Get(), x, y, rowPitch);
-                textureSampler->Store(tempData.Get(), x, y, tempRowPitch, color);
+                for (int32 x = 0; x < mipWidth; x++)
+                {
+                    Color color = dataSampler->SamplePoint(data.Get(), x, y, rowPitch);
+                    textureSampler->Store(tempData.Get(), x, y, tempRowPitch, color);
+                }
             }
+            data = ToSpan(tempData);
+            rowPitch = tempRowPitch;
+            slicePitch = tempSlicePitch;
         }
-
-        data = ToSpan(tempData);
-        rowPitch = tempRowPitch;
-        slicePitch = tempSlicePitch;
+        else
+        {
+            // Conversion with external library
+            TextureData src, dst;
+            src.Width = mipWidth;
+            src.Height = mipHeight;
+            src.Depth = mipDepth;
+            src.Format = dataFormat;
+            auto& srcItem = src.Items.AddOne();
+            auto& srcMip = srcItem.Mips.AddOne();
+            srcMip.RowPitch = rowPitch;
+            srcMip.DepthPitch = slicePitch;
+            srcMip.Lines = slicePitch / rowPitch;
+            srcMip.Data.Link(data);
+            if (Convert(dst, src, textureFormat))
+                return true;
+            auto& dstMip = dst.Items[0].Mips[0];
+            tempData.Set(dstMip.Data.Get(), dstMip.Data.Length());
+            data = ToSpan(tempData);
+            rowPitch = dstMip.RowPitch;
+            slicePitch = dstMip.DepthPitch;
+        }
     }
 
     // Update texture
