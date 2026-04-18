@@ -1,5 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
 using System.IO;
 using Flax.Build.NativeCpp;
 using Flax.Build.Platforms;
@@ -22,6 +23,9 @@ public class GraphicsDeviceWebGPU : GraphicsDeviceBaseModule
     public override void Setup(BuildOptions options)
     {
         base.Setup(options);
+
+        if (!EmscriptenSdk.Instance.IsValid)
+            throw new Exception("Cannot build WebGPU for Web without Emscripten SDK. Check environment variable 'EMSDK'.");
 
         var port = "--use-port=emdawnwebgpu:cpp_bindings=false";
         options.OutputFiles.Add(port);
