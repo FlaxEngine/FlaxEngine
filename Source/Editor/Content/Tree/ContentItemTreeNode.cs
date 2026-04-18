@@ -129,28 +129,6 @@ public sealed class ContentItemTreeNode : TreeNode, IContentItemOwner
     }
 
     /// <inheritdoc />
-    public override bool OnKeyDown(KeyboardKeys key)
-    {
-        if (IsFocused)
-        {
-            switch (key)
-            {
-            case KeyboardKeys.Return:
-                Editor.Instance.Windows.ContentWin.Open(Item);
-                return true;
-            case KeyboardKeys.F2:
-                Editor.Instance.Windows.ContentWin.Rename(Item);
-                return true;
-            case KeyboardKeys.Delete:
-                Editor.Instance.Windows.ContentWin.Delete(Item);
-                return true;
-            }
-        }
-
-        return base.OnKeyDown(key);
-    }
-
-    /// <inheritdoc />
     protected override void DoDragDrop()
     {
         DoDragDrop(DragItems.GetDragData(Item));
