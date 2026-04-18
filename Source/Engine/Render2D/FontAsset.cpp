@@ -155,6 +155,22 @@ FontAsset* FontAsset::GetItalic()
     return _virtualItalic;
 }
 
+FontAsset* FontAsset::GetMSDF()
+{
+    ScopeLock lock(Locker);
+    if (_options.RasterMode == FontRasterMode::MSDF)
+        return this;
+    if (!_virtualMSDF)
+    {
+        _virtualMSDF = Content::CreateVirtualAsset<FontAsset>();
+        _virtualMSDF->Init(_fontFile);
+        auto options = _options;
+        options.RasterMode = FontRasterMode::MSDF;
+        _virtualMSDF->SetOptions(options);
+    }
+    return _virtualMSDF;
+}
+
 bool FontAsset::Init(const BytesContainer& fontFile)
 {
     ScopeLock lock(Locker);
