@@ -125,6 +125,7 @@ private:
     Dictionary<Pair<float, uint32>, int32> _kerningTable;
     AssetReference<FontAsset> _virtualBold;
     AssetReference<FontAsset> _virtualItalic;
+    AssetReference<FontAsset> _virtualMSDF;
 
 public:
     /// <summary>
@@ -182,6 +183,12 @@ public:
     /// </summary>
     /// <returns>The virtual font or this.</returns>
     API_FUNCTION() FontAsset* GetItalic();
+
+    /// <summary>
+    /// Gets the MSDF version of the font. Returns itself or creates a new virtual font asset using this font but rasterized with MSDF.
+    /// </summary>
+    /// <returns>The virtual font or this.</returns>
+    API_FUNCTION() FontAsset* GetMSDF();
 
     /// <summary>
     /// Initializes the font with a custom font file data.
