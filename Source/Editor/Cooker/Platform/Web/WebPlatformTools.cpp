@@ -188,11 +188,21 @@ bool WebPlatformTools::OnPostProcess(CookingData& data)
 #endif
         procSettings.Arguments = String::Format(TEXT("files.data --preload \"{}@/\" --lz4 --js-output=files.js"), data.DataOutputPath);
         procSettings.WorkingDirectory = data.OriginalOutputPath;
+#if PLATFORM_MAC
+        // Use python bundled with SDK (python from min-spec XCode 16.4 is 3.9.6 which is < 3.10 needed by SDK 5.0)
+        Array<String> pythons;
+        FileSystem::GetChildDirectories(pythons, emscriptenSdk / TEXT("/python"));
+        if (pythons.HasItems())
+        {
+            procSettings.Arguments = procSettings.FileName + TEXT(".py ") + procSettings.Arguments;
+            procSettings.FileName = pythons[0] / TEXT("/bin/python3");
+        }
+#endif
         const int32 result = Platform::CreateProcess(procSettings);
         if (result != 0)
         {
             if (!FileSystem::FileExists(procSettings.FileName))
-                data.Error(TEXT("Missing file_packager.bat. Ensure Emscripten SDK installation is valid and 'EMSDK' environment variable points to it."));
+                data.Error(TEXT("Missing file_packager tool. Ensure Emscripten SDK installation is valid and 'EMSDK' environment variable points to it."));
             data.Error(String::Format(TEXT("Failed to package project files (result code: {0}). See log for more info."), result));
             return true;
         }
