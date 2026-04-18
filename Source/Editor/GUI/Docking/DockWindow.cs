@@ -89,7 +89,7 @@ namespace FlaxEditor.GUI.Docking
                 // Check if is docked to the floating window and is selected so update window title
                 if (IsSelected && _dockedTo is FloatWindowDockPanel floatPanel)
                 {
-                    floatPanel.Window.Title = Title;
+                    floatPanel.UpdateTitle(_title);
                 }
             }
         }
