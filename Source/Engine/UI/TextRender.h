@@ -39,6 +39,7 @@ private:
     Color _color;
     TextLayoutOptions _layoutOptions;
     float _size;
+    float _MSDFSize;
     int32 _sceneRenderingKey = -1;
 
     BoundingBox _localBox;
@@ -95,6 +96,17 @@ public:
     /// Sets the font characters size.
     /// </summary>
     API_PROPERTY() void SetFontSize(float value);
+
+    /// <summary>
+    /// Gets the font size for MSDF atlas generation.
+    /// </summary>
+    API_PROPERTY(Attributes = "EditorOrder(50), DefaultValue(32), Limit(4, 256), EditorDisplay(\"Text\")")
+    float GetFontMSDFSize() const;
+
+    /// <summary>
+    /// Sets the font size for MSDF atlas generation.
+    /// </summary>
+    API_PROPERTY() void SetFontMSDFSize(float value);
 
     /// <summary>
     /// The draw passes to use for rendering this object.

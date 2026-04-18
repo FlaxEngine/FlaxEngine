@@ -19,6 +19,7 @@ REGISTER_BINARY_ASSET_WITH_UPGRADER(FontAsset, "FlaxEngine.FontAsset", FontAsset
 FontAsset::FontAsset(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)
     , _face(nullptr)
+    , _fontCache(512)
 {
 }
 
@@ -102,7 +103,7 @@ void FontAsset::SetOptions(const FontOptions& value)
     _options = value;
 }
 
-Font* FontAsset::CreateFont(float size)
+Font* FontAsset::CreateFont(float size, float MSDFSize)
 {
     PROFILE_CPU();
 
@@ -116,11 +117,11 @@ Font* FontAsset::CreateFont(float size)
     // Check if font with that size has already been created
     for (auto font : _fonts)
     {
-        if (font->GetAsset() == this && font->GetSize() == size)
+        if (font->GetAsset() == this && font->GetSize() == size && font->GetMSDFSize() == MSDFSize)
             return font;
     }
 
-    return New<Font>(this, size);
+    return New<Font>(this, size, MSDFSize);
 }
 
 FontAsset* FontAsset::GetBold()
@@ -153,6 +154,22 @@ FontAsset* FontAsset::GetItalic()
         _virtualItalic->SetOptions(options);
     }
     return _virtualItalic;
+}
+
+FontAsset* FontAsset::GetMSDF()
+{
+    ScopeLock lock(Locker);
+    if (_options.RasterMode == FontRasterMode::MSDF)
+        return this;
+    if (!_virtualMSDF)
+    {
+        _virtualMSDF = Content::CreateVirtualAsset<FontAsset>();
+        _virtualMSDF->Init(_fontFile);
+        auto options = _options;
+        options.RasterMode = FontRasterMode::MSDF;
+        _virtualMSDF->SetOptions(options);
+    }
+    return _virtualMSDF;
 }
 
 bool FontAsset::Init(const BytesContainer& fontFile)
@@ -197,6 +214,11 @@ bool FontAsset::ContainsChar(Char c) const
 void FontAsset::Invalidate()
 {
     ScopeLock lock(Locker);
+    for (auto& entry : _fontCache)
+        FontManager::Invalidate(entry.Value);
+
+    _fontCache.Clear();
+
     for (auto font : _fonts)
         font->Invalidate();
 }
