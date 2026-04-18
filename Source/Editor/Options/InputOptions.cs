@@ -347,6 +347,14 @@ namespace FlaxEditor.Options
         [EditorDisplay("Viewport"), EditorOrder(1550)]
         public InputBinding Down = new InputBinding(KeyboardKeys.Q);
 
+        [DefaultValue(typeof(InputBinding), "C")]
+        [EditorDisplay("Viewport"), EditorOrder(1551)]
+        public InputBinding ZoomIn = new InputBinding(KeyboardKeys.C);
+
+        [DefaultValue(typeof(InputBinding), "Z")]
+        [EditorDisplay("Viewport"), EditorOrder(1552)]
+        public InputBinding ZoomOut = new InputBinding(KeyboardKeys.Z);
+
         [DefaultValue(typeof(InputBinding), "None")]
         [EditorDisplay("Viewport", "Toggle Camera Rotation"), EditorOrder(1560)]
         public InputBinding CameraToggleRotation = new InputBinding(KeyboardKeys.None);
