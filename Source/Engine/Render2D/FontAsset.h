@@ -182,7 +182,7 @@ public:
     API_FUNCTION() FontAsset* GetItalic();
 
     /// <summary>
-    /// Gets the MSDF version of the font. Returns itself or creates a new virtual font asset using this font but rasterized with MSDF.
+    /// Gets the MSDF version of the font. Returns itself or creates a new virtual font asset using this font but rasterized with Multi-channel Signed Distance Field (MSDF).
     /// </summary>
     /// <returns>The virtual font or this.</returns>
     API_FUNCTION() FontAsset* GetMSDF();

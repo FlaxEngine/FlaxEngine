@@ -69,6 +69,7 @@ void FontAsset::unload(bool isReloading)
     _fontFile.Release();
     _virtualBold = nullptr;
     _virtualItalic = nullptr;
+    _virtualMSDF = nullptr;
 }
 
 AssetChunksFlag FontAsset::getChunksToPreload() const
