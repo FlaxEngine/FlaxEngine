@@ -185,6 +185,15 @@ namespace Flax.Deploy
                     plist = plist.Replace("{Arch}", arch == TargetArchitecture.ARM64 ? "arm64" : "x86_64");
                     File.WriteAllText(Path.Combine(appContentsPath, "Info.plist"), plist, Encoding.ASCII);
 
+                    // Codesign tint compiler executable and remove ones for Windows/Linux
+                    var webPlatformFolder = Path.Combine(OutputPath, "Source/Platforms/Web");
+                    if (Directory.Exists(webPlatformFolder))
+                    {
+                        Utilities.DirectoryDelete(Path.Combine(webPlatformFolder, "Binaries/Tools/Linux"));
+                        Utilities.DirectoryDelete(Path.Combine(webPlatformFolder, "Binaries/Tools/Windows"));
+                        CodeSign(Path.Combine(webPlatformFolder, "Binaries/Tools/Mac/ARM64/tint"));
+                    }
+
                     // Copy output editor files
                     Utilities.DirectoryCopy(OutputPath, appContentsPath);
 
