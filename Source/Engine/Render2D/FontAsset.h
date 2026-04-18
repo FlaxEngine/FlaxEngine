@@ -169,7 +169,7 @@ public:
     /// </summary>
     /// <param name="size">The font characters size.</param>
     /// <returns>The created font object.</returns>
-    API_FUNCTION() Font* CreateFont(float size, float MSDFSize = 24.0f);
+    API_FUNCTION() Font* CreateFont(float size, float MSDFSize = 32.0f);
 
     /// <summary>
     /// Gets the font with bold style. Returns itself or creates a new virtual font asset using this font but with bold option enabled.

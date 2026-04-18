@@ -101,7 +101,7 @@ API_STRUCT(NoDefault) struct FLAXENGINE_API FontCharacterEntry
     API_FIELD() const FontTextureAtlasSlot* Slot;
 
     /// <summary>
-    /// The owner font.
+    /// The font containing metrics.
     /// </summary>
     API_FIELD() const class Font* Font;
 };
