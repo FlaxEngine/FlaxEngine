@@ -2,6 +2,7 @@
 
 using System;
 using FlaxEditor.Content.Thumbnails;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Viewport.Previews;
 using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
@@ -45,6 +46,49 @@ namespace FlaxEditor.Content
         {
             if (Editor.CreateAsset("MaterialInstance", outputPath))
                 throw new Exception("Failed to create new asset.");
+        }
+
+        /// <inheritdoc />
+        public override void OnContentWindowContextMenu(ContextMenu menu, ContentItem item)
+        {
+            base.OnContentWindowContextMenu(menu, item);
+
+            if (item is BinaryAssetItem binaryAssetItem)
+            {
+                var button = menu.AddButton("Create Material Instance", CreateMaterialInstanceClicked);
+                button.Tag = binaryAssetItem;
+            }
+        }
+
+        private void CreateMaterialInstanceClicked(ContextMenuButton obj)
+        {
+            var binaryAssetItem = (BinaryAssetItem)obj.Tag;
+            CreateMaterialInstance(binaryAssetItem);
+        }
+
+        /// <summary>
+        /// Creates the material instance from the given material.
+        /// </summary>
+        /// <param name="materialItem">The material item to use as a base material.</param>
+        public static void CreateMaterialInstance(BinaryAssetItem materialItem)
+        {
+            var materialInstanceName = materialItem.ShortName + " Instance";
+            var materialInstanceProxy = Editor.Instance.ContentDatabase.GetProxy<MaterialInstance>();
+            Editor.Instance.Windows.ContentWin.NewItem(materialInstanceProxy, null, item => OnMaterialInstanceCreated(item, materialItem), materialInstanceName);
+        }
+
+        private static void OnMaterialInstanceCreated(ContentItem item, BinaryAssetItem materialItem)
+        {
+            var assetItem = (AssetItem)item;
+            var materialInstance = FlaxEngine.Content.LoadAsync<MaterialInstance>(assetItem.ID);
+            if (materialInstance == null || materialInstance.WaitForLoaded())
+            {
+                Editor.LogError("Failed to load created material instance.");
+                return;
+            }
+
+            materialInstance.BaseMaterial = FlaxEngine.Content.LoadAsync<MaterialInstance>(materialItem.ID);
+            materialInstance.Save();
         }
 
         /// <inheritdoc />
