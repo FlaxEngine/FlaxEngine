@@ -78,8 +78,6 @@ namespace FlaxEditor.Content
                 };
                 InitAssetPreview(_preview);
             }
-
-            // TODO: disable streaming for asset during thumbnail rendering (and restore it after)
         }
 
         /// <inheritdoc />

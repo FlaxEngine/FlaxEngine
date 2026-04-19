@@ -99,8 +99,6 @@ namespace FlaxEditor.Content
                 _preview = new MaterialPreview(false);
                 InitAssetPreview(_preview);
             }
-
-            // TODO: disable streaming for dependant assets during thumbnail rendering (and restore it after)
         }
 
         /// <inheritdoc />

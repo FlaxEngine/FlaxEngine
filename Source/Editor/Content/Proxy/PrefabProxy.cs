@@ -113,8 +113,6 @@ namespace FlaxEditor.Content
                 _preview = new PrefabPreview(false);
                 InitAssetPreview(_preview);
             }
-
-            // TODO: disable streaming for asset during thumbnail rendering (and restore it after)
         }
 
         /// <inheritdoc />
@@ -125,6 +123,7 @@ namespace FlaxEditor.Content
 
             // Check if asset is streamed enough
             var asset = (Prefab)request.Asset;
+            // TODO: check all prefab actors to have loaded resources (models/textures/etc.)
             return asset.IsLoaded;
         }
 

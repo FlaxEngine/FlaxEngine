@@ -153,6 +153,11 @@ public:
     /// </summary>
     API_PROPERTY() bool HasStreamingError() const;
 
+    /// <summary>
+    /// Sets the texture as visible this frame to inform streaming about usage which will stream boost its priority for the streaming.
+    /// </summary>
+    API_FUNCTION() void SetStreamingVisible() const;
+
 public:
     /// <summary>
     /// Gets the mip data.
