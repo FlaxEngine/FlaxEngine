@@ -181,6 +181,14 @@ namespace FlaxEditor.Content.Thumbnails
             return baseMaterial == null || HasMinimumQualityInternal(baseMaterial);
         }
 
+        internal static bool HasMinimumQuality(Prefab asset)
+        {
+            if (!asset.IsLoaded)
+                return false;
+            var defaultInstance = asset.GetDefaultInstance();
+            return defaultInstance == null || HasMinimumQualityInternal(defaultInstance);
+        }
+
         private static bool HasMinimumQualityInternal(MaterialBase asset)
         {
             if (!asset.IsLoaded)
@@ -191,6 +199,43 @@ namespace FlaxEditor.Content.Thumbnails
                 if (parameter.Value is TextureBase asTexture && !HasMinimumQuality(asTexture))
                     return false;
             }
+            return true;
+        }
+
+        private static bool HasMinimumQualityInternal(Actor actor)
+        {
+            if (!actor.IsActive)
+                return true;
+
+            if (actor is ModelInstanceActor modelInstance)
+            {
+                var model = modelInstance.GetModel();
+                if (model && !HasMinimumQuality(model))
+                    return false;
+                var slots = modelInstance.MaterialSlots;
+                foreach (var slot in slots)
+                {
+                    if (slot.Material && !HasMinimumQuality(slot.Material))
+                        return false;
+                }
+            }
+            if (actor is SpriteRender spriteRender)
+            {
+                if (spriteRender.Material && !HasMinimumQuality(spriteRender.Material))
+                    return false;
+            }
+            if (actor is TextRender textRender)
+            {
+                if (textRender.Material && !HasMinimumQuality(textRender.Material))
+                    return false;
+            }
+
+            for (int i = 0; i < actor.ChildrenCount; i++)
+            {
+                if (!HasMinimumQualityInternal(actor.GetChild(i)))
+                    return false;
+            }
+
             return true;
         }
 

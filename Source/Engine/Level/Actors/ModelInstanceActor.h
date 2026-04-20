@@ -67,6 +67,11 @@ public:
     API_FUNCTION(Sealed) virtual MaterialBase* GetMaterial(int32 entryIndex) = 0;
 
     /// <summary>
+    /// Gets the model (base class).
+    /// </summary>
+    API_FUNCTION(Sealed) virtual ModelBase* GetModel() = 0;
+
+    /// <summary>
     /// Sets the material to the entry slot. Can be used to override the material of the meshes using this slot.
     /// </summary>
     /// <param name="entryIndex">The material slot entry index.</param>

@@ -1332,6 +1332,11 @@ MaterialBase* AnimatedModel::GetMaterial(int32 entryIndex)
     return material;
 }
 
+ModelBase* AnimatedModel::GetModel()
+{
+    return SkinnedModel.Get();
+}
+
 bool AnimatedModel::IntersectsEntry(int32 entryIndex, const Ray& ray, Real& distance, Vector3& normal)
 {
     auto model = SkinnedModel.Get();

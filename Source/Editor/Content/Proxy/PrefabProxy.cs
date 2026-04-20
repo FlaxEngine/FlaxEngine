@@ -122,9 +122,7 @@ namespace FlaxEditor.Content
                 return false;
 
             // Check if asset is streamed enough
-            var asset = (Prefab)request.Asset;
-            // TODO: check all prefab actors to have loaded resources (models/textures/etc.)
-            return asset.IsLoaded;
+            return ThumbnailsModule.HasMinimumQuality((Prefab)request.Asset);
         }
 
         private void Prepare(Actor actor, ref BoundingBox bounds)

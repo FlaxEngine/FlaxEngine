@@ -599,6 +599,11 @@ MaterialBase* StaticModel::GetMaterial(int32 entryIndex)
     return material;
 }
 
+ModelBase* StaticModel::GetModel()
+{
+    return Model.Get();
+}
+
 bool StaticModel::IntersectsEntry(int32 entryIndex, const Ray& ray, Real& distance, Vector3& normal)
 {
     auto model = Model.Get();
