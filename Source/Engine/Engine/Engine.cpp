@@ -157,7 +157,7 @@ int32 Engine::OnInit(const Char* cmdLine)
     Application::BeforeRun();
     LOG_FLOOR();
     LOG_FLUSH();
-    Time::Synchronize();
+    Time::Synchronize(true);
     EngineImpl::IsReady = true;
     PROFILE_MEM_END();
 

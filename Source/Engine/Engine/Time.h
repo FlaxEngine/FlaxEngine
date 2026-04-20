@@ -75,7 +75,7 @@ public:
         TimeSpan UnscaledTime;
 
     public:
-        virtual void Synchronize(float targetFps, double currentTime);
+        virtual void Synchronize(float targetFps, double currentTime, bool resetTotalTime);
         virtual void OnReset(float targetFps, double currentTime);
         virtual bool OnTickBegin(double time, float targetFps, float maxDeltaTime);
         virtual void OnTickEnd();
@@ -220,7 +220,8 @@ public:
     /// <summary>
     /// Synchronizes update, fixed update and draw. Resets any pending deltas for fresh ticking in sync.
     /// </summary>
-    API_FUNCTION() static void Synchronize();
+    /// <param name="resetTotalTime">True if reset total time, otherwise only delta time and ticking is reset.</param>
+    API_FUNCTION() static void Synchronize(bool resetTotalTime = false);
 
 private:
     // Methods used by the Engine class
