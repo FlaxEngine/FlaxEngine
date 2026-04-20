@@ -188,7 +188,7 @@ namespace FlaxEditor.Content
                 if (bounds != BoundingBox.Empty)
                 {
                     float targetSize = 38.0f;
-                    var maxSize = Math.Max(0.001f, (float)bounds.Size.MaxValue);
+                    float maxSize = Math.Max(0.001f, (float)bounds.Size.MaxValue);
                     float scale = targetSize / maxSize;
                     _preview.Instance.Scale = new Float3(scale);
                     _preview.Instance.Position = -bounds.Center * scale;

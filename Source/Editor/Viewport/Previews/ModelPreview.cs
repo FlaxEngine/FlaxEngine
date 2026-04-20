@@ -18,7 +18,7 @@ namespace FlaxEditor.Viewport.Previews
         private ContextMenuButton _showBoundsButton, _showCurrentLODButton, _showNormalsButton, _showTangentsButton, _showBitangentsButton, _showFloorButton;
         private ContextMenu _previewLODsWidgetButtonMenu;
         private StaticModel _previewModel, _floorModel;
-        private bool _showBounds, _showCurrentLOD, _showNormals, _showTangents, _showBitangents, _showFloor;
+        private bool _showBounds, _showCurrentLOD, _showNormals, _showTangents, _showBitangents, _showFloor, _autoAdjustCamera = true;
         private MeshDataCache _meshDatas;
 
         /// <summary>
@@ -221,8 +221,8 @@ namespace FlaxEditor.Viewport.Previews
                 _showCurrentLODButton.IndexInParent = 2;
                 _showCurrentLODButton.CloseMenuOnClick = false;
 
-                // Preview LODs mode widget
-                var PreviewLODsMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
+                // Preview LOD mode widget
+                var previewLODsMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
                 _previewLODsWidgetButtonMenu = new ContextMenu();
                 _previewLODsWidgetButtonMenu.VisibleChanged += control =>
                 {
@@ -248,14 +248,32 @@ namespace FlaxEditor.Viewport.Previews
                 new ViewportWidgetButton("Preview LOD", SpriteHandle.Invalid, _previewLODsWidgetButtonMenu)
                 {
                     TooltipText = "Preview LOD properties",
-                    Parent = PreviewLODsMode,
+                    Parent = previewLODsMode,
                 };
-                PreviewLODsMode.Parent = this;
+                previewLODsMode.Parent = this;
+            }
+        }
+
+        internal static void AdjustCamera(AssetPreview preview, BoundingBox box)
+        {
+            if (box.Size.MaxValue < preview.NearPlane)
+            {
+                // Very small object
+                preview.NearPlane = Mathf.Min(preview.NearPlane, box.Size.MaxValue * 0.5f + 0.01f);
+                preview.FarPlane *= 0.5f;
+                preview.MovementSpeed = 0.1f;
             }
         }
 
         private void OnBegin(RenderTask task, GPUContext context)
         {
+            if (_autoAdjustCamera && Model && Model.IsLoaded)
+            {
+                // Control camera's near/far planes to properly cover object
+                _autoAdjustCamera = false;
+                AdjustCamera(this, Model.GetBox());
+            }
+
             if (!ScaleToFit)
             {
                 _previewModel.Scale = Float3.One;

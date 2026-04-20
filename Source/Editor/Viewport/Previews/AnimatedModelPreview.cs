@@ -17,7 +17,7 @@ namespace FlaxEditor.Viewport.Previews
         private ContextMenuButton _showNodesButton, _showBoundsButton, _showFloorButton, _showNodesNamesButton;
         private bool _showNodes, _showBounds, _showFloor, _showNodesNames;
         private StaticModel _floorModel;
-        private bool _playAnimation, _playAnimationOnce;
+        private bool _playAnimation, _playAnimationOnce, _autoAdjustCamera = true;
         private float _playSpeed = 1.0f;
 
         /// <summary>
@@ -291,6 +291,13 @@ namespace FlaxEditor.Viewport.Previews
 
         private void OnBegin(RenderTask task, GPUContext context)
         {
+            if (_autoAdjustCamera && SkinnedModel && SkinnedModel.IsLoaded)
+            {
+                // Control camera's near/far planes to properly cover object
+                _autoAdjustCamera = false;
+                ModelPreview.AdjustCamera(this, SkinnedModel.GetBox());
+            }
+
             if (!ScaleToFit)
             {
                 if (_snapToOrigin)

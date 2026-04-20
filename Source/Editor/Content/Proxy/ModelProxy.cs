@@ -95,6 +95,7 @@ namespace FlaxEditor.Content
             var bounds = _preview.Model.GetBox();
             var maxSize = Math.Max(0.001f, (float)bounds.Size.MaxValue);
             _preview.ViewportCamera.SetArcBallView(bounds);
+            _preview.NearPlane = Mathf.Min(10.0f, maxSize * 0.5f);
             _preview.FarPlane = Mathf.Max(1000.0f, maxSize * 2 + 100.0f);
 
             _preview.Task.OnDraw();
