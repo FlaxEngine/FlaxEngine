@@ -73,21 +73,19 @@ public class Editor : EditorModule
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "PS4", "PLATFORM_TOOLS_PS4");
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "PS5", "PLATFORM_TOOLS_PS5");
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "XboxScarlett", "PLATFORM_TOOLS_XBOX_SCARLETT", "PLATFORM_TOOLS_GDK");
-            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Android", "PLATFORM_TOOLS_ANDROID");
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Switch", "PLATFORM_TOOLS_SWITCH");
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Linux", "PLATFORM_TOOLS_LINUX");
         }
         else if (options.Platform.Target == TargetPlatform.Linux)
         {
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Linux", "PLATFORM_TOOLS_LINUX");
-            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Android", "PLATFORM_TOOLS_ANDROID");
         }
         else if (options.Platform.Target == TargetPlatform.Mac)
         {
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Mac", "PLATFORM_TOOLS_MAC");
-            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Android", "PLATFORM_TOOLS_ANDROID");
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "iOS", "PLATFORM_TOOLS_IOS");
         }
+        AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Android", "PLATFORM_TOOLS_ANDROID");
         AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Web", "PLATFORM_TOOLS_WEB");
 
         // Visual Studio integration
@@ -118,11 +116,11 @@ public class Editor : EditorModule
     {
         files.Add(Path.Combine(FolderPath, "Editor.h"));
         files.Add(Path.Combine(FolderPath, "ProjectInfo.h"));
-
         files.Add(Path.Combine(FolderPath, "Cooker/CookingData.h"));
         files.Add(Path.Combine(FolderPath, "Cooker/GameCooker.h"));
         files.Add(Path.Combine(FolderPath, "Cooker/PlatformTools.h"));
         files.Add(Path.Combine(FolderPath, "Cooker/Steps/CookAssetsStep.h"));
         files.Add(Path.Combine(FolderPath, "Utilities/ViewportIconsRenderer.h"));
+        files.Add(Path.Combine(FolderPath, "Managed/ManagedEditor.h"));
     }
 }
