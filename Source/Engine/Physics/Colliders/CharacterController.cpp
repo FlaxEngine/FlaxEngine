@@ -244,6 +244,16 @@ void CharacterController::Resize(float height, float radius)
     UpdateBounds();
 }
 
+void CharacterController::ResetAccumulatedGravity()
+{
+    _gravityDisplacement = Vector3::Zero;
+}
+
+Vector3 CharacterController::GetAccumulatedGravity() const
+{
+    return _gravityDisplacement;
+}
+
 #if USE_EDITOR
 
 #include "Engine/Debug/DebugDraw.h"
