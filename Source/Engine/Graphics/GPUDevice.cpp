@@ -534,7 +534,11 @@ void GPUDevice::DumpResourcesToLog() const
             {
                 if (MemoryUsage != other.MemoryUsage)
                     return MemoryUsage > other.MemoryUsage;
+#if GPU_ENABLE_RESOURCE_NAMING
                 return Object->GetName().Compare(other.Object->GetName()) > 0;
+#else
+                return (uintptr)Object < (uintptr)other.Object;
+#endif
             }
         };
         Array<Resource> resources;
