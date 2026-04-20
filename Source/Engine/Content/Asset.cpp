@@ -585,7 +585,8 @@ void Asset::startLoading()
 {
     PROFILE_MEM(ContentAssets);
     ASSERT(!IsLoaded());
-    ASSERT(Platform::AtomicRead(&_loadingTask) == 0);
+    auto task = (Task*)Platform::AtomicRead(&_loadingTask);
+    ASSERT(task == nullptr || task->IsFinished() || task->IsCanceled());
     auto loadingTask = createLoadingTask();
     ASSERT(loadingTask != nullptr);
     Platform::AtomicStore(&_loadingTask, (intptr)loadingTask);
