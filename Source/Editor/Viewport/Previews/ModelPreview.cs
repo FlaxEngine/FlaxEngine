@@ -259,7 +259,7 @@ namespace FlaxEditor.Viewport.Previews
             if (box.Size.MaxValue < preview.NearPlane)
             {
                 // Very small object
-                preview.NearPlane = Mathf.Min(preview.NearPlane, box.Size.MaxValue * 0.5f + 0.01f);
+                preview.NearPlane = Mathf.Min(preview.NearPlane, (float)box.Size.MaxValue * 0.5f + 0.01f);
                 preview.FarPlane *= 0.5f;
                 preview.MovementSpeed = 0.1f;
             }
