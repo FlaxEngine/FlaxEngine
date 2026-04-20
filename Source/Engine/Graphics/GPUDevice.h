@@ -389,6 +389,11 @@ public:
     /// </summary>
     void DumpResourcesToLog() const;
 
+    /// <summary>
+    /// Dumps all GPU resources information to the log.
+    /// </summary>
+    API_FUNCTION(Attributes="DebugCommand") static void DumpResources();
+
 protected:
     virtual void preDispose();
 
