@@ -127,16 +127,34 @@ namespace FlaxEditor.Content
             return asset.IsLoaded;
         }
 
-        private void Prepare(Actor actor)
+        private void Prepare(Actor actor, ref BoundingBox bounds)
         {
+            if (!actor.IsActive)
+                return;
             if (actor is TextRender textRender)
             {
                 textRender.UpdateLayout();
             }
 
+            // Use bounds from visual-only elements
+            var actorBounds = BoundingBox.Empty;
+            if (actor is ModelInstanceActor || 
+                actor is SpriteRender ||
+                actor is TextRender)
+            {
+                actorBounds = actor.EditorBox;
+            }
+            if (actorBounds != BoundingBox.Empty)
+            {
+                if (bounds == BoundingBox.Empty)
+                    bounds = actorBounds;
+                else
+                    BoundingBox.Merge(ref actorBounds, ref bounds, out bounds);
+            }
+
             for (int i = 0; i < actor.ChildrenCount; i++)
             {
-                Prepare(actor.GetChild(i));
+                Prepare(actor.GetChild(i), ref bounds);
             }
         }
 
@@ -164,14 +182,24 @@ namespace FlaxEditor.Content
             else
             {
                 // Update some actors data (some actor types update bounds/data later but its required to be done before rendering)
-                Prepare(_preview.Instance);
+                var bounds = BoundingBox.Empty;
+                Prepare(_preview.Instance, ref bounds);
+                //bounds = _preview.Instance.EditorBoxChildren;
 
                 // Auto fit actor to camera
-                float targetSize = 30.0f;
-                var bounds = _preview.Instance.EditorBoxChildren;
-                var maxSize = Math.Max(0.001f, (float)bounds.Size.MaxValue);
-                _preview.Instance.Scale = new Float3(targetSize / maxSize);
-                _preview.Instance.Position = Vector3.Zero;
+                if (bounds != BoundingBox.Empty)
+                {
+                    float targetSize = 38.0f;
+                    var maxSize = Math.Max(0.001f, (float)bounds.Size.MaxValue);
+                    float scale = targetSize / maxSize;
+                    _preview.Instance.Scale = new Float3(scale);
+                    _preview.Instance.Position = -bounds.Center * scale;
+                }
+                else
+                {
+                    _preview.Instance.Scale = Float3.One;
+                    _preview.Instance.Position = Vector3.Zero;
+                }
             }
 
             _preview.Task.OnDraw();
