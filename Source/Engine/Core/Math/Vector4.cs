@@ -900,7 +900,7 @@ namespace FlaxEngine
         /// <param name="result">When the method completes, contains the linear interpolation of the two vectors.</param>
         public static void Slerp(ref Vector4 start, ref Vector4 end, Real amount, out Vector4 result)
         {
-            var dot = Mathr.Clamp(Dot(start, end), -1.0f, 1.0f);
+            var dot = Dot(start, end);
             var theta = Mathr.Acos(dot) * amount;
             Vector4 relativeVector = (end - start * dot).Normalized;
             result = ((start * Mathr.Cos(theta)) + (relativeVector * Mathr.Sin(theta)));
