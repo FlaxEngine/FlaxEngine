@@ -272,7 +272,7 @@ namespace FlaxEditor.Windows.Assets
                         infoLabel.AutoHeight = true;
                         var sourceAssetPicker = setupGroup.AddPropertyItem("Source Asset").Custom<AssetPicker>().CustomControl;
                         sourceAssetPicker.Height = 48;
-                        sourceAssetPicker.CheckValid = CheckSourceAssetValid;
+                        sourceAssetPicker.Validator.CheckValid = CheckSourceAssetValid;
                         sourceAssetPicker.SelectedItemChanged += () =>
                         {
                             proxy.Setups.Add(sourceAssetPicker.Validator.SelectedAsset, new SetupProxy());
