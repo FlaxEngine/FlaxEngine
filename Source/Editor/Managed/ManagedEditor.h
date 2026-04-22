@@ -4,7 +4,6 @@
 
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Platform/Window.h"
-#include "Engine/ShadowsOfMordor/Types.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Tools/ModelTool/ModelTool.h"
 #include "Engine/Tools/AudioTool/AudioTool.h"

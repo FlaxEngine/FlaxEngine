@@ -287,7 +287,11 @@ public:
                     {
                         int32 hintIndex = (int32)(intptr)box->Connections[k];
                         TmpConnectionHint hint = tmpHints[hintIndex];
-                        box->Connections[k] = hint.Node->GetBox(hint.BoxID);
+                        Box* hintBox = hint.Node->TryGetBox(hint.BoxID);
+                        if (hintBox == nullptr)
+                            box->Connections.RemoveAtKeepOrder(k--);
+                        else
+                            box->Connections[k] = hintBox;
                     }
                 }
             }

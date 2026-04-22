@@ -110,14 +110,25 @@ public:
     API_FUNCTION() static int32 ComputeModelLOD(const Model* model, API_PARAM(Ref) const Float3& origin, float radius, API_PARAM(Ref) const RenderContext& renderContext);
 
     /// <summary>
+    /// Computes the model LOD index to use during rendering.
+    /// </summary>
+    /// <param name="model">The model.</param>
+    /// <param name="origin">The bounds origin.</param>
+    /// <param name="radius">The bounds radius.</param>
+    /// <param name="renderContext">The rendering context.</param>
+    /// <returns>The zero-based LOD index. Returns -1 if model should not be rendered.</returns>
+    API_FUNCTION() static int32 ComputeModelLOD(const SkinnedModel* model, API_PARAM(Ref) const Float3& origin, float radius, API_PARAM(Ref) const RenderContext& renderContext);
+
+    /// <summary>
     /// Computes the skinned model LOD index to use during rendering.
+    /// [Deprecated in v1.12]
     /// </summary>
     /// <param name="model">The skinned model.</param>
     /// <param name="origin">The bounds origin.</param>
     /// <param name="radius">The bounds radius.</param>
     /// <param name="renderContext">The rendering context.</param>
     /// <returns>The zero-based LOD index. Returns -1 if model should not be rendered.</returns>
-    API_FUNCTION() static int32 ComputeSkinnedModelLOD(const SkinnedModel* model, API_PARAM(Ref) const Float3& origin, float radius, API_PARAM(Ref) const RenderContext& renderContext);
+    API_FUNCTION() DEPRECATED("Use ComputeModelLOD instead.") static int32 ComputeSkinnedModelLOD(const SkinnedModel* model, API_PARAM(Ref) const Float3& origin, float radius, API_PARAM(Ref) const RenderContext& renderContext);
 
     /// <summary>
     /// Computes the sorting key for depth value (quantized)

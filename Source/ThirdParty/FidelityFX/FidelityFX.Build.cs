@@ -1,7 +1,8 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using Flax.Build;
-using Flax.Build.NativeCpp;
+using System.Collections.Generic;
+using System.IO;
 
 /// <summary>
 /// https://github.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK
@@ -18,5 +19,13 @@ public class FidelityFX : HeaderOnlyModule
 
         // Merge third-party modules into engine binary
         BinaryModuleName = "FlaxEngine";
+    }
+
+    /// <inheritdoc />
+    public override void GetFilesToDeploy(List<string> files)
+    {
+        base.GetFilesToDeploy(files);
+
+        files.AddRange(Directory.GetFiles(FolderPath, "*.h", SearchOption.AllDirectories));
     }
 }

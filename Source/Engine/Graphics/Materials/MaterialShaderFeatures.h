@@ -3,7 +3,6 @@
 #pragma once
 
 #include "MaterialShader.h"
-#include "Engine/Core/Math/Rectangle.h"
 #include "Engine/Core/Types/Span.h"
 #include "Engine/Renderer/GI/DynamicDiffuseGlobalIllumination.h"
 #include "Engine/Renderer/GlobalSignDistanceFieldPass.h"

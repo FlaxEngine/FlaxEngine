@@ -38,6 +38,7 @@ private:
     mutable int32 _hasCachedClasses : 1;
 
     mutable ClassesDictionary _classes;
+    mutable ClassesDictionary _typeClasses;
 
     int32 _reloadCount;
     StringAnsi _name;
@@ -233,6 +234,11 @@ public:
     /// Gets the classes lookup cache. Performs full initialization if not cached. The result cache contains all classes from the assembly.
     /// </summary>
     const ClassesDictionary& GetClasses() const;
+
+    /// <summary>
+    /// Gets the classes lookup cache that includes runtime-cached types. Non-stable to iterate over due to dynamic types caching.
+    /// </summary>
+    ClassesDictionary& GetTypeClasses() const;
 
 private:
     bool LoadCorlib();

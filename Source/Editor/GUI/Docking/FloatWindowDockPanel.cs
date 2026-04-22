@@ -200,6 +200,14 @@ namespace FlaxEditor.GUI.Docking
             Dispose();
         }
 
+        internal void UpdateTitle(string title)
+        {
+            _window.Title = title;
+            var decorations = Parent.GetChild<FloatWindowDecorations>();
+            if (decorations != null)
+                decorations.PerformLayout();
+        }
+
         /// <inheritdoc />
         public override bool IsFloating => true;
 
@@ -227,10 +235,7 @@ namespace FlaxEditor.GUI.Docking
 
             if (_window != null && SelectedTab != null)
             {
-                _window.Title = SelectedTab.Title;
-                var decorations = Parent.GetChild<FloatWindowDecorations>();
-                if (decorations != null)
-                    decorations.PerformLayout();
+                UpdateTitle(SelectedTab.Title);
             }
         }
 

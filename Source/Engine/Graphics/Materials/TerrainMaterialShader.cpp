@@ -150,21 +150,6 @@ bool TerrainMaterialShader::Load()
     }
 #endif
 
-    // Support blending but then use only emissive channel
-    switch (_info.BlendMode)
-    {
-    case MaterialBlendMode::Transparent:
-        psDesc.BlendMode = BlendingMode::AlphaBlend;
-        break;
-    case MaterialBlendMode::Additive:
-        psDesc.BlendMode = BlendingMode::Additive;
-        break;
-    case MaterialBlendMode::Multiply:
-        psDesc.BlendMode = BlendingMode::Multiply;
-        break;
-    default: ;
-    }
-
     // GBuffer Pass
     psDesc.VS = _shader->GetVS("VS");
     psDesc.PS = _shader->GetPS("PS_GBuffer");
@@ -185,7 +170,6 @@ bool TerrainMaterialShader::Load()
 
     // Depth Pass
     psDesc.CullMode = CullMode::TwoSided;
-    psDesc.BlendMode = BlendingMode::Opaque;
     psDesc.DepthClipEnable = false;
     psDesc.DepthWriteEnable = true;
     psDesc.DepthEnable = true;

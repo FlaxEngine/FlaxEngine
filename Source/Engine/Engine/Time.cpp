@@ -75,10 +75,11 @@ void TimeSettings::Apply()
 #endif
 }
 
-void Time::TickData::Synchronize(float targetFps, double currentTime)
+void Time::TickData::Synchronize(float targetFps, double currentTime, bool resetTotalTime)
 {
     OnReset(targetFps, currentTime);
-    Time = UnscaledTime = TimeSpan::Zero();
+    if (resetTotalTime)
+        Time = UnscaledTime = TimeSpan::Zero();
     NextBegin = targetFps > ZeroTolerance ? LastBegin + (1.0f / targetFps) : 0.0;
 }
 
@@ -258,13 +259,13 @@ void Time::SetFixedDeltaTime(bool enable, float value)
     FixedDeltaTimeValue = value;
 }
 
-void Time::Synchronize()
+void Time::Synchronize(bool resetTotalTime)
 {
     // Initialize tick data (based on a time settings)
     const double time = Platform::GetTimeSeconds();
-    Update.Synchronize(UpdateFPS, time);
-    Physics.Synchronize(PhysicsFPS, time);
-    Draw.Synchronize(DrawFPS, time);
+    Update.Synchronize(UpdateFPS, time, resetTotalTime);
+    Physics.Synchronize(PhysicsFPS, time, resetTotalTime);
+    Draw.Synchronize(DrawFPS, time, resetTotalTime);
 }
 
 bool Time::OnBeginUpdate(double time)

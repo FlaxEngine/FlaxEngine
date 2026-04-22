@@ -51,13 +51,14 @@ AssetChunksFlag SkeletonMask::getChunksToPreload() const
 
 const BitArray<>& SkeletonMask::GetNodesMask()
 {
-    if (_mask.IsEmpty() && Skeleton && !Skeleton->WaitForLoaded())
+    if (!Skeleton || Skeleton->WaitForLoaded())
+        return _mask;
+    ScopeLock lock(Locker);
+    if (_mask.IsEmpty())
     {
         _mask.Resize(Skeleton->Skeleton.Nodes.Count());
         for (int32 i = 0; i < _mask.Count(); i++)
-        {
             _mask.Set(i, _maskedNodes.Contains(Skeleton->Skeleton.Nodes[i].Name));
-        }
     }
 
     return _mask;

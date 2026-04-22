@@ -367,6 +367,11 @@ MaterialBase* SplineModel::GetMaterial(int32 entryIndex)
     return material;
 }
 
+ModelBase* SplineModel::GetModel()
+{
+    return Model.Get();
+}
+
 void SplineModel::UpdateBounds()
 {
     OnSplineUpdated();

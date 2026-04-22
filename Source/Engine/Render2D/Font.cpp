@@ -52,6 +52,10 @@ void Font::GetCharacter(Char c, FontCharacterEntry& result, bool enableFallback)
             for (int32 fallbackIndex = 0; fallbackIndex < FallbackFonts.Count(); fallbackIndex++)
             {
                 FontAsset* fallbackFont = FallbackFonts.Get()[fallbackIndex].Get();
+                if (fallbackFont && _asset->GetOptions().RasterMode == FontRasterMode::MSDF)
+                {
+                    fallbackFont = fallbackFont->GetMSDF();
+                }
                 if (fallbackFont && fallbackFont->ContainsChar(c))
                 {
                     fallbackFont->CreateFont(GetSize())->GetCharacter(c, result, enableFallback);

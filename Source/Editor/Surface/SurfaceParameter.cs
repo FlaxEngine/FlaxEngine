@@ -48,5 +48,11 @@ namespace FlaxEditor.Surface
         /// </summary>
         [NoSerialize, HideInEditor]
         public readonly SurfaceMeta Meta = new SurfaceMeta();
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return $"{Type} {Name} = {Value?.ToString() ?? "null"}";
+        }
     }
 }

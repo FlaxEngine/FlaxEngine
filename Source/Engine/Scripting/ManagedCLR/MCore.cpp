@@ -142,7 +142,8 @@ void MAssembly::Unload(bool isReloading)
     _isLoaded = false;
     _hasCachedClasses = false;
 #if USE_NETCORE
-    ArenaAllocator::ClearDelete(_classes);
+    ArenaAllocator::ClearDelete(_typeClasses);
+    _classes.Clear();
 #else
     _classes.ClearDelete();
 #endif

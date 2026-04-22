@@ -1138,6 +1138,21 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, "", typeof(float), 0),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 37,
+                Title = "Instance Transform",
+                Description = "Animated model transformation (in world space).",
+                Flags = NodeFlags.AnimGraph,
+                Size = new Float2(200, 80),
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, "", typeof(Transform), 0),
+                    NodeElementArchetype.Factory.Output(1, "Position", typeof(Vector3), 1),
+                    NodeElementArchetype.Factory.Output(2, "Rotation", typeof(Quaternion), 2),
+                    NodeElementArchetype.Factory.Output(3, "Scale", typeof(Float3), 3),
+                }
+            },
         };
     }
 }

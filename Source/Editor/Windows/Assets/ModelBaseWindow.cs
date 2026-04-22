@@ -112,12 +112,14 @@ namespace FlaxEditor.Windows.Assets
 
                 Window._isolateIndex = -1;
                 Window._highlightIndex = -1;
+                Window._meshProxy = this;
             }
 
             public override void OnClean()
             {
                 Window._isolateIndex = -1;
                 Window._highlightIndex = -1;
+                Window._meshProxy = null;
 
                 base.OnClean();
             }
@@ -402,38 +404,10 @@ namespace FlaxEditor.Windows.Assets
                                 slots[i].ShadowsMode = shadowsModes[i];
                             }
 
-                            UpdateMaterialSlotsUI();
+                            Window?._meshProxy?.UpdateMaterialSlotsUI();
                         }
                     }
                 }
-            }
-
-            private readonly List<ComboBox> _materialSlotComboBoxes = new List<ComboBox>();
-
-            /// <summary>
-            /// Updates the material slots UI parts. Should be called after material slot rename.
-            /// </summary>
-            public void UpdateMaterialSlotsUI()
-            {
-                Window._skipEffectsGuiEvents = true;
-
-                // Generate material slots labels (with index prefix)
-                var slots = Asset.MaterialSlots;
-                var slotsLabels = new string[slots.Length];
-                for (int i = 0; i < slots.Length; i++)
-                {
-                    slotsLabels[i] = string.Format("[{0}] {1}", i, slots[i].Name);
-                }
-
-                // Update comboboxes
-                for (int i = 0; i < _materialSlotComboBoxes.Count; i++)
-                {
-                    var comboBox = _materialSlotComboBoxes[i];
-                    comboBox.SetItems(slotsLabels);
-                    comboBox.SelectedIndex = ((Mesh)comboBox.Tag).MaterialSlotIndex;
-                }
-
-                Window._skipEffectsGuiEvents = false;
             }
 
             protected class ProxyEditor : ProxyEditorBase
@@ -776,6 +750,7 @@ namespace FlaxEditor.Windows.Assets
         protected readonly Tabs _tabs;
         protected readonly ToolStripButton _saveButton;
 
+        private MeshesPropertiesProxyBase _meshProxy;
         protected ModelImportSettings _importSettings = new ModelImportSettings();
         protected bool _refreshOnLODsLoaded;
         protected bool _skipEffectsGuiEvents;

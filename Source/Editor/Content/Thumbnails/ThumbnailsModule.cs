@@ -122,39 +122,43 @@ namespace FlaxEditor.Content.Thumbnails
 
         internal static bool HasMinimumQuality(TextureBase asset)
         {
+            // Don't block thumbnails queue when texture fails to stream in (eg. unsupported format)
             if (asset.HasStreamingError)
-                return true; // Don't block thumbnails queue when texture fails to stream in (eg. unsupported format)
+                return true;
+
+            // Check if enough mip levels are loaded
             var mipLevels = asset.MipLevels;
             var minMipLevels = Mathf.Min(mipLevels, 7);
-            return asset.IsLoaded && asset.ResidentMipLevels >= Mathf.Max(minMipLevels, (int)(mipLevels * MinimumRequiredResourcesQuality));
+            if (asset.IsLoaded && asset.ResidentMipLevels >= Mathf.Max(minMipLevels, (int)(mipLevels * MinimumRequiredResourcesQuality)))
+                return true;
+
+            // Inform streaming about resource usage to stream it in for the thumbnail
+            asset.SetStreamingVisible();
+
+            return false;
         }
 
-        internal static bool HasMinimumQuality(Model asset)
+        internal static bool HasMinimumQuality(ModelBase asset)
         {
             if (!asset.IsLoaded)
                 return false;
-            var lods = asset.LODs.Length;
+            var lods = asset.LODsCount;
             var slots = asset.MaterialSlots;
-            foreach (var slot in slots)
-            {
-                if (slot.Material && !HasMinimumQuality(slot.Material))
-                    return false;
-            }
-            return asset.LoadedLODs >= Mathf.Max(1, (int)(lods * MinimumRequiredResourcesQuality));
-        }
 
-        internal static bool HasMinimumQuality(SkinnedModel asset)
-        {
-            var lods = asset.LODs.Length;
-            if (asset.IsLoaded && lods == 0)
-                return true; // Skeleton-only model
-            var slots = asset.MaterialSlots;
+            // Check if all materials are loaded (incl. dependent resources)
             foreach (var slot in slots)
             {
                 if (slot.Material && !HasMinimumQuality(slot.Material))
                     return false;
             }
-            return asset.LoadedLODs >= Mathf.Max(1, (int)(lods * MinimumRequiredResourcesQuality));
+
+            // Check if enough LODs are loaded
+            if (asset.LoadedLODs >= Mathf.Max(1, (int)(lods * MinimumRequiredResourcesQuality)))
+                return true;
+
+            // TODO: impl SetStreamingVisible for models similar to textures (ModelsStreamingHandler needs to use it)
+
+            return false;
         }
 
         internal static bool HasMinimumQuality(MaterialBase asset)
@@ -177,6 +181,14 @@ namespace FlaxEditor.Content.Thumbnails
             return baseMaterial == null || HasMinimumQualityInternal(baseMaterial);
         }
 
+        internal static bool HasMinimumQuality(Prefab asset)
+        {
+            if (!asset.IsLoaded)
+                return false;
+            var defaultInstance = asset.GetDefaultInstance();
+            return defaultInstance == null || HasMinimumQualityInternal(defaultInstance);
+        }
+
         private static bool HasMinimumQualityInternal(MaterialBase asset)
         {
             if (!asset.IsLoaded)
@@ -187,6 +199,43 @@ namespace FlaxEditor.Content.Thumbnails
                 if (parameter.Value is TextureBase asTexture && !HasMinimumQuality(asTexture))
                     return false;
             }
+            return true;
+        }
+
+        private static bool HasMinimumQualityInternal(Actor actor)
+        {
+            if (!actor.IsActive)
+                return true;
+
+            if (actor is ModelInstanceActor modelInstance)
+            {
+                var model = modelInstance.GetModel();
+                if (model && !HasMinimumQuality(model))
+                    return false;
+                var slots = modelInstance.MaterialSlots;
+                foreach (var slot in slots)
+                {
+                    if (slot.Material && !HasMinimumQuality(slot.Material))
+                        return false;
+                }
+            }
+            if (actor is SpriteRender spriteRender)
+            {
+                if (spriteRender.Material && !HasMinimumQuality(spriteRender.Material))
+                    return false;
+            }
+            if (actor is TextRender textRender)
+            {
+                if (textRender.Material && !HasMinimumQuality(textRender.Material))
+                    return false;
+            }
+
+            for (int i = 0; i < actor.ChildrenCount; i++)
+            {
+                if (!HasMinimumQualityInternal(actor.GetChild(i)))
+                    return false;
+            }
+
             return true;
         }
 

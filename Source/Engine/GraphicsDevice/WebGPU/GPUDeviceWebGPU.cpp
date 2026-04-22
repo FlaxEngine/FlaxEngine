@@ -321,17 +321,19 @@ bool GPUDeviceWebGPU::Init()
                 FormatSupport::Buffer |
                 FormatSupport::InputAssemblyIndexBuffer |
                 FormatSupport::InputAssemblyVertexBuffer;
-        auto supportsTexture =
+        auto supportsTextureUnfilterable =
                 FormatSupport::Texture1D |
                 FormatSupport::Texture2D |
                 FormatSupport::Texture3D |
                 FormatSupport::TextureCube |
                 FormatSupport::ShaderLoad |
+                FormatSupport::Mip;
+        auto supportsTexture =
+                supportsTextureUnfilterable |
                 FormatSupport::ShaderSample |
                 FormatSupport::ShaderSampleComparison |
                 FormatSupport::ShaderGather |
-                FormatSupport::ShaderGatherComparison |
-                FormatSupport::Mip;
+                FormatSupport::ShaderGatherComparison;
         auto supportsRender =
                 FormatSupport::RenderTarget |
                 FormatSupport::Blendable;
@@ -414,18 +416,18 @@ bool GPUDeviceWebGPU::Init()
             FeaturesPerFormat[(int32)PixelFormat::R8_SNorm].Support |= supportsBuffer | supportsTexture | supportsBasicStorage;
             FeaturesPerFormat[(int32)PixelFormat::R8_UInt].Support |= supportsBasicStorage;
             FeaturesPerFormat[(int32)PixelFormat::R8_SInt].Support |= supportsBasicStorage;
-            FeaturesPerFormat[(int32)PixelFormat::R16_UNorm].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMSAA | supportsBasicStorage;
-            FeaturesPerFormat[(int32)PixelFormat::R16_SNorm].Support |= supportsBuffer | supportsTexture | supportsBasicStorage;
+            FeaturesPerFormat[(int32)PixelFormat::R16_UNorm].Support |= supportsBuffer | supportsTextureUnfilterable | supportsRender | supportsMSAA | supportsBasicStorage;
+            FeaturesPerFormat[(int32)PixelFormat::R16_SNorm].Support |= supportsBuffer | supportsTextureUnfilterable | supportsBasicStorage;
             //FeaturesPerFormat[(int32)PixelFormat::R16_UInt].Support |= supportsBasicStorage; // TODO: fix issues with particle indices buffer that could use it
             FeaturesPerFormat[(int32)PixelFormat::R16_SInt].Support |= supportsBasicStorage;
             FeaturesPerFormat[(int32)PixelFormat::R16_Float].Support |= supportsBasicStorage;
-            FeaturesPerFormat[(int32)PixelFormat::R16G16_UNorm].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMultisampling | supportsBasicStorage;
-            FeaturesPerFormat[(int32)PixelFormat::R16G16_SNorm].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMultisampling | supportsBasicStorage;
+            FeaturesPerFormat[(int32)PixelFormat::R16G16_UNorm].Support |= supportsBuffer | supportsTextureUnfilterable | supportsRender | supportsMultisampling | supportsBasicStorage;
+            FeaturesPerFormat[(int32)PixelFormat::R16G16_SNorm].Support |= supportsBuffer | supportsTextureUnfilterable | supportsRender | supportsMultisampling | supportsBasicStorage;
             FeaturesPerFormat[(int32)PixelFormat::R16G16_UInt].Support |= supportsBasicStorage;
             FeaturesPerFormat[(int32)PixelFormat::R16G16_SInt].Support |= supportsBasicStorage;
             FeaturesPerFormat[(int32)PixelFormat::R16G16_Float].Support |= supportsBasicStorage;
-            FeaturesPerFormat[(int32)PixelFormat::R16G16B16A16_UNorm].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMultisampling | supportsBasicStorage;
-            FeaturesPerFormat[(int32)PixelFormat::R16G16B16A16_SNorm].Support |= supportsBuffer | supportsTexture | supportsRender | supportsMultisampling | supportsBasicStorage;
+            FeaturesPerFormat[(int32)PixelFormat::R16G16B16A16_UNorm].Support |= supportsBuffer | supportsTextureUnfilterable | supportsRender | supportsMultisampling | supportsBasicStorage;
+            FeaturesPerFormat[(int32)PixelFormat::R16G16B16A16_SNorm].Support |= supportsBuffer | supportsTextureUnfilterable | supportsRender | supportsMultisampling | supportsBasicStorage;
             FeaturesPerFormat[(int32)PixelFormat::R10G10B10A2_UNorm].Support |= supportsBasicStorage;
             FeaturesPerFormat[(int32)PixelFormat::R11G11B10_Float].Support |= supportsBasicStorage;
         }

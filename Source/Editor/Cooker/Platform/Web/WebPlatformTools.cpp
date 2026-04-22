@@ -183,16 +183,33 @@ bool WebPlatformTools::OnPostProcess(CookingData& data)
         String emscriptenSdk = TEXT("EMSDK");
         Platform::GetEnvironmentVariable(emscriptenSdk, emscriptenSdk);
         procSettings.FileName = emscriptenSdk / TEXT("upstream/emscripten/tools/file_packager");
-#if PLATFORM_WIN32
-        procSettings.FileName += TEXT(".bat");
-#endif
         procSettings.Arguments = String::Format(TEXT("files.data --preload \"{}@/\" --lz4 --js-output=files.js"), data.DataOutputPath);
         procSettings.WorkingDirectory = data.OriginalOutputPath;
+#if PLATFORM_MAC || PLATFORM_WINDOWS
+        // Use python bundled with SDK (python from min-spec XCode 16.4 is 3.9.6 which is < 3.10 needed by SDK 5.0)
+        Array<String> pythons;
+        FileSystem::GetChildDirectories(pythons, emscriptenSdk / TEXT("/python"));
+        if (pythons.HasItems())
+        {
+            procSettings.Arguments = procSettings.FileName + TEXT(".py ") + procSettings.Arguments;
+#if PLATFORM_WINDOWS
+            procSettings.FileName = pythons[0] / TEXT("/python.exe");
+#else
+            procSettings.FileName = pythons[0] / TEXT("/bin/python3");
+#endif
+        }
+#if PLATFORM_WINDOWS
+        else
+        {
+            procSettings.FileName += TEXT(".bat");
+        }
+#endif
+#endif
         const int32 result = Platform::CreateProcess(procSettings);
         if (result != 0)
         {
             if (!FileSystem::FileExists(procSettings.FileName))
-                data.Error(TEXT("Missing file_packager.bat. Ensure Emscripten SDK installation is valid and 'EMSDK' environment variable points to it."));
+                data.Error(TEXT("Missing file_packager tool. Ensure Emscripten SDK installation is valid and 'EMSDK' environment variable points to it."));
             data.Error(String::Format(TEXT("Failed to package project files (result code: {0}). See log for more info."), result));
             return true;
         }

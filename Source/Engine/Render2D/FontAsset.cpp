@@ -69,6 +69,7 @@ void FontAsset::unload(bool isReloading)
     _fontFile.Release();
     _virtualBold = nullptr;
     _virtualItalic = nullptr;
+    _virtualMSDF = nullptr;
 }
 
 AssetChunksFlag FontAsset::getChunksToPreload() const
@@ -153,6 +154,22 @@ FontAsset* FontAsset::GetItalic()
         _virtualItalic->SetOptions(options);
     }
     return _virtualItalic;
+}
+
+FontAsset* FontAsset::GetMSDF()
+{
+    ScopeLock lock(Locker);
+    if (_options.RasterMode == FontRasterMode::MSDF)
+        return this;
+    if (!_virtualMSDF)
+    {
+        _virtualMSDF = Content::CreateVirtualAsset<FontAsset>();
+        _virtualMSDF->Init(_fontFile);
+        auto options = _options;
+        options.RasterMode = FontRasterMode::MSDF;
+        _virtualMSDF->SetOptions(options);
+    }
+    return _virtualMSDF;
 }
 
 bool FontAsset::Init(const BytesContainer& fontFile)

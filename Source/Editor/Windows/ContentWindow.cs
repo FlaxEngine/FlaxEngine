@@ -32,7 +32,7 @@ namespace FlaxEditor.Windows
         private string _workspaceRebuildLocation;
         private string _lastViewedFolderBeforeReload;
         private SplitPanel _split;
-        private Panel _treeOnlyPanel;
+        private TreeViewPanel _treeOnlyPanel;
         private ContainerControl _treePanelRoot;
         private ContainerControl _treeHeaderPanel;
         private Panel _contentItemsSearchPanel;
@@ -186,7 +186,7 @@ namespace FlaxEditor.Windows
             };
 
             // Tree-only panel (used when showing all content in the tree)
-            _treeOnlyPanel = new Panel(ScrollBars.None)
+            _treeOnlyPanel = new TreeViewPanel
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = new Margin(0, 0, _toolStrip.Bottom, 0),
@@ -237,6 +237,7 @@ namespace FlaxEditor.Windows
                 Parent = _contentTreePanel,
             };
             _tree.SelectedChanged += OnTreeSelectionChanged;
+            _treeOnlyPanel.ContentTree = _tree;
 
             // Content items searching query input box and filters selector
             _contentItemsSearchPanel = new Panel
@@ -632,11 +633,7 @@ namespace FlaxEditor.Windows
                     var area = node.TextRect;
                     const float minRenameWidth = 220.0f;
                     if (area.Width < minRenameWidth)
-                    {
-                        float expand = minRenameWidth - area.Width;
-                        area.X -= expand * 0.5f;
                         area.Width = minRenameWidth;
-                    }
                     area.Y -= 2;
                     area.Height += 4.0f;
                     popup = RenamePopup.Show(node, area, item.ShortName, true);
@@ -889,6 +886,7 @@ namespace FlaxEditor.Windows
             // Refresh this folder now and try to find duplicated item
             Editor.ContentDatabase.RefreshFolder(item.ParentFolder, true);
             RefreshView();
+            RefreshTreeItems();
             var targetItem = item.ParentFolder.FindChild(targetPath);
 
             // Start renaming it

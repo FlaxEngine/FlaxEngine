@@ -39,11 +39,6 @@ namespace FlaxEditor.GUI
         public event Action SelectedItemChanged;
 
         /// <summary>
-        /// The custom callback for assets validation. Cane be used to implement a rule for assets to pick.
-        /// </summary>
-        public Func<ContentItem, bool> CheckValid;
-
-        /// <summary>
         /// False if changing selected item is disabled.
         /// </summary>
         public bool CanEdit = true;

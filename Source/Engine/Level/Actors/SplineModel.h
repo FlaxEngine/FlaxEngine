@@ -117,6 +117,7 @@ public:
     void OnParentChanged() override;
     const Span<MaterialSlot> GetMaterialSlots() const override;
     MaterialBase* GetMaterial(int32 entryIndex) override;
+    ModelBase* GetModel() override;
     void UpdateBounds() override;
 
 protected:

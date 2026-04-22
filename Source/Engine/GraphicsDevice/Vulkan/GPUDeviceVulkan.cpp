@@ -2257,6 +2257,7 @@ bool FenceManagerVulkan::WaitForFence(FenceVulkan* fence, float timeoutSeconds) 
         fence->IsSignaled = true;
         return false;
     }
+    LOG(Warning, "vkWaitForFences failed with timeout: {}s", timeoutSeconds);
     return true;
 }
 
