@@ -135,6 +135,9 @@ public sealed class ContentItemTreeNode : TreeNode, IContentItemOwner
     }
 
     /// <inheritdoc />
+    protected override bool ShowTooltip => true;
+
+    /// <inheritdoc />
     public override bool OnShowTooltip(out string text, out Float2 location, out Rectangle area)
     {
         Item.UpdateTooltipText();
