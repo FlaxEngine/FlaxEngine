@@ -71,9 +71,12 @@ public class TreeViewPanel : Panel
             var items = new List<ContentItem>();
             foreach (var node in selection)
             {
-                if (node is ContentItemTreeNode contentNode)
+                if (node is ContentItemTreeNode fileNode)
                 {
-                    items.Add(contentNode.Item);
+                    items.Add(fileNode.Item);
+                } else if (node is ContentFolderTreeNode folderNode)
+                {
+                    items.Add(folderNode.Folder);
                 }
             }
 
