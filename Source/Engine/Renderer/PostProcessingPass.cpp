@@ -546,7 +546,10 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     // - 5 - LensStar - lens star texture
     // - 7 - ColorGradingLUT
     context->BindSR(0, input->View());
-    context->BindSR(4, GetCustomOrDefault(settings.LensFlares.LensDirt, _defaultLensDirt, TEXT("Engine/Textures/DefaultLensDirt")));
+    if ((useLensFlares || useBloom) && settings.LensFlares.LensDirtIntensity > 0)
+        context->BindSR(4, GetCustomOrDefault(settings.LensFlares.LensDirt, _defaultLensDirt, TEXT("Engine/Textures/DefaultLensDirt")));
+    else
+        context->BindSR(4, device->GetDefaultBlackTexture());
     context->BindSR(7, colorGradingLutView);
 
     // Composite final frame during single pass (done in full resolution)
