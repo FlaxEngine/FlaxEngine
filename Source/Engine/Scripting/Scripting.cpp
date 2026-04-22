@@ -368,7 +368,28 @@ bool Scripting::LoadBinaryModules(const String& path, const String& projectFolde
         return true;
     }
 
-    // TODO: validate Name, Platform, Architecture, Configuration from file
+    // Load metadata
+#if !BUILD_RELEASE
+    const String platform = JsonTools::GetString(document, "Platform");
+    const String architecture = JsonTools::GetString(document, "Architecture");
+    const String configuration = JsonTools::GetString(document, "Configuration");
+    const Char* engineConfiguration = BUILD_DEBUG ? TEXT("Debug") : (BUILD_DEVELOPMENT ? TEXT("Development") : TEXT("Release"));
+    if (platform != ToString(PLATFORM_TYPE) ||
+        architecture != ToString(PLATFORM_ARCH) ||
+        configuration != engineConfiguration)
+    {
+        LOG(Error, "Incorrect binary modules configuration!");
+        LOG(Error, "Loaded: {}, {}, {}", platform, architecture, configuration);
+        LOG(Error, "Expected: {}, {}, {}", ToString(PLATFORM_TYPE), ToString(PLATFORM_ARCH), engineConfiguration);
+    }
+#endif
+    auto versionControlInfoMember = document.FindMember("VersionControlInfo");
+    if (versionControlInfoMember != document.MemberEnd())
+    {
+        String versionControlInfo = versionControlInfoMember->value.GetText();
+        versionControlInfo.Replace(TEXT("+"), TEXT(", "));
+        LOG(Info, "Version: {}", versionControlInfo);
+    }
 
     // Load all references
     auto referencesMember = document.FindMember("References");

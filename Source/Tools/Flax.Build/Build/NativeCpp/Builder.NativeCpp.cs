@@ -110,6 +110,7 @@ namespace Flax.Build
             public string Platform;
             public string Architecture;
             public string Configuration;
+            public string VersionControlInfo;
             public string HotReloadPostfix;
             public BuildTargetBinaryModuleInfo[] BinaryModules;
             public BuildTargetReferenceInfo[] References;
@@ -167,6 +168,8 @@ namespace Flax.Build
             public string Serialize()
             {
                 // Null any empty fields to exclude them from serialization
+                if (VersionControlInfo?.Length == 0)
+                    VersionControlInfo = null;
                 if (HotReloadPostfix?.Length == 0)
                     HotReloadPostfix = null;
                 foreach (var binaryModule in BinaryModules)
@@ -184,6 +187,7 @@ namespace Flax.Build
                     IncludeFields = true,
                     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
                     TypeInfoResolver = BuildTargetInfoSourceGenerationContext.Default,
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
                 };
                 return JsonSerializer.Serialize<BuildTargetInfo>(this, options);
             }
@@ -980,6 +984,7 @@ namespace Flax.Build
                     Platform = toolchain.Platform.Target.ToString(),
                     Architecture = toolchain.Architecture.ToString(),
                     Configuration = configuration.ToString(),
+                    VersionControlInfo = project.VersionControlInfo,
                     HotReloadPostfix = targetBuildOptions.HotReloadPostfix,
                     BinaryModules = new BuildTargetBinaryModuleInfo[buildData.BinaryModules.Length + targetBuildOptions.ExternalModules.Count],
                     References = new BuildTargetReferenceInfo[buildData.ReferenceBuilds.Count],
@@ -1220,6 +1225,7 @@ namespace Flax.Build
                     Platform = platform.Target.ToString(),
                     Architecture = architecture.ToString(),
                     Configuration = configuration.ToString(),
+                    VersionControlInfo = project.VersionControlInfo,
                     HotReloadPostfix = targetBuildOptions.HotReloadPostfix,
                     BinaryModules = new BuildTargetBinaryModuleInfo[buildData.BinaryModules.Length + targetBuildOptions.ExternalModules.Count],
                     References = new BuildTargetReferenceInfo[buildData.ReferenceBuilds.Count],
