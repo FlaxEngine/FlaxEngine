@@ -70,7 +70,7 @@ public:
         /// <summary>
         /// The size of a single sample in bits. The clip will be converted to this bit depth on import.
         /// </summary>
-        API_FIELD(Attributes="EditorOrder(50), VisibleIf(nameof(ShowBtiDepth))")
+        API_FIELD(Attributes="EditorOrder(50), VisibleIf(nameof(ShowBitDepth))")
         BitDepth BitDepth = BitDepth::_16;
 
         String ToString() const;
