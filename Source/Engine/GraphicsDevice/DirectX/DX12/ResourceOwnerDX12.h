@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Engine/Core/Delegate.h"
 #include "Engine/Graphics/GPUResourceState.h"
 #include "../IncludeDirectXHeaders.h"
 
@@ -19,7 +18,7 @@ class GPUAsyncContextDX12;
 /// <summary>
 /// Default amount of frames to wait until resource delete.
 /// </summary>
-#define DX12_RESOURCE_DELETE_SAFE_FRAMES_COUNT 100
+#define DX12_RESOURCE_DELETE_SAFE_FRAMES_COUNT 30
 
 /// <summary>
 /// Custom resource state used to indicate invalid state (useful for debugging resource tracking issues).
@@ -68,19 +67,12 @@ protected:
     uint32 _subresourcesCount = 0;
 
 public:
-
-    /// <summary>
-    /// Action called on resource release event.
-    /// </summary>
-    Delegate<ResourceOwnerDX12*> OnRelease;
-
     /// <summary>
     /// The resource state tracking helper. Used for resource barriers.
     /// </summary>
     ResourceStateDX12 State;
 
 public:
-
     /// <summary>
     /// Gets the subresources count.
     /// </summary>
@@ -103,7 +95,6 @@ public:
     virtual GPUResource* AsGPUResource() const = 0;
 
 protected:
-
     FORCE_INLINE void initResource(ID3D12Resource* resource, const D3D12_RESOURCE_STATES initialState, const D3D12_RESOURCE_DESC& desc, bool usePerSubresourceTracking = false)
     {
         initResource(resource, initialState, desc.DepthOrArraySize * desc.MipLevels, usePerSubresourceTracking);

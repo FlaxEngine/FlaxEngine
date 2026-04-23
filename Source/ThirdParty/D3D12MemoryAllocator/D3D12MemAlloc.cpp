@@ -3007,13 +3007,16 @@ public:
 
     virtual void AddStatistics(Statistics& inoutStats) const = 0;
     virtual void AddDetailedStatistics(DetailedStatistics& inoutStats) const = 0;
+#ifndef _D3D12MA_JSON_WRITER
     virtual void WriteAllocationInfoToJson(JsonWriter& json) const = 0;
     virtual void DebugLogAllAllocations() const = 0;
+#endif
 
 protected:
     const ALLOCATION_CALLBACKS* GetAllocs() const { return m_pAllocationCallbacks; }
     UINT64 GetDebugMargin() const { return IsVirtual() ? 0 : D3D12MA_DEBUG_MARGIN; }
 
+#ifndef _D3D12MA_JSON_WRITER
     void DebugLogAllocation(UINT64 offset, UINT64 size, void* privateData) const;
     void PrintDetailedMap_Begin(JsonWriter& json,
         UINT64 unusedBytes,
@@ -3024,6 +3027,7 @@ protected:
     void PrintDetailedMap_UnusedRange(JsonWriter& json,
         UINT64 offset, UINT64 size) const;
     void PrintDetailedMap_End(JsonWriter& json) const;
+#endif
 
 private:
     UINT64 m_Size;
@@ -3042,6 +3046,7 @@ BlockMetadata::BlockMetadata(const ALLOCATION_CALLBACKS* allocationCallbacks, bo
     D3D12MA_ASSERT(allocationCallbacks);
 }
 
+#ifndef _D3D12MA_JSON_WRITER
 void BlockMetadata::DebugLogAllocation(UINT64 offset, UINT64 size, void* privateData) const
 {
     if (IsVirtual())
@@ -3128,6 +3133,7 @@ void BlockMetadata::PrintDetailedMap_End(JsonWriter& json) const
 {
     json.EndArray();
 }
+#endif
 #endif // _D3D12MA_BLOCK_METADATA_FUNCTIONS
 #endif // _D3D12MA_BLOCK_METADATA
 
@@ -3171,8 +3177,10 @@ public:
 
     void AddStatistics(Statistics& inoutStats) const override;
     void AddDetailedStatistics(DetailedStatistics& inoutStats) const override;
+#ifndef _D3D12MA_JSON_WRITER
     void WriteAllocationInfoToJson(JsonWriter& json) const override;
     void DebugLogAllAllocations() const override;
+#endif
 
 private:
     /*
@@ -3819,6 +3827,7 @@ void BlockMetadata_Linear::AddDetailedStatistics(DetailedStatistics& inoutStats)
     }
 }
 
+#ifndef _D3D12MA_JSON_WRITER
 void BlockMetadata_Linear::WriteAllocationInfoToJson(JsonWriter& json) const
 {
     const UINT64 size = GetSize();
@@ -4145,6 +4154,7 @@ void BlockMetadata_Linear::DebugLogAllAllocations() const
         if (it->type != SUBALLOCATION_TYPE_FREE)
             DebugLogAllocation(it->offset, it->size, it->privateData);
 }
+#endif
 
 Suballocation& BlockMetadata_Linear::FindSuballocation(UINT64 offset) const
 {
@@ -4471,8 +4481,10 @@ public:
 
     void AddStatistics(Statistics& inoutStats) const override;
     void AddDetailedStatistics(DetailedStatistics& inoutStats) const override;
+#ifndef _D3D12MA_JSON_WRITER
     void WriteAllocationInfoToJson(JsonWriter& json) const override;
     void DebugLogAllAllocations() const override;
+#endif
 
 private:
     // According to original paper it should be preferable 4 or 5:
@@ -5088,6 +5100,7 @@ void BlockMetadata_TLSF::AddDetailedStatistics(DetailedStatistics& inoutStats) c
         AddDetailedStatisticsUnusedRange(inoutStats, m_NullBlock->size);
 }
 
+#ifndef _D3D12MA_JSON_WRITER
 void BlockMetadata_TLSF::WriteAllocationInfoToJson(JsonWriter& json) const
 {
     size_t blockCount = m_AllocCount + m_BlocksFreeCount;
@@ -5128,6 +5141,7 @@ void BlockMetadata_TLSF::DebugLogAllAllocations() const
         }
     }
 }
+#endif
 
 UINT8 BlockMetadata_TLSF::SizeToMemoryClass(UINT64 size) const
 {
@@ -6955,6 +6969,7 @@ void AllocatorPimpl::GetBudgetForHeapType(Budget& outBudget, D3D12_HEAP_TYPE hea
 
 void AllocatorPimpl::BuildStatsString(WCHAR** ppStatsString, BOOL detailedMap)
 {
+#ifndef _D3D12MA_STRING_BUILDER
     StringBuilder sb(GetAllocs());
     {
         Budget localBudget = {}, nonLocalBudget = {};
@@ -7305,6 +7320,9 @@ void AllocatorPimpl::BuildStatsString(WCHAR** ppStatsString, BOOL detailedMap)
     memcpy(result + 1, sb.GetData(), length * sizeof(WCHAR));
     result[length + 1] = L'\0';
     *ppStatsString = result;
+#else
+    *ppStatsString = nullptr;
+#endif
 }
 
 void AllocatorPimpl::FreeStatsString(WCHAR* pStatsString)
@@ -7905,6 +7923,7 @@ bool AllocatorPimpl::NewAllocationWithinBudget(D3D12_HEAP_TYPE heapType, UINT64 
 
 void AllocatorPimpl::WriteBudgetToJson(JsonWriter& json, const Budget& budget)
 {
+#ifndef _D3D12MA_JSON_WRITER
     json.BeginObject();
     {
         json.WriteString(L"BudgetBytes");
@@ -7913,6 +7932,7 @@ void AllocatorPimpl::WriteBudgetToJson(JsonWriter& json, const Budget& budget)
         json.WriteNumber(budget.UsageBytes);
     }
     json.EndObject();
+#endif
 }
 
 #endif // _D3D12MA_ALLOCATOR_PIMPL
@@ -8028,9 +8048,11 @@ NormalBlock::~NormalBlock()
 {
     if (m_pMetadata != NULL)
     {
+#ifndef _D3D12MA_JSON_WRITER
         // Define macro D3D12MA_DEBUG_LOG to receive the list of the unfreed allocations.
         if (!m_pMetadata->IsEmpty())
             m_pMetadata->DebugLogAllAllocations();
+#endif
 
         // THIS IS THE MOST IMPORTANT ASSERT IN THE ENTIRE LIBRARY!
         // Hitting it means you have some memory leak - unreleased Allocation objects.
@@ -8129,6 +8151,7 @@ void CommittedAllocationList::AddDetailedStatistics(DetailedStatistics& inoutSta
 
 void CommittedAllocationList::BuildStatsString(JsonWriter& json)
 {
+#ifndef _D3D12MA_JSON_WRITER
     MutexLockRead lock(m_Mutex, m_UseMutex);
 
     for (Allocation* alloc = m_AllocationList.Front();
@@ -8138,6 +8161,7 @@ void CommittedAllocationList::BuildStatsString(JsonWriter& json)
         json.AddAllocationToObject(*alloc);
         json.EndObject();
     }
+#endif
 }
 
 void CommittedAllocationList::Register(Allocation* alloc)
@@ -8386,6 +8410,7 @@ void BlockVector::AddDetailedStatistics(DetailedStatistics& inoutStats)
 
 void BlockVector::WriteBlockInfoToJson(JsonWriter& json)
 {
+#ifndef _D3D12MA_JSON_WRITER
     MutexLockRead lock(m_Mutex, m_hAllocator->UseMutex());
 
     json.BeginObject();
@@ -8405,6 +8430,7 @@ void BlockVector::WriteBlockInfoToJson(JsonWriter& json)
     }
 
     json.EndObject();
+#endif
 }
 
 UINT64 BlockVector::CalcSumBlockSize() const
@@ -10167,6 +10193,7 @@ void VirtualBlock::CalculateStatistics(DetailedStatistics* pStats) const
 
 void VirtualBlock::BuildStatsString(WCHAR** ppStatsString) const
 {
+#ifndef _D3D12MA_JSON_WRITER
     D3D12MA_ASSERT(ppStatsString);
 
     D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
@@ -10185,6 +10212,9 @@ void VirtualBlock::BuildStatsString(WCHAR** ppStatsString) const
     memcpy(result, sb.GetData(), length * sizeof(WCHAR));
     result[length] = L'\0';
     *ppStatsString = result;
+#else
+    *ppStatsString = nullptr;
+#endif
 }
 
 void VirtualBlock::FreeStatsString(WCHAR* pStatsString) const

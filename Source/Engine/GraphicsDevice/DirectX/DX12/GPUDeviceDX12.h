@@ -31,6 +31,8 @@ namespace D3D12MA
     class Allocator;
     class Allocation;
 };
+#define _D3D12MA_JSON_WRITER 0
+#define _D3D12MA_STRING_BUILDER 0
 #if !BUILD_DEBUG
 #define D3D12MA_ASSERT(cond)
 #endif
