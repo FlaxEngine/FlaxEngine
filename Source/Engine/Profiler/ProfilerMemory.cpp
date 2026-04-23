@@ -15,6 +15,7 @@
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Threading/ThreadLocal.h"
 #include "Engine/Utilities/StringConverter.h"
+#include "Engine/Graphics/GPUDevice.h"
 #include <ThirdParty/tracy/tracy/Tracy.hpp>
 
 #define GROUPS_COUNT (int32)ProfilerMemory::Groups::MAX
@@ -338,11 +339,17 @@ void TickProfilerMemory()
     memory.UsedPhysicalMemory -= GroupMemory[(int32)ProfilerMemory::Groups::Profiler];
     GroupMemory[(int32)ProfilerMemory::Groups::Total] = memory.UsedPhysicalMemory;
     GroupMemory[(int32)ProfilerMemory::Groups::TotalUntracked] = Math::Max<int64>(memory.UsedPhysicalMemory - GroupMemory[(int32)ProfilerMemory::Groups::TotalTracked], 0);
+    if (GPUDevice::Instance)
+    {
+        auto memoryGPU = GPUDevice::Instance->GetMemoryStats();
+        GroupMemory[(int32)ProfilerMemory::Groups::TotalGPU] = memoryGPU.UsedDedicatedMemory + memoryGPU.UsedSystemMemory;
+    }
 
     // Update peeks
     UPDATE_PEEK(ProfilerMemory::Groups::Profiler);
     UPDATE_PEEK(ProfilerMemory::Groups::Total);
     UPDATE_PEEK(ProfilerMemory::Groups::TotalUntracked);
+    UPDATE_PEEK(ProfilerMemory::Groups::TotalGPU);
     GroupMemoryPeek[(int32)ProfilerMemory::Groups::Total] = Math::Max(GroupMemoryPeek[(int32)ProfilerMemory::Groups::Total], GroupMemoryPeek[(int32)ProfilerMemory::Groups::TotalTracked]);
 }
 

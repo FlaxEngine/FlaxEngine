@@ -569,6 +569,7 @@ public:
     GPUContext* GetMainContext() override;
     GPUAdapter* GetAdapter() const override;
     void* GetNativePtr() const override;
+    GPUMemoryStats GetMemoryStats() override;
     bool Init() override;
     void DrawBegin() override;
     void Dispose() override;

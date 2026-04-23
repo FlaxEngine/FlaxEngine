@@ -33,6 +33,7 @@ namespace D3D12MA
 };
 #define _D3D12MA_JSON_WRITER 0
 #define _D3D12MA_STRING_BUILDER 0
+#define D3D12MA_NO_HELPERS 1
 #if !BUILD_DEBUG
 #define D3D12MA_ASSERT(cond)
 #endif
@@ -191,7 +192,6 @@ private:
     void updateRes2Dispose();
 
 public:
-
     // [GPUDeviceDX]
     GPUContext* GetMainContext() override
     {
@@ -201,9 +201,11 @@ public:
     {
         return _device;
     }
+    GPUMemoryStats GetMemoryStats() override;
     bool Init() override;
     void DrawBegin() override;
     void RenderEnd() override;
+    void OnCrash() override;
     void Dispose() final override;
     void WaitForGPU() override;
     bool GetQueryResult(uint64 queryID, uint64& result, bool wait = false) override;

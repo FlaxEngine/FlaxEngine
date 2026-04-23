@@ -1537,6 +1537,31 @@ void* GPUDeviceVulkan::GetNativePtr() const
     return _nativePtr;
 }
 
+GPUMemoryStats GPUDeviceVulkan::GetMemoryStats()
+{
+    GPUMemoryStats stats;
+    VmaBudget budgets[VK_MAX_MEMORY_HEAPS];
+    vmaGetHeapBudgets(Allocator, budgets);
+    const VkPhysicalDeviceMemoryProperties* memoryProperties;
+    vmaGetMemoryProperties(Allocator, &memoryProperties);
+    for (uint32 i = 0; i < memoryProperties->memoryHeapCount; i++)
+    {
+        VkMemoryHeap heap = memoryProperties->memoryHeaps[i];
+        VmaBudget& budget = budgets[i];
+        if (heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT && Adapter->GpuProps.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+        {
+            stats.UsedDedicatedMemory += budget.usage;
+            stats.TotalDedicatedMemory += budget.budget;
+        }
+        else
+        {
+            stats.UsedSystemMemory += budget.usage;
+            stats.TotalSystemMemory += budget.budget;
+        }
+    }
+    return stats;
+}
+
 static int32 GetMaxSampleCount(VkSampleCountFlags counts)
 {
     if (counts & VK_SAMPLE_COUNT_64_BIT)

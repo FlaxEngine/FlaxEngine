@@ -578,6 +578,28 @@ GPUDeviceDX12::GPUDeviceDX12(IDXGIFactory4* dxgiFactory, GPUAdapterDX* adapter)
 {
 }
 
+GPUMemoryStats GPUDeviceDX12::GetMemoryStats()
+{
+    GPUMemoryStats stats;
+    D3D12MA::Budget localBudget, nonLocalBudget;
+    Allocator->GetBudget(&localBudget, &nonLocalBudget);
+    if (Allocator->IsUMA())
+    {
+        // UMA (Unified Memory Architecture) means no dedicated video memory and the system memory is shared between CPU and GPU
+        stats.UsedSystemMemory = localBudget.UsageBytes;
+        stats.TotalSystemMemory = localBudget.BudgetBytes;
+    }
+    else
+    {
+        // Discrete GPU
+        stats.UsedDedicatedMemory = localBudget.UsageBytes;
+        stats.TotalDedicatedMemory = localBudget.BudgetBytes;
+        stats.UsedSystemMemory = nonLocalBudget.UsageBytes;
+        stats.TotalSystemMemory = nonLocalBudget.BudgetBytes;
+    }
+    return stats;
+}
+
 bool GPUDeviceDX12::Init()
 {
 #if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
@@ -970,6 +992,19 @@ void GPUDeviceDX12::RenderEnd()
     // Resolve the queries
     for (auto heap : QueryHeaps)
         heap->EndQueryBatchAndResolveQueryData(_mainContext);
+}
+
+void GPUDeviceDX12::OnCrash()
+{
+    // Dump allocator stats
+    //D3D12MA::TotalStatistics statistics;
+    //Allocator->CalculateStatistics(&statistics);
+    D3D12MA::Budget localBudget, nonLocalBudget;
+    Allocator->GetBudget(&localBudget, &nonLocalBudget);
+    LOG(Info, "[D3D12 Memory] Local budget: {} / {} bytes (blocks: {}, allocs: {})", localBudget.UsageBytes, localBudget.BudgetBytes, localBudget.Stats.BlockCount, localBudget.Stats.AllocationCount);
+    LOG(Info, "[D3D12 Memory] Non-local budget: {} / {} bytes (blocks: {}, allocs: {})", nonLocalBudget.UsageBytes, nonLocalBudget.BudgetBytes, nonLocalBudget.Stats.BlockCount, nonLocalBudget.Stats.AllocationCount);
+
+    GPUDeviceDX::OnCrash();
 }
 
 GPUDeviceDX12::~GPUDeviceDX12()

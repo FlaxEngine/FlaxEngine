@@ -361,8 +361,7 @@ void GPUDevice::OnRequestingExit()
         Engine::FatalError != FatalErrorType::GPUHang && 
         Engine::FatalError != FatalErrorType::GPUOutOfMemory)
         return;
-    // TODO: get and log actual GPU memory used by the engine (API-specific)
-    DumpResourcesToLog();
+    OnCrash();
 }
 
 GPUDevice::GPUDevice(RendererType type, ShaderProfile profile)
@@ -751,6 +750,11 @@ void GPUDevice::RenderEnd()
 #endif
 }
 
+void GPUDevice::OnCrash()
+{
+    DumpResourcesToLog();
+}
+
 GPUTasksContext* GPUDevice::CreateTasksContext()
 {
     return New<GPUTasksContext>(this);
@@ -820,6 +824,16 @@ uint64 GPUDevice::GetMemoryUsage() const
         result += _resources[i]->GetMemoryUsage();
     _resourcesLock.Unlock();
     return result;
+}
+
+GPUMemoryStats GPUDevice::GetMemoryStats()
+{
+    GPUMemoryStats stats;
+    stats.UsedDedicatedMemory = GetMemoryUsage();
+    stats.TotalDedicatedMemory = TotalGraphicsMemory;
+    stats.UsedSystemMemory = 0;
+    stats.TotalSystemMemory = 0;
+    return stats;
 }
 
 Array<GPUResource*> GPUDevice::GetResources() const
