@@ -152,7 +152,7 @@ void Screen::SetCursorLock(CursorLockMode mode)
 #endif
     if (win)
     {
-        bool inRelativeMode = Input::Mouse->IsRelative();
+        bool inRelativeMode = Input::Mouse && Input::Mouse->IsRelative();
         if (mode == CursorLockMode::Clipped)
             win->StartClippingCursor(bounds);
 #if PLATFORM_SDL
@@ -168,11 +168,14 @@ void Screen::SetCursorLock(CursorLockMode mode)
             win->EndClippingCursor();
 #endif
 
-        // Enable relative mode when cursor is restricted
-        if (mode != CursorLockMode::None)
-            Input::Mouse->SetRelativeMode(true, win);
-        else if (mode == CursorLockMode::None && inRelativeMode)
-            Input::Mouse->SetRelativeMode(false, win);
+        if (Input::Mouse)
+        {
+            // Enable relative mode when cursor is restricted
+            if (mode != CursorLockMode::None)
+                Input::Mouse->SetRelativeMode(true, win);
+            else if (mode == CursorLockMode::None && inRelativeMode)
+                Input::Mouse->SetRelativeMode(false, win);
+        }
     }
     CursorLock = mode;
 }
