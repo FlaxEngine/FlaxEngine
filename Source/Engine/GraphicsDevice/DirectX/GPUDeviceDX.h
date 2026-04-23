@@ -83,6 +83,7 @@ protected:
 #if GRAPHICS_API_DIRECTX12
         case D3D_FEATURE_LEVEL_12_0:
         case D3D_FEATURE_LEVEL_12_1:
+        case D3D_FEATURE_LEVEL_12_2:
             return ShaderProfile::DirectX_SM5;
 #endif
         default:

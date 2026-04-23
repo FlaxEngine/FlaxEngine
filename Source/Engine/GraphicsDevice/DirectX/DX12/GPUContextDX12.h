@@ -93,6 +93,9 @@ public:
         return _commandList;
     }
 
+    // Flag for command list state.
+    bool IsOpen = false;
+
     uint64 FrameFenceValues[2];
 
 public:

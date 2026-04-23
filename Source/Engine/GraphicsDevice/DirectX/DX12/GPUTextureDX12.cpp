@@ -171,7 +171,7 @@ bool GPUTextureDX12::OnInit()
     if (isWrite)
     {
         _device->Locker.Lock();
-        if (IsInMainThread() && _device->IsRendering())
+        if (IsInMainThread() && _device->IsRendering() && _device->GetMainContextDX12()->IsOpen)
             _device->GetMainContextDX12()->GetCommandList()->DiscardResource(_resource, nullptr);
         else
             _device->PendingResourceDiscards.Add(_resource);

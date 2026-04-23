@@ -269,6 +269,7 @@ void GPUContextDX12::Reset()
         _currentAllocator = _device->GetCommandQueue()->RequestAllocator();
         _commandList->Reset(_currentAllocator, nullptr);
     }
+    IsOpen = true;
 
     // Setup initial state
     _currentState = nullptr;
@@ -327,6 +328,7 @@ uint64 GPUContextDX12::Execute(bool waitForCompletion)
     _currentState = nullptr;
 
     // Execute commands
+    IsOpen = false;
     const uint64 fenceValue = queue->ExecuteCommandList(_commandList);
 
     // Cleanup used allocator
