@@ -530,7 +530,7 @@ namespace FlaxEditor.Viewport
         }
 
         /// <summary>
-        /// Toggles game view view mode on or off.
+        /// Toggles view mode on/off.
         /// </summary>
         public void ToggleGameView()
         {
@@ -547,9 +547,9 @@ namespace FlaxEditor.Viewport
             // Set flags & values
             Task.ViewFlags = _gameViewActive ? _preGameViewFlags : ViewFlags.DefaultGame;
             Task.ViewMode = _gameViewActive ? _preGameViewViewMode : ViewMode.Default;
-            ShowFpsCounter = _gameViewActive ? _gameViewWasFpsCounterShown : false;
-            ShowNavigation = _gameViewActive ? _gameViewWasNavigationShown : false;
-            Grid.Enabled = _gameViewActive ? _gameViewWasGridShown : false;
+            ShowFpsCounter = _gameViewActive && _gameViewWasFpsCounterShown;
+            ShowNavigation = _gameViewActive && _gameViewWasNavigationShown;
+            Grid.Enabled = _gameViewActive && _gameViewWasGridShown;
 
             _gameViewActive = !_gameViewActive;
 
@@ -728,6 +728,20 @@ namespace FlaxEditor.Viewport
             Focus();
 
             base.OnLeftMouseButtonUp();
+        }
+
+        /// <inheritdoc />
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            if (base.OnKeyDown(key))
+                return true;
+
+            if (key == KeyboardKeys.Escape)
+            {
+                _editor.SceneEditing.Deselect();
+            }
+
+            return false;
         }
 
         /// <inheritdoc />
