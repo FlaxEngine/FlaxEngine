@@ -16,6 +16,7 @@
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/GPUPass.h"
 
 // Shader input texture slots mapping
 #define TEXTURE0 4
@@ -278,6 +279,9 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
     // Combine pass
     {
         PROFILE_GPU("Combine");
+        auto rt = colorBuffer0->View(0);
+        auto rtAction = GPUDrawPassAction::Store;
+        GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
         context->BindSR(0, buffers->GBuffer0);
         context->BindSR(1, buffers->GBuffer1);
         context->BindSR(2, buffers->GBuffer2);
@@ -286,7 +290,6 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
         context->BindSR(TEXTURE1, reflectionsRT);
         context->BindSR(TEXTURE2, _preIntegratedGF->GetTexture());
         context->SetViewportAndScissors((float)colorBufferWidth, (float)colorBufferHeight);
-        context->SetRenderTarget(colorBuffer0->View(0));
         context->SetState(_psCombinePass);
         context->DrawFullscreenTriangle();
         context->UnBindSR(TEXTURE1);
@@ -324,8 +327,10 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
     // Ray Trace Pass
     {
         PROFILE_GPU("RayTrace");
+        auto rt = traceBuffer->View();
+        auto rtAction = GPUDrawPassAction::Store;
+        GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
         context->SetViewportAndScissors((float)traceWidth, (float)traceHeight);
-        context->SetRenderTarget(*traceBuffer);
         context->BindSR(3, depthBufferTrace);
         context->BindSR(TEXTURE0, colorBuffer0->View());
         if (useGlobalSurfaceAtlas)
@@ -347,8 +352,10 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
     // Resolve Pass
     {
         PROFILE_GPU("Resolve");
+        auto rt = resolveBuffer->View();
+        auto rtAction = GPUDrawPassAction::Store;
+        GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
         context->SetViewportAndScissors((float)resolveWidth, (float)resolveHeight);
-        context->SetRenderTarget(resolveBuffer->View());
         context->BindSR(TEXTURE0, traceBuffer->View());
         context->SetState(_psResolvePass.Get(resolvePassIndex));
         context->DrawFullscreenTriangle();
@@ -381,7 +388,9 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
         }
         else
         {
-            context->SetRenderTarget(newTemporal->View());
+            auto rt = newTemporal->View();
+            auto rtAction = GPUDrawPassAction::Store;
+            GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
             context->BindSR(TEXTURE0, resolveBuffer);
             context->BindSR(TEXTURE1, buffers->TemporalSSR);
             context->BindSR(TEXTURE2, buffers->MotionVectors && buffers->MotionVectors->IsAllocated() ? buffers->MotionVectors->View() : nullptr);

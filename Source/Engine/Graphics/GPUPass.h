@@ -150,6 +150,18 @@ struct FLAXENGINE_API GPUDrawPass : GPUPass
         Context->BeginDrawPass(*this);
     }
 
+    GPUDrawPass(GPUContext* context, Span<GPUTextureView*> renderTargets, Span<GPUDrawPassAction> renderTargetsActions)
+        : GPUPass(context)
+        , DepthBuffer(nullptr)
+        , RenderTargets(renderTargets.Get())
+        , RenderTargetsActions(renderTargetsActions.Get())
+        , RenderTargetsCount(renderTargets.Length())
+        , DepthAction(GPUDrawPassAction::None)
+    {
+        ASSERT_LOW_LAYER(renderTargets.Length() == renderTargetsActions.Length());
+        Context->BeginDrawPass(*this);
+    }
+
     ~GPUDrawPass()
     {
         Context->EndDrawPass();

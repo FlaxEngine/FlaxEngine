@@ -447,7 +447,8 @@ void DeferredDeletionQueueVulkan::EnqueueGenericResource(Type type, uint64 handl
 uint32 GetHash(const RenderTargetLayoutVulkan& key)
 {
     uint32 hash = (int32)key.MSAA * 11;
-    CombineHash(hash, key.Flags);
+    CombineHash(hash, (uint32)(key.Flags & MAX_uint32));
+    CombineHash(hash, (uint32)((key.Flags >> 32) & MAX_uint32));
     CombineHash(hash, (uint32)key.DepthFormat * 93473262);
     CombineHash(hash, key.Extent.width);
     CombineHash(hash, key.Extent.height);

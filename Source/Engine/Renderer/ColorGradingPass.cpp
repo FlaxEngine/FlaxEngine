@@ -6,6 +6,7 @@
 #include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPULimits.h"
+#include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -252,10 +253,12 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
     context->SetViewportAndScissors((float)lutDesc.Width, (float)lutDesc.Height);
     context->SetState(_psLut.Get((int32)toneMapping.Mode));
     context->BindSR(0, lutTexture);
+    auto rtAction = GPUDrawPassAction::Store;
 #if GPU_ALLOW_GEOMETRY_SHADERS
     if (use3D)
     {
-        context->SetRenderTarget(colorGradingBuffer.LUT->ViewVolume());
+        auto rt = colorGradingBuffer.LUT->ViewVolume();
+        GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
 
         // Render one fullscreen-triangle per slice intersecting the bounds
         const int32 numInstances = lutDesc.Depth;
@@ -264,7 +267,8 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
     else
 #endif
     {
-        context->SetRenderTarget(colorGradingBuffer.LUT->View());
+        auto rt = colorGradingBuffer.LUT->View();
+        GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
         context->DrawFullscreenTriangle();
     }
     context->UnBindSR(0);

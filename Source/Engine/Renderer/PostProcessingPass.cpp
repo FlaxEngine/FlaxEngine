@@ -9,6 +9,7 @@
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Engine/Time.h"
+#include "Engine/Graphics/GPUPass.h"
 
 #define GB_RADIUS 6
 #define GB_KERNEL_SIZE (GB_RADIUS * 2 + 1)
@@ -415,8 +416,9 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
         {
             const int32 mipWidth = w2 >> mip;
             const int32 mipHeight = h2 >> mip;
-
-            context->SetRenderTarget(bloomBuffer1->View(0, mip));
+            auto rt = bloomBuffer1->View(0, mip);
+            auto rtAction = GPUDrawPassAction::Store;
+            GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
             context->SetViewportAndScissors((float)mipWidth, (float)mipHeight);
             context->BindSR(0, bloomBuffer1->View(0, mip - 1));
             context->SetState(_psBloomDownsample);
@@ -438,7 +440,9 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
 
             data.BloomLayer = static_cast<float>(mip);
             context->UpdateCB(cb0, &data);
-            context->SetRenderTarget(bloomBuffer2->View(0, mip));
+            auto rt = bloomBuffer2->View(0, mip);
+            auto rtAction = GPUDrawPassAction::Store;
+            GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
             context->SetViewportAndScissors((float)mipWidth, (float)mipHeight);
             context->BindSR(0, upscaleBuffer->View(0, mip + 1));
             context->BindSR(1, bloomBuffer1->View(0, mip + 1));
@@ -470,13 +474,17 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
         context->BindSR(6, GetCustomOrDefault(settings.LensFlares.LensColor, _defaultLensColor, TEXT("Engine/Textures/DefaultLensColor")));
 
         // Render lens flares
-        context->SetRenderTarget(bloomBuffer2->View(0, 1));
-        context->SetViewportAndScissors((float)w4, (float)h4);
-        context->BindSR(3, bloomBuffer1->View(0, 1)); // Use mip 1 of bloomBuffer1 as source
-        context->SetState(_psGenGhosts);
-        context->DrawFullscreenTriangle();
-        context->ResetRenderTarget();
-        context->UnBindSR(3);
+        {
+            auto rt = bloomBuffer2->View(0, 1);
+            auto rtAction = GPUDrawPassAction::Store;
+            GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
+            context->SetViewportAndScissors((float)w4, (float)h4);
+            context->BindSR(3, bloomBuffer1->View(0, 1)); // Use mip 1 of bloomBuffer1 as source
+            context->SetState(_psGenGhosts);
+            context->DrawFullscreenTriangle();
+            context->ResetRenderTarget();
+            context->UnBindSR(3);
+        }
 
         // Gaussian blur kernel
         GaussianBlurData gbData;
@@ -486,24 +494,32 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
         GB_ComputeKernel(2.0f, gbData.Size.X, gbData.Size.Y, GaussianBlurCacheH, GaussianBlurCacheV);
 
         // Gaussian blur H
-        Platform::MemoryCopy(gbData.GaussianBlurCache, GaussianBlurCacheH, sizeof(GaussianBlurCacheH));
-        context->UpdateCB(cb1, &gbData);
-        context->BindCB(1, cb1);
-        context->SetRenderTarget(bloomBuffer1->View(0, 1));
-        context->BindSR(0, bloomBuffer2->View(0, 1));
-        context->SetState(_psBlurH);
-        context->DrawFullscreenTriangle();
-        context->ResetRenderTarget();
+        {
+            auto rt = bloomBuffer1->View(0, 1);
+            auto rtAction = GPUDrawPassAction::Store;
+            GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
+            Platform::MemoryCopy(gbData.GaussianBlurCache, GaussianBlurCacheH, sizeof(GaussianBlurCacheH));
+            context->UpdateCB(cb1, &gbData);
+            context->BindCB(1, cb1);
+            context->BindSR(0, bloomBuffer2->View(0, 1));
+            context->SetState(_psBlurH);
+            context->DrawFullscreenTriangle();
+            context->ResetRenderTarget();
+        }
 
         // Gaussian blur V
-        Platform::MemoryCopy(gbData.GaussianBlurCache, GaussianBlurCacheV, sizeof(GaussianBlurCacheV));
-        context->UpdateCB(cb1, &gbData);
-        context->BindCB(1, cb1);
-        context->SetRenderTarget(bloomBuffer2->View(0, 1));
-        context->BindSR(0, bloomBuffer1->View(0, 1));
-        context->SetState(_psBlurV);
-        context->DrawFullscreenTriangle();
-        context->ResetRenderTarget();
+        {
+            auto rt = bloomBuffer2->View(0, 1);
+            auto rtAction = GPUDrawPassAction::Store;
+            GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
+            Platform::MemoryCopy(gbData.GaussianBlurCache, GaussianBlurCacheV, sizeof(GaussianBlurCacheV));
+            context->UpdateCB(cb1, &gbData);
+            context->BindCB(1, cb1);
+            context->BindSR(0, bloomBuffer1->View(0, 1));
+            context->SetState(_psBlurV);
+            context->DrawFullscreenTriangle();
+            context->ResetRenderTarget();
+        }
 
         // Set lens flares output
         context->BindSR(3, bloomBuffer2->View(0, 1));
@@ -515,10 +531,6 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Final composite
-
-    // TODO: consider to use more compute shader for post processing
-
-    // TODO: maybe don't use this rt swap and start using GetTempRt to make this design easier
 
     // Check if use Tone Mapping + Color Grading LUT
     int32 compositePermutationIndex = 0;
@@ -553,10 +565,14 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     context->BindSR(7, colorGradingLutView);
 
     // Composite final frame during single pass (done in full resolution)
-    context->SetViewportAndScissors((float)output->Width(), (float)output->Height());
-    context->SetRenderTarget(*output);
-    context->SetState(_psComposite.Get(compositePermutationIndex));
-    context->DrawFullscreenTriangle();
+    {
+        auto rt = output->View();
+        auto rtAction = GPUDrawPassAction::Store;
+        GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
+        context->SetViewportAndScissors((float)output->Width(), (float)output->Height());
+        context->SetState(_psComposite.Get(compositePermutationIndex));
+        context->DrawFullscreenTriangle();
+    }
 
     // Cleanup
     RenderTargetPool::Release(bloomBuffer1);

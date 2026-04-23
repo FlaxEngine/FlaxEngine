@@ -8,6 +8,7 @@
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTools.h"
@@ -482,7 +483,8 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
                 if (blurPasses == 0)
                     rts = m_finalResults->View(pass);
 
-                context->SetRenderTarget(nullptr, rts);
+                GPUDrawPassAction rtsAction = GPUDrawPassAction::Store;
+                GPUDrawPass drawPass(context, ToSpan(&rts, 1), ToSpan(&rtsAction, 1));
                 context->BindSR(SSAO_TEXTURE_SLOT0, m_halfDepths[pass]);
                 context->BindSR(SSAO_TEXTURE_SLOT1, renderContext.Buffers->GBuffer1);
                 context->SetState(_psGenerate[settings.QualityLevel]);
@@ -504,7 +506,8 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
                     if (i == (blurPasses - 1))
                         rts = m_finalResults->View(pass);
 
-                    context->SetRenderTarget(nullptr, rts);
+                    GPUDrawPassAction rtsAction = GPUDrawPassAction::Store;
+                    GPUDrawPass drawPass(context, ToSpan(&rts, 1), ToSpan(&rtsAction, 1));
                     context->BindSR(SSAO_TEXTURE_SLOT0, pPingRT);
 
                     if (settings.QualityLevel == 0)

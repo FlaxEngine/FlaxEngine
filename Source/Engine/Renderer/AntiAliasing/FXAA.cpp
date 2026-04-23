@@ -4,6 +4,7 @@
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTask.h"
 
@@ -61,7 +62,9 @@ void FXAA::Dispose()
 void FXAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output)
 {
     auto context = GPUDevice::Instance->GetMainContext();
-    context->SetRenderTarget(output);
+
+    auto rtAction = GPUDrawPassAction::Store;
+    GPUDrawPass drawPass(context, ToSpan(&output, 1), ToSpan(&rtAction, 1));
     if (checkIfSkipPass())
     {
         // Resources are missing. Do not perform rendering, just copy input frame.
@@ -69,7 +72,7 @@ void FXAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureVie
         return;
     }
     PROFILE_GPU_CPU("Fast Approximate Antialiasing");
-
+     
     // Bind input
     Data data;
     data.ScreenSize = renderContext.View.ScreenSize;

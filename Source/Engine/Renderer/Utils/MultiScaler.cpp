@@ -4,6 +4,7 @@
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Graphics/GPUPass.h"
 
 GPU_CB_STRUCT(Data {
     Float2 TexelSize;
@@ -142,20 +143,25 @@ void MultiScaler::Filter(FilterMode mode, GPUContext* context, int32 width, int3
     auto cb = _shader->GetShader()->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
+    auto rtAction = GPUDrawPassAction::Store;
 
     // Convolve horizontal
-    context->BindSR(0, src);
-    context->SetRenderTarget(tmp);
-    context->SetState(ps->Get(0));
-    context->DrawFullscreenTriangle();
+    {
+        GPUDrawPass drawPass(context, ToSpan(&tmp, 1), ToSpan(&rtAction, 1));
+        context->BindSR(0, src);
+        context->SetState(ps->Get(0));
+        context->DrawFullscreenTriangle();
+    }
 
     context->ResetRenderTarget();
 
     // Convolve vertical
-    context->BindSR(0, tmp);
-    context->SetRenderTarget(dst);
-    context->SetState(ps->Get(1));
-    context->DrawFullscreenTriangle();
+    {
+        GPUDrawPass drawPass(context, ToSpan(&dst, 1), ToSpan(&rtAction, 1));
+        context->BindSR(0, tmp);
+        context->SetState(ps->Get(1));
+        context->DrawFullscreenTriangle();
+    }
 
     context->ResetRenderTarget();
 }
@@ -194,20 +200,26 @@ void MultiScaler::Filter(FilterMode mode, GPUContext* context, int32 width, int3
     auto cb = _shader->GetShader()->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
+    auto rtAction = GPUDrawPassAction::Store;
 
     // Convolve horizontal
-    context->BindSR(0, srcDst);
-    context->SetRenderTarget(tmp);
-    context->SetState(ps->Get(0));
-    context->DrawFullscreenTriangle();
+    {
+        GPUDrawPass drawPass(context, ToSpan(&tmp, 1), ToSpan(&rtAction, 1));
+        context->BindSR(0, srcDst);
+        context->SetRenderTarget(tmp);
+        context->SetState(ps->Get(0));
+        context->DrawFullscreenTriangle();
+    }
 
     context->ResetRenderTarget();
 
     // Convolve vertical
-    context->BindSR(0, tmp);
-    context->SetRenderTarget(srcDst);
-    context->SetState(ps->Get(1));
-    context->DrawFullscreenTriangle();
+    {
+        GPUDrawPass drawPass(context, ToSpan(&srcDst, 1), ToSpan(&rtAction, 1));
+        context->BindSR(0, tmp);
+        context->SetState(ps->Get(1));
+        context->DrawFullscreenTriangle();
+    }
 
     context->ResetRenderTarget();
 }
@@ -266,8 +278,10 @@ void MultiScaler::BuildHiZ(GPUContext* context, GPUTexture* srcDepth, GPUTexture
     }
     else
     {
+        auto rt = dstHiZ->View();
+        auto rtAction = GPUDrawPassAction::Store;
+        GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
         context->SetViewportAndScissors((float)dstWidth, (float)dstHeight);
-        context->SetRenderTarget(dstHiZ->View());
         context->BindSR(0, srcDepth);
         context->SetState(_psHalfDepth[2]);
         context->DrawFullscreenTriangle();
@@ -280,8 +294,10 @@ void MultiScaler::BuildHiZ(GPUContext* context, GPUTexture* srcDepth, GPUTexture
         const int32 mipHeight = Math::Max(dstHeight >> mip, 1);
         context->ResetRenderTarget();
 
+        auto rt = dstHiZ->View(0, mip);
+        auto rtAction = GPUDrawPassAction::Store;
+        GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
         context->SetViewportAndScissors((float)mipWidth, (float)mipHeight);
-        context->SetRenderTarget(dstHiZ->View(0, mip));
         context->BindSR(0, dstHiZ->View(0, mip - 1));
         context->SetState(_psHalfDepth[2]);
         context->DrawFullscreenTriangle();
@@ -295,8 +311,9 @@ void MultiScaler::Upscale(GPUContext* context, const Viewport& viewport, GPUText
 {
     PROFILE_GPU_CPU("Upscale");
 
+    auto rtAction = GPUDrawPassAction::Store;
+    GPUDrawPass drawPass(context, ToSpan(&dst, 1), ToSpan(&rtAction, 1));
     context->SetViewportAndScissors(viewport);
-    context->SetRenderTarget(dst);
 
     if (checkIfSkipPass())
     {
