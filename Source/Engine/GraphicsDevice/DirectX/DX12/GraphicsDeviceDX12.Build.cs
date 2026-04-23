@@ -42,5 +42,7 @@ public class GraphicsDeviceDX12 : GraphicsDeviceBaseModule
             options.DependencyFiles.Add(Path.Combine(options.DepsFolder, "WinPixEventRuntime.dll"));
             options.DelayLoadLibraries.Add("WinPixEventRuntime.dll");
         }
+
+        options.PrivateDependencies.Add("D3D12MemoryAllocator");
     }
 }

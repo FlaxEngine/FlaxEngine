@@ -29,6 +29,10 @@
 #include "Engine/Threading/Threading.h"
 #include "CommandSignatureDX12.h"
 
+// Inline into this module to leave it as a header-only
+#include <ThirdParty/D3D12MemoryAllocator/D3D12MemAlloc.h>
+#include <ThirdParty/D3D12MemoryAllocator/D3D12MemAlloc.cpp>
+
 static bool CheckDX12Support(IDXGIAdapter* adapter)
 {
 #if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
@@ -41,6 +45,17 @@ static bool CheckDX12Support(IDXGIAdapter* adapter)
     }
     return false;
 #endif
+}
+
+void* D3D12MA_Allocate(size_t Size, size_t Alignment, void* pPrivateData)
+{
+    PROFILE_MEM(GraphicsCommands);
+    return Platform::Allocate(Size, Alignment);
+}
+
+void D3D12MA_Free(void* pMemory, void* pPrivateData)
+{
+    Platform::Free(pMemory);
 }
 
 GPUVertexLayoutDX12::GPUVertexLayoutDX12(GPUDeviceDX12* device, const Elements& elements, bool explicitOffsets)
@@ -664,12 +679,13 @@ bool GPUDeviceDX12::Init()
 
     // Create DirectX device
     VALIDATE_DIRECTX_CALL(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&_device)));
+    HRESULT hr;
 
 #if PLATFORM_WINDOWS
     // Detect RenderDoc usage (UUID {A7AA6116-9C8D-4BBA-9083-B4D816B71B78})
     IUnknown* unknown = nullptr;
     const GUID uuidRenderDoc = { 0xa7aa6116, 0x9c8d, 0x4bba, { 0x90, 0x83, 0xb4, 0xd8, 0x16, 0xb7, 0x1b, 0x78 } };
-    HRESULT hr = _device->QueryInterface(uuidRenderDoc, (void**)&unknown);
+    hr = _device->QueryInterface(uuidRenderDoc, (void**)&unknown);
     if (SUCCEEDED(hr) && unknown)
     {
         IsDebugToolAttached = true;
@@ -699,8 +715,8 @@ bool GPUDeviceDX12::Init()
     // Debug Layer
 #if GPU_ENABLE_DIAGNOSTICS
     ComPtr<ID3D12InfoQueue> infoQueue;
-    HRESULT result = _device->QueryInterface(IID_PPV_ARGS(&infoQueue));
-    LOG_DIRECTX_RESULT(result);
+    hr = _device->QueryInterface(IID_PPV_ARGS(&infoQueue));
+    LOG_DIRECTX_RESULT(hr);
     if (infoQueue)
     {
         D3D12_INFO_QUEUE_FILTER filter;
@@ -809,6 +825,16 @@ bool GPUDeviceDX12::Init()
 #endif
 
     // Setup resources
+    D3D12MA::ALLOCATION_CALLBACKS allocationCallbacks = {};
+    allocationCallbacks.pAllocate = &D3D12MA_Allocate;
+    allocationCallbacks.pFree = &D3D12MA_Free;
+    D3D12MA::ALLOCATOR_DESC allocatorDesc = {};
+    allocatorDesc.pDevice = _device;
+    allocatorDesc.pAdapter = adapter;
+    allocatorDesc.Flags = D3D12MA_RECOMMENDED_ALLOCATOR_FLAGS;
+    allocatorDesc.pAllocationCallbacks = &allocationCallbacks;
+    hr = D3D12MA::CreateAllocator(&allocatorDesc, &Allocator);
+    LOG_DIRECTX_RESULT_WITH_RETURN(hr, true);
     _commandQueue = New<CommandQueueDX12>(this, D3D12_COMMAND_LIST_TYPE_DIRECT);
     if (_commandQueue->Init())
         return true;
@@ -1050,6 +1076,7 @@ void GPUDeviceDX12::Dispose()
     SAFE_DELETE(DrawIndirectCommandSignature);
     SAFE_DELETE(_mainContext);
     SAFE_DELETE(_commandQueue);
+    SAFE_RELEASE(Allocator);
 
     // Clear DirectX stuff
     SAFE_DELETE(_adapter);
@@ -1140,16 +1167,17 @@ GPUConstantBuffer* GPUDeviceDX12::CreateConstantBuffer(uint32 size, const String
     return New<GPUConstantBufferDX12>(this, size, name);
 }
 
-void GPUDeviceDX12::AddResourceToLateRelease(IGraphicsUnknown* resource, uint32 safeFrameCount)
+
+void GPUDeviceDX12::AddResourceToLateRelease(IGraphicsUnknown* resource, D3D12MA::Allocation* allocation, uint32 safeFrameCount)
 {
     if (resource == nullptr)
         return;
-
     ScopeLock lock(_res2DisposeLock);
 
     // Add to the list
     DisposeResourceEntry entry;
     entry.Resource = resource;
+    entry.Allocation = allocation;
     entry.TargetFrame = Engine::FrameCount + safeFrameCount;
     _res2Dispose.Add(entry);
 }
@@ -1169,6 +1197,8 @@ void GPUDeviceDX12::updateRes2Dispose()
         const DisposeResourceEntry& entry = _res2Dispose[i];
         if (entry.TargetFrame <= currentFrame)
         {
+            if (entry.Allocation)
+                entry.Allocation->Release();
             auto refs = entry.Resource->Release();
             if (refs != 0)
             {

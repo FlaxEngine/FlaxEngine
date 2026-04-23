@@ -18,7 +18,7 @@
 
 #if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
 
-#if  PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT
 #include <Scarlett/d3d12_xs.h>
 #else
 #include <XboxOne/d3d12_x.h>

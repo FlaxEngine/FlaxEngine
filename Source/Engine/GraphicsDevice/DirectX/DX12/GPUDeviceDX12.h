@@ -25,6 +25,16 @@ class GPUSwapChainDX12;
 class CommandQueueDX12;
 class CommandSignatureDX12;
 
+// D3D12MemoryAllocator config
+namespace D3D12MA
+{
+    class Allocator;
+    class Allocation;
+};
+#if !BUILD_DEBUG
+#define D3D12MA_ASSERT(cond)
+#endif
+
 /// <summary>
 /// Implementation of Graphics Device for DirectX 12 rendering system
 /// </summary>
@@ -38,6 +48,7 @@ private:
     struct DisposeResourceEntry
     {
         IGraphicsUnknown* Resource;
+        D3D12MA::Allocation* Allocation;
         uint64 TargetFrame;
     };
 
@@ -71,6 +82,7 @@ public:
     ~GPUDeviceDX12();
 
 public:
+    D3D12MA::Allocator* Allocator = nullptr;
     UploadBufferDX12 UploadBuffer;
     bool AllowTearing = false;
     CommandSignatureDX12* DispatchIndirectCommandSignature = nullptr;
@@ -78,6 +90,7 @@ public:
     CommandSignatureDX12* DrawIndirectCommandSignature = nullptr;
     GPUBuffer* DummyVB = nullptr;
     Array<QueryHeapDX12*, InlinedAllocation<8>> QueryHeaps;
+    Array<ID3D12Resource*> PendingResourceDiscards;
 
     D3D12_CPU_DESCRIPTOR_HANDLE NullSRV(D3D12_SRV_DIMENSION dimension) const;
     D3D12_CPU_DESCRIPTOR_HANDLE NullUAV() const;
@@ -154,7 +167,7 @@ public:
 public:
 
     // Add resource to late release service (will be released after 'safeFrameCount' frames)
-    void AddResourceToLateRelease(IGraphicsUnknown* resource, uint32 safeFrameCount = DX12_RESOURCE_DELETE_SAFE_FRAMES_COUNT);
+    void AddResourceToLateRelease(IGraphicsUnknown* resource, D3D12MA::Allocation* allocation = nullptr, uint32 safeFrameCount = DX12_RESOURCE_DELETE_SAFE_FRAMES_COUNT);
 
     static FORCE_INLINE uint32 GetMaxMSAAQuality(uint32 sampleCount)
     {

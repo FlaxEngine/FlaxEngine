@@ -22,16 +22,13 @@ void ResourceOwnerDX12::initResource(const D3D12_RESOURCE_STATES initialState, c
 
 void ResourceOwnerDX12::releaseResource(uint32 safeFrameCount)
 {
-    if (_resource)
+    auto resource = _resource;
+    if (resource)
     {
-        OnRelease(this);
-
-        auto resource = _resource;
-        _resource = nullptr;
         _subresourcesCount = 0;
         State.Release();
-
-        ((GPUDeviceDX12*)GPUDevice::Instance)->AddResourceToLateRelease(resource, safeFrameCount);
+        ((GPUDeviceDX12*)GPUDevice::Instance)->AddResourceToLateRelease(resource, _allocation, safeFrameCount);
+        _allocation = nullptr;
     }
 }
 

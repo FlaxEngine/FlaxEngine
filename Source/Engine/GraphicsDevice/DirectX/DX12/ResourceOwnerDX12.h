@@ -8,6 +8,10 @@
 
 #if GRAPHICS_API_DIRECTX12
 
+namespace D3D12MA
+{
+    class Allocation;
+}
 class GPUResource;
 class GPUContextDX12;
 class GPUAsyncContextDX12;
@@ -59,19 +63,9 @@ class ResourceOwnerDX12
     friend GPUAsyncContextDX12;
 
 protected:
-
-    ID3D12Resource* _resource;
-    uint32 _subresourcesCount;
-
-    ResourceOwnerDX12()
-        : _resource(nullptr)
-        , _subresourcesCount(0)
-    {
-    }
-
-    ~ResourceOwnerDX12()
-    {
-    }
+    D3D12MA::Allocation* _allocation = nullptr;
+    ID3D12Resource* _resource = nullptr;
+    uint32 _subresourcesCount = 0;
 
 public:
 

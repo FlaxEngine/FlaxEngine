@@ -310,6 +310,11 @@ void GPUContextDX12::Reset()
     _commandList->IASetVertexBuffers(GPU_MAX_VB_BINDED, 1, &dummyVBView);
 
     ForceRebindDescriptors();
+
+    // Discard resources not created during rendering
+    for (auto* resource : _device->PendingResourceDiscards)
+        _commandList->DiscardResource(resource, nullptr);
+    _device->PendingResourceDiscards.Clear();
 }
 
 uint64 GPUContextDX12::Execute(bool waitForCompletion)
