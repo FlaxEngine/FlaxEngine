@@ -622,6 +622,16 @@ void GPUDevice::DumpResources()
 
 extern void ClearVertexLayoutCache();
 
+bool UseVSync()
+{
+    bool vsync = Graphics::UseVSync;
+    if (CommandLine::Options.NoVSync.HasValue())
+        vsync = !CommandLine::Options.NoVSync.GetValue();
+    else if (CommandLine::Options.VSync.HasValue())
+        vsync = CommandLine::Options.VSync.GetValue();
+    return vsync;
+}
+
 void GPUDevice::preDispose()
 {
     Locker.Lock();
@@ -665,26 +675,26 @@ void GPUDevice::DrawEnd()
 {
     PROFILE_CPU_NAMED("Present");
 
-    // Check if use VSync
-    bool useVSync = Graphics::UseVSync;
-    if (CommandLine::Options.NoVSync.HasValue())
-        useVSync = !CommandLine::Options.NoVSync.GetValue();
-    else if (CommandLine::Options.VSync.HasValue())
-        useVSync = CommandLine::Options.VSync.GetValue();
-
-    // Find index of the last rendered window task (use vsync only on the last window)
-    int32 lastWindowIndex = -1;
+    // Check if use VSync (prioritize the last window, in case of multi-window in Editor)
+    bool useVSync = UseVSync();
+    int32 vsyncTask = -1;
     for (int32 i = RenderTask::Tasks.Count() - 1; i >= 0; i--)
     {
         const auto task = RenderTask::Tasks[i];
         if (task && task->LastUsedFrame == Engine::FrameCount && task->SwapChain && task->SwapChain->IsReady())
         {
-            lastWindowIndex = i;
+            vsyncTask = i;
             break;
         }
     }
+    if (_rendererType == RendererType::Vulkan && RenderTask::Tasks.Contains(_lastVSyncTask))
+    {
+        // On Vulkan, maintain the last window that was VSynced to avoid recreating swapchain too often (eg. when using context menus or tooltips)
+        vsyncTask = RenderTask::Tasks.Find(_lastVSyncTask);
+    }
 
     // Call present on all used tasks
+    _lastVSyncTask = nullptr;
     int32 presentCount = 0;
     bool anyVSync = false;
 #if COMPILE_WITH_PROFILER
@@ -696,7 +706,7 @@ void GPUDevice::DrawEnd()
         if (task && task->LastUsedFrame == Engine::FrameCount && task->SwapChain && task->SwapChain->IsReady())
         {
             bool vsync = useVSync;
-            if (lastWindowIndex != i)
+            if (vsyncTask != i)
             {
                 // Perform VSync only on the last window
                 vsync = false;
@@ -711,6 +721,8 @@ void GPUDevice::DrawEnd()
 
             anyVSync |= vsync;
             task->OnPresent(vsync);
+            if (vsync)
+                _lastVSyncTask = task;
             presentCount++;
         }
     }

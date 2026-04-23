@@ -9,7 +9,9 @@
 #include "GPUContextVulkan.h"
 #include "CmdBufferVulkan.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/GPULimits.h"
+#include "Engine/Graphics/Graphics.h"
 #include "Engine/Scripting/Enums.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
@@ -153,6 +155,14 @@ void GPUSwapChainVulkan::Begin(RenderTask* task)
             backBuffer.SubmitCmdBuffer = nullptr;
         }
     }
+
+    // Rebuild swapchain if need to
+    if (_vsyncPending != _vsyncCurrent)
+    {
+        LOG(Info, "Changing VSync mode to {}", _vsyncPending ? TEXT("on") : TEXT("off"));
+        _device->WaitForGPU();
+        CreateSwapChain(_width, _height);
+    }
 }
 
 bool GPUSwapChainVulkan::Resize(int32 width, int32 height)
@@ -212,6 +222,14 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
 
         // Flush removed resources
         _device->DeferredDeletionQueue.ReleaseResources(true);
+    }
+    if (_vsyncInit)
+    {
+        // Guess the VSync value for the 1st time (Present has not been called yet)
+        extern bool UseVSync();
+        _vsyncPending = UseVSync();
+        _vsyncPending &= _window == Engine::MainWindow; // Don't use VSync on new context menus or tooltips in Editor
+        _vsyncInit = false;
     }
     ASSERT(_surface == VK_NULL_HANDLE);
     ASSERT_LOW_LAYER(_backBuffers.Count() == 0);
@@ -329,13 +347,13 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
         Array<VkPresentModeKHR, InlinedAllocation<8>> presentModes;
         presentModes.Resize(presentModesCount);
         VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, _surface, &presentModesCount, presentModes.Get()));
-        if (presentModes.Contains(VK_PRESENT_MODE_MAILBOX_KHR))
-        {
-            presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
-        }
-        else if (presentModes.Contains(VK_PRESENT_MODE_IMMEDIATE_KHR))
+        if (!_vsyncPending && presentModes.Contains(VK_PRESENT_MODE_IMMEDIATE_KHR))
         {
             presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+        }
+        else if (!_vsyncPending && presentModes.Contains(VK_PRESENT_MODE_MAILBOX_KHR))
+        {
+            presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
         }
         else if (presentModes.Contains(VK_PRESENT_MODE_FIFO_KHR))
         {
@@ -406,6 +424,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     // Cache data
     _width = width;
     _height = height;
+    _vsyncCurrent = _vsyncPending;
 
     // Setup back buffers
     {
@@ -566,6 +585,9 @@ void GPUSwapChainVulkan::Present(bool vsync)
         return;
     PROFILE_CPU();
     ZoneColor(TracyWaitZoneColor);
+
+    // Update pending VSync value based on the present mode
+    _vsyncPending = vsync;
 
     // Ensure that backbuffer has been acquired before presenting it to the window
     const auto backBuffer = (GPUTextureViewVulkan*)GetBackBufferView();

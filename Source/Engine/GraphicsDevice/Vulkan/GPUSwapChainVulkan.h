@@ -65,6 +65,7 @@ private:
     int32 _currentImageIndex;
     int32 _semaphoreIndex;
     int32 _acquiredImageIndex;
+    bool _vsyncCurrent = false, _vsyncPending = false, _vsyncInit = true;
     Array<BackBufferVulkan, FixedAllocation<VULKAN_BACK_BUFFERS_COUNT_MAX>> _backBuffers;
     SemaphoreVulkan* _acquiredSemaphore;
 
@@ -75,7 +76,6 @@ public:
     /// <summary>
     /// Gets the Vulkan surface.
     /// </summary>
-    /// <returns>The surface object.</returns>
     FORCE_INLINE VkSurfaceKHR GetSurface() const
     {
         return _surface;
@@ -84,7 +84,6 @@ public:
     /// <summary>
     /// Gets the Vulkan surface swap chain.
     /// </summary>
-    /// <returns>The swap chain object.</returns>
     FORCE_INLINE VkSwapchainKHR GetSwapChain() const
     {
         return _swapChain;

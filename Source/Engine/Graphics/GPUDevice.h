@@ -162,6 +162,7 @@ protected:
     PrivateData* _res;
     Array<GPUResource*> _resources;
     CriticalSection _resourcesLock;
+    RenderTask* _lastVSyncTask = nullptr;
 
     void OnRequestingExit();
 
