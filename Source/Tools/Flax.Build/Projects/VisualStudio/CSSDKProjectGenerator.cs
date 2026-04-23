@@ -231,6 +231,16 @@ namespace Flax.Build.Projects.VisualStudio
                 else
                     csProjectFileContent.AppendLine(string.Format("    <{0} Include=\"{1}\" />", fileType, projectPath));
             }
+
+            if (project.EmbeddedResources != null)
+            {
+                foreach (var file in project.EmbeddedResources)
+                {
+                    var projectPath = Utilities.MakePathRelativeTo(file, projectDirectory);
+                    csProjectFileContent.AppendLine(string.Format("    <EmbeddedResource Include=\"{0}\" />", projectPath));
+                }
+            }
+
             csProjectFileContent.AppendLine("  </ItemGroup>");
 
             if (project.GeneratedSourceFiles != null)
