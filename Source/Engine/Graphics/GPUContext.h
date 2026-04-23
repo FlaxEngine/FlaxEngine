@@ -27,6 +27,7 @@ class GPUTextureView;
 class GPUBufferView;
 class GPUVertexLayout;
 struct GPUPass;
+struct GPUDrawPass;
 enum class GPUResourceAccess;
 enum class GPUQueryType;
 
@@ -695,6 +696,14 @@ public:
 
     // Begins or ends unordered access resource overlap region that allows running different compute shader dispatches simultaneously.
     virtual void OverlapUA(bool end)
+    {
+    }
+
+    // Begins draw pass rendering. See GPUDrawPass.
+    virtual void BeginDrawPass(GPUDrawPass& pass);
+
+    // Ends draw pass rendering. See GPUDrawPass.
+    virtual void EndDrawPass()
     {
     }
 };

@@ -91,6 +91,7 @@ private:
     uint32 _stencilRef;
 
     RenderPassVulkan* _renderPass;
+    GPUDrawPass* _drawPass = nullptr;
     GPUPipelineStateVulkan* _currentState;
     GPUShaderProgramCSVulkan* _currentCompute;
     GPUVertexLayoutVulkan* _vertexLayout;
@@ -219,6 +220,8 @@ public:
     void Transition(GPUResource* resource, GPUResourceAccess access) override;
     void MemoryBarrier() override;
     void OverlapUA(bool end) override;
+    void BeginDrawPass(GPUDrawPass& pass) override;
+    void EndDrawPass() override;
 };
 
 #endif

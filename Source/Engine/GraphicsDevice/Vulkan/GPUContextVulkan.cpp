@@ -17,6 +17,7 @@
 #include "GPUShaderProgramVulkan.h"
 #include "GPUTextureVulkan.h"
 #include "QueueVulkan.h"
+#include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Debug/Exceptions/NotImplementedException.h"
 
@@ -436,10 +437,21 @@ void GPUContextVulkan::BeginRenderPass()
             layout.RTVsFormats[i] = handle->GetFormat();
             framebufferKey.Attachments[i] = handle->GetFramebufferView();
             AddImageBarrier(handle, handle->LayoutRTV);
+            uint64 mask = 1ull << i;
             if (FindClear(handle, clear))
             {
-                layout.ClearFlags |= 1 << i;
+                layout.LoadClear |= mask;
                 clearValues[i] = clear.Value;
+            }
+            if (_drawPass && _drawPass->RenderTargetsActions)
+            {
+                GPUDrawPassAction action = _drawPass->RenderTargetsActions[i];
+                if ((uint32)action & (uint32)GPUDrawPassAction::Clear)
+                    layout.LoadClear |= mask;
+                else if (((uint32)action & (uint32)GPUDrawPassAction::LoadMask) == 0)
+                    layout.LoadDontCare |= mask;
+                else if (((uint32)action & (uint32)GPUDrawPassAction::StoreMask) == 0)
+                    layout.StoreDontCare |= mask;
             }
         }
         else
@@ -459,10 +471,21 @@ void GPUContextVulkan::BeginRenderPass()
         framebufferKey.AttachmentCount++;
         framebufferKey.Attachments[_rtCount] = handle->GetFramebufferView();
         AddImageBarrier(handle, handle->LayoutRTV);
+        uint64 mask = 1ull << _rtCount;
         if (FindClear(handle, clear))
         {
-            layout.ClearFlags |= 1 << _rtCount;
+            layout.LoadClear |= mask;
             clearValues[_rtCount] = clear.Value;
+        }
+        if (_drawPass)
+        {
+            GPUDrawPassAction action = _drawPass->DepthAction;
+            if ((uint32)action & (uint32)GPUDrawPassAction::Clear)
+                layout.LoadClear |= mask;
+            else if (((uint32)action & (uint32)GPUDrawPassAction::LoadMask) == 0)
+                layout.LoadDontCare |= mask;
+            else if (((uint32)action & (uint32)GPUDrawPassAction::StoreMask) == 0)
+                layout.StoreDontCare |= mask;
         }
     }
     else
@@ -1004,7 +1027,7 @@ void GPUContextVulkan::SetRenderTarget(GPUTextureView* depthBuffer, GPUTextureVi
 
 void GPUContextVulkan::SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPUTextureView*>& rts)
 {
-    ASSERT(Math::IsInRange(rts.Length(), 1, GPU_MAX_RT_BINDED));
+    ASSERT(Math::IsInRange(rts.Length(), 0, GPU_MAX_RT_BINDED));
 
     const auto depthBufferVulkan = static_cast<GPUTextureViewVulkan*>(depthBuffer);
 
@@ -1961,6 +1984,21 @@ void GPUContextVulkan::OverlapUA(bool end)
 {
     if (end)
         AddUABarrier();
+}
+
+void GPUContextVulkan::BeginDrawPass(GPUDrawPass& pass)
+{
+    _drawPass = &pass;
+    _rtDirtyFlag = true;
+    _psDirtyFlag = true;
+    _rtCount = pass.RenderTargetsCount;
+    _rtDepth = (GPUTextureViewVulkan*)pass.DepthBuffer;
+    Platform::MemoryCopy(_rtHandles, pass.RenderTargets, pass.RenderTargetsCount * sizeof(void*));
+}
+
+void GPUContextVulkan::EndDrawPass()
+{
+    _drawPass = nullptr;
 }
 
 #endif

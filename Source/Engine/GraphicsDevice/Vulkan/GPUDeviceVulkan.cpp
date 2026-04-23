@@ -537,9 +537,9 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
         attachment.flags = 0;
         attachment.format = RenderToolsVulkan::ToVulkanFormat(layout.RTVsFormats[i]);
         attachment.samples = (VkSampleCountFlagBits)layout.MSAA;
-        // TODO: we need render passes into high-level rendering api to perform more optimal rendering (esp. for tiled gpus)
-        attachment.loadOp = layout.ClearFlags & 1 << i ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
-        attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        uint64 mask = 1ull << i;
+        attachment.loadOp = layout.LoadClear & mask ? VK_ATTACHMENT_LOAD_OP_CLEAR : (layout.LoadDontCare & mask ? VK_ATTACHMENT_LOAD_OP_DONT_CARE : VK_ATTACHMENT_LOAD_OP_LOAD);
+        attachment.storeOp = layout.StoreDontCare & mask ? VK_ATTACHMENT_STORE_OP_DONT_CARE : VK_ATTACHMENT_STORE_OP_STORE;
         attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         attachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -592,10 +592,11 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
         // TODO: use VK_ATTACHMENT_STORE_OP_NONE for readonly depth/stencil but check for 'VK_KHR_load_store_op_none' extension
         attachment.stencilLoadOp = layout.ReadStencil ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachment.stencilStoreOp = layout.WriteStencil ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        if (layout.ClearFlags & 1 << colorAttachmentsCount)
-        {
+        uint64 mask = 1ull << colorAttachmentsCount;
+        if (layout.LoadClear & mask)
             attachment.loadOp = attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        }
+        else if (layout.LoadDontCare & mask)
+            attachment.loadOp = attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachment.initialLayout = depthStencilLayout;
         attachment.finalLayout = depthStencilLayout;
         depthStencilReference.attachment = colorAttachmentsCount;

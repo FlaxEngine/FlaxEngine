@@ -2,6 +2,7 @@
 
 #include "GPUContext.h"
 #include "GPUDevice.h"
+#include "GPUPass.h"
 #include "RenderTask.h"
 #include "Textures/GPUTexture.h"
 
@@ -136,4 +137,9 @@ void GPUContext::SetResourceState(GPUResource* resource, uint64 state, int32 sub
 
 void GPUContext::ForceRebindDescriptors()
 {
+}
+
+void GPUContext::BeginDrawPass(GPUDrawPass& pass)
+{
+    SetRenderTarget(pass.DepthBuffer, ToSpan(pass.RenderTargets, pass.RenderTargetsCount));
 }

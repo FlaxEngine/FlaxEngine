@@ -11,17 +11,18 @@
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
+#include "Engine/Graphics/Graphics.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Level/Actors/Decal.h"
 #include "Engine/Level/Actors/Sky.h"
 #include "Engine/Engine/Engine.h"
-#include "Engine/Graphics/Graphics.h"
 
 GPU_CB_STRUCT(GBufferPassData {
     ShaderGBufferData GBuffer;
@@ -167,13 +168,19 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTexture* lightBuffer)
         renderContext.Buffers->GBuffer2->View(),
         renderContext.Buffers->GBuffer3->View(),
     };
+    GPUDrawPassAction targetActions[5] =
+    {
+        GPUDrawPassAction::ClearStore,
+        GPUDrawPassAction::ClearStore,
+        GPUDrawPassAction::ClearStore,
+        GPUDrawPassAction::ClearStore,
+        GPUDrawPassAction::ClearStore,
+    };
     renderContext.View.Pass = DrawPass::GBuffer;
     context->SetViewportAndScissors(renderContext.Buffers->GetViewport());
 
     // Clear GBuffer
     {
-        PROFILE_GPU_CPU_NAMED("Clear");
-
         context->ClearDepth(*renderContext.Buffers->DepthBuffer);
         context->Clear(lightBuffer->View(), Color::Transparent);
         context->Clear(renderContext.Buffers->GBuffer0->View(), Color::Transparent);
@@ -211,8 +218,15 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTexture* lightBuffer)
 #endif
 
     // Draw objects that can get decals
-    context->SetRenderTarget(*renderContext.Buffers->DepthBuffer, ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)));
-    renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::GBuffer);
+    {
+        GPUDrawPass drawPass(
+            context,
+            *renderContext.Buffers->DepthBuffer,
+            GPUDrawPassAction::ClearStore,
+            ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)),
+            ToSpan(targetActions, ARRAY_COUNT(targetActions)));
+        renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::GBuffer);
+    }
 
     // Draw decals
     DrawDecals(renderContext, lightBuffer->View());

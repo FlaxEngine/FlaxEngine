@@ -198,16 +198,18 @@ struct RenderTargetLayoutVulkan
     {
         struct
         {
-            uint32 Layers : 10; // Limited by GPU_MAX_TEXTURE_ARRAY_SIZE
-            uint32 RTsCount : 3; // Limited by GPU_MAX_RT_BINDED
-            uint32 ReadDepth : 1;
-            uint32 WriteDepth : 1;
-            uint32 ReadStencil : 1;
-            uint32 WriteStencil : 1;
-            uint32 ClearFlags : 7; // GPU_MAX_RT_BINDED + 1
+            uint64 Layers : 10; // Limited by GPU_MAX_TEXTURE_ARRAY_SIZE
+            uint64 RTsCount : 3; // Limited by GPU_MAX_RT_BINDED
+            uint64 ReadDepth : 1;
+            uint64 WriteDepth : 1;
+            uint64 ReadStencil : 1;
+            uint64 WriteStencil : 1;
+            uint64 LoadClear : 7; // GPU_MAX_RT_BINDED + 1
+            uint64 LoadDontCare : 7; // GPU_MAX_RT_BINDED + 1
+            uint64 StoreDontCare : 7; // GPU_MAX_RT_BINDED + 1
         };
 
-        uint32 Flags;
+        uint64 Flags;
     };
 
     MSAALevel MSAA;
