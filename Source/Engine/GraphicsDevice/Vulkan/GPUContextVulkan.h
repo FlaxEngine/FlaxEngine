@@ -70,6 +70,12 @@ struct PipelineBarrierVulkan
 class GPUContextVulkan : public GPUContext
 {
 private:
+    struct PendingClear
+    {
+        GPUTextureViewVulkan* View;
+        VkClearValue Value;
+    };
+
     GPUDeviceVulkan* _device;
     QueueVulkan* _queue;
     CmdBufferManagerVulkan* _cmdBufferManager;
@@ -101,6 +107,7 @@ private:
 #if COMPILE_WITH_PROFILER
     void* _tracyContext;
 #endif
+    Array<PendingClear, FixedAllocation<16>> _pendingClears;
 
     typedef Array<DescriptorPoolVulkan*> DescriptorPoolArray;
     Dictionary<uint32, DescriptorPoolArray> _descriptorPools;
@@ -143,10 +150,11 @@ public:
     DescriptorPoolVulkan* AllocateDescriptorSets(const VkDescriptorSetAllocateInfo& descriptorSetAllocateInfo, const DescriptorSetLayoutVulkan& layout, VkDescriptorSet* outSets);
 
     void BeginRenderPass();
-
     void EndRenderPass();
 
 private:
+    bool FindClear(const GPUTextureViewVulkan* view, PendingClear& clear);
+    void ManualClear(const PendingClear& clear);
     void UpdateDescriptorSets(const struct SpirvShaderDescriptorInfo& descriptorInfo, class DescriptorSetWriterVulkan& dsWriter, bool& needsWrite);
     void UpdateDescriptorSets(ComputePipelineStateVulkan* pipelineState);
     void OnDrawCall();

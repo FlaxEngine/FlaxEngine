@@ -144,7 +144,7 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         case 5: // SPIR-V module not valid: MemoryBarrier: Vulkan specification requires Memory Semantics to have one of the following bits set: Acquire, Release, AcquireRelease or SequentiallyConsistent
         case -1666394502: // After query pool creation, each query must be reset before it is used. Queries must also be reset between uses.
         case 1203141749:
-        case 602160055: // Attachment 4 not written by fragment shader; undefined values will be written to attachment. TODO: investigate it for PS_GBuffer shader from Deferred material with USE_LIGHTMAP=1
+        case 602160055: // Attachment 4 not written by fragment shader; undefined values will be written to attachment.
         case 7060244: //  Image Operand Offset can only be used with OpImage*Gather operations
         case -1539028524: // SortedIndices is null so Vulkan backend sets it to default R32_SFLOAT format which is not good for UINT format of the buffer
         case -1810835948: // SortedIndices is null so Vulkan backend sets it to default R32_SFLOAT format which is not good for UINT format of the buffer
@@ -537,14 +537,8 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
         attachment.flags = 0;
         attachment.format = RenderToolsVulkan::ToVulkanFormat(layout.RTVsFormats[i]);
         attachment.samples = (VkSampleCountFlagBits)layout.MSAA;
-#if PLATFORM_ANDROID
-        attachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD; // TODO: Adreno 640 has glitches when blend is disabled and rt data not loaded 
-#elif PLATFORM_MAC || PLATFORM_IOS
-        attachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD; // MoltenVK seams to have glitches (tiled arch of gpu)
-#else
         // TODO: we need render passes into high-level rendering api to perform more optimal rendering (esp. for tiled gpus)
-        attachment.loadOp = layout.BlendEnable ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-#endif
+        attachment.loadOp = layout.ClearFlags & 1 << i ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
         attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -595,8 +589,13 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
         attachment.loadOp = layout.ReadDepth || layout.ReadStencil ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         //attachment.storeOp = layout.WriteDepth || layout.WriteStencil ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
         attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // For some reason, read-only depth results in artifacts
+        // TODO: use VK_ATTACHMENT_STORE_OP_NONE for readonly depth/stencil but check for 'VK_KHR_load_store_op_none' extension
         attachment.stencilLoadOp = layout.ReadStencil ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachment.stencilStoreOp = layout.WriteStencil ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        if (layout.ClearFlags & 1 << colorAttachmentsCount)
+        {
+            attachment.loadOp = attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        }
         attachment.initialLayout = depthStencilLayout;
         attachment.finalLayout = depthStencilLayout;
         depthStencilReference.attachment = colorAttachmentsCount;

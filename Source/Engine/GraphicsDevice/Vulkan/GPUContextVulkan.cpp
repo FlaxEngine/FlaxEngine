@@ -422,9 +422,12 @@ void GPUContextVulkan::BeginRenderPass()
     FramebufferVulkan::Key framebufferKey;
     framebufferKey.AttachmentCount = _rtCount;
     RenderTargetLayoutVulkan layout;
+    Platform::MemoryClear(&layout, sizeof(layout));
+    layout.Flags = 0;
     layout.RTsCount = _rtCount;
-    layout.BlendEnable = _currentState && _currentState->BlendEnable;
     layout.DepthFormat = _rtDepth ? _rtDepth->GetFormat() : PixelFormat::Unknown;
+    VkClearValue clearValues[GPU_MAX_RT_BINDED + 1];
+    PendingClear clear;
     for (int32 i = 0; i < GPU_MAX_RT_BINDED; i++)
     {
         auto handle = _rtHandles[i];
@@ -433,6 +436,11 @@ void GPUContextVulkan::BeginRenderPass()
             layout.RTVsFormats[i] = handle->GetFormat();
             framebufferKey.Attachments[i] = handle->GetFramebufferView();
             AddImageBarrier(handle, handle->LayoutRTV);
+            if (FindClear(handle, clear))
+            {
+                layout.ClearFlags |= 1 << i;
+                clearValues[i] = clear.Value;
+            }
         }
         else
         {
@@ -448,17 +456,14 @@ void GPUContextVulkan::BeginRenderPass()
         layout.ReadStencil = PixelFormatExtensions::HasStencil(handle->GetFormat());
         layout.WriteDepth = handle->LayoutRTV == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || handle->LayoutRTV == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL || handle->LayoutRTV == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
         layout.WriteStencil = handle->LayoutRTV == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || handle->LayoutRTV == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL || handle->LayoutRTV == VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
-        if (_currentState && 0)
-        {
-            // TODO: use this but only if state doesn't change during whole render pass (eg. 1st draw call might not draw depth but 2nd might)
-            layout.ReadDepth &= _currentState->DepthReadEnable;
-            layout.ReadStencil &= _currentState->StencilReadEnable;
-            layout.WriteDepth &= _currentState->DepthWriteEnable;
-            layout.WriteStencil &= _currentState->StencilWriteEnable;
-        }
         framebufferKey.AttachmentCount++;
         framebufferKey.Attachments[_rtCount] = handle->GetFramebufferView();
         AddImageBarrier(handle, handle->LayoutRTV);
+        if (FindClear(handle, clear))
+        {
+            layout.ClearFlags |= 1 << _rtCount;
+            clearValues[_rtCount] = clear.Value;
+        }
     }
     else
     {
@@ -471,6 +476,11 @@ void GPUContextVulkan::BeginRenderPass()
     layout.Extent.height = handle->Extent.height;
     layout.Layers = handle->Layers;
 
+    // Clear textures that are not bind to the render pass
+    for (auto& e : _pendingClears)
+        ManualClear(e);
+    _pendingClears.Clear();
+
     // Get or create objects
     auto renderPass = _device->GetOrCreateRenderPass(layout);
     framebufferKey.RenderPass = renderPass;
@@ -479,8 +489,7 @@ void GPUContextVulkan::BeginRenderPass()
 
     FlushBarriers();
 
-    // TODO: use clear values for render pass begin to improve performance
-    cmdBuffer->BeginRenderPass(renderPass, framebuffer, 0, nullptr);
+    cmdBuffer->BeginRenderPass(renderPass, framebuffer, ARRAY_COUNT(clearValues), clearValues);
 }
 
 void GPUContextVulkan::EndRenderPass()
@@ -492,6 +501,41 @@ void GPUContextVulkan::EndRenderPass()
     // Place a barrier between RenderPasses, so that color/depth outputs can be read in subsequent passes
     // TODO: remove it in future and use proper barriers without whole pipeline stalls
     vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 0, nullptr);
+}
+
+bool GPUContextVulkan::FindClear(const GPUTextureViewVulkan* view, PendingClear& clear)
+{
+    // Get last clear for render pass (the following ones will be done manually if the same resource was cleared twice)
+    for (int32 i = _pendingClears.Count() - 1; i >= 0; i--)
+    {
+        auto& e = _pendingClears.Get()[i];
+        if (e.View == view)
+        {
+            clear = e;
+            _pendingClears.RemoveAtKeepOrder(i);
+            return true;
+        }
+    }
+    return false;
+}
+
+void GPUContextVulkan::ManualClear(const PendingClear& clear)
+{
+    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+    if (cmdBuffer->IsInsideRenderPass())
+        EndRenderPass();
+
+    AddImageBarrier(clear.View, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    FlushBarriers();
+
+    if (((GPUTextureVulkan*)clear.View->GetParent())->IsDepthStencil())
+    {
+        vkCmdClearDepthStencilImage(cmdBuffer->GetHandle(), clear.View->Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear.Value.depthStencil, 1, &clear.View->Info.subresourceRange);
+    }
+    else
+    {
+        vkCmdClearColorImage(cmdBuffer->GetHandle(), clear.View->Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear.Value.color, 1, &clear.View->Info.subresourceRange);
+    }
 }
 
 void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& descriptorInfo, DescriptorSetWriterVulkan& dsWriter, bool& needsWrite)
@@ -762,6 +806,7 @@ void GPUContextVulkan::FrameBegin()
     Platform::MemoryClear(_uaHandles, sizeof(_uaHandles));
     Platform::MemoryCopy(_samplerHandles, _device->HelperResources.GetStaticSamplers(), sizeof(VkSampler) * GPU_STATIC_SAMPLERS_COUNT);
     Platform::MemoryClear(_samplerHandles + GPU_STATIC_SAMPLERS_COUNT, sizeof(_samplerHandles) - sizeof(VkSampler) * GPU_STATIC_SAMPLERS_COUNT);
+    _pendingClears.Clear();
 
     // Init command buffer
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
@@ -835,44 +880,17 @@ bool GPUContextVulkan::IsDepthBufferBinded()
 
 void GPUContextVulkan::Clear(GPUTextureView* rt, const Color& color)
 {
-    auto rtVulkan = static_cast<GPUTextureViewVulkan*>(rt);
-
-    if (rtVulkan)
-    {
-        // TODO: detect if inside render pass and use ClearAttachments
-        // TODO: delay clear for attachments before render pass to use render pass clear values for faster clearing
-
-        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-        if (cmdBuffer->IsInsideRenderPass())
-            EndRenderPass();
-
-        AddImageBarrier(rtVulkan, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        FlushBarriers();
-
-        vkCmdClearColorImage(cmdBuffer->GetHandle(), rtVulkan->Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (const VkClearColorValue*)color.Raw, 1, &rtVulkan->Info.subresourceRange);
-    }
+    auto& clear = _pendingClears.AddOne();
+    clear.View = (GPUTextureViewVulkan*)rt;
+    Platform::MemoryCopy(clear.Value.color.float32, color.Raw, sizeof(color.Raw));
 }
 
 void GPUContextVulkan::ClearDepth(GPUTextureView* depthBuffer, float depthValue, uint8 stencilValue)
 {
-    const auto rtVulkan = static_cast<GPUTextureViewVulkan*>(depthBuffer);
-    if (rtVulkan)
-    {
-        // TODO: detect if inside render pass and use ClearAttachments
-        // TODO: delay clear for attachments before render pass to use render pass clear values for faster clearing
-
-        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-        if (cmdBuffer->IsInsideRenderPass())
-            EndRenderPass();
-
-        AddImageBarrier(rtVulkan, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        FlushBarriers();
-
-        VkClearDepthStencilValue clear;
-        clear.depth = depthValue;
-        clear.stencil = stencilValue;
-        vkCmdClearDepthStencilImage(cmdBuffer->GetHandle(), rtVulkan->Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear, 1, &rtVulkan->Info.subresourceRange);
-    }
+    auto& clear = _pendingClears.AddOne();
+    clear.View = (GPUTextureViewVulkan*)depthBuffer;
+    clear.Value.depthStencil.depth = depthValue;
+    clear.Value.depthStencil.stencil = stencilValue;
 }
 
 void GPUContextVulkan::ClearUA(GPUBuffer* buf, const Float4& value)
@@ -1427,9 +1445,12 @@ void GPUContextVulkan::FlushState()
 {
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
     if (cmdBuffer->IsInsideRenderPass())
-    {
         EndRenderPass();
-    }
+
+    // Flush pending clears
+    for (auto& clear : _pendingClears)
+        ManualClear(clear);
+    _pendingClears.Clear();
 
     FlushBarriers();
 }

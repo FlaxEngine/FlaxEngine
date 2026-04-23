@@ -204,7 +204,7 @@ struct RenderTargetLayoutVulkan
             uint32 WriteDepth : 1;
             uint32 ReadStencil : 1;
             uint32 WriteStencil : 1;
-            uint32 BlendEnable : 1;
+            uint32 ClearFlags : 7; // GPU_MAX_RT_BINDED + 1
         };
 
         uint32 Flags;
