@@ -162,6 +162,7 @@ public:
     /// <summary>
     /// Gets the mip data.
     /// </summary>
+    /// <remarks>Use with caution as this operation loads texture data from the file.</remarks>
     /// <param name="mipIndex">The mip index (zero-based).</param>
     /// <param name="rowPitch">The data row pitch (in bytes).</param>
     /// <param name="slicePitch">The data slice pitch (in bytes).</param>
@@ -171,6 +172,7 @@ public:
     /// <summary>
     /// Loads the texture data from the asset.
     /// </summary>
+    /// <remarks>Use with caution as this operation loads texture data from the file.</remarks>
     /// <param name="result">The result data.</param>
     /// <param name="copyData">True if copy asset data to the result buffer, otherwise texture data will be linked to the internal storage (then the data is valid while asset is loaded and there is no texture data copy operations - faster).</param>
     /// <returns>True if cannot load data, otherwise false.</returns>
@@ -179,6 +181,7 @@ public:
     /// <summary>
     /// Loads the texture data from the asset (single mip).
     /// </summary>
+    /// <remarks>Use with caution as this operation loads texture data from the file.</remarks>
     /// <param name="result">The result data.</param>
     /// <param name="mipIndex">The mip index (zero-based).</param>
     /// <param name="arrayIndex">The array or depth slice index (zero-based).</param>
@@ -189,6 +192,7 @@ public:
     /// <summary>
     /// Gets the texture pixels as Color32 array.
     /// </summary>
+    /// <remarks>Use with caution as this operation loads texture data from the file.</remarks>
     /// <remarks>Supported only for 'basic' texture formats (uncompressed, single plane).</remarks>
     /// <param name="pixels">The result texture pixels array.</param>
     /// <param name="mipIndex">The mip index (zero-based).</param>
@@ -199,6 +203,7 @@ public:
     /// <summary>
     /// Gets the texture pixels as Color array.
     /// </summary>
+    /// <remarks>Use with caution as this operation loads texture data from the file.</remarks>
     /// <remarks>Supported only for 'basic' texture formats (uncompressed, single plane).</remarks>
     /// <param name="pixels">The result texture pixels array.</param>
     /// <param name="mipIndex">The mip index (zero-based).</param>
@@ -252,6 +257,7 @@ private:
 #if !COMPILE_WITHOUT_CSHARP
     // Internal bindings
     API_FUNCTION(NoProxy) bool InitCSharp(void* ptr);
+    API_FUNCTION(NoProxy) TextureData* GetTextureData();
 #endif
 
 public:

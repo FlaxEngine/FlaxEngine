@@ -107,7 +107,7 @@ public:
     void EndClippingCursor() override;
     void SetMousePosition(const Float2& position) const override;
     void SetCursor(CursorType type) override;
-    void SetIcon(TextureData& icon) override;
+    void SetIcon(const TextureData& icon) override;
     void SetCursorImage(void* image) override;
     static void* LoadCursorImage(const StringView& path);
     static void* LoadCursorImage(const TextureData& image, const Int2& hotSpot = Int2::Zero);

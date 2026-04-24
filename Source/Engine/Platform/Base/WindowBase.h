@@ -597,7 +597,7 @@ public:
     /// Sets the window icon.
     /// </summary>
     /// <param name="icon">The icon.</param>
-    virtual void SetIcon(TextureData& icon)
+    virtual void SetIcon(const TextureData& icon)
     {
     }
 

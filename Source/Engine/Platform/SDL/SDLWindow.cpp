@@ -1033,7 +1033,7 @@ void SDLWindow::UpdateCursor()
     SDL_SetCursor(cursor);
 }
 
-void SDLWindow::SetIcon(TextureData& icon)
+void SDLWindow::SetIcon(const TextureData& icon)
 {
     Array<Color32> colorData;
     icon.GetPixels(colorData);
