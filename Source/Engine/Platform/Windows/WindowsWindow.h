@@ -19,7 +19,6 @@ class FLAXENGINE_API WindowsWindow : public WindowBase
     friend WindowsPlatform;
 
 private:
-
     Windows::HWND _handle;
 #if USE_EDITOR
     Windows::ULONG _refCount;
@@ -29,16 +28,15 @@ private:
     bool _trackingMouse = false;
     bool _clipCursorSet = false;
     bool _lastCursorHidden = false;
-    int _cursorHiddenSafetyCount = 0;
-    float _opacity = 1.0f;
     bool _isDuringMaximize = false;
+    int32 _cursorHiddenSafetyCount = 0;
+    float _opacity = 1.0f;
     Windows::HANDLE _monitor = nullptr;
     Windows::LONG _clipCursorRect[4];
     int32 _regionWidth = 0, _regionHeight = 0;
     Float2 _minimizedScreenPosition = Float2::Zero;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="WindowsWindow"/> class.
     /// </summary>
@@ -51,7 +49,6 @@ public:
     ~WindowsWindow();
 
 public:
-
     /// <summary>
     /// Gets the window handle.
     /// </summary>
@@ -80,7 +77,6 @@ public:
     void GetScreenInfo(int32& x, int32& y, int32& width, int32& height) const;
 
 public:
-
     /// <summary>
     /// The Windows messages procedure.
     /// </summary>
@@ -91,13 +87,11 @@ public:
     Windows::LRESULT WndProc(Windows::UINT msg, Windows::WPARAM wParam, Windows::LPARAM lParam);
 
 private:
-
     void CheckForWindowResize();
     void UpdateCursor();
     void UpdateRegion();
 
 public:
-
     // [WindowBase]
     void* GetNativePtr() const override;
     void Show() override;
@@ -130,9 +124,12 @@ public:
     void StartClippingCursor(const Rectangle& bounds) override;
     void EndClippingCursor() override;
     void SetCursor(CursorType type) override;
+    void SetCursorImage(void* image) override;
+    static void* LoadCursorImage(const StringView& path);
+    static void* LoadCursorImage(const TextureData& image, const Int2& hotSpot = Int2::Zero);
+    static void DestroyCursorImage(void* image);
 
 #if USE_EDITOR
-
     // [IUnknown]
     Windows::HRESULT __stdcall QueryInterface(const Windows::IID& id, void** ppvObject) override;
     Windows::ULONG __stdcall AddRef() override;
@@ -143,7 +140,6 @@ public:
     Windows::HRESULT __stdcall DragOver(Windows::DWORD grfKeyState, Windows::POINTL pt, Windows::DWORD* pdwEffect) override;
     Windows::HRESULT __stdcall DragLeave() override;
     Windows::HRESULT __stdcall Drop(Windows::IDataObject* pDataObj, Windows::DWORD grfKeyState, Windows::POINTL pt, Windows::DWORD* pdwEffect) override;
-
 #endif
 };
 

@@ -1197,6 +1197,8 @@ void MacWindow::SetCursor(CursorType type)
     case CursorType::Hidden:
         [NSCursor hide];
         return;
+    case CursorType::Image:
+        // TODO: custom cursor support
     default:
         cursor = [NSCursor arrowCursor];
         break;

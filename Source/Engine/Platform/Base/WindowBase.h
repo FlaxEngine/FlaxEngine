@@ -23,7 +23,7 @@ API_INJECT_CODE(cpp, "#include \"Engine/Platform/Window.h\"");
 /// <summary>
 /// Native platform window object.
 /// </summary>
-API_CLASS(NoSpawn, NoConstructor, Sealed, Name="Window")
+API_CLASS(NoSpawn, NoConstructor, Sealed, Name="Window", Tag="NativeInvokeUseName")
 class FLAXENGINE_API WindowBase : public ScriptingObject
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(WindowBase);
@@ -31,16 +31,17 @@ class FLAXENGINE_API WindowBase : public ScriptingObject
 protected:
     bool _visible, _minimized, _maximized, _isClosing, _showAfterFirstPaint, _focused;
     GPUSwapChain* _swapChain;
+    void* _cursorImage = nullptr;
     CreateWindowSettings _settings;
     String _title;
     CursorType _cursor;
     Float2 _clientSize;
-    int _dpi;
+    int32 _dpi;
     float _dpiScale;
 
     Float2 _trackingMouseOffset;
-    bool _isUsingMouseOffset = false;
     Rectangle _mouseOffsetScreenSize;
+    bool _isUsingMouseOffset = false;
     bool _isTrackingMouse = false;
     bool _isHorizontalFlippingMouse = false;
     bool _isVerticalFlippingMouse = false;
@@ -544,6 +545,52 @@ public:
     API_PROPERTY() virtual void SetCursor(CursorType type)
     {
         _cursor = type;
+    }
+
+    /// <summary>
+    /// Gets the mouse cursor image handle.
+    /// </summary>
+    API_PROPERTY() FORCE_INLINE void* GetCursorImage() const
+    {
+        return _cursorImage;
+    }
+
+    /// <summary>
+    /// Sets the mouse cursor image handle.
+    /// </summary>
+    /// <param name="image">The cursor image.</param>
+    API_PROPERTY() virtual void SetCursorImage(void* image)
+    {
+        _cursorImage = image;
+    }
+
+    /// <summary>
+    /// Loads a cursor file as a cursor image. Returns a native cursor handle that can be used with `SetCursorImage`. Support depends on platform (eg. Windows uses .cur/.ani files).
+    /// </summary>
+    /// <param name="path">Path to the cursor file (absolute or relative).</param>
+    /// <returns>Loaded cursor image handle, or null if failed.</returns>
+    API_FUNCTION() static void* LoadCursorImage(const StringView& path)
+    {
+        return nullptr;
+    }
+
+    /// <summary>
+    /// Loads a texture as a cursor image. Returns a native cursor handle that can be used with `SetCursorImage`. Support depends on platform.
+    /// </summary>
+    /// <param name="image">Texture data with a cursor image.</param>
+    /// <param name="hotSpot">The texture coordinate of a cursor's hot spot that defines the exact 'clickable' point.</param>
+    /// <returns>Loaded cursor image handle, or null if failed.</returns>
+    API_FUNCTION() static void* LoadCursorImage(const TextureData& image, const Int2& hotSpot = Int2::Zero)
+    {
+        return nullptr;
+    }
+
+    /// <summary>
+    /// Destroys a cursor image loaded with `LoadCursorImage`. Should be called to release native resources after the cursor image is not needed anymore.
+    /// </summary>
+    /// <param name="image">The cursor image.</param>
+    API_FUNCTION() static void DestroyCursorImage(void* image)
+    {
     }
 
     /// <summary>

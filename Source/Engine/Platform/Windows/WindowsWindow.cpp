@@ -7,9 +7,11 @@
 #include "WindowsInput.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Math/Color32.h"
 #include "Engine/Graphics/GPUSwapChain.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/Textures/TextureData.h"
 #include "../Win32/IncludeWindowsHeaders.h"
 #include <propidl.h>
 #if USE_EDITOR
@@ -696,6 +698,71 @@ void WindowsWindow::SetCursor(CursorType type)
     UpdateCursor();
 }
 
+void WindowsWindow::SetCursorImage(void* image)
+{
+    // Base
+    WindowBase::SetCursorImage(image);
+
+    if (_cursor == CursorType::Image)
+        UpdateCursor();
+}
+
+void* WindowsWindow::LoadCursorImage(const StringView& path)
+{
+    return ::LoadCursorFromFileW(path.GetText());
+}
+
+// From wingdi.h
+WIN_API HBITMAP WIN_API_CALLCONV CreateBitmap(int nWidth, int nHeight, UINT nPlanes, UINT nBitCount, CONST VOID* lpBits);
+WIN_API BOOL WIN_API_CALLCONV DeleteObject(HGDIOBJ ho);
+#pragma comment(lib, "Gdi32.lib")
+
+void* WindowsWindow::LoadCursorImage(const TextureData& image, const Int2& hotSpot)
+{
+    // Get image pixels
+    Array<Color32> pixels;
+    if (image.GetPixels(pixels))
+    {
+        LOG(Error, "Invalid cursor texture");
+        return nullptr;
+    }
+
+    // RGBA -> BGRA
+    for (int32 y = 0; y < image.Height; y++)
+    {
+        for (int32 x = 0; x < image.Width; x++)
+        {
+            auto& color = *(pixels.Get() + y * image.Width + x);
+            color = Color32(color.B, color.G, color.R, color.A);
+        }
+    }
+
+    // Initialize a dummy mask
+    Array<uint8> pixelsMask;
+    pixelsMask.AddUninitialized(pixels.Count());
+    Platform::MemorySet(pixelsMask.Get(), pixelsMask.Count(), 255);
+
+    // Create cursor from the image
+    HBITMAP colorBitmap = ::CreateBitmap(image.Width, image.Height, 1, 32, pixels.Get());
+    HBITMAP maskBitmap = ::CreateBitmap(image.Width, image.Height, 1, 8, pixelsMask.Get());
+    ICONINFO iconInfo = {};
+    iconInfo.xHotspot = hotSpot.X;
+    iconInfo.yHotspot = hotSpot.Y;
+    iconInfo.hbmColor = colorBitmap;
+    iconInfo.hbmMask = maskBitmap;
+    HCURSOR result = ::CreateIconIndirect(&iconInfo);
+    ::DeleteObject(colorBitmap);
+    ::DeleteObject(maskBitmap);
+    return result;
+}
+
+void WindowsWindow::DestroyCursorImage(void* image)
+{
+    if (!image)
+        return;
+    ::DestroyCursor((HCURSOR)image);
+}
+
 void WindowsWindow::CheckForWindowResize()
 {
     // Skip for minimized window (GetClientRect for minimized window returns 0)
@@ -763,76 +830,49 @@ void WindowsWindow::UpdateCursor()
     else if (_lastCursorHidden)
     {
         _lastCursorHidden = false;
-        while(::ShowCursor(TRUE) < 0)
+        while (::ShowCursor(TRUE) < 0)
         {
             if (_cursorHiddenSafetyCount >= 100)
             {
                 LOG(Warning, "Cursor has failed to show.");
                 break;
             }
-            _cursorHiddenSafetyCount += 1;
+            _cursorHiddenSafetyCount++;
         }
         _cursorHiddenSafetyCount = 0;
     }
 
-    int32 index = 0;
-    switch (_cursor)
+    const LPCWSTR cursors[] =
     {
-    case CursorType::Default:
-        break;
-    case CursorType::Cross:
-        index = 1;
-        break;
-    case CursorType::Hand:
-        index = 2;
-        break;
-    case CursorType::Help:
-        index = 3;
-        break;
-    case CursorType::IBeam:
-        index = 4;
-        break;
-    case CursorType::No:
-        index = 5;
-        break;
-    case CursorType::Wait:
-        index = 11;
-        break;
-    case CursorType::SizeAll:
-        index = 6;
-        break;
-    case CursorType::SizeNESW:
-        index = 7;
-        break;
-    case CursorType::SizeNS:
-        index = 8;
-        break;
-    case CursorType::SizeNWSE:
-        index = 9;
-        break;
-    case CursorType::SizeWE:
-        index = 10;
-        break;
-    }
-
-    static const LPCWSTR cursors[] =
-    {
-        IDC_ARROW,
-        IDC_CROSS,
-        IDC_HAND,
-        IDC_HELP,
-        IDC_IBEAM,
-        IDC_NO,
-        IDC_SIZEALL,
-        IDC_SIZENESW,
-        IDC_SIZENS,
-        IDC_SIZENWSE,
-        IDC_SIZEWE,
-        IDC_WAIT,
+        IDC_ARROW, // Default
+        IDC_CROSS, // Cross
+        IDC_HAND, // Hand
+        IDC_HELP, // Help
+        IDC_IBEAM, // IBeam
+        IDC_NO, // No
+        IDC_WAIT, // Wait
+        IDC_SIZEALL, // SizeAll
+        IDC_SIZENESW, // SizeNESW
+        IDC_SIZENS, // SizeNS
+        IDC_SIZENWSE, // SizeNWSE
+        IDC_SIZEWE, // SizeWE
     };
+    static_assert(ARRAY_COUNT(cursors) + 2 == (int32)CursorType::MAX, "Invalid cursors count.");
 
-    ASSERT(index >= 0 && index < ARRAY_COUNT(cursors));
-    const HCURSOR cursor = LoadCursorW(nullptr, cursors[index]);
+    HCURSOR cursor;
+    if (_cursor == CursorType::Image)
+    {
+        static bool Once = true;
+        if (!_cursorImage && Once)
+        {
+            Once = false;
+            LOG(Error, "Missing cursor image to set.");
+        }
+        cursor = (HCURSOR)_cursorImage;
+    }
+    else
+        cursor = LoadCursorW(nullptr, cursors[(int32)_cursor]);
+
     ::SetCursor(cursor);
 }
 

@@ -846,7 +846,7 @@ void LinuxWindow::SetCursor(CursorType type)
 	WindowBase::SetCursor(type);
 
 	LINUX_WINDOW_PROLOG;
-    if (!display)
+    if (!display || type == CursorType::Image)
         return;
 	X11::XDefineCursor(display, window, Cursors[(int32)type]);
 }

@@ -36,7 +36,7 @@ API_ENUM() enum class ClosingReason
 API_ENUM() enum class CursorType
 {
     /// <summary>
-    /// The default.
+    /// The default cursor, usually an arrow.
     /// </summary>
     Default = 0,
 
@@ -56,7 +56,7 @@ API_ENUM() enum class CursorType
     Help,
 
     /// <summary>
-    /// The I beam.
+    /// The I-beam for text selection.
     /// </summary>
     IBeam,
 
@@ -99,6 +99,11 @@ API_ENUM() enum class CursorType
     /// The cursor is hidden.
     /// </summary>
     Hidden,
+
+    /// <summary>
+    /// The custom cursor image. Loaded manually via Window::LoadCursorImage.
+    /// </summary>
+    Image,
 
     MAX
 };
