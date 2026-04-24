@@ -127,6 +127,7 @@ bool GameBase::Init()
     if (!gameSettings)
         return true;
     GameBaseImpl::FirstScene = gameSettings->FirstScene;
+    Level::PreloadSceneAsync(GameBaseImpl::FirstScene.GetID());
 
     return false;
 }
