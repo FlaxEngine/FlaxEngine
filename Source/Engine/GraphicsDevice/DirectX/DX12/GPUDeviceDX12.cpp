@@ -602,6 +602,7 @@ GPUMemoryStats GPUDeviceDX12::GetMemoryStats()
 
 bool GPUDeviceDX12::Init()
 {
+    HRESULT hr;
 #if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
     // Create DirectX device
     D3D12XBOX_CREATE_DEVICE_PARAMETERS params = {};
@@ -690,18 +691,17 @@ bool GPUDeviceDX12::Init()
 #endif
 #else
     // Get DXGI adapter
-    IDXGIAdapter1* adapter;
+    IDXGIAdapter1* dxgiAdapter;
     ASSERT(_factoryDXGI);
-    if (_factoryDXGI->EnumAdapters1(_adapter->Index, &adapter) == DXGI_ERROR_NOT_FOUND || adapter == nullptr)
+    if (_factoryDXGI->EnumAdapters1(_adapter->Index, &dxgiAdapter) == DXGI_ERROR_NOT_FOUND || dxgiAdapter == nullptr)
     {
         LOG(Warning, "Cannot get the adapter.");
         return true;
     }
-    UpdateOutputs(adapter);
+    UpdateOutputs(dxgiAdapter);
 
     // Create DirectX device
-    VALIDATE_DIRECTX_CALL(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&_device)));
-    HRESULT hr;
+    VALIDATE_DIRECTX_CALL(D3D12CreateDevice(dxgiAdapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&_device)));
 
 #if PLATFORM_WINDOWS
     // Detect RenderDoc usage (UUID {A7AA6116-9C8D-4BBA-9083-B4D816B71B78})
@@ -853,7 +853,7 @@ bool GPUDeviceDX12::Init()
     allocationCallbacks.pFree = &D3D12MA_Free;
     D3D12MA::ALLOCATOR_DESC allocatorDesc = {};
     allocatorDesc.pDevice = _device;
-    allocatorDesc.pAdapter = adapter;
+    allocatorDesc.pAdapter = dxgiAdapter;
     allocatorDesc.Flags = D3D12MA_RECOMMENDED_ALLOCATOR_FLAGS;
     allocatorDesc.pAllocationCallbacks = &allocationCallbacks;
     hr = D3D12MA::CreateAllocator(&allocatorDesc, &Allocator);

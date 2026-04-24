@@ -46,53 +46,9 @@ public:
     Array<VideoOutputDX> Outputs;
 
 protected:
-
     void UpdateOutputs(IDXGIAdapter* adapter);
 
-    static RendererType getRendererType(GPUAdapterDX* adapter)
-    {
-        switch (adapter->MaxFeatureLevel)
-        {
-        case D3D_FEATURE_LEVEL_10_0:
-            return RendererType::DirectX10;
-        case D3D_FEATURE_LEVEL_10_1:
-            return RendererType::DirectX10_1;
-        case D3D_FEATURE_LEVEL_11_0:
-        case D3D_FEATURE_LEVEL_11_1:
-            return RendererType::DirectX11;
-#if GRAPHICS_API_DIRECTX12
-        case D3D_FEATURE_LEVEL_12_0:
-        case D3D_FEATURE_LEVEL_12_1:
-            return RendererType::DirectX12;
-#endif
-        default:
-            return RendererType::Unknown;
-        }
-    }
-
-    static ShaderProfile getShaderProfile(GPUAdapterDX* adapter)
-    {
-        switch (adapter->MaxFeatureLevel)
-        {
-        case D3D_FEATURE_LEVEL_10_0:
-        case D3D_FEATURE_LEVEL_10_1:
-            return ShaderProfile::DirectX_SM4;
-        case D3D_FEATURE_LEVEL_11_0:
-        case D3D_FEATURE_LEVEL_11_1:
-            return ShaderProfile::DirectX_SM5;
-#if GRAPHICS_API_DIRECTX12
-        case D3D_FEATURE_LEVEL_12_0:
-        case D3D_FEATURE_LEVEL_12_1:
-        case D3D_FEATURE_LEVEL_12_2:
-            return ShaderProfile::DirectX_SM5;
-#endif
-        default:
-            return ShaderProfile::Unknown;
-        }
-    }
-
 public:
-
     // [GPUDevice]
     GPUAdapter* GetAdapter() const override
     {
@@ -100,7 +56,6 @@ public:
     }
 
 protected:
-
     // [GPUDevice]
     bool Init() override
     {
@@ -137,7 +92,6 @@ protected:
         // Base
         return GPUDevice::Init();
     }
-
     void Dispose() override
     {
         Outputs.Resize(0);

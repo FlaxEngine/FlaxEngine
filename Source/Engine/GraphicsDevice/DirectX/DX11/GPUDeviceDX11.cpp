@@ -87,6 +87,37 @@ static D3D11_STENCIL_OP ToDX11(StencilOperation value)
     }
 }
 
+static RendererType GetRendererType(GPUAdapterDX* adapter)
+{
+    switch (adapter->MaxFeatureLevel)
+    {
+    case D3D_FEATURE_LEVEL_10_0:
+        return RendererType::DirectX10;
+    case D3D_FEATURE_LEVEL_10_1:
+        return RendererType::DirectX10_1;
+    case D3D_FEATURE_LEVEL_11_0:
+    case D3D_FEATURE_LEVEL_11_1:
+        return RendererType::DirectX11;
+    default:
+        return RendererType::Unknown;
+    }
+}
+
+static ShaderProfile GetShaderProfile(GPUAdapterDX* adapter)
+{
+    switch (adapter->MaxFeatureLevel)
+    {
+    case D3D_FEATURE_LEVEL_10_0:
+    case D3D_FEATURE_LEVEL_10_1:
+        return ShaderProfile::DirectX_SM4;
+    case D3D_FEATURE_LEVEL_11_0:
+    case D3D_FEATURE_LEVEL_11_1:
+        return ShaderProfile::DirectX_SM5;
+    default:
+        return ShaderProfile::Unknown;
+    }
+}
+
 static bool TryCreateDevice(IDXGIAdapter* adapter, D3D_FEATURE_LEVEL maxFeatureLevel, D3D_FEATURE_LEVEL* featureLevel)
 {
     ID3D11Device* device = nullptr;
@@ -335,7 +366,7 @@ GPUDevice* GPUDeviceDX11::Create()
 }
 
 GPUDeviceDX11::GPUDeviceDX11(IDXGIFactory* dxgiFactory, GPUAdapterDX* adapter)
-    : GPUDeviceDX(getRendererType(adapter), getShaderProfile(adapter), adapter)
+    : GPUDeviceDX(::GetRendererType(adapter), ::GetShaderProfile(adapter), adapter)
     , _factoryDXGI(dxgiFactory)
 {
     Platform::MemoryClear(RasterizerStates, sizeof(RasterizerStates));
