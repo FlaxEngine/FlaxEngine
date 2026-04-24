@@ -507,16 +507,22 @@ namespace FlaxEngine.Json
             cache.MemoryStream.Initialize(jsonBuffer, jsonLength);
             cache.Reader.DiscardBufferedData();
             var jsonReader = new JsonTextReader(cache.Reader);
-            if (*jsonBuffer != (byte)'{' && input is LocalizedString asLocalizedString)
+            if (*jsonBuffer != (byte)'{')
             {
                 // Hack for objects that are serialized into sth different thant "{..}" (eg. LocalizedString can be saved as plain string if not using localization)
-                asLocalizedString.Id = null;
-                asLocalizedString.Value = jsonReader.ReadAsString();
+                if (input is LocalizedString asLocalizedString)
+                {
+                    asLocalizedString.Id = null;
+                    asLocalizedString.Value = jsonReader.ReadAsString();
+                    return;
+                }
+                if (input is SceneReference)
+                {
+                    typeof(SceneReference).GetField("ID").SetValue(input, ParseID(jsonReader.ReadAsString()));
+                    return;
+                }
             }
-            else
-            {
-                cache.JsonSerializer.Populate(jsonReader, input);
-            }
+            cache.JsonSerializer.Populate(jsonReader, input);
             if (cache.JsonSerializer.CheckAdditionalContent)
             {
                 while (jsonReader.Read())
