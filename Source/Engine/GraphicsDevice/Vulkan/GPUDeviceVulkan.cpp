@@ -946,9 +946,7 @@ GPUBufferVulkan* HelperResourcesVulkan::GetDummyVertexBuffer()
 GPUConstantBuffer* HelperResourcesVulkan::GetDummyConstantBuffer()
 {
     if (!_dummyCB)
-    {
-        _dummyCB = _device->CreateConstantBuffer(256, TEXT("DummyConstantBuffer"));
-    }
+        _dummyCB = _device->CreateConstantBuffer(1024, TEXT("DummyConstantBuffer"));
     return _dummyCB;
 }
 
