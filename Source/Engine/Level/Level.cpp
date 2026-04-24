@@ -91,6 +91,7 @@ enum class SceneEventType
     OnSceneLoadError = 5,
     OnSceneUnloading = 6,
     OnSceneUnloaded = 7,
+    OnScenePreloaded = 8,
 };
 
 enum class SceneResult
@@ -116,6 +117,11 @@ public:
     virtual SceneResult Do(Context& context)
     {
         return SceneResult::Failed;
+    }
+
+    virtual bool IsPreloading(const Guid* sceneId = nullptr)
+    {
+        return false;
     }
 };
 
@@ -147,6 +153,13 @@ struct TimeSlicer
 class SceneLoader
 {
 public:
+    enum class Modes
+    {
+        Sync,
+        Async,
+        Preload,
+    };
+
     struct Args
     {
         rapidjson_flax::Value& Data;
@@ -172,6 +185,7 @@ public:
 
     bool AsyncLoad;
     bool AsyncJobs;
+    bool Preload;
     Guid SceneId = Guid::Empty;
     Scene* Scene = nullptr;
     float TotalTime = 0.0f;
@@ -185,9 +199,10 @@ public:
     SceneObjectsFactory::PrefabSyncData* PrefabSyncData = nullptr;
     TimeSlicer StageSlicer;
 
-    SceneLoader(bool asyncLoad = false)
-        : AsyncLoad(asyncLoad)
+    SceneLoader(Modes mode = Modes::Sync)
+        : AsyncLoad(mode != Modes::Sync)
         , AsyncJobs(JobSystem::GetThreadsCount() > 1)
+        , Preload(mode == Modes::Preload)
         , Modifier(Cache::ISerializeModifier.GetUnscoped())
         , Context(Modifier)
     {
@@ -221,6 +236,8 @@ public:
     SceneResult OnInitialize(Args& args);
     SceneResult OnBeginPlay(Args& args);
     SceneResult OnEnd(Args& args);
+
+    static bool LoadPreloadedScene(::Scene* scene);
 };
 
 namespace LevelImpl
@@ -228,6 +245,7 @@ namespace LevelImpl
     Array<SceneAction*> _sceneActions;
     CriticalSection _sceneActionsLocker;
     DateTime _lastSceneLoadTime(0);
+    Array<Scene*> _preloadedScenes;
 #if USE_EDITOR
     Array<ScriptsReloadObject> ScriptsReloadObjects;
 #endif
@@ -290,6 +308,7 @@ Delegate<Scene*, const Guid&> Level::SceneLoaded;
 Delegate<Scene*, const Guid&> Level::SceneLoadError;
 Delegate<Scene*, const Guid&> Level::SceneUnloading;
 Delegate<Scene*, const Guid&> Level::SceneUnloaded;
+Delegate<Scene*, const Guid&> Level::ScenePreloaded;
 #if USE_EDITOR
 Action Level::ScriptsReloadStart;
 Action Level::ScriptsReload;
@@ -523,8 +542,8 @@ public:
     AssetReference<JsonAsset> SceneAsset;
     SceneLoader Loader;
 
-    LoadSceneAction(const Guid& sceneId, JsonAsset* sceneAsset, bool async)
-        : Loader(async)
+    LoadSceneAction(const Guid& sceneId, JsonAsset* sceneAsset, SceneLoader::Modes mode)
+        : Loader(mode)
     {
         SceneId = sceneId;
         SceneAsset = sceneAsset;
@@ -537,6 +556,11 @@ public:
         if (!SceneAsset->IsLoaded())
             return SceneResult::Wait;
         return LevelImpl::loadScene(Loader, SceneAsset, &context.TimeBudget);
+    }
+
+    bool IsPreloading(const Guid* sceneId) override
+    {
+        return Loader.Preload && (!sceneId || *sceneId == SceneId);
     }
 };
 
@@ -817,6 +841,9 @@ void LevelImpl::CallSceneEvent(SceneEventType eventType, Scene* scene, Guid scen
     case SceneEventType::OnSceneUnloaded:
         Level::SceneUnloaded(scene, sceneId);
         break;
+    case SceneEventType::OnScenePreloaded:
+        Level::ScenePreloaded(scene, sceneId);
+        break;
     }
 }
 
@@ -953,6 +980,7 @@ bool LevelImpl::unloadScene(Scene* scene)
         scene->EndPlay();
 
     // Remove from scenes list
+    _preloadedScenes.Remove(scene);
     Level::Scenes.Remove(scene);
 
     // Fire event
@@ -967,12 +995,36 @@ bool LevelImpl::unloadScene(Scene* scene)
 bool LevelImpl::unloadScenes()
 {
     PROFILE_MEM(Level);
+
+    // Preloading actions
+    _sceneActionsLocker.Lock();
+    for (int32 i = _sceneActions.Count() - 1; i >= 0; i--)
+    {
+        auto action = _sceneActions[i];
+        if (action->IsPreloading())
+        {
+            _sceneActions.RemoveAtKeepOrder(i--);
+            Delete(action);
+        }
+    }
+    _sceneActionsLocker.Unlock();
+
+    // Preloaded scenes
+    auto preloadedScenes = _preloadedScenes;
+    for (auto scene : preloadedScenes)
+    {
+        if (unloadScene(scene))
+            return true;
+    }
+
+    // Active scenes
     auto scenes = Level::Scenes;
     for (int32 i = scenes.Count() - 1; i >= 0; i--)
     {
         if (unloadScene(scenes[i]))
             return true;
     }
+
     return false;
 }
 
@@ -1044,7 +1096,7 @@ SceneResult LevelImpl::loadScene(SceneLoader& loader, rapidjson_flax::Value& dat
         const float delta = time.GetTotalSeconds();
         loader.TotalTime += delta;
         timeLeft -= delta;
-        if (timeLeft < 0.0f && result == SceneResult::Success)
+        if (timeLeft < 0.0f && result == SceneResult::Success && loader.Stage != SceneLoader::Stages::Loaded)
         {
             result = SceneResult::Wait;
             break;
@@ -1391,6 +1443,15 @@ SceneResult SceneLoader::OnInitialize(Args& args)
 
 SceneResult SceneLoader::OnBeginPlay(Args& args)
 {
+    if (Preload)
+    {
+        // Scene got preloaded
+        _preloadedScenes.Add(Scene);
+        CallSceneEvent(SceneEventType::OnScenePreloaded, Scene, SceneId);
+        LOG(Info, "Scene pre-loaded in {}ms ({} frames)", (int32)(TotalTime * 1000.0), Engine::UpdateCount - StartFrame);
+        Stage = Stages::Loaded;
+        return SceneResult::Success;
+    }
     PROFILE_CPU_NAMED("BeginPlay");
     ASSERT_LOW_LAYER(IsInMainThread());
 
@@ -1447,6 +1508,24 @@ SceneResult SceneLoader::OnEnd(Args& args)
 
     NextStage();
     return SceneResult::Success;
+}
+
+bool SceneLoader::LoadPreloadedScene(::Scene* scene)
+{
+    PROFILE_CPU_NAMED("BeginPlay");
+    ASSERT_LOW_LAYER(IsInMainThread());
+
+    // Link scene
+    ScopeLock lock(Level::ScenesLock);
+    _preloadedScenes.Remove(scene);
+    Level::Scenes.Add(scene);
+
+    // Start the game for scene objects
+    SceneBeginData beginData;
+    scene->BeginPlay(&beginData);
+    beginData.OnDone();
+
+    return false;
 }
 
 bool LevelImpl::saveScene(Scene* scene)
@@ -1657,6 +1736,33 @@ bool Level::LoadScene(const Guid& id)
         return true;
     }
 
+    // Check preloaded scenes
+    for (auto scene : _preloadedScenes)
+    {
+        if (scene->GetID() == id)
+            return SceneLoader::LoadPreloadedScene(scene);
+    }
+
+    // Check if scene is during preloading
+    _sceneActionsLocker.Lock();
+    for (auto action : _sceneActions)
+    {
+        if (action->IsPreloading(&id))
+        {
+            // Turn preloading into loading and run it now
+            auto loadAction = (LoadSceneAction*)action;
+            loadAction->Loader.Preload = false;
+            if (loadScene(loadAction->Loader, loadAction->SceneAsset) != SceneResult::Success)
+            {
+                LOG(Error, "Failed to deserialize scene {0}", id);
+                CallSceneEvent(SceneEventType::OnSceneLoadError, nullptr, id);
+                return true;
+            }
+            return false;
+        }
+    }
+    _sceneActionsLocker.Unlock();
+
     // Preload scene asset
     const auto sceneAsset = Content::LoadAsync<JsonAsset>(id);
     if (sceneAsset == nullptr)
@@ -1705,8 +1811,98 @@ bool Level::LoadSceneAsync(const Guid& id)
         return true;
     }
 
+    // Check preloaded scenes
+    // TODO: if scene loader gets time-slicing to begin play then make a new action to perform it in async
+    for (auto scene : _preloadedScenes)
+    {
+        if (scene->GetID() == id)
+            return SceneLoader::LoadPreloadedScene(scene);
+    }
+
+    // Check if scene is during preloading
+    _sceneActionsLocker.Lock();
+    for (auto action : _sceneActions)
+    {
+        if (action->IsPreloading(&id))
+        {
+            // Turn preloading into loading and let it load this scene (it might be in progress already)
+            auto loadAction = (LoadSceneAction*)action;
+            loadAction->Loader.Preload = false;
+            return false;
+        }
+    }
+    _sceneActionsLocker.Unlock();
+
     ScopeLock lock(_sceneActionsLocker);
-    _sceneActions.Enqueue(New<LoadSceneAction>(id, sceneAsset, true));
+    _sceneActions.Enqueue(New<LoadSceneAction>(id, sceneAsset, SceneLoader::Modes::Async));
+
+    return false;
+}
+
+bool Level::PreloadSceneAsync(const Guid& id)
+{
+    if (!id.IsValid())
+    {
+        Log::ArgumentException();
+        return true;
+    }
+
+    // Check preloaded scenes
+    for (auto scene : _preloadedScenes)
+    {
+        if (scene->GetID() == id)
+            return false; // Already preloaded
+    }
+
+    // Check queue
+    _sceneActionsLocker.Lock();
+    for (auto action : _sceneActions)
+    {
+        if (action->IsPreloading(&id))
+            return false; // Already preloading
+    }
+    _sceneActionsLocker.Unlock();
+
+    // Preload scene asset
+    const auto sceneAsset = Content::LoadAsync<JsonAsset>(id);
+    if (sceneAsset == nullptr)
+    {
+        LOG(Error, "Cannot load scene asset.");
+        return true;
+    }
+
+    ScopeLock lock(_sceneActionsLocker);
+    _sceneActions.Enqueue(New<LoadSceneAction>(id, sceneAsset, SceneLoader::Modes::Preload));
+
+    return false;
+}
+
+bool Level::UnloadScene(const Guid& id)
+{
+    // Try with already loaded scene
+    if (Scene* scene = FindScene(id))
+        return unloadScene(scene);
+
+    // Check preloaded scenes
+    for (auto scene : _preloadedScenes)
+    {
+        if (scene->GetID() == id)
+            return unloadScene(scene);
+    }
+
+    // Check loading queue
+    _sceneActionsLocker.Lock();
+    for (int32 i = _sceneActions.Count() - 1; i >= 0; i--)
+    {
+        auto action = _sceneActions[i];
+        if (action->IsPreloading(&id))
+        {
+            _sceneActions.RemoveAtKeepOrder(i--);
+            Delete(action);
+            break;
+        }
+    }
+    _sceneActionsLocker.Unlock();
 
     return false;
 }

@@ -222,6 +222,11 @@ public:
     /// </summary>
     API_EVENT() static Delegate<Scene*, const Guid&> SceneUnloaded;
 
+    /// <summary>
+    /// Fired when scene gets preloaded (loaded but not yet added to the level).
+    /// </summary>
+    API_EVENT() static Delegate<Scene*, const Guid&> ScenePreloaded;
+
 #if USE_EDITOR
 
     /// <summary>
@@ -317,34 +322,51 @@ public:
     API_FUNCTION() static bool LoadSceneAsync(const Guid& id);
 
     /// <summary>
+    /// Begins preloading scene in the background. Intended to use by scene streaming systems that want to prepare scene but not add to the level yet.
+    /// Loads scene asset, deserializes actors and scripts, setup objects hierarchy with transformations and initializes them (incl. calling OnAwake for scripts).
+    /// Preloaded scene is not added to the loaded scenes and not active in the game (no BeginPlay/OnEnable/OnStart called yet). Use <see cref="LoadScene(Guid)"/> or <see cref="LoadSceneAsync(Guid)"/> to finish loading preloaded scene and add it to the level.
+    /// Preloaded scene can be normally unloaded via <see cref="UnloadScene(Guid)"/> to release resources if it's not needed anymore.
+    /// </summary>
+    /// <param name="id">Scene ID</param>
+    /// <returns>True if preloading cannot be done, otherwise false.</returns>
+    API_FUNCTION() static bool PreloadSceneAsync(const Guid& id);
+
+    /// <summary>
     /// Unloads given scene.
     /// </summary>
+    /// <param name="id">Scene ID</param>
+    /// <returns>True if action cannot be done, otherwise false.</returns>
+    API_FUNCTION() static bool UnloadScene(const Guid& id);
+
+    /// <summary>
+    /// Unloads given scene.
+    /// </summary>
+    /// <param name="scene">Scene</param>
     /// <returns>True if action cannot be done, otherwise false.</returns>
     API_FUNCTION() static bool UnloadScene(Scene* scene);
 
     /// <summary>
     /// Unloads given scene. Done in the background.
     /// </summary>
+    /// <param name="scene">Scene</param>
     API_FUNCTION() static void UnloadSceneAsync(Scene* scene);
 
     /// <summary>
-    /// Unloads all scenes.
+    /// Unloads all scenes. Cancels all scene preloading.
     /// </summary>
     /// <returns>True if action cannot be done, otherwise false.</returns>
     API_FUNCTION() static bool UnloadAllScenes();
 
     /// <summary>
-    /// Unloads all scenes. Done in the background.
+    /// Unloads all scenes. Done in the background. Cancels all scene preloading.
     /// </summary>
     API_FUNCTION() static void UnloadAllScenesAsync();
 
 #if USE_EDITOR
-
     /// <summary>
     /// Reloads scripts. Done in the background.
     /// </summary>
     static void ReloadScriptsAsync();
-
 #endif
 
 public:
