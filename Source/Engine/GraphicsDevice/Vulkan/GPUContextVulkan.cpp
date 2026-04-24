@@ -671,7 +671,14 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
                 VkDeviceSize offset = 0, range = 0;
                 uint32 dynamicOffset = 0;
                 if (!handle)
-                    handle = (GPUConstantBufferVulkan*)_device->HelperResources.GetDummyConstantBuffer();
+                {
+                    auto cb = (GPUConstantBufferVulkan*)_device->HelperResources.GetDummyConstantBuffer();
+                    // TODO: cache this allocation within a frame
+                    const auto allocation = _device->UniformBufferUploader->Allocate(cb->GetSize(), 0, this);
+                    Platform::MemoryClear(allocation.CPUAddress, allocation.Size);
+                    cb->Allocation = allocation;
+                    handle = cb;
+                }
                 handle->DescriptorAsDynamicUniformBuffer(this, buffer, offset, range, dynamicOffset);
                 needsWrite |= dsWriter.WriteDynamicUniformBuffer(descriptorIndex, buffer, offset, range, dynamicOffset, index);
                 break;
