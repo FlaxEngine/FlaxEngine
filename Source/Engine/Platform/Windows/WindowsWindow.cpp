@@ -841,6 +841,8 @@ void WindowsWindow::UpdateCursor()
         }
         _cursorHiddenSafetyCount = 0;
     }
+    if (_cursor == CursorType::Hidden)
+        return;
 
     const LPCWSTR cursors[] =
     {
