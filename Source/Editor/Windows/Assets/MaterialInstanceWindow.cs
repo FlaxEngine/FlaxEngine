@@ -233,7 +233,7 @@ namespace FlaxEditor.Windows.Assets
                 var materialInstance = proxy.Window?.Asset;
                 if (materialInstance == null)
                 {
-                    layout.Label("No parameters");
+                    layout.Label("No parameters", TextAlignment.Center);
                     return;
                 }
                 if (!materialInstance.IsLoaded || (materialInstance.BaseMaterial && !materialInstance.BaseMaterial.IsLoaded))
@@ -246,7 +246,10 @@ namespace FlaxEditor.Windows.Assets
                 base.Initialize(layout);
 
                 if (parameters.Length == 0)
+                {
+                    layout.Label("No parameters", TextAlignment.Center);
                     return;
+                }
 
                 var parametersGroup = SurfaceUtils.InitGraphParametersGroup(layout);
                 var settingButton = parametersGroup.AddSettingsButton();
