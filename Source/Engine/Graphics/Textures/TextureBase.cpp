@@ -753,6 +753,17 @@ bool TextureBase::InitCSharp(void* ptr)
     return Init(initData);
 }
 
+TextureData* TextureBase::GetTextureData()
+{
+    auto result = New<TextureData>();
+    if (GetTextureData(*result, false))
+    {
+        Delete(result);
+        result = nullptr;
+    }
+    return result;
+}
+
 #endif
 
 uint64 TextureBase::GetMemoryUsage() const

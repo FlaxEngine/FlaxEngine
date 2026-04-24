@@ -37,6 +37,16 @@ namespace FlaxEngine
         public const int MaxArraySize = 512;
 
         /// <summary>
+        /// Loads the texture data from the asset.
+        /// </summary>
+        /// <remarks>Use with caution as this operation loads texture data from the file.</remarks>
+        /// <returns>The loaded texture data or null if failed.</returns>
+        public TextureData GetTextureData()
+        {
+            return Internal_GetTextureData(__unmanagedPtr);
+        }
+
+        /// <summary>
         /// The texture data initialization container.
         /// </summary>
         public struct InitData
