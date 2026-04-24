@@ -24,7 +24,7 @@ namespace FlaxEditor.Modules
         private bool _rebuildInitFlag;
         private int _itemsCreated;
         private int _itemsDeleted;
-        private readonly HashSet<MainContentFolderTreeNode> _dirtyNodes = new HashSet<MainContentFolderTreeNode>();
+        private readonly HashSet<ContentFolderTreeNode> _dirtyNodes = new HashSet<ContentFolderTreeNode>();
 
         /// <summary>
         /// The project directory.
@@ -1309,25 +1309,30 @@ namespace FlaxEditor.Modules
 
         internal void OnDirectoryEvent(MainContentFolderTreeNode node, FileSystemEventArgs e)
         {
-            // Ensure to be ready for external events
+            // Ignore events during fast setup
             if (_isDuringFastSetup)
                 return;
+            ContentFolderTreeNode dirtyNode = node;
 
-            // TODO: maybe we could make it faster! since we have a path so it would be easy to just create or delete given file. but remember about subdirectories
+            // Filter the node based on modified path
+            // (eg. if we have event for 'Content/Folder1/Folder2' and node is 'Content/Folder1' then we should process but skip other 'Content' subfolders)
+            var path = StringUtils.NormalizePath(Path.GetDirectoryName(e.FullPath));
+            var pathItem = node.Folder.Find(path) as ContentFolder;
+            if (pathItem != null)
+            {
+                dirtyNode = pathItem.Node;
+            }
 
-            // Switch type
             switch (e.ChangeType)
             {
             case WatcherChangeTypes.Created:
             case WatcherChangeTypes.Deleted:
             case WatcherChangeTypes.Renamed:
-            {
                 lock (_dirtyNodes)
                 {
-                    _dirtyNodes.Add(node);
+                    _dirtyNodes.Add(dirtyNode);
                 }
                 break;
-            }
             }
         }
 
@@ -1383,14 +1388,15 @@ namespace FlaxEditor.Modules
             // Update all dirty content tree nodes
             lock (_dirtyNodes)
             {
+                Profiler.BeginEvent("ContentDatabase.Refresh");
                 foreach (var node in _dirtyNodes)
                 {
                     LoadFolder(node, true);
-
-                    if (_enableEvents)
-                        WorkspaceModified?.Invoke();
                 }
+                if (_enableEvents && _dirtyNodes.Count != 0)
+                    WorkspaceModified?.Invoke();
                 _dirtyNodes.Clear();
+                Profiler.EndEvent();
             }
 
             // Lazy-rebuilds

@@ -113,6 +113,8 @@ CreateAssetContext::CreateAssetContext(const StringView& inputPath, const String
 
 CreateAssetResult CreateAssetContext::Run(const CreateAssetFunction& callback)
 {
+    PROFILE_CPU();
+    PROFILE_MEM(Content);
     ASSERT(callback.IsBinded());
 
     // Call action
@@ -207,6 +209,9 @@ void CreateAssetContext::AddMeta(JsonWriter& writer) const
 
 void CreateAssetContext::ApplyChanges()
 {
+    PROFILE_CPU();
+    PROFILE_MEM(Content);
+
     // Get access
     auto storage = ContentStorageManager::TryGetStorage(TargetAssetPath);
     if (storage && storage->IsLoaded())
@@ -274,6 +279,8 @@ bool AssetsImportingManager::Create(const String& tag, const StringView& outputP
 
 bool AssetsImportingManager::Import(const StringView& inputPath, const StringView& outputPath, Guid& assetId, void* arg)
 {
+    PROFILE_CPU();
+    PROFILE_MEM(Content);
     LOG(Info, "Importing file '{0}' to '{1}'...", inputPath, outputPath);
 
     // Check if input file exists
@@ -347,6 +354,7 @@ String AssetsImportingManager::GetImportPath(const String& path)
 bool AssetsImportingManager::Create(const Function<CreateAssetResult(CreateAssetContext&)>& callback, const StringView& inputPath, const StringView& outputPath, Guid& assetId, void* arg)
 {
     PROFILE_CPU();
+    PROFILE_MEM(Content);
     ZoneText(*outputPath, outputPath.Length());
     const auto startTime = Platform::GetTimeSeconds();
 

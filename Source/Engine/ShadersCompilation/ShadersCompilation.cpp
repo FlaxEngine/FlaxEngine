@@ -310,6 +310,7 @@ namespace
     {
         if (action == FileSystemAction::Delete)
             return;
+        PROFILE_CPU();
 
         // Get list of assets using this shader file
         Array<Asset*> toReload;
@@ -515,6 +516,7 @@ namespace
     {
         if (action == FileSystemAction::Delete || !path.EndsWith(TEXT(".shader")))
             return;
+        PROFILE_CPU();
 
         LOG(Info, "Shader \'{0}\' has been modified.", path);
 
