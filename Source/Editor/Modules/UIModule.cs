@@ -465,6 +465,8 @@ namespace FlaxEditor.Modules
 
         internal void ProgressFailed(string message)
         {
+            if (StatusBar == null)
+                return;
             _progressFailed = true;
             StatusBar.StatusColor = Style.Current.Statusbar.Failed;
             StatusBar.Text = message;
