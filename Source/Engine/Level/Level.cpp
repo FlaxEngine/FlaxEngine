@@ -186,6 +186,7 @@ public:
     bool AsyncLoad;
     bool AsyncJobs;
     bool Preload;
+    bool DeprecatedFlag = false;
     Guid SceneId = Guid::Empty;
     Scene* Scene = nullptr;
     float TotalTime = 0.0f;
@@ -1102,6 +1103,9 @@ SceneResult LevelImpl::loadScene(SceneLoader& loader, rapidjson_flax::Value& dat
             break;
         }
     }
+#if USE_EDITOR
+    loader.DeprecatedFlag |= ContentDeprecated::Clear();
+#endif
     if (outScene)
         *outScene = loader.Scene;
     return result;
@@ -1496,7 +1500,7 @@ SceneResult SceneLoader::OnEnd(Args& args)
             LOG(Error, "Failed to resave asset '{}'", prefab->GetPath());
         }
     }
-    if (ContentDeprecated::Clear() && args.AssetPath != StringView())
+    if (DeprecatedFlag && args.AssetPath != StringView())
     {
         LOG(Info, "Resaving asset '{}' that uses deprecated data format", args.AssetPath);
         if (saveScene(Scene, args.AssetPath))
