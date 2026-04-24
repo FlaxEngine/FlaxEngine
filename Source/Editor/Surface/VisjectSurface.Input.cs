@@ -659,7 +659,7 @@ namespace FlaxEditor.Surface
                     if (_movingNodes != null && _movingNodes.Count > 0)
                     {
                         // Allow dropping a single node onto an existing connection and connect it
-                        if (_movingNodes.Count == 1)
+                        if (_movingNodes.Count == 1 && controlUnderMouse is not Archetypes.Tools.RerouteNode)
                         {
                             var mousePos = _rootControl.PointFromParent(ref _mousePos);
                             InputBox intersectedConnectionInputBox;
