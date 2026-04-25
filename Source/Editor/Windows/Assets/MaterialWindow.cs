@@ -57,7 +57,7 @@ namespace FlaxEditor.Windows.Assets
             [EditorOrder(20), VisibleIf(nameof(IsStandard)), EditorDisplay("General"), Tooltip("Defines how material inputs and properties are combined to result the final surface color.")]
             public MaterialShadingModel ShadingModel;
 
-            [EditorOrder(30), VisibleIf(nameof(ShowBlendMode)), EditorDisplay("General"), Tooltip("Determinates how materials' color should be blended with the background colors.")]
+            [EditorOrder(30), VisibleIf(nameof(IsStandard)), EditorDisplay("General"), Tooltip("Determinates how materials' color should be blended with the background colors.")]
             public MaterialBlendMode BlendMode;
 
             // Rendering
@@ -145,7 +145,6 @@ namespace FlaxEditor.Windows.Assets
 
             // Visibility conditionals
 
-            private bool ShowBlendMode => Domain != MaterialDomain.Terrain;
             private bool IsPostProcess => Domain == MaterialDomain.PostProcess;
             private bool IsDecal => Domain == MaterialDomain.Decal;
             private bool IsGUI => Domain == MaterialDomain.GUI;
@@ -188,14 +187,6 @@ namespace FlaxEditor.Windows.Assets
 
                 // Link
                 Window = window;
-
-                // [Deprecated in 1.12]
-                // Fix old terrain materials to go back into opaque
-                if (Domain == MaterialDomain.Terrain && BlendMode != MaterialBlendMode.Opaque)
-                {
-                    BlendMode = MaterialBlendMode.Opaque;
-                    FlaxEngine.Scripting.InvokeOnUpdate(Window.MarkAsEdited);
-                }
             }
 
             /// <summary>
