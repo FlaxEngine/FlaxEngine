@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Content/BinaryAsset.h"
 #include "Engine/Content/AssetReference.h"
 #include "FontCharacterEntry.h"

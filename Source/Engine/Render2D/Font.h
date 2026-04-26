@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Engine/Core/Collections/Array.h"
-#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Scripting/ScriptingObject.h"
