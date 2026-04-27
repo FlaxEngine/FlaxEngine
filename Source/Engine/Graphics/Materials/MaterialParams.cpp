@@ -507,6 +507,7 @@ void MaterialParameter::clone(const MaterialParameter* param)
         break;
     case MaterialParameterType::Integer:
     case MaterialParameterType::SceneTexture:
+    case MaterialParameterType::ChannelMask:
     case MaterialParameterType::TextureGroupSampler:
         _asInteger = param->_asInteger;
         break;
@@ -647,10 +648,7 @@ bool MaterialParams::Load(ReadStream* stream)
     PROFILE_MEM(GraphicsMaterials);
     bool result = false;
 
-    // Release
-    Resize(0);
-
-    // Check for not empty params
+    Clear();
     if (stream != nullptr && stream->CanRead())
     {
         // Version
