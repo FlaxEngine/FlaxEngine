@@ -130,26 +130,25 @@ void Foliage::AddToCluster(ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_S
 
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE && FOLIAGE_USE_DRAW_CALLS_BATCHING
 
-void Foliage::DrawInstance(DrawContext& context, FoliageInstance& instance, Model* model, int32 lod, float lodDitherFactor, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const
+void Foliage::DrawInstance(DrawContext& context, FoliageInstance& instance, int32 lod, float lodDitherFactor, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const
 {
-    const auto& meshes = model->LODs.Get()[lod].Meshes;
-    for (int32 meshIndex = 0; meshIndex < meshes.Count(); meshIndex++)
+    const auto& drawCalls = drawCallsLists[lod];
+    const auto* drawCallsPtr = drawCalls.Get();
+    for (int32 i = 0; i < drawCalls.Count(); i++)
     {
-        auto& drawCall = drawCallsLists[lod][meshIndex];
-        if (!drawCall.Material)
-            continue;
+        auto& drawCall = drawCallsPtr[i];
 
         DrawKey key;
         key.Mat = drawCall.Material;
-        key.Geo = &meshes.Get()[meshIndex];
+        key.Geo = (Mesh*)(void*)drawCall.Geometry.IndexBuffer; // Hack to pass this over Foliage::DrawType
         key.Lightmap = instance.LightmapTextureIndex;
         auto* e = result.TryGet(key);
         if (!e)
         {
             e = &result.Add(key, BatchedDrawCall(context.RenderContext.List))->Value;
             e->DrawCall.Material = key.Mat;
-            e->DrawCall.Surface.Lightmap = EnumHasAnyFlags(_staticFlags, StaticFlags::Lightmap) && _scene ? _scene->LightmapsData.GetReadyLightmap(key.Lightmap) : nullptr;
-            e->DrawCall.Surface.GeometrySize = key.Geo->GetBox().GetSize();
+            e->DrawCall.Surface.Lightmap = key.Lightmap != -1 && EnumHasAnyFlags(_staticFlags, StaticFlags::Lightmap) && _scene ? _scene->LightmapsData.GetReadyLightmap(key.Lightmap) : nullptr;
+            e->DrawCall.Surface.GeometrySize = drawCall.Surface.GeometrySize;
         }
 
         // Add instance to the draw batch
@@ -231,14 +230,14 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCal
                             {
                                 const auto prevLOD = model->ClampLODIndex(instance.DrawStatePrevLOD);
                                 const float normalizedProgress = static_cast<float>(instance.DrawStateLODTransition) * (1.0f / 255.0f);
-                                DrawInstance(context, instance, model, prevLOD, normalizedProgress, drawCallsLists, result);
+                                DrawInstance(context, instance, prevLOD, normalizedProgress, drawCallsLists, result);
                             }
                         }
                         else if (instance.DrawStateLODTransition < 255)
                         {
                             const auto prevLOD = model->ClampLODIndex(instance.DrawStatePrevLOD);
                             const float normalizedProgress = static_cast<float>(instance.DrawStateLODTransition) * (1.0f / 255.0f);
-                            DrawInstance(context, instance, model, prevLOD, normalizedProgress, drawCallsLists, result);
+                            DrawInstance(context, instance, prevLOD, normalizedProgress, drawCallsLists, result);
                         }
                     }
                     instance.DrawStatePrevFrame = frame;
@@ -278,19 +277,19 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCal
                 // Draw
                 if (instance.DrawStatePrevLOD == lodIndex)
                 {
-                    DrawInstance(context, instance, model, lodIndex, 0.0f, drawCallsLists, result);
+                    DrawInstance(context, instance, lodIndex, 0.0f, drawCallsLists, result);
                 }
                 else if (instance.DrawStatePrevLOD == -1)
                 {
                     const float normalizedProgress = static_cast<float>(instance.DrawStateLODTransition) * (1.0f / 255.0f);
-                    DrawInstance(context, instance, model, lodIndex, 1.0f - normalizedProgress, drawCallsLists, result);
+                    DrawInstance(context, instance, lodIndex, 1.0f - normalizedProgress, drawCallsLists, result);
                 }
                 else
                 {
                     const auto prevLOD = model->ClampLODIndex(instance.DrawStatePrevLOD);
                     const float normalizedProgress = static_cast<float>(instance.DrawStateLODTransition) * (1.0f / 255.0f);
-                    DrawInstance(context, instance, model, prevLOD, normalizedProgress, drawCallsLists, result);
-                    DrawInstance(context, instance, model, lodIndex, normalizedProgress - 1.0f, drawCallsLists, result);
+                    DrawInstance(context, instance, prevLOD, normalizedProgress, drawCallsLists, result);
+                    DrawInstance(context, instance, lodIndex, normalizedProgress - 1.0f, drawCallsLists, result);
                 }
 
                 //DebugDraw::DrawSphere(instance.Bounds, Color::YellowGreen);
@@ -493,12 +492,10 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Me
         auto& modelLod = type.Model->LODs[lod];
         DrawCallsList& drawCallsList = drawCallsLists[lod];
         const auto& meshes = modelLod.Meshes;
-        drawCallsList.Resize(meshes.Count());
+        drawCallsList.EnsureCapacity(meshes.Count());
         for (int32 meshIndex = 0; meshIndex < meshes.Count(); meshIndex++)
         {
             const auto& mesh = meshes.Get()[meshIndex];
-            auto& drawCall = drawCallsList.Get()[meshIndex];
-            drawCall.Material = nullptr; // DrawInstance skips draw calls from meshes with unset material
 
             // Check entry visibility
             const auto& entry = type.Entries[mesh.GetMaterialSlotIndex()];
@@ -523,7 +520,10 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Me
             if (drawModes == DrawPass::None)
                 continue;
 
+            // Add mesh to drawing
+            auto& drawCall = drawCallsList.AddOne();
             drawCall.Material = material;
+            drawCall.Geometry.IndexBuffer = (GPUBuffer*)(void*)&mesh; // Wrap pointer to mesh for DrawKey::Geo
             drawCall.Surface.GeometrySize = mesh.GetBox().GetSize();
         }
     }

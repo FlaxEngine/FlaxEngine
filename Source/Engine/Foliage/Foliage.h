@@ -190,7 +190,7 @@ private:
 
     typedef Array<struct DrawCall, InlinedAllocation<8>> DrawCallsList;
     typedef Dictionary<DrawKey, struct BatchedDrawCall, ConcurrentArenaAllocation> BatchedDrawCalls;
-    void DrawInstance(DrawContext& context, FoliageInstance& instance, Model* model, int32 lod, float lodDitherFactor, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const;
+    void DrawInstance(DrawContext& context, FoliageInstance& instance, int32 lod, float lodDitherFactor, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const;
     void DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const;
     void DrawType(RenderContext& renderContext, const FoliageType& type, DrawCallsList* drawCallsLists);
 #else
