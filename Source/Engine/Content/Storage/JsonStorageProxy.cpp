@@ -9,6 +9,7 @@
 #include "Engine/Level/Types.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #if USE_EDITOR
 #include "Engine/Core/Collections/HashSet.h"
 #include "Engine/Core/Collections/Dictionary.h"
