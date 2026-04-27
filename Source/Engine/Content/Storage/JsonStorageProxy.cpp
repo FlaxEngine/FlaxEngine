@@ -20,17 +20,66 @@ bool JsonStorageProxy::IsValidExtension(const StringView& extension)
     return extension == DEFAULT_SCENE_EXTENSION || extension == DEFAULT_PREFAB_EXTENSION || extension == DEFAULT_JSON_EXTENSION;
 }
 
+StringAnsiView ParseJsonString(const StringAnsiView& json, int32 start)
+{
+    while (start < json.Length() && json[start] != '\"')
+        start++;
+    int32 end = start + 1;
+    while (end < json.Length() && json[end] != '\"')
+        end++;
+    return json.Substring(start + 1, end - start - 1);
+}
+
 bool JsonStorageProxy::GetAssetInfo(const StringView& path, Guid& resultId, String& resultDataTypeName)
 {
     PROFILE_CPU();
-    // TODO: we could just open file and start reading until we find 'ID:..' without parsing whole file - could be much more faster
+    PROFILE_MEM(Content);
+    ZoneText(*path, path.Length());
+
+    // Read the first part of the file to get asset metadata (ID and TypeName)
+    auto file = File::Open(path, FileMode::OpenExisting, FileAccess::Read, FileShare::All);
+    if (!file)
+        return false;
+    Array<byte> fileData;
+    fileData.Resize(256);
+    uint32 read = 0;
+    file->Read(fileData.Get(), fileData.Count(), &read);
+    Delete(file);
+    file = nullptr;
+    if (read != 0)
+    {
+        // Naive Json parsing to get ID and TypeName without full parsing
+        StringAnsiView json((const char*)fileData.Get(), read);
+        StringAnsiView idStart("\"ID\": ");
+        StringAnsiView typenameStart("\"TypeName\": ");
+        bool hasOneOfThem = false;
+        for (int32 i = 0; i < json.Length() - 7; i++)
+        {
+            if (json.Substring(i).StartsWith(idStart))
+            {
+                StringAnsiView value = ParseJsonString(json, i + idStart.Length());
+                if (Guid::Parse(value, resultId))
+                    continue;
+                if (hasOneOfThem)
+                    return true;
+                hasOneOfThem = true;
+                i += value.Length() + idStart.Length() + 2;
+            }
+            if (json.Substring(i).StartsWith(typenameStart))
+            {
+                StringAnsiView value = ParseJsonString(json, i + typenameStart.Length());
+                resultDataTypeName = String(value);
+                if (hasOneOfThem)
+                    return true;
+                hasOneOfThem = true;
+                i += value.Length() + typenameStart.Length() + 2;
+            }
+        }
+    }
 
     // Load file
-    Array<byte> fileData;
     if (File::ReadAllBytes(path, fileData))
-    {
         return false;
-    }
 
     // Parse data
     rapidjson_flax::Document document;
@@ -89,11 +138,8 @@ void FindObjectIds(const rapidjson_flax::Value& obj, const rapidjson_flax::Docum
     }
 }
 
-#endif
-
 bool JsonStorageProxy::ChangeId(const StringView& path, const Guid& newId)
 {
-#if USE_EDITOR
     PROFILE_CPU();
 
     // Load file
@@ -140,8 +186,6 @@ bool JsonStorageProxy::ChangeId(const StringView& path, const Guid& newId)
         return true;
 
     return false;
-#else
-	LOG(Warning, "Editing cooked content is invalid.");
-	return true;
-#endif
 }
+
+#endif
