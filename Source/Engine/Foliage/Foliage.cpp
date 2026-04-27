@@ -438,26 +438,25 @@ void Foliage::DrawFoliageJob(int32 i)
 {
     PROFILE_CPU();
     PROFILE_MEM(Graphics);
-    const FoliageType& type = FoliageTypes[i];
-    if (type._canDraw)
-    {
-        DrawCallsList drawCallsLists[MODEL_MAX_LODS];
-        for (RenderContext& renderContext : _renderContextBatch->Contexts)
-        {
+    const int32 foliageIndex = i / _renderContextBatch->Contexts.Count();
+    const int32 contextIndex = i % _renderContextBatch->Contexts.Count();
+    const FoliageType& type = FoliageTypes[foliageIndex];
+    if (!type._canDraw)
+        return;
+    DrawCallsList drawCallsLists[MODEL_MAX_LODS];
+    RenderContext& renderContext = _renderContextBatch->Contexts[contextIndex];
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE && FOLIAGE_USE_DRAW_CALLS_BATCHING
-            DrawType(renderContext, type, drawCallsLists);
+    DrawType(renderContext, type, drawCallsLists);
 #else
-            Mesh::DrawInfo draw;
-            draw.Flags = GetStaticFlags();
-            draw.DrawModes = (DrawPass)(DrawPass::Default & renderContext.View.Pass);
-            draw.LODBias = 0;
-            draw.ForcedLOD = -1;
-            draw.VertexColors = nullptr;
-            draw.Deformation = nullptr;
-            DrawType(renderContext, type, draw);
+    Mesh::DrawInfo draw;
+    draw.Flags = GetStaticFlags();
+    draw.DrawModes = (DrawPass)(DrawPass::Default & renderContext.View.Pass);
+    draw.LODBias = 0;
+    draw.ForcedLOD = -1;
+    draw.VertexColors = nullptr;
+    draw.Deformation = nullptr;
+    DrawType(renderContext, type, draw);
 #endif
-        }
-    }
 }
 
 #endif
@@ -1323,7 +1322,7 @@ void Foliage::Draw(RenderContextBatch& renderContextBatch)
         _renderContextBatch = &renderContextBatch;
         Function<void(int32)> func;
         func.Bind<Foliage, &Foliage::DrawFoliageJob>(this);
-        const int64 waitLabel = JobSystem::Dispatch(func, FoliageTypes.Count());
+        const int64 waitLabel = JobSystem::Dispatch(func, FoliageTypes.Count() * renderContextBatch.Contexts.Count());
         renderContextBatch.WaitLabels.Add(waitLabel);
         return;
     }
