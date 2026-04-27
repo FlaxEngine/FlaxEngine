@@ -302,7 +302,12 @@ namespace FlaxEditor.Tools.Foliage
                 var proxyObject = (ProxyObject)Values[0];
                 proxyObject.SyncOptions();
 
-                _info.Text = string.Format("Instances: {0}, Total: {1}", proxyObject.Foliage.GetFoliageTypeInstancesCount(proxyObject.SelectedFoliageTypeIndex), proxyObject.Foliage.InstancesCount);
+                var instancesCount = proxyObject.Foliage.GetFoliageTypeInstancesCount(proxyObject.SelectedFoliageTypeIndex);
+                var totalCount = proxyObject.Foliage.InstancesCount;
+                if (instancesCount == totalCount)
+                    _info.Text = string.Format("Instances: {0:###,###,###}", instancesCount);
+                else
+                    _info.Text = string.Format("Instances: {0:###,###,###}, Total: {1:###,###,###}", instancesCount, totalCount);
 
                 base.Refresh();
             }
