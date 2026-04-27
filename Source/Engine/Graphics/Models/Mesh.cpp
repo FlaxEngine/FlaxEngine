@@ -305,7 +305,7 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.Surface.GeometrySize = _box.GetSize();
     drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
     drawCall.Surface.Lightmap = (info.Flags & StaticFlags::Lightmap) != StaticFlags::None ? info.Lightmap : nullptr;
-    drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Rectangle::Empty;
+    drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Half4::Zero;
     drawCall.Surface.LODDitherFactor = lodDitherFactor;
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
     drawCall.StencilValue = info.StencilValue;
@@ -368,7 +368,7 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     drawCall.Surface.GeometrySize = _box.GetSize();
     drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
     drawCall.Surface.Lightmap = (info.Flags & StaticFlags::Lightmap) != StaticFlags::None ? info.Lightmap : nullptr;
-    drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Rectangle::Empty;
+    drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Half4::Zero;
     drawCall.Surface.LODDitherFactor = lodDitherFactor;
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
     drawCall.StencilValue = info.StencilValue;

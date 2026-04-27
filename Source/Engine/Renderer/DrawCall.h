@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Config.h"
-#include "Engine/Core/Math/Rectangle.h"
+#include "Engine/Core/Math/Half.h"
 #include "Engine/Core/Math/Color.h"
 
 struct RenderView;
@@ -183,13 +183,13 @@ struct DrawCall
         struct
         {
             const Lightmap* Lightmap;
-            Rectangle LightmapUVsArea;
+            Half4 LightmapUVsArea;
         } Features;
 
         struct
         {
             const Lightmap* Lightmap;
-            Rectangle LightmapUVsArea;
+            Half4 LightmapUVsArea;
             SkinnedMeshDrawData* Skinning;
             Float3 GeometrySize; // Object geometry size in the world (unscaled).
             float LODDitherFactor; // The model LOD transition dither progress.
@@ -199,7 +199,7 @@ struct DrawCall
         struct
         {
             const Lightmap* Lightmap;
-            Rectangle LightmapUVsArea;
+            Half4 LightmapUVsArea;
             Float4 HeightmapUVScaleBias;
             Float4 NeighborLOD;
             Float2 OffsetUV;

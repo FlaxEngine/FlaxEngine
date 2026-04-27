@@ -102,7 +102,7 @@ void LightmapUVsDensityMaterialShader::Bind(BindParameters& params)
             scaleZ > 0.00001f ? 1.0f / scaleZ : 0.0f);
         data.LightmapTexelsPerWorldUnit = ShadowsOfMordor::LightmapTexelsPerWorldUnit;
         data.LightmapSize = 1024.0f;
-        data.LightmapArea = drawCall.Surface.LightmapUVsArea;
+        data.LightmapArea = drawCall.Surface.LightmapUVsArea.ToFloat4();
         const ModelLOD* drawCallModelLod;
         float scaleInLightmap = drawCall.Surface.LODDitherFactor; // Reuse field
         if (scaleInLightmap < 0.0f)

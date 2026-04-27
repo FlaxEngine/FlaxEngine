@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Types/Guid.h"
-#include "Engine/Core/Math/Rectangle.h"
+#include "Engine/Core/Math/Half.h"
 #include "Engine/Core/ISerializable.h"
 
 #if USE_EDITOR
@@ -42,21 +42,24 @@ struct LightmapEntry
     /// <summary>
     /// Index of the lightmap
     /// </summary>
-    int32 TextureIndex;
+    int16 TextureIndex;
 
     /// <summary>
     /// Lightmap UVs area that entry occupies
     /// </summary>
-    Rectangle UVsArea;
+    Half4 UVsArea;
 
     /// <summary>
     /// Init
     /// </summary>
     LightmapEntry()
         : TextureIndex(INVALID_INDEX)
-        , UVsArea(Rectangle::Empty)
+        , UVsArea(Half4::Zero)
     {
     }
+
+    void Serialize(ISerializable::SerializeStream& stream);
+    void Deserialize(ISerializable::DeserializeStream& stream);
 };
 
 template<>

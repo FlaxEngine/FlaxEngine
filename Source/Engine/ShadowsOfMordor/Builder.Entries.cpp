@@ -172,28 +172,24 @@ void ShadowsOfMordor::Builder::updateEntries()
         if (e.ChartIndex == INVALID_INDEX)
         {
             // Removed previously baked lightmap info
-            LightmapEntry emptyEntry;
             switch (e.Type)
             {
             case GeometryType::StaticModel:
             {
-                auto staticModel = e.AsStaticModel.Actor;
-                if (staticModel)
-                    staticModel->Lightmap = emptyEntry;
+                if (auto staticModel = e.AsStaticModel.Actor)
+                    staticModel->RemoveLightmap();
             }
             break;
             case GeometryType::Terrain:
             {
-                auto terrain = e.AsTerrain.Actor;
-                if (terrain)
-                    terrain->GetPatch(e.AsTerrain.PatchIndex)->Chunks[e.AsTerrain.ChunkIndex].Lightmap = emptyEntry;
+                if (auto terrain = e.AsTerrain.Actor)
+                    terrain->GetPatch(e.AsTerrain.PatchIndex)->Chunks[e.AsTerrain.ChunkIndex].RemoveLightmap();
             }
             break;
             case GeometryType::Foliage:
             {
-                auto foliage = e.AsFoliage.Actor;
-                if (foliage)
-                    foliage->Instances[e.AsFoliage.InstanceIndex].Lightmap = emptyEntry;
+                if (auto foliage = e.AsFoliage.Actor)
+                    foliage->Instances[e.AsFoliage.InstanceIndex].RemoveLightmap();
             }
             break;
             }
@@ -202,8 +198,10 @@ void ShadowsOfMordor::Builder::updateEntries()
         auto& chart = scene->Charts[e.ChartIndex];
 
         // Update result uvs by taking into account lightmap uvs box
-        chart.Result.UVsArea.Size /= e.UVsBox.Size;
-        chart.Result.UVsArea.Location += e.UVsBox.Location * chart.Result.UVsArea.Size;
+        Rectangle rect = chart.Result.UVsArea.ToFloat4();
+        rect.Size /= e.UVsBox.Size;
+        rect.Location += e.UVsBox.Location * rect.Size;
+        chart.Result.UVsArea = Half4(rect);
 
         switch (e.Type)
         {
@@ -243,7 +241,9 @@ void ShadowsOfMordor::Builder::updateEntries()
             if (foliage)
             {
                 // Update data
-                foliage->Instances[e.AsFoliage.InstanceIndex].Lightmap = chart.Result;
+                auto& instance = foliage->Instances[e.AsFoliage.InstanceIndex];
+                instance.LightmapTextureIndex = (int8)chart.Result.TextureIndex;
+                instance.LightmapUVsArea = chart.Result.UVsArea;
             }
             else
             {

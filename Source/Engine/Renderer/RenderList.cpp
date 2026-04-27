@@ -1,6 +1,8 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "RenderList.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Half.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Graphics/Materials/IMaterial.h"
 #include "Engine/Graphics/Materials/MaterialShader.h"
@@ -12,11 +14,9 @@
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/PostProcessEffect.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Content/Assets/CubeTexture.h"
-#include "Engine/Core/Log.h"
-#include "Engine/Core/Math/Half.h"
-#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Level/Actors/PostFxVolume.h"
 
@@ -47,10 +47,9 @@ namespace
     }
 }
 
-void ShaderObjectData::Store(const Matrix& worldMatrix, const Matrix& prevWorldMatrix, const Rectangle& lightmapUVsArea, const Float3& geometrySize, float perInstanceRandom, float worldDeterminantSign, float lodDitherFactor)
+void ShaderObjectData::Store(const Matrix& worldMatrix, const Matrix& prevWorldMatrix, const Half4& lightmapUVsArea, const Float3& geometrySize, float perInstanceRandom, float worldDeterminantSign, float lodDitherFactor)
 {
-    Half4 lightmapUVsAreaPacked(*(Float4*)&lightmapUVsArea);
-    Float2 lightmapUVsAreaPackedAliased = *(Float2*)&lightmapUVsAreaPacked;
+    Float2 lightmapUVsAreaPackedAliased = *(Float2*)&lightmapUVsArea;
     Raw[0] = Float4(worldMatrix.M11, worldMatrix.M12, worldMatrix.M13, worldMatrix.M41);
     Raw[1] = Float4(worldMatrix.M21, worldMatrix.M22, worldMatrix.M23, worldMatrix.M42);
     Raw[2] = Float4(worldMatrix.M31, worldMatrix.M32, worldMatrix.M33, worldMatrix.M43);
@@ -62,7 +61,7 @@ void ShaderObjectData::Store(const Matrix& worldMatrix, const Matrix& prevWorldM
     // TODO: pack WorldDeterminantSign and LODDitherFactor
 }
 
-void ShaderObjectData::Load(Matrix& worldMatrix, Matrix& prevWorldMatrix, Rectangle& lightmapUVsArea, Float3& geometrySize, float& perInstanceRandom, float& worldDeterminantSign, float& lodDitherFactor) const
+void ShaderObjectData::Load(Matrix& worldMatrix, Matrix& prevWorldMatrix, Half4& lightmapUVsArea, Float3& geometrySize, float& perInstanceRandom, float& worldDeterminantSign, float& lodDitherFactor) const
 {
     worldMatrix.SetRow1(Float4(Float3(Raw[0]), 0.0f));
     worldMatrix.SetRow2(Float4(Float3(Raw[1]), 0.0f));
@@ -77,8 +76,7 @@ void ShaderObjectData::Load(Matrix& worldMatrix, Matrix& prevWorldMatrix, Rectan
     worldDeterminantSign = Raw[7].X;
     lodDitherFactor = Raw[7].Y;
     Float2 lightmapUVsAreaPackedAliased(Raw[7].Z, Raw[7].W);
-    Half4 lightmapUVsAreaPacked(*(Half4*)&lightmapUVsAreaPackedAliased);
-    *(Float4*)&lightmapUVsArea = lightmapUVsAreaPacked.ToFloat4();
+    lightmapUVsArea = *(Half4*)&lightmapUVsAreaPackedAliased;
 }
 
 bool RenderLightData::CanRenderShadow(const RenderView& view) const

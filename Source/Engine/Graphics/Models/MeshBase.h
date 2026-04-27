@@ -375,7 +375,7 @@ public:
                 /// <summary>
                 /// The lightmap UVs.
                 /// </summary>
-                const Rectangle* LightmapUVs;
+                const Half4* LightmapUVs;
             };
         };
 

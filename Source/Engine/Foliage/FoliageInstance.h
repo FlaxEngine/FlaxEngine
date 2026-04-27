@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Math/Transform.h"
 #include "Engine/Core/Math/BoundingSphere.h"
+#include "Engine/Core/Math/Half.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Level/Scene/Lightmap.h"
 
@@ -30,6 +31,11 @@ API_STRUCT(NoPod) struct FLAXENGINE_API FoliageInstance
     API_FIELD() int32 Type;
 
     /// <summary>
+    /// The lightmap index for the foliage instance. -1 if unused.
+    /// </summary>
+    int8 LightmapTextureIndex;
+
+    /// <summary>
     /// The per-instance random value from range [0;1].
     /// </summary>
     API_FIELD() float Random;
@@ -45,9 +51,9 @@ API_STRUCT(NoPod) struct FLAXENGINE_API FoliageInstance
     API_FIELD() BoundingSphere Bounds;
 
     /// <summary>
-    /// The lightmap entry for the foliage instance.
+    /// Lightmap UVs area that entry occupies (packed Rectangle into Half4).
     /// </summary>
-    LightmapEntry Lightmap;
+    Half4 LightmapUVsArea;
 
 public:
     bool operator==(const FoliageInstance& v) const
@@ -60,7 +66,7 @@ public:
     /// </summary>
     FORCE_INLINE bool HasLightmap() const
     {
-        return Lightmap.TextureIndex != INVALID_INDEX;
+        return LightmapTextureIndex != INVALID_INDEX;
     }
 
     /// <summary>
@@ -68,6 +74,6 @@ public:
     /// </summary>
     FORCE_INLINE void RemoveLightmap()
     {
-        Lightmap.TextureIndex = INVALID_INDEX;
+        LightmapTextureIndex = INVALID_INDEX;
     }
 };

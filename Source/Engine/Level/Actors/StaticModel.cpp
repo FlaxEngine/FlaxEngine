@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "StaticModel.h"
+#include "Engine/Core/Math/Rectangle.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Content/Deprecated.h"
 #include "Engine/Graphics/GPUBuffer.h"
@@ -19,6 +20,31 @@
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #endif
+
+void LightmapEntry::Serialize(ISerializable::SerializeStream& stream)
+{
+    stream.JKEY("LightmapIndex");
+    stream.Int(TextureIndex);
+
+    stream.JKEY("LightmapArea");
+    stream.Rectangle(UVsArea.ToFloat4());
+}
+
+void LightmapEntry::Deserialize(ISerializable::DeserializeStream& stream)
+{
+    ISerializeModifier* modifier = nullptr;
+
+    DESERIALIZE_MEMBER(LightmapIndex, TextureIndex);
+    {
+        const auto e = SERIALIZE_FIND_MEMBER(stream, "LightmapArea");
+        if (e != stream.MemberEnd())
+        {
+            Rectangle rect;
+            Serialization::Deserialize(e->value, rect, nullptr);
+            UVsArea = Half4(rect);
+        }
+    }
+}
 
 StaticModel::StaticModel(const SpawnParams& params)
     : ModelInstanceActor(params)
@@ -457,11 +483,7 @@ void StaticModel::Serialize(SerializeStream& stream, const void* otherObj)
 #endif
     )
     {
-        stream.JKEY("LightmapIndex");
-        stream.Int(Lightmap.TextureIndex);
-
-        stream.JKEY("LightmapArea");
-        stream.Rectangle(Lightmap.UVsArea);
+        Lightmap.Serialize(stream);
     }
 
     stream.JKEY("Buffer");
@@ -502,9 +524,7 @@ void StaticModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     DESERIALIZE_MEMBER(ForcedLOD, _forcedLod);
     DESERIALIZE_MEMBER(SortOrder, _sortOrder);
     DESERIALIZE_MEMBER(DrawModes, _drawModes);
-    DESERIALIZE_MEMBER(LightmapIndex, Lightmap.TextureIndex);
-    DESERIALIZE_MEMBER(LightmapArea, Lightmap.UVsArea);
-
+    Lightmap.Deserialize(stream);
     Entries.DeserializeIfExists(stream, "Buffer", modifier);
 
     {

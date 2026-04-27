@@ -127,7 +127,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
                 Matrix worldMatrix;
                 staticModel->GetLocalToWorldMatrix(worldMatrix);
                 Matrix::Transpose(worldMatrix, shaderData.WorldMatrix);
-                shaderData.LightmapArea = staticModel->Lightmap.UVsArea;
+                shaderData.LightmapArea = staticModel->Lightmap.UVsArea.ToFloat4();
 
                 context->UpdateCB(cb, &shaderData);
                 context->BindCB(0, cb);
@@ -163,7 +163,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
                 Matrix world;
                 chunk->GetTransform().GetWorld(world);
                 Matrix::Transpose(world, shaderData.WorldMatrix);
-                shaderData.LightmapArea = chunk->Lightmap.UVsArea;
+                shaderData.LightmapArea = chunk->Lightmap.UVsArea.ToFloat4();
                 shaderData.TerrainChunkSizeLOD0 = TERRAIN_UNITS_PER_VERTEX * chunkSize;
                 shaderData.HeightmapUVScaleBias = chunk->GetHeightmapUVScaleBias();
 
@@ -199,7 +199,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
                 Matrix world;
                 foliage->GetTransform().LocalToWorld(instance.Transform).GetWorld(world);
                 Matrix::Transpose(world, shaderData.WorldMatrix);
-                shaderData.LightmapArea = instance.Lightmap.UVsArea;
+                shaderData.LightmapArea = instance.LightmapUVsArea.ToFloat4();
 
                 context->UpdateCB(cb, &shaderData);
                 context->BindCB(0, cb);

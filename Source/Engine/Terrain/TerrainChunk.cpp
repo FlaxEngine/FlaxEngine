@@ -120,7 +120,7 @@ void TerrainChunk::Draw(const RenderContext& renderContext) const
     else
     {
         drawCall.Terrain.Lightmap = nullptr;
-        drawCall.Terrain.LightmapUVsArea = Rectangle::Empty;
+        drawCall.Terrain.LightmapUVsArea = Half4::Zero;
     }
     drawCall.PerInstanceRandom = _perInstanceRandom;
     drawCall.SetStencilValue(_patch->_terrain->GetLayer());
@@ -181,7 +181,7 @@ void TerrainChunk::Draw(const RenderContext& renderContext, MaterialBase* materi
     else
     {
         drawCall.Terrain.Lightmap = nullptr;
-        drawCall.Terrain.LightmapUVsArea = Rectangle::Empty;
+        drawCall.Terrain.LightmapUVsArea = Half4::Zero;
     }
     drawCall.PerInstanceRandom = _perInstanceRandom;
     drawCall.SetStencilValue(_patch->_terrain->GetLayer());
@@ -311,11 +311,7 @@ void TerrainChunk::Serialize(SerializeStream& stream, const void* otherObj)
 #endif
     )
     {
-        stream.JKEY("LightmapIndex");
-        stream.Int(Lightmap.TextureIndex);
-
-        stream.JKEY("LightmapArea");
-        stream.Rectangle(Lightmap.UVsArea);
+        Lightmap.Serialize(stream);
     }
 }
 
@@ -324,6 +320,5 @@ void TerrainChunk::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE_MEMBER(Offset, _yOffset);
     DESERIALIZE_MEMBER(Height, _yHeight);
     DESERIALIZE_MEMBER(Material, OverrideMaterial);
-    DESERIALIZE_MEMBER(LightmapIndex, Lightmap.TextureIndex);
-    DESERIALIZE_MEMBER(LightmapArea, Lightmap.UVsArea);
+    Lightmap.Deserialize(stream);
 }

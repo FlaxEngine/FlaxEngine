@@ -22,6 +22,7 @@ class IPostFxSettingsProvider;
 class CubeTexture;
 struct RenderContext;
 struct RenderContextBatch;
+struct Half4;
 
 struct RenderLightData
 {
@@ -683,8 +684,8 @@ GPU_CB_STRUCT(ShaderObjectData
     {
     Float4 Raw[8];
 
-    void FLAXENGINE_API Store(const Matrix& worldMatrix, const Matrix& prevWorldMatrix, const Rectangle& lightmapUVsArea, const Float3& geometrySize, float perInstanceRandom = 0.0f, float worldDeterminantSign = 1.0f, float lodDitherFactor = 0.0f);
-    void FLAXENGINE_API Load(Matrix& worldMatrix, Matrix& prevWorldMatrix, Rectangle& lightmapUVsArea, Float3& geometrySize, float& perInstanceRandom, float& worldDeterminantSign, float& lodDitherFactor) const;
+    void FLAXENGINE_API Store(const Matrix& worldMatrix, const Matrix& prevWorldMatrix, const Half4& lightmapUVsAreaPacked, const Float3& geometrySize, float perInstanceRandom = 0.0f, float worldDeterminantSign = 1.0f, float lodDitherFactor = 0.0f);
+    void FLAXENGINE_API Load(Matrix& worldMatrix, Matrix& prevWorldMatrix, Half4& lightmapUVsArea, Float3& geometrySize, float& perInstanceRandom, float& worldDeterminantSign, float& lodDitherFactor) const;
 
     FORCE_INLINE void Store(const DrawCall& drawCall)
     {

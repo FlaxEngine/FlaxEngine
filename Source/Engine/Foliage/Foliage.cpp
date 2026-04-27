@@ -5,6 +5,7 @@
 #include "FoliageCluster.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Random.h"
+#include "Engine/Core/Math/Rectangle.h"
 #include "Engine/Core/Collections/BitArray.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/Graphics.h"
@@ -17,6 +18,7 @@
 #endif
 #include "Engine/Level/SceneQuery.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
 #include "Engine/Renderer/GI/GlobalSurfaceAtlasPass.h"
@@ -140,7 +142,7 @@ void Foliage::DrawInstance(DrawContext& context, FoliageInstance& instance, Mode
         DrawKey key;
         key.Mat = drawCall.Material;
         key.Geo = &meshes.Get()[meshIndex];
-        key.Lightmap = instance.Lightmap.TextureIndex;
+        key.Lightmap = instance.LightmapTextureIndex;
         auto* e = result.TryGet(key);
         if (!e)
         {
@@ -158,7 +160,7 @@ void Foliage::DrawInstance(DrawContext& context, FoliageInstance& instance, Mode
         const Float3 translation = transform.Translation - context.ViewOrigin;
         Matrix::Transformation(transform.Scale, transform.Orientation, translation, world);
         constexpr float worldDeterminantSign = 1.0f;
-        instanceData.Store(world, world, instance.Lightmap.UVsArea, drawCall.Surface.GeometrySize, instance.Random, worldDeterminantSign, lodDitherFactor);
+        instanceData.Store(world, world, instance.LightmapUVsArea, drawCall.Surface.GeometrySize, instance.Random, worldDeterminantSign, lodDitherFactor);
     }
 }
 
@@ -351,7 +353,7 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, Mesh::D
                 instance.DrawState.PrevWorld = world;
 
                 // Draw model
-                draw.Lightmap = _scene->LightmapsData.GetReadyLightmap(instance.Lightmap.TextureIndex);
+                draw.Lightmap = _scene->LightmapsData.GetReadyLightmap(instance.LightmapTextureIndex);
                 draw.LightmapUVs = &instance.Lightmap.UVsArea;
                 draw.Buffer = &type.Entries;
                 draw.World = &world;
@@ -1267,8 +1269,8 @@ void Foliage::Draw(RenderContext& renderContext)
         draw.ForcedLOD = -1;
         draw.SortOrder = 0;
         draw.VertexColors = nullptr;
-        draw.Lightmap = _scene ? _scene->LightmapsData.GetReadyLightmap(instance.Lightmap.TextureIndex) : nullptr;
-        draw.LightmapUVs = &instance.Lightmap.UVsArea;
+        draw.Lightmap = _scene ? _scene->LightmapsData.GetReadyLightmap(instance.LightmapTextureIndex) : nullptr;
+        draw.LightmapUVs = &instance.LightmapUVsArea;
         draw.Buffer = &type.Entries;
         draw.World = &world;
         draw.DrawState = &instance.DrawState;
@@ -1367,7 +1369,8 @@ struct InstanceEncoded2
     Float3 Translation;
     Quaternion Orientation;
     Float3 Scale;
-    LightmapEntry Lightmap;
+    int32 LightmapTextureIndex;
+    Rectangle LightmapUVsArea;
 
     static const int32 Size = 68;
     static const int32 Base64Size = GetInstanceBase64Size(Size);
@@ -1435,7 +1438,10 @@ struct FoliageWriter
 
         // Lightmap data (if used)
         if (data.HasLightmap)
-            Memory.Write(instance.Lightmap);
+        {
+            Memory.Write(instance.LightmapTextureIndex);
+            Memory.Write(instance.LightmapUVsArea);
+        }
 
         // Move to the next instance
         InstanceCounter++;
@@ -1519,7 +1525,10 @@ struct FoliageReader
             q.Normalize();
             instance.Transform.Orientation = q;
             if (data.HasLightmap)
-                memory.Read(instance.Lightmap);
+            {
+                memory.Read(instance.LightmapTextureIndex);
+                memory.Read(instance.LightmapUVsArea);
+            }
         }
     }
 };
@@ -1656,7 +1665,7 @@ void Foliage::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
                     instance.Transform.Translation = enc.Translation;
                     instance.Transform.Orientation = enc.Orientation;
                     instance.Transform.Scale = enc.Scale;
-                    instance.Lightmap = LightmapEntry();
+                    instance.LightmapTextureIndex = -1;
                 }
             }
             else
@@ -1680,7 +1689,8 @@ void Foliage::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
                     instance.Transform.Translation = enc.Translation;
                     instance.Transform.Orientation = enc.Orientation;
                     instance.Transform.Scale = enc.Scale;
-                    instance.Lightmap = enc.Lightmap;
+                    instance.LightmapTextureIndex = enc.LightmapTextureIndex;
+                    instance.LightmapUVsArea = Half4(enc.LightmapUVsArea);
                 }
             }
         }
