@@ -370,7 +370,9 @@ bool ParticleEmitterGraphCPUExecutor::ComputeBounds(ParticleEmitter* emitter, Pa
 
 void ParticleEmitterGraphCPUExecutor::Draw(ParticleEmitter* emitter, ParticleEffect* effect, ParticleEmitterInstance& data, RenderContext& renderContext, Matrix& transform)
 {
-    if (!emitter->IsUsingLights || _graph._attrPosition == -1)
+    if (!emitter->IsUsingLights ||
+        _graph._attrPosition == -1 ||
+        data.Version != _graph.Version)
         return;
 
     // Prepare particles buffer access

@@ -21,7 +21,7 @@
 #include "Editor/Editor.h"
 #endif
 
-void LightmapEntry::Serialize(ISerializable::SerializeStream& stream)
+void LightmapEntry::Serialize(ISerializable::SerializeStream& stream) const
 {
     stream.JKEY("LightmapIndex");
     stream.Int(TextureIndex);

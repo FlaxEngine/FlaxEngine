@@ -48,8 +48,15 @@ void BoneSocket::UpdateTransformation()
         Transform t;
         if (nodes.IsValidIndex(_index))
             nodes.Get()[_index].Decompose(t);
-        else
+        else if (parent->SkinnedModel->Skeleton.Nodes.IsValidIndex(_index))
             t = parent->SkinnedModel->Skeleton.GetNodeTransform(_index);
+        else
+        {
+            // Retry when cached index become invalid (eg. model reimport)
+            _index = -1;
+            UpdateTransformation();
+            return;
+        }
         if (!_useScale)
             t.Scale = _localTransform.Scale;
         SetLocalTransform(t);

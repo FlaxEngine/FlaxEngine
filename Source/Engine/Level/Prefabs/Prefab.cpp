@@ -61,14 +61,14 @@ Actor* Prefab::GetDefaultInstance()
     // Skip if not loaded
     if (!IsLoaded())
     {
-        LOG(Warning, "Cannot instantiate object from not loaded prefab asset.");
+        LOG(Warning, "Cannot instantiate object from not loaded prefab asset '{}'", GetPath());
         return nullptr;
     }
 
     // Prevent recursive calls
     if (_isCreatingDefaultInstance)
     {
-        LOG(Warning, "Loop call to Prefab::GetDefaultInstance.");
+        LOG(Warning, "Loop call to Prefab::GetDefaultInstance for '{}'", GetPath());
         return nullptr;
     }
     _isCreatingDefaultInstance = true;

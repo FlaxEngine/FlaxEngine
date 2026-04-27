@@ -58,7 +58,7 @@ struct LightmapEntry
     {
     }
 
-    void Serialize(ISerializable::SerializeStream& stream);
+    void Serialize(ISerializable::SerializeStream& stream) const;
     void Deserialize(ISerializable::DeserializeStream& stream);
 };
 
