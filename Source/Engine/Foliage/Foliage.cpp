@@ -5,6 +5,7 @@
 #include "FoliageCluster.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Random.h"
+#include "Engine/Core/Collections/BitArray.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -20,7 +21,10 @@
 #include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
 #include "Engine/Renderer/GI/GlobalSurfaceAtlasPass.h"
 #include "Engine/Serialization/Serialization.h"
+#include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Utilities/Encryption.h"
+#include <ThirdParty/LZ4/lz4.h>
 
 #define FOLIAGE_GET_DRAW_MODES(renderContext, type) (type._drawModes & renderContext.View.Pass & renderContext.View.GetShadowsDrawPassMask(type.ShadowsMode))
 #define FOLIAGE_CAN_DRAW(renderContext, type) (type.IsReady() && FOLIAGE_GET_DRAW_MODES(renderContext, type) != DrawPass::None && type.Model->CanBeRendered())
@@ -1336,6 +1340,7 @@ struct InstanceEncoded1
     static constexpr int32 Base64Size = GetInstanceBase64Size(Size);
 };
 
+// [Deprecated in v1.13]
 struct InstanceEncoded2
 {
     int32 Type;
@@ -1349,9 +1354,156 @@ struct InstanceEncoded2
     static const int32 Base64Size = GetInstanceBase64Size(Size);
 };
 
+// [Deprecated in v1.13]
 typedef InstanceEncoded2 InstanceEncoded;
 static_assert(InstanceEncoded::Size == sizeof(InstanceEncoded), "Please update base64 buffer size to match the encoded instance buffer.");
 static_assert(InstanceEncoded::Base64Size == GetInstanceBase64Size(sizeof(InstanceEncoded)), "Please update base64 buffer size to match the encoded instance buffer.");
+
+struct FoliageChunkMeta
+{
+    uint16 InstanceCounter;
+};
+
+struct FoliageInstanceData
+{
+    union
+    {
+        struct
+        {
+            uint16 Type : 14; // Max 16,384 foliage types, which is more than enough for any use case
+            uint16 OrientationNegativeW : 1;
+            uint16 HasLightmap : 1;
+        };
+        uint16 Packed;
+    };
+    int16 OrientationX, OrientationY, OrientationZ;
+    float Random;
+    Float3 Position, Scale;
+};
+
+struct FoliageWriter
+{
+    static constexpr int32 InstanceSizeApprox = sizeof(FoliageInstanceData);
+    static constexpr int32 InstancesPerChunk = 64;
+    typedef uint16 CompressedSize;
+    int32 InstanceCounter = 0;
+    Foliage::SerializeStream& Stream;
+    MemoryWriteStream Memory;
+    Array<byte> Compressed;
+    Array<char> Base64;
+
+    FoliageWriter(Foliage::SerializeStream& stream)
+        : Stream(stream)
+        , Memory(Math::RoundUpToPowerOf2(InstancesPerChunk* InstanceSizeApprox))
+    {
+        Memory.Move<FoliageChunkMeta>();
+    }
+
+    void Write(const FoliageInstance& instance)
+    {
+        // Fixed-size data
+        FoliageInstanceData data;
+        data.Type = (uint16)instance.Type;
+        data.HasLightmap = instance.HasLightmap();
+        data.Random = instance.Random;
+        data.Position = (Float3)instance.Transform.Translation;
+        data.Scale = instance.Transform.Scale;
+        data.OrientationX = (int16)(instance.Transform.Orientation.X * MAX_int16);
+        data.OrientationY = (int16)(instance.Transform.Orientation.Y * MAX_int16);
+        data.OrientationZ = (int16)(instance.Transform.Orientation.Z * MAX_int16);
+        data.OrientationNegativeW = instance.Transform.Orientation.W < 0;
+        Memory.Write(data);
+
+        // Lightmap data (if used)
+        if (data.HasLightmap)
+            Memory.Write(instance.Lightmap);
+
+        // Move to the next instance
+        InstanceCounter++;
+        if (InstanceCounter >= InstancesPerChunk)
+            Flush();
+    }
+
+    void Flush()
+    {
+        if (InstanceCounter == 0)
+            return;
+
+        // Store chunk size metadata in the beginning
+        static_assert(InstancesPerChunk * InstanceSizeApprox * 2 < MAX_uint16, "Too much data for potential chunk storage.");
+        auto meta = (FoliageChunkMeta*)Memory.GetHandle();
+        meta->InstanceCounter = (uint16)InstanceCounter;
+        InstanceCounter = 0;
+
+        // Compress with LZ4
+        const int32 srcSize = (int32)Memory.GetPosition();
+        const int32 maxSize = LZ4_compressBound(srcSize);
+        Compressed.Resize(maxSize + sizeof(CompressedSize)); // Place decompressed size in the beginning
+        const int32 dstSize = LZ4_compress_default((const char*)Memory.GetHandle(), (char*)Compressed.Get() + sizeof(CompressedSize), srcSize, maxSize);
+        Compressed.Resize(dstSize + sizeof(CompressedSize));
+        *(CompressedSize*)Compressed.Get() = (CompressedSize)srcSize;
+
+        // Convert raw bytes into Base64 string and write to Json stream
+        Encryption::Base64Encode(Compressed.Get(), Compressed.Count(), Base64);
+        Stream.String(Base64.Get(), Base64.Count());
+
+        // Reset memory writer
+        Memory.Reset();
+        Memory.Move<FoliageChunkMeta>();
+    }
+};
+
+struct FoliageReader
+{
+    typedef FoliageWriter::CompressedSize CompressedSize;
+    Array<byte> Base64;
+    Array<byte> Decompressed;
+
+    FoliageReader()
+    {
+    }
+
+    void Read(Foliage& foliage, int32& instanceIndex, StringAnsiView base64)
+    {
+        // Convert Base64 string into raw bytes
+        Encryption::Base64Decode(base64.Get(), base64.Length(), Base64);
+
+        // Decompress with LZ4
+        auto originalSize = *(CompressedSize*)Base64.Get();
+        Decompressed.Resize(originalSize);
+        const int32 res = LZ4_decompress_safe((const char*)Base64.Get() + sizeof(CompressedSize), (char*)Decompressed.Get(), Base64.Count() - sizeof(CompressedSize), originalSize);
+        ASSERT(res >= 0);
+        Decompressed.Resize(res);
+
+        // Read instances from memory
+        MemoryReadStream memory(Decompressed);
+        FoliageChunkMeta meta;
+        memory.Read(meta);
+        FoliageInstanceData data;
+        ASSERT(meta.InstanceCounter <= FoliageWriter::InstancesPerChunk);
+        for (int32 i = 0; i < meta.InstanceCounter; i++)
+        {
+            memory.Read(data);
+
+            auto& instance = foliage.Instances[instanceIndex++];
+            instance.Type = data.Type;
+            instance.Random = data.Random;
+            instance.Transform.Translation = data.Position;
+            instance.Transform.Scale = data.Scale;
+            Quaternion q;
+            q.X = (float)data.OrientationX * (1.0f / (float)MAX_int16);
+            q.Y = (float)data.OrientationY * (1.0f / (float)MAX_int16);
+            q.Z = (float)data.OrientationZ * (1.0f / (float)MAX_int16);
+            q.W = Math::Sqrt(Math::Max(1.0f - q.X * q.X - q.Y * q.Y - q.Z * q.Z, 0.0f));
+            if (data.OrientationNegativeW)
+                q.W *= -1;
+            q.Normalize();
+            instance.Transform.Orientation = q;
+            if (data.HasLightmap)
+                memory.Read(instance.Lightmap);
+        }
+    }
+};
 
 void Foliage::Serialize(SerializeStream& stream, const void* otherObj)
 {
@@ -1359,11 +1511,10 @@ void Foliage::Serialize(SerializeStream& stream, const void* otherObj)
     Actor::Serialize(stream, otherObj);
 
     SERIALIZE_GET_OTHER_OBJ(Foliage);
-
     if (FoliageTypes.IsEmpty())
         return;
-
     PROFILE_CPU();
+    PROFILE_MEM(LevelFoliage);
 
     stream.JKEY("Foliage");
     stream.StartArray();
@@ -1377,25 +1528,19 @@ void Foliage::Serialize(SerializeStream& stream, const void* otherObj)
 
     stream.JKEY("Instances");
     stream.StartArray();
-    InstanceEncoded enc;
-    char base64[InstanceEncoded::Base64Size + 2];
-    base64[0] = '\"';
-    base64[InstanceEncoded::Base64Size + 1] = '\"';
+
+    // Put some metadata
+    stream.Int(Instances.Count());
+
+    // Write instances in chunks
+    FoliageWriter writer(stream);
+    // TODO: run this in parallel for better performance on large foliage data (keep the order of instances in the stream, run job for each 64 instances, let one job keep writing results back to the stream to avoid too much memory usage)
     for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
     {
-        auto& instance = *i;
-
-        enc.Type = instance.Type;
-        enc.Random = instance.Random;
-        enc.Translation = instance.Transform.Translation;
-        enc.Orientation = instance.Transform.Orientation;
-        enc.Scale = instance.Transform.Scale;
-        enc.Lightmap = instance.Lightmap;
-
-        Encryption::Base64Encode((const byte*)&enc, sizeof(enc), base64 + 1);
-
-        stream.RawValue(base64, InstanceEncoded::Base64Size + 2);
+        writer.Write(*i);
     }
+    writer.Flush();
+
     stream.EndArray();
 }
 
@@ -1419,18 +1564,18 @@ void Foliage::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
     int32 foliageTypesCount = 0;
     const auto& foliageTypesMember = stream.FindMember("Foliage");
     if (foliageTypesMember != stream.MemberEnd() && foliageTypesMember->value.IsArray())
-    {
         foliageTypesCount = foliageTypesMember->value.Size();
-    }
     if (foliageTypesCount)
     {
+        PROFILE_CPU_NAMED("Types");
         const DeserializeStream& items = foliageTypesMember->value;;
         FoliageTypes.Resize(foliageTypesCount, false);
         for (int32 i = 0; i < foliageTypesCount; i++)
         {
-            FoliageTypes[i].Foliage = this;
-            FoliageTypes[i].Index = i;
-            FoliageTypes[i].Deserialize((DeserializeStream&)items[i], modifier);
+            auto& type = FoliageTypes[i];
+            type.Foliage = this;
+            type.Index = i;
+            type.Deserialize((DeserializeStream&)items[i], modifier);
         }
     }
 
@@ -1439,88 +1584,108 @@ void Foliage::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
         return;
 
     // Deserialize foliage instances
-    int32 foliageInstancesCount = 0;
     const auto& foliageInstancesMember = stream.FindMember("Instances");
-    if (foliageInstancesMember != stream.MemberEnd() && foliageInstancesMember->value.IsArray())
-    {
-        foliageInstancesCount = foliageInstancesMember->value.Size();
-    }
-    if (foliageInstancesCount)
+    if (foliageInstancesMember == stream.MemberEnd() || !foliageInstancesMember->value.IsArray())
+        return;
+    if (modifier->EngineBuild >= 7001)
     {
         const DeserializeStream& items = foliageInstancesMember->value;
+        int32 chunksCount = (int32)items.Size() - 1;
+        if (chunksCount <= 0)
+            return;
+        int32 foliageInstancesCount = items[0].GetInt();
         Instances.Resize(foliageInstancesCount);
-
-        if (modifier->EngineBuild <= 6189)
+        PROFILE_CPU_NAMED("Instances");
+        
+        FoliageReader reader;
+        int32 instanceIndex = 0;
+        for (int32 i = 1; i <= chunksCount; i++)
         {
-            // [Deprecated on 30.11.2019, expires on 30.11.2021]
-            MARK_CONTENT_DEPRECATED();
-            InstanceEncoded1 enc;
-            for (int32 i = 0; i < foliageInstancesCount; i++)
+            reader.Read(*this, instanceIndex, items[i].GetStringAnsiView());
+        }
+    }
+    else
+    {
+        // [Deprecated in v1.13]
+        MARK_CONTENT_DEPRECATED();
+        int32 foliageInstancesCount = foliageInstancesMember->value.Size();
+        if (foliageInstancesCount)
+        {
+            const DeserializeStream& items = foliageInstancesMember->value;
+            Instances.Resize(foliageInstancesCount);
+
+            if (modifier->EngineBuild <= 6189)
             {
-                auto& instance = Instances[i];
-                auto& item = items[i];
-
-                const int32 length = item.GetStringLength();
-                if (length != InstanceEncoded1::Base64Size)
+                // [Deprecated on 30.11.2019, expires on 30.11.2021]
+                MARK_CONTENT_DEPRECATED();
+                InstanceEncoded1 enc;
+                for (int32 i = 0; i < foliageInstancesCount; i++)
                 {
-                    LOG(Warning, "Invalid foliage instance data size.");
-                    continue;
-                }
-                Encryption::Base64Decode(item.GetString(), length, (byte*)&enc);
+                    auto& instance = Instances[i];
+                    auto& item = items[i];
 
-                instance.Type = enc.Type;
-                instance.Random = enc.Random;
-                instance.Transform.Translation = enc.Translation;
-                instance.Transform.Orientation = enc.Orientation;
-                instance.Transform.Scale = enc.Scale;
-                instance.Lightmap = LightmapEntry();
+                    const int32 length = item.GetStringLength();
+                    if (length != InstanceEncoded1::Base64Size)
+                    {
+                        LOG(Warning, "Invalid foliage instance data size.");
+                        continue;
+                    }
+                    Encryption::Base64Decode(item.GetString(), length, (byte*)&enc);
+
+                    instance.Type = enc.Type;
+                    instance.Random = enc.Random;
+                    instance.Transform.Translation = enc.Translation;
+                    instance.Transform.Orientation = enc.Orientation;
+                    instance.Transform.Scale = enc.Scale;
+                    instance.Lightmap = LightmapEntry();
+                }
+            }
+            else
+            {
+                InstanceEncoded enc;
+                for (int32 i = 0; i < foliageInstancesCount; i++)
+                {
+                    auto& instance = Instances[i];
+                    auto& item = items[i];
+
+                    const int32 length = item.GetStringLength();
+                    if (length != InstanceEncoded::Base64Size)
+                    {
+                        LOG(Warning, "Invalid foliage instance data size.");
+                        continue;
+                    }
+                    Encryption::Base64Decode(item.GetString(), length, (byte*)&enc);
+
+                    instance.Type = enc.Type;
+                    instance.Random = enc.Random;
+                    instance.Transform.Translation = enc.Translation;
+                    instance.Transform.Orientation = enc.Orientation;
+                    instance.Transform.Scale = enc.Scale;
+                    instance.Lightmap = enc.Lightmap;
+                }
             }
         }
-        else
-        {
-            InstanceEncoded enc;
-            for (int32 i = 0; i < foliageInstancesCount; i++)
-            {
-                auto& instance = Instances[i];
-                auto& item = items[i];
-
-                const int32 length = item.GetStringLength();
-                if (length != InstanceEncoded::Base64Size)
-                {
-                    LOG(Warning, "Invalid foliage instance data size.");
-                    continue;
-                }
-                Encryption::Base64Decode(item.GetString(), length, (byte*)&enc);
-
-                instance.Type = enc.Type;
-                instance.Random = enc.Random;
-                instance.Transform.Translation = enc.Translation;
-                instance.Transform.Orientation = enc.Orientation;
-                instance.Transform.Scale = enc.Scale;
-                instance.Lightmap = enc.Lightmap;
-            }
-        }
+    }
 
 #if BUILD_DEBUG
-        // Remove invalid instances
-        for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
+    // Remove invalid instances
+    for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
+    {
+        if (i->Type < 0 || i->Type >= FoliageTypes.Count())
         {
-            if (i->Type < 0 || i->Type >= FoliageTypes.Count())
-            {
-                LOG(Warning, "Removing invalid foliage instance.");
-                Instances.Remove(i);
-                --i;
-            }
+            LOG(Warning, "Removing invalid foliage instance.");
+            Instances.Remove(i);
+            --i;
         }
+    }
 #endif
 
-        // Update cull distance
-        for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
-        {
-            auto& instance = *i;
-            auto& type = FoliageTypes[instance.Type];
-            instance.CullDistance = type.CullDistance + type.CullDistanceRandomRange * instance.Random;
-        }
+    // Update cull distance
+    for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
+    {
+        auto& instance = *i;
+        auto& type = FoliageTypes[instance.Type];
+        instance.CullDistance = type.CullDistance + type.CullDistanceRandomRange * instance.Random;
     }
 }
 

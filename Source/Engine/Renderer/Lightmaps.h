@@ -59,6 +59,12 @@ struct LightmapEntry
     }
 };
 
+template<>
+struct TIsPODType<LightmapEntry>
+{
+    enum { Value = true };
+};
+
 /// <summary>
 /// Describes lightmap generation options
 /// </summary>
