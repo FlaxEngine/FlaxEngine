@@ -98,6 +98,61 @@ namespace FlaxEngine.GUI
                     }
                 }
             }
+
+            if (!_autoSize)
+                PerformExpansion();
         }
+
+        /// <inheritdoc />
+        protected override void PerformExpansion()
+        {
+
+            if (ForceChildExpand && _children.Count > 0)
+            {
+                // Calculate the available height for children (taking margins into account)
+                float availableHeight = Height - _margin.Top - _margin.Bottom - (_children.Count - 1) * _spacing;
+
+                // Calculate the height each child should take up
+                float childHeight = availableHeight / _children.Count;
+
+                // Adjust for the first and last child to prevent being cut off
+                float firstChildY = _margin.Top;
+                float lastChildY = Height - _margin.Bottom - childHeight;
+
+                // Loop through each child and set their height and position
+                float top = _margin.Top;
+                for (int i = 0; i < _children.Count; i++)
+                {
+                    Control child = _children[i];
+                    if (child.Visible)
+                    {
+                        // Adjust the height and position of the first and last children
+                        if (i == 0)
+                        {
+                            // First child, position it at the start and set its height                            
+                            child.Height = childHeight;
+                            child.Y = firstChildY;
+                        }
+                        else if (i == _children.Count - 1)
+                        {
+                            // Last child, position it near the bottom edge and set its height                            
+                            child.Height = childHeight;
+                            child.Y = lastChildY;
+                        }
+                        else
+                        {
+                            // For all other children, distribute the height evenly                            
+                            child.Height = childHeight;
+                            child.Y = top;
+                        }
+
+                        // Move the `top` pointer to the bottom for the next child
+                        top = child.Bottom + _spacing;
+                    }
+                    child.PerformLayout(true);
+                }
+            }
+        }
+
     }
 }
