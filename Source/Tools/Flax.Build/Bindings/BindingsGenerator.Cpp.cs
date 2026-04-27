@@ -3463,6 +3463,9 @@ namespace Flax.Build.Bindings
             var binaryModuleSourcePath = Path.Combine(project.ProjectFolderPath, "Source", binaryModuleName + ".Gen.cpp");
             contents.AppendLine("// This code was auto-generated. Do not modify it.");
             contents.AppendLine();
+            contents.AppendLine("#ifndef FILE");
+            contents.AppendLine("#include <cstdio>");
+            contents.AppendLine("#endif");
             contents.AppendLine("#include \"Engine/Scripting/BinaryModule.h\"");
             contents.AppendLine($"#include \"{binaryModuleName}.Gen.h\"");
             contents.AppendLine();
