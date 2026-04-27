@@ -859,7 +859,7 @@ int SetIconErrorHandler(X11::Display *dpy, X11::XErrorEvent *ev)
 	return 0;
 }
 
-void LinuxWindow::SetIcon(TextureData& icon)
+void LinuxWindow::SetIcon(const TextureData& icon)
 {
 	WindowBase::SetIcon(icon);
 
