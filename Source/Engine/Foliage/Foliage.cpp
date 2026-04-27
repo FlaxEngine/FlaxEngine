@@ -147,7 +147,6 @@ void Foliage::DrawInstance(DrawContext& context, FoliageInstance& instance, Mode
         if (!e)
         {
             e = &result.Add(key, BatchedDrawCall(context.RenderContext.List))->Value;
-            ASSERT_LOW_LAYER(key.Mat);
             e->DrawCall.Material = key.Mat;
             e->DrawCall.Surface.Lightmap = EnumHasAnyFlags(_staticFlags, StaticFlags::Lightmap) && _scene ? _scene->LightmapsData.GetReadyLightmap(key.Lightmap) : nullptr;
             e->DrawCall.Surface.GeometrySize = key.Geo->GetBox().GetSize();
@@ -156,7 +155,8 @@ void Foliage::DrawInstance(DrawContext& context, FoliageInstance& instance, Mode
         // Add instance to the draw batch
         auto& instanceData = e->Instances.AddOne();
         Matrix world;
-        const Transform transform = _transform.LocalToWorld(instance.Transform);
+        Transform transform;
+        _transform.LocalToWorld(instance.Transform, transform);
         const Float3 translation = transform.Translation - context.ViewOrigin;
         Matrix::Transformation(transform.Scale, transform.Orientation, translation, world);
         constexpr float worldDeterminantSign = 1.0f;
@@ -203,45 +203,45 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCal
                 context.RenderContext.View.CullingFrustum.Intersects(sphere) &&
                 RenderTools::ComputeBoundsScreenRadiusSquared(sphere.Center, (float)sphere.Radius, context.RenderContext.View) * context.ViewScreenSizeSq >= context.MinObjectPixelSizeSq)
             {
-                const auto modelFrame = instance.DrawState.PrevFrame + 1;
+                const auto modelFrame = instance.DrawStatePrevFrame + 1;
 
                 // Select a proper LOD index (model may be culled)
                 int32 lodIndex = RenderTools::ComputeModelLOD(model, sphere.Center, (float)sphere.Radius, context.RenderContext);
                 if (lodIndex == -1)
                 {
                     // Handling model fade-out transition
-                    if (modelFrame == frame && instance.DrawState.PrevLOD != -1)
+                    if (modelFrame == frame && instance.DrawStatePrevLOD != -1)
                     {
                         if (transitionLOD)
                         {
                             // Check if start transition
-                            if (instance.DrawState.LODTransition == 255)
+                            if (instance.DrawStateLODTransition == 255)
                             {
-                                instance.DrawState.LODTransition = 0;
+                                instance.DrawStateLODTransition = 0;
                             }
 
-                            RenderTools::UpdateModelLODTransition(instance.DrawState.LODTransition);
+                            RenderTools::UpdateModelLODTransition(instance.DrawStateLODTransition);
 
                             // Check if end transition
-                            if (instance.DrawState.LODTransition == 255)
+                            if (instance.DrawStateLODTransition == 255)
                             {
-                                instance.DrawState.PrevLOD = lodIndex;
+                                instance.DrawStatePrevLOD = lodIndex;
                             }
                             else
                             {
-                                const auto prevLOD = model->ClampLODIndex(instance.DrawState.PrevLOD);
-                                const float normalizedProgress = static_cast<float>(instance.DrawState.LODTransition) * (1.0f / 255.0f);
+                                const auto prevLOD = model->ClampLODIndex(instance.DrawStatePrevLOD);
+                                const float normalizedProgress = static_cast<float>(instance.DrawStateLODTransition) * (1.0f / 255.0f);
                                 DrawInstance(context, instance, model, prevLOD, normalizedProgress, drawCallsLists, result);
                             }
                         }
-                        else if (instance.DrawState.LODTransition < 255)
+                        else if (instance.DrawStateLODTransition < 255)
                         {
-                            const auto prevLOD = model->ClampLODIndex(instance.DrawState.PrevLOD);
-                            const float normalizedProgress = static_cast<float>(instance.DrawState.LODTransition) * (1.0f / 255.0f);
+                            const auto prevLOD = model->ClampLODIndex(instance.DrawStatePrevLOD);
+                            const float normalizedProgress = static_cast<float>(instance.DrawStateLODTransition) * (1.0f / 255.0f);
                             DrawInstance(context, instance, model, prevLOD, normalizedProgress, drawCallsLists, result);
                         }
                     }
-                    instance.DrawState.PrevFrame = frame;
+                    instance.DrawStatePrevFrame = frame;
                     continue;
                 }
                 lodIndex += context.RenderContext.View.ModelLODBias;
@@ -253,42 +253,42 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCal
                     if (modelFrame == frame)
                     {
                         // Check if start transition
-                        if (instance.DrawState.PrevLOD != lodIndex && instance.DrawState.LODTransition == 255)
+                        if (instance.DrawStatePrevLOD != lodIndex && instance.DrawStateLODTransition == 255)
                         {
-                            instance.DrawState.LODTransition = 0;
+                            instance.DrawStateLODTransition = 0;
                         }
 
-                        RenderTools::UpdateModelLODTransition(instance.DrawState.LODTransition);
+                        RenderTools::UpdateModelLODTransition(instance.DrawStateLODTransition);
 
                         // Check if end transition
-                        if (instance.DrawState.LODTransition == 255)
+                        if (instance.DrawStateLODTransition == 255)
                         {
-                            instance.DrawState.PrevLOD = lodIndex;
+                            instance.DrawStatePrevLOD = lodIndex;
                         }
                     }
                     // Check if there was a gap between frames in drawing this model instance
-                    else if (modelFrame < frame || instance.DrawState.PrevLOD == -1)
+                    else if (modelFrame < frame || instance.DrawStatePrevLOD == -1)
                     {
                         // Reset state
-                        instance.DrawState.PrevLOD = lodIndex;
-                        instance.DrawState.LODTransition = 0;
+                        instance.DrawStatePrevLOD = lodIndex;
+                        instance.DrawStateLODTransition = 0;
                     }
                 }
 
                 // Draw
-                if (instance.DrawState.PrevLOD == lodIndex)
+                if (instance.DrawStatePrevLOD == lodIndex)
                 {
                     DrawInstance(context, instance, model, lodIndex, 0.0f, drawCallsLists, result);
                 }
-                else if (instance.DrawState.PrevLOD == -1)
+                else if (instance.DrawStatePrevLOD == -1)
                 {
-                    const float normalizedProgress = static_cast<float>(instance.DrawState.LODTransition) * (1.0f / 255.0f);
+                    const float normalizedProgress = static_cast<float>(instance.DrawStateLODTransition) * (1.0f / 255.0f);
                     DrawInstance(context, instance, model, lodIndex, 1.0f - normalizedProgress, drawCallsLists, result);
                 }
                 else
                 {
-                    const auto prevLOD = model->ClampLODIndex(instance.DrawState.PrevLOD);
-                    const float normalizedProgress = static_cast<float>(instance.DrawState.LODTransition) * (1.0f / 255.0f);
+                    const auto prevLOD = model->ClampLODIndex(instance.DrawStatePrevLOD);
+                    const float normalizedProgress = static_cast<float>(instance.DrawStateLODTransition) * (1.0f / 255.0f);
                     DrawInstance(context, instance, model, prevLOD, normalizedProgress, drawCallsLists, result);
                     DrawInstance(context, instance, model, lodIndex, normalizedProgress - 1.0f, drawCallsLists, result);
                 }
@@ -296,7 +296,7 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCal
                 //DebugDraw::DrawSphere(instance.Bounds, Color::YellowGreen);
 
                 if (transitionLOD)
-                    instance.DrawState.PrevFrame = frame;
+                    instance.DrawStatePrevFrame = frame;
             }
         }
     }
@@ -350,6 +350,8 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, Mesh::D
                 Matrix::Transformation(transform.Scale, transform.Orientation, translation, world);
 
                 // Disable motion blur
+                GeometryDrawStateData drawState;
+                drawState.PrevWorld = world;
                 instance.DrawState.PrevWorld = world;
 
                 // Draw model
@@ -357,7 +359,7 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, Mesh::D
                 draw.LightmapUVs = &instance.Lightmap.UVsArea;
                 draw.Buffer = &type.Entries;
                 draw.World = &world;
-                draw.DrawState = &instance.DrawState;
+                draw.DrawState = &drawState;
                 draw.Bounds = sphere;
                 draw.PerInstanceRandom = instance.Random;
                 draw.DrawModes = type._drawModes;
@@ -366,7 +368,7 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, Mesh::D
 
                 //DebugDraw::DrawSphere(instance.Bounds, Color::YellowGreen);
 
-                instance.DrawState.PrevFrame = frame;
+                instance.DrawStatePrevFrame = frame;
             }
         }
     }
@@ -1263,6 +1265,8 @@ void Foliage::Draw(RenderContext& renderContext)
         Matrix world;
         const Transform transform = _transform.LocalToWorld(instance.Transform);
         renderContext.View.GetWorldMatrix(transform, world);
+        GeometryDrawStateData drawState;
+        drawState.PrevWorld = world;
         Mesh::DrawInfo draw;
         draw.Flags = GetStaticFlags();
         draw.LODBias = 0;
@@ -1273,7 +1277,7 @@ void Foliage::Draw(RenderContext& renderContext)
         draw.LightmapUVs = &instance.LightmapUVsArea;
         draw.Buffer = &type.Entries;
         draw.World = &world;
-        draw.DrawState = &instance.DrawState;
+        draw.DrawState = &drawState;
         draw.Deformation = nullptr;
         draw.Bounds = instance.Bounds;
         draw.PerInstanceRandom = instance.Random;
