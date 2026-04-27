@@ -408,7 +408,7 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
 
 bool Serialization::ShouldSerialize(const Guid& v, const void* otherObj)
 {
-    return v.IsValid();
+    return !otherObj || v != *(Guid*)otherObj;
 }
 
 void Serialization::Serialize(ISerializable::SerializeStream& stream, const Guid& v, const void* otherObj)
@@ -427,10 +427,12 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Guid& 
     const char* b = a + 8;
     const char* c = b + 8;
     const char* d = c + 8;
-    StringUtils::ParseHex(a, 8, &v.A);
-    StringUtils::ParseHex(b, 8, &v.B);
-    StringUtils::ParseHex(c, 8, &v.C);
-    StringUtils::ParseHex(d, 8, &v.D);
+    bool failed = StringUtils::ParseHex(a, 8, &v.A);
+    failed |= StringUtils::ParseHex(b, 8, &v.B);
+    failed |= StringUtils::ParseHex(c, 8, &v.C);
+    failed |= StringUtils::ParseHex(d, 8, &v.D);
+    if (failed)
+        v = Guid::Empty;
 }
 
 bool Serialization::ShouldSerialize(const DateTime& v, const void* otherObj)
