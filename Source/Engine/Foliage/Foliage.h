@@ -205,6 +205,7 @@ private:
 #endif
 
     void InitType(const RenderView& view, FoliageType& type);
+    void UpdateBounds();
 
 public:
     /// <summary>

@@ -613,6 +613,44 @@ void Foliage::InitType(const RenderView& view, FoliageType& type)
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::DrawModes);
 }
 
+void Foliage::UpdateBounds()
+{
+    PROFILE_CPU();
+    PROFILE_MEM(LevelFoliage);
+
+    // Cache bounds for each foliage type
+    BitArray<> typeReady;
+    Array<BoundingSphere> typeBounds;
+    typeReady.Resize(FoliageTypes.Count());
+    typeBounds.Resize(FoliageTypes.Count());
+    for (int32 i = 0; i < typeBounds.Count(); i++)
+    {
+        auto& type = FoliageTypes[i];
+        bool ready = type.IsReady();
+        typeReady.Set(i, ready);
+        if (ready)
+            BoundingSphere::FromBox(type.Model->GetBox(), typeBounds[i]);
+    }
+
+    // Update bounds for all instances
+    Matrix foliageWorld, instanceLocal, instanceWorld;
+    GetLocalToWorldMatrix(foliageWorld);
+    for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
+    {
+        auto& instance = *i;
+        if (typeReady.Get(instance.Type))
+        {
+            instance.Transform.GetWorld(instanceLocal);
+            Matrix::Multiply(foliageWorld, instanceLocal, instanceWorld);
+            BoundingSphere::Transform(typeBounds[instance.Type], instanceWorld, instance.Bounds);
+        }
+        else
+        {
+            instance.Bounds = BoundingSphere::Empty;
+        }
+    }
+}
+
 int32 Foliage::GetInstancesCount() const
 {
     return Instances.Count();
@@ -759,33 +797,26 @@ void Foliage::RemoveInstance(ChunkedArray<FoliageInstance, FOLIAGE_INSTANCE_CHUN
 void Foliage::SetInstanceTransform(int32 index, const Transform& value)
 {
     auto& instance = Instances[index];
-    auto type = &FoliageTypes[instance.Type];
+    const auto& type = FoliageTypes[instance.Type];
 
     // Change transform
     instance.Transform = value;
 
     // Update bounds
-    instance.Bounds = BoundingSphere::Empty;
-    if (!type->IsReady())
-        return;
-    Vector3 corners[8];
-    auto& meshes = type->Model->LODs[0].Meshes;
-    const Transform transform = _transform.LocalToWorld(instance.Transform);
-    for (int32 j = 0; j < meshes.Count(); j++)
+    if (type.IsReady())
     {
-        meshes[j].GetBox().GetCorners(corners);
-
-        for (int32 k = 0; k < 8; k++)
-        {
-            Vector3::Transform(corners[k], transform, corners[k]);
-        }
-        BoundingSphere meshBounds;
-        BoundingSphere::FromPoints(corners, 8, meshBounds);
-        ASSERT(meshBounds.Radius > ZeroTolerance);
-
-        BoundingSphere::Merge(instance.Bounds, meshBounds, instance.Bounds);
+        BoundingSphere typeBounds;
+        BoundingSphere::FromBox(type.Model->GetBox(), typeBounds);
+        Matrix foliageWorld, instanceLocal, instanceWorld;
+        GetLocalToWorldMatrix(foliageWorld);
+        instance.Transform.GetWorld(instanceLocal);
+        Matrix::Multiply(foliageWorld, instanceLocal, instanceWorld);
+        BoundingSphere::Transform(typeBounds, instanceWorld, instance.Bounds);
     }
-    instance.Bounds.Radius += ZeroTolerance;
+    else
+    {
+        instance.Bounds = BoundingSphere::Empty;
+    }
 }
 
 void Foliage::OnFoliageTypeModelLoaded(int32 index)
@@ -804,34 +835,23 @@ void Foliage::OnFoliageTypeModelLoaded(int32 index)
 #endif
     {
         PROFILE_CPU_NAMED("Update Bounds");
-        Vector3 corners[8];
-        auto& meshes = type.Model->LODs[0].Meshes;
+
+        BoundingSphere typeBounds;
+        BoundingSphere::FromBox(type.Model->GetBox(), typeBounds);
+        Matrix foliageWorld, instanceLocal, instanceWorld;
+        GetLocalToWorldMatrix(foliageWorld);
+
         for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
         {
             auto& instance = *i;
             if (instance.Type != index)
                 continue;
-            instance.Bounds = BoundingSphere::Empty;
-            const Transform transform = _transform.LocalToWorld(instance.Transform);
 
-            // Include all meshes
-            for (int32 j = 0; j < meshes.Count(); j++)
-            {
-                // TODO: cache bounds for all model meshes and reuse later
-                meshes[j].GetBox().GetCorners(corners);
-
-                // TODO: use SIMD
-                for (int32 k = 0; k < 8; k++)
-                {
-                    Vector3::Transform(corners[k], transform, corners[k]);
-                }
-                BoundingSphere meshBounds;
-                BoundingSphere::FromPoints(corners, 8, meshBounds);
-                BoundingSphere::Merge(instance.Bounds, meshBounds, instance.Bounds);
-            }
+            instance.Transform.GetWorld(instanceLocal);
+            Matrix::Multiply(foliageWorld, instanceLocal, instanceWorld);
+            BoundingSphere::Transform(typeBounds, instanceWorld, instance.Bounds);
 
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE
-            // TODO: use SIMD
             BoundingBox::FromSphere(instance.Bounds, box);
             if (hasAnyInstance)
                 BoundingBox::Merge(totalBoundsType, box, totalBoundsType);
@@ -1718,35 +1738,6 @@ void Foliage::OnTransformChanged()
 
     PROFILE_CPU();
 
-    // Update instances matrices and cached world bounds
-    Vector3 corners[8];
-    Matrix world;
-    GetLocalToWorldMatrix(world);
-    for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
-    {
-        auto& instance = *i;
-        auto type = &FoliageTypes[instance.Type];
-
-        // Update bounds
-        instance.Bounds = BoundingSphere::Empty;
-        if (!type->IsReady())
-            continue;
-        auto& meshes = type->Model->LODs[0].Meshes;
-        const Transform transform = _transform.LocalToWorld(instance.Transform);
-        for (int32 j = 0; j < meshes.Count(); j++)
-        {
-            meshes[j].GetBox().GetCorners(corners);
-
-            for (int32 k = 0; k < 8; k++)
-            {
-                Vector3::Transform(corners[k], transform, corners[k]);
-            }
-            BoundingSphere meshBounds;
-            BoundingSphere::FromPoints(corners, 8, meshBounds);
-
-            BoundingSphere::Merge(instance.Bounds, meshBounds, instance.Bounds);
-        }
-    }
-
+    UpdateBounds();
     RebuildClusters();
 }
