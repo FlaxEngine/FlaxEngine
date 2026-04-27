@@ -535,7 +535,7 @@ public:
     /// </summary>
     /// <param name="result">The destination texture data container.</param>
     /// <returns>True if cannot download data, otherwise false.</returns>
-    API_FUNCTION() bool DownloadData(TextureData& result);
+    API_FUNCTION() bool DownloadData(API_PARAM(Out) TextureData& result);
 
     /// <summary>
     /// Creates GPU async task that will gather texture data from the GPU.

@@ -1362,7 +1362,12 @@ namespace Flax.Build.Bindings
                     var apiType = FindApiTypeInfo(buildData, parameterInfo.Type, caller);
                     if (apiType != null)
                     {
-                        if (parameterInfo.IsOut)
+                        if (parameterInfo.IsOut && parameterInfo.Type.IsRef && !parameterInfo.Type.IsPtr && apiType.IsScriptingObject)
+                        {
+                            contents.Append(indent).AppendFormat("{1}* {0}Temp = New<{1}>();", parameterInfo.Name, parameterInfo.Type.GetFullNameNative(buildData, caller, false)).AppendLine();
+                            callParams += "*";
+                        }
+                        else if (parameterInfo.IsOut)
                             contents.Append(indent).AppendFormat("{1} {0}Temp;", parameterInfo.Name, parameterInfo.Type.GetFullNameNative(buildData, caller, false)).AppendLine();
                         else
                             contents.Append(indent).AppendFormat("auto {0}Temp = {1};", parameterInfo.Name, param).AppendLine();
