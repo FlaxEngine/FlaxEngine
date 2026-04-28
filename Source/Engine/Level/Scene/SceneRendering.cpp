@@ -236,8 +236,8 @@ void SceneRendering::RemoveActor(Actor* a, int32& key)
 }
 
 #define FOR_EACH_BATCH_ACTOR const int64 count = _drawListSize; while (true) { const int64 index = Platform::InterlockedIncrement(&_drawListIndex); if (index >= count) break; auto e = _drawListData[index];
-#define CHECK_ACTOR ((view.RenderLayersMask.Mask & e.LayerMask) && (e.NoCulling || FrustumsListCull(e.Bounds, _drawFrustumsData)))
-#define CHECK_ACTOR_SINGLE_FRUSTUM ((view.RenderLayersMask.Mask & e.LayerMask) && (e.NoCulling || view.CullingFrustum.Intersects(e.Bounds)))
+#define CHECK_ACTOR ((viewRenderLayersMask & e.LayerMask) && (e.NoCulling || FrustumsListCull(e.Bounds, _drawFrustumsData)))
+#define CHECK_ACTOR_SINGLE_FRUSTUM ((viewRenderLayersMask & e.LayerMask) && (e.NoCulling || viewCullingFrustum.Intersects(e.Bounds)))
 #if SCENE_RENDERING_USE_PROFILER_PER_ACTOR
 #define DRAW_ACTOR(mode) PROFILE_CPU_ACTOR(e.Actor); e.Actor->Draw(mode)
 #else
@@ -250,20 +250,23 @@ void SceneRendering::DrawActorsJob(int32)
     PROFILE_MEM(Graphics);
     auto& mainContext = _drawBatch->GetMainContext();
     const auto& view = mainContext.View;
+    const Vector3 viewOrigin = view.Origin;
+    const uint32 viewRenderLayersMask = view.RenderLayersMask.Mask;
     if (view.StaticFlagsMask != StaticFlags::None)
     {
         // Static-flags culling
         FOR_EACH_BATCH_ACTOR
-            e.Bounds.Center -= view.Origin;
+            e.Bounds.Center -= viewOrigin;
             if (CHECK_ACTOR && (e.Actor->GetStaticFlags() & view.StaticFlagsMask) == view.StaticFlagsCompare)
             {
                 DRAW_ACTOR(*_drawBatch);
             }
         }
     }
-    else if (view.Origin.IsZero() && _drawFrustumsData.Count() == 1)
+    else if (viewOrigin.IsZero() && _drawFrustumsData.Count() == 1)
     {
         // Fast path for no origin shifting with a single context
+        const BoundingFrustum viewCullingFrustum = view.CullingFrustum;
         FOR_EACH_BATCH_ACTOR
             if (CHECK_ACTOR_SINGLE_FRUSTUM)
             {
@@ -271,7 +274,7 @@ void SceneRendering::DrawActorsJob(int32)
             }
         }
     }
-    else if (view.Origin.IsZero())
+    else if (viewOrigin.IsZero())
     {
         // Fast path for no origin shifting
         FOR_EACH_BATCH_ACTOR
@@ -285,7 +288,7 @@ void SceneRendering::DrawActorsJob(int32)
     {
         // Generic case
         FOR_EACH_BATCH_ACTOR
-            e.Bounds.Center -= view.Origin;
+            e.Bounds.Center -= viewOrigin;
             if (CHECK_ACTOR)
             {
                 DRAW_ACTOR(*_drawBatch);
