@@ -108,7 +108,7 @@ private:
 #if COMPILE_WITH_PROFILER
     void* _tracyContext;
 #endif
-    Array<PendingClear, FixedAllocation<16>> _pendingClears;
+    Array<PendingClear> _pendingClears;
 
     typedef Array<DescriptorPoolVulkan*> DescriptorPoolArray;
     Dictionary<uint32, DescriptorPoolArray> _descriptorPools;
