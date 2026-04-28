@@ -194,9 +194,9 @@ public:
 private:
     Array<BoundingFrustum> _drawFrustumsData;
     DrawActor* _drawListData;
-    int64 _drawListSize;
-    volatile int64 _drawListIndex;
+    int32 _drawListSize;
+    int32 _drawListJobs;
     RenderContextBatch* _drawBatch;
 
-    void DrawActorsJob(int32);
+    void DrawActorsJob(int32 i);
 };

@@ -87,20 +87,21 @@ void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory c
         _drawFrustumsData.Get()[i] = renderContextBatch.Contexts.Get()[i].View.CullingFrustum;
 
     // Draw all visual components
-    _drawListIndex = -1;
 #if PLATFORM_THREADS_LIMIT > 1
     if (_drawListSize >= 64 && category == SceneDrawAsync && renderContextBatch.EnableAsync)
     {
         // Run in async via Job System
         Function<void(int32)> func;
         func.Bind<SceneRendering, &SceneRendering::DrawActorsJob>(this);
-        const int64 waitLabel = JobSystem::Dispatch(func, JobSystem::GetThreadsCount());
+        _drawListJobs = JobSystem::GetThreadsCount();
+        const int64 waitLabel = JobSystem::Dispatch(func, _drawListJobs);
         renderContextBatch.WaitLabels.Add(waitLabel);
     }
     else
 #endif
     {
         // Scene is small so draw on a main-thread
+        _drawListJobs = 1;
         DrawActorsJob(0);
     }
 
@@ -235,7 +236,7 @@ void SceneRendering::RemoveActor(Actor* a, int32& key)
     key = -1;
 }
 
-#define FOR_EACH_BATCH_ACTOR const int64 count = _drawListSize; while (true) { const int64 index = Platform::InterlockedIncrement(&_drawListIndex); if (index >= count) break; auto e = _drawListData[index];
+#define FOR_EACH_BATCH_ACTOR const int32 count = _drawListSize; int32 step = _drawListJobs; DrawActor* data = _drawListData; for (int32 index = i; index < count; index += step) { auto e = data[index]; Platform::MemoryPrefetch(&data[index + step]);
 #define CHECK_ACTOR ((viewRenderLayersMask & e.LayerMask) && (e.NoCulling || FrustumsListCull(e.Bounds, _drawFrustumsData)))
 #define CHECK_ACTOR_SINGLE_FRUSTUM ((viewRenderLayersMask & e.LayerMask) && (e.NoCulling || viewCullingFrustum.Intersects(e.Bounds)))
 #if SCENE_RENDERING_USE_PROFILER_PER_ACTOR
@@ -244,7 +245,7 @@ void SceneRendering::RemoveActor(Actor* a, int32& key)
 #define DRAW_ACTOR(mode) e.Actor->Draw(mode)
 #endif
 
-void SceneRendering::DrawActorsJob(int32)
+void SceneRendering::DrawActorsJob(int32 i)
 {
     PROFILE_CPU();
     PROFILE_MEM(Graphics);
