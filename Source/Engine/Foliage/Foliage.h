@@ -6,6 +6,7 @@
 #include "FoliageInstance.h"
 #include "FoliageCluster.h"
 #include "FoliageType.h"
+#include "Engine/Core/Math/BoundingFrustum.h"
 #include "Engine/Core/Memory/ArenaAllocation.h"
 #include "Engine/Level/Actor.h"
 
@@ -158,15 +159,25 @@ public:
 
 private:
     void AddToCluster(ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_SIZE>& clusters, FoliageCluster* cluster, FoliageInstance& instance);
+
     struct DrawContext
     {
         RenderContext& RenderContext;
-        const RenderView& LodView;
-        const FoliageType& FoliageType;
+        Model* FoliageTypeModel;
         Vector3 ViewOrigin;
-        float MinObjectPixelSizeSq;
         float ViewScreenSizeSq;
+        Float3 LodViewOrigin;
+        float MinObjectPixelSizeSq;
+        Float3 LodViewPosition;
+        int32 MinLOD, MaxLOD;
+        BoundingFrustum CullingFrustum;
+
+        FORCE_INLINE int32 ClampLODIndex(int32 index) const
+        {
+            return index < MinLOD ? MinLOD : index < MaxLOD ? index : MaxLOD;
+        }
     };
+
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE && FOLIAGE_USE_DRAW_CALLS_BATCHING
     struct DrawKey
     {

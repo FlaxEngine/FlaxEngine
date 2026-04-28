@@ -137,6 +137,7 @@ void Foliage::DrawInstance(DrawContext& context, FoliageInstance& instance, int3
     for (int32 i = 0; i < drawCalls.Count(); i++)
     {
         auto& drawCall = drawCallsPtr[i];
+        Platform::MemoryPrefetch(&drawCallsPtr[i + 1]);
 
         DrawKey key;
         key.Mat = drawCall.Material;
@@ -166,7 +167,7 @@ void Foliage::DrawInstance(DrawContext& context, FoliageInstance& instance, int3
 void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const
 {
     // Skip clusters that around too far from view
-    if (Float3::Distance(context.LodView.Position, cluster->TotalBoundsSphere.Center - context.LodView.Origin) - (float)cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
+    if (Float3::Distance(context.LodViewPosition, cluster->TotalBoundsSphere.Center - context.LodViewOrigin) - (float)cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
         return;
     //DebugDraw::DrawBox(cluster->Bounds, Color::Red);
 
@@ -178,7 +179,7 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCal
         box = cluster->Children[idx]->TotalBounds; \
         box.Minimum -= context.ViewOrigin; \
         box.Maximum -= context.ViewOrigin; \
-		if (context.RenderContext.View.CullingFrustum.Intersects(box)) \
+		if (context.CullingFrustum.Intersects(box)) \
 			DrawCluster(context, cluster->Children[idx], drawCallsLists, result)
         DRAW_CLUSTER(0);
         DRAW_CLUSTER(1);
@@ -190,16 +191,19 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCal
     {
         // Draw visible instances
         const auto frame = Engine::FrameCount;
-        const auto model = context.FoliageType.Model.Get();
+        const auto model = context.FoliageTypeModel;
         const auto transitionLOD = context.RenderContext.View.Pass != DrawPass::Depth; // Let the main view pass update LOD transitions
+        const auto instances = cluster->Instances.Get();
+        const auto instancesCount = cluster->Instances.Count();
         // TODO: move DrawState to be stored per-view (so shadows can fade objects on their own)
-        for (int32 i = 0; i < cluster->Instances.Count(); i++)
+        for (int32 i = 0; i < instancesCount; i++)
         {
-            auto& instance = *cluster->Instances.Get()[i];
+            auto& instance = *instances[i];
+            Platform::MemoryPrefetch(instances[i + 1]);
             BoundingSphere sphere = instance.Bounds;
             sphere.Center -= context.ViewOrigin;
-            if (Float3::Distance(context.LodView.Position, sphere.Center) - (float)sphere.Radius < instance.CullDistance &&
-                context.RenderContext.View.CullingFrustum.Intersects(sphere) &&
+            if (Float3::Distance(context.LodViewPosition, sphere.Center) - (float)sphere.Radius < instance.CullDistance &&
+                context.CullingFrustum.Intersects(sphere) &&
                 RenderTools::ComputeBoundsScreenRadiusSquared(sphere.Center, (float)sphere.Radius, context.RenderContext.View) * context.ViewScreenSizeSq >= context.MinObjectPixelSizeSq)
             {
                 const auto modelFrame = instance.DrawStatePrevFrame + 1;
@@ -228,14 +232,14 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCal
                             }
                             else
                             {
-                                const auto prevLOD = model->ClampLODIndex(instance.DrawStatePrevLOD);
+                                const auto prevLOD = context.ClampLODIndex(instance.DrawStatePrevLOD);
                                 const float normalizedProgress = static_cast<float>(instance.DrawStateLODTransition) * (1.0f / 255.0f);
                                 DrawInstance(context, instance, prevLOD, normalizedProgress, drawCallsLists, result);
                             }
                         }
                         else if (instance.DrawStateLODTransition < 255)
                         {
-                            const auto prevLOD = model->ClampLODIndex(instance.DrawStatePrevLOD);
+                            const auto prevLOD = context.ClampLODIndex(instance.DrawStatePrevLOD);
                             const float normalizedProgress = static_cast<float>(instance.DrawStateLODTransition) * (1.0f / 255.0f);
                             DrawInstance(context, instance, prevLOD, normalizedProgress, drawCallsLists, result);
                         }
@@ -244,7 +248,7 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCal
                     continue;
                 }
                 lodIndex += context.RenderContext.View.ModelLODBias;
-                lodIndex = model->ClampLODIndex(lodIndex);
+                lodIndex = context.ClampLODIndex(lodIndex);
 
                 if (transitionLOD)
                 {
@@ -286,7 +290,7 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCal
                 }
                 else
                 {
-                    const auto prevLOD = model->ClampLODIndex(instance.DrawStatePrevLOD);
+                    const auto prevLOD = context.ClampLODIndex(instance.DrawStatePrevLOD);
                     const float normalizedProgress = static_cast<float>(instance.DrawStateLODTransition) * (1.0f / 255.0f);
                     DrawInstance(context, instance, prevLOD, normalizedProgress, drawCallsLists, result);
                     DrawInstance(context, instance, lodIndex, normalizedProgress - 1.0f, drawCallsLists, result);
@@ -306,7 +310,7 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCal
 void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, Mesh::DrawInfo& draw)
 {
     // Skip clusters that around too far from view
-    if (Float3::Distance(context.LodView.Position, cluster->TotalBoundsSphere.Center - context.LodView.Origin) - (float)cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
+    if (Float3::Distance(context.LodViewPosition, cluster->TotalBoundsSphere.Center - context.LodViewOrigin) - (float)cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
         return;
     //DebugDraw::DrawBox(cluster->Bounds, Color::Red);
 
@@ -318,7 +322,7 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, Mesh::D
         box = cluster->Children[idx]->TotalBounds; \
         box.Minimum -= context.ViewOrigin; \
         box.Maximum -= context.ViewOrigin; \
-		if (context.RenderContext.View.CullingFrustum.Intersects(box)) \
+		if (context.CullingFrustum.Intersects(box)) \
 			DrawCluster(context, cluster->Children[idx], draw)
         DRAW_CLUSTER(0);
         DRAW_CLUSTER(1);
@@ -339,8 +343,8 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, Mesh::D
 
             // Check if can draw this instance
             if (type._canDraw &&
-                Float3::Distance(context.LodView.Position, sphere.Center) - (float)sphere.Radius < instance.CullDistance &&
-                context.RenderContext.View.CullingFrustum.Intersects(sphere) &&
+                Float3::Distance(context.LodViewPosition, sphere.Center) - (float)sphere.Radius < instance.CullDistance &&
+                context.CullingFrustum.Intersects(sphere) &&
                 RenderTools::ComputeBoundsScreenRadiusSquared(sphere.Center, sphere.Radius, context.RenderContext.View) * context.ViewScreenSizeSq >= context.MinObjectPixelSizeSq)
             {
                 Matrix world;
@@ -474,14 +478,19 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Me
         return;
     const DrawPass typeDrawModes = FOLIAGE_GET_DRAW_MODES(renderContext, type);
     PROFILE_CPU_ASSET(type.Model);
+    auto& lodView = renderContext.LodProxyView ? *renderContext.LodProxyView : renderContext.View;
     DrawContext context
     {
         renderContext,
-        renderContext.LodProxyView ? *renderContext.LodProxyView : renderContext.View,
-        type,
+        type.Model,
         renderContext.View.Origin,
-        Math::Square(Graphics::Shadows::MinObjectPixelSize),
         renderContext.View.ScreenSize.X * renderContext.View.ScreenSize.Y,
+        lodView.Origin,
+        Math::Square(Graphics::Shadows::MinObjectPixelSize),
+        lodView.Position,
+        type.Model->HighestResidentLODIndex(),
+        type.Model->GetLODsCount() - 1,
+        renderContext.View.CullingFrustum,
     };
     if (context.RenderContext.View.Pass != DrawPass::Depth)
         context.MinObjectPixelSizeSq = 0.0f; // Don't use it in main view
