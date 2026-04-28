@@ -109,6 +109,12 @@ struct GlobalSurfaceAtlasTile : RectPackNode<uint16>
     void OnFree(GlobalSurfaceAtlasCustomBuffer* buffer);
 };
 
+struct GlobalSurfaceAtlasFreeShaderSlot
+{
+    uint32 Address = 0; // Amount of Float4s from start
+    int32 TilesCount = 0;
+};
+
 struct GlobalSurfaceAtlasObject
 {
     uint64 LastFrameUsed;
@@ -119,7 +125,9 @@ struct GlobalSurfaceAtlasObject
     Float3 Position;
     float Radius;
     mutable bool Dirty;
+    mutable bool ObjectDataDirty;
     bool UseVisibility; // TODO: merge into bit flags
+    GlobalSurfaceAtlasFreeShaderSlot ObjectDataAddress;
     OrientedBoundingBox Bounds;
 
     GlobalSurfaceAtlasObject()
@@ -154,12 +162,14 @@ public:
     GPUBuffer* CulledObjectsBuffer = nullptr;
     DynamicTypedBuffer ObjectsBuffer;
     DynamicTypedBuffer ObjectsListBuffer;
+    bool ObjectsBufferDirty = true;
     int32 CulledObjectsCounterIndex = -1;
     GlobalSurfaceAtlasPass::BindingData Result;
     RectPackAtlas<GlobalSurfaceAtlasTile> Atlas;
     Dictionary<void*, GlobalSurfaceAtlasObject> Objects;
     Dictionary<Guid, GlobalSurfaceAtlasLight> Lights;
     SamplesBuffer<uint32, 30> CulledObjectsUsageHistory;
+    Array<GlobalSurfaceAtlasFreeShaderSlot> FreeObjectsBufferSlots[6]; // Bin for each tile count for quick reusage
 
     // Cached data to be reused during RasterizeActor
     Array<void*> DirtyObjectsBuffer;
@@ -174,7 +184,7 @@ public:
 
     // Async objects drawing cache
     Array<int64, FixedAllocation<3>> AsyncDrawWaitLabels;
-    RenderListBuffer<GlobalSurfaceAtlasTile*> AsyncFreeTiles;
+    RenderListBuffer<Pair<GlobalSurfaceAtlasTile*, GlobalSurfaceAtlasObject*>> AsyncFreeTiles;
     RenderListBuffer<GlobalSurfaceAtlasNewObject> AsyncNewObjects;
     RenderListBuffer<GlobalSurfaceAtlasNewTile> AsyncNewTiles;
     Array<int64> AsyncScenesDrawCounters[2];
@@ -196,6 +206,10 @@ public:
         Atlas.Clear();
         Objects.Clear();
         Lights.Clear();
+        for (auto& e : FreeObjectsBufferSlots)
+            e.Clear();
+        ObjectsBuffer.Clear();
+        ObjectsBufferDirty = true;
     }
 
     void Reset()
@@ -343,8 +357,18 @@ public:
     {
         PROFILE_CPU_NAMED("Flush Atlas");
 
-        for (auto* tile : AsyncFreeTiles)
-            Atlas.Free(tile, this);
+        for (auto& e : AsyncFreeTiles)
+        {
+            Atlas.Free(e.First, this);
+            auto& object = *e.Second;
+            if (object.ObjectDataAddress.TilesCount != 0)
+            {
+                // Free existing data in objects buffer to be reallocated when tiles count changes
+                FreeObjectsBufferSlots[object.ObjectDataAddress.TilesCount - 1].Add(object.ObjectDataAddress);
+                object.ObjectDataAddress = GlobalSurfaceAtlasFreeShaderSlot();
+                object.ObjectDataDirty = true;
+            }
+        }
         AsyncFreeTiles.Clear();
 
         for (auto& newObject : AsyncNewObjects)
@@ -352,9 +376,10 @@ public:
             auto& object = Objects[newObject.ActorObject];
             object.Actor = newObject.Actor;
             object.LastFrameUsed = CurrentFrame;
-            object.Position = (Float3)newObject.ActorObjectBounds.Center;
+            object.Position = (Float3)newObject.ActorObjectBounds.Center; // TODO: large worlds
             object.Radius = (float)newObject.ActorObjectBounds.Radius;
             object.Dirty = true;
+            object.ObjectDataDirty = true;
             object.UseVisibility = newObject.UseVisibility;
             object.Bounds = newObject.Bounds;
         }
@@ -376,6 +401,13 @@ public:
             {
                 object.Tiles[newTile.TileIndex] = tile;
                 object.Dirty = true;
+                object.ObjectDataDirty = true;
+                if (object.ObjectDataAddress.TilesCount != 0)
+                {
+                    // Free existing data in objects buffer to be reallocated when tiles count changes
+                    FreeObjectsBufferSlots[object.ObjectDataAddress.TilesCount - 1].Add(object.ObjectDataAddress);
+                    object.ObjectDataAddress = GlobalSurfaceAtlasFreeShaderSlot();
+                }
             }
             else
             {
@@ -392,11 +424,22 @@ public:
         {
             if (it->Value.LastFrameUsed != CurrentFrame)
             {
-                for (auto& tile : it->Value.Tiles)
+                auto& object = it->Value;
+
+                // Free used tiles
+                for (auto& tile : object.Tiles)
                 {
                     if (tile)
                         Atlas.Free(tile, this);
                 }
+
+                if (object.ObjectDataAddress.TilesCount != 0)
+                {
+                    // Free existing data in objects buffer to be reallocated when tiles count changes
+                    FreeObjectsBufferSlots[object.ObjectDataAddress.TilesCount - 1].Add(object.ObjectDataAddress);
+                    object.ObjectDataAddress = GlobalSurfaceAtlasFreeShaderSlot();
+                }
+
                 Objects.Remove(it);
             }
         }
@@ -406,9 +449,10 @@ public:
     {
         PROFILE_CPU_NAMED("Write Objects");
         DirtyObjectsBuffer.Clear();
-        ObjectsBuffer.Clear();
-        ObjectsListBuffer.Clear();
-        ObjectsListBuffer.Data.EnsureCapacity(Objects.Count() * sizeof(uint32));
+        ObjectsBuffer.Data.EnsureCapacity(Objects.Count() * sizeof(Float4) * (GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE + 2 * GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE));
+        ObjectsListBuffer.Data.Resize(Objects.Count() * sizeof(uint32));
+        auto objectsListData = (uint32*)ObjectsListBuffer.Data.Get();
+        int32 dirtyTiles = 0, objectIndex = 0;
         for (auto& e : Objects)
         {
             auto& object = e.Value;
@@ -420,18 +464,58 @@ public:
                 DirtyObjectsBuffer.Add(e.Key);
             }
 
+            if (!object.ObjectDataDirty)
+            {
+                // Skip updating data if it's valid
+                ASSERT(object.ObjectDataAddress.TilesCount != 0);
+                uint32& addr = objectsListData[objectIndex++];
+                if (addr != object.ObjectDataAddress.Address)
+                {
+                    addr = object.ObjectDataAddress.Address;
+                    ObjectsBufferDirty = true;
+                }
+                continue;
+            }
+            object.ObjectDataDirty = false;
+            ObjectsBufferDirty = true;
+
+            // Check if this object doesn't have an allocation
+            if (object.ObjectDataAddress.TilesCount == 0)
+            {
+                int32 requestedTilesCount = 0;
+                for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
+                {
+                    if (object.Tiles[tileIndex])
+                        requestedTilesCount++;
+                }
+                requestedTilesCount = Math::Max(requestedTilesCount, 1); // Avoid issues when for some reason object has no tiles but is still in a buffer
+
+                // Find free slot that is right for this object
+                auto& freeObjectsBufferSlots = FreeObjectsBufferSlots[requestedTilesCount - 1];
+                if (freeObjectsBufferSlots.HasItems())
+                {
+                    object.ObjectDataAddress = freeObjectsBufferSlots.Last();
+                    freeObjectsBufferSlots.RemoveLast();
+                }
+                else
+                {
+                    // Allocate a new slot at the end of the buffer
+                    object.ObjectDataAddress.Address = ObjectsBuffer.Data.Count() / sizeof(Float4);
+                    object.ObjectDataAddress.TilesCount = requestedTilesCount;
+                    ObjectsBuffer.Data.AddUninitialized(sizeof(Float4) * (GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE + requestedTilesCount * GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE));
+                }
+            }
+
             Matrix3x3 worldToLocalRotation;
             Matrix3x3::RotationQuaternion(object.Bounds.Transformation.Orientation.Conjugated(), worldToLocalRotation);
             Float3 worldPosition = object.Bounds.Transformation.Translation;
             Float3 worldExtents = object.Bounds.Extents * object.Bounds.Transformation.Scale;
 
             // Write to objects buffer (this must match unpacking logic in HLSL)
-            uint32 objectAddress = ObjectsBuffer.Data.Count() / sizeof(Float4);
-            ObjectsListBuffer.Write(objectAddress);
-            ObjectsBuffer.Data.EnsureCapacity(ObjectsBuffer.Data.Count() + sizeof(Float4) * (GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE + 6 * GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE));
-            auto* objectData = ObjectsBuffer.WriteReserve<Float4>(GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE);
+            objectsListData[objectIndex++] = object.ObjectDataAddress.Address;
+            auto* objectData = (Float4*)(ObjectsBuffer.Data.Get() + object.ObjectDataAddress.Address * sizeof(Float4));
             objectData[0] = Float4(object.Position, object.Radius);
-            objectData[1] = Float4::Zero;
+            objectData[1] = Float4::Zero; // tileOffsets + objectDataSize
             objectData[2] = Float4(worldToLocalRotation.M11, worldToLocalRotation.M12, worldToLocalRotation.M13, worldPosition.X);
             objectData[3] = Float4(worldToLocalRotation.M21, worldToLocalRotation.M22, worldToLocalRotation.M23, worldPosition.Y);
             objectData[4] = Float4(worldToLocalRotation.M31, worldToLocalRotation.M32, worldToLocalRotation.M33, worldPosition.Z);
@@ -439,13 +523,14 @@ public:
             auto tileOffsets = reinterpret_cast<uint16*>(&objectData[1]); // xyz used for tile offsets packed into uint16
             auto objectDataSize = reinterpret_cast<uint32*>(&objectData[1].W); // w used for object size (count of Float4s for object+tiles)
             *objectDataSize = GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE;
+            auto* tileData = objectData + GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE;
             for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
             {
                 auto* tile = object.Tiles[tileIndex];
                 if (!tile)
                     continue;
                 tile->ObjectAddressOffset = *objectDataSize;
-                tile->Address = objectAddress + tile->ObjectAddressOffset;
+                tile->Address = object.ObjectDataAddress.Address + tile->ObjectAddressOffset;
                 tileOffsets[tileIndex] = tile->ObjectAddressOffset;
                 *objectDataSize += GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE;
 
@@ -461,7 +546,7 @@ public:
                 xAxis.NormalizeFast();
                 yAxis.NormalizeFast();
                 zAxis.NormalizeFast();
-                tile->ViewPosition = object.Bounds.Transformation.LocalToWorld(localSpaceOffset);
+                object.Bounds.Transformation.LocalToWorld(localSpaceOffset, tile->ViewPosition);
                 tile->ViewDirection = zAxis;
 
                 // Create view matrix
@@ -479,14 +564,24 @@ public:
                 // Per-tile data
                 const float tileWidth = (float)tile->Width - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
                 const float tileHeight = (float)tile->Height - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
-                auto* tileData = ObjectsBuffer.WriteReserve<Float4>(GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE);
                 tileData[0] = Float4(tile->X, tile->Y, tileWidth, tileHeight) * ResolutionInv;
                 tileData[1] = Float4(tile->ViewMatrix.M11, tile->ViewMatrix.M12, tile->ViewMatrix.M13, tile->ViewMatrix.M41);
                 tileData[2] = Float4(tile->ViewMatrix.M21, tile->ViewMatrix.M22, tile->ViewMatrix.M23, tile->ViewMatrix.M42);
                 tileData[3] = Float4(tile->ViewMatrix.M31, tile->ViewMatrix.M32, tile->ViewMatrix.M33, tile->ViewMatrix.M43);
                 tileData[4] = Float4(tile->ViewBoundsSize, 0.0f); // w unused
+                tileData += GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE;
+                dirtyTiles++;
             }
         }
+        ZoneValue(dirtyTiles);
+
+#if 0
+        // Debug print objects buffer usage
+        uint32 freeObjectsBufferSlotsCount = 0;
+        for (auto& e : FreeObjectsBufferSlots)
+            freeObjectsBufferSlotsCount += e.Count();
+        LOG(Info, "Dirty tiles: {}, free slots: {}, total size: {}", dirtyTiles, freeObjectsBufferSlotsCount, Utilities::BytesToText(ObjectsBuffer.Data.Count()));
+#endif
     }
 
     void SetupJob(int32)
@@ -504,10 +599,13 @@ public:
 
     void OnSceneRenderingUpdateActor(Actor* a, const BoundingSphere& prevBounds, UpdateFlags flags) override
     {
+        GlobalSurfaceAtlasObject* object = Objects.TryGet(a);
+        if (object)
+            object->ObjectDataDirty = true; // Sync shader data when actor moves or changes
+
         // Dirty static objects to redraw when changed (eg. material modification)
         if (a->HasStaticFlag(StaticFlags::Lightmap))
         {
-            GlobalSurfaceAtlasObject* object = Objects.TryGet(a);
             if (object)
             {
                 // Dirty object to redraw
@@ -525,6 +623,7 @@ public:
 
     void OnSceneRenderingRemoveActor(Actor* a) override
     {
+        // TODO: use it to speed up atlas/buffers defragmentation when streaming out scenes (CompactObjects cleans up objects)
     }
 
     void OnSceneRenderingClear(SceneRendering* scene) override
@@ -937,11 +1036,13 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     }
 
     // Send objects data to the GPU
+    if (surfaceAtlasData.ObjectsBufferDirty)
     {
         PROFILE_GPU_CPU_NAMED("Update Objects");
         GPUMemoryPass pass(context);
         surfaceAtlasData.ObjectsBuffer.Flush(context);
         surfaceAtlasData.ObjectsListBuffer.Flush(context);
+        surfaceAtlasData.ObjectsBufferDirty = false;
     }
 
     // Init constants
@@ -1510,8 +1611,9 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
             // Skip too small surfaces
             if (object && object->Tiles[tileIndex])
             {
-                surfaceAtlasData.AsyncFreeTiles.Add(object->Tiles[tileIndex]);
+                surfaceAtlasData.AsyncFreeTiles.Add(ToPair(object->Tiles[tileIndex], object));
                 object->Tiles[tileIndex] = nullptr;
+                object->ObjectDataDirty = true;
             }
             continue;
         }
@@ -1533,8 +1635,9 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
                 anyTile = true;
                 continue;
             }
-            surfaceAtlasData.AsyncFreeTiles.Add(object->Tiles[tileIndex]);
+            surfaceAtlasData.AsyncFreeTiles.Add(ToPair(object->Tiles[tileIndex], object));
             object->Tiles[tileIndex] = nullptr;
+            object->ObjectDataDirty = true;
         }
 
         // Insert tile into atlas
