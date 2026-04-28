@@ -5,6 +5,7 @@
 #include "Engine/Core/Math/Transform.h"
 #include "Engine/Core/Math/BoundingSphere.h"
 #include "Engine/Core/Math/Half.h"
+#include "Engine/Core/Math/Matrix.h"
 
 /// <summary>
 /// Foliage instanced mesh instance. Packed data with very little of logic. Managed by the foliage chunks and foliage actor itself.
@@ -49,6 +50,11 @@ API_STRUCT(NoPod, NoDefault) struct FLAXENGINE_API FoliageInstance
     byte DrawStateLODTransition = 255;
 
     /// <summary>
+    /// Flag used to indicate whether CachedDrawWorld contains valid data.
+    /// </summary>
+    byte CachedDrawWorldValid = 0;
+
+    /// <summary>
     /// The per-instance random value from range [0;1].
     /// </summary>
     API_FIELD() float Random;
@@ -62,6 +68,11 @@ API_STRUCT(NoPod, NoDefault) struct FLAXENGINE_API FoliageInstance
     /// Lightmap UVs area that entry occupies (packed Rectangle into Half4).
     /// </summary>
     Half4 LightmapUVsArea;
+
+    /// <summary>
+    /// Cached local-to-world transformation matrix for the instance used during rendering. Relative to the last rendering context origin. Valid only if CachedDrawWorldValid flag is set.
+    /// </summary>
+    Matrix CachedDrawWorld;
 
 public:
     bool operator==(const FoliageInstance& v) const

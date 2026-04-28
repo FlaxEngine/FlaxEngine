@@ -154,13 +154,16 @@ void Foliage::DrawInstance(DrawContext& context, FoliageInstance& instance, int3
 
         // Add instance to the draw batch
         auto& instanceData = e->Instances.AddOne();
-        Matrix world;
-        Transform transform;
-        _transform.LocalToWorld(instance.Transform, transform);
-        const Float3 translation = transform.Translation - context.ViewOrigin;
-        Matrix::Transformation(transform.Scale, transform.Orientation, translation, world);
         constexpr float worldDeterminantSign = 1.0f;
-        instanceData.Store(world, world, instance.LightmapUVsArea, drawCall.Surface.GeometrySize, instance.Random, worldDeterminantSign, lodDitherFactor);
+        if (!instance.CachedDrawWorldValid)
+        {
+            Transform transform;
+            _transform.LocalToWorld(instance.Transform, transform);
+            const Float3 translation = transform.Translation - context.ViewOrigin;
+            Matrix::Transformation(transform.Scale, transform.Orientation, translation, instance.CachedDrawWorld);
+            instance.CachedDrawWorldValid = true;
+        }
+        instanceData.Store(instance.CachedDrawWorld, instance.CachedDrawWorld, instance.LightmapUVsArea, drawCall.Surface.GeometrySize, instance.Random, worldDeterminantSign, lodDitherFactor);
     }
 }
 
@@ -492,6 +495,7 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Me
         type.Model->GetLODsCount() - 1,
         renderContext.View.CullingFrustum,
     };
+    _cachedDrawWorldOrigin = renderContext.View.Origin;
     if (context.RenderContext.View.Pass != DrawPass::Depth)
         context.MinObjectPixelSizeSq = 0.0f; // Don't use it in main view
 #if FOLIAGE_USE_DRAW_CALLS_BATCHING
@@ -603,6 +607,21 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Me
 #else
     DrawCluster(context, type.Root, draw);
 #endif
+}
+
+void Foliage::PreDraw(const RenderView& view)
+{
+    // When origin changes, then update all instance matrices
+    if (_cachedDrawWorldOrigin != view.Origin)
+    {
+        _cachedDrawWorldOrigin = view.Origin;
+        for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
+            i->CachedDrawWorldValid = false;
+    }
+
+    // Cache data per foliage instance type
+    for (FoliageType& type : FoliageTypes)
+        InitType(view, type);
 }
 
 void Foliage::InitType(const RenderView& view, FoliageType& type)
@@ -775,6 +794,7 @@ void Foliage::AddInstance(const FoliageInstance& instance)
     data->Bounds = BoundingSphere::Empty;
     data->Random = Random::Rand();
     data->CullDistance = type->CullDistance + type->CullDistanceRandomRange * data->Random;
+    data->CachedDrawWorldValid = false;
 
     // Validate foliage type model
     if (!type->IsReady())
@@ -813,6 +833,7 @@ void Foliage::SetInstanceTransform(int32 index, const Transform& value)
 
     // Change transform
     instance.Transform = value;
+    instance.CachedDrawWorldValid = false;
 
     // Update bounds
     if (type.IsReady())
@@ -1200,12 +1221,7 @@ void Foliage::Draw(RenderContext& renderContext)
         return;
     PROFILE_CPU();
     const RenderView& view = renderContext.View;
-
-    // Cache data per foliage instance type
-    for (auto& type : FoliageTypes)
-    {
-        InitType(renderContext.View, type);
-    }
+    PreDraw(view);
 
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
     {
@@ -1305,8 +1321,6 @@ void Foliage::Draw(RenderContext& renderContext)
     draw.ForcedLOD = -1;
     draw.VertexColors = nullptr;
     draw.Deformation = nullptr;
-#else
-    DrawCallsList draw[MODEL_MAX_LODS];
 #endif
 #if FOLIAGE_USE_SINGLE_QUAD_TREE
     if (Root)
@@ -1314,6 +1328,9 @@ void Foliage::Draw(RenderContext& renderContext)
 #else
     for (auto& type : FoliageTypes)
     {
+#if !FOLIAGE_USE_SINGLE_QUAD_TREE && FOLIAGE_USE_DRAW_CALLS_BATCHING
+        DrawCallsList draw[MODEL_MAX_LODS];
+#endif
         DrawType(renderContext, type, draw);
     }
 #endif
@@ -1329,9 +1346,7 @@ void Foliage::Draw(RenderContextBatch& renderContextBatch)
     const RenderView& view = renderContextBatch.GetMainContext().View;
     if (EnumHasAnyFlags(view.Pass, DrawPass::GBuffer) && !(view.Pass & (DrawPass::GlobalSDF | DrawPass::GlobalSurfaceAtlas)) && renderContextBatch.EnableAsync)
     {
-        // Cache data per foliage instance type
-        for (FoliageType& type : FoliageTypes)
-            InitType(view, type);
+        PreDraw(view);
 
         // Run async job for each foliage type
         _renderContextBatch = &renderContextBatch;
@@ -1759,6 +1774,13 @@ void Foliage::OnTransformChanged()
     Actor::OnTransformChanged();
 
     PROFILE_CPU();
+
+    if (IsDuringPlay())
+    {
+        // Invalidate cached world matrix
+        for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
+            i->CachedDrawWorldValid = false;
+    }
 
     UpdateBounds();
     RebuildClusters();

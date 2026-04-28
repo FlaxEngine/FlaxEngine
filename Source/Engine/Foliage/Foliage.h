@@ -20,6 +20,7 @@ API_CLASS() class FLAXENGINE_API Foliage final : public Actor
 private:
     bool _disableFoliageTypeEvents;
     int32 _sceneRenderingKey = -1;
+    Vector3 _cachedDrawWorldOrigin = Vector3::Zero;
 
 public:
     /// <summary>
@@ -215,6 +216,7 @@ private:
     RenderContextBatch* _renderContextBatch;
 #endif
 
+    void PreDraw(const RenderView& view);
     void InitType(const RenderView& view, FoliageType& type);
     void UpdateBounds();
 
