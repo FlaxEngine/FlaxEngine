@@ -297,6 +297,11 @@ public:
                 {
                     auto& object = e.Value;
                     Platform::MemoryClear(object.Tiles, sizeof(object.Tiles));
+                    if (object.ObjectDataAddress.TilesCount != 0)
+                    {
+                        FreeObjectsBufferSlots[object.ObjectDataAddress.TilesCount - 1].Add(object.ObjectDataAddress);
+                        object.ObjectDataAddress = GlobalSurfaceAtlasFreeShaderSlot();
+                    }
                 }
                 Atlas.Clear();
                 AtlasPixelsUsed = 0;
@@ -311,7 +316,7 @@ public:
         DistanceScalingEnd = METERS_TO_UNITS(50.0f); // Distance from camera at which the tiles resolution end to be scaled down
         DistanceScaling = 0.2f; // The scale for tiles at distanceScalingEnd and further away
         // TODO: add DetailsScale param to adjust quality of scene details in Global Surface Atlas
-        MinObjectRadius = 20.0f; // Skip too small objects
+        MinObjectRadius = METERS_TO_UNITS(0.2f); // Skip too small objects
         CullingPosDistance = Vector4(renderContext.View.Position, distance);
         AsyncRenderContext = renderContext;
         AsyncRenderContext.View.Pass = DrawPass::GlobalSurfaceAtlas;
@@ -1655,7 +1660,7 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
     {
         // Redraw objects from time-to-time (dynamic objects can be animated, static objects can have textures streamed)
         uint32 redrawFramesCount = GLOBAL_SURFACE_ATLAS_DIRTY_FRAMES(actor->GetStaticFlags());
-        if (surfaceAtlasData.CurrentFrame - object->LastFrameUpdated >= (redrawFramesCount + (actor->GetID().D & redrawFramesCount)))
+        if (surfaceAtlasData.CurrentFrame - object->LastFrameUpdated >= (redrawFramesCount + ((actor->GetID().D + GetHash(actorObject)) & redrawFramesCount)))
             dirty = true;
 
         // Mark object as used
