@@ -218,6 +218,7 @@ void RenderFogData::Init(const RenderView& view, IFogRenderer* renderer)
 void* RendererAllocation::Allocate(uintptr size)
 {
     PROFILE_CPU();
+    size = AllocationUtils::AlignToPowerOf2((int32)size); // Reduce fragmentation by operating on power-of-2 blocks
     void* result = nullptr;
     MemPoolLocker.Lock();
     for (int32 i = 0; i < MemPool.Count(); i++)
@@ -238,6 +239,7 @@ void* RendererAllocation::Allocate(uintptr size)
 void RendererAllocation::Free(void* ptr, uintptr size)
 {
     PROFILE_CPU();
+    size = AllocationUtils::AlignToPowerOf2((int32)size); // Reduce fragmentation by operating on power-of-2 blocks
     MemPoolLocker.Lock();
     MemPool.Add({ ptr, size });
     MemPoolLocker.Unlock();
