@@ -96,7 +96,7 @@ namespace FlaxEditor.Surface
             base.OnSpawned(action);
 
             // Randomize color
-            Color = ColorValue = Color.FromHSV(new Random().NextFloat(0, 360), 0.7f, 0.25f, 0.8f);
+            Color = ColorValue = Color.FromHSV(new System.Random().NextFloat(0, 360), 0.7f, 0.25f, 0.8f);
 
             if (OrderValue == -1)
                 OrderValue = Context.CommentCount - 1;
