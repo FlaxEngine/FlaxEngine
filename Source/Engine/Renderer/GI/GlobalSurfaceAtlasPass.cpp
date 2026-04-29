@@ -458,10 +458,11 @@ public:
         ObjectsListBuffer.Data.Resize(Objects.Count() * sizeof(uint32));
         auto objectsListData = (uint32*)ObjectsListBuffer.Data.Get();
         int32 dirtyTiles = 0, objectIndex = 0;
+        int32 dirtyObjectsLimitLeft = 50; // TODO: expose as scalability parameter
         for (auto& e : Objects)
         {
             auto& object = e.Value;
-            if (object.Dirty)
+            if (object.Dirty && dirtyObjectsLimitLeft-- > 0)
             {
                 // Collect dirty objects
                 object.LastFrameUpdated = CurrentFrame;
@@ -941,7 +942,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         context->SetRenderTarget(depthBuffer, ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)));
         {
             PROFILE_GPU_CPU_NAMED("Clear");
-            if (noCache || GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES)
+            if (noCache || GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES || surfaceAtlasData.LastFrameAtlasDefragmentation == currentFrame)
             {
                 // Full-atlas hardware clear
                 context->ClearDepth(depthBuffer);
@@ -973,7 +974,6 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 VB_DRAW();
             }
         }
-        // TODO: limit dirty objects count on a first frame (eg. collect overflown objects to be redirty next frame)
         auto& drawCallsListGBuffer = renderContextTiles.List->DrawCallsLists[(int32)DrawCallsListType::GBuffer];
         auto& drawCallsListGBufferNoDecals = renderContextTiles.List->DrawCallsLists[(int32)DrawCallsListType::GBufferNoDecals];
         drawCallsListGBuffer.CanUseInstancing = false;
