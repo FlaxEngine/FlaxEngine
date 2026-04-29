@@ -43,6 +43,7 @@ public:
 private:
     bool _supported = false;
     AssetReference<Shader> _shader;
+    GPUPipelineState* _psCopy = nullptr;
     GPUPipelineState* _psClear = nullptr;
     GPUPipelineState* _psClearLighting = nullptr;
     GPUPipelineState* _psDirectLighting0 = nullptr;

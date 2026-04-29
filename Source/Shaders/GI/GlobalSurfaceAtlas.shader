@@ -49,6 +49,28 @@ AtlasVertexOutput VS_Atlas(AtlasVertexInput input)
 	return output;
 }
 
+#ifdef _PS_Copy
+
+Texture2D DepthTexture : register(t0);
+Texture2D EmissiveTexture : register(t1);
+Texture2D GBuffer0Texture : register(t2);
+Texture2D GBuffer1Texture : register(t3);
+Texture2D LightingTexture : register(t4);
+
+// Pixel shader for Global Surface Atlas copying (eg. after defragmentation)
+META_PS(true, FEATURE_LEVEL_SM5)
+void PS_Copy(AtlasVertexOutput input, out float Depth : SV_Depth, out float4 Emissive : SV_Target0, out float4 GBuffer0 : SV_Target1, out float4 GBuffer1 : SV_Target2, out float4 Lighting : SV_Target3)
+{
+	float2 atlasUV = input.TileUV; // Old-atlas UVs computed on CPU
+    Depth = SAMPLE_RT_DEPTH(DepthTexture, atlasUV);
+    Emissive = SAMPLE_RT(EmissiveTexture, atlasUV);
+    GBuffer0 = SAMPLE_RT(GBuffer0Texture, atlasUV);
+    GBuffer1 = SAMPLE_RT(GBuffer1Texture, atlasUV);
+    Lighting = SAMPLE_RT(LightingTexture, atlasUV);
+}
+
+#endif
+
 // Pixel shader for Global Surface Atlas software clearing
 META_PS(true, FEATURE_LEVEL_SM5)
 void PS_Clear(out float4 Light : SV_Target0, out float4 RT0 : SV_Target1, out float4 RT1 : SV_Target2, out float4 RT2 : SV_Target3)
@@ -64,7 +86,7 @@ void PS_Clear(out float4 Light : SV_Target0, out float4 RT0 : SV_Target1, out fl
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t4);
 Texture2D Texture : register(t7);
 
-// Pixel shader for Global Surface Atlas clearing
+// Pixel shader for Global Surface Atlas clearing (copies emissive texture)
 META_PS(true, FEATURE_LEVEL_SM5)
 float4 PS_ClearLighting(AtlasVertexOutput input) : SV_Target
 {
