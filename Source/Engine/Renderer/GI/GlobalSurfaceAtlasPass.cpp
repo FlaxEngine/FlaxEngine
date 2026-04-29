@@ -509,7 +509,7 @@ public:
         ObjectsListBuffer.Data.Resize(Objects.Count() * sizeof(uint32));
         auto objectsListData = (uint32*)ObjectsListBuffer.Data.Get();
         int32 dirtyTiles = 0, objectIndex = 0;
-        int32 dirtyObjectsLimitLeft = 50; // TODO: expose as scalability parameter
+        int32 dirtyObjectsLimitLeft = 100; // TODO: expose as scalability parameter
         for (auto& e : Objects)
         {
             auto& object = e.Value;
@@ -586,6 +586,15 @@ public:
             Float3 worldPosition = object.Bounds.Transformation.Translation;
             Float3 worldExtents = object.Bounds.Extents * object.Bounds.Transformation.Scale;
 
+            // Fix axes for objects with negative scale
+            Float3 axisScales[3] = { Float3::One, Float3::One, Float3::One };
+            if (worldExtents.X < 0)
+                axisScales[0] = -1.0f;
+            if (worldExtents.Y < 0)
+                axisScales[1] = -1.0f;
+            if (worldExtents.Z < 0)
+                axisScales[2] = -1.0f;
+
             // Write to objects buffer (this must match unpacking logic in HLSL)
             objectsListData[objectIndex++] = object.ObjectDataAddress.Address;
             auto* objectData = (Float4*)(ObjectsBuffer.Data.Get() + object.ObjectDataAddress.Address * sizeof(Float4));
@@ -594,7 +603,7 @@ public:
             objectData[2] = Float4(worldToLocalRotation.M11, worldToLocalRotation.M12, worldToLocalRotation.M13, worldPosition.X);
             objectData[3] = Float4(worldToLocalRotation.M21, worldToLocalRotation.M22, worldToLocalRotation.M23, worldPosition.Y);
             objectData[4] = Float4(worldToLocalRotation.M31, worldToLocalRotation.M32, worldToLocalRotation.M33, worldPosition.Z);
-            objectData[5] = Float4(worldExtents, object.UseVisibility ? 1.0f : 0.0f);
+            objectData[5] = Float4(worldExtents.GetAbsolute(), object.UseVisibility ? 1.0f : 0.0f);
             auto tileOffsets = reinterpret_cast<uint16*>(&objectData[1]); // xyz used for tile offsets packed into uint16
             auto objectDataSize = reinterpret_cast<uint32*>(&objectData[1].W); // w used for object size (count of Float4s for object+tiles)
             *objectDataSize = GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE;
@@ -614,6 +623,9 @@ public:
                 zAxis.Raw[tileIndex / 2] = tileIndex & 1 ? 1.0f : -1.0f;
                 yAxis = tileIndex == 2 || tileIndex == 3 ? Float3::Right : Float3::Up;
                 Float3::Cross(yAxis, zAxis, xAxis);
+                xAxis *= axisScales[0];
+                yAxis *= axisScales[1];
+                zAxis *= axisScales[2];
                 Float3 localSpaceOffset = -zAxis * object.Bounds.Extents;
                 xAxis = object.Bounds.Transformation.LocalToWorldVector(xAxis);
                 yAxis = object.Bounds.Transformation.LocalToWorldVector(yAxis);
