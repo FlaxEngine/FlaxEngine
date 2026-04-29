@@ -40,6 +40,7 @@
 #define GLOBAL_SURFACE_ATLAS_TILE_SIZE_MAX 192 // The maximum size of the tile
 #define GLOBAL_SURFACE_ATLAS_TILE_PROJ_PLANE_OFFSET 0.1f // Small offset to prevent clipping with the closest triangles (shifts near and far planes)
 #define GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES 0 // Forces to redraw all object tiles every frame
+#define GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_LIGHTS 0 // Forces to redraw all lights every frame
 #define GLOBAL_SURFACE_ATLAS_DEBUG_DRAW_OBJECTS 0 // Debug draws object bounds on redraw (and tile draw projection locations)
 #define GLOBAL_SURFACE_ATLAS_DEBUG_DRAW_CHUNKS 0 // Debug draws culled chunks bounds (non-empty)
 #define GLOBAL_SURFACE_ATLAS_MAX_NEW_OBJECTS_PER_FRAME 500 // Limits the amount of newly added objects to atlas per-frame to reduce hitches on 1st frame or camera-cut
@@ -157,6 +158,13 @@ struct GlobalSurfaceAtlasLight
     uint64 LastFrameUpdated = 0;
 };
 
+struct GlobalSurfaceAtlasPendingDirtyObject
+{
+    void* ActorObject;
+    GlobalSurfaceAtlasObject* Object;
+    float Priority;
+};
+
 class GlobalSurfaceAtlasCustomBuffer : public RenderBuffers::CustomBuffer, public ISceneRenderingListener
 {
 public:
@@ -190,6 +198,7 @@ public:
 
     // Cached data to be reused during RasterizeActor
     Array<void*> DirtyObjectsBuffer;
+    Array<GlobalSurfaceAtlasPendingDirtyObject> PendingDirtyObjectsBuffer;
     Vector4 CullingPosDistance;
     uint64 CurrentFrame;
     Float3 ViewPosition;
@@ -495,22 +504,39 @@ public:
     void WriteObjects()
     {
         PROFILE_CPU_NAMED("Write Objects");
-        DirtyObjectsBuffer.Clear();
+        PendingDirtyObjectsBuffer.Clear();
         ObjectsBuffer.Data.EnsureCapacity(Objects.Count() * sizeof(Float4) * (GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE + 2 * GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE));
         ObjectsListBuffer.Data.Resize(Objects.Count() * sizeof(uint32));
         auto objectsListData = (uint32*)ObjectsListBuffer.Data.Get();
         int32 dirtyTiles = 0, objectIndex = 0;
         int32 dirtyObjectsLimitLeft = 50; // TODO: expose as scalability parameter
-        // TODO: sort dirt objects by size to collect biggest ones first
         for (auto& e : Objects)
         {
             auto& object = e.Value;
-            if (object.Dirty && dirtyObjectsLimitLeft-- > 0)
+
+            // Collect dirty objects
+            if (object.Dirty)
             {
-                // Collect dirty objects
-                object.LastFrameUpdated = CurrentFrame;
-                object.LightingUpdateFrame = CurrentFrame;
-                DirtyObjectsBuffer.Add(e.Key);
+                float priority = object.Radius;
+                GlobalSurfaceAtlasPendingDirtyObject pending = { e.Key, &object, priority };
+                if (dirtyObjectsLimitLeft-- > 0)
+                {
+                    PendingDirtyObjectsBuffer.Add(pending);
+                }
+                else
+                {
+                    // Not enough space to update all objects that have bigger radius (more visible)
+                    // TODO: maybe use screen-size as better heuristic for which objects to update first
+                    for (int32 i = 0; i < PendingDirtyObjectsBuffer.Count(); i++)
+                    {
+                        if (PendingDirtyObjectsBuffer[i].Priority < priority)
+                        {
+                            // TODO: this is wrong, we should collect all pending objects and sort them to pick top ones
+                            PendingDirtyObjectsBuffer[i] = pending;
+                            break;
+                        }
+                    }
+                }
             }
 
             if (!object.ObjectDataDirty)
@@ -623,6 +649,19 @@ public:
             }
         }
         ZoneValue(dirtyTiles);
+
+        // Move pending dirty objects to be actually in a dirty buffer to redraw
+        DirtyObjectsBuffer.Clear();
+        DirtyObjectsBuffer.Resize(PendingDirtyObjectsBuffer.Count());
+        auto* dirtyObjectsBufferPtr = DirtyObjectsBuffer.Get();
+        const auto* pendingDirtyObjectsBufferPtr = PendingDirtyObjectsBuffer.Get();
+        for (int32 i = 0; i < DirtyObjectsBuffer.Count(); i++)
+        {
+            auto pending = pendingDirtyObjectsBufferPtr[i];
+            pending.Object->LastFrameUpdated = CurrentFrame;
+            pending.Object->LightingUpdateFrame = CurrentFrame;
+            dirtyObjectsBufferPtr[i] = pending.ActorObject;
+        }
 
 #if 0
         // Debug print objects buffer usage
@@ -1377,7 +1416,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         data.GlobalSurfaceAtlas = result.Constants;
 
         // Collect objects to update lighting this frame (dirty objects and dirty lights)
-        bool allLightingDirty = false;
+        bool allLightingDirty = GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_LIGHTS;
         for (auto& light : renderContext.List->DirectionalLights)
         {
             GlobalSurfaceAtlasLight& lightData = surfaceAtlasData.Lights[light.ID];
