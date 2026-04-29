@@ -434,6 +434,8 @@ cleanup:
 
 DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
 {
+    PROFILE_CPU();
+
     // Construct input flags
     UINT flags = 0;
     switch (buttons)
