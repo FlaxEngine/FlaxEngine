@@ -217,7 +217,7 @@ private:
 #endif
 
     void PreDraw(const RenderView& view);
-    void InitType(const RenderView& view, FoliageType& type);
+    void InitType(const RenderView& view, int32 typeIndex);
     void UpdateBounds();
 
 public:
@@ -230,6 +230,12 @@ public:
     /// <param name="instanceIndex">When the method completes, contains zero-based index of the foliage instance that is the closest to the ray.</param>
     /// <returns>True whether the two objects intersected, otherwise false.</returns>
     API_FUNCTION() bool Intersects(API_PARAM(Ref) const Ray& ray, API_PARAM(Out) Real& distance, API_PARAM(Out) Vector3& normal, API_PARAM(Out) int32& instanceIndex);
+
+private:
+#if USE_EDITOR
+    // Debug filter to draw only specific foliage type (in editor).
+    API_FIELD(Internal) int32 _drawFoliageType = -1;
+#endif
 
 public:
     // [Actor]

@@ -179,12 +179,17 @@ namespace FlaxEditor.Viewport
         public Tools.Terrain.EditTerrainGizmoMode EditTerrainGizmo;
 
         /// <summary>
-        /// The paint foliage gizmo.
+        /// The edit foliage types gizmo.
+        /// </summary>
+        public Tools.Foliage.FoliageTypesGizmoMode EditFoliageTypesGizmo;
+
+        /// <summary>
+        /// The paint foliage instances gizmo.
         /// </summary>
         public Tools.Foliage.PaintFoliageGizmoMode PaintFoliageGizmo;
 
         /// <summary>
-        /// The edit foliage gizmo.
+        /// The edit foliage instances gizmo.
         /// </summary>
         public Tools.Foliage.EditFoliageGizmoMode EditFoliageGizmo;
 
@@ -276,6 +281,7 @@ namespace FlaxEditor.Viewport
                 Gizmos.AddMode(SculptTerrainGizmo = new Tools.Terrain.SculptTerrainGizmoMode());
                 Gizmos.AddMode(PaintTerrainGizmo = new Tools.Terrain.PaintTerrainGizmoMode());
                 Gizmos.AddMode(EditTerrainGizmo = new Tools.Terrain.EditTerrainGizmoMode());
+                Gizmos.AddMode(EditFoliageTypesGizmo = new Tools.Foliage.FoliageTypesGizmoMode());
                 Gizmos.AddMode(PaintFoliageGizmo = new Tools.Foliage.PaintFoliageGizmoMode());
                 Gizmos.AddMode(EditFoliageGizmo = new Tools.Foliage.EditFoliageGizmoMode());
 
@@ -343,10 +349,12 @@ namespace FlaxEditor.Viewport
         /// <param name="customSelectionOutline">The custom selection outline or null if use default one.</param>
         public void OverrideSelectionOutline(SelectionOutline customSelectionOutline)
         {
+            if (Task == null)
+                return;
+
             if (_customSelectionOutline != null)
             {
                 Task.RemoveCustomPostFx(_customSelectionOutline);
-                Object.Destroy(ref _customSelectionOutline);
                 Task.AddCustomPostFx(customSelectionOutline ? customSelectionOutline : SelectionOutline);
             }
             else if (customSelectionOutline != null)
@@ -857,8 +865,8 @@ namespace FlaxEditor.Viewport
             if (_task != null)
             {
                 // Release if task is not used to save screenshot for project icon
+                ReleaseTaskResources();
                 Object.Destroy(ref _task);
-                ReleaseResources();
             }
 
             base.OnDestroy();
@@ -874,6 +882,7 @@ namespace FlaxEditor.Viewport
             _savedTask = _task;
             _savedBackBuffer = _backBuffer;
 
+            ReleaseTaskResources();
             _task = null;
             _backBuffer = null;
         }
@@ -884,20 +893,20 @@ namespace FlaxEditor.Viewport
             {
                 _savedTask.Enabled = false;
                 Object.Destroy(_savedTask);
-                ReleaseResources();
+                ReleaseTaskResources();
                 _savedTask = null;
             }
             Object.Destroy(ref _savedBackBuffer);
         }
 
-        private void ReleaseResources()
+        private void ReleaseTaskResources()
         {
-            if (Task)
+            if (_task)
             {
-                Task.RemoveCustomPostFx(SelectionOutline);
-                Task.RemoveCustomPostFx(EditorPrimitives);
-                Task.RemoveCustomPostFx(_editorSpritesRenderer);
-                Task.RemoveCustomPostFx(_customSelectionOutline);
+                _task.RemoveCustomPostFx(SelectionOutline);
+                _task.RemoveCustomPostFx(EditorPrimitives);
+                _task.RemoveCustomPostFx(_editorSpritesRenderer);
+                _task.RemoveCustomPostFx(_customSelectionOutline);
             }
             Object.Destroy(ref SelectionOutline);
             Object.Destroy(ref EditorPrimitives);

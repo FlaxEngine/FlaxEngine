@@ -1,6 +1,5 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System;
 using FlaxEditor.Gizmo;
 using FlaxEditor.SceneGraph.Actors;
 using FlaxEditor.Viewport;
@@ -9,22 +8,29 @@ using FlaxEditor.Viewport.Modes;
 namespace FlaxEditor.Tools.Foliage
 {
     /// <summary>
-    /// Foliage instances editing mode.
+    /// Foliage types editing mode.
     /// </summary>
     /// <seealso cref="FlaxEditor.Viewport.Modes.EditorGizmoMode" />
-    public class EditFoliageGizmoMode : EditorGizmoMode
+    public class FoliageTypesGizmoMode : EditorGizmoMode
     {
-        private int _selectedInstanceIndex = -1;
+        /// <summary>
+        /// The foliage types gizmo.
+        /// </summary>
+        public FoliageTypesGizmo Gizmo;
 
         /// <summary>
-        /// The foliage editing gizmo.
+        /// The foliage type editing selection outline.
         /// </summary>
-        public EditFoliageGizmo Gizmo;
+        public FoliageTypesOutline SelectionOutline;
 
         /// <summary>
-        /// The foliage editing selection outline.
+        /// The selected foliage type index.
         /// </summary>
-        public EditFoliageSelectionOutline SelectionOutline;
+        public int SelectedTypeIndex
+        {
+            get => Editor.Instance.Windows.ToolboxWin.Foliage.SelectedFoliageTypeIndex;
+            set => Editor.Instance.Windows.ToolboxWin.Foliage.SelectedFoliageTypeIndex = value;
+        }
 
         /// <summary>
         /// Gets the selected foliage actor (see <see cref="Modules.SceneEditingModule"/>).
@@ -39,33 +45,12 @@ namespace FlaxEditor.Tools.Foliage
             }
         }
 
-        /// <summary>
-        /// The selected foliage instance index.
-        /// </summary>
-        public int SelectedInstanceIndex
-        {
-            get => _selectedInstanceIndex;
-            set
-            {
-                if (_selectedInstanceIndex == value)
-                    return;
-
-                _selectedInstanceIndex = value;
-                SelectedInstanceIndexChanged?.Invoke();
-            }
-        }
-
-        /// <summary>
-        /// Occurs when selected instance index gets changed.
-        /// </summary>
-        public event Action SelectedInstanceIndexChanged;
-
         /// <inheritdoc />
         public override void Init(IGizmoOwner owner)
         {
             base.Init(owner);
 
-            Gizmo = new EditFoliageGizmo(owner, this);
+            Gizmo = new FoliageTypesGizmo(owner, this);
         }
 
         /// <inheritdoc />
@@ -84,11 +69,10 @@ namespace FlaxEditor.Tools.Foliage
             Owner.Gizmos.Active = Gizmo;
             if (SelectionOutline == null)
             {
-                SelectionOutline = FlaxEngine.Object.New<EditFoliageSelectionOutline>();
+                SelectionOutline = FlaxEngine.Object.New<FoliageTypesOutline>();
                 SelectionOutline.GizmoMode = this;
             }
             ((MainEditorGizmoViewport)Owner).OverrideSelectionOutline(SelectionOutline);
-            SelectedInstanceIndex = -1;
         }
 
         /// <inheritdoc />

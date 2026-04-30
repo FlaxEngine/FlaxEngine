@@ -29,7 +29,7 @@
 #include <ThirdParty/LZ4/lz4.h>
 
 #define FOLIAGE_GET_DRAW_MODES(renderContext, type) (type._drawModes & renderContext.View.Pass & renderContext.View.GetShadowsDrawPassMask(type.ShadowsMode))
-#define FOLIAGE_CAN_DRAW(renderContext, type) (type.IsReady() && FOLIAGE_GET_DRAW_MODES(renderContext, type) != DrawPass::None && type.Model->CanBeRendered())
+#define FOLIAGE_CAN_DRAW(renderContext, type) (type.IsReady() && type._canDraw && FOLIAGE_GET_DRAW_MODES(renderContext, type) != DrawPass::None && type.Model->CanBeRendered())
 
 Foliage::Foliage(const SpawnParams& params)
     : Actor(params)
@@ -620,14 +620,18 @@ void Foliage::PreDraw(const RenderView& view)
     }
 
     // Cache data per foliage instance type
-    for (FoliageType& type : FoliageTypes)
-        InitType(view, type);
+    for (int32 i = 0; i < FoliageTypes.Count(); i++)
+        InitType(view, i);
 }
 
-void Foliage::InitType(const RenderView& view, FoliageType& type)
+void Foliage::InitType(const RenderView& view, int32 typeIndex)
 {
+    FoliageType& type = FoliageTypes[typeIndex];
     const DrawPass drawModes = type._drawModes & view.Pass & view.GetShadowsDrawPassMask(type.ShadowsMode);
     type._canDraw = type.IsReady() && drawModes != DrawPass::None && type.Model && type.Model->CanBeRendered();
+#if USE_EDITOR
+    type._canDraw &= _drawFoliageType == -1 || _drawFoliageType == typeIndex;
+#endif
     bool drawModesDirty = false;
     for (int32 j = 0; j < type.Entries.Count(); j++)
     {
@@ -1286,7 +1290,7 @@ void Foliage::Draw(RenderContext& renderContext)
         // Draw single foliage instance projection into Global Surface Atlas
         auto& instance = *(FoliageInstance*)GlobalSurfaceAtlasPass::Instance()->GetCurrentActorObject();
         auto& type = FoliageTypes[instance.Type];
-        InitType(renderContext.View, type);
+        InitType(renderContext.View, instance.Type);
         Matrix world;
         const Transform transform = _transform.LocalToWorld(instance.Transform);
         renderContext.View.GetWorldMatrix(transform, world);
