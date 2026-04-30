@@ -160,6 +160,7 @@ float4 LoadTextureWGSL(Texture2D tex, float2 uv)
 #define HDR_CLAMP_MAX 65472.0
 #define PI 3.1415926535897932
 #define UNITS_TO_METERS_SCALE 0.01f
+#define REVERSE_Z 0
 
 // Structure that contains information about GBuffer
 struct GBufferData
