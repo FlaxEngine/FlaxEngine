@@ -14,6 +14,17 @@ namespace FlaxEngine
     partial class BehaviorKnowledge
     {
         /// <summary>
+        /// Gets the behavior blackboard cast to the given type.
+        /// </summary>
+        /// <typeparam name="T">The blackboard type.</typeparam>
+        /// <returns>The behavior blackboard cast to the given type.</returns>
+        [Unmanaged]
+        public T GetBlackboard<T>()
+        {
+            return (T)Blackboard;
+        }
+
+        /// <summary>
         /// Checks if knowledge has a given goal (exact type match without base class check).
         /// </summary>
         /// <typeparam name="T"> goal type.</typeparam>
