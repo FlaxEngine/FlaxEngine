@@ -11,6 +11,18 @@ using FlaxEngine.GUI;
 
 namespace FlaxEngine
 {
+    partial class Behavior
+    {
+        /// <summary>
+        /// Gets the blackboard of the given type.
+        /// </summary>
+        /// <typeparam name="T"> The blackboard type.</typeparam>
+        public T GetBlackboard<T>()
+        {
+            return Knowledge.GetBlackboard<T>();
+        }
+    }
+
     partial class BehaviorKnowledge
     {
         /// <summary>
@@ -32,6 +44,16 @@ namespace FlaxEngine
         public void RemoveGoal<T>()
         {
             RemoveGoal(typeof(T));
+        }
+        
+        /// <summary>
+        /// Gets the blackboard of the given type.
+        /// </summary>
+        /// <typeparam name="T"> The blackboard type.</typeparam>
+        [Unmanaged]
+        public T GetBlackboard<T>()
+        {
+            return (T)Blackboard;
         }
     }
 
