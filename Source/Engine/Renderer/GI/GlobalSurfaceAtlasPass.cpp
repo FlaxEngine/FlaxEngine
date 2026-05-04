@@ -1282,9 +1282,10 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         }
         if (surfaceAtlasData.CulledObjectsCounterIndex != -1)
         {
-            // Get the last counter value (accept staging readback delay or not available data yet)
+            // Get the last counter value
             notReady = true;
             PROFILE_CPU_NAMED("Readback Object Count");
+            ZoneColor(TracyWaitZoneColor);
             auto data = (uint32*)_culledObjectsSizeBuffer->Map(GPUResourceMapMode::Read);
             if (data)
             {
@@ -1510,6 +1511,13 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         }
 
         // Copy emissive light into the final direct lighting atlas
+        if (allLightingDirty)
+        {
+            PROFILE_GPU("Copy Emissive");
+            context->Draw(surfaceAtlasData.AtlasEmissive);
+            context->BindSR(0, surfaceAtlasData.AtlasGBuffer0->View()); // Rebind
+        }
+        else
         {
             PROFILE_GPU_CPU_NAMED("Copy Emissive");
             _vertexBuffer->Clear();
