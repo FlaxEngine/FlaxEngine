@@ -71,10 +71,26 @@ float4 MotionVectorToColor(float2 v)
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_MotionVectorsDebug(Quad_VS2PS input) : SV_Target
 {
-	float4 c = SAMPLE_RT(Input0, input.TexCoord);
+	float4 color = SAMPLE_RT(Input0, input.TexCoord);
+
+    // Grey-out background pixels (that don't draw dedicated motion vectors)
+    float motionObjectsDepth = SAMPLE_RT_DEPTH(Input2, input.TexCoord);
+#if REVERSE_Z
+    bool isBackground = motionObjectsDepth <= 0;
+#else
+    bool isBackground = motionObjectsDepth >= 1;
+#endif
+    uint2 checkerboardCoord = (uint2(input.Position.xy) >> 3) & 0x1;
+    float checkerboard = checkerboardCoord.x == checkerboardCoord.y ? 1.0f : 0.0f;
+    float3 backgroundColor = Luminance(color.rgb).xxx * (0.4f + 0.1f * checkerboard);
+    color.rgb = select(isBackground, backgroundColor, max(color.rgb, 0.2f));
+
+    // Debug color based on the pixel motion
     float2 v = SAMPLE_RT(Input1, input.TexCoord).xy * 20.0f;
     float4 vC = MotionVectorToColor(v);
-    return float4(lerp(c.rgb, vC.rgb, vC.a * 0.6f), c.a);
+    color.rgb =  lerp(color.rgb, vC.rgb, vC.a * 0.6f);
+
+    return color;
 }
 
 // Returns the longer velocity vector

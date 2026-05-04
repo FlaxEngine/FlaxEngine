@@ -236,20 +236,43 @@ void MotionBlurPass::RenderMotionVectors(RenderContext& renderContext)
 
 void MotionBlurPass::RenderDebug(RenderContext& renderContext, GPUTextureView* frame)
 {
+    auto outputView = renderContext.Task->GetOutputView();
+    auto outputViewport = renderContext.Task->GetOutputViewport();
     auto context = GPUDevice::Instance->GetMainContext();
     const auto motionVectors = renderContext.Buffers->MotionVectors;
+    context->ResetRenderTarget();
     if (!motionVectors || !motionVectors->IsAllocated() || checkIfSkipPass())
     {
+        context->SetRenderTarget(outputView);
+        context->SetViewportAndScissors(outputViewport);
         context->Draw(frame);
         return;
+    }
+
+    // Draw depth of objects that draw motion vectors for better debugging content when optimizing this pass
+    auto desc = GPUTextureDescription::New2D(motionVectors->Width(), motionVectors->Height(), PixelFormat::D16_UNorm, GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil);
+    auto motionObjectsDepth = RenderTargetPool::Get(desc);
+    {
+        PROFILE_GPU_CPU("Motion Vectors Depth");
+        context->SetRenderTarget(motionObjectsDepth->View(), nullptr);
+        context->SetViewportAndScissors((float)desc.Width, (float)desc.Height);
+        context->ClearDepth(motionObjectsDepth->View());
+        renderContext.View.Pass = DrawPass::Depth;
+        renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::MotionVectors);
+        context->ResetRenderTarget();
     }
 
     PROFILE_GPU_CPU("Motion Vectors Debug");
     context->BindSR(0, frame);
     context->BindSR(1, renderContext.Buffers->MotionVectors->View());
+    context->BindSR(2, motionObjectsDepth->View());
     context->SetState(_psMotionVectorsDebug);
+    context->SetRenderTarget(outputView);
+    context->SetViewportAndScissors(outputViewport);
     context->DrawFullscreenTriangle();
     context->ResetSR();
+
+    RenderTargetPool::Release(motionObjectsDepth);
 }
 
 void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& frame, GPUTexture*& tmp)

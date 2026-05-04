@@ -789,9 +789,6 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     // Debug motion vectors
     if (renderContext.View.Mode == ViewMode::MotionVectors)
     {
-        context->ResetRenderTarget();
-        context->SetRenderTarget(task->GetOutputView());
-        context->SetViewportAndScissors(outputViewport);
         MotionBlurPass::Instance()->RenderDebug(renderContext, frameBuffer->View());
         RenderTargetPool::Release(tempBuffer);
         RenderTargetPool::Release(frameBuffer);
