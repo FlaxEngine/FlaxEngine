@@ -624,22 +624,31 @@ void RenderList::Clear()
 PACK_STRUCT(struct PackedSortKey
 {
     uint32 DistanceKey;
-    uint8 DrawKey;
-    uint16 BatchKey;
+    uint8 GeoKey;
+    uint16 MaterialKey;
     uint8 SortKey;
 });
+static_assert(sizeof(PackedSortKey) == sizeof(uint64), "Invalid sort key size");
 
 // Sorting order: By Sort Order -> By Material -> By Geometry -> By Distance
-PACK_STRUCT(struct PackedSortKeyDistance
+PACK_STRUCT(struct PackedSortKeyForward
 {
-    uint8 DrawKey;
-    uint16 BatchKey;
+    uint8 GeoKey;
+    uint16 MaterialKey;
     uint32 DistanceKey;
     uint8 SortKey;
 });
+static_assert(sizeof(PackedSortKeyForward) == sizeof(uint64), "Invalid sort key size");
 
-static_assert(sizeof(PackedSortKey) == sizeof(uint64), "Invalid sort key size");
-static_assert(sizeof(PackedSortKeyDistance) == sizeof(uint64), "Invalid sort key size");
+// Sorting order: By Material -> By Geometry -> By Distance
+PACK_STRUCT(struct PackedSortKeyDepth
+{
+    uint32 DistanceKey;
+    uint8 Dummy;
+    uint8 GeoKey;
+    uint16 MaterialKey;
+});
+static_assert(sizeof(PackedSortKeyDepth) == sizeof(uint64), "Invalid sort key size");
 
 FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall& drawCall, int8 sortOrder)
 {
@@ -647,21 +656,21 @@ FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall&
     const float planePoint = -Float3::Dot(planeNormal, renderContext.View.Position);
     const float distance = Float3::Dot(planeNormal, drawCall.ObjectPosition) - planePoint;
     uint32 distanceKey = RenderTools::ComputeDistanceSortKey(distance);
-    uint32 batchKey = GetHash(drawCall.Material);
+    uint32 material = GetHash(drawCall.Material);
     IMaterial::InstancingHandler handler;
     if (drawCall.Material->CanUseInstancing(handler))
-        handler.GetHash(drawCall, batchKey);
-    batchKey = (batchKey * 397) ^ drawCall.StencilValue;
-    uint32 drawKey = (uint32)(471 * drawCall.WorldDeterminant);
-    drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[0]);
-    drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[1]);
-    drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[2]);
-    drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.IndexBuffer);
+        handler.GetHash(drawCall, material);
+    material = (material * 397) ^ drawCall.StencilValue;
+    uint32 geoKey = (uint32)(471 * drawCall.WorldDeterminant);
+    geoKey = (geoKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[0]);
+    geoKey = (geoKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[1]);
+    geoKey = (geoKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[2]);
+    geoKey = (geoKey * 397) ^ GetHash(drawCall.Geometry.IndexBuffer);
 
     PackedSortKey key;
-    key.BatchKey = (uint16)batchKey;
+    key.MaterialKey = (uint16)material;
     key.DistanceKey = distanceKey;
-    key.DrawKey = (uint8)drawKey;
+    key.GeoKey = (uint8)geoKey;
     key.SortKey = (uint8)(sortOrder - MIN_int8);
     drawCall.SortKey = *(uint64*)&key;
 }
@@ -822,10 +831,10 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
             {
                 const DrawCall& drawCall = drawCallsData[listData[i]];
                 PackedSortKey key = *(PackedSortKey*)&drawCall.SortKey;
-                PackedSortKeyDistance forwardKey;
-                forwardKey.BatchKey = key.BatchKey;
+                PackedSortKeyForward forwardKey;
+                forwardKey.MaterialKey = key.MaterialKey;
                 forwardKey.DistanceKey = key.DistanceKey ^ MAX_uint32; // Reverse depth
-                forwardKey.DrawKey = key.DrawKey;
+                forwardKey.GeoKey = key.GeoKey;
                 forwardKey.SortKey = key.SortKey ^ MAX_uint8; // Reverse sort order
                 sortedKeys[i] = *(uint64*)&forwardKey;
             }
@@ -844,8 +853,27 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     }
     else
     {
-        for (int32 i = 0; i < listSize; i++)
-            sortedKeys[i] = drawCallsData[listData[i]].SortKey;
+        if (listType == DrawCallsListType::Depth)
+        {
+            // Reorder keys and drop sort order for better batching/instancing in depth/shadow passes
+            PackedSortKeyDepth depthKey;
+            depthKey.Dummy = 0;
+            for (int32 i = 0; i < listSize; i++)
+            {
+                const DrawCall& drawCall = drawCallsData[listData[i]];
+                PackedSortKey key = *(PackedSortKey*)&drawCall.SortKey;
+                depthKey.DistanceKey = key.DistanceKey;
+                depthKey.GeoKey = key.GeoKey;
+                depthKey.MaterialKey = key.MaterialKey;
+                sortedKeys[i] = *(uint64*)&depthKey;
+            }
+        }
+        else
+        {
+            // Copy keys as-is
+            for (int32 i = 0; i < listSize; i++)
+                sortedKeys[i] = drawCallsData[listData[i]].SortKey;
+        }
     }
 
     // Sort draw calls indices
@@ -873,7 +901,6 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
                         other.InstanceCount != 0 &&
                         drawCallHandler.CanBatch == otherHandler.CanBatch &&
                         drawCallHandler.CanBatch(drawCall, other, pass) &&
-                        drawCall.WorldDeterminant == other.WorldDeterminant &&
                         drawCall.StencilValue == other.StencilValue;
                 if (!canBatch)
                     break;
@@ -935,7 +962,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
     bool useInstancing = list.CanUseInstancing && CanUseInstancing(renderContext.View.Pass) && GPUDevice::Instance->Limits.HasInstancing;
     TaaJitterRemoveContext taaJitterRemove(renderContext.View);
 
-    // Lazy-init objects buffer (if user didn't do it)
+    // Lazy-init objects buffer (if caller didn't do it)
     if (drawCallsList->ObjectBuffer.Data.IsEmpty())
     {
         drawCallsList->BuildObjectsBuffer();
@@ -1184,7 +1211,10 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
 
 void SurfaceDrawCallHandler::GetHash(const DrawCall& drawCall, uint32& batchKey)
 {
-    batchKey = (batchKey * 397) ^ ::GetHash(drawCall.Surface.Lightmap);
+    if (drawCall.Surface.Lightmap)
+        CombineHash(batchKey, 1313);
+    if (drawCall.Surface.Skinning)
+        CombineHash(batchKey, 11);
 }
 
 bool SurfaceDrawCallHandler::CanBatch(const DrawCall& a, const DrawCall& b, DrawPass pass)
@@ -1193,16 +1223,19 @@ bool SurfaceDrawCallHandler::CanBatch(const DrawCall& a, const DrawCall& b, Draw
     if (a.Surface.Lightmap == nullptr && b.Surface.Lightmap == nullptr &&
         a.Surface.Skinning == nullptr && b.Surface.Skinning == nullptr)
     {
+        auto& materialInfo = a.Material->GetInfo();
         if (a.Material != b.Material)
         {
             // Batch simple materials during depth-only drawing (when using default vertex shader and no pixel shader)
             if (pass == DrawPass::Depth)
             {
-                return IsSimpleMaterial(a.Material->GetInfo()) && IsSimpleMaterial(b.Material->GetInfo());
+                return IsSimpleMaterial(materialInfo) && IsSimpleMaterial(b.Material->GetInfo());
             }
             return false;
         }
-        return true;
+
+        // World determinant flips the culling mode
+        return (materialInfo.CullMode == CullMode::TwoSided || a.WorldDeterminant == b.WorldDeterminant);
     }
     return false;
 }
