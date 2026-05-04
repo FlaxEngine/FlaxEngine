@@ -97,6 +97,18 @@ bool RenderLightData::CanRenderShadow(const RenderView& view) const
     return result && ShadowsStrength > ZeroTolerance;
 }
 
+#if !BUILD_RELEASE
+
+#include "Engine/Level/Actors/Light.h"
+#include "Engine/Scripting/Scripting.h"
+
+Light* RenderLightData::GetActor() const
+{
+    return Scripting::TryFindObject<Light>(ID);
+}
+
+#endif
+
 void RenderDirectionalLightData::SetShaderData(ShaderLightData& data, bool useShadow) const
 {
     data.SpotAngles.X = -2.0f;

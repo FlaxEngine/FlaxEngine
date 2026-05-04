@@ -10,6 +10,7 @@
 #include "../Types/String.h"
 
 static_assert(sizeof(Matrix) == 4 * 4 * 4, "Invalid Matrix type size.");
+static_assert(sizeof(Double4x4) == 8 * 4 * 4, "Invalid Double4x4 type size.");
 
 const Matrix Matrix::Zero(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 const Matrix Matrix::Identity(
@@ -17,6 +18,13 @@ const Matrix Matrix::Identity(
     0.0f, 1.0f, 0.0f, 0.0f,
     0.0f, 0.0f, 1.0f, 0.0f,
     0.0f, 0.0f, 0.0f, 1.0f);
+
+const Double4x4 Double4x4::Zero(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+const Double4x4 Double4x4::Identity(
+    1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, 1.0, 0.0,
+    0.0, 0.0, 0.0, 1.0);
 
 Matrix::Matrix(const Matrix3x3& matrix)
 {

@@ -64,6 +64,10 @@ struct RenderLightData
     int32 ShadowsResolution;
 
     bool CanRenderShadow(const RenderView& view) const;
+#if !BUILD_RELEASE
+    // Development-only, gets the actor that produced this light (from ID).
+    Light* GetActor() const;
+#endif
 };
 
 struct RenderDirectionalLightData : RenderLightData
