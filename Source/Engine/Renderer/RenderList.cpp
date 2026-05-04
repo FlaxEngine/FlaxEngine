@@ -710,7 +710,9 @@ void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawMo
     {
         DrawCallsLists[(int32)DrawCallsListType::Distortion].Indices.Add(index);
     }
-    if ((drawModes & DrawPass::MotionVectors) != DrawPass::None && (staticFlags & StaticFlags::Transform) == StaticFlags::None)
+    if ((drawModes & DrawPass::MotionVectors) != DrawPass::None &&
+        (staticFlags & StaticFlags::Transform) == StaticFlags::None &&
+        RenderTools::ComputeBoundsScreenRadiusSquared(drawCall.ObjectPosition, drawCall.ObjectRadius, renderContext.View) > Math::Square(Graphics::MotionVectors::MinObjectScreenSize))
     {
         DrawCallsLists[(int32)DrawCallsListType::MotionVectors].Indices.Add(index);
     }
@@ -756,7 +758,9 @@ void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawP
         {
             DrawCallsLists[(int32)DrawCallsListType::Distortion].Indices.Add(index);
         }
-        if ((drawModes & DrawPass::MotionVectors) != DrawPass::None && (staticFlags & StaticFlags::Transform) == StaticFlags::None)
+        if ((drawModes & DrawPass::MotionVectors) != DrawPass::None && 
+            (staticFlags & StaticFlags::Transform) == StaticFlags::None &&
+            RenderTools::ComputeBoundsScreenRadiusSquared(bounds.Center, (float)bounds.Radius, mainRenderContext.View) > Math::Square(Graphics::MotionVectors::MinObjectScreenSize))
         {
             DrawCallsLists[(int32)DrawCallsListType::MotionVectors].Indices.Add(index);
         }

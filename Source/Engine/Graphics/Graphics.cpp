@@ -32,6 +32,7 @@ bool Graphics::SpreadWorkload = true;
 #if !BUILD_RELEASE || USE_EDITOR
 float Graphics::TestValue = 0.0f;
 #endif
+float Graphics::MotionVectors::MinObjectScreenSize = 0.02f;
 float Graphics::Shadows::MinObjectPixelSize = 2.0f;
 bool Graphics::PostProcessing::ColorGradingVolumeLUT = true;
 

@@ -110,6 +110,15 @@ public:
         API_FIELD() static float MinObjectPixelSize;
     };
 
+    // Motion Vectors rendering configuration.
+    API_CLASS(Static, Attributes="DebugCommand") class FLAXENGINE_API MotionVectors
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(MotionVectors);
+
+        // The minimum screen size of objects to draw motion vectors. Improves performance by skipping too small objects (eg. sub-pixel) from rendering motion vectors.
+        API_FIELD() static float MinObjectScreenSize;
+    };
+
     // Post Processing effects rendering configuration.
     API_CLASS(Static, Attributes="DebugCommand") class FLAXENGINE_API PostProcessing
     {
