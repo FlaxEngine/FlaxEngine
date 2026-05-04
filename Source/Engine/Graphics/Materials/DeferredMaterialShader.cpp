@@ -26,10 +26,10 @@ bool DeferredMaterialShader::CanUseLightmap() const
     return true;
 }
 
-bool DeferredMaterialShader::CanUseInstancing(InstancingHandler& handler) const
+bool DeferredMaterialShader::CanUseInstancing(const RenderContext& renderContext, InstancingHandler& handler) const
 {
     handler = { SurfaceDrawCallHandler::GetHash, SurfaceDrawCallHandler::CanBatch, };
-    return _instanced;
+    return _instanced || renderContext.View.Pass == DrawPass::Depth;
 }
 
 void DeferredMaterialShader::Bind(BindParameters& params)

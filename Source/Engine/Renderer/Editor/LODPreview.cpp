@@ -32,7 +32,7 @@ bool LODPreviewMaterialShader::IsReady() const
     return _material && _material->IsReady();
 }
 
-bool LODPreviewMaterialShader::CanUseInstancing(InstancingHandler& handler) const
+bool LODPreviewMaterialShader::CanUseInstancing(const RenderContext& renderContext, InstancingHandler& handler) const
 {
     return false;
 }

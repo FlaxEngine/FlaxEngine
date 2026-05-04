@@ -126,9 +126,10 @@ public:
     /// <summary>
     /// Returns true if material can use draw calls instancing.
     /// </summary>
+    /// <param name="renderContext">The rendering context.</param>
     /// <param name="handler">The output data for the instancing handling used to hash, batch and write draw calls. Valid only when function returns true.</param>
     /// <returns>True if can use instancing, otherwise false.</returns>
-    virtual bool CanUseInstancing(InstancingHandler& handler) const
+    virtual bool CanUseInstancing(const RenderContext& renderContext, InstancingHandler& handler) const
     {
 #if BUILD_DEBUG
         handler = { nullptr, nullptr };

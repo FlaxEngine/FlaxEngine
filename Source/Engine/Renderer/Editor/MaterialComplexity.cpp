@@ -36,9 +36,9 @@ bool MaterialComplexityMaterialShader::WrapperShader::IsReady() const
     return MaterialAsset && MaterialAsset->IsReady();
 }
 
-bool MaterialComplexityMaterialShader::WrapperShader::CanUseInstancing(InstancingHandler& handler) const
+bool MaterialComplexityMaterialShader::WrapperShader::CanUseInstancing(const RenderContext& renderContext, InstancingHandler& handler) const
 {
-    return MaterialAsset && MaterialAsset->CanUseInstancing(handler);
+    return MaterialAsset && MaterialAsset->CanUseInstancing(renderContext, handler);
 }
 
 DrawPass MaterialComplexityMaterialShader::WrapperShader::GetDrawModes() const

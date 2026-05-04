@@ -121,7 +121,7 @@ void DebugOverrideDrawCallsMaterial(const RenderContext& renderContext, IMateria
         return;
     PROFILE_CPU();
     IMaterial::InstancingHandler handler;
-    const bool canUseInstancing = material->CanUseInstancing(handler);
+    const bool canUseInstancing = material->CanUseInstancing(renderContext, handler);
     const auto drawModes = material->GetDrawModes();
     if (EnumHasAnyFlags(drawModes, DrawPass::GBuffer))
     {

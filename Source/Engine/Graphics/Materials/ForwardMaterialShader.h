@@ -71,7 +71,7 @@ public:
 public:
     // [MaterialShader]
     DrawPass GetDrawModes() const override;
-    bool CanUseInstancing(InstancingHandler& handler) const override;
+    bool CanUseInstancing(const RenderContext& renderContext, InstancingHandler& handler) const override;
     void Bind(BindParameters& params) override;
     void Unload() override;
 

@@ -658,7 +658,7 @@ FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall&
     uint32 distanceKey = RenderTools::ComputeDistanceSortKey(distance);
     uint32 material = GetHash(drawCall.Material);
     IMaterial::InstancingHandler handler;
-    if (drawCall.Material->CanUseInstancing(handler))
+    if (drawCall.Material->CanUseInstancing(renderContext, handler))
         handler.GetHash(drawCall, material);
     material = (material * 397) ^ drawCall.StencilValue;
     uint32 geoKey = (uint32)(471 * drawCall.WorldDeterminant);
@@ -890,14 +890,14 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
         int32 batchSize = 1;
         int32 instanceCount = drawCall.InstanceCount;
         IMaterial::InstancingHandler drawCallHandler, otherHandler;
-        if (instanceCount != 0 && drawCall.Material->CanUseInstancing(drawCallHandler))
+        if (instanceCount != 0 && drawCall.Material->CanUseInstancing(renderContext, drawCallHandler))
         {
             // Check the following draw calls sequence to merge them
             for (int32 j = i + 1; j < listSize; j++)
             {
                 const DrawCall& other = drawCallsData[listData[j]];
                 const bool canBatch =
-                        other.Material->CanUseInstancing(otherHandler) &&
+                        other.Material->CanUseInstancing(renderContext, otherHandler) &&
                         other.InstanceCount != 0 &&
                         drawCallHandler.CanBatch == otherHandler.CanBatch &&
                         drawCallHandler.CanBatch(drawCall, other, pass) &&

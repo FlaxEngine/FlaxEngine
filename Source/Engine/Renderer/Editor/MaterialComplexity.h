@@ -30,7 +30,7 @@ private:
         const MaterialInfo& GetInfo() const override;
         GPUShader* GetShader() const override;
         bool IsReady() const override;
-        bool CanUseInstancing(InstancingHandler& handler) const override;
+        bool CanUseInstancing(const RenderContext& renderContext, InstancingHandler& handler) const override;
         DrawPass GetDrawModes() const override;
         void Bind(BindParameters& params) override;
     };
