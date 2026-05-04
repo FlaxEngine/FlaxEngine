@@ -182,7 +182,7 @@ namespace FlaxEditor.SceneGraph.GUI
                 _highlights?.Clear();
                 isThisVisible = true;
             }
-            else
+            else if (filterText.Contains(','))
             {
                 var splitFilter = filterText.Split(',');
                 var hasAllFilters = true;
@@ -199,21 +199,17 @@ namespace FlaxEditor.SceneGraph.GUI
                         // Check for any scripts
                         if (trimmedFilter.Equals("s:", StringComparison.OrdinalIgnoreCase))
                         {
-                            if (Actor != null)
-                            {
-                                if (Actor.ScriptsCount > 0)
-                                {
-                                    hasFilter = true;
-                                }
-                            }
+                            if (actor != null && actor.ScriptsCount > 0)
+                                hasFilter = true;
                         }
                         else
                         {
                             var scriptText = trimmedFilter.Replace("s:", "", StringComparison.OrdinalIgnoreCase).Trim();
                             var scriptFound = false;
-                            if (Actor != null)
+                            if (actor != null)
                             {
-                                foreach (var script in Actor.Scripts)
+                                var scripts = actor.Scripts;
+                                foreach (var script in scripts)
                                 {
                                     var name = TypeUtils.GetTypeDisplayName(script.GetType());
                                     var nameNoSpaces = name.Replace(" ", "");
@@ -233,15 +229,15 @@ namespace FlaxEditor.SceneGraph.GUI
                     {
                         if (trimmedFilter.Equals("a:", StringComparison.OrdinalIgnoreCase))
                         {
-                            if (Actor != null)
+                            if (actor != null)
                                 hasFilter = true;
                         }
                         else
                         {
-                            if (Actor != null)
+                            if (actor != null)
                             {
                                 var actorTypeText = trimmedFilter.Replace("a:", "", StringComparison.OrdinalIgnoreCase).Trim();
-                                var name = TypeUtils.GetTypeDisplayName(Actor.GetType());
+                                var name = TypeUtils.GetTypeDisplayName(actor.GetType());
                                 var nameNoSpaces = name.Replace(" ", "");
                                 if (name.Contains(actorTypeText, StringComparison.OrdinalIgnoreCase) || nameNoSpaces.Contains(actorTypeText, StringComparison.OrdinalIgnoreCase))
                                     hasFilter = true;
@@ -253,15 +249,15 @@ namespace FlaxEditor.SceneGraph.GUI
                     {
                         if (trimmedFilter.Equals("c:", StringComparison.OrdinalIgnoreCase))
                         {
-                            if (Actor != null)
+                            if (actor != null)
                                 hasFilter = true;
                         }
                         else
                         {
-                            if (Actor != null && Actor is UIControl uic && uic.Control != null)
+                            if (actor is UIControl uiControl && uiControl.Control != null)
                             {
                                 var controlTypeText = trimmedFilter.Replace("c:", "", StringComparison.OrdinalIgnoreCase).Trim();
-                                var name = TypeUtils.GetTypeDisplayName(uic.Control.GetType());
+                                var name = TypeUtils.GetTypeDisplayName(uiControl.Control.GetType());
                                 var nameNoSpaces = name.Replace(" ", "");
                                 if (name.Contains(controlTypeText, StringComparison.OrdinalIgnoreCase) || nameNoSpaces.Contains(controlTypeText, StringComparison.OrdinalIgnoreCase))
                                     hasFilter = true;
@@ -283,8 +279,9 @@ namespace FlaxEditor.SceneGraph.GUI
                             var textRect = TextRect;
                             for (int i = 0; i < ranges.Length; i++)
                             {
-                                var start = font.GetCharPosition(text, ranges[i].StartIndex);
-                                var end = font.GetCharPosition(text, ranges[i].EndIndex);
+                                var range = ranges[i];
+                                var start = font.GetCharPosition(text, range.StartIndex);
+                                var end = font.GetCharPosition(text, range.EndIndex);
                                 _highlights.Add(new Rectangle(start.X + textRect.X, textRect.Y, end.X - start.X, textRect.Height));
                             }
                             hasFilter = true;
@@ -301,6 +298,31 @@ namespace FlaxEditor.SceneGraph.GUI
                 isThisVisible = hasAllFilters;
                 if (!hasAllFilters)
                     _highlights?.Clear();
+            }
+            else if (QueryFilterHelper.Match(filterText, Text, out QueryFilterHelper.Range[] ranges))
+            {
+                // Update highlights
+                if (_highlights == null)
+                    _highlights = new List<Rectangle>(ranges.Length);
+                else
+                    _highlights.Clear();
+                var font = Style.Current.FontSmall;
+                var textRect = TextRect;
+                var text = Text;
+                for (int i = 0; i < ranges.Length; i++)
+                {
+                    var range = ranges[i];
+                    var start = font.GetCharPosition(text, range.StartIndex);
+                    var end = font.GetCharPosition(text, range.EndIndex);
+                    _highlights.Add(new Rectangle(start.X + textRect.X, textRect.Y, end.X - start.X, textRect.Height));
+                }
+                isThisVisible = true;
+            }
+            else
+            {
+                // Hide
+                _highlights?.Clear();
+                isThisVisible = false;
             }
 
             // Update children

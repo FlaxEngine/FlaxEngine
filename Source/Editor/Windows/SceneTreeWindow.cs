@@ -175,8 +175,8 @@ namespace FlaxEditor.Windows
             if (IsLayoutLocked)
                 return;
 
-            _tree.LockChildrenRecursive();
             PerformLayout();
+            _tree.LockChildrenRecursive();
 
             // Update tree
             var query = _searchBox.Text;
