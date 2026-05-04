@@ -370,6 +370,7 @@ public:
 
     void DirtyStaticBounds(const BoundingSphere& bounds)
     {
+        PROFILE_CPU();
         // TODO: use octree to improve bounds-testing
         // TODO: build list of modified bounds and dirty them in batch on next frame start (ideally in async within shadows setup job)
         for (auto& e : Lights)
@@ -773,7 +774,6 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
 {
     SetupLight(shadows, renderContext, renderContextBatch, (RenderLightData&)light, atlasLight);
 
-    const RenderView& view = renderContext.View;
     const int32 csmCount = atlasLight.TilesCount;
     const auto shadowMapsSize = (float)atlasLight.Resolution;
     atlasLight.BlendCSM = Graphics::AllowCSMBlending;
@@ -787,9 +787,9 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
 #endif
 
     // Calculate cascade splits
-    const float minDistance = view.Near;
-    const float maxDistance = view.Near + atlasLight.Distance;
-    const float viewRange = view.Far - view.Near;
+    const float minDistance = renderContext.View.Near;
+    const float maxDistance = renderContext.View.Near + atlasLight.Distance;
+    const float viewRange = renderContext.View.Far - renderContext.View.Near;
     float cascadeSplits[MAX_CSM_CASCADES];
     {
         PartitionMode partitionMode = light.PartitionMode;
@@ -843,9 +843,9 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
 
         // Convert distance splits to ratios cascade in the range [0, 1]
         for (int32 i = 0; i < MAX_CSM_CASCADES; i++)
-            cascadeSplits[i] = (cascadeSplits[i] - view.Near) / viewRange;
+            cascadeSplits[i] = (cascadeSplits[i] - renderContext.View.Near) / viewRange;
     }
-    atlasLight.CascadeSplits = view.Near + Float4(cascadeSplits) * viewRange;
+    atlasLight.CascadeSplits = renderContext.View.Near + Float4(cascadeSplits) * viewRange;
 
     // Update cached state (invalidate it if the light changed)
     atlasLight.ValidateCache(renderContext.View, light);
@@ -881,21 +881,29 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     renderContextBatch.Contexts.AddDefault(atlasLight.ContextCount);
     atlasLight.Cache.Set(renderContext.View, light, atlasLight.CascadeSplits);
 
-    // Calculate view frustum corners (un-jittered) in view-space
-    Float3 frustumCorners[8];
+    // Get the 8 points of the view frustum in view-space (unproject from clip-space)
+    Float3 frustumCornersVs[8];
     {
-        BoundingFrustum stableViewFrustum;
-        Matrix m;
-        Matrix::Multiply(renderContext.View.View, renderContext.View.NonJitteredProjection, m);
-        stableViewFrustum.SetMatrix(m);
-        stableViewFrustum.GetCorners(frustumCorners);
+        Float3 frustumCornersCs[8] =
+        {
+            Float3(-1.0f,  1.0f, 0.0f),
+            Float3(1.0f,  1.0f, 0.0f),
+            Float3(1.0f, -1.0f, 0.0f),
+            Float3(-1.0f, -1.0f, 0.0f),
+            Float3(-1.0f,  1.0f, 1.0f),
+            Float3(1.0f,  1.0f, 1.0f),
+            Float3(1.0f, -1.0f, 1.0f),
+            Float3(-1.0f, -1.0f, 1.0f),
+        };
+        Matrix invProjectionMatrix;
+        Matrix::Invert(renderContext.View.NonJitteredProjection, invProjectionMatrix);
+        for (int32 i = 0; i < 8; i++)
+            Float3::TransformCoordinate(frustumCornersCs[i], invProjectionMatrix, frustumCornersVs[i]);
     }
-    for (int32 i = 0; i < 8; i++)
-        Float3::Transform(frustumCorners[i], renderContext.View.View, frustumCorners[i]);
 
     // Create the different view and projection matrices for each split
     float splitMinRatio = 0;
-    float splitMaxRatio = (minDistance - view.Near) / viewRange;
+    float splitMaxRatio = (minDistance - renderContext.View.Near) / viewRange;
     int32 contextIndex = 0;
     for (int32 cascadeIndex = 0; cascadeIndex < csmCount; cascadeIndex++)
     {
@@ -908,31 +916,31 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
             continue;
 
         // Calculate cascade split frustum corners in view space
-        Float3 frustumCornersVs[8];
+        Float3 cascadeCornersVs[8];
+        float csmOverlap = atlasLight.BlendCSM ? 0.2f : 0.1f;
         for (int32 j = 0; j < 4; j++)
         {
-            float csmOverlap = atlasLight.BlendCSM ? 0.2f : 0.1f;
             float overlapWithPrevSplit = csmOverlap * (splitMinRatio - oldSplitMinRatio);
-            const auto frustumRangeVS = frustumCorners[j + 4] - frustumCorners[j];
-            frustumCornersVs[j] = frustumCorners[j] + frustumRangeVS * (splitMinRatio - overlapWithPrevSplit);
-            frustumCornersVs[j + 4] = frustumCorners[j] + frustumRangeVS * splitMaxRatio;
+            const Float3 frustumRangeVS = frustumCornersVs[j + 4] - frustumCornersVs[j];
+            cascadeCornersVs[j] = frustumCornersVs[j] + frustumRangeVS * (splitMinRatio - overlapWithPrevSplit);
+            cascadeCornersVs[j + 4] = frustumCornersVs[j] + frustumRangeVS * splitMaxRatio;
         }
 
         // Transform the frustum from camera view space to world-space
-        Float3 frustumCornersWs[8];
+        Float3 cascadeCornersWs[8];
         for (int32 i = 0; i < 8; i++)
-            Float3::Transform(frustumCornersVs[i], renderContext.View.IV, frustumCornersWs[i]);
+            Float3::Transform(cascadeCornersVs[i], renderContext.View.IV, cascadeCornersWs[i]);
 
         // Calculate the centroid of the view frustum slice
         Float3 frustumCenter = Float3::Zero;
         for (int32 i = 0; i < 8; i++)
-            frustumCenter += frustumCornersWs[i];
+            frustumCenter += cascadeCornersWs[i];
         frustumCenter *= 1.0f / 8.0f;
 
         // Calculate the radius of a bounding sphere surrounding the frustum corners
         float frustumRadius = 0.0f;
         for (int32 i = 0; i < 8; i++)
-            frustumRadius = Math::Max(frustumRadius, (frustumCornersWs[i] - frustumCenter).LengthSquared());
+            frustumRadius = Math::Max(frustumRadius, (cascadeCornersWs[i] - frustumCenter).LengthSquared());
         frustumRadius = Math::Ceil(Math::Sqrt(frustumRadius) * 16.0f) / 16.0f;
 
         // Snap cascade center to the texel size
@@ -955,7 +963,7 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
         Matrix::LookAt(frustumCenter + light.Direction * minExtents.Z, frustumCenter, up, shadowView);
 
         // Create viewport for culling with extended near/far planes due to culling issues (aka pancaking)
-        const float cullRangeExtent = 100000.0f;
+        const float cullRangeExtent = METERS_TO_UNITS(1000.0f);
         Matrix::OrthoOffCenter(minExtents.X, maxExtents.X, minExtents.Y, maxExtents.Y, -cullRangeExtent, cascadeExtents.Z + cullRangeExtent, shadowProjection);
         Matrix::Multiply(shadowView, shadowProjection, cullingVP);
 
@@ -981,11 +989,11 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
         // Setup context for cascade
         auto& shadowContext = renderContextBatch.Contexts[atlasLight.ContextIndex + contextIndex++];
         SetupRenderContext(renderContext, shadowContext);
-        shadowContext.View.Position = light.Direction * -atlasLight.Distance + view.Position;
+        shadowContext.View.Position = light.Direction * -atlasLight.Distance + renderContext.View.Position;
         shadowContext.View.Direction = light.Direction;
         shadowContext.View.SetUp(shadowView, shadowProjection);
         shadowContext.View.CullingFrustum.SetMatrix(cullingVP);
-        shadowContext.View.PrepareCache(shadowContext, shadowMapsSize, shadowMapsSize, Float2::Zero, &view);
+        shadowContext.View.PrepareCache(shadowContext, shadowMapsSize, shadowMapsSize, Float2::Zero, &renderContext.View);
     }
 }
 
