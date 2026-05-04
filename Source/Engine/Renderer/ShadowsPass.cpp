@@ -195,7 +195,7 @@ struct ShadowAtlasLight
     bool BlendCSM;
     mutable StaticStates StaticState;
     BoundingSphere Bounds;
-    float Sharpness, Fade, NormalOffsetScale, Bias, FadeDistance, Distance, TileBorder;
+    float Sharpness, Fade, NormalOffsetScale, Bias, FadeDistance, Distance, TileBorder, CascadeBlendSize;
     Float4 CascadeSplits;
     ShadowAtlasLightTile Tiles[SHADOWS_MAX_TILES];
     ShadowAtlasLightCache Cache;
@@ -846,6 +846,7 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
             cascadeSplits[i] = (cascadeSplits[i] - renderContext.View.Near) / viewRange;
     }
     atlasLight.CascadeSplits = renderContext.View.Near + Float4(cascadeSplits) * viewRange;
+    atlasLight.CascadeBlendSize = Math::Saturate(light.CascadeBlendSize);
 
     // Update cached state (invalidate it if the light changed)
     atlasLight.ValidateCache(renderContext.View, light);
@@ -917,10 +918,10 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
 
         // Calculate cascade split frustum corners in view space
         Float3 cascadeCornersVs[8];
-        float csmOverlap = atlasLight.BlendCSM ? 0.2f : 0.1f;
+        float blendDistance = atlasLight.CascadeBlendSize;
         for (int32 j = 0; j < 4; j++)
         {
-            float overlapWithPrevSplit = csmOverlap * (splitMinRatio - oldSplitMinRatio);
+            float overlapWithPrevSplit = blendDistance * (splitMinRatio - oldSplitMinRatio);
             const Float3 frustumRangeVS = frustumCornersVs[j + 4] - frustumCornersVs[j];
             cascadeCornersVs[j] = frustumCornersVs[j] + frustumRangeVS * (splitMinRatio - overlapWithPrevSplit);
             cascadeCornersVs[j + 4] = frustumCornersVs[j] + frustumRangeVS * splitMaxRatio;
@@ -1430,7 +1431,7 @@ RETRY_ATLAS_SETUP:
         {
             // Shadow info
             auto* packed = shadows.ShadowsBuffer.WriteReserve<Float4>(2);
-            Color32 packed0x((byte)(atlasLight.Sharpness * (255.0f / 10.0f)), (byte)(atlasLight.Fade * 255.0f), (byte)atlasLight.TilesCount, 0);
+            Color32 packed0x((byte)(atlasLight.Sharpness * (255.0f / 10.0f)), (byte)(atlasLight.Fade * 255.0f), (byte)atlasLight.TilesCount, (byte)(atlasLight.CascadeBlendSize * 255.0f));
             packed[0] = Float4(*(const float*)&packed0x, atlasLight.FadeDistance, atlasLight.NormalOffsetScale, atlasLight.Bias);
             packed[1] = atlasLight.CascadeSplits;
         }

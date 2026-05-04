@@ -21,6 +21,7 @@ struct ShadowData
     float FadeDistance;
     float NormalOffsetScale;
     float Bias;
+    float CascadeBlendSize;
     uint TilesCount;
     float4 CascadeSplits;
 };
@@ -43,6 +44,7 @@ ShadowData LoadShadowsBuffer(Buffer<float4> shadowsBuffer, uint shadowsBufferAdd
     shadow.Sharpness = (packed0x & 0x000000ff) * (10.0f / 255.0f);
     shadow.Fade = ((packed0x & 0x0000ff00) >> 8) * (1.0f / 255.0f);
     shadow.TilesCount = ((packed0x & 0x00ff0000) >> 16);
+    shadow.CascadeBlendSize = ((packed0x & 0xff000000) >> 24) * (1.0f / 255.0f);
     shadow.FadeDistance = vector0.y;
     shadow.NormalOffsetScale = vector0.z;
     shadow.Bias = vector0.w;

@@ -48,6 +48,12 @@ public:
     API_FIELD(Attributes="EditorOrder(69), DefaultValue(1.0f), VisibleIf(nameof(ShowCascade4)), Limit(0, 1, 0.001f), EditorDisplay(\"Shadow\")")
     float Cascade4Spacing = 1.0f;
 
+    /// <summary>
+    /// Percentage of the cascade distance over which cascades will blend together. This helps to hide the transition between cascades.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(70), EditorDisplay(\"Shadow\", \"Cascade Blend Distance\"), Limit(0.0f, 1.0f)")
+    float CascadeBlendSize = 0.1f;
+
 public:
     // [LightWithShadow]
     void Draw(RenderContext& renderContext) override;
