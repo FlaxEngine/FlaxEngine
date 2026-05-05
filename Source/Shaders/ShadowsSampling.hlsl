@@ -89,12 +89,6 @@ float SampleShadowMap(Texture2D<float> shadowMap, float2 shadowMapUV, float scen
     return result;
 }
 
-float SampleShadowMapOptimizedPCFHelper(Texture2D<float> shadowMap, float2 baseUV, float u, float v, float2 shadowMapSizeInv, float sceneDepth)
-{
-    float2 uv = baseUV + float2(u, v) * shadowMapSizeInv;
-    return SAMPLE_SHADOW_MAP(shadowMap, uv, sceneDepth);
-}
-
 // [Shadow map sampling method used in The Witness, https://github.com/TheRealMJP/Shadows]
 float SampleShadowMapOptimizedPCF(Texture2D<float> shadowMap, float2 shadowMapUV, float sceneDepth)
 {
@@ -130,10 +124,10 @@ float SampleShadowMapOptimizedPCF(Texture2D<float> shadowMap, float2 shadowMapUV
 	float v0 = (2 - t) / vw0 - 1;
 	float v1 = t / vw1 + 1;
 
-	sum += uw0 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u0, v0, shadowMapSizeInv, sceneDepth);
-	sum += uw1 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u1, v0, shadowMapSizeInv, sceneDepth);
-	sum += uw0 * vw1 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u0, v1, shadowMapSizeInv, sceneDepth);
-	sum += uw1 * vw1 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u1, v1, shadowMapSizeInv, sceneDepth);
+	sum += uw0 * vw0 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u0, v0) * shadowMapSizeInv, sceneDepth);
+	sum += uw1 * vw0 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u1, v0) * shadowMapSizeInv, sceneDepth);
+	sum += uw0 * vw1 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u0, v1) * shadowMapSizeInv, sceneDepth);
+	sum += uw1 * vw1 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u1, v1) * shadowMapSizeInv, sceneDepth);
 
 	return sum * 1.0f / 16;
 #elif SHADOWS_QUALITY == 2
@@ -153,17 +147,17 @@ float SampleShadowMapOptimizedPCF(Texture2D<float> shadowMap, float2 shadowMapUV
 	float v1 = (3 + t) / vw1;
 	float v2 = t / vw2 + 2;
 
-	sum += uw0 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u0, v0, shadowMapSizeInv, sceneDepth);
-	sum += uw1 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u1, v0, shadowMapSizeInv, sceneDepth);
-	sum += uw2 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u2, v0, shadowMapSizeInv, sceneDepth);
+	sum += uw0 * vw0 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u0, v0) * shadowMapSizeInv, sceneDepth);
+	sum += uw1 * vw0 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u1, v0) * shadowMapSizeInv, sceneDepth);
+	sum += uw2 * vw0 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u2, v0) * shadowMapSizeInv, sceneDepth);
 
-	sum += uw0 * vw1 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u0, v1, shadowMapSizeInv, sceneDepth);
-	sum += uw1 * vw1 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u1, v1, shadowMapSizeInv, sceneDepth);
-	sum += uw2 * vw1 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u2, v1, shadowMapSizeInv, sceneDepth);
+	sum += uw0 * vw1 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u0, v1) * shadowMapSizeInv, sceneDepth);
+	sum += uw1 * vw1 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u1, v1) * shadowMapSizeInv, sceneDepth);
+	sum += uw2 * vw1 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u2, v1) * shadowMapSizeInv, sceneDepth);
 
-	sum += uw0 * vw2 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u0, v2, shadowMapSizeInv, sceneDepth);
-	sum += uw1 * vw2 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u1, v2, shadowMapSizeInv, sceneDepth);
-	sum += uw2 * vw2 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u2, v2, shadowMapSizeInv, sceneDepth);
+	sum += uw0 * vw2 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u0, v2) * shadowMapSizeInv, sceneDepth);
+	sum += uw1 * vw2 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u1, v2) * shadowMapSizeInv, sceneDepth);
+	sum += uw2 * vw2 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u2, v2) * shadowMapSizeInv, sceneDepth);
 
 	return sum * 1.0f / 144;
 #elif SHADOWS_QUALITY == 3
@@ -187,25 +181,25 @@ float SampleShadowMapOptimizedPCF(Texture2D<float> shadowMap, float2 shadowMapUV
 	float v2 = -(7 * t + 5) / vw2 + 1;
 	float v3 = -t / vw3 + 3;
 
-	sum += uw0 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u0, v0, shadowMapSizeInv, sceneDepth);
-	sum += uw1 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u1, v0, shadowMapSizeInv, sceneDepth);
-	sum += uw2 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u2, v0, shadowMapSizeInv, sceneDepth);
-	sum += uw3 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u3, v0, shadowMapSizeInv, sceneDepth);
+	sum += uw0 * vw0 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u0, v0) * shadowMapSizeInv, sceneDepth);
+	sum += uw1 * vw0 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u1, v0) * shadowMapSizeInv, sceneDepth);
+	sum += uw2 * vw0 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u2, v0) * shadowMapSizeInv, sceneDepth);
+	sum += uw3 * vw0 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u3, v0) * shadowMapSizeInv, sceneDepth);
 
-	sum += uw0 * vw1 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u0, v1, shadowMapSizeInv, sceneDepth);
-	sum += uw1 * vw1 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u1, v1, shadowMapSizeInv, sceneDepth);
-	sum += uw2 * vw1 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u2, v1, shadowMapSizeInv, sceneDepth);
-	sum += uw3 * vw1 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u3, v1, shadowMapSizeInv, sceneDepth);
+	sum += uw0 * vw1 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u0, v1) * shadowMapSizeInv, sceneDepth);
+	sum += uw1 * vw1 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u1, v1) * shadowMapSizeInv, sceneDepth);
+	sum += uw2 * vw1 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u2, v1) * shadowMapSizeInv, sceneDepth);
+	sum += uw3 * vw1 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u3, v1) * shadowMapSizeInv, sceneDepth);
 
-	sum += uw0 * vw2 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u0, v2, shadowMapSizeInv, sceneDepth);
-	sum += uw1 * vw2 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u1, v2, shadowMapSizeInv, sceneDepth);
-	sum += uw2 * vw2 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u2, v2, shadowMapSizeInv, sceneDepth);
-	sum += uw3 * vw2 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u3, v2, shadowMapSizeInv, sceneDepth);
+	sum += uw0 * vw2 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u0, v2) * shadowMapSizeInv, sceneDepth);
+	sum += uw1 * vw2 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u1, v2) * shadowMapSizeInv, sceneDepth);
+	sum += uw2 * vw2 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u2, v2) * shadowMapSizeInv, sceneDepth);
+	sum += uw3 * vw2 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u3, v2) * shadowMapSizeInv, sceneDepth);
 
-	sum += uw0 * vw3 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u0, v3, shadowMapSizeInv, sceneDepth);
-	sum += uw1 * vw3 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u1, v3, shadowMapSizeInv, sceneDepth);
-	sum += uw2 * vw3 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u2, v3, shadowMapSizeInv, sceneDepth);
-	sum += uw3 * vw3 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u3, v3, shadowMapSizeInv, sceneDepth);
+	sum += uw0 * vw3 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u0, v3) * shadowMapSizeInv, sceneDepth);
+	sum += uw1 * vw3 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u1, v3) * shadowMapSizeInv, sceneDepth);
+	sum += uw2 * vw3 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u2, v3) * shadowMapSizeInv, sceneDepth);
+	sum += uw3 * vw3 * SAMPLE_SHADOW_MAP(shadowMap, baseUV + float2(u3, v3) * shadowMapSizeInv, sceneDepth);
 
 	return sum * (1.0f / 2704);
 #else
