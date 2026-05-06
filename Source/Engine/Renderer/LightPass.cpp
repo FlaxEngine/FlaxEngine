@@ -31,10 +31,8 @@ bool LightPass::Init()
 {
     // Create pipeline states
     _psLightDir.CreatePipelineStates();
-    _psLightPoint.CreatePipelineStates();
-    _psLightPointInside.CreatePipelineStates();
-    _psLightSpot.CreatePipelineStates();
-    _psLightSpotInside.CreatePipelineStates();
+    _psLightLocal.CreatePipelineStates();
+    _psLightLocalInside.CreatePipelineStates();
     _psLightSky = GPUDevice::Instance->CreatePipelineState();
     _psLightSkyInside = GPUDevice::Instance->CreatePipelineState();
     _depthBounds = GPUDevice::Instance->Limits.HasDepthBounds && GPUDevice::Instance->Limits.HasReadOnlyDepth;
@@ -81,7 +79,7 @@ bool LightPass::setupResources()
         if (_psLightDir.Create(psDesc, shader, "PS_Directional"))
             return true;
     }
-    if (!_psLightPoint.IsValid())
+    if (!_psLightLocal.IsValid())
     {
         psDesc = GPUPipelineState::Description::DefaultNoDepth;
         psDesc.BlendMode = BlendingMode::Add;
@@ -90,27 +88,11 @@ bool LightPass::setupResources()
         psDesc.DepthEnable = true;
         psDesc.DepthBoundsEnable = _depthBounds;
         psDesc.CullMode = CullMode::Normal;
-        if (_psLightPoint.Create(psDesc, shader, "PS_Point"))
+        if (_psLightLocal.Create(psDesc, shader, "PS_LocalLight"))
             return true;
         psDesc.DepthFunc = ComparisonFunc::Greater;
         psDesc.CullMode = CullMode::Inverted;
-        if (_psLightPointInside.Create(psDesc, shader, "PS_Point"))
-            return true;
-    }
-    if (!_psLightSpot.IsValid())
-    {
-        psDesc = GPUPipelineState::Description::DefaultNoDepth;
-        psDesc.BlendMode = BlendingMode::Add;
-        psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
-        psDesc.VS = shader->GetVS("VS_Model");
-        psDesc.DepthEnable = true;
-        psDesc.DepthBoundsEnable = _depthBounds;
-        psDesc.CullMode = CullMode::Normal;
-        if (_psLightSpot.Create(psDesc, shader, "PS_Spot"))
-            return true;
-        psDesc.DepthFunc = ComparisonFunc::Greater;
-        psDesc.CullMode = CullMode::Inverted;
-        if (_psLightSpotInside.Create(psDesc, shader, "PS_Spot"))
+        if (_psLightLocalInside.Create(psDesc, shader, "PS_LocalLight"))
             return true;
     }
     if (!_psLightSky->IsValid())
@@ -141,10 +123,8 @@ void LightPass::Dispose()
 
     // Cleanup
     _psLightDir.Delete();
-    _psLightPoint.Delete();
-    _psLightPointInside.Delete();
-    _psLightSpot.Delete();
-    _psLightSpotInside.Delete();
+    _psLightLocal.Delete();
+    _psLightLocalInside.Delete();
     SAFE_DELETE_GPU_RESOURCE(_psLightSky);
     SAFE_DELETE_GPU_RESOURCE(_psLightSkyInside);
     SAFE_DELETE_GPU_RESOURCE(_psClearDiffuse);
@@ -301,7 +281,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         context->BindCB(0, cb0);
         context->BindCB(1, cb1);
         int32 permutationIndex = (disableSpecular ? 1 : 0) + (useIES ? 2 : 0);
-        context->SetState((isViewInside ? _psLightPointInside : _psLightPoint).Get(permutationIndex));
+        context->SetState((isViewInside ? _psLightLocalInside : _psLightLocal).Get(permutationIndex));
         sphereMesh.Render(context);
     }
 
@@ -349,7 +329,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         context->BindCB(0, cb0);
         context->BindCB(1, cb1);
         int32 permutationIndex = (disableSpecular ? 1 : 0) + (useIES ? 2 : 0);
-        context->SetState((isViewInside ? _psLightSpotInside : _psLightSpot).Get(permutationIndex));
+        context->SetState((isViewInside ? _psLightLocalInside : _psLightLocal).Get(permutationIndex));
         sphereMesh.Render(context);
     }
 

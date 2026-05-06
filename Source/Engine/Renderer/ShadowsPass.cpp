@@ -525,6 +525,7 @@ bool ShadowsPass::setupResources()
         if (_psShadowDir.Create(psDesc, shader, "PS_DirLight"))
             return true;
     }
+    StringAnsiView psLocalLight("PS_LocalLight");
     if (!_psShadowPoint.IsValid())
     {
         psDesc = GPUPipelineState::Description::DefaultNoDepth;
@@ -533,11 +534,11 @@ bool ShadowsPass::setupResources()
         psDesc.DepthEnable = true;
         psDesc.DepthBoundsEnable = _depthBounds;
         psDesc.CullMode = CullMode::Normal;
-        if (_psShadowPoint.Create(psDesc, shader, "PS_PointLight"))
+        if (_psShadowPoint.Create(psDesc, shader, psLocalLight))
             return true;
         psDesc.DepthFunc = ComparisonFunc::Greater;
         psDesc.CullMode = CullMode::Inverted;
-        if (_psShadowPointInside.Create(psDesc, shader, "PS_PointLight"))
+        if (_psShadowPointInside.Create(psDesc, shader, psLocalLight))
             return true;
     }
     if (!_psShadowSpot.IsValid())
@@ -548,11 +549,11 @@ bool ShadowsPass::setupResources()
         psDesc.DepthEnable = true;
         psDesc.DepthBoundsEnable = _depthBounds;
         psDesc.CullMode = CullMode::Normal;
-        if (_psShadowSpot.Create(psDesc, shader, "PS_SpotLight"))
+        if (_psShadowSpot.Create(psDesc, shader, psLocalLight, 8))
             return true;
         psDesc.DepthFunc = ComparisonFunc::Greater;
         psDesc.CullMode = CullMode::Inverted;
-        if (_psShadowSpotInside.Create(psDesc, shader, "PS_SpotLight"))
+        if (_psShadowSpotInside.Create(psDesc, shader, psLocalLight, 8))
             return true;
     }
     if (_psDepthClear == nullptr)

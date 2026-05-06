@@ -16,10 +16,8 @@ class LightPass : public RendererPass<LightPass>
 private:
     AssetReference<Shader> _shader;
     GPUPipelineStatePermutationsPs<2> _psLightDir;
-    GPUPipelineStatePermutationsPs<4> _psLightPoint;
-    GPUPipelineStatePermutationsPs<4> _psLightPointInside;
-    GPUPipelineStatePermutationsPs<4> _psLightSpot;
-    GPUPipelineStatePermutationsPs<4> _psLightSpotInside;
+    GPUPipelineStatePermutationsPs<4> _psLightLocal;
+    GPUPipelineStatePermutationsPs<4> _psLightLocalInside;
     GPUPipelineState* _psLightSky = nullptr;
     GPUPipelineState* _psLightSkyInside = nullptr;
     GPUPipelineState* _psClearDiffuse = nullptr;
@@ -45,10 +43,8 @@ private:
     void OnShaderReloading(Asset* obj)
     {
         _psLightDir.Release();
-        _psLightPoint.Release();
-        _psLightPointInside.Release();
-        _psLightSpot.Release();
-        _psLightSpotInside.Release();
+        _psLightLocal.Release();
+        _psLightLocalInside.Release();
         _psLightSky->ReleaseGPU();
         _psLightSkyInside->ReleaseGPU();
         invalidateResources();

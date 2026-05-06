@@ -70,13 +70,13 @@ void PS_Directional(Quad_VS2PS input, out float4 output : SV_Target0)
 	output = GetLighting(gBufferData.ViewPos, Light, gBuffer, shadowMask, false, false);
 }
 
-// Pixel shader for point light rendering
+// Pixel shader for point/spot light rendering
 META_PS(true, FEATURE_LEVEL_ES2)
 META_PERMUTATION_2(LIGHTING_NO_SPECULAR=0, USE_IES_PROFILE=0)
 META_PERMUTATION_2(LIGHTING_NO_SPECULAR=1, USE_IES_PROFILE=0)
 META_PERMUTATION_2(LIGHTING_NO_SPECULAR=0, USE_IES_PROFILE=1)
 META_PERMUTATION_2(LIGHTING_NO_SPECULAR=1, USE_IES_PROFILE=1)
-void PS_Point(Model_VS2PS input, out float4 output : SV_Target0)
+void PS_LocalLight(Model_VS2PS input, out float4 output : SV_Target0)
 {
 	output = 0;
 
@@ -103,48 +103,7 @@ void PS_Point(Model_VS2PS input, out float4 output : SV_Target0)
 	}
 
 	// Calculate lighting
-	output = GetLighting(gBufferData.ViewPos, Light, gBuffer, shadowMask, true, false);
-
-	// Apply IES texture
-#if USE_IES_PROFILE
-	output *= ComputeLightProfileMultiplier(IESTexture, gBuffer.WorldPos, Light.Position, -Light.Direction);
-#endif
-}
-
-// Pixel shader for spot light rendering
-META_PS(true, FEATURE_LEVEL_ES2)
-META_PERMUTATION_2(LIGHTING_NO_SPECULAR=0, USE_IES_PROFILE=0)
-META_PERMUTATION_2(LIGHTING_NO_SPECULAR=1, USE_IES_PROFILE=0)
-META_PERMUTATION_2(LIGHTING_NO_SPECULAR=0, USE_IES_PROFILE=1)
-META_PERMUTATION_2(LIGHTING_NO_SPECULAR=1, USE_IES_PROFILE=1)
-void PS_Spot(Model_VS2PS input, out float4 output : SV_Target0)
-{
-	output = 0;
-
-	// Obtain UVs corresponding to the current pixel
-	float2 uv = (input.ScreenPos.xy / input.ScreenPos.w) * float2(0.5, -0.5) + float2(0.5, 0.5);
-
-	// Sample GBuffer
-	GBufferData gBufferData = GetGBufferData();
-	GBufferSample gBuffer = SampleGBuffer(gBufferData, uv);
-
-	// Check if cannot shadow pixel
-	BRANCH
-	if (gBuffer.ShadingModel == SHADING_MODEL_UNLIT)
-	{
-		discard;
-		return;
-	}
-
-	// Sample shadow mask
-	float4 shadowMask = 1;
-	if (Light.ShadowsBufferAddress != 0)
-	{
-		shadowMask = SAMPLE_RT(Shadow, uv);
-	}
-
-	// Calculate lighting
-	output = GetLighting(gBufferData.ViewPos, Light, gBuffer, shadowMask, true, true);
+	output = GetLighting(gBufferData.ViewPos, Light, gBuffer, shadowMask, true, IsSpotLight(Light));
 
 	// Apply IES texture
 #if USE_IES_PROFILE

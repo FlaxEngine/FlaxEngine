@@ -58,6 +58,11 @@ struct LightSample
     float3 Transmission;
 };
 
+bool IsSpotLight(LightData lightData)
+{
+    return lightData.SpotAngles.x > -2.0f;
+}
+
 // Calculates radial light (point or spot) attenuation factors (distance, spot and radius mask)
 void GetRadialLightAttenuation(
     LightData lightData,

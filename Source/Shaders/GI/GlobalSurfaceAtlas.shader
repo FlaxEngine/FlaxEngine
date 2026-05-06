@@ -209,7 +209,7 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 
 	// Calculate lighting
 #if RADIAL_LIGHT
-	bool isSpotLight = Light.SpotAngles.x > -2.0f;
+	bool isSpotLight = IsSpotLight(Light);
 #else
 	bool isSpotLight = false;
 #endif

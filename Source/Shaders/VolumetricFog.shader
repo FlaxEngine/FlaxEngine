@@ -175,7 +175,7 @@ float4 PS_InjectLight(Quad_GS2PS input) : SV_Target0
 	uint samplesCount = historyAlpha < 0.01f ? MissedHistorySamplesCount : 1;
 
 	float NoL = 0;
-	bool isSpotLight = LocalLight.SpotAngles.x > -2.0f;
+	bool isSpotLight = IsSpotLight(LocalLight);
 	float4 scattering = 0;
 	for (uint sampleIndex = 0; sampleIndex < samplesCount; sampleIndex++)
 	{

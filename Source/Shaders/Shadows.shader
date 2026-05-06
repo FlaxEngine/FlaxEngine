@@ -70,36 +70,6 @@ Model_VS2PS VS_Model(ModelInput_PosOnly input)
 	return output;
 }
 
-// Pixel shader for point light shadow rendering
-META_PS(true, FEATURE_LEVEL_ES2)
-META_PERMUTATION_2(SHADOWS_QUALITY=0,CONTACT_SHADOWS=0)
-META_PERMUTATION_2(SHADOWS_QUALITY=1,CONTACT_SHADOWS=0)
-META_PERMUTATION_2(SHADOWS_QUALITY=2,CONTACT_SHADOWS=0)
-META_PERMUTATION_2(SHADOWS_QUALITY=3,CONTACT_SHADOWS=0)
-META_PERMUTATION_2(SHADOWS_QUALITY=0,CONTACT_SHADOWS=1)
-META_PERMUTATION_2(SHADOWS_QUALITY=1,CONTACT_SHADOWS=1)
-META_PERMUTATION_2(SHADOWS_QUALITY=2,CONTACT_SHADOWS=1)
-META_PERMUTATION_2(SHADOWS_QUALITY=3,CONTACT_SHADOWS=1)
-float4 PS_PointLight(Model_VS2PS input) : SV_Target0
-{
-	// Obtain texture coordinates corresponding to the current pixel
-	float2 uv = (input.ScreenPos.xy / input.ScreenPos.w) * float2(0.5, -0.5) + float2(0.5, 0.5);
-
-	// Sample GBuffer
-	GBufferData gBufferData = GetGBufferData();
-	GBufferSample gBuffer = SampleGBuffer(gBufferData, uv);
-
-	// Sample shadow
-    ShadowSample shadow = SamplePointLightShadow(Light, ShadowsBuffer, ShadowMap, gBuffer);
-
-#if CONTACT_SHADOWS && SHADOWS_QUALITY > 0
-	// Calculate screen-space contact shadow
-	shadow.SurfaceShadow *= RayCastScreenSpaceShadow(gBufferData, gBuffer, gBuffer.WorldPos, normalize(Light.Position - gBuffer.WorldPos), ContactShadowsLength);
-#endif
-
-	return GetShadowMask(shadow);
-}
-
 // Pixel shader for directional light shadow rendering
 META_PS(true, FEATURE_LEVEL_ES2)
 META_PERMUTATION_3(SHADOWS_QUALITY=0,CONTACT_SHADOWS=0,SHADOWS_CSM_BLENDING=0)
@@ -135,17 +105,25 @@ float4 PS_DirLight(Quad_VS2PS input) : SV_Target0
 	return GetShadowMask(shadow);
 }
 
-// Pixel shader for spot light shadow rendering
+// Pixel shader for point/spot light shadow rendering
 META_PS(true, FEATURE_LEVEL_ES2)
-META_PERMUTATION_2(SHADOWS_QUALITY=0,CONTACT_SHADOWS=0)
-META_PERMUTATION_2(SHADOWS_QUALITY=1,CONTACT_SHADOWS=0)
-META_PERMUTATION_2(SHADOWS_QUALITY=2,CONTACT_SHADOWS=0)
-META_PERMUTATION_2(SHADOWS_QUALITY=3,CONTACT_SHADOWS=0)
-META_PERMUTATION_2(SHADOWS_QUALITY=0,CONTACT_SHADOWS=1)
-META_PERMUTATION_2(SHADOWS_QUALITY=1,CONTACT_SHADOWS=1)
-META_PERMUTATION_2(SHADOWS_QUALITY=2,CONTACT_SHADOWS=1)
-META_PERMUTATION_2(SHADOWS_QUALITY=3,CONTACT_SHADOWS=1)
-float4 PS_SpotLight(Model_VS2PS input) : SV_Target0
+META_PERMUTATION_3(SHADOWS_QUALITY=0,CONTACT_SHADOWS=0,LIGHT_TYPE=0) // Point light
+META_PERMUTATION_3(SHADOWS_QUALITY=1,CONTACT_SHADOWS=0,LIGHT_TYPE=0)
+META_PERMUTATION_3(SHADOWS_QUALITY=2,CONTACT_SHADOWS=0,LIGHT_TYPE=0)
+META_PERMUTATION_3(SHADOWS_QUALITY=3,CONTACT_SHADOWS=0,LIGHT_TYPE=0)
+META_PERMUTATION_3(SHADOWS_QUALITY=0,CONTACT_SHADOWS=1,LIGHT_TYPE=0)
+META_PERMUTATION_3(SHADOWS_QUALITY=1,CONTACT_SHADOWS=1,LIGHT_TYPE=0)
+META_PERMUTATION_3(SHADOWS_QUALITY=2,CONTACT_SHADOWS=1,LIGHT_TYPE=0)
+META_PERMUTATION_3(SHADOWS_QUALITY=3,CONTACT_SHADOWS=1,LIGHT_TYPE=0)
+META_PERMUTATION_3(SHADOWS_QUALITY=0,CONTACT_SHADOWS=0,LIGHT_TYPE=1) // Spot light
+META_PERMUTATION_3(SHADOWS_QUALITY=1,CONTACT_SHADOWS=0,LIGHT_TYPE=1)
+META_PERMUTATION_3(SHADOWS_QUALITY=2,CONTACT_SHADOWS=0,LIGHT_TYPE=1)
+META_PERMUTATION_3(SHADOWS_QUALITY=3,CONTACT_SHADOWS=0,LIGHT_TYPE=1)
+META_PERMUTATION_3(SHADOWS_QUALITY=0,CONTACT_SHADOWS=1,LIGHT_TYPE=1)
+META_PERMUTATION_3(SHADOWS_QUALITY=1,CONTACT_SHADOWS=1,LIGHT_TYPE=1)
+META_PERMUTATION_3(SHADOWS_QUALITY=2,CONTACT_SHADOWS=1,LIGHT_TYPE=1)
+META_PERMUTATION_3(SHADOWS_QUALITY=3,CONTACT_SHADOWS=1,LIGHT_TYPE=1)
+float4 PS_LocalLight(Model_VS2PS input) : SV_Target0
 {
 	// Obtain texture coordinates corresponding to the current pixel
 	float2 uv = (input.ScreenPos.xy / input.ScreenPos.w) * float2(0.5, -0.5) + float2(0.5, 0.5);
@@ -155,7 +133,13 @@ float4 PS_SpotLight(Model_VS2PS input) : SV_Target0
 	GBufferSample gBuffer = SampleGBuffer(gBufferData, uv);
 
 	// Sample shadow
+#if LIGHT_TYPE == 0
+    ShadowSample shadow = SamplePointLightShadow(Light, ShadowsBuffer, ShadowMap, gBuffer);
+#elif LIGHT_TYPE == 1
     ShadowSample shadow = SampleSpotLightShadow(Light, ShadowsBuffer, ShadowMap, gBuffer);
+#else
+    ShadowSample shadow = (ShadowSample)0;
+#endif
 
 #if CONTACT_SHADOWS && SHADOWS_QUALITY > 0
 	// Calculate screen-space contact shadow
