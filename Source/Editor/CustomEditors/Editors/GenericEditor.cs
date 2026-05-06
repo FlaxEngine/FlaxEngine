@@ -261,6 +261,7 @@ namespace FlaxEditor.CustomEditors.Editors
         public static List<ItemInfo> GetItemsForType(ScriptType type, bool useProperties, bool useFields, bool usePropertiesWithoutSetter = false)
         {
             var items = new List<ItemInfo>();
+            var isPlayMode = Editor.IsPlayMode;
 
             if (useProperties)
             {
@@ -278,7 +279,7 @@ namespace FlaxEditor.CustomEditors.Editors
                         continue;
 
                     // Skip hidden fields, handle special attributes
-                    if ((!p.IsPublic && !showInEditor) || attributes.Any(x => x is HideInEditorAttribute))
+                    if ((!p.IsPublic && !showInEditor) || attributes.Any(x => x is HideInEditorAttribute hide && (!isPlayMode || !hide.ShowInPlayMode)))
                         continue;
 
                     items.Add(new ItemInfo(p, attributes));
@@ -293,11 +294,10 @@ namespace FlaxEditor.CustomEditors.Editors
                 for (int i = 0; i < fields.Length; i++)
                 {
                     var f = fields[i];
-
                     var attributes = f.GetAttributes(true);
 
                     // Skip hidden fields, handle special attributes
-                    if ((!f.IsPublic && !attributes.Any(x => x is ShowInEditorAttribute)) || attributes.Any(x => x is HideInEditorAttribute))
+                    if ((!f.IsPublic && !attributes.Any(x => x is ShowInEditorAttribute)) || attributes.Any(x => x is HideInEditorAttribute hide && (!isPlayMode || !hide.ShowInPlayMode)))
                         continue;
 
                     items.Add(new ItemInfo(f, attributes));
