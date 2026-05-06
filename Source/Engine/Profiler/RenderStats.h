@@ -16,39 +16,32 @@ API_STRUCT() struct RenderStatsData
     /// <summary>
     /// The draw calls count.
     /// </summary>
-    API_FIELD() int64 DrawCalls;
+    API_FIELD() int64 DrawCalls = 0;
 
     /// <summary>
     /// The compute shader dispatch calls count.
     /// </summary>
-    API_FIELD() int64 DispatchCalls;
+    API_FIELD() int64 DispatchCalls = 0;
 
     /// <summary>
     /// The vertices drawn count.
     /// </summary>
-    API_FIELD() int64 Vertices;
+    API_FIELD() int64 Vertices = 0;
 
     /// <summary>
     /// The triangles drawn count.
     /// </summary>
-    API_FIELD() int64 Triangles;
+    API_FIELD() int64 Triangles = 0;
 
     /// <summary>
     /// The pipeline state changes count.
     /// </summary>
-    API_FIELD() int64 PipelineStateChanges;
+    API_FIELD() int64 PipelineStateChanges = 0;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="RenderStatsData"/> struct.
+    /// The amount of bytes uploaded to GPU (to buffers and textures).
     /// </summary>
-    RenderStatsData()
-        : DrawCalls(0)
-        , DispatchCalls(0)
-        , Vertices(0)
-        , Triangles(0)
-        , PipelineStateChanges(0)
-    {
-    }
+    API_FIELD() int64 DataUpload = 0;
 
     /// <summary>
     /// The global rendering stats counter.
@@ -67,6 +60,7 @@ API_STRUCT() struct RenderStatsData
         MIX(Vertices);
         MIX(Triangles);
         MIX(PipelineStateChanges);
+        MIX(DataUpload);
 #undef MIX
     }
 
@@ -78,6 +72,7 @@ API_STRUCT() struct RenderStatsData
         MIX(Vertices);
         MIX(Triangles);
         MIX(PipelineStateChanges);
+        MIX(DataUpload);
 #undef MIX
         return *this;
     }
@@ -90,6 +85,7 @@ API_STRUCT() struct RenderStatsData
         MIX(Vertices);
         MIX(Triangles);
         MIX(PipelineStateChanges);
+        MIX(DataUpload);
 #undef MIX
         return *this;
     }
@@ -97,6 +93,7 @@ API_STRUCT() struct RenderStatsData
 
 #define RENDER_STAT_DISPATCH_CALL() Platform::InterlockedIncrement(&RenderStatsData::Counter.DispatchCalls)
 #define RENDER_STAT_PS_STATE_CHANGE() Platform::InterlockedIncrement(&RenderStatsData::Counter.PipelineStateChanges)
+#define RENDER_STAT_DATA_UPLOAD(bytes) Platform::InterlockedAdd(&RenderStatsData::Counter.DataUpload, bytes)
 #define RENDER_STAT_DRAW_CALL(vertices, triangles) \
 	Platform::InterlockedIncrement(&RenderStatsData::Counter.DrawCalls); \
 	Platform::InterlockedAdd(&RenderStatsData::Counter.Vertices, vertices); \
@@ -106,6 +103,7 @@ API_STRUCT() struct RenderStatsData
 
 #define RENDER_STAT_DISPATCH_CALL()
 #define RENDER_STAT_PS_STATE_CHANGE()
+#define RENDER_STAT_DATA_UPLOAD(bytes)
 #define RENDER_STAT_DRAW_CALL(vertices, primitives)
 
 #endif

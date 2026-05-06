@@ -1131,6 +1131,7 @@ void GPUContextDX12::UpdateCB(GPUConstantBuffer* cb, const void* data)
 
     // Allocate bytes for the buffer
     auto allocation = _device->UploadBuffer.Allocate(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+    RENDER_STAT_DATA_UPLOAD(size);
 
     // Copy data
     Platform::MemoryCopy(allocation.CPUAddress, data, allocation.Size);
@@ -1388,6 +1389,7 @@ void GPUContextDX12::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 si
     flushRBs();
 
     _device->UploadBuffer.UploadBuffer(GetCommandList(), bufferDX12->GetResource(), offset, data, size);
+    RENDER_STAT_DATA_UPLOAD(size);
 }
 
 void GPUContextDX12::CopyBuffer(GPUBuffer* dstBuffer, GPUBuffer* srcBuffer, uint32 size, uint32 dstOffset, uint32 srcOffset)
@@ -1414,6 +1416,7 @@ void GPUContextDX12::UpdateTexture(GPUTexture* texture, int32 arrayIndex, int32 
     flushRBs();
 
     _device->UploadBuffer.UploadTexture(GetCommandList(), textureDX12->GetResource(), data, rowPitch, slicePitch, mipIndex, arrayIndex);
+    RENDER_STAT_DATA_UPLOAD(slicePitch);
 }
 
 void GPUContextDX12::CopyTexture(GPUTexture* dstResource, uint32 dstSubresource, uint32 dstX, uint32 dstY, uint32 dstZ, GPUTexture* srcResource, uint32 srcSubresource)
@@ -1469,6 +1472,7 @@ void GPUContextDX12::ResetCounter(GPUBuffer* buffer)
 
     uint32 value = 0;
     _device->UploadBuffer.UploadBuffer(GetCommandList(), counter->GetResource(), 0, &value, 4);
+    RENDER_STAT_DATA_UPLOAD(4);
 
     SetResourceState(counter, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 }

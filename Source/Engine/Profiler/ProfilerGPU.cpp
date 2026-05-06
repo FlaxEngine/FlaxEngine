@@ -439,6 +439,8 @@ void GraphicsDumping::Print()
                 sb.AppendFormat(TEXT(", 1 tri, {} verts"), FormatValue(NameBuffers[0], item.Stats.Vertices));
             else if (item.Stats.Triangles != 0)
                 sb.AppendFormat(TEXT(", {} tris, {} verts"), FormatValue(NameBuffers[0], item.Stats.Triangles), FormatValue(NameBuffers[1], item.Stats.Vertices));
+            if (item.Stats.DataUpload > 4096)
+                sb.AppendFormat(TEXT(", {} sent"), Utilities::BytesToText(item.Stats.DataUpload));
         }
         else
         {

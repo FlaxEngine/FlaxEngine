@@ -682,6 +682,7 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
                     auto cb = (GPUConstantBufferVulkan*)_device->HelperResources.GetDummyConstantBuffer();
                     // TODO: cache this allocation within a frame
                     const auto allocation = _device->UniformBufferUploader->Allocate(cb->GetSize(), 0, this);
+                    RENDER_STAT_DATA_UPLOAD(allocation.Size);
                     Platform::MemoryClear(allocation.CPUAddress, allocation.Size);
                     cb->Allocation = allocation;
                     handle = cb;
@@ -1187,6 +1188,7 @@ void GPUContextVulkan::UpdateCB(GPUConstantBuffer* cb, const void* data)
 
     // Allocate bytes for the buffer
     const auto allocation = _device->UniformBufferUploader->Allocate(size, 0, this);
+    RENDER_STAT_DATA_UPLOAD(size);
 
     // Copy data
     Platform::MemoryCopy(allocation.CPUAddress, data, allocation.Size);
@@ -1538,6 +1540,7 @@ void GPUContextVulkan::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 
         region.dstOffset = offset;
         vkCmdCopyBuffer(cmdBuffer->GetHandle(), allocation.Buffer, ((GPUBufferVulkan*)buffer)->GetHandle(), 1, &region);
     }
+    RENDER_STAT_DATA_UPLOAD(size);
 
     // Memory transfer barrier to ensure buffer is ready to read (eg. by Draw or Dispatch)
     if (_pass == 0)
@@ -1586,6 +1589,7 @@ void GPUContextVulkan::UpdateTexture(GPUTexture* texture, int32 arrayIndex, int3
     FlushBarriers();
 
     auto allocation = _device->UploadBuffer.Upload(data, slicePitch, 512);
+    RENDER_STAT_DATA_UPLOAD(slicePitch);
 
     // Setup buffer copy region
     int32 mipWidth, mipHeight, mipDepth;

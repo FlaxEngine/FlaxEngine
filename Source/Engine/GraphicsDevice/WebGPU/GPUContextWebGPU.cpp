@@ -364,6 +364,7 @@ void GPUContextWebGPU::UpdateCB(GPUConstantBuffer* cb, const void* data)
         cbWebGPU->AllocationSize = alignedSize;
         // TODO: consider holding CPU-side staging buffer and copying data to the GPU buffer in a single batch for all uniforms (before flushing the active command encoder)
         wgpuQueueWriteBuffer(_device->Queue, allocation.Buffer, allocation.Offset, data, size);
+        RENDER_STAT_DATA_UPLOAD(size);
         _bindGroupDirty = true;
     }
 }
@@ -593,6 +594,7 @@ void GPUContextWebGPU::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 
         // Efficient upload via queue
         wgpuQueueWriteBuffer(_device->Queue, bufferWebGPU->Buffer, offset, data, size);
     }
+    RENDER_STAT_DATA_UPLOAD(size);
 }
 
 void GPUContextWebGPU::CopyBuffer(GPUBuffer* dstBuffer, GPUBuffer* srcBuffer, uint32 size, uint32 dstOffset, uint32 srcOffset)
@@ -633,6 +635,7 @@ void GPUContextWebGPU::UpdateTexture(GPUTexture* texture, int32 arrayIndex, int3
     dataLayout.rowsPerImage = mipHeight;
     WGPUExtent3D writeSize = { (uint32_t)mipWidth, (uint32_t)mipHeight, (uint32_t)mipDepth };
     wgpuQueueWriteTexture(_device->Queue, &copyInfo, data, slicePitch, &dataLayout, &writeSize);
+    RENDER_STAT_DATA_UPLOAD(slicePitch);
 }
 
 void GPUContextWebGPU::CopyTexture(GPUTexture* dstResource, uint32 dstSubresource, uint32 dstX, uint32 dstY, uint32 dstZ, GPUTexture* srcResource, uint32 srcSubresource)

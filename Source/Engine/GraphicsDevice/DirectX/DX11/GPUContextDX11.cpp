@@ -499,6 +499,7 @@ void GPUContextDX11::UpdateCB(GPUConstantBuffer* cb, const void* data)
         return;
 
     _context->UpdateSubresource(cbDX11->GetBuffer(), 0, nullptr, data, size, 1);
+    RENDER_STAT_DATA_UPLOAD(size);
 }
 
 void GPUContextDX11::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ)
@@ -904,6 +905,7 @@ void GPUContextDX11::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 si
         box.bottom = 1;
         _context->UpdateSubresource(bufferDX11->GetResource(), 0, &box, data, size, 0);
     }
+    RENDER_STAT_DATA_UPLOAD(size);
 }
 
 void GPUContextDX11::CopyBuffer(GPUBuffer* dstBuffer, GPUBuffer* srcBuffer, uint32 size, uint32 dstOffset, uint32 srcOffset)
@@ -934,6 +936,7 @@ void GPUContextDX11::UpdateTexture(GPUTexture* texture, int32 arrayIndex, int32 
     if (texture->IsVolume())
         depthPitch /= Math::Max(1, texture->Depth() >> mipIndex);
     _context->UpdateSubresource(textureDX11->GetResource(), subresourceIndex, nullptr, data, (UINT)rowPitch, (UINT)depthPitch);
+    RENDER_STAT_DATA_UPLOAD(slicePitch);
 
     //D3D11_MAPPED_SUBRESOURCE mapped;
     //_device->GetIM()->Map(_resource, textureMipIndex, D3D11_MAP_WRITE_DISCARD, 0, &mapped);

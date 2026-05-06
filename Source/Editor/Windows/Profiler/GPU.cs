@@ -49,7 +49,7 @@ namespace FlaxEditor.Windows.Profiler
             {
                 Title = "Draw (GPU)",
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                Offsets = new Margin(0, 0, _drawTimeCPU.Height + 2, 0),
+                Offsets = new Margin(0, 0, _drawTimeCPU.Height + 2, SingleChart.DefaultHeight),
                 FormatSample = v => (Mathf.RoundToInt(v * 10.0f) / 10.0f) + " ms",
                 Parent = mainPanel,
             };

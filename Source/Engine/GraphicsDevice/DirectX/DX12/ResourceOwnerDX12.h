@@ -13,7 +13,6 @@ namespace D3D12MA
 }
 class GPUResource;
 class GPUContextDX12;
-class GPUAsyncContextDX12;
 
 /// <summary>
 /// Default amount of frames to wait until resource delete.
@@ -59,7 +58,6 @@ public:
 class ResourceOwnerDX12
 {
     friend GPUContextDX12;
-    friend GPUAsyncContextDX12;
 
 protected:
     D3D12MA::Allocation* _allocation = nullptr;

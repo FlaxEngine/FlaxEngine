@@ -7,6 +7,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUPass.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerGPU.h"
 
 DefaultGPUTasksExecutor::DefaultGPUTasksExecutor()
     : _context(nullptr)
@@ -33,6 +34,7 @@ void DefaultGPUTasksExecutor::FrameBegin()
     const int32 count = GPUDevice::Instance->GetTasksManager()->RequestWork(buffer, 32);
     if (count == 0)
         return;
+    PROFILE_GPU("GPUTasks");
     GPUMemoryPass pass(_context->GPU);
     for (int32 i = 0; i < count; i++)
     {
