@@ -635,9 +635,80 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     atlasLight.Bounds.Center = light.Position + renderContext.View.Origin; // Keep bounds in world-space to properly handle DirtyStaticBounds
     atlasLight.Bounds.Radius = 0.0f;
 
-    // Adjust bias to account for lower shadow quality
-    if (shadows.MaxShadowsQuality == 0)
-        atlasLight.Bias *= 1.5f;
+    // Adjust bias to account for lower shadow quality (mix between different shadow map resolution and filter size) to automatically hide artifacts
+    switch ((Quality)shadows.MaxShadowsQuality)
+    {
+    case Quality::Low:
+        switch (Graphics::ShadowMapsQuality)
+        {
+        case Quality::Low:
+            atlasLight.Bias += 0.003f;
+            break;
+        case Quality::Medium:
+            atlasLight.Bias += 0.001f;
+            break;
+        }
+        break;
+    case Quality::Medium:
+        switch (Graphics::ShadowMapsQuality)
+        {
+        case Quality::Low:
+            atlasLight.Bias += 0.008f;
+            break;
+        case Quality::Medium:
+            atlasLight.Bias += 0.003f;
+            break;
+        case Quality::High:
+            atlasLight.Bias += 0.001f;
+            break;
+        }
+        break;
+    case Quality::High:
+        switch (Graphics::ShadowMapsQuality)
+        {
+        case Quality::Low:
+            atlasLight.Bias += 0.012f;
+            break;
+        case Quality::Medium:
+            atlasLight.Bias += 0.006f;
+            break;
+        case Quality::High:
+            atlasLight.Bias += 0.002f;
+            break;
+        }
+        break;
+    }
+    if (!light.IsDirectionalLight)
+    {
+        switch ((Quality)shadows.MaxShadowsQuality)
+        {
+        case Quality::Medium:
+            switch (Graphics::ShadowMapsQuality)
+            {
+            case Quality::Low:
+                atlasLight.NormalOffsetScale += 25;
+                break;
+            case Quality::Medium:
+                atlasLight.NormalOffsetScale += 10;
+                break;
+            }
+            break;
+        case Quality::High:
+            switch (Graphics::ShadowMapsQuality)
+            {
+            case Quality::Low:
+                atlasLight.NormalOffsetScale += 20;
+                break;
+            case Quality::Medium:
+                atlasLight.NormalOffsetScale +=15;
+                break;
+            case Quality::High:
+                atlasLight.NormalOffsetScale += 5;
+                break;
+            }
+            break;
+        }
+    }
 }
 
 bool ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLocalLightData& light, ShadowAtlasLight& atlasLight)

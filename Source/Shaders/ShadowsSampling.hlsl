@@ -334,6 +334,9 @@ float SampleShadowMapPCSS(Texture2D<float> shadowMap, float2 shadowMapUV, float 
 
     // Calculate penumbra size
     float penumbra = max(sceneDepth - avgBlockerDistance, 0.0);
+#if defined(VULKAN)
+    sceneDepth *= lerp(1, 0.985f, saturate(penumbra * 4.0f)); // Fix shadow bias issues on Vulkan
+#endif
     float filterRadius = penumbra * sourceAngle;
     filterRadius = max(filterRadius, minRadius); // Don't use too small filter near blockers to avoid jagged edges
 

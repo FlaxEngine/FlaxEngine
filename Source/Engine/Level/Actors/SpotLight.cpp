@@ -19,8 +19,8 @@ SpotLight::SpotLight(const SpawnParams& params)
 {
     CastVolumetricShadow = false;
     ShadowsDistance = 2000.0f;
-    ShadowsFadeDistance = 100.0f;
-    ShadowsDepthBias = 0.5f;
+    ShadowsFadeDistance = 500.0f;
+    ShadowsDepthBias = 0.05f;
 
     _direction = Vector3::Forward;
     _cosOuterCone = Math::Cos(_outerConeAngle * DegreesToRadians);

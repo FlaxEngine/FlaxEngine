@@ -15,8 +15,9 @@ PointLight::PointLight(const SpawnParams& params)
 {
     CastVolumetricShadow = false;
     ShadowsDistance = 2000.0f;
-    ShadowsFadeDistance = 100.0f;
-    ShadowsDepthBias = 0.5f;
+    ShadowsFadeDistance = 500.0f;
+    ShadowsDepthBias = 0.05f;
+
     _direction = Float3::Forward;
     _sphere = BoundingSphere(Vector3::Zero, _radius);
     BoundingBox::FromSphere(_sphere, _box);

@@ -820,7 +820,7 @@ VkSampler* HelperResourcesVulkan::GetStaticSamplers()
         RenderToolsVulkan::ZeroStruct(createInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
         createInfo.mipLodBias = 0.0f;
         createInfo.minLod = 0.0f;
-        createInfo.maxLod = MAX_float;
+        createInfo.maxLod = 1000.0f;
         createInfo.maxAnisotropy = 1.0f;
         createInfo.anisotropyEnable = VK_FALSE;
         createInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;

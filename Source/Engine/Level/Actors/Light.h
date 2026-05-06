@@ -151,7 +151,7 @@ public:
     /// The depth bias used for shadow map comparison.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(95), EditorDisplay(\"Shadow\", \"Depth Bias\"), Limit(0.0f, 10.0f, 0.0001f)")
-    float ShadowsDepthBias = 0.005f;
+    float ShadowsDepthBias = 0.05f;
 
     /// <summary>
     /// A factor specifying the offset to add to the calculated shadow map depth with respect to the surface normal.

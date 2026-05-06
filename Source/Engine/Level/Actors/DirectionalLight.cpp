@@ -10,6 +10,8 @@
 DirectionalLight::DirectionalLight(const SpawnParams& params)
     : LightWithShadow(params)
 {
+    ShadowsDepthBias = 0.002f;
+
     _drawNoCulling = 1;
     Brightness = 8.0f;
 }
