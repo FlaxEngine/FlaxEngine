@@ -1953,7 +1953,7 @@ API_STRUCT() struct FLAXENGINE_API AntiAliasingSettings : ISerializable
     /// The anti-aliasing effect mode.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(0), PostProcessSetting((int)AntiAliasingSettingsOverride.Mode)")
-    AntialiasingMode Mode = AntialiasingMode::FastApproximateAntialiasing;
+    AntialiasingMode Mode = AntialiasingMode::TemporalAntialiasing;
 
     /// <summary>
     /// The diameter (in texels) inside which jitter samples are spread. Smaller values result in crisper but more aliased output, while larger values result in more stable but blurrier output.
