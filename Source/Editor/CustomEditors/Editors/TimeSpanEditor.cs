@@ -42,7 +42,7 @@ namespace FlaxEditor.CustomEditors.Editors
             base.Refresh();
 
             _isRefreshing = true;
-            _textBox.Text = HasDifferentValues ? "Multiple Values" : ((TimeSpan)Values[0]).ToString("g");
+            _textBox.Text = HasDifferentValues ? "Multiple Values" : ((TimeSpan)Values[0]).ToString("G");
             _isRefreshing = false;
         }
     }
