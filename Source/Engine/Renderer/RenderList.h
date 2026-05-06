@@ -80,6 +80,7 @@ struct RenderDirectionalLightData : RenderLightData
     PartitionMode PartitionMode;
     int32 CascadeCount;
     float CascadeBlendSize;
+    float SourceAngle;
 
     RenderDirectionalLightData()
     {

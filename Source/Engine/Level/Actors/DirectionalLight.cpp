@@ -49,6 +49,7 @@ void DirectionalLight::Draw(RenderContext& renderContext)
         data.Cascade3Spacing = Cascade3Spacing;
         data.Cascade4Spacing = Cascade4Spacing;
         data.CascadeBlendSize = CascadeBlendSize;
+        data.SourceAngle = Math::Tan(SourceAngle * DegreesToRadians * 0.5f);
         data.PartitionMode = PartitionMode;
         data.ContactShadowsLength = ContactShadowsLength;
         data.StaticFlags = GetStaticFlags();
@@ -65,6 +66,7 @@ void DirectionalLight::Serialize(SerializeStream& stream, const void* otherObj)
 
     SERIALIZE_GET_OTHER_OBJ(DirectionalLight);
 
+    SERIALIZE(SourceAngle);
     SERIALIZE(CascadeCount);
     SERIALIZE(Cascade1Spacing);
     SERIALIZE(Cascade2Spacing);
@@ -79,6 +81,7 @@ void DirectionalLight::Deserialize(DeserializeStream& stream, ISerializeModifier
     // Base
     LightWithShadow::Deserialize(stream, modifier);
 
+    DESERIALIZE(SourceAngle);
     DESERIALIZE(CascadeCount);
     DESERIALIZE(Cascade1Spacing);
     DESERIALIZE(Cascade2Spacing);

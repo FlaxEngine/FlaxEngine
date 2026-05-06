@@ -39,7 +39,7 @@ public:
     API_FIELD() static Quality VolumetricFogQuality;
 
     /// <summary>
-    /// The shadows quality.
+    /// The shadows filtering quality (sampling).
     /// </summary>
     API_FIELD() static Quality ShadowsQuality;
 

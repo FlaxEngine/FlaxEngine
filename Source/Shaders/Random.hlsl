@@ -14,6 +14,10 @@ float RandN1(float n)
 {
     return frac(sin(n) * 43758.5453123);
 }
+float RandN1(float2 n)
+{
+    return RandN1(dot(n, float2(12.9898, 78.233)));
+}
 
 // Generic noise (2-components)
 float2 RandN2(float2 n)

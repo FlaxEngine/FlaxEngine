@@ -113,7 +113,7 @@ void RenderDirectionalLightData::SetShaderData(ShaderLightData& data, bool useSh
 {
     data.SpotAngles.X = -2.0f;
     data.SpotAngles.Y = 1.0f;
-    data.SourceRadius = 0;
+    data.SourceRadius = SourceAngle;
     data.SourceLength = 0;
     data.Color = Color;
     data.MinRoughness = Math::Max(MinRoughness, MIN_ROUGHNESS);

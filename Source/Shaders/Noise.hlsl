@@ -56,12 +56,16 @@ float2 PerlinNoiseFade(float2 t)
 
 // "Next Generation Post Processing in Call of Duty: Advanced Warfare"
 // http://advances.realtimerendering.com/s2014/index.html
+float InterleavedGradientNoise(float2 uv)
+{
+    float3 magic = float3(0.06711056f, 0.00583715f, 52.9829189f);
+    return frac(magic.z * frac(dot(uv, magic.xy)));
+}
 float InterleavedGradientNoise(float2 uv, uint frameCount)
 {
     const float2 magicFrameScale = float2(47, 17) * 0.695;
     uv += frameCount * magicFrameScale;
-    const float3 magic = float3(0.06711056, 0.00583715, 52.9829189);
-    return frac(magic.z * frac(dot(uv, magic.xy)));
+    return InterleavedGradientNoise(uv);
 }
 
 // Removes error from the color to properly store it in lower precision formats (error = 2^(-mantissaBits))

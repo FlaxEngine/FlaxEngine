@@ -13,6 +13,12 @@ class FLAXENGINE_API DirectionalLight : public LightWithShadow
     DECLARE_SCENE_OBJECT(DirectionalLight);
 public:
     /// <summary>
+    /// Light source angle (in degrees) that defines its angular diameter. Higher values produce softer shadows. The default value is 0.5357 degrees, which is the angular diameter of the Sun as seen from Earth. Set this to 0 to produce hard shadows with sharp edges.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(41), EditorDisplay(\"Light\"), Limit(0, 4, 0.001f), ValueCategory(Utils.ValueCategory.Angle)")
+    float SourceAngle = 0.5332f;
+
+    /// <summary>
     /// The partitioning mode for the shadow cascades.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(64), DefaultValue(PartitionMode.Manual), EditorDisplay(\"Shadow\")")
