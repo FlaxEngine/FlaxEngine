@@ -13,13 +13,13 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Platform/IGuiData.h"
 #include "Engine/Platform/Base/DragDropHelper.h"
+#include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
 #endif
 
 #include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
 #include <propidl.h>
-
 #if USE_EDITOR
 #include <oleidl.h>
 #include <shellapi.h>
@@ -648,6 +648,7 @@ HRESULT Window::Drop(Windows::IDataObject* pDataObj, Windows::DWORD grfKeyState,
     ::ScreenToClient((HWND)_handle, &p);
     GuiDragDropData.Init((IDataObject*)pDataObj);
     DragDropEffect effect = DragDropEffect::None;
+    ScopeLock gpuLock(GPUDevice::Instance->Locker); // Avoid issues when DoDragDropJob is during frame painting
     OnDragDrop(&GuiDragDropData, Float2(static_cast<float>(p.x), static_cast<float>(p.y)), effect);
     *pdwEffect = dropEffect2OleEnum(effect);
     return S_OK;
