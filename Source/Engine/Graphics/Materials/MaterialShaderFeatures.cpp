@@ -78,7 +78,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     for (int32 i = 0; i < cache->EnvironmentProbes.Count(); i++)
     {
         const RenderEnvironmentProbeData& probe = cache->EnvironmentProbes.Get()[i];
-        const float sphereCullDistance = objectBounds.Radius + probe.Radius;
+        const float sphereCullDistance = (float)objectBounds.Radius + probe.Radius;
         const float distanceSq = Float3::DistanceSquared(probe.Position, objectBounds.Center);
         if (distanceSq <= sphereCullDistance * sphereCullDistance && distanceSq < minDistanceSq)
         {
