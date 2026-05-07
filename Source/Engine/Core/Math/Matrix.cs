@@ -2176,10 +2176,15 @@ namespace FlaxEngine
             result = Identity;
             result.M11 = 2.0f / (right - left);
             result.M22 = 2.0f / (top - bottom);
-            result.M33 = zRange;
             result.M41 = (left + right) / (left - right);
             result.M42 = (top + bottom) / (bottom - top);
+#if FLAX_REVERSE_Z
+            result.M33 = -zRange;
+            result.M43 = zfar * zRange;
+#else
+            result.M33 = zRange;
             result.M43 = -znear * zRange;
+#endif
         }
 
         /// <summary>
@@ -2238,14 +2243,19 @@ namespace FlaxEngine
         public static void PerspectiveFov(float fov, float aspect, float znear, float zfar, out Matrix result)
         {
             var yScale = (float)(1.0f / Math.Tan(fov * 0.5f));
-            var q = zfar / (zfar - znear);
+            var zRange = 1.0f / (zfar - znear);
             result = new Matrix
             {
                 M11 = yScale / aspect,
                 M22 = yScale,
-                M33 = q,
                 M34 = 1.0f,
-                M43 = -q * znear,
+#if FLAX_REVERSE_Z
+                M33 = -znear * zRange,
+                M43 = znear * zfar * zRange,
+#else
+                M33 = zfar * zRange,
+                M43 = -znear * zfar * zRange,
+#endif
             };
         }
 
@@ -2275,16 +2285,21 @@ namespace FlaxEngine
         /// <param name="result">When the method completes, contains the created projection matrix.</param>
         public static void PerspectiveOffCenter(float left, float right, float bottom, float top, float znear, float zfar, out Matrix result)
         {
-            float zRange = zfar / (zfar - znear);
+            float zRange = 1.0f / (zfar - znear);
             result = new Matrix
             {
                 M11 = 2.0f * znear / (right - left),
                 M22 = 2.0f * znear / (top - bottom),
                 M31 = (left + right) / (left - right),
                 M32 = (top + bottom) / (bottom - top),
-                M33 = zRange,
                 M34 = 1.0f,
-                M43 = -znear * zRange,
+#if FLAX_REVERSE_Z
+                M33 = -znear * zRange,
+                M43 = znear * zfar * zRange,
+#else
+                M33 = zfar * zRange,
+                M43 = -znear * zfar * zRange,
+#endif
             };
         }
 

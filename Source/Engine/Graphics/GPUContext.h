@@ -14,6 +14,12 @@
 #undef MemoryBarrier
 #endif
 
+#if FLAX_REVERSE_Z
+#define GPU_DEPTH_CLEAR_VALUE 0.0f
+#else
+#define GPU_DEPTH_CLEAR_VALUE 1.0f
+#endif
+
 class GPUConstantBuffer;
 class GPUShaderProgramCS;
 class GPUBuffer;
@@ -208,7 +214,7 @@ public:
     /// <param name="depthBuffer">The depth buffer to clear.</param>
     /// <param name="depthValue">The clear depth value.</param>
     /// <param name="stencilValue">The clear stencil value.</param>
-    API_FUNCTION() virtual void ClearDepth(GPUTextureView* depthBuffer, float depthValue = 1.0f, uint8 stencilValue = 0) = 0;
+    API_FUNCTION() virtual void ClearDepth(GPUTextureView* depthBuffer, float depthValue = GPU_DEPTH_CLEAR_VALUE, uint8 stencilValue = 0) = 0;
 
     /// <summary>
     /// Clears an unordered access buffer with a float value.

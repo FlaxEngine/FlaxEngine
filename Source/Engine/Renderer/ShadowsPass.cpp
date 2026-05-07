@@ -536,7 +536,11 @@ bool ShadowsPass::setupResources()
         psDesc.CullMode = CullMode::Normal;
         if (_psShadowPoint.Create(psDesc, shader, psLocalLight))
             return true;
+#if FLAX_REVERSE_Z
+        psDesc.DepthFunc = ComparisonFunc::Less;
+#else
         psDesc.DepthFunc = ComparisonFunc::Greater;
+#endif
         psDesc.CullMode = CullMode::Inverted;
         if (_psShadowPointInside.Create(psDesc, shader, psLocalLight))
             return true;
@@ -551,7 +555,11 @@ bool ShadowsPass::setupResources()
         psDesc.CullMode = CullMode::Normal;
         if (_psShadowSpot.Create(psDesc, shader, psLocalLight, 8))
             return true;
+#if FLAX_REVERSE_Z
+        psDesc.DepthFunc = ComparisonFunc::Less;
+#else
         psDesc.DepthFunc = ComparisonFunc::Greater;
+#endif
         psDesc.CullMode = CullMode::Inverted;
         if (_psShadowSpotInside.Create(psDesc, shader, psLocalLight, 8))
             return true;
@@ -1139,7 +1147,11 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
 void ShadowsPass::ClearShadowMapTile(GPUContext* context, GPUConstantBuffer* quadShaderCB, QuadShaderData& quadShaderData) const
 {
     // Color.r is used by PS_DepthClear in Quad shader to clear depth
+#if FLAX_REVERSE_Z
+    quadShaderData.Color = Float4::Zero;
+#else
     quadShaderData.Color = Float4::One;
+#endif
     context->UpdateCB(quadShaderCB, &quadShaderData);
     context->BindCB(0, quadShaderCB);
 
@@ -1590,14 +1602,7 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
                 context->SetViewportAndScissors(Viewport(tile.StaticRectTile->X, tile.StaticRectTile->Y, tile.StaticRectTile->Width, tile.StaticRectTile->Height));
                 if (!shadows.ClearStaticShadowMapAtlas)
                 {
-                    // Color.r is used by PS_DepthClear in Quad shader to clear depth
-                    quadShaderData.Color = Float4::One;
-                    context->UpdateCB(quadShaderCB, &quadShaderData);
-                    context->BindCB(0, quadShaderCB);
-
-                    // Clear tile depth
-                    context->SetState(_psDepthClear);
-                    context->DrawFullscreenTriangle();
+                    ClearShadowMapTile(context, quadShaderCB, quadShaderData);
                 }
 
                 // Draw objects depth

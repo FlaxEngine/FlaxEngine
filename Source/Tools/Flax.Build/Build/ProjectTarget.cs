@@ -89,6 +89,13 @@ namespace Flax.Build
                 options.ScriptingAPI.Defines.Add("PLATFORM_SDL");
             }
 
+            if (!EngineConfiguration.WithTraditionalZ(options))
+            {
+                // Add reverse-z definitions
+                options.CompileEnv.PreprocessorDefinitions.Add("FLAX_REVERSE_Z");
+                options.ScriptingAPI.Defines.Add("FLAX_REVERSE_Z");
+            }
+
             // Add include paths for this and all referenced projects sources
             foreach (var project in Project.GetAllProjects())
             {
