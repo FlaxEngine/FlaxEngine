@@ -382,7 +382,7 @@ API_STRUCT() struct FLAXENGINE_API GlobalIlluminationSettings : ISerializable
     /// <summary>
     /// Draw distance of the Global Illumination effect. Scene outside the range will use fallback irradiance.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(30), Limit(1000), PostProcessSetting((int)GlobalIlluminationSettingsOverride.Distance)")
+    API_FIELD(Attributes="EditorOrder(30), Limit(1000), PostProcessSetting((int)GlobalIlluminationSettingsOverride.Distance), ValueCategory(Utils.ValueCategory.Distance)")
     float Distance = 20000.0f;
 
     /// <summary>
@@ -1819,17 +1819,17 @@ API_STRUCT() struct FLAXENGINE_API ScreenSpaceReflectionsSettings : ISerializabl
     /// <summary>
     /// The effect fade out end distance from camera (in world units).
     /// </summary>
-    API_FIELD(Attributes="Limit(0), EditorOrder(31), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.FadeOutDistance)")
+    API_FIELD(Attributes="Limit(0), EditorOrder(31), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.FadeOutDistance), ValueCategory(Utils.ValueCategory.Distance)")
     float FadeOutDistance = 5000.0f;
 
     /// <summary>
     /// The effect fade distance (in world units). Defines the size of the effect fade from fully visible to fully invisible at FadeOutDistance.
     /// </summary>
-    API_FIELD(Attributes="Limit(0), EditorOrder(32), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.FadeDistance)")
+    API_FIELD(Attributes="Limit(0), EditorOrder(32), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.FadeDistance), ValueCategory(Utils.ValueCategory.Distance)")
     float FadeDistance = 500.0f;
 
     /// <summary>
-    /// "The input color buffer downscale mode that uses blurred mipmaps when resolving the reflection color. Produces more realistic results by blurring distant parts of reflections in rough (low-gloss) materials. It also improves performance on most platforms but uses more memory.
+    /// The input color buffer downscale mode that uses blurred mipmaps when resolving the reflection color. Produces more realistic results by blurring distant parts of reflections in rough (low-gloss) materials. It also improves performance on most platforms but uses more memory.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(40), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.UseColorBufferMips), EditorDisplay(null, \"Use Color Buffer Mips\")")
     bool UseColorBufferMips = true;

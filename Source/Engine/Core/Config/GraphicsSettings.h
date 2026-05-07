@@ -127,7 +127,7 @@ public:
     /// <summary>
     /// The Global Illumination probes spacing distance (in world units). Defines the quality of the GI resolution. Adjust to 200-500 to improve performance and lower frequency GI data.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(2120), Limit(50, 1000), EditorDisplay(\"Global Illumination\")")
+    API_FIELD(Attributes="EditorOrder(2120), Limit(50, 1000), EditorDisplay(\"Global Illumination\"), ValueCategory(Utils.ValueCategory.Distance)")
     float GIProbesSpacing = 100;
 
     /// <summary>

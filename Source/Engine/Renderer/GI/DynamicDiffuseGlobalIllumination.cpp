@@ -343,7 +343,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
     }
 
     // Calculate the probes count based on the amount of cascades and the distance to cover
-    const float cascadesDistanceScales[] = { 1.0f, 3.0f, 5.0f, 10.0f }; // Scales each cascade further away from the camera origin
+    const float cascadesDistanceScales[] = { 1.0f, 3.0f, 6.0f, 10.0f }; // Scales each cascade further away from the camera origin
     const float distanceExtent = distance / cascadesDistanceScales[cascadesCount - 1];
     const float verticalRangeScale = 0.8f; // Scales the probes volume size at Y axis (horizontal aspect ratio makes the DDGI use less probes vertically to cover whole screen)
     Int3 probesCounts(Float3::Ceil(Float3(distanceExtent, distanceExtent * verticalRangeScale, distanceExtent) / probesSpacing));
@@ -601,7 +601,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
             // For inactive probes, search nearby ones to find the closest valid for quick fallback when sampling irradiance
             {
                 PROFILE_GPU_CPU_NAMED("Update Inactive Probes");
-                // TODO: this could run within GPUComputePass during Trace Rays or Update Probes to overlap compute works
+                // TODO: this could run within GPUComputePass during Trace Rays or Update Probes to overlap compute works (just move StepSize to other Cb to avoid data overlaps)
                 context->BindUA(0, ddgiData.Result.ProbesData);
                 Data1 data;
                 data.CascadeIndex = cascadeIndex;
