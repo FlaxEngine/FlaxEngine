@@ -26,6 +26,17 @@ namespace FlaxEditor.Content.Settings
         }
 
         /// <summary>
+        /// Use DefaultProbeCubemapFormat instead
+        /// [Deprecated in v1.13]
+        /// </summary>
+        [Serialize, Obsolete, NoUndo]
+        private bool UseHDRProbes
+        {
+            get => UseHDRProbes;
+            set => DefaultProbeCubemapFormat = value ? ProbeCubemapFormats.R11G11B10 : ProbeCubemapFormats.R8G8B8A8;
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="GraphicsSettings"/>.
         /// </summary>
         public GraphicsSettings()

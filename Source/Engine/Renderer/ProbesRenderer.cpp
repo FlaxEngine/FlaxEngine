@@ -25,6 +25,7 @@
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
+#include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Threading/ThreadPoolTask.h"
 
 // Amount of frames to wait for data from probe update job
@@ -46,6 +47,7 @@ struct ProbeEntry
     bool UseTextureData() const;
     int32 GetResolution() const;
     PixelFormat GetFormat() const;
+    PixelFormat GetStorageFormat() const;
 };
 
 // Custom task called after downloading probe texture data to save it.
@@ -70,16 +72,29 @@ public:
 
     bool Run() override
     {
+        // Compress texture data if needed
+        TextureData* data = &_data;
+#if COMPILE_WITH_TEXTURE_TOOL
+        TextureData tmpData;
+        PixelFormat storageFormat = _entry.GetStorageFormat();
+        if (storageFormat != _data.Format)
+        {
+            if (TextureTool::Convert(tmpData, _data, storageFormat))
+                return true;
+            data = &tmpData;
+        }
+#endif
+
         Actor* actor = _entry.Actor.Get();
         if (_entry.Type == ProbeEntry::Types::EnvProbe)
         {
             if (actor)
-                ((EnvironmentProbe*)actor)->SetProbeData(_data);
+                ((EnvironmentProbe*)actor)->SetProbeData(*data);
         }
         else if (_entry.Type == ProbeEntry::Types::SkyLight)
         {
             if (actor)
-                ((SkyLight*)actor)->SetProbeData(_data);
+                ((SkyLight*)actor)->SetProbeData(*data);
         }
         else
         {
@@ -202,7 +217,35 @@ int32 ProbeEntry::GetResolution() const
 
 PixelFormat ProbeEntry::GetFormat() const
 {
-    return GraphicsSettings::Get()->UseHDRProbes ? PixelFormat::R11G11B10_Float : PixelFormat::R8G8B8A8_UNorm;
+    // Return render format (storage can be compressed during importing, realtime probes use uncompressed)
+    switch (GraphicsSettings::Get()->DefaultProbeCubemapFormat)
+    {
+    case GraphicsSettings::ProbeCubemapFormats::R8G8B8A8:
+        return PixelFormat::R8G8B8A8_UNorm;
+    case GraphicsSettings::ProbeCubemapFormats::R11G11B10:
+    case GraphicsSettings::ProbeCubemapFormats::BC6:
+    case GraphicsSettings::ProbeCubemapFormats::BC7:
+        return PixelFormat::R11G11B10_Float;
+    default:
+        return PixelFormat::Unknown;
+    }
+}
+
+PixelFormat ProbeEntry::GetStorageFormat() const
+{
+    switch (GraphicsSettings::Get()->DefaultProbeCubemapFormat)
+    {
+    case GraphicsSettings::ProbeCubemapFormats::R8G8B8A8:
+        return PixelFormat::R8G8B8A8_UNorm;
+    case GraphicsSettings::ProbeCubemapFormats::R11G11B10:
+        return PixelFormat::R11G11B10_Float;
+    case GraphicsSettings::ProbeCubemapFormats::BC6:
+        return PixelFormat::BC6H_Uf16;
+    case GraphicsSettings::ProbeCubemapFormats::BC7:
+        return PixelFormat::BC7_UNorm;
+    default:
+        return PixelFormat::Unknown;
+    }
 }
 
 bool ProbesRendererService::LazyInit()

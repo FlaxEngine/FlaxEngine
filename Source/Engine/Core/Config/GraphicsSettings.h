@@ -31,6 +31,22 @@ public:
         R16G16B16A16,
     };
 
+    /// <summary>
+    /// The environment probes cubemap texture storage formats.
+    /// </summary>
+    API_ENUM(Attributes = "EnumDisplay(EnumDisplayAttribute.FormatMode.None)")
+    enum class ProbeCubemapFormats
+    {
+        // LDR uncompressed format (32-bit per pixel).
+        R8G8B8A8,
+        // HDR uncompressed format (32-bit per pixel, no alpha).
+        R11G11B10,
+        // HDR compressed format (8-bit per pixel, no alpha). Converted into ASTC/Basis for mobile/web. Realtime probes will fallback to R11G11B10.
+        BC6,
+        // HDR compressed format (8-bit per pixel). Converted into ASTC/Basis for mobile/web. Realtime probes will fallback to R11G11B10.
+        BC7,
+    };
+
 public:
     /// <summary>
     /// Enables rendering synchronization with the refresh rate of the display device to avoid "tearing" artifacts.
@@ -87,9 +103,16 @@ public:
     ProbeCubemapResolution DefaultProbeResolution = ProbeCubemapResolution::_128;
 
     /// <summary>
-    /// If checked, Environment Probes will use HDR texture format. Improves quality in very bright scenes at cost of higher memory usage.
+    /// Environment Probes texture storage format. Controls the quality fo reflections and memory usage of probes data.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(1502), EditorDisplay(\"Quality\")")
+    ProbeCubemapFormats DefaultProbeCubemapFormat = ProbeCubemapFormats::BC6;
+
+    /// <summary>
+    /// If checked, Environment Probes will use HDR texture format. Improves quality in very bright scenes at cost of higher memory usage.
+    /// [Deprecated in v1.13]
+    /// </summary>
+    DEPRECATED("Use DefaultProbeCubemapFormat instead.")
     bool UseHDRProbes = false;
 
     /// <summary>
@@ -175,8 +198,10 @@ private:
     /// Renamed UeeHDRProbes into UseHDRProbes
     /// [Deprecated on 12.10.2022, expires on 12.10.2024]
     /// </summary>
-    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") DEPRECATED("Use UseHDRProbes instead.") bool GetUeeHDRProbes() const { return UseHDRProbes; }
-    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") DEPRECATED("Use UseHDRProbes instead.") void SetUeeHDRProbes(bool value);
+    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") DEPRECATED("Use DefaultProbeCubemapFormat instead.") bool GetUeeHDRProbes() const;
+    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") DEPRECATED("Use DefaultProbeCubemapFormat instead.") void SetUeeHDRProbes(bool value);
+    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") DEPRECATED("Use DefaultProbeCubemapFormat instead.") bool GetUseHDRProbes() const;
+    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") DEPRECATED("Use DefaultProbeCubemapFormat instead.") void SetUseHDRProbes(bool value);
     API_FUNCTION(Attributes="OnDeserializing", Hidden) void OnDeserializing(const CallbackContext& context);
 
 public:

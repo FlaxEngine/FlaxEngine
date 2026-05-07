@@ -44,11 +44,31 @@ public:
 IMPLEMENT_ENGINE_SETTINGS_GETTER(BuildSettings, GameCooking);
 
 #include "Engine/Content/Deprecated.h"
+
+PRAGMA_DISABLE_DEPRECATION_WARNINGS;
+
+bool GraphicsSettings::GetUeeHDRProbes() const
+{
+    return UseHDRProbes;
+}
+
 void GraphicsSettings::SetUeeHDRProbes(bool value)
 {
     MARK_CONTENT_DEPRECATED();
-    UseHDRProbes = value;
+    DefaultProbeCubemapFormat = value ? ProbeCubemapFormats::R11G11B10 : ProbeCubemapFormats::R8G8B8A8;
 }
+
+bool GraphicsSettings::GetUseHDRProbes() const
+{
+    return UseHDRProbes;
+}
+
+void GraphicsSettings::SetUseHDRProbes(bool value)
+{
+    DefaultProbeCubemapFormat = value ? ProbeCubemapFormats::R11G11B10 : ProbeCubemapFormats::R8G8B8A8;
+}
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS;
 
 void GraphicsSettings::OnDeserializing(const CallbackContext& context)
 {

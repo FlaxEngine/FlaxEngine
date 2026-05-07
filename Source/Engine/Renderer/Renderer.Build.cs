@@ -15,5 +15,9 @@ public class Renderer : EngineModule
 
         options.PrivateDependencies.Add("Graphics");
         options.PrivateDependencies.Add("Content");
+        if (options.Target.IsEditor)
+        {
+            options.PrivateDependencies.Add("TextureTool");
+        }
     }
 }
