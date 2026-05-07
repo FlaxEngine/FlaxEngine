@@ -11,6 +11,7 @@ DirectionalLight::DirectionalLight(const SpawnParams& params)
     : LightWithShadow(params)
 {
     ShadowsDepthBias = 0.002f;
+    ShadowsNormalOffsetScale = 20.0f;
 
     _drawNoCulling = 1;
     Brightness = 8.0f;
@@ -20,8 +21,9 @@ void DirectionalLight::Draw(RenderContext& renderContext)
 {
     float brightness = Brightness;
     AdjustBrightness(renderContext.View, brightness);
+    Float3 color = Color.ToFloat3() * (Color.A * brightness);
     Float3 position;
-    if (Brightness > ZeroTolerance
+    if (color.SumValues() > ZeroTolerance
         && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::DirectionalLights)
         && EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GBuffer)
         && CheckViewDistance(renderContext.View.Position, renderContext.View.Origin, position, brightness))
@@ -30,7 +32,7 @@ void DirectionalLight::Draw(RenderContext& renderContext)
         data.Position = position;
         data.MinRoughness = MinRoughness;
         data.ShadowsDistance = ShadowsDistance;
-        data.Color = Color.ToFloat3() * (Color.A * brightness);
+        data.Color = color;
         data.ShadowsStrength = ShadowsStrength;
         data.Direction = GetDirection();
         data.ShadowsFadeDistance = ShadowsFadeDistance;
