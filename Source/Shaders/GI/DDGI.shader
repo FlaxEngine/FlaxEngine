@@ -30,6 +30,7 @@
 #define DDGI_PROBE_EMPTY_AREA_DENSITY 8 // Spacing (in probe grid) between fallback probes placed into empty areas to provide valid GI for nearby dynamic objects or transparency
 #define DDGI_DEBUG_STATS 0 // Enables additional GPU-driven stats for probe/rays count
 #define DDGI_DEBUG_INSTABILITY 0 // Enables additional probe irradiance instability debugging
+#define DDGI_SKY_DISTANCE 1e27f // Sky is the limit
 
 META_CB_BEGIN(0, Data0)
 DDGIData DDGI;
@@ -191,21 +192,51 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
     float relocateLimit = probesSpacing * ProbesRelocateLimits[CascadeIndex];
 #ifdef DDGI_PROBE_EMPTY_AREA_DENSITY
     uint3 probeCoordsStable = GetDDGIProbeCoords(DDGI, probeIndex);
+#endif
+
+    // Classify probe based on previous state and neighborhood
+#if DDGI_FALLBACK_OUTER_DEDICATED_PROBE
+    if (CascadeIndex == DDGI.CascadesCount - 1 && probeIndex == 0)
+    {
+        // Special probe as a fallback for ambient GI outside the last cascade
+        probeOffset = float3(0, 0, 0);
+        if (probeStateOld == DDGI_PROBE_STATE_INACTIVE)
+        {
+            probeState = DDGI_PROBE_STATE_ACTIVATED;
+            probeAttention = 1.0f;
+        }
+        else
+        {
+            probeState = DDGI_PROBE_STATE_ACTIVE;
+            probeAttention = 0.5f;
+        }
+    }
+    else
+#endif
+#ifdef DDGI_PROBE_EMPTY_AREA_DENSITY
     if (sdf > probesSpacing * DDGI.ProbesCounts.x * 0.3f
 #if DDGI_PROBE_EMPTY_AREA_DENSITY > 1
         && (
             // Low-density grid grid
             (probeCoordsStable.x % DDGI_PROBE_EMPTY_AREA_DENSITY == 0 && probeCoordsStable.y % DDGI_PROBE_EMPTY_AREA_DENSITY == 0 && probeCoordsStable.z % DDGI_PROBE_EMPTY_AREA_DENSITY == 0)
-            // Edge probes at the last cascade (for good fallback irradiance outside the GI distance)
+            // Edge probes at the last cascade (for good fallback irradiance outside the GI distance) - not needed anymore as DDGI_FALLBACK_OUTER_DEDICATED_PROBE does a far better job
             //|| (CascadeIndex + 1 == DDGI.CascadesCount && IsProbeAtBorder(probeCoords))
         )
 #endif
     )
     {
-        // Addd some fallback probes in empty areas to provide valid GI for nearby dynamic objects or transparency
+        // Add some fallback probes in empty areas to provide valid GI for nearby dynamic objects or transparency
         probeOffset = float3(0, 0, 0);
-        probeState = wasScrolled || probeStateOld == DDGI_PROBE_STATE_INACTIVE ? DDGI_PROBE_STATE_ACTIVATED : DDGI_PROBE_STATE_ACTIVE;
-        probeAttention = DDGI_PROBE_ATTENTION_MIN;
+        if (wasScrolled || probeStateOld == DDGI_PROBE_STATE_INACTIVE)
+        {
+            probeState = DDGI_PROBE_STATE_ACTIVATED;
+            probeAttention = 1.0f;
+        }
+        else
+        {
+            probeState = DDGI_PROBE_STATE_ACTIVE;
+            probeAttention = DDGI_PROBE_ATTENTION_MIN;
+        }
     }
     else 
 #endif
@@ -479,6 +510,15 @@ void CS_TraceRays(uint3 DispatchThreadId : SV_DispatchThreadID)
     float3 probeRayDirection = GetProbeRayDirection(DDGI, rayIndex, probeRaysCount, probeIndex, probeCoords);
     // TODO: implement ray-guiding based on the probe irradiance (prioritize directions with high luminance)
 
+#if DDGI_FALLBACK_OUTER_DEDICATED_PROBE
+    if (CascadeIndex == DDGI.CascadesCount - 1 && probeIndex == 0)
+    {
+        // Special probe as a fallback for ambient GI outside the last cascade
+        RWProbesTrace[uint2(rayIndex, DispatchThreadId.x)] = float4(Skybox.SampleLevel(SamplerLinearClamp, probeRayDirection, 0).rgb * SkyboxIntensity, DDGI_SKY_DISTANCE);
+        return;
+    }
+#endif
+
     // Trace ray with Global SDF
     GlobalSDFTrace trace;
     trace.Init(probePosition, probeRayDirection, 0.0f, DDGI.RayMaxDistance);
@@ -513,7 +553,7 @@ void CS_TraceRays(uint3 DispatchThreadId : SV_DispatchThreadID)
     {
         // Ray hits sky
         radiance.rgb = Skybox.SampleLevel(SamplerLinearClamp, probeRayDirection, 0).rgb * SkyboxIntensity;
-        radiance.a = 1e27f; // Sky is the limit
+        radiance.a = DDGI_SKY_DISTANCE;
     }
 
     // Write into probes trace results

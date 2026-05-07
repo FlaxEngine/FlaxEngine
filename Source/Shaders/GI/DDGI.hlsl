@@ -29,6 +29,7 @@
 #define DDGI_FALLBACK_COORDS_ENCODE(coord) ((float3)(coord + 1) / 128.0f)
 #define DDGI_FALLBACK_COORDS_DECODE(data) (uint3)(data.xyz * 128.0f - 1)
 #define DDGI_FALLBACK_COORDS_VALID(data) (length(data.xyz) > 0)
+#define DDGI_FALLBACK_OUTER_DEDICATED_PROBE 1 // Enables using a special probe at (0, 0, 0) of the last cascade to be used for ambient GI on far pixels outside the DDGI range
 //#define DDGI_DEBUG_CASCADE 0 // Forces a specific cascade to be only in use (for debugging)
 
 // DDGI data for a constant buffer
@@ -166,6 +167,21 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
 {
     bool invalidCascade = cascadeIndex >= data.CascadesCount;
     cascadeIndex = min(cascadeIndex, data.CascadesCount - 1);
+#if DDGI_FALLBACK_OUTER_DEDICATED_PROBE
+    if (invalidCascade)
+    {
+        // Sample a special probe as a fallback for ambient GI outside the last cascade
+        float2 octahedralCoords = GetOctahedralCoords(worldNormal);
+        float2 uv = GetDDGIProbeUV(data, cascadeIndex, 0, octahedralCoords, DDGI_PROBE_RESOLUTION_IRRADIANCE);
+        float3 probeIrradiance = probesIrradiance.SampleLevel(SamplerLinearClamp, uv, 0).rgb;
+#if DDGI_SRGB_BLENDING
+        probeIrradiance = pow(probeIrradiance, data.IrradianceGamma * 0.5f);
+        probeIrradiance *= probeIrradiance;
+#endif
+        probeIrradiance *= 2.0f * PI;
+        return probeIrradiance;
+    }
+#endif
     uint3 probeCoordsEnd = data.ProbesCounts - uint3(1, 1, 1);
     uint3 baseProbeCoords = clamp(uint3((worldPosition - probesOrigin + probesExtent) / probesSpacing), uint3(0, 0, 0), probeCoordsEnd);
 
@@ -258,8 +274,10 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
         irradiance = float4(0, 1, 0, 1);
     else if (cascadeIndex == 2)
         irradiance = float4(0, 0, 1, 1);
-    else
+    else if (invalidCascade) // Area outside the last cascade that clamps to it
         irradiance = float4(1, 0, 1, 1);
+    else
+        irradiance = float4(0, 1, 1, 1);
 #endif
 
     if (irradiance.a > 0.0f)
@@ -267,7 +285,11 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
         // Normalize irradiance
         //irradiance.rgb /= irradiance.a;
         //irradiance.rgb /= lerp(1, irradiance.a, saturate(irradiance.a * irradiance.a + 0.9f));
+#if DDGI_FALLBACK_OUTER_DEDICATED_PROBE
+        irradiance.rgb /= lerp(1, irradiance.a, saturate(irradiance.a * irradiance.a + 0.9f));
+#else
         irradiance.rgb /= invalidCascade ? irradiance.a : lerp(1, irradiance.a, saturate(irradiance.a * irradiance.a + 0.9f));
+#endif
 #if DDGI_SRGB_BLENDING
         irradiance.rgb *= irradiance.rgb;
 #endif
@@ -331,13 +353,15 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
     // Blend with the next cascade (or fallback irradiance outside the volume)
 #if DDGI_CASCADE_BLEND_SMOOTH && !defined(DDGI_DEBUG_CASCADE)
     cascadeIndex++;
-    if (cascadeIndex < data.CascadesCount && cascadeWeight < 0.99f)
+    if (cascadeIndex <= data.CascadesCount && cascadeWeight < 0.99f)
     {
+        uint cascadeIndexTmp = cascadeIndex;
+        cascadeIndex = min(cascadeIndex, data.CascadesCount - 1);
         probesSpacing = data.ProbesOriginAndSpacing[cascadeIndex].w;
         probesOrigin = data.ProbesScrollOffsets[cascadeIndex].xyz * probesSpacing + data.ProbesOriginAndSpacing[cascadeIndex].xyz;
         probesExtent = (data.ProbesCounts - 1) * (probesSpacing * 0.5f);
         biasedWorldPosition = worldPosition + GetDDGISurfaceBias(viewDir, probesSpacing, worldNormal, bias);
-        float3 resultNext = SampleDDGIIrradianceCascade(data, probesData, probesDistance, probesIrradiance, worldPosition, worldNormal, cascadeIndex, probesOrigin, probesExtent, probesSpacing, biasedWorldPosition);
+        float3 resultNext = SampleDDGIIrradianceCascade(data, probesData, probesDistance, probesIrradiance, worldPosition, worldNormal, cascadeIndexTmp, probesOrigin, probesExtent, probesSpacing, biasedWorldPosition);
         result *= cascadeWeight;
         result += resultNext * (1 - cascadeWeight);
     }
