@@ -412,9 +412,9 @@ namespace Flax.Build.Bindings
                 {
                     currentParam.Name = token.Value;
                 }
-                // Support nameless arguments. assume optional usage
                 else
                 {
+                    // Support nameless arguments (assumes optional usage)
                     context.Tokenizer.PreviousToken();
                     if (string.IsNullOrEmpty(currentParam.Attributes))
                         currentParam.Attributes = "Optional";
@@ -475,6 +475,8 @@ namespace Flax.Build.Bindings
 
                 // Check for end or next param
                 token = context.Tokenizer.ExpectAnyTokens(new[] { TokenType.Comma, TokenType.RightParent });
+                if (currentParam.DefaultValue != null && context.PreprocessorDefines.TryGetValue(currentParam.DefaultValue, out var defaultValueMacroValue))
+                    currentParam.DefaultValue = defaultValueMacroValue; // Default value wrapped into preprocessor define (can be conditional)
                 if (token.Type == TokenType.Comma)
                 {
                     parameters.Add(currentParam);
