@@ -175,6 +175,30 @@ public:
     }
 
     /// <summary>
+    /// Gets the value that determines whether the video playback is playing.
+    /// </summary>
+    API_PROPERTY() FORCE_INLINE bool IsPlaying() const
+    {
+        return _state == States::Playing;
+    }
+
+    /// <summary>
+    /// Gets the value that determines whether the video playback is paused.
+    /// </summary>
+    API_PROPERTY() FORCE_INLINE bool IsPaused() const
+    {
+        return _state == States::Paused;
+    }
+
+    /// <summary>
+    /// Gets the value that determines whether the video playback is stopped.
+    /// </summary>
+    API_PROPERTY() FORCE_INLINE bool IsStopped() const
+    {
+        return _state == States::Stopped;
+    }
+
+    /// <summary>
     /// Gets the current time of playback. The time is in seconds, in range [0, Duration].
     /// </summary>
     API_PROPERTY(Attributes="HideInEditor, NoSerialize") float GetTime() const;
