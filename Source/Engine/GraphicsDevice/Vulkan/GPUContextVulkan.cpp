@@ -446,7 +446,7 @@ void GPUContextVulkan::BeginRenderPass()
             if (_drawPass && _drawPass->RenderTargetsActions)
             {
                 GPUDrawPassAction action = _drawPass->RenderTargetsActions[i];
-                if ((uint32)action & (uint32)GPUDrawPassAction::Clear)
+                if ((uint32)action & (uint32)GPUDrawPassAction::Clear && _drawPassCanClear)
                     layout.LoadClear |= mask;
                 else if (((uint32)action & (uint32)GPUDrawPassAction::LoadMask) == 0)
                     layout.LoadDontCare |= mask;
@@ -480,7 +480,7 @@ void GPUContextVulkan::BeginRenderPass()
         if (_drawPass)
         {
             GPUDrawPassAction action = _drawPass->DepthAction;
-            if ((uint32)action & (uint32)GPUDrawPassAction::Clear)
+            if ((uint32)action & (uint32)GPUDrawPassAction::Clear && _drawPassCanClear)
                 layout.LoadClear |= mask;
             else if (((uint32)action & (uint32)GPUDrawPassAction::LoadMask) == 0)
                 layout.LoadDontCare |= mask;
@@ -516,6 +516,7 @@ void GPUContextVulkan::BeginRenderPass()
     framebufferKey.RenderPass = renderPass;
     auto framebuffer = _device->GetOrCreateFramebuffer(framebufferKey, layout.Extent, layout.Layers);
     _renderPass = renderPass;
+    _drawPassCanClear = false;
 
     FlushBarriers();
 
@@ -2009,6 +2010,7 @@ void GPUContextVulkan::BeginDrawPass(GPUDrawPass& pass)
     _drawPass = &pass;
     _rtDirtyFlag = true;
     _psDirtyFlag = true;
+    _drawPassCanClear = true;
     _rtCount = pass.RenderTargetsCount;
     _rtDepth = (GPUTextureViewVulkan*)pass.DepthBuffer;
     Platform::MemoryCopy(_rtHandles, pass.RenderTargets, pass.RenderTargetsCount * sizeof(void*));
