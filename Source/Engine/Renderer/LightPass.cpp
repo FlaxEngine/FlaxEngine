@@ -283,7 +283,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         if (_depthBounds)
         {
             Float2 minMaxDepth = RenderTools::GetDepthBounds(view, BoundingSphere(light.Position, light.Radius));
-            context->SetDepthBounds(minMaxDepth.X, minMaxDepth.Y);
+            context->SetDepthBounds(GPU_DEPTH_BOUNDS_SWAP(minMaxDepth.X, minMaxDepth.Y));
         }
         context->UpdateCB(cb0, &perLight);
         context->BindCB(0, cb0);
@@ -331,7 +331,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         if (_depthBounds)
         {
             Float2 minMaxDepth = RenderTools::GetDepthBounds(view, BoundingSphere(light.Position, light.Radius));
-            context->SetDepthBounds(minMaxDepth.X, minMaxDepth.Y);
+            context->SetDepthBounds(GPU_DEPTH_BOUNDS_SWAP(minMaxDepth.X, minMaxDepth.Y));
         }
         context->UpdateCB(cb0, &perLight);
         context->BindCB(0, cb0);
@@ -365,7 +365,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
 
         // Calculate lighting
         if (_depthBounds)
-            context->SetDepthBounds(0.0f, RenderTools::DepthBoundMaxBackground);
+            context->SetDepthBounds(GPU_DEPTH_BOUNDS_SWAP(GPU_DEPTH_MIN_VALUE, RenderTools::DepthBoundMaxBackground));
         context->UpdateCB(cb0, &perLight);
         context->BindCB(0, cb0);
         context->BindCB(1, cb1);
@@ -398,7 +398,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         if (_depthBounds)
         {
             Float2 minMaxDepth = RenderTools::GetDepthBounds(view, BoundingSphere(light.Position, light.Radius));
-            context->SetDepthBounds(minMaxDepth.X, minMaxDepth.Y);
+            context->SetDepthBounds(GPU_DEPTH_BOUNDS_SWAP(minMaxDepth.X, minMaxDepth.Y));
         }
         context->UpdateCB(cb0, &perLight);
         context->BindCB(0, cb0);
@@ -411,7 +411,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
 
     // Restore state
     if (_depthBounds)
-        context->SetDepthBounds(0, 1);
+        context->SetDepthBounds();
     context->ResetRenderTarget();
     context->ResetSR();
     context->ResetCB();

@@ -347,7 +347,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
 
             // Setup depth bounds (if device supports it)
             if (_depthBounds)
-                context->SetDepthBounds(minMaxDepth.X, minMaxDepth.Y);
+                context->SetDepthBounds(GPU_DEPTH_BOUNDS_SWAP(minMaxDepth.X, minMaxDepth.Y));
 
             // Pack probe properties buffer
             probe.SetShaderData(data.PData);
@@ -368,7 +368,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
         context->UnBindSR(4);
         context->ResetRenderTarget();
         if (_depthBounds)
-            context->SetDepthBounds(0, 1);
+            context->SetDepthBounds();
     }
 
     // Screen Space Reflections pass
@@ -417,7 +417,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
         if (_depthBounds)
         {
             context->SetRenderTarget(depthBufferRTV, lightBuffer);
-            context->SetDepthBounds(0, RenderTools::DepthBoundMaxBackground);
+            context->SetDepthBounds(GPU_DEPTH_BOUNDS_SWAP(GPU_DEPTH_MIN_VALUE, RenderTools::DepthBoundMaxBackground));
         }
         else
             context->SetRenderTarget(lightBuffer);
@@ -430,7 +430,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
         context->SetState(_psCombinePass);
         context->DrawFullscreenTriangle();
         if (_depthBounds)
-            context->SetDepthBounds(0, 1);
+            context->SetDepthBounds();
     }
 
     RenderTargetPool::Release(ssrBuffer);

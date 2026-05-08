@@ -1147,11 +1147,7 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
 void ShadowsPass::ClearShadowMapTile(GPUContext* context, GPUConstantBuffer* quadShaderCB, QuadShaderData& quadShaderData) const
 {
     // Color.r is used by PS_DepthClear in Quad shader to clear depth
-#if FLAX_REVERSE_Z
-    quadShaderData.Color = Float4::Zero;
-#else
-    quadShaderData.Color = Float4::One;
-#endif
+    quadShaderData.Color = GPU_DEPTH_MAX_VALUE;
     context->UpdateCB(quadShaderCB, &quadShaderData);
     context->BindCB(0, quadShaderCB);
 
@@ -1753,8 +1749,8 @@ void ShadowsPass::RenderShadowMask(RenderContextBatch& renderContextBatch, Rende
         if (light.IsPointLight || light.IsSpotLight)
             minMaxDepth = RenderTools::GetDepthBounds(view, BoundingSphere(light.Position, ((RenderLocalLightData&)light).Radius));
         else //if (light.IsDirectionalLight)
-            minMaxDepth = Float2(0.0f, RenderTools::DepthBoundMaxBackground);
-        context->SetDepthBounds(minMaxDepth.X, minMaxDepth.Y);
+            minMaxDepth = Float2(GPU_DEPTH_MIN_VALUE, RenderTools::DepthBoundMaxBackground);
+        context->SetDepthBounds(GPU_DEPTH_BOUNDS_SWAP(minMaxDepth.X, minMaxDepth.Y));
     }
     if (light.IsPointLight)
     {

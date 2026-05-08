@@ -796,9 +796,8 @@ void GPUContextVulkan::OnDrawCall()
     if (_psDirtyFlag && pipelineState && (_rtDepth || _rtCount))
     {
         _psDirtyFlag = false;
-        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer()->GetHandle();
         const auto pipeline = pipelineState->GetState(_renderPass, _vertexLayout);
-        vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+        vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
         RENDER_STAT_PS_STATE_CHANGE();
         if (_depthBoundsEnable && (!_currentState || !_currentState->DepthBoundsEnable))
         {
