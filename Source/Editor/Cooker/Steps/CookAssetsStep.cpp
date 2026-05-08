@@ -233,6 +233,15 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
         LOG(Info, "{0} option has been modified.", TEXT("ShadersGenerateDebugData"));
         invalidateShaders = true;
     }
+    bool reverseZ = false;
+#if REVERSE_Z
+    reverseZ = true;
+#endif
+    if (reverseZ != Settings.Global.ShadersReverseZ)
+    {
+        LOG(Info, "{0} option has been modified.", TEXT("ShadersReverseZ"));
+        invalidateShaders = true;
+    }
 #if PLATFORM_TOOLS_WINDOWS
     if (data.Platform == BuildPlatform::Windows32 || data.Platform == BuildPlatform::Windows64)
     {

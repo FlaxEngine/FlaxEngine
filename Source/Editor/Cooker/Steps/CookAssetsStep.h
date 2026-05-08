@@ -97,6 +97,7 @@ public:
             {
                 bool ShadersNoOptimize;
                 bool ShadersGenerateDebugData;
+                bool ShadersReverseZ;
                 Guid StreamingSettingsAssetId;
                 int32 ShadersVersion;
                 int32 MaterialGraphVersion;
