@@ -2178,7 +2178,7 @@ namespace FlaxEngine
             result.M22 = 2.0f / (top - bottom);
             result.M41 = (left + right) / (left - right);
             result.M42 = (top + bottom) / (bottom - top);
-#if FLAX_REVERSE_Z
+#if REVERSE_Z
             result.M33 = -zRange;
             result.M43 = zfar * zRange;
 #else
@@ -2249,7 +2249,7 @@ namespace FlaxEngine
                 M11 = yScale / aspect,
                 M22 = yScale,
                 M34 = 1.0f,
-#if FLAX_REVERSE_Z
+#if REVERSE_Z
                 M33 = -znear * zRange,
                 M43 = znear * zfar * zRange,
 #else
@@ -2293,7 +2293,7 @@ namespace FlaxEngine
                 M31 = (left + right) / (left - right),
                 M32 = (top + bottom) / (bottom - top),
                 M34 = 1.0f,
-#if FLAX_REVERSE_Z
+#if REVERSE_Z
                 M33 = -znear * zRange,
                 M43 = znear * zfar * zRange,
 #else

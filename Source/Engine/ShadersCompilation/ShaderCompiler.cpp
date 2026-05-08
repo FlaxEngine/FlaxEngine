@@ -249,8 +249,8 @@ bool ShaderCompiler::OnCompileBegin()
     const auto profile = GetProfile();
     const auto featureLevel = RenderTools::GetFeatureLevel(profile);
     _globalMacros.Add({ "FEATURE_LEVEL", Numbers[(int32)featureLevel] });
-#if FLAX_REVERSE_Z
-    _globalMacros.Add({ "FLAX_REVERSE_Z", "1"});
+#if REVERSE_Z
+    _globalMacros.Add({ "REVERSE_Z", "1"});
 #endif
 
     return false;

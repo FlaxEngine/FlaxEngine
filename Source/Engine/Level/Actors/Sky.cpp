@@ -103,7 +103,7 @@ void Sky::Draw(RenderContext& renderContext)
                 psDesc.CullMode = CullMode::Inverted;
                 psDesc.DepthWriteEnable = false;
                 psDesc.DepthClipEnable = false;
-#if FLAX_REVERSE_Z
+#if REVERSE_Z
                 psDesc.DepthFunc = ComparisonFunc::GreaterEqual;
 #else
                 psDesc.DepthFunc = ComparisonFunc::LessEqual;

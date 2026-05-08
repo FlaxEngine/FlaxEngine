@@ -524,7 +524,7 @@ void Matrix::OrthoOffCenter(float left, float right, float bottom, float top, fl
     result.M22 = 2.0f / (top - bottom);
     result.M41 = (left + right) / (left - right);
     result.M42 = (top + bottom) / (bottom - top);
-#if FLAX_REVERSE_Z
+#if REVERSE_Z
     result.M33 = -zRange;
     result.M43 = zFar * zRange;
 #else
@@ -554,7 +554,7 @@ void Matrix::PerspectiveOffCenter(float left, float right, float bottom, float t
     result.M31 = (left + right) / (left - right);
     result.M32 = (top + bottom) / (bottom - top);
     result.M34 = 1.0f;
-#if FLAX_REVERSE_Z
+#if REVERSE_Z
     result.M33 = -zNear * zRange;
     result.M43 = zFar * zNear * zRange;
 #else

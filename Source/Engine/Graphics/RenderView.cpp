@@ -65,7 +65,7 @@ void RenderView::Prepare(RenderContext& renderContext)
 void RenderView::PrepareCache(const RenderContext& renderContext, float width, float height, const Float2& temporalAAJitter, const RenderView* mainView)
 {
     // The same format used by the Flax common shaders and postFx materials
-#if FLAX_REVERSE_Z
+#if REVERSE_Z
     ViewInfo = Float4(1.0f / Projection.M11, 1.0f / Projection.M22, -Near / (Far - Near), (Far * Near) / (Far - Near) / Far);
 #else
     ViewInfo = Float4(1.0f / Projection.M11, 1.0f / Projection.M22, Far / (Far - Near), -(Far * Near) / (Far - Near) / Far);

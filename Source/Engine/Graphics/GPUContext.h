@@ -14,7 +14,7 @@
 #undef MemoryBarrier
 #endif
 
-#if FLAX_REVERSE_Z
+#if REVERSE_Z
 #define GPU_DEPTH_MIN_VALUE 1.0f
 #define GPU_DEPTH_MAX_VALUE 0.0f
 #define GPU_DEPTH_BOUNDS_SWAP(min, max) max, min

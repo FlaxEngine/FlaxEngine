@@ -684,7 +684,7 @@ float RenderTools::TemporalHalton(int32 index, int32 base)
 
 Float2 RenderTools::GetDepthBounds(const RenderView& view, const Float3& nearPoint, const Float3& farPoint)
 {
-#if FLAX_REVERSE_Z
+#if REVERSE_Z
     Float3 viewNearPoint = Float3::Transform(nearPoint, view.View);
     Float3 viewFarPoint = Float3::Transform(farPoint, view.View);
 
@@ -727,7 +727,7 @@ Float2 RenderTools::GetDepthBounds(const RenderView& view, const BoundingSphere&
 
 Float2 RenderTools::GetDepthBounds(const RenderView& view, const Span<Float3>& points)
 {
-#if FLAX_REVERSE_Z
+#if REVERSE_Z
     // Find min and max view depth range for list of points
     float nearDepth = view.Far, farDepth = view.Near;
     for (int32 i = 0; i < points.Length(); i++)
@@ -781,7 +781,7 @@ Float2 RenderTools::GetDepthBounds(const RenderView& view, const OrientedBoundin
 
 float RenderTools::GetDepthBounds(const RenderView& view, const Float3& point, bool near)
 {
-#if FLAX_REVERSE_Z
+#if REVERSE_Z
     Float3 viewPoint = Float3::Transform(point, view.View);
     viewPoint.Z = Math::Clamp(viewPoint.Z, view.Near, view.Far);
 

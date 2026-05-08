@@ -160,7 +160,7 @@ GPUPipelineState::Description GPUPipelineState::Description::Default =
     true, // DepthWriteEnable
     true, // DepthClipEnable
     false, // DepthBoundsEnable
-#if FLAX_REVERSE_Z
+#if REVERSE_Z
     ComparisonFunc::Greater, // DepthFunc
 #else
     ComparisonFunc::Less, // DepthFunc
@@ -189,7 +189,7 @@ GPUPipelineState::Description GPUPipelineState::Description::DefaultNoDepth =
     false, // DepthWriteEnable
     false, // DepthClipEnable
     false, // DepthBoundsEnable
-#if FLAX_REVERSE_Z
+#if REVERSE_Z
     ComparisonFunc::Greater, // DepthFunc
 #else
     ComparisonFunc::Less, // DepthFunc
@@ -218,7 +218,7 @@ GPUPipelineState::Description GPUPipelineState::Description::DefaultFullscreenTr
     false, // DepthWriteEnable
     false, // DepthClipEnable
     false, // DepthBoundsEnable
-#if FLAX_REVERSE_Z
+#if REVERSE_Z
     ComparisonFunc::Greater, // DepthFunc
 #else
     ComparisonFunc::Less, // DepthFunc

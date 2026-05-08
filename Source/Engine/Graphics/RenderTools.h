@@ -174,7 +174,7 @@ public:
     static float GetDepthBounds(const RenderView& view, const Float3& point, bool near);
     static float GetDepthBounds(const RenderView& view, float viewDistance, bool near);
     // Skip background/sky pixels from shading
-#if FLAX_REVERSE_Z
+#if REVERSE_Z
     static constexpr float DepthBoundMaxBackground = 0.0000001f;
 #else
     static constexpr float DepthBoundMaxBackground = 1.0f - 0.0000001f;

@@ -147,7 +147,7 @@ namespace FlaxEditor.Gizmo
             _material.SetParameterValue("OutlineColor0", _color0);
             _material.SetParameterValue("OutlineColor1", _color1);
             _material.SetParameterValue("CustomDepth", customDepth);
-#if FLAX_REVERSE_Z
+#if REVERSE_Z
             _material.SetParameterValue("ViewInfo", new Float4(1.0f / projection.M11, 1.0f / projection.M22, -near / (far - near), (far * near) / (far - near) / far));
 #else
             _material.SetParameterValue("ViewInfo", new Float4(1.0f / projection.M11, 1.0f / projection.M22, far / (far - near), -(far * near) / (far - near) / far));

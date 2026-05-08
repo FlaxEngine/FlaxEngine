@@ -182,7 +182,7 @@ bool DeferredMaterialShader::Load()
     // Motion Vectors pass
     psDesc.DepthWriteEnable = false;
     psDesc.DepthEnable = true;
-#if FLAX_REVERSE_Z
+#if REVERSE_Z
     psDesc.DepthFunc = ComparisonFunc::GreaterEqual;
 #else
     psDesc.DepthFunc = ComparisonFunc::LessEqual;
@@ -204,7 +204,7 @@ bool DeferredMaterialShader::Load()
     psDesc.DepthClipEnable = false;
     psDesc.DepthWriteEnable = true;
     psDesc.DepthEnable = true;
-#if FLAX_REVERSE_Z
+#if REVERSE_Z
     psDesc.DepthFunc = ComparisonFunc::Greater;
 #else
     psDesc.DepthFunc = ComparisonFunc::Less;

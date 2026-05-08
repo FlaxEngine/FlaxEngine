@@ -20,8 +20,18 @@
 #include "./FlaxPlatforms/PS5/Shaders/PS5Common.hlsl"
 #endif
 
-#ifndef FLAX_REVERSE_Z
-#define FLAX_REVERSE_Z 0
+// Reversed Z support
+#ifndef REVERSE_Z
+#define REVERSE_Z 0
+#endif
+#if REVERSE_Z
+#define DEPTH_MIN_VALUE 1
+#define DEPTH_MAX_VALUE 0
+//#define DEPTH_CMP(l, r) l > r
+#else
+#define DEPTH_MIN_VALUE 0
+#define DEPTH_MAX_VALUE 1
+//#define DEPTH_CMP(l, r) l < r
 #endif
 
 // Feature levels
@@ -161,10 +171,11 @@ float4 LoadTextureWGSL(Texture2D tex, float2 uv)
 #else
 #define SAMPLE_RT_DEPTH(rt, texCoord) SAMPLE_RT(rt, texCoord).r
 #endif
+
+// General purpose constants
 #define HDR_CLAMP_MAX 65472.0
 #define PI 3.1415926535897932
 #define UNITS_TO_METERS_SCALE 0.01f
-#define REVERSE_Z 0
 
 // Structure that contains information about GBuffer
 struct GBufferData

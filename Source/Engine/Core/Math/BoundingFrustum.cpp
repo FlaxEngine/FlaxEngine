@@ -60,7 +60,7 @@ void BoundingFrustum::SetMatrix(const Matrix& matrix)
     _pFar.D = matrix.M44 - matrix.M43;
     _pFar.Normalize();
 
-#if FLAX_REVERSE_Z
+#if REVERSE_Z
     // Swap far and near planes if reverse z
     Swap(_pFar, _pNear);
 #endif

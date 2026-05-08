@@ -244,7 +244,7 @@ namespace FlaxEngine
             far.D = matrix.M44 - matrix.M43;
             far.Normalize();
 
-#if FLAX_REVERSE_Z
+#if REVERSE_Z
             // Swap far and near planes if reverse z
             (near, far) = (far, near);
 #endif
