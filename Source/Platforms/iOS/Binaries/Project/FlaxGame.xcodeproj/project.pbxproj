@@ -293,6 +293,7 @@ ${PBXResourcesGroup}
 				CURRENT_PROJECT_VERSION = ${AppVersion};
 				DEVELOPMENT_TEAM = ${AppTeamId};
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FlaxGame/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "${ProjectName}";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -333,6 +334,7 @@ ${PBXResourcesGroup}
 				CURRENT_PROJECT_VERSION = ${AppVersion};
 				DEVELOPMENT_TEAM = ${AppTeamId};
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FlaxGame/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "${ProjectName}";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
