@@ -155,7 +155,7 @@ bool LinuxFileSystem::ShowFileExplorer(const StringView& path)
     const StringAsUTF8<> pathAnsi(*path, path.Length());
     char cmd[2048];
     sprintf(cmd, "xdg-open %s &", pathAnsi.Get());
-    system(cmd);
+    (void)system(cmd);
     return false;
 }
 
