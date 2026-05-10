@@ -131,8 +131,10 @@ bool LinuxFileSystem::ShowBrowseFolderDialog(Window* parentWindow, const StringV
     }
     FILE* f = popen(cmd, "r");
     char buf[2048];
-    fgets(buf, ARRAY_COUNT(buf), f); 
+    const char* readResult = fgets(buf, ARRAY_COUNT(buf), f);
     int result = pclose(f);
+    if (!readResult)
+        return true;
     if (result != 0)
         return true;
 
