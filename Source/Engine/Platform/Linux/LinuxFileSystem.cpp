@@ -17,8 +17,46 @@
 #include <string.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <limits.h>
+#include <vector>
 
 const DateTime UnixEpoch(1970, 1, 1);
+
+bool LinuxFileSystem::FindProgramInPath(const char* program, char* outPath, size_t outSize)
+{
+    if (!program || !*program || !outPath || outSize == 0)
+        return false;
+
+    if (strchr(program, '/'))
+    {
+        char resolved[PATH_MAX];
+        if (realpath(program, resolved) == NULL || access(resolved, X_OK) != 0)
+            return false;
+        snprintf(outPath, outSize, "%s", resolved);
+        return true;
+    }
+
+    // Search for the program in the PATH environment variable
+    const char* pathEnv = getenv("PATH");
+    // Fallback to well-known locations if PATH is not available.
+    if (!pathEnv || !*pathEnv)
+        pathEnv = "/usr/bin:/bin";
+
+    char pathCopy[PATH_MAX];
+    strncpy(pathCopy, pathEnv, sizeof(pathCopy) - 1);
+    pathCopy[sizeof(pathCopy) - 1] = '\0';
+
+    char* savePtr = NULL;
+    for (char* dir = strtok_r(pathCopy, ":", &savePtr); dir; dir = strtok_r(NULL, ":", &savePtr))
+    {
+        int written = snprintf(outPath, outSize, "%s/%s", dir, program);
+        if (written > 0 && (size_t)written < outSize && access(outPath, X_OK) == 0)
+            return true;
+    }
+
+    outPath[0] = '\0';
+    return false;
+}
 
 bool LinuxFileSystem::ShowOpenFileDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& filter, bool multiSelect, const StringView& title, Array<String, HeapAllocation>& filenames)
 {
@@ -31,37 +69,46 @@ bool LinuxFileSystem::ShowOpenFileDialog(Window* parentWindow, const StringView&
     Platform::GetEnvironmentVariable(TEXT("XDG_CURRENT_DESKTOP"), xdgCurrentDesktop);
     StringUtils::GetZZString(filter.Get()).Split('\0', fileFilterEntries);
 
-    const bool zenitySupported = FileSystem::FileExists(TEXT("/usr/bin/zenity"));
-    const bool kdialogSupported = FileSystem::FileExists(TEXT("/usr/bin/kdialog"));
-    char cmd[2048];
+    char zenityPath[PATH_MAX];
+    char kdialogPath[PATH_MAX];
+    const bool zenitySupported = FindProgramInPath("zenity", zenityPath, sizeof(zenityPath));
+    const bool kdialogSupported = FindProgramInPath("kdialog", kdialogPath, sizeof(kdialogPath));
+    char cmd[PATH_MAX];
     if (zenitySupported && (xdgCurrentDesktop != TEXT("KDE") || !kdialogSupported)) // Prefer kdialog when running on KDE
     {
-        for (int32 i = 1; i < fileFilterEntries.Count(); i += 2)
+        const int32 pairCount = fileFilterEntries.Count() / 2;
+        for (int32 pairIndex = 0; pairIndex < pairCount; pairIndex++)
         {
-            String extensions(fileFilterEntries[i]);
-            fileFilterEntries[i].Replace(TEXT(";"), TEXT(" "));
-            fileFilter.Append(String::Format(TEXT("{0}--file-filter=\"{1}|{2}\""), i > 1 ? TEXT(" ") : TEXT(""), fileFilterEntries[i-1].Get(), extensions.Get()));
+            const int32 nameIndex = pairIndex * 2;
+            const int32 extensionsIndex = nameIndex + 1;
+            String extensions(fileFilterEntries[extensionsIndex]);
+            fileFilterEntries[extensionsIndex].Replace(TEXT(";"), TEXT(" "));
+            fileFilter.Append(String::Format(TEXT("{0}--file-filter=\"{1}|{2}\""), pairIndex > 0 ? TEXT(" ") : TEXT(""), fileFilterEntries[nameIndex].Get(), extensions.Get()));
         }
 
-        sprintf(cmd, "/usr/bin/zenity --modal --file-selection %s--filename=\"%s\" --title=\"%s\" %s ", multiSelect ? "--multiple --separator=$'\n' " : " ", initDir, titleAnsi.Get(), fileFilter.ToStringView().ToStringAnsi().GetText());
+        sprintf(cmd, "\"%s\" --modal --file-selection %s--filename=\"%s\" --title=\"%s\" %s ", zenityPath, multiSelect ? "--multiple --separator=$'\n' " : " ", initDir, titleAnsi.Get(), fileFilter.ToStringView().ToStringAnsi().GetText());
     }
     else if (kdialogSupported)
     {
-        for (int32 i = 1; i < fileFilterEntries.Count(); i += 2)
+        const int32 pairCount = fileFilterEntries.Count() / 2;
+        for (int32 pairIndex = 0; pairIndex < pairCount; pairIndex++)
         {
-            String extensions(fileFilterEntries[i]);
-            fileFilterEntries[i].Replace(TEXT(";"), TEXT(" "));
-            fileFilter.Append(String::Format(TEXT("{0}\"{1}({2})\""), i > 1 ? TEXT(" ") : TEXT(""), fileFilterEntries[i-1].Get(), extensions.Get()));
+            const int32 nameIndex = pairIndex * 2;
+            const int32 extensionsIndex = nameIndex + 1;
+            String extensions(fileFilterEntries[extensionsIndex]);
+            fileFilterEntries[extensionsIndex].Replace(TEXT(";"), TEXT(" "));
+            fileFilter.Append(String::Format(TEXT("{0}\"{1}({2})\""), pairIndex > 0 ? TEXT(" ") : TEXT(""), fileFilterEntries[nameIndex].Get(), extensions.Get()));
         }
         fileFilter.Append(String::Format(TEXT("{0}\"{1}({2})\""), TEXT(" "), TEXT("many things"), TEXT("*.png *.jpg")));
 
-        sprintf(cmd, "/usr/bin/kdialog --getopenfilename %s--title \"%s\" \"%s\" %s ", multiSelect ? "--multiple --separate-output " : " ", titleAnsi.Get(), initDir, fileFilter.ToStringView().ToStringAnsi().GetText());
+        sprintf(cmd, "\"%s\" --getopenfilename %s--title \"%s\" \"%s\" %s ", kdialogPath, multiSelect ? "--multiple --separate-output " : " ", titleAnsi.Get(), initDir, fileFilter.ToStringView().ToStringAnsi().GetText());
     }
     else
     {
         LOG(Error, "Missing file picker (install zenity or kdialog).");
-        return true;    
+        return true;
     }
+
     FILE* f = popen(cmd, "r");
     char buf[2048];
     char* writePointer = buf;
@@ -113,21 +160,23 @@ bool LinuxFileSystem::ShowBrowseFolderDialog(Window* parentWindow, const StringV
 
     // TODO: support initialDirectory
 
-    const bool zenitySupported = FileSystem::FileExists(TEXT("/usr/bin/zenity"));
-    const bool kdialogSupported = FileSystem::FileExists(TEXT("/usr/bin/kdialog"));
-    char cmd[2048];
+    char zenityPath[PATH_MAX];
+    char kdialogPath[PATH_MAX];
+    const bool zenitySupported = FindProgramInPath("zenity", zenityPath, sizeof(zenityPath));
+    const bool kdialogSupported = FindProgramInPath("kdialog", kdialogPath, sizeof(kdialogPath));
+    char cmd[PATH_MAX];
     if (zenitySupported && (xdgCurrentDesktop != TEXT("KDE") || !kdialogSupported)) // Prefer kdialog when running on KDE
     {
-        sprintf(cmd, "/usr/bin/zenity --modal --file-selection --directory --title=\"%s\" ", titleAnsi.Get());
+        sprintf(cmd, "\"%s\" --modal --file-selection --directory --title=\"%s\" ", zenityPath, titleAnsi.Get());
     }
     else if (kdialogSupported)
     {
-        sprintf(cmd, "/usr/bin/kdialog --getexistingdirectory --title \"%s\" ", titleAnsi.Get());
+        sprintf(cmd, "\"%s\" --getexistingdirectory --title \"%s\" ", kdialogPath, titleAnsi.Get());
     }
     else
     {
         LOG(Error, "Missing file picker (install zenity or kdialog).");
-        return true;    
+        return true;
     }
     FILE* f = popen(cmd, "r");
     char buf[2048];
@@ -248,16 +297,18 @@ bool LinuxFileSystem::MoveFileToRecycleBin(const StringView& path)
     {
         const String ext = GetExtension(path);
         dst = filesDir / getNameWithoutExtension(path) + TEXT("XXXXXX.") + ext;
-        const char *templateString = dst.ToStringAnsi().Get();
-        char writableName[strlen(templateString) + 1];
-        strcpy(writableName, templateString);
-        fd = mkstemps(writableName, ext.Length() + 1);
+        const auto templateStringAnsi = dst.ToStringAnsi();
+        const char* templateString = templateStringAnsi.Get();
+        const size_t templateLength = strlen(templateString);
+        std::vector<char> writableName(templateLength + 1);
+        strcpy(writableName.data(), templateString);
+        fd = mkstemps(writableName.data(), ext.Length() + 1);
         if (fd < 0)
         {
-            LOG(Error, "Cannot create a temporary file as {0}, errno={1}", String(writableName), errno);
+            LOG(Error, "Cannot create a temporary file as {0}, errno={1}", String(writableName.data()), errno);
             return true;
         }
-        dst = String(writableName);
+        dst = String(writableName.data());
         trashName = getBaseName(dst);
     }
     if (fd != -1)
@@ -268,17 +319,17 @@ bool LinuxFileSystem::MoveFileToRecycleBin(const StringView& path)
         // Not MoveFile means success so write the info file
         const String infoFile = infoDir / trashName + TEXT(".trashinfo");
         StringBuilder trashInfo;
-        const char *ansiPath = path.ToStringAnsi().Get();
-        const int maxLength = strlen(ansiPath) * 3 + 1; // in the worst case the length will be tripled
-        char encoded[maxLength];
-        if (!UrnEncodePath(ansiPath, encoded, maxLength))
+        const char* ansiPath = path.ToStringAnsi().Get();
+        const int maxLength = static_cast<int>(strlen(ansiPath) * 3 + 1); // in the worst case the length will be tripled
+        std::vector<char> encoded(static_cast<size_t>(maxLength));
+        if (!UrnEncodePath(ansiPath, encoded.data(), maxLength))
         {
             // unlikely but better keep something
-            strcpy(encoded, ansiPath);
+            strcpy(encoded.data(), ansiPath);
         }
         const DateTime now = DateTime::Now();
         const String rfcDate = String::Format(TEXT("{0}-{1:0>2}-{2:0>2}T{3:0>2}:{4:0>2}:{5:0>2}"), now.GetYear(), now.GetMonth(), now.GetDay(), now.GetHour(), now.GetMinute(), now.GetSecond());
-        trashInfo.AppendLine(TEXT("[Trash Info]")).Append(TEXT("Path=")).Append(encoded).Append(TEXT('\n'));
+        trashInfo.AppendLine(TEXT("[Trash Info]")).Append(TEXT("Path=")).Append(encoded.data()).Append(TEXT('\n'));
         trashInfo.Append(TEXT("DeletionDate=")).Append(rfcDate).Append(TEXT("\n\0"));
 
         // a failure to write the info file is considered non-fatal according to the FreeDesktop.org specification
