@@ -401,7 +401,15 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     VkBool32 supportsPresent;
     VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfaceSupportKHR(gpu, _device->PresentQueue->GetFamilyIndex(), _surface, &supportsPresent));
     ASSERT(supportsPresent);
+#if PLATFORM_IOS
+	Function<void()> func = [this, &device, &swapChainInfo]()
+	{
+        VALIDATE_VULKAN_RESULT(vkCreateSwapchainKHR(device, &swapChainInfo, nullptr, &_swapChain));
+	};
+	iOSPlatform::RunOnUIThread(func, true);
+#else
     VALIDATE_VULKAN_RESULT(vkCreateSwapchainKHR(device, &swapChainInfo, nullptr, &_swapChain));
+#endif
 
     // Cache data
     _width = width;
