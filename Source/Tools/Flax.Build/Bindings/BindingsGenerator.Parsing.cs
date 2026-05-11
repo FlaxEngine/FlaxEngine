@@ -475,8 +475,8 @@ namespace Flax.Build.Bindings
 
                 // Check for end or next param
                 token = context.Tokenizer.ExpectAnyTokens(new[] { TokenType.Comma, TokenType.RightParent });
-                if (currentParam.DefaultValue != null && context.PreprocessorDefines.TryGetValue(currentParam.DefaultValue, out var defaultValueMacroValue))
-                    currentParam.DefaultValue = defaultValueMacroValue; // Default value wrapped into preprocessor define (can be conditional)
+                if (currentParam.DefaultValue != null && context.PreprocessorDefines.TryGetValue(currentParam.DefaultValue, out var define))
+                    currentParam.DefaultValue = define; // Default value wrapped into preprocessor define (can be conditional)
                 if (token.Type == TokenType.Comma)
                 {
                     parameters.Add(currentParam);
@@ -1218,6 +1218,7 @@ namespace Flax.Build.Bindings
                     token = context.Tokenizer.NextToken();
                     if (token.Type == TokenType.Equal)
                     {
+                        // Rean enum value
                         token = context.Tokenizer.NextToken();
                         entry.Value = string.Empty;
                         while (token.Type != TokenType.EndOfFile &&
@@ -1227,6 +1228,10 @@ namespace Flax.Build.Bindings
                             entry.Value += token.Value;
                             token = context.Tokenizer.NextToken(true);
                         }
+
+                        // Optionally swap with preprocessor define
+                        if (context.PreprocessorDefines.TryGetValue(entry.Value, out var define))
+                            entry.Value = define;
                     }
                     context.Tokenizer.PreviousToken();
 

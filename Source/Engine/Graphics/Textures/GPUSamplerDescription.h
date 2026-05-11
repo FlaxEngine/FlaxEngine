@@ -47,6 +47,8 @@ API_ENUM() enum class GPUSamplerCompareFunction
     Never = 0,
     /// <summary>If the source data is less than the destination data, the comparison passes.</summary>
     Less = 1,
+    /// <summary>If the source data is greater than the destination data, the comparison passes.</summary>
+    Greater = 2,
 
     API_ENUM(Attributes="HideInEditor") MAX
 };

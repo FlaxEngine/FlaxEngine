@@ -25,13 +25,17 @@
 #define REVERSE_Z 0
 #endif
 #if REVERSE_Z
-#define DEPTH_MIN_VALUE 1
-#define DEPTH_MAX_VALUE 0
-//#define DEPTH_CMP(l, r) l > r
+#define DEPTH_RANGE_MIN 1
+#define DEPTH_RANGE_MAX 0
+#define DEPTH_CMP(l, r) (l > r)
+#define DEPTH_DIFF(l, r) (r - l)
+#define DEPTH_01(d) (1 - d)
 #else
-#define DEPTH_MIN_VALUE 0
-#define DEPTH_MAX_VALUE 1
-//#define DEPTH_CMP(l, r) l < r
+#define DEPTH_RANGE_MIN 0
+#define DEPTH_RANGE_MAX 1
+#define DEPTH_CMP(l, r) (l < r)
+#define DEPTH_DIFF(l, r) (l - r)
+#define DEPTH_01(d) (d)
 #endif
 
 // Feature levels

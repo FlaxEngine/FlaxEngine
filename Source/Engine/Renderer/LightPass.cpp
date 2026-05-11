@@ -90,11 +90,7 @@ bool LightPass::setupResources()
         psDesc.CullMode = CullMode::Normal;
         if (_psLightLocal.Create(psDesc, shader, "PS_LocalLight"))
             return true;
-#if REVERSE_Z
-        psDesc.DepthFunc = ComparisonFunc::Less;
-#else
-        psDesc.DepthFunc = ComparisonFunc::Greater;
-#endif
+        psDesc.DepthFunc = ComparisonFunc::DefaultInv;
         psDesc.CullMode = CullMode::Inverted;
         if (_psLightLocalInside.Create(psDesc, shader, "PS_LocalLight"))
             return true;
@@ -111,11 +107,7 @@ bool LightPass::setupResources()
         psDesc.CullMode = CullMode::Normal;
         if (_psLightSky->Init(psDesc))
             return true;
-#if REVERSE_Z
-        psDesc.DepthFunc = ComparisonFunc::Less;
-#else
-        psDesc.DepthFunc = ComparisonFunc::Greater;
-#endif
+        psDesc.DepthFunc = ComparisonFunc::DefaultInv;
         psDesc.CullMode = CullMode::Inverted;
         if (_psLightSkyInside->Init(psDesc))
             return true;
@@ -283,7 +275,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         if (_depthBounds)
         {
             Float2 minMaxDepth = RenderTools::GetDepthBounds(view, BoundingSphere(light.Position, light.Radius));
-            context->SetDepthBounds(GPU_DEPTH_BOUNDS_SWAP(minMaxDepth.X, minMaxDepth.Y));
+            context->SetDepthBounds(GPU_DEPTH_RANGE_BOUNDS(minMaxDepth.X, minMaxDepth.Y));
         }
         context->UpdateCB(cb0, &perLight);
         context->BindCB(0, cb0);
@@ -331,7 +323,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         if (_depthBounds)
         {
             Float2 minMaxDepth = RenderTools::GetDepthBounds(view, BoundingSphere(light.Position, light.Radius));
-            context->SetDepthBounds(GPU_DEPTH_BOUNDS_SWAP(minMaxDepth.X, minMaxDepth.Y));
+            context->SetDepthBounds(GPU_DEPTH_RANGE_BOUNDS(minMaxDepth.X, minMaxDepth.Y));
         }
         context->UpdateCB(cb0, &perLight);
         context->BindCB(0, cb0);
@@ -365,7 +357,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
 
         // Calculate lighting
         if (_depthBounds)
-            context->SetDepthBounds(GPU_DEPTH_BOUNDS_SWAP(GPU_DEPTH_MIN_VALUE, RenderTools::DepthBoundMaxBackground));
+            context->SetDepthBounds(GPU_DEPTH_RANGE_BOUNDS(GPU_DEPTH_RANGE_MIN, RenderTools::DepthBoundMaxBackground));
         context->UpdateCB(cb0, &perLight);
         context->BindCB(0, cb0);
         context->BindCB(1, cb1);
@@ -398,7 +390,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         if (_depthBounds)
         {
             Float2 minMaxDepth = RenderTools::GetDepthBounds(view, BoundingSphere(light.Position, light.Radius));
-            context->SetDepthBounds(GPU_DEPTH_BOUNDS_SWAP(minMaxDepth.X, minMaxDepth.Y));
+            context->SetDepthBounds(GPU_DEPTH_RANGE_BOUNDS(minMaxDepth.X, minMaxDepth.Y));
         }
         context->UpdateCB(cb0, &perLight);
         context->BindCB(0, cb0);

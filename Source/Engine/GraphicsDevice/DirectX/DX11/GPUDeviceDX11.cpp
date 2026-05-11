@@ -25,6 +25,7 @@
 bool EnableNvapi = false;
 #endif
 #if COMPILE_WITH_AGS
+#define AGS_EXCLUDE_DIRECTX_12
 #include <ThirdParty/AGS/amd_ags.h>
 #include "Engine/Engine/Globals.h"
 #include "FlaxEngine.Gen.h"
@@ -757,7 +758,11 @@ bool GPUDeviceDX11::Init()
         samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
         samplerDesc.MipLODBias = 0.0f;
         samplerDesc.MaxAnisotropy = 1;
+#if REVERSE_Z
+        samplerDesc.ComparisonFunc = D3D11_COMPARISON_GREATER;
+#else
         samplerDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
+#endif
 
         // Linear Clamp
         samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;

@@ -536,11 +536,7 @@ bool ShadowsPass::setupResources()
         psDesc.CullMode = CullMode::Normal;
         if (_psShadowPoint.Create(psDesc, shader, psLocalLight))
             return true;
-#if REVERSE_Z
-        psDesc.DepthFunc = ComparisonFunc::Less;
-#else
-        psDesc.DepthFunc = ComparisonFunc::Greater;
-#endif
+        psDesc.DepthFunc = ComparisonFunc::DefaultInv;
         psDesc.CullMode = CullMode::Inverted;
         if (_psShadowPointInside.Create(psDesc, shader, psLocalLight))
             return true;
@@ -555,11 +551,7 @@ bool ShadowsPass::setupResources()
         psDesc.CullMode = CullMode::Normal;
         if (_psShadowSpot.Create(psDesc, shader, psLocalLight, 8))
             return true;
-#if REVERSE_Z
-        psDesc.DepthFunc = ComparisonFunc::Less;
-#else
-        psDesc.DepthFunc = ComparisonFunc::Greater;
-#endif
+        psDesc.DepthFunc = ComparisonFunc::DefaultInv;
         psDesc.CullMode = CullMode::Inverted;
         if (_psShadowSpotInside.Create(psDesc, shader, psLocalLight, 8))
             return true;
@@ -967,14 +959,14 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     {
         Float3 frustumCornersCs[8] =
         {
-            Float3(-1.0f,  1.0f, 0.0f),
-            Float3(1.0f,  1.0f, 0.0f),
-            Float3(1.0f, -1.0f, 0.0f),
-            Float3(-1.0f, -1.0f, 0.0f),
-            Float3(-1.0f,  1.0f, 1.0f),
-            Float3(1.0f,  1.0f, 1.0f),
-            Float3(1.0f, -1.0f, 1.0f),
-            Float3(-1.0f, -1.0f, 1.0f),
+            Float3(-1.0f,  1.0f, GPU_DEPTH_RANGE_MIN),
+            Float3(1.0f,  1.0f, GPU_DEPTH_RANGE_MIN),
+            Float3(1.0f, -1.0f, GPU_DEPTH_RANGE_MIN),
+            Float3(-1.0f, -1.0f, GPU_DEPTH_RANGE_MIN),
+            Float3(-1.0f,  1.0f, GPU_DEPTH_RANGE_MAX),
+            Float3(1.0f,  1.0f, GPU_DEPTH_RANGE_MAX),
+            Float3(1.0f, -1.0f, GPU_DEPTH_RANGE_MAX),
+            Float3(-1.0f, -1.0f, GPU_DEPTH_RANGE_MAX),
         };
         Matrix invProjectionMatrix;
         Matrix::Invert(renderContext.View.NonJitteredProjection, invProjectionMatrix);
@@ -1147,7 +1139,7 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
 void ShadowsPass::ClearShadowMapTile(GPUContext* context, GPUConstantBuffer* quadShaderCB, QuadShaderData& quadShaderData) const
 {
     // Color.r is used by PS_DepthClear in Quad shader to clear depth
-    quadShaderData.Color = GPU_DEPTH_MAX_VALUE;
+    quadShaderData.Color = GPU_DEPTH_RANGE_MAX;
     context->UpdateCB(quadShaderCB, &quadShaderData);
     context->BindCB(0, quadShaderCB);
 
@@ -1749,8 +1741,8 @@ void ShadowsPass::RenderShadowMask(RenderContextBatch& renderContextBatch, Rende
         if (light.IsPointLight || light.IsSpotLight)
             minMaxDepth = RenderTools::GetDepthBounds(view, BoundingSphere(light.Position, ((RenderLocalLightData&)light).Radius));
         else //if (light.IsDirectionalLight)
-            minMaxDepth = Float2(GPU_DEPTH_MIN_VALUE, RenderTools::DepthBoundMaxBackground);
-        context->SetDepthBounds(GPU_DEPTH_BOUNDS_SWAP(minMaxDepth.X, minMaxDepth.Y));
+            minMaxDepth = Float2(GPU_DEPTH_RANGE_MIN, RenderTools::DepthBoundMaxBackground);
+        context->SetDepthBounds(GPU_DEPTH_RANGE_BOUNDS(minMaxDepth.X, minMaxDepth.Y));
     }
     if (light.IsPointLight)
     {

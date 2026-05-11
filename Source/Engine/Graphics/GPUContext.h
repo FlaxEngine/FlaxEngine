@@ -15,13 +15,13 @@
 #endif
 
 #if REVERSE_Z
-#define GPU_DEPTH_MIN_VALUE 1.0f
-#define GPU_DEPTH_MAX_VALUE 0.0f
-#define GPU_DEPTH_BOUNDS_SWAP(min, max) max, min
+#define GPU_DEPTH_RANGE_MIN 1.0f
+#define GPU_DEPTH_RANGE_MAX 0.0f
+#define GPU_DEPTH_RANGE_BOUNDS(min, max) max, min
 #else
-#define GPU_DEPTH_MIN_VALUE 0.0f
-#define GPU_DEPTH_MAX_VALUE 1.0f
-#define GPU_DEPTH_BOUNDS_SWAP(min, max) min, max
+#define GPU_DEPTH_RANGE_MIN 0.0f
+#define GPU_DEPTH_RANGE_MAX 1.0f
+#define GPU_DEPTH_RANGE_BOUNDS(min, max) min, max
 #endif
 
 class GPUConstantBuffer;
@@ -218,7 +218,7 @@ public:
     /// <param name="depthBuffer">The depth buffer to clear.</param>
     /// <param name="depthValue">The clear depth value.</param>
     /// <param name="stencilValue">The clear stencil value.</param>
-    API_FUNCTION() virtual void ClearDepth(GPUTextureView* depthBuffer, float depthValue = GPU_DEPTH_MAX_VALUE, uint8 stencilValue = 0) = 0;
+    API_FUNCTION() virtual void ClearDepth(GPUTextureView* depthBuffer, float depthValue = GPU_DEPTH_RANGE_MAX, uint8 stencilValue = 0) = 0;
 
     /// <summary>
     /// Clears an unordered access buffer with a float value.

@@ -19,7 +19,7 @@ META_VS(true, FEATURE_LEVEL_ES2)
 Quad_VS2PS VS(float2 Position : POSITION0, float2 TexCoord : TEXCOORD0)
 {
 	Quad_VS2PS output;
-	output.Position = float4(Position, 0, 1);
+	output.Position = float4(Position, DEPTH_RANGE_MIN, 1);
 	output.TexCoord = TexCoord;
 	return output;
 }
@@ -29,7 +29,7 @@ META_VS(true, FEATURE_LEVEL_ES2)
 MaterialVertexOutput VS_PostFx(float2 Position : POSITION0, float2 TexCoord : TEXCOORD0)
 {
 	MaterialVertexOutput output;
-	output.Position = float4(Position, 0, 1);
+	output.Position = float4(Position, DEPTH_RANGE_MIN, 1);
 	output.WorldPosition = output.Position.xyz;
 	output.TexCoord = TexCoord;
 	return output;

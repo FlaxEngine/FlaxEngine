@@ -347,7 +347,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
 
             // Setup depth bounds (if device supports it)
             if (_depthBounds)
-                context->SetDepthBounds(GPU_DEPTH_BOUNDS_SWAP(minMaxDepth.X, minMaxDepth.Y));
+                context->SetDepthBounds(GPU_DEPTH_RANGE_BOUNDS(minMaxDepth.X, minMaxDepth.Y));
 
             // Pack probe properties buffer
             probe.SetShaderData(data.PData);
@@ -417,7 +417,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
         if (_depthBounds)
         {
             context->SetRenderTarget(depthBufferRTV, lightBuffer);
-            context->SetDepthBounds(GPU_DEPTH_BOUNDS_SWAP(GPU_DEPTH_MIN_VALUE, RenderTools::DepthBoundMaxBackground));
+            context->SetDepthBounds(GPU_DEPTH_RANGE_BOUNDS(GPU_DEPTH_RANGE_MIN, RenderTools::DepthBoundMaxBackground));
         }
         else
             context->SetRenderTarget(lightBuffer);

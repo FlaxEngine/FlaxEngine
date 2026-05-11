@@ -189,11 +189,7 @@ bool TerrainMaterialShader::Load()
     psDesc.DepthClipEnable = false;
     psDesc.DepthWriteEnable = true;
     psDesc.DepthEnable = true;
-#if REVERSE_Z
-    psDesc.DepthFunc = ComparisonFunc::Greater;
-#else
-    psDesc.DepthFunc = ComparisonFunc::Less;
-#endif
+    psDesc.DepthFunc = ComparisonFunc::Default;
     psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::None;
     psDesc.HS = nullptr;
     psDesc.DS = nullptr;

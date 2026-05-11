@@ -147,7 +147,7 @@ float4 SampleGlobalSurfaceAtlasTile(const GlobalSurfaceAtlasData data, GlobalSur
     // Calculate bilinear weights
     float2 bilinearWeightsUV = frac(atlasUV * data.Resolution + 0.5f);
     float4 bilinearWeights;
-    bilinearWeights.x = (1.0 - bilinearWeightsUV.x) * (bilinearWeightsUV.y);
+    bilinearWeights.x = (1 - bilinearWeightsUV.x) * (bilinearWeightsUV.y);
     bilinearWeights.y = (bilinearWeightsUV.x) * (bilinearWeightsUV.y);
     bilinearWeights.z = (bilinearWeightsUV.x) * (1 - bilinearWeightsUV.y);
     bilinearWeights.w = (1 - bilinearWeightsUV.x) * (1 - bilinearWeightsUV.y);
@@ -159,8 +159,9 @@ float4 SampleGlobalSurfaceAtlasTile(const GlobalSurfaceAtlasData data, GlobalSur
     UNROLL
     for (uint i = 0; i < 4; i++)
     {
-        depthVisibility[i] = 1.0f - saturate((abs(tileDepth - tileZ[i]) - depthThreshold) / (0.5f * depthThreshold));
-        if (tileZ[i] >= 1.0f)
+        float z = DEPTH_01(tileZ[i]);
+        depthVisibility[i] = 1.0f - saturate((abs(tileDepth - z) - depthThreshold) / (0.5f * depthThreshold));
+        if (z >= 1.0f)
             depthVisibility[i] = 0.0f;
     }
     float sampleWeight = dot(depthVisibility, bilinearWeights);

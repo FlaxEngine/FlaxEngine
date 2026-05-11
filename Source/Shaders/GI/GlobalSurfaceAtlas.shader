@@ -43,7 +43,7 @@ META_VS(true, FEATURE_LEVEL_SM5)
 AtlasVertexOutput VS_Atlas(AtlasVertexInput input)
 {
 	AtlasVertexOutput output;
-	output.Position = float4(input.Position, 1, 1);
+	output.Position = float4(input.Position, DEPTH_RANGE_MAX, 1);
 	output.TileUV = input.TileUV;
 	output.TileAddress = input.TileAddress;
 	return output;
@@ -143,7 +143,7 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 	}
 
 	// Reconstruct world-space position manually (from uv+depth within a tile)
-	float tileDepth = SampleZ(atlasUV);
+	float tileDepth = DEPTH_01(SampleZ(atlasUV));
 	float3 tileSpacePos = float3(input.TileUV.x - 0.5f, 0.5f - input.TileUV.y, tileDepth);
 	float3 gBufferTilePos = tileSpacePos * tile.ViewBoundsSize;
 	float4x4 tileLocalToWorld = Inverse(tile.WorldToLocal);

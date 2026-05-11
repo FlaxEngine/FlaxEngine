@@ -59,7 +59,7 @@ float4 PS_DebugView(Quad_VS2PS input) : SV_Target
 	{
 		case View_Mode_Diffuse: result = gBuffer.Color; break;
 		case View_Mode_Normals: result = gBuffer.Normal * 0.5 + 0.5; break;
-		case View_Mode_Depth: result = gBuffer.ViewPos.z / GBuffer.ViewFar; break;
+		case View_Mode_Depth: result = pow(gBuffer.ViewPos.z / GBuffer.ViewFar, 0.6); break;
 		case View_Mode_AmbientOcclusion: result = gBuffer.AO; break;
 		case View_Mode_Metalness: result = gBuffer.Metalness; break;
 		case View_Mode_Rougness: result = gBuffer.Roughness; break;

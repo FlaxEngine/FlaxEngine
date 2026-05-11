@@ -1127,7 +1127,7 @@ META_VS_IN_ELEMENT(TEXCOORD, 0, R32G32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
 VaryingsEdge VS_Edge(float2 Position : POSITION0, float2 TexCoord : TEXCOORD0)
 {
     VaryingsEdge output;
-    output.Position = float4(Position, 0, 1);
+    output.Position = float4(Position, DEPTH_RANGE_MIN, 1);
     output.TexCoord = TexCoord;
 	SMAAEdgeDetectionVS(TexCoord, output.Offsets);
     return output;
@@ -1162,7 +1162,7 @@ META_VS_IN_ELEMENT(TEXCOORD, 0, R32G32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
 VaryingsBlend VS_Blend(float2 Position : POSITION0, float2 TexCoord : TEXCOORD0)
 {
     VaryingsBlend output;
-    output.Position = float4(Position.xy, 0, 1);
+    output.Position = float4(Position.xy, DEPTH_RANGE_MIN, 1);
     output.TexCoord = TexCoord;
     output.PixCoord = output.TexCoord * SMAA_RT_METRICS.zw;
 	SMAABlendingWeightCalculationVS(TexCoord, output.PixCoord, output.Offsets);
@@ -1204,7 +1204,7 @@ META_VS_IN_ELEMENT(TEXCOORD, 0, R32G32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
 VaryingsNeighbor VS_Neighbor(float2 Position : POSITION0, float2 TexCoord : TEXCOORD0)
 {
     VaryingsNeighbor output;
-    output.Position = float4(Position, 0, 1);
+    output.Position = float4(Position, DEPTH_RANGE_MIN, 1);
     output.TexCoord = TexCoord;
 	SMAANeighborhoodBlendingVS(TexCoord, output.Offset);
     return output;
