@@ -2083,10 +2083,23 @@ static MonoAssembly* OnMonoAssemblyLoad(const char* aname)
     LOG(Info, "Loading C# assembly from path = {0}, exist = {1}", path, FileSystem::FileExists(path));
 #endif
     MonoAssembly* assembly = nullptr;
+    MonoImageOpenStatus status = MONO_IMAGE_IMAGE_INVALID;
     if (FileSystem::FileExists(path))
     {
         StringAnsi pathAnsi(path);
-        assembly = mono_assembly_open(pathAnsi.Get(), nullptr);
+#if PLATFORM_IOS
+        Array<byte> data;
+        File::ReadAllBytes(path, data);
+        const auto name = path.ToStringAnsi();
+        const auto assemblyImage = mono_image_open_from_data_with_name(reinterpret_cast<char*>(data.Get()), data.Count(), true, &status, false, name.Get());
+        if (assemblyImage)
+        {
+            assembly = mono_assembly_load_from_full(assemblyImage, name.Substring(0, name.Length() - 3).Get(), &status, false);
+            mono_image_close(assemblyImage);
+        }
+#else
+        assembly = mono_assembly_open(pathAnsi.Get(), &status);
+#endif
     }
     if (!assembly)
     {
