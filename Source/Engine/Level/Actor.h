@@ -549,17 +549,35 @@ public:
 
     /// <summary>
     /// Gets actor direction vector (forward vector).
+    /// [Deprecated in v1.13]
     /// </summary>
+    DEPRECATED("Use GetForward instead.")
     API_PROPERTY(Attributes="HideInEditor, NoSerialize") FORCE_INLINE Float3 GetDirection() const
+    {
+        return GetForward();
+    }
+    
+    /// <summary>
+    /// Gets the actor's forward vector.
+    /// </summary>
+    API_PROPERTY(Attributes="HideInEditor, NoSerialize") FORCE_INLINE Float3 GetForward() const
     {
         return Float3::Transform(Float3::Forward, GetOrientation());
     }
 
     /// <summary>
     /// Sets actor direction vector (forward)
+    /// [Deprecated in v1.13]
     /// </summary>
     /// <param name="value">The value to set.</param>
+    DEPRECATED("Use SetForward instead.")
     API_PROPERTY() void SetDirection(const Float3& value);
+
+    /// <summary>
+    /// Rotates the actor to align its forward vector with the passed in value.
+    /// </summary>
+    /// <param name="value">The value to align to.</param>
+    API_PROPERTY() void SetForward(const Float3& value);
 
 public:
     /// <summary>
