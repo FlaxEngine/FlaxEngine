@@ -182,7 +182,7 @@ namespace FlaxEditor.SceneGraph.GUI
                 _highlights?.Clear();
                 isThisVisible = true;
             }
-            else if (filterText.Contains(','))
+            else if (filterText.Contains(':'))
             {
                 var splitFilter = filterText.Split(',');
                 var hasAllFilters = true;
