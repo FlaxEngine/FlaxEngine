@@ -15,7 +15,6 @@
 #define DEBUG_MOTION 0
 #define DEBUG_VELOCITY_REJECTION 0
 
-#define TAA_EPSILON 0.000001f
 #define NO_GBUFFER_SAMPLING
 #define NEED_DEPTH_VELOCITY (MINMAX_4TAP_VARYING)
 #if NEED_DEPTH_VELOCITY
@@ -149,23 +148,6 @@ VelocityDepth SampleVelocityDepth(float2 uv)
     return velocityDepth;
 }
 
-float4 ClipAAB(float3 aabbMin, float3 aabbMax, float4 p, float4 q)
-{
-    // only clips towards aabb center
-    float3 pClip = 0.5 * (aabbMax + aabbMin);
-    float3 eClip = 0.5 * (aabbMax - aabbMin) + TAA_EPSILON;
-
-    float4 vClip = q - float4(pClip, p.w);
-    float3 vUnit = vClip.xyz / eClip;
-    float3 aUnit = abs(vUnit);
-    float maUnit = max(aUnit.x, max(aUnit.y, aUnit.z));
-
-    if (maUnit > 1.0)
-        return float4(pClip, p.w) + vClip / maUnit;
-    else
-        return q; // point inside aabb
-}
-
 // Pixel Shader for Temporal Anti-Aliasing
 META_PS(true, FEATURE_LEVEL_ES2)
 META_PERMUTATION_1(QUALITY=0)
@@ -248,16 +230,10 @@ float4 PS(Quad_VS2PS input) : SV_Target0
     //history = clamp(history, cMin, cMax);
 
     // Calculate history weight from unbiased luminance diff
-    // [Reference: "TSSAA (Temporal Super-Sampling AA)" by Timothy Lottes (2011)]
-    float currentLum = Luminance(current.rgb);
-    float historyLum = Luminance(history.rgb);
-    float unbiasedDiff = abs(currentLum - historyLum) / max(currentLum, max(historyLum, 0.2f));
-    float unbiasedWeight = 1.0 - unbiasedDiff;
-    float unbiasedWeightSqr = unbiasedWeight * unbiasedWeight;
+    float historyBlend = TemporalHistoryWeight(current, history, MotionBlending);
 #if DEBUG_LUMINANCE_DIFF
-    return unbiasedWeightSqr.xxxx;
+    return historyBlend.xxxx;
 #endif
-    float historyBlend = lerp(MotionBlending, min(MotionBlending + 0.2f, 0.97f), unbiasedWeightSqr);
 
     // Higher history blend when there is no motion
     float motion = saturate(length(velocityDepth.xy) * 1000.0f);
