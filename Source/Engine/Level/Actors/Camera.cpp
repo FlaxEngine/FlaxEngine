@@ -210,7 +210,7 @@ Ray Camera::ConvertMouseToRay(const Float2& mousePosition, const Viewport& viewp
 {
     Vector3 position = GetPosition();
     if (viewport.Width < ZeroTolerance || viewport.Height < ZeroTolerance || mousePosition.IsNaN())
-        return Ray(position, GetDirection());
+        return Ray(position, GetForward());
 
     // Use different logic in orthographic projection
     if (!_usePerspective)

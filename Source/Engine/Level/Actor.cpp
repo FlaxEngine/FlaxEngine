@@ -1719,13 +1719,13 @@ Actor* Actor::Intersects(const Ray& ray, Real& distance, Vector3& normal)
 
 void Actor::LookAt(const Vector3& worldPos)
 {
-    const Quaternion orientation = LookingAt(worldPos);
+    const Quaternion orientation = GetLookAtDirection(worldPos);
     SetOrientation(orientation);
 }
 
 void Actor::LookAt(const Vector3& worldPos, const Vector3& worldUp)
 {
-    const Quaternion orientation = LookingAt(worldPos, worldUp);
+    const Quaternion orientation = GetLookAtDirection(worldPos, worldUp);
     SetOrientation(orientation);
 }
 
@@ -1771,12 +1771,11 @@ Quaternion Actor::GetLookAtDirection(const Vector3& worldPos, const Vector3& wor
     const Vector3 direction = worldPos - _transform.Translation;
     if (direction.LengthSquared() < ZeroTolerance)
         return _parent ? _parent->GetOrientation() : Quaternion::Identity;
+
     const Float3 forward = Vector3::Normalize(direction);
     const Float3 up = Vector3::Normalize(worldUp);
     if (Math::IsOne(Float3::Dot(forward, up)))
-    {
-        return LookingAt(worldPos);
-    }
+        return GetLookAtDirection(worldPos);
 
     Quaternion orientation;
     Quaternion::LookRotation(direction, up, orientation);

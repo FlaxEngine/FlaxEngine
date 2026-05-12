@@ -96,7 +96,7 @@ namespace FlaxEngine
             Vector3 cameraPos = camera.Position;
             LargeWorlds.UpdateOrigin(ref Origin, cameraPos);
             Position = cameraPos - Origin;
-            Direction = camera.Direction;
+            Direction = camera.Forward;
             Near = camera.NearPlane;
             Far = camera.FarPlane;
             camera.GetMatrices(out View, out Projection, ref viewport, ref Origin);
