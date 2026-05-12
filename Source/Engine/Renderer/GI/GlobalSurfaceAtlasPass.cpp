@@ -67,8 +67,8 @@ GPU_CB_STRUCT(Data0 {
 
 PACK_STRUCT(struct AtlasTileVertex
     {
-    Half2 Position;
-    Half2 TileUV;
+    Float2 Position;
+    Float2 TileUV;
     uint32 TileAddress;
     });
 
@@ -649,8 +649,8 @@ public:
                 tile->ViewBoundsSize = viewExtent.GetAbsolute() * 2.0f;
 
                 // Per-tile data
-                const float tileWidth = (float)tile->Width - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
-                const float tileHeight = (float)tile->Height - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
+                const float tileWidth = (float)(tile->Width - GLOBAL_SURFACE_ATLAS_TILE_PADDING);
+                const float tileHeight = (float)(tile->Height - GLOBAL_SURFACE_ATLAS_TILE_PADDING);
                 tileData[0] = Float4(tile->X, tile->Y, tileWidth, tileHeight) * ResolutionInv;
                 tileData[1] = Float4(tile->ViewMatrix.M11, tile->ViewMatrix.M12, tile->ViewMatrix.M13, tile->ViewMatrix.M41);
                 tileData[2] = Float4(tile->ViewMatrix.M21, tile->ViewMatrix.M22, tile->ViewMatrix.M23, tile->ViewMatrix.M42);
@@ -979,8 +979,8 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     if (!_vertexBuffer)
     {
         auto layout = GPUVertexLayout::Get({
-            { VertexElement::Types::Position, 0, 0, 0, PixelFormat::R16G16_Float },
-            { VertexElement::Types::TexCoord0, 0, 0, 0, PixelFormat::R16G16_Float },
+            { VertexElement::Types::Position, 0, 0, 0, PixelFormat::R32G32_Float },
+            { VertexElement::Types::TexCoord0, 0, 0, 0, PixelFormat::R32G32_Float },
             { VertexElement::Types::TexCoord1, 0, 0, 0, PixelFormat::R32_UInt },
         });
         _vertexBuffer = New<DynamicVertexBuffer>(0u, (uint32)sizeof(AtlasTileVertex), TEXT("GlobalSurfaceAtlas.VertexBuffer"), layout);
@@ -994,26 +994,15 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     // Utility for writing into tiles vertex buffer
     const Float2 posToClipMul(2.0f * resolutionInv, -2.0f * resolutionInv);
     const Float2 posToClipAdd(-1.0f, 1.0f);
-#define VB_WRITE_TILE_POS_ONLY(tile) \
-        Float2 minPos((float)tile->X, (float)tile->Y), maxPos((float)(tile->X + tile->Width), (float)(tile->Y + tile->Height)); \
-        Half2 min(minPos * posToClipMul + posToClipAdd), max(maxPos * posToClipMul + posToClipAdd); \
-        auto* quad = _vertexBuffer->WriteReserve<AtlasTileVertex>(6); \
-        quad[0] = { { max }, Half2::Zero, 0 }; \
-        quad[1] = { { min.X, max.Y }, Half2::Zero, 0 }; \
-        quad[2] = { { min }, Half2::Zero, 0 }; \
-        quad[3] = quad[2]; \
-        quad[4] = { { max.X, min.Y }, Half2::Zero, 0 }; \
-        quad[5] = quad[0]
 #define VB_WRITE_TILE(tile) \
-        Float2 minPos((float)tile->X, (float)tile->Y), maxPos((float)(tile->X + tile->Width), (float)(tile->Y + tile->Height)); \
-        Half2 min(minPos * posToClipMul + posToClipAdd), max(maxPos * posToClipMul + posToClipAdd); \
-        Float2 minUV(0, 0), maxUV(1, 1); \
+        Float2 minPos((float)tile->X, (float)tile->Y), maxPos((float)(tile->X + tile->Width - GLOBAL_SURFACE_ATLAS_TILE_PADDING), (float)(tile->Y + tile->Height - GLOBAL_SURFACE_ATLAS_TILE_PADDING)); \
+        Float2 min(minPos * posToClipMul + posToClipAdd), max(maxPos * posToClipMul + posToClipAdd); \
         auto* quad = _vertexBuffer->WriteReserve<AtlasTileVertex>(6); \
-        quad[0] = { { max }, { maxUV }, tile->Address }; \
-        quad[1] = { { min.X, max.Y }, { minUV.X, maxUV.Y }, tile->Address }; \
-        quad[2] = { { min }, { minUV }, tile->Address }; \
+        quad[0] = { max, Float2::One, tile->Address }; \
+        quad[1] = { { min.X, max.Y }, Float2::UnitY, tile->Address }; \
+        quad[2] = { min, Float2::Zero, tile->Address }; \
         quad[3] = quad[2]; \
-        quad[4] = { { max.X, min.Y }, { maxUV.X, minUV.Y }, tile->Address }; \
+        quad[4] = { { max.X, min.Y }, Float2::UnitX, tile->Address }; \
         quad[5] = quad[0]
 #define VB_DRAW() \
         _vertexBuffer->Flush(context); \
@@ -1069,17 +1058,17 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 auto* tile = object.Tiles[tileIndex];
                 if (!tile)
                     continue;
-                VB_WRITE_TILE_POS_ONLY(tile);
+                VB_WRITE_TILE(tile);
 
                 // Write old atlas UVs of this tile
                 auto defragTile = e.Tiles[tileIndex];
-                Half2 minUV(defragTile.X * resolutionInv, defragTile.Y * resolutionInv);
-                Half2 maxUV((defragTile.X + defragTile.Width) * resolutionInv, (defragTile.Y + defragTile.Height) * resolutionInv);
+                Float2 minUV((float)defragTile.X * resolutionInv, (float)defragTile.Y * resolutionInv);
+                Float2 maxUV((float)(defragTile.X + defragTile.Width - GLOBAL_SURFACE_ATLAS_TILE_PADDING) * resolutionInv, (float)(defragTile.Y + defragTile.Height - GLOBAL_SURFACE_ATLAS_TILE_PADDING) * resolutionInv);
                 quad[0].TileUV = maxUV;
-                quad[1].TileUV = Half2(minUV.X, maxUV.Y);
+                quad[1].TileUV = Float2(minUV.X, maxUV.Y);
                 quad[2].TileUV = minUV;
                 quad[3].TileUV = minUV;
-                quad[4].TileUV = Half2(maxUV.X, minUV.Y);
+                quad[4].TileUV = Float2(maxUV.X, minUV.Y);
                 quad[5].TileUV = maxUV;
             }
 
@@ -1163,7 +1152,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                         auto* tile = object.Tiles[tileIndex];
                         if (!tile)
                             continue;
-                        VB_WRITE_TILE_POS_ONLY(tile);
+                        VB_WRITE_TILE(tile);
                     }
                 }
                 context->SetState(_psClear);
@@ -1211,8 +1200,6 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 auto* tile = object.Tiles[tileIndex];
                 if (!tile)
                     continue;
-                const float tileWidth = (float)tile->Width - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
-                const float tileHeight = (float)tile->Height - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
 
                 // Setup projection to capture object from the side
                 renderContextTiles.View.Position = tile->ViewPosition;
@@ -1228,6 +1215,8 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
 #endif
 
                 // Draw
+                const float tileWidth = (float)(tile->Width - GLOBAL_SURFACE_ATLAS_TILE_PADDING);
+                const float tileHeight = (float)(tile->Height - GLOBAL_SURFACE_ATLAS_TILE_PADDING);
                 context->SetViewportAndScissors(Viewport(tile->X, tile->Y, tileWidth, tileHeight));
                 renderContextTiles.List->ExecuteDrawCalls(renderContextTiles, drawCallsListGBuffer);
                 renderContextTiles.List->ExecuteDrawCalls(renderContextTiles, drawCallsListGBufferNoDecals);
@@ -1511,7 +1500,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         }
 
         // Copy emissive light into the final direct lighting atlas
-        if (allLightingDirty)
+        if (allLightingDirty && surfaceAtlasData.Objects.Count() > 100) // Batch copy only in high usage
         {
             PROFILE_GPU("Copy Emissive");
             context->Draw(surfaceAtlasData.AtlasEmissive);
