@@ -222,7 +222,10 @@ internal class DirectionGizmo : ContainerControl
         else
         {
             // This could be some actual math expression, not that hack
-            var fov = _owner.Viewport.FieldOfView / 60.0f;
+            float fov = _owner.Viewport.FieldOfView;
+            if (_owner.Viewport.ViewportCamera is Viewport.Cameras.FPSCamera fpsCam)
+                fov += fpsCam.AdditionalZoomFOV;
+            fov /= 60.0f;
             float scaleAt30 = 0.1f, scaleAt60 = 1.0f, scaleAt120 = 1.5f, scaleAt180 = 3.0f;
             heightNormalization /= Mathf.Lerp(scaleAt30, scaleAt60, fov);
             heightNormalization /= Mathf.Lerp(scaleAt60, scaleAt120, Mathf.Saturate(fov - 1));
