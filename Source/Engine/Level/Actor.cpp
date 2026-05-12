@@ -1731,6 +1731,11 @@ void Actor::LookAt(const Vector3& worldPos, const Vector3& worldUp)
 
 Quaternion Actor::LookingAt(const Vector3& worldPos) const
 {
+    return GetLookAtDirection(worldPos);
+}
+
+Quaternion Actor::GetLookAtDirection(const Vector3& worldPos) const
+{
     const Vector3 direction = worldPos - _transform.Translation;
     if (direction.LengthSquared() < ZeroTolerance)
         return _parent ? _parent->GetOrientation() : Quaternion::Identity;
@@ -1757,6 +1762,11 @@ Quaternion Actor::LookingAt(const Vector3& worldPos) const
 }
 
 Quaternion Actor::LookingAt(const Vector3& worldPos, const Vector3& worldUp) const
+{
+    return GetLookAtDirection(worldPos, worldUp);
+}
+
+Quaternion Actor::GetLookAtDirection(const Vector3& worldPos, const Vector3& worldUp) const
 {
     const Vector3 direction = worldPos - _transform.Translation;
     if (direction.LengthSquared() < ZeroTolerance)
