@@ -153,10 +153,10 @@ VkCompareOp RenderToolsVulkan::ComparisonFuncToVkCompareOp[9] =
 
 #if GPU_ENABLE_RESOURCE_NAMING
 
-void RenderToolsVulkan::SetObjectName(VkDevice device, uint64 objectHandle, VkObjectType objectType, const String& name)
+void RenderToolsVulkan::SetObjectName(VkDevice device, uint64 objectHandle, VkObjectType objectType, const StringView& name)
 {
 #if VK_EXT_debug_utils
-    auto str = name.ToStringAnsi();
+    StringAsANSI<> str(name.Get(), name.Length());
     SetObjectName(device, objectHandle, objectType, str.Get());
 #endif
 }
