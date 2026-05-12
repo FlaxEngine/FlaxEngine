@@ -823,6 +823,11 @@ void Actor::SetRotation(const Matrix& value)
 
 void Actor::SetDirection(const Float3& value)
 {
+    SetForward(value);
+}
+
+void Actor::SetForward(const Float3& value)
+{
     CHECK(!value.IsNanOrInfinity());
     Quaternion orientation;
     if (Float3::Dot(value, Float3::Up) >= 0.999f)
