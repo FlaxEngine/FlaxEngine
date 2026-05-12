@@ -536,7 +536,7 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
     }
 
     // Apply
-    context->SetDepthBounds(0.0f, RenderTools::GetDepthBounds(renderContext.View, aoSettings.FadeOutDistance, false));
+    context->SetDepthBounds(GPU_DEPTH_RANGE_BOUNDS(GPU_DEPTH_RANGE_MIN, RenderTools::GetDepthBounds(renderContext.View, aoSettings.FadeOutDistance, false)));
     context->BindSR(SSAO_TEXTURE_SLOT0, m_finalResults->ViewArray());
     context->SetViewportAndScissors((float)m_sizeX, (float)m_sizeY);
     context->SetState(settings.SkipHalfPixels ? _psApplyHalf : _psApply);

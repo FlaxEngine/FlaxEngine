@@ -317,7 +317,7 @@ Quad_VS2GS VS_WriteToSlice(float2 position : POSITION0, float2 texCoord : TEXCOO
 #if VULKAN
 	position.y = position.y * -1.0f;
 #endif
-	output.Vertex.Position = float4(position, 0, 1);
+	output.Vertex.Position = float4(position, DEPTH_RANGE_MIN, 1);
 	output.Vertex.TexCoord = texCoord;
 	output.LayerIndex = layerIndex;
 	return output;

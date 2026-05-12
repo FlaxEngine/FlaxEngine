@@ -24,8 +24,8 @@
 #define SAMPLE_SHADOW_MAP(shadowMap, shadowUV, sceneDepth) shadowMap.SampleCmpLevelZero(ShadowSamplerLinear, shadowUV, sceneDepth)
 #define SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowUV, texelOffset, sceneDepth) shadowMap.SampleCmpLevelZero(ShadowSamplerLinear, shadowUV, sceneDepth, texelOffset)
 #else
-#define SAMPLE_SHADOW_MAP(shadowMap, shadowUV, sceneDepth) (sceneDepth < shadowMap.SampleLevel(SamplerLinearClamp, shadowUV, 0).r)
-#define SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowUV, texelOffset, sceneDepth) (sceneDepth < shadowMap.SampleLevel(SamplerLinearClamp, shadowUV, 0, texelOffset).r)
+#define SAMPLE_SHADOW_MAP(shadowMap, shadowUV, sceneDepth) DEPTH_CMP(sceneDepth, shadowMap.SampleLevel(SamplerLinearClamp, shadowUV, 0).r)
+#define SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowUV, texelOffset, sceneDepth) (sceneDepth, shadowMap.SampleLevel(SamplerLinearClamp, shadowUV, 0, texelOffset).r)
 #endif
 #if defined(WGSL)
 #define LOAD_SHADOW_MAP(shadowMap, shadowUV) SAMPLE_RT_DEPTH(shadowMap, shadowUV)
@@ -60,7 +60,11 @@ float2 GetLightShadowAtlasUV(ShadowData shadow, ShadowTileData shadowTile, float
 {
     // Project into shadow space (WorldToShadow is pre-multiplied to convert Clip Space to UV Space)
     shadowPosition = mul(float4(samplePosition, 1.0f), shadowTile.WorldToShadow);
+#if REVERSE_Z
+    shadowPosition.z += shadow.Bias;
+#else
     shadowPosition.z -= shadow.Bias;
+#endif
     shadowPosition.xyz /= shadowPosition.w;
 
     // UV Space -> Atlas Tile UV Space
@@ -311,7 +315,12 @@ float SampleShadowMapPCSS(Texture2D<float> shadowMap, float2 shadowMapUV, float 
     sincos(rotationAngle, rotation.x, rotation.y);
 
     // Search blockers
+#if REVERSE_Z
+    float sceneDepthRev = 1 - sceneDepth;
+    float searchRadius = sourceAngle * saturate(sceneDepthRev - 0.02f) / sceneDepthRev;
+#else
     float searchRadius = sourceAngle * saturate(sceneDepth - 0.02f) / sceneDepth;
+#endif
     searchRadius = max(searchRadius, minRadius);
     uint blockers = 0;
     float avgBlockerDistance = 0.0f;
@@ -322,7 +331,7 @@ float SampleShadowMapPCSS(Texture2D<float> shadowMap, float2 shadowMapUV, float 
         offset = shadowMapUV + offset;
         offset = clamp(offset, uvMin, uvMax);
         float shadowMapDepth = LOAD_SHADOW_MAP(shadowMap, offset);
-        if (shadowMapDepth < sceneDepth)
+        if (DEPTH_CMP(shadowMapDepth, sceneDepth))
         {
             blockers++;
             avgBlockerDistance += shadowMapDepth;
@@ -333,9 +342,14 @@ float SampleShadowMapPCSS(Texture2D<float> shadowMap, float2 shadowMapUV, float 
     avgBlockerDistance /= blockers;
 
     // Calculate penumbra size
-    float penumbra = max(sceneDepth - avgBlockerDistance, 0.0);
-#if defined(VULKAN)
-    sceneDepth *= lerp(1, 0.985f, saturate(penumbra * 4.0f)); // Fix shadow bias issues on Vulkan
+    float penumbra = max(DEPTH_DIFF(sceneDepth, avgBlockerDistance), 0.0);
+#if VULKAN
+    // Fix shadow bias issues on Vulkan
+#if REVERSE_Z
+    sceneDepth *= lerp(1, 1.025f, saturate(penumbra * 4.0f));
+#else
+    sceneDepth *= lerp(1, 0.985f, saturate(penumbra * 4.0f));
+#endif
 #endif
     float filterRadius = penumbra * sourceAngle;
     filterRadius = max(filterRadius, minRadius); // Don't use too small filter near blockers to avoid jagged edges
@@ -348,7 +362,11 @@ float SampleShadowMapPCSS(Texture2D<float> shadowMap, float2 shadowMapUV, float 
         offset = SampleShadowPCSSRotate(offset, rotation);
         offset = shadowMapUV + offset;
         offset = clamp(offset, uvMin, uvMax);
+#if REVERSE_Z
+        shadow += LOAD_SHADOW_MAP(shadowMap, offset) < sceneDepth;
+#else
         shadow += LOAD_SHADOW_MAP(shadowMap, offset) > sceneDepth;
+#endif
     }
     return shadow / (float)SHADOWS_PCSS_SAMPLES;
 }

@@ -243,6 +243,11 @@ namespace FlaxEngine
             far.Normal.Z = matrix.M34 - matrix.M33;
             far.D = matrix.M44 - matrix.M43;
             far.Normalize();
+
+#if REVERSE_Z
+            // Swap far and near planes if reverse z
+            (near, far) = (far, near);
+#endif
         }
 
         private static Vector3 Get3PlanesInterPoint(ref Plane p1, ref Plane p2, ref Plane p3)

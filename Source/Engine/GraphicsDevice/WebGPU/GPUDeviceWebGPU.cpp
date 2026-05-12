@@ -636,18 +636,22 @@ bool GPUDeviceWebGPU::Init()
 
     // Create default resources
     auto samplerDesc = GPUSamplerDescription::New();
-#define INIT_SAMPLER(slot, filter, addressMode, compare) \
+#define INIT_SAMPLER(slot, filter, addressMode) \
     DefaultSamplers[slot] = New<GPUSamplerWebGPU>(this); \
     samplerDesc.Filter = filter; \
     samplerDesc.AddressU = samplerDesc.AddressV = samplerDesc.AddressW = addressMode; \
-    samplerDesc.ComparisonFunction = compare; \
     DefaultSamplers[slot]->Init(samplerDesc)
-    INIT_SAMPLER(0, GPUSamplerFilter::Trilinear, GPUSamplerAddressMode::Clamp, GPUSamplerCompareFunction::Never);
-    INIT_SAMPLER(1, GPUSamplerFilter::Point, GPUSamplerAddressMode::Clamp, GPUSamplerCompareFunction::Never);
-    INIT_SAMPLER(2, GPUSamplerFilter::Trilinear, GPUSamplerAddressMode::Wrap, GPUSamplerCompareFunction::Never);
-    INIT_SAMPLER(3, GPUSamplerFilter::Point, GPUSamplerAddressMode::Wrap, GPUSamplerCompareFunction::Never);
-    INIT_SAMPLER(4, GPUSamplerFilter::Point, GPUSamplerAddressMode::Clamp, GPUSamplerCompareFunction::Less);
-    INIT_SAMPLER(5, GPUSamplerFilter::Trilinear, GPUSamplerAddressMode::Clamp, GPUSamplerCompareFunction::Less);
+    INIT_SAMPLER(0, GPUSamplerFilter::Trilinear, GPUSamplerAddressMode::Clamp);
+    INIT_SAMPLER(1, GPUSamplerFilter::Point, GPUSamplerAddressMode::Clamp);
+    INIT_SAMPLER(2, GPUSamplerFilter::Trilinear, GPUSamplerAddressMode::Wrap);
+    INIT_SAMPLER(3, GPUSamplerFilter::Point, GPUSamplerAddressMode::Wrap);
+#if REVERSE_Z
+    samplerDesc.ComparisonFunction = GPUSamplerCompareFunction::Greater;
+#else
+    samplerDesc.ComparisonFunction = GPUSamplerCompareFunction::Less;
+#endif
+    INIT_SAMPLER(4, GPUSamplerFilter::Point, GPUSamplerAddressMode::Clamp);
+    INIT_SAMPLER(5, GPUSamplerFilter::Trilinear, GPUSamplerAddressMode::Clamp);
 #undef INIT_SAMPLER
     {
         WGPUBufferDescriptor bufferDesc = WGPU_BUFFER_DESCRIPTOR_INIT;

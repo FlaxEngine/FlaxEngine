@@ -28,10 +28,18 @@ float PS_HalfDepth(Quad_VS2PS input)
     // Load 4 depth values (2x2 quad)
 	float4 depths = TextureGatherDepth(Input, input.TexCoord);
 
+#if REVERSE_Z
+#if HZB_CLOSEST
+	return max(depths.x, max(depths.y, max(depths.z, depths.w)));
+#else
+	return min(depths.x, min(depths.y, min(depths.z, depths.w)));
+#endif
+#else
 #if HZB_CLOSEST
 	return min(depths.x, min(depths.y, min(depths.z, depths.w)));
 #else
 	return max(depths.x, max(depths.y, max(depths.z, depths.w)));
+#endif
 #endif
 }
 

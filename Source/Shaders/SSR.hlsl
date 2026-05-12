@@ -6,6 +6,9 @@
 #include "./Flax/MonteCarlo.hlsl"
 #include "./Flax/GBufferCommon.hlsl"
 #if SSR_USE_HZB
+#if REVERSE_Z
+#define FFX_SSSR_INVERTED_DEPTH_RANGE 1
+#endif
 #include "./FlaxThirdParty/FidelityFX/ffx_sssr.h"
 #endif
 
@@ -117,7 +120,7 @@ float3 TraceScreenSpaceReflection(
     {
         // Sample depth buffer and calculate depth difference
         float currSample = SAMPLE_RT_DEPTH(depthBuffer, currOffset.xy);
-        float depthDiff = currOffset.z - currSample;
+        float depthDiff = DEPTH_DIFF(currOffset.z, currSample);
 
         // Check intersection
         if (depthDiff >= 0)

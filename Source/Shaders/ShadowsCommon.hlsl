@@ -74,9 +74,13 @@ float3 GetShadowPositionOffset(float offsetScale, float NoL, float3 normal)
 
 float CalculateSubsurfaceOcclusion(float opacity, float sceneDepth, float shadowMapDepth)
 {
-    float thickness = max(sceneDepth - shadowMapDepth, 0);
+    float thickness = max(DEPTH_DIFF(sceneDepth, shadowMapDepth), 0);
     float occlusion = 1 - saturate(thickness * lerp(1.0f, 100.0f, opacity));
+#if REVERSE_Z
+    return shadowMapDepth < 0.01f ? 1 : occlusion;
+#else
     return shadowMapDepth > 0.99f ? 1 : occlusion;
+#endif
 }
 
 float PostProcessShadow(ShadowData lightShadow, float shadow)

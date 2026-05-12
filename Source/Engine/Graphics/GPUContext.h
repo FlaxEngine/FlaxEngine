@@ -14,6 +14,16 @@
 #undef MemoryBarrier
 #endif
 
+#if REVERSE_Z
+#define GPU_DEPTH_RANGE_MIN 1.0f
+#define GPU_DEPTH_RANGE_MAX 0.0f
+#define GPU_DEPTH_RANGE_BOUNDS(min, max) max, min
+#else
+#define GPU_DEPTH_RANGE_MIN 0.0f
+#define GPU_DEPTH_RANGE_MAX 1.0f
+#define GPU_DEPTH_RANGE_BOUNDS(min, max) min, max
+#endif
+
 class GPUConstantBuffer;
 class GPUShaderProgramCS;
 class GPUBuffer;
@@ -208,7 +218,7 @@ public:
     /// <param name="depthBuffer">The depth buffer to clear.</param>
     /// <param name="depthValue">The clear depth value.</param>
     /// <param name="stencilValue">The clear stencil value.</param>
-    API_FUNCTION() virtual void ClearDepth(GPUTextureView* depthBuffer, float depthValue = 1.0f, uint8 stencilValue = 0) = 0;
+    API_FUNCTION() virtual void ClearDepth(GPUTextureView* depthBuffer, float depthValue = GPU_DEPTH_RANGE_MAX, uint8 stencilValue = 0) = 0;
 
     /// <summary>
     /// Clears an unordered access buffer with a float value.
@@ -628,9 +638,10 @@ public:
     /// <summary>
     /// Sets the minimum and maximum depth values for depth bounds test.
     /// </summary>
+    /// <remarks>Both values must be between 0.0 and 1.0, MinDepth must be less than or equal to MaxDepth.</remarks>
     /// <param name="minDepth">The minimum value for depth bound test.</param>
     /// <param name="maxDepth">The maximum value for depth bound test.</param>
-    API_FUNCTION() virtual void SetDepthBounds(float minDepth, float maxDepth) = 0;
+    API_FUNCTION() virtual void SetDepthBounds(float minDepth = 0.0f, float maxDepth = 1.0f) = 0;
 
 public:
     /// <summary>

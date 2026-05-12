@@ -182,7 +182,7 @@ bool DeferredMaterialShader::Load()
     // Motion Vectors pass
     psDesc.DepthWriteEnable = false;
     psDesc.DepthEnable = true;
-    psDesc.DepthFunc = ComparisonFunc::LessEqual;
+    psDesc.DepthFunc = ComparisonFunc::DefaultEqual;
     psDesc.VS = _shader->GetVS("VS");
     psDesc.PS = _shader->GetPS("PS_MotionVectors");
     _cache.MotionVectors.Init(psDesc);
@@ -200,7 +200,7 @@ bool DeferredMaterialShader::Load()
     psDesc.DepthClipEnable = false;
     psDesc.DepthWriteEnable = true;
     psDesc.DepthEnable = true;
-    psDesc.DepthFunc = ComparisonFunc::Less;
+    psDesc.DepthFunc = ComparisonFunc::Default;
     psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::None;
     psDesc.HS = nullptr;
     psDesc.DS = nullptr;

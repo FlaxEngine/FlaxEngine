@@ -188,17 +188,41 @@ bool ShaderCacheManagerService::Init()
         int32 ShaderCacheVersion = -1;
         int32 MaterialGraphVersion = -1;
         int32 ParticleGraphVersion = -1;
-        bool ShaderDebug;
-        bool ShaderProfile;
-    };
-    CacheVersion cacheVersion;
-    const String cacheVerFile = rootDir / TEXT("CacheVersion");
+        union
+        {
+            struct
+            {
+                uint32 ShaderDebug : 1;
+                uint32 ShaderProfile : 1;
+                uint32 ReverseZ : 1;
+            };
+            uint32 Flags;
+        };
+
+        CacheVersion()
+        {
+            Platform::MemoryClear(this, sizeof(*this));
+        }
+
+        void InitDefault()
+        {
+            EngineVersion = FLAXENGINE_VERSION_BUILD;
+            ShaderCacheVersion = GPU_SHADER_CACHE_VERSION;
+            MaterialGraphVersion = MATERIAL_GRAPH_VERSION;
+            ParticleGraphVersion = PARTICLE_GPU_GRAPH_VERSION;
+            Flags = 0;
 #if USE_EDITOR
-    const bool shaderDebug = CommandLine::Options.ShaderDebug.IsTrue();
-    const bool shaderProfile = CommandLine::Options.ShaderProfile.IsTrue();
-#else
-    const bool shaderDebug = false;
+            ShaderDebug = CommandLine::Options.ShaderDebug.IsTrue();
+            ShaderProfile = CommandLine::Options.ShaderProfile.IsTrue();
 #endif
+#if REVERSE_Z
+            ReverseZ = true;
+#endif
+        }
+    };
+    CacheVersion cacheVersion, cacheVersionDefault;
+    cacheVersionDefault.InitDefault();
+    const String cacheVerFile = rootDir / TEXT("CacheVersion");
     if (FileSystem::FileExists(cacheVerFile))
     {
         if (File::ReadAllBytes(cacheVerFile, (byte*)&cacheVersion, sizeof(cacheVersion)))
@@ -207,34 +231,25 @@ bool ShaderCacheManagerService::Init()
             LOG(Warning, "Failed to read the shaders cache database version file.");
         }
     }
-    if (cacheVersion.EngineVersion != FLAXENGINE_VERSION_BUILD
-        || cacheVersion.ShaderCacheVersion != GPU_SHADER_CACHE_VERSION
-        || cacheVersion.MaterialGraphVersion != MATERIAL_GRAPH_VERSION
-        || cacheVersion.ParticleGraphVersion != PARTICLE_GPU_GRAPH_VERSION
-        || cacheVersion.ShaderDebug != shaderDebug
-        || cacheVersion.ShaderProfile != shaderProfile
+    if (cacheVersion.EngineVersion != cacheVersionDefault.EngineVersion
+        || cacheVersion.ShaderCacheVersion != cacheVersionDefault.ShaderCacheVersion
+        || cacheVersion.MaterialGraphVersion != cacheVersionDefault.MaterialGraphVersion
+        || cacheVersion.ParticleGraphVersion != cacheVersionDefault.ParticleGraphVersion
+        || cacheVersion.Flags != cacheVersionDefault.Flags
     )
     {
         LOG(Warning, "Shaders cache database is invalid. Performing reset.");
-
         if (FileSystem::DirectoryExists(rootDir) && FileSystem::DeleteDirectory(rootDir))
         {
-            LOG(Warning, "Failed to reset the shaders cache database.");
+            LOG(Warning, "Failed to reset shaders cache database.");
         }
         if (FileSystem::CreateDirectory(rootDir))
         {
-            LOG(Error, "Failed to createe the shaders cache database directory.");
+            LOG(Error, "Failed to create shaders cache database directory.");
         }
-
-        cacheVersion.EngineVersion = FLAXENGINE_VERSION_BUILD;
-        cacheVersion.ShaderCacheVersion = GPU_SHADER_CACHE_VERSION;
-        cacheVersion.MaterialGraphVersion = MATERIAL_GRAPH_VERSION;
-        cacheVersion.ParticleGraphVersion = PARTICLE_GPU_GRAPH_VERSION;
-        cacheVersion.ShaderDebug = shaderDebug;
-        cacheVersion.ShaderProfile = shaderProfile;
-        if (File::WriteAllBytes(cacheVerFile, (byte*)&cacheVersion, sizeof(cacheVersion)))
+        if (File::WriteAllBytes(cacheVerFile, (byte*)&cacheVersionDefault, sizeof(cacheVersionDefault)))
         {
-            LOG(Error, "Failed to create the shaders cache database version file.");
+            LOG(Error, "Failed to create shaders cache database version file.");
         }
     }
 

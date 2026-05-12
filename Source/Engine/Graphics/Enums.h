@@ -629,6 +629,17 @@ public:
 
 uint32 GetHash(const BlendingMode& key);
 
+// Temp defines to put them into ComparisonFunc enum conditionally
+#if REVERSE_Z
+#define REVERSE_Z_COMP_DEFAULT 5
+#define REVERSE_Z_COMP_DEFAULT_INV 2
+#define REVERSE_Z_COMP_DEFAULT_EQ 7
+#else
+#define REVERSE_Z_COMP_DEFAULT 2
+#define REVERSE_Z_COMP_DEFAULT_INV 5
+#define REVERSE_Z_COMP_DEFAULT_EQ 4
+#endif
+
 /// <summary>
 /// Comparison function modes
 /// </summary>
@@ -651,8 +662,20 @@ API_ENUM() enum class ComparisonFunc : byte
     // Always pass the comparison.
     Always = 8,
 
-    API_ENUM(Attributes="HideInEditor") MAX
+    API_ENUM(Attributes="HideInEditor") MAX,
+
+    // Default comparision when rendering scene objects (Less or Greater).
+    API_ENUM(Attributes="HideInEditor") Default = REVERSE_Z_COMP_DEFAULT,
+    // Default comparision when rendering scene objects inverted (Greater or Less).
+    API_ENUM(Attributes="HideInEditor") DefaultInv = REVERSE_Z_COMP_DEFAULT_INV,
+    // Default comparision when rendering scene objects with equal (LessEqual or GreaterEqual).
+    API_ENUM(Attributes="HideInEditor") DefaultEqual = REVERSE_Z_COMP_DEFAULT_EQ,
 };
+
+// Remove temp defines to plug conditional value into the enum
+#undef REVERSE_Z_COMP_DEFAULT
+#undef REVERSE_Z_COMP_DEFAULT_INV
+#undef REVERSE_Z_COMP_DEFAULT_EQ
 
 /// <summary>
 /// Rendering quality levels.

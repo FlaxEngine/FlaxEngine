@@ -160,7 +160,7 @@ GPUPipelineState::Description GPUPipelineState::Description::Default =
     true, // DepthWriteEnable
     true, // DepthClipEnable
     false, // DepthBoundsEnable
-    ComparisonFunc::Less, // DepthFunc
+    ComparisonFunc::Default, // DepthFunc
     false, // StencilEnable
     0xff, // StencilReadMask
     0xff, // StencilWriteMask
@@ -185,7 +185,7 @@ GPUPipelineState::Description GPUPipelineState::Description::DefaultNoDepth =
     false, // DepthWriteEnable
     false, // DepthClipEnable
     false, // DepthBoundsEnable
-    ComparisonFunc::Less, // DepthFunc
+    ComparisonFunc::Default, // DepthFunc
     false, // StencilEnable
     0xff, // StencilReadMask
     0xff, // StencilWriteMask
@@ -210,7 +210,7 @@ GPUPipelineState::Description GPUPipelineState::Description::DefaultFullscreenTr
     false, // DepthWriteEnable
     false, // DepthClipEnable
     false, // DepthBoundsEnable
-    ComparisonFunc::Less, // DepthFunc
+    ComparisonFunc::Default, // DepthFunc
     false, // StencilEnable
     0xff, // StencilReadMask
     0xff, // StencilWriteMask

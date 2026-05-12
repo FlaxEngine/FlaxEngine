@@ -136,7 +136,7 @@ bool GPUTextureDX12::OnInit()
     else if (useDSV)
     {
         clearValue.Format = _dxgiFormatDSV;
-        clearValue.DepthStencil.Depth = 1.0f;
+        clearValue.DepthStencil.Depth = GPU_DEPTH_RANGE_MAX;
         clearValue.DepthStencil.Stencil = 0;
         clearValuePtr = &clearValue;
     }

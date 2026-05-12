@@ -4,20 +4,38 @@
 #define __COMMON__
 
 // Platform macros
-#if !defined(DIRECTX)
+#ifndef DIRECTX
 #define DIRECTX 0
 #endif
-#if !defined(OPENGL)
+#ifndef OPENGL
 #define OPENGL 0
 #endif
-#if !defined(VULKAN)
+#ifndef VULKAN
 #define VULKAN 0
 #endif
-#if defined(PLATFORM_PS4)
+#ifdef PLATFORM_PS4
 #include "./FlaxPlatforms/PS4/Shaders/PS4Common.hlsl"
 #endif
-#if defined(PLATFORM_PS5)
+#ifdef PLATFORM_PS5
 #include "./FlaxPlatforms/PS5/Shaders/PS5Common.hlsl"
+#endif
+
+// Reversed Z support
+#ifndef REVERSE_Z
+#define REVERSE_Z 0
+#endif
+#if REVERSE_Z
+#define DEPTH_RANGE_MIN 1
+#define DEPTH_RANGE_MAX 0
+#define DEPTH_CMP(l, r) (l > r)
+#define DEPTH_DIFF(l, r) (r - l)
+#define DEPTH_01(d) (1 - d)
+#else
+#define DEPTH_RANGE_MIN 0
+#define DEPTH_RANGE_MAX 1
+#define DEPTH_CMP(l, r) (l < r)
+#define DEPTH_DIFF(l, r) (l - r)
+#define DEPTH_01(d) (d)
 #endif
 
 // Feature levels
@@ -157,15 +175,20 @@ float4 LoadTextureWGSL(Texture2D tex, float2 uv)
 #else
 #define SAMPLE_RT_DEPTH(rt, texCoord) SAMPLE_RT(rt, texCoord).r
 #endif
+
+// General purpose constants
 #define HDR_CLAMP_MAX 65472.0
 #define PI 3.1415926535897932
 #define UNITS_TO_METERS_SCALE 0.01f
-#define REVERSE_Z 0
 
 // Structure that contains information about GBuffer
 struct GBufferData
 {
-    float4 ViewInfo; // x-1/Projection[0,0], y-1/Projection[1,1], z-(Far / (Far - Near), w-(-Far * Near) / (Far - Near) / Far)
+    // If reverse Z enabled:
+    //     x-1/Projection[0,0], y-1/Projection[1,1], z-(-Near / (Far - Near)), w-((Far * Near) / (Far - Near) / Far)
+    // Otherwise:
+    //     x-1/Projection[0,0], y-1/Projection[1,1], z-(Far / (Far - Near)), w-(-(Far * Near) / (Far - Near) / Far)
+    float4 ViewInfo;
     float4 ScreenSize; // x-Width, y-Height, z-1/Width, w-1/Height
     float3 ViewPos; // view position (in world space)
     float ViewFar; // view far plane distance (in world space)

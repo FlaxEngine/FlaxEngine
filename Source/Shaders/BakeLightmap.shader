@@ -60,7 +60,7 @@ RenderCacheVSOutput VS_RenderCacheModel(ModelInput input)
 	float2 lightmapUV = input.LightmapUV * LightmapArea.zw + LightmapArea.xy;
 	lightmapUV.y = 1.0 - lightmapUV.y;
 	lightmapUV.xy = lightmapUV.xy * 2.0 - 1.0;
-	output.Position = float4(lightmapUV, 0, 1);
+	output.Position = float4(lightmapUV, DEPTH_RANGE_MIN, 1);
 
 	return output;
 }
@@ -129,7 +129,7 @@ RenderCacheVSOutput VS_RenderCacheTerrain(TerrainVertexInput input)
 	float2 lightmapUV = input.TexCoord * LightmapArea.zw + LightmapArea.xy;
 	lightmapUV.y = 1.0 - lightmapUV.y;
 	lightmapUV.xy = lightmapUV.xy * 2.0 - 1.0;
-	output.Position = float4(lightmapUV, 0, 1);
+	output.Position = float4(lightmapUV, DEPTH_RANGE_MIN, 1);
 
 	return output;
 }

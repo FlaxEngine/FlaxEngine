@@ -50,6 +50,10 @@
 #endif
 #include "FlaxEngine.Gen.h"
 
+#ifndef REVERSE_Z
+#define REVERSE_Z 0
+#endif
+
 Dictionary<String, CookAssetsStep::ProcessAssetFunc> CookAssetsStep::AssetProcessors;
 
 void IBuildCache::InvalidateCacheShaders()
@@ -231,6 +235,11 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
     if (buildSettings->ShadersGenerateDebugData != Settings.Global.ShadersGenerateDebugData)
     {
         LOG(Info, "{0} option has been modified.", TEXT("ShadersGenerateDebugData"));
+        invalidateShaders = true;
+    }
+    if (REVERSE_Z != Settings.Global.ShadersReverseZ)
+    {
+        LOG(Info, "{0} option has been modified.", TEXT("ShadersReverseZ"));
         invalidateShaders = true;
     }
 #if PLATFORM_TOOLS_WINDOWS
@@ -1076,6 +1085,7 @@ bool CookAssetsStep::Perform(CookingData& data)
     {
         cache.Settings.Global.ShadersNoOptimize = buildSettings->ShadersNoOptimize;
         cache.Settings.Global.ShadersGenerateDebugData = buildSettings->ShadersGenerateDebugData;
+        cache.Settings.Global.ShadersReverseZ = REVERSE_Z;
         cache.Settings.Global.StreamingSettingsAssetId = gameSettings->Streaming;
         cache.Settings.Global.ShadersVersion = GPU_SHADER_CACHE_VERSION;
         cache.Settings.Global.MaterialGraphVersion = MATERIAL_GRAPH_VERSION;

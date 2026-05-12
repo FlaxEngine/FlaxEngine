@@ -307,6 +307,12 @@ namespace Flax.Build
         public static bool UseLargeWorlds = false;
 
         /// <summary>
+        /// 1 to use reversed Z Buffer, or traditional one.
+        /// </summary>
+        [CommandLine("useReverseZ", "1 to use reversed Z Buffer, or traditional one.")]
+        public static bool UseReverseZ = false;
+
+        /// <summary>
         /// True if managed C# scripting should be enabled, otherwise false. Engine without C# is partially supported and can be used when porting to a new platform before implementing C# runtime on it.
         /// </summary>
         [CommandLine("useCSharp", "0 to disable C# support in build")]
@@ -341,6 +347,12 @@ namespace Flax.Build
         {
             // This can be used to selectively control 64-bit coordinates per-platform or build configuration
             return UseLargeWorlds;
+        }
+
+        public static bool WithReverseZ(NativeCpp.BuildOptions options)
+        {
+            // Whether to use traditional z-buffer or reversed depth
+            return UseReverseZ;
         }
 
         public static bool WithDotNet(NativeCpp.BuildOptions options)
