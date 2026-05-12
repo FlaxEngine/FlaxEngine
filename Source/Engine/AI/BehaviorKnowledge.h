@@ -133,8 +133,7 @@ public:
         auto* structure = Blackboard.AsStructure<T>();
         if (structure)
             return structure;
-
-        return Blackboard.AsObject(T::TypeInitializer);
+        return Cast<T>((ScriptingObject*)Blackboard);
     }
 
 public:
