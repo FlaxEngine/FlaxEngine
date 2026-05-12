@@ -35,7 +35,7 @@ private:
 
 public:
 #if GPU_ENABLE_RESOURCE_NAMING
-    static void SetObjectName(VkDevice device, uint64 objectHandle, VkObjectType objectType, const String& name);
+    static void SetObjectName(VkDevice device, uint64 objectHandle, VkObjectType objectType, const StringView& name);
     static void SetObjectName(VkDevice device, uint64 objectHandle, VkObjectType objectType, const char* name);
 #endif
 
