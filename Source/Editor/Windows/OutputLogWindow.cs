@@ -176,7 +176,8 @@ namespace FlaxEditor.Windows
                         if (Owner != null && (!Owner._searchPopup?.Visible ?? true))
                         {
                             // Focus back the input field as user want to modify command from history
-                            Owner._searchPopup?.Hide();
+                            Owner.HideHistory();
+                            Owner.HideSearch();
                             Owner.RootWindow.Focus();
                             Owner.Focus();
                             Owner.OnKeyDown(key);
@@ -209,6 +210,7 @@ namespace FlaxEditor.Windows
 
             private OutputLogWindow _window;
             private ItemsListContextMenu _searchPopup;
+            private ItemsListContextMenu _historyPopup;
             private bool _isSettingText;
 
             public CommandLineBox(float x, float y, float width, OutputLogWindow window)
@@ -224,6 +226,24 @@ namespace FlaxEditor.Windows
                 SetText(command);
                 SetSelection(command.Length);
                 _isSettingText = false;
+            }
+
+            private void HideSearch()
+            {
+                if (_searchPopup != null)
+                {
+                    _searchPopup.Hide();
+                    _searchPopup = null;
+                }
+            }
+
+            private void HideHistory()
+            {
+                if (_historyPopup != null)
+                {
+                    _historyPopup.Dispose();
+                    _historyPopup = null;
+                }
             }
 
             private void ShowPopup(ref ItemsListContextMenu cm, IEnumerable<string> commands, string searchText = null)
@@ -295,7 +315,7 @@ namespace FlaxEditor.Windows
             private void OnRootWindowLostFocus()
             {
                 // Prevent popup from staying active when editor window looses focus
-                _searchPopup?.Hide();
+                HideSearch();
                 if (RootWindow?.Window != null)
                     RootWindow.Window.LostFocus -= OnRootWindowLostFocus;
             }
@@ -330,6 +350,7 @@ namespace FlaxEditor.Windows
                         if (isWhitespaceOnly)
                             DebugCommands.GetAllCommands(out commands);
 
+                        HideHistory();
                         ShowPopup(ref _searchPopup, isWhitespaceOnly ? commands : matches, text);
                         
                         if (isWhitespaceOnly)
@@ -342,7 +363,7 @@ namespace FlaxEditor.Windows
                         return;
                     }
                 }
-                _searchPopup?.Hide();
+                HideSearch();
             }
 
             /// <inheritdoc />
@@ -353,7 +374,8 @@ namespace FlaxEditor.Windows
                 case KeyboardKeys.Return:
                 {
                     // Run command
-                    _searchPopup?.Hide();
+                    HideSearch();
+                    HideHistory();
                     var command = Text.Trim();
                     if (command.Length == 0)
                         return true;
@@ -430,9 +452,8 @@ namespace FlaxEditor.Windows
                         if (_window._commandHistory != null && _window._commandHistory.Count != 0)
                         {
                             // Show command history popup
-                            _searchPopup?.Hide();
-                            ItemsListContextMenu cm = null;
-                            ShowPopup(ref cm, _window._commandHistory);
+                            HideSearch();
+                            ShowPopup(ref _historyPopup, _window._commandHistory);
                         }
                     }
                     return true;
