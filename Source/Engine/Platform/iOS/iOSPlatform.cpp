@@ -248,11 +248,13 @@ MessagePipeline MainThreadPipeline;
     UIThreadPipeline.Run();
 }
 
-- (BOOL)application:(UIApplication*)application didFinishLaunchingWithOptions:(NSDictionary*)launchOptions
+- (void)scene:(UIScene*)scene willConnectToSession:(UISceneSession*)session options:(UISceneConnectionOptions*)connectionOptions
 {
+    //LOG(Info, "[iOS] willConnectToSession");
+
     // Create window
 	CGRect frame = [[UIScreen mainScreen] bounds];
-    self.window = [[UIWindow alloc] initWithFrame:frame];
+    self.window = [[UIWindow alloc] initWithWindowScene:(UIWindowScene*)scene];
 
     // Create view
     self.view = [[FlaxView alloc] initWithFrame:frame];
@@ -271,10 +273,80 @@ MessagePipeline MainThreadPipeline;
 	[self.viewController setNeedsStatusBarAppearanceUpdate];
     MainViewController = self.viewController;
 
-    // Create navigation controller
-    UINavigationController* navController = [[UINavigationController alloc] initWithRootViewController:self.viewController];
-    [self.window setRootViewController:navController];
+    // Link controller and show window
+    self.window.rootViewController = MainViewController;
     [self.window makeKeyAndVisible];
+}
+
+- (UISceneConfiguration*)application:(UIApplication*)application configurationForConnectingSceneSession:(UISceneSession*)connectingSceneSession options:(UISceneConnectionOptions*)options API_AVAILABLE(ios(13.0), tvos(13.0), visionos(1.0))
+{
+    LOG(Info, "[iOS] configurationForConnectingSceneSession");
+    UISceneConfiguration* config = [[UISceneConfiguration alloc] initWithName:@"Default Configuration" sessionRole:connectingSceneSession.role];
+    config.delegateClass = [FlaxAppDelegate class];
+    return config;
+}
+
+- (void)application:(UIApplication*)application didDiscardSceneSessions:(NSSet<UISceneSession*>*)sceneSessions API_AVAILABLE(ios(13.0), tvos(13.0), visionos(1.0))
+{
+    LOG(Info, "[iOS] didDiscardSceneSessions");
+}
+
+- (void)sceneDidDisconnect:(UIScene*)scene API_AVAILABLE(ios(13.0), tvos(13.0), visionos(1.0))
+{
+    LOG(Info, "[iOS] sceneDidDisconnect");
+}
+
+- (void)sceneDidBecomeActive:(UIScene*)scene API_AVAILABLE(ios(13.0), tvos(13.0), visionos(1.0))
+{
+    LOG(Info, "[iOS] sceneDidBecomeActive");
+
+    // Focus app
+    HasFocus = true;
+    if (MainWindow)
+    {
+        Function<void()> func = []()
+        {
+            MainWindow->OnGotFocus();
+        };
+        iOSPlatform::RunOnMainThread(func);
+    }
+}
+
+- (void)sceneWillResignActive:(UIScene*)scene API_AVAILABLE(ios(13.0), tvos(13.0), visionos(1.0))
+{
+    LOG(Info, "[iOS] sceneWillResignActive");
+
+    // Defocus app
+    HasFocus = false;
+    if (MainWindow)
+    {
+        Function<void()> func = []()
+        {
+            MainWindow->OnLostFocus();
+        };
+        iOSPlatform::RunOnMainThread(func);
+    }
+}
+
+- (void)sceneDidEnterBackground:(UIScene*)scene API_AVAILABLE(ios(13.0), tvos(13.0), visionos(1.0))
+{
+    LOG(Info, "[iOS] sceneDidEnterBackground");
+
+    // Pause
+    IsPaused = true;
+}
+
+- (void)sceneWillEnterForeground:(UIScene*)scene API_AVAILABLE(ios(13.0), tvos(13.0), visionos(1.0))
+{
+    LOG(Info, "[iOS] sceneDidEnterBackground");
+
+    // Resume
+    IsPaused = false;
+}
+
+- (BOOL)application:(UIApplication*)application didFinishLaunchingWithOptions:(NSDictionary*)launchOptions
+{
+    //LOG(Info, "[iOS] didFinishLaunchingWithOptions");
 
     // Create UI thread update callback
     self.displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(UIThreadMain)];
