@@ -27,10 +27,13 @@ namespace FlaxEngine
     partial class DebugCommands
     {
 #if WITH_HELP
-        private static Dictionary<Assembly, Dictionary<string, string>> _xmlCache = new();
+        private static Dictionary<Assembly, Dictionary<string, string>> _xmlCache;
+        private static StringBuilder _sb;
 
         internal static void ClearXml()
         {
+            if (_xmlCache == null)
+                return;
             foreach (var asm in _xmlCache.Keys.ToArray())
             {
                 if (asm.IsCollectible)
@@ -118,7 +121,10 @@ namespace FlaxEngine
                     key = "T:" + GetXmlKey(typeInfo.FullName);
                 }
                 if (key != null)
+                {
                     xml.TryGetValue(key, out text);
+                    text = FilterWhitespaces(text);
+                }
 
                 // Customize tooltips for properties to be more human-readable in UI
                 if (text != null && memberType.HasFlag(MemberTypes.Property) && text.StartsWith("Gets or sets ", StringComparison.Ordinal))
@@ -138,16 +144,18 @@ namespace FlaxEngine
         {
             if (str.Contains("  ", StringComparison.Ordinal))
             {
-                var sb = new StringBuilder();
+                if (_sb == null)
+                    _sb = new StringBuilder();
+                else
+                    _sb.Clear();
+                var sb = _sb;
                 var prev = str[0];
                 sb.Append(prev);
                 for (int i = 1; i < str.Length; i++)
                 {
                     var c = str[i];
                     if (prev != ' ' || c != ' ')
-                    {
                         sb.Append(c);
-                    }
                     prev = c;
                 }
                 str = sb.ToString();
@@ -256,6 +264,8 @@ namespace FlaxEngine
 
         private static Dictionary<string, string> GetXmlDocs(Assembly assembly)
         {
+            if (_xmlCache == null)
+                _xmlCache = new Dictionary<Assembly, Dictionary<string, string>>();
             if (!_xmlCache.TryGetValue(assembly, out var result))
             {
                 Profiler.BeginEvent("GetXmlDocs");
