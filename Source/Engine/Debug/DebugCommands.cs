@@ -142,7 +142,7 @@ namespace FlaxEngine
 
         private static string FilterWhitespaces(string str)
         {
-            if (str.Contains("  ", StringComparison.Ordinal))
+            if (str != null && str.Contains("  ", StringComparison.Ordinal))
             {
                 if (_sb == null)
                     _sb = new StringBuilder();

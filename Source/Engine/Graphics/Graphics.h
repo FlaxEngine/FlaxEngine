@@ -19,32 +19,32 @@ public:
     API_FIELD() static bool UseVSync;
 
     /// <summary>
-    /// Anti Aliasing quality setting.
+    /// Anti Aliasing quality setting. Available values are: Low, Medium, High, Ultra (or 0, 1, 2, 3).
     /// </summary>
     API_FIELD() static Quality AAQuality;
 
     /// <summary>
-    /// Screen Space Reflections quality setting.
+    /// Screen Space Reflections quality setting. Available values are: Low, Medium, High, Ultra (or 0, 1, 2, 3).
     /// </summary>
     API_FIELD() static Quality SSRQuality;
 
     /// <summary>
-    /// Screen Space Ambient Occlusion quality setting.
+    /// Screen Space Ambient Occlusion quality setting. Available values are: Low, Medium, High, Ultra (or 0, 1, 2, 3).
     /// </summary>
     API_FIELD() static Quality SSAOQuality;
 
     /// <summary>
-    /// Volumetric Fog quality setting.
+    /// Volumetric Fog quality setting. Available values are: Low, Medium, High, Ultra (or 0, 1, 2, 3).
     /// </summary>
     API_FIELD() static Quality VolumetricFogQuality;
 
     /// <summary>
-    /// The shadows quality.
+    /// The shadows quality. Available values are: Low, Medium, High, Ultra (or 0, 1, 2, 3).
     /// </summary>
     API_FIELD() static Quality ShadowsQuality;
 
     /// <summary>
-    /// The shadow maps quality (textures resolution).
+    /// The shadow maps quality (textures resolution). Available values are: Low, Medium, High, Ultra (or 0, 1, 2, 3).
     /// </summary>
     API_FIELD() static Quality ShadowMapsQuality;
 
@@ -59,12 +59,12 @@ public:
     API_FIELD() static bool AllowCSMBlending;
 
     /// <summary>
-    /// The Global SDF quality. Controls the volume texture resolution and amount of cascades to use.
+    /// The Global SDF quality. Controls the volume texture resolution and amount of cascades to use. Available values are: Low, Medium, High, Ultra (or 0, 1, 2, 3).
     /// </summary>
     API_FIELD() static Quality GlobalSDFQuality;
 
     /// <summary>
-    /// The Global Illumination quality. Controls the quality of the GI effect.
+    /// The Global Illumination quality. Controls the quality of the GI effect. Available values are: Low, Medium, High, Ultra (or 0, 1, 2, 3).
     /// </summary>
     API_FIELD() static Quality GIQuality;
 
