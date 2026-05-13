@@ -1,6 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-#if USE_EDITOR || !BUILD_RELEASE
+#if FLAX_EDITOR || !BUILD_RELEASE
 #define WITH_HELP
 #endif
 
