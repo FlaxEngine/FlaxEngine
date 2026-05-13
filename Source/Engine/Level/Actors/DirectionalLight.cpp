@@ -34,7 +34,7 @@ void DirectionalLight::Draw(RenderContext& renderContext)
         data.ShadowsDistance = ShadowsDistance;
         data.Color = color;
         data.ShadowsStrength = ShadowsStrength;
-        data.Direction = GetDirection();
+        data.Direction = GetForward();
         data.ShadowsFadeDistance = ShadowsFadeDistance;
         data.ShadowsNormalOffsetScale = ShadowsNormalOffsetScale;
         data.ShadowsDepthBias = ShadowsDepthBias;

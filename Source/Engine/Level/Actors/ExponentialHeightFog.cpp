@@ -163,7 +163,7 @@ void ExponentialHeightFog::GetExponentialHeightFogData(const RenderView& view, S
     result.FogCutoffDistance = FogCutoffDistance >= 0 ? FogCutoffDistance : view.Far + FogCutoffDistance;
     if (useDirectionalLightInscattering)
     {
-        result.InscatteringLightDirection = -DirectionalInscatteringLight->GetDirection();
+        result.InscatteringLightDirection = -DirectionalInscatteringLight->GetForward();
         result.DirectionalInscatteringColor = DirectionalInscatteringColor.ToFloat3();
         result.DirectionalInscatteringExponent = Math::Clamp(DirectionalInscatteringExponent, 0.000001f, 1000.0f);
         result.DirectionalInscatteringStartDistance = Math::Min(DirectionalInscatteringStartDistance, view.Far - 1.0f);

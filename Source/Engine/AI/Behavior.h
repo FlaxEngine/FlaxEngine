@@ -57,6 +57,15 @@ public:
     {
         return &_knowledge;
     }
+    
+    /// <summary>
+    /// Gets the blackboard of a given type.
+    /// </summary>
+    template<typename T>
+    FORCE_INLINE T* GetBlackboard()
+    {
+        return _knowledge.GetBlackboard<T>();
+    }
 
     /// <summary>
     /// Gets the last behavior tree execution result.

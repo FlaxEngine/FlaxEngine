@@ -1636,7 +1636,7 @@ FORCE_INLINE StringAnsiView GetPropertyMethodName(MProperty* property, StringAns
     Platform::MemoryCopy(mem, prefix.Get(), prefix.Length());
     Platform::MemoryCopy(mem + prefix.Length(), name.Get(), name.Length());
     mem[name.Length() + prefix.Length()] = 0;
-    return StringAnsiView(mem, name.Length() + prefix.Length() + 1);
+    return StringAnsiView(mem, name.Length() + prefix.Length());
 }
 
 MProperty::MProperty(MClass* parentClass, const char* name, void* handle, void* getterHandle, void* setterHandle, MMethodAttributes getterAttributes, MMethodAttributes setterAttributes)

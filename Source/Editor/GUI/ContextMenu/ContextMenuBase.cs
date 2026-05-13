@@ -355,7 +355,7 @@ namespace FlaxEditor.GUI.ContextMenu
             if (_previouslyFocused != null)
             {
                 _previouslyFocused.RootWindow?.Focus();
-                _previouslyFocused.Focus();
+                _previouslyFocused?.Focus();
                 _previouslyFocused = null;
             }
 

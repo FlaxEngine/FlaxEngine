@@ -124,6 +124,18 @@ public:
         RemoveGoal(T::TypeInitializer);
     }
 
+    /// <summary>
+    /// Gets the blackboard of a given type.
+    /// </summary>
+    template<typename T>
+    FORCE_INLINE T* GetBlackboard()
+    {
+        auto* structure = Blackboard.AsStructure<T>();
+        if (structure)
+            return structure;
+        return Cast<T>((ScriptingObject*)Blackboard);
+    }
+
 public:
     /// <summary>
     /// Compares two values and returns the comparision result.

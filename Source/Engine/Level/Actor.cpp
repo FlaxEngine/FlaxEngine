@@ -823,6 +823,11 @@ void Actor::SetRotation(const Matrix& value)
 
 void Actor::SetDirection(const Float3& value)
 {
+    SetForward(value);
+}
+
+void Actor::SetForward(const Float3& value)
+{
     CHECK(!value.IsNanOrInfinity());
     Quaternion orientation;
     if (Float3::Dot(value, Float3::Up) >= 0.999f)
@@ -1714,17 +1719,22 @@ Actor* Actor::Intersects(const Ray& ray, Real& distance, Vector3& normal)
 
 void Actor::LookAt(const Vector3& worldPos)
 {
-    const Quaternion orientation = LookingAt(worldPos);
+    const Quaternion orientation = GetLookAtDirection(worldPos);
     SetOrientation(orientation);
 }
 
 void Actor::LookAt(const Vector3& worldPos, const Vector3& worldUp)
 {
-    const Quaternion orientation = LookingAt(worldPos, worldUp);
+    const Quaternion orientation = GetLookAtDirection(worldPos, worldUp);
     SetOrientation(orientation);
 }
 
 Quaternion Actor::LookingAt(const Vector3& worldPos) const
+{
+    return GetLookAtDirection(worldPos);
+}
+
+Quaternion Actor::GetLookAtDirection(const Vector3& worldPos) const
 {
     const Vector3 direction = worldPos - _transform.Translation;
     if (direction.LengthSquared() < ZeroTolerance)
@@ -1753,15 +1763,19 @@ Quaternion Actor::LookingAt(const Vector3& worldPos) const
 
 Quaternion Actor::LookingAt(const Vector3& worldPos, const Vector3& worldUp) const
 {
+    return GetLookAtDirection(worldPos, worldUp);
+}
+
+Quaternion Actor::GetLookAtDirection(const Vector3& worldPos, const Vector3& worldUp) const
+{
     const Vector3 direction = worldPos - _transform.Translation;
     if (direction.LengthSquared() < ZeroTolerance)
         return _parent ? _parent->GetOrientation() : Quaternion::Identity;
+
     const Float3 forward = Vector3::Normalize(direction);
     const Float3 up = Vector3::Normalize(worldUp);
     if (Math::IsOne(Float3::Dot(forward, up)))
-    {
-        return LookingAt(worldPos);
-    }
+        return GetLookAtDirection(worldPos);
 
     Quaternion orientation;
     Quaternion::LookRotation(direction, up, orientation);

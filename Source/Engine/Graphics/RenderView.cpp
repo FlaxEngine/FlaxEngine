@@ -199,7 +199,7 @@ void RenderView::CopyFrom(const Camera* camera, const Viewport* viewport)
     const Vector3 cameraPos = camera->GetPosition();
     LargeWorlds::UpdateOrigin(Origin, cameraPos);
     Position = cameraPos - Origin;
-    Direction = camera->GetDirection();
+    Direction = camera->GetForward();
     Near = camera->GetNearPlane();
     Far = camera->GetFarPlane();
     camera->GetMatrices(View, Projection, viewport ? *viewport : camera->GetViewport(), Origin);
