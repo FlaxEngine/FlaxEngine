@@ -429,6 +429,9 @@ void Asset::Reload()
 
         ScopeLock lock(Locker);
 
+        // Cancel any still-running loading task (e.g. if WaitForLoaded timed out)
+        Platform::AtomicStore(&_loadingTask, 0);
+
         if (IsLoaded())
         {
             // Unload current data
@@ -610,6 +613,13 @@ bool Asset::onLoad(LoadAssetTask* task)
     LogContextScope logContext(GetID());
 
     Locker.Lock();
+
+    // Re-check after acquiring lock (loading task may have been cleared by Reload, or replaced by a new task)
+    if (Platform::AtomicRead(&_loadingTask) == 0)
+    {
+        Locker.Unlock();
+        return true;
+    }
 
     // Load asset
     LoadResult result;
