@@ -664,9 +664,7 @@ namespace FlaxEditor.Windows
 
             // Remove focus from game window
             if ((ContainsFocus && Parent != null) && !Editor.IsPlayMode || Editor.IsPlayMode && !Screen.CursorVisible && Screen.CursorLock == CursorLockMode.None)
-            {
                 Parent.Focus();
-            }
         }
 
         /// <inheritdoc />
