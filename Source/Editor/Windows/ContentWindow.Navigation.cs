@@ -257,6 +257,17 @@ namespace FlaxEditor.Windows
             _navigationBar.IsLayoutLocked = wasLayoutLocked;
             _navigationBar.PerformLayout();
             UpdateNavigationBarBounds();
+
+            ScrollNavigationBarToCurrentFolder();
+        }
+
+        private void ScrollNavigationBarToCurrentFolder()
+        {
+            if (_navigationBar != null && _navigationBar.ChildrenCount != 0 && _navigationBar.HScrollBar.Visible)
+            {
+                _navigationBar.HScrollBar.TargetValue = _navigationBar.HScrollBar.Maximum;
+                _navigationBar.HScrollBar.FastScroll();
+            }
         }
 
         /// <summary>

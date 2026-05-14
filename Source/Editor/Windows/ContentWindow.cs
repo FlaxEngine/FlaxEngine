@@ -1775,6 +1775,14 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc />
+        protected override void OnSizeChanged()
+        {
+            base.OnSizeChanged();
+
+            ScrollNavigationBarToCurrentFolder();
+        }
+
+        /// <inheritdoc />
         protected override void PerformLayoutBeforeChildren()
         {
             base.PerformLayoutBeforeChildren();
