@@ -413,19 +413,13 @@ public class Slider : ContainerControl
     public override Control OnNavigate(NavDirection direction, Float2 location, Control caller, List<Control> visited)
     {
         bool _isHorizontal = Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft;
+        bool _isRevelant = _isHorizontal ? (direction is NavDirection.Left or NavDirection.Right) : (direction is NavDirection.Up or NavDirection.Down);
 
-        float keyOrGamepadPosition = _isHorizontal ? location.X : location.Y;
-
-        if (_thumbRect.Contains(ref location))
+        if (_isRevelant)
         {
-            // Start sliding
-            _isSliding = true;
-            SlidingStart?.Invoke();
+            float _keyOrGamepadPosition = ((direction is NavDirection.Right or NavDirection.Down) != (Direction is SliderDirection.HorizontalLeft or SliderDirection.VerticalUp)) ? location.X : location.Y;
+            Value += (_keyOrGamepadPosition < _thumbCenter ? 1f : -1f) * 10f;
             return this;
-        }
-        else
-        {
-            Value += (keyOrGamepadPosition < _thumbCenter ? -1 : 1) * 10;
         }
 
         return base.OnNavigate(direction, location, caller, visited);
