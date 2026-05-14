@@ -35,10 +35,19 @@ namespace Flax.Build.Platforms
             // Setup system paths
             SystemIncludePaths.Add(Path.Combine(GDK.Instance.RootPath, "GRDK\\GameKit\\Include"));
             SystemLibraryPaths.Add(Path.Combine(GDK.Instance.RootPath, "GRDK\\GameKit\\Lib\\amd64"));
-            var xboxServicesPath = Path.Combine(GDK.Instance.RootPath, "GRDK\\ExtensionLibraries\\Xbox.Services.API.C\\DesignTime\\CommonConfiguration\\Neutral\\");
             var xboxServicesToolset = XboxServicesToolset;
+            var xboxServicesPath = Path.Combine(GDK.Instance.RootPath, "GRDK\\ExtensionLibraries\\Xbox.Services.API.C\\DesignTime\\CommonConfiguration\\Neutral\\");
+            if (Directory.Exists(xboxServicesPath))
+            {
+                SystemLibraryPaths.Add(xboxServicesPath + "Lib\\Release\\" + xboxServicesToolset);
+            }
+            else
+            {
+                // New location since 250402
+                xboxServicesPath = Path.Combine(GDK.Instance.RootPath, "GRDK\\ExtensionLibraries\\Xbox.Services.API.C\\");
+                SystemLibraryPaths.Add(xboxServicesPath + "Lib\\x64\\Release\\" + xboxServicesToolset);
+            }
             SystemIncludePaths.Add(xboxServicesPath + "Include");
-            SystemLibraryPaths.Add(xboxServicesPath + "Lib\\Release\\" + xboxServicesToolset);
             var curlPath = Path.Combine(GDK.Instance.RootPath, "GRDK\\ExtensionLibraries\\Xbox.XCurl.API\\DesignTime\\CommonConfiguration\\Neutral\\");
             SystemIncludePaths.Add(curlPath + "Include");
             SystemLibraryPaths.Add(curlPath + "Lib");
