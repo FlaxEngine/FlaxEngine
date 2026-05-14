@@ -525,6 +525,18 @@ public class Slider : ContainerControl
     }
 
     /// <inheritdoc />
+    public override void OnKeyUp(KeyboardKeys key)
+    {
+        if (key == KeyboardKeys.Escape && _isSliding)
+        {
+            EndSliding();
+            return;
+        }
+
+        base.OnKeyUp(key);
+    }
+
+    /// <inheritdoc />
     public override bool OnMouseUp(Float2 location, MouseButton button)
     {
         if (button == MouseButton.Left && _isSliding)
@@ -534,6 +546,18 @@ public class Slider : ContainerControl
         }
 
         return base.OnMouseUp(location, button);
+    }
+
+    /// <inheritdoc />
+    public override bool OnTouchUp(Float2 location, int pointerId)
+    {
+        if (base.OnTouchUp(location, pointerId) && _isSliding)
+        {
+            EndSliding();
+            return true;
+        }
+
+        return false;
     }
 
     /// <inheritdoc />
