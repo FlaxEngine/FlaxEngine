@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 
 namespace FlaxEngine.GUI;
 
@@ -409,6 +410,40 @@ public class Slider : ContainerControl
     }
 
     /// <inheritdoc />
+    public override Control OnNavigate(NavDirection direction, Float2 location, Control caller, List<Control> visited)
+    {
+        bool _isHorizontal = Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft;
+
+        float keyOrGamepadPosition = _isHorizontal ? location.X : location.Y;
+
+        if (_thumbRect.Contains(ref location))
+        {
+            // Start sliding
+            _isSliding = true;
+            SlidingStart?.Invoke();
+            return this;
+        }
+        else
+        {
+            Value += (keyOrGamepadPosition < _thumbCenter ? -1 : 1) * 10;
+        }
+
+        return base.OnNavigate(direction, location, caller, visited);
+    }
+
+    /// <inheritdoc />
+    public override bool OnKeyDown(KeyboardKeys key)
+    {
+        if (key == KeyboardKeys.Escape)
+        {
+            Defocus();
+            return true;
+        }
+
+        return base.OnKeyDown(key);
+    }
+
+    /// <inheritdoc />
     public override bool OnMouseDown(Float2 location, MouseButton button)
     {
         if (button == MouseButton.Left)
@@ -441,6 +476,21 @@ public class Slider : ContainerControl
         }
 
         return base.OnMouseDown(location, button);
+    }
+
+    /// <inheritdoc />
+    public override bool OnTouchDown(Float2 location, int pointerId)
+    {
+        if (base.OnTouchDown(location, pointerId))
+            return true;
+
+        if (!new Rectangle(Float2.Zero, Size).Contains(ref location))
+        {
+            Defocus();
+            return true;
+        }
+
+        return false;
     }
 
     /// <inheritdoc />
