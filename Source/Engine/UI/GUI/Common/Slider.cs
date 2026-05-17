@@ -423,16 +423,8 @@ public class Slider : ContainerControl
             return this;
         }
 
-        switch (Direction)
-        {
-            case SliderDirection.HorizontalRight or SliderDirection.VerticalDown:
-                Value += (_keyOrGamepadPosition < _thumbCenter ? -1 : 1) * 10;
-                break;
-            case SliderDirection.HorizontalLeft or SliderDirection.VerticalUp:
-                Value -= (_keyOrGamepadPosition < _thumbCenter ? -1 : 1) * 10;
-                break;
-            default: break;
-        }
+        var SliderPosition = (Direction == SliderDirection.HorizontalRight || Direction == SliderDirection.VerticalDown) ? _keyOrGamepadPosition : - _keyOrGamepadPosition;
+        Value += (SliderPosition < _thumbCenter ? -1 : 1) * 10;
 
         return base.OnNavigate(direction, location, caller, visited);
     }
