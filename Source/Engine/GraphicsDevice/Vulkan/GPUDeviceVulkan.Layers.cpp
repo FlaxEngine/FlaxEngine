@@ -6,11 +6,11 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/ArrayExtensions.h"
 #include "Engine/Core/Collections/Sorting.h"
+#include "Engine/Engine/CommandLine.h"
 
 #if GRAPHICS_API_VULKAN
 
-// TODO: expose it as a command line or engine parameter to end-user
-#if GPU_ENABLE_DIAGNOSTICS
+#if GPU_ENABLE_DEBUG_LAYER
 VulkanValidationLevel ValidationLevel = VulkanValidationLevel::ErrorsAndWarningsPerf;
 #else
 VulkanValidationLevel ValidationLevel = VulkanValidationLevel::Disabled;
@@ -18,7 +18,6 @@ VulkanValidationLevel ValidationLevel = VulkanValidationLevel::Disabled;
 
 #if VULKAN_USE_DEBUG_LAYER
 
-// TODO: expose it as a command line or engine parameter to end-user
 #define VULKAN_USE_KHRONOS_STANDARD_VALIDATION 1 // uses VK_LAYER_KHRONOS_validation
 #define VULKAN_USE_LUNARG_STANDARD_VALIDATION 1 // uses VK_LAYER_LUNARG_standard_validation
 
@@ -217,7 +216,7 @@ static bool ListContains(const Array<StringAnsi>& list, const char* name)
     return false;
 }
 
-void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInstanceExtensions, Array<const char*>& outInstanceLayers, bool& outDebugUtils)
+void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInstanceExtensions, Array<const char*>& outInstanceLayers, bool& outDebugUtils, bool useDebugLayer)
 {
     VkResult result;
     outDebugUtils = false;
@@ -281,10 +280,13 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
         }
     }
 
-    // TODO: expose as a command line parameter or sth
+#if VULKAN_USE_DEBUG_LAYER
+    if (!useDebugLayer)
+        ValidationLevel = VulkanValidationLevel::Disabled;
     const bool useVkTrace = false;
+
     bool vkTrace = false;
-    if (useVkTrace)
+    if (useVkTrace && useDebugLayer)
     {
         const char* VkTraceName = "VK_LAYER_LUNARG_vktrace";
         if (ContainsLayer(globalLayerExtensions, VkTraceName))
@@ -294,9 +296,8 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
         }
     }
 
-#if VULKAN_USE_DEBUG_LAYER
 #if VULKAN_ENABLE_API_DUMP
-	if (!vkTrace)
+	if (!vkTrace && useDebugLayer)
 	{
 		const char* VkApiDumpName = "VK_LAYER_LUNARG_api_dump";
 		if (FindLayerInList(globalLayerExtensions, VkApiDumpName))
@@ -499,13 +500,13 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
 #if VULKAN_USE_KHRONOS_STANDARD_VALIDATION
     const char* vkLayerKhronosValidation = "VK_LAYER_KHRONOS_validation";
     hasKhronosStandardValidationLayer = ContainsLayer(deviceLayerExtensions, vkLayerKhronosValidation);
-    if (hasKhronosStandardValidationLayer)
+    if (hasKhronosStandardValidationLayer && _debugLayer)
     {
         outDeviceLayers.Add(vkLayerKhronosValidation);
     }
 #endif
 #if VULKAN_USE_LUNARG_STANDARD_VALIDATION
-    if (!hasKhronosStandardValidationLayer)
+    if (!hasKhronosStandardValidationLayer && _debugLayer)
     {
         const char* vkLayerLunargStandardValidation = "VK_LAYER_LUNARG_standard_validation";
         hasLunargStandardValidationLayer = ContainsLayer(deviceLayerExtensions, vkLayerLunargStandardValidation);
@@ -515,7 +516,7 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
         }
     }
 #endif
-    if (!hasKhronosStandardValidationLayer && !hasLunargStandardValidationLayer)
+    if (!hasKhronosStandardValidationLayer && !hasLunargStandardValidationLayer && _debugLayer)
     {
         for (uint32 i = 0; GValidationLayers[i] != nullptr; i++)
         {

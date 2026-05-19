@@ -144,7 +144,6 @@ public:
     GPUBuffer* GetDummyVB();
 
 public:
-
     // [GPUDeviceDX]
     GPUContext* GetMainContext() override
     {

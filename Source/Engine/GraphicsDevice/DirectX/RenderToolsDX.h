@@ -68,7 +68,7 @@ namespace RenderToolsDX
 #define LOG_DIRECTX_RESULT(result) if (FAILED(result)) RenderToolsDX::LogD3DResult(result, __FILE__, __LINE__)
 #define LOG_DIRECTX_RESULT_WITH_RETURN(result, returnValue) if (FAILED(result)) { RenderToolsDX::LogD3DResult(result, __FILE__, __LINE__); return returnValue; }
 
-#if GPU_ENABLE_DIAGNOSTICS || COMPILE_WITH_SHADER_COMPILER || GPU_ENABLE_RESOURCE_NAMING
+#if GPU_ENABLE_DEBUG_LAYER || COMPILE_WITH_SHADER_COMPILER || GPU_ENABLE_RESOURCE_NAMING
 
 #include "Engine/Utilities/StringConverter.h"
 

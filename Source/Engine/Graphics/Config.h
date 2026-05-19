@@ -42,7 +42,7 @@
 #define GPU_ENABLE_TEXTURES_STREAMING 1
 
 // Enable/disable creating Shader Resource View for window backbuffer surface
-#define GPU_USE_WINDOW_SRV 1
+#define GPU_ENABLE_WINDOW_SRV 1
 
 // True if allow graphics profile events and markers
 #ifndef GPU_ALLOW_PROFILE_EVENTS
@@ -85,8 +85,11 @@
 // Enable/disable gpu resources naming
 #define GPU_ENABLE_RESOURCE_NAMING (!BUILD_RELEASE)
 
+// Enable/disable gpu debug layer support (activated via '-gpudebug')
+#define GPU_ENABLE_DEBUG_LAYER (!BUILD_RELEASE)
+
 // True if use debug tools and flow for shaders
-#define GPU_USE_SHADERS_DEBUG_LAYER (BUILD_DEBUG)
+#define GPU_ENABLE_SHADERS_DEBUG_LAYER (BUILD_DEBUG)
 
 // Maximum size of the texture that is supported by the engine (specific platforms can have lower limit)
 #define GPU_MAX_TEXTURE_SIZE 16384

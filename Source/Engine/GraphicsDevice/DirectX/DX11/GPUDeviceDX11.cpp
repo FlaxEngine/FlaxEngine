@@ -124,8 +124,9 @@ static bool TryCreateDevice(IDXGIAdapter* adapter, D3D_FEATURE_LEVEL maxFeatureL
     ID3D11Device* device = nullptr;
     ID3D11DeviceContext* context = nullptr;
     uint32 deviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_BGRA_SUPPORT;
-#if GPU_ENABLE_DIAGNOSTICS
-    deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#if GPU_ENABLE_DEBUG_LAYER
+    if (CommandLine::Options.GPUDebug.IsTrue())
+        deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
     // Pick the first level
@@ -166,7 +167,11 @@ static bool TryCreateDevice(IDXGIAdapter* adapter, D3D_FEATURE_LEVEL maxFeatureL
         context->Release();
         return true;
     }
-#if GPU_ENABLE_DIAGNOSTICS
+#if GPU_ENABLE_DEBUG_LAYER
+    if ((deviceFlags & D3D11_CREATE_DEVICE_DEBUG) != D3D11_CREATE_DEVICE_DEBUG)
+        return false;
+
+    // Retry without debug layer
     deviceFlags &= ~D3D11_CREATE_DEVICE_DEBUG;
     if (SUCCEEDED(D3D11CreateDevice(
         adapter,
@@ -545,9 +550,12 @@ bool GPUDeviceDX11::Init()
 
     // Get flags and device type base on current configuration
     uint32 flags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
-#if GPU_ENABLE_DIAGNOSTICS
-    flags |= D3D11_CREATE_DEVICE_DEBUG;
-    LOG(Info, "DirectX debugging layer enabled");
+#if GPU_ENABLE_DEBUG_LAYER
+    if (_debugLayer)
+    {
+        flags |= D3D11_CREATE_DEVICE_DEBUG;
+        LOG(Info, "DirectX debugging layer enabled");
+    }
 #endif
 
     // Create DirectX device
@@ -712,9 +720,10 @@ bool GPUDeviceDX11::Init()
     }
 
     // Init debug layer
-#if GPU_ENABLE_DIAGNOSTICS
+#if GPU_ENABLE_DEBUG_LAYER
     ComPtr<ID3D11InfoQueue> infoQueue;
-    VALIDATE_DIRECTX_CALL(_device->QueryInterface(IID_PPV_ARGS(&infoQueue)));
+    if (_debugLayer)
+        _device->QueryInterface(IID_PPV_ARGS(&infoQueue));
     if (infoQueue)
     {
         D3D11_INFO_QUEUE_FILTER filter;
@@ -905,7 +914,7 @@ void GPUDeviceDX11::Dispose()
     SAFE_DELETE(_mainContext);
     SAFE_DELETE(_adapter);
     SAFE_RELEASE(_imContext);
-#if GPU_ENABLE_DIAGNOSTICS && 0
+#if GPU_ENABLE_DEBUG_LAYER && 0
     ID3D11Debug* debugLayer = nullptr;
     _device->QueryInterface(IID_PPV_ARGS(&debugLayer));
     if (debugLayer)
@@ -934,10 +943,11 @@ void GPUDeviceDX11::DrawEnd()
 {
     GPUDeviceDX::DrawEnd();
 
-#if GPU_ENABLE_DIAGNOSTICS && LOG_ENABLE
+#if GPU_ENABLE_DEBUG_LAYER && LOG_ENABLE
     // Flush debug messages queue
     ComPtr<ID3D11InfoQueue> infoQueue;
-    VALIDATE_DIRECTX_CALL(_device->QueryInterface(IID_PPV_ARGS(&infoQueue)));
+    if (_debugLayer)
+        _device->QueryInterface(IID_PPV_ARGS(&infoQueue));
     if (infoQueue)
     {
         Array<uint8> data;

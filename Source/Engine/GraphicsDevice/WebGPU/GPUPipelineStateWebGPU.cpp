@@ -295,7 +295,7 @@ WGPUBindGroupLayout CreateBindGroupLayout(WGPUDevice device, const GPUContextBin
 #endif
             break;
         default:
-#if GPU_ENABLE_DIAGNOSTICS
+#if GPU_ENABLE_DEBUG_LAYER
             LOG(Fatal, "Unknown descriptor type: {} used as {} in '{}'", (uint32)descriptor.DescriptorType, (uint32)descriptor.BindingType, String(debugName));
 #else
             CRASH;

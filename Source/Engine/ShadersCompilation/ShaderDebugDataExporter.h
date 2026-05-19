@@ -5,7 +5,7 @@
 #include "ShaderCompilationContext.h"
 #include "Engine/Graphics/Config.h"
 
-#if GPU_USE_SHADERS_DEBUG_LAYER && COMPILE_WITH_SHADER_COMPILER
+#if GPU_ENABLE_SHADERS_DEBUG_LAYER && COMPILE_WITH_SHADER_COMPILER
 
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"

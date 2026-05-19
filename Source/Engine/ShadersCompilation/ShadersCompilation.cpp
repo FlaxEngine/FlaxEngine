@@ -177,7 +177,7 @@ bool ShadersCompilation::Compile(ShaderCompilationOptions& options)
         result = compiler->Compile(&context);
         FreeCompiler(compiler);
 
-#if GPU_USE_SHADERS_DEBUG_LAYER
+#if GPU_ENABLE_SHADERS_DEBUG_LAYER
         // Export debug data
         ShaderDebugDataExporter::Export(&context);
 #endif
@@ -627,7 +627,7 @@ void ShaderCompilationContext::OnError(const char* message)
 
 void ShaderCompilationContext::OnCollectDebugInfo(ShaderFunctionMeta& meta, int32 permutationIndex, const char* data, const int32 dataLength)
 {
-#ifdef GPU_USE_SHADERS_DEBUG_LAYER
+#ifdef GPU_ENABLE_SHADERS_DEBUG_LAYER
 
     // Cache data
     meta.Permutations[permutationIndex].DebugData.Set(data, dataLength);

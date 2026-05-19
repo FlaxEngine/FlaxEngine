@@ -395,7 +395,7 @@ public:
     static OptionalVulkanDeviceExtensions OptionalDeviceExtensions;
 
 private:
-    static void GetInstanceLayersAndExtensions(Array<const char*>& outInstanceExtensions, Array<const char*>& outInstanceLayers, bool& outDebugUtils);
+    static void GetInstanceLayersAndExtensions(Array<const char*>& outInstanceExtensions, Array<const char*>& outInstanceLayers, bool& outDebugUtils, bool useDebugLayer = false);
     void GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<const char*>& outDeviceExtensions, Array<const char*>& outDeviceLayers);
     static void ParseOptionalDeviceExtensions(const Array<const char*>& deviceExtensions);
 

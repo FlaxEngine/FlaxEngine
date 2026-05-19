@@ -123,6 +123,7 @@ public:
 /// </summary>
 class GPUDeviceWebGPU : public GPUDevice
 {
+    friend class GPUSwapChainWebGPU;
 private:
     GPUContextWebGPU* _mainContext = nullptr;
 

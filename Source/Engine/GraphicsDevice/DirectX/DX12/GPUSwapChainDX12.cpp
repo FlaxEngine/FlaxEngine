@@ -26,7 +26,7 @@ void BackBufferDX12::Setup(GPUSwapChainDX12* window, ID3D12Resource* backbuffer)
         Handle.SetRTV(rtDesc);
     }
 
-#if GPU_USE_WINDOW_SRV
+#if GPU_ENABLE_WINDOW_SRV
     // Create SRV
     {
         D3D12_SHADER_RESOURCE_VIEW_DESC srDesc;
@@ -198,7 +198,7 @@ bool GPUSwapChainDX12::Resize(int32 width, int32 height)
         swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
         swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
         swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-#if GPU_USE_WINDOW_SRV
+#if GPU_ENABLE_WINDOW_SRV
         swapChainDesc.BufferUsage |= DXGI_USAGE_SHADER_INPUT;
 #endif
         if (_allowTearing)

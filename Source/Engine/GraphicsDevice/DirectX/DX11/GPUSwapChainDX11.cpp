@@ -35,7 +35,7 @@ void GPUSwapChainDX11::getBackBuffer()
     ID3D11RenderTargetView* rtv;
     ID3D11ShaderResourceView* srv;
     VALIDATE_DIRECTX_CALL(_device->GetDevice()->CreateRenderTargetView(_backBuffer, nullptr, &rtv));
-#if GPU_USE_WINDOW_SRV
+#if GPU_ENABLE_WINDOW_SRV
     VALIDATE_DIRECTX_CALL(_device->GetDevice()->CreateShaderResourceView(_backBuffer, nullptr, &srv));
 #else
 	srv = nullptr;
@@ -229,7 +229,7 @@ bool GPUSwapChainDX11::Resize(int32 width, int32 height)
         swapChainDesc.Scaling = DXGI_SCALING_NONE;
         swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
 #endif
-#if GPU_USE_WINDOW_SRV
+#if GPU_ENABLE_WINDOW_SRV
         swapChainDesc.BufferUsage |= DXGI_USAGE_SHADER_INPUT;
 #endif
 

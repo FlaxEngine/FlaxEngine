@@ -399,7 +399,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     swapChainInfo.imageExtent.width = width;
     swapChainInfo.imageExtent.height = height;
     swapChainInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-#if GPU_USE_WINDOW_SRV
+#if GPU_ENABLE_WINDOW_SRV
     swapChainInfo.imageUsage |= VK_IMAGE_USAGE_SAMPLED_BIT;
 #endif
     swapChainInfo.preTransform = surfProperties.currentTransform;

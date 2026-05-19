@@ -369,6 +369,9 @@ GPUDevice::GPUDevice(RendererType type, ShaderProfile profile)
     , _state(DeviceState::Missing)
     , _isRendering(false)
     , _wasVSyncUsed(false)
+#if GPU_ENABLE_DEBUG_LAYER
+    , _debugLayer(CommandLine::Options.GPUDebug.IsTrue())
+#endif
     , _drawGpuEventIndex(0)
     , _rendererType(type)
     , _shaderProfile(profile)

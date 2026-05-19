@@ -204,6 +204,11 @@ public:
         /// -shaderprofile (enables debugging data generation for shaders but leaves shader compiler optimizations active for performance profiling)
         /// </summary>
         Nullable<bool> ShaderProfile;
+
+        /// <summary>
+        /// -gpudebug (activates GPU Debug Layers and additional assertions for rendering validation)
+        /// </summary>
+        Nullable<bool> GPUDebug;
 #endif
     };
 

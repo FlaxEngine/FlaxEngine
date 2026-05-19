@@ -1036,7 +1036,12 @@ GPUDevice* GPUDeviceVulkan::Create()
     instInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 #endif
     instInfo.pApplicationInfo = &appInfo;
-    GetInstanceLayersAndExtensions(InstanceExtensions, InstanceLayers, SupportsDebugUtilsExt);
+#if VULKAN_USE_DEBUG_LAYER
+    bool useDebugLayer = CommandLine::Options.GPUDebug.IsTrue();
+#else
+    bool useDebugLayer = false;
+#endif
+    GetInstanceLayersAndExtensions(InstanceExtensions, InstanceLayers, SupportsDebugUtilsExt, useDebugLayer);
     instInfo.enabledExtensionCount = InstanceExtensions.Count();
     instInfo.ppEnabledExtensionNames = instInfo.enabledExtensionCount > 0 ? static_cast<const char* const*>(InstanceExtensions.Get()) : nullptr;
     instInfo.enabledLayerCount = InstanceLayers.Count();
@@ -1134,7 +1139,8 @@ GPUDevice* GPUDeviceVulkan::Create()
 
     // Setup debug layer
 #if VULKAN_USE_DEBUG_LAYER
-    SetupDebugLayerCallback();
+    if (useDebugLayer)
+        SetupDebugLayerCallback();
 #endif
 
     // Enumerate all GPU devices and pick one

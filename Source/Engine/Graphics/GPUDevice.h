@@ -152,6 +152,9 @@ protected:
     DeviceState _state;
     bool _isRendering;
     bool _wasVSyncUsed;
+#if GPU_ENABLE_DEBUG_LAYER
+    bool _debugLayer;
+#endif
     int32 _drawGpuEventIndex;
     RendererType _rendererType;
     ShaderProfile _shaderProfile;

@@ -1233,7 +1233,7 @@ void GPUContextWebGPU::BuildBindGroup(uint32 groupIndex, const SpirvShaderDescri
             break;
         }
         default:
-#if GPU_ENABLE_DIAGNOSTICS
+#if GPU_ENABLE_DEBUG_LAYER
             LOG(Fatal, "Unknown descriptor type: {} used as {}", (uint32)descriptor.DescriptorType, (uint32)descriptor.BindingType);
 #else
             CRASH;

@@ -406,36 +406,39 @@ GPUDevice* GPUDeviceDX12::Create()
 #endif
 
     // Debug Layer
-#if GPU_ENABLE_DIAGNOSTICS
-    ComPtr<ID3D12Debug> debugLayer;
-    D3D12GetDebugInterface(IID_PPV_ARGS(&debugLayer));
-    if (debugLayer)
+#if GPU_ENABLE_DEBUG_LAYER
+    if (CommandLine::Options.GPUDebug.IsTrue())
     {
-        debugLayer->EnableDebugLayer();
-        LOG(Info, "DirectX debugging layer enabled");
-    }
+        ComPtr<ID3D12Debug> debugLayer;
+        D3D12GetDebugInterface(IID_PPV_ARGS(&debugLayer));
+        if (debugLayer)
+        {
+            debugLayer->EnableDebugLayer();
+            LOG(Info, "DirectX debugging layer enabled");
+        }
 #if 0
 #ifdef __ID3D12Debug1_FWD_DEFINED__
-    ComPtr<ID3D12Debug1> debugLayer1;
-    D3D12GetDebugInterface(IID_PPV_ARGS(&debugLayer1));
-    if (debugLayer1)
-    {
-        // GPU-based validation and synchronized validation for debugging only
-        debugLayer1->SetEnableGPUBasedValidation(true);
-        debugLayer1->SetEnableSynchronizedCommandQueueValidation(true);
-    }
+        ComPtr<ID3D12Debug1> debugLayer1;
+        D3D12GetDebugInterface(IID_PPV_ARGS(&debugLayer1));
+        if (debugLayer1)
+        {
+            // GPU-based validation and synchronized validation for debugging only
+            debugLayer1->SetEnableGPUBasedValidation(true);
+            debugLayer1->SetEnableSynchronizedCommandQueueValidation(true);
+        }
 #endif
 #endif
 #ifdef __ID3D12DeviceRemovedExtendedDataSettings_FWD_DEFINED__
-    ComPtr<ID3D12DeviceRemovedExtendedDataSettings> dredSettings;
-    D3D12GetDebugInterface(IID_PPV_ARGS(&dredSettings));
-    if (dredSettings)
-    {
-        // Turn on AutoBreadcrumbs and Page Fault reporting
-        dredSettings->SetAutoBreadcrumbsEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
-        dredSettings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
-    }
+        ComPtr<ID3D12DeviceRemovedExtendedDataSettings> dredSettings;
+        D3D12GetDebugInterface(IID_PPV_ARGS(&dredSettings));
+        if (dredSettings)
+        {
+            // Turn on AutoBreadcrumbs and Page Fault reporting
+            dredSettings->SetAutoBreadcrumbsEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+            dredSettings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+        }
 #endif
+    }
 #endif
 
     // Create DXGI factory (CreateDXGIFactory2 is supported on Windows 8.1 or newer)
@@ -612,8 +615,9 @@ bool GPUDeviceDX12::Init()
     // Create DirectX device
     D3D12XBOX_CREATE_DEVICE_PARAMETERS params = {};
     params.Version = D3D12_SDK_VERSION;
-#if GPU_ENABLE_DIAGNOSTICS
-    params.ProcessDebugFlags = D3D12_PROCESS_DEBUG_FLAG_DEBUG_LAYER_ENABLED;
+#if GPU_ENABLE_DEBUG_LAYER
+    if (_debugLayer)
+        params.ProcessDebugFlags = D3D12_PROCESS_DEBUG_FLAG_DEBUG_LAYER_ENABLED;
 #elif !BUILD_RELEASE
     params.ProcessDebugFlags = D3D12XBOX_PROCESS_DEBUG_FLAG_INSTRUMENTED;
 #endif
@@ -740,10 +744,10 @@ bool GPUDeviceDX12::Init()
     }
 
     // Debug Layer
-#if GPU_ENABLE_DIAGNOSTICS
+#if GPU_ENABLE_DEBUG_LAYER
     ComPtr<ID3D12InfoQueue> infoQueue;
-    hr = _device->QueryInterface(IID_PPV_ARGS(&infoQueue));
-    LOG_DIRECTX_RESULT(hr);
+    if (_debugLayer)
+        _device->QueryInterface(IID_PPV_ARGS(&infoQueue));
     if (infoQueue)
     {
         D3D12_INFO_QUEUE_FILTER filter;
@@ -794,7 +798,6 @@ bool GPUDeviceDX12::Init()
     VALIDATE_DIRECTX_CALL(_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options)));
     LOG(Info, "Tiled Resources Tier: {0}", (int32)options.TiledResourcesTier);
     LOG(Info, "Resource Binding Tier: {0}", (int32)options.ResourceBindingTier);
-    LOG(Info, "Conservative Rasterization Tier: {0}", (int32)options.ConservativeRasterizationTier);
     LOG(Info, "Resource Heap Tier: {0}", (int32)options.ResourceHeapTier);
 
     // Init device limits
@@ -841,10 +844,9 @@ bool GPUDeviceDX12::Init()
         D3D12_FEATURE_DATA_D3D12_OPTIONS2 options2 = {};
         if (SUCCEEDED(_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS2, &options2, sizeof(options2))))
             limits.HasDepthBounds = !!options2.DepthBoundsTestSupported;
-
     }
 
-#if !BUILD_RELEASE
+#if USE_EDITOR || !BUILD_RELEASE
 	// Prevent the GPU from overclocking or under-clocking to get consistent timings
     if (CommandLine::Options.ShaderProfile.IsTrue())
     {

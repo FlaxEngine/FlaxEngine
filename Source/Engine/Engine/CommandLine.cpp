@@ -183,6 +183,7 @@ bool CommandLine::Parse(const Char* cmdLine)
 #endif
 #if USE_EDITOR || !BUILD_RELEASE
     PARSE_BOOL_SWITCH("-shaderprofile ", ShaderProfile);
+    PARSE_BOOL_SWITCH("-gpudebug ", GPUDebug);
 #endif
 
     return false;
