@@ -2089,9 +2089,9 @@ namespace FlaxEditor.Viewport
             new ViewModeOptions(ViewMode.Wireframe, "Wireframe", Editor.Instance.Options.Options.Input.Wireframe),
             new ViewModeOptions(ViewMode.LightBuffer, "Light Buffer", Editor.Instance.Options.Options.Input.LightBuffer),
             new ViewModeOptions(ViewMode.Reflections, "Reflections Buffer", Editor.Instance.Options.Options.Input.ReflectionsBuffer),
-            new ViewModeOptions(ViewMode.Depth, "Depth Buffer", Editor.Instance.Options.Options.Input.DepthBuffer),
             new ViewModeOptions("GBuffer", new[]
             {
+                new ViewModeOptions(ViewMode.Depth, "Depth Buffer", Editor.Instance.Options.Options.Input.DepthBuffer),
                 new ViewModeOptions(ViewMode.Diffuse, "Diffuse"),
                 new ViewModeOptions(ViewMode.Metalness, "Metalness"),
                 new ViewModeOptions(ViewMode.Roughness, "Roughness"),
@@ -2107,9 +2107,12 @@ namespace FlaxEditor.Viewport
             new ViewModeOptions(ViewMode.LightmapUVsDensity, "Lightmap UVs Density", Editor.Instance.Options.Options.Input.LightmapUVDensity),
             new ViewModeOptions(ViewMode.VertexColors, "Vertex Colors", Editor.Instance.Options.Options.Input.VertexColors),
             new ViewModeOptions(ViewMode.PhysicsColliders, "Physics Colliders", Editor.Instance.Options.Options.Input.PhysicsColliders),
-            new ViewModeOptions(ViewMode.LODPreview, "LOD Preview", Editor.Instance.Options.Options.Input.LODPreview),
-            new ViewModeOptions(ViewMode.MaterialComplexity, "Material Complexity", Editor.Instance.Options.Options.Input.MaterialComplexity),
-            new ViewModeOptions(ViewMode.QuadOverdraw, "Quad Overdraw", Editor.Instance.Options.Options.Input.QuadOverdraw),
+            new ViewModeOptions("Optimization", new[]
+            {
+                new ViewModeOptions(ViewMode.LODPreview, "LOD Preview", Editor.Instance.Options.Options.Input.LODPreview),
+                new ViewModeOptions(ViewMode.MaterialComplexity, "Material Complexity", Editor.Instance.Options.Options.Input.MaterialComplexity),
+                new ViewModeOptions(ViewMode.QuadOverdraw, "Quad Overdraw", Editor.Instance.Options.Options.Input.QuadOverdraw),
+            }),
             new ViewModeOptions(ViewMode.GlobalSDF, "Global SDF", Editor.Instance.Options.Options.Input.GloablSDF),
             new ViewModeOptions(ViewMode.GlobalSurfaceAtlas, "Global Surface Atlas", Editor.Instance.Options.Options.Input.GlobalSurfaceAtlas),
             new ViewModeOptions(ViewMode.GlobalIllumination, "Global Illumination", Editor.Instance.Options.Options.Input.GlobalIllumination),
