@@ -213,6 +213,8 @@ public:
     RenderListBuffer<Pair<GlobalSurfaceAtlasTile*, GlobalSurfaceAtlasObject*>> AsyncFreeTiles;
     RenderListBuffer<GlobalSurfaceAtlasNewObject> AsyncNewObjects;
     RenderListBuffer<GlobalSurfaceAtlasNewTile> AsyncNewTiles;
+    Array<void*> FailedObjects;
+    Array<void*> PrevFrameFailedObjects;
     Array<int64> AsyncScenesDrawCounters[2];
     RenderContext AsyncRenderContext;
 
@@ -312,7 +314,7 @@ public:
         const auto currentFrame = Engine::FrameCount;
         {
             // Perform atlas defragmentation if needed
-            constexpr float maxUsageToDefrag = 0.8f;
+            constexpr float maxUsageToDefrag = 0.9f;
             if (currentFrame - LastFrameAtlasInsertFail < 10 &&
                 currentFrame - LastFrameAtlasDefragmentation > 60 &&
                 (float)AtlasPixelsUsed / AtlasPixelsTotal < maxUsageToDefrag)
@@ -413,6 +415,7 @@ public:
     {
         PROFILE_CPU_NAMED("Flush Atlas");
 
+        // Free unsued tiles
         for (auto& e : AsyncFreeTiles)
         {
             Atlas.Free(e.First, this);
@@ -427,6 +430,7 @@ public:
         }
         AsyncFreeTiles.Clear();
 
+        // Insert new objects
         for (auto& newObject : AsyncNewObjects)
         {
             auto& object = Objects[newObject.ActorObject];
@@ -446,6 +450,12 @@ public:
         sortingTiles.Resize(AsyncNewTiles.Count());
         Sorting::MergeSort(AsyncNewTiles.Get(), AsyncNewTiles.Count(), sortingTiles.Get());
 
+        // Cache tiles that filed to insert to dirty them on the next frame to fix bug with missing surface after defragmentation
+        auto prevFrameFailedObjects = PrevFrameFailedObjects;
+        PrevFrameFailedObjects = FailedObjects;
+        FailedObjects.Clear();
+
+        // Insert new tiles
         for (auto& newTile : AsyncNewTiles)
         {
             auto& object = Objects[newTile.ActorObject];
@@ -468,9 +478,22 @@ public:
             else
             {
                 LastFrameAtlasInsertFail = CurrentFrame;
+
+                // Cache as failed to retry if defragmentation happens later this frame
+                FailedObjects.Add(newTile.ActorObject);
             }
         }
         AsyncNewTiles.Clear();
+
+        // Dirt objects that failed to insert during previous frame to ensure they are updated correctly
+        for (void* actorObject : prevFrameFailedObjects)
+        {
+            if (GlobalSurfaceAtlasObject* objectPtr = Objects.TryGet(actorObject))
+            {
+                objectPtr->Dirty = true;
+                objectPtr->ObjectDataDirty = true;
+            }
+        }
     }
 
     void CompactObjects()
@@ -1016,7 +1039,6 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     if (atlasDefrag)
     {
         PROFILE_GPU_CPU_NAMED("Defragment");
-        // TODO: atlas copy maybe could be done in separate pass for each surface if they could alias the same memory chunk (eg. in Vulkan/D3D12)
 
         // Allocate a new atlas textures to copy data from the old ones
 #define INIT_ATLAS_TEXTURE(texture) GPUTexture* defrag##texture = surfaceAtlasData.texture; surfaceAtlasData.texture = RenderTargetPool::Get(surfaceAtlasData.texture->GetDescription()); RENDER_TARGET_POOL_SET_NAME(surfaceAtlasData.texture, "GlobalSurfaceAtlas." #texture);
