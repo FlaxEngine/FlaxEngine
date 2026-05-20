@@ -36,8 +36,10 @@ internal class DirectionGizmo : ContainerControl
     private List<AxisData> _axisData = new List<AxisData>();
     private int _hoveredAxisIndex = -1;
 
+    private bool _mouseDown;
+    private Float2 _mouseDownLocation;
+
     private SpriteHandle _posHandle;
-    private SpriteHandle _negHandle;
 
     private FontReference _fontReference;
 
@@ -110,7 +112,6 @@ internal class DirectionGizmo : ContainerControl
 
         var editor = Editor.Instance;
         _posHandle = editor.Icons.VisjectBoxClosed32;
-        _negHandle = editor.Icons.VisjectBoxOpen32;
 
         _fontReference = new FontReference(Style.Current.FontSmall);
 
@@ -142,7 +143,25 @@ internal class DirectionGizmo : ContainerControl
     public override void OnMouseMove(Float2 location)
     {
         _hoveredAxisIndex = -1;
+        
+        if (_mouseDown)
+        {
+            StartMouseCapture();
+            Cursor = CursorType.Hidden;
 
+            const float sensitivity = 0.125f;
+            Float2 delta = Input.MousePositionDelta;
+            delta *= Mathf.DegreesToRadians;
+            delta *= sensitivity;
+
+            const float orbitRadius = 500f;
+            Quaternion newOrientation = _viewport.ViewOrientation * Quaternion.RotationYawPitchRoll(delta.X , delta.Y, 0f);
+            Vector3 orbitCenter = _viewport.ViewPosition + _viewport.ViewDirection * orbitRadius;
+            _viewport.ViewportCamera.SetArcBallView(newOrientation, orbitCenter, orbitRadius);
+
+            return;
+        }
+         
         // Check which axis is being hovered - check from closest to farthest for proper layering
         for (int i = _spritePositions.Count - 1; i >= 0; i--)
         {
@@ -156,9 +175,27 @@ internal class DirectionGizmo : ContainerControl
         base.OnMouseMove(location);
     }
 
+    public override bool OnMouseDown(Float2 location, MouseButton button)
+    {
+        _mouseDown = true;
+        _mouseDownLocation = location;
+        return true;
+    }
+
     /// <inheritdoc />
     public override bool OnMouseUp(Float2 location, MouseButton button)
     {
+        if (_mouseDown && _mouseDownLocation != location)
+        {
+            _mouseDown = false;
+            EndMouseCapture();
+            Root.MousePosition = PointToParent(Root, _mouseDownLocation);
+            Cursor = CursorType.Default;
+            return true;
+        }
+
+        _mouseDown = false;
+
         if (base.OnMouseUp(location, button))
             return true;
 
@@ -269,7 +306,12 @@ internal class DirectionGizmo : ContainerControl
         // Rebuild sprite positions list for hover detection
         _spritePositions.Clear();
 
-        Render2D.DrawSprite(_posHandle, new Rectangle(0, 0, Size), Color.Black.AlphaMultiplied(_backgroundOpacity));
+        if (IsMouseOver)
+        {
+            Rectangle backgroundRect = new Rectangle(0, 0, Size);
+            Color backgroundColor = Color.DarkGray.AlphaMultiplied(_backgroundOpacity);
+            Render2D.DrawSprite(_posHandle, backgroundRect, backgroundColor);
+        }
 
         // Draw in order from farthest to closest
         for (int i = 0; i < _axisData.Count; i++)
