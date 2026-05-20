@@ -185,16 +185,19 @@ internal class DirectionGizmo : ContainerControl
     /// <inheritdoc />
     public override bool OnMouseUp(Float2 location, MouseButton button)
     {
-        if (_mouseDown && _mouseDownLocation != location)
+        if (_mouseDown)
         {
             _mouseDown = false;
-            EndMouseCapture();
-            Root.MousePosition = PointToParent(Root, _mouseDownLocation);
-            Cursor = CursorType.Default;
-            return true;
+    
+            if (_mouseDownLocation != location)
+            {
+                _mouseDown = false;
+                EndMouseCapture();
+                Root.MousePosition = PointToParent(Root, _mouseDownLocation);
+                Cursor = CursorType.Default;
+                return true;
+            }
         }
-
-        _mouseDown = false;
 
         if (base.OnMouseUp(location, button))
             return true;
