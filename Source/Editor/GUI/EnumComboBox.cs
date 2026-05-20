@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Scripting;
@@ -106,16 +105,6 @@ namespace FlaxEditor.GUI
                 if (_cachedValue == value && _hasValueCached)
                     return;
 
-                // Single value
-                for (int i = 0; i < _entries.Count; i++)
-                {
-                    if (_entries[i].Value == value)
-                    {
-                        SelectedIndex = i;
-                        return;
-                    }
-                }
-
                 if (IsFlags)
                 {
                     // Collection of flags
@@ -132,7 +121,17 @@ namespace FlaxEditor.GUI
                 }
                 else
                 {
-                    SelectedIndex = -1;
+                    // Single value
+                    var toSelect = -1;
+                    for (int i = 0; i < _entries.Count; i++)
+                    {
+                        if (_entries[i].Value == value)
+                        {
+                            toSelect = i;
+                            break;
+                        }
+                    }
+                    SelectedIndex = toSelect;
                 }
             }
         }
@@ -310,43 +309,22 @@ namespace FlaxEditor.GUI
                 }
 
                 // Calculate value that will be set after change
-                long valueAfter = 0;
+                long valueAfter = Value;
                 bool isSelected = _selectedIndices.Contains(index);
                 long selectedValue = entries[index].Value;
-                for (int i = 0; i < _selectedIndices.Count; i++)
+                if (isSelected)
                 {
-                    int selectedIndex = _selectedIndices[i];
-                    if (selectedIndex != index && (isSelected || (entries[selectedIndex].Value & selectedValue) == 0))
-                        valueAfter |= entries[selectedIndex].Value;
+                    // Remove from flags selection
+                    valueAfter &= ~selectedValue;
                 }
-                if (!isSelected)
+                else
+                {
+                    // Add to flags selection
                     valueAfter |= selectedValue;
-
-                // Skip if value won't change
-                if (Value == valueAfter)
-                {
-                    return;
                 }
 
-                // Build new selection
-                for (int i = 0; i < entries.Count; i++)
-                {
-                    if (entries[i].Value == valueAfter)
-                    {
-                        SelectedIndex = i;
-                        return;
-                    }
-                }
-                _selectedIndices.Clear();
-                for (int i = 0; i < entries.Count; i++)
-                {
-                    var e = entries[i].Value;
-                    if (e != 0 && (e & valueAfter) == e)
-                    {
-                        _selectedIndices.Add(i);
-                    }
-                }
-                OnSelectedIndexChanged();
+                // Change value (incl. multiselection for flags)
+                Value = valueAfter;
                 return;
             }
 
