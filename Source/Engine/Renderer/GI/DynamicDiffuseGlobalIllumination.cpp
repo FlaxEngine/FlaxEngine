@@ -373,8 +373,8 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         const Float3 probesDistance = Float3(probesCounts - 1) * cascadeProbesSpacing;
         const float probesDistanceMax = probesDistance.MaxValue();
         const Float3 viewRayHit = CollisionsHelper::LineHitsBox(viewOrigin, viewOrigin + viewDirection * (probesDistanceMax * 2.0f), viewOrigin - probesDistance, viewOrigin + probesDistance);
-        const float viewOriginOffset = viewRayHit.Y * probesDistanceMax * 0.6f;
-        viewOrigin += viewDirection * viewOriginOffset;
+        const float viewOriginOffset = viewRayHit.Y * probesDistanceMax * 0.6f; // Limit max movement
+        viewOrigin += viewDirection * viewOriginOffset * Float3(1, 0.5f, 1); // Reduce vertical movement
         //viewOrigin = Float3::Zero;
         blendOrigins[cascadeIndex] = viewOrigin;
         const float viewOriginSnapping = cascadeProbesSpacing;
