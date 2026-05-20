@@ -352,3 +352,86 @@ float4 PS_Debug(Quad_VS2PS input) : SV_Target
 }
 
 #endif
+
+#ifdef _PS_Overdraw
+
+#define NO_GBUFFER_SAMPLING
+#include "./Flax/GBuffer.hlsl"
+#include "./Flax/Noise.hlsl"
+
+META_CB_BEGIN(2, OverdrawData)
+GBufferData GBuffer;
+float3 CascadeBoundsMin;
+float CascadeBoundsResolution;
+float3 CascadeBoundsMax;
+float Padding30;
+uint4 ChunksBuffer[512/4]; // (MaxVolumeRes/ChunkRes)^3 = (256/32)^3
+META_CB_END
+
+Texture2D Depth : register(t0);
+Texture2D GBuffer0 : register(t1);
+
+float GteOutline(float baseDepth, float2 uv, float2 offset, float2 depthSizeInv)
+{
+    float neighborDepth = SAMPLE_RT_DEPTH(Depth, uv + offset * depthSizeInv);
+    return DEPTH_DIFF(baseDepth, neighborDepth) * 1000.0f;
+}
+
+float4 GetHeatmap(float value)
+{
+    const float4 colors[4] = {
+        float4(0, 0.97f, 0.12f, 1),
+        float4(0.2f, 0.2f, 0.7f, 1),
+        float4(1, 0.57f, 0, 1),
+        float4(1, 0, 0, 1)
+    };
+    const float weights[4] = { 0.0f, 0.5f, 0.8f, 1.0f };
+
+    float4 color;
+    if (value < weights[1])
+        color = lerp(colors[0], colors[1], value / weights[1]);
+    else if (value < weights[2])
+        color = lerp(colors[1], colors[2], (value - weights[1]) / (weights[2] - weights[1]));
+    else
+        color = lerp(colors[2], colors[3], (value - weights[2]) / (weights[3] - weights[2]));
+    return color;
+}
+
+// Pixel shader for Global SDF overdraw drawing
+META_PS(true, FEATURE_LEVEL_SM5)
+float4 PS_Overdraw(Quad_VS2PS input) : SV_Target
+{
+    // Use over-exposed diffuse as a base for scene identification
+    float3 diffuse = SAMPLE_RT(GBuffer0, input.TexCoord).rgb;
+    diffuse = saturate(Luminance(diffuse.rgb).xxx * 0.5f + 0.6f);
+
+    // Make depth-based outlines
+    float baseDepth = SAMPLE_RT_DEPTH(Depth, input.TexCoord);
+    float2 depthSize;
+    Depth.GetDimensions(depthSize.x, depthSize.y);
+    float2 depthSizeInv = 1.0f / depthSize;
+    float outline = GteOutline(baseDepth, input.TexCoord, float2(1, 0), depthSizeInv);
+    outline += GteOutline(baseDepth, input.TexCoord, float2(0, 1), depthSizeInv);
+    outline += GteOutline(baseDepth, input.TexCoord, float2(-1, 0), depthSizeInv);
+    outline += GteOutline(baseDepth, input.TexCoord, float2(0, -1), depthSizeInv);
+    outline = 1 - saturate(outline);
+
+    // Get position inside chunk used by the pixel position
+    float3 worldPos = GetWorldPos(GBuffer, input.TexCoord, baseDepth);
+    worldPos += rand3dTo3d(float3(input.TexCoord, diffuse.x)) * 0.1f; // Noise a bit to reduce z-fighting at chunk borders
+    float3 cascadeBoundsSize = CascadeBoundsMax - CascadeBoundsMin;
+    float3 cascadePos = (worldPos - CascadeBoundsMin) / cascadeBoundsSize;
+    cascadePos = floor(cascadePos * CascadeBoundsResolution) / CascadeBoundsResolution;
+    if (any(cascadePos < 0) || any(cascadePos >= 1)) return float4(0, 0, 0, 0); // Skip pixels outside the current cascade
+    //return float4(cascadePos, 1);
+
+    // Read complexity of the Global SDF rasterization at the pixel position
+    cascadePos *= CascadeBoundsResolution;
+    uint i = (uint)(cascadePos.z * CascadeBoundsResolution * CascadeBoundsResolution + cascadePos.y * CascadeBoundsResolution + cascadePos.x);
+    float complexity = (float)ChunksBuffer[i / 4][i % 4] / 255.0f;
+
+    // Mix complexity with depth/diffuse to improve scene readability
+    return float4(diffuse * outline, 1) * GetHeatmap(complexity);
+}
+
+#endif

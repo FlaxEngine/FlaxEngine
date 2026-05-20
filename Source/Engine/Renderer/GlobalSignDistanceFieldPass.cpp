@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "GlobalSignDistanceFieldPass.h"
+#include "GBufferPass.h"
 #include "RenderList.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Matrix3x4.h"
@@ -81,6 +82,15 @@ GPU_CB_STRUCT(ModelsRasterizeData {
     uint32 MipMipOffsetX;
     });
 
+GPU_CB_STRUCT(OverdrawData {
+    ShaderGBufferData GBuffer;
+    Float3 CascadeBoundsMin;
+    float CascadeBoundsResolution;
+    Float3 CascadeBoundsMax;
+    float Padding30;
+    uint32 ChunksBuffer[512]; // (MaxVolumeRes/ChunkRes)^3 = (256/32)^3
+    });
+
 struct RasterizeChunk
 {
     uint16 ModelsCount;
@@ -108,6 +118,7 @@ struct RasterizeObject
 };
 
 constexpr int32 RasterizeChunkKeyHashResolution = GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
+#define KEY_GET_HASH(key) key.Coord.Z * (RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution) + key.Coord.Y * RasterizeChunkKeyHashResolution + key.Coord.X
 
 struct RasterizeChunkKey
 {
@@ -115,6 +126,7 @@ struct RasterizeChunkKey
     uint32 Layer;
     Int3 Coord;
 
+    // Moves to the next layer and permutates the hash
     FORCE_INLINE void NextLayer()
     {
         Layer++;
@@ -152,6 +164,7 @@ struct CascadeData
 
     // Cache
     Dictionary<RasterizeChunkKey, RasterizeChunk> Chunks;
+    Dictionary<RasterizeChunkKey, RasterizeChunk> DebugOverdrawChunks;
     Array<RasterizeObject> RasterizeObjects;
     Array<byte> ObjectsData;
     Array<GPUTextureView*> ObjectsTextures;
@@ -182,7 +195,7 @@ struct CascadeData
             {
                 for (key.Coord.X = objectChunkMin.X; key.Coord.X <= objectChunkMax.X; key.Coord.X++)
                 {
-                    key.Hash = key.Coord.Z * (RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution) + key.Coord.Y * RasterizeChunkKeyHashResolution + key.Coord.X;
+                    key.Hash = KEY_GET_HASH(key);
                     StaticChunks.Remove(key);
                 }
             }
@@ -195,6 +208,7 @@ class GlobalSignDistanceFieldCustomBuffer : public RenderBuffers::CustomBuffer, 
 public:
     int32 FrameIndex = 0;
     int32 Resolution = 0;
+    bool DebugOverdraw = false;
     GPUTexture* Texture = nullptr;
     GPUTexture* TextureMip = nullptr;
     Vector3 Origin = Vector3::Zero;
@@ -308,6 +322,7 @@ public:
             FrameIndex = 0;
         AsyncRenderContext = renderContext;
         AsyncRenderContext.View.Pass = DrawPass::GlobalSDF;
+        DebugOverdraw = renderContext.View.Mode == ViewMode::GlobalSDFOverdraw;
         const bool useCache = !reset && !GLOBAL_SDF_DEBUG_FORCE_REDRAW;
         static_assert(GLOBAL_SDF_RASTERIZE_CHUNK_SIZE % GLOBAL_SDF_RASTERIZE_GROUP_SIZE == 0, "Invalid chunk size for Global SDF rasterization group size.");
         const int32 rasterizeChunks = Math::CeilToInt((float)resolution / (float)GLOBAL_SDF_RASTERIZE_CHUNK_SIZE);
@@ -472,6 +487,8 @@ void GlobalSignDistanceFieldCustomBuffer::UpdateCascadeChunks(CascadeData& casca
     PROFILE_CPU();
 
     // Update static chunks
+    if (DebugOverdraw)
+        cascade.DebugOverdrawChunks = cascade.Chunks;
     for (auto it = cascade.Chunks.Begin(); it.IsNotEnd(); ++it)
     {
         auto& e = *it;
@@ -642,12 +659,21 @@ bool GlobalSignDistanceFieldPass::setupResources()
         _objectsBuffer = New<DynamicStructuredBuffer>(0, (uint32)sizeof(ObjectRasterizeData), false, TEXT("GlobalSDF.ObjectsBuffer"));
 
     // Create pipeline state
+    // TODO: don't compile those shaders in Release builds (and skip PSOs)
     GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
     if (!_psDebug)
     {
         _psDebug = device->CreatePipelineState();
         psDesc.PS = shader->GetPS("PS_Debug");
         if (_psDebug->Init(psDesc))
+            return true;
+    }
+    if (!_psOverdraw)
+    {
+        _psOverdraw = device->CreatePipelineState();
+        psDesc.PS = shader->GetPS("PS_Overdraw");
+        psDesc.BlendMode = BlendingMode::AlphaBlend;
+        if (_psOverdraw->Init(psDesc))
             return true;
     }
 
@@ -659,6 +685,7 @@ bool GlobalSignDistanceFieldPass::setupResources()
 void GlobalSignDistanceFieldPass::OnShaderReloading(Asset* obj)
 {
     SAFE_DELETE_GPU_RESOURCE(_psDebug);
+    SAFE_DELETE_GPU_RESOURCE(_psOverdraw);
     _csRasterizeModel0 = nullptr;
     _csRasterizeModel1 = nullptr;
     _csRasterizeHeightfield = nullptr;
@@ -1094,12 +1121,80 @@ void GlobalSignDistanceFieldPass::RenderDebug(RenderContext& renderContext, GPUC
         context->UpdateCB(_cb0, &data);
         context->BindCB(0, _cb0);
     }
-    context->BindSR(0, bindingData.Texture ? bindingData.Texture->ViewVolume() : nullptr);
-    context->BindSR(1, bindingData.TextureMip ? bindingData.TextureMip->ViewVolume() : nullptr);
-    context->SetState(_psDebug);
     context->SetRenderTarget(output->View());
     context->SetViewportAndScissors(outputSize.X, outputSize.Y);
-    context->DrawFullscreenTriangle();
+    if (renderContext.View.Mode == ViewMode::GlobalSDFOverdraw)
+    {
+        auto& sdfData = *renderContext.Buffers->GetCustomBuffer<GlobalSignDistanceFieldCustomBuffer>(TEXT("GlobalSignDistanceField"));
+        int32 chunkRes = sdfData.Resolution / GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
+        OverdrawData data;
+        GBufferPass::SetInputs(renderContext.View, data.GBuffer);
+        GPUConstantBuffer* cb2 = _shader->GetShader()->GetCB(2);
+        context->BindCB(2, cb2);
+        context->BindSR(0, renderContext.Buffers->DepthBuffer);
+        context->BindSR(1, renderContext.Buffers->GBuffer0);
+        context->SetState(_psOverdraw);
+        context->Clear(output->View(), Color::Transparent);
+
+        // Rasterize all cascades to show overdraw
+        for (int32 cascadeIndex = sdfData.Cascades.Count() - 1; cascadeIndex >= 0; cascadeIndex--)
+        {
+            auto& cascade = sdfData.Cascades[cascadeIndex];
+
+            // Scale complexity down for far cascades as they are updated less often
+            float cascadeScale = Math::Max(1.0f - (float)cascadeIndex / (float)sdfData.Cascades.Count(), 0.3f);
+
+            // Provide per-chunk overdraw based on objects count and complexity
+            RasterizeChunkKey key;
+            for (key.Coord.Z = 0; key.Coord.Z < chunkRes; key.Coord.Z++)
+            {
+                for (key.Coord.Y = 0; key.Coord.Y < chunkRes; key.Coord.Y++)
+                {
+                    for (key.Coord.X = 0; key.Coord.X < chunkRes; key.Coord.X++)
+                    {
+                        int32 models = 0, heightfields = 0, dynamic = 0;
+                        key.Layer = 0;
+                        key.Hash = KEY_GET_HASH(key);
+                        while (auto* chunk = cascade.DebugOverdrawChunks.TryGet(key))
+                        {
+                            models += chunk->ModelsCount;
+                            heightfields += chunk->HeightfieldsCount;
+                            dynamic += chunk->Dynamic ? 1 : 0;
+                            key.NextLayer();
+                        }
+
+                        // Calculate complexity of the chunk that is related to amount of compute shader dispatches and data amount to process
+                        uint32 complexity = 0;
+                        complexity = (key.Layer - 1) * 30;
+                        complexity += (models + heightfields) * 5;
+                        complexity += dynamic * 50;
+                        if (heightfields > 1)
+                            complexity += 20;
+                        if (models > 1)
+                            complexity += 20;
+                        complexity = (uint32)(cascadeScale * complexity);
+
+                        int32 i = key.Coord.Z * chunkRes * chunkRes + key.Coord.Y * chunkRes + key.Coord.X;
+                        data.ChunksBuffer[i] = Math::Min<uint32>(complexity, MAX_uint8);
+                    }
+                }
+            }
+
+            data.CascadeBoundsMin = (Float3)cascade.Bounds.Minimum;
+            data.CascadeBoundsMax = (Float3)cascade.Bounds.Maximum;
+            data.CascadeBoundsResolution = (float)sdfData.Resolution / GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
+            context->UpdateCB(cb2, &data);
+            context->DrawFullscreenTriangle();
+        }
+        context->UnBindCB(2);
+    }
+    else
+    {
+        context->BindSR(0, bindingData.Texture ? bindingData.Texture->ViewVolume() : nullptr);
+        context->BindSR(1, bindingData.TextureMip ? bindingData.TextureMip->ViewVolume() : nullptr);
+        context->SetState(_psDebug);
+        context->DrawFullscreenTriangle();
+    }
 }
 
 void GlobalSignDistanceFieldPass::GetCullingData(BoundingBox& bounds) const
@@ -1144,7 +1239,7 @@ void GlobalSignDistanceFieldPass::RasterizeModelSDF(Actor* actor, const ModelBas
                 for (key.Coord.X = objectChunkMin.X; key.Coord.X <= objectChunkMax.X; key.Coord.X++)
                 {
                     key.Layer = 0;
-                    key.Hash = key.Coord.Z * (RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution) + key.Coord.Y * RasterizeChunkKeyHashResolution + key.Coord.X;
+                    key.Hash = KEY_GET_HASH(key);
                     RasterizeChunk* chunk = &chunks[key];
                     chunk->Dynamic |= dynamic;
 
@@ -1205,7 +1300,7 @@ void GlobalSignDistanceFieldPass::RasterizeHeightfield(Actor* actor, GPUTexture*
                 for (key.Coord.X = objectChunkMin.X; key.Coord.X <= objectChunkMax.X; key.Coord.X++)
                 {
                     key.Layer = 0;
-                    key.Hash = key.Coord.Z * (RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution) + key.Coord.Y * RasterizeChunkKeyHashResolution + key.Coord.X;
+                    key.Hash = KEY_GET_HASH(key);
                     RasterizeChunk* chunk = &chunks[key];
                     chunk->Dynamic |= dynamic;
 

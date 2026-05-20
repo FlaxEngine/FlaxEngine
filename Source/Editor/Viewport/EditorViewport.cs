@@ -2112,6 +2112,7 @@ namespace FlaxEditor.Viewport
                 new ViewModeOptions(ViewMode.LODPreview, "LOD Preview", Editor.Instance.Options.Options.Input.LODPreview),
                 new ViewModeOptions(ViewMode.MaterialComplexity, "Material Complexity", Editor.Instance.Options.Options.Input.MaterialComplexity),
                 new ViewModeOptions(ViewMode.QuadOverdraw, "Quad Overdraw", Editor.Instance.Options.Options.Input.QuadOverdraw),
+                new ViewModeOptions(ViewMode.GlobalSDFOverdraw, "Global SDF Overdraw"),
             }),
             new ViewModeOptions(ViewMode.GlobalSDF, "Global SDF", Editor.Instance.Options.Options.Input.GloablSDF),
             new ViewModeOptions(ViewMode.GlobalSurfaceAtlas, "Global Surface Atlas", Editor.Instance.Options.Options.Input.GlobalSurfaceAtlas),

@@ -923,6 +923,7 @@ void GlobalSurfaceAtlasPass::OnCollectDrawCalls(RenderContextBatch& renderContex
         return;
     if (GBufferPass::IsDebugView(renderContext.View.Mode) ||
         renderContext.View.Mode == ViewMode::GlobalSDF ||
+        renderContext.View.Mode == ViewMode::GlobalSDFOverdraw ||
         renderContext.View.Mode == ViewMode::QuadOverdraw ||
         renderContext.View.Mode == ViewMode::MaterialComplexity)
         return;

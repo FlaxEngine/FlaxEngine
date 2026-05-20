@@ -404,6 +404,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
                 (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::GI) && renderContext.List->Settings.GlobalIllumination.Mode == GlobalIlluminationMode::DDGI);
         setup.UseGlobalSDF = (graphicsSettings->EnableGlobalSDF && EnumHasAnyFlags(view.Flags, ViewFlags::GlobalSDF)) ||
                 renderContext.View.Mode == ViewMode::GlobalSDF ||
+                renderContext.View.Mode == ViewMode::GlobalSDFOverdraw ||
                 setup.UseGlobalSurfaceAtlas;
         setup.UseVolumetricFog = (view.Flags & ViewFlags::Fog) != ViewFlags::None;
 
@@ -424,6 +425,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         case ViewMode::ShadingModel:
         case ViewMode::Reflections:
         case ViewMode::GlobalSDF:
+        case ViewMode::GlobalSDFOverdraw:
         case ViewMode::GlobalSurfaceAtlas:
         case ViewMode::LightmapUVsDensity:
         case ViewMode::MaterialComplexity:
@@ -460,6 +462,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         case ViewMode::LightmapUVsDensity:
         case ViewMode::GlobalSurfaceAtlas:
         case ViewMode::GlobalSDF:
+        case ViewMode::GlobalSDFOverdraw:
         case ViewMode::MaterialComplexity:
         case ViewMode::VertexColors:
             drawShadows = false;
@@ -596,7 +599,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     GBufferPass::Instance()->Fill(renderContext, lightBuffer);
 
     // Debug drawing
-    if (renderContext.View.Mode == ViewMode::GlobalSDF)
+    if (renderContext.View.Mode == ViewMode::GlobalSDF || renderContext.View.Mode == ViewMode::GlobalSDFOverdraw)
         GlobalSignDistanceFieldPass::Instance()->RenderDebug(renderContext, context, lightBuffer);
     else if (renderContext.View.Mode == ViewMode::GlobalSurfaceAtlas)
         GlobalSurfaceAtlasPass::Instance()->RenderDebug(renderContext, context, lightBuffer);
@@ -604,7 +607,8 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         renderContext.View.Mode == ViewMode::VertexColors ||
         renderContext.View.Mode == ViewMode::LightmapUVsDensity ||
         renderContext.View.Mode == ViewMode::GlobalSurfaceAtlas ||
-        renderContext.View.Mode == ViewMode::GlobalSDF)
+        renderContext.View.Mode == ViewMode::GlobalSDF ||
+        renderContext.View.Mode == ViewMode::GlobalSDFOverdraw)
     {
         context->ResetRenderTarget();
         context->SetRenderTarget(task->GetOutputView());

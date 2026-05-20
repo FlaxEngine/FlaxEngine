@@ -1005,6 +1005,11 @@ API_ENUM() enum class ViewMode
     /// Draw Global Illumination debug preview (eg. irradiance probes).
     /// </summary>
     GlobalIllumination = 26,
+
+    /// <summary>
+    /// Draw Global Sign Distant Field (SDF) overdraw to visualize performance of SDF tracing.
+    /// </summary>
+    GlobalSDFOverdraw = 27,
 };
 
 /// <summary>

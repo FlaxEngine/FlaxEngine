@@ -34,6 +34,7 @@ private:
     bool _supported = false;
     AssetReference<Shader> _shader;
     GPUPipelineState* _psDebug = nullptr;
+    GPUPipelineState* _psOverdraw = nullptr;
     GPUShaderProgramCS* _csRasterizeModel0 = nullptr;
     GPUShaderProgramCS* _csRasterizeModel1 = nullptr;
     GPUShaderProgramCS* _csRasterizeHeightfield = nullptr;
