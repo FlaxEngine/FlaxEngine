@@ -146,7 +146,7 @@ internal class DirectionGizmo : ContainerControl
         
         if (_mouseDown)
         {
-            StartMouseCapture();
+            StartMouseCapture(true);
             Cursor = CursorType.Hidden;
 
             const float sensitivity = 0.125f;
