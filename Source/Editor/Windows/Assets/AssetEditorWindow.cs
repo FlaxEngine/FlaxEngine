@@ -480,8 +480,7 @@ namespace FlaxEditor.Windows.Assets
         /// <returns>True if failed, otherwise false.</returns>
         protected virtual bool SaveToOriginal()
         {
-            // Wait until temporary asset file be fully loaded
-            if (_asset.WaitForLoaded())
+            if (_asset.LastLoadFailed)
             {
                 Editor.LogError(string.Format("Cannot save asset {0}. Wait for temporary asset loaded failed.", _item.Path));
                 return true;
@@ -513,12 +512,6 @@ namespace FlaxEditor.Windows.Assets
             {
                 Editor.LogError(string.Format("Cannot copy asset \'{0}\' to \'{1}\'", sourcePath, destinationPath));
                 return true;
-            }
-
-            // Reload original asset
-            if (originalAsset)
-            {
-                originalAsset.Reload();
             }
 
             // Refresh thumbnail
