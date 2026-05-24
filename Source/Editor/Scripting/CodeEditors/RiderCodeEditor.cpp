@@ -14,9 +14,6 @@
 
 #if PLATFORM_WINDOWS
 #include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
-#elif PLATFORM_MAC
-#include "Engine/Platform/Apple/AppleUtils.h"
-#include <AppKit/AppKit.h>
 #endif
 
 namespace
@@ -71,14 +68,10 @@ namespace
         if (!launcherPath.HasChars() || !FileSystem::FileExists(exePath))
             return;
 
-        String installPath = launchOverridePath != String::Empty ? launchOverridePath : exePath;
-        StringUtils::PathRemoveRelativeParts(installPath);
-        for (RiderInstallation* installation : *installations)
-        {
-            if (installation->path == installPath)
-                return;
-        }
-        installations->Add(New<RiderInstallation>(installPath, versionMember->value.GetText()));
+        if (launchOverridePath != String::Empty)
+            installations->Add(New<RiderInstallation>(launchOverridePath, versionMember->value.GetText()));
+        else
+            installations->Add(New<RiderInstallation>(exePath, versionMember->value.GetText()));
     }
 
 #if PLATFORM_WINDOWS
@@ -228,29 +221,17 @@ void RiderCodeEditor::FindEditors(Array<CodeEditor*>* output)
     String applicationSupportFolder;
     FileSystem::GetSpecialFolderPath(SpecialFolder::ProgramData, applicationSupportFolder);
 
-    NSURL* appURL = [[NSWorkspace sharedWorkspace] URLForApplicationWithBundleIdentifier:@"com.jetbrains.rider"];
-    if (appURL != nullptr)
-    {
-        const String appPath = AppleUtils::ToString((CFStringRef)[appURL path]);
-        SearchDirectory(&installations, appPath / TEXT("Contents/Resources"), appPath);
-    }
-
     Array<String> subMacDirectories;
     FileSystem::GetChildDirectories(subMacDirectories, applicationSupportFolder / TEXT("JetBrains/Toolbox/apps/Rider/ch-0/"));
     FileSystem::GetChildDirectories(subMacDirectories, applicationSupportFolder / TEXT("JetBrains/Toolbox/apps/Rider/ch-1/"));
     for (const String& directory : subMacDirectories)
     {
-        String riderAppPath = directory / TEXT("Rider.app");
-        SearchDirectory(&installations, riderAppPath / TEXT("Contents/Resources"), riderAppPath);
+        String riderAppDirectory = directory / TEXT("Rider.app/Contents/Resources");
+        SearchDirectory(&installations, riderAppDirectory);
     }
 
     // Check the local installer version
-    SearchDirectory(&installations, TEXT("/Applications/Rider.app/Contents/Resources"), TEXT("/Applications/Rider.app"));
-
-    String userFolder;
-    FileSystem::GetSpecialFolderPath(SpecialFolder::Documents, userFolder);
-    String riderAppPath = userFolder / TEXT("../Applications/Rider.app");
-    SearchDirectory(&installations, riderAppPath / TEXT("Contents/Resources"), riderAppPath);
+    SearchDirectory(&installations, TEXT("/Applications/Rider.app/Contents/Resources"));
 #endif
 
     for (const String& directory : subDirectories)
