@@ -1009,6 +1009,10 @@ void MacWindow::Close(ClosingReason reason)
 {
     const BOOL wasKey = _window && [(NSWindow*)_window isKeyWindow];
     WindowBase::Close(reason);
+
+    // Closing can be cancelled by managed Window.Closing handlers.
+    if (!IsClosed())
+        return;
     
     if (NSWindow* window = (NSWindow*)_window)
     {
