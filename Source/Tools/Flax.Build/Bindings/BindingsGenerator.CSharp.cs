@@ -108,7 +108,7 @@ namespace Flax.Build.Bindings
                 if (attribute && valueType != null && !valueType.IsArray)
                 {
                     //if (valueType.Type == "")
-                    //ScriptingObjectReference
+                    //ScriptingObjectReference, ScriptingObjectInterfaceReference, SoftObjectInterfaceReference
                     apiType = FindApiTypeInfo(buildData, valueType, caller);
 
                     // Object reference
@@ -350,6 +350,10 @@ namespace Flax.Build.Bindings
             if (CSharpNativeToManagedDefault.TryGetValue(typeInfo.Type, out result))
                 return result;
 
+            // Interface reference property
+            if (typeInfo.IsInterfaceRef)
+                return marshalling ? "IntPtr" : GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[0], caller, marshalling);
+
             // Object reference property
             if (typeInfo.IsObjectRef)
                 return GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[0], caller, marshalling);
@@ -556,6 +560,10 @@ namespace Flax.Build.Bindings
                 }
                 return string.Empty;
             default:
+                // Interface reference property
+                if (typeInfo.IsInterfaceRef)
+                    return string.Format("FlaxEngine.Object.GetUnmanagedInterface({{0}}, typeof({0}))", GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[0], caller));
+
                 var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
                 if (apiType != null)
                 {
@@ -778,8 +786,16 @@ namespace Flax.Build.Bindings
                 }
             }
 #endif
+            const string interfaceResultName = "__interfaceResult";
+
+            var returnInterfaceRef = !functionInfo.Glue.UseReferenceForResult && functionInfo.ReturnType.IsInterfaceRef;
+
             if (functionInfo.Glue.UseReferenceForResult)
             {
+            }
+            else if (returnInterfaceRef)
+            {
+                contents.Append("var ").Append(interfaceResultName).Append(" = ");
             }
             else if (!functionInfo.ReturnType.IsVoid)
             {
@@ -851,6 +867,11 @@ namespace Flax.Build.Bindings
             }
 
             contents.Append(')');
+            if (returnInterfaceRef)
+            {
+                var managedType = GenerateCSharpNativeToManaged(buildData, functionInfo.ReturnType.GenericArgs[0], caller);
+                contents.Append("; return ").Append(interfaceResultName).Append(" != IntPtr.Zero ? Unsafe.As<").Append(managedType).Append(">(ManagedHandle.FromIntPtr(").Append(interfaceResultName).Append(").Target) : null");
+            }
             if ((functionInfo.ReturnType.Type == "Array" || functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "DataContainer") && functionInfo.ReturnType.GenericArgs != null)
             {
                 // Convert array that uses different type for marshalling
@@ -987,6 +1008,12 @@ namespace Flax.Build.Bindings
         private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, MemberInfo memberInfo, bool useUnmanaged, string defaultValue = null, TypeInfo defaultValueType = null)
         {
             GenerateCSharpAttributes(buildData, contents, indent, apiTypeInfo, memberInfo.Attributes, memberInfo.Comment, true, useUnmanaged, defaultValue, memberInfo.DeprecatedMessage, defaultValueType);
+            var memberType = (memberInfo as FieldInfo)?.Type ?? (memberInfo as PropertyInfo)?.Type;
+            if (memberType != null && memberType.IsInterfaceRef)
+            {
+                var attribute = memberType.Type == "SoftObjectInterfaceReference" ? "SoftObjectInterfaceReference" : "ScriptingObjectInterfaceReference";
+                contents.Append(indent).Append("[FlaxEngine.").Append(attribute).AppendLine("]");
+            }
         }
 
         private static bool GenerateCSharpStructureUseDefaultInitialize(BuildData buildData, StructureInfo structureInfo)

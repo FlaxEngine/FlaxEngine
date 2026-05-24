@@ -167,6 +167,8 @@ namespace Flax.Build.Bindings
                 return $"Variant(StringView({value}))";
             if (typeInfo.Type == "StringAnsi")
                 return $"Variant(StringAnsiView({value}))";
+            if (typeInfo.IsInterfaceRef)
+                return $"Variant({value}.GetObject())";
             if (typeInfo.IsObjectRef)
                 return $"Variant({value}.Get())";
             if (typeInfo.Type == "SoftTypeReference")
@@ -307,6 +309,8 @@ namespace Flax.Build.Bindings
                 return $"((StringView){value}).GetText()"; // (StringView)Variant, if not empty, is guaranteed to point to a null-terminated buffer.
             if (typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "SoftObjectReference")
                 return $"ScriptingObject::Cast<{typeInfo.GenericArgs[0].Type}>((ScriptingObject*){value})";
+            if (typeInfo.IsInterfaceRef)
+                return $"ScriptingObject::ToInterface<{typeInfo.GenericArgs[0].Type}>((ScriptingObject*){value})";
             if (typeInfo.IsObjectRef)
                 return $"ScriptingObject::Cast<{typeInfo.GenericArgs[0].Type}>((Asset*){value})";
             if (typeInfo.Type == "SoftTypeReference")
@@ -797,6 +801,19 @@ namespace Flax.Build.Bindings
                 type = "MObject*";
                 return "MUtils::ToNative({0})";
             default:
+                // Interface reference property
+                if (typeInfo.IsInterfaceRef)
+                {
+                    if (CppNonPodTypesConvertingGeneration)
+                    {
+                        type = "MObject*";
+                        return "ScriptingObject::ToInterface<" + typeInfo.GenericArgs[0].Type + ">(ScriptingObject::ToNative({0}))";
+                    }
+
+                    type = typeInfo.GenericArgs[0].Type + '*';
+                    return string.Empty;
+                }
+
                 // Object reference property
                 if (typeInfo.IsObjectRef)
                 {
