@@ -656,8 +656,8 @@ namespace Flax.Build.Bindings
                 {
                     CppIncludeFiles.Add("Engine/Scripting/Internal/ManagedDictionary.h");
                     type = "MObject*";
-                    var keyClass = GenerateCppGetNativeType(buildData, typeInfo.GenericArgs[0], caller, functionInfo);
-                    var valueClass = GenerateCppGetNativeType(buildData, typeInfo.GenericArgs[1], caller, functionInfo);
+                    var keyClass = typeInfo.GenericArgs[0].IsInterfaceRef ? "MCore::TypeCache::Object->GetType()" : GenerateCppGetNativeType(buildData, typeInfo.GenericArgs[0], caller, functionInfo);
+                    var valueClass = typeInfo.GenericArgs[1].IsInterfaceRef ? "MCore::TypeCache::Object->GetType()" : GenerateCppGetNativeType(buildData, typeInfo.GenericArgs[1], caller, functionInfo);
                     return "ManagedDictionary::ToManaged({0}, " + keyClass + ", " + valueClass + ")";
                 }
 
@@ -1023,8 +1023,8 @@ namespace Flax.Build.Bindings
             if (typeInfo.Type == "Dictionary" && typeInfo.GenericArgs != null)
             {
                 CppIncludeFiles.Add("Engine/Scripting/Internal/ManagedDictionary.h");
-                var keyClass = GenerateCppGetNativeType(buildData, typeInfo.GenericArgs[0], caller);
-                var valueClass = GenerateCppGetNativeType(buildData, typeInfo.GenericArgs[1], caller);
+                var keyClass = typeInfo.GenericArgs[0].IsInterfaceRef ? "MCore::TypeCache::Object->GetType()" : GenerateCppGetNativeType(buildData, typeInfo.GenericArgs[0], caller);
+                var valueClass = typeInfo.GenericArgs[1].IsInterfaceRef ? "MCore::TypeCache::Object->GetType()" : GenerateCppGetNativeType(buildData, typeInfo.GenericArgs[1], caller);
                 return $"ManagedDictionary::ToManaged({value}, {keyClass}, {valueClass})";
             }
 

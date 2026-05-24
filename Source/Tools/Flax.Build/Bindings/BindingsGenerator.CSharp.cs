@@ -375,12 +375,16 @@ namespace Flax.Build.Bindings
                     if (arrayApiType != null && arrayApiType.MarshalAs != null)
                         arrayTypeInfo = arrayApiType.MarshalAs;
                 }
-                return GenerateCSharpNativeToManaged(buildData, arrayTypeInfo, caller) + "[]";
+                return GenerateCSharpNativeToManaged(buildData, arrayTypeInfo, caller, marshalling) + "[]";
             }
 
             // Dictionary
             if (typeInfo.Type == "Dictionary" && typeInfo.GenericArgs != null)
-                return string.Format("System.Collections.Generic.Dictionary<{0}, {1}>", GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[0], caller, marshalling), GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[1], caller, marshalling));
+            {
+                var keyType = marshalling && typeInfo.GenericArgs[0].IsInterfaceRef ? "object" : GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[0], caller, marshalling);
+                var valueType = marshalling && typeInfo.GenericArgs[1].IsInterfaceRef ? "object" : GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[1], caller, marshalling);
+                return string.Format("System.Collections.Generic.Dictionary<{0}, {1}>", keyType, valueType);
+            }
 
             // HashSet
             if (typeInfo.Type == "HashSet" && typeInfo.GenericArgs != null)
@@ -554,9 +558,19 @@ namespace Flax.Build.Bindings
                 {
                     // Convert array that uses different type for marshalling
                     var arrayTypeInfo = typeInfo.GenericArgs[0];
+                    if (arrayTypeInfo.IsInterfaceRef)
+                        return "{0} != null ? FlaxEngine.Interop.NativeInterop.ManagedArrayToGCHandleArray({0}) : null";
                     var arrayApiType = FindApiTypeInfo(buildData, arrayTypeInfo, caller);
                     if (arrayApiType != null && arrayApiType.MarshalAs != null)
                         return $"{{0}}.ConvertArray(x => ({GenerateCSharpNativeToManaged(buildData, arrayApiType.MarshalAs, caller)})x)";
+                }
+                return string.Empty;
+            case "Dictionary":
+                if (typeInfo.GenericArgs != null && typeInfo.GenericArgs.Count == 2 && (typeInfo.GenericArgs[0].IsInterfaceRef || typeInfo.GenericArgs[1].IsInterfaceRef))
+                {
+                    var keyConverter = typeInfo.GenericArgs[0].IsInterfaceRef ? "(object)x.Key" : "x.Key";
+                    var valueConverter = typeInfo.GenericArgs[1].IsInterfaceRef ? "(object)x.Value" : "x.Value";
+                    return $"{{0}} != null ? System.Linq.Enumerable.ToDictionary({{0}}, x => {keyConverter}, x => {valueConverter}) : null";
                 }
                 return string.Empty;
             default:
@@ -787,8 +801,20 @@ namespace Flax.Build.Bindings
             }
 #endif
             const string interfaceResultName = "__interfaceResult";
+            const string interfaceArrayResultName = "__interfaceArrayResult";
+            const string interfaceDictionaryResultName = "__interfaceDictionaryResult";
 
             var returnInterfaceRef = !functionInfo.Glue.UseReferenceForResult && functionInfo.ReturnType.IsInterfaceRef;
+            var returnInterfaceRefArray = !functionInfo.Glue.UseReferenceForResult &&
+                                          (functionInfo.ReturnType.Type == "Array" || functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "DataContainer") &&
+                                          functionInfo.ReturnType.GenericArgs != null &&
+                                          functionInfo.ReturnType.GenericArgs.Count != 0 &&
+                                          functionInfo.ReturnType.GenericArgs[0].IsInterfaceRef;
+            var returnInterfaceRefDictionary = !functionInfo.Glue.UseReferenceForResult &&
+                                               functionInfo.ReturnType.Type == "Dictionary" &&
+                                               functionInfo.ReturnType.GenericArgs != null &&
+                                               functionInfo.ReturnType.GenericArgs.Count == 2 &&
+                                               (functionInfo.ReturnType.GenericArgs[0].IsInterfaceRef || functionInfo.ReturnType.GenericArgs[1].IsInterfaceRef);
 
             if (functionInfo.Glue.UseReferenceForResult)
             {
@@ -796,6 +822,14 @@ namespace Flax.Build.Bindings
             else if (returnInterfaceRef)
             {
                 contents.Append("var ").Append(interfaceResultName).Append(" = ");
+            }
+            else if (returnInterfaceRefArray)
+            {
+                contents.Append("var ").Append(interfaceArrayResultName).Append(" = ");
+            }
+            else if (returnInterfaceRefDictionary)
+            {
+                contents.Append("var ").Append(interfaceDictionaryResultName).Append(" = ");
             }
             else if (!functionInfo.ReturnType.IsVoid)
             {
@@ -872,7 +906,20 @@ namespace Flax.Build.Bindings
                 var managedType = GenerateCSharpNativeToManaged(buildData, functionInfo.ReturnType.GenericArgs[0], caller);
                 contents.Append("; return ").Append(interfaceResultName).Append(" != IntPtr.Zero ? Unsafe.As<").Append(managedType).Append(">(ManagedHandle.FromIntPtr(").Append(interfaceResultName).Append(").Target) : null");
             }
-            if ((functionInfo.ReturnType.Type == "Array" || functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "DataContainer") && functionInfo.ReturnType.GenericArgs != null)
+            else if (returnInterfaceRefArray)
+            {
+                var managedType = GenerateCSharpNativeToManaged(buildData, functionInfo.ReturnType.GenericArgs[0].GenericArgs[0], caller);
+                contents.Append("; return ").Append(interfaceArrayResultName).Append("?.ConvertArray(x => x != IntPtr.Zero ? Unsafe.As<").Append(managedType).Append(">(ManagedHandle.FromIntPtr(x).Target) : null)");
+            }
+            else if (returnInterfaceRefDictionary)
+            {
+                var keyTypeInfo = functionInfo.ReturnType.GenericArgs[0];
+                var valueTypeInfo = functionInfo.ReturnType.GenericArgs[1];
+                var keyConverter = keyTypeInfo.IsInterfaceRef ? $"x.Key != null ? Unsafe.As<{GenerateCSharpNativeToManaged(buildData, keyTypeInfo.GenericArgs[0], caller)}>(x.Key) : null" : "x.Key";
+                var valueConverter = valueTypeInfo.IsInterfaceRef ? $"x.Value != null ? Unsafe.As<{GenerateCSharpNativeToManaged(buildData, valueTypeInfo.GenericArgs[0], caller)}>(x.Value) : null" : "x.Value";
+                contents.Append("; return ").Append(interfaceDictionaryResultName).Append(" != null ? System.Linq.Enumerable.ToDictionary(").Append(interfaceDictionaryResultName).Append(", x => ").Append(keyConverter).Append(", x => ").Append(valueConverter).Append(") : null");
+            }
+            else if ((functionInfo.ReturnType.Type == "Array" || functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "DataContainer") && functionInfo.ReturnType.GenericArgs != null)
             {
                 // Convert array that uses different type for marshalling
                 var arrayTypeInfo = functionInfo.ReturnType.GenericArgs[0];
@@ -1009,9 +1056,24 @@ namespace Flax.Build.Bindings
         {
             GenerateCSharpAttributes(buildData, contents, indent, apiTypeInfo, memberInfo.Attributes, memberInfo.Comment, true, useUnmanaged, defaultValue, memberInfo.DeprecatedMessage, defaultValueType);
             var memberType = (memberInfo as FieldInfo)?.Type ?? (memberInfo as PropertyInfo)?.Type;
-            if (memberType != null && memberType.IsInterfaceRef)
+            var interfaceRefType = memberType;
+            if ((memberType?.Type == "Array" || memberType?.Type == "Span" || memberType?.Type == "DataContainer") &&
+                memberType.GenericArgs != null &&
+                memberType.GenericArgs.Count != 0 &&
+                memberType.GenericArgs[0].IsInterfaceRef)
             {
-                var attribute = memberType.Type == "SoftObjectInterfaceReference" ? "SoftObjectInterfaceReference" : "ScriptingObjectInterfaceReference";
+                interfaceRefType = memberType.GenericArgs[0];
+            }
+            else if (memberType?.Type == "Dictionary" &&
+                     memberType.GenericArgs != null &&
+                     memberType.GenericArgs.Count == 2 &&
+                     (memberType.GenericArgs[0].IsInterfaceRef || memberType.GenericArgs[1].IsInterfaceRef))
+            {
+                interfaceRefType = memberType.GenericArgs[1].IsInterfaceRef ? memberType.GenericArgs[1] : memberType.GenericArgs[0];
+            }
+            if (interfaceRefType != null && interfaceRefType.IsInterfaceRef)
+            {
+                var attribute = interfaceRefType.Type == "SoftObjectInterfaceReference" ? "SoftObjectInterfaceReference" : "ScriptingObjectInterfaceReference";
                 contents.Append(indent).Append("[FlaxEngine.").Append(attribute).AppendLine("]");
             }
         }
