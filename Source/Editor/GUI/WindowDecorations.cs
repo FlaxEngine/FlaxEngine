@@ -181,7 +181,7 @@ public class WindowDecorations : ContainerControl
             return WindowHitCodes.NoWhere;
 
         var dpiScale = _window.DpiScale;
-        var pos = _window.ScreenToClient(mouse * dpiScale); // pos is not DPI adjusted
+        var pos = _window.ScreenToClient(mouse * dpiScale); // pos is DPI adjusted in window space
         if (!_window.IsMaximized)
         {
             var winSize = _window.Size;
@@ -214,6 +214,7 @@ public class WindowDecorations : ContainerControl
                 return WindowHitCodes.Bottom;
         }
 
+        pos /= dpiScale; // The position should not be DPI adjusted in control space
         var controlUnderMouse = GetChildAt(pos, control => control != _title);
         if (_title.Bounds.Contains(pos) && controlUnderMouse == null)
             return WindowHitCodes.Caption;
