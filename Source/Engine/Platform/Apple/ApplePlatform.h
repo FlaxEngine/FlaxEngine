@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if PLATFORM_MAC || PLATFORM_IOS
+#if PLATFORM_APPLE_FAMILY
 
 #include "../Unix/UnixPlatform.h"
 
