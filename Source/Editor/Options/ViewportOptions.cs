@@ -187,7 +187,7 @@ namespace FlaxEditor.Options
         public float DirectionGizmoScale { get; set; } = 1f;
 
         /// <summary>
-        /// Gets or sets a value for the opacity of the main viewports <see cref="Gizmo.DirectionGizmo"/> background.
+        /// Gets or sets a value for the opacity of the main viewports <see cref="Gizmo.DirectionGizmo"/> background. Background will only show when the gizmo is hovered.
         /// </summary>
         [DefaultValue(0.1f), Limit(0.0f, 1.0f)]
         [EditorDisplay("Direction Gizmo"), EditorOrder(502), Tooltip("The background opacity of the of the direction gizmo in the main viewport.")]
