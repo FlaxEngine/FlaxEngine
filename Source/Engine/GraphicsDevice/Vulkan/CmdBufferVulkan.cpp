@@ -57,7 +57,7 @@ void CmdBufferVulkan::End()
         if (vkCmdEndDebugUtilsLabelEXT)
             vkCmdEndDebugUtilsLabelEXT(GetHandle());
 #endif
-#if GPU_ENABLE_TRACY
+#if VULKAN_USE_TRACY_GPU
         tracy::EndVkZoneScope(_tracyZones.Last().Data);
         _tracyZones.RemoveLast();
 #endif
@@ -101,7 +101,7 @@ void CmdBufferVulkan::BeginEvent(const Char* name, void* tracyContext)
     char buffer[60];
     int32 bufferSize = StringUtils::Copy(buffer, name, sizeof(buffer));
 
-#if GPU_ENABLE_TRACY
+#if VULKAN_USE_TRACY_GPU
     auto& zone = _tracyZones.AddOne();
     tracy::BeginVkZoneScope(zone.Data, tracyContext, GetHandle(), buffer, bufferSize);
 #endif
@@ -128,7 +128,7 @@ void CmdBufferVulkan::EndEvent()
         vkCmdEndDebugUtilsLabelEXT(GetHandle());
 #endif
 
-#if GPU_ENABLE_TRACY
+#if VULKAN_USE_TRACY_GPU
     tracy::EndVkZoneScope(_tracyZones.Last().Data);
     _tracyZones.RemoveLast();
 #endif
