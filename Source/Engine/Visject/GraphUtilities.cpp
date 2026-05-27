@@ -256,6 +256,33 @@ void GraphUtilities::ApplySomeMathHere(Variant& v, Variant& a, MathOp1 op)
         vv.W = (double)op((float)aa.W);
         break;
     }
+    case VariantType::Int2:
+    {
+        Int2& vv = *(Int2*)v.AsData;
+        const Int2& aa = *(const Int2*)a.AsData;
+        vv.X = (int32)op((float)aa.X);
+        vv.Y = (int32)op((float)aa.Y);
+        break;
+    }
+    case VariantType::Int3:
+    {
+        Int3& vv = *(Int3*)v.AsData;
+        const Int3& aa = *(const Int3*)a.AsData;
+        vv.X = (int32)op((float)aa.X);
+        vv.Y = (int32)op((float)aa.Y);
+        vv.Z = (int32)op((float)aa.Z);
+        break;
+    }
+    case VariantType::Int4:
+    {
+        Int4& vv = *(Int4*)v.AsData;
+        const Int4& aa = *(const Int4*)a.AsData;
+        vv.X = (int32)op((float)aa.X);
+        vv.Y = (int32)op((float)aa.Y);
+        vv.Z = (int32)op((float)aa.Z);
+        vv.W = (int32)op((float)aa.W);
+        break;
+    }
     case VariantType::Quaternion:
     {
         Quaternion& vv = *(Quaternion*)v.AsData;
@@ -381,6 +408,36 @@ void GraphUtilities::ApplySomeMathHere(Variant& v, Variant& a, Variant& b, MathO
         vv.W = (double)op((float)aa.W, (float)bb.W);
         break;
     }
+    case VariantType::Int2:
+    {
+        Int2& vv = *(Int2*)v.AsData;
+        const Int2& aa = *(const Int2*)a.AsData;
+        const Int2& bb = *(const Int2*)b.AsData;
+        vv.X = (int32)op((float)aa.X, (float)bb.X);
+        vv.Y = (int32)op((float)aa.Y, (float)bb.Y);
+        break;
+    }
+    case VariantType::Int3:
+    {
+        Int3& vv = *(Int3*)v.AsData;
+        const Int3& aa = *(const Int3*)a.AsData;
+        const Int3& bb = *(const Int3*)b.AsData;
+        vv.X = (int32)op((float)aa.X, (float)bb.X);
+        vv.Y = (int32)op((float)aa.Y, (float)bb.Y);
+        vv.Z = (int32)op((float)aa.Z, (float)bb.Z);
+        break;
+    }
+    case VariantType::Int4:
+    {
+        Int4& vv = *(Int4*)v.AsData;
+        const Int4& aa = *(const Int4*)a.AsData;
+        const Int4& bb = *(const Int4*)b.AsData;
+        vv.X = (int32)op((float)aa.X, (float)bb.X);
+        vv.Y = (int32)op((float)aa.Y, (float)bb.Y);
+        vv.Z = (int32)op((float)aa.Z, (float)bb.Z);
+        vv.W = (int32)op((float)aa.W, (float)bb.W);
+        break;
+    }
     case VariantType::Quaternion:
     {
         Quaternion& vv = *(Quaternion*)v.AsData;
@@ -497,6 +554,39 @@ void GraphUtilities::ApplySomeMathHere(Variant& v, Variant& a, Variant& b, Varia
         vv.Y = (double)op((float)aa.Y, (float)bb.Y, (float)cc.Y);
         vv.Z = (double)op((float)aa.Z, (float)bb.Z, (float)cc.Z);
         vv.W = (double)op((float)aa.W, (float)bb.W, (float)cc.W);
+        break;
+    }
+    case VariantType::Int2:
+    {
+        Int2& vv = *(Int2*)v.AsData;
+        const Int3& aa = *(const Int2*)a.AsData;
+        const Int3& bb = *(const Int2*)b.AsData;
+        const Int3& cc = *(const Int2*)c.AsData;
+        vv.X = (int32)op((float)aa.X, (float)bb.X, (float)cc.X);
+        vv.Y = (int32)op((float)aa.Y, (float)bb.Y, (float)cc.Y);
+        break;
+    }
+    case VariantType::Int3:
+    {
+        Int3& vv = *(Int3*)v.AsData;
+        const Int3& aa = *(const Int3*)a.AsData;
+        const Int3& bb = *(const Int3*)b.AsData;
+        const Int3& cc = *(const Int3*)c.AsData;
+        vv.X = (int32)op((float)aa.X, (float)bb.X, (float)cc.X);
+        vv.Y = (int32)op((float)aa.Y, (float)bb.Y, (float)cc.Y);
+        vv.Z = (int32)op((float)aa.Z, (float)bb.Z, (float)cc.Z);
+        break;
+    }
+    case VariantType::Int4:
+    {
+        Int4& vv = *(Int4*)v.AsData;
+        const Int4& aa = *(const Int4*)a.AsData;
+        const Int4& bb = *(const Int4*)b.AsData;
+        const Int4& cc = *(const Int4*)c.AsData;
+        vv.X = (int32)op((float)aa.X, (float)bb.X, (float)cc.X);
+        vv.Y = (int32)op((float)aa.Y, (float)bb.Y, (float)cc.Y);
+        vv.Z = (int32)op((float)aa.Z, (float)bb.Z, (float)cc.Z);
+        vv.W = (int32)op((float)aa.W, (float)bb.W, (float)cc.W);
         break;
     }
     case VariantType::Quaternion:

@@ -11,6 +11,8 @@
 // Float
 
 static_assert(sizeof(Float4) == 16, "Invalid Float4 type size.");
+static_assert(sizeof(Int4) == 16, "Invalid Int4 type size.");
+static_assert(sizeof(Double4) == 32, "Invalid Double4 type size.");
 
 template<>
 const Float4 Float4::Zero(0.0f);

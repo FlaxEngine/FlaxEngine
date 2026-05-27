@@ -9,6 +9,8 @@
 // Float
 
 static_assert(sizeof(Float2) == 8, "Invalid Float2 type size.");
+static_assert(sizeof(Int2) == 8, "Invalid Int2 type size.");
+static_assert(sizeof(Double2) == 16, "Invalid Double2 type size.");
 
 template<>
 const Float2 Float2::Zero(0.0f);
