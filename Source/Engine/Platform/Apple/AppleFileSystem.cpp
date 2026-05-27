@@ -1,6 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-#if PLATFORM_APPLE_FAMILY
+#if PLATFORM_MAC || PLATFORM_IOS
 
 #include "AppleFileSystem.h"
 #include "AppleUtils.h"

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if PLATFORM_APPLE_FAMILY
+#if PLATFORM_MAC || PLATFORM_IOS
 
 #include "Engine/Core/Types/String.h"
 #include <CoreFoundation/CoreFoundation.h>

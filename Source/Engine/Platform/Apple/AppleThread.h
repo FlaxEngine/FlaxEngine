@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if PLATFORM_APPLE_FAMILY
+#if PLATFORM_MAC || PLATFORM_IOS
 
 #include "../Unix/UnixThread.h"
 #include <signal.h>

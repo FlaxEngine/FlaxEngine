@@ -1,6 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-#if PLATFORM_APPLE_FAMILY
+#if PLATFORM_MAC || PLATFORM_IOS
 
 #if PLATFORM_MAC
 #define PLATFORM_MAC_CACHED 1
