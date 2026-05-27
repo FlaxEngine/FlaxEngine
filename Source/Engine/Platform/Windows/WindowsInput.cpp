@@ -189,6 +189,7 @@ bool WindowsMouse::WndProc(Window* window, const UINT msg, WPARAM wParam, LPARAM
     POINT p;
     p.x = static_cast<LONG>(WINDOWS_GET_X_LPARAM(lParam));
     p.y = static_cast<LONG>(WINDOWS_GET_Y_LPARAM(lParam));
+    const Float2 mousePosScreen(static_cast<float>(p.x), static_cast<float>(p.y));
     ::ClientToScreen(window->GetHWND(), &p);
     const Float2 mousePos(static_cast<float>(p.x), static_cast<float>(p.y));
 
@@ -203,7 +204,8 @@ bool WindowsMouse::WndProc(Window* window, const UINT msg, WPARAM wParam, LPARAM
     }    
     case WM_NCMOUSEMOVE:
     {
-        OnMouseMove(mousePos, window);
+        // The position in the message is already reported in screen-space
+        OnMouseMove(mousePosScreen, window);
         result = true;
         break;
     }
