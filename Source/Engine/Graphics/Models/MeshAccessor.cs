@@ -643,11 +643,16 @@ namespace FlaxEngine
                 else
                 {
                     Float3 min = Float3.Maximum, max = Float3.Minimum;
-                    for (int i = 0; i < vertices; i++)
+                    PixelFormatSampler.Get(positionStream.Format, out var positionSampler);
+                    int positionStride = positionStream.Stride;
+                    fixed (byte* data = positionStream.Data)
                     {
-                        Float3 pos = positionStream.GetFloat3(i);
-                        Float3.Min(ref min, ref pos, out min);
-                        Float3.Max(ref max, ref pos, out max);
+                        for (int i = 0; i < vertices; i++)
+                        {
+                            Float3 pos = new Float3(positionSampler.Read(data + i * positionStride));
+                            Float3.Min(ref min, ref pos, out min);
+                            Float3.Max(ref max, ref pos, out max);
+                        }
                     }
                     bounds = new BoundingBox(min, max);
                 }
