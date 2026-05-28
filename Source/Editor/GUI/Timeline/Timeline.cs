@@ -1302,7 +1302,6 @@ namespace FlaxEditor.GUI.Timeline
             if (track.ParentTrack != null)
                 OnTracksOrderChanged();
             track.OnSpawned();
-            _tracksPanelArea.ScrollViewTo(track);
             MarkAsEdited();
             if (withUndo)
                 Undo?.AddAction(new AddRemoveTrackAction(this, track, true));
