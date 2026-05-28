@@ -288,12 +288,15 @@ void ReadStream::Read(Variant& data)
         break;
     }
     case VariantType::Float2:
+    case VariantType::Int2:
         ReadBytes(&data.AsData, sizeof(Float2));
         break;
     case VariantType::Float3:
+    case VariantType::Int3:
         ReadBytes(&data.AsData, sizeof(Float3));
         break;
     case VariantType::Float4:
+    case VariantType::Int4:
         ReadBytes(&data.AsData, sizeof(Float4));
         break;
     case VariantType::Double2:
@@ -687,12 +690,15 @@ void WriteStream::Write(const Variant& data)
         Write(id);
         break;
     case VariantType::Float2:
+    case VariantType::Int2:
         WriteBytes(data.AsData, sizeof(Float2));
         break;
     case VariantType::Float3:
+    case VariantType::Int3:
         WriteBytes(data.AsData, sizeof(Float3));
         break;
     case VariantType::Float4:
+    case VariantType::Int4:
         WriteBytes(data.AsData, sizeof(Float4));
         break;
     case VariantType::Double2:
