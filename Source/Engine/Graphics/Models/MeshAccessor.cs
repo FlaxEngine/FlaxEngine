@@ -621,7 +621,7 @@ namespace FlaxEngine
                 {
                     ibData = dataPtr[IB];
                     use16BitIndexBuffer = _formats[IB] == PixelFormat.R16_UInt;
-                    triangles = (uint)(_data[IB].Length / PixelFormatExtensions.SizeInBytes(_formats[IB]));
+                    triangles = (uint)(_data[IB].Length / (PixelFormatExtensions.SizeInBytes(_formats[IB]) * 3));
                 }
 
                 if (mesh.Init(vertices, triangles, vbData, ibData, use16BitIndexBuffer, vbLayout))
