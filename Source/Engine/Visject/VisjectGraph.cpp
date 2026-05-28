@@ -952,7 +952,7 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
 #define SAMPLE_CURVE(id, curves, type, graphType) \
 		case id: \
 		{ \
-			const auto& curve = GetCurrentGraph()->curves[node->Data.Curve.CurveIndex]; \
+			const auto& curve = GetCurrentGraph()->curves[node->CurveIndex]; \
 			const float time = (float)tryGetValue(node->GetBox(0), Value::Zero); \
 			value.Type = VariantType(VariantType::graphType); \
 			curve.Evaluate(*(type*)value.AsData, time, false); \

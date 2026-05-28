@@ -163,7 +163,7 @@ VisjectExecutor::Value VisualScriptExecutor::eatBox(Node* caller, Box* box)
 
     // Add to the calling stack
     VisualScripting::StackFrame frame = *stack.Stack;
-    frame.Node = parentNode;
+    frame.Node = (VisualScriptGraphNode*)parentNode;
     frame.Box = box;
     frame.PreviousFrame = stack.Stack;
     stack.Stack = &frame;
@@ -189,7 +189,7 @@ VisjectExecutor::Value VisualScriptExecutor::eatBox(Node* caller, Box* box)
 VisjectExecutor::Graph* VisualScriptExecutor::GetCurrentGraph() const
 {
     auto& stack = ThreadStacks.Get();
-    return stack.Stack && stack.Stack->Script ? &stack.Stack->Script->Graph : nullptr;
+    return stack.Stack && stack.Stack->Script ? (Graph*)&stack.Stack->Script->Graph : nullptr;
 }
 
 void VisualScriptExecutor::ProcessGroupParameters(Box* box, Node* node, Value& value)
@@ -432,7 +432,7 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
         // Call Impulse or Pure Method
         if (boxBase->ID == 0 || (bool)node->Values[3])
         {
-            auto& cache = node->Data.InvokeMethod;
+            auto& cache = ((VisualScriptGraphNode*)node)->Data.InvokeMethod;
             if (!cache.Method)
             {
                 // Load method signature
@@ -667,7 +667,7 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
     // Get Field
     case 7:
     {
-        auto& cache = node->Data.GetSetField;
+        auto& cache = ((VisualScriptGraphNode*)node)->Data.GetSetField;
         if (!cache.Field)
         {
             const auto typeName = (StringView)node->Values[0];
@@ -753,7 +753,7 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
     // Get Field
     case 8:
     {
-        auto& cache = node->Data.GetSetField;
+        auto& cache = ((VisualScriptGraphNode*)node)->Data.GetSetField;
         if (!cache.Field)
         {
             const auto typeName = (StringView)node->Values[0];

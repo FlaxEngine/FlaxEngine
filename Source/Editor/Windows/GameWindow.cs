@@ -123,7 +123,7 @@ namespace FlaxEditor.Windows
         private readonly ScaledRenderOutputControl _viewport;
         private readonly GameRoot _guiRoot;
         private bool _showGUI = true, _editGUI = true;
-        private bool _showDebugDraw = false;
+        private bool _showDebugDraw = true;
         private bool _audioMuted = false;
         private float _audioVolume = 1;
         private bool _isMaximized = false, _isUnlockingMouse = false;

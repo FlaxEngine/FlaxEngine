@@ -61,14 +61,14 @@ void AnimGraphBase::Clear()
     StateTransitions.Resize(0);
 
     // Base
-    GraphType::Clear();
+    VisjectGraph::Clear();
 }
 
 #if USE_EDITOR
 
 void AnimGraphBase::GetReferences(Array<Guid>& output) const
 {
-    GraphType::GetReferences(output);
+    VisjectGraph::GetReferences(output);
 
     // Collect references from nested graph (assets used in state machines)
     for (const auto* subGraph : SubGraphs)
