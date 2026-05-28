@@ -229,6 +229,7 @@ namespace FlaxEditor.GUI.Timeline
         private List<Track> _mediaMoveStartTracks;
         private byte[][] _mediaMoveStartData;
         private float _zoom = 1.0f;
+        private float _tracksVScrollTarget;
         private bool _isMovingPositionHandle;
         private bool _canPlayPause = true, _canStop = true;
         private List<IUndoAction> _batchedUndoActions;
@@ -1305,6 +1306,10 @@ namespace FlaxEditor.GUI.Timeline
             MarkAsEdited();
             if (withUndo)
                 Undo?.AddAction(new AddRemoveTrackAction(this, track, true));
+
+            // Scroll to track
+            _tracksPanelArea.ScrollViewTo(track);
+            _tracksVScrollTarget = _tracksPanelArea.VScrollBar.TargetValue;
         }
 
         /// <summary>
@@ -2033,12 +2038,24 @@ namespace FlaxEditor.GUI.Timeline
             base.Update(deltaTime);
 
             // Synchronize scroll vertical bars for tracks and media panels to keep the view in sync
-            var scroll1 = _tracksPanelArea.VScrollBar;
-            var scroll2 = _backgroundArea.VScrollBar;
-            if (scroll1.IsThumbClicked || _tracksPanelArea.IsMouseOver)
-                scroll2.TargetValue = scroll1.Value;
+            var tracksVScroll = _tracksPanelArea.VScrollBar;
+            var backgroundVScroll = _backgroundArea.VScrollBar;
+            bool forceBackgroundToTracksScroll = _tracksVScrollTarget > 0;
+            if (forceBackgroundToTracksScroll)
+            {
+                backgroundVScroll.TargetValue = tracksVScroll.Value;
+
+                if (Mathf.Abs(tracksVScroll.Value - _tracksVScrollTarget) < 0.5f)
+                    _tracksVScrollTarget = 0f;
+            }
+            else if (tracksVScroll.IsThumbClicked || _tracksPanelArea.IsMouseOver)
+            {
+                backgroundVScroll.TargetValue = tracksVScroll.Value;
+            }
             else
-                scroll1.TargetValue = scroll2.Value;
+            {
+                tracksVScroll.TargetValue = backgroundVScroll.Value;
+            }
 
             // Batch undo actions
             if (_batchedUndoActions != null && _batchedUndoActions.Count != 0)
