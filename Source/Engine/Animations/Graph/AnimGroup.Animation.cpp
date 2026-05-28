@@ -873,65 +873,41 @@ void AnimGraphExecutor::ProcessGroupParameters(Box* box, Node* node, Value& valu
             switch (param->Type.Type)
             {
             case VariantType::Float2:
-                switch (box->ID)
-                {
-                case 1:
-                case 2:
+                if (box->ID >= 1 && box->ID <= 2)
                     value = value.AsFloat2().Raw[box->ID - 1];
-                    break;
-                }
                 break;
             case VariantType::Float3:
-                switch (box->ID)
-                {
-                case 1:
-                case 2:
-                case 3:
+                if (box->ID >= 1 && box->ID <= 3)
                     value = value.AsFloat3().Raw[box->ID - 1];
-                    break;
-                }
                 break;
             case VariantType::Float4:
             case VariantType::Color:
-                switch (box->ID)
-                {
-                case 1:
-                case 2:
-                case 3:
-                case 4:
+                if (box->ID >= 1 && box->ID <= 4)
                     value = value.AsFloat4().Raw[box->ID - 1];
-                    break;
-                }
                 break;
             case VariantType::Double2:
-                switch (box->ID)
-                {
-                case 1:
-                case 2:
+                if (box->ID >= 1 && box->ID <= 2)
                     value = value.AsDouble2().Raw[box->ID - 1];
-                    break;
-                }
                 break;
             case VariantType::Double3:
-                switch (box->ID)
-                {
-                case 1:
-                case 2:
-                case 3:
+                if (box->ID >= 1 && box->ID <= 3)
                     value = value.AsDouble3().Raw[box->ID - 1];
-                    break;
-                }
                 break;
             case VariantType::Double4:
-                switch (box->ID)
-                {
-                case 1:
-                case 2:
-                case 3:
-                case 4:
+                if (box->ID >= 1 && box->ID <= 4)
                     value = value.AsDouble4().Raw[box->ID - 1];
-                    break;
-                }
+                break;
+            case VariantType::Int2:
+                if (box->ID >= 1 && box->ID <= 2)
+                    value = value.AsInt2().Raw[box->ID - 1];
+                break;
+            case VariantType::Int3:
+                if (box->ID >= 1 && box->ID <= 3)
+                    value = value.AsInt3().Raw[box->ID - 1];
+                break;
+            case VariantType::Int4:
+                if (box->ID >= 1 && box->ID <= 4)
+                    value = value.AsInt4().Raw[box->ID - 1];
                 break;
             case VariantType::Matrix:
             {

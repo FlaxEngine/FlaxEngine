@@ -706,7 +706,7 @@ namespace FlaxEditor.Viewport
         {
             base.OnLeftMouseButtonDown();
 
-            if (!IsAltKeyDown)
+            if (!IsAltKeyDown && !_directionGizmo.IsMouseOver)
                 _rubberBandSelector.TryStartingRubberBandSelection(_viewMousePos);
         }
 
@@ -714,7 +714,7 @@ namespace FlaxEditor.Viewport
         protected override void OnLeftMouseButtonUp()
         {
             // Skip if was controlling mouse or mouse is not over the area
-            if (_prevInput.IsControllingMouse || !Bounds.Contains(ref _viewMousePos))
+            if (_prevInput.IsControllingMouse || !Bounds.Contains(ref _viewMousePos) || _directionGizmo.IsMouseOver)
                 return;
 
             // Select rubberbanded rect actor nodes or pick with gizmo

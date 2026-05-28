@@ -43,8 +43,10 @@ private:
     FenceVulkan* _fence;
 #if GPU_ALLOW_PROFILE_EVENTS
     int32 _eventsBegin = 0;
+#if VULKAN_USE_TRACY_GPU
     struct TracyZone { byte Data[TracyVulkanZoneSize]; };
     Array<TracyZone, InlinedAllocation<32>> _tracyZones;
+#endif
 #endif
 
     // The latest value when command buffer was submitted.
