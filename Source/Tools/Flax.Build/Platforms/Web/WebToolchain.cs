@@ -367,7 +367,7 @@ namespace Flax.Build.Platforms
                 if (args.All(arg => !arg.Contains("-sASSERTIONS")))
                 {
                     // minimum_runtime_check.js from Emscripten checks min browser versions only with ASSERTIONS enabled so use custom check
-                    var checkBrowserVersion = File.ReadAllText(Path.Combine(Globals.EngineRoot, "Source/Platforms/Web/Binaries/Data/check_browser_version.js"));
+                    var checkBrowserVersion = File.ReadAllText(Path.Combine(Globals.EngineRoot, "Source/Platforms/Web/Binaries/check_browser_version.js"));
                     checkBrowserVersion = checkBrowserVersion.Replace("TARGET_NOT_SUPPORTED", "0x7fffffff");
                     checkBrowserVersion = checkBrowserVersion.Replace("MIN_CHROME_VERSION", minChrome.ToString());
                     checkBrowserVersion = checkBrowserVersion.Replace("MIN_FIREFOX_VERSION", minFirefox.ToString());
@@ -377,11 +377,11 @@ namespace Flax.Build.Platforms
                     args.Add($"--pre-js \"{path}\"");
                 }
                 if (addJSPI)
-                    args.Add($"--pre-js \"{Globals.EngineRoot}/Source/Platforms/Web/Binaries/Data/check_jspi.js\"");
+                    args.Add($"--pre-js \"{Globals.EngineRoot}/Source/Platforms/Web/Binaries/check_jspi.js\"");
 
                 // Customize output HTML shell
                 if (options.LinkEnv.Output == LinkerOutput.Executable)
-                    args.Add($"--shell-file \"{Globals.EngineRoot}/Source/Platforms/Web/Binaries/Data/shell.html\"");
+                    args.Add($"--shell-file \"{Globals.EngineRoot}/Source/Platforms/Web/Binaries/shell.html\"");
             }
 
             args.Add("-Wl,--start-group");

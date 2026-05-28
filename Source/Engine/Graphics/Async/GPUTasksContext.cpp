@@ -76,9 +76,10 @@ void GPUTasksContext::OnFrameBegin()
     {
         auto task = _tasksSyncing[i];
         auto state = task->GetState();
+        if (EnumHasAllFlags(task->Flags, ObjectFlags::WasMarkedToDelete))
+            state = TaskState::Finished;
         if (task->GetSyncPoint() <= _currentSyncPoint && state != TaskState::Finished)
         {
-            // TODO: add stats counter and count performed jobs, print to log on exit.
             task->Sync();
         }
         if (state == TaskState::Failed || state == TaskState::Canceled)

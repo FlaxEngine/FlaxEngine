@@ -43,52 +43,13 @@ template<class BoxType = VisjectGraphBox>
 class VisjectGraphNode : public GraphNode<BoxType>
 {
 public:
-    struct CurveData
-    {
-        /// <summary>
-        /// The curve index.
-        /// </summary>
-        int32 CurveIndex;
-    };
-
-    /// <summary>
-    /// Custom cached data per node type. Compact to use as small amount of memory as possible.
-    /// </summary>
-    struct AdditionalData
-    {
-        union
-        {
-            CurveData Curve;
-
-            struct
-            {
-                void* Method;
-                BinaryModule* Module;
-                int32 ParamsCount;
-                uint32 OutParamsMask;
-                bool IsStatic;
-            } InvokeMethod;
-
-            struct
-            {
-                void* Field;
-                BinaryModule* Module;
-                bool IsStatic;
-            } GetSetField;
-        };
-    };
-
-public:
     VisjectGraphNode()
         : GraphNode<BoxType>()
     {
     }
 
 public:
-    /// <summary>
-    /// The custom data (depends on node type). Used to cache data for faster usage at runtime.
-    /// </summary>
-    AdditionalData Data;
+    int32 CurveIndex = MAX_uint16;
 
     /// <summary>
     /// The asset references. Linked resources such as Animation assets are referenced in graph data as ID. We need to keep valid refs to them at runtime to keep data in memory.
@@ -148,7 +109,7 @@ public:
 #define SETUP_CURVE(id, curves, access) \
 			case id: \
 			{ \
-				n->Data.Curve.CurveIndex = curves.Count(); \
+				n->CurveIndex = curves.Count(); \
 				auto& curve = curves.AddOne(); \
 				const int32 keyframesCount = n->Values[0].AsInt; \
 				auto& keyframes = curve.GetKeyframes(); \
@@ -177,8 +138,16 @@ public:
             }
         }
 
-        // Base
         return Base::onNodeLoaded(n);
+    }
+    void Clear() override
+    {
+        FloatCurves.Clear();
+        Float2Curves.Clear();
+        Float3Curves.Clear();
+        Float4Curves.Clear();
+
+        Base::Clear();
     }
 };
 

@@ -589,6 +589,8 @@ namespace FlaxEditor.GUI
                 // Get the next item
                 bool controlDown = Root.GetKey(KeyboardKeys.Control);
                 var items = GetVisibleItems(!controlDown);
+                if (items.Count == 0)
+                    return true;
                 var focusedIndex = items.IndexOf(focusedItem);
 
                 int delta = key == KeyboardKeys.ArrowDown ? -1 : 1;
