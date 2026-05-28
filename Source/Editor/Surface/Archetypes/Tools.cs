@@ -1524,6 +1524,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 10,
                 Title = "Color Gradient",
+                AlternativeTitles = new [] { "Color Ramp" },
                 Create = (id, context, arch, groupArch) => new ColorGradientNode(id, context, arch, groupArch),
                 Description = "Linear color gradient sampler",
                 Flags = NodeFlags.AllGraphs | NodeFlags.FixedSize,
