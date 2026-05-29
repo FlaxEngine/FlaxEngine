@@ -559,7 +559,7 @@ namespace FlaxEditor.Windows
         }
 
         /// <summary>
-        ///  Enables or disables vertical and horizontal scrolling on the content tree panel
+        /// Enables or disables vertical and horizontal scrolling on the content tree panel
         /// </summary>
         /// <param name="enabled">The state to set scrolling to</param>
         public void ScrollingOnTreeView(bool enabled)
@@ -571,7 +571,7 @@ namespace FlaxEditor.Windows
         }
 
         /// <summary>
-        ///  Enables or disables vertical and horizontal scrolling on the content view panel
+        /// Enables or disables vertical and horizontal scrolling on the content view panel
         /// </summary>
         /// <param name="enabled">The state to set scrolling to</param>
         public void ScrollingOnContentView(bool enabled)
@@ -1555,6 +1555,7 @@ namespace FlaxEditor.Windows
                     PerformLayout();
                 }
                 UpdateViewDropdownBounds();
+                ScrollNavigationBarToCurrentFolder();
             }
         }
 
@@ -1772,6 +1773,14 @@ namespace FlaxEditor.Windows
             }
 
             return base.OnMouseUp(location, button);
+        }
+
+        /// <inheritdoc />
+        protected override void OnSizeChanged()
+        {
+            base.OnSizeChanged();
+
+            ScrollNavigationBarToCurrentFolder();
         }
 
         /// <inheritdoc />
