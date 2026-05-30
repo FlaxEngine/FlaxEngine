@@ -112,7 +112,7 @@ namespace FlaxEditor.GUI
                     for (int i = 0; i < _entries.Count; i++)
                     {
                         var e = _entries[i].Value;
-                        if (e != 0 && (e & value) == e)
+                        if ((e != 0 || value == 0) && (e & value) == e)
                         {
                             selection.Add(i);
                         }
@@ -292,6 +292,22 @@ namespace FlaxEditor.GUI
             base.OnLayoutMenuButton(button, index, construct);
             if (IsFlags)
                 button.CloseMenuOnClick = false;
+        }
+
+        /// <inheritdoc />
+        protected override string GetSelectedText()
+        {
+            // If multiple values are selected then try to find an enum item that matches the mask value
+            if (_selectedIndices.Count > 1)
+            {
+                foreach (var e in _entries)
+                {
+                    if (e.Value == Value)
+                        return e.Name;
+                }
+            }
+
+            return base.GetSelectedText();
         }
 
         /// <inheritdoc />

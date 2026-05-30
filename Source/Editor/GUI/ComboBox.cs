@@ -487,6 +487,15 @@ namespace FlaxEditor.GUI
         }
 
         /// <summary>
+        /// Gets the text for selected item(s).
+        /// </summary>
+        /// <returns>The display text.</returns>
+        protected virtual string GetSelectedText()
+        {
+            return _selectedIndices.Count == 1 ? (_selectedIndices[0] >= 0 && _selectedIndices[0] < _items.Count ? _items[_selectedIndices[0]] : "") : "Multiple Values";
+        }
+
+        /// <summary>
         /// Creates the popup menu.
         /// </summary>
         protected virtual ContextMenu.ContextMenu OnCreatePopup()
@@ -554,7 +563,7 @@ namespace FlaxEditor.GUI
             // Check if has selected item
             if (_selectedIndices != null && _selectedIndices.Count > 0)
             {
-                string text = _selectedIndices.Count == 1 ? (_selectedIndices[0] >= 0 && _selectedIndices[0] < _items.Count ? _items[_selectedIndices[0]] : "") : "Multiple Values";
+                string text = GetSelectedText();
 
                 // Draw text of the selected item
                 float textScale = Height / DefaultHeight;
