@@ -471,6 +471,13 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
     task.arguments  = AppleUtils::ParseArguments(AppleUtils::ToNSString(settings.Arguments));
     if (settings.WorkingDirectory.HasChars())
         task.currentDirectoryPath = AppleUtils::ToNSString(settings.WorkingDirectory);
+    [task setStandardInput:[NSFileHandle fileHandleWithNullDevice]];
+    if (!captureStdOut)
+    {
+        NSFileHandle* nullDevice = [NSFileHandle fileHandleWithNullDevice];
+        [task setStandardOutput:nullDevice];
+        [task setStandardError:nullDevice];
+    }
 
     int32 returnCode = 0;
     if (settings.WaitForEnd)
