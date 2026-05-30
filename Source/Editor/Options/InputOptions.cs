@@ -71,49 +71,49 @@ namespace FlaxEditor.Options
 
         #region Common
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+S")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+S")]
         [EditorDisplay("Common"), EditorOrder(100)]
-        public InputBinding Save = new InputBinding(KeyboardKeys.S, KeyboardKeys.Control);
+        public InputBinding Save = new InputBinding(KeyboardKeys.S, KeyboardKeys.Shortcut);
 
         [DefaultValue(typeof(InputBinding), "F2")]
         [EditorDisplay("Common"), EditorOrder(110)]
         public InputBinding Rename = new InputBinding(KeyboardKeys.F2);
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+C")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+C")]
         [EditorDisplay("Common"), EditorOrder(120)]
-        public InputBinding Copy = new InputBinding(KeyboardKeys.C, KeyboardKeys.Control);
+        public InputBinding Copy = new InputBinding(KeyboardKeys.C, KeyboardKeys.Shortcut);
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+X")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+X")]
         [EditorDisplay("Common"), EditorOrder(130)]
-        public InputBinding Cut = new InputBinding(KeyboardKeys.X, KeyboardKeys.Control);
+        public InputBinding Cut = new InputBinding(KeyboardKeys.X, KeyboardKeys.Shortcut);
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+V")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+V")]
         [EditorDisplay("Common"), EditorOrder(140)]
-        public InputBinding Paste = new InputBinding(KeyboardKeys.V, KeyboardKeys.Control);
+        public InputBinding Paste = new InputBinding(KeyboardKeys.V, KeyboardKeys.Shortcut);
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+D")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+D")]
         [EditorDisplay("Common"), EditorOrder(150)]
-        public InputBinding Duplicate = new InputBinding(KeyboardKeys.D, KeyboardKeys.Control);
+        public InputBinding Duplicate = new InputBinding(KeyboardKeys.D, KeyboardKeys.Shortcut);
 
         [DefaultValue(typeof(InputBinding), "Delete")]
         [EditorDisplay("Common"), EditorOrder(160)]
         public InputBinding Delete = new InputBinding(KeyboardKeys.Delete);
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+Z")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+Z")]
         [EditorDisplay("Common"), EditorOrder(170)]
-        public InputBinding Undo = new InputBinding(KeyboardKeys.Z, KeyboardKeys.Control);
+        public InputBinding Undo = new InputBinding(KeyboardKeys.Z, KeyboardKeys.Shortcut);
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+Y")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+Y")]
         [EditorDisplay("Common"), EditorOrder(180)]
-        public InputBinding Redo = new InputBinding(KeyboardKeys.Y, KeyboardKeys.Control);
+        public InputBinding Redo = new InputBinding(KeyboardKeys.Y, KeyboardKeys.Shortcut);
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+A")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+A")]
         [EditorDisplay("Common"), EditorOrder(190)]
-        public InputBinding SelectAll = new InputBinding(KeyboardKeys.A, KeyboardKeys.Control);
+        public InputBinding SelectAll = new InputBinding(KeyboardKeys.A, KeyboardKeys.Shortcut);
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+Shift+A")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+Shift+A")]
         [EditorDisplay("Common"), EditorOrder(195)]
-        public InputBinding DeselectAll = new InputBinding(KeyboardKeys.A, KeyboardKeys.Shift, KeyboardKeys.Control);
+        public InputBinding DeselectAll = new InputBinding(KeyboardKeys.A, KeyboardKeys.Shift, KeyboardKeys.Shortcut);
 
         [DefaultValue(typeof(InputBinding), "F")]
         [EditorDisplay("Common"), EditorOrder(200)]
@@ -123,13 +123,13 @@ namespace FlaxEditor.Options
         [EditorDisplay("Common"), EditorOrder(200)]
         public InputBinding LockFocusSelection = new InputBinding(KeyboardKeys.F, KeyboardKeys.Shift);
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+F")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+F")]
         [EditorDisplay("Common"), EditorOrder(210)]
-        public InputBinding Search = new InputBinding(KeyboardKeys.F, KeyboardKeys.Control);
+        public InputBinding Search = new InputBinding(KeyboardKeys.F, KeyboardKeys.Shortcut);
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+O")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+O")]
         [EditorDisplay("Common"), EditorOrder(220)]
-        public InputBinding ContentFinder = new InputBinding(KeyboardKeys.O, KeyboardKeys.Control);
+        public InputBinding ContentFinder = new InputBinding(KeyboardKeys.O, KeyboardKeys.Shortcut);
 
         [DefaultValue(typeof(InputBinding), "R")]
         [EditorDisplay("Common"), EditorOrder(230)]
@@ -139,9 +139,9 @@ namespace FlaxEditor.Options
         [EditorDisplay("Common"), EditorOrder(240)]
         public InputBinding ToggleFullscreen = new InputBinding(KeyboardKeys.F11);
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+BackQuote")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+BackQuote")]
         [EditorDisplay("Common"), EditorOrder(250)]
-        public InputBinding FocusConsoleCommand = new InputBinding(KeyboardKeys.BackQuote, KeyboardKeys.Control);
+        public InputBinding FocusConsoleCommand = new InputBinding(KeyboardKeys.BackQuote, KeyboardKeys.Shortcut);
 
         #endregion
 
@@ -219,17 +219,17 @@ namespace FlaxEditor.Options
         [EditorDisplay("Scene"), EditorOrder(573)]
         public InputBinding PilotActor = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+G")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+G")]
         [EditorDisplay("Scene"), EditorOrder(574)]
-        public InputBinding GroupSelectedActors = new InputBinding(KeyboardKeys.G, KeyboardKeys.Control);
+        public InputBinding GroupSelectedActors = new InputBinding(KeyboardKeys.G, KeyboardKeys.Shortcut);
 
         #endregion
 
         #region Tools
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+F10")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+F10")]
         [EditorDisplay("Tools", "Build scenes data"), EditorOrder(600)]
-        public InputBinding BuildScenesData = new InputBinding(KeyboardKeys.F10, KeyboardKeys.Control);
+        public InputBinding BuildScenesData = new InputBinding(KeyboardKeys.F10, KeyboardKeys.Shortcut);
 
         [DefaultValue(typeof(InputBinding), "None")]
         [EditorDisplay("Tools", "Bake lightmaps"), EditorOrder(601)]
@@ -263,9 +263,9 @@ namespace FlaxEditor.Options
 
         #region Profiler
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+Alpha7")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+Alpha7")]
         [EditorDisplay("Profiler", "Open Profiler Window"), EditorOrder(630)]
-        public InputBinding ProfilerWindow = new InputBinding(KeyboardKeys.Alpha7, KeyboardKeys.Control);
+        public InputBinding ProfilerWindow = new InputBinding(KeyboardKeys.Alpha7, KeyboardKeys.Shortcut);
 
         [DefaultValue(typeof(InputBinding), "None")]
         [EditorDisplay("Profiler", "Start/Stop Profiler"), EditorOrder(631)]
@@ -487,9 +487,9 @@ namespace FlaxEditor.Options
         [EditorDisplay("View Flags"), EditorOrder(3010)]
         public InputBinding Shadows = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), "Shift+Ctrl+Alpha7")]
+        [DefaultValue(typeof(InputBinding), "Shift+Shortcut+Alpha7")]
         [EditorDisplay("View Flags"), EditorOrder(3020)]
-        public InputBinding EditorSprites = new InputBinding(KeyboardKeys.Alpha7, KeyboardKeys.Control, KeyboardKeys.Shift);
+        public InputBinding EditorSprites = new InputBinding(KeyboardKeys.Alpha7, KeyboardKeys.Shortcut, KeyboardKeys.Shift);
 
         [DefaultValue(typeof(InputBinding), "None")]
         [EditorDisplay("View Flags"), EditorOrder(3030)]
@@ -503,9 +503,9 @@ namespace FlaxEditor.Options
         [EditorDisplay("View Flags"), EditorOrder(3050)]
         public InputBinding AmbientOcclusion = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), "Shift+Ctrl+Alpha6")]
+        [DefaultValue(typeof(InputBinding), "Shift+Shortcut+Alpha6")]
         [EditorDisplay("View Flags", "Global Illumination"), EditorOrder(3060)]
-        public InputBinding GlobalIlluminationViewFlag = new InputBinding(KeyboardKeys.Alpha6, KeyboardKeys.Control, KeyboardKeys.Shift);
+        public InputBinding GlobalIlluminationViewFlag = new InputBinding(KeyboardKeys.Alpha6, KeyboardKeys.Shortcut, KeyboardKeys.Shift);
 
         [DefaultValue(typeof(InputBinding), "None")]
         [EditorDisplay("View Flags"), EditorOrder(3070)]
@@ -539,9 +539,9 @@ namespace FlaxEditor.Options
         [EditorDisplay("View Flags"), EditorOrder(3140)]
         public InputBinding Decals = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), "Shift+Ctrl+Alpha3")]
+        [DefaultValue(typeof(InputBinding), "Shift+Shortcut+Alpha3")]
         [EditorDisplay("View Flags"), EditorOrder(3150)]
-        public InputBinding CustomPostProcess = new InputBinding(KeyboardKeys.Alpha3, KeyboardKeys.Control, KeyboardKeys.Shift);
+        public InputBinding CustomPostProcess = new InputBinding(KeyboardKeys.Alpha3, KeyboardKeys.Shortcut, KeyboardKeys.Shift);
 
         [DefaultValue(typeof(InputBinding), "None")]
         [EditorDisplay("View Flags"), EditorOrder(3160)]
@@ -551,9 +551,9 @@ namespace FlaxEditor.Options
         [EditorDisplay("View Flags"), EditorOrder(3170)]
         public InputBinding ToneMapping = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), "Shift+Ctrl+Alpha2")]
+        [DefaultValue(typeof(InputBinding), "Shift+Shortcut+Alpha2")]
         [EditorDisplay("View Flags"), EditorOrder(3180)]
-        public InputBinding EyeAdaptation = new InputBinding(KeyboardKeys.Alpha2, KeyboardKeys.Control, KeyboardKeys.Shift);
+        public InputBinding EyeAdaptation = new InputBinding(KeyboardKeys.Alpha2, KeyboardKeys.Shortcut, KeyboardKeys.Shift);
 
         [DefaultValue(typeof(InputBinding), "None")]
         [EditorDisplay("View Flags"), EditorOrder(3190)]
@@ -575,17 +575,17 @@ namespace FlaxEditor.Options
         [EditorDisplay("View Flags"), EditorOrder(3230)]
         public InputBinding ContactShadows = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), "Shift+Ctrl+Alpha1")]
+        [DefaultValue(typeof(InputBinding), "Shift+Shortcut+Alpha1")]
         [EditorDisplay("View Flags"), EditorOrder(3240)]
-        public InputBinding PhysicsDebug = new InputBinding(KeyboardKeys.Alpha1, KeyboardKeys.Control, KeyboardKeys.Shift);
+        public InputBinding PhysicsDebug = new InputBinding(KeyboardKeys.Alpha1, KeyboardKeys.Shortcut, KeyboardKeys.Shift);
 
-        [DefaultValue(typeof(InputBinding), "Shift+Ctrl+Alpha5")]
+        [DefaultValue(typeof(InputBinding), "Shift+Shortcut+Alpha5")]
         [EditorDisplay("View Flags"), EditorOrder(3250)]
-        public InputBinding LightsDebug = new InputBinding(KeyboardKeys.Alpha5, KeyboardKeys.Control, KeyboardKeys.Shift);
+        public InputBinding LightsDebug = new InputBinding(KeyboardKeys.Alpha5, KeyboardKeys.Shortcut, KeyboardKeys.Shift);
 
-        [DefaultValue(typeof(InputBinding), "Shift+Ctrl+Alpha4")]
+        [DefaultValue(typeof(InputBinding), "Shift+Shortcut+Alpha4")]
         [EditorDisplay("View Flags"), EditorOrder(3260)]
-        public InputBinding DebugDraw = new InputBinding(KeyboardKeys.Alpha4, KeyboardKeys.Control, KeyboardKeys.Shift);
+        public InputBinding DebugDraw = new InputBinding(KeyboardKeys.Alpha4, KeyboardKeys.Shortcut, KeyboardKeys.Shift);
 
         [DefaultValue(typeof(InputBinding), "None")]
         [EditorDisplay("View Flags"), EditorOrder(3270)]
@@ -595,17 +595,17 @@ namespace FlaxEditor.Options
 
         #region Interface
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+W")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+W")]
         [EditorDisplay("Interface"), EditorOrder(3500)]
-        public InputBinding CloseTab = new InputBinding(KeyboardKeys.W, KeyboardKeys.Control);
+        public InputBinding CloseTab = new InputBinding(KeyboardKeys.W, KeyboardKeys.Shortcut);
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+Tab")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+Tab")]
         [EditorDisplay("Interface"), EditorOrder(3510)]
-        public InputBinding NextTab = new InputBinding(KeyboardKeys.Tab, KeyboardKeys.Control);
+        public InputBinding NextTab = new InputBinding(KeyboardKeys.Tab, KeyboardKeys.Shortcut);
 
-        [DefaultValue(typeof(InputBinding), "Shift+Ctrl+Tab")]
+        [DefaultValue(typeof(InputBinding), "Shift+Shortcut+Tab")]
         [EditorDisplay("Interface"), EditorOrder(3520)]
-        public InputBinding PreviousTab = new InputBinding(KeyboardKeys.Tab, KeyboardKeys.Control, KeyboardKeys.Shift);
+        public InputBinding PreviousTab = new InputBinding(KeyboardKeys.Tab, KeyboardKeys.Shortcut, KeyboardKeys.Shift);
 
         [DefaultValue(SceneNodeDoubleClick.Expand)]
         [EditorDisplay("Interface"), EditorOrder(3530)]
@@ -622,37 +622,37 @@ namespace FlaxEditor.Options
         [EditorDisplay("Windows", "Avaliability in Play Mode"), EditorOrder(3000)]
         public PlayModeShortcutAvailability PlayModeWindowShortcutAvaliability { get; set; } = PlayModeShortcutAvailability.ProfilerOnly;
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+Alpha5")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+Alpha5")]
         [EditorDisplay("Windows"), EditorOrder(3010)]
-        public InputBinding ContentWindow = new InputBinding(KeyboardKeys.Alpha5, KeyboardKeys.Control);
+        public InputBinding ContentWindow = new InputBinding(KeyboardKeys.Alpha5, KeyboardKeys.Shortcut);
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+Alpha4")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+Alpha4")]
         [EditorDisplay("Windows"), EditorOrder(3020)]
-        public InputBinding SceneWindow = new InputBinding(KeyboardKeys.Alpha4, KeyboardKeys.Control);
+        public InputBinding SceneWindow = new InputBinding(KeyboardKeys.Alpha4, KeyboardKeys.Shortcut);
 
         [DefaultValue(typeof(InputBinding), "None")]
         [EditorDisplay("Windows"), EditorOrder(3030)]
         public InputBinding ToolboxWindow = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+Alpha3")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+Alpha3")]
         [EditorDisplay("Windows"), EditorOrder(3040)]
-        public InputBinding PropertiesWindow = new InputBinding(KeyboardKeys.Alpha3, KeyboardKeys.Control);
+        public InputBinding PropertiesWindow = new InputBinding(KeyboardKeys.Alpha3, KeyboardKeys.Shortcut);
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+Alpha2")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+Alpha2")]
         [EditorDisplay("Windows"), EditorOrder(3050)]
-        public InputBinding GameWindow = new InputBinding(KeyboardKeys.Alpha2, KeyboardKeys.Control);
+        public InputBinding GameWindow = new InputBinding(KeyboardKeys.Alpha2, KeyboardKeys.Shortcut);
 
-        [DefaultValue(typeof(InputBinding), "Ctrl+Alpha1")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+Alpha1")]
         [EditorDisplay("Windows"), EditorOrder(3060)]
-        public InputBinding EditorWindow = new InputBinding(KeyboardKeys.Alpha1, KeyboardKeys.Control);
+        public InputBinding EditorWindow = new InputBinding(KeyboardKeys.Alpha1, KeyboardKeys.Shortcut);
 
         [DefaultValue(typeof(InputBinding), "None")]
         [EditorDisplay("Windows"), EditorOrder(3070)]
         public InputBinding DebugLogWindow = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), "None")]
+        [DefaultValue(typeof(InputBinding), "Shift+Shortcut+C")]
         [EditorDisplay("Windows"), EditorOrder(3080)]
-        public InputBinding OutputLogWindow = new InputBinding(KeyboardKeys.C, KeyboardKeys.Control, KeyboardKeys.Shift);
+        public InputBinding OutputLogWindow = new InputBinding(KeyboardKeys.C, KeyboardKeys.Shortcut, KeyboardKeys.Shift);
 
         [DefaultValue(typeof(InputBinding), "None")]
         [EditorDisplay("Windows"), EditorOrder(3090)]
@@ -670,9 +670,9 @@ namespace FlaxEditor.Options
         [EditorDisplay("Windows"), EditorOrder(4020)]
         public InputBinding VisualScriptDebuggerWindow = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), "Control+Comma")]
+        [DefaultValue(typeof(InputBinding), "Shortcut+Comma")]
         [EditorDisplay("Windows"), EditorOrder(4030)]
-        public InputBinding EditorOptionsWindow = new InputBinding(KeyboardKeys.Comma, KeyboardKeys.Control);
+        public InputBinding EditorOptionsWindow = new InputBinding(KeyboardKeys.Comma, KeyboardKeys.Shortcut);
 
         #endregion
 

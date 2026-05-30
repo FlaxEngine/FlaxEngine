@@ -98,8 +98,8 @@ KeyboardKeys GetKey(NSEvent* event)
     case 0x33: return KeyboardKeys::Backspace;
     //case 0x34:
     case 0x35: return KeyboardKeys::Escape;
-    case 0x36: return KeyboardKeys::Control; // Command (right)
-    case 0x37: return KeyboardKeys::Control; // Command (left)
+    case 0x36: return KeyboardKeys::Command; // Command (right)
+    case 0x37: return KeyboardKeys::Command; // Command (left)
     case 0x38: return KeyboardKeys::Shift;
     case 0x39: return KeyboardKeys::Capital;
     case 0x3A: return KeyboardKeys::Alt;
@@ -416,6 +416,8 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 	    Input::Keyboard->OnKeyDown(key, Window);
 
 	// Send a text input event
+    if (([event modifierFlags] & NSEventModifierFlagCommand) != 0)
+        return;
     switch (key)
     {
         // Ignore text from special keys

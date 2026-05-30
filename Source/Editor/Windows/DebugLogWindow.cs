@@ -209,7 +209,7 @@ namespace FlaxEditor.Windows
                     Open();
                 }
                 // Ctrl+C
-                else if (options.Copy.Process(this))
+                else if (options.Copy.Process(this, key))
                 {
                     Copy();
                     return true;

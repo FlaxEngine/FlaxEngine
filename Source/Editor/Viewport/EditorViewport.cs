@@ -933,7 +933,7 @@ namespace FlaxEditor.Viewport
                     for (int i = 0; i < ViewFlagsValues.Length; i++)
                     {
                         var v = ViewFlagsValues[i];
-                        var button = viewFlags.AddButton(v.Name, v.InputBinding.ToString());
+                        var button = viewFlags.AddButton(v.Name, v.InputBinding.ToDisplayString());
                         button.CloseMenuOnClick = false;
                         button.Tag = v.Mode;
                     }
@@ -982,7 +982,7 @@ namespace FlaxEditor.Viewport
                         }
                         else
                         {
-                            var button = debugView.AddButton(v.Name, v.InputBinding.ToString());
+                            var button = debugView.AddButton(v.Name, v.InputBinding.ToDisplayString());
                             button.CloseMenuOnClick = false;
                             button.Tag = v.Mode;
                         }
