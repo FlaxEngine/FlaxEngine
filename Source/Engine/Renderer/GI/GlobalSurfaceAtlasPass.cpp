@@ -562,10 +562,9 @@ public:
                 }
             }
 
-            if (!object.ObjectDataDirty)
+            if (!object.ObjectDataDirty && object.ObjectDataAddress.TilesCount != 0)
             {
                 // Skip updating data if it's valid
-                ASSERT(object.ObjectDataAddress.TilesCount != 0);
                 uint32& addr = objectsListData[objectIndex++];
                 if (addr != object.ObjectDataAddress.Address)
                 {

@@ -1870,7 +1870,7 @@ bool InitHostfxr()
     int rc = get_hostfxr_path(hostfxrPath, &hostfxrPathSize, &get_hostfxr_params);
     if (rc != 0)
     {
-        LOG(Error, "Failed to find hostfxr: {0:x} ({1})", (unsigned int)rc, String(get_hostfxr_params.dotnet_root));
+        LOG(Error, "Failed to find hostfxr: 0x{0:x} ({1})", (unsigned int)rc, String(get_hostfxr_params.dotnet_root));
 
         // Warn user about missing .Net
 #if PLATFORM_DESKTOP

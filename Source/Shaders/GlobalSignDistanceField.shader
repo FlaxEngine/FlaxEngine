@@ -407,6 +407,7 @@ float4 PS_Overdraw(Quad_VS2PS input) : SV_Target
 
     // Make depth-based outlines
     float baseDepth = SAMPLE_RT_DEPTH(Depth, input.TexCoord);
+    if (DEPTH_01(baseDepth) > 0.999999f) return 0; // Skip background
     float2 depthSize;
     Depth.GetDimensions(depthSize.x, depthSize.y);
     float2 depthSizeInv = 1.0f / depthSize;

@@ -217,7 +217,7 @@ struct ShadowAtlasLight
         return false;
     }
 
-    float CalculateUpdateRateInv(const RenderLightData& light, float distanceFromView, bool& freezeUpdate) const
+    float CalculateUpdateRateInv(const RenderLightData& light, float distanceFromView, bool& freezeUpdate, bool canGlobalScale = true) const
     {
         if (!GPU_SPREAD_WORKLOAD)
         {
@@ -227,7 +227,8 @@ struct ShadowAtlasLight
         const float shadowsUpdateRate = light.ShadowsUpdateRate;
         const float shadowsUpdateRateAtDistance = shadowsUpdateRate * light.ShadowsUpdateRateAtDistance;
         float updateRate = Math::Lerp(shadowsUpdateRate, shadowsUpdateRateAtDistance, Math::Saturate(distanceFromView / Distance));
-        updateRate *= Graphics::ShadowUpdateRate;
+        if (canGlobalScale)
+            updateRate *= Graphics::ShadowUpdateRate;
         freezeUpdate = updateRate <= ZeroTolerance;
         if (freezeUpdate)
             return 0.0f;
@@ -928,9 +929,9 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     atlasLight.ContextCount = 0;
     for (int32 cascadeIndex = 0; cascadeIndex < csmCount; cascadeIndex++)
     {
-        const float dstToCascade = atlasLight.CascadeSplits.Raw[cascadeIndex];
+        float dstToCascade = cascadeIndex == 0 ? 0 : atlasLight.CascadeSplits.Raw[cascadeIndex - 1];
         bool freezeUpdate;
-        const float updateRateInv = atlasLight.CalculateUpdateRateInv(light, dstToCascade, freezeUpdate);
+        const float updateRateInv = atlasLight.CalculateUpdateRateInv(light, dstToCascade, freezeUpdate, cascadeIndex != 0);
         auto& tile = atlasLight.Tiles[cascadeIndex];
         if ((tile.FramesToUpdate > 0.0f || freezeUpdate) && atlasLight.Cache.DynamicValid)
         {
