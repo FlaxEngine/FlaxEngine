@@ -228,8 +228,12 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
 
         // Smooth backface test
         // x - weight, y - non-directional weight with a bias
+#if LIGHTING_NO_DIRECTIONAL
+        float2 weights = float2(1, 1);
+#else
         float backfaceWeight = Square(dot(worldPosToProbe, worldNormal) * 0.5f + 0.5f);
         float2 weights = float2(max(backfaceWeight, 0.1f), backfaceWeight + 0.2f);
+#endif
 
         // Sample distance texture
         float2 octahedralCoords = GetOctahedralCoords(-biasedPosToProbe);
@@ -303,8 +307,13 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
 
 float3 GetDDGISurfaceBias(float3 viewDir, float probesSpacing, float3 worldNormal, float bias)
 {
+#if LIGHTING_NO_DIRECTIONAL
+    return 0;
+#else
     // Bias the world-space position to reduce artifacts
     return (worldNormal * 0.2f + viewDir * 0.8f) * (0.6f * probesSpacing * bias);
+    //return worldNormal * (0.2f * probesSpacing * bias);
+#endif
 }
 
 // [Inigo Quilez, https://iquilezles.org/articles/distfunctions/]
