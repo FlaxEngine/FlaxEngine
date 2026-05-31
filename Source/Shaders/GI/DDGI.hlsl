@@ -190,7 +190,9 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
     float3 biasAlpha = saturate((biasedWorldPosition - baseProbeWorldPosition) / probesSpacing);
 
     // Loop over the closest probes to accumulate their contributions
-    float4 irradiance = float4(0, 0, 0, 0);
+    float4 totalIrradiance = float4(0, 0, 0, 0);
+    float4 totalIrradianceNonDir = float4(0, 0, 0, 0);
+    float fallbacks = 0;
     for (uint i = 0; i < 8; i++)
     {
         uint3 probeCoordsOffset = uint3(i, i >> 1, i >> 2) & 1;
@@ -201,7 +203,7 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
         float4 probeData = LoadDDGIProbeData(data, probesData, cascadeIndex, probeIndex);
         uint probeState = DecodeDDGIProbeState(probeData);
         uint useVisibility = true;
-        float minWight = 0.000001f;
+        float minWight = 0.001f;
         if (probeState == DDGI_PROBE_STATE_INACTIVE)
         {
             // Use fallback probe that is closest to this one
@@ -212,6 +214,7 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
             probeCoords = fallbackCoords;
             probeIndex = GetDDGIScrollingProbeIndex(data, cascadeIndex, fallbackCoords);
             probeData = LoadDDGIProbeData(data, probesData, cascadeIndex, probeIndex);
+            fallbacks++;
             //if (DecodeDDGIProbeState(probeData) == DDGI_PROBE_STATE_INACTIVE) continue;
         }
 
@@ -224,8 +227,9 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
         float biasedPosToProbeDist = length(probePosition - biasedWorldPosition) * 0.95f;
 
         // Smooth backface test
-        float weight = Square(dot(worldPosToProbe, worldNormal) * 0.5f + 0.5f);
-        weight = max(weight, 0.1f);
+        // x - weight, y - non-directional weight with a bias
+        float backfaceWeight = Square(dot(worldPosToProbe, worldNormal) * 0.5f + 0.5f);
+        float2 weights = float2(max(backfaceWeight, 0.1f), backfaceWeight + 0.2f);
 
         // Sample distance texture
         float2 octahedralCoords = GetOctahedralCoords(-biasedPosToProbe);
@@ -237,19 +241,19 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
         {
             float variance = abs(Square(probeDistance.x) - probeDistance.y);
             float visibilityWeight = variance / (variance + Square(biasedPosToProbeDist - probeDistance.x));
-            weight *= max(visibilityWeight * visibilityWeight * visibilityWeight, 0.0f);
+            weights *= max(visibilityWeight * visibilityWeight * visibilityWeight, 0.0f);
         }
 
         // Avoid a weight of zero
-        weight = max(weight, minWight);
+        weights = max(weights, minWight);
 
         // Adjust weight curve to inject a small portion of light
         const float minWeightThreshold = 0.2f;
-        if (weight < minWeightThreshold) weight *= (weight * weight) * (1.0f / (minWeightThreshold * minWeightThreshold));
+        if (weights.x < minWeightThreshold) weights.x *= (weights.x * weights.x) * (1.0f / (minWeightThreshold * minWeightThreshold));
 
         // Calculate trilinear weights based on the distance to each probe to smoothly transition between grid of 8 probes
         float3 trilinear = lerp(1.0f - biasAlpha, biasAlpha, (float3)probeCoordsOffset);
-        weight *= saturate(trilinear.x * trilinear.y * trilinear.z * 2.0f);
+        weights *= saturate(trilinear.x * trilinear.y * trilinear.z * 2.0f);
 
         // Sample irradiance texture
         octahedralCoords = GetOctahedralCoords(worldNormal);
@@ -259,43 +263,42 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
         probeIrradiance = pow(probeIrradiance, data.IrradianceGamma * 0.5f);
 #endif
 
-        // Debug probe offset visualization
-        //probeIrradiance = float3(max(frac(probeData.xyz) * 2, 0.1f));
-
         // Accumulate weighted irradiance
-        irradiance += float4(probeIrradiance * weight, weight);
+        totalIrradiance += float4(probeIrradiance * weights.x, weights.x);
+        totalIrradianceNonDir += float4(probeIrradiance * weights.y, weights.y);
     }
 
 #if 0
     // Debug DDGI cascades with colors
     if (cascadeIndex == 0)
-        irradiance = float4(1, 0, 0, 1);
+        totalIrradiance = float4(1, 0, 0, 1);
     else if (cascadeIndex == 1)
-        irradiance = float4(0, 1, 0, 1);
+        totalIrradiance = float4(0, 1, 0, 1);
     else if (cascadeIndex == 2)
-        irradiance = float4(0, 0, 1, 1);
+        totalIrradiance = float4(0, 0, 1, 1);
     else if (invalidCascade) // Area outside the last cascade that clamps to it
-        irradiance = float4(1, 0, 1, 1);
+        totalIrradiance = float4(1, 0, 1, 1);
     else
-        irradiance = float4(0, 1, 1, 1);
+        totalIrradiance = float4(0, 1, 1, 1);
 #endif
 
-    if (irradiance.a > 0.0f)
+    // Normalize irradiance
+    totalIrradiance.a += 0.0001f; // Avoid division by zero
+    float canNormalize = saturate(totalIrradianceNonDir.a * totalIrradianceNonDir.a + 0.9f); // Don't normalize when the weight is very low to preserve indirect shadowing
+#if !DDGI_FALLBACK_OUTER_DEDICATED_PROBE
+    canNormalize += invalidCascade ? 1 : 0; // Normalize when outside the last cascade to preserve ambient GI when not using ambient probe
+#endif
+    totalIrradiance.rgb /= lerp(1, totalIrradiance.a, saturate(canNormalize));
+    if (fallbacks >= 5 && totalIrradianceNonDir.a > 0.00001f)
     {
-        // Normalize irradiance
-        //irradiance.rgb /= irradiance.a;
-        //irradiance.rgb /= lerp(1, irradiance.a, saturate(irradiance.a * irradiance.a + 0.9f));
-#if DDGI_FALLBACK_OUTER_DEDICATED_PROBE
-        irradiance.rgb /= lerp(1, irradiance.a, saturate(irradiance.a * irradiance.a + 0.9f));
-#else
-        irradiance.rgb /= invalidCascade ? irradiance.a : lerp(1, irradiance.a, saturate(irradiance.a * irradiance.a + 0.9f));
-#endif
-#if DDGI_SRGB_BLENDING
-        irradiance.rgb *= irradiance.rgb;
-#endif
-        irradiance.rgb *= 2.0f * PI;
+        // Use non-directional irradiance when sampling mostly fallback probes (out of place)
+        totalIrradiance.rgb = totalIrradianceNonDir.rgb / totalIrradianceNonDir.a;
     }
-    return irradiance.rgb;
+#if DDGI_SRGB_BLENDING
+    totalIrradiance.rgb *= totalIrradiance.rgb;
+#endif
+    totalIrradiance.rgb *= 2.0f * PI;
+    return totalIrradiance.rgb;
 }
 
 float3 GetDDGISurfaceBias(float3 viewDir, float probesSpacing, float3 worldNormal, float bias)
