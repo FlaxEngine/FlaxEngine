@@ -27,6 +27,7 @@ namespace Flax.Build
     public abstract class Sdk
     {
         private static Dictionary<string, Sdk> _sdks;
+        private static List<Sdk> _delayedPrints;
 
         /// <summary>
         /// Returns true if SDK is valid.
@@ -53,14 +54,11 @@ namespace Flax.Build
         /// </summary>
         public static void Print()
         {
+            _delayedPrints = null;
             Get(string.Empty);
             foreach (var e in _sdks)
             {
-                var sdk = e.Value;
-                if (sdk.IsValid)
-                    Log.Message(sdk.GetType().Name + ", " + sdk.Version + ", " + sdk.RootPath);
-                else
-                    Log.Message(sdk.GetType().Name + ", missing");
+                Print(e.Value);
             }
             foreach (var e in WindowsPlatformBase.GetSDKs())
             {
@@ -70,6 +68,31 @@ namespace Flax.Build
             {
                 Log.Message("Windows Toolset " + e.Key + ", " + e.Value);
             }
+            _delayedPrints = new List<Sdk>();
+        }
+
+        private static void Print(Sdk sdk)
+        {
+            if (sdk.IsValid)
+                Log.Message(sdk.GetType().Name + ", " + sdk.Version + ", " + sdk.RootPath);
+            else
+                Log.Message(sdk.GetType().Name + ", missing");
+        }
+
+        internal static void DelayedPrint()
+        {
+            if (_delayedPrints == null || _delayedPrints.Count == 0)
+                return;
+            foreach (var sdk in _delayedPrints)
+                Print(sdk);
+            _delayedPrints.Clear();
+        }
+
+        protected Sdk()
+        {
+            // SDKs coming from dynamic build files (eg. plugins or modules) can be printed after they are initialized with a delay
+            if (_delayedPrints != null)
+                _delayedPrints.Add(this);
         }
 
         /// <summary>

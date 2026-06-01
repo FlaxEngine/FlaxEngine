@@ -165,6 +165,7 @@ namespace Flax.Build
                 }
 
                 // Performance logging
+                Sdk.DelayedPrint();
                 if (Configuration.PerformanceInfo)
                 {
                     Log.Info(string.Empty);

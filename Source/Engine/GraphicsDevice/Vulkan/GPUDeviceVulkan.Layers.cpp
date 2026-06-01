@@ -280,12 +280,12 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
         }
     }
 
+    bool vkTrace = false;
 #if VULKAN_USE_DEBUG_LAYER
     if (!useDebugLayer)
         ValidationLevel = VulkanValidationLevel::Disabled;
     const bool useVkTrace = false;
 
-    bool vkTrace = false;
     if (useVkTrace && useDebugLayer)
     {
         const char* VkTraceName = "VK_LAYER_LUNARG_vktrace";
