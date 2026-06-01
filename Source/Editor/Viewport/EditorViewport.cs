@@ -120,8 +120,8 @@ namespace FlaxEditor.Viewport
                 WasAltDownBefore = prevInput.WasAltDownBefore || prevInput.IsAltDown;
 
                 InputOptions inputOptions = Editor.Instance.Options.Options.Input;
-                ZoomInDown = window.GetKey(inputOptions.ZoomIn.Key);
-                ZoomOutDown = window.GetKey(inputOptions.ZoomOut.Key);
+                ZoomInDown = inputOptions.ZoomIn.Process(window);
+                ZoomOutDown = inputOptions.ZoomOut.Process(window);
 
                 IsMouseRightDown = useMouse && window.GetMouseButton(MouseButton.Right);
                 IsMouseMiddleDown = useMouse && window.GetMouseButton(MouseButton.Middle);
