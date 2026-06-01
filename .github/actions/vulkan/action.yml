@@ -26,7 +26,7 @@ runs:
             export VULKAN_SDK_ROOT=`pwd`/../VulkanSDK
             curl -LO "https://sdk.lunarg.com/sdk/download/$VULKAN_SDK_VER/mac/vulkansdk-macos-$VULKAN_SDK_VER.zip"
             unzip vulkansdk-macos-$VULKAN_SDK_VER.zip
-            sudo open -n vulkansdk-macos-$VULKAN_SDK_VER.app --args --root $VULKAN_SDK_ROOT --accept-licenses --default-answer --confirm-command install
+            sudo "vulkansdk-macos-$VULKAN_SDK_VER.app/Contents/MacOS/vulkansdk-macOS-$VULKAN_SDK_VER" --root $VULKAN_SDK_ROOT --accept-licenses --default-answer --confirm-command install
             export VULKAN_SDK=$VULKAN_SDK_ROOT/macOS
             ;;
           *) # Windows
