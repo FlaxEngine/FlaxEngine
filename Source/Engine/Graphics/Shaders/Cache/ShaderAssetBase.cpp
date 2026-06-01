@@ -264,10 +264,13 @@ bool ShaderAssetBase::LoadShaderCache(ShaderCacheResult& result)
         auto& platformDefine = options.Macros.AddOne();
 #if PLATFORM_WINDOWS
         platformDefine.Name = "PLATFORM_WINDOWS";
+        options.Platform = PlatformType::Windows;
 #elif PLATFORM_LINUX
         platformDefine.Name = "PLATFORM_LINUX";
+        options.Platform = PlatformType::Linux;
 #elif PLATFORM_MAC
         platformDefine.Name = "PLATFORM_MAC";
+        options.Platform = PlatformType::Mac;
 #else
 #error "Unknown platform."
 #endif

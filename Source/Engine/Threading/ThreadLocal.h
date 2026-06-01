@@ -54,6 +54,12 @@ public:
         GetBucket().Value = value;
     }
 
+    FORCE_INLINE ThreadLocal& operator=(const T& value)
+    {
+        GetBucket().Value = value;
+        return *this;
+    }
+
     int32 Count() const
     {
         int32 result = 0;

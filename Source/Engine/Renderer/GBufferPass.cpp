@@ -189,12 +189,9 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTexture* lightBuffer)
         context->Clear(renderContext.Buffers->GBuffer3->View(), Color::Transparent);
     }
 
-    // Ensure to have valid data
+    // Skip when resources are not loaded yet
     if (checkIfSkipPass())
-    {
-        // Resources are missing. Do not perform rendering.
         return;
-    }
 
 #if USE_EDITOR
     // Special debug drawing

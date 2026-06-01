@@ -188,6 +188,7 @@ bool ShaderCacheManagerService::Init()
         int32 ShaderCacheVersion = -1;
         int32 MaterialGraphVersion = -1;
         int32 ParticleGraphVersion = -1;
+        int32 Platform = -1;
         union
         {
             struct
@@ -210,6 +211,7 @@ bool ShaderCacheManagerService::Init()
             ShaderCacheVersion = GPU_SHADER_CACHE_VERSION;
             MaterialGraphVersion = MATERIAL_GRAPH_VERSION;
             ParticleGraphVersion = PARTICLE_GPU_GRAPH_VERSION;
+            Platform = (int32)PLATFORM_TYPE;
             Flags = 0;
 #if USE_EDITOR
             ShaderDebug = CommandLine::Options.ShaderDebug.IsTrue();
@@ -235,6 +237,7 @@ bool ShaderCacheManagerService::Init()
         || cacheVersion.ShaderCacheVersion != cacheVersionDefault.ShaderCacheVersion
         || cacheVersion.MaterialGraphVersion != cacheVersionDefault.MaterialGraphVersion
         || cacheVersion.ParticleGraphVersion != cacheVersionDefault.ParticleGraphVersion
+        || cacheVersion.Platform != cacheVersionDefault.Platform
         || cacheVersion.Flags != cacheVersionDefault.Flags
     )
     {

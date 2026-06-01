@@ -94,6 +94,11 @@ void GPUTextureViewVulkan::Init(GPUDeviceVulkan* device, ResourceOwnerVulkan* ow
     }
 
     VALIDATE_VULKAN_RESULT(vkCreateImageView(device->Device, &Info, nullptr, &View));
+
+#if VK_KHR_maintenance1
+    if (arraySize == 1 && extent.depth > 1)
+        range.layerCount = VK_REMAINING_ARRAY_LAYERS; // without maintenance9 for per-layer masking all layers need to be enabled with a special value
+#endif
 }
 
 VkImageView GPUTextureViewVulkan::GetFramebufferView()
@@ -119,6 +124,7 @@ VkImageView GPUTextureViewVulkan::GetFramebufferView()
         // Use an additional view for that case with modified level count to 1.
         VkImageViewCreateInfo createInfo = Info;
         createInfo.subresourceRange.levelCount = 1;
+        createInfo.subresourceRange.layerCount = 1;
         VALIDATE_VULKAN_RESULT(vkCreateImageView(Device->Device, &createInfo, nullptr, &ViewFramebuffer));
     }
     else

@@ -945,13 +945,45 @@ bool ShaderCompilerVulkan::OnCompileBegin()
 
 void ShaderCompilerVulkan::InitParsing(ShaderCompilationContext* context, glslang::TShader& shader)
 {
+    // Pick Vulkan version based on target platform
+    // Based on: https://docs.vulkan.org/guide/latest/versions.html#_spir_v
+    glslang::EShTargetClientVersion targetVulkan;
+    glslang::EShTargetLanguageVersion targetLang;
+    switch (context->Options->Platform)
+    {
+    case PlatformType::Windows:
+        // TODO: update glslang and try Vulkan 1.2 with SPIR-V 1.5
+        targetVulkan = glslang::EShTargetVulkan_1_1;
+        targetLang = glslang::EShTargetSpv_1_2;
+        break;
+    case PlatformType::Android:
+        targetVulkan = glslang::EShTargetVulkan_1_1;
+        targetLang = glslang::EShTargetSpv_1_2;
+        break;
+    case PlatformType::Switch:
+        // TODO: update glslang and try Vulkan 1.3 with SPIR-V 1.6
+        targetVulkan = glslang::EShTargetVulkan_1_1;
+        targetLang = glslang::EShTargetSpv_1_2;
+        break;
+    case PlatformType::Mac:
+    case PlatformType::iOS:
+        // TODO: update glslang and try Vulkan 1.4 with SPIR-V 1.6
+        targetVulkan = glslang::EShTargetVulkan_1_1;
+        targetLang = glslang::EShTargetSpv_1_2;
+        break;
+    default:
+        targetVulkan = glslang::EShTargetVulkan_1_0;
+        targetLang = glslang::EShTargetSpv_1_0;
+        break;
+    }
+
     shader.setInvertY(true);
     //shader.setAutoMapLocations(true);
     //shader.setAutoMapBindings(true);
     //shader.setShiftBinding(glslang::TResourceType::EResUav, 500);
     shader.setHlslIoMapping(true);
-    shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_0);
-    shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_0);
+    shader.setEnvClient(glslang::EShClientVulkan, targetVulkan);
+    shader.setEnvTarget(glslang::EShTargetSpv, targetLang);
 }
 
 void ShaderCompilerVulkan::InitCodegen(ShaderCompilationContext* context, glslang::SpvOptions& spvOptions)

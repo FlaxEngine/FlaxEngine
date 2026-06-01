@@ -434,7 +434,7 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
     }
 }
 
-void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<const char*>& outDeviceExtensions, Array<const char*>& outDeviceLayers)
+void GPUDeviceVulkan::GetDeviceExtensions(VkPhysicalDevice gpu, Array<const char*>& outDeviceExtensions)
 {
     Array<LayerExtension> deviceLayerExtensions;
     deviceLayerExtensions.AddDefault(1);
@@ -495,70 +495,19 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
     {
         IsDebugToolAttached = true;
     }
-#if VULKAN_USE_DEBUG_LAYER
-    bool hasKhronosStandardValidationLayer = false, hasLunargStandardValidationLayer = false;
-#if VULKAN_USE_KHRONOS_STANDARD_VALIDATION
-    const char* vkLayerKhronosValidation = "VK_LAYER_KHRONOS_validation";
-    hasKhronosStandardValidationLayer = ContainsLayer(deviceLayerExtensions, vkLayerKhronosValidation);
-    if (hasKhronosStandardValidationLayer && _debugLayer)
-    {
-        outDeviceLayers.Add(vkLayerKhronosValidation);
-    }
-#endif
-#if VULKAN_USE_LUNARG_STANDARD_VALIDATION
-    if (!hasKhronosStandardValidationLayer && _debugLayer)
-    {
-        const char* vkLayerLunargStandardValidation = "VK_LAYER_LUNARG_standard_validation";
-        hasLunargStandardValidationLayer = ContainsLayer(deviceLayerExtensions, vkLayerLunargStandardValidation);
-        if (hasLunargStandardValidationLayer)
-        {
-            outDeviceLayers.Add(vkLayerLunargStandardValidation);
-        }
-    }
-#endif
-    if (!hasKhronosStandardValidationLayer && !hasLunargStandardValidationLayer && _debugLayer)
-    {
-        for (uint32 i = 0; GValidationLayers[i] != nullptr; i++)
-        {
-            const char* validationLayer = GValidationLayers[i];
-            if (ContainsLayer(deviceLayerExtensions, validationLayer))
-            {
-                outDeviceLayers.Add(validationLayer);
-            }
-        }
-    }
-#endif
 
     // Find all extensions
     Array<const char*> availableExtensions;
+    availableExtensions.Resize(deviceLayerExtensions[0].Extensions.Count());
+    for (int32 i = 0; i < deviceLayerExtensions[0].Extensions.Count(); i++)
     {
-        for (int32 i = 0; i < deviceLayerExtensions[0].Extensions.Count(); i++)
-        {
-            availableExtensions.Add(deviceLayerExtensions[0].Extensions[i].extensionName);
-        }
-
-        for (int32 layerIndex = 0; layerIndex < outDeviceLayers.Count(); layerIndex++)
-        {
-            int32 findLayerIndex;
-            for (findLayerIndex = 1; findLayerIndex < deviceLayerExtensions.Count(); findLayerIndex++)
-            {
-                if (!StringUtils::Compare(deviceLayerExtensions[findLayerIndex].Layer.layerName, outDeviceLayers[layerIndex]))
-                {
-                    break;
-                }
-            }
-
-            if (findLayerIndex < deviceLayerExtensions.Count())
-            {
-                deviceLayerExtensions[findLayerIndex].GetExtensions(availableExtensions);
-            }
-        }
+        availableExtensions[i] = deviceLayerExtensions[0].Extensions[i].extensionName;
     }
     TrimDuplicates(availableExtensions);
 
     // Pick extensions to use
     Array<const char*> platformExtensions;
-    VulkanPlatform::GetDeviceExtensions(platformExtensions, outDeviceLayers);
+    VulkanPlatform::GetDeviceExtensions(platformExtensions);
     for (const char* extension : platformExtensions)
     {
         if (ListContains(availableExtensions, extension))
@@ -581,15 +530,6 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
         for (const char* extension : outDeviceExtensions)
         {
             LOG(Info, "- {0}", String(extension));
-        }
-    }
-
-    if (outDeviceLayers.HasItems())
-    {
-        LOG(Info, "Using device layers:");
-        for (const char* layer : outDeviceLayers)
-        {
-            LOG(Info, "- {0}", String(layer));
         }
     }
 }

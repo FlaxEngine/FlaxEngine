@@ -210,7 +210,11 @@ void GPUContextVulkan::AddImageBarrier(GPUTextureViewVulkan* handle, VkImageLayo
                 range.baseMipLevel = 0;
                 range.levelCount = mipLevels;
                 range.baseArrayLayer = 0;
+#if VK_KHR_maintenance1
+                range.layerCount = VK_REMAINING_ARRAY_LAYERS; // maintenance9 could be enabled for per-layer masking
+#else
                 range.layerCount = handle->Owner->ArraySlices;
+#endif
                 AddImageBarrier(handle->Image, srcLayout, dstLayout, range, handle);
                 state.SetResourceState(dstLayout);
             }
@@ -229,6 +233,10 @@ void GPUContextVulkan::AddImageBarrier(GPUTextureViewVulkan* handle, VkImageLayo
                     range.levelCount = 1;
                     range.baseArrayLayer = i / mipLevels;
                     range.layerCount = 1;
+#if VK_KHR_maintenance1
+                    if (handle->Owner->ArraySlices == 1)
+                        range.layerCount = VK_REMAINING_ARRAY_LAYERS; // maintenance9 could be enabled for per-layer masking
+#endif
                     AddImageBarrier(handle->Image, srcLayout, dstLayout, range, handle);
                     state.SetSubresourceState(i, dstLayout);
                 }
@@ -264,6 +272,10 @@ void GPUContextVulkan::AddImageBarrier(GPUTextureVulkan* texture, int32 mipSlice
     range.levelCount = 1;
     range.baseArrayLayer = arraySlice;
     range.layerCount = 1;
+#if VK_KHR_maintenance1
+    if (texture->IsVolume())
+        range.layerCount = VK_REMAINING_ARRAY_LAYERS; // maintenance9 could be enabled for per-layer masking
+#endif
     AddImageBarrier(texture->GetHandle(), srcLayout, dstLayout, range, nullptr);
     state.SetSubresourceState(subresourceIndex, dstLayout);
 }
@@ -285,6 +297,10 @@ void GPUContextVulkan::AddImageBarrier(GPUTextureVulkan* texture, VkImageLayout 
         range.levelCount = texture->MipLevels();
         range.baseArrayLayer = 0;
         range.layerCount = texture->ArraySize();
+#if VK_KHR_maintenance1
+        if (texture->IsVolume())
+            range.layerCount = VK_REMAINING_ARRAY_LAYERS; // maintenance9 could be enabled for per-layer masking
+#endif
         AddImageBarrier(texture->GetHandle(), srcLayout, dstLayout, range, nullptr);
         state.SetResourceState(dstLayout);
     }
@@ -431,7 +447,7 @@ void GPUContextVulkan::BeginRenderPass()
     PendingClear clear;
     for (int32 i = 0; i < GPU_MAX_RT_BINDED; i++)
     {
-        auto handle = _rtHandles[i];
+        auto handle = _rtTargets[i];
         if (handle)
         {
             layout.RTVsFormats[i] = handle->GetFormat();
@@ -490,7 +506,7 @@ void GPUContextVulkan::BeginRenderPass()
     }
     else
     {
-        handle = _rtHandles[0];
+        handle = _rtTargets[0];
 #if !BUILD_RELEASE
         if (!handle)
         {
@@ -507,9 +523,8 @@ void GPUContextVulkan::BeginRenderPass()
     layout.Layers = handle->Layers;
 
     // Clear textures that are not bind to the render pass
-    for (auto& e : _pendingClears)
-        ManualClear(e);
-    _pendingClears.Clear();
+    if (_pendingClears.HasItems())
+        FlushManualClears();
 
     // Get or create objects
     auto renderPass = _device->GetOrCreateRenderPass(layout);
@@ -567,6 +582,17 @@ void GPUContextVulkan::ManualClear(const PendingClear& clear)
     {
         vkCmdClearColorImage(cmdBuffer->GetHandle(), clear.View->Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear.Value.color, 1, &clear.View->Info.subresourceRange);
     }
+}
+
+void GPUContextVulkan::FlushManualClears()
+{
+    // Batch barriers
+    for (auto& clear : _pendingClears)
+        AddImageBarrier(clear.View, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    for (auto& clear : _pendingClears)
+        ManualClear(clear);
+    _pendingClears.Clear();
 }
 
 void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& descriptorInfo, DescriptorSetWriterVulkan& dsWriter, bool& needsWrite)
@@ -736,6 +762,27 @@ void GPUContextVulkan::OnDrawCall()
     ASSERT(pipelineState && pipelineState->IsValid());
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
 
+    // Flush pending image clears before binding descriptors but skip ones that are going to be used as render targets
+    // (they will be cleared in the render pass with proper loadOp and without extra barriers)
+    if (_pendingClears.HasItems())
+    {
+        auto rtHandles = ToSpan(_rtHandles, ARRAY_COUNT(_rtHandles));
+        for (auto& clear : _pendingClears)
+        {
+            if (!SpanContains(rtHandles, clear.View))
+                AddImageBarrier(clear.View, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        }
+        for (int32 i = 0; i < _pendingClears.Count(); i++)
+        {
+            auto& clear = _pendingClears.Get()[i];
+            if (!SpanContains(rtHandles, clear.View))
+            {
+                ManualClear(clear);
+                _pendingClears.RemoveAtKeepOrder(i--);
+            }
+        }
+    }
+
     // End previous render pass if render targets layout was modified
     if (_rtDirtyFlag && cmdBuffer->IsInsideRenderPass())
         EndRenderPass();
@@ -837,7 +884,6 @@ void GPUContextVulkan::FrameBegin()
     _currentState = nullptr;
     _currentCompute = nullptr;
     _vertexLayout = nullptr;
-    _rtDepth = nullptr;
     Platform::MemoryClear(_rtHandles, sizeof(_rtHandles));
     Platform::MemoryClear(_cbHandles, sizeof(_cbHandles));
     Platform::MemoryClear(_srHandles, sizeof(_srHandles));
@@ -918,6 +964,17 @@ bool GPUContextVulkan::IsDepthBufferBinded()
 
 void GPUContextVulkan::Clear(GPUTextureView* rt, const Color& color)
 {
+    for (auto& e : _pendingClears)
+    {
+        if (e.View == rt)
+        {
+            // Use existing slot
+            Platform::MemoryCopy(e.Value.color.float32, color.Raw, sizeof(color.Raw));
+            return;
+        }
+    }
+
+    // Add a new entry
     auto& clear = _pendingClears.AddOne();
     clear.View = (GPUTextureViewVulkan*)rt;
     Platform::MemoryCopy(clear.Value.color.float32, color.Raw, sizeof(color.Raw));
@@ -925,6 +982,18 @@ void GPUContextVulkan::Clear(GPUTextureView* rt, const Color& color)
 
 void GPUContextVulkan::ClearDepth(GPUTextureView* depthBuffer, float depthValue, uint8 stencilValue)
 {
+    for (auto& e : _pendingClears)
+    {
+        if (e.View == depthBuffer)
+        {
+            // Use existing slot
+            e.Value.depthStencil.depth = depthValue;
+            e.Value.depthStencil.stencil = stencilValue;
+            return;
+        }
+    }
+
+    // Add a new entry
     auto& clear = _pendingClears.AddOne();
     clear.View = (GPUTextureViewVulkan*)depthBuffer;
     clear.Value.depthStencil.depth = depthValue;
@@ -1001,7 +1070,6 @@ void GPUContextVulkan::ResetRenderTarget()
         _rtDirtyFlag = true;
         _psDirtyFlag = true;
         _rtCount = 0;
-        _rtDepth = nullptr;
         Platform::MemoryClear(_rtHandles, sizeof(_rtHandles));
 
         const auto cmdBuffer = _cmdBufferManager->GetActiveCmdBuffer();
@@ -1014,13 +1082,13 @@ void GPUContextVulkan::SetRenderTarget(GPUTextureView* rt)
 {
     const auto rtVulkan = static_cast<GPUTextureViewVulkan*>(rt);
 
-    if (_rtDepth != nullptr || _rtCount != 1 || _rtHandles[0] != rtVulkan)
+    if (_rtDepth != nullptr || _rtCount != 1 || _rtTargets[0] != rtVulkan)
     {
         _rtDirtyFlag = true;
         _psDirtyFlag = true;
         _rtCount = 1;
         _rtDepth = nullptr;
-        _rtHandles[0] = rtVulkan;
+        _rtTargets[0] = rtVulkan;
     }
 }
 
@@ -1030,13 +1098,13 @@ void GPUContextVulkan::SetRenderTarget(GPUTextureView* depthBuffer, GPUTextureVi
     const auto depthBufferVulkan = static_cast<GPUTextureViewVulkan*>(depthBuffer);
     const auto rtCount = rtVulkan ? 1 : 0;
 
-    if (_rtDepth != depthBufferVulkan || _rtCount != rtCount || _rtHandles[0] != rtVulkan)
+    if (_rtDepth != depthBufferVulkan || _rtCount != rtCount || _rtTargets[0] != rtVulkan)
     {
         _rtDirtyFlag = true;
         _psDirtyFlag = true;
         _rtCount = rtCount;
         _rtDepth = depthBufferVulkan;
-        _rtHandles[0] = rtVulkan;
+        _rtTargets[0] = rtVulkan;
     }
 }
 
@@ -1053,13 +1121,13 @@ void GPUContextVulkan::SetRenderTarget(GPUTextureView* depthBuffer, const Span<G
     }
     const int32 rtvsSize = sizeof(GPUTextureViewVulkan*) * rts.Length();
 
-    if (_rtDepth != depthBufferVulkan || _rtCount != rts.Length() || Platform::MemoryCompare(_rtHandles, rtvs, rtvsSize) != 0)
+    if (_rtDepth != depthBufferVulkan || _rtCount != rts.Length() || Platform::MemoryCompare(_rtTargets, rtvs, rtvsSize) != 0)
     {
         _rtDirtyFlag = true;
         _psDirtyFlag = true;
         _rtCount = rts.Length();
         _rtDepth = depthBufferVulkan;
-        Platform::MemoryCopy(_rtHandles, rtvs, rtvsSize);
+        Platform::MemoryCopy(_rtTargets, rtvs, rtvsSize);
     }
 }
 
@@ -1486,11 +1554,7 @@ void GPUContextVulkan::FlushState()
     if (cmdBuffer->IsInsideRenderPass())
         EndRenderPass();
 
-    // Flush pending clears
-    for (auto& clear : _pendingClears)
-        ManualClear(clear);
-    _pendingClears.Clear();
-
+    FlushManualClears();
     FlushBarriers();
 }
 
@@ -2012,7 +2076,7 @@ void GPUContextVulkan::BeginDrawPass(GPUDrawPass& pass)
     _drawPassCanClear = true;
     _rtCount = pass.RenderTargetsCount;
     _rtDepth = (GPUTextureViewVulkan*)pass.DepthBuffer;
-    Platform::MemoryCopy(_rtHandles, pass.RenderTargets, pass.RenderTargetsCount * sizeof(void*));
+    Platform::MemoryCopy(_rtTargets, pass.RenderTargets, pass.RenderTargetsCount * sizeof(void*));
 }
 
 void GPUContextVulkan::EndDrawPass()

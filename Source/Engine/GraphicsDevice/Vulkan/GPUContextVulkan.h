@@ -96,8 +96,15 @@ private:
     GPUPipelineStateVulkan* _currentState;
     GPUShaderProgramCSVulkan* _currentCompute;
     GPUVertexLayoutVulkan* _vertexLayout;
-    GPUTextureViewVulkan* _rtDepth;
-    GPUTextureViewVulkan* _rtHandles[GPU_MAX_RT_BINDED];
+    union
+    {
+        struct
+        {
+            GPUTextureViewVulkan* _rtDepth;
+            GPUTextureViewVulkan* _rtTargets[GPU_MAX_RT_BINDED];
+        };
+        GPUTextureViewVulkan* _rtHandles[GPU_MAX_RT_BINDED + 1];
+    };
     DescriptorOwnerResourceVulkan* _cbHandles[GPU_MAX_CB_BINDED];
     DescriptorOwnerResourceVulkan* _srHandles[GPU_MAX_SR_BINDED];
     DescriptorOwnerResourceVulkan* _uaHandles[GPU_MAX_UA_BINDED];
@@ -157,6 +164,7 @@ public:
 private:
     bool FindClear(const GPUTextureViewVulkan* view, PendingClear& clear);
     void ManualClear(const PendingClear& clear);
+    void FlushManualClears();
     void UpdateDescriptorSets(const struct SpirvShaderDescriptorInfo& descriptorInfo, class DescriptorSetWriterVulkan& dsWriter, bool& needsWrite);
     void UpdateDescriptorSets(ComputePipelineStateVulkan* pipelineState);
     void OnDrawCall();

@@ -130,6 +130,11 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugReportFunction(VkDebugReportFlagsEXT m
 
 #if VK_EXT_debug_utils
 
+#if GPU_ENABLE_DEBUG_LAYER
+#include "Engine/Threading/ThreadLocal.h"
+extern ThreadLocal<const GPUShaderProgramInitializer*> CurrentVulkanShaderLoading;
+#endif
+
 static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSeverityFlagBitsEXT msgSeverity, VkDebugUtilsMessageTypeFlagsEXT msgType, const VkDebugUtilsMessengerCallbackDataEXT* callbackData, void* userData)
 {
     // Ignore some errors
@@ -149,6 +154,7 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         case -1539028524: // SortedIndices is null so Vulkan backend sets it to default R32_SFLOAT format which is not good for UINT format of the buffer
         case -1810835948: // SortedIndices is null so Vulkan backend sets it to default R32_SFLOAT format which is not good for UINT format of the buffer
         case -1621360350: // VkFramebufferCreateInfo attachment #0 has a layer count (1) smaller than the corresponding framebuffer layer count (64). The Vulkan spec states: If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments that is used as an input, color, resolve, or depth/stencil attachment by renderPass must have been created with a VkImageViewCreateInfo::subresourceRange.layerCount greater than or equal to layers
+        case -1744492148: // pCreateInfos[0] Inside [VK_SHADER_STAGE_FRAGMENT_BIT], it writes to [Output variable, Location 3], but there is no VkSubpassDescription::pColorAttachments[3] and this write is unused.
             return VK_FALSE;
         }
         break;
@@ -158,6 +164,7 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         case 0: // Vertex shader writes to output location 0.0 which is not consumed by fragment shader
         case 558591440: // preTransform doesn't match the currentTransform returned by vkGetPhysicalDeviceSurfaceCapabilitiesKHR, the presentation engine will transform the image content as part of the presentation operation. TODO: implement preTransform for Android to improve swapchain presentation performance
         case 101294395: // Vertex shader writes to output location 0.0 which is not consumed by fragment shader
+        case -937765618: // pCreateInfos[0] (SPIR-V Interface) [VK_SHADER_STAGE_VERTEX_BIT] has an Output value declared at Location 1 Component 0, but there is no corresponding Input declared in [VK_SHADER_STAGE_FRAGMENT_BIT].
             return VK_FALSE;
         }
         break;
@@ -240,10 +247,14 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         LOG(Info, "[Vulkan] {0} {1}:{2} {3}", type, severity, callbackData->messageIdNumber, message);
     }
 
-#if !BUILD_RELEASE
+#if GPU_ENABLE_DEBUG_LAYER
     if (GPUDevice::Instance)
     {
-        if (auto* context = (GPUContextVulkan*)GPUDevice::Instance->GetMainContext())
+        if (auto* shaderInitializer = CurrentVulkanShaderLoading.Get())
+        {
+            LOG(Warning, "[Vulkan] Error during loading shader '{}' from '{}'", String(shaderInitializer->Name), String(shaderInitializer->Owner->GetName()));
+        }
+        else if (auto* context = (GPUContextVulkan*)GPUDevice::Instance->GetMainContext())
         {
             if (auto* state = (GPUPipelineStateVulkan*)context->GetState())
             {
@@ -999,13 +1010,13 @@ GPUDeviceVulkan::GPUDeviceVulkan(ShaderProfile shaderProfile, GPUAdapterVulkan* 
 GPUDevice* GPUDeviceVulkan::Create()
 {
 #if !USE_EDITOR && (PLATFORM_WINDOWS || PLATFORM_LINUX)
-	auto settings = PlatformSettings::Get();
-	if (!settings->SupportVulkan)
-	{
-		// Skip if there is no support
-		LOG(Warning, "Cannot use Vulkan (support disabled).");
-		return nullptr;
-	}
+    auto settings = PlatformSettings::Get();
+    if (!settings->SupportVulkan)
+    {
+        // Skip if there is no support
+        LOG(Warning, "Cannot use Vulkan (support disabled).");
+        return nullptr;
+    }
 #endif
 
     VkResult result;
@@ -1225,10 +1236,19 @@ GPUDevice* GPUDeviceVulkan::Create()
             }
         }
     }
-    ASSERT(adapters[selectedAdapterIndex].IsValid());
+    GPUAdapterVulkan& selectedAdapter = adapters[selectedAdapterIndex];
+    ASSERT(selectedAdapter.IsValid());
+    if (VK_VERSION_MAJOR(selectedAdapter.GpuProps.apiVersion) < VK_VERSION_MAJOR(VULKAN_API_VERSION) || VK_VERSION_MINOR(selectedAdapter.GpuProps.apiVersion) < VK_VERSION_MINOR(VULKAN_API_VERSION))
+    {
+#if PLATFORM_DESKTOP
+        LOG(Fatal, "Failed to use GPU '{}' with Vulkan API {}.{} which is lower than required {}.{}.\nCheck your video driver version for update to the latest one.", selectedAdapter.Description, VK_VERSION_MAJOR(selectedAdapter.GpuProps.apiVersion), VK_VERSION_MINOR(selectedAdapter.GpuProps.apiVersion), VK_VERSION_MAJOR(VULKAN_API_VERSION), VK_VERSION_MINOR(VULKAN_API_VERSION));
+#else
+        LOG(Fatal, "Failed to use GPU '{}' with Vulkan API {}.{} which is lower than required {}.{}.\nCheck your system for updates.", selectedAdapter.Description, VK_VERSION_MAJOR(selectedAdapter.GpuProps.apiVersion), VK_VERSION_MINOR(selectedAdapter.GpuProps.apiVersion), VK_VERSION_MAJOR(VULKAN_API_VERSION), VK_VERSION_MINOR(VULKAN_API_VERSION));
+#endif
+    }
 
     // Create device
-    auto device = New<GPUDeviceVulkan>(ShaderProfile::Vulkan_SM5, New<GPUAdapterVulkan>(adapters[selectedAdapterIndex]));
+    auto device = New<GPUDeviceVulkan>(ShaderProfile::Vulkan_SM5, New<GPUAdapterVulkan>(selectedAdapter));
     if (device->Init())
     {
         LOG(Warning, "Graphics Device init failed");
@@ -1616,8 +1636,7 @@ bool GPUDeviceVulkan::Init()
 
     // Get extensions and layers
     Array<const char*> deviceExtensions;
-    Array<const char*> validationLayers;
-    GetDeviceExtensionsAndLayers(gpu, deviceExtensions, validationLayers);
+    GetDeviceExtensions(gpu, deviceExtensions);
     ParseOptionalDeviceExtensions(deviceExtensions);
 
     // Setup device info
@@ -1625,8 +1644,6 @@ bool GPUDeviceVulkan::Init()
     RenderToolsVulkan::ZeroStruct(deviceInfo, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
     deviceInfo.enabledExtensionCount = deviceExtensions.Count();
     deviceInfo.ppEnabledExtensionNames = deviceExtensions.Get();
-    deviceInfo.enabledLayerCount = validationLayers.Count();
-    deviceInfo.ppEnabledLayerNames = deviceInfo.enabledLayerCount > 0 ? validationLayers.Get() : nullptr;
 
     // Setup queues info
     Array<VkDeviceQueueCreateInfo> queueFamilyInfos;
@@ -1769,7 +1786,7 @@ bool GPUDeviceVulkan::Init()
         limits.HasInstancing = true;
         limits.HasVolumeTextureRendering = true;
         limits.HasDrawIndirect = PhysicalDeviceLimits.maxDrawIndirectCount >= 1;
-        limits.HasAppendConsumeBuffers = false; // TODO: add Append Consume buffers support for Vulkan
+        limits.HasAppendConsumeBuffers = false;
         limits.HasDepthClip = PhysicalDeviceFeatures.depthClamp;
         limits.HasDepthBounds = PhysicalDeviceFeatures.depthBounds;
         limits.HasDepthAsSRV = true;
@@ -1877,7 +1894,9 @@ bool GPUDeviceVulkan::Init()
     // Initialize memory allocator
     {
         VmaVulkanFunctions vulkanFunctions;
+        Platform::MemoryClear(&vulkanFunctions, sizeof(vulkanFunctions));
 #define INIT_FUNC(name) vulkanFunctions.name = name
+#define INIT_FUNC_EXTENSION(name, extension) vulkanFunctions.name = name; if (!vulkanFunctions.name) vulkanFunctions.name = extension
         INIT_FUNC(vkGetPhysicalDeviceProperties);
         INIT_FUNC(vkGetPhysicalDeviceMemoryProperties);
         INIT_FUNC(vkAllocateMemory);
@@ -1895,16 +1914,28 @@ bool GPUDeviceVulkan::Init()
         INIT_FUNC(vkCreateImage);
         INIT_FUNC(vkDestroyImage);
         INIT_FUNC(vkCmdCopyBuffer);
-#if VMA_DEDICATED_ALLOCATION
 #if PLATFORM_SWITCH
         vulkanFunctions.vkGetBufferMemoryRequirements2KHR = vkGetBufferMemoryRequirements2;
         vulkanFunctions.vkGetImageMemoryRequirements2KHR = vkGetImageMemoryRequirements2;
 #else
-        INIT_FUNC(vkGetBufferMemoryRequirements2KHR);
-        INIT_FUNC(vkGetImageMemoryRequirements2KHR);
+#if VMA_DEDICATED_ALLOCATION || VMA_VULKAN_VERSION >= 1001000
+        INIT_FUNC_EXTENSION(vkGetBufferMemoryRequirements2KHR, vkGetBufferMemoryRequirements2);
+        INIT_FUNC_EXTENSION(vkGetImageMemoryRequirements2KHR, vkGetImageMemoryRequirements2);
+#endif
+#if VMA_BIND_MEMORY2 || VMA_VULKAN_VERSION >= 1001000
+        INIT_FUNC_EXTENSION(vkBindBufferMemory2KHR, vkBindBufferMemory2);
+        INIT_FUNC_EXTENSION(vkBindImageMemory2KHR, vkBindImageMemory2);
+#endif
+#if VMA_MEMORY_BUDGET || VMA_VULKAN_VERSION >= 1001000
+        INIT_FUNC_EXTENSION(vkGetPhysicalDeviceMemoryProperties2KHR, vkGetPhysicalDeviceMemoryProperties2);
+#endif
+#if VMA_KHR_MAINTENANCE4 || VMA_VULKAN_VERSION >= 1003000
+        INIT_FUNC_EXTENSION(vkGetDeviceBufferMemoryRequirements, vkGetDeviceBufferMemoryRequirementsKHR);
+        INIT_FUNC_EXTENSION(vkGetDeviceImageMemoryRequirements, vkGetDeviceImageMemoryRequirementsKHR);
 #endif
 #endif
 #undef INIT_FUNC
+#undef INIT_FUNC_EXTENSION
         VmaAllocatorCreateInfo allocatorInfo = {};
         allocatorInfo.vulkanApiVersion = VULKAN_API_VERSION;
         allocatorInfo.physicalDevice = gpu;

@@ -433,6 +433,7 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
     options.GenerateDebugData = data.Cache.Settings.Global.ShadersGenerateDebugData;
     options.TreatWarningsAsErrors = false;
     options.Output = &cacheStream;
+    options.Platform = data.Data.Tools->GetPlatform();
     Array<String> includes;
 
 #define COMPILE_PROFILE(profile, cacheChunk) \
@@ -535,7 +536,6 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
 #if PLATFORM_TOOLS_XBOX_SCARLETT
     case BuildPlatform::XboxScarlett:
     {
-        options.Platform = PlatformType::XboxScarlett;
         const char* platformDefineName = "PLATFORM_XBOX_SCARLETT";
         COMPILE_PROFILE(DirectX_SM6, SHADER_FILE_CHUNK_INTERNAL_D3D_SM6_CACHE);
         break;
