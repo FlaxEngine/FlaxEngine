@@ -10,11 +10,12 @@
 #include "Engine/Core/Collections/BitArray.h"
 #include "Engine/Tools/ModelTool/ModelTool.h"
 #include "Engine/Tools/ModelTool/VertexTriangleAdjacency.h"
-#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/MessageBox.h"
+#include "Engine/Profiler/ProfilerCPU.h"
+#include <ThirdParty/meshoptimizer/meshoptimizer.h>
 #define USE_MIKKTSPACE 1
-#include "ThirdParty/MikkTSpace/mikktspace.h"
+#include <ThirdParty/MikkTSpace/mikktspace.h>
 #if USE_ASSIMP
 #define USE_SPATIAL_SORT 1
 #define ASSIMP_BUILD_NO_EXPORT
@@ -24,6 +25,26 @@
 #define USE_SPATIAL_SORT 0
 #endif
 #include <stack>
+
+bool InitedMeshOpt = false;
+
+void* MeshOptAllocate(size_t size)
+{
+    return Allocator::Allocate(size);
+}
+
+void MeshOptDeallocate(void* ptr)
+{
+    Allocator::Free(ptr);
+}
+
+void InitMeshOpt()
+{
+    if (InitedMeshOpt)
+        return;
+    InitedMeshOpt = true;
+    meshopt_setAllocator(MeshOptAllocate, MeshOptDeallocate);
+}
 
 #if PLATFORM_WINDOWS
 
@@ -932,6 +953,23 @@ void MeshData::ImproveCacheLocality()
     const double time = Utilities::RoundTo2DecimalPlaces(endTime - startTime);
     if (time > 0.5f) // Don't log if generation was fast enough
         LOG(Info, "Generated {3} for mesh in {0}s ({1} vertices, {2} indices)", time, vertexCount, indexCount, TEXT("optimized indices"));
+}
+
+void MeshData::Optimize()
+{
+    if (Indices.IsEmpty() || Positions.IsEmpty())
+        return;
+    PROFILE_CPU();
+    InitMeshOpt();
+
+    // Vertex cache optimization (https://meshoptimizer.org/#vertex-cache-optimization)
+    Array<uint32> tmpIndices;
+    tmpIndices.Resize(Indices.Count());
+    meshopt_optimizeVertexCache(tmpIndices.Get(), Indices.Get(), Indices.Count(), Positions.Count());
+
+    // Overdraw optimization (https://meshoptimizer.org/#overdraw-optimization)
+    const float overdrawThreshold = 1.05f;
+    meshopt_optimizeOverdraw(Indices.Get(), tmpIndices.Get(), Indices.Count(), (const float*)Positions.Get(), Positions.Count(), sizeof(Float3), overdrawThreshold);
 }
 
 float MeshData::CalculateTrianglesArea() const

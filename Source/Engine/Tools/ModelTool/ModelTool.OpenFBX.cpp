@@ -988,7 +988,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
 
     if (data.Options.OptimizeMeshes)
     {
-        mesh.ImproveCacheLocality();
+        mesh.Optimize();
     }
 
     // Apply FBX Mesh geometry transformation

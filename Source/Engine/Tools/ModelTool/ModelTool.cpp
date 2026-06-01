@@ -45,6 +45,7 @@
 #include "Editor/Utilities/EditorUtilities.h"
 #include "Engine/Animations/Graph/AnimGraph.h"
 #include <ThirdParty/meshoptimizer/meshoptimizer.h>
+extern void InitMeshOpt();
 #endif
 
 ModelSDFHeader::ModelSDFHeader(const ModelBase::SDFData& sdf, const GPUTextureDescription& desc)
@@ -938,16 +939,6 @@ void OptimizeCurve(LinearCurve<T>& curve)
     {
         curve.SetKeyframes(newKeyframes);
     }
-}
-
-void* MeshOptAllocate(size_t size)
-{
-    return Allocator::Allocate(size);
-}
-
-void MeshOptDeallocate(void* ptr)
-{
-    Allocator::Free(ptr);
 }
 
 void TrySetupMaterialParameter(MaterialInstance* instance, Span<const Char*> paramNames, const Variant& value, MaterialParameterType type)
@@ -1954,8 +1945,8 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
     // Automatic LOD generation
     if (options.GenerateLODs && options.LODCount > 1 && data.LODs.HasItems() && options.TriangleReduction < 1.0f - ZeroTolerance)
     {
+        InitMeshOpt();
         auto lodStartTime = DateTime::NowUTC();
-        meshopt_setAllocator(MeshOptAllocate, MeshOptDeallocate);
         float triangleReduction = Math::Saturate(options.TriangleReduction);
         int32 lodCount = Math::Max(options.LODCount, data.LODs.Count());
         int32 baseLOD = Math::Clamp(options.BaseLOD, 0, lodCount - 1);

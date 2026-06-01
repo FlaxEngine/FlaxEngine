@@ -437,6 +437,12 @@ bool ProcessMesh(ModelData& result, AssimpImporterData& data, const aiMesh* aMes
             }
         }
     }
+
+    if (data.Options.OptimizeMeshes)
+    {
+        mesh.Optimize();
+    }
+
     return false;
 }
 
@@ -730,7 +736,7 @@ bool ModelTool::ImportDataAssimp(const String& path, ModelData& data, Options& o
         if (options.ReverseWindingOrder)
             flags &= ~aiProcess_FlipWindingOrder;
         if (options.OptimizeMeshes)
-            flags |= aiProcess_OptimizeMeshes | aiProcess_SplitLargeMeshes | aiProcess_ImproveCacheLocality;
+            flags |= aiProcess_OptimizeMeshes;
         if (options.MergeMeshes)
             flags |= aiProcess_RemoveRedundantMaterials;
     }
