@@ -6,6 +6,7 @@
 
 #if GRAPHICS_API_VULKAN && PLATFORM_MAC
 
+#define VULKAN_API_VERSION VK_API_VERSION_1_4
 #define VULKAN_BACK_BUFFERS_COUNT 3
 
 // General/Validation Error:0 VK_ERROR_INITIALIZATION_FAILED: Could not create MTLCounterSampleBuffer for query pool of type VK_QUERY_TYPE_TIMESTAMP. Reverting to emulated behavior. (Error code 0): Cannot allocate sample buffer
