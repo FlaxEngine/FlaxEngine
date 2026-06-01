@@ -87,16 +87,16 @@ bool StringAnsiView::operator!=(const StringAnsi& other) const
     return this->Compare(StringAnsiView(other)) != 0;
 }
 
-StringAnsi StringAnsiView::Substring(int32 startIndex) const
+StringAnsiView StringAnsiView::Substring(int32 startIndex) const
 {
     ASSERT(startIndex >= 0 && startIndex < Length());
-    return StringAnsi(Get() + startIndex, Length() - startIndex);
+    return StringAnsiView(Get() + startIndex, Length() - startIndex);
 }
 
-StringAnsi StringAnsiView::Substring(int32 startIndex, int32 count) const
+StringAnsiView StringAnsiView::Substring(int32 startIndex, int32 count) const
 {
     ASSERT(startIndex >= 0 && startIndex + count <= Length() && count >= 0);
-    return StringAnsi(Get() + startIndex, count);
+    return StringAnsiView(Get() + startIndex, count);
 }
 
 String StringAnsiView::ToString() const

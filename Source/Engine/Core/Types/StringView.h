@@ -368,7 +368,7 @@ public:
     StringView Right(int32 count) const;
 
     /// <summary>
-    /// Retrieves substring created from characters starting from startIndex to the String end.
+    /// Retrieves substring created from characters starting from startIndex to the end.
     /// </summary>
     /// <param name="startIndex">The index of the first character to subtract.</param>
     /// <returns>The substring created from String data.</returns>
@@ -550,11 +550,11 @@ public:
     }
 
     /// <summary>
-    /// Retrieves substring created from characters starting from startIndex to the String end.
+    /// Retrieves substring created from characters starting from startIndex to the end.
     /// </summary>
     /// <param name="startIndex">The index of the first character to subtract.</param>
     /// <returns>The substring created from String data.</returns>
-    StringAnsi Substring(int32 startIndex) const;
+    StringAnsiView Substring(int32 startIndex) const;
 
     /// <summary>
     /// Retrieves substring created from characters starting from start index.
@@ -562,7 +562,7 @@ public:
     /// <param name="startIndex">The index of the first character to subtract.</param>
     /// <param name="count">The amount of characters to retrieve.</param>
     /// <returns>The substring created from String data.</returns>
-    StringAnsi Substring(int32 startIndex, int32 count) const;
+    StringAnsiView Substring(int32 startIndex, int32 count) const;
 
 public:
     String ToString() const;
