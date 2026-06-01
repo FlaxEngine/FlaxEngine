@@ -71,10 +71,33 @@ public sealed class VulkanSdk : Sdk
         {
             if (Directory.Exists(vulkanSdk))
             {
+                // Detect version (read core header beginning to find a specific line)
+                Version = new Version(1, 0);
+                try
+                {
+                    using (var stream = File.OpenRead(Path.Combine(vulkanSdk, "Include/vulkan/vulkan_core.h")))
+                    using (var reader = new StreamReader(stream, System.Text.Encoding.UTF8, true, 1024))
+                    {
+                        string line;
+                        while ((line = reader.ReadLine()) != null)
+                        {
+                            if (line.StartsWith("#define VK_HEADER_VERSION_COMPLETE"))
+                            {
+                                var parts = line.Split(',');
+                                Version = new Version(int.Parse(parts[1]), int.Parse(parts[2]));
+                                break;
+                            }
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    // Ignore errors
+                }
+
                 // Found
                 RootPath = vulkanSdk;
                 IsValid = true;
-                Version = new Version(1, 0); // TODO: detecting Vulkan SDK version
                 Log.Verbose("Found VulkanSDK at: " + vulkanSdk);
             }
             else
