@@ -75,6 +75,12 @@
         Platform::CheckFailed(#expression, __FILE__, __LINE__); \
         return returnValue; \
     }
+// Performs a soft check of the expression. Logs the expression failure and continues execution.
+#define CHECK_NO_RETURN(expression) \
+    if (!(expression)) \
+    { \
+        Platform::CheckFailed(#expression, __FILE__, __LINE__); \
+    }
 
 #if ENABLE_ASSERTION
 // Performs a soft check of the expression. Logs the expression failure and returns from the function call.

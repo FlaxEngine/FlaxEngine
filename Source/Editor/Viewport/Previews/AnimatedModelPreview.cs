@@ -216,16 +216,17 @@ namespace FlaxEditor.Viewport.Previews
                 _showFloorButton = ViewWidgetShowMenu.AddButton("Floor", button => ShowFloor = !ShowFloor);
                 _showFloorButton.IndexInParent = 1;
                 _showFloorButton.CloseMenuOnClick = false;
-            }
 
-            _nodeNameSizeButton = ViewWidgetButtonMenu.AddButton("Skeleton Names Size");
-            _nodeNameSizeButton.CloseMenuOnClick = false;
-            var nodeNameSizeValue = new IntValueBox(NodeNamesSize, 118, 2, 70.0f, 1, 32)
-            {
-                Parent = _nodeNameSizeButton
-            };
-            _nodeNameSizeButton.Enabled = ShowNodesNames;
-            nodeNameSizeValue.ValueChanged += () => NodeNamesSize = nodeNameSizeValue.Value;
+                // Skeleton Names Size
+                _nodeNameSizeButton = ViewWidgetButtonMenu.AddButton("Skeleton Names Size");
+                _nodeNameSizeButton.CloseMenuOnClick = false;
+                var nodeNameSizeValue = new IntValueBox(NodeNamesSize, 118, 2, 70.0f, 1, 32)
+                {
+                    Parent = _nodeNameSizeButton
+                };
+                _nodeNameSizeButton.Enabled = ShowNodesNames;
+                nodeNameSizeValue.ValueChanged += () => NodeNamesSize = nodeNameSizeValue.Value;
+            }
 
             // Enable shadows
             PreviewLight.ShadowsMode = ShadowsCastingMode.All;

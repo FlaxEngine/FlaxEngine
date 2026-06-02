@@ -588,6 +588,10 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(TriangleReduction);
     SERIALIZE(SloppyOptimization);
     SERIALIZE(LODTargetError);
+    SERIALIZE(LODTargetErrorAbsolute);
+    SERIALIZE(LODLockBorder);
+    SERIALIZE(LODPreserveUVs);
+    SERIALIZE(LODPreserveUVsWeight);
     SERIALIZE(ImportMaterials);
     SERIALIZE(CreateEmptyMaterialSlots);
     SERIALIZE(ImportMaterialsAsInstances);
@@ -645,6 +649,10 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(TriangleReduction);
     DESERIALIZE(SloppyOptimization);
     DESERIALIZE(LODTargetError);
+    DESERIALIZE(LODTargetErrorAbsolute);
+    DESERIALIZE(LODLockBorder);
+    DESERIALIZE(LODPreserveUVs);
+    DESERIALIZE(LODPreserveUVsWeight);
     DESERIALIZE(ImportMaterials);
     DESERIALIZE(CreateEmptyMaterialSlots);
     DESERIALIZE(ImportMaterialsAsInstances);
@@ -1954,6 +1962,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
     // Automatic LOD generation
     if (options.GenerateLODs && options.LODCount > 1 && data.LODs.HasItems() && options.TriangleReduction < 1.0f - ZeroTolerance)
     {
+        PROFILE_CPU_NAMED("GenerateLODs");
         auto lodStartTime = DateTime::NowUTC();
         meshopt_setAllocator(MeshOptAllocate, MeshOptDeallocate);
         float triangleReduction = Math::Saturate(options.TriangleReduction);
@@ -1992,13 +2001,51 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                     continue;
                 indices.Clear();
                 indices.Resize(srcMeshIndexCount);
-                int32 dstMeshIndexCount = {};
+                int32 dstMeshIndexCount = 0;
                 if (options.SloppyOptimization)
+                {
+                    PROFILE_CPU_NAMED("meshopt_simplifySloppy");
                     dstMeshIndexCount = (int32)meshopt_simplifySloppy(indices.Get(), srcMesh->Indices.Get(), srcMeshIndexCount, (const float*)srcMesh->Positions.Get(), srcMeshVertexCount, sizeof(Float3), dstMeshIndexCountTarget, options.LODTargetError);
+                }
                 else
-                    dstMeshIndexCount = (int32)meshopt_simplify(indices.Get(), srcMesh->Indices.Get(), srcMeshIndexCount, (const float*)srcMesh->Positions.Get(), srcMeshVertexCount, sizeof(Float3), dstMeshIndexCountTarget, options.LODTargetError);
-                if (dstMeshIndexCount <= 0 || dstMeshIndexCount > indices.Count())
-                    continue;
+                {
+                    // Build simplification flags
+                    unsigned int simplifyOptions = 0;
+                    if (options.LODLockBorder)
+                        simplifyOptions |= meshopt_SimplifyLockBorder;
+                    if (options.LODTargetErrorAbsolute)
+                        simplifyOptions |= meshopt_SimplifyErrorAbsolute;
+                    if (options.LODPreserveUVs && srcMesh->UVs.HasItems())
+                    {
+                        // Pack UV channels as attributes for meshopt_simplifyWithAttributes
+                        int32 uvChannelCount = srcMesh->UVs.Count();
+                        int32 attributeCount = uvChannelCount * 2; // 2 floats (U, V) per channel
+                        Array<float> attributes;
+                        attributes.Resize(srcMeshVertexCount * attributeCount);
+                        Array<float> attributeWeights;
+                        attributeWeights.Resize(attributeCount);
+                        for (int32 ch = 0; ch < uvChannelCount; ch++)
+                        {
+                            for (int32 v = 0; v < srcMeshVertexCount; v++)
+                            {
+                                Float2 uv = srcMesh->UVs[ch][v];
+                                attributes[v * attributeCount + ch * 2 + 0] = uv.X;
+                                attributes[v * attributeCount + ch * 2 + 1] = uv.Y;
+                            }
+                            attributeWeights[ch * 2 + 0] = options.LODPreserveUVsWeight;
+                            attributeWeights[ch * 2 + 1] = options.LODPreserveUVsWeight;
+                        }
+                        PROFILE_CPU_NAMED("meshopt_simplifyWithAttributes");
+                        dstMeshIndexCount = (int32)meshopt_simplifyWithAttributes(indices.Get(), srcMesh->Indices.Get(), srcMeshIndexCount, (const float*)srcMesh->Positions.Get(), srcMeshVertexCount, sizeof(Float3), attributes.Get(), sizeof(float) * attributeCount, attributeWeights.Get(), attributeCount, nullptr, dstMeshIndexCountTarget, options.LODTargetError, simplifyOptions, nullptr);
+                    }
+                    else
+                    {
+                        PROFILE_CPU_NAMED("meshopt_simplify");
+                        dstMeshIndexCount = (int32)meshopt_simplify(indices.Get(), srcMesh->Indices.Get(), srcMeshIndexCount, (const float*)srcMesh->Positions.Get(), srcMeshVertexCount, sizeof(Float3), dstMeshIndexCountTarget, options.LODTargetError, simplifyOptions, nullptr);
+                    }
+                }
+                if (dstMeshIndexCount <= 0 || dstMeshIndexCount >= indices.Count())
+                    continue; // Skip if failed to generate LOD or it doesn't have less vertices than source
                 indices.Resize(dstMeshIndexCount);
 
                 // Generate simplified vertex buffer remapping table (use only vertices from LOD index buffer)

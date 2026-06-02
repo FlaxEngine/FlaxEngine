@@ -8,6 +8,7 @@
 #include "Engine/Level/Actors/EmptyActor.h"
 #include "Engine/Level/Actors/DirectionalLight.h"
 #include "Engine/Level/Actors/ExponentialHeightFog.h"
+#include "Engine/Level/Actors/AnimatedModel.h"
 #include "Engine/Level/Prefabs/Prefab.h"
 #include "Engine/Level/Prefabs/PrefabManager.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
@@ -904,5 +905,125 @@ TEST_CASE("Prefabs")
         // Cleanup
         instance1->DeleteObject();
         instance2->DeleteObject();
+    }
+    SECTION("Test Adding Object To Base Prefab")
+    {
+        // https://github.com/LOOPDISK/FlaxEngine/pull/44
+
+        // Create inner prefab with 3 objects in hierarchy
+        AssetReference<Prefab> prefabInner = Content::CreateVirtualAsset<Prefab>();
+        REQUIRE(prefabInner);
+        Guid id;
+        Guid::Parse("15dbe4b0416be0777a6ce59e8788b10f", id);
+        prefabInner->ChangeID(id);
+        auto prefabInnerInit = prefabInner->Init(Prefab::TypeName,
+            "["
+            "{"
+            "\"ID\": \"3de462104f56f681c14650a0171f88fb\","
+            "\"TypeName\" : \"FlaxEngine.SpotLight\","
+            "\"Name\" : \"Inner.Root\""
+            "},"
+            "{"
+            "\"ID\": \"19b181f846b6911635ffacb902c93c6a\","
+            "\"TypeName\" : \"FlaxEngine.StaticModel\","
+            "\"ParentID\" : \"3de462104f56f681c14650a0171f88fb\","
+            "\"Name\" : \"Inner.Cube\""
+            "},"
+            "{"
+            "\"ID\": \"8950889f4a2e752d55165fbf10eaf184\","
+            "\"TypeName\" : \"FlaxEngine.AnimatedModel\","
+            "\"ParentID\" : \"19b181f846b6911635ffacb902c93c6a\","
+            "\"Name\" : \"Inner.Model\""
+            "}"
+            "]");
+        REQUIRE(!prefabInnerInit);
+
+        // Create outer prefab with 2 instances of inner prefab
+        AssetReference<Prefab> prefabOuter = Content::CreateVirtualAsset<Prefab>();
+        REQUIRE(prefabOuter);
+        SCOPE_EXIT{ Content::DeleteAsset(prefabOuter); };
+        Guid::Parse("2ab744714f746e31855f41815612d14b", id);
+        prefabOuter->ChangeID(id);
+        auto prefabOuterInit = prefabOuter->Init(Prefab::TypeName,
+            "["
+            "{"
+            "\"ID\": \"dba7f4bb4acfd62608b9a8bf550f31a5\","
+            "\"TypeName\": \"FlaxEngine.EmptyActor\","
+            "\"Name\": \"Outer.Root\""
+            "},"
+            "{"
+            "\"ID\": \"a3b705284432bed9f043829c04a2bc8f\","
+            "\"PrefabID\": \"15dbe4b0416be0777a6ce59e8788b10f\","
+            "\"PrefabObjectID\": \"3de462104f56f681c14650a0171f88fb\","
+            "\"ParentID\": \"dba7f4bb4acfd62608b9a8bf550f31a5\","
+            "\"Name\": \"Instance 1\""
+            "},"
+            "{"
+            "\"ID\": \"06a8c15a41b822dd27f3ac9d79b142d3\","
+            "\"PrefabID\": \"15dbe4b0416be0777a6ce59e8788b10f\","
+            "\"PrefabObjectID\": \"19b181f846b6911635ffacb902c93c6a\","
+            "\"ParentID\": \"a3b705284432bed9f043829c04a2bc8f\""
+            "},"
+            "{"
+            "\"ID\": \"4759fb9e4c4dda3b61ab5ab43949e42f\","
+            "\"PrefabID\": \"15dbe4b0416be0777a6ce59e8788b10f\","
+            "\"PrefabObjectID\": \"8950889f4a2e752d55165fbf10eaf184\","
+            "\"ParentID\": \"06a8c15a41b822dd27f3ac9d79b142d3\""
+            "},"
+            "{"
+            "\"ID\": \"1225be664c0c081e714bbf93e09b99e4\","
+            "\"PrefabID\": \"15dbe4b0416be0777a6ce59e8788b10f\","
+            "\"PrefabObjectID\": \"3de462104f56f681c14650a0171f88fb\","
+            "\"ParentID\": \"dba7f4bb4acfd62608b9a8bf550f31a5\","
+            "\"Name\": \"Instance 2\""
+            "},"
+            "{"
+            "\"ID\": \"b397243540322182b806ad8339b7b617\","
+            "\"PrefabID\": \"15dbe4b0416be0777a6ce59e8788b10f\","
+            "\"PrefabObjectID\": \"19b181f846b6911635ffacb902c93c6a\","
+            "\"ParentID\": \"1225be664c0c081e714bbf93e09b99e4\""
+            "},"
+            "{"
+            "\"ID\": \"2c3b8e824daf038a58df528a238ca2de\","
+            "\"PrefabID\": \"15dbe4b0416be0777a6ce59e8788b10f\","
+            "\"PrefabObjectID\": \"8950889f4a2e752d55165fbf10eaf184\","
+            "\"ParentID\": \"b397243540322182b806ad8339b7b617\""
+            "}"
+            "]");
+        REQUIRE(!prefabOuterInit);
+
+        // Spawn test instances of both prefabs
+        ScriptingObjectReference<Actor> instanceInner = PrefabManager::SpawnPrefab(prefabInner);
+        ScriptingObjectReference<Actor> instanceOuter = PrefabManager::SpawnPrefab(prefabOuter);
+
+        // Add new object to the inner prefab
+        instanceInner->Children[0]->GetOrAddChild<DirectionalLight>();
+
+        // Apply changes
+        bool applyResult = PrefabManager::ApplyAll(instanceInner);
+        REQUIRE(!applyResult);
+
+        // Check state of outer instance to properly reflect hierarchy
+        REQUIRE(instanceOuter);
+        REQUIRE(instanceOuter->Children.Count() == 2);
+        REQUIRE(instanceOuter->Children[0] != nullptr);
+        REQUIRE(instanceOuter->Children[0]->Children.Count() == 1);
+        REQUIRE(instanceOuter->Children[0]->Children[0]);
+        REQUIRE(instanceOuter->Children[0]->Children[0]->Children.Count() == 2);
+        REQUIRE(instanceOuter->Children[0]->Children[0]->Children[0]->Is<AnimatedModel>());
+        REQUIRE(instanceOuter->Children[0]->Children[0]->Children[1]->Is<DirectionalLight>());
+        REQUIRE(instanceOuter->Children[1] != nullptr);
+        REQUIRE(instanceOuter->Children[1]->Children.Count() == 1);
+        REQUIRE(instanceOuter->Children[1]->Children[0]);
+        REQUIRE(instanceOuter->Children[1]->Children[0]->Children.Count() == 2);
+        REQUIRE(instanceOuter->Children[1]->Children[0]->Children[0]->Is<AnimatedModel>());
+        REQUIRE(instanceOuter->Children[0]->Children[0]->Children[1]->Is<DirectionalLight>());
+        REQUIRE(instanceOuter->Children[0]->Children[0] != instanceOuter->Children[1]->Children[0]);
+        REQUIRE(instanceOuter->Children[0]->Children[0]->Children[0] != instanceOuter->Children[1]->Children[0]->Children[0]);
+        REQUIRE(instanceOuter->Children[0]->Children[0]->Children[1] != instanceOuter->Children[1]->Children[0]->Children[1]);
+
+        // Cleanup
+        instanceInner->DeleteObject();
+        instanceOuter->DeleteObject();
     }
 }
