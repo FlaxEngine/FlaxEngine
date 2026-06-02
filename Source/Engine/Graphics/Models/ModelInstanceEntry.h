@@ -115,6 +115,7 @@ public:
 
 public:
     // [ISerializable]
+    bool ShouldSerialize(const void* otherObj) const override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 };
