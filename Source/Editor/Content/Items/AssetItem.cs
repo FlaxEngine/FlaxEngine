@@ -98,12 +98,12 @@ namespace FlaxEditor.Content
         }
 
         /// <summary>
-        /// Reloads the asset (if it's loaded).
+        /// Reloads the asset (if it's loaded or failed to load).
         /// </summary>
         public void Reload()
         {
             var asset = FlaxEngine.Content.GetAsset(ID);
-            if (asset != null && asset.IsLoaded)
+            if (asset != null && (asset.IsLoaded || asset.LastLoadFailed))
             {
                 asset.Reload();
             }
