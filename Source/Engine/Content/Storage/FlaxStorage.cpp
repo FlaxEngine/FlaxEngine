@@ -243,9 +243,9 @@ FlaxStorage::~FlaxStorage()
 {
     // Validate if has been disposed
     ASSERT(IsDisposed());
-    CHECK(_chunksLock == 0);
-    CHECK(_refCount == 0);
-    CHECK(_isUnloadingData == 0);
+    CHECK_NO_RETURN(_chunksLock == 0);
+    CHECK_NO_RETURN(_refCount == 0);
+    CHECK_NO_RETURN(_isUnloadingData == 0);
     ASSERT(_chunks.IsEmpty());
 
 #if USE_EDITOR
