@@ -50,7 +50,7 @@ void ModelInstanceEntries::Serialize(SerializeStream& stream, const void* otherO
 void ModelInstanceEntries::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
     PROFILE_MEM(Graphics);
-    const DeserializeStream& entriesData = stream[DeserializeStream::GenericValue(rapidjson::StringRef("Entries", 7))];
+    const DeserializeStream& entriesData = stream[rapidjson_flax::Value(rapidjson::StringRef("Entries", 7))];
     CHECK(entriesData.IsArray());
     Resize(entriesData.Size());
     ModelInstanceEntry* entries = Get();
