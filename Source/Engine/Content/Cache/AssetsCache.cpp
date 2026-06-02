@@ -113,7 +113,7 @@ void AssetsCache::Init()
         }
 
         // Use only valid entries
-        if (IsEntryValid(e))
+        if (IsEntryValid(e) != EntryValidation::Invalid)
             _registry.Add(e.Info.ID, e);
         else
             rejectedCount++;
@@ -295,14 +295,23 @@ bool AssetsCache::FindAsset(const StringView& path, AssetInfo& info)
         auto& e = i->Value;
         if (e.Info.Path == path)
         {
-            if (!IsEntryValid(e))
+            const auto validation = IsEntryValid(e);
+            if (validation == EntryValidation::Invalid)
             {
                 LOG(Warning, "Missing file from registry: \'{0}\':{1}:{2}", e.Info.Path, e.Info.ID, e.Info.TypeName);
                 _registry.Remove(i);
             }
             else
             {
-                // Found
+#if ENABLE_ASSETS_DISCOVERY
+                if (validation == EntryValidation::Inaccessible && !e.WarnedInaccessible)
+                {
+                    e.WarnedInaccessible = true;
+                    LOG(Warning, "Asset file locked, keeping cached entry: \'{0}\':{1}:{2}", e.Info.Path, e.Info.ID, e.Info.TypeName);
+                }
+#endif
+
+                // Found valid or inaccessible but return cached info either way
                 result = true;
                 info = e.Info;
             }
@@ -322,13 +331,22 @@ bool AssetsCache::FindAsset(const Guid& id, AssetInfo& info)
     auto e = _registry.TryGet(id);
     if (e != nullptr)
     {
-        if (!IsEntryValid(*e))
+        const auto validation = IsEntryValid(*e);
+        if (validation == EntryValidation::Invalid)
         {
             LOG(Warning, "Missing file from registry: \'{0}\':{1}:{2}", e->Info.Path, e->Info.ID, e->Info.TypeName);
             _registry.Remove(id);
         }
         else
         {
+#if ENABLE_ASSETS_DISCOVERY
+            if (validation == EntryValidation::Inaccessible && !e->WarnedInaccessible)
+            {
+                e->WarnedInaccessible = true;
+                LOG(Warning, "Asset file locked, keeping cached entry: \'{0}\':{1}:{2}", e->Info.Path, e->Info.ID, e->Info.TypeName);
+            }
+#endif
+
             // Found
             result = true;
             info = e->Info;
@@ -567,60 +585,70 @@ bool AssetsCache::RenameAsset(const StringView& oldPath, const StringView& newPa
 
 #endif
 
-bool AssetsCache::IsEntryValid(Entry& e)
+AssetsCache::EntryValidation AssetsCache::IsEntryValid(Entry& e)
 {
 #if ENABLE_ASSETS_DISCOVERY
     // Check if file exists
-    if (FileSystem::FileExists(e.Info.Path))
+    if (!FileSystem::FileExists(e.Info.Path))
+        return EntryValidation::Invalid;
+
+    // Check if file hasn't been modified
+    const auto fileModified = FileSystem::GetFileLastEditTime(e.Info.Path);
+    if (fileModified == e.FileModified)
     {
-        // Check if file hasn't been modified
-        const auto fileModified = FileSystem::GetFileLastEditTime(e.Info.Path);
-        if (fileModified == e.FileModified)
-            return true;
-
-        const auto extension = FileSystem::GetExtension(e.Info.Path).ToLower();
-
-        // Check if it's a binary asset
-        if (ContentStorageManager::IsFlaxStorageExtension(extension))
-        {
-            // Validate ID within storage container
-            const auto storage = ContentStorageManager::GetStorage(e.Info.Path);
-            if (storage)
-            {
-                // Check if storage at given location contains that asset
-                const bool isValid = storage->HasAsset(e.Info);
-
-                // Update entry and mark cache as dirty
-                e.FileModified = fileModified;
-                _isDirty = true;
-
-                return isValid;
-            }
-        }
-        // Check for json resource
-        else if (JsonStorageProxy::IsValidExtension(extension))
-        {
-            // Check Json storage layer
-            Guid jsonId;
-            String jsonTypeName;
-            if (JsonStorageProxy::GetAssetInfo(e.Info.Path, jsonId, jsonTypeName))
-            {
-                const bool isValid = e.Info.ID == jsonId && e.Info.TypeName == jsonTypeName;
-
-                // Update entry and mark cache as dirty
-                e.FileModified = fileModified;
-                _isDirty = true;
-
-                return isValid;
-            }
-        }
+        e.WarnedInaccessible = false;
+        return EntryValidation::Valid;
     }
 
-    return false;
+    const auto extension = FileSystem::GetExtension(e.Info.Path).ToLower();
 
+    // Check if it's a binary asset
+    if (ContentStorageManager::IsFlaxStorageExtension(extension))
+    {
+        // Validate ID within storage container
+        const auto storage = ContentStorageManager::GetStorage(e.Info.Path);
+        if (storage)
+        {
+            // Check if storage at given location contains that asset
+            const bool isValid = storage->HasAsset(e.Info);
+
+            // Update entry and mark cache as dirty
+            e.FileModified = fileModified;
+            e.WarnedInaccessible = false;
+            _isDirty = true;
+
+            return isValid ? EntryValidation::Valid : EntryValidation::Invalid;
+        }
+    }
+    // Check for json resource
+    else if (JsonStorageProxy::IsValidExtension(extension))
+    {
+        // Check Json storage layer
+        Guid jsonId;
+        String jsonTypeName;
+        if (JsonStorageProxy::GetAssetInfo(e.Info.Path, jsonId, jsonTypeName))
+        {
+            const bool isValid = e.Info.ID == jsonId && e.Info.TypeName == jsonTypeName;
+
+            // Update entry and mark cache as dirty
+            e.FileModified = fileModified;
+            e.WarnedInaccessible = false;
+            _isDirty = true;
+
+            return isValid ? EntryValidation::Valid : EntryValidation::Invalid;
+        }
+    }
+    else
+    {
+        // Unknown file type
+        return EntryValidation::Invalid;
+    }
+
+    // File exists but cannot be read (likely locked by git or another process)
+    return EntryValidation::Inaccessible;
 #else
     // In game we don't care about it because all cached asset entries are valid (precached)
     // Skip only entries with missing file
-    return e.Info.Path.HasChars();
+    return e.Info.Path.HasChars() ? EntryValidation::Valid : EntryValidation::Invalid;
 #endif
 }
