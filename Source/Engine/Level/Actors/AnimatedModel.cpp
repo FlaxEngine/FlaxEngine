@@ -820,8 +820,7 @@ void AnimatedModel::RunBlendShapeDeformer(const MeshBase* mesh, MeshDeformationD
 
 void AnimatedModel::BeginPlay(SceneBeginData* data)
 {
-    if (SkinnedModel && SkinnedModel->IsLoaded())
-        PreInitSkinningData();
+    PreInitSkinningData();
 
     // Base
     ModelInstanceActor::BeginPlay(data);
