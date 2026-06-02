@@ -132,7 +132,8 @@ namespace FlaxEditor.Windows
 
                     if (item is AssetItem assetItem)
                     {
-                        if (assetItem.IsLoaded)
+                        var asset = FlaxEngine.Content.GetAsset(assetItem.ID);
+                        if (asset != null && (asset.IsLoaded || asset.LastLoadFailed))
                             cm.AddButton("Reload", assetItem.Reload);
                         cm.AddButton("Copy asset ID", () => Clipboard.Text = JsonSerializer.GetStringID(assetItem.ID));
                         cm.AddButton("Select actors using this asset", () => Editor.SceneEditing.SelectActorsUsingAsset(assetItem.ID));

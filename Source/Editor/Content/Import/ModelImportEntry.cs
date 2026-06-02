@@ -19,6 +19,7 @@ namespace FlaxEngine.Tools
             private bool ShowRootMotion => ShowAnimation && RootMotion != RootMotionMode.None;
             private bool ShowSmoothingNormalsAngle => ShowGeometry && CalculateNormals;
             private bool ShowSmoothingTangentsAngle => ShowGeometry && CalculateTangents;
+            private bool ShowGenerateLODs => ShowGeometry && GenerateLODs;
             private bool ShowFramesRange => ShowAnimation && Duration == AnimationDuration.Custom;
             private bool ShowSplitting => Type != ModelType.Prefab;
         }
