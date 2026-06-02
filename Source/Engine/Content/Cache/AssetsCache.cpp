@@ -378,13 +378,13 @@ void AssetsCache::GetAllByTypeName(const StringView& typeName, Array<Guid>& resu
 void AssetsCache::RegisterAssets(FlaxStorage* storage)
 {
     PROFILE_CPU();
-
     ASSERT(storage);
 
     // Get all entries
     Array<FlaxStorage::Entry> entries;
     storage->GetEntries(entries);
-    ASSERT(entries.HasItems());
+    if (entries.IsEmpty())
+        return;
 
     ASSETS_CACHE_LOCK();
     auto storagePath = storage->GetPath();

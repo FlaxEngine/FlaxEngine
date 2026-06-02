@@ -564,10 +564,7 @@ ContentLoadTask* BinaryAsset::createLoadingTask()
         loadTask = preLoadChunksTask;
     }
 
-    // Before asset loading we have to initialize storage
-    // TODO: maybe in build game we could do it in place?
-    // This step is only for opening asset files in background and upgrading them
-    // In build game we have only a few packages which are ready to use
+    // Before asset loading we have to initialize storage and pull the asset header
     auto initTask = New<InitAssetTask>(this);
     initTask->ContinueWith(loadTask);
     loadTask = initTask;

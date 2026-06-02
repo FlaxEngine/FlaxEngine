@@ -54,6 +54,7 @@ FlaxStorageReference ContentStorageManager::GetStorage(const StringView& path, b
     Locker.Lock();
 
     // Try fast lookup
+    bool wasCached = true;
     FlaxStorage* storage;
     if (!StorageMap.TryGet(path, storage))
     {
@@ -74,6 +75,7 @@ FlaxStorageReference ContentStorageManager::GetStorage(const StringView& path, b
 
         // Register storage container
         StorageMap.Add(path, storage);
+        wasCached = false;
     }
 
     // Build reference (before releasing the lock so ContentStorageSystem::Job won't delete it when running from async thread)
@@ -90,6 +92,8 @@ FlaxStorageReference ContentStorageManager::GetStorage(const StringView& path, b
         if (loadFailed)
         {
             LOG(Error, "Failed to load {0}.", path);
+            if (wasCached)
+                return result;
             Locker.Lock();
             StorageMap.Remove(path);
             if (storage->IsPackage())
