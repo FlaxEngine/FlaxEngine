@@ -10,6 +10,7 @@
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Platform/Base/DragDropHelper.h"
 #endif
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
@@ -356,7 +357,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
     MacWindow* Window;
     NSTrackingArea* TrackingArea;
     bool IsMouseOver;
-    bool CommandModifiedKeys[(int32)KeyboardKeys::MAX];
+    Array<KeyboardKeys, InlinedAllocation<4>> CommandModifiedKeys;
 }
 
 - (void)setWindow:(MacWindow*)window;
@@ -383,8 +384,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
     Window = window;
     TrackingArea = nil;
     IsMouseOver = false;
-    for (int32 i = 0; i < (int32)KeyboardKeys::MAX; i++)
-        CommandModifiedKeys[i] = false;
+    CommandModifiedKeys.Clear();
 }
 
 - (CALayer*)makeBackingLayer
@@ -419,14 +419,9 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)releaseCommandModifiedKeys
 {
-    for (int32 i = 0; i < (int32)KeyboardKeys::MAX; i++)
-    {
-        if (CommandModifiedKeys[i])
-        {
-            CommandModifiedKeys[i] = false;
-            Input::Keyboard->OnKeyUp((KeyboardKeys)i, Window);
-        }
-    }
+    for (const KeyboardKeys key : CommandModifiedKeys)
+        Input::Keyboard->OnKeyUp(key, Window);
+    CommandModifiedKeys.Clear();
 }
 
 - (void)keyDown:(NSEvent*)event
@@ -437,7 +432,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
     {
         Input::Keyboard->OnKeyDown(key, Window);
         if (([event modifierFlags] & NSEventModifierFlagCommand) != 0 && !IsModifierKey(key))
-            CommandModifiedKeys[(int32)key] = true;
+            CommandModifiedKeys.AddUnique(key);
     }
 
 	// Send a text input event
@@ -472,7 +467,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
     KeyboardKeys key = GetKey(event);
     if (key != KeyboardKeys::None)
     {
-        CommandModifiedKeys[(int32)key] = false;
+        CommandModifiedKeys.Remove(key);
         Input::Keyboard->OnKeyUp(key, Window);
     }
 }
@@ -502,9 +497,9 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
         }
         else
         {
-            Input::Keyboard->OnKeyUp(key, Window);
             if (key == KeyboardKeys::Command)
                 [self releaseCommandModifiedKeys];
+            Input::Keyboard->OnKeyUp(key, Window);
         }
     }
 }
