@@ -125,7 +125,7 @@ VariantType::VariantType(Types type, const StringAnsiView& typeName, bool static
 VariantType::VariantType(Types type, const ScriptingType& sType)
     : VariantType(type)
 {
-    SetTypeName(sType.Fullname, sType.Module->CanReload);
+    SetTypeName(sType.Fullname, !sType.Module->CanReload);
 }
 
 VariantType::VariantType(Types type, const MClass* klass)
@@ -345,13 +345,13 @@ void VariantType::SetTypeName(const StringAnsiView& typeName, bool staticName)
 
 void VariantType::SetTypeName(const ScriptingType& type)
 {
-    SetTypeName(type.Fullname, type.Module->CanReload);
+    SetTypeName(type.Fullname, !type.Module->CanReload);
 }
 
 void VariantType::SetTypeName(const MClass& klass)
 {
 #if USE_CSHARP
-    SetTypeName(klass.GetFullName(), klass.GetAssembly()->CanReload());
+    SetTypeName(klass.GetFullName(), !klass.GetAssembly()->CanReload());
 #endif
 }
 
