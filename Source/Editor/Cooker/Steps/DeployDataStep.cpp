@@ -30,13 +30,6 @@ bool DeployDataStep::Perform(CookingData& data)
         Platform::Sleep(10);
     }
     FileSystem::CreateDirectory(contentDir);
-    const String dstMono = data.DataOutputPath / TEXT("Mono");
-#if USE_NETCORE
-    {
-        // Remove old Mono files
-        FileSystem::DeleteDirectory(dstMono);
-        FileSystem::DeleteFile(data.DataOutputPath / TEXT("MonoPosixHelper.dll"));
-    }
     String dstDotnet = data.DataOutputPath / TEXT("Dotnet");
     const DotNetAOTModes aotMode = data.Tools->UseAOT();
     const bool usAOT = aotMode != DotNetAOTModes::None && aotMode != DotNetAOTModes::NoDotnet;
@@ -386,23 +379,6 @@ bool DeployDataStep::Perform(CookingData& data)
             }
         }
     }
-#else
-    if (!FileSystem::DirectoryExists(dstMono))
-    {
-        // Deploy Mono files (from platform data folder)
-        const String srcMono = depsRoot / TEXT("Mono");
-        if (!FileSystem::DirectoryExists(srcMono))
-        {
-            data.Error(TEXT("Missing Mono runtime data files."));
-            return true;
-        }
-        if (FileSystem::CopyDirectory(dstMono, srcMono))
-        {
-            data.Error(TEXT("Failed to copy Mono runtime data files."));
-            return true;
-        }
-    }
-#endif
 
     // Deploy engine data for the target platform
     if (data.Tools->OnDeployBinaries(data))

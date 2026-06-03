@@ -237,7 +237,7 @@ namespace FlaxEditor.Surface
                     surfaceParameters.Remove(surfaceParameter);
                     surfaceParameters.Add(surfaceParameter);
                 }
-                var attributes = surfaceParameter?.Meta.GetAttributes() ?? FlaxEngine.Utils.GetEmptyArray<Attribute>();
+                var attributes = surfaceParameter?.Meta.GetAttributes() ?? Array.Empty<Attribute>();
                 data[i] = new GraphParameterData(null, index++, parameter.Name, parameter.IsPublic, ToType(parameter.ParameterType), attributes, parameter);
                 i++;
             }

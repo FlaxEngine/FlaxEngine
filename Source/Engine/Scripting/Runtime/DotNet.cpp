@@ -2298,7 +2298,7 @@ bool InitHostfxr()
     // Setup debugger
     {
         int32 debuggerLogLevel = 0;
-        if (CommandLine::Options.MonoLog.IsTrue() || DOTNET_HOST_MONO_DEBUG)
+        if (DOTNET_HOST_MONO_DEBUG)
         {
             LOG(Info, "Using detailed Mono logging");
             mono_trace_set_level_string("debug");
@@ -2309,9 +2309,10 @@ bool InitHostfxr()
             mono_trace_set_level_string("warning");
         }
 
-#if MONO_DEBUG_ENABLE && !PLATFORM_SWITCH
+#if 0
         StringAnsi debuggerIp = "127.0.0.1";
         uint16 debuggerPort = 41000 + Platform::GetCurrentProcessId() % 1000;
+        // Old DebuggerAddress arg: '-debug !ip:port! (Mono debugger address)'
         if (CommandLine::Options.DebuggerAddress.HasValue())
         {
             const auto& address = CommandLine::Options.DebuggerAddress.GetValue();
@@ -2327,8 +2328,9 @@ bool InitHostfxr()
             }
         }
 
+        bool waitForDebugger = true;
         char buffer[150];
-        sprintf(buffer, "--debugger-agent=transport=dt_socket,address=%s:%d,embedding=1,server=y,suspend=%s,loglevel=%d", debuggerIp.Get(), debuggerPort, CommandLine::Options.WaitForDebugger ? "y,timeout=5000" : "n", debuggerLogLevel);
+        sprintf(buffer, "--debugger-agent=transport=dt_socket,address=%s:%d,embedding=1,server=y,suspend=%s,loglevel=%d", debuggerIp.Get(), debuggerPort, waitForDebugger ? "y,timeout=5000" : "n", debuggerLogLevel);
 
         const char* options[] = {
             "--soft-breakpoints",

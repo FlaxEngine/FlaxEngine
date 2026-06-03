@@ -135,12 +135,8 @@ ScriptingObject* ScriptingObject::NewObject(const ScriptingTypeHandle& typeHandl
 
 MObject* ScriptingObject::GetManagedInstance() const
 {
-#if USE_NETCORE
-    const MGCHandle handle = Platform::AtomicRead((int64*)&_gcHandle);
-#elif USE_MONO
-    const MGCHandle handle = Platform::AtomicRead((int32*)&_gcHandle);
-#endif
 #if USE_CSHARP
+    const MGCHandle handle = Platform::AtomicRead((int64*)&_gcHandle);
     return handle ? MCore::GCHandle::GetTarget(handle) : nullptr;
 #else
     return nullptr;
@@ -251,7 +247,7 @@ ScriptingObject* ScriptingObject::ToNative(MObject* obj)
 #if USE_CSHARP
     if (obj)
     {
-#if USE_MONO || USE_MONO_AOT || DOTNET_HOST_MONO
+#if USE_MONO_AOT || DOTNET_HOST_MONO
         const auto ptrField = MCore::Object::GetClass(obj)->GetField(ScriptingObject_unmanagedPtr);
         CHECK_RETURN(ptrField, nullptr);
         ptrField->GetValue(obj, &ptr);
@@ -549,12 +545,11 @@ PersistentScriptingObject::PersistentScriptingObject(const SpawnParams& params)
 
 #if USE_CSHARP
 
-DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_Create1(MTypeObject* type)
+DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_Create1(MType* mType)
 {
     // Peek class for that type (handle generic class cases)
-    if (!type)
+    if (!mType)
         DebugLog::ThrowArgumentNull("type");
-    MType* mType = INTERNAL_TYPE_OBJECT_GET(type);
     const MTypes mTypeType = MCore::Type::GetType(mType);
     if (mTypeType == MTypes::GenericInst)
     {
@@ -717,7 +712,7 @@ DEFINE_INTERNAL_CALL(MString*) ObjectInternal_GetTypeName(ScriptingObject* obj)
     return MUtils::ToString(obj->GetType().Fullname);
 }
 
-DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_FindObject(Guid* id, MTypeObject* type, bool skipLog = false)
+DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_FindObject(Guid* id, MType* type, bool skipLog = false)
 {
     if (!id->IsValid())
         return nullptr;
@@ -759,7 +754,7 @@ DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_FindObject(Guid* id, MTypeObject* 
     return nullptr;
 }
 
-DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_TryFindObject(Guid* id, MTypeObject* type)
+DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_TryFindObject(Guid* id, MType* type)
 {
     ScriptingObject* obj = Scripting::TryFindObject(*id);
     if (obj && !obj->Is(MUtils::GetClass(type)))
@@ -773,7 +768,7 @@ DEFINE_INTERNAL_CALL(void) ObjectInternal_ChangeID(ScriptingObject* obj, Guid* i
     obj->ChangeID(*id);
 }
 
-DEFINE_INTERNAL_CALL(void*) ObjectInternal_GetUnmanagedInterface(ScriptingObject* obj, MTypeObject* type)
+DEFINE_INTERNAL_CALL(void*) ObjectInternal_GetUnmanagedInterface(ScriptingObject* obj, MType* type)
 {
     if (obj && type)
     {
@@ -815,20 +810,6 @@ class ScriptingObjectInternal
 public:
     static void InitRuntime()
     {
-        ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_Create1", &ObjectInternal_Create1);
-        ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_Create2", &ObjectInternal_Create2);
-        ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_ManagedInstanceCreated", &ObjectInternal_ManagedInstanceCreated);
-        ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_ManagedInstanceDeleted", &ObjectInternal_ManagedInstanceDeleted);
-        ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_Destroy", &ObjectInternal_Destroy);
-        ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_DestroyNow", &ObjectInternal_DestroyNow);
-        ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_GetTypeName", &ObjectInternal_GetTypeName);
-        ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_FindObject", &ObjectInternal_FindObject);
-        ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_TryFindObject", &ObjectInternal_TryFindObject);
-        ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_ChangeID", &ObjectInternal_ChangeID);
-        ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_GetUnmanagedInterface", &ObjectInternal_GetUnmanagedInterface);
-        ADD_INTERNAL_CALL("FlaxEngine.Object::FromUnmanagedPtr", &ObjectInternal_FromUnmanagedPtr);
-        ADD_INTERNAL_CALL("FlaxEngine.Object::MapObjectID", &ObjectInternal_MapObjectID);
-        ADD_INTERNAL_CALL("FlaxEngine.Object::RemapObjectID", &ObjectInternal_RemapObjectID);
     }
 
     static ScriptingObject* Spawn(const ScriptingObjectSpawnParams& params)

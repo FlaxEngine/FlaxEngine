@@ -1484,7 +1484,7 @@ namespace FlaxEditor.Surface.Elements
         protected override void OnAttributesChanged()
         {
             OnCurrentTypeChanged();
-            _editor?.UpdateAttributes(this, _attributes ?? Utils.GetEmptyArray<object>(), _defaultValueEditor);
+            _editor?.UpdateAttributes(this, _attributes ?? Array.Empty<object>(), _defaultValueEditor);
         }
 
         /// <inheritdoc />

@@ -142,7 +142,7 @@ namespace FlaxEngine
                 if (initData.GenerateMipsLinear)
                     t.GenerateMips |= 2;
             }
-            var emptyArray = Utils.GetEmptyArray<byte>();
+            var emptyArray = Array.Empty<byte>();
             fixed (byte* data13 = (initData.Mips.Length > 13 ? initData.Mips[13].Data : emptyArray))
             fixed (byte* data12 = (initData.Mips.Length > 12 ? initData.Mips[12].Data : emptyArray))
             fixed (byte* data11 = (initData.Mips.Length > 11 ? initData.Mips[11].Data : emptyArray))

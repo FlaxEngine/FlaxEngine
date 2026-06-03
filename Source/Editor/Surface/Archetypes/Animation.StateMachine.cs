@@ -875,7 +875,7 @@ namespace FlaxEditor.Surface.Archetypes
                     byte[] value;
                     if (Transitions.Count == 0)
                     {
-                        value = Utils.GetEmptyArray<byte>();
+                        value = Array.Empty<byte>();
                     }
                     else
                     {
@@ -1807,7 +1807,7 @@ namespace FlaxEditor.Surface.Archetypes
                 get => _ruleGraph;
                 set
                 {
-                    _ruleGraph = value ?? Utils.GetEmptyArray<byte>();
+                    _ruleGraph = value ?? Array.Empty<byte>();
                     SourceState.SaveTransitions();
                 }
             }
@@ -1849,7 +1849,7 @@ namespace FlaxEditor.Surface.Archetypes
                 DestinationState = destination;
                 _data = data;
                 _data.Destination = destination.ID;
-                _ruleGraph = ruleGraph ?? Utils.GetEmptyArray<byte>();
+                _ruleGraph = ruleGraph ?? Array.Empty<byte>();
             }
 
             /// <summary>

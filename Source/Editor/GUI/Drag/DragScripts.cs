@@ -103,7 +103,7 @@ namespace FlaxEditor.GUI.Drag
                     return results.ToArray();
                 }
             }
-            return Utils.GetEmptyArray<Script>();
+            return Array.Empty<Script>();
         }
 
         /// <summary>

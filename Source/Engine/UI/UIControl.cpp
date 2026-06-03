@@ -133,7 +133,7 @@ void UIControl::Deserialize(DeserializeStream& stream, ISerializeModifier* modif
 
 #if !COMPILE_WITHOUT_CSHARP
     PROFILE_MEM(UI);
-    MTypeObject* typeObj = nullptr;
+    MType* typeObj = nullptr;
     const auto controlMember = stream.FindMember("Control");
     if (controlMember != stream.MemberEnd())
     {
@@ -141,7 +141,7 @@ void UIControl::Deserialize(DeserializeStream& stream, ISerializeModifier* modif
         const MClass* type = Scripting::FindClass(controlType);
         if (type != nullptr)
         {
-            typeObj = INTERNAL_TYPE_GET_OBJECT(type->GetType());
+            typeObj = type->GetType();
         }
         else
         {

@@ -174,10 +174,6 @@ public:
         static MTypes GetType(MType* type);
         static bool IsPointer(MType* type);
         static bool IsReference(MType* type);
-#if USE_MONO
-        static MTypeObject* GetObject(MType* type);
-        static MType* Get(MTypeObject* type);
-#endif
     };
 
     /// <summary>

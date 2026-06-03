@@ -91,7 +91,7 @@ namespace FlaxEditor.Surface
                     }
                 }
             }
-            return Utils.GetEmptyArray<Attribute>();
+            return Array.Empty<Attribute>();
         }
 
         /// <summary>
@@ -106,7 +106,7 @@ namespace FlaxEditor.Surface
                 var json = FlaxEngine.Json.JsonSerializer.Serialize(attributes);
                 return Encoding.Unicode.GetBytes(json);
             }
-            return Utils.GetEmptyArray<byte>();
+            return Array.Empty<byte>();
         }
 
         /// <summary>

@@ -319,12 +319,6 @@ namespace Flax.Build
         public static bool UseCSharp = true;
 
         /// <summary>
-        /// True if .NET support should be enabled.
-        /// </summary>
-        [CommandLine("useDotNet", "1 to enable .NET support in build, 0 to enable Mono support in build")]
-        public static bool UseDotNet = true;
-
-        /// <summary>
         /// True if enable logging in Release game builds.
         /// </summary>
         [CommandLine("useLogInRelease", "Can be used to disable logging in Release game builds")]
@@ -353,11 +347,6 @@ namespace Flax.Build
         {
             // Whether to use traditional z-buffer or reversed depth
             return UseReverseZ;
-        }
-
-        public static bool WithDotNet(NativeCpp.BuildOptions options)
-        {
-            return UseDotNet;
         }
 
         public static bool WithSDL(NativeCpp.BuildOptions options)

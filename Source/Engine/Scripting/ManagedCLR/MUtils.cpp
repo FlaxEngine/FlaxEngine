@@ -24,6 +24,8 @@
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Content/Asset.h"
 
+#define MANAGED_GC_HANDLE AsUint64
+
 #if USE_CSHARP
 
 namespace
@@ -145,7 +147,7 @@ MString* MUtils::ToString(const StringView& str, MDomain* domain)
     return MCore::String::New(str.Get(), len, domain);
 }
 
-ScriptingTypeHandle MUtils::UnboxScriptingTypeHandle(MTypeObject* value)
+ScriptingTypeHandle MUtils::UnboxScriptingTypeHandle(MType* value)
 {
     MClass* klass = GetClass(value);
     if (!klass)
@@ -157,13 +159,12 @@ ScriptingTypeHandle MUtils::UnboxScriptingTypeHandle(MTypeObject* value)
     return typeHandle;
 }
 
-MTypeObject* MUtils::BoxScriptingTypeHandle(const ScriptingTypeHandle& value)
+MType* MUtils::BoxScriptingTypeHandle(const ScriptingTypeHandle& value)
 {
-    MTypeObject* result = nullptr;
+    MType* result = nullptr;
     if (value)
     {
-        MType* mType = value.GetType().ManagedClass->GetType();
-        result = INTERNAL_TYPE_GET_OBJECT(mType);
+        result = value.GetType().ManagedClass->GetType();
     }
     return result;
 }
@@ -290,7 +291,7 @@ VariantType MUtils::UnboxVariantType(MType* type)
     return VariantType();
 }
 
-MTypeObject* MUtils::BoxVariantType(const VariantType& value)
+MType* MUtils::BoxVariantType(const VariantType& value)
 {
     if (value.Type == VariantType::Null)
         return nullptr;
@@ -300,8 +301,7 @@ MTypeObject* MUtils::BoxVariantType(const VariantType& value)
         LOG(Error, "Invalid native type to box {0}", value);
         return nullptr;
     }
-    MType* mType = klass->GetType();
-    return INTERNAL_TYPE_GET_OBJECT(mType);
+    return klass->GetType();
 }
 
 Variant MUtils::UnboxVariant(MObject* value)
@@ -614,11 +614,7 @@ MObject* MUtils::BoxVariant(const Variant& value)
     case VariantType::Guid:
         return MCore::Object::Box((void*)&value.AsData, stdTypes.GuidClass);
     case VariantType::String:
-#if USE_NETCORE
         return (MObject*)MUtils::ToString((StringView)value);
-#else
-        return (MObject*)MUtils::ToString((StringView)value);
-#endif
     case VariantType::Quaternion:
         return MCore::Object::Box((void*)&value.AsData, stdTypes.QuaternionClass);
     case VariantType::BoundingSphere:
@@ -803,11 +799,7 @@ MObject* MUtils::BoxVariant(const Variant& value)
         return nullptr;
     }
     case VariantType::ManagedObject:
-#if USE_NETCORE
-        return value.AsUint64 ? MCore::GCHandle::GetTarget(value.AsUint64) : nullptr;
-#else
-        return value.AsUint ? MCore::GCHandle::GetTarget(value.AsUint) : nullptr;
-#endif
+        return value.MANAGED_GC_HANDLE ? MCore::GCHandle::GetTarget(value.MANAGED_GC_HANDLE) : nullptr;
     case VariantType::Typename:
     {
         const auto klass = Scripting::FindClass((StringAnsiView)value);
@@ -832,12 +824,11 @@ StringAnsiView MUtils::GetClassFullname(MObject* obj)
     return StringAnsiView::Empty;
 }
 
-MClass* MUtils::GetClass(MTypeObject* type)
+MClass* MUtils::GetClass(MType* type)
 {
     if (type == nullptr)
         return nullptr;
-    MType* mType = INTERNAL_TYPE_OBJECT_GET(type);
-    return MCore::Type::GetClass(mType);
+    return MCore::Type::GetClass(type);
 }
 
 MClass* MUtils::GetClass(const VariantType& value)
@@ -1020,7 +1011,7 @@ MClass* MUtils::GetClass(const Variant& value)
     return GetClass(value.Type);
 }
 
-MTypeObject* MUtils::GetType(MObject* object)
+MType* MUtils::GetType(MObject* object)
 {
     if (!object)
         return nullptr;
@@ -1028,12 +1019,11 @@ MTypeObject* MUtils::GetType(MObject* object)
     return GetType(klass);
 }
 
-MTypeObject* MUtils::GetType(MClass* klass)
+MType* MUtils::GetType(MClass* klass)
 {
     if (!klass)
         return nullptr;
-    MType* type = klass->GetType();
-    return INTERNAL_TYPE_GET_OBJECT(type);
+    return klass->GetType();
 }
 
 BytesContainer MUtils::LinkArray(MArray* arrayObj)

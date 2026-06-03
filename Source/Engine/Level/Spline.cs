@@ -32,7 +32,7 @@ namespace FlaxEngine
             set
             {
                 if (value == null)
-                    value = Utils.GetEmptyArray<BezierCurve<Transform>.Keyframe>();
+                    value = Array.Empty<BezierCurve<Transform>.Keyframe>();
                 _keyframes = null;
                 Internal_SetKeyframes(__unmanagedPtr, value, System.Runtime.CompilerServices.Unsafe.SizeOf<BezierCurve<Transform>.Keyframe>());
             }

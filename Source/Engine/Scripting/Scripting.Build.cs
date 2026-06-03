@@ -15,7 +15,6 @@ public class Scripting : EngineModule
 
         if (EngineConfiguration.WithCSharp(options))
         {
-            if (EngineConfiguration.WithDotNet(options))
             {
                 void AddFrameworkDefines(string template, int major, int latestMinor)
                 {
@@ -44,12 +43,6 @@ public class Scripting : EngineModule
                     var fileName = options.Platform.GetLinkOutputFileName(EngineTarget.LibraryName, LinkerOutput.SharedLibrary);
                     options.CompileEnv.PreprocessorDefinitions.Add("MCORE_MAIN_MODULE_NAME=" + fileName);
                 }
-            }
-            else
-            {
-                // Mono
-                options.PrivateDependencies.Add("mono");
-                options.ScriptingAPI.Defines.Add("USE_MONO");
             }
         }
 

@@ -814,11 +814,6 @@ private:
 
 public:
     /// <summary>
-    /// Initializes the managed runtime calls.
-    /// </summary>
-    static void initRuntime();
-
-    /// <summary>
     /// Initializes a new instance of the <see cref="AnimGraphExecutor"/> class.
     /// </summary>
     /// <param name="graph">The graph to execute.</param>

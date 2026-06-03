@@ -886,7 +886,7 @@ bool MeshBase::UpdateTrianglesUShort(int32 triangleCount, const MArray* triangle
     return ::UpdateTriangles<uint16>(this, triangleCount, trianglesObj);
 }
 
-MArray* MeshBase::DownloadIndexBuffer(bool forceGpu, MTypeObject* resultType, bool use16Bit)
+MArray* MeshBase::DownloadIndexBuffer(bool forceGpu, MType* resultType, bool use16Bit)
 {
     ScopeLock lock(GetModelBase()->Locker);
 
@@ -903,7 +903,7 @@ MArray* MeshBase::DownloadIndexBuffer(bool forceGpu, MTypeObject* resultType, bo
     auto indexStride = indexStream.GetStride();
 
     // Convert into managed array
-    MArray* result = MCore::Array::New(MCore::Type::GetClass(INTERNAL_TYPE_OBJECT_GET(resultType)), indexCount);
+    MArray* result = MCore::Array::New(MCore::Type::GetClass(resultType), indexCount);
     void* managedArrayPtr = MCore::Array::GetAddress(result);
     if (use16Bit)
     {

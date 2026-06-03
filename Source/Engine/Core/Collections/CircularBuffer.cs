@@ -365,7 +365,7 @@ namespace FlaxEngine.Collections
         public T[] ToArray()
         {
             if (Count == 0)
-                return Utils.GetEmptyArray<T>();
+                return Array.Empty<T>();
 
             var result = new T[Count];
             if (_backItem > _frontItem)

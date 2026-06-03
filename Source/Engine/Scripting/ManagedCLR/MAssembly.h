@@ -23,10 +23,7 @@ public:
     typedef Dictionary<StringAnsiView, MClass*> ClassesDictionary;
 
 private:
-#if USE_MONO
-    MonoAssembly* _monoAssembly = nullptr;
-    MonoImage* _monoImage = nullptr;
-#elif USE_NETCORE
+#if USE_NETCORE
     void* _handle = nullptr;
     StringAnsi _fullname;
 #endif
@@ -167,17 +164,10 @@ public:
         return _domain;
     }
 
-#if USE_MONO
-    FORCE_INLINE MonoAssembly* GetMonoAssembly() const
-    {
-        return _monoAssembly;
-    }
-
-    FORCE_INLINE MonoImage* GetMonoImage() const
-    {
-        return _monoImage;
-    }
-#elif USE_NETCORE
+#if USE_NETCORE
+    /// <summary>
+    /// Gets the native handle.
+    /// </summary>
     FORCE_INLINE void* GetHandle() const
     {
         return _handle;
@@ -193,15 +183,6 @@ public:
     /// <returns>True if cannot load, otherwise false</returns>
     bool Load(const String& assemblyPath, const StringView& nativePath = StringView::Empty);
 
-#if USE_MONO
-    /// <summary>
-    /// Loads assembly for domain.
-    /// </summary>
-    /// <param name="monoImage">The assembly image.</param>
-    /// <returns>True if cannot load, otherwise false.</returns>
-    bool Load(MonoImage* monoImage);
-#endif
-
     /// <summary>
     /// Cleanup data. Caller must ensure not to use any types from this assembly after it has been unloaded.
     /// </summary>
@@ -215,20 +196,6 @@ public:
     /// <param name="typeName">The type name.</param>
     /// <returns>The class object or null if failed to find it.</returns>
     MClass* GetClass(const StringAnsiView& typeName) const;
-
-#if USE_MONO
-    /// <summary>
-    /// Converts an internal mono representation of a class into engine class.
-    /// </summary>
-    /// <param name="monoClass">The Mono class.</param>
-    /// <returns>The class object.</returns>
-    MClass* GetClass(MonoClass* monoClass) const;
-
-    /// <summary>
-    /// Gets the native of the assembly (for the current domain). Can be used to pass to the scripting backend as a parameter.
-    /// </summary>
-    MonoReflectionAssembly* GetNative() const;
-#endif
 
     /// <summary>
     /// Gets the classes lookup cache. Performs full initialization if not cached. The result cache contains all classes from the assembly.

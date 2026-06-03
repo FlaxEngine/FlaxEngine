@@ -584,7 +584,6 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             var codeBase = Utils.GetAssemblyLocation(assembly);
             if (string.IsNullOrEmpty(codeBase))
                 return true;
-#if USE_NETCORE
             if (assembly.ManifestModule.FullyQualifiedName == "<In Memory Module>")
                 return false;
 
@@ -592,11 +591,6 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             string repositoryUrl = assembly.GetCustomAttributes<AssemblyMetadataAttribute>().FirstOrDefault(x => x.Key == "RepositoryUrl")?.Value ?? "";
             if (repositoryUrl != "https://github.com/dotnet/runtime")
                 return true;
-#else
-            // Skip assemblies from in-build Mono directory
-            if (!codeBase.Contains("/Mono/lib/mono/"))
-                return true;
-#endif
             return false;
         }
 

@@ -13,10 +13,7 @@ class FLAXENGINE_API MClass
 {
     friend MCore;
 private:
-#if USE_MONO
-    MonoClass* _monoClass;
-    mutable void* _attrInfo = nullptr;
-#elif USE_NETCORE
+#if USE_NETCORE
     void* _handle;
     StringAnsiView _name;
     StringAnsiView _namespace;
@@ -54,9 +51,7 @@ private:
     int32 _isGeneric : 1;
 
 public:
-#if USE_MONO
-    MClass(const MAssembly* parentAssembly, MonoClass* monoClass, const StringAnsi& fullname);
-#elif USE_NETCORE
+#if USE_NETCORE
     MClass(MAssembly* parentAssembly, void* handle, const char* name, const char* fullname, const char* namespace_, MTypeAttributes typeAttributes);
 #endif
 
@@ -98,15 +93,10 @@ public:
         return _namespace;
     }
 
-#if USE_MONO
+#if USE_NETCORE
     /// <summary>
-    /// Gets the Mono class handle.
+    /// Gets the native class handle.
     /// </summary>
-    FORCE_INLINE MonoClass* GetNative() const
-    {
-        return _monoClass;
-    }
-#elif USE_NETCORE
     FORCE_INLINE void* GetNative() const
     {
         return _handle;

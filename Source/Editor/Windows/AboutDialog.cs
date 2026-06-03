@@ -136,9 +136,9 @@ namespace FlaxEditor.Windows
             {
                 "Used third party software:",
                 "",
-                "Mono Project - www.mono-project.com",
 #if USE_NETCORE
                 ".NET - www.dotnet.microsoft.com",
+                "Mono Project - www.mono-project.com",
 #endif
 #if PLATFORM_SDL
                 "Simple DirectMedia Layer - www.libsdl.org",

@@ -21,16 +21,6 @@
 // Use in-built cultures info tables from mono
 #include "CultureInfo.Tables.h"
 
-#if USE_MONO
-typedef struct
-{
-    MonoObject obj;
-    MonoBoolean is_read_only;
-    gint32 lcid;
-    //...
-} MonoCultureInfo;
-#endif
-
 namespace
 {
     const CultureInfoEntry* FindEntry(const StringAnsiView& name)
@@ -182,10 +172,7 @@ void* MUtils::ToManaged(const CultureInfo& value)
 CultureInfo MUtils::ToNative(void* value)
 {
     int32 lcid = 127;
-#if USE_MONO
-    if (value)
-        lcid = static_cast<MonoCultureInfo*>(value)->lcid;
-#elif USE_CSHARP
+#if USE_CSHARP
     PROFILE_MEM(Localization);
     const MClass* klass = GetBinaryModuleCorlib()->Assembly->GetClass("System.Globalization.CultureInfo");
     if (value && klass)

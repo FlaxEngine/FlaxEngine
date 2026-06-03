@@ -445,7 +445,7 @@ namespace FlaxEditor.Surface.Archetypes
                 var decorator = Context.SpawnNode(19, 3, Location, new object[]
                 {
                     nodeType.TypeName,
-                    Utils.GetEmptyArray<byte>(),
+                    Array.Empty<byte>(),
                 });
 
                 // Add decorator to the node
@@ -646,7 +646,7 @@ namespace FlaxEditor.Surface.Archetypes
                             return new[] { uint.Parse(id[0]) };
                         }
                     }
-                    return Utils.GetEmptyArray<uint>();
+                    return Array.Empty<uint>();
                 }
             }
 
@@ -949,7 +949,7 @@ namespace FlaxEditor.Surface.Archetypes
                 DefaultValues = new object[]
                 {
                     string.Empty, // Type Name
-                    Utils.GetEmptyArray<byte>(), // Instance Data
+                    Array.Empty<byte>(), // Instance Data
                     null, // List of Decorator Nodes IDs
                 },
                 Size = new Float2(100, 0),
@@ -967,7 +967,7 @@ namespace FlaxEditor.Surface.Archetypes
                 DefaultValues = new object[]
                 {
                     typeof(BehaviorTreeRootNode).FullName, // Root node
-                    Utils.GetEmptyArray<byte>(), // Instance Data
+                    Array.Empty<byte>(), // Instance Data
                 },
                 Size = new Float2(100, 0),
                 Elements = new[]
@@ -984,7 +984,7 @@ namespace FlaxEditor.Surface.Archetypes
                 DefaultValues = new object[]
                 {
                     string.Empty, // Type Name
-                    Utils.GetEmptyArray<byte>(), // Instance Data
+                    Array.Empty<byte>(), // Instance Data
                 },
                 Size = new Float2(100, 0),
             },

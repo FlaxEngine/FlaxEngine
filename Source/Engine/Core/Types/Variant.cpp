@@ -27,11 +27,7 @@
 #include "Engine/Utilities/Crc.h"
 #include "Engine/Utilities/StringConverter.h"
 
-#if USE_NETCORE
 #define MANAGED_GC_HANDLE AsUint64
-#else
-#define MANAGED_GC_HANDLE AsUint
-#endif
 #define AsEnum AsUint64
 
 namespace

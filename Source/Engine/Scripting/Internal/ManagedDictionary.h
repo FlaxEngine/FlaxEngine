@@ -33,13 +33,13 @@ public:
 
 private:
     friend class Scripting;
-    static Dictionary<KeyValueType, MTypeObject*> CachedTypes;
+    static Dictionary<KeyValueType, MType*> CachedTypes;
 
 #if !USE_MONO_AOT
-    typedef MTypeObject* (*MakeGenericTypeThunk)(MObject* instance, MTypeObject* genericType, MArray* genericArgs, MObject** exception);
+    typedef MType* (*MakeGenericTypeThunk)(MObject* instance, MType* genericType, MArray* genericArgs, MObject** exception);
     static MakeGenericTypeThunk MakeGenericType;
 
-    typedef MObject* (*CreateInstanceThunk)(MObject* instance, MTypeObject* type, void* arr, MObject** exception);
+    typedef MObject* (*CreateInstanceThunk)(MObject* instance, MType* type, void* arr, MObject** exception);
     static CreateInstanceThunk CreateInstance;
 
     typedef void (*AddDictionaryItemThunk)(MObject* instance, MObject* dictionary, MObject* key, MObject* value, MObject** exception);
@@ -154,23 +154,19 @@ public:
         return result;
     }
 
-    static MTypeObject* GetClass(MType* keyType, MType* valueType)
+    static MType* GetClass(MType* keyType, MType* valueType)
     {
         // Check if the generic type was generated earlier
         KeyValueType cacheKey = { keyType, valueType };
-        MTypeObject* dictionaryType;
+        MType* dictionaryType;
         if (CachedTypes.TryGet(cacheKey, dictionaryType))
             return dictionaryType;
 
-        MTypeObject* genericType = MUtils::GetType(StdTypesContainer::Instance()->DictionaryClass);
-#if USE_NETCORE
+        MType* genericType = MUtils::GetType(StdTypesContainer::Instance()->DictionaryClass);
         MArray* genericArgs = MCore::Array::New(MCore::TypeCache::IntPtr, 2);
-#else
-        MArray* genericArgs = MCore::Array::New(MCore::TypeCache::Object, 2);
-#endif
-        MTypeObject** genericArgsPtr = MCore::Array::GetAddress<MTypeObject*>(genericArgs);
-        genericArgsPtr[0] = INTERNAL_TYPE_GET_OBJECT(keyType);
-        genericArgsPtr[1] = INTERNAL_TYPE_GET_OBJECT(valueType);
+        MType** genericArgsPtr = MCore::Array::GetAddress<MType*>(genericArgs);
+        genericArgsPtr[0] = keyType;
+        genericArgsPtr[1] = valueType;
 
         MObject* exception = nullptr;
 #if !USE_MONO_AOT
@@ -179,7 +175,7 @@ public:
         void* params[2];
         params[0] = genericType;
         params[1] = genericArgs;
-        dictionaryType = (MTypeObject*)MakeGenericType->Invoke(nullptr, params, &exception);
+        dictionaryType = (MType*)MakeGenericType->Invoke(nullptr, params, &exception);
 #endif
         if (exception)
         {
@@ -194,7 +190,7 @@ public:
     static ManagedDictionary New(MType* keyType, MType* valueType)
     {
         ManagedDictionary result;
-        MTypeObject* dictionaryType = GetClass(keyType, valueType);
+        MType* dictionaryType = GetClass(keyType, valueType);
         if (!dictionaryType)
             return result;
 

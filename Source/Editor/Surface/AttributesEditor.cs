@@ -56,8 +56,8 @@ namespace FlaxEditor.Surface
 
             private object Creator(Type type)
             {
-                var ctor = type.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, null, Utils.GetEmptyArray<Type>(), null);
-                return ctor.Invoke(Utils.GetEmptyArray<object>());
+                var ctor = type.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, null, Array.Empty<Type>(), null);
+                return ctor.Invoke(Array.Empty<object>());
             }
         }
 

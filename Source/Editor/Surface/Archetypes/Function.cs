@@ -574,7 +574,7 @@ namespace FlaxEditor.Surface.Archetypes
                     if (_parameters.Length == 0 && methodInfo.ValueType.IsVoid)
                     {
                         // Skip allocations if method is void and parameter-less
-                        Values[2] = Utils.GetEmptyArray<byte>();
+                        Values[2] = Array.Empty<byte>();
                     }
                     else
                     {
@@ -714,7 +714,7 @@ namespace FlaxEditor.Surface.Archetypes
                     method.Name, // Method name
                     parametersCount, // Method parameters count
                     false, // Is Pure?
-                    Utils.GetEmptyArray<byte>(), // Cached function signature data
+                    Array.Empty<byte>(), // Cached function signature data
                     // Default value for parameters (27 entries)
                     // @formatter:off
                     null,null,null,null,null,null,null,null,null,null,
@@ -810,7 +810,7 @@ namespace FlaxEditor.Surface.Archetypes
                         signature.IsStatic = reader.ReadBoolean(); // Is Static
                         signature.ReturnType = VariantUtils.ReadVariantScriptType(reader); // Return type
                         var parametersCount = reader.ReadInt32(); // Parameters count
-                        signature.Params = parametersCount != 0 ? new SignatureParamInfo[parametersCount] : Utils.GetEmptyArray<SignatureParamInfo>();
+                        signature.Params = parametersCount != 0 ? new SignatureParamInfo[parametersCount] : Array.Empty<SignatureParamInfo>();
                         for (int i = 0; i < parametersCount; i++)
                         {
                             ref var param = ref signature.Params[i];
@@ -831,7 +831,7 @@ namespace FlaxEditor.Surface.Archetypes
                         signature.IsStatic = reader.ReadBoolean(); // Is Static
                         signature.ReturnType = VariantUtils.ReadVariantScriptType(reader); // Return type
                         var parametersCount = reader.ReadInt32(); // Parameters count
-                        signature.Params = parametersCount != 0 ? new SignatureParamInfo[parametersCount] : Utils.GetEmptyArray<SignatureParamInfo>();
+                        signature.Params = parametersCount != 0 ? new SignatureParamInfo[parametersCount] : Array.Empty<SignatureParamInfo>();
                         for (int i = 0; i < parametersCount; i++)
                         {
                             ref var param = ref signature.Params[i];
@@ -2489,7 +2489,7 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     string.Empty, // Overriden method name
                     0, // Overriden method parameters count
-                    Utils.GetEmptyArray<byte>(), // Cached function signature data
+                    Array.Empty<byte>(), // Cached function signature data
                 },
             },
             new NodeArchetype
@@ -2507,7 +2507,7 @@ namespace FlaxEditor.Surface.Archetypes
                     string.Empty, // Method name
                     0, // Method parameters count
                     false, // Is Pure?
-                    Utils.GetEmptyArray<byte>(), // Cached function signature data
+                    Array.Empty<byte>(), // Cached function signature data
 
                     // Default value for parameters (27 entries)
                     // @formatter:off
@@ -2546,7 +2546,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Size = new Float2(240, 20),
                 DefaultValues = new object[]
                 {
-                    Utils.GetEmptyArray<byte>(), // Function signature data
+                    Array.Empty<byte>(), // Function signature data
                 },
             },
             new NodeArchetype

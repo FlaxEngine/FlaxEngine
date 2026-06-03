@@ -502,7 +502,7 @@ namespace FlaxEditor.Windows.Assets
                         {
                             Name = $"{name} (in {member.DeclaringType.Name})",
                             TooltipText = Editor.Instance.CodeDocs.GetTooltip(member),
-                            Tag = new object[] { name, parameters.Length, Utils.GetEmptyArray<byte>() },
+                            Tag = new object[] { name, parameters.Length, Array.Empty<byte>() },
                             // Do some basic sorting based on if the method is defined directly in the script base class
                             SortScore = member.DeclaringType == member.Type.ReflectedType ? 1 : 0,
                         };

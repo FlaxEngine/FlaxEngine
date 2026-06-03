@@ -12,6 +12,6 @@ class CustomEditorsUtil
 public:
 
 #if USE_CSHARP
-    static MTypeObject* GetCustomEditor(MTypeObject* refType);
+    static MType* GetCustomEditor(MType* type);
 #endif
 };

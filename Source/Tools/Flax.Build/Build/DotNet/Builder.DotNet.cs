@@ -155,62 +155,35 @@ namespace Flax.Build
             var outputDocFile = Path.Combine(outputPath, name + ".xml");
             var outputGeneratedFiles = Path.Combine(buildOptions.IntermediateFolder);
             string cscPath, referenceAssemblies;
-#if USE_NETCORE
             var dotnetSdk = DotNetSdk.Instance;
             if (!dotnetSdk.IsValid)
                 throw new DotNetSdk.MissingException();
             string dotnetPath = "dotnet", referenceAnalyzers;
             string[] runtimeVersionNameParts = dotnetSdk.RuntimeVersionName.Split('.');
             string runtimeVersionShort = runtimeVersionNameParts[0] + '.' + runtimeVersionNameParts[1];
-#else
-            string monoRoot, monoPath;
-#endif
             switch (buildPlatform)
             {
             case TargetPlatform.Windows:
             {
-#if USE_NETCORE
                 dotnetPath = Path.Combine(dotnetSdk.RootPath, "dotnet.exe");
                 cscPath = Path.Combine(dotnetSdk.RootPath, @$"sdk\{dotnetSdk.VersionName}\Roslyn\bincore\csc.dll");
                 referenceAssemblies = Path.Combine(dotnetSdk.RootPath, @$"packs\Microsoft.NETCore.App.Ref\{dotnetSdk.RuntimeVersionName}\ref\net{runtimeVersionShort}\");
                 referenceAnalyzers = Path.Combine(dotnetSdk.RootPath, @$"packs\Microsoft.NETCore.App.Ref\{dotnetSdk.RuntimeVersionName}\analyzers\dotnet\cs\");
-#else
-                monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Windows", "Mono");
-                monoPath = Path.Combine(monoRoot, "bin", "mono.exe");
-                cscPath = Path.Combine(Path.GetDirectoryName(VCEnvironment.MSBuildPath), "Roslyn", "csc.exe");
-                if (!File.Exists(cscPath))
-                    cscPath = Path.Combine(monoRoot, "lib", "mono", "4.5", "csc.exe");
-                referenceAssemblies = Path.Combine(monoRoot, "lib", "mono", "4.5-api");
-#endif
                 break;
             }
             case TargetPlatform.Linux:
             {
-#if USE_NETCORE
                 cscPath = Path.Combine(dotnetSdk.RootPath, $"sdk/{dotnetSdk.VersionName}/Roslyn/bincore/csc.dll");
                 referenceAssemblies = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/ref/net{runtimeVersionShort}/");
                 referenceAnalyzers = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/analyzers/dotnet/cs/");
-#else
-                monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Linux", "Mono");
-                monoPath = Path.Combine(monoRoot, "bin", "mono");
-                cscPath = Path.Combine(monoRoot, "lib", "mono", "4.5", "csc.exe");
-                referenceAssemblies = Path.Combine(monoRoot, "lib", "mono", "4.5-api");
-#endif
                 break;
             }
             case TargetPlatform.Mac:
             {
-#if USE_NETCORE
                 dotnetPath = Path.Combine(dotnetSdk.RootPath, "dotnet");
                 cscPath = Path.Combine(dotnetSdk.RootPath, $"sdk/{dotnetSdk.VersionName}/Roslyn/bincore/csc.dll");
                 referenceAssemblies = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/ref/net{runtimeVersionShort}/");
                 referenceAnalyzers = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/analyzers/dotnet/cs/");
-#else
-                monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Mac", "Mono");
-                monoPath = Path.Combine(monoRoot, "bin", "mono");
-                cscPath = Path.Combine(monoRoot, "lib", "mono", "4.5", "csc.exe");
-                referenceAssemblies = Path.Combine(monoRoot, "lib", "mono", "4.5-api");
-#endif
                 break;
             }
             default: throw new InvalidPlatformException(buildPlatform);
@@ -240,16 +213,12 @@ namespace Flax.Build
             args.Add("/unsafe");
             args.Add("/fullpaths");
             args.Add("/filealign:512");
-#if USE_NETCORE
             args.Add($"/langversion:{dotnetSdk.CSharpLanguageVersion}");
             args.Add(string.Format("/nullable:{0}", buildOptions.ScriptingAPI.CSharpNullableReferences.ToString().ToLowerInvariant()));
             if (buildOptions.ScriptingAPI.CSharpNullableReferences == CSharpNullableReferences.Disable)
                 args.Add("-nowarn:8632"); // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
             if (buildOptions.Configuration != TargetConfiguration.Release)
                 args.Add("-nowarn:1701"); // Assuming assembly reference 'XXX, Version=8.0.0.0' used by 'Y' matches identity 'X, Version=9.0.0.0' of 'X', you may need to supply runtime policy
-#else
-            args.Add("/langversion:7.3");
-#endif
             if (buildOptions.ScriptingAPI.IgnoreMissingDocumentationWarnings)
                 args.Add("-nowarn:1591");
             if (buildOptions.ScriptingAPI.IgnoreSpecificWarnings.Any())
@@ -263,14 +232,9 @@ namespace Flax.Build
             // Optimizations prevent debugging, only enable in release builds by default
             var optimize = optimizeAssembly.HasValue ? optimizeAssembly.Value : buildData.Configuration == TargetConfiguration.Release;
             args.Add(optimize ? "/optimize+" : "/optimize-");
-#if !USE_NETCORE
-            args.Add(string.Format("/reference:\"{0}mscorlib.dll\"", referenceAssemblies));
-#endif
             args.Add(string.Format("/out:\"{0}\"", outputFile));
             args.Add(string.Format("/doc:\"{0}\"", outputDocFile));
-#if USE_NETCORE
             args.Add(string.Format("/generatedfilesout:\"{0}\"", outputGeneratedFiles));
-#endif
             if (buildOptions.ScriptingAPI.Defines.Count != 0)
                 args.Add("/define:" + string.Join(";", buildOptions.ScriptingAPI.Defines));
             if (buildData.Configuration == TargetConfiguration.Debug)
@@ -299,21 +263,17 @@ namespace Flax.Build
                 }
             }
 
-#if USE_NETCORE
             foreach (var systemAnalyzer in buildOptions.ScriptingAPI.SystemAnalyzers)
                 args.Add(string.Format("/analyzer:\"{0}{1}.dll\"", referenceAnalyzers, systemAnalyzer));
             foreach (var analyzer in buildOptions.ScriptingAPI.Analyzers)
                 args.Add(string.Format("/analyzer:\"{0}\"", analyzer));
-#endif
             foreach (var sourceFile in sourceFiles)
                 args.Add("\"" + sourceFile + "\"");
 
-#if USE_NETCORE
             // Inject some assembly metadata (similar to msbuild in Visual Studio)
             var assemblyAttributesPath = Path.Combine(buildOptions.IntermediateFolder, name + ".AssemblyAttributes.cs");
             File.WriteAllText(assemblyAttributesPath, $"[assembly: global::System.Runtime.Versioning.TargetFrameworkAttribute(\".NETCoreApp,Version=v{runtimeVersionShort}\", FrameworkDisplayName = \".NET {runtimeVersionShort}\")]\n", Encoding.UTF8);
             args.Add("\"" + assemblyAttributesPath + "\"");
-#endif
 
             // Generate response file with source files paths and compilation arguments
             string responseFile = Path.Combine(buildOptions.IntermediateFolder, name + ".response");
@@ -331,21 +291,8 @@ namespace Flax.Build
 
             // The "/shared" flag enables the compiler server support:
             // https://github.com/dotnet/roslyn/blob/main/docs/compilers/Compiler%20Server.md
-#if USE_NETCORE
             task.CommandPath = dotnetPath;
             task.CommandArguments = $"exec \"{cscPath}\" /noconfig /shared @\"{responseFile}\"";
-#else
-            if (monoPath != null)
-            {
-                task.CommandPath = monoPath;
-                task.CommandArguments = $"\"{cscPath}\" /noconfig @\"{responseFile}\"";
-            }
-            else
-            {
-                task.CommandPath = cscPath;
-                task.CommandArguments = $"/noconfig /shared @\"{responseFile}\"";
-            }
-#endif
 
             BuildDotNetAssembly?.Invoke(graph, buildData, buildOptions, task, binaryModule);
 

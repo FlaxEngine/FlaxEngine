@@ -144,10 +144,6 @@ bool CommandLine::Parse(const Char* cmdLine)
     PARSE_BOOL_SWITCH("-novsync ", NoVSync);
     PARSE_BOOL_SWITCH("-nolog ", NoLog);
     PARSE_BOOL_SWITCH("-std ", Std);
-#if !BUILD_RELEASE
-    PARSE_ARG_SWITCH("-debug ", DebuggerAddress);
-    PARSE_BOOL_SWITCH("-debugwait ", WaitForDebugger);
-#endif
 #if PLATFORM_HAS_HEADLESS_MODE
     PARSE_BOOL_SWITCH("-headless ", Headless);
 #endif
@@ -159,7 +155,6 @@ bool CommandLine::Parse(const Char* cmdLine)
     PARSE_BOOL_SWITCH("-nvidia ", NVIDIA);
     PARSE_BOOL_SWITCH("-amd ", AMD);
     PARSE_BOOL_SWITCH("-intel ", Intel);
-    PARSE_BOOL_SWITCH("-monolog ", MonoLog);
     PARSE_BOOL_SWITCH("-mute ", Mute);
     PARSE_BOOL_SWITCH("-lowdpi ", LowDPI);
 

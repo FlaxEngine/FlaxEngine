@@ -426,7 +426,7 @@ enum class InternalBufferType
     VB0 = 0,
 };
 
-MArray* SkinnedMesh::DownloadBuffer(bool forceGpu, MTypeObject* resultType, int32 typeI)
+MArray* SkinnedMesh::DownloadBuffer(bool forceGpu, MType* resultType, int32 typeI)
 {
     // [Deprecated in v1.10]
     ScopeLock lock(GetModelBase()->Locker);
@@ -445,7 +445,7 @@ MArray* SkinnedMesh::DownloadBuffer(bool forceGpu, MTypeObject* resultType, int3
     auto count = GetVertexCount();
 
     // Convert into managed array
-    MArray* result = MCore::Array::New(MCore::Type::GetClass(INTERNAL_TYPE_OBJECT_GET(resultType)), count);
+    MArray* result = MCore::Array::New(MCore::Type::GetClass(resultType), count);
     void* managedArrayPtr = MCore::Array::GetAddress(result);
     switch ((InternalBufferType)typeI)
     {

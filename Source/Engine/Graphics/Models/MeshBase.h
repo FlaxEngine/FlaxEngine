@@ -453,7 +453,7 @@ private:
 #if !COMPILE_WITHOUT_CSHARP
     API_FUNCTION(NoProxy) bool UpdateTrianglesUInt(int32 triangleCount, const MArray* trianglesObj);
     API_FUNCTION(NoProxy) bool UpdateTrianglesUShort(int32 triangleCount, const MArray* trianglesObj);
-    API_FUNCTION(NoProxy) MArray* DownloadIndexBuffer(bool forceGpu, MTypeObject* resultType, bool use16Bit);
+    API_FUNCTION(NoProxy) MArray* DownloadIndexBuffer(bool forceGpu, MType* resultType, bool use16Bit);
     API_FUNCTION(NoProxy) bool DownloadData(int32 count, MeshBufferType* types, API_PARAM(Out) BytesContainer& buffer0, API_PARAM(Out) BytesContainer& buffer1, API_PARAM(Out) BytesContainer& buffer2, API_PARAM(Out) BytesContainer& buffer3, API_PARAM(Out) GPUVertexLayout*& layout0, API_PARAM(Out) GPUVertexLayout*& layout1, API_PARAM(Out) GPUVertexLayout*& layout2, API_PARAM(Out) GPUVertexLayout*& layout3, bool forceGpu) const;
 #endif
 };

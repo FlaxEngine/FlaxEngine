@@ -636,34 +636,11 @@ void EngineImpl::InitPaths()
 #endif
 #if USE_EDITOR
     Globals::EngineContentFolder = Globals::StartupFolder / TEXT("Content");
-#if USE_MONO
-#if PLATFORM_WINDOWS
-    Globals::MonoPath = Globals::StartupFolder / TEXT("Source/Platforms/Editor/Windows/Mono");
-#elif PLATFORM_LINUX
-    Globals::MonoPath = Globals::StartupFolder / TEXT("Source/Platforms/Editor/Linux/Mono");
-#elif PLATFORM_MAC
-    Globals::MonoPath = Globals::StartupFolder / TEXT("Source/Platforms/Editor/Mac/Mono");
-#else
-    #error "Please specify the Mono data location for Editor on this platform."
-#endif
-#endif
-#else
-#if USE_MONO
-    Globals::MonoPath = Globals::StartupFolder / TEXT("Mono");
-#endif
 #endif
     Globals::ProjectContentFolder = Globals::ProjectFolder / TEXT("Content");
 #if USE_EDITOR
     Globals::ProjectSourceFolder = Globals::ProjectFolder / TEXT("Source");
     Globals::ProjectCacheFolder = Globals::ProjectFolder / TEXT("Cache");
-#endif
-
-#if USE_MONO
-    // We must ensure that engine is located in folder which path contains only ANSI characters
-    // Why? Mono lib must have etc and lib folders at ANSI path
-    // But project can be located on Unicode path
-    if (!Globals::StartupFolder.IsANSI())
-        Platform::Fatal(TEXT("Cannot start application in directory which name contains non-ANSI characters."));
 #endif
 
 #if !PLATFORM_SWITCH && !FLAX_TESTS

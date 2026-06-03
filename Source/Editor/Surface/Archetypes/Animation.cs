@@ -784,7 +784,7 @@ namespace FlaxEditor.Surface.Archetypes
                 DefaultValues = new object[]
                 {
                     "Locomotion",
-                    Utils.GetEmptyArray<byte>(),
+                    Array.Empty<byte>(),
                     3,
                     true,
                     true,
@@ -818,8 +818,8 @@ namespace FlaxEditor.Surface.Archetypes
                 DefaultValues = new object[]
                 {
                     "State",
-                    Utils.GetEmptyArray<byte>(),
-                    Utils.GetEmptyArray<byte>(),
+                    Array.Empty<byte>(),
+                    Array.Empty<byte>(),
                 },
             },
             new NodeArchetype
@@ -1089,7 +1089,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Size = new Float2(100, 0),
                 DefaultValues = new object[]
                 {
-                    Utils.GetEmptyArray<byte>(),
+                    Array.Empty<byte>(),
                 },
             },
             new NodeArchetype

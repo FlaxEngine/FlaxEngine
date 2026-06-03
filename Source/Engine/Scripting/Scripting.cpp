@@ -36,8 +36,6 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 
-extern void registerFlaxEngineInternalCalls();
-
 class ScriptingService : public EngineService
 {
 public:
@@ -203,9 +201,6 @@ bool ScriptingService::Init()
     domain->SetCurrentDomain(true);
     _scriptsDomain = domain;
 
-    // Add internal calls
-    registerFlaxEngineInternalCalls();
-
     // Load assemblies
     if (Scripting::Load())
     {
@@ -269,7 +264,7 @@ void ScriptingService::Update()
     }
     _objectsLocker.Unlock();
 
-#if defined(USE_NETCORE) && !USE_EDITOR
+#if USE_NETCORE && !USE_EDITOR
     // Force GC to run in background periodically to avoid large blocking collections causing hitches
     if (Time::Update.TicksCount % 60 == 0)
     {

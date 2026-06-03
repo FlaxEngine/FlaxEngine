@@ -160,7 +160,7 @@ namespace FlaxEditor.Content
             }
             else
             {
-                _parameters = Utils.GetEmptyArray<ScriptMemberInfo.Parameter>();
+                _parameters = Array.Empty<ScriptMemberInfo.Parameter>();
             }
         }
 
@@ -283,9 +283,9 @@ namespace FlaxEditor.Content
         {
             if (!_asset)
             {
-                _parameters = Utils.GetEmptyArray<ScriptMemberInfo>();
-                _methods = Utils.GetEmptyArray<ScriptMemberInfo>();
-                _attributes = Utils.GetEmptyArray<Attribute>();
+                _parameters = Array.Empty<ScriptMemberInfo>();
+                _methods = Array.Empty<ScriptMemberInfo>();
+                _attributes = Array.Empty<Attribute>();
                 return;
             }
             if (_parameters != null)
@@ -303,7 +303,7 @@ namespace FlaxEditor.Content
                     _parameters[i] = new ScriptMemberInfo(new VisualScriptParameterInfo(this, parameters[i]));
             }
             else
-                _parameters = Utils.GetEmptyArray<ScriptMemberInfo>();
+                _parameters = Array.Empty<ScriptMemberInfo>();
 
             // Cache Visual Script methods info
             var methodsCount = _asset.GetMethodsCount();
@@ -314,7 +314,7 @@ namespace FlaxEditor.Content
                     _methods[i] = new ScriptMemberInfo(new VisualScriptMethodInfo(this, i));
             }
             else
-                _methods = Utils.GetEmptyArray<ScriptMemberInfo>();
+                _methods = Array.Empty<ScriptMemberInfo>();
 
             // Cache Visual Script attributes
             {
@@ -525,7 +525,7 @@ namespace FlaxEditor.Content
             var baseType = BaseType;
             if (baseType)
                 return baseType.GetProperties(bindingAttr);
-            return Utils.GetEmptyArray<ScriptMemberInfo>();
+            return Array.Empty<ScriptMemberInfo>();
         }
 
         /// <inheritdoc />

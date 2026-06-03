@@ -559,7 +559,7 @@ namespace FlaxEngine
         /// </summary>
         public LinearCurve()
         {
-            Keyframes = Utils.GetEmptyArray<Keyframe>();
+            Keyframes = Array.Empty<Keyframe>();
         }
 
         /// <summary>
@@ -655,7 +655,7 @@ namespace FlaxEngine
             if (end - start <= Mathf.Epsilon)
             {
                 // Erase the curve
-                Keyframes = Utils.GetEmptyArray<Keyframe>();
+                Keyframes = Array.Empty<Keyframe>();
                 return;
             }
 
@@ -866,7 +866,7 @@ namespace FlaxEngine
         /// </summary>
         public BezierCurve()
         {
-            Keyframes = Utils.GetEmptyArray<Keyframe>();
+            Keyframes = Array.Empty<Keyframe>();
         }
 
         /// <summary>
@@ -970,7 +970,7 @@ namespace FlaxEngine
             if (end - start <= Mathf.Epsilon)
             {
                 // Erase the curve
-                Keyframes = Utils.GetEmptyArray<Keyframe>();
+                Keyframes = Array.Empty<Keyframe>();
                 return;
             }
 

@@ -15,9 +15,6 @@ String Globals::EngineContentFolder;
 String Globals::ProjectSourceFolder;
 #endif
 String Globals::ProjectContentFolder;
-#if USE_MONO
-String Globals::MonoPath;
-#endif
 PRAGMA_DISABLE_DEPRECATION_WARNINGS;
 bool Globals::FatalErrorOccurred;
 bool Globals::IsRequestingExit;

@@ -20,10 +20,7 @@ class FLAXENGINE_API MMethod
     friend MCore;
 
 protected:
-#if USE_MONO
-    MonoMethod* _monoMethod;
-    StringAnsi _name;
-#elif USE_NETCORE
+#if USE_NETCORE
     void* _handle;
     StringAnsiView _name;
     int32 _paramsCount;
@@ -49,10 +46,7 @@ protected:
     mutable Array<MObject*, ArenaAllocation> _attributes;
 
 public:
-#if USE_MONO
-    explicit MMethod(MonoMethod* monoMethod, MClass* parentClass);
-    explicit MMethod(MonoMethod* monoMethod, const char* name, MClass* parentClass);
-#elif USE_NETCORE
+#if USE_NETCORE
     MMethod(MClass* parentClass, StringAnsiView name, void* handle, int32 paramsCount, MMethodAttributes attributes);
 #endif
 
@@ -165,16 +159,6 @@ public:
     {
         return _isStatic != 0;
     }
-
-#if USE_MONO
-    /// <summary>
-    /// Gets the Mono method handle.
-    /// </summary>
-    FORCE_INLINE MonoMethod* GetNative() const
-    {
-        return _monoMethod;
-    }
-#endif
 
 public:
     /// <summary>

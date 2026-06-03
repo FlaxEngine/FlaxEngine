@@ -15,11 +15,7 @@ class FLAXENGINE_API MField
     friend MCore;
 
 protected:
-#if USE_MONO
-    MonoClassField* _monoField;
-    MonoType* _monoType;
-    StringAnsi _name;
-#elif USE_NETCORE
+#if USE_NETCORE
     void* _handle;
     void* _type;
     int32 _fieldOffset;
@@ -38,9 +34,7 @@ protected:
     mutable Array<MObject*, ArenaAllocation> _attributes;
 
 public:
-#if USE_MONO
-    explicit MField(MonoClassField* monoField, const char* name, MClass* parentClass);
-#elif USE_NETCORE
+#if USE_NETCORE
     MField(MClass* parentClass, void* handle, const char* name, void* type, int fieldOffset, MFieldAttributes attributes);
 #endif
 
@@ -86,16 +80,6 @@ public:
     {
         return _isStatic != 0;
     }
-
-#if USE_MONO
-    /// <summary>
-    /// Gets mono field handle.
-    /// </summary>
-    FORCE_INLINE MonoClassField* GetNative() const
-    {
-        return _monoField;
-    }
-#endif
 
 public:
     /// <summary>

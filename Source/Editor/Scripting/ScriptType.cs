@@ -447,7 +447,7 @@ namespace FlaxEditor.Scripting
             {
                 var parameters = methodInfo.GetParameters();
                 if (parameters.Length == 0)
-                    return Utils.GetEmptyArray<Parameter>();
+                    return Array.Empty<Parameter>();
                 var result = new Parameter[parameters.Length];
                 for (int i = 0; i < result.Length; i++)
                 {
@@ -593,7 +593,7 @@ namespace FlaxEditor.Scripting
             }
             if (_custom != null)
                 return _custom.GetAttributes(inherit);
-            return Utils.GetEmptyArray<object>();
+            return Array.Empty<object>();
         }
 
         /// <summary>
@@ -1116,7 +1116,7 @@ namespace FlaxEditor.Scripting
                 return _managed.GetCustomAttributes(inherit);
             if (_custom != null)
                 return _custom.GetAttributes(inherit);
-            return Utils.GetEmptyArray<object>();
+            return Array.Empty<object>();
         }
 
         /// <summary>
@@ -1191,12 +1191,12 @@ namespace FlaxEditor.Scripting
             if (_managed != null)
             {
                 managedMembers = _managed.GetMember(name, type, bindingAttr);
-                return Utils.GetEmptyArray<ScriptMemberInfo>();
+                return Array.Empty<ScriptMemberInfo>();
             }
             managedMembers = null;
             if (_custom != null)
                 return _custom.GetMembers(name, type, bindingAttr);
-            return Utils.GetEmptyArray<ScriptMemberInfo>();
+            return Array.Empty<ScriptMemberInfo>();
         }
 
         /// <summary>
@@ -1218,7 +1218,7 @@ namespace FlaxEditor.Scripting
             }
             if (_custom != null)
                 return _custom.GetMembers(name, type, bindingAttr);
-            return Utils.GetEmptyArray<ScriptMemberInfo>();
+            return Array.Empty<ScriptMemberInfo>();
         }
 
         /// <summary>
@@ -1282,12 +1282,12 @@ namespace FlaxEditor.Scripting
             if (_managed != null)
             {
                 managedMembers = _managed.GetMembers(bindingAttr);
-                return Utils.GetEmptyArray<ScriptMemberInfo>();
+                return Array.Empty<ScriptMemberInfo>();
             }
             managedMembers = null;
             if (_custom != null)
                 return _custom.GetMembers(bindingAttr);
-            return Utils.GetEmptyArray<ScriptMemberInfo>();
+            return Array.Empty<ScriptMemberInfo>();
         }
 
         /// <summary>
@@ -1307,7 +1307,7 @@ namespace FlaxEditor.Scripting
             }
             if (_custom != null)
                 return _custom.GetMembers(bindingAttr);
-            return Utils.GetEmptyArray<ScriptMemberInfo>();
+            return Array.Empty<ScriptMemberInfo>();
         }
 
         /// <summary>
@@ -1327,7 +1327,7 @@ namespace FlaxEditor.Scripting
             }
             if (_custom != null)
                 return _custom.GetFields(bindingAttr);
-            return Utils.GetEmptyArray<ScriptMemberInfo>();
+            return Array.Empty<ScriptMemberInfo>();
         }
 
         /// <summary>
@@ -1365,7 +1365,7 @@ namespace FlaxEditor.Scripting
             }
             if (_custom != null)
                 return _custom.GetProperties(bindingAttr);
-            return Utils.GetEmptyArray<ScriptMemberInfo>();
+            return Array.Empty<ScriptMemberInfo>();
         }
 
         /// <summary>
@@ -1403,7 +1403,7 @@ namespace FlaxEditor.Scripting
             }
             if (_custom != null)
                 return _custom.GetMethods(bindingAttr);
-            return Utils.GetEmptyArray<ScriptMemberInfo>();
+            return Array.Empty<ScriptMemberInfo>();
         }
 
         /// <summary>

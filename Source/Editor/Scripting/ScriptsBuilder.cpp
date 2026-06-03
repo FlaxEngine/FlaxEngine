@@ -141,10 +141,10 @@ int32 ScriptsBuilder::GetCompilationsCount()
 
 String ScriptsBuilder::GetBuildToolPath()
 {
-#if USE_NETCORE && (PLATFORM_LINUX || PLATFORM_MAC)
-    return Globals::StartupFolder / TEXT("Binaries/Tools/Flax.Build");
-#else
+#if PLATFORM_WINDOWS_FAMILY
     return Globals::StartupFolder / TEXT("Binaries/Tools/Flax.Build.exe");
+#else
+    return Globals::StartupFolder / TEXT("Binaries/Tools/Flax.Build");
 #endif
 }
 
@@ -244,18 +244,6 @@ bool ScriptsBuilder::RunBuildTool(const StringView& args, const StringView& work
 
     // Prepare build options
     StringBuilder cmdLine(args.Length() + buildToolPath.Length() + 200);
-#if !USE_NETCORE && (PLATFORM_LINUX || PLATFORM_MAC)
-    const String monoPath = Globals::MonoPath / TEXT("bin/mono");
-    if (!FileSystem::FileExists(monoPath))
-    {
-        Log::FileNotFoundException(monoPath).SetLevel(LogType::Fatal);
-        return true;
-    }
-    const String monoPath = TEXT("mono");
-    cmdLine.Append(monoPath);
-    cmdLine.Append(TEXT(" "));
-    // TODO: Set env var for the mono MONO_GC_PARAMS=nursery-size64m to boost build performance -> profile it
-#endif
     cmdLine.Append(buildToolPath);
 
     // Call build tool

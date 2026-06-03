@@ -223,7 +223,6 @@ namespace Flax.Build.Bindings
             return false;
         }
 
-#if USE_NETCORE
         /// <summary>
         /// Check if structure contains unblittable types that would require custom marshaller for the structure.
         /// </summary>
@@ -255,7 +254,6 @@ namespace Flax.Build.Bindings
 
             return false;
         }
-#endif
 
         /// <summary>
         /// Finds the API type information.

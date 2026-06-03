@@ -46,11 +46,6 @@ public:
     // Project content directory path.
     API_FIELD(ReadOnly) static String ProjectContentFolder;
 
-#if USE_MONO
-    // Mono library folder path.
-    API_FIELD(ReadOnly) static String MonoPath;
-#endif
-
 public:
     // True if fatal error occurred (engine is exiting).
     // [Deprecated in v1.10]

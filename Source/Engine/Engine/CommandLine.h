@@ -50,20 +50,6 @@ public:
         /// </summary>
         Nullable<bool> Std;
 
-#if !BUILD_RELEASE
-
-        /// <summary>
-        /// -debug !ip:port! (Mono debugger address)
-        /// </summary>
-        Nullable<String> DebuggerAddress;
-
-        /// <summary>
-        /// -debugwait (instructs Mono debugger to wait for client attach for 5 seconds)
-        /// </summary>
-        Nullable<bool> WaitForDebugger;
-
-#endif
-
 #if PLATFORM_HAS_HEADLESS_MODE
 
         /// <summary>
@@ -112,11 +98,6 @@ public:
         /// -intel (hints to use Intel GPU if available)
         /// </summary>
         Nullable<bool> Intel;
-
-        /// <summary>
-        /// -monolog (enables advanced debugging for Mono runtime)
-        /// </summary>
-        Nullable<bool> MonoLog;
 
         /// <summary>
         /// -mute (disables audio playback and uses Null Audio Backend)

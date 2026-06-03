@@ -13,10 +13,7 @@ class FLAXENGINE_API MEvent
     friend MCore;
 
 protected:
-#if USE_MONO
-    MonoEvent* _monoEvent;
-    StringAnsi _name;
-#elif USE_NETCORE
+#if USE_NETCORE
     void* _handle;
     StringAnsiView _name;
 #else
@@ -34,9 +31,7 @@ protected:
     mutable Array<MObject*, ArenaAllocation> _attributes;
 
 public:
-#if USE_MONO
-    explicit MEvent(MonoEvent* monoEvent, const char* name, MClass* parentClass);
-#elif USE_NETCORE
+#if USE_NETCORE
     MEvent(MClass* parentClass, void* handle, const char* name);
 #endif
 
@@ -87,16 +82,6 @@ public:
     {
         return GetAddMethod()->IsStatic();
     }
-
-#if USE_MONO
-    /// <summary>
-    /// Gets the Mono event handle.
-    /// </summary>
-    FORCE_INLINE MonoEvent* GetNative() const
-    {
-        return _monoEvent;
-    }
-#endif
 
 public:
     /// <summary>
