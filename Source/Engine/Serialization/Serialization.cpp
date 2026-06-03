@@ -49,6 +49,54 @@ void ISerializable::DeserializeIfExists(DeserializeStream& stream, const char* m
             var = defaultValue;\
     }
 
+void Serialization::SerializeEnum(ISerializable::SerializeStream& stream, uint32 v, ScriptingTypeHandle typeHandle)
+{
+    if (typeHandle)
+    {
+        // Check if serialize enum as string
+        const ScriptingType& type = typeHandle.GetType();
+        if (type.Type == ScriptingTypes::Enum && type.Enum.StringSerialization)
+        {
+            const auto items = type.Enum.Items;
+            for (int32 i = 0; items[i].Name; i++)
+            {
+                if (items[i].Value == v)
+                {
+                    stream.String(items[i].Name);
+                    return;
+                }
+            }
+        }
+    }
+    stream.Uint(v);
+}
+
+int32 Serialization::DeserializeEnum(ISerializable::DeserializeStream& stream, ScriptingTypeHandle typeHandle)
+{
+    if (stream.IsString() && typeHandle)
+    {
+        // Deserialize enum from string
+        const ScriptingType& type = typeHandle.GetType();
+        if (type.Type == ScriptingTypes::Enum)
+        {
+            const auto str = stream.GetStringAnsiView();
+            const auto items = type.Enum.Items;
+            for (int32 i = 0; items[i].Name; i++)
+            {
+                if (str == items[i].Name)
+                {
+                    return (int32)items[i].Value;
+                }
+            }
+            int32 result;
+            if (!StringUtils::Parse(stream.GetString(), &result))
+                return result;
+            LOG(Warning, "Failed to parse enum '{}' as {}", str.ToString(), type.Fullname.ToString());
+        }
+    }
+    return DeserializeInt(stream);
+}
+
 bool Serialization::ShouldSerialize(const VariantType& v, const void* otherObj)
 {
     return !otherObj || v != *(VariantType*)otherObj;
@@ -129,7 +177,6 @@ void Serialization::Serialize(ISerializable::SerializeStream& stream, const Vari
         stream.Int64(v.AsInt64);
         break;
     case VariantType::Uint64:
-    case VariantType::Enum:
         stream.Uint64(v.AsUint64);
         break;
     case VariantType::Float:
@@ -222,6 +269,9 @@ void Serialization::Serialize(ISerializable::SerializeStream& stream, const Vari
         else
             stream.String("", 0);
         break;
+    case VariantType::Enum:
+        SerializeEnum(stream, (int32)v.AsUint64, v.Type.GetScriptingType());
+        break;
     case VariantType::ManagedObject:
     case VariantType::Structure:
     {
@@ -276,7 +326,6 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         v.AsInt64 = value.GetInt64();
         break;
     case VariantType::Uint64:
-    case VariantType::Enum:
         v.AsUint64 = value.GetUint64();
         break;
     case VariantType::Float:
@@ -371,6 +420,9 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         CHECK(value.IsString());
         v.SetTypename(value.GetStringAnsiView());
         break;
+    case VariantType::Enum:
+        v.AsInt64 = DeserializeEnum(value, v.Type.GetScriptingType());
+        break;
     case VariantType::ManagedObject:
     case VariantType::Structure:
     {
@@ -408,7 +460,7 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
 
 bool Serialization::ShouldSerialize(const Guid& v, const void* otherObj)
 {
-    return v.IsValid();
+    return !otherObj || v != *(Guid*)otherObj;
 }
 
 void Serialization::Serialize(ISerializable::SerializeStream& stream, const Guid& v, const void* otherObj)
@@ -427,10 +479,12 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Guid& 
     const char* b = a + 8;
     const char* c = b + 8;
     const char* d = c + 8;
-    StringUtils::ParseHex(a, 8, &v.A);
-    StringUtils::ParseHex(b, 8, &v.B);
-    StringUtils::ParseHex(c, 8, &v.C);
-    StringUtils::ParseHex(d, 8, &v.D);
+    bool failed = StringUtils::ParseHex(a, 8, &v.A);
+    failed |= StringUtils::ParseHex(b, 8, &v.B);
+    failed |= StringUtils::ParseHex(c, 8, &v.C);
+    failed |= StringUtils::ParseHex(d, 8, &v.D);
+    if (failed)
+        v = Guid::Empty;
 }
 
 bool Serialization::ShouldSerialize(const DateTime& v, const void* otherObj)

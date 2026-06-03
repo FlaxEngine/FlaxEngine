@@ -151,6 +151,7 @@ public:
     void SetTypeName(const ScriptingType& type);
     void SetTypeName(const MClass& klass);
     const char* GetTypeName() const;
+    ScriptingTypeHandle GetScriptingType() const;
     VariantType GetElementType() const;
     // Drops custom type name into the name allocated by the scripting module to reduce memory allocations when referencing types.
     void Inline();
@@ -416,6 +417,15 @@ public:
         ASSERT_LOW_LAYER(type.Type == VariantType::Enum);
         Variant v;
         v.SetType(MoveTemp(type));
+        v.AsUint64 = (uint64)value;
+        return MoveTemp(v);
+    }
+
+    template<typename T>
+    static typename TEnableIf<TIsEnum<T>::Value, Variant>::Type Enum(const T value)
+    {
+        Variant v;
+        v.SetType(VariantType(VariantType::Enum, StaticType<T>().GetType()));
         v.AsUint64 = (uint64)value;
         return MoveTemp(v);
     }
