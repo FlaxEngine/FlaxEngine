@@ -2761,7 +2761,8 @@ namespace Flax.Build.Bindings
             contents.Append($"ScriptingTypeInitializer {enumTypeNameInternal}_TypeInitializer((BinaryModule*)GetBinaryModule{moduleInfo.Name}(), ");
             contents.Append($"StringAnsiView(\"{enumTypeNameManaged}\", {enumTypeNameManaged.Length}), ");
             contents.Append($"sizeof({enumTypeNameNative}), ");
-            contents.Append($"{enumTypeNameInternal}Internal::Items);").AppendLine();
+            var stringSerialization = enumInfo.Attributes != null && enumInfo.Attributes.Contains("EnumString") ? "true" : "false";
+            contents.Append($"{enumTypeNameInternal}Internal::Items, {stringSerialization});").AppendLine();
 
             contents.AppendLine($"template<> {moduleInfo.Name.ToUpperInvariant()}_API ScriptingTypeHandle StaticType<{enumTypeNameNative}>() {{ return {enumTypeNameInternal}_TypeInitializer; }}");
         }
