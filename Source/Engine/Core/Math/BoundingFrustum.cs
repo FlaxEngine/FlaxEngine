@@ -264,7 +264,7 @@ namespace FlaxEngine
         /// <param name="cameraPos">The camera pos.</param>
         /// <param name="lookDir">The look dir.</param>
         /// <param name="upDir">Up dir.</param>
-        /// <param name="fov">The fov.</param>
+        /// <param name="fov">The fov in radians.</param>
         /// <param name="znear">The Z near.</param>
         /// <param name="zfar">The Z far.</param>
         /// <param name="aspect">The aspect.</param>
