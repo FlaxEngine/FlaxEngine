@@ -733,7 +733,9 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     }
 
     // Upscaling after scene rendering but before post processing
-    bool useUpscaling = task->RenderingPercentage < 1.0f;
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+    bool useUpscaling = task->RenderingPercentage * task->RenderScale < 1.0f;
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
     const Viewport outputViewport = task->GetOutputViewport();
     if (useUpscaling && setup.UpscaleLocation == RenderingUpscaleLocation::BeforePostProcessingPass)
     {
