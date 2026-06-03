@@ -259,29 +259,29 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Creates a new frustum relaying on perspective camera parameters
+        /// Creates a new frustum based on a perspective camera parameters.
         /// </summary>
-        /// <param name="cameraPos">The camera pos.</param>
-        /// <param name="lookDir">The look dir.</param>
-        /// <param name="upDir">Up dir.</param>
+        /// <param name="cameraPos">The camera position.</param>
+        /// <param name="lookDir">The look direction.</param>
+        /// <param name="upDir">Up direction.</param>
         /// <param name="fov">The fov in radians.</param>
-        /// <param name="znear">The Z near.</param>
-        /// <param name="zfar">The Z far.</param>
-        /// <param name="aspect">The aspect.</param>
-        /// <returns>The bounding frustum calculated from perspective camera</returns>
-        public static BoundingFrustum FromCamera(Vector3 cameraPos, Vector3 lookDir, Vector3 upDir, float fov, float znear, float zfar, float aspect)
+        /// <param name="zNear">The Z near plane.</param>
+        /// <param name="zFar">The Z far plane.</param>
+        /// <param name="aspectRatio">The aspect ratio.</param>
+        /// <returns>The bounding frustum calculated from the perspective camera</returns>
+        public static BoundingFrustum FromCamera(Vector3 cameraPos, Vector3 lookDir, Vector3 upDir, float fov, float zNear, float zFar, float aspectRatio)
         {
             //http://knol.google.com/k/view-frustum
 
             lookDir = Vector3.Normalize(lookDir);
             upDir = Vector3.Normalize(upDir);
 
-            Vector3 nearCenter = cameraPos + lookDir * znear;
-            Vector3 farCenter = cameraPos + lookDir * zfar;
-            var nearHalfHeight = (float)(znear * Math.Tan(fov / 2f));
-            var farHalfHeight = (float)(zfar * Math.Tan(fov / 2f));
-            float nearHalfWidth = nearHalfHeight * aspect;
-            float farHalfWidth = farHalfHeight * aspect;
+            Vector3 nearCenter = cameraPos + lookDir * zNear;
+            Vector3 farCenter = cameraPos + lookDir * zFar;
+            var nearHalfHeight = (float)(zNear * Math.Tan(fov / 2f));
+            var farHalfHeight = (float)(zFar * Math.Tan(fov / 2f));
+            float nearHalfWidth = nearHalfHeight * aspectRatio;
+            float farHalfWidth = farHalfHeight * aspectRatio;
 
             Vector3 rightDir = Vector3.Normalize(Vector3.Cross(upDir, lookDir));
             Vector3 near1 = nearCenter - nearHalfHeight * upDir + nearHalfWidth * rightDir;
@@ -310,20 +310,21 @@ namespace FlaxEngine
             result.pTop.Normalize();
             result.pBottom.Normalize();
 
-            result.pMatrix = Matrix.LookAt(cameraPos, cameraPos + lookDir * 10, upDir) * Matrix.PerspectiveFov(fov, aspect, znear, zfar);
+            result.pMatrix = Matrix.LookAt(cameraPos, cameraPos + lookDir * 10, upDir) * Matrix.PerspectiveFov(fov, aspectRatio, zNear, zFar);
 
             return result;
         }
 
         /// <summary>
-        /// Returns the 8 corners of the frustum, element0 is Near1 (near right down corner)
-        /// , element1 is Near2 (near right top corner)
-        /// , element2 is Near3 (near Left top corner)
-        /// , element3 is Near4 (near Left down corner)
-        /// , element4 is Far1 (far right down corner)
-        /// , element5 is Far2 (far right top corner)
-        /// , element6 is Far3 (far left top corner)
-        /// , element7 is Far4 (far left down corner)
+        /// Returns the 8 corners of the frustum:
+        /// <para>[0] is Near1 (Near right down corner)</para>
+        /// <para>[1] is Near2 (Near right top corner)</para>
+        /// <para>[2] is Near3 (Near left top corner)</para>
+        /// <para>[3] is Near4 (Near left down corner)</para>
+        /// <para>[4] is Far1 (Far right down corner)</para>
+        /// <para>[5] is Far2 (Far right top corner)</para>
+        /// <para>[6] is Far3 (Far left top corner)</para>
+        /// <para>[7] is Far4 (Far left down corner)</para>
         /// </summary>
         /// <returns>The 8 corners of the frustum</returns>
         public Vector3[] GetCorners()
@@ -334,16 +335,16 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Returns the 8 corners of the frustum, element0 is Near1 (near right down corner)
-        /// , element1 is Near2 (near right top corner)
-        /// , element2 is Near3 (near Left top corner)
-        /// , element3 is Near4 (near Left down corner)
-        /// , element4 is Far1 (far right down corner)
-        /// , element5 is Far2 (far right top corner)
-        /// , element6 is Far3 (far left top corner)
-        /// , element7 is Far4 (far left down corner)
+        /// Populates the array with the 8 corners of the frustum:
+        /// <para>[0] is Near1 (Near right down corner)</para>
+        /// <para>[1] is Near2 (Near right top corner)</para>
+        /// <para>[2] is Near3 (Near left top corner)</para>
+        /// <para>[3] is Near4 (Near left down corner)</para>
+        /// <para>[4] is Far1 (Far right down corner)</para>
+        /// <para>[5] is Far2 (Far right top corner)</para>
+        /// <para>[6] is Far3 (Far left top corner)</para>
+        /// <para>[7] is Far4 (Far left down corner)</para>
         /// </summary>
-        /// <returns>The 8 corners of the frustum</returns>
         public void GetCorners(Vector3[] corners)
         {
             corners[0] = Get3PlanesInterPoint(ref pNear, ref pBottom, ref pRight); //Near1
@@ -357,7 +358,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Checks whether a point lay inside, intersects or lay outside the frustum.
+        /// Checks whether a point lays inside, intersects or lays outside the frustum.
         /// </summary>
         /// <param name="point">The point.</param>
         /// <returns>Type of the containment</returns>
@@ -664,15 +665,15 @@ namespace FlaxEngine
         {
             if (Contains(ray.Position) != ContainmentType.Disjoint)
             {
-                Real nearstPlaneDistance = Real.MaxValue;
+                Real nearestPlaneDistance = Real.MaxValue;
                 for (var i = 0; i < 6; i++)
                 {
                     Plane plane = GetPlane(i);
-                    if (CollisionsHelper.RayIntersectsPlane(ref ray, ref plane, out Real distance) && (distance < nearstPlaneDistance))
-                        nearstPlaneDistance = distance;
+                    if (CollisionsHelper.RayIntersectsPlane(ref ray, ref plane, out Real distance) && (distance < nearestPlaneDistance))
+                        nearestPlaneDistance = distance;
                 }
 
-                inDistance = nearstPlaneDistance;
+                inDistance = nearestPlaneDistance;
                 outDistance = null;
                 return true;
             }
@@ -706,9 +707,9 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Get the distance which when added to camera position along the lookat direction will do the effect of zoom to extents (zoom to fit) operation, so all the passed points will fit in the current view.
-        /// if the returned value is positive, the camera will move toward the lookat direction (ZoomIn).
-        /// if the returned value is negative, the camera will move in the reverse direction of the lookat direction (ZoomOut).
+        /// Get the distance which when added to camera position along the look-at direction will do the effect of zoom to extents (zoom to fit) operation, so all the passed points will fit in the current view.
+        /// if the returned value is positive, the camera will move toward the look-at direction (ZoomIn).
+        /// if the returned value is negative, the camera will move in the reverse direction of the look-at direction (ZoomOut).
         /// </summary>
         /// <param name="points">The points.</param>
         /// <returns>The zoom to fit distance</returns>
@@ -735,9 +736,9 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Get the distance which when added to camera position along the lookat direction will do the effect of zoom to extents (zoom to fit) operation, so all the passed points will fit in the current view.
-        /// if the returned value is positive, the camera will move toward the lookat direction (ZoomIn).
-        /// if the returned value is negative, the camera will move in the reverse direction of the lookat direction (ZoomOut).
+        /// Get the distance which when added to camera position along the look-at direction will do the effect of zoom to extents (zoom to fit) operation, so all the passed points will fit in the current view.
+        /// if the returned value is positive, the camera will move toward the look-at direction (ZoomIn).
+        /// if the returned value is negative, the camera will move in the reverse direction of the look-at direction (ZoomOut).
         /// </summary>
         /// <param name="boundingBox">The bounding box.</param>
         /// <returns>The zoom to fit distance</returns>
