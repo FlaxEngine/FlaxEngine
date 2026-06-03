@@ -362,6 +362,11 @@ const char* VariantType::GetTypeName() const
     return InBuiltTypesTypeNames[Type];
 }
 
+ScriptingTypeHandle VariantType::GetScriptingType() const
+{
+    return Scripting::FindScriptingType(GetTypeName());
+}
+
 VariantType VariantType::GetElementType() const
 {
     if (Type == Array)

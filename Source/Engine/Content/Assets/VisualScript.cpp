@@ -339,7 +339,7 @@ void VisualScriptExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
                         obj = Value::Null;
 #else
                     const ScriptingTypeHandle type = Scripting::FindScriptingType(StringAnsiView(typeNameAnsi.Get(), typeName.Length()));
-                    const ScriptingTypeHandle objType = Scripting::FindScriptingType(obj.Type.GetTypeName());
+                    const ScriptingTypeHandle objType = obj.Type.GetScriptingType();
                     if (!type || !objType || !objType.IsSubclassOf(type))
                         obj = Value::Null;
 #endif

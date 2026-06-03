@@ -151,6 +151,7 @@ public:
     void SetTypeName(const ScriptingType& type);
     void SetTypeName(const MClass& klass);
     const char* GetTypeName() const;
+    ScriptingTypeHandle GetScriptingType() const;
     VariantType GetElementType() const;
     // Drops custom type name into the name allocated by the scripting module to reduce memory allocations when referencing types.
     void Inline();
