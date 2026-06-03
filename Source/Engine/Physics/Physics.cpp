@@ -184,6 +184,15 @@ PhysicsScene* Physics::FindScene(const StringView& name)
     return nullptr;
 }
 
+void Physics::DeleteScene(PhysicsScene* scene)
+{
+    if (scene == nullptr || scene == DefaultScene)
+        return;
+    scene->CollectResults();
+    Scenes.RemoveKeepOrder(scene);
+    Delete(scene);
+}
+
 bool Physics::GetAutoSimulation()
 {
     return !DefaultScene || DefaultScene->GetAutoSimulation();

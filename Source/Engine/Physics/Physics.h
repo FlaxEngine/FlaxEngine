@@ -32,6 +32,11 @@ API_CLASS(Static) class FLAXENGINE_API Physics
     /// </summary>
     API_FUNCTION() static PhysicsScene* FindScene(const StringView& name);
 
+    /// <summary>
+    /// Delete an existing scene (excluding the default one).
+    /// </summary>
+    API_FUNCTION() static void DeleteScene(PhysicsScene* scene);
+
 public:
     /// <summary>
     /// The automatic simulation feature. True if perform physics simulation after on fixed update by auto, otherwise user should do it.
