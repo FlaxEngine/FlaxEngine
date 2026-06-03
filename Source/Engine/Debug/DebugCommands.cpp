@@ -85,7 +85,7 @@ struct CommandData
         else if (value.Type.Type == VariantType::Structure)
         {
             // Prettify structure printing
-            ScriptingTypeHandle resultType = Scripting::FindScriptingType(value.Type.GetTypeName());
+            ScriptingTypeHandle resultType = value.Type.GetScriptingType();
             if (resultType)
             {
                 Array<void*> fields;

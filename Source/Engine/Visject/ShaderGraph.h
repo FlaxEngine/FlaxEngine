@@ -167,6 +167,15 @@ public:
         // Base
         return Base::onNodeLoaded(n);
     }
+    void Clear() override
+    {
+        FloatCurves.Clear();
+        Float2Curves.Clear();
+        Float3Curves.Clear();
+        Float4Curves.Clear();
+
+        Base::Clear();
+    }
 };
 
 /// <summary>

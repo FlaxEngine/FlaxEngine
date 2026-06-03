@@ -12,10 +12,46 @@
 #define VISUAL_SCRIPT_GRAPH_MAX_CALL_STACK 250
 #define VISUAL_SCRIPT_DEBUGGING USE_EDITOR
 
-#define VisualScriptGraphNode VisjectGraphNode<>
-
 class VisualScripting;
 class VisualScriptingBinaryModule;
+
+/// <summary>
+/// Visual Script graph node.
+/// </summary>
+class VisualScriptGraphNode : public VisjectGraphNode<>
+{
+public:
+    struct InvokeMethodData
+    {
+        void* Method;
+        BinaryModule* Module;
+        int32 ParamsCount;
+        uint32 OutParamsMask;
+        bool IsStatic;
+    };
+
+    struct GetSetFieldData
+    {
+        void* Field;
+        BinaryModule* Module;
+        bool IsStatic;
+    };
+
+    /// <summary>
+    /// Custom cached data per node type. Compact to use as small amount of memory as possible.
+    /// </summary>
+    struct AdditionalData
+    {
+        union
+        {
+            InvokeMethodData InvokeMethod;
+            GetSetFieldData GetSetField;
+        };
+    };
+
+    // The custom per-node data. Used to cache data for faster usage at runtime.
+    AdditionalData Data;
+};
 
 /// <summary>
 /// The Visual Script graph data.

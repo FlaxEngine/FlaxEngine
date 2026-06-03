@@ -38,12 +38,16 @@ namespace Serialization
         int32 result = 0;
         if (stream.IsInt())
             result = stream.GetInt();
+        else if (stream.IsInt64())
+            result = (int32)stream.GetInt64();
         else if (stream.IsFloat())
             result = (int32)stream.GetFloat();
         else if (stream.IsString())
             StringUtils::Parse(stream.GetString(), &result);
         return result;
     }
+    FLAXENGINE_API void SerializeEnum(ISerializable::SerializeStream& stream, uint32 v, ScriptingTypeHandle typeHandle);
+    FLAXENGINE_API int32 DeserializeEnum(ISerializable::DeserializeStream& stream, ScriptingTypeHandle typeHandle);
 
     // In-build types
     
@@ -226,12 +230,12 @@ namespace Serialization
     template<typename T>
     inline typename TEnableIf<TIsEnum<T>::Value>::Type Serialize(ISerializable::SerializeStream& stream, const T& v, const void* otherObj)
     {
-        stream.Uint((uint32)v);
+        SerializeEnum(stream, (uint32)v, StaticType<T>());
     }
     template<typename T>
     inline typename TEnableIf<TIsEnum<T>::Value>::Type Deserialize(ISerializable::DeserializeStream& stream, T& v, ISerializeModifier* modifier)
     {
-        v = (T)DeserializeInt(stream);
+        v = (T)DeserializeEnum(stream, StaticType<T>());
     }
 
     // Common types

@@ -112,7 +112,7 @@ GPUContextVulkan::GPUContextVulkan(GPUDeviceVulkan* device, QueueVulkan* queue)
     _handlesSizes[(int32)SpirvShaderResourceBindingType::UAV] = GPU_MAX_UA_BINDED;
 #endif
 
-#if GPU_ENABLE_TRACY
+#if VULKAN_USE_TRACY_GPU
 #if VK_EXT_calibrated_timestamps && VK_EXT_host_query_reset && !PLATFORM_SWITCH
     // Use calibrated timestamps extension
     if (vkResetQueryPoolEXT && vkGetCalibratedTimestampsEXT && _device->PhysicalDeviceFeatures12.hostQueryReset)
@@ -139,7 +139,7 @@ GPUContextVulkan::GPUContextVulkan(GPUDeviceVulkan* device, QueueVulkan* queue)
 
 GPUContextVulkan::~GPUContextVulkan()
 {
-#if GPU_ENABLE_TRACY
+#if VULKAN_USE_TRACY_GPU
     tracy::DestroyVkContext(_tracyContext);
 #endif
     for (int32 i = 0; i < _descriptorPools.Count(); i++)
@@ -921,7 +921,7 @@ void GPUContextVulkan::FrameEnd()
     // Execute any queued layout transitions that weren't already handled by the render pass
     FlushBarriers();
 
-#if GPU_ENABLE_TRACY
+#if VULKAN_USE_TRACY_GPU
     if (cmdBuffer)
         tracy::CollectVkContext(_tracyContext, cmdBuffer->GetHandle());
 #endif
@@ -935,7 +935,7 @@ void GPUContextVulkan::FrameEnd()
 void GPUContextVulkan::EventBegin(const Char* name)
 {
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-#if COMPILE_WITH_PROFILER
+#if VULKAN_USE_TRACY_GPU
     void* tracyContext = _tracyContext;
 #else
     void* tracyContext = nullptr;

@@ -752,7 +752,7 @@ void SceneObjectsFactory::SynchronizePrefabInstances(Context& context, PrefabSyn
             obj->SetOrderInParent(order);
     }
 
-    // Setup hierarchy for the prefab instances (ensure any new objects are connected)
+    // Setup hierarchy for the prefab instances (after adding new objects to ensure they are connected, eg. when reparenting existing prefab into a new root)
     for (const auto& instance : context.Instances)
     {
         const auto& prefabStartData = data.Data[instance.StatIndex];

@@ -486,8 +486,7 @@ void StaticModel::Serialize(SerializeStream& stream, const void* otherObj)
         Lightmap.Serialize(stream);
     }
 
-    stream.JKEY("Buffer");
-    stream.Object(&Entries, other ? &other->Entries : nullptr);
+    SERIALIZE_MEMBER(Buffer, Entries);
 
     if (_vertexColorsCount)
     {
@@ -525,7 +524,7 @@ void StaticModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     DESERIALIZE_MEMBER(SortOrder, _sortOrder);
     DESERIALIZE_MEMBER(DrawModes, _drawModes);
     Lightmap.Deserialize(stream);
-    Entries.DeserializeIfExists(stream, "Buffer", modifier);
+    DESERIALIZE_MEMBER(Buffer, Entries);
 
     {
         const auto member = stream.FindMember("VertexColors");

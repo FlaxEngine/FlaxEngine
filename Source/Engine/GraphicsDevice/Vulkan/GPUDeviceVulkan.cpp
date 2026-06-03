@@ -1732,7 +1732,7 @@ bool GPUDeviceVulkan::Init()
     VulkanPlatform::RestrictEnabledPhysicalDeviceFeatures(PhysicalDeviceFeatures, enabledFeatures);
     deviceInfo.pEnabledFeatures = &enabledFeatures;
 
-#if GPU_ENABLE_TRACY && VK_EXT_calibrated_timestamps && VK_EXT_host_query_reset
+#if VULKAN_USE_TRACY_GPU && VK_EXT_calibrated_timestamps && VK_EXT_host_query_reset
     VkPhysicalDeviceHostQueryResetFeatures resetFeatures;
     if (PhysicalDeviceFeatures12.hostQueryReset)
     {

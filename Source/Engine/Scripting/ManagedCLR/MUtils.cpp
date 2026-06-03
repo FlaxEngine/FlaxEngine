@@ -609,6 +609,12 @@ MObject* MUtils::BoxVariant(const Variant& value)
         return MCore::Object::Box((void*)&value.AsData, Double3::TypeInitializer.GetClass());
     case VariantType::Double4:
         return MCore::Object::Box((void*)&value.AsData, Double4::TypeInitializer.GetClass());
+    case VariantType::Int2:
+        return MCore::Object::Box((void*)&value.AsData, Int2::TypeInitializer.GetClass());
+    case VariantType::Int3:
+        return MCore::Object::Box((void*)&value.AsData, Int3::TypeInitializer.GetClass());
+    case VariantType::Int4:
+        return MCore::Object::Box((void*)&value.AsData, Int4::TypeInitializer.GetClass());
     case VariantType::Color:
         return MCore::Object::Box((void*)&value.AsData, stdTypes.ColorClass);
     case VariantType::Guid:
@@ -880,6 +886,12 @@ MClass* MUtils::GetClass(const VariantType& value)
         return Double3::TypeInitializer.GetClass();
     case VariantType::Double4:
         return Double4::TypeInitializer.GetClass();
+    case VariantType::Int2:
+        return Int2::TypeInitializer.GetClass();
+    case VariantType::Int3:
+        return Int3::TypeInitializer.GetClass();
+    case VariantType::Int4:
+        return Int4::TypeInitializer.GetClass();
     case VariantType::Color:
         return Color::TypeInitializer.GetClass();
     case VariantType::Guid:
@@ -970,6 +982,12 @@ MClass* MUtils::GetClass(const Variant& value)
         return Double3::TypeInitializer.GetClass();
     case VariantType::Double4:
         return Double4::TypeInitializer.GetClass();
+    case VariantType::Int2:
+        return Int2::TypeInitializer.GetClass();
+    case VariantType::Int3:
+        return Int3::TypeInitializer.GetClass();
+    case VariantType::Int4:
+        return Int4::TypeInitializer.GetClass();
     case VariantType::Color:
         return stdTypes.ColorClass;
     case VariantType::Guid:
@@ -1138,6 +1156,9 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, MType* type, bool& failed)
         CASE_IN_BUILD_TYPE(Double2, AsData);
         CASE_IN_BUILD_TYPE(Double3, AsData);
         CASE_IN_BUILD_TYPE(Double4, AsBlob.Data);
+        CASE_IN_BUILD_TYPE(Int2, AsData);
+        CASE_IN_BUILD_TYPE(Int3, AsData);
+        CASE_IN_BUILD_TYPE(Int4, AsData);
 #undef CASE_IN_BUILD_TYPE
         if (klass->IsValueType())
         {

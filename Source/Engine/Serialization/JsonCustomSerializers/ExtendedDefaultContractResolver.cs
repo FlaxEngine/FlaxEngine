@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 
 namespace FlaxEngine.Json.JsonCustomSerializers
@@ -44,6 +45,13 @@ namespace FlaxEngine.Json.JsonCustomSerializers
                 ((JsonObjectContract)contract).ItemReferenceLoopHandling = ReferenceLoopHandling.Serialize;
             }
 
+            // Check if use enum serialization as string
+            var type = Nullable.GetUnderlyingType(objectType) ?? objectType;
+            if (type.IsEnum && type.GetCustomAttribute<EnumStringAttribute>() != null)
+            {
+                contract.Converter = new StringEnumConverter();
+            }
+
             return contract;
         }
 
@@ -53,19 +61,19 @@ namespace FlaxEngine.Json.JsonCustomSerializers
             var contract = base.CreateDictionaryContract(objectType);
 
             // Override contract to save enums keys as integer
-            if (contract.DictionaryKeyType?.IsEnum ?? false)
+            var keyType = contract.DictionaryKeyType;
+            if ((keyType?.IsEnum ?? false) && keyType.GetCustomAttribute<EnumStringAttribute>() == null)
             {
-                var enumType = contract.DictionaryKeyType;
                 contract.DictionaryKeyResolver = name =>
                 {
                     try
                     {
-                        var e = Enum.Parse(enumType, name);
+                        var e = Enum.Parse(keyType, name);
                         name = Convert.ToInt32(e).ToString();
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // Ignore errors
+                        Debug.Logger.LogHandler.LogWrite(LogType.Warning, $"Failed to parse enum '{name}' as {keyType.Name}: {ex.Message}");
                     }
                     return name;
                 };

@@ -140,6 +140,11 @@ namespace Flax.Build.Platforms
         /// Windows 11 SDK (10.0.26100.0) 24H2
         /// </summary>
         v10_0_26100_0,
+
+        /// <summary>
+        /// Windows 11 SDK (10.0.28000.0)
+        /// </summary>
+        v10_0_28000_0,
     }
 
     /// <summary>
@@ -333,6 +338,7 @@ namespace Flax.Build.Platforms
             case WindowsPlatformSDK.v10_0_22000_0: return new Version(10, 0, 22000, 0);
             case WindowsPlatformSDK.v10_0_22621_0: return new Version(10, 0, 22621, 0);
             case WindowsPlatformSDK.v10_0_26100_0: return new Version(10, 0, 26100, 0);
+            case WindowsPlatformSDK.v10_0_28000_0: return new Version(10, 0, 28000, 0);
             default: throw new ArgumentOutOfRangeException(nameof(sdk), sdk, null);
             }
         }
@@ -388,6 +394,7 @@ namespace Flax.Build.Platforms
                 WindowsPlatformSDK.v10_0_22000_0,
                 WindowsPlatformSDK.v10_0_22621_0,
                 WindowsPlatformSDK.v10_0_26100_0,
+                WindowsPlatformSDK.v10_0_28000_0,
             };
             foreach (var sdk10 in sdk10Roots)
             {
