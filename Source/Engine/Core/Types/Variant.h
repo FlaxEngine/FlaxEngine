@@ -422,6 +422,15 @@ public:
     }
 
     template<typename T>
+    static typename TEnableIf<TIsEnum<T>::Value, Variant>::Type Enum(const T value)
+    {
+        Variant v;
+        v.SetType(VariantType(VariantType::Enum, StaticType<T>().GetType()));
+        v.AsUint64 = (uint64)value;
+        return MoveTemp(v);
+    }
+
+    template<typename T>
     static typename TEnableIf<!TIsEnum<T>::Value && !TIsPointer<T>::Value, Variant>::Type Structure(VariantType&& type, const T& value)
     {
         ASSERT_LOW_LAYER(type.Type == VariantType::Structure);
