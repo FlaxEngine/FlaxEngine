@@ -191,7 +191,7 @@ bool WebPlatformTools::OnPostProcess(CookingData& data)
         FileSystem::GetChildDirectories(pythons, emscriptenSdk / TEXT("/python"));
         if (pythons.HasItems())
         {
-            procSettings.Arguments = procSettings.FileName + TEXT(".py ") + procSettings.Arguments;
+            procSettings.Arguments = String::Format(TEXT("\"{}.py\" {}"), procSettings.FileName, procSettings.Arguments);
 #if PLATFORM_WINDOWS
             procSettings.FileName = pythons[0] / TEXT("/python.exe");
 #else

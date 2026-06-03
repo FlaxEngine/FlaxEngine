@@ -205,10 +205,9 @@ bool BehaviorKnowledge::Set(const StringAnsiView& path, const Variant& value)
 
 bool BehaviorKnowledge::HasGoal(ScriptingTypeHandle type) const
 {
-    for (int32 i = 0; i < Goals.Count(); i++)
+    for (const Variant& goal : Goals)
     {
-        const ScriptingTypeHandle goalType = Scripting::FindScriptingType(Goals[i].Type.GetTypeName());
-        if (goalType == type)
+        if (goal.Type.GetScriptingType() == type)
             return true;
     }
     return false;
@@ -218,8 +217,7 @@ const Variant& BehaviorKnowledge::GetGoal(ScriptingTypeHandle type) const
 {
     for (const Variant& goal : Goals)
     {
-        const ScriptingTypeHandle goalType = Scripting::FindScriptingType(goal.Type.GetTypeName());
-        if (goalType == type)
+        if (goal.Type.GetScriptingType() == type)
             return goal;
     }
     return Variant::Null;
@@ -242,10 +240,9 @@ void BehaviorKnowledge::RemoveGoal(ScriptingTypeHandle type)
 {
     for (int32 i = 0; i < Goals.Count(); i++)
     {
-        const ScriptingTypeHandle goalType = Scripting::FindScriptingType(Goals[i].Type.GetTypeName());
-        if (goalType == type)
+        if (Goals[i].Type.GetScriptingType() == type)
         {
-            Goals.RemoveAt(i);
+            Goals.RemoveAtKeepOrder(i);
             break;
         }
     }

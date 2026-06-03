@@ -204,7 +204,7 @@ ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* modul
     Struct.SetField = setField;
 }
 
-ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* module, int32 size, EnumItem* items)
+ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* module, int32 size, EnumItem* items, bool stringSerialization)
     : ManagedClass(nullptr)
     , Module(module)
     , InitRuntime(DefaultInitRuntime)
@@ -215,6 +215,7 @@ ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* modul
     , Size(size)
 {
     Enum.Items = items;
+    Enum.StringSerialization = stringSerialization;
 }
 
 ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* module, InitRuntimeHandler initRuntime, SetupScriptVTableHandler setupScriptVTable, SetupScriptObjectVTableHandler setupScriptObjectVTable, GetInterfaceWrapper getInterfaceWrapper)
@@ -270,6 +271,7 @@ ScriptingType::ScriptingType(const ScriptingType& other)
         break;
     case ScriptingTypes::Enum:
         Enum.Items = other.Enum.Items;
+        Enum.StringSerialization = other.Enum.StringSerialization;
         break;
     case ScriptingTypes::Interface:
         Interface.SetupScriptVTable = other.Interface.SetupScriptVTable;
@@ -323,6 +325,7 @@ ScriptingType::ScriptingType(ScriptingType&& other)
         break;
     case ScriptingTypes::Enum:
         Enum.Items = other.Enum.Items;
+        Enum.StringSerialization = other.Enum.StringSerialization;
         break;
     case ScriptingTypes::Interface:
         Interface.SetupScriptVTable = other.Interface.SetupScriptVTable;
@@ -604,70 +607,56 @@ StringAnsiView ScriptingType::GetName() const
     return Fullname;
 }
 
+#if BUILD_DEBUG || USE_EDITOR
+#define INIT_TYPE(...) \
+    module->Types.AddUninitialized(); \
+    new(module->Types.Get() + TypeIndex)ScriptingType(fullname, module, ##__VA_ARGS__); \
+    if (module->TypeNameToTypeIndex.ContainsKey(fullname)) \
+        LOG(Error, "Duplicated native typename {0} from module {1}.", String(fullname), String(module->GetName())); \
+    module->TypeNameToTypeIndex[fullname] = TypeIndex;
+#else
+#define INIT_TYPE(...) \
+    module->Types.AddUninitialized(); \
+    new(module->Types.Get() + TypeIndex)ScriptingType(fullname, module, ##__VA_ARGS__); \
+    module->TypeNameToTypeIndex[fullname] = TypeIndex;
+#endif
+
 ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::SpawnHandler spawn, ScriptingTypeInitializer* baseType, ScriptingType::SetupScriptVTableHandler setupScriptVTable, ScriptingType::SetupScriptObjectVTableHandler setupScriptObjectVTable, const ScriptingType::InterfaceImplementation* interfaces)
     : ScriptingTypeHandle(module, module->Types.Count())
 {
     // Script
-    module->Types.AddUninitialized();
-    new(module->Types.Get() + TypeIndex)ScriptingType(fullname, module, size, initRuntime, spawn, baseType, setupScriptVTable, setupScriptObjectVTable, interfaces);
-#if BUILD_DEBUG
-    if (module->TypeNameToTypeIndex.ContainsKey(fullname))
-        LOG(Error, "Duplicated native typename {0} from module {1}.", String(fullname), String(module->GetName()));
-#endif
-    module->TypeNameToTypeIndex[fullname] = TypeIndex;
+    INIT_TYPE(size, initRuntime, spawn, baseType, setupScriptVTable, setupScriptObjectVTable, interfaces);
 }
 
 ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::Ctor ctor, ScriptingType::Dtor dtor, ScriptingTypeInitializer* baseType, const ScriptingType::InterfaceImplementation* interfaces)
     : ScriptingTypeHandle(module, module->Types.Count())
 {
     // Class
-    module->Types.AddUninitialized();
-    new(module->Types.Get() + TypeIndex)ScriptingType(fullname, module, size, initRuntime, ctor, dtor, baseType, interfaces);
-#if BUILD_DEBUG
-    if (module->TypeNameToTypeIndex.ContainsKey(fullname))
-        LOG(Error, "Duplicated native typename {0} from module {1}.", String(fullname), String(module->GetName()));
-#endif
-    module->TypeNameToTypeIndex[fullname] = TypeIndex;
+    INIT_TYPE(size, initRuntime, ctor, dtor, baseType, interfaces);
 }
 
 ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::Ctor ctor, ScriptingType::Dtor dtor, ScriptingType::Copy copy, ScriptingType::Box box, ScriptingType::Unbox unbox, ScriptingType::GetField getField, ScriptingType::SetField setField, ScriptingTypeInitializer* baseType, const ScriptingType::InterfaceImplementation* interfaces)
     : ScriptingTypeHandle(module, module->Types.Count())
 {
     // Structure
-    module->Types.AddUninitialized();
-    new(module->Types.Get() + TypeIndex)ScriptingType(fullname, module, size, initRuntime, ctor, dtor, copy, box, unbox, getField, setField, baseType, interfaces);
-#if BUILD_DEBUG
-    if (module->TypeNameToTypeIndex.ContainsKey(fullname))
-        LOG(Error, "Duplicated native typename {0} from module {1}.", String(fullname), String(module->GetName()));
-#endif
-    module->TypeNameToTypeIndex[fullname] = TypeIndex;
+    INIT_TYPE(size, initRuntime, ctor, dtor, copy, box, unbox, getField, setField, baseType, interfaces);
 }
 
-ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::EnumItem* items)
+ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::EnumItem* items, bool stringSerialization)
     : ScriptingTypeHandle(module, module->Types.Count())
 {
     // Enum
-    module->Types.AddUninitialized();
-    new(module->Types.Get() + TypeIndex)ScriptingType(fullname, module, size, items);
-#if BUILD_DEBUG
-    if (module->TypeNameToTypeIndex.ContainsKey(fullname))
-        LOG(Error, "Duplicated native typename {0} from module {1}.", String(fullname), String(module->GetName()));
-#endif
-    module->TypeNameToTypeIndex[fullname] = TypeIndex;
+    INIT_TYPE(size, items, stringSerialization);
 }
 
 ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::SetupScriptVTableHandler setupScriptVTable, ScriptingType::SetupScriptObjectVTableHandler setupScriptObjectVTable, ScriptingType::GetInterfaceWrapper getInterfaceWrapper)
     : ScriptingTypeHandle(module, module->Types.Count())
 {
     // Interface
-    module->Types.AddUninitialized();
-    new(module->Types.Get() + TypeIndex)ScriptingType(fullname, module, initRuntime, setupScriptVTable, setupScriptObjectVTable, getInterfaceWrapper);
-#if BUILD_DEBUG
-    if (module->TypeNameToTypeIndex.ContainsKey(fullname))
-        LOG(Error, "Duplicated native typename {0} from module {1}.", String(fullname), String(module->GetName()));
-#endif
-    module->TypeNameToTypeIndex[fullname] = TypeIndex;
+    INIT_TYPE(initRuntime, setupScriptVTable, setupScriptObjectVTable, getInterfaceWrapper);
 }
+
+#undef INIT_TYPE
 
 CriticalSection BinaryModule::Locker;
 

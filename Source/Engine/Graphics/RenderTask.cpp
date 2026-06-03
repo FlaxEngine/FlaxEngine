@@ -353,8 +353,11 @@ Viewport SceneRenderTask::GetViewport() const
         viewport = Buffers->GetViewport();
     else
         viewport = Viewport(0, 0, 1280, 720);
-    viewport.Width *= RenderingPercentage;
-    viewport.Height *= RenderingPercentage;
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+    float renderScale = RenderingPercentage * RenderScale;
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
+    viewport.Width *= renderScale;
+    viewport.Height *= renderScale;
     return viewport;
 }
 
@@ -394,13 +397,16 @@ void SceneRenderTask::OnBegin(GPUContext* context)
     }
 
     // Setup render buffers for the output rendering resolution
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+    float renderScale = RenderingPercentage * RenderScale;
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
     if (Output)
     {
-        Buffers->Init((int32)((float)Output->Width() * RenderingPercentage), (int32)((float)Output->Height() * RenderingPercentage));
+        Buffers->Init((int32)((float)Output->Width() * renderScale), (int32)((float)Output->Height() * renderScale));
     }
     else if (SwapChain)
     {
-        Buffers->Init((int32)((float)SwapChain->GetWidth() * RenderingPercentage), (int32)((float)SwapChain->GetHeight() * RenderingPercentage));
+        Buffers->Init((int32)((float)SwapChain->GetWidth() * renderScale), (int32)((float)SwapChain->GetHeight() * renderScale));
     }
 }
 
@@ -434,7 +440,10 @@ bool SceneRenderTask::Resize(int32 width, int32 height)
     PROFILE_MEM(Graphics);
     if (Output && Output->Resize(width, height))
         return true;
-    if (Buffers && Buffers->Init((int32)((float)width * RenderingPercentage), (int32)((float)height * RenderingPercentage)))
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+    float renderScale = RenderingPercentage * RenderScale;
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
+    if (Buffers && Buffers->Init((int32)((float)width * renderScale), (int32)((float)height * renderScale)))
         return true;
     return false;
 }
@@ -477,12 +486,6 @@ void MainRenderTask::OnBegin(GPUContext* context)
     // Use the main camera for the game (can be later overriden in Begin event by external code)
     Camera = Camera::GetMainCamera();
 
-#if !USE_EDITOR
-    // Sync render buffers size with the backbuffer
-    const auto size = Screen::GetSize();
-    Buffers->Init((int32)(size.X * RenderingPercentage), (int32)(size.Y * RenderingPercentage));
-#endif
-
     SceneRenderTask::OnBegin(context);
 }
 
@@ -506,4 +509,11 @@ RenderContextBatch::RenderContextBatch(const RenderContext& context)
     Task = context.Task;
     Contexts.Add(context);
     EnableAsync = JobSystem::GetThreadsCount() > 1;
+}
+
+void RenderContextBatch::FlushWaitLabels()
+{
+    for (const int64 label : WaitLabels)
+        JobSystem::Wait(label);
+    WaitLabels.Clear();
 }

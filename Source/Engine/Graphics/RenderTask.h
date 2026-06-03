@@ -268,8 +268,14 @@ public:
 
     /// <summary>
     /// The scale of the rendering resolution relative to the output dimensions. If lower than 1 the scene and postprocessing will be rendered at a lower resolution and upscaled to the output backbuffer.
+    /// [Deprecated in v1.13]
     /// </summary>
-    API_FIELD() float RenderingPercentage = 1.0f;
+    API_FIELD() DEPRECATED("Use RenderScale instead.") float RenderingPercentage = 1.0f;
+
+    /// <summary>
+    /// The scale of the rendering resolution relative to the output dimensions. If lower than 1 the scene and postprocessing will be rendered at a lower resolution and upscaled to the output backbuffer.
+    /// </summary>
+    API_FIELD() float RenderScale = 1.0f;
 
     /// <summary>
     /// The image resolution upscale location within rendering pipeline. Unused if RenderingPercentage is 1.
@@ -533,4 +539,9 @@ API_STRUCT(NoDefault) struct FLAXENGINE_API RenderContextBatch
     {
         return Contexts.Get()[0];
     }
+
+    /// <summary>
+    /// Waits for all scheduled async jobs to complete and clears WaitLabels.
+    /// </summary>
+    void FlushWaitLabels();
 };
