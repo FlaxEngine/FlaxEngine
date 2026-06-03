@@ -829,9 +829,9 @@ namespace FlaxEditor.Modules
             projectPath = projectPath.Replace('/', '\\');
 #endif
 
-            string largeWorld = "Large Worlds Enabled: false";
+            string largeWorld = "Large Worlds Disabled";
 #if USE_LARGE_WORLDS
-            largeWorld = "Large Worlds Enabled: true";
+            largeWorld = "Large Worlds Enabled";
 #endif
 
             WindowDecorations = new MainWindowDecorations(mainWindow, !Utilities.Utils.UseCustomWindowDecorations(true))
