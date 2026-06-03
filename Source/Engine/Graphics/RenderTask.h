@@ -533,4 +533,9 @@ API_STRUCT(NoDefault) struct FLAXENGINE_API RenderContextBatch
     {
         return Contexts.Get()[0];
     }
+
+    /// <summary>
+    /// Waits for all scheduled async jobs to complete and clears WaitLabels.
+    /// </summary>
+    void FlushWaitLabels();
 };

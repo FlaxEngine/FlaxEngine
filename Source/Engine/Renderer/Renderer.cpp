@@ -356,9 +356,7 @@ void Renderer::DrawActors(RenderContext& renderContext, const Array<Actor*>& cus
         Level::DrawActors(renderContextBatch, SceneRendering::DrawCategory::SceneDraw);
         Level::DrawActors(renderContextBatch, SceneRendering::DrawCategory::SceneDrawAsync);
         JobSystem::SetJobStartingOnDispatch(true);
-        for (const int64 label : renderContextBatch.WaitLabels)
-            JobSystem::Wait(label);
-        renderContextBatch.WaitLabels.Clear();
+        renderContextBatch.FlushWaitLabels();
     }
 }
 
@@ -483,9 +481,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
 
         // Wait for async jobs to finish
         JobSystem::SetJobStartingOnDispatch(true);
-        for (const int64 label : renderContextBatch.WaitLabels)
-            JobSystem::Wait(label);
-        renderContextBatch.WaitLabels.Clear();
+        renderContextBatch.FlushWaitLabels();
 
         // Perform custom post-scene drawing (eg. GPU dispatches used by VFX)
         for (int32 i = 0; i < renderContextBatch.Contexts.Count(); i++)

@@ -507,3 +507,10 @@ RenderContextBatch::RenderContextBatch(const RenderContext& context)
     Contexts.Add(context);
     EnableAsync = JobSystem::GetThreadsCount() > 1;
 }
+
+void RenderContextBatch::FlushWaitLabels()
+{
+    for (const int64 label : WaitLabels)
+        JobSystem::Wait(label);
+    WaitLabels.Clear();
+}
