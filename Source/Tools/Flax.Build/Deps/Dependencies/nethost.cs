@@ -53,7 +53,7 @@ namespace Flax.Deps.Dependencies
         {
             // Build configuration (see build.cmd -help)
             string configuration = "Release";
-            string framework = "net8.0";
+            string framework = "net10.0";
 
             // Clean output directory
             var artifacts = Path.Combine(root, "artifacts");

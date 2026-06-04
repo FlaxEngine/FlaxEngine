@@ -28,10 +28,10 @@ Follow the instructions below to compile and run the engine from source.
 
 ## Windows
 
-* Install Visual Studio 2022 or newer
-* Install Windows 8.1 SDK or newer (via Visual Studio Installer)
+* Install Visual Studio 2026 or newer
+* Install Windows 10 SDK or newer (via Visual Studio Installer)
 * Install Microsoft Visual C++ 2015 v140 toolset or newer (via Visual Studio Installer)
-* Install .NET 8 SDK (or newer) for **Windows x64** (via Visual Studio Installer or [from web](https://dotnet.microsoft.com/en-us/download/dotnet/8.0))
+* Install .NET 10 SDK (or newer) for **Windows x64** (via Visual Studio Installer or [from web](https://dotnet.microsoft.com/en-us/download/dotnet/10.0))
 * Install Git with LFS
 * Clone repo (with LFS)
 * Run **GenerateProjectFiles.bat**
@@ -44,10 +44,10 @@ Follow the instructions below to compile and run the engine from source.
 ## Linux
 
 * Install Visual Studio Code
-* Install .NET 8 or 9 SDK ([https://dotnet.microsoft.com/en-us/download/dotnet/8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0))
-  * Ubuntu: `sudo apt install dotnet-sdk-8.0`
-  * Fedora: `sudo dnf install dotnet-sdk-8.0`
-  * Arch: `sudo pacman -S dotnet-sdk-8.0 dotnet-runtime-8.0 dotnet-targeting-pack-8.0 dotnet-host`
+* Install .NET 10 SDK (or newer) ([https://dotnet.microsoft.com/en-us/download/dotnet/10.0](https://dotnet.microsoft.com/en-us/download/dotnet/10.0))
+  * Ubuntu: `sudo apt install dotnet-sdk-10.0`
+  * Fedora: `sudo dnf install dotnet-sdk-10.0`
+  * Arch: `sudo pacman -S dotnet-sdk-10.0 dotnet-runtime-10.0 dotnet-targeting-pack-10.0 dotnet-host`
 * Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
   * Ubuntu: `sudo apt install vulkan-sdk` (deprecated, follow official docs)
   * Fedora: `sudo dnf install vulkan-headers vulkan-tools vulkan-validation-layers`
@@ -73,7 +73,7 @@ Follow the instructions below to compile and run the engine from source.
 ## Mac
 
 * Install XCode 16.4 (or newer)
-* Install .NET 8 SDK (or newer) ([https://dotnet.microsoft.com/en-us/download/dotnet/8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0))
+* Install .NET 10 SDK (or newer) ([https://dotnet.microsoft.com/en-us/download/dotnet/10.0](https://dotnet.microsoft.com/en-us/download/dotnet/10.0))
 * Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
 * Clone repo (with LFS)
 * Run `GenerateProjectFiles.command`
@@ -86,17 +86,17 @@ Follow the instructions below to compile and run the engine from source.
 
 Restart PC - ensure DotNet is added to PATH for command line tools execution.
 
-* `Microsoft.NET.TargetFrameworkInference.targets(141,5): error NETSDK1045: The current .NET SDK does not support targeting .NET 8.0.  Either target .NET 5.0 or lower, or use a version of the .NET SDK that supports .NET 8.0`
+* `Microsoft.NET.TargetFrameworkInference.targets(141,5): error NETSDK1045: The current .NET SDK does not support targeting .NET 10.0.  Either target .NET 5.0 or lower, or use a version of the .NET SDK that supports .NET 10.0`
 
-Use Visual Studio 2022, older versions are not supported by .NET SDK 8.
+Use Visual Studio 2026 (or newer), old Visual Studio versions are not supported by .NET SDK 10.
 
 * `Building for Windows without Vulkan rendering backend (Vulkan SDK is missing)`
 
 Install the Vulkan SDK then set an environment variable to provide the path to the SDK prior to running GenerateProjectFiles.bat: `set VULKAN_SDK=%sdk_path%`.
 
-* `The NuGetSdkResolver did not resolve this SDK`
+* `The NuGetSdkResolver did not resolve this SDK` / `Could not resolve SDK "Microsoft.NET.Sdk"`
 
-Install `.NET SDK`, `NuGet package manager` and `NuGet targets and build tasks` in Visual Studio components.
+Install `.NET SDK` 10, `NuGet package manager` and `NuGet targets and build tasks` in Visual Studio components.
 
 ## Workspace directory
 

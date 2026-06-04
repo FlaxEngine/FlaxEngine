@@ -23,7 +23,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 10.0.x
     - name: Print .NET info
       run: |
         dotnet --info
@@ -34,7 +34,7 @@ jobs:
         git lfs pull
     - name: Build
       run: |
-        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -printSDKs -dotnet=8 -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxEditor
+        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -printSDKs -dotnet=10 -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxEditor
 
   # Game
   game-linux:
@@ -52,7 +52,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 10.0.x
     - name: Print .NET info
       run: |
         dotnet --info
@@ -63,4 +63,4 @@ jobs:
         git lfs pull
     - name: Build
       run: |
-        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -printSDKs -dotnet=8 -arch=x64 -platform=Linux -configuration=Release -buildtargets=FlaxGame
+        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -printSDKs -dotnet=10 -arch=x64 -platform=Linux -configuration=Release -buildtargets=FlaxGame

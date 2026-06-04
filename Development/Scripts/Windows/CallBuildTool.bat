@@ -34,7 +34,7 @@ goto Exit
 echo CallBuildTool ERROR: The script is in invalid directory.
 goto Exit
 :Error_NoVisualStudioEnvironment
-echo CallBuildTool ERROR: Missing Visual Studio 2022 or newer.
+echo CallBuildTool ERROR: Missing Visual Studio 2026 or newer.
 goto Exit
 :Error_CompilationFailed
 echo CallBuildTool ERROR: Failed to compile Flax.Build project.

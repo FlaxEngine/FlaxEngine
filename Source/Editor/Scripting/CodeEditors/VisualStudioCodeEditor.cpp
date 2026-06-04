@@ -130,7 +130,7 @@ String VisualStudioCodeEditor::GetName() const
 
 String VisualStudioCodeEditor::GetGenerateProjectCustomArgs() const
 {
-    return TEXT("-vs2022 -vscode");
+    return TEXT("-vs2026 -vscode");
 }
 
 void VisualStudioCodeEditor::OpenFile(const String& path, int32 line)
@@ -138,7 +138,7 @@ void VisualStudioCodeEditor::OpenFile(const String& path, int32 line)
     // Generate VS solution files for intellisense
     if (!FileSystem::FileExists(Globals::ProjectFolder / Editor::Project->Name + TEXT(".sln")))
     {
-        ScriptsBuilder::GenerateProject(TEXT("-vs2022"));
+        ScriptsBuilder::GenerateProject(TEXT("-vs2026"));
     }
 
     // Generate project files if missing
@@ -165,7 +165,7 @@ void VisualStudioCodeEditor::OpenSolution()
     // Generate VS solution files for intellisense
     if (!FileSystem::FileExists(Globals::ProjectFolder / Editor::Project->Name + TEXT(".sln")))
     {
-        ScriptsBuilder::GenerateProject(TEXT("-vs2022"));
+        ScriptsBuilder::GenerateProject(TEXT("-vs2026"));
     }
 
     // Generate project files if solution is missing

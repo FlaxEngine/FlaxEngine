@@ -103,7 +103,7 @@ namespace Flax.Build.Projects.VisualStudio
 
             if (Environment.OSVersion.Platform == PlatformID.Win32NT)
             {
-                // Visual Studio 2017-2022
+                // Visual Studio 2017-2026
                 List<VisualStudioInstance> preReleaseInstallDirs = null;
                 try
                 {

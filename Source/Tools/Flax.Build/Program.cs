@@ -16,8 +16,6 @@ namespace Flax.Build
         static int Main()
         {
             // Setup
-            ServicePointManager.Expect100Continue = true;
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             var culture = CultureInfo.InvariantCulture;
             CultureInfo.DefaultThreadCurrentCulture = culture;
             CultureInfo.DefaultThreadCurrentUICulture = culture;

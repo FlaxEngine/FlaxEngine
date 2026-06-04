@@ -205,7 +205,7 @@ namespace Flax.Build
                 if (Configuration.ProjectFormatVSCode)
                     projectFormats.Add(ProjectFormat.VisualStudioCode);
                 if (Configuration.ProjectFormatRider)
-                    projectFormats.Add(ProjectFormat.VisualStudio2022);
+                    projectFormats.Add(ProjectFormat.VisualStudio2026);
                 if (!string.IsNullOrEmpty(Configuration.ProjectFormatCustom))
                     projectFormats.Add(ProjectFormat.Custom);
                 if (projectFormats.Count == 0)
@@ -216,7 +216,7 @@ namespace Flax.Build
                     !projectFormats.Contains(ProjectFormat.VisualStudio2022) &&
                     !projectFormats.Contains(ProjectFormat.VisualStudio))
                 {
-                    projectFormats.Add(ProjectFormat.VisualStudio2022);
+                    projectFormats.Add(ProjectFormat.VisualStudio2026);
                 }
 
                 foreach (ProjectFormat projectFormat in projectFormats)

@@ -1568,7 +1568,7 @@ void* MMethod::GetThunk()
 
 MMethod* MMethod::InflateGeneric() const
 {
-    // This seams to be unused on .NET (Mono required inflating generic class of the script)
+    // This seems to be unused on .NET (Mono required inflating generic class of the script)
     return const_cast<MMethod*>(this);
 }
 
@@ -1877,9 +1877,9 @@ bool InitHostfxr()
         Platform::OpenUrl(TEXT("https://dotnet.microsoft.com/en-us/download/dotnet"));
 #endif
 #if USE_EDITOR
-        LOG(Fatal, "Missing .NET 8 or later SDK installation for {0} is required to run Flax Editor.", platformStr);
+        LOG(Fatal, "Missing .NET 10 or later SDK installation for {0} is required to run Flax Editor.", platformStr);
 #else
-        LOG(Fatal, "Missing .NET 8 or later Runtime installation for {0} is required to run this application.", platformStr);
+        LOG(Fatal, "Missing .NET 10 or later Runtime installation for {0} is required to run this application.", platformStr);
 #endif
         return true;
     }

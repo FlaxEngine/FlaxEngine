@@ -28,7 +28,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 8.0.419
+        dotnet-version: 10.0.x
     - name: Print .NET info
       run: |
         dotnet --info
@@ -38,7 +38,7 @@ jobs:
         PowerShell "(Get-Content global.json).Replace('latestMajor', 'minor') | Set-Content global.json"
         PowerShell "(Get-Content Source/Tools/Flax.Build/global.json).Replace('latestMajor', 'minor') | Set-Content Source/Tools/Flax.Build/global.json"
         PowerShell "(Get-Content Source/Tools/Flax.Build/Flax.Build.csproj).Replace('LatestMajor', 'Minor') | Set-Content Source/Tools/Flax.Build/Flax.Build.csproj"
-        .\PackageEditor.bat -arch=x64 -platform=Windows -deployOutput=Output -dotnet=8
+        .\PackageEditor.bat -arch=x64 -platform=Windows -deployOutput=Output -dotnet=10
     - name: Upload
       uses: actions/upload-artifact@v7
       with:
@@ -64,7 +64,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 8.0.419
+        dotnet-version: 10.0.x
     - name: Print .NET info
       run: |
         dotnet --info
@@ -74,7 +74,7 @@ jobs:
         PowerShell "(Get-Content global.json).Replace('latestMajor', 'minor') | Set-Content global.json"
         PowerShell "(Get-Content Source/Tools/Flax.Build/global.json).Replace('latestMajor', 'minor') | Set-Content Source/Tools/Flax.Build/global.json"
         PowerShell "(Get-Content Source/Tools/Flax.Build/Flax.Build.csproj).Replace('LatestMajor', 'Minor') | Set-Content Source/Tools/Flax.Build/Flax.Build.csproj"
-        .\PackagePlatforms.bat -arch=x64 -platform=Windows -deployOutput=Output -dotnet=8
+        .\PackagePlatforms.bat -arch=x64 -platform=Windows -deployOutput=Output -dotnet=10
     - name: Upload
       uses: actions/upload-artifact@v7
       with:
@@ -101,14 +101,14 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 10.0.x
     - name: Print .NET info
       run: |
         dotnet --info
         dotnet workload --info
     - name: Build
       run: |
-        ./PackageEditor.sh -arch=x64 -platform=Linux -deployOutput=Output -dotnet=8
+        ./PackageEditor.sh -arch=x64 -platform=Linux -deployOutput=Output -dotnet=10
     - name: Upload
       uses: actions/upload-artifact@v7
       with:
@@ -133,14 +133,14 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 10.0.x
     - name: Print .NET info
       run: |
         dotnet --info
         dotnet workload --info
     - name: Build
       run: |
-        ./PackagePlatforms.sh -arch=x64 -platform=Linux -deployOutput=Output -dotnet=8
+        ./PackagePlatforms.sh -arch=x64 -platform=Linux -deployOutput=Output -dotnet=10
     - name: Upload
       uses: actions/upload-artifact@v7
       with:
@@ -163,14 +163,14 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 10.0.x
     - name: Print .NET info
       run: |
         dotnet --info
         dotnet workload --info
     - name: Build
       run: |
-        ./PackageEditor.command -arch=ARM64 -platform=Mac -deployOutput=Output -dotnet=8
+        ./PackageEditor.command -arch=ARM64 -platform=Mac -deployOutput=Output -dotnet=10
     - name: Upload
       uses: actions/upload-artifact@v7
       with:
@@ -191,14 +191,14 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 10.0.x
     - name: Print .NET info
       run: |
         dotnet --info
         dotnet workload --info
     - name: Build
       run: |
-        ./PackagePlatforms.command -arch=ARM64 -platform=Mac -deployOutput=Output -dotnet=8
+        ./PackagePlatforms.command -arch=ARM64 -platform=Mac -deployOutput=Output -dotnet=10
     - name: Upload
       uses: actions/upload-artifact@v7
       with:

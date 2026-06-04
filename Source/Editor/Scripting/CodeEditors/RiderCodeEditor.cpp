@@ -278,7 +278,7 @@ String RiderCodeEditor::GetName() const
 
 String RiderCodeEditor::GetGenerateProjectCustomArgs() const
 {
-    return TEXT("-vs2022");
+    return TEXT("-vs2026");
 }
 
 void RiderCodeEditor::OpenFile(const String& path, int32 line)

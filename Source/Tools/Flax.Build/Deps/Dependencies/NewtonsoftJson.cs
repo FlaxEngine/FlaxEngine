@@ -19,18 +19,7 @@ namespace Flax.Deps.Dependencies
                 switch (BuildPlatform)
                 {
                 case TargetPlatform.Windows:
-                    return new[]
-                    {
-                        TargetPlatform.Windows,
-                        TargetPlatform.Linux,
-                        TargetPlatform.XboxOne,
-                        TargetPlatform.XboxScarlett,
-                        TargetPlatform.PS4,
-                        TargetPlatform.PS5,
-                        TargetPlatform.Switch,
-                        TargetPlatform.Mac,
-                        TargetPlatform.iOS,
-                    };
+                    return Globals.AllPlatforms;
                 default: return new TargetPlatform[0];
                 }
             }
@@ -67,13 +56,13 @@ namespace Flax.Deps.Dependencies
                 "Newtonsoft.Json.pdb",
                 "Newtonsoft.Json.xml",
             };
-            var binFolder = Path.Combine(root, "Src", "Newtonsoft.Json", "bin", configuration, "net8.0");
+            var binFolder = Path.Combine(root, "Src", "Newtonsoft.Json", "bin", configuration, "net10.0");
 
             // Get the source
             CloneGitRepo(root, "https://github.com/FlaxEngine/Newtonsoft.Json.git");
 
             // Default build
-            GitCheckout(root, "flax-net80");
+            GitCheckout(root, "flax-net100");
             Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, buildPlatform);
             {
                 var platform = "JIT";

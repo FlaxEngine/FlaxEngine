@@ -10,6 +10,8 @@ using Flax.Build.NativeCpp;
 /// </summary>
 public class nethost : ThirdPartyModule
 {
+    private static bool _logDotnetOnce;
+
     /// <inheritdoc />
     public override void Init()
     {
@@ -41,6 +43,19 @@ public class nethost : ThirdPartyModule
                 return; // Ignore missing Host Runtime at projects evaluation stage (not important)
             if (Configuration.BuildBindingsOnly)
                 return; // Ignore missing Host Runtime when just building C# bindings (without native code)
+            if (!_logDotnetOnce)
+            {
+                // Dump dotnet info to help diagnose missing runtime issues
+                _logDotnetOnce = true;
+                try
+                {
+                    Flax.Build.Utilities.Run("dotnet", "--info", null, null, Flax.Build.Utilities.RunOptions.ConsoleLogOutput);
+                }
+                catch (Exception)
+                {
+                    // Ignore errors
+                }
+            }
             throw new Exception($"Missing NET SDK runtime for {options.Platform.Target} {options.Architecture}.");
         }
 
