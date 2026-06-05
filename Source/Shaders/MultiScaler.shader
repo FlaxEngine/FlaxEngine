@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "./Flax/Common.hlsl"
+#include "./Flax/Gather.hlsl"
 
 META_CB_BEGIN(0, Data)
 float2 TexelSize;
@@ -8,25 +9,30 @@ float2 Padding;
 META_CB_END
 
 // Use linear sampling (less texture fetches required)
-#define SAMPLE(rt, texCoord) SAMPLE_RT_LINEAR(rt, texCoord)
+#define SAMPLE_BLUR(rt, texCoord) SAMPLE_RT_LINEAR(rt, texCoord)
 
 Texture2D Input : register(t0);
 
 // Pixel Shader for depth buffer downscale (to half res)
 META_PS(true, FEATURE_LEVEL_ES2)
-float PS_HalfDepth(Quad_VS2PS input) : SV_Depth
-{
-#if CAN_USE_GATHER
-	float4 depths = Input.GatherRed(SamplerPointClamp, input.TexCoord);
+META_PERMUTATION_1(OUTPUT_DEPTH=0)
+META_PERMUTATION_1(OUTPUT_DEPTH=1)
+META_PERMUTATION_1(HZB_CLOSEST=2)
+float PS_HalfDepth(Quad_VS2PS input) 
+#if OUTPUT_DEPTH
+    : SV_Depth
 #else
-	float4 depths;
-	depths.x = Input.SampleLevel(SamplerPointClamp, input.TexCoord + float2(0, 1) * TexelSize, 0).r;
-	depths.y = Input.SampleLevel(SamplerPointClamp, input.TexCoord + float2(1, 1) * TexelSize, 0).r;
-	depths.z = Input.SampleLevel(SamplerPointClamp, input.TexCoord + float2(1, 0) * TexelSize, 0).r;
-	depths.w = Input.SampleLevel(SamplerPointClamp, input.TexCoord + float2(0, 0) * TexelSize, 0).r;
+    : SV_Target0
 #endif
+{
+    // Load 4 depth values (2x2 quad)
+	float4 depths = TextureGatherDepth(Input, input.TexCoord);
 
-	return max(depths.x, max(depths.y, max(depths.z, depths.w))) + 0.0001f;
+#if HZB_CLOSEST
+	return min(depths.x, min(depths.y, min(depths.z, depths.w)));
+#else
+	return max(depths.x, max(depths.y, max(depths.z, depths.w)));
+#endif
 }
 
 // Pixel Shader for 5-tap gaussian blur
@@ -44,7 +50,7 @@ float4 PS_Blur5(Quad_VS2PS input) : SV_Target0
 		0.35294118
 	};
 
-	float4 color = SAMPLE(Input, input.TexCoord) * weights[0];
+	float4 color = SAMPLE_BLUR(Input, input.TexCoord) * weights[0];
 
 	UNROLL
 	for (int i = 1; i < 2; i++)
@@ -55,8 +61,8 @@ float4 PS_Blur5(Quad_VS2PS input) : SV_Target0
 	float2 texCoordOffset = float2(0, offsets[i]) * TexelSize;
 #endif
 
-		color += (SAMPLE(Input, input.TexCoord + texCoordOffset)
-				+ SAMPLE(Input, input.TexCoord - texCoordOffset))
+		color += (SAMPLE_BLUR(Input, input.TexCoord + texCoordOffset)
+				+ SAMPLE_BLUR(Input, input.TexCoord - texCoordOffset))
 				* weights[i];
 	}
 
@@ -80,7 +86,7 @@ float4 PS_Blur9(Quad_VS2PS input) : SV_Target0
 		0.07027027
 	};
 
-	float4 color = SAMPLE(Input, input.TexCoord) * weights[0];
+	float4 color = SAMPLE_BLUR(Input, input.TexCoord) * weights[0];
 
 	UNROLL
 	for (int i = 1; i < 3; i++)
@@ -91,8 +97,8 @@ float4 PS_Blur9(Quad_VS2PS input) : SV_Target0
 	float2 texCoordOffset = float2(0, offsets[i]) * TexelSize;
 #endif
 
-		color += (SAMPLE(Input, input.TexCoord + texCoordOffset)
-				+ SAMPLE(Input, input.TexCoord - texCoordOffset))
+		color += (SAMPLE_BLUR(Input, input.TexCoord + texCoordOffset)
+				+ SAMPLE_BLUR(Input, input.TexCoord - texCoordOffset))
 				* weights[i];
 	}
 
@@ -118,7 +124,7 @@ float4 PS_Blur13(Quad_VS2PS input) : SV_Target0
 		0.01038136
 	};
 
-	float4 color = SAMPLE(Input, input.TexCoord) * weights[0];
+	float4 color = SAMPLE_BLUR(Input, input.TexCoord) * weights[0];
 
 	UNROLL
 	for (int i = 1; i < 4; i++)
@@ -129,8 +135,8 @@ float4 PS_Blur13(Quad_VS2PS input) : SV_Target0
 	float2 texCoordOffset = float2(0, offsets[i]) * TexelSize;
 #endif
 
-		color += (SAMPLE(Input, input.TexCoord + texCoordOffset)
-				+ SAMPLE(Input, input.TexCoord - texCoordOffset))
+		color += (SAMPLE_BLUR(Input, input.TexCoord + texCoordOffset)
+				+ SAMPLE_BLUR(Input, input.TexCoord - texCoordOffset))
 				* weights[i];
 	}
 

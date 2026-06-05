@@ -370,7 +370,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 SetValue(Editor.Instance.ContentDatabase.Find(Utilities.Utils.ToPathAbsolute(path)));
             else if (value is Asset)
                 SetValue(FlaxEngine.Content.LoadAsync(path));
-            else if (value is string)
+            else if (value is string || Values.Type == typeof(string))
                 SetValue(path);
         }
 

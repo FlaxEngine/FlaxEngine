@@ -12,7 +12,6 @@
 class FLAXENGINE_API UnixPlatform : public PlatformBase
 {
 public:
-    
     // [PlatformBase]
     static void* Allocate(uint64 size, uint64 alignment);
     static void Free(void* ptr);

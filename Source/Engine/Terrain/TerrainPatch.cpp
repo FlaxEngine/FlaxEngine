@@ -2591,11 +2591,11 @@ void TerrainPatch::ExtractCollisionGeometry(Array<Float3>& vertexBuffer, Array<i
     const int32 indexCount = (rows - 1) * (cols - 1) * 6;
     indexBuffer.Resize(indexCount);
     int32* ib = indexBuffer.Get();
-    for (int32 col = 0; col < cols - 1; col++)
+    for (int32 row = 0; row < rows - 1; row++)
     {
-        for (int32 row = 0; row < rows - 1; row++)
+        for (int32 col = 0; col < cols - 1; col++)
         {
-#define GET_INDEX(x, y) *ib++ = (col + (y)) + (row + (x)) * cols
+#define GET_INDEX(x, y) *ib++ = (col + (y)) * cols + (row + (x))
 
             GET_INDEX(0, 0);
             GET_INDEX(1, 1);

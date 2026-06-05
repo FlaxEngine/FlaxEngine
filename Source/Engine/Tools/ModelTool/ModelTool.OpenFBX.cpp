@@ -196,7 +196,7 @@ struct OpenFbxImporterData
 #endif
     }
 
-    bool ImportMaterialTexture(ModelData& result, const ofbx::Material* mat, ofbx::Texture::TextureType textureType, int32& textureIndex, TextureEntry::TypeHint type) const
+    bool ImportMaterialTexture(ModelData& result, const ofbx::Material* mat, ofbx::Texture::TextureType textureType, int32& textureIndex, TextureEntry::TypeHint type, bool sRGB = false) const
     {
         const ofbx::Texture* tex = mat->getTexture(textureType);
         if (tex)
@@ -225,6 +225,7 @@ struct OpenFbxImporterData
             auto& texture = result.Textures.AddOne();
             texture.FilePath = path;
             texture.Type = type;
+            texture.sRGB = sRGB;
             texture.AssetID = Guid::Empty;
             return true;
         }
@@ -251,7 +252,7 @@ struct OpenFbxImporterData
 
                 if (EnumHasAnyFlags(Options.ImportTypes, ImportDataTypes::Textures))
                 {
-                    ImportMaterialTexture(result, mat, ofbx::Texture::DIFFUSE, material.Diffuse.TextureIndex, TextureEntry::TypeHint::ColorRGB);
+                    ImportMaterialTexture(result, mat, ofbx::Texture::DIFFUSE, material.Diffuse.TextureIndex, TextureEntry::TypeHint::ColorRGB, true);
                     ImportMaterialTexture(result, mat, ofbx::Texture::EMISSIVE, material.Emissive.TextureIndex, TextureEntry::TypeHint::ColorRGB);
                     ImportMaterialTexture(result, mat, ofbx::Texture::NORMAL, material.Normals.TextureIndex, TextureEntry::TypeHint::Normals);
 
@@ -415,6 +416,8 @@ void ProcessNodes(OpenFbxImporterData& data, const ofbx::Object* aNode, int32 pa
     }
 #endif
     transform.Decompose(node.LocalTransform);
+    if (data.Options.IgnoreNodesScale)
+        node.LocalTransform.Scale = Float3::One;
     data.Nodes.Add(node);
 
     // Process the children

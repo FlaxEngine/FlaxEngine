@@ -5,6 +5,10 @@
 
 #include "./Flax/Math.hlsl"
 
+// Shared configs for Color Grading LUT
+#define COLOR_GRADING_LUT_LOG 1
+#define COLOR_GRADING_LUT_SCALE 1.04f
+
 // Fast reversible tonemapper
 // http://gpuopen.com/optimized-reversible-tonemapper-for-resolve/
 float3 FastTonemap(float3 c)

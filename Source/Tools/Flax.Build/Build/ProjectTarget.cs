@@ -83,6 +83,11 @@ namespace Flax.Build
             {
                 options.CompileEnv.PreprocessorDefinitions.Add("LOG_ENABLE=0");
             }
+            if (EngineConfiguration.WithSDL(options))
+            {
+                options.CompileEnv.PreprocessorDefinitions.Add("PLATFORM_SDL");
+                options.ScriptingAPI.Defines.Add("PLATFORM_SDL");
+            }
 
             // Add include paths for this and all referenced projects sources
             foreach (var project in Project.GetAllProjects())

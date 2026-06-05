@@ -160,11 +160,24 @@ public:
     {
     }
 
+    uint64 BeginQuery(GPUQueryType type) override
+    {
+        return 0;
+    }
+
+    void EndQuery(uint64 queryID) override
+    {
+    }
+
     void SetViewport(const Viewport& viewport) override
     {
     }
 
     void SetScissor(const Rectangle& scissorRect) override
+    {
+    }
+
+    void SetDepthBounds(float minDepth, float maxDepth) override
     {
     }
 

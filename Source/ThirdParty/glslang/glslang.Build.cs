@@ -7,7 +7,7 @@ using Flax.Build.NativeCpp;
 /// <summary>
 /// https://github.com/KhronosGroup/glslang
 /// </summary>
-public class glslang : DepsModule
+public class glslang : EngineDepsModule
 {
     /// <inheritdoc />
     public override void Init()
@@ -16,9 +16,6 @@ public class glslang : DepsModule
 
         LicenseType = LicenseTypes.Custom;
         LicenseFilePath = "LICENSE.txt";
-
-        // Merge third-party modules into engine binary
-        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />

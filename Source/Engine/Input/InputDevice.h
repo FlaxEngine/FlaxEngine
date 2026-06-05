@@ -25,6 +25,7 @@ public:
         MouseDoubleClick,
         MouseWheel,
         MouseMove,
+        MouseMoveRelative,
         MouseLeave,
         TouchDown,
         TouchMove,
@@ -53,6 +54,11 @@ public:
                 MouseButton Button;
                 Float2 Position;
             } MouseData;
+
+            struct
+            {
+                Float2 PositionRelative;
+            } MouseMovementData;
 
             struct
             {

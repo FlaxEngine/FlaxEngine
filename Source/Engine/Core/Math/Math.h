@@ -596,7 +596,8 @@ namespace Math
     /// <param name="toMin">The destination range minimum.</param>
     /// <param name="toMax">The destination range maximum.</param>
     /// <returns>The remapped value.</returns>
-    static float Remap(float value, float fromMin, float fromMax, float toMin, float toMax)
+    template<typename T>
+    static float Remap(T value, T fromMin, T fromMax, T toMin, T toMax)
     {
         return (value - fromMin) / (fromMax - fromMin) * (toMax - toMin) + toMin;
     }

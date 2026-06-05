@@ -113,6 +113,55 @@ namespace Flax.Build
                     value = "true";
                 else if (reader.TokenType == JsonTokenType.False)
                     value = "false";
+                else if (reader.TokenType == JsonTokenType.StartObject)
+                {
+                    value = "{";
+                    int depth = 1;
+                    while (depth > 0 && reader.Read())
+                    {
+                        switch (reader.TokenType)
+                        {
+                        case JsonTokenType.StartObject:
+                            depth++;
+                            value += "{";
+                            break;
+                        case JsonTokenType.EndObject:
+                            if (value.Last() == ',')
+                                value = value.Substring(0, value.Length - 1);
+                            value += "}";
+                            if (depth != 1)
+                                value += ",";
+                            depth--;
+                            break;
+                        case JsonTokenType.StartArray:
+                            value += "[";
+                            break;
+                        case JsonTokenType.EndArray:
+                            value += "],";
+                            break;
+                        case JsonTokenType.PropertyName:
+                            value += $"\"{reader.GetString()}\":";
+                            break;
+                        case JsonTokenType.String:
+                            value += $"\"{reader.GetString()}\",";
+                            break;
+                            case JsonTokenType.Number:
+                            value += $"{reader.GetString()},";
+                            break;
+                        case JsonTokenType.True:
+                            value += "true,";
+                            break;
+                        case JsonTokenType.False:
+                            value += "false,";
+                            break;
+                        case JsonTokenType.Null:
+                            value += "null,";
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                        }
+                    }
+                }
                 else
                     value = reader.GetString();
                 dictionary.Add(key, value);
@@ -146,6 +195,19 @@ namespace Flax.Build
     {
         private static List<ProjectInfo> _projectsCache;
         private string _versionControlCommit, _versionControlBranch;
+
+        internal static JsonSerializerOptions JsonOptions = new JsonSerializerOptions
+        {
+            Converters =
+            {
+                new FlaxVersionConverter(),
+                new ConfigurationDictionaryConverter(),
+            },
+            IncludeFields = true,
+            AllowTrailingCommas = true,
+            ReadCommentHandling = JsonCommentHandling.Skip,
+            TypeInfoResolver = ProjectInfoSourceGenerationContext.Default,
+        };
 
         /// <summary>
         /// The project reference.
@@ -230,7 +292,6 @@ namespace Flax.Build
         /// <summary>
         /// The custom build configuration entries loaded from project file.
         /// </summary>
-        [System.Text.Json.Serialization.JsonConverter(typeof(ConfigurationDictionaryConverter))]
         public Dictionary<string, string> Configuration;
 
         /// <summary>
@@ -264,7 +325,6 @@ namespace Flax.Build
         /// </summary>
         public string VersionControlInfo
         {
-
             get
             {
                 if (_versionControlCommit == null)
@@ -356,7 +416,7 @@ namespace Flax.Build
         /// </summary>
         public void Save()
         {
-            var contents = JsonSerializer.Serialize<ProjectInfo>(this, new JsonSerializerOptions() { Converters = { new FlaxVersionConverter() }, TypeInfoResolver = ProjectInfoSourceGenerationContext.Default });
+            var contents = JsonSerializer.Serialize<ProjectInfo>(this, JsonOptions);
             File.WriteAllText(ProjectPath, contents);
         }
 
@@ -382,8 +442,7 @@ namespace Flax.Build
                 // Load
                 Log.Verbose("Loading project file from \"" + path + "\"...");
                 var contents = File.ReadAllText(path);
-                var project = JsonSerializer.Deserialize<ProjectInfo>(contents.AsSpan(),
-                                                                      new JsonSerializerOptions() { Converters = { new FlaxVersionConverter() }, IncludeFields = true, TypeInfoResolver = ProjectInfoSourceGenerationContext.Default });
+                var project = JsonSerializer.Deserialize<ProjectInfo>(contents.AsSpan(), JsonOptions);
                 project.ProjectPath = path;
                 project.ProjectFolderPath = Path.GetDirectoryName(path);
 

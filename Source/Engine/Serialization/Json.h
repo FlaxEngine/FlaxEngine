@@ -5,7 +5,9 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/StringView.h"
 
-#if PLATFORM_SIMD_SSE4_2
+#if PLATFORM_WEB && PLATFORM_SIMD_SSE2
+#define RAPIDJSON_SSE2
+#elif PLATFORM_SIMD_SSE4_2
 #define RAPIDJSON_SSE42
 #elif PLATFORM_SIMD_SSE2
 #define RAPIDJSON_SSE2
@@ -18,6 +20,7 @@
 #define RAPIDJSON_NEW(x) New<x>
 #define RAPIDJSON_DELETE(x) Delete(x)
 #define RAPIDJSON_NOMEMBERITERATORCLASS
+#define RAPIDJSON_PARSE_DEFAULT_FLAGS kParseTrailingCommasFlag
 //#define RAPIDJSON_MALLOC(size) ::malloc(size)
 //#define RAPIDJSON_REALLOC(ptr, new_size) ::realloc(ptr, new_size)
 //#define RAPIDJSON_FREE(ptr) ::free(ptr)

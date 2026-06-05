@@ -67,12 +67,28 @@ namespace FlaxEditor.Windows
                 b = cm.AddButton("Open", () => Open(item));
                 b.Enabled = proxy != null || isFolder;
 
-                if (_view.SelectedCount > 1)
-                    b = cm.AddButton("Open (all selected)", () =>
+                if (_showAllContentInTree)
+                {
+                    var selection = _tree.Selection;
+                    if (selection.Count > 0)
                     {
-                        foreach (var e in _view.Selection)
-                            Open(e);
-                    });
+                        b = cm.AddButton("Open (all selected)", () =>
+                        {
+                            foreach (var e in _tree.Selection)
+                                if (e is ContentItemTreeNode contentNode)
+                                    Open(contentNode.Item);
+                        });
+                    }
+                }
+                else
+                {
+                    if (_view.SelectedCount > 1)
+                        b = cm.AddButton("Open (all selected)", () =>
+                        {
+                            foreach (var e in _view.Selection)
+                                Open(e);
+                        });
+                }
 
                 cm.AddButton(Utilities.Constants.ShowInExplorer, () => FileSystem.ShowFileExplorer(System.IO.Path.GetDirectoryName(item.Path)));
                 
@@ -116,7 +132,8 @@ namespace FlaxEditor.Windows
 
                     if (item is AssetItem assetItem)
                     {
-                        if (assetItem.IsLoaded)
+                        var asset = FlaxEngine.Content.GetAsset(assetItem.ID);
+                        if (asset != null && (asset.IsLoaded || asset.LastLoadFailed))
                             cm.AddButton("Reload", assetItem.Reload);
                         cm.AddButton("Copy asset ID", () => Clipboard.Text = JsonSerializer.GetStringID(assetItem.ID));
                         cm.AddButton("Select actors using this asset", () => Editor.SceneEditing.SelectActorsUsingAsset(assetItem.ID));
@@ -137,12 +154,21 @@ namespace FlaxEditor.Windows
                 {
                     cm.AddButton("Delete", () => Delete(item));
                     cm.AddSeparator();
-                    cm.AddButton("Duplicate", _view.Duplicate);
-                    cm.AddButton("Cut", _view.Cut);
-                    cm.AddButton("Copy", _view.Copy);
+                    if (_showAllContentInTree)
+                    {
+                        cm.AddButton("Duplicate", _treeOnlyPanel.Duplicate);
+                        cm.AddButton("Cut", _treeOnlyPanel.Cut);
+                        cm.AddButton("Copy", _treeOnlyPanel.Copy);
+                    }
+                    else
+                    {
+                        cm.AddButton("Duplicate", _view.Duplicate);
+                        cm.AddButton("Cut", _view.Cut);
+                        cm.AddButton("Copy", _view.Copy);
+                    }
                 }
 
-                b = cm.AddButton("Paste", _view.Paste);
+                b = _showAllContentInTree ? cm.AddButton("Paste", _treeOnlyPanel.Paste) : cm.AddButton("Paste", _view.Paste);
                 b.Enabled = _view.CanPaste();
 
                 if (isFolder && folder.Node is MainContentFolderTreeNode)

@@ -1,6 +1,5 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEngine;
 using FlaxEditor.Viewport.Widgets;
@@ -14,6 +13,7 @@ namespace FlaxEditor.Viewport.Previews
     /// <seealso cref="AnimatedModelPreview" />
     public class AnimationPreview : AnimatedModelPreview
     {
+        private bool _baseModelMissing;
         private ViewportWidgetButton _playPauseButton;
 
         /// <summary>
@@ -94,14 +94,23 @@ namespace FlaxEditor.Viewport.Previews
 
             var style = Style.Current;
             var skinnedModel = SkinnedModel;
+            var baseModelMissing = false;
             if (skinnedModel == null)
             {
                 Render2D.DrawText(style.FontLarge, "Missing Base Model", new Rectangle(Float2.Zero, Size), Color.Red, TextAlignment.Center, TextAlignment.Center, TextWrapping.WrapWords);
+                baseModelMissing = true;
             }
             else if (!skinnedModel.IsLoaded)
             {
                 Render2D.DrawText(style.FontLarge, skinnedModel.LastLoadFailed ? "Failed to load" : "Loading...", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
+                baseModelMissing = true;
             }
+            if (_baseModelMissing && !baseModelMissing)
+            {
+                // Focus model when base model appears
+                ResetCamera();
+            }
+            _baseModelMissing = baseModelMissing;
         }
 
         /// <inheritdoc />

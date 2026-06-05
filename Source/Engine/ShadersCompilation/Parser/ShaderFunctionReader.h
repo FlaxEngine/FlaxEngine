@@ -354,10 +354,7 @@ namespace ShaderProcessing
 
             // Clear current meta
             auto& current = ShaderMetaReaderType::_current;
-            current.Name.Clear();
-            current.Permutations.Clear();
-            current.Flags = ShaderFlags::Default;
-            current.MinFeatureLevel = FeatureLevel::ES2;
+            current = MetaType();
             _permutationReader->Clear();
 
             // Here we read '(x, y)\n' where 'x' is a shader function 'visible' flag, and 'y' is mini feature level
@@ -388,6 +385,7 @@ namespace ShaderProcessing
             };
             MinFeatureLevel levels[] =
             {
+                { FeatureLevel::ES2, "AUTO" },
                 { FeatureLevel::ES2, "FEATURE_LEVEL_ES2" },
                 { FeatureLevel::ES3, "FEATURE_LEVEL_ES3" },
                 { FeatureLevel::ES3_1, "FEATURE_LEVEL_ES3_1" },
@@ -406,7 +404,7 @@ namespace ShaderProcessing
             }
             if (missing)
             {
-                parser->OnError(TEXT("Invalid shader function \'minFeatureLevel\' option value."));
+                parser->OnError(TEXT("Invalid shader function \'minFeatures\' option value."));
                 return;
             }
 
@@ -433,7 +431,9 @@ namespace ShaderProcessing
             }
 
             // Check if use this shader program
-            if ((current.Flags & ShaderFlags::Hidden) == (ShaderFlags)0 && current.MinFeatureLevel <= parser->GetFeatureLevel())
+            if ((current.Flags & ShaderFlags::Hidden) == (ShaderFlags)0 && 
+                current.MinFeatureLevel <= parser->GetFeatureLevel() &&
+                EnumHasAllFlags(parser->GetFeatures(), current.MinFeatures))
             {
                 // Cache read function
                 ShaderMetaReaderType::_cache.Add(current);

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS && !PLATFORM_SDL
 
 #include "Engine/Platform/Base/WindowBase.h"
 #include "Engine/Platform/Platform.h"
@@ -30,6 +30,7 @@ private:
     bool _clipCursorSet = false;
     bool _lastCursorHidden = false;
     int _cursorHiddenSafetyCount = 0;
+    float _opacity = 1.0f;
     bool _isDuringMaximize = false;
     Windows::HANDLE _monitor = nullptr;
     Windows::LONG _clipCursorRect[4];
@@ -123,6 +124,7 @@ public:
     void Focus() override;
     void SetTitle(const StringView& title) override;
     DragDropEffect DoDragDrop(const StringView& data) override;
+    using WindowBase::DoDragDrop;
     void StartTrackingMouse(bool useMouseScreenOffset) override;
     void EndTrackingMouse() override;
     void StartClippingCursor(const Rectangle& bounds) override;
@@ -136,7 +138,7 @@ public:
     Windows::ULONG __stdcall AddRef() override;
     Windows::ULONG __stdcall Release() override;
 
-    // [IDropTarget]
+    // [Windows::IDropTarget]
     Windows::HRESULT __stdcall DragEnter(Windows::IDataObject* pDataObj, Windows::DWORD grfKeyState, Windows::POINTL pt, Windows::DWORD* pdwEffect) override;
     Windows::HRESULT __stdcall DragOver(Windows::DWORD grfKeyState, Windows::POINTL pt, Windows::DWORD* pdwEffect) override;
     Windows::HRESULT __stdcall DragLeave() override;

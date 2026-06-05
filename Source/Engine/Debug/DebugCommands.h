@@ -56,7 +56,16 @@ public:
     /// Returns flags of the command.
     /// </summary>
     /// <param name="command">The full name of the command.</param>
+    /// <returns>Command flags.</returns>
     API_FUNCTION() static CommandFlags GetCommandFlags(StringView command);
+
+    /// <summary>
+    /// Returns help text of the command (from documentation comment).
+    /// </summary>
+    /// <remarks>Only available in non-Release builds and Editor.</remarks>
+    /// <param name="command">The full name of the command.</param>
+    /// <returns>Command help text or empty if failed to get it.</returns>
+    API_FUNCTION() static StringView GetCommandHelp(StringView command);
 
 public:
     static bool Iterate(const StringView& searchText, int32& index);

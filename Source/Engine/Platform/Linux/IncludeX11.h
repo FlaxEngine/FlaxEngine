@@ -21,6 +21,7 @@ namespace X11
 #include <X11/Xresource.h>
 #include <X11/extensions/Xinerama.h>
 #include <X11/Xcursor/Xcursor.h>
+#include <X11/extensions/Xfixes.h>
 }
 
 // Helper macros

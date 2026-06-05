@@ -99,7 +99,7 @@ private:
 #endif
     VkPipelineViewportStateCreateInfo _descViewport;
     VkPipelineDynamicStateCreateInfo _descDynamic;
-    VkDynamicState _dynamicStates[4];
+    VkDynamicState _dynamicStates[5];
     VkPipelineMultisampleStateCreateInfo _descMultisample;
     VkPipelineDepthStencilStateCreateInfo _descDepthStencil;
     VkPipelineRasterizationStateCreateInfo _descRasterization;
@@ -123,6 +123,7 @@ public:
     uint32 BlendEnable : 1;
     uint32 DepthReadEnable : 1;
     uint32 DepthWriteEnable : 1;
+    uint32 DepthBoundsEnable : 1;
     uint32 StencilReadEnable : 1;
     uint32 StencilWriteEnable : 1;
 

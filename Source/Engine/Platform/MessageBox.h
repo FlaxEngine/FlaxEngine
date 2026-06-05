@@ -237,4 +237,9 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(MessageBox);
     /// <param name="icon">One of the MessageBoxIcon values that specifies which icon to display in the message box.</param>
     /// <returns>The message box dialog result.</returns>
     API_FUNCTION() static DialogResult Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon);
+
+private:
+#if PLATFORM_SDL && PLATFORM_LINUX
+    static DialogResult ShowFallback(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon);
+#endif
 };

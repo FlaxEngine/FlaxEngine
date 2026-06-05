@@ -393,7 +393,7 @@ VertexOutput VS_Sprite(SpriteInput input, uint particleIndex : SV_InstanceID)
 	output.WorldPosition = position + spriteVertexPosition;
 
 	// Compute clip space position
-	output.Position = mul(float4(output.WorldPosition.xyz, 1), ViewProjectionMatrix);
+	output.Position = PROJECT_POINT(float4(output.WorldPosition.xyz, 1), ViewProjectionMatrix);
 
 	// Pass vertex attributes
 	output.TexCoord = input.TexCoord;
@@ -431,7 +431,7 @@ VertexOutput VS_Sprite(SpriteInput input, uint particleIndex : SV_InstanceID)
 	// Apply world position offset per-vertex
 #if USE_POSITION_OFFSET
 	output.WorldPosition += material.PositionOffset;
-	output.Position = mul(float4(output.WorldPosition.xyz, 1), ViewProjectionMatrix);
+	output.Position = PROJECT_POINT(float4(output.WorldPosition.xyz, 1), ViewProjectionMatrix);
 #endif
 
 	// Copy interpolants for other shader stages
@@ -511,7 +511,7 @@ VertexOutput VS_Model(ModelInput input, uint particleIndex : SV_InstanceID)
 	output.WorldPosition = mul(float4(input.Position, 1), world).xyz;
 
 	// Compute clip space position
-	output.Position = mul(float4(output.WorldPosition, 1), ViewProjectionMatrix);
+	output.Position = PROJECT_POINT(float4(output.WorldPosition, 1), ViewProjectionMatrix);
 
 	// Pass vertex attributes
 	output.TexCoord = input.TexCoord0;
@@ -549,7 +549,7 @@ VertexOutput VS_Model(ModelInput input, uint particleIndex : SV_InstanceID)
 	// Apply world position offset per-vertex
 #if USE_POSITION_OFFSET
 	output.WorldPosition += material.PositionOffset;
-	output.Position = mul(float4(output.WorldPosition.xyz, 1), ViewProjectionMatrix);
+	output.Position = PROJECT_POINT(float4(output.WorldPosition.xyz, 1), ViewProjectionMatrix);
 #endif
 
 	// Copy interpolants for other shader stages
@@ -617,7 +617,7 @@ VertexOutput VS_Ribbon(RibbonInput input, uint vertexIndex : SV_VertexID)
 	output.WorldPosition = position + tangentRight * vertexSign * (ribbonWidth.xxx * 0.5f);
 
 	// Compute clip space position
-	output.Position = mul(float4(output.WorldPosition.xyz, 1), ViewProjectionMatrix);
+	output.Position = PROJECT_POINT(float4(output.WorldPosition.xyz, 1), ViewProjectionMatrix);
 
 	// Pass vertex attributes
 	output.ParticleIndex = particleIndex;
@@ -655,7 +655,7 @@ VertexOutput VS_Ribbon(RibbonInput input, uint vertexIndex : SV_VertexID)
 	// Apply world position offset per-vertex
 #if USE_POSITION_OFFSET
 	output.WorldPosition += material.PositionOffset;
-	output.Position = mul(float4(output.WorldPosition.xyz, 1), ViewProjectionMatrix);
+	output.Position = PROJECT_POINT(float4(output.WorldPosition.xyz, 1), ViewProjectionMatrix);
 #endif
 
 	// Copy interpolants for other shader stages

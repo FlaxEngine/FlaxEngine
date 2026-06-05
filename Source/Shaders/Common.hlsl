@@ -32,14 +32,14 @@
 #endif
 
 // Meta macros used by shaders parser
-#define META_VS(isVisible, minFeatureLevel)
+#define META_VS(isVisible, minFeatures)
 #define META_VS_IN_ELEMENT(type, index, format, slot, offset, slotClass, stepRate, isVisible) // [Deprecated in v1.10]
-#define META_HS(isVisible, minFeatureLevel)
+#define META_HS(isVisible, minFeatures)
 #define META_HS_PATCH(inControlPoints)
-#define META_DS(isVisible, minFeatureLevel)
-#define META_GS(isVisible, minFeatureLevel)
-#define META_PS(isVisible, minFeatureLevel)
-#define META_CS(isVisible, minFeatureLevel)
+#define META_DS(isVisible, minFeatures)
+#define META_GS(isVisible, minFeatures)
+#define META_PS(isVisible, minFeatures)
+#define META_CS(isVisible, minFeatures)
 #define META_FLAG(flag)
 #define META_PERMUTATION_1(param0)
 #define META_PERMUTATION_2(param0, param1)
@@ -54,12 +54,12 @@
 #define SHADING_MODEL_FOLIAGE 3
 
 // Detect feature level support
-#if FEATURE_LEVEL >= FEATURE_LEVEL_SM5
+#if FEATURE_LEVEL >= FEATURE_LEVEL_SM5 || defined(WGSL)
 #define CAN_USE_GATHER 1
 #else
 #define CAN_USE_GATHER 0
 #endif
-#if FEATURE_LEVEL >= FEATURE_LEVEL_SM5
+#if FEATURE_LEVEL >= FEATURE_LEVEL_SM5 || defined(WGSL)
 #define CAN_USE_COMPUTE_SHADER 1
 #else
 #define CAN_USE_COMPUTE_SHADER 0
@@ -73,6 +73,22 @@
 #define CAN_USE_TESSELLATION 1
 #else
 #define CAN_USE_TESSELLATION 0
+#endif
+
+#if defined(WGSL)
+// Alias read-only Buffer binded as shader resource into StructuredBuffer to be used as storage on WebGPU (not supported)
+#define CAN_USE_TYPED_BUFFER_LOADS 0
+#define Buffer StructuredBuffer
+#define RWBuffer RWStructuredBuffer
+
+// Hack matrix multiplication order for WebGPU (row-major vs column-major bug?)
+#define PROJECT_POINT(p, m) mul(m, p)
+
+// Stenil8 is in Red channel on WebGPU
+#define STENCIL_BUFFER_SWIZZLE .r
+#else
+#define CAN_USE_TYPED_BUFFER_LOADS 1
+#define PROJECT_POINT(p, m) mul(p, m)
 #endif
 
 // Compiler attributes
@@ -129,6 +145,18 @@ SamplerComparisonState ShadowSamplerLinear : register(s5);
 // General purpose macros
 #define SAMPLE_RT(rt, texCoord) rt.SampleLevel(SamplerPointClamp, texCoord, 0)
 #define SAMPLE_RT_LINEAR(rt, texCoord) rt.SampleLevel(SamplerLinearClamp, texCoord, 0)
+#if defined(WGSL)
+// WebGPU doesn't allow to sample depth texture with regular sampler, need to use Load instead of Sample and get texture size for UV to pixel coordinate conversion
+float4 LoadTextureWGSL(Texture2D tex, float2 uv)
+{
+    uint2 size;
+    tex.GetDimensions(size.x, size.y);
+    return tex.Load(uint3(size * uv, 0));
+}
+#define SAMPLE_RT_DEPTH(rt, texCoord) LoadTextureWGSL(rt, texCoord).r
+#else
+#define SAMPLE_RT_DEPTH(rt, texCoord) SAMPLE_RT(rt, texCoord).r
+#endif
 #define HDR_CLAMP_MAX 65472.0
 #define PI 3.1415926535897932
 #define UNITS_TO_METERS_SCALE 0.01f
@@ -170,18 +198,6 @@ struct AtmosphericFogData
     float3 AtmosphericFogSunColor;
     float AtmosphericFogDensityOffset;
 };
-
-// Packed env probe data
-struct ProbeData
-{
-    float4 Data0; // x - Position.x,  y - Position.y,  z - Position.z,  w - unused
-    float4 Data1; // x - Radius    ,  y - 1 / Radius,  z - Brightness,  w - unused
-};
-
-#define ProbePos Data0.xyz
-#define ProbeRadius Data1.x
-#define ProbeInvRadius Data1.y
-#define ProbeBrightness Data1.z
 
 struct Quad_VS2PS
 {

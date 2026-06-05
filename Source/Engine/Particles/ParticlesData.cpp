@@ -167,7 +167,11 @@ bool ParticleBuffer::AllocateSortBuffer()
     const int32 sortedIndicesCount = Capacity * Emitter->Graph.SortModules.Count();
     uint32 indexSize = sizeof(uint32);
     PixelFormat indexFormat = PixelFormat::R32_UInt;
-    if (Capacity <= MAX_uint16)
+    auto r16Support = GPUDevice::Instance->GetFormatFeatures(PixelFormat::R16_UInt).Support;
+    auto indexFormatRequirements = FormatSupport::Buffer | FormatSupport::UnorderedAccessReadOnly;
+    if (Mode == ParticlesSimulationMode::GPU)
+        indexFormatRequirements |= FormatSupport::UnorderedAccess;
+    if (Capacity <= MAX_uint16 &&  EnumHasAllFlags(r16Support, indexFormatRequirements))
     {
         // 16-bit indices
         indexSize = sizeof(uint16);

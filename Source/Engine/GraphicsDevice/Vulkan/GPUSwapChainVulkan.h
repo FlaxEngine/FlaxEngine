@@ -20,14 +20,19 @@ public:
     GPUDeviceVulkan* Device;
 
     /// <summary>
-    /// The image acquired semaphore handle.
+    /// The semaphore used to signal backbuffer image being ready to be used again for the commands rendering.
     /// </summary>
     SemaphoreVulkan* ImageAcquiredSemaphore;
 
     /// <summary>
-    /// The rendering done semaphore handle.
+    /// The semaphore used to signal the last command buffer rendering to be completed before presenting the image.
     /// </summary>
     SemaphoreVulkan* RenderingDoneSemaphore;
+
+    /// <summary>
+    /// The last command buffer used to submit commands for rendering to that backbuffer. Used to wait by CPU for the rendering completion before starting recording new commands (ensure that frame is not in flight).
+    /// </summary>
+    CmdBufferVulkan* SubmitCmdBuffer = nullptr;
 
     /// <summary>
     /// The render target surface handle.
@@ -109,6 +114,7 @@ public:
     bool IsFullscreen() override;
     void SetFullscreen(bool isFullscreen) override;
     GPUTextureView* GetBackBufferView() override;
+    void Begin(RenderTask* task) override;
     void Present(bool vsync) override;
     bool Resize(int32 width, int32 height) override;
     void CopyBackbuffer(GPUContext* context, GPUTexture* dst) override;

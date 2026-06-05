@@ -2,6 +2,7 @@
 
 using System;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Input;
 using FlaxEngine;
 using Object = FlaxEngine.Object;
 
@@ -14,10 +15,10 @@ namespace FlaxEditor.Viewport.Previews
     public class AnimatedModelPreview : AssetPreview
     {
         private AnimatedModel _previewModel;
-        private ContextMenuButton _showNodesButton, _showBoundsButton, _showFloorButton, _showNodesNamesButton;
+        private ContextMenuButton _showNodesButton, _showBoundsButton, _showFloorButton, _showNodesNamesButton, _nodeNameSizeButton;
         private bool _showNodes, _showBounds, _showFloor, _showNodesNames;
         private StaticModel _floorModel;
-        private bool _playAnimation, _playAnimationOnce;
+        private bool _playAnimation, _playAnimationOnce, _autoAdjustCamera = true;
         private float _playSpeed = 1.0f;
 
         /// <summary>
@@ -110,8 +111,15 @@ namespace FlaxEditor.Viewport.Previews
                     ShowDebugDraw = true;
                 if (_showNodesNamesButton != null)
                     _showNodesNamesButton.Checked = value;
+                if (_nodeNameSizeButton != null)
+                    _nodeNameSizeButton.Enabled = value;
             }
         }
+
+        /// <summary>
+        /// The font size used in the node name debug draw.
+        /// </summary>
+        public int NodeNamesSize = 10;
 
         /// <summary>
         /// Gets or sets a value indicating whether show animated model bounding box debug view.
@@ -208,6 +216,16 @@ namespace FlaxEditor.Viewport.Previews
                 _showFloorButton = ViewWidgetShowMenu.AddButton("Floor", button => ShowFloor = !ShowFloor);
                 _showFloorButton.IndexInParent = 1;
                 _showFloorButton.CloseMenuOnClick = false;
+
+                // Skeleton Names Size
+                _nodeNameSizeButton = ViewWidgetButtonMenu.AddButton("Skeleton Names Size");
+                _nodeNameSizeButton.CloseMenuOnClick = false;
+                var nodeNameSizeValue = new IntValueBox(NodeNamesSize, 118, 2, 70.0f, 1, 32)
+                {
+                    Parent = _nodeNameSizeButton
+                };
+                _nodeNameSizeButton.Enabled = ShowNodesNames;
+                nodeNameSizeValue.ValueChanged += () => NodeNamesSize = nodeNameSizeValue.Value;
             }
 
             // Enable shadows
@@ -291,6 +309,13 @@ namespace FlaxEditor.Viewport.Previews
 
         private void OnBegin(RenderTask task, GPUContext context)
         {
+            if (_autoAdjustCamera && SkinnedModel && SkinnedModel.IsLoaded)
+            {
+                // Control camera's near/far planes to properly cover object
+                _autoAdjustCamera = false;
+                ModelPreview.AdjustCamera(this, SkinnedModel.GetBox());
+            }
+
             if (!ScaleToFit)
             {
                 if (_snapToOrigin)
@@ -371,7 +396,7 @@ namespace FlaxEditor.Viewport.Previews
                             if (nodesMask != null && !nodesMask[nodeIndex])
                                 continue;
                             //var t = new Transform(pose[nodeIndex].TranslationVector, Quaternion.Identity, new Float3(0.1f));
-                            DebugDraw.DrawText(nodes[nodeIndex].Name, pose[nodeIndex].TranslationVector, Color.White, 20, 0.0f, 0.1f);
+                            DebugDraw.DrawText(nodes[nodeIndex].Name, pose[nodeIndex].TranslationVector, Color.White, NodeNamesSize, 0.0f, 0.25f);
                         }
                     }
                 }

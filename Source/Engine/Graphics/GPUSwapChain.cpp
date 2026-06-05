@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "GPUSwapChain.h"
+#include "GPUContext.h"
 #include "GPUDevice.h"
 #include "Textures/GPUTexture.h"
 #include "Engine/Core/Log.h"
@@ -40,6 +41,11 @@ GPUSwapChain::GPUSwapChain()
 #if GPU_ENABLE_RESOURCE_NAMING
     SetName(TEXT("Swap Chain (backbuffers)"));
 #endif
+}
+
+void GPUSwapChain::CopyBackbuffer(GPUContext* context, GPUTexture* dst)
+{
+    context->Draw(dst, GetBackBufferView());
 }
 
 Task* GPUSwapChain::DownloadDataAsync(TextureData& result)

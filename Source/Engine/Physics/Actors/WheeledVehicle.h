@@ -402,6 +402,16 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         /// </summary>
         API_FIELD() float SuspensionOffset = 0.0f;
 
+        /// <summary>
+        /// The longitudinal slip of the tire (frontal). Can be used to determine whether the tire is slipping or gripping the surface.
+        /// </summary>
+        API_FIELD() float LongitudinalSlip = 0.0f;
+
+        /// <summary>
+        /// The lateral slip of the tire (sideways). Can be used to determine whether the tire is slipping or gripping the surface.
+        /// </summary>
+        API_FIELD() float LateralSlip = 0.0f;
+
 #if USE_EDITOR
         /// <summary>
         /// The start location of the suspension raycast start (Editor only for debugging).

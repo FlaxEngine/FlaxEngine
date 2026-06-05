@@ -27,7 +27,11 @@ Quality Graphics::GlobalSDFQuality = Quality::High;
 Quality Graphics::GIQuality = Quality::High;
 bool Graphics::GICascadesBlending = false;
 PostProcessSettings Graphics::PostProcessSettings;
+bool Graphics::GammaColorSpace = true;
 bool Graphics::SpreadWorkload = true;
+#if !BUILD_RELEASE || USE_EDITOR
+float Graphics::TestValue = 0.0f;
+#endif
 float Graphics::Shadows::MinObjectPixelSize = 2.0f;
 bool Graphics::PostProcessing::ColorGradingVolumeLUT = true;
 
@@ -74,6 +78,7 @@ void GraphicsSettings::Apply()
     Graphics::GICascadesBlending = GICascadesBlending;
     Graphics::PostProcessSettings = ::PostProcessSettings();
     Graphics::PostProcessSettings.BlendWith(PostProcessSettings, 1.0f);
+    Graphics::GammaColorSpace = GammaColorSpace;
 #if !USE_EDITOR // OptionsModule handles fallback fonts in Editor
     Font::FallbackFonts = FallbackFonts;
 #endif
@@ -172,6 +177,11 @@ bool GraphicsService::Init()
         if (!device)
             device = CreateGPUDevicePS5();
 #endif
+#if GRAPHICS_API_WEBGPU
+        extern GPUDevice* CreateGPUDeviceWebGPU();
+        if (!device)
+            device = CreateGPUDeviceWebGPU();
+#endif
     }
 
     // Null as a fallback
@@ -203,7 +213,7 @@ bool GraphicsService::Init()
 #endif
         )
     {
-#if !USE_EDITOR && BUILD_RELEASE && !PLATFORM_LINUX && !PLATFORM_CONSOLE // IsDebugToolAttached seams to be enabled on many Linux machines via VK_EXT_tooling_info
+#if !USE_EDITOR && BUILD_RELEASE && !PLATFORM_CONSOLE
         // Block graphics debugging to protect contents
         Platform::Fatal(TEXT("Graphics debugger attached."));
 #endif
@@ -234,3 +244,10 @@ void GraphicsService::Dispose()
 {
     // Device is disposed AFTER Content (faster and safer because there is no assets so there is less gpu resources to cleanup)
 }
+
+#if PLATFORM_WEB && !GRAPHICS_API_WEBGPU
+// Fix missing method when using Null backend on Web
+void SetWebGPUTextureViewSampler(GPUTextureView* view, uint32 samplerType)
+{
+}
+#endif

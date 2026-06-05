@@ -7,7 +7,7 @@ using Flax.Build.NativeCpp;
 /// <summary>
 /// https://github.com/microsoft/DirectXTex
 /// </summary>
-public class DirectXTex : DepsModule
+public class DirectXTex : EngineDepsModule
 {
     /// <inheritdoc />
     public override void Init()
@@ -16,9 +16,6 @@ public class DirectXTex : DepsModule
 
         LicenseType = LicenseTypes.MIT;
         LicenseFilePath = "LICENSE";
-
-        // Merge third-party modules into engine binary
-        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />

@@ -54,6 +54,7 @@ bool GPUPipelineStateDX11::Init(const Description& desc)
         D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
     };
     PrimitiveTopology = D3D11_primTypes[static_cast<int32>(desc.PrimitiveTopology)];
+    DepthBounds = desc.DepthBoundsEnable;
 #if GPU_ALLOW_TESSELLATION_SHADERS
     if (HS)
         PrimitiveTopology = (D3D11_PRIMITIVE_TOPOLOGY)((int32)D3D11_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST + (HS->GetControlPointsCount() - 1));

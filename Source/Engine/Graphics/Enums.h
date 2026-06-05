@@ -75,6 +75,11 @@ API_ENUM() enum class RendererType
     /// </summary>
     PS5 = 12,
 
+    /// <summary>
+    /// WebGPU
+    /// </summary>
+    WebGPU = 13,
+
     API_ENUM(Attributes="HideInEditor")
     MAX
 };
@@ -131,11 +136,47 @@ API_ENUM() enum class ShaderProfile
     /// </summary>
     PS5 = 8,
 
+    /// <summary>
+    /// WebGPU
+    /// </summary>
+    WebGPU = 9,
+
     API_ENUM(Attributes="HideInEditor")
     MAX
 };
 
 const Char* ToString(ShaderProfile value);
+
+/// <summary>
+/// Shader profile feature flags. Defines a set of features supported by a shader profile.
+/// </summary>
+API_ENUM() enum class ShaderProfileFeatures
+{
+    /// <summary>
+    /// Nothing.
+    /// </summary>
+    None = 0,
+
+    /// <summary>
+    /// Compute shaders are supported.
+    /// </summary>
+    ComputeShaders = 1,
+
+    /// <summary>
+    /// Geometry shaders are supported.
+    /// </summary>
+    GeometryShaders = 2,
+
+    /// <summary>
+    /// Tessellation shaders are supported (Hull and Domain).
+    /// </summary>
+    TessellationShaders = 4,
+
+    API_ENUM(Attributes = "HideInEditor")
+    MAX
+};
+
+DECLARE_ENUM_OPERATORS(ShaderProfileFeatures);
 
 /// <summary>
 /// Graphics feature levels indicates what level of support can be relied upon. 
@@ -348,6 +389,24 @@ API_ENUM(Attributes="Flags") enum class GPUResourceMapMode
 };
 
 DECLARE_ENUM_OPERATORS(GPUResourceMapMode);
+
+/// <summary>
+/// GPU resources types.
+/// </summary>
+enum class GPUQueryType
+{
+    /// <summary>
+    /// Measures duration of GPU commands execution. Returns time in microseconds (1/1000 ms).
+    /// </summary>
+    Timer = 0,
+
+    /// <summary>
+    /// Tests object visibility by counting number of pixel samples that are not culled (by depth or stencil tests).
+    /// </summary>
+    Occlusion = 1,
+
+    MAX
+};
 
 /// <summary>
 /// Primitives types.

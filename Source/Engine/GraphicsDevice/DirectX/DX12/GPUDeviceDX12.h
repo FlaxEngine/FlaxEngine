@@ -44,7 +44,13 @@ private:
 private:
 
     // Private Stuff
-    ID3D12Device* _device;
+    ID3D12Device* _device = nullptr;
+#ifdef __ID3D12Device1_FWD_DEFINED__
+    ID3D12Device1* _device1 = nullptr;
+#endif
+#ifdef __ID3D12Device2_FWD_DEFINED__
+    ID3D12Device2* _device2 = nullptr;
+#endif
     IDXGIFactory4* _factoryDXGI;
     CriticalSection _res2DisposeLock;
     Array<DisposeResourceEntry> _res2Dispose;
@@ -65,21 +71,13 @@ public:
     ~GPUDeviceDX12();
 
 public:
-    /// <summary>
-    /// Data uploading utility via pages.
-    /// </summary>
     UploadBufferDX12 UploadBuffer;
-
-    /// <summary>
-    /// The timestamp queries heap.
-    /// </summary>
-    QueryHeapDX12 TimestampQueryHeap;
-
     bool AllowTearing = false;
     CommandSignatureDX12* DispatchIndirectCommandSignature = nullptr;
     CommandSignatureDX12* DrawIndexedIndirectCommandSignature = nullptr;
     CommandSignatureDX12* DrawIndirectCommandSignature = nullptr;
     GPUBuffer* DummyVB = nullptr;
+    Array<QueryHeapDX12*, InlinedAllocation<8>> QueryHeaps;
 
     D3D12_CPU_DESCRIPTOR_HANDLE NullSRV(D3D12_SRV_DIMENSION dimension) const;
     D3D12_CPU_DESCRIPTOR_HANDLE NullUAV() const;
@@ -93,6 +91,12 @@ public:
     {
         return _device;
     }
+#ifdef __ID3D12Device1_FWD_DEFINED__
+    FORCE_INLINE ID3D12Device1* GetDevice1() const { return _device1; }
+#endif
+#ifdef __ID3D12Device2_FWD_DEFINED__
+    FORCE_INLINE ID3D12Device2* GetDevice2() const { return _device2; }
+#endif
 
     /// <summary>
     /// Gets DXGI factory.
@@ -135,6 +139,8 @@ public:
     {
         return _mainContext;
     }
+
+    GPUQueryDX12 AllocQuery(GPUQueryType type);
 
 public:
 
@@ -185,6 +191,7 @@ public:
     void RenderEnd() override;
     void Dispose() final override;
     void WaitForGPU() override;
+    bool GetQueryResult(uint64 queryID, uint64& result, bool wait = false) override;
     GPUTexture* CreateTexture(const StringView& name) override;
     GPUShader* CreateShader(const StringView& name) override;
     GPUPipelineState* CreatePipelineState() override;

@@ -4,6 +4,8 @@
 
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/Window.h"
+#include "Engine/Platform/Windows/WindowsInput.h"
+#include "Engine/Platform/Windows/WindowsWindow.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/CreateWindowSettings.h"
 #include "Engine/Platform/CreateProcessSettings.h"
@@ -34,7 +36,6 @@
 #define CLR_EXCEPTION 0xE0434352
 #define VCPP_EXCEPTION 0xE06D7363
 
-const Char* WindowsPlatform::ApplicationWindowClass = TEXT("FlaxWindow");
 void* WindowsPlatform::Instance = nullptr;
 
 #if CRASH_LOG_ENABLE || TRACY_ENABLE
@@ -288,6 +289,8 @@ struct CPUBrand
 
 #endif
 
+#if !PLATFORM_SDL
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     // Find window to process that message
@@ -304,6 +307,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     // Default
     return DefWindowProc(hwnd, msg, wParam, lParam);
 }
+
+#endif
 
 long __stdcall WindowsPlatform::SehExceptionHandler(EXCEPTION_POINTERS* ep)
 {
@@ -469,11 +474,12 @@ DialogResult MessageBox::Show(Window* parent, const StringView& text, const Stri
         flags |= MB_ICONHAND;
         break;
     case MessageBoxIcon::Information:
+    case MessageBoxIcon::Question:
         flags |= MB_ICONINFORMATION;
         break;
-    case MessageBoxIcon::Question:
-        flags |= MB_ICONQUESTION;
-        break;
+    //case MessageBoxIcon::Question:
+    //    flags |= MB_ICONQUESTION;
+    //    break;
     case MessageBoxIcon::Stop:
         flags |= MB_ICONSTOP;
         break;
@@ -611,6 +617,7 @@ void WindowsPlatform::PreInit(void* hInstance)
     // Disable the process from being showing "ghosted" while not responding messages during slow tasks
     DisableProcessWindowsGhosting();
 
+#if !PLATFORM_SDL
     // Register window class
     WNDCLASS windowsClass;
     Platform::MemoryClear(&windowsClass, sizeof(WNDCLASS));
@@ -619,12 +626,13 @@ void WindowsPlatform::PreInit(void* hInstance)
     windowsClass.hInstance = (HINSTANCE)Instance;
     windowsClass.hIcon = LoadIconW(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDR_MAINFRAME));
     windowsClass.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    windowsClass.lpszClassName = ApplicationWindowClass;
+    windowsClass.lpszClassName = ApplicationClassName;
     if (!RegisterClassW(&windowsClass))
     {
         Error(TEXT("Window class registration failed!"));
         exit(-1);
     }
+#endif
 
     // Init OLE
     if (OleInitialize(nullptr) != S_OK)
@@ -793,7 +801,9 @@ bool WindowsPlatform::Init()
     }
     OnPlatformUserAdd(New<User>(userName));
 
+#if !PLATFORM_SDL
     WindowsInput::Init();
+#endif
 
     return false;
 }
@@ -827,7 +837,9 @@ void WindowsPlatform::LogInfo()
 
 void WindowsPlatform::Tick()
 {
+#if !PLATFORM_SDL
     WindowsInput::Update();
+#endif
 
     // Check to see if any messages are waiting in the queue
     MSG msg;
@@ -858,15 +870,17 @@ void WindowsPlatform::Exit()
     FlaxDbgHelpUnlock();
 #endif
 
+#if !PLATFORM_SDL
     // Unregister app class
-    UnregisterClassW(ApplicationWindowClass, nullptr);
+    UnregisterClassW(ApplicationClassName, nullptr);
+#endif
 
     Win32Platform::Exit();
 }
 
 #if !BUILD_RELEASE
 
-void WindowsPlatform::Log(const StringView& msg)
+void WindowsPlatform::Log(const StringView& msg, int32 logType)
 {
     Char buffer[512];
     Char* str;
@@ -936,10 +950,12 @@ BatteryInfo WindowsPlatform::GetBatteryInfo()
     return info;
 }
 
+#if !PLATFORM_SDL
 int32 WindowsPlatform::GetDpi()
 {
     return SystemDpi;
 }
+#endif
 
 String WindowsPlatform::GetUserLanguage()
 {
@@ -1321,10 +1337,12 @@ int32 WindowsPlatform::CreateProcess(CreateProcessSettings& settings)
     return result;
 }
 
+#if !PLATFORM_SDL
 Window* WindowsPlatform::CreateWindow(const CreateWindowSettings& settings)
 {
     return New<WindowsWindow>(settings);
 }
+#endif
 
 void* WindowsPlatform::LoadLibrary(const Char* filename)
 {
@@ -1549,6 +1567,51 @@ void WindowsPlatform::CollectCrashData(const String& crashDataFolder, void* cont
     DWORD threadID;
     const auto handle = CreateThread(0, 0x8000, threadFunc, &crashInfo, 0, &threadID);
     WaitForSingleObject(handle, INFINITE);
+}
+
+#endif
+
+#if USE_EDITOR
+
+#include "Engine/Core/Math/Color32.h"
+
+WIN_API COLORREF WIN_API_CALLCONV GetPixel(_In_ HDC hdc, _In_ int x, _In_ int y);
+#define GetRValue(rgb) (LOBYTE(rgb))
+#define GetGValue(rgb) (LOBYTE(((WORD)(rgb)) >> 8))
+#define GetBValue(rgb) (LOBYTE((rgb) >> 16))
+#pragma comment(lib, "Gdi32.lib")
+
+static HHOOK MouseCallbackHook;
+
+LRESULT CALLBACK OnScreenUtilsMouseCallback(_In_ int nCode, _In_ WPARAM wParam, _In_ LPARAM lParam)
+{
+    if (nCode >= 0 && wParam == WM_LBUTTONDOWN)
+    {
+        UnhookWindowsHookEx(MouseCallbackHook);
+
+        // Push event with the picked color
+        const Float2 cursorPos = Platform::GetMousePosition();
+        const Color32 colorPicked = PlatformBase::GetScreenColorAt(cursorPos);
+        PlatformBase::PickScreenColorDone(colorPicked);
+        return 1;
+    }
+    return CallNextHookEx(NULL, nCode, wParam, lParam);
+}
+
+Color32 WindowsPlatform::GetScreenColorAt(const Float2& pos)
+{
+    PROFILE_CPU();
+    HDC deviceContext = GetDC(NULL);
+    COLORREF color = GetPixel(deviceContext, (int)pos.X, (int)pos.Y);
+    ReleaseDC(NULL, deviceContext);
+    return Color32(GetRValue(color), GetGValue(color), GetBValue(color), 255);
+}
+
+void WindowsPlatform::PickScreenColor()
+{
+    MouseCallbackHook = SetWindowsHookEx(WH_MOUSE_LL, OnScreenUtilsMouseCallback, NULL, NULL);
+    if (MouseCallbackHook == NULL)
+        LOG(Warning, "Failed to set mouse hook (GetLastError={})", GetLastError());
 }
 
 #endif

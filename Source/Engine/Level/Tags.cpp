@@ -46,6 +46,9 @@ Tag Tags::Get(const StringView& tagName)
     Tag tag(List.Find(tagName) + 1);
     if (tag.Index == 0 && tagName.HasChars())
     {
+        int32 dot = tagName.FindLast('.');
+        if (dot != -1) // Ensure that all parents also exist
+            Get(tagName.Substring(0, dot));
         List.AddOne() = tagName;
         tag.Index = List.Count();
 #if !BUILD_RELEASE

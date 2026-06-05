@@ -97,6 +97,7 @@ namespace Flax.Deps
                         TargetPlatform.PS5,
                         TargetPlatform.Android,
                         TargetPlatform.Switch,
+                        TargetPlatform.Web,
                     };
                 case TargetPlatform.Linux:
                     return new[]
@@ -127,6 +128,7 @@ namespace Flax.Deps
                 case TargetPlatform.Windows:
                     return new[]
                     {
+                        TargetArchitecture.x86,
                         TargetArchitecture.x64,
                         TargetArchitecture.ARM64,
                     };
@@ -185,9 +187,12 @@ namespace Flax.Deps
         /// Logs build process start.
         /// </summary>
         /// <param name="platform">Target platform.</param>
-        protected void BuildStarted(TargetPlatform platform, TargetArchitecture architecture)
+        /// <param name="architecture">Target architecture.</param>
+        /// <returns>True if build for the target platform, otherwise false if that architecture should be skipped.</returns>
+        protected bool BuildStarted(TargetPlatform platform, TargetArchitecture architecture)
         {
             Log.Info($"Building {GetType().Name} for {platform}{(architecture != TargetArchitecture.AnyCPU ? $" ({architecture})" : "")}");
+            return Platform.IsPlatformSupported(platform, architecture);
         }
 
         /// <summary>
@@ -251,6 +256,54 @@ namespace Flax.Deps
         }
 
         /// <summary>
+        /// Copies the library to the deps files (handles platform specific switches). Matches <see cref="DepsModule.AddLib"/>.
+        /// </summary>
+        /// <param name="platform">The build platform.</param>
+        /// <param name="srcFolder">The path fo the source folder with library (build output).</param>
+        /// <param name="dstFolder">The path fo the source folder with library.</param>
+        /// <param name="name">The library name.</param>
+        public static void CopyLib(TargetPlatform platform, string srcFolder, string dstFolder, string name)
+        {
+            string filename, pdbPath;
+            switch (platform)
+            {
+            case TargetPlatform.Windows:
+            case TargetPlatform.XboxOne:
+            case TargetPlatform.UWP:
+            case TargetPlatform.XboxScarlett:
+                filename = string.Format("{0}.lib", name);
+                pdbPath = Path.Combine(srcFolder, string.Format("{0}.pdb", name));
+                if (File.Exists(pdbPath))
+                    Utilities.FileCopy(pdbPath, Path.Combine(dstFolder, string.Format("{0}.pdb", name)), true);
+                break;
+            case TargetPlatform.Linux:
+            case TargetPlatform.PS4:
+            case TargetPlatform.PS5:
+            case TargetPlatform.Android:
+            case TargetPlatform.Switch:
+            case TargetPlatform.Mac:
+            case TargetPlatform.iOS:
+            case TargetPlatform.Web:
+                filename = string.Format("lib{0}.a", name);
+                break;
+            default: throw new InvalidPlatformException(platform);
+            }
+            Utilities.FileCopy(Path.Combine(srcFolder, filename), Path.Combine(dstFolder, filename), true);
+        }
+
+        /// <summary>
+        /// Checks if git repository exists at given path.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        public static bool GitRepositoryExists(string path)
+        {
+            Console.WriteLine(path);
+            string dotGitPath = Path.Combine(path, ".git");
+            return Directory.Exists(dotGitPath) ||
+                File.Exists(dotGitPath); // Worktree repository
+        }
+
+        /// <summary>
         /// Clones the git repository from the remote url (full repository).
         /// </summary>
         /// <param name="path">The local path for close.</param>
@@ -260,7 +313,7 @@ namespace Flax.Deps
         /// <param name="submodules">True if initialize submodules of the repository (recursive).</param>
         public static void CloneGitRepo(string path, string url, string commit = null, string args = null, bool submodules = false)
         {
-            if (!Directory.Exists(Path.Combine(path, ".git")))
+            if (!GitRepositoryExists(path))
             {
                 string cmdLine = string.Format("clone \"{0}\" \"{1}\"", url, path);
                 if (args != null)
@@ -277,7 +330,7 @@ namespace Flax.Deps
         }
 
         /// <summary>
-        /// Clones the git repository from the remote url.
+        /// Clones the git repository from the remote url (shallow clone).
         /// </summary>
         /// <param name="path">The local path for close.</param>
         /// <param name="url">The remote url.</param>
@@ -285,7 +338,7 @@ namespace Flax.Deps
         /// <param name="submodules">True if initialize submodules of the repository (recursive).</param>
         public static void CloneGitRepoFast(string path, string url, string args = null, bool submodules = false)
         {
-            if (!Directory.Exists(Path.Combine(path, ".git")))
+            if (!GitRepositoryExists(path))
             {
                 string cmdLine = string.Format("clone \"{0}\" \"{1}\" --depth 1", url, path);
                 if (args != null)
@@ -300,6 +353,19 @@ namespace Flax.Deps
         }
 
         /// <summary>
+        /// Fetches the git repository from remote url.
+        /// </summary>
+        /// <param name="path">The git repository path</param>
+        /// <param name="url">The remote url</param>
+        public static void GitFetch(string path)
+        {
+            if (GitRepositoryExists(path))
+            {
+                Utilities.Run("git", $"fetch \"{path}\"", null, path, Utilities.RunOptions.DefaultTool);
+            }
+        }
+
+        /// <summary>
         /// Clones the git repository from the remote url (clones a single branch).
         /// </summary>
         /// <param name="path">The local path for close.</param>
@@ -310,7 +376,7 @@ namespace Flax.Deps
         /// <param name="submodules">True if initialize submodules of the repository (recursive).</param>
         public static void CloneGitRepoSingleBranch(string path, string url, string branch, string commit = null, string args = null, bool submodules = false)
         {
-            if (!Directory.Exists(Path.Combine(path, ".git")))
+            if (!GitRepositoryExists(path))
             {
                 string cmdLine = string.Format("clone --single-branch --branch {2} \"{0}\" \"{1}\"", url, path, branch);
                 if (commit == null)
@@ -367,6 +433,23 @@ namespace Flax.Deps
         }
 
         /// <summary>
+        /// Resets to the specific commit, optionally fetching the commit from remote.
+        /// Note: Fetching requires server-side support, may not work with all servers.
+        /// </summary>
+        /// <param name="path">The local path that contains git repository.</param>
+        /// <param name="commit">The full hash of the commit.</param>
+        /// <param name="fetch">Fetch the commit from remote.</param>
+        public static void GitResetToCommit(string path, string commit, bool fetch = false)
+        {
+            if (fetch)
+            {
+                // This requires server-side configuration uploadpack.allowReachableSHA1InWant to be enabled
+                Utilities.Run("git", $"fetch --depth=1 \"{path}\" {commit}", null, path, Utilities.RunOptions.ConsoleLogOutput);
+            }
+            Utilities.Run("git", $"reset --hard {commit}", null, path, Utilities.RunOptions.DefaultTool);
+        }
+
+        /// <summary>
         /// Gets the maximum concurrency level for a cmake command. See CMAKE_BUILD_PARALLEL_LEVEL or -j docs.
         /// </summary>
         public static string CmakeBuildParallel => Math.Min(Math.Max(1, (int)(Environment.ProcessorCount * Configuration.ConcurrencyProcessorScale)), Configuration.MaxConcurrency).ToString();
@@ -387,9 +470,10 @@ namespace Flax.Deps
         /// <param name="path">The path.</param>
         /// <param name="config">The configuration preset.</param>
         /// <param name="envVars">Custom environment variables to pass to the child process.</param>
-        public static void BuildCmake(string path, string config = "Release", Dictionary<string, string> envVars = null)
+        /// <param name="options">Defines the options how to run. See RunOptions.</param>
+        public static void BuildCmake(string path, string config = "Release", Dictionary<string, string> envVars = null, Utilities.RunOptions options = Utilities.RunOptions.DefaultTool)
         {
-            Utilities.Run("cmake", $"--build .  --config {config}", null, path, Utilities.RunOptions.DefaultTool, envVars);
+            Utilities.Run("cmake", $"--build .  --config {config}", null, path, options, envVars);
         }
 
         /// <summary>
@@ -437,10 +521,16 @@ namespace Flax.Deps
                 break;
             }
             case TargetPlatform.PS4:
-                cmdLine = "CMakeLists.txt -DCMAKE_GENERATOR_PLATFORM=ORBIS -G \"Visual Studio 15 2017\"";
+                if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2017))
+                    cmdLine = "CMakeLists.txt -DCMAKE_GENERATOR_PLATFORM=ORBIS -G \"Visual Studio 15 2017\"";
+                else
+                    cmdLine = string.Format("CMakeLists.txt -G \"Ninja\" -DCMAKE_TOOLCHAIN_FILE=\"{0}/Source/Platforms/PS4/Binaries/Data/nethost/src/ps4/PS4Toolchain.txt\"", Globals.EngineRoot);
                 break;
             case TargetPlatform.PS5:
-                cmdLine = "CMakeLists.txt -DCMAKE_GENERATOR_PLATFORM=PROSPERO -G \"Visual Studio 16 2019\"";
+                if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2019))
+                    cmdLine = "CMakeLists.txt -DCMAKE_GENERATOR_PLATFORM=PROSPERO -G \"Visual Studio 16 2019\"";
+                else
+                    cmdLine = string.Format("CMakeLists.txt -G \"Ninja\" -DCMAKE_TOOLCHAIN_FILE=\"{0}/Source/Platforms/PS5/Binaries/Data/nethost/src/ps5/PS5Toolchain.txt\"", Globals.EngineRoot);
                 break;
             case TargetPlatform.Linux:
                 cmdLine = "CMakeLists.txt";
@@ -457,19 +547,26 @@ namespace Flax.Deps
                 var ndk = AndroidNdk.Instance.RootPath;
                 var abi = AndroidToolchain.GetAbiName(architecture);
                 var hostName = AndroidSdk.GetHostName();
-                cmdLine = string.Format("-DCMAKE_TOOLCHAIN_FILE=\"{0}/build/cmake/android.toolchain.cmake\" -DANDROID_NDK=\"{0}\" -DANDROID_STL=c++_shared -DANDROID_ABI={1} -DANDROID_PLATFORM=android-{2} -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=\"{0}/prebuilt/{3}/bin/make.exe\"", ndk, abi, Configuration.AndroidPlatformApi, hostName);
+                cmdLine = string.Format("-DCMAKE_TOOLCHAIN_FILE=\"{0}/build/cmake/android.toolchain.cmake\" -DANDROID_NDK=\"{0}\" -DANDROID_STL=c++_shared -DANDROID_ABI={1} -DANDROID_PLATFORM=android-{2} -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=\"{0}/prebuilt/{3}/bin/make.exe\"", ndk, abi, AndroidConfiguration.PlatformApi, hostName);
                 break;
             }
             case TargetPlatform.Mac:
             {
                 var arch = GetAppleArchName(architecture);
-                cmdLine = string.Format("CMakeLists.txt -DCMAKE_OSX_DEPLOYMENT_TARGET=\"{0}\" -DCMAKE_OSX_ARCHITECTURES={1}", Configuration.MacOSXMinVer, arch);
+                cmdLine = string.Format("CMakeLists.txt -DCMAKE_OSX_DEPLOYMENT_TARGET=\"{0}\" -DCMAKE_OSX_ARCHITECTURES={1}", MacConfiguration.MacOSXMinVer, arch);
                 break;
             }
             case TargetPlatform.iOS:
             {
                 var arch = GetAppleArchName(architecture);
-                cmdLine = string.Format("CMakeLists.txt -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_DEPLOYMENT_TARGET=\"{0}\" -DCMAKE_OSX_ARCHITECTURES={1}", Configuration.iOSMinVer, arch);
+                cmdLine = string.Format("CMakeLists.txt -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_DEPLOYMENT_TARGET=\"{0}\" -DCMAKE_OSX_ARCHITECTURES={1}", iOSConfiguration.MinVer, arch);
+                break;
+            }
+            case TargetPlatform.Web:
+            {
+                cmdLine = $"CMakeLists.txt -DCMAKE_TOOLCHAIN_FILE=\"{EmscriptenSdk.Instance.CMakeToolchainPath}\"";
+                if (BuildPlatform == TargetPlatform.Windows)
+                    cmdLine += " -G \"Ninja\"";
                 break;
             }
             default: throw new InvalidPlatformException(platform);

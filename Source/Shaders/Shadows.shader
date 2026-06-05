@@ -37,8 +37,8 @@ float RayCastScreenSpaceShadow(GBufferData gBufferData, GBufferSample gBuffer, f
 #endif
 	float distanceFade = 1 - saturate(pow(length(gBuffer.WorldPos - gBufferData.ViewPos) / ContactShadowsDistance, 2));
 	float maxShadowLength = gBufferData.InvProjectionMatrix[1][1] * gBuffer.ViewPos.z * rayLength * distanceFade;
-	float4 rayStartCS = mul(float4(rayStartWS, 1), ViewProjectionMatrix);
-	float4 rayEndCS = mul(float4(rayStartWS + rayDirWS * maxShadowLength, 1), ViewProjectionMatrix);
+	float4 rayStartCS = PROJECT_POINT(float4(rayStartWS, 1), ViewProjectionMatrix);
+	float4 rayEndCS = PROJECT_POINT(float4(rayStartWS + rayDirWS * maxShadowLength, 1), ViewProjectionMatrix);
 	float4 rayStepCS = (rayEndCS - rayStartCS) / maxSteps;
 	float4 rayCS = rayStartCS + rayStepCS;
 	float lightAmountMax = 0;
@@ -65,7 +65,7 @@ META_VS_IN_ELEMENT(POSITION, 0, R32G32B32_FLOAT, 0, 0, PER_VERTEX, 0, true)
 Model_VS2PS VS_Model(ModelInput_PosOnly input)
 {
 	Model_VS2PS output;
-	output.Position = mul(float4(input.Position.xyz, 1), WVP);
+	output.Position = PROJECT_POINT(float4(input.Position.xyz, 1), WVP);
 	output.ScreenPos = output.Position;
 	return output;
 }

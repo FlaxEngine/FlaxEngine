@@ -81,7 +81,6 @@ namespace FlaxEditor.GUI.Docking
         public DockPanel HitTest(ref Float2 position, FloatWindowDockPanel excluded)
         {
             // Check all floating windows
-            // TODO: gather windows order and take it into account when performing test
             for (int i = 0; i < FloatingPanels.Count; i++)
             {
                 var win = FloatingPanels[i];
@@ -94,7 +93,42 @@ namespace FlaxEditor.GUI.Docking
             }
 
             // Base
+            //if (!Root?.RootWindow.Window.IsFocused ?? false)
+            //    return null;
             return base.HitTest(ref position);
+        }
+
+        /// <summary>
+        /// Performs hit test over dock panel.
+        /// </summary>
+        /// <param name="position">Window space position to test.</param>
+        /// <param name="excluded">Floating window to omit during searching (and all docked to that one).</param>
+        /// <param name="hitResults">Results of the hit test</param>
+        /// <returns>True if any dock panels were hit, otherwise false.</returns>
+        public bool HitTest(ref Float2 position, FloatWindowDockPanel excluded, out DockPanel[] hitResults)
+        {
+            // Check all floating windows
+            List<DockPanel> results = new(FloatingPanels.Count);
+            for (int i = 0; i < FloatingPanels.Count; i++)
+            {
+                var win = FloatingPanels[i];
+                if (win.Visible && win != excluded)
+                {
+                    var result = win.HitTest(ref position);
+                    if (result != null)
+                        results.Add(result);
+                }
+            }
+
+            // Base
+            //if (!Root?.RootWindow.Window.IsFocused ?? false)
+            //    return null;
+            var baseResult = base.HitTest(ref position);
+            if (baseResult != null)
+                results.Add(baseResult);
+
+            hitResults = results.ToArray();
+            return hitResults.Length > 0;
         }
 
         internal void LinkWindow(DockWindow window)

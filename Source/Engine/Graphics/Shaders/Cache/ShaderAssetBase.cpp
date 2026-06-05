@@ -360,14 +360,12 @@ bool ShaderAssetBase::LoadShaderCache(ShaderCacheResult& result)
         return true;
     }
 
-    ASSERT(result.Data.IsValid());
-
 #if COMPILE_WITH_SHADER_COMPILER
     // Read includes from cache
     IsValidShaderCache(result.Data, result.Includes);
 #endif
 
-    return false;
+    return result.Data.IsInvalid();
 }
 
 #if COMPILE_WITH_SHADER_COMPILER

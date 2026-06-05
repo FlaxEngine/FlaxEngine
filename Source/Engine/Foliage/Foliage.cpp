@@ -168,9 +168,6 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCal
     // Draw visible children
     if (cluster->Children[0])
     {
-        // Don't store instances in non-leaf nodes
-        ASSERT_LOW_LAYER(cluster->Instances.IsEmpty());
-
         BoundingBox box;
 #define DRAW_CLUSTER(idx) \
         box = cluster->Children[idx]->TotalBounds; \
@@ -184,7 +181,7 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCal
         DRAW_CLUSTER(3);
 #undef 	DRAW_CLUSTER
     }
-    else
+    //else // Minor clusters can be subdivided and contain instances
     {
         // Draw visible instances
         const auto frame = Engine::FrameCount;
@@ -311,9 +308,6 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, Mesh::D
     // Draw visible children
     if (cluster->Children[0])
     {
-        // Don't store instances in non-leaf nodes
-        ASSERT_LOW_LAYER(cluster->Instances.IsEmpty());
-
         BoundingBox box;
 #define DRAW_CLUSTER(idx) \
         box = cluster->Children[idx]->TotalBounds; \
@@ -327,7 +321,7 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, Mesh::D
         DRAW_CLUSTER(3);
 #undef 	DRAW_CLUSTER
     }
-    else
+    //else // Minor clusters can be subdivided and contain instances
     {
         // Draw visible instances
         const auto frame = Engine::FrameCount;
@@ -390,7 +384,7 @@ void Foliage::DrawClusterGlobalSDF(class GlobalSignDistanceFieldPass* globalSDF,
         DRAW_CLUSTER(3);
 #undef 	DRAW_CLUSTER
     }
-    else
+    //else // Minor clusters can be subdivided and contain instances
     {
         // Draw visible instances
         for (int32 i = 0; i < cluster->Instances.Count(); i++)
@@ -421,7 +415,7 @@ void Foliage::DrawClusterGlobalSA(GlobalSurfaceAtlasPass* globalSA, const Vector
         DRAW_CLUSTER(3);
 #undef 	DRAW_CLUSTER
     }
-    else
+    //else // Minor clusters can be subdivided and contain instances
     {
         // Draw visible instances
         for (int32 i = 0; i < cluster->Instances.Count(); i++)

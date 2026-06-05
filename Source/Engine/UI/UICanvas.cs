@@ -465,7 +465,7 @@ namespace FlaxEngine
                 Quaternion.Euler(180, 180, 0, out var quat);
                 Matrix.RotationQuaternion(ref quat, out m2);
                 Matrix.Multiply(ref m3, ref m2, out m1);
-                m2 = Matrix.Transformation(Vector3.One, Quaternion.FromDirection(-camera.Direction), translation);
+                m2 = Matrix.Transformation(Vector3.One, Quaternion.FromDirection(-camera.Forward), translation);
                 Matrix.Multiply(ref m1, ref m2, out world);
             }
             else if (_renderMode == CanvasRenderMode.CameraSpace && camera)

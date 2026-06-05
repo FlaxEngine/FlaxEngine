@@ -253,8 +253,11 @@ namespace FlaxEngine.GUI
             {
                 var leftEdge = font.GetCharPosition(text, SelectionLeft, ref _layout);
                 var rightEdge = font.GetCharPosition(text, SelectionRight, ref _layout);
-                var fontHeight = font.Height;
-                var textHeight = fontHeight / DpiScale;
+                float fontHeight = font.Height;
+#if PLATFORM_MAC && !PLATFORM_SDL
+                fontHeight /= (float)Platform.Dpi / 96.0f; // TODO: refactor DPI support on macOS to skip such hacks
+#endif
+                float textHeight = fontHeight / DpiScale;
 
                 // Draw selection background
                 float alpha = Mathf.Min(1.0f, Mathf.Cos(_animateTime * BackgroundSelectedFlashSpeed) * 0.5f + 1.3f);

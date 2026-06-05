@@ -820,8 +820,7 @@ void AnimatedModel::RunBlendShapeDeformer(const MeshBase* mesh, MeshDeformationD
 
 void AnimatedModel::BeginPlay(SceneBeginData* data)
 {
-    if (SkinnedModel && SkinnedModel->IsLoaded())
-        PreInitSkinningData();
+    PreInitSkinningData();
 
     // Base
     ModelInstanceActor::BeginPlay(data);
@@ -863,6 +862,7 @@ void AnimatedModel::OnActiveInTreeChanged()
 void AnimatedModel::UpdateBounds()
 {
     const auto model = SkinnedModel.Get();
+    BoundingSphere prevSphere = _sphere;
     if (CustomBounds.GetSize().LengthSquared() > 0.01f)
     {
         BoundingBox::Transform(CustomBounds, _transform, _box);
@@ -893,7 +893,7 @@ void AnimatedModel::UpdateBounds()
         _box = BoundingBox(_transform.Translation);
     }
     BoundingSphere::FromBox(_box, _sphere);
-    if (_sceneRenderingKey != -1)
+    if (_sceneRenderingKey != -1 && prevSphere != _sphere)
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Bounds);
 }
 
@@ -940,7 +940,7 @@ void AnimatedModel::OnAnimationUpdated_Async()
         _skinningData.OnDataChanged(!PerBoneMotionBlur);
     }
 
-    if (UpdateWhenOffscreen) 
+    //if (UpdateWhenOffscreen)
     {
         UpdateBounds();
     }
@@ -1262,9 +1262,7 @@ void AnimatedModel::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(ShadowsMode);
     PRAGMA_ENABLE_DEPRECATION_WARNINGS
     SERIALIZE(RootMotionTarget);
-
-    stream.JKEY("Buffer");
-    stream.Object(&Entries, other ? &other->Entries : nullptr);
+    SERIALIZE_MEMBER(Buffer, Entries);
 }
 
 void AnimatedModel::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -1289,8 +1287,7 @@ void AnimatedModel::Deserialize(DeserializeStream& stream, ISerializeModifier* m
     DESERIALIZE(ShadowsMode);
     PRAGMA_ENABLE_DEPRECATION_WARNINGS
     DESERIALIZE(RootMotionTarget);
-
-    Entries.DeserializeIfExists(stream, "Buffer", modifier);
+    DESERIALIZE_MEMBER(Buffer, Entries);
 
     // [Deprecated on 07.02.2022, expires on 07.02.2024]
     if (modifier->EngineBuild <= 6330)
@@ -1329,6 +1326,11 @@ MaterialBase* AnimatedModel::GetMaterial(int32 entryIndex)
             material = GPUDevice::Instance->GetDefaultMaterial();
     }
     return material;
+}
+
+ModelBase* AnimatedModel::GetModel()
+{
+    return SkinnedModel.Get();
 }
 
 bool AnimatedModel::IntersectsEntry(int32 entryIndex, const Ray& ray, Real& distance, Vector3& normal)

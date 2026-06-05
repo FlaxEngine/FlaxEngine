@@ -14,6 +14,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/PostProcessSettings.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Engine/Time.h"
 
@@ -152,8 +153,8 @@ void MotionBlurPass::RenderMotionVectors(RenderContext& renderContext)
     auto context = GPUDevice::Instance->GetMainContext();
     const int32 screenWidth = renderContext.Buffers->GetWidth();
     const int32 screenHeight = renderContext.Buffers->GetHeight();
-    const int32 motionVectorsWidth = screenWidth / static_cast<int32>(settings.MotionVectorsResolution);
-    const int32 motionVectorsHeight = screenHeight / static_cast<int32>(settings.MotionVectorsResolution);
+    const int32 motionVectorsWidth = RenderTools::GetResolution(screenWidth, settings.MotionVectorsResolution);
+    const int32 motionVectorsHeight = RenderTools::GetResolution(screenHeight, settings.MotionVectorsResolution);
     if (!renderContext.List->Setup.UseMotionVectors || checkIfSkipPass())
     {
         // Skip pass (just clear motion vectors if texture is allocated)
@@ -260,8 +261,8 @@ void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& frame, GP
     MotionBlurSettings& settings = renderContext.List->Settings.MotionBlur;
     const int32 screenWidth = frame->Width();
     const int32 screenHeight = frame->Height();
-    const int32 motionVectorsWidth = screenWidth / static_cast<int32>(settings.MotionVectorsResolution);
-    const int32 motionVectorsHeight = screenHeight / static_cast<int32>(settings.MotionVectorsResolution);
+    const int32 motionVectorsWidth = RenderTools::GetResolution(screenWidth, settings.MotionVectorsResolution);
+    const int32 motionVectorsHeight = RenderTools::GetResolution(screenHeight, settings.MotionVectorsResolution);
     if ((renderContext.View.Flags & ViewFlags::MotionBlur) == ViewFlags::None ||
         !_hasValidResources ||
         isCameraCut ||

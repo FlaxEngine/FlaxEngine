@@ -50,12 +50,7 @@ bool ParticleEmitterGPUGenerator::loadTexture(Node* caller, Box* box, const Seri
 bool ParticleEmitterGPUGenerator::sampleSceneTexture(Node* caller, Box* box, const SerializedMaterialParam& texture, Value& result)
 {
     ASSERT(caller && box && texture.ID.IsValid());
-
-    // Cache data
     auto parent = box->GetParent<Node>();
-    const bool isCubemap = texture.Type == MaterialParameterType::CubeTexture;
-    const bool isVolume = texture.Type == MaterialParameterType::GPUTextureVolume;
-    const bool isArray = texture.Type == MaterialParameterType::GPUTextureArray;
 
     // Check if has variable assigned and it's a valid type
     if (texture.Type != MaterialParameterType::Texture

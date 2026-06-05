@@ -13,6 +13,8 @@
 // Float
 
 static_assert(sizeof(Float3) == 12, "Invalid Float3 type size.");
+static_assert(sizeof(Int3) == 12, "Invalid Int3 type size.");
+static_assert(sizeof(Double3) == 24, "Invalid Double3 type size.");
 
 template<>
 const Float3 Float3::Zero(0.0f);

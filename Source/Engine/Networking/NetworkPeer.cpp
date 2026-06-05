@@ -22,10 +22,6 @@ bool NetworkPeer::Initialize(const NetworkConfig& config)
         return true;
 
     Config = config;
-    PRAGMA_DISABLE_DEPRECATION_WARNINGS
-    if (Config.NetworkDriver == nullptr && Config.NetworkDriverType == NetworkDriverType::ENet)
-        Config.NetworkDriver = New<ENetDriver>();
-    PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
     if (Config.NetworkDriver == nullptr)
     {

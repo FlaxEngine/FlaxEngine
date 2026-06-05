@@ -8,19 +8,19 @@ using Flax.Build.NativeCpp;
 
 namespace Flax.Build
 {
-    partial class Configuration
+    partial class WindowsConfiguration
     {
         /// <summary>
         /// Specifies the minimum Windows version to use (eg. 10).
         /// </summary>
-        [CommandLine("winMinVer", "<version>", "Specifies the minimum Windows version to use (eg. 10).")]
-        public static string WindowsMinVer = "10";
+        [CommandLine("minVer", "<version>", "Specifies the minimum Windows version to use (eg. 10).")]
+        public static string MinVer = "10";
 
         /// <summary>
         /// Specifies the minimum CPU architecture type to support (on x86/x64).
         /// </summary>
-        [CommandLine("winCpuArch", "<arch>", "Specifies the minimum CPU architecture type to support (on x86/x64).")]
-        public static CpuArchitecture WindowsCpuArch = CpuArchitecture.SSE4_2; // 99.78% support on PC according to Steam Hardware & Software Survey: September 2025 (https://store.steampowered.com/hwsurvey/)
+        [CommandLine("cpuArch", "<arch>", "Specifies the minimum CPU architecture type to support (on x86/x64).")]
+        public static CpuArchitecture CpuArch = CpuArchitecture.SSE4_2; // 99.78% support on PC according to Steam Hardware & Software Survey: September 2025 (https://store.steampowered.com/hwsurvey/)
     }
 }
 
@@ -44,7 +44,7 @@ namespace Flax.Build.Platforms
         : base(platform, architecture, WindowsPlatformToolset.Latest, WindowsPlatformSDK.Latest)
         {
             // Select minimum Windows version
-            if (!Utilities.ParseVersion(Configuration.WindowsMinVer, out _minVersion))
+            if (!Utilities.ParseVersion(WindowsConfiguration.MinVer, out _minVersion))
                 _minVersion = new Version(7, 0);
         }
 
@@ -76,7 +76,7 @@ namespace Flax.Build.Platforms
             options.LinkEnv.InputLibraries.Add("oleaut32.lib");
             options.LinkEnv.InputLibraries.Add("delayimp.lib");
 
-            options.CompileEnv.CpuArchitecture = Configuration.WindowsCpuArch;
+            options.CompileEnv.CpuArchitecture = WindowsConfiguration.CpuArch;
 
             if (options.Architecture == TargetArchitecture.x64)
             {

@@ -45,10 +45,15 @@ void ThreadBase::Kill(bool waitForJoin)
     if (!_isRunning)
     {
         ClearHandleInternal();
+        if (_callAfterWork)
+        {
+            _callAfterWork = false;
+            _runnable->AfterWork(true);
+        }
         return;
     }
     ASSERT(GetID());
-    const auto thread = static_cast<Thread*>(this);
+    Thread* thread = (Thread*)this;
 
     // Stop runnable object
     if (_callAfterWork && _runnable)

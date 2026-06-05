@@ -8,6 +8,7 @@
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Input/KeyboardKeys.h"
 #include "Engine/Input/Enums.h"
+#include "Enums.h"
 
 class Input;
 class Engine;
@@ -16,252 +17,6 @@ class SceneRenderTask;
 class GPUSwapChain;
 class TextureData;
 class IGuiData;
-
-/// <summary>
-/// Window closing reasons.
-/// </summary>
-API_ENUM() enum class ClosingReason
-{
-    /// <summary>
-    /// The unknown.
-    /// </summary>
-    Unknown = 0,
-
-    /// <summary>
-    /// The user.
-    /// </summary>
-    User,
-
-    /// <summary>
-    /// The engine exit.
-    /// </summary>
-    EngineExit,
-
-    /// <summary>
-    /// The close event.
-    /// </summary>
-    CloseEvent,
-};
-
-/// <summary>
-/// Types of default cursors.
-/// </summary>
-API_ENUM() enum class CursorType
-{
-    /// <summary>
-    /// The default.
-    /// </summary>
-    Default = 0,
-
-    /// <summary>
-    /// The cross.
-    /// </summary>
-    Cross,
-
-    /// <summary>
-    /// The hand.
-    /// </summary>
-    Hand,
-
-    /// <summary>
-    /// The help icon
-    /// </summary>
-    Help,
-
-    /// <summary>
-    /// The I beam.
-    /// </summary>
-    IBeam,
-
-    /// <summary>
-    /// The blocking image.
-    /// </summary>
-    No,
-
-    /// <summary>
-    /// The wait.
-    /// </summary>
-    Wait,
-
-    /// <summary>
-    /// The size all sides.
-    /// </summary>
-    SizeAll,
-
-    /// <summary>
-    /// The size NE-SW.
-    /// </summary>
-    SizeNESW,
-
-    /// <summary>
-    /// The size NS.
-    /// </summary>
-    SizeNS,
-
-    /// <summary>
-    /// The size NW-SE.
-    /// </summary>
-    SizeNWSE,
-
-    /// <summary>
-    /// The size WE.
-    /// </summary>
-    SizeWE,
-
-    /// <summary>
-    /// The cursor is hidden.
-    /// </summary>
-    Hidden,
-
-    MAX
-};
-
-/// <summary>
-/// Data drag and drop effects.
-/// </summary>
-API_ENUM() enum class DragDropEffect
-{
-    /// <summary>
-    /// The none.
-    /// </summary>
-    None = 0,
-
-    /// <summary>
-    /// The copy.
-    /// </summary>
-    Copy,
-
-    /// <summary>
-    /// The move.
-    /// </summary>
-    Move,
-
-    /// <summary>
-    /// The link.
-    /// </summary>
-    Link,
-};
-
-/// <summary>
-/// Window hit test codes. Note: they are 1:1 mapping for Win32 values.
-/// </summary>
-API_ENUM() enum class WindowHitCodes
-{
-    /// <summary>
-    /// The transparent area.
-    /// </summary>
-    Transparent = -1,
-
-    /// <summary>
-    /// The no hit.
-    /// </summary>
-    NoWhere = 0,
-
-    /// <summary>
-    /// The client area.
-    /// </summary>
-    Client = 1,
-
-    /// <summary>
-    /// The caption area.
-    /// </summary>
-    Caption = 2,
-
-    /// <summary>
-    /// The system menu.
-    /// </summary>
-    SystemMenu = 3,
-
-    /// <summary>
-    /// The grow box
-    /// </summary>
-    GrowBox = 4,
-
-    /// <summary>
-    /// The menu.
-    /// </summary>
-    Menu = 5,
-
-    /// <summary>
-    /// The horizontal scroll.
-    /// </summary>
-    HScroll = 6,
-
-    /// <summary>
-    /// The vertical scroll.
-    /// </summary>
-    VScroll = 7,
-
-    /// <summary>
-    /// The minimize button.
-    /// </summary>
-    MinButton = 8,
-
-    /// <summary>
-    /// The maximize button.
-    /// </summary>
-    MaxButton = 9,
-
-    /// <summary>
-    /// The left side;
-    /// </summary>
-    Left = 10,
-
-    /// <summary>
-    /// The right side.
-    /// </summary>
-    Right = 11,
-
-    /// <summary>
-    /// The top side.
-    /// </summary>
-    Top = 12,
-
-    /// <summary>
-    /// The top left corner.
-    /// </summary>
-    TopLeft = 13,
-
-    /// <summary>
-    /// The top right corner.
-    /// </summary>
-    TopRight = 14,
-
-    /// <summary>
-    /// The bottom side.
-    /// </summary>
-    Bottom = 15,
-
-    /// <summary>
-    /// The bottom left corner.
-    /// </summary>
-    BottomLeft = 16,
-
-    /// <summary>
-    /// The bottom right corner.
-    /// </summary>
-    BottomRight = 17,
-
-    /// <summary>
-    /// The border.
-    /// </summary>
-    Border = 18,
-
-    /// <summary>
-    /// The object.
-    /// </summary>
-    Object = 19,
-
-    /// <summary>
-    /// The close button.
-    /// </summary>
-    Close = 20,
-
-    /// <summary>
-    /// The help button.
-    /// </summary>
-    Help = 21,
-};
 
 API_INJECT_CODE(cpp, "#include \"Engine/Platform/Window.h\"");
 
@@ -290,6 +45,7 @@ protected:
     bool _isHorizontalFlippingMouse = false;
     bool _isVerticalFlippingMouse = false;
     bool _isClippingCursor = false;
+    bool _restoreRelativeMode = false;
 
     explicit WindowBase(const CreateWindowSettings& settings);
     virtual ~WindowBase();
@@ -403,6 +159,17 @@ public:
     }
 
     /// <summary>
+    /// Gets a value that indicates whether a window is always on top of other windows.
+    /// </summary>
+    API_PROPERTY() virtual bool IsAlwaysOnTop() const;
+
+    /// <summary>
+    /// Sets a value that indicates whether a window is always on top of other windows.
+    /// </summary>
+    /// <param name="isAlwaysOnTop">True if always on top.</param>
+    API_PROPERTY() virtual void SetIsAlwaysOnTop(bool isAlwaysOnTop);
+
+    /// <summary>
     /// Gets the native window handle.
     /// </summary>
     /// <returns>The native window object handle.</returns>
@@ -475,10 +242,7 @@ public:
     /// <summary>
     /// Checks if window is closed.
     /// </summary>
-    API_PROPERTY() virtual bool IsClosed() const
-    {
-        return _isClosing;
-    }
+    API_PROPERTY() virtual bool IsClosed() const;
 
     /// <summary>
     /// Checks if window is foreground (the window with which the user is currently working).
@@ -663,11 +427,23 @@ public:
 
 public:
     /// <summary>
-    /// Starts drag and drop operation
+    /// Starts a drag and drop operation.
     /// </summary>
     /// <param name="data">The data.</param>
     /// <returns>The result.</returns>
     API_FUNCTION() virtual DragDropEffect DoDragDrop(const StringView& data)
+    {
+        return DragDropEffect::None;
+    }
+
+    /// <summary>
+    /// Starts a window drag and drop operation.
+    /// </summary>
+    /// <param name="data">The data.</param>
+    /// <param name="offset">The offset for positioning the window from cursor.</param>
+    /// <param name="dragSourceWindow">The window where dragging started.</param>
+    /// <returns>The result.</returns>
+    API_FUNCTION() virtual DragDropEffect DoDragDrop(const StringView& data, const Float2& offset, Window* dragSourceWindow)
     {
         return DragDropEffect::None;
     }
@@ -741,6 +517,17 @@ public:
     API_FUNCTION() virtual void EndClippingCursor()
     {
     }
+
+    /// <summary>
+    /// Gets the mouse position in window coordinates.
+    /// </summary>
+    API_PROPERTY() virtual Float2 GetMousePosition() const;
+
+    /// <summary>
+    /// Sets the mouse position in window coordinates.
+    /// </summary>
+    /// <param name="position">Mouse position to set on</param>
+    API_PROPERTY() virtual void SetMousePosition(const Float2& position) const;
 
     /// <summary>
     /// Gets the mouse cursor.
@@ -838,6 +625,12 @@ public:
     void OnMouseMove(const Float2& mousePosition);
 
     /// <summary>
+    /// Event fired when mouse moves in relative mode.
+    /// </summary>
+    MouseDelegate MouseMoveRelative;
+    void OnMouseMoveRelative(const Float2& mousePositionRelative);
+
+    /// <summary>
     /// Event fired when mouse leaves window.
     /// </summary>
     Action MouseLeave;
@@ -932,16 +725,6 @@ public:
     API_FUNCTION() bool GetKeyUp(KeyboardKeys key) const;
 
 public:
-    /// <summary>
-    /// Gets the mouse position in window coordinates.
-    /// </summary>
-    API_PROPERTY() Float2 GetMousePosition() const;
-
-    /// <summary>
-    /// Sets the mouse position in window coordinates.
-    /// </summary>
-    /// <param name="position">Mouse position to set on</param>
-    API_PROPERTY() void SetMousePosition(const Float2& position) const;
 
     /// <summary>
     /// Gets the mouse position change during the last frame.

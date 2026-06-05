@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Flax Engine. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using System.IO;
@@ -43,6 +43,10 @@ namespace Flax.Deploy
                 // Deploy files
                 {
                     DeployFolder(platformsRoot, Deployer.PackageOutputPath, platformName);
+
+                    // Strip internal engine data
+                    Utilities.DirectoryDelete(Path.Combine(dst, "Binaries", "ThirdParty"));
+                    Utilities.DirectoryDelete(Path.Combine(dst, "Binaries", "Data"));
 
                     // For Linux don't deploy engine libs used by C++ scripting linking (engine source required)
                     if (platform == TargetPlatform.Linux)

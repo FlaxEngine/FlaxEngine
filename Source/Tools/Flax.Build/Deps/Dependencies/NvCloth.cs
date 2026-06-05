@@ -70,6 +70,10 @@ namespace Flax.Deps.Dependencies
                     case TargetPlatform.Linux:
                         Build(options, platform, architecture);
                         break;
+                    case TargetPlatform.Web:
+                        Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "NvCloth"), root, true, true);
+                        Build(options, platform, TargetArchitecture.x86);
+                        break;
                     }
                 }
             }
@@ -144,8 +148,19 @@ namespace Flax.Deps.Dependencies
                 cmakeArgs += " -DTARGET_BUILD_PLATFORM=linux -DNVCLOTH_CXX_FLAGS=\"-Wno-error=poison-system-directories -Wno-error=missing-include-dirs\"";
                 cmakeName = "linux";
                 binariesPrefix = "lib";
-                envVars.Add("CC", "clang-" + Configuration.LinuxClangMinVer);
-                envVars.Add("CXX", "clang++-" + Configuration.LinuxClangMinVer);
+                envVars.Add("CC", "clang-" + LinuxConfiguration.ClangMinVer);
+                envVars.Add("CXX", "clang++-" + LinuxConfiguration.ClangMinVer);
+                break;
+            case TargetPlatform.Web:
+                cmakeArgs += " -DTARGET_BUILD_PLATFORM=web";
+                cmakeArgs += $" -DCMAKE_TOOLCHAIN_FILE=\"{EmscriptenSdk.Instance.CMakeToolchainPath}\"";
+                if (WebConfiguration.Threads)
+                    cmakeArgs += " -DNVCLOTH_CXX_FLAGS=\"-pthread\"";
+                cmakeName = "web";
+                binariesPrefix = "lib";
+
+                // Disable SIMD and fix missing symbols during linking
+                Utilities.ReplaceInFile(Path.Combine(nvCloth, "src/NvSimd/NvSimdTypes.h"), "(__x86_64__) || PX_EMSCRIPTEN", "(__x86_64__) // || PX_EMSCRIPTEN");
                 break;
             default: throw new InvalidPlatformException(platform);
             }
@@ -169,13 +184,15 @@ namespace Flax.Deps.Dependencies
             Log.Info($"Building {File.ReadAllLines(Path.Combine(root, "README.md"))[0].Trim()} to {platform} {architecture}");
 
             // Generate project files
+            var config = "Release";
             SetupDirectory(buildFolder, false);
+            SetupDirectory(Path.Combine(root, "PxShared/src/foundation/include"), false);
             Utilities.FileDelete(Path.Combine(cmakeFolder, "CMakeCache.txt"));
             cmakeArgs += $" -DPX_STATIC_LIBRARIES=1 -DPX_OUTPUT_DLL_DIR=\"{Path.Combine(buildFolder, "bin")}\" -DPX_OUTPUT_LIB_DIR=\"{Path.Combine(buildFolder, "lib")}\" -DPX_OUTPUT_EXE_DIR=\"{Path.Combine(buildFolder, "bin")}\"";
-            RunCmake(cmakeFolder, platform, architecture, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + cmakeArgs, envVars);
+            RunCmake(cmakeFolder, platform, architecture, $" -DCMAKE_BUILD_TYPE={config} -DBUILD_SHARED_LIBS=OFF " + cmakeArgs, envVars);
 
             // Run build
-            BuildCmake(cmakeFolder, envVars);
+            BuildCmake(cmakeFolder, config, envVars);
 
             // Deploy binaries
             var libs = new[]

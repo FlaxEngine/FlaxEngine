@@ -23,7 +23,7 @@ FLAXENGINE_API
 @end
 
 FLAXENGINE_API
-@interface FlaxAppDelegate : UIResponder <UIApplicationDelegate>
+@interface FlaxAppDelegate : UIResponder <UIApplicationDelegate, UIWindowSceneDelegate>
 
 @property(strong, retain, nonatomic) UIWindow* window;
 @property(strong, retain, nonatomic) FlaxViewController* viewController;

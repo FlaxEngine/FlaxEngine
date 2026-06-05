@@ -16,6 +16,8 @@ class GPUPipelineStateDX11 : public GPUResourceDX11<GPUPipelineState>
 public:
 
     int32 RasterizerStateIndex;
+    D3D11_PRIMITIVE_TOPOLOGY PrimitiveTopology;
+    bool DepthBounds;
     ID3D11DepthStencilState* DepthStencilState = nullptr;
     ID3D11BlendState* BlendState = nullptr;
     GPUShaderProgramVSDX11* VS = nullptr;
@@ -27,7 +29,6 @@ public:
     GPUShaderProgramGSDX11* GS = nullptr;
 #endif
     GPUShaderProgramPSDX11* PS = nullptr;
-    D3D11_PRIMITIVE_TOPOLOGY PrimitiveTopology;
 
 public:
 

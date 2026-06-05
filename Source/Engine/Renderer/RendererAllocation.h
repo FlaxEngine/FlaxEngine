@@ -4,6 +4,9 @@
 
 #include "Engine/Core/Memory/SimpleHeapAllocation.h"
 
+/// <summary>
+/// Shared pool allocator for the renderer used for large chunks of memory.
+/// </summary>
 class RendererAllocation : public SimpleHeapAllocation<RendererAllocation, 64>
 {
 public:

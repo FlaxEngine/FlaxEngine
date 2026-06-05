@@ -549,17 +549,35 @@ public:
 
     /// <summary>
     /// Gets actor direction vector (forward vector).
+    /// [Deprecated in v1.13]
     /// </summary>
-    API_PROPERTY(Attributes="HideInEditor, NoSerialize") FORCE_INLINE Float3 GetDirection() const
+    API_PROPERTY(Attributes="HideInEditor, NoSerialize") DEPRECATED("Use GetForward instead.")
+    FORCE_INLINE Float3 GetDirection() const
+    {
+        return GetForward();
+    }
+    
+    /// <summary>
+    /// Gets the actor's forward vector (direction).
+    /// </summary>
+    API_PROPERTY(Attributes="HideInEditor, NoSerialize") FORCE_INLINE Float3 GetForward() const
     {
         return Float3::Transform(Float3::Forward, GetOrientation());
     }
 
     /// <summary>
     /// Sets actor direction vector (forward)
+    /// [Deprecated in v1.13]
     /// </summary>
     /// <param name="value">The value to set.</param>
-    API_PROPERTY() void SetDirection(const Float3& value);
+    API_PROPERTY() DEPRECATED("Use SetForward instead.")
+    void SetDirection(const Float3& value);
+
+    /// <summary>
+    /// Rotates the actor to align its forward vector with the passed in value (direction).
+    /// </summary>
+    /// <param name="value">The value to align to.</param>
+    API_PROPERTY() void SetForward(const Float3& value);
 
 public:
     /// <summary>
@@ -897,16 +915,31 @@ public:
 
     /// <summary>
     /// Gets rotation of the actor oriented towards the specified world position.
+    /// [Deprecated in v1.13]
     /// </summary>
     /// <param name="worldPos">The world position to orient towards.</param>
-    API_FUNCTION() Quaternion LookingAt(const Vector3& worldPos) const;
+    API_FUNCTION() DEPRECATED("Use GetLookAtDirection instead.") Quaternion LookingAt(const Vector3& worldPos) const;
+    
+    /// <summary>
+    /// Gets rotation of the actor oriented towards the specified world position.
+    /// </summary>
+    /// <param name="worldPos">The world position to orient towards.</param>
+    API_FUNCTION() Quaternion GetLookAtDirection(const Vector3& worldPos) const;
 
+    /// <summary>
+    /// Gets rotation of the actor oriented towards the specified world position with upwards direction.
+    /// [Deprecated in v1.13]
+    /// </summary>
+    /// <param name="worldPos">The world position to orient towards.</param>
+    /// <param name="worldUp">The up direction that constrains up axis orientation to a plane this vector lies on. This rule might be broken if forward and up direction are nearly parallel.</param>
+    API_FUNCTION() DEPRECATED("Use GetLookAtDirection instead.") Quaternion LookingAt(const Vector3& worldPos, const Vector3& worldUp) const;
+    
     /// <summary>
     /// Gets rotation of the actor oriented towards the specified world position with upwards direction.
     /// </summary>
     /// <param name="worldPos">The world position to orient towards.</param>
     /// <param name="worldUp">The up direction that constrains up axis orientation to a plane this vector lies on. This rule might be broken if forward and up direction are nearly parallel.</param>
-    API_FUNCTION() Quaternion LookingAt(const Vector3& worldPos, const Vector3& worldUp) const;
+    API_FUNCTION() Quaternion GetLookAtDirection(const Vector3& worldPos, const Vector3& worldUp) const;
 
 public:
     /// <summary>

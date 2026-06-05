@@ -460,6 +460,18 @@ void MaterialParameter::Bind(BindMeta& meta) const
                     ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)(_offset + sizeof(Float4)));
                     *((Float4*)(meta.Constants.Get() + _offset)) = (Float4)e->Value.AsDouble4();
                     break;
+                case VariantType::Int2:
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)(_offset + sizeof(Int2)));
+                    *((Int2*)(meta.Constants.Get() + _offset)) = (Int2)e->Value.AsInt2();
+                    break;
+                case VariantType::Int3:
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)(_offset + sizeof(Int3)));
+                    *((Int3*)(meta.Constants.Get() + _offset)) = (Int3)e->Value.AsInt3();
+                    break;
+                case VariantType::Int4:
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)(_offset + sizeof(Int4)));
+                    *((Int4*)(meta.Constants.Get() + _offset)) = (Int4)e->Value.AsInt4();
+                    break;
                 default: ;
                 }
             }
@@ -507,6 +519,7 @@ void MaterialParameter::clone(const MaterialParameter* param)
         break;
     case MaterialParameterType::Integer:
     case MaterialParameterType::SceneTexture:
+    case MaterialParameterType::ChannelMask:
     case MaterialParameterType::TextureGroupSampler:
         _asInteger = param->_asInteger;
         break;
@@ -647,10 +660,7 @@ bool MaterialParams::Load(ReadStream* stream)
     PROFILE_MEM(GraphicsMaterials);
     bool result = false;
 
-    // Release
-    Resize(0);
-
-    // Check for not empty params
+    Clear();
     if (stream != nullptr && stream->CanRead())
     {
         // Version

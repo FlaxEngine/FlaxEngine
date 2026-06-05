@@ -141,6 +141,11 @@ API_ENUM() enum class BuildPlatform
     /// </summary>
     API_ENUM(Attributes="EditorDisplay(null, \"Windows ARM64\")")
     WindowsARM64 = 15,
+
+    /// <summary>
+    /// Web
+    /// </summary>
+    Web = 16,
 };
 
 /// <summary>
@@ -188,6 +193,11 @@ enum class DotNetAOTModes
     /// Use Mono AOT to cross-compile all used C# assemblies into native platform static libraries which can be linked into a single shared library.
     /// </summary>
     MonoAOTStatic,
+
+    /// <summary>
+    /// Target platform doesn't support .NET or it has been disabled.
+    /// </summary>
+    NoDotnet,
 };
 
 extern FLAXENGINE_API const Char* ToString(const BuildPlatform platform);

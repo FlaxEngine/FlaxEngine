@@ -16,6 +16,7 @@ private:
 
     AssetReference<Shader> _gBufferShader;
     GPUPipelineState* _psDebug = nullptr;
+    GPUPipelineState* _psLinearToSrgb = nullptr;
     AssetReference<Model> _skyModel;
     AssetReference<Model> _boxModel;
 #if USE_EDITOR
@@ -39,6 +40,14 @@ public:
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     void RenderDebug(RenderContext& renderContext);
+
+    /// <summary>
+    /// Draws the shader that converts texture from Linear to sRGB color space. Can be used to display internal lighting buffer that is not matching gamma of the output display.
+    /// </summary>
+    /// <remarks>Assumes the output render target and viewport has been set.</remarks>
+    /// <param name="renderContext">The rendering context.</param>
+    /// <param name="input">The input texture to blit.</param>
+    void DrawLinearToSrgb(RenderContext& renderContext, GPUTexture* input);
 
     /// <summary>
     /// Renders the sky or skybox into low-resolution cubemap. Can be used to sample realtime sky lighting in GI passes.

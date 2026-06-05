@@ -61,14 +61,14 @@ void AnimGraphBase::Clear()
     StateTransitions.Resize(0);
 
     // Base
-    GraphType::Clear();
+    VisjectGraph::Clear();
 }
 
 #if USE_EDITOR
 
 void AnimGraphBase::GetReferences(Array<Guid>& output) const
 {
-    GraphType::GetReferences(output);
+    VisjectGraph::GetReferences(output);
 
     // Collect references from nested graph (assets used in state machines)
     for (const auto* subGraph : SubGraphs)
@@ -115,6 +115,12 @@ void SlotBucketInit(AnimGraphInstanceData::Bucket& bucket)
 void InstanceDataBucketInit(AnimGraphInstanceData::Bucket& bucket)
 {
     bucket.InstanceData.Init = true;
+}
+
+void SpringBonePhysicsBucketInit(AnimGraphInstanceData::Bucket& bucket)
+{
+    bucket.SpringBonePhysics.LastUpdateFrame = 0;
+    bucket.SpringBonePhysics.StateDataStart = -1;
 }
 
 bool SortMultiBlend1D(const ANIM_GRAPH_MULTI_BLEND_INDEX& a, const ANIM_GRAPH_MULTI_BLEND_INDEX& b, AnimGraphNode* n)
@@ -313,18 +319,24 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
         // Transform Node (local/model space)
         // Get Node Transform (local/model space)
         // IK Aim, Two Bone IK
+        // Spring Bone Physics
         case 25:
         case 26:
         case 28:
         case 29:
         case 30:
         case 31:
+        case 35:
         {
             auto& data = n->Data.TransformNode;
             if (_graph->BaseModel && !_graph->BaseModel->WaitForLoaded())
                 data.NodeIndex = _graph->BaseModel->FindNode((StringView)n->Values[0]);
             else
                 data.NodeIndex = -1;
+            if (n->TypeID == 35)
+            {
+                ADD_BUCKET(SpringBonePhysicsBucketInit);
+            }
             break;
         }
         // Copy Node

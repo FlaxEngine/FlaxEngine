@@ -232,8 +232,8 @@ dtStatus dtNavMesh::init(const dtNavMeshParams* params)
 	m_posLookup = (dtMeshTile**)dtAlloc(sizeof(dtMeshTile*)*m_tileLutSize, DT_ALLOC_PERM);
 	if (!m_posLookup)
 		return DT_FAILURE | DT_OUT_OF_MEMORY;
-	memset(m_tiles, 0, sizeof(dtMeshTile)*m_maxTiles);
-	memset(m_posLookup, 0, sizeof(dtMeshTile*)*m_tileLutSize);
+	memset((void*)m_tiles, 0, sizeof(dtMeshTile)*m_maxTiles);
+	memset((void*)m_posLookup, 0, sizeof(dtMeshTile*)*m_tileLutSize);
 	m_nextFree = 0;
 	for (int i = m_maxTiles-1; i >= 0; --i)
 	{

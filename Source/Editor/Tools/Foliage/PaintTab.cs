@@ -302,7 +302,7 @@ namespace FlaxEditor.Tools.Foliage
                         Tag = i,
                         Parent = itemPanel,
                     };
-                    itemView.Clicked += OnFoliageTypeListItemClicked;
+                    itemView.ItemClicked += OnFoliageTypeListItemClicked;
 
                     itemPanel.Height = 34;
                     itemPanel.Parent = _items;

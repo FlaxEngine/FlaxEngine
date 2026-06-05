@@ -170,7 +170,7 @@ namespace Flax.Build
         /// <summary>
         /// Gets the default project format used by the given platform.
         /// </summary>
-        public abstract Projects.ProjectFormat DefaultProjectFormat { get; }
+        public virtual Projects.ProjectFormat DefaultProjectFormat => Projects.ProjectFormat.VisualStudioCode;
 
         /// <summary>
         /// Creates the toolchain for a given architecture.
@@ -196,7 +196,7 @@ namespace Flax.Build
         /// <returns><c>true</c> if this platform can build the specified architecture; otherwise, <c>false</c>.</returns>
         public virtual bool CanBuildArchitecture(TargetArchitecture targetArchitecture)
         {
-            return IsPlatformSupported(Target, targetArchitecture);
+            return IsPlatformSupported(Target, targetArchitecture) && HasRequiredSDKsInstalled;
         }
 
         /// <summary>
@@ -332,7 +332,7 @@ namespace Flax.Build
 
             switch (targetPlatform)
             {
-            case TargetPlatform.Windows: return targetArchitecture == TargetArchitecture.x64 || targetArchitecture == TargetArchitecture.x86 || targetArchitecture == TargetArchitecture.ARM64;
+            case TargetPlatform.Windows: return targetArchitecture == TargetArchitecture.x64 || targetArchitecture == TargetArchitecture.ARM64;
             case TargetPlatform.XboxScarlett: return targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.XboxOne: return targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.UWP: return targetArchitecture == TargetArchitecture.x64;
@@ -343,6 +343,7 @@ namespace Flax.Build
             case TargetPlatform.Switch: return targetArchitecture == TargetArchitecture.ARM64;
             case TargetPlatform.Mac: return targetArchitecture == TargetArchitecture.ARM64 || targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.iOS: return targetArchitecture == TargetArchitecture.ARM64;
+            case TargetPlatform.Web: return targetArchitecture == TargetArchitecture.x86;
             default: return false;
             }
         }

@@ -49,7 +49,7 @@ namespace Flax.Build.Projects.VisualStudio
                 vcProjectFileContent.AppendLine(string.Format("    <ProjectGuid>{0}</ProjectGuid>", ProjectGuid.ToString("B").ToUpperInvariant()));
                 vcProjectFileContent.AppendLine(string.Format("    <RootNamespace>{0}</RootNamespace>", BaseName));
                 vcProjectFileContent.AppendLine(string.Format("    <MinimumVisualStudioVersion>{0}</MinimumVisualStudioVersion>", projectFileToolVersion));
-                vcProjectFileContent.AppendLine(string.Format("    <AndroidAPILevel>{0}</AndroidAPILevel>", Configuration.AndroidPlatformApi));
+                vcProjectFileContent.AppendLine(string.Format("    <AndroidAPILevel>{0}</AndroidAPILevel>", AndroidConfiguration.PlatformApi));
                 vcProjectFileContent.AppendLine(string.Format("    <AndroidSupportedAbis>{0}</AndroidSupportedAbis>", "arm64-v8a"));
                 vcProjectFileContent.AppendLine("    <ConfigurationType>Application</ConfigurationType>");
                 vcProjectFileContent.AppendLine("    <AntPackage>");

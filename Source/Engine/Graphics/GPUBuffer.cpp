@@ -189,6 +189,7 @@ bool GPUBuffer::IsDynamic() const
 
 bool GPUBuffer::Init(const GPUBufferDescription& desc)
 {
+    PROFILE_CPU();
     PROFILE_MEM(GraphicsBuffers);
 
     // Validate description
@@ -246,6 +247,7 @@ bool GPUBuffer::Init(const GPUBufferDescription& desc)
     }
 
 #if COMPILE_WITH_PROFILER
+    ZoneValue(_memoryUsage / 1024); // Memory size in kB
     auto group = ProfilerMemory::Groups::GraphicsBuffers;
     if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::VertexBuffer))
         group = ProfilerMemory::Groups::GraphicsVertexBuffers;

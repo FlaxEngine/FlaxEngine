@@ -39,17 +39,23 @@ bool DeployDataStep::Perform(CookingData& data)
     }
     String dstDotnet = data.DataOutputPath / TEXT("Dotnet");
     const DotNetAOTModes aotMode = data.Tools->UseAOT();
-    const bool usAOT = aotMode != DotNetAOTModes::None;
+    const bool usAOT = aotMode != DotNetAOTModes::None && aotMode != DotNetAOTModes::NoDotnet;
     if (usAOT)
     {
         // Deploy Dotnet files into intermediate cooking directory for AOT
         FileSystem::DeleteDirectory(dstDotnet);
         dstDotnet = data.ManagedCodeOutputPath;
     }
-    if (buildSettings.SkipDotnetPackaging && data.Tools->UseSystemDotnet())
+    if (aotMode == DotNetAOTModes::NoDotnet)
+    {
+        // No .NET
+        FileSystem::DeleteDirectory(dstDotnet);
+    }
+    else if (buildSettings.SkipDotnetPackaging && data.Tools->UseSystemDotnet())
     {
         // Use system-installed .NET Runtime
         FileSystem::DeleteDirectory(dstDotnet);
+        LOG(Info, "Not using .NET Runtime");
     }
     else
     {

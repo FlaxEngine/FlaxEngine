@@ -9,14 +9,14 @@ jobs:
   # Cook on Mac
   cook-mac:
     name: Cook (Mac)
-    runs-on: "macos-14"
+    runs-on: "macos-15"
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v6
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.x
     - name: Setup .NET Workload
@@ -31,7 +31,7 @@ jobs:
         git lfs version
         git lfs pull
     - name: Get Flax Samples
-      uses: actions/checkout@v3
+      uses: actions/checkout@v6
       with:
         fetch-depth: 1
         repository: FlaxEngine/FlaxSamples

@@ -556,6 +556,9 @@ namespace FlaxEngine.GUI
             {
                 const float caretWidth = 1.2f;
                 Float2 caretPos = GetCharPosition(CaretPosition, out var height);
+#if PLATFORM_MAC && !PLATFORM_SDL
+                height /= (float)Platform.Dpi / 96.0f; // TODO: refactor DPI support on macOS to skip such hacks
+#endif
                 return new Rectangle(
                                      caretPos.X - (caretWidth * 0.5f),
                                      caretPos.Y,

@@ -27,8 +27,6 @@ namespace
 MaterialValue* MaterialGenerator::sampleTextureRaw(Node* caller, Value& value, Box* box, SerializedMaterialParam* texture)
 {
     ASSERT(texture && box);
-
-    // Cache data
     const auto parent = box->GetParent<ShaderGraphNode<>>();
     const bool isCubemap = texture->Type == MaterialParameterType::CubeTexture;
     const bool isArray = texture->Type == MaterialParameterType::GPUTextureArray;
@@ -101,7 +99,13 @@ MaterialValue* MaterialGenerator::sampleTextureRaw(Node* caller, Value& value, B
         const Char* sampler = TEXT("SamplerLinearWrap");
 
         // Sample texture
-        if (isNormalMap)
+        if (texture->AsInteger == (int32)MaterialSceneTextures::SceneDepth)
+        {
+            // Sample depth buffer
+            String sampledValue = String::Format(TEXT("SAMPLE_RT_DEPTH({0}, {1})"), texture->ShaderName, uv);
+            valueBox->Cache = writeLocal(VariantType::Float, sampledValue, parent);
+        }
+        else if (isNormalMap)
         {
             const Char* format = canUseSample ? TEXT("{0}.Sample({1}, {2}).xyz") : TEXT("{0}.SampleLevel({1}, {2}, {3}).xyz");
 

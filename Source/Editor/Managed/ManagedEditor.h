@@ -4,7 +4,6 @@
 
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Platform/Window.h"
-#include "Engine/ShadowsOfMordor/Types.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Tools/ModelTool/ModelTool.h"
 #include "Engine/Tools/AudioTool/AudioTool.h"
@@ -17,7 +16,7 @@ namespace CSG
 /// <summary>
 /// The main managed editor class. Editor root object.
 /// </summary>
-API_CLASS(Namespace="FlaxEditor", Name="Editor", NoSpawn, NoConstructor) class ManagedEditor : private ScriptingObject
+API_CLASS(Namespace="FlaxEditor", Name="Editor", NoSpawn, NoConstructor) class FLAXENGINE_API ManagedEditor : private ScriptingObject
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(ManagedEditor);
     static Guid ObjectID;

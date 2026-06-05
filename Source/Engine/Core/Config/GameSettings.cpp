@@ -50,6 +50,19 @@ void GraphicsSettings::SetUeeHDRProbes(bool value)
     UseHDRProbes = value;
 }
 
+void GraphicsSettings::OnDeserializing(const CallbackContext& context)
+{
+#if 0 // TODO: move to Linear color space as default once it's ready for production
+    // [Deprecated on 9.01.2026, expires on 9.01.2028]
+    if (context.Modifier && context.Modifier->EngineBuild < 6901)
+    {
+        // Old projects were made in Gamma color space
+        GammaColorSpace = true;
+        MARK_CONTENT_DEPRECATED();
+    }
+#endif
+}
+
 IMPLEMENT_ENGINE_SETTINGS_GETTER(GraphicsSettings, Graphics);
 IMPLEMENT_ENGINE_SETTINGS_GETTER(NetworkSettings, Network);
 IMPLEMENT_ENGINE_SETTINGS_GETTER(LayersAndTagsSettings, LayersAndTags);
@@ -82,6 +95,8 @@ IMPLEMENT_ENGINE_SETTINGS_GETTER(SwitchPlatformSettings, SwitchPlatform);
 IMPLEMENT_ENGINE_SETTINGS_GETTER(MacPlatformSettings, MacPlatform);
 #elif PLATFORM_IOS
 IMPLEMENT_ENGINE_SETTINGS_GETTER(iOSPlatformSettings, iOSPlatform);
+#elif PLATFORM_WEB
+IMPLEMENT_ENGINE_SETTINGS_GETTER(WebPlatformSettings, WebPlatform);
 #else
 #error Unknown platform
 #endif
@@ -267,6 +282,7 @@ void GameSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE(PS5Platform);
     DESERIALIZE(MacPlatform);
     DESERIALIZE(iOSPlatform);
+    DESERIALIZE(WebPlatform);
 }
 
 #if USE_EDITOR

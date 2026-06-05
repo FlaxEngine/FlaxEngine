@@ -1,6 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-#if PLATFORM_UNIX
+#if PLATFORM_UNIX && !PLATFORM_WEB
 
 #include "UnixThread.h"
 #include "Engine/Core/Log.h"

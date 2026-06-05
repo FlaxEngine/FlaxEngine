@@ -97,4 +97,13 @@ namespace FlaxEngine
             }
         }
     }
+
+    partial class MaterialParameter
+    {
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return $"{ParameterType} {Name} = {Value?.ToString() ?? "null"}";
+        }
+    }
 }

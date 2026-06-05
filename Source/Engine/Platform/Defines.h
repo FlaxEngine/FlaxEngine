@@ -67,6 +67,11 @@ API_ENUM() enum class PlatformType
     /// </summary>
     API_ENUM(Attributes="EditorDisplay(null, \"iOS\")")
     iOS = 11,
+
+    /// <summary>
+    /// Running on Web.
+    /// </summary>
+    Web = 12,
 };
 
 /// <summary>
@@ -140,6 +145,12 @@ API_ENUM() enum class ArchitectureType
 #if !defined(PLATFORM_SWITCH)
 #define PLATFORM_SWITCH 0
 #endif
+#if !defined(PLATFORM_SDL)
+#define PLATFORM_SDL 0
+#endif
+#if !defined(PLATFORM_WEB)
+#define PLATFORM_WEB 0
+#endif
 
 #if PLATFORM_WINDOWS
 #include "Windows/WindowsDefines.h"
@@ -163,6 +174,8 @@ API_ENUM() enum class ArchitectureType
 #include "Mac/MacDefines.h"
 #elif PLATFORM_IOS
 #include "iOS/iOSDefines.h"
+#elif PLATFORM_WEB
+#include "Web/WebDefines.h"
 #else
 #error Missing Defines implementation!
 #endif

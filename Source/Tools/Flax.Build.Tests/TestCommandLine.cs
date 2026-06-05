@@ -149,6 +149,12 @@ namespace Flax.Build.Tests
             CommandLine.Configure(typeof(TestConfig1), "-option1 -option");
             Assert.AreEqual(true, TestConfig1.Option1);
 
+            CommandLine.Configure(typeof(TestConfig1), "-option1=0");
+            Assert.AreEqual(false, TestConfig1.Option1);
+
+            CommandLine.Configure(typeof(TestConfig1), "-option1=TRUE");
+            Assert.AreEqual(true, TestConfig1.Option1);
+
             CommandLine.Configure(typeof(TestConfig1), "-option2=11");
             Assert.AreEqual(11, TestConfig1.Option2);
 

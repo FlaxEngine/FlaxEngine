@@ -14,6 +14,7 @@ class JsonAsset;
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API Engine
 {
+    friend class PlatformMain;
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(Engine);
 
 public:
@@ -215,6 +216,8 @@ public:
     API_PROPERTY() static bool HasGameViewportFocus();
 
 private:
+    static int32 OnInit(const Char* cmdLine);
+    static void OnLoop();
     static void OnPause();
     static void OnUnpause();
 };

@@ -97,9 +97,20 @@ namespace Flax.Build.Bindings
                 UniqueFunctionNames = new HashSet<string>();
             int idx = 1;
             functionInfo.UniqueName = functionInfo.Name;
-            while (UniqueFunctionNames.Contains(functionInfo.UniqueName))
+            while (!IsUniqueFunctionName(this, functionInfo.UniqueName))
                 functionInfo.UniqueName = functionInfo.Name + idx++;
             UniqueFunctionNames.Add(functionInfo.UniqueName);
+        }
+
+        private static bool IsUniqueFunctionName(VirtualClassInfo type, string name)
+        {
+            while (type != null)
+            {
+                while (type.UniqueFunctionNames.Contains(name))
+                    return false;
+                type = type.BaseType as VirtualClassInfo;
+            }
+            return true;
         }
 
         public abstract int GetScriptVTableSize(out int offset);

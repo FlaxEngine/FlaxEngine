@@ -56,6 +56,12 @@ namespace ShaderProcessing
         virtual FeatureLevel GetFeatureLevel() const = 0;
 
         /// <summary>
+        /// Gets the parser feature flags for the Shader Profile of the target platform graphics backend.
+        /// </summary>
+        /// <returns>The shader profile features mask.</returns>
+        virtual ShaderProfileFeatures GetFeatures() const = 0;
+
+        /// <summary>
         /// Gets the parser macros.
         /// </summary>
         /// <returns>The macros</returns>

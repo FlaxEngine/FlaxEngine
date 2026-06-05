@@ -52,6 +52,7 @@ namespace FlaxEditor.Windows
                 { PlatformType.PS5, new PS5() },
                 { PlatformType.Mac, new Mac() },
                 { PlatformType.iOS, new iOS() },
+                { PlatformType.Web, new Web() },
             };
 
             public BuildTabProxy(GameCookerWindow win, PlatformSelector platformSelector)
@@ -122,6 +123,7 @@ namespace FlaxEditor.Windows
                     {
                     case BuildPlatform.LinuxX64:
                     case BuildPlatform.AndroidARM64:
+                    case BuildPlatform.Web:
                         IsSupported = true;
                         break;
                     default:
@@ -135,6 +137,7 @@ namespace FlaxEditor.Windows
                     case BuildPlatform.MacOSARM64:
                     case BuildPlatform.iOSARM64:
                     case BuildPlatform.AndroidARM64:
+                    case BuildPlatform.Web:
                         IsSupported = true;
                         break;
                     default:
@@ -165,6 +168,7 @@ namespace FlaxEditor.Windows
                         case BuildPlatform.UWPx64:
                         case BuildPlatform.LinuxX64:
                         case BuildPlatform.AndroidARM64:
+                        case BuildPlatform.Web:
                             text += "\nUse Flax Launcher and download the required package.";
                             break;
 #endif
@@ -538,6 +542,11 @@ namespace FlaxEditor.Windows
                 protected override BuildPlatform BuildPlatform => BuildPlatform.iOSARM64;
             }
 
+            class Web : Platform
+            {
+                protected override BuildPlatform BuildPlatform => BuildPlatform.Web;
+            }
+
             class Editor : CustomEditor
             {
                 private PlatformType _platform;
@@ -591,6 +600,10 @@ namespace FlaxEditor.Windows
                             break;
                         case PlatformType.iOS:
                             name = "iOS";
+                            break;
+                        case PlatformType.Web:
+                            name = "Web";
+                            layout.Label("Web platform is experimental and some features are not finished yet (eg. C# scripting)", TextAlignment.Center).Label.TextColor = Color.Yellow;
                             break;
                         default:
                             name = Utilities.Utils.GetPropertyNameUI(_platform.ToString());

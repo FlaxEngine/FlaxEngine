@@ -370,6 +370,16 @@ public:
     /// </summary>
     virtual void WaitForGPU() = 0;
 
+    /// <summary>
+    /// Reads the query result from the GPU. Timer queries return time in microseconds (1/1000 ms).
+    /// </summary>
+    /// <remarks>GPU query results are short-lived, meaning that in the frame that results are ready, they won't be available in the next frame, as queries are reused.</remarks>
+    /// <param name="queryID">Query identifier returned by GPUContext::BeginQuery.</param>
+    /// <param name="result">The output result data of the query. Valid only when function returns true.</param>
+    /// <param name="wait">True if wait for the GPU to end processing commands for sync data ready. Otherwise, if query is incomplete then function will return value of false without result.</param>
+    /// <returns>True if got valid query result, otherwise false. If called with wait enabled then device failed to readback the query data.</returns>
+    virtual bool GetQueryResult(uint64 queryID, uint64& result, bool wait = false) = 0;
+
 public:
     void AddResource(GPUResource* resource);
     void RemoveResource(GPUResource* resource);
@@ -378,6 +388,11 @@ public:
     /// Dumps all GPU resources information to the log.
     /// </summary>
     void DumpResourcesToLog() const;
+
+    /// <summary>
+    /// Dumps all GPU resources information to the log.
+    /// </summary>
+    API_FUNCTION(Attributes="DebugCommand") static void DumpResources();
 
 protected:
     virtual void preDispose();
@@ -425,9 +440,10 @@ public:
 
     /// <summary>
     /// Creates the timer query object.
+    /// [Deprecated in v1.12]
     /// </summary>
     /// <returns>The timer query.</returns>
-    virtual GPUTimerQuery* CreateTimerQuery() = 0;
+    DEPRECATED("Use new BeginQuery/EndQuery on GPUContext to insert queries and GetQueryResult on GPUDevice to read the results.") virtual GPUTimerQuery* CreateTimerQuery() = 0;
 
     /// <summary>
     /// Creates the buffer.
@@ -501,3 +517,10 @@ struct FLAXENGINE_API GPUDeviceLock : NonCopyable
         Device->Locker.Unlock();
     }
 };
+
+// Utility to get GPU resource name (StringView) from the AssetInfo. Supports cooked builds with enabled debug resource naming that resolves original file path from the project to boost debugging experience.
+#if GPU_ENABLE_RESOURCE_NAMING && !USE_EDITOR
+#define GPU_GET_RESOURCE_NAME_FROM_ASSET(assetInfo) Content::GetRegistry()->GetEditorAssetPath(info->ID)
+#else
+#define GPU_GET_RESOURCE_NAME_FROM_ASSET(assetInfo) info->Path
+#endif

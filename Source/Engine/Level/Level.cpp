@@ -429,7 +429,9 @@ void LevelService::LateFixedUpdate()
 
 void LevelService::Dispose()
 {
+    // End scene actions
     ScopeLock lock(_sceneActionsLocker);
+    _sceneActions.ClearDelete();
 
     // Unload scenes
     unloadScenes();

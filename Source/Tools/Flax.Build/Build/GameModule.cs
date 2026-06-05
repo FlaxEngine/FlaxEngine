@@ -1,7 +1,5 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System;
-using System.Collections.Generic;
 using Flax.Build.NativeCpp;
 
 namespace Flax.Build

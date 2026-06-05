@@ -2,6 +2,7 @@
 
 #if PLATFORM_WINDOWS
 
+#include "WindowsWindow.h"
 #include "WindowsFileSystem.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/Window.h"
@@ -16,7 +17,7 @@
 #define __shobjidl_h__
 #define LPFNADDPROPSHEETPAGE void*
 #include <ShlObj.h>
-#include <ShellAPI.h>
+#include <shellapi.h>
 #include <KnownFolders.h>
 #undef ShellExecute
 
@@ -110,7 +111,7 @@ bool WindowsFileSystem::MoveFileToRecycleBin(const StringView& path)
     op.wFunc = FO_DELETE;
     op.pFrom = pathNullNull;
     op.pTo = nullptr;
-    op.fFlags = FOF_ALLOWUNDO | FOF_NO_UI;
+    op.fFlags = FOF_ALLOWUNDO | FOF_NO_UI | FOF_NOCONFIRMATION;
     op.fAnyOperationsAborted = FALSE;
     op.hNameMappings = nullptr;
     op.lpszProgressTitle = nullptr;
@@ -317,7 +318,7 @@ bool WindowsFileSystem::ShowBrowseFolderDialog(Window* parentWindow, const Strin
         if (SUCCEEDED(SHCreateItemFromParsingName(initialDirectory.Get(), NULL, IID_PPV_ARGS(&defaultFolder))))
             fd->SetFolder(defaultFolder);
 
-        HWND hwndOwner = parentWindow ? parentWindow->GetHWND() : NULL;
+        HWND hwndOwner = parentWindow ? (HWND)parentWindow->GetNativePtr() : NULL;
         if (SUCCEEDED(fd->Show(hwndOwner)))
         {
             ComPtr<IShellItem> si;

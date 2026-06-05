@@ -3,7 +3,6 @@
 #pragma once
 
 #include "MaterialShader.h"
-#include "Engine/Core/Math/Rectangle.h"
 #include "Engine/Core/Types/Span.h"
 #include "Engine/Renderer/GI/DynamicDiffuseGlobalIllumination.h"
 #include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
@@ -32,6 +31,7 @@ struct ForwardShadingFeature : MaterialShaderFeature
         ShaderLightData SkyLight;
         ShaderEnvProbeData EnvironmentProbe;
         ShaderExponentialHeightFogData ExponentialHeightFog;
+        ShaderVolumetricFogData VolumetricFogData;
         Float3 Dummy2;
         uint32 LocalLightsCount;
         ShaderLightData LocalLights[MaxLocalLights];

@@ -20,7 +20,7 @@ void BackBufferVulkan::Setup(GPUSwapChainVulkan* window, VkImage backbuffer, Pix
     initResource(VK_IMAGE_LAYOUT_UNDEFINED);
 
     Device = window->GetDevice();
-    Handle.Init(window->GetDevice(), this, backbuffer, 1, format, MSAALevel::None, extent, VK_IMAGE_VIEW_TYPE_2D);
+    Handle.Init(Device, this, backbuffer, 1, format, MSAALevel::None, extent, VK_IMAGE_VIEW_TYPE_2D);
     RenderingDoneSemaphore = New<SemaphoreVulkan>(Device);
     ImageAcquiredSemaphore = New<SemaphoreVulkan>(Device);
 }
@@ -30,6 +30,12 @@ void BackBufferVulkan::Release()
     Handle.Release();
     Delete(RenderingDoneSemaphore);
     Delete(ImageAcquiredSemaphore);
+    if (SubmitCmdBuffer)
+    {
+        SubmitCmdBuffer->Wait();
+        SubmitCmdBuffer = nullptr;
+    }
+    Device = nullptr;
 }
 
 GPUSwapChainVulkan::GPUSwapChainVulkan(GPUDeviceVulkan* device, Window* window)
@@ -127,10 +133,26 @@ GPUTextureView* GPUSwapChainVulkan::GetBackBufferView()
         // Submit here so we can add a dependency with the acquired semaphore
         cmdBuffer->AddWaitSemaphore(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, _acquiredSemaphore);
         cmdBufferManager->SubmitActiveCmdBuffer();
-        cmdBufferManager->PrepareForNewActiveCommandBuffer();
+        cmdBufferManager->GetNewActiveCommandBuffer();
         ASSERT(cmdBufferManager->HasPendingActiveCmdBuffer() && cmdBufferManager->GetActiveCmdBuffer()->GetState() == CmdBufferVulkan::State::IsInsideBegin);
     }
     return &_backBuffers[_acquiredImageIndex].Handle;
+}
+
+void GPUSwapChainVulkan::Begin(RenderTask* task)
+{
+    GPUSwapChain::Begin(task);
+
+    // Wait for the backbuffer to be available
+    if (_currentImageIndex != -1)
+    {
+        auto& backBuffer = _backBuffers[_currentImageIndex];
+        if (backBuffer.SubmitCmdBuffer)
+        {
+            backBuffer.SubmitCmdBuffer->Wait();
+            backBuffer.SubmitCmdBuffer = nullptr;
+        }
+    }
 }
 
 bool GPUSwapChainVulkan::Resize(int32 width, int32 height)
@@ -195,7 +217,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     ASSERT_LOW_LAYER(_backBuffers.Count() == 0);
 
     // Create platform-dependent surface
-    VulkanPlatform::CreateSurface(windowHandle, GPUDeviceVulkan::Instance, &_surface);
+    VulkanPlatform::CreateSurface(_window, _device, GPUDeviceVulkan::Instance, &_surface);
     if (_surface == VK_NULL_HANDLE)
     {
         LOG(Warning, "Failed to create Vulkan surface.");
@@ -210,11 +232,13 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     VkSurfaceFormatKHR result;
     Platform::MemoryClear(&result, sizeof(result));
     {
-        uint32 surfaceFormatsCount;
-        VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, _surface, &surfaceFormatsCount, nullptr));
+        uint32 surfaceFormatsCount = 0;
+        vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, _surface, &surfaceFormatsCount, nullptr);
         Array<VkSurfaceFormatKHR, InlinedAllocation<16>> surfaceFormats;
         surfaceFormats.AddZeroed(surfaceFormatsCount);
-        VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, _surface, &surfaceFormatsCount, surfaceFormats.Get()));
+        VkResult vkResult = vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, _surface, &surfaceFormatsCount, surfaceFormats.Get());
+        if (vkResult != VK_SUCCESS && vkResult != VK_INCOMPLETE)
+            RenderToolsVulkan::LogVkResult(vkResult, __FILE__, __LINE__);
 
         if (resultFormat != PixelFormat::Unknown)
         {
@@ -302,36 +326,18 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     {
         uint32 presentModesCount = 0;
         VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, _surface, &presentModesCount, nullptr));
-        Array<VkPresentModeKHR, InlinedAllocation<4>> presentModes;
+        Array<VkPresentModeKHR, InlinedAllocation<8>> presentModes;
         presentModes.Resize(presentModesCount);
         VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, _surface, &presentModesCount, presentModes.Get()));
-        bool foundPresentModeMailbox = false;
-        bool foundPresentModeImmediate = false;
-        bool foundPresentModeFifo = false;
-        for (size_t i = 0; i < presentModesCount; i++)
-        {
-            switch (presentModes[(int32)i])
-            {
-            case VK_PRESENT_MODE_MAILBOX_KHR:
-                foundPresentModeMailbox = true;
-                break;
-            case VK_PRESENT_MODE_IMMEDIATE_KHR:
-                foundPresentModeImmediate = true;
-                break;
-            case VK_PRESENT_MODE_FIFO_KHR:
-                foundPresentModeFifo = true;
-                break;
-            }
-        }
-        if (foundPresentModeMailbox)
+        if (presentModes.Contains(VK_PRESENT_MODE_MAILBOX_KHR))
         {
             presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
         }
-        else if (foundPresentModeImmediate)
+        else if (presentModes.Contains(VK_PRESENT_MODE_IMMEDIATE_KHR))
         {
             presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
         }
-        else if (foundPresentModeFifo)
+        else if (presentModes.Contains(VK_PRESENT_MODE_FIFO_KHR))
         {
             presentMode = VK_PRESENT_MODE_FIFO_KHR;
         }
@@ -352,13 +358,22 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
         LOG(Error, "Vulkan swapchain dimensions are invalid {}x{} (minImageExtent={}x{}, maxImageExtent={}x{})", width, height, surfProperties.minImageExtent.width, surfProperties.minImageExtent.height, surfProperties.maxImageExtent.width, surfProperties.maxImageExtent.height);
         return true;
     }
+
+    uint32_t backbuffersCount = VULKAN_BACK_BUFFERS_COUNT;
+#if PLATFORM_SDL && PLATFORM_LINUX && USE_EDITOR
+    // Wayland compositor might block one of the backbuffers while the window is minimized or fully occluded,
+    // make sure we have at least 3 backbuffers available so double-buffering can be used while we are blocked.
+    if (Platform::UsesWayland())
+        backbuffersCount = Math::Max<uint32_t>(backbuffersCount, 3);
+#endif
+    
     ASSERT(surfProperties.minImageCount <= VULKAN_BACK_BUFFERS_COUNT_MAX);
     VkSwapchainCreateInfoKHR swapChainInfo;
     RenderToolsVulkan::ZeroStruct(swapChainInfo, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
     swapChainInfo.surface = _surface;
     swapChainInfo.minImageCount = surfProperties.maxImageCount > 0 // A value of 0 means that there is no limit on the number of image
-                                      ? Math::Min<uint32_t>(VULKAN_BACK_BUFFERS_COUNT, surfProperties.maxImageCount)
-                                      : VULKAN_BACK_BUFFERS_COUNT;
+                                      ? Math::Min<uint32_t>(backbuffersCount, surfProperties.maxImageCount)
+                                      : backbuffersCount;
     swapChainInfo.minImageCount = Math::Max<uint32_t>(swapChainInfo.minImageCount, surfProperties.minImageCount);
     swapChainInfo.minImageCount = Math::Min<uint32_t>(swapChainInfo.minImageCount, VULKAN_BACK_BUFFERS_COUNT_MAX);
     swapChainInfo.imageFormat = result.format;
@@ -377,14 +392,24 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     swapChainInfo.presentMode = presentMode;
     swapChainInfo.clipped = VK_TRUE;
     swapChainInfo.compositeAlpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
-    if (surfProperties.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR)
+    if (_window->GetSettings().SupportsTransparency && surfProperties.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR)
+        swapChainInfo.compositeAlpha = VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR;
+    else if (surfProperties.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR)
         swapChainInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 
     // Create swap chain
     VkBool32 supportsPresent;
     VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfaceSupportKHR(gpu, _device->PresentQueue->GetFamilyIndex(), _surface, &supportsPresent));
     ASSERT(supportsPresent);
+#if PLATFORM_IOS
+	Function<void()> func = [this, &device, &swapChainInfo]()
+	{
+        VALIDATE_VULKAN_RESULT(vkCreateSwapchainKHR(device, &swapChainInfo, nullptr, &_swapChain));
+	};
+	iOSPlatform::RunOnUIThread(func, true);
+#else
     VALIDATE_VULKAN_RESULT(vkCreateSwapchainKHR(device, &swapChainInfo, nullptr, &_swapChain));
+#endif
 
     // Cache data
     _width = width;
@@ -557,6 +582,11 @@ void GPUSwapChainVulkan::Present(bool vsync)
     auto context = _device->MainContext;
     context->AddImageBarrier(backBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
     context->FlushBarriers();
+
+    // Cache a command buffer to wait on its fence before drawing to this backbuffer again
+    auto& acquiredBackBuffer = _backBuffers[_acquiredImageIndex];
+    ASSERT(acquiredBackBuffer.SubmitCmdBuffer == nullptr);
+    acquiredBackBuffer.SubmitCmdBuffer = context->GetCmdBufferManager()->GetActiveCmdBuffer();
 
     context->GetCmdBufferManager()->SubmitActiveCmdBuffer(_backBuffers[_acquiredImageIndex].RenderingDoneSemaphore);
 

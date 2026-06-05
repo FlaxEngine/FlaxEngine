@@ -203,11 +203,11 @@ namespace Flax.Build.Bindings
 
                 var fullname = apiType.FullNameManaged;
                 if (apiType.IsEnum)
-                    return $"Variant::Enum(VariantType(VariantType::Enum, StringAnsiView(\"{fullname}\", {fullname.Length})), {value})";
+                    return $"Variant::Enum(VariantType(VariantType::Enum, StringAnsiView(\"{fullname}\", {fullname.Length}), !USE_EDITOR), {value})";
                 if (apiType.IsStruct && !CppInBuildVariantStructures.Contains(apiType.Name))
                 {
                     if (apiType.IsInBuild)
-                        return $"Variant::Structure(VariantType(VariantType::Structure, StringAnsiView(\"{fullname}\", {fullname.Length})), {(typeInfo.IsPtr ? "*" + value : value)})";
+                        return $"Variant::Structure(VariantType(VariantType::Structure, StringAnsiView(\"{fullname}\", {fullname.Length}), !USE_EDITOR), {(typeInfo.IsPtr ? "*" + value : value)})";
                     return $"Variant::Structure(VariantType(VariantType::Structure, {apiType.FullNameNative}::TypeInitializer.GetType()), {(typeInfo.IsPtr ? "*" + value : value)})";
                 }
             }
@@ -269,7 +269,7 @@ namespace Flax.Build.Bindings
             {
                 var elementType = FindApiTypeInfo(buildData, typeInfo.GenericArgs[0], caller);
                 var elementName = $"{(elementType != null ? elementType.FullNameManaged : typeInfo.GenericArgs[0].Type)}[]";
-                return $"VariantType(VariantType::Array, StringAnsiView(\"{elementName}\", {elementName.Length}))";
+                return $"VariantType(VariantType::Array, StringAnsiView(\"{elementName}\", {elementName.Length}), !USE_EDITOR)";
             }
             if (typeInfo.Type == "Dictionary" && typeInfo.GenericArgs != null)
                 return "VariantType(VariantType::Dictionary)";
@@ -280,11 +280,11 @@ namespace Flax.Build.Bindings
             {
                 var fullname = apiType.FullNameManaged;
                 if (apiType.IsEnum)
-                    return $"VariantType(VariantType::Enum, StringAnsiView(\"{fullname}\", {fullname.Length}))";
+                    return $"VariantType(VariantType::Enum, StringAnsiView(\"{fullname}\", {fullname.Length}), !USE_EDITOR)";
                 if (apiType.IsStruct)
                 {
                     if (apiType.IsInBuild)
-                        return $"VariantType(VariantType::Structure, StringAnsiView(\"{fullname}\", {fullname.Length}))";
+                        return $"VariantType(VariantType::Structure, StringAnsiView(\"{fullname}\", {fullname.Length}), !USE_EDITOR)";
                     return $"VariantType(VariantType::Structure, {apiType.FullNameNative}::TypeInitializer.GetType())";
                 }
                 if (apiType.IsClass)
@@ -1316,7 +1316,7 @@ namespace Flax.Build.Bindings
             if (functionInfo.IsStatic)
             {
                 // Call native static method
-                string nativeType = caller.Tags != null && caller.Tags.ContainsKey("NativeInvokeUseName") ? caller.Name : caller.NativeName;
+                string nativeType = caller.HasTag("NativeInvokeUseName") ? caller.Name : caller.NativeName;
                 if (caller.Parent != null && !(caller.Parent is FileInfo))
                     nativeType = caller.Parent.FullNameNative + "::" + nativeType;
                 call = $"{nativeType}::{functionInfo.Name}";
@@ -1991,6 +1991,25 @@ namespace Flax.Build.Bindings
             return false;
         }
 
+        private static void GenerateCppAutoSerializationCallback(BuildData buildData, StringBuilder contents, ApiTypeInfo typeInfo, string callback, string context)
+        {
+            // Generate invoking custom serialization callbacks (pre/post serialization/deserialization)
+            if (typeInfo is ClassStructInfo classStructInfo)
+            {
+                foreach (var functionInfo in classStructInfo.Functions)
+                {
+                    if (functionInfo.Name != callback)
+                        continue;
+                    if (functionInfo.Parameters.Count != 1 && functionInfo.Parameters[0].Type.Type != "CallbackContext")
+                    {
+                        Log.Warning(GetBuildErrorLocation(typeInfo, $"Invalid serialization callback parameters in function '{typeInfo.Name}::{functionInfo.Name}'"));
+                        continue;
+                    }
+                    contents.AppendLine($"    {typeInfo.NativeName}::{functionInfo.Name}({context});");
+                }
+            }
+        }
+
         private static void GenerateCppAutoSerialization(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, ApiTypeInfo typeInfo, string typeNameNative)
         {
             var classInfo = typeInfo as ClassInfo;
@@ -2004,10 +2023,15 @@ namespace Flax.Build.Bindings
             CppAutoSerializeProperties.Clear();
             CppIncludeFiles.Add("Engine/Serialization/Serialization.h");
 
+            // ISerializable::CallbackContext
+            var callbackContextSerialize = "{ nullptr }";
+            var callbackContextDeserialize = "{ modifier }";
+
             // Serialize
             contents.AppendLine();
             contents.Append($"void {typeNameNative}::Serialize(SerializeStream& stream, const void* otherObj)").AppendLine();
             contents.Append('{').AppendLine();
+            GenerateCppAutoSerializationCallback(buildData, contents, typeInfo, "OnSerializing", callbackContextSerialize);
             if (baseType != null)
                 contents.Append($"    {baseType.FullNameNative}::Serialize(stream, otherObj);").AppendLine();
             contents.Append($"    SERIALIZE_GET_OTHER_OBJ({typeNameNative});").AppendLine();
@@ -2063,12 +2087,14 @@ namespace Flax.Build.Bindings
                     CppAutoSerializeFields.Add(fieldInfo);
                 }
             }
+            GenerateCppAutoSerializationCallback(buildData, contents, typeInfo, "OnSerialized", callbackContextSerialize);
             contents.Append('}').AppendLine();
 
             // Deserialize
             contents.AppendLine();
             contents.Append($"void {typeNameNative}::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)").AppendLine();
             contents.Append('{').AppendLine();
+            GenerateCppAutoSerializationCallback(buildData, contents, typeInfo, "OnDeserializing", callbackContextDeserialize);
             if (baseType != null)
                 contents.Append($"    {baseType.FullNameNative}::Deserialize(stream, modifier);").AppendLine();
             foreach (var fieldInfo in CppAutoSerializeFields)
@@ -2088,6 +2114,7 @@ namespace Flax.Build.Bindings
                 contents.AppendLine("    }");
             }
             contents.Append('}').AppendLine();
+            GenerateCppAutoSerializationCallback(buildData, contents, typeInfo, "OnDeserialized", callbackContextDeserialize);
 
             // ShouldSerialize
             contents.AppendLine();
@@ -2448,6 +2475,8 @@ namespace Flax.Build.Bindings
             var interfacesTable = GenerateCppInterfaceInheritanceTable(buildData, contents, moduleInfo, classInfo, classTypeNameNative, classTypeNameInternal);
 
             // Type initializer
+            if (classInfo.HasTag("NoTypeInitializer"))
+                return;
             if (GenerateCppIsTemplateInstantiationType(classInfo))
                 contents.Append("template<> ");
             contents.Append($"ScriptingTypeInitializer {classTypeNameNative}::TypeInitializer((BinaryModule*)GetBinaryModule{moduleInfo.Name}(), ");
@@ -2732,7 +2761,8 @@ namespace Flax.Build.Bindings
             contents.Append($"ScriptingTypeInitializer {enumTypeNameInternal}_TypeInitializer((BinaryModule*)GetBinaryModule{moduleInfo.Name}(), ");
             contents.Append($"StringAnsiView(\"{enumTypeNameManaged}\", {enumTypeNameManaged.Length}), ");
             contents.Append($"sizeof({enumTypeNameNative}), ");
-            contents.Append($"{enumTypeNameInternal}Internal::Items);").AppendLine();
+            var stringSerialization = enumInfo.Attributes != null && enumInfo.Attributes.Contains("EnumString") ? "true" : "false";
+            contents.Append($"{enumTypeNameInternal}Internal::Items, {stringSerialization});").AppendLine();
 
             contents.AppendLine($"template<> {moduleInfo.Name.ToUpperInvariant()}_API ScriptingTypeHandle StaticType<{enumTypeNameNative}>() {{ return {enumTypeNameInternal}_TypeInitializer; }}");
         }
@@ -3074,7 +3104,7 @@ namespace Flax.Build.Bindings
                         header.Append("    Variant result;").AppendLine();
                         var apiType = FindApiTypeInfo(buildData, valueType, moduleInfo);
                         var elementName = $"{(apiType != null ? apiType.FullNameManaged : valueType.Type)}[]";
-                        header.Append($"    result.SetType(VariantType(VariantType::Array, StringAnsiView(\"{elementName}\", {elementName.Length})));").AppendLine();
+                        header.Append($"    result.SetType(VariantType(VariantType::Array, StringAnsiView(\"{elementName}\", {elementName.Length}), !USE_EDITOR));").AppendLine();
                         header.Append("    auto* array = reinterpret_cast<Array<Variant, HeapAllocation>*>(result.AsData);").AppendLine();
                         header.Append("    array->Resize(length);").AppendLine();
                         header.Append("    for (int32 i = 0; i < length; i++)").AppendLine();

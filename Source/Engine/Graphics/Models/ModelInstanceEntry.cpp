@@ -21,6 +21,13 @@ bool ModelInstanceEntries::HasContentLoaded() const
     return result;
 }
 
+bool ModelInstanceEntries::ShouldSerialize(const void* otherObj) const
+{
+    if (!otherObj)
+        return true;
+    return !(*this == *(const ModelInstanceEntries*)otherObj);
+}
+
 void ModelInstanceEntries::Serialize(SerializeStream& stream, const void* otherObj)
 {
     SERIALIZE_GET_OTHER_OBJ(ModelInstanceEntries);
@@ -43,12 +50,13 @@ void ModelInstanceEntries::Serialize(SerializeStream& stream, const void* otherO
 void ModelInstanceEntries::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
     PROFILE_MEM(Graphics);
-    const DeserializeStream& entries = stream["Entries"];
-    ASSERT(entries.IsArray());
-    Resize(entries.Size());
-    for (rapidjson::SizeType i = 0; i < entries.Size(); i++)
+    const DeserializeStream& entriesData = stream[rapidjson_flax::Value(rapidjson::StringRef("Entries", 7))];
+    CHECK(entriesData.IsArray());
+    Resize(entriesData.Size());
+    ModelInstanceEntry* entries = Get();
+    for (int32 i = 0; i < Count(); i++)
     {
-        At(i).Deserialize((DeserializeStream&)entries[i], modifier);
+        entries[i].Deserialize((DeserializeStream&)entriesData[i], modifier);
     }
 }
 

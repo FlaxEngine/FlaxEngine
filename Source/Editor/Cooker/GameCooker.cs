@@ -106,6 +106,7 @@ namespace FlaxEditor
             case BuildPlatform.MacOSARM64:
             case BuildPlatform.MacOSx64: return PlatformType.Mac;
             case BuildPlatform.iOSARM64: return PlatformType.iOS;
+            case BuildPlatform.Web: return PlatformType.Web;
             default: throw new ArgumentOutOfRangeException(nameof(buildPlatform), buildPlatform, null);
             }
         }

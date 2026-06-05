@@ -16,6 +16,38 @@ class GPUContextDX11;
 class GPUSwapChainDX11;
 
 /// <summary>
+/// GPU query ID packed into 64-bits.
+/// </summary>
+struct GPUQueryDX11
+{
+    union
+    {
+        struct
+        {
+            uint16 Type;
+            uint16 Index;
+            uint32 Padding;
+        };
+        uint64 Raw;
+    };
+};
+
+/// <summary>
+/// GPU query data (reusable via pooling).
+/// </summary>
+struct GPUQueryDataDX11
+{
+    ID3D11Query* Query = nullptr;
+    ID3D11Query* TimerBeginQuery = nullptr;
+    ID3D11Query* DisjointQuery = nullptr;
+    uint64 Result = 0;
+    enum States { Ready, Begin, End, Finished } State = Ready;
+    GPUQueryType Type = GPUQueryType::MAX;
+
+    void Release();
+};
+
+/// <summary>
 /// Implementation of Graphics Device for DirectX 11 backend.
 /// </summary>
 class GPUDeviceDX11 : public GPUDeviceDX
@@ -60,6 +92,8 @@ private:
     GPUContextDX11* _mainContext = nullptr;
     bool _allowTearing = false;
     GPUBuffer* _dummyVB = nullptr;
+    Array<GPUQueryDataDX11> _queries;
+    Array<uint16> _readyQueries[2]; // Timer and Occlusion
 
     // Static Samplers
     ID3D11SamplerState* _samplerLinearClamp = nullptr;
@@ -124,6 +158,7 @@ public:
     void Dispose() override;
     void WaitForGPU() override;
     void DrawEnd() override;
+    bool GetQueryResult(uint64 queryID, uint64& result, bool wait = false) override;
     GPUTexture* CreateTexture(const StringView& name) override;
     GPUShader* CreateShader(const StringView& name) override;
     GPUPipelineState* CreatePipelineState() override;

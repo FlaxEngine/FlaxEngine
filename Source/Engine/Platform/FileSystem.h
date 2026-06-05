@@ -24,6 +24,8 @@
 #include "Mac/MacFileSystem.h"
 #elif PLATFORM_IOS
 #include "iOS/iOSFileSystem.h"
+#elif PLATFORM_WEB
+#include "Web/WebFileSystem.h"
 #else
 #error Missing File System implementation!
 #endif

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Flax Engine. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 namespace Flax.Build
 {
@@ -61,6 +61,11 @@ namespace Flax.Build
         /// Running on iPhone.
         /// </summary>
         iOS = 11,
+
+        /// <summary>
+        /// Running on Web.
+        /// </summary>
+        Web = 12,
     }
 
     /// <summary>

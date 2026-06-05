@@ -24,6 +24,12 @@ namespace Flax.Deps.Dependencies
                     {
                         TargetPlatform.Windows,
                         TargetPlatform.Android,
+                        TargetPlatform.XboxOne,
+                        TargetPlatform.XboxScarlett,
+                        TargetPlatform.Switch,
+                        TargetPlatform.PS4,
+                        TargetPlatform.PS5,
+                        TargetPlatform.Web,
                     };
                 case TargetPlatform.Linux:
                     return new[]
@@ -51,6 +57,7 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.Windows:
                     return new[]
                     {
+                        TargetArchitecture.x86,
                         TargetArchitecture.x64,
                         TargetArchitecture.ARM64,
                     };
@@ -83,12 +90,17 @@ namespace Flax.Deps.Dependencies
             };
             var args = new string[]
             {
+                "-DMSDFGEN_BUILD_STANDALONE=OFF",
                 "-DMSDFGEN_USE_VCPKG=OFF",
                 "-DMSDFGEN_CORE_ONLY=ON",
                 "-DMSDFGEN_DYNAMIC_RUNTIME=ON",
                 "-DMSDFGEN_USE_SKIA=OFF",
+                "-DMSDFGEN_INSTALL=ON",
+                "-DMSDFGEN_USE_SKIA=OFF",
+                "-DMSDFGEN_DISABLE_SVG=ON",
+                "-DMSDFGEN_DISABLE_PNG=ON",
+                "-DMSDFGEN_DYNAMIC_RUNTIME=ON",
                 "-DBUILD_SHARED_LIBS=OFF",
-                "-DMSDFGEN_INSTALL=ON"
             };
 
             // Get the source
@@ -101,6 +113,7 @@ namespace Flax.Deps.Dependencies
                 {
                     BuildStarted(platform, architecture);
 
+                    var isMSVC = Platform.GetPlatform(platform, true) is Build.Platforms.WindowsPlatformBase;
                     var buildDir = Path.Combine(root, "build-" + architecture);
                     var installDir = Path.Combine(root, "install-" + architecture);
                     var depsFolder = GetThirdPartyFolder(options, platform, architecture);
@@ -108,7 +121,11 @@ namespace Flax.Deps.Dependencies
                     SetupDirectory(buildDir, true);
                     File.Delete(Path.Combine(root, "CMakeCache.txt"));
 
-                    Dictionary<string, string> envVars = null;
+                    var envVars = new Dictionary<string, string>
+                    {
+                        { "CXXFLAGS", isMSVC ? "/EH- /GR-" : "-fno-exceptions -fno-rtti" }, // Disable exceptions and RTTI
+                        { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
+                    };
                     var libName = "libmsdfgen-core.a";
                     var cmakeArgs = string.Join(" ", args);
                     switch (platform)
@@ -119,18 +136,14 @@ namespace Flax.Deps.Dependencies
                         libName = "msdfgen-core.lib";
                         break;
                     case TargetPlatform.Linux:
-                        envVars = new Dictionary<string, string>
-                        {
-                            { "CC", "clang-" + Configuration.LinuxClangMinVer },
-                            { "CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer },
-                            { "CXX", "clang++-" + Configuration.LinuxClangMinVer },
-                            { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
-                        };
+                        envVars["CC"] = "clang-" + LinuxConfiguration.ClangMinVer;
+                        envVars["CC_FOR_BUILD"] = "clang-" + LinuxConfiguration.ClangMinVer;
+                        envVars["CXX"] = "clang++-" + LinuxConfiguration.ClangMinVer;
                         cmakeArgs += " -DCMAKE_POSITION_INDEPENDENT_CODE=ON";
                         break;
                     }
 
-                    RunCmake(root, platform, architecture, $"-B\"{buildDir}\" " + cmakeArgs, envVars);
+                    RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -Wno-dev " + cmakeArgs, envVars);
                     BuildCmake(buildDir);
                     Utilities.Run("cmake", $"--install {buildDir} --prefix {installDir} --config {configuration}", null, root, Utilities.RunOptions.DefaultTool);
                     Utilities.FileCopy(Path.Combine(installDir, "lib", libName), Path.Combine(depsFolder, libName));

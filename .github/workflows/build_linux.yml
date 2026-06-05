@@ -13,15 +13,15 @@ jobs:
     runs-on: "ubuntu-24.04"
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v6
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y --fix-missing libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
+        sudo apt-get install -y --fix-missing libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev libwayland-dev
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.x
     - name: Print .NET info
@@ -42,14 +42,15 @@ jobs:
     runs-on: "ubuntu-24.04"
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v6
     - name: Install dependencies
       run: |
-        sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev
+        sudo apt-get update
+        sudo apt-get install -y --fix-missing libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev libwayland-dev
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.x
     - name: Print .NET info

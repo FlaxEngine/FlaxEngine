@@ -92,6 +92,9 @@ namespace FlaxEditor.Windows.Assets
             [EditorOrder(220), DefaultValue(true), VisibleIf(nameof(IsForward)), EditorDisplay("Transparency"), Tooltip("Enables distortion effect when rendering.")]
             public bool EnableDistortion;
 
+            [EditorOrder(221), DefaultValue(true), VisibleIf(nameof(IsForward)), EditorDisplay("Transparency"), Tooltip("Enables shadows sampling for lights when rendering material.")]
+            public bool EnableShadows;
+
             [EditorOrder(224), DefaultValue(false), VisibleIf(nameof(IsForward)), EditorDisplay("Transparency"), Tooltip("Enables sampling Global Illumination in material (eg. light probes or volumetric lightmap).")]
             public bool EnableGlobalIllumination;
 
@@ -166,6 +169,7 @@ namespace FlaxEditor.Windows.Assets
                 EnableScreenSpaceReflections = (info.FeaturesFlags & MaterialFeaturesFlags.ScreenSpaceReflections) != 0;
                 EnableFog = (info.FeaturesFlags & MaterialFeaturesFlags.DisableFog) == 0;
                 EnableDistortion = (info.FeaturesFlags & MaterialFeaturesFlags.DisableDistortion) == 0;
+                EnableShadows = (info.FeaturesFlags & MaterialFeaturesFlags.DisableShadows) == 0;
                 EnableGlobalIllumination = (info.FeaturesFlags & MaterialFeaturesFlags.GlobalIllumination) != 0;
                 PixelNormalOffsetRefraction = (info.FeaturesFlags & MaterialFeaturesFlags.PixelNormalOffsetRefraction) != 0;
                 InputWorldSpaceNormal = (info.FeaturesFlags & MaterialFeaturesFlags.InputWorldSpaceNormal) != 0;
@@ -207,6 +211,8 @@ namespace FlaxEditor.Windows.Assets
                     info.FeaturesFlags |= MaterialFeaturesFlags.DisableFog;
                 if (!EnableDistortion)
                     info.FeaturesFlags |= MaterialFeaturesFlags.DisableDistortion;
+                if (!EnableShadows)
+                    info.FeaturesFlags |= MaterialFeaturesFlags.DisableShadows;
                 if (EnableGlobalIllumination)
                     info.FeaturesFlags |= MaterialFeaturesFlags.GlobalIllumination;
                 if (PixelNormalOffsetRefraction)

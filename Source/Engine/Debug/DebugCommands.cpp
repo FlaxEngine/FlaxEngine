@@ -16,7 +16,10 @@
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
 #include "Engine/Scripting/ManagedCLR/MField.h"
 #include "Engine/Scripting/ManagedCLR/MProperty.h"
+#include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "FlaxEngine.Gen.h"
+
+#define WITH_HELP (USE_EDITOR || !BUILD_RELEASE) && USE_CSHARP
 
 struct CommandData
 {
@@ -26,6 +29,38 @@ struct CommandData
     void* MethodGet = nullptr;
     void* MethodSet = nullptr;
     void* Field = nullptr;
+#if WITH_HELP
+    mutable String Help;
+
+    StringView GetHelp() const
+    {
+        if (Help.IsEmpty())
+        {
+            if (dynamic_cast<ManagedBinaryModule*>(Module))
+            {
+                // Get C# type and member name
+                const MClass* mclass = nullptr;
+                StringAnsiView name;
+                if (auto field = (MField*)Field)
+                {
+                    mclass = field->GetParentClass();
+                    name = field->GetName();
+                }
+                else if (auto method = (MMethod*)(Method ? Method : (MethodGet ? MethodGet : MethodSet)))
+                {
+                    mclass = method->GetParentClass();
+                    name = method->GetName();
+                }
+
+                // Use Xml docs reader used by Editor to get tooltips
+                auto getXmlInternal = DebugCommands::TypeInitializer.GetClass()->GetMethod("GetXmlInternal", 2);
+                void* params[2] = { INTERNAL_TYPE_GET_OBJECT(mclass->GetType()), MUtils::ToString(name) };
+                Help = MUtils::ToString((MString*)getXmlInternal->Invoke(nullptr, params, nullptr));
+            }
+        }
+        return Help;
+    }
+#endif
 
     static void PrettyPrint(StringBuilder& sb, const Variant& value)
     {
@@ -50,7 +85,7 @@ struct CommandData
         else if (value.Type.Type == VariantType::Structure)
         {
             // Prettify structure printing
-            ScriptingTypeHandle resultType = Scripting::FindScriptingType(value.Type.GetTypeName());
+            ScriptingTypeHandle resultType = value.Type.GetScriptingType();
             if (resultType)
             {
                 Array<void*> fields;
@@ -122,7 +157,11 @@ struct CommandData
         // Parse arguments
         if (args == StringView(TEXT("?"), 1))
         {
-            LOG(Warning, "TODO: debug commands help/docs printing"); // TODO: debug commands help/docs printing (use CodeDocsModule that parses XML docs)
+#if WITH_HELP
+            // Print command description
+            LOG(Info, "> {} ?", Name);
+            LOG_STR(Info, GetHelp());
+#endif
             return;
         }
         Array<Variant> params;
@@ -356,6 +395,22 @@ namespace
             InitCommands();
         Locker.Unlock();
     }
+
+    const CommandData* GetCommand(StringView command)
+    {
+        if (command.FindLast(' ') != -1)
+            command = command.Left(command.Find(' '));
+        // TODO: fix missing string handle on 1st command execution (command gets invalid after InitCommands due to dotnet GC or dotnet interop handles flush)
+        String commandCopy = command;
+        command = commandCopy;
+        EnsureInited();
+        for (auto& e : Commands)
+        {
+            if (e.Name == command)
+                return &e;
+        }
+        return nullptr;
+    }
 }
 
 class DebugCommandsService : public EngineService
@@ -475,27 +530,29 @@ void DebugCommands::GetAllCommands(Array<StringView>& commands)
 DebugCommands::CommandFlags DebugCommands::GetCommandFlags(StringView command)
 {
     CommandFlags result = CommandFlags::None;
-    if (command.FindLast(' ') != -1)
-        command = command.Left(command.Find(' '));
-    // TODO: fix missing string handle on 1st command execution (command gets invalid after InitCommands due to dotnet GC or dotnet interop handles flush)
-    String commandCopy = command;
-    command = commandCopy;
-    EnsureInited();
-    for (auto& e : Commands)
+    if (auto cmd = GetCommand(command))
     {
-        if (e.Name == command)
-        {
-            if (e.Method)
-                result |= CommandFlags::Exec;
-            else if (e.Field)
-                result |= CommandFlags::ReadWrite;
-            if (e.MethodGet)
-                result |= CommandFlags::Read;
-            if (e.MethodSet)
-                result |= CommandFlags::Write;
-            break;
-        }
+        if (cmd->Method)
+            result |= CommandFlags::Exec;
+        else if (cmd->Field)
+            result |= CommandFlags::ReadWrite;
+        if (cmd->MethodGet)
+            result |= CommandFlags::Read;
+        if (cmd->MethodSet)
+            result |= CommandFlags::Write;
     }
+    return result;
+}
+
+StringView DebugCommands::GetCommandHelp(StringView command)
+{
+    StringView result;
+#if WITH_HELP
+    if (auto cmd = GetCommand(command))
+    {
+        result = cmd->GetHelp();
+    }
+#endif
     return result;
 }
 

@@ -22,20 +22,18 @@ namespace ShaderProcessing
     class Parser : public IShaderParser, public ITokenReadersContainerBase<IShaderFunctionReader>
     {
     private:
-
         bool failed;
         String targetName;
         Reader text;
         ParserMacros _macros;
         FeatureLevel _featureLevel;
+        ShaderProfileFeatures _features;
 
     private:
-
-        Parser(const String& targetName, const char* source, int32 sourceLength, ParserMacros macros, FeatureLevel featureLevel);
+        Parser(const String& targetName, const char* source, int32 sourceLength, ParserMacros macros, ShaderProfile profile);
         ~Parser();
 
     public:
-
         /// <summary>
         /// Process shader source code and generate metadata
         /// </summary>
@@ -43,13 +41,12 @@ namespace ShaderProcessing
         /// <param name="source">ANSI source code</param>
         /// <param name="sourceLength">Amount of characters in the source code</param>
         /// <param name="macros">The input macros.</param>
-        /// <param name="featureLevel">The target feature level.</param>
+        /// <param name="profile">The target shader profile.</param>
         /// <param name="result">Output result with metadata</param>
         /// <returns>True if cannot process the file (too many errors), otherwise false</returns>
-        static bool Process(const String& targetName, const char* source, int32 sourceLength, ParserMacros macros, FeatureLevel featureLevel, ShaderMeta* result);
+        static bool Process(const String& targetName, const char* source, int32 sourceLength, ParserMacros macros, ShaderProfile profile, ShaderMeta* result);
 
     public:
-
         /// <summary>
         /// Process shader source code and generate metadata
         /// </summary>
@@ -57,34 +54,32 @@ namespace ShaderProcessing
         void Process(ShaderMeta* result);
 
     private:
-
         void init();
         bool process();
         bool collectResults(ShaderMeta* result);
 
     public:
-
         // [IShaderParser]
         FeatureLevel GetFeatureLevel() const override
         {
             return _featureLevel;
         }
-
+        ShaderProfileFeatures GetFeatures() const override
+        {
+            return _features;
+        }
         bool Failed() const override
         {
             return failed;
         }
-
         Reader& GetReader() override
         {
             return text;
         }
-
         ParserMacros GetMacros() const override
         {
             return _macros;
         }
-
         void OnError(const String& message) override;
         void OnWarning(const String& message) override;
     };

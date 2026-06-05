@@ -274,7 +274,7 @@ namespace FlaxEngine.GUI
             if (_focusedControl != null)
             {
                 _focusedControl.OnGotFocus();
-                Assert.IsTrue(_focusedControl.IsFocused);
+                Assert.IsTrue(_focusedControl == null || _focusedControl.IsFocused);
             }
 
             // Update flags
@@ -337,6 +337,18 @@ namespace FlaxEngine.GUI
             }
 
             base.OnMouseMove(location);
+        }
+
+        /// <inheritdoc />
+        public override void OnMouseMoveRelative(Float2 motion)
+        {
+            if (_trackingControl != null)
+            {
+                _trackingControl.OnMouseMoveRelative(motion);
+                return;
+            }
+
+            base.OnMouseMoveRelative(motion);
         }
     }
 }

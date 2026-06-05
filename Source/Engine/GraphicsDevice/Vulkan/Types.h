@@ -2,8 +2,6 @@
 
 #pragma once
 
-#if COMPILE_WITH_VK_SHADER_COMPILER || GRAPHICS_API_VULKAN
-
 #include "Engine/Graphics/PixelFormat.h"
 
 #if GRAPHICS_API_VULKAN
@@ -43,6 +41,7 @@ enum class SpirvShaderResourceType
     TextureCube = 7,
     Texture1DArray = 8,
     Texture2DArray = 9,
+    MAX
 };
 
 enum class SpirvShaderResourceBindingType : byte
@@ -122,7 +121,22 @@ struct SpirvShaderHeader
         /// <summary>
         /// The raw SPIR-V byte code.
         /// </summary>
-        Raw = 0,
+        SPIRV = 0,
+
+        /// <summary>
+        /// The raw WGSL shader code.
+        /// </summary>
+        WGSL = 1,
+
+        /// <summary>
+        /// The WGSL shader code compressed with LZ4.
+        /// </summary>
+        WGSL_LZ4 = 2,
+
+        /// <summary>
+        /// The SPIR-V byte code compressed with LZ4.
+        /// </summary>
+        SPIRV_LZ4 = 3,
     };
 
     /// <summary>
@@ -135,5 +149,3 @@ struct SpirvShaderHeader
     /// </summary>
     SpirvShaderDescriptorInfo DescriptorInfo;
 };
-
-#endif

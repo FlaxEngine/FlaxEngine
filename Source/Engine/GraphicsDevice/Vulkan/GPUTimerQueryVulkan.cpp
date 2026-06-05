@@ -11,6 +11,78 @@ GPUTimerQueryVulkan::GPUTimerQueryVulkan(GPUDeviceVulkan* device)
 {
 }
 
+#if !VULKAN_USE_TIMER_QUERIES
+
+void GPUTimerQueryVulkan::OnReleaseGPU()
+{
+}
+
+void GPUTimerQueryVulkan::Begin()
+{
+}
+
+void GPUTimerQueryVulkan::End()
+{
+}
+
+bool GPUTimerQueryVulkan::HasResult()
+{
+    return true;
+}
+
+float GPUTimerQueryVulkan::GetResult()
+{
+    return 0;
+}
+
+#elif GPU_VULKAN_QUERY_NEW
+
+void GPUTimerQueryVulkan::OnReleaseGPU()
+{
+    _hasResult = false;
+    _endCalled = false;
+    _timeDelta = 0.0f;
+}
+
+void GPUTimerQueryVulkan::Begin()
+{
+    const auto context = _device->GetMainContext();
+    _query = context->BeginQuery(GPUQueryType::Timer);
+    _hasResult = false;
+    _endCalled = false;
+}
+
+void GPUTimerQueryVulkan::End()
+{
+    if (_endCalled)
+        return;
+    const auto context = _device->GetMainContext();
+    context->EndQuery(_query);
+    _endCalled = true;
+}
+
+bool GPUTimerQueryVulkan::HasResult()
+{
+    if (!_endCalled)
+        return false;
+    if (_hasResult)
+        return true;
+    uint64 result;
+    return _device->GetQueryResult(_query, result, false);
+}
+
+float GPUTimerQueryVulkan::GetResult()
+{
+    if (_hasResult)
+        return _timeDelta;
+    uint64 result;
+    _timeDelta = _device->GetQueryResult(_query, result, true) ? (float)((double)result / 1000.0) : 0.0f;
+    _hasResult = true;
+    return _timeDelta;
+}
+
+#else
+
 void GPUTimerQueryVulkan::Interrupt(CmdBufferVulkan* cmdBuffer)
 {
     if (!_interrupted)
@@ -38,8 +110,7 @@ bool GPUTimerQueryVulkan::GetResult(Query& query)
 {
     if (query.Pool)
     {
-        const auto context = (GPUContextVulkan*)_device->GetMainContext();
-        if (query.Pool->GetResults(context, query.Index, query.Result))
+        if (query.Pool->GetResults(query.Index, query.Result))
         {
             // Release query
             query.Pool->ReleaseQuery(query.Index);
@@ -58,7 +129,7 @@ bool GPUTimerQueryVulkan::GetResult(Query& query)
 
 void GPUTimerQueryVulkan::WriteTimestamp(CmdBufferVulkan* cmdBuffer, Query& query, VkPipelineStageFlagBits stage) const
 {
-    auto pool = _device->FindAvailableQueryPool(VK_QUERY_TYPE_TIMESTAMP);
+    auto pool = _device->QueryPools[_device->GetOrCreateQueryPool(GPUQueryType::Timer)];
     uint32 index;
     if (pool->AcquireQuery(cmdBuffer, index))
     {
@@ -76,7 +147,6 @@ void GPUTimerQueryVulkan::WriteTimestamp(CmdBufferVulkan* cmdBuffer, Query& quer
 
 bool GPUTimerQueryVulkan::TryGetResult()
 {
-#if VULKAN_USE_QUERIES
     // Try get queries value (if not already)
     for (int32 i = 0; i < _queries.Count(); i++)
     {
@@ -115,20 +185,12 @@ bool GPUTimerQueryVulkan::TryGetResult()
             e.End.Pool->ReleaseQuery(e.End.Index);
     }
     _queries.Clear();
-#else
-    _timeDelta = 0.0f;
-    _hasResult = true;
-#endif
     return true;
 }
 
 bool GPUTimerQueryVulkan::UseQueries()
 {
-#if VULKAN_USE_QUERIES
     return _device->PhysicalDeviceLimits.timestampComputeAndGraphics == VK_TRUE;
-#else
-    return false;
-#endif
 }
 
 void GPUTimerQueryVulkan::OnReleaseGPU()
@@ -150,7 +212,6 @@ void GPUTimerQueryVulkan::OnReleaseGPU()
 
 void GPUTimerQueryVulkan::Begin()
 {
-#if VULKAN_USE_QUERIES
     if (UseQueries())
     {
         const auto context = (GPUContextVulkan*)_device->GetMainContext();
@@ -162,12 +223,11 @@ void GPUTimerQueryVulkan::Begin()
         _queryIndex = 0;
         _interrupted = false;
         WriteTimestamp(cmdBuffer, e.Begin, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
-        context->GetCmdBufferManager()->OnQueryBegin(this);
+        context->GetCmdBufferManager()->OnTimerQueryBegin(this);
 
         ASSERT(_queries.IsEmpty());
         _queries.Add(e);
     }
-#endif
 
     _hasResult = false;
     _endCalled = false;
@@ -178,7 +238,6 @@ void GPUTimerQueryVulkan::End()
     if (_endCalled)
         return;
 
-#if VULKAN_USE_QUERIES
     if (UseQueries())
     {
         const auto context = (GPUContextVulkan*)_device->GetMainContext();
@@ -188,9 +247,8 @@ void GPUTimerQueryVulkan::End()
         {
             WriteTimestamp(cmdBuffer, _queries[_queryIndex].End, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
         }
-        context->GetCmdBufferManager()->OnQueryEnd(this);
+        context->GetCmdBufferManager()->OnTimerQueryEnd(this);
     }
-#endif
 
     _endCalled = true;
 }
@@ -211,5 +269,7 @@ float GPUTimerQueryVulkan::GetResult()
     TryGetResult();
     return _timeDelta;
 }
+
+#endif
 
 #endif

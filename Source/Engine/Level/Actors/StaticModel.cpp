@@ -464,8 +464,7 @@ void StaticModel::Serialize(SerializeStream& stream, const void* otherObj)
         stream.Rectangle(Lightmap.UVsArea);
     }
 
-    stream.JKEY("Buffer");
-    stream.Object(&Entries, other ? &other->Entries : nullptr);
+    SERIALIZE_MEMBER(Buffer, Entries);
 
     if (_vertexColorsCount)
     {
@@ -504,8 +503,7 @@ void StaticModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     DESERIALIZE_MEMBER(DrawModes, _drawModes);
     DESERIALIZE_MEMBER(LightmapIndex, Lightmap.TextureIndex);
     DESERIALIZE_MEMBER(LightmapArea, Lightmap.UVsArea);
-
-    Entries.DeserializeIfExists(stream, "Buffer", modifier);
+    DESERIALIZE_MEMBER(Buffer, Entries);
 
     {
         const auto member = stream.FindMember("VertexColors");
@@ -597,6 +595,11 @@ MaterialBase* StaticModel::GetMaterial(int32 entryIndex)
             material = GPUDevice::Instance->GetDefaultMaterial();
     }
     return material;
+}
+
+ModelBase* StaticModel::GetModel()
+{
+    return Model.Get();
 }
 
 bool StaticModel::IntersectsEntry(int32 entryIndex, const Ray& ray, Real& distance, Vector3& normal)

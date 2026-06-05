@@ -18,11 +18,7 @@ Shader::Shader(const SpawnParams& params, const AssetInfo* info)
     : ShaderAssetTypeBase<BinaryAsset>(params, info)
 {
     ASSERT(GPUDevice::Instance);
-    StringView name = info->Path;
-#if GPU_ENABLE_RESOURCE_NAMING && !USE_EDITOR
-    name = Content::GetRegistry()->GetEditorAssetPath(info->ID);
-#endif
-    _shader = GPUDevice::Instance->CreateShader(name);
+    _shader = GPUDevice::Instance->CreateShader(GPU_GET_RESOURCE_NAME_FROM_ASSET(info));
     ASSERT(_shader);
     GPU = _shader;
 }

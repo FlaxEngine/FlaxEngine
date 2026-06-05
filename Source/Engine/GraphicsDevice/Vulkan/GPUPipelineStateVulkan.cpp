@@ -10,6 +10,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Pair.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 
 static VkStencilOp ToVulkanStencilOp(const StencilOperation value)
@@ -91,6 +92,7 @@ ComputePipelineStateVulkan* GPUShaderProgramCSVulkan::GetOrCreateState()
     if (_pipelineState)
         return _pipelineState;
     PROFILE_CPU();
+    PROFILE_MEM(GraphicsShaders);
     ZoneText(*_name, _name.Length());
 
     // Create pipeline layout
@@ -224,6 +226,7 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVer
         return pipeline;
     }
     PROFILE_CPU();
+    PROFILE_MEM(GraphicsShaders);
 #if !BUILD_RELEASE
     DebugName name;
     GetDebugName(name);
@@ -443,13 +446,15 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_VIEWPORT;
     _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_SCISSOR;
     _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_STENCIL_REFERENCE;
+    if (desc.DepthBoundsEnable)
+        _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_DEPTH_BOUNDS;
 #define IsBlendUsingBlendFactor(blend) blend == BlendingMode::Blend::BlendFactor || blend == BlendingMode::Blend::BlendInvFactor
     if (desc.BlendMode.BlendEnable && (
         IsBlendUsingBlendFactor(desc.BlendMode.SrcBlend) || IsBlendUsingBlendFactor(desc.BlendMode.SrcBlendAlpha) ||
         IsBlendUsingBlendFactor(desc.BlendMode.DestBlend) || IsBlendUsingBlendFactor(desc.BlendMode.DestBlendAlpha)))
         _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_BLEND_CONSTANTS;
 #undef IsBlendUsingBlendFactor
-    static_assert(ARRAY_COUNT(_dynamicStates) <= 4, "Invalid dynamic states array.");
+    static_assert(ARRAY_COUNT(_dynamicStates) >= 5, "Invalid dynamic states array.");
     _desc.pDynamicState = &_descDynamic;
 
     // Multisample
@@ -462,6 +467,9 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     RenderToolsVulkan::ZeroStruct(_descDepthStencil, VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);
     _descDepthStencil.depthTestEnable = desc.DepthEnable;
     _descDepthStencil.depthWriteEnable = desc.DepthWriteEnable;
+    _descDepthStencil.depthBoundsTestEnable = desc.DepthBoundsEnable;
+    _descDepthStencil.minDepthBounds = 0.0f;
+    _descDepthStencil.maxDepthBounds = 1.0f; // TODO: inverse depth buffer rendering
     _descDepthStencil.depthCompareOp = RenderToolsVulkan::ToVulkanCompareOp(desc.DepthFunc);
     _descDepthStencil.stencilTestEnable = desc.StencilEnable;
     _descDepthStencil.front.compareMask = desc.StencilReadMask;
@@ -474,6 +482,7 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _desc.pDepthStencilState = &_descDepthStencil;
     DepthReadEnable = desc.DepthEnable && desc.DepthFunc != ComparisonFunc::Always;
     DepthWriteEnable = _descDepthStencil.depthWriteEnable;
+    DepthBoundsEnable = _descDepthStencil.depthBoundsTestEnable;
     StencilReadEnable = desc.StencilEnable && desc.StencilReadMask != 0 && desc.StencilFunc != ComparisonFunc::Always;
     StencilWriteEnable = desc.StencilEnable && desc.StencilWriteMask != 0;
 

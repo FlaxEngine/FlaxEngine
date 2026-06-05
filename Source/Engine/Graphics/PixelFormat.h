@@ -564,6 +564,11 @@ API_ENUM() enum class PixelFormat : uint32
     NV12 = 109,
 
     /// <summary>
+    /// Basis Universal format (.basis file data). Uses supercompressed texture transcoding system.
+    /// </summary>
+    Basis = 110,
+
+    /// <summary>
     /// The maximum format value (for internal use only).
     /// </summary>
     MAX

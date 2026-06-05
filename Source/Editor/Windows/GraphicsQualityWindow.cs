@@ -98,10 +98,10 @@ namespace FlaxEditor.Windows
             [NoSerialize, DefaultValue(1.0f), Limit(0.05f, 5, 0)]
             [EditorOrder(1400), EditorDisplay("Quality")]
             [Tooltip("The scale of the rendering resolution relative to the output dimensions. If lower than 1 the scene and postprocessing will be rendered at a lower resolution and upscaled to the output backbuffer.")]
-            public float RenderingPercentage
+            public float RenderScale
             {
-                get => MainRenderTask.Instance.RenderingPercentage;
-                set => MainRenderTask.Instance.RenderingPercentage = value;
+                get => MainRenderTask.Instance.RenderScale;
+                set => MainRenderTask.Instance.RenderScale = value;
             }
 
             [NoSerialize, DefaultValue(RenderingUpscaleLocation.AfterAntiAliasingPass), VisibleIf(nameof(UpscaleLocation_Visible))]
@@ -113,7 +113,7 @@ namespace FlaxEditor.Windows
                 set => MainRenderTask.Instance.UpscaleLocation = value;
             }
 
-            private bool UpscaleLocation_Visible => MainRenderTask.Instance.RenderingPercentage < 1.0f;
+            private bool UpscaleLocation_Visible => MainRenderTask.Instance.RenderScale < 1.0f;
 
             [NoSerialize, DefaultValue(1.0f), Limit(0, 1)]
             [EditorOrder(1500), EditorDisplay("Quality"), Tooltip("The global density scale for all foliage instances. The default value is 1. Use values from range 0-1. Lower values decrease amount of foliage instances in-game. Use it to tweak game performance for slower devices.")]

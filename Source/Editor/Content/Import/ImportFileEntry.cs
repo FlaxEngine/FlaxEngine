@@ -106,11 +106,14 @@ namespace FlaxEditor.Content.Import
         {
             // Get extension (without a dot)
             var extension = Path.GetExtension(request.InputPath);
-            if (string.IsNullOrEmpty(extension))
+            if (File.GetAttributes(request.InputPath).HasFlag(FileAttributes.Directory))
                 return new FolderImportEntry(ref request);
-            if (extension[0] == '.')
-                extension = extension.Remove(0, 1);
-            extension = extension.ToLower();
+            if (extension.Length > 0)
+            {
+                if (extension[0] == '.')
+                    extension = extension.Remove(0, 1);
+                extension = extension.ToLower();
+            }
 
             // Check if use overriden type
             if (FileTypes.TryGetValue(extension, out ImportFileEntryHandler createDelegate))

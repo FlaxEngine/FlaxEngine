@@ -573,6 +573,14 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
         break;
     }
 #endif
+#if PLATFORM_TOOLS_WEB
+    case BuildPlatform::Web:
+    {
+        const char* platformDefineName = "PLATFORM_WEB";
+        COMPILE_PROFILE(WebGPU, SHADER_FILE_CHUNK_INTERNAL_GENERIC_CACHE);
+        break;
+    }
+#endif
     default:
     {
         LOG(Warning, "Not implemented platform or shaders not supported.");
@@ -734,37 +742,8 @@ bool ProcessTextureBase(CookAssetsStep::AssetCookData& data)
     {
         auto chunk = New<FlaxChunk>();
         data.InitData.Header.Chunks[mipIndex] = chunk;
-
-        // Calculate the texture data storage layout
-        uint32 rowPitch, slicePitch;
-        const int32 mipWidth = Math::Max(1, textureData->Width >> mipIndex);
-        const int32 mipHeight = Math::Max(1, textureData->Height >> mipIndex);
-        RenderTools::ComputePitch(textureData->Format, mipWidth, mipHeight, rowPitch, slicePitch);
-        chunk->Data.Allocate(slicePitch * textureData->GetArraySize());
-
-        // Copy array slices into mip data (sequential)
-        for (int32 arrayIndex = 0; arrayIndex < textureData->Items.Count(); arrayIndex++)
-        {
-            auto& mipData = textureData->Items[arrayIndex].Mips[mipIndex];
-            byte* src = mipData.Data.Get();
-            byte* dst = chunk->Data.Get() + (slicePitch * arrayIndex);
-
-            // Faster path if source and destination data layout matches
-            if (rowPitch == mipData.RowPitch && slicePitch == mipData.DepthPitch)
-            {
-                Platform::MemoryCopy(dst, src, slicePitch);
-            }
-            else
-            {
-                const auto copyRowSize = Math::Min(mipData.RowPitch, rowPitch);
-                for (uint32 line = 0; line < mipData.Lines; line++)
-                {
-                    Platform::MemoryCopy(dst, src, copyRowSize);
-                    src += mipData.RowPitch;
-                    dst += rowPitch;
-                }
-            }
-        }
+        if (TextureTool::WriteTextureData(chunk->Data, *textureData, mipIndex))
+            return true;
     }
 
     // Clone any custom asset chunks (eg. sprite atlas data, mips are in 0-13 chunks)

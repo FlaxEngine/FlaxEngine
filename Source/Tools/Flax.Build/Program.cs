@@ -85,6 +85,11 @@ namespace Flax.Build
                     {
                         CommandLine.Configure(typeof(EngineConfiguration), engineProject.Configuration);
                         CommandLine.Configure(typeof(Configuration), engineProject.Configuration);
+                        CommandLine.ConfigureChild(typeof(WindowsConfiguration), engineProject.Configuration, "Windows");
+                        CommandLine.ConfigureChild(typeof(LinuxConfiguration), engineProject.Configuration, "Linux");
+                        CommandLine.ConfigureChild(typeof(MacConfiguration), engineProject.Configuration, "Mac");
+                        CommandLine.ConfigureChild(typeof(iOSConfiguration), engineProject.Configuration, "iOS");
+                        CommandLine.ConfigureChild(typeof(WebConfiguration), engineProject.Configuration, "Web");
                     }
                     CommandLine.Configure(typeof(EngineConfiguration));
                 }

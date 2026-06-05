@@ -6,7 +6,7 @@
 #include "RenderToolsVulkan.h"
 #include "QueueVulkan.h"
 #include "GPUContextVulkan.h"
-#if VULKAN_USE_QUERIES
+#if VULKAN_USE_TIMER_QUERIES
 #include "GPUTimerQueryVulkan.h"
 #endif
 #include "DescriptorSetVulkan.h"
@@ -57,7 +57,7 @@ void CmdBufferVulkan::End()
         if (vkCmdEndDebugUtilsLabelEXT)
             vkCmdEndDebugUtilsLabelEXT(GetHandle());
 #endif
-#if GPU_ENABLE_TRACY
+#if VULKAN_USE_TRACY_GPU
         tracy::EndVkZoneScope(_tracyZones.Last().Data);
         _tracyZones.RemoveLast();
 #endif
@@ -101,7 +101,7 @@ void CmdBufferVulkan::BeginEvent(const Char* name, void* tracyContext)
     char buffer[60];
     int32 bufferSize = StringUtils::Copy(buffer, name, sizeof(buffer));
 
-#if GPU_ENABLE_TRACY
+#if VULKAN_USE_TRACY_GPU
     auto& zone = _tracyZones.AddOne();
     tracy::BeginVkZoneScope(zone.Data, tracyContext, GetHandle(), buffer, bufferSize);
 #endif
@@ -128,7 +128,7 @@ void CmdBufferVulkan::EndEvent()
         vkCmdEndDebugUtilsLabelEXT(GetHandle());
 #endif
 
-#if GPU_ENABLE_TRACY
+#if VULKAN_USE_TRACY_GPU
     tracy::EndVkZoneScope(_tracyZones.Last().Data);
     _tracyZones.RemoveLast();
 #endif
@@ -138,8 +138,9 @@ void CmdBufferVulkan::EndEvent()
 
 void CmdBufferVulkan::Wait(float timeoutSeconds)
 {
+    if (!IsSubmitted())
+        return;
     PROFILE_CPU();
-    ASSERT(IsSubmitted());
     const bool failed = _device->FenceManager.WaitForFence(GetFence(), timeoutSeconds);
     ASSERT(!failed);
     RefreshFenceStatus();
@@ -251,6 +252,7 @@ void CmdBufferPoolVulkan::RefreshFenceStatus(const CmdBufferVulkan* skipCmdBuffe
 
 CmdBufferManagerVulkan::CmdBufferManagerVulkan(GPUDeviceVulkan* device, GPUContextVulkan* context)
     : _device(device)
+    , _context(context)
     , _pool(device)
     , _queue(context->GetQueue())
     , _activeCmdBuffer(nullptr)
@@ -267,12 +269,28 @@ void CmdBufferManagerVulkan::SubmitActiveCmdBuffer(SemaphoreVulkan* signalSemaph
         if (_activeCmdBuffer->IsInsideRenderPass())
             _activeCmdBuffer->EndRenderPass();
 
-#if VULKAN_USE_QUERIES
-        // Pause all active queries
-        for (int32 i = 0; i < _queriesInProgress.Count(); i++)
+#if VULKAN_USE_TIMER_QUERIES && GPU_VULKAN_PAUSE_QUERIES
+        // Pause all active timer queries
+        auto queries = _activeTimerQueries.Get();
+#if GPU_VULKAN_QUERY_NEW
+        for (int32 i = 0; i < _activeTimerQueries.Count(); i++)
         {
-            _queriesInProgress.Get()[i]->Interrupt(_activeCmdBuffer);
+            GPUQueryVulkan query;
+            query.Raw = queries[i];
+
+            // End active query to get time from start until submission
+            auto pool = _device->QueryPools[query.PoolIndex];
+            vkCmdWriteTimestamp(_activeCmdBuffer->GetHandle(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool->GetHandle(), query.SecondQueryIndex);
+            pool->MarkQueryAsStarted(query.SecondQueryIndex);
+            // TODO: somehow handle ending this query properly by stopping split query instead
+            //_context->EndQuery(query.Raw);
+
+            // TODO: reimplement timer queries pause/resume to be more exact?
         }
+#else
+        for (int32 i = 0; i < _activeTimerQueries.Count(); i++)
+            queries->Interrupt(_activeCmdBuffer);
+#endif
 #endif
 
         _activeCmdBuffer->End();
@@ -289,7 +307,7 @@ void CmdBufferManagerVulkan::SubmitActiveCmdBuffer(SemaphoreVulkan* signalSemaph
     _activeCmdBuffer = nullptr;
 }
 
-void CmdBufferManagerVulkan::PrepareForNewActiveCommandBuffer()
+void CmdBufferManagerVulkan::GetNewActiveCommandBuffer()
 {
     PROFILE_CPU();
     ASSERT_LOW_LAYER(_activeCmdBuffer == nullptr)
@@ -316,27 +334,37 @@ void CmdBufferManagerVulkan::PrepareForNewActiveCommandBuffer()
 
     _activeCmdBuffer->Begin();
 
-#if VULKAN_USE_QUERIES
-    // Resume any paused queries with the new command buffer
-    for (int32 i = 0; i < _queriesInProgress.Count(); i++)
+#if VULKAN_USE_TIMER_QUERIES && GPU_VULKAN_PAUSE_QUERIES
+    // Resume any paused timer queries with the new command buffer
+    auto queries = _activeTimerQueries.Get();
+#if GPU_VULKAN_QUERY_NEW
+    for (int32 i = 0; i < _activeTimerQueries.Count(); i++)
     {
-        _queriesInProgress.Get()[i]->Resume(_activeCmdBuffer);
+        GPUQueryVulkan query;
+        query.Raw = queries[i];
+        //_activeTimerQueries.Get()[i]->Resume(_activeCmdBuffer);
+    }
+#else
+    for (int32 i = 0; i < _activeTimerQueries.Count(); i++)
+    {
+        queries->Resume(_activeCmdBuffer);
     }
 #endif
-}
-
-void CmdBufferManagerVulkan::OnQueryBegin(GPUTimerQueryVulkan* query)
-{
-#if VULKAN_USE_QUERIES
-    _queriesInProgress.Add(query);
 #endif
 }
 
-void CmdBufferManagerVulkan::OnQueryEnd(GPUTimerQueryVulkan* query)
+#if GPU_VULKAN_QUERY_NEW && GPU_VULKAN_PAUSE_QUERIES
+
+void CmdBufferManagerVulkan::OnTimerQueryBegin(QueryType query)
 {
-#if VULKAN_USE_QUERIES
-    _queriesInProgress.Remove(query);
-#endif
+    _activeTimerQueries.Add(query);
 }
+
+void CmdBufferManagerVulkan::OnTimerQueryEnd(QueryType query)
+{
+    _activeTimerQueries.Remove(query);
+}
+
+#endif
 
 #endif

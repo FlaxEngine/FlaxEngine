@@ -6,7 +6,7 @@ using Flax.Build.NativeCpp;
 /// <summary>
 /// https://github.com/zpl-c/enet
 /// </summary>
-public class ENet : DepsModule
+public class ENet : EngineDepsModule
 {
     /// <inheritdoc />
     public override void Init()
@@ -15,9 +15,6 @@ public class ENet : DepsModule
 
         LicenseType = LicenseTypes.MIT;
         LicenseFilePath = "enet License.txt";
-
-        // Merge third-party modules into engine binary
-        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />

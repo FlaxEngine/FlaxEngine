@@ -96,9 +96,9 @@ namespace
         }
     };
 
-    Dictionary<Guid, ScriptingObjectData> _objectsDictionary(1024 * 16);
+    Dictionary<Guid, ScriptingObjectData> _objectsDictionary;
 #else
-    Dictionary<Guid, ScriptingObject*> _objectsDictionary(1024 * 16);
+    Dictionary<Guid, ScriptingObject*> _objectsDictionary;
 #endif
     bool _isEngineAssemblyLoaded = false;
     bool _hasGameModulesLoaded = false;
@@ -178,6 +178,8 @@ bool ScriptingService::Init()
 {
     PROFILE_MEM(Scripting);
     Stopwatch stopwatch;
+
+    _objectsDictionary.EnsureCapacity(16 * 1024);
 
     // Initialize managed runtime
     if (MCore::LoadEngine())
@@ -573,6 +575,7 @@ bool Scripting::Load()
     auto* flaxEngineModule = (NativeBinaryModule*)GetBinaryModuleFlaxEngine();
     if (!flaxEngineModule->Assembly->IsLoaded())
     {
+#if USE_CSHARP
         String flaxEnginePath = Globals::BinariesFolder / TEXT("FlaxEngine.CSharp.dll");
 #if USE_MONO_AOT
         if (!FileSystem::FileExists(flaxEnginePath))
@@ -583,6 +586,7 @@ bool Scripting::Load()
             LOG(Error, "Failed to load FlaxEngine C# assembly.");
             return true;
         }
+#endif
         flaxEngineModule->CanReload = false;
         flaxEngineModule->Assembly->_canReload = false;
         onEngineLoaded(flaxEngineModule->Assembly);

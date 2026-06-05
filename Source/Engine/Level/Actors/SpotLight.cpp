@@ -27,7 +27,7 @@ SpotLight::SpotLight(const SpawnParams& params)
     _cosInnerCone = Math::Cos(_innerConeAngle * DegreesToRadians);
     _invCosConeDifference = 1.0f / (_cosInnerCone - _cosOuterCone);
     const float boundsRadius = Math::Sqrt(1.25f * _radius * _radius - _radius * _radius * _cosOuterCone);
-    _sphere = BoundingSphere(GetPosition() + 0.5f * GetDirection() * _radius, boundsRadius);
+    _sphere = BoundingSphere(GetPosition() + 0.5f * GetForward() * _radius, boundsRadius);
     BoundingBox::FromSphere(_sphere, _box);
 }
 
@@ -113,7 +113,7 @@ void SpotLight::UpdateBounds()
     // Note: we use the law of cosines to find the distance to the furthest edge of the spotlight cone from a position that is halfway down the spotlight direction
     const float radius = GetScaledRadius();
     const float boundsRadius = Math::Sqrt(1.25f * radius * radius - radius * radius * _cosOuterCone);
-    _sphere = BoundingSphere(GetPosition() + 0.5f * GetDirection() * radius, boundsRadius);
+    _sphere = BoundingSphere(GetPosition() + 0.5f * GetForward() * radius, boundsRadius);
     BoundingBox::FromSphere(_sphere, _box);
 
     if (_sceneRenderingKey != -1)
@@ -199,7 +199,7 @@ void SpotLight::OnDebugDrawSelected()
     const auto color = Color::Yellow;
     Vector3 right = _transform.GetRight();
     Vector3 up = _transform.GetUp();
-    Vector3 forward = GetDirection();
+    Vector3 forward = GetForward();
     float radius = GetScaledRadius();
     float discRadius = radius * Math::Tan(_outerConeAngle * DegreesToRadians);
     float falloffDiscRadius = radius * Math::Tan(_innerConeAngle * DegreesToRadians);
@@ -231,7 +231,7 @@ void SpotLight::DrawLightsDebug(RenderView& view)
     const auto color = Color::Yellow;
     Vector3 right = _transform.GetRight();
     Vector3 up = _transform.GetUp();
-    Vector3 forward = GetDirection();
+    Vector3 forward = GetForward();
     float radius = GetScaledRadius();
     float discRadius = radius * Math::Tan(_outerConeAngle * DegreesToRadians);
     float falloffDiscRadius = radius * Math::Tan(_innerConeAngle * DegreesToRadians);

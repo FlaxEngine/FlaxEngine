@@ -7,7 +7,7 @@ using Flax.Build.NativeCpp;
 /// <summary>
 /// https://github.com/microsoft/UVAtlas
 /// </summary>
-public class UVAtlas : DepsModule
+public class UVAtlas : EngineDepsModule
 {
     /// <inheritdoc />
     public override void Init()
@@ -16,9 +16,6 @@ public class UVAtlas : DepsModule
 
         LicenseType = LicenseTypes.MIT;
         LicenseFilePath = "LICENSE";
-
-        // Merge third-party modules into engine binary
-        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />

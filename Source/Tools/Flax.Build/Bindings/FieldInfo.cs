@@ -57,6 +57,8 @@ namespace Flax.Build.Bindings
             var result = string.Empty;
             if (IsStatic)
                 result += "static ";
+            if (IsConstexpr)
+                result += "constexpr ";
             result += Type + " " + Name;
             if (HasDefaultValue)
                 result += " = " + DefaultValue;

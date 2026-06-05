@@ -256,4 +256,9 @@ float3 RotateAboutAxis(float4 normalizedRotationAxisAndAngle, float3 positionOnA
     return pointOnAxis + rotation - position;
 }
 
+float Remap(float value, float fromMin, float fromMax, float toMin, float toMax)
+{
+    return (value - fromMin) / (fromMax - fromMin) * (toMax - toMin) + toMin;
+}
+
 #endif

@@ -59,12 +59,12 @@ namespace FlaxEditor.GUI
             /// <summary>
             /// Occurs when items gets clicked by the user.
             /// </summary>
-            public event Action<Item> Clicked;
+            public event Action<Item> ItemClicked;
 
             /// <summary>
             /// Occurs when items gets focused.
             /// </summary>
-            public event Action<Item> Focused;
+            public event Action<Item> ItemFocused;
 
             /// <summary>
             /// The tint color of the text.
@@ -203,7 +203,7 @@ namespace FlaxEditor.GUI
                 if (button == MouseButton.Left && _isMouseDown)
                 {
                     _isMouseDown = false;
-                    Clicked?.Invoke(this);
+                    ItemClicked?.Invoke(this);
                 }
 
                 return base.OnMouseUp(location, button);
@@ -222,7 +222,7 @@ namespace FlaxEditor.GUI
             {
                 base.OnGotFocus();
 
-                Focused?.Invoke(this);
+                ItemFocused?.Invoke(this);
             }
 
             /// <inheritdoc />
@@ -434,7 +434,7 @@ namespace FlaxEditor.GUI
         /// <param name="item">The item.</param>
         public void AddItem(Item item)
         {
-            item.Clicked += OnClickItem;
+            item.ItemClicked += OnClickItem;
             ContainerControl parent = ItemsPanel;
             if (!string.IsNullOrEmpty(item.Category))
             {
@@ -589,6 +589,8 @@ namespace FlaxEditor.GUI
                 // Get the next item
                 bool controlDown = Root.GetKey(KeyboardKeys.Control);
                 var items = GetVisibleItems(!controlDown);
+                if (items.Count == 0)
+                    return true;
                 var focusedIndex = items.IndexOf(focusedItem);
 
                 int delta = key == KeyboardKeys.ArrowDown ? -1 : 1;

@@ -17,7 +17,7 @@
 #endif
 #include <iostream>
 
-#define LOG_ENABLE_FILE (!PLATFORM_SWITCH)
+#define LOG_ENABLE_FILE (!PLATFORM_SWITCH && !PLATFORM_WEB)
 #define LOG_ENABLE_WINDOWS_SINGLE_NEW_LINE_CHAR (PLATFORM_WINDOWS && PLATFORM_DESKTOP && (USE_EDITOR || !BUILD_RELEASE))
 
 namespace
@@ -116,7 +116,7 @@ bool Log::Logger::Init()
     return false;
 }
 
-void Log::Logger::Write(const StringView& msg)
+void Log::Logger::Write(const StringView& msg, LogType type)
 {
     const auto ptr = msg.Get();
     const auto length = msg.Length();
@@ -152,9 +152,10 @@ void Log::Logger::Write(const StringView& msg)
 
 #if !BUILD_RELEASE
     // Send message to platform logging
-    Platform::Log(msg);
+    Platform::Log(msg, (int32)type);
 #endif
 
+#if LOG_ENABLE_FILE
     // Write message to log file
     constexpr int32 LogMaxWriteSize = 1 * 1024 * 1024; // 1GB
     if (LogAfterInit && LogTotalWriteSize < LogMaxWriteSize)
@@ -171,6 +172,7 @@ void Log::Logger::Write(const StringView& msg)
         LogFile->Flush();
 #endif
     }
+#endif
 
     IsDuringLog = false;
     LogLocker.Unlock();
@@ -187,7 +189,11 @@ void Log::Logger::Dispose()
 
     // Write ending info
     WriteFloor();
+#if LOG_ENABLE_FILE
     Write(String::Format(TEXT(" Total errors: {0}\n Closing file"), LogTotalErrorsCnt, DateTime::Now().ToString()));
+#else
+    Write(String::Format(TEXT(" Total errors: {0}"), LogTotalErrorsCnt));
+#endif
     WriteFloor();
 
     // Close
@@ -213,10 +219,12 @@ bool Log::Logger::IsLogEnabled()
 
 void Log::Logger::Flush()
 {
+#if LOG_ENABLE_FILE
     LogLocker.Lock();
     if (LogFile)
         LogFile->Flush();
     LogLocker.Unlock();
+#endif
 }
 
 void Log::Logger::WriteFloor()
@@ -270,7 +278,7 @@ void Log::Logger::Write(LogType type, const StringView& msg)
     ProcessLogMessage(type, msg, w);
 
     // Log formatted message
-    Write(StringView(w.data(), (int32)w.size()));
+    Write(StringView(w.data(), (int32)w.size()), type);
 
     // Fire events
     OnMessage(type, msg);

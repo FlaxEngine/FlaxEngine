@@ -654,7 +654,7 @@ Window* Editor::CreateMainWindow()
     PROFILE_MEM(Editor);
     Window* window = Managed->GetMainWindow();
 
-#if PLATFORM_LINUX
+#if PLATFORM_LINUX || (PLATFORM_MAC && PLATFORM_SDL)
     // Set window icon
     const String iconPath = Globals::BinariesFolder / TEXT("Logo.png");
     if (FileSystem::FileExists(iconPath))

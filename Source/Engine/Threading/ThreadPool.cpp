@@ -22,9 +22,16 @@ FLAXENGINE_API bool IsInMainThread()
     return Globals::MainThreadID == Platform::GetCurrentThreadID();
 }
 
+String ThreadPoolTask::ToString() const
+{
+    return String::Format(TEXT("Thread Pool Task ({0})"), (int32)GetState());
+}
+
+#if PLATFORM_THREADS_LIMIT > 1
+
 namespace ThreadPoolImpl
 {
-    volatile int64 ExitFlag = 0;
+    volatile intptr ExitFlag = 0;
     Array<Thread*> Threads;
     ConcurrentTaskQueue<ThreadPoolTask> Jobs; // Hello Steve!
     ConditionVariable JobsSignal;
@@ -32,11 +39,6 @@ namespace ThreadPoolImpl
 #ifdef THREAD_POOL_AFFINITY_MASK
     volatile int64 ThreadIndex = 0;
 #endif
-}
-
-String ThreadPoolTask::ToString() const
-{
-    return String::Format(TEXT("Thread Pool Task ({0})"), (int32)GetState());
 }
 
 void ThreadPoolTask::Enqueue()
@@ -141,3 +143,13 @@ int32 ThreadPool::ThreadProc()
 
     return 0;
 }
+
+#else
+
+void ThreadPoolTask::Enqueue()
+{
+    // Run task on the main thread (fallback when no threading is supported)
+    Execute();
+}
+
+#endif

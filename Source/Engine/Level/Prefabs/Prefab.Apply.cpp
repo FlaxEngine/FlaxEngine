@@ -24,6 +24,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/MainThreadTask.h"
 #include "Editor/Editor.h"
+#include "FlaxEngine.Gen.h"
 
 // Apply flow:
 // - collect all prefabs using this prefab (load and create default instances)
@@ -772,7 +773,13 @@ bool Prefab::ApplyAll(Actor* targetActor)
     if (ApplyAllInternal(targetActor, true, thisPrefabInstancesData))
         return true;
 
-    SyncNestedPrefabs(allPrefabs, allPrefabsInstancesData);
+    // Sync nested prefabs
+    if (allPrefabs.HasItems())
+    {
+        LOG(Info, "Updating referencing prefabs");
+        HashSet<Guid> synced;
+        SyncNestedPrefabs(allPrefabs, allPrefabsInstancesData, synced);
+    }
 
     const auto endTime = DateTime::NowUTC();
     LOG(Info, "Prefab updated! {0} ms", (int32)(endTime - startTime).GetTotalMilliseconds());
@@ -1027,8 +1034,14 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
         rapidjson_flax::Document targetDataDocument;
         if (NestedPrefabs.HasItems())
         {
+            // Use initial data buffer (unstripped) but reorder objects to match the sequence (eg. when new object was added to the nested prefab)
             targetDataDocument.Parse(dataBuffer.GetString(), dataBuffer.GetSize());
-            SceneObjectsFactory::PrefabSyncData prefabSyncData(*sceneObjects.Value, targetDataDocument, modifier.Value);
+            Array<SceneObject*> reorderedObjects = *sceneObjects.Value;
+            newPrefabInstanceIdToDataIndexCounter = 0;
+            for (auto i = newPrefabInstanceIdToDataIndex.Begin(); i.IsNotEnd(); ++i)
+                reorderedObjects.Insert(i->Value, sceneObjects->At(newPrefabInstanceIdToDataIndexStart + newPrefabInstanceIdToDataIndexCounter++));
+            reorderedObjects.Resize(sceneObjects.Value->Count()); // reorderedObjects matches order in targetDataDocument
+            SceneObjectsFactory::PrefabSyncData prefabSyncData(reorderedObjects, targetDataDocument, modifier.Value);
             SceneObjectsFactory::SetupPrefabInstances(context, prefabSyncData);
 
             if (context.Instances.HasItems())
@@ -1236,7 +1249,7 @@ bool Prefab::UpdateInternal(const Array<SceneObject*>& defaultInstanceObjects, r
     {
         return Init(TypeName, StringAnsiView(tmpBuffer.GetString(), (int32)tmpBuffer.GetSize()));
     }
-#if 1 // Set to 0 to use memory-only reload that does not modifies the source file - useful for testing and debugging prefabs apply
+#if 1 // Set to 0 to use memory-only reload that does not modify the source file - useful for testing and debugging prefabs apply
 #if COMPILE_WITH_ASSETS_IMPORTER
     Locker.Unlock();
 
@@ -1295,7 +1308,7 @@ bool Prefab::UpdateInternal(const Array<SceneObject*>& defaultInstanceObjects, r
             _defaultInstance->DeleteObject();
             _defaultInstance = nullptr;
         }
-        _isLoaded = false;
+        _loadState = 0;
 
         // Update prefab data manually (to prevent updating source asset file - just for testing)
         Document.Parse(buffer.GetString(), buffer.GetSize());
@@ -1348,7 +1361,7 @@ bool Prefab::UpdateInternal(const Array<SceneObject*>& defaultInstanceObjects, r
                 NestedPrefabs.Add(prefabId);
             }
         }
-        _isLoaded = true;
+        _loadState = 1;
     }
 #endif
 
@@ -1395,34 +1408,31 @@ bool Prefab::SyncChangesInternal(PrefabInstancesData& prefabInstancesData)
     return ApplyAllInternal(targetActor, false, prefabInstancesData);
 }
 
-void Prefab::SyncNestedPrefabs(const NestedPrefabsList& allPrefabs, Array<PrefabInstancesData>& allPrefabsInstancesData) const
+void Prefab::SyncNestedPrefabs(const NestedPrefabsList& allPrefabs, Array<PrefabInstancesData>& allPrefabsInstancesData, HashSet<Guid>& synced) const
 {
     PROFILE_CPU();
-    LOG(Info, "Updating referencing prefabs");
-
-    // TODO: this may not work well for very complex prefab nesting -> loop order matters, maybe build a graph of dependencies?
 
     // Call recursive for all referencing prefab assets to refresh nested prefabs
     for (int32 i = 0; i < allPrefabs.Count(); i++)
     {
-        auto nestedPrefab = allPrefabs[i].Get();
-        if (nestedPrefab)
+        Prefab* nestedPrefab = allPrefabs[i].Get();
+        if (!nestedPrefab || synced.Contains(nestedPrefab->GetID()))
+            continue;
+        if (nestedPrefab->WaitForLoaded())
         {
-            if (nestedPrefab->WaitForLoaded())
-            {
-                LOG(Warning, "Waiting for prefab asset load failed.");
-                continue;
-            }
+            LOG(Warning, "Waiting for '{}' load failed.", nestedPrefab->ToString());
+            continue;
+        }
 
-            // Sync only if prefab is used by this prefab (directly) and it has been captured before
-            const int32 nestedPrefabIndex = nestedPrefab->NestedPrefabs.Find(GetID());
-            if (nestedPrefabIndex != -1)
-            {
-                if (nestedPrefab->SyncChangesInternal(allPrefabsInstancesData[i]))
-                    continue;
-                nestedPrefab->SyncNestedPrefabs(allPrefabs, allPrefabsInstancesData);
-                ObjectsRemovalService::Flush();
-            }
+        // Sync only if prefab is used by this prefab (directly) and it has been captured before
+        const int32 nestedPrefabIndex = nestedPrefab->NestedPrefabs.Find(GetID());
+        if (nestedPrefabIndex != -1)
+        {
+            synced.Add(nestedPrefab->GetID());
+            if (nestedPrefab->SyncChangesInternal(allPrefabsInstancesData[i]))
+                continue;
+            nestedPrefab->SyncNestedPrefabs(allPrefabs, allPrefabsInstancesData, synced);
+            ObjectsRemovalService::Flush();
         }
     }
 }

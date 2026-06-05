@@ -243,9 +243,9 @@ FlaxStorage::~FlaxStorage()
 {
     // Validate if has been disposed
     ASSERT(IsDisposed());
-    CHECK(_chunksLock == 0);
-    CHECK(_refCount == 0);
-    CHECK(_isUnloadingData == 0);
+    CHECK_NO_RETURN(_chunksLock == 0);
+    CHECK_NO_RETURN(_refCount == 0);
+    CHECK_NO_RETURN(_isUnloadingData == 0);
     ASSERT(_chunks.IsEmpty());
 
 #if USE_EDITOR
@@ -714,10 +714,12 @@ bool FlaxStorage::LoadAssetChunk(FlaxChunk* chunk)
     ASSERT(IsLoaded());
     ASSERT(chunk != nullptr && _chunks.Contains(chunk));
 
+#if PLATFORM_THREADS_LIMIT > 1
     // Protect against loading the same chunk from multiple threads at once
     while (Platform::InterlockedCompareExchange(&chunk->IsLoading, 1, 0) != 0)
         Platform::Sleep(1);
     SCOPE_EXIT{ Platform::AtomicStore(&chunk->IsLoading, 0); };
+#endif
     if (chunk->IsLoaded())
         return false;
 

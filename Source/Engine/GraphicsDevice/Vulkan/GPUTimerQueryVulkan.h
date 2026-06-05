@@ -13,6 +13,13 @@
 class GPUTimerQueryVulkan : public GPUResourceVulkan<GPUTimerQuery>
 {
 private:
+#if !VULKAN_USE_TIMER_QUERIES
+#elif GPU_VULKAN_QUERY_NEW
+    bool _hasResult = false;
+    bool _endCalled = false;
+    float _timeDelta = 0.0f;
+    uint64 _query = 0;
+#else
     struct Query
     {
         BufferedQueryPoolVulkan* Pool;
@@ -32,6 +39,7 @@ private:
     float _timeDelta = 0.0f;
     int32 _queryIndex;
     Array<QueryPair, InlinedAllocation<8>> _queries;
+#endif
 
 public:
     /// <summary>
@@ -40,6 +48,7 @@ public:
     /// <param name="device">The graphics device.</param>
     GPUTimerQueryVulkan(GPUDeviceVulkan* device);
 
+#if !GPU_VULKAN_QUERY_NEW
 public:
     /// <summary>
     /// Interrupts an in-progress query, allowing the command buffer to submitted. Interrupted queries must be resumed using Resume().
@@ -58,6 +67,7 @@ private:
     void WriteTimestamp(CmdBufferVulkan* cmdBuffer, Query& query, VkPipelineStageFlagBits stage) const;
     bool TryGetResult();
     bool UseQueries();
+#endif
 
 public:
     // [GPUTimerQuery]

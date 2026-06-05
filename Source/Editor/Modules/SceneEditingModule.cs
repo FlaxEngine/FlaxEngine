@@ -16,6 +16,8 @@ namespace FlaxEditor.Modules
     /// <seealso cref="FlaxEditor.Modules.EditorModule" />
     public sealed class SceneEditingModule : EditorModule
     {
+        private int _lastSelectionStatus = 0;
+
         /// <summary>
         /// The selected objects.
         /// </summary>
@@ -193,6 +195,20 @@ namespace FlaxEditor.Modules
             Undo.AddAction(new SelectionChangeAction(before, Selection.ToArray(), OnSelectionUndo));
 
             OnSelectionChanged();
+
+            // Display amount of selected actors on the status bar
+            Editor.UI.RemoveStatusMessage(_lastSelectionStatus);
+            var objects = Selection.Count;
+            var actors = CountActors(Selection);
+            _lastSelectionStatus = Editor.UI.AddStatusMessage($"Selected {objects} {(objects > 1 ? "objects" : "object")} (total {actors} {(actors > 1 ? "actors" : "actor")})");
+        }
+
+        private int CountActors(List<SceneGraphNode> nodes)
+        {
+            int result = 0;
+            foreach (var node in nodes)
+                result += 1 + CountActors(node.ChildNodes);
+            return result;
         }
 
         private void OnSelectionUndo(SceneGraphNode[] toSelect)
@@ -525,7 +541,7 @@ namespace FlaxEditor.Modules
             // Set paste target if only one actor is selected and no target provided
             if (pasteTargetActor == null && SelectionCount == 1 && Selection[0] is ActorNode actorNode)
             {
-                pasteTargetActor = actorNode.Actor.Scene == actorNode.Actor ? actorNode.Actor : actorNode.Actor.Parent;
+                pasteTargetActor = actorNode.Actor;
             }
 
             // Create paste action

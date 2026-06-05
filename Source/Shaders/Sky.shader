@@ -4,13 +4,14 @@
 #include "./Flax/MaterialCommon.hlsl"
 #include "./Flax/GBuffer.hlsl"
 #include "./Flax/Common.hlsl"
+#include "./Flax/Noise.hlsl"
 #include "./Flax/AtmosphereFog.hlsl"
 
 META_CB_BEGIN(0, Data)
 float4x4 WorldViewProjection;
 float4x4 InvViewProjection;
 float3 ViewOffset;
-float Padding;
+float NoiseScale;
 GBufferData GBuffer;
 AtmosphericFogData AtmosphericFog;
 META_CB_END
@@ -31,7 +32,7 @@ MaterialInput VS(ModelInput_PosOnly input)
 	MaterialInput output;
 
 	// Compute vertex position
-	output.Position = mul(float4(input.Position.xyz, 1), WorldViewProjection);
+	output.Position = PROJECT_POINT(float4(input.Position.xyz, 1), WorldViewProjection);
 	output.ScreenPos = output.Position;
 
 	return output;
@@ -46,12 +47,17 @@ GBufferOutput PS_Sky(MaterialInput input)
     // Calculate view vector (unproject at the far plane)
 	GBufferData gBufferData = GetGBufferData();
 	float4 clipPos = float4(input.ScreenPos.xy / input.ScreenPos.w, 1.0, 1.0);
-	clipPos = mul(clipPos, InvViewProjection);
+	clipPos = PROJECT_POINT(clipPos, InvViewProjection);
 	float3 worldPos = clipPos.xyz / clipPos.w;
     float3 viewVector = normalize(worldPos - gBufferData.ViewPos);
 
 	// Sample atmosphere color
     float4 color = GetAtmosphericFog(AtmosphericFog, gBufferData.ViewFar, gBufferData.ViewPos + ViewOffset, viewVector, gBufferData.ViewFar, float3(0, 0, 0));
+
+    // Apply dithering to hide banding artifacts
+    float2 uv = (input.ScreenPos.xy / input.ScreenPos.w) * float2(0.5, -0.5) + float2(0.5, 0.5);
+    float luminance = Luminance(saturate(color.rgb));
+    color.rgb += rand2dTo1d(uv) * luminance * NoiseScale;
 
 	// Pack GBuffer
 	output.Light = color;

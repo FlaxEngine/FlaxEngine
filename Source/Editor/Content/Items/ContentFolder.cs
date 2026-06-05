@@ -282,7 +282,7 @@ namespace FlaxEditor.Content
 
             if (data is DragDataFiles)
                 return DragDropEffect.Copy;
-            return _dragOverItems.Effect;
+            return _dragOverItems?.Effect ?? DragDropEffect.None;
         }
 
         /// <inheritdoc />

@@ -72,7 +72,6 @@ public:
 	void Minimize() override;
 	void Maximize() override;
 	void Restore() override;
-	bool IsClosed() const override;
     bool IsForegroundWindow() const override;
 	void BringToFront(bool force = false) override;
 	void SetClientBounds(const Rectangle& clientArea) override;
@@ -89,6 +88,7 @@ public:
 	void Focus() override;
 	void SetTitle(const StringView& title) override;
 	DragDropEffect DoDragDrop(const StringView& data) override;
+    using WindowBase::DoDragDrop;
 	void StartTrackingMouse(bool useMouseScreenOffset) override;
 	void EndTrackingMouse() override;
 	void SetCursor(CursorType type) override;

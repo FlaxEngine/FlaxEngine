@@ -1,5 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System.IO;
 using System.Collections.Generic;
 using Flax.Build;
 using Flax.Build.NativeCpp;
@@ -26,5 +27,6 @@ public class AudioTool : EngineModule
     /// <inheritdoc />
     public override void GetFilesToDeploy(List<string> files)
     {
+        files.Add(Path.Combine(FolderPath, "AudioTool.h"));
     }
 }

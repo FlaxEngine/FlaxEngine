@@ -539,11 +539,35 @@ protected:
 			hitInfo = hit.shape ? static_cast<PhysicsColliderActor*>(hit.shape->userData) : nullptr; \
 		}
 
+#if PLATFORM_THREADS_LIMIT <= 1
+
+class DummyCpuDispatcher : public PxCpuDispatcher
+{
+public:
+    void submitTask(PxBaseTask& task) override
+    {
+        // Run directly
+        PROFILE_CPU_NAMED("Physics");
+        task.run();
+        task.release();
+    }
+    uint32_t getWorkerCount() const override
+    {
+        return 1;
+    }
+};
+
+#endif
+
 namespace
 {
     PxFoundation* Foundation = nullptr;
     PxPhysics* PhysX = nullptr;
+#if PLATFORM_THREADS_LIMIT > 1
     PxDefaultCpuDispatcher* CpuDispatcher = nullptr;
+#else
+    DummyCpuDispatcher* CpuDispatcher = nullptr;
+#endif
 #if WITH_PVD
     PxPvd* PVD = nullptr;
 #endif
@@ -1151,6 +1175,8 @@ void ScenePhysX::UpdateVehicles(float dt)
             state.SteerAngle = RadiansToDegrees * perWheel.steerAngle;
             state.RotationAngle = -RadiansToDegrees * drive->mWheelsDynData.getWheelRotationAngle(j);
             state.SuspensionOffset = perWheel.suspJounce;
+            state.LongitudinalSlip = perWheel.longitudinalSlip;
+            state.LateralSlip = perWheel.lateralSlip;
 #if USE_EDITOR
             state.SuspensionTraceStart = P2C(perWheel.suspLineStart) + Origin;
             state.SuspensionTraceEnd = P2C(perWheel.suspLineStart + perWheel.suspLineDir * perWheel.suspLineLength) + Origin;
@@ -1740,7 +1766,11 @@ void PhysicsBackend::Shutdown()
 #if WITH_PVD
     RELEASE_PHYSX(PVD);
 #endif
+#if PLATFORM_THREADS_LIMIT > 1
     RELEASE_PHYSX(CpuDispatcher);
+#else
+    SAFE_DELETE(CpuDispatcher);
+#endif
     RELEASE_PHYSX(Foundation);
     SceneOrigins.Clear();
 }
@@ -1800,8 +1830,13 @@ void* PhysicsBackend::CreateScene(const PhysicsSettings& settings)
     {
         if (CpuDispatcher == nullptr)
         {
+#if PLATFORM_THREADS_LIMIT > 1
             uint32 threads = Math::Clamp<uint32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 1, 8);
             CpuDispatcher = PxDefaultCpuDispatcherCreate(threads);
+            CHECK_INIT(CpuDispatcher, "PxDefaultCpuDispatcherCreate failed!");
+#else
+            CpuDispatcher = New<DummyCpuDispatcher>();
+#endif
             CHECK_INIT(CpuDispatcher, "PxDefaultCpuDispatcherCreate failed!");
         }
         sceneDesc.cpuDispatcher = CpuDispatcher;
@@ -1944,6 +1979,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         PxActor** activeActors = scenePhysX->Scene->getActiveActors(activeActorsCount);
 
         // Update changed transformations
+#if PLATFORM_THREADS_LIMIT > 1
         if (activeActorsCount > 50 && JobSystem::GetThreadsCount() > 1)
         {
             // Run in async via job system
@@ -1953,6 +1989,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
             JobSystem::Execute(FlushActiveTransforms, JobSystem::GetThreadsCount());
         }
         else
+#endif
         {
             for (uint32 i = 0; i < activeActorsCount; i++)
             {

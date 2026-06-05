@@ -17,9 +17,7 @@ private:
     bool _hasResult = false;
     bool _endCalled = false;
     float _timeDelta = 0.0f;
-    uint64 _gpuFrequency = 0;
-    QueryHeapDX12::ElementHandle _begin;
-    QueryHeapDX12::ElementHandle _end;
+    uint64 _query = 0;
 
 public:
 

@@ -50,16 +50,12 @@ namespace FlaxEditor.Content
                     Offsets = Margin.Zero,
                 };
             }
-
-            // TODO: disable streaming for asset during thumbnail rendering (and restore it after)
         }
 
         /// <inheritdoc />
         public override bool CanDrawThumbnail(ThumbnailRequest request)
         {
-            // Check if asset is streamed enough
-            var asset = (SpriteAtlas)request.Asset;
-            return asset.ResidentMipLevels >= Mathf.Max(1, (int)(asset.MipLevels * ThumbnailsModule.MinimumRequiredResourcesQuality));
+            return ThumbnailsModule.HasMinimumQuality((SpriteAtlas)request.Asset);
         }
 
         /// <inheritdoc />

@@ -2,8 +2,8 @@
 
 #include "MultiScaler.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
-#include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Content/Content.h"
 
 GPU_CB_STRUCT(Data {
     Float2 TexelSize;
@@ -18,10 +18,10 @@ String MultiScaler::ToString() const
 bool MultiScaler::Init()
 {
     // Create pipeline states
-    _psHalfDepth = GPUDevice::Instance->CreatePipelineState();
     _psBlur5.CreatePipelineStates();
     _psBlur9.CreatePipelineStates();
     _psBlur13.CreatePipelineStates();
+    _psHalfDepth.CreatePipelineStates();
     _psUpscale = GPUDevice::Instance->CreatePipelineState();
 
     // Load asset
@@ -66,13 +66,21 @@ bool MultiScaler::setupResources()
         if (_psUpscale->Init(psDesc))
             return true;
     }
-    if (!_psHalfDepth->IsValid())
+    if (!_psHalfDepth.IsValid())
     {
-        psDesc.PS = shader->GetPS("PS_HalfDepth");
+        psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::Red;
+        psDesc.PS = shader->GetPS("PS_HalfDepth", 0);
+        if (_psHalfDepth[0]->Init(psDesc))
+            return true;
+        psDesc.PS = shader->GetPS("PS_HalfDepth", 2);
+        if (_psHalfDepth[2]->Init(psDesc))
+            return true;
+        psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::None;
+        psDesc.PS = shader->GetPS("PS_HalfDepth", 1);
         psDesc.DepthWriteEnable = true;
         psDesc.DepthEnable = true;
         psDesc.DepthFunc = ComparisonFunc::Always;
-        if (_psHalfDepth->Init(psDesc))
+        if (_psHalfDepth[1]->Init(psDesc))
             return true;
     }
 
@@ -85,15 +93,15 @@ void MultiScaler::Dispose()
     RendererPass::Dispose();
 
     // Cleanup
-    SAFE_DELETE_GPU_RESOURCE(_psHalfDepth);
     SAFE_DELETE_GPU_RESOURCE(_psUpscale);
     _psBlur5.Delete();
     _psBlur9.Delete();
     _psBlur13.Delete();
+    _psHalfDepth.Delete();
     _shader = nullptr;
 }
 
-void MultiScaler::Filter(const FilterMode mode, GPUContext* context, const int32 width, const int32 height, GPUTextureView* src, GPUTextureView* dst, GPUTextureView* tmp)
+void MultiScaler::Filter(FilterMode mode, GPUContext* context, int32 width, int32 height, GPUTextureView* src, GPUTextureView* dst, GPUTextureView* tmp)
 {
     PROFILE_GPU_CPU("MultiScaler Filter");
 
@@ -152,18 +160,14 @@ void MultiScaler::Filter(const FilterMode mode, GPUContext* context, const int32
     context->ResetRenderTarget();
 }
 
-void MultiScaler::Filter(const FilterMode mode, GPUContext* context, const int32 width, const int32 height, GPUTextureView* srcDst, GPUTextureView* tmp)
+void MultiScaler::Filter(FilterMode mode, GPUContext* context, int32 width, int32 height, GPUTextureView* srcDst, GPUTextureView* tmp)
 {
     PROFILE_GPU_CPU("MultiScaler Filter");
 
     context->SetViewportAndScissors((float)width, (float)height);
 
-    // Check if has missing resources
     if (checkIfSkipPass())
-    {
-        // Skip
         return;
-    }
 
     // Select filter
     GPUPipelineStatePermutationsPs<2>* ps;
@@ -211,12 +215,13 @@ void MultiScaler::Filter(const FilterMode mode, GPUContext* context, const int32
 void MultiScaler::DownscaleDepth(GPUContext* context, int32 dstWidth, int32 dstHeight, GPUTexture* src, GPUTextureView* dst)
 {
     PROFILE_GPU_CPU("Downscale Depth");
-
-    // Check if has missing resources
+    bool outputDepth = ((GPUTexture*)dst->GetParent())->IsDepthStencil();
     if (checkIfSkipPass())
     {
-        // Clear the output
-        context->ClearDepth(dst);
+        if (outputDepth)
+            context->ClearDepth(dst);
+        else
+            context->Clear(dst, Color::Transparent);
         return;
     }
 
@@ -230,12 +235,58 @@ void MultiScaler::DownscaleDepth(GPUContext* context, int32 dstWidth, int32 dstH
 
     // Draw
     context->SetViewportAndScissors((float)dstWidth, (float)dstHeight);
-    context->SetRenderTarget(dst, (GPUTextureView*)nullptr);
+    if (outputDepth)
+        context->SetRenderTarget(dst, (GPUTextureView*)nullptr);
+    else
+        context->SetRenderTarget(dst);
     context->BindSR(0, src);
-    context->SetState(_psHalfDepth);
+    context->SetState(_psHalfDepth[outputDepth ? 1 : 0]);
     context->DrawFullscreenTriangle();
 
     // Cleanup
+    context->ResetRenderTarget();
+    context->UnBindCB(0);
+}
+
+void MultiScaler::BuildHiZ(GPUContext* context, GPUTexture* srcDepth, GPUTexture* dstHiZ)
+{
+    PROFILE_GPU_CPU("Build HiZ");
+
+    int32 dstWidth = dstHiZ->Width();
+    int32 dstHeight = dstHiZ->Height();
+
+    // Copy mip0
+    if (srcDepth->Size() == dstHiZ->Size() && srcDepth->Format() == dstHiZ->Format())
+    {
+        context->CopySubresource(dstHiZ, 0, srcDepth, 0);
+    }
+    else if (srcDepth->Size() == dstHiZ->Size())
+    {
+        context->Draw(dstHiZ, srcDepth);
+    }
+    else
+    {
+        context->SetViewportAndScissors((float)dstWidth, (float)dstHeight);
+        context->SetRenderTarget(dstHiZ->View());
+        context->BindSR(0, srcDepth);
+        context->SetState(_psHalfDepth[2]);
+        context->DrawFullscreenTriangle();
+    }
+
+    // Build mip chain
+    for (int32 mip = 1; mip < dstHiZ->MipLevels(); mip++)
+    {
+        const int32 mipWidth = Math::Max(dstWidth >> mip, 1);
+        const int32 mipHeight = Math::Max(dstHeight >> mip, 1);
+        context->ResetRenderTarget();
+
+        context->SetViewportAndScissors((float)mipWidth, (float)mipHeight);
+        context->SetRenderTarget(dstHiZ->View(0, mip));
+        context->BindSR(0, dstHiZ->View(0, mip - 1));
+        context->SetState(_psHalfDepth[2]);
+        context->DrawFullscreenTriangle();
+    }
+
     context->ResetRenderTarget();
     context->UnBindCB(0);
 }

@@ -267,7 +267,7 @@ namespace FlaxEditor.Modules
         }
 
         /// <inheritdoc />
-        public override void OnPlayBegin()
+        public override void OnPlayBeginning()
         {
             Editor.Windows.FlashMainWindow();
 

@@ -160,6 +160,7 @@ void GPUTextureViewVulkan::Release()
 
 void GPUTextureViewVulkan::DescriptorAsImage(GPUContextVulkan* context, VkImageView& imageView, VkImageLayout& layout)
 {
+    // Texture SRV
     imageView = View;
     layout = LayoutSRV;
     const VkImageAspectFlags aspectMask = Info.subresourceRange.aspectMask;
@@ -190,6 +191,7 @@ void GPUTextureViewVulkan::DescriptorAsImage(GPUContextVulkan* context, VkImageV
 
 void GPUTextureViewVulkan::DescriptorAsStorageImage(GPUContextVulkan* context, VkImageView& imageView, VkImageLayout& layout)
 {
+    // Texture UAV
     imageView = View;
     layout = VK_IMAGE_LAYOUT_GENERAL;
     context->AddImageBarrier(this, VK_IMAGE_LAYOUT_GENERAL);
@@ -519,5 +521,17 @@ void GPUTextureVulkan::OnReleaseGPU()
     // Base
     GPUTexture::OnReleaseGPU();
 }
+
+#if GPU_ENABLE_RESOURCE_NAMING
+
+void GPUTextureVulkan::OnRenamed()
+{
+    if (_image)
+    {
+        VK_SET_DEBUG_NAME(_device, _image, VK_OBJECT_TYPE_IMAGE, GetName());
+    }
+}
+
+#endif
 
 #endif

@@ -210,6 +210,14 @@ namespace FlaxEditor.Content.Settings
         public JsonAsset iOSPlatform;
 #endif
 
+#if FLAX_EDITOR || PLATFORM_WEB
+        /// <summary>
+        /// Reference to <see cref="WebPlatformSettings"/> asset. Used to apply configuration on Web platform.
+        /// </summary>
+        [EditorOrder(2110), EditorDisplay("Platform Settings", "Web"), AssetReference(typeof(WebPlatformSettings), true), Tooltip("Reference to Web Platform Settings asset")]
+        public JsonAsset WebPlatform;
+#endif
+
         /// <summary>
         /// Gets the absolute path to the game settings asset file.
         /// </summary>
@@ -345,6 +353,10 @@ namespace FlaxEditor.Content.Settings
             if (type == typeof(iOSPlatformSettings))
                 return Load<iOSPlatformSettings>(gameSettings.iOSPlatform) as T;
 #endif
+#if FLAX_EDITOR || PLATFORM_WEB
+            if (type == typeof(WebPlatformSettings))
+                return Load<WebPlatformSettings>(gameSettings.WebPlatform) as T;
+#endif
 
             if (gameSettings.CustomSettings != null)
             {
@@ -442,6 +454,10 @@ namespace FlaxEditor.Content.Settings
 #if FLAX_EDITOR || PLATFORM_IOS
             if (type == typeof(iOSPlatformSettings))
                 return gameSettings.iOSPlatform;
+#endif
+#if FLAX_EDITOR || PLATFORM_WEB
+            if (type == typeof(WebPlatformSettings))
+                return gameSettings.WebPlatform;
 #endif
 
             if (gameSettings.CustomSettings != null)
@@ -557,6 +573,8 @@ namespace FlaxEditor.Content.Settings
                 return SaveAsset(gameSettings, ref gameSettings.MacPlatform, obj);
             if (type == typeof(iOSPlatformSettings))
                 return SaveAsset(gameSettings, ref gameSettings.iOSPlatform, obj);
+            if (type == typeof(WebPlatformSettings))
+                return SaveAsset(gameSettings, ref gameSettings.WebPlatform, obj);
 
             return true;
         }

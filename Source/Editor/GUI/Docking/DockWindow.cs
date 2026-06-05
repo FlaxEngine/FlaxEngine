@@ -65,7 +65,7 @@ namespace FlaxEditor.GUI.Docking
         /// <summary>
         /// Gets the default window size (in UI units, unscaled by DPI which is handled by windowing system).
         /// </summary>
-        public virtual Float2 DefaultSize => new Float2(900, 580);
+        public virtual Float2 DefaultSize => new Float2(1200, 740);
 
         /// <summary>
         /// Gets the serialization typename.
@@ -89,7 +89,7 @@ namespace FlaxEditor.GUI.Docking
                 // Check if is docked to the floating window and is selected so update window title
                 if (IsSelected && _dockedTo is FloatWindowDockPanel floatPanel)
                 {
-                    floatPanel.Window.Title = Title;
+                    floatPanel.UpdateTitle(_title);
                 }
             }
         }
@@ -183,6 +183,26 @@ namespace FlaxEditor.GUI.Docking
         /// <param name="position">Window location.</param>
         public void ShowFloating(Float2 location, Float2 size, WindowStartPosition position = WindowStartPosition.CenterParent)
         {
+            CreateFloating(location, size, position, true);
+        }
+
+        /// <summary>
+        /// Creates the window in a floating state.
+        /// </summary>
+        public void CreateFloating()
+        {
+            CreateFloating(Float2.Zero, Float2.Zero);
+        }
+
+        /// <summary>
+        /// Creates the window in a floating state.
+        /// </summary>
+        /// <param name="location">Window location.</param>
+        /// <param name="size">Window size, set <see cref="Float2.Zero"/> to use default.</param>
+        /// <param name="position">Window location.</param>
+        /// <param name="showWindow">Window visibility.</param>
+        public void CreateFloating(Float2 location, Float2 size, WindowStartPosition position = WindowStartPosition.CenterParent, bool showWindow = false)
+        {
             Undock();
 
             // Create window
@@ -199,14 +219,17 @@ namespace FlaxEditor.GUI.Docking
             windowGUI.UnlockChildrenRecursive();
             windowGUI.PerformLayout();
 
-            // Show
-            window.Show();
-            window.BringToFront();
-            window.Focus();
-            OnShow();
+            if (showWindow)
+            {
+                // Show
+                window.Show();
+                window.BringToFront();
+                window.Focus();
+                OnShow();
 
-            // Perform layout again
-            windowGUI.PerformLayout();
+                // Perform layout again
+                windowGUI.PerformLayout();
+            }
         }
 
         /// <summary>

@@ -12,7 +12,9 @@
 void PrecompileAssembliesStep::OnBuildStarted(CookingData& data)
 {
     const DotNetAOTModes aotMode = data.Tools->UseAOT();
-    if (aotMode == DotNetAOTModes::None || EnumHasAllFlags(data.Options, BuildOptions::NoCook))
+    if (aotMode == DotNetAOTModes::None || 
+        aotMode == DotNetAOTModes::NoDotnet || 
+        EnumHasAllFlags(data.Options, BuildOptions::NoCook))
         return;
     const auto& buildSettings = *BuildSettings::Get();
 
@@ -49,7 +51,8 @@ void PrecompileAssembliesStep::OnBuildStarted(CookingData& data)
 bool PrecompileAssembliesStep::Perform(CookingData& data)
 {
     const DotNetAOTModes aotMode = data.Tools->UseAOT();
-    if (aotMode == DotNetAOTModes::None)
+    if (aotMode == DotNetAOTModes::None ||
+        aotMode == DotNetAOTModes::NoDotnet)
         return false;
     const auto& buildSettings = *BuildSettings::Get();
     if (buildSettings.SkipDotnetPackaging && data.Tools->UseSystemDotnet())

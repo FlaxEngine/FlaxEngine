@@ -42,6 +42,9 @@
 #if COMPILE_WITH_VK_SHADER_COMPILER
 #include "Vulkan/ShaderCompilerVulkan.h"
 #endif
+#if COMPILE_WITH_WEBGPU_SHADER_COMPILER
+#include "WebGPU/ShaderCompilerWebGPU.h"
+#endif
 #if COMPILE_WITH_PS4_SHADER_COMPILER
 #include "Platforms/PS4/Engine/ShaderCompilerPS4/ShaderCompilerPS4.h"
 #endif
@@ -149,19 +152,13 @@ bool ShadersCompilation::Compile(ShaderCompilationOptions& options)
         options.SourceLength--;
 
     const DateTime startTime = DateTime::NowUTC();
-    const FeatureLevel featureLevel = RenderTools::GetFeatureLevel(options.Profile);
 
     // Process shader source to collect metadata
     ShaderMeta meta;
-    if (ShaderProcessing::Parser::Process(options.TargetName, options.Source, options.SourceLength, options.Macros, featureLevel, &meta))
+    if (ShaderProcessing::Parser::Process(options.TargetName, options.Source, options.SourceLength, options.Macros, options.Profile, &meta))
     {
         LOG(Warning, "Failed to parse source code.");
         return true;
-    }
-    const int32 shadersCount = meta.GetShadersCount();
-    if (shadersCount == 0)
-    {
-        LOG(Warning, "Shader has no valid functions.");
     }
 
     // Perform actual compilation
@@ -253,6 +250,11 @@ ShaderCompiler* ShadersCompilation::RequestCompiler(ShaderProfile profile, Platf
 #if COMPILE_WITH_VK_SHADER_COMPILER
     case ShaderProfile::Vulkan_SM5:
         compiler = New<ShaderCompilerVulkan>(profile);
+        break;
+#endif
+#if COMPILE_WITH_WEBGPU_SHADER_COMPILER
+    case ShaderProfile::WebGPU:
+        compiler = New<ShaderCompilerWebGPU>(profile);
         break;
 #endif
 #if COMPILE_WITH_PS4_SHADER_COMPILER
@@ -442,6 +444,11 @@ String ShadersCompilation::ResolveShaderPath(StringView path)
         {
             // Hard-coded redirect to platform-specific includes
             result = Globals::StartupFolder / TEXT("Source/Platforms");
+        }
+        else if (projectName.StartsWith(StringView(TEXT("FlaxThirdParty"))))
+        {
+            // Hard-coded redirect to third-party-specific includes
+            result = Globals::StartupFolder / TEXT("Source/ThirdParty");
         }
         else
         {

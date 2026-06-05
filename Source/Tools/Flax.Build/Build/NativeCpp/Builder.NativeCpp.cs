@@ -429,6 +429,7 @@ namespace Flax.Build
                 var dependencyModule = buildData.Rules.GetModule(moduleName);
                 if (dependencyModule != null && buildData.Modules.TryGetValue(dependencyModule, out var dependencyOptions))
                 {
+                    moduleOptions.LinkEnv.CustomArgs.AddRange(dependencyOptions.LinkEnv.CustomArgs);
                     moduleOptions.LinkEnv.InputFiles.AddRange(dependencyOptions.OutputFiles);
                     moduleOptions.DependencyFiles.AddRange(dependencyOptions.DependencyFiles);
                     moduleOptions.OptionalDependencyFiles.AddRange(dependencyOptions.OptionalDependencyFiles);
@@ -445,6 +446,7 @@ namespace Flax.Build
                 var dependencyModule = buildData.Rules.GetModule(moduleName);
                 if (dependencyModule != null && buildData.Modules.TryGetValue(dependencyModule, out var dependencyOptions))
                 {
+                    moduleOptions.LinkEnv.CustomArgs.AddRange(dependencyOptions.LinkEnv.CustomArgs);
                     moduleOptions.LinkEnv.InputFiles.AddRange(dependencyOptions.OutputFiles);
                     moduleOptions.DependencyFiles.AddRange(dependencyOptions.DependencyFiles);
                     moduleOptions.OptionalDependencyFiles.AddRange(dependencyOptions.OptionalDependencyFiles);
@@ -491,7 +493,7 @@ namespace Flax.Build
                 var cppFiles = new List<string>(moduleOptions.SourceFiles.Count / 2);
                 for (int i = 0; i < moduleOptions.SourceFiles.Count; i++)
                 {
-                    if (moduleOptions.SourceFiles[i].EndsWith(".cpp", StringComparison.OrdinalIgnoreCase))
+                    if (moduleOptions.SourceFiles[i].EndsWith(".cpp", StringComparison.OrdinalIgnoreCase) || moduleOptions.SourceFiles[i].EndsWith(".c", StringComparison.OrdinalIgnoreCase))
                         cppFiles.Add(moduleOptions.SourceFiles[i]);
                 }
 
@@ -940,6 +942,7 @@ namespace Flax.Build
                         var moduleOptions = BuildModule(buildData, module);
 
                         // Merge module into target environment
+                        buildData.TargetOptions.LinkEnv.CustomArgs.AddRange(moduleOptions.LinkEnv.CustomArgs);
                         buildData.TargetOptions.LinkEnv.InputFiles.AddRange(moduleOptions.OutputFiles);
                         buildData.TargetOptions.DependencyFiles.AddRange(moduleOptions.DependencyFiles);
                         buildData.TargetOptions.OptionalDependencyFiles.AddRange(moduleOptions.OptionalDependencyFiles);

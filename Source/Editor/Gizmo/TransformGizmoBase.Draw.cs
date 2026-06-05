@@ -81,7 +81,8 @@ namespace FlaxEditor.Gizmo
             _isDisabled = ShouldGizmoBeLocked();
 
             float brightness = _isDisabled ? options.Visual.TransformGizmoBrightnessDisabled : options.Visual.TransformGizmoBrightness;
-            if (Mathf.NearEqual(brightness, (float)_materialAxisX.GetParameterValue(_brightnessParamName)))
+            var currentValue = _materialAxisX.GetParameterValue(_brightnessParamName);
+            if (currentValue is not float currentValueFloat || Mathf.NearEqual(brightness, currentValueFloat))
                 return;
             _materialAxisX.SetParameterValue(_brightnessParamName, brightness);
             _materialAxisY.SetParameterValue(_brightnessParamName, brightness);

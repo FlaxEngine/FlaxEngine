@@ -12,15 +12,20 @@ struct android_app;
 /// <summary>
 /// The Android platform implementation and application management utilities.
 /// </summary>
+API_CLASS(Static, Tag="NoTypeInitializer")
 class FLAXENGINE_API AndroidPlatform : public UnixPlatform
 {
 public:
 
     static android_app* GetApp();
-    static String GetAppPackageName();
-    static String GetDeviceManufacturer();
-    static String GetDeviceModel();
-    static String GetDeviceBuildNumber();
+    // Gets 'getPackageName()' value.
+    API_PROPERTY() static String GetAppPackageName();
+    // Gets 'android.os.Build.MANUFACTURER' value.
+    API_PROPERTY() static String GetDeviceManufacturer();
+    // Gets 'android.os.Build.MODEL' value.
+    API_PROPERTY() static String GetDeviceModel();
+    // Gets 'android.os.Build.DISPLAY' value.
+    API_PROPERTY() static String GetDeviceBuildNumber();
     static void PreInit(android_app* app);
 
 public:
@@ -94,11 +99,6 @@ public:
     static void Yield();
     static double GetTimeSeconds();
     static uint64 GetTimeCycles();
-    FORCE_INLINE static uint64 GetClockFrequency()
-    {
-        // Dummy value
-        return 1000000;
-    }
     static void GetSystemTime(int32& year, int32& month, int32& dayOfWeek, int32& day, int32& hour, int32& minute, int32& second, int32& millisecond);
     static void GetUTCTime(int32& year, int32& month, int32& dayOfWeek, int32& day, int32& hour, int32& minute, int32& second, int32& millisecond);
     static bool Init();
@@ -108,7 +108,7 @@ public:
     static void BeforeExit();
     static void Exit();
 #if !BUILD_RELEASE
-    static void Log(const StringView& msg);
+    static void Log(const StringView& msg, int32 logType = 1);
 #endif
     static int32 GetDpi();
     static NetworkConnectionType GetNetworkConnectionType();

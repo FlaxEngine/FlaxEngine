@@ -13,8 +13,6 @@ API_CLASS(Static, Attributes="DebugCommand") class FLAXENGINE_API Globals
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(Globals);
 
 public:
-    // Paths
-
     // Main engine directory path.
     API_FIELD(ReadOnly) static String StartupFolder;
 
@@ -54,8 +52,6 @@ public:
 #endif
 
 public:
-    // State
-
     // True if fatal error occurred (engine is exiting).
     // [Deprecated in v1.10]
     DEPRECATED("Use Engine::FatalError instead.") static bool FatalErrorOccurred;
@@ -91,14 +87,10 @@ public:
     DEPRECATED("Use Engine::ExitCode instead.") static int32 ExitCode;
 
 public:
-    // Threading
-
     // Main Engine thread id.
     API_FIELD(ReadOnly) static uint64 MainThreadID;
 
 public:
-    // Config
-
     /// <summary>
     /// The full engine version.
     /// </summary>

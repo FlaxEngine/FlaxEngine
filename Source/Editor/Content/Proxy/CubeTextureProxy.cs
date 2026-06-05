@@ -47,8 +47,6 @@ namespace FlaxEditor.Content
                 _preview = new CubeTexturePreview(false);
                 InitAssetPreview(_preview);
             }
-
-            // TODO: disable streaming for asset during thumbnail rendering (and restore it after)
         }
 
         /// <inheritdoc />

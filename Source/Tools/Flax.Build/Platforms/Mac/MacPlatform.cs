@@ -42,6 +42,7 @@ namespace Flax.Build.Platforms
             {
             case TargetPlatform.iOS:
             case TargetPlatform.Mac: return HasRequiredSDKsInstalled;
+            case TargetPlatform.Web: return EmscriptenSdk.Instance.IsValid;
             default: return false;
             }
         }

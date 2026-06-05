@@ -407,7 +407,6 @@ namespace FlaxEditor
 
             // Close splash and show main window
             CloseSplashScreen();
-            Assert.IsNotNull(Windows.MainWindow);
             if (!IsHeadlessMode)
             {
                 Windows.MainWindow.Show();
@@ -655,7 +654,9 @@ namespace FlaxEditor
             GameSettings.Save(new WindowsPlatformSettings());
             GameSettings.Save(new LinuxPlatformSettings());
             GameSettings.Save(new AndroidPlatformSettings());
-            GameSettings.Save(new UWPPlatformSettings());
+            GameSettings.Save(new MacPlatformSettings());
+            GameSettings.Save(new iOSPlatformSettings());
+            GameSettings.Save(new WebPlatformSettings());
         }
 
         internal void OnPlayBeginning()
@@ -1525,11 +1526,14 @@ namespace FlaxEditor
 
         internal bool Internal_HasGameViewportFocus()
         {
-            if (Windows.GameWin != null && Windows.GameWin.ContainsFocus)
+            var gameWin = Windows.GameWin;
+            if (gameWin != null && gameWin.ContainsFocus)
             {
-                var win = Windows.GameWin.Root;
+                var win = gameWin.Root;
                 if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
                 {
+                    if (gameWin.Parent is GUI.Docking.DockPanelProxy dockPanel && dockPanel.IsUsingDockPanel)
+                        return false;
                     if (StateMachine.IsPlayMode && StateMachine.PlayingState.IsPaused)
                         return false;
                     return true;

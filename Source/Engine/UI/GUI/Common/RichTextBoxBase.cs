@@ -379,6 +379,9 @@ namespace FlaxEngine.GUI
                     var leftEdge = selection.StartIndex <= textBlock.Range.StartIndex ? textBlock.Bounds.UpperLeft : GetCharPosition(selection.StartIndex, out _);
                     var rightEdge = selection.EndIndex >= textBlock.Range.EndIndex ? textBlock.Bounds.UpperRight : GetCharPosition(selection.EndIndex, out _);
                     float height = font.Height;
+#if PLATFORM_MAC && !PLATFORM_SDL
+                    height /= (float)Platform.Dpi / 96.0f; // TODO: refactor DPI support on macOS to skip such hacks
+#endif
                     float alpha = Mathf.Min(1.0f, Mathf.Cos(_animateTime * BackgroundSelectedFlashSpeed) * 0.5f + 1.3f);
                     alpha *= alpha;
                     Color selectionColor = Color.White * alpha;

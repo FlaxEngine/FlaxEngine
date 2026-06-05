@@ -367,6 +367,11 @@ MaterialBase* SplineModel::GetMaterial(int32 entryIndex)
     return material;
 }
 
+ModelBase* SplineModel::GetModel()
+{
+    return Model.Get();
+}
+
 void SplineModel::UpdateBounds()
 {
     OnSplineUpdated();
@@ -492,9 +497,7 @@ void SplineModel::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(PreTransform, _preTransform)
     SERIALIZE(Model);
     SERIALIZE(DrawModes);
-
-    stream.JKEY("Buffer");
-    stream.Object(&Entries, other ? &other->Entries : nullptr);
+    SERIALIZE_MEMBER(Buffer, Entries);
 }
 
 void SplineModel::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -509,8 +512,7 @@ void SplineModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     DESERIALIZE_MEMBER(PreTransform, _preTransform);
     DESERIALIZE(Model);
     DESERIALIZE(DrawModes);
-
-    Entries.DeserializeIfExists(stream, "Buffer", modifier);
+    DESERIALIZE_MEMBER(Buffer, Entries);
 
     // [Deprecated on 07.02.2022, expires on 07.02.2024]
     if (modifier->EngineBuild <= 6330)

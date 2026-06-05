@@ -4,10 +4,11 @@
 
 #if COMPILE_WITH_SHADER_COMPILER
 
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Utilities/TextProcessing.h"
 #include "Engine/Profiler/ProfilerCPU.h"
-#include "Engine/Core/Log.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "ShaderFunctionReader.CB.h"
 #include "ShaderFunctionReader.VS.h"
 #include "ShaderFunctionReader.HS.h"
@@ -17,12 +18,13 @@
 #include "ShaderFunctionReader.CS.h"
 #include "Config.h"
 
-ShaderProcessing::Parser::Parser(const String& targetName, const char* source, int32 sourceLength, ParserMacros macros, FeatureLevel featureLevel)
+ShaderProcessing::Parser::Parser(const String& targetName, const char* source, int32 sourceLength, ParserMacros macros, ShaderProfile profile)
     : failed(false)
     , targetName(targetName)
     , text(source, sourceLength)
     , _macros(macros)
-    , _featureLevel(featureLevel)
+    , _featureLevel(RenderTools::GetFeatureLevel(profile))
+    , _features(RenderTools::GetShaderProfileFeatures(profile))
 {
 }
 
@@ -30,10 +32,10 @@ ShaderProcessing::Parser::~Parser()
 {
 }
 
-bool ShaderProcessing::Parser::Process(const String& targetName, const char* source, int32 sourceLength, ParserMacros macros, FeatureLevel featureLevel, ShaderMeta* result)
+bool ShaderProcessing::Parser::Process(const String& targetName, const char* source, int32 sourceLength, ParserMacros macros, ShaderProfile profile, ShaderMeta* result)
 {
     PROFILE_CPU_NAMED("Shader.Parse");
-    Parser parser(targetName, source, sourceLength, macros, featureLevel);
+    Parser parser(targetName, source, sourceLength, macros, profile);
     parser.Process(result);
     return parser.Failed();
 }

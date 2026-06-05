@@ -106,7 +106,7 @@ public:
     /// </summary>
     /// <param name="context">The GPU commands context.</param>
     /// <param name="dst">The destination texture. It must match the output dimensions and format. No staging texture support.</param>
-    virtual void CopyBackbuffer(GPUContext* context, GPUTexture* dst) = 0;
+    virtual void CopyBackbuffer(GPUContext* context, GPUTexture* dst);
 
     /// <summary>
     /// Checks if task is ready to render.

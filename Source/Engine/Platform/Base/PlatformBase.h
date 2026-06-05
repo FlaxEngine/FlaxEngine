@@ -191,6 +191,13 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(PlatformBase);
     static void Exit();
 
 public:
+
+    /// <summary>
+    /// Application windows class name.
+    /// </summary>
+    static const Char* ApplicationClassName;
+
+public:
     /// <summary>
     /// Copy memory region
     /// </summary>
@@ -371,7 +378,7 @@ public:
     /// Returns true if running on 64-bit computer
     /// </summary>
     /// <returns>True if running on 64-bit computer, otherwise false.</returns>
-    API_PROPERTY() static bool Is64BitPlatform() = delete;
+    API_PROPERTY() static bool Is64BitPlatform();
 
     /// <summary>
     /// Gets the name of the operating system.
@@ -463,7 +470,11 @@ public:
     /// Gets the system clock frequency.
     /// </summary>
     /// <returns>The clock frequency.</returns>
-    API_PROPERTY() static uint64 GetClockFrequency() = delete;
+    API_PROPERTY() static uint64 GetClockFrequency()
+    {
+        // Dummy value
+        return 1000000;
+    }
 
     /// <summary>
     /// Gets current system time based on current computer settings.
@@ -529,7 +540,8 @@ public:
     /// Logs the specified message to the platform-dependant logging stream.
     /// </summary>
     /// <param name="msg">The message.</param>
-    static void Log(const StringView& msg);
+    /// <param name="logType">The type of the log matching LogType enum. 1 - log, 2 - warning, 4 - error</param>
+    static void Log(const StringView& msg, int32 logType = 1);
 
     /// <summary>
     /// Checks whenever program is running with debugger attached.
@@ -871,6 +883,26 @@ public:
 
     // Crash dump data handling
     static void CollectCrashData(const String& crashDataFolder, void* context = nullptr);
+
+public:
+#if USE_EDITOR
+    /// <summary>
+    /// Gets the pixel color at the specified coordinates.
+    /// </summary>
+    /// <param name="pos">Screen-space coordinate to read.</param>
+    /// <returns>Pixel color at the specified coordinates, or transparent color when color couldn't be picked up.</returns>
+    API_FUNCTION() static Color32 GetScreenColorAt(const Float2& pos);
+
+    /// <summary>
+    /// Starts async color picking. Color will be returned through PickColorDone event when the action ends (user selected the final color with a mouse). When action is active, GetColorAt can be used to read the current value.
+    /// </summary>
+    API_FUNCTION() static void PickScreenColor();
+
+    /// <summary>
+    /// Called when PickColor action is finished.
+    /// </summary>
+    API_EVENT() static Delegate<Color32> PickScreenColorDone;
+#endif
 };
 
 extern FLAXENGINE_API const Char* ToString(PlatformType type);

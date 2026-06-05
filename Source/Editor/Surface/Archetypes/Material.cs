@@ -807,8 +807,8 @@ namespace FlaxEditor.Surface.Archetypes
                 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Input(0, "A", true, null, 0),
-                    NodeElementArchetype.Factory.Input(1, "B", true, null, 1),
+                    NodeElementArchetype.Factory.Input(0, "UV", true, null, 0),
+                    NodeElementArchetype.Factory.Input(1, "Center", true, null, 1),
                     NodeElementArchetype.Factory.Input(2, "Radius", true, typeof(float), 2, 0),
                     NodeElementArchetype.Factory.Input(3, "Hardness", true, typeof(float), 3, 1),
                     NodeElementArchetype.Factory.Input(4, "Invert", true, typeof(bool), 4, 2),
@@ -1231,6 +1231,32 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Enum(0, 0, 120, 0, typeof(BlendMode)), // Blend mode selector
                     NodeElementArchetype.Factory.Output(0, "Result", typeof(Float4), 3),
                 }
+            },
+            new NodeArchetype
+            {
+                TypeID = 52,
+                Title = "Linear to sRGB",
+                Description = "Converts linear color into sRGB.",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(150, 20),
+                Elements =
+                [
+                    NodeElementArchetype.Factory.Input(0, "Linear", true, typeof(Float3), 0),
+                    NodeElementArchetype.Factory.Output(0, "sRGB", typeof(Float3), 1),
+                ]
+            },
+            new NodeArchetype
+            {
+                TypeID = 53,
+                Title = "sRGB to Linear",
+                Description = "Converts sRGB color into linear.",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(150, 20),
+                Elements =
+                [
+                    NodeElementArchetype.Factory.Input(0, "sRGB", true, typeof(Float3), 0),
+                    NodeElementArchetype.Factory.Output(0, "Linear", typeof(Float3), 1),
+                ]
             },
         };
     }

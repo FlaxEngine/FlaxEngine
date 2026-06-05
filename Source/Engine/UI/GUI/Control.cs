@@ -496,6 +496,11 @@ namespace FlaxEngine.GUI
         public bool IsNavFocused => _isNavFocused;
 
         /// <summary>
+        /// Event fired when control gets focus.
+        /// </summary>
+        public event Action Focused;
+
+        /// <summary>
         /// Sets input focus to the control
         /// </summary>
         public virtual void Focus()
@@ -523,18 +528,17 @@ namespace FlaxEngine.GUI
         [NoAnimate]
         public virtual void OnGotFocus()
         {
-            // Cache flag
             _isFocused = true;
             _isNavFocused = false;
+            Focused?.Invoke();
         }
 
         /// <summary>
-        /// When control losts input focus
+        /// When control looses input focus
         /// </summary>
         [NoAnimate]
         public virtual void OnLostFocus()
         {
-            // Clear flag
             _isFocused = false;
             _isNavFocused = false;
         }
@@ -568,12 +572,12 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Starts the mouse tracking. Used by the scrollbars, splitters, etc.
         /// </summary>
-        /// <param name="useMouseScreenOffset">If set to <c>true</c> will use mouse screen offset.</param>
+        /// <param name="screenSpaceMouseWrap">If set to <c>true</c> will wrap when it hits a screen border.</param>
         [NoAnimate]
-        public void StartMouseCapture(bool useMouseScreenOffset = false)
+        public void StartMouseCapture(bool screenSpaceMouseWrap = false)
         {
             var parent = Root;
-            parent?.StartTrackingMouse(this, useMouseScreenOffset);
+            parent?.StartTrackingMouse(this, screenSpaceMouseWrap);
         }
 
         /// <summary>
@@ -681,7 +685,7 @@ namespace FlaxEngine.GUI
         /// <param name="location">The navigation start location (in the control-space).</param>
         /// <param name="caller">The control that calls the event.</param>
         /// <param name="visited">The list with visited controls. Used to skip recursive navigation calls when doing traversal across the UI hierarchy.</param>
-        /// <returns>The target navigation control or null if didn't performed any navigation.</returns>
+        /// <returns>The target navigation control or null if didn't perform any navigation.</returns>
         public virtual Control OnNavigate(NavDirection direction, Float2 location, Control caller, List<Control> visited)
         {
             if (caller == _parent && AutoFocus && Visible)
@@ -768,6 +772,15 @@ namespace FlaxEngine.GUI
                 SetUpdate(ref _tooltipUpdate, null);
                 Tooltip?.OnMouseLeaveControl(this);
             }
+        }
+
+        /// <summary>
+        /// When mouse moves over control's area while mouse is in relative mode
+        /// </summary>
+        /// <param name="motion">Mouse relative motion</param>
+        [NoAnimate]
+        public virtual void OnMouseMoveRelative(Float2 motion)
+        {
         }
 
         /// <summary>

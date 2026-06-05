@@ -40,15 +40,11 @@
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
 #include "Engine/Scripting/ManagedCLR/MException.h"
-#include "Engine/Core/Config/PlatformSettings.h"
 #endif
 
 namespace EngineImpl
 {
     bool IsReady = false;
-#if !USE_EDITOR
-    bool RunInBackground = false;
-#endif
     String CommandLine = nullptr;
     int32 Fps = 0, FpsAccumulatedFrames = 0;
     double FpsAccumulated = 0.0;
@@ -78,7 +74,7 @@ int32 Engine::ExitCode = 0;
 Window* Engine::MainWindow = nullptr;
 double EngineIdleTime = 0;
 
-int32 Engine::Main(const Char* cmdLine)
+int32 Engine::OnInit(const Char* cmdLine)
 {
 #if COMPILE_WITH_PROFILER
     extern void InitProfilerMemory(const Char* cmdLine, int32 stage);
@@ -97,14 +93,8 @@ int32 Engine::Main(const Char* cmdLine)
         return -1;
     }
 
-#if FLAX_TESTS
-    // Configure engine for test running environment
-    CommandLine::Options.Headless = true;
-    CommandLine::Options.Null = true;
-    CommandLine::Options.Mute = true;
-    CommandLine::Options.Std = true;
-#endif
-
+    // Init platform
+    Platform::SetHighDpiAwarenessEnabled(!CommandLine::Options.LowDPI.IsTrue());
     if (Platform::Init())
     {
         Platform::Fatal(TEXT("Cannot init platform."));
@@ -113,9 +103,9 @@ int32 Engine::Main(const Char* cmdLine)
 #if COMPILE_WITH_PROFILER
     InitProfilerMemory(cmdLine, 1);
 #endif
-
-    Platform::SetHighDpiAwarenessEnabled(!CommandLine::Options.LowDPI.IsTrue());
     Time::StartupTime = DateTime::Now();
+
+    // Setup paths and folders
     Globals::StartupFolder = Globals::BinariesFolder = Platform::GetMainDirectory();
 #if USE_EDITOR
     Globals::StartupFolder /= TEXT("../../../..");
@@ -130,31 +120,28 @@ int32 Engine::Main(const Char* cmdLine)
 #endif
     StringUtils::PathRemoveRelativeParts(Globals::StartupFolder);
     FileSystem::NormalizePath(Globals::BinariesFolder);
-
     FileSystem::GetSpecialFolderPath(SpecialFolder::Temporary, Globals::TemporaryFolder);
     if (Globals::TemporaryFolder.IsEmpty())
         Platform::Fatal(TEXT("Failed to gather temporary folder directory."));
     Globals::TemporaryFolder /= Guid::New().ToString(Guid::FormatType::D);
 
     // Load game info or project info
-    {
-        const int32 result = Application::LoadProduct();
-        if (result != 0)
-            return result;
-    }
+    const int32 result = Application::LoadProduct();
+    if (result != 0)
+        return result;
 
+    // Init logging
     EngineImpl::InitPaths();
     EngineImpl::InitLog();
 
 #if USE_EDITOR
     if (Editor::CheckProjectUpgrade())
     {
-        // End
         LOG(Warning, "Loading project cancelled. Closing...");
 #if LOG_ENABLE
         Log::Logger::Dispose();
 #endif
-        return 0;
+        return 1;
     }
 #endif
 
@@ -168,97 +155,102 @@ int32 Engine::Main(const Char* cmdLine)
     Platform::BeforeRun();
     EngineImpl::InitMainWindow();
     Application::BeforeRun();
-#if !USE_EDITOR && (PLATFORM_WINDOWS || PLATFORM_LINUX || PLATFORM_MAC)
-    EngineImpl::RunInBackground = PlatformSettings::Get()->RunInBackground;
-#endif
     LOG_FLOOR();
     LOG_FLUSH();
-    Time::Synchronize();
+    Time::Synchronize(true);
     EngineImpl::IsReady = true;
     PROFILE_MEM_END();
 
+    return 0;
+}
+
+void Engine::OnLoop()
+{
+    // Reduce CPU usage by introducing idle time if the engine is running very fast and has enough time to spend
+    const bool useSleep = !PLATFORM_WEB; // TODO: this should probably be a platform setting
+    if ((useSleep && Time::UpdateFPS > ZeroTolerance) || !Platform::GetHasFocus())
+    {
+        double nextTick = Time::GetNextTick();
+        double timeToTick = nextTick - Platform::GetTimeSeconds();
+
+        // Sleep less than needed, some platforms may sleep slightly more than requested
+        if (timeToTick > 0.002)
+        {
+            PROFILE_CPU_NAMED("Idle");
+            auto sleepStart = Platform::GetTimeSeconds();
+            Platform::Sleep(1);
+            auto sleepEnd = Platform::GetTimeSeconds();
+            EngineIdleTime += sleepEnd - sleepStart;
+        }
+    }
+
+    // App paused logic
+    if (Platform::GetIsPaused())
+    {
+        OnPause();
+        do
+        {
+            Platform::Sleep(10);
+            Platform::Tick();
+        } while (Platform::GetIsPaused() && !ShouldExit());
+        if (ShouldExit())
+            return;
+        OnUnpause();
+    }
+
+    // Use the same time for all ticks to improve synchronization
+    const double time = Platform::GetTimeSeconds();
+
+    // Update application (will gather data and other platform related events)
+    {
+        PROFILE_CPU_NAMED("Platform.Tick");
+        Platform::Tick();
+#if COMPILE_WITH_PROFILER
+        extern void TickProfilerMemory();
+        TickProfilerMemory();
+#endif
+    }
+
+    // Update game logic
+    if (Time::OnBeginUpdate(time))
+    {
+        OnUpdate();
+        OnLateUpdate();
+        Time::OnEndUpdate();
+        EngineIdleTime = 0;
+    }
+
+    // Start physics simulation
+    if (Time::OnBeginPhysics(time))
+    {
+        OnFixedUpdate();
+        OnLateFixedUpdate();
+        Time::OnEndPhysics();
+    }
+
+    // Draw frame
+    if (Time::OnBeginDraw(time))
+    {
+        OnDraw();
+        Time::OnEndDraw();
+    }
+}
+
+int32 Engine::Main(const Char* cmdLine)
+{
+    // Initialize
+    ExitCode = OnInit(cmdLine);
+    if (ExitCode != 0)
+        return ExitCode;
+
     // Main engine loop
-    const bool useSleep = true; // TODO: this should probably be a platform setting
     while (!ShouldExit())
     {
-        // Reduce CPU usage by introducing idle time if the engine is running very fast and has enough time to spend
-        if ((useSleep && Time::UpdateFPS > ZeroTolerance) || !Platform::GetHasFocus())
-        {
-            double nextTick = Time::GetNextTick();
-            double timeToTick = nextTick - Platform::GetTimeSeconds();
-
-            // Sleep less than needed, some platforms may sleep slightly more than requested
-            if (timeToTick > 0.002)
-            {
-                PROFILE_CPU_NAMED("Idle");
-                auto sleepStart = Platform::GetTimeSeconds();
-                Platform::Sleep(1);
-                auto sleepEnd = Platform::GetTimeSeconds();
-                EngineIdleTime += sleepEnd - sleepStart;
-            }
-        }
-
-        // App paused logic
-        if (Platform::GetIsPaused())
-        {
-            OnPause();
-            do
-            {
-                Platform::Sleep(10);
-                Platform::Tick();
-            } while (Platform::GetIsPaused() && !ShouldExit());
-            if (ShouldExit())
-                break;
-            OnUnpause();
-        }
-
-        // Use the same time for all ticks to improve synchronization
-        const double time = Platform::GetTimeSeconds();
-
-        // Update application (will gather data and other platform related events)
-        {
-            PROFILE_CPU_NAMED("Platform.Tick");
-            Platform::Tick();
-#if COMPILE_WITH_PROFILER
-            extern void TickProfilerMemory();
-            TickProfilerMemory();
-#endif
-        }
-
-        // Update game logic
-        if (Time::OnBeginUpdate(time))
-        {
-            OnUpdate();
-            OnLateUpdate();
-            Time::OnEndUpdate();
-            EngineIdleTime = 0;
-        }
-
-        // Start physics simulation
-        if (Time::OnBeginPhysics(time))
-        {
-            OnFixedUpdate();
-            OnLateFixedUpdate();
-            Time::OnEndPhysics();
-        }
-
-        // Draw frame
-        if (Time::OnBeginDraw(time))
-        {
-            OnDraw();
-            Time::OnEndDraw();
-        }
+        OnLoop();
     }
 
-    // Call on exit event
+    // Shutdown
     OnExit();
-
-    // Delete temporary directory only if Engine is closing normally (after crash user/developer can restore some data)
-    if (FileSystem::DirectoryExists(Globals::TemporaryFolder))
-    {
-        FileSystem::DeleteDirectory(Globals::TemporaryFolder);
-    }
-
     return ExitCode;
 }
 
@@ -353,20 +345,8 @@ void Engine::OnUpdate()
 
     UpdateCount++;
 
-    const auto mainWindow = MainWindow;
-
-#if !USE_EDITOR
-    // Pause game if window lost focus and cannot run in a background
-    bool isGameRunning = true;
-    if (mainWindow && !mainWindow->IsFocused())
-    {
-        isGameRunning = EngineImpl::RunInBackground;
-    }
-    Time::SetGamePaused(!isGameRunning);
-#endif
-
     // Determine if application has focus (flag used by the other parts of the engine)
-    HasFocus = (mainWindow && mainWindow->IsFocused()) || Platform::GetHasFocus();
+    HasFocus = (MainWindow && MainWindow->IsFocused()) || Platform::GetHasFocus();
 
     // Simulate lags
     //Platform::Sleep(100);
@@ -574,6 +554,12 @@ void Engine::OnExit()
 #endif
 
     Platform::Exit();
+
+    // Delete temporary directory only if Engine is closing normally (after crash user/developer can restore some data)
+    if (ExitCode == 0 && FileSystem::DirectoryExists(Globals::TemporaryFolder))
+    {
+        FileSystem::DeleteDirectory(Globals::TemporaryFolder);
+    }
 }
 
 void EngineImpl::InitLog()

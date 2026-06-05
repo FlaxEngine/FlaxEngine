@@ -1626,7 +1626,9 @@ namespace FlaxEngine.Interop
             // We need private types of this assembly too, DefinedTypes contains a lot of types from other assemblies...
             var types = referencedTypes.Any() ? assembly.DefinedTypes.Where(x => !referencedTypes.Contains(x.FullName)).ToArray() : assembly.DefinedTypes.ToArray();
 
+#if FLAX_EDITOR
             Assert.IsTrue(Utils.GetAssemblies().Count(x => x.GetName().Name == "FlaxEngine.CSharp") == 1);
+#endif
             return types;
         }
 

@@ -12,6 +12,7 @@
 #include "Engine/Core/Math/OrientedBoundingBox.h"
 #include "Engine/Utilities/Noise.h"
 #include "Engine/Debug/DebugDraw.h"
+#include "Engine/Engine/Units.h"
 
 // ReSharper disable CppCStyleCast
 // ReSharper disable CppClangTidyClangDiagnosticCastAlign
@@ -1485,7 +1486,9 @@ void ParticleEmitterGraphCPUExecutor::DebugDrawModule(ParticleEmitterGraphCPUNod
     if (node->UsePerParticleDataResolve())
         return;
 
-    const Color color = Color::White;
+    const Color colorPosition = Color::White;
+    const Color colorCollision = Color::GreenYellow;
+    const Color colorCollisionFill = colorCollision.AlphaMultiplied(0.1f);
     switch (node->TypeID)
     {
     case 202: // Position (sphere surface)
@@ -1493,7 +1496,7 @@ void ParticleEmitterGraphCPUExecutor::DebugDrawModule(ParticleEmitterGraphCPUNod
     {
         const Float3 center = transform.LocalToWorld((Float3)GetValue(node->GetBox(0), 2));
         const float radius = (float)GetValue(node->GetBox(1), 3);
-        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(center, radius), color, 0.0f, true);
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(center, radius), colorPosition, 0.0f, true);
         break;
     }
     case 203: // Position (plane)
@@ -1503,7 +1506,7 @@ void ParticleEmitterGraphCPUExecutor::DebugDrawModule(ParticleEmitterGraphCPUNod
         const Float3 halfExtent = Float3(size.X * 0.5f, 0.0f, size.Y * 0.5f);
         OrientedBoundingBox box(halfExtent, Transform(center));
         box.Transform(transform);
-        DEBUG_DRAW_WIRE_BOX(box, color, 0.0f, true);
+        DEBUG_DRAW_WIRE_BOX(box, colorPosition, 0.0f, true);
         break;
     }
     case 204: // Position (circle)
@@ -1511,7 +1514,7 @@ void ParticleEmitterGraphCPUExecutor::DebugDrawModule(ParticleEmitterGraphCPUNod
     {
         const Float3 center = transform.LocalToWorld((Float3)GetValue(node->GetBox(0), 2));
         const float radius = (float)GetValue(node->GetBox(1), 3);
-        DEBUG_DRAW_WIRE_CYLINDER(center, transform.Orientation * Quaternion::Euler(90, 0, 0), radius, 0.0f, color, 0.0f, true);
+        DEBUG_DRAW_WIRE_CYLINDER(center, transform.Orientation * Quaternion::Euler(90, 0, 0), radius, 0.0f, colorPosition, 0.0f, true);
         break;
     }
     case 206: // Position (box surface)
@@ -1521,7 +1524,7 @@ void ParticleEmitterGraphCPUExecutor::DebugDrawModule(ParticleEmitterGraphCPUNod
         const Float3 size = (Float3)GetValue(node->GetBox(1), 3);
         OrientedBoundingBox box(size * 0.5f, Transform(center));
         box.Transform(transform);
-        DEBUG_DRAW_WIRE_BOX(box, color, 0.0f, true);
+        DEBUG_DRAW_WIRE_BOX(box, colorPosition, 0.0f, true);
         break;
     }
     // Position (cylinder)
@@ -1530,7 +1533,7 @@ void ParticleEmitterGraphCPUExecutor::DebugDrawModule(ParticleEmitterGraphCPUNod
         const float height = (float)GetValue(node->GetBox(2), 4);
         const Float3 center = transform.LocalToWorld((Float3)GetValue(node->GetBox(0), 2) + Float3(0, 0, height * 0.5f));
         const float radius = (float)GetValue(node->GetBox(1), 3);
-        DEBUG_DRAW_WIRE_CYLINDER(center, transform.Orientation * Quaternion::Euler(90, 0, 0), radius, height, color, 0.0f, true);
+        DEBUG_DRAW_WIRE_CYLINDER(center, transform.Orientation * Quaternion::Euler(90, 0, 0), radius, height, colorPosition, 0.0f, true);
         break;
     }
     // Position (line)
@@ -1538,7 +1541,7 @@ void ParticleEmitterGraphCPUExecutor::DebugDrawModule(ParticleEmitterGraphCPUNod
     {
         const Float3 start = transform.LocalToWorld((Float3)GetValue(node->GetBox(0), 2));
         const Float3 end = transform.LocalToWorld((Float3)GetValue(node->GetBox(1), 3));
-        DEBUG_DRAW_LINE(start, end, color, 0.0f, true);
+        DEBUG_DRAW_LINE(start, end, colorPosition, 0.0f, true);
         break;
     }
     // Position (torus)
@@ -1547,15 +1550,54 @@ void ParticleEmitterGraphCPUExecutor::DebugDrawModule(ParticleEmitterGraphCPUNod
         const Float3 center = transform.LocalToWorld((Float3)GetValue(node->GetBox(0), 2));
         const float radius = Math::Max((float)GetValue(node->GetBox(1), 3), ZeroTolerance);
         const float thickness = (float)GetValue(node->GetBox(2), 4);
-        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(center, radius + thickness), color, 0.0f, true);
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(center, radius + thickness), colorPosition, 0.0f, true);
         break;
     }
-    
     // Position (spiral)
     case 214:
     {
         const Float3 center = transform.LocalToWorld((Float3)GetValue(node->GetBox(0), 2));
-        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(center, 5.0f), color, 0.0f, true);
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(center, 5.0f), colorPosition, 0.0f, true);
+        break;
+    }
+    // Collision (plane)
+    case 330:
+    {
+        const Float3 position = transform.LocalToWorld((Float3)GetValue(node->GetBox(5), 8));
+        //const Float3 normal = transform.Orientation * (Float3)GetValue(node->GetBox(6), 9) * ((bool)node->Values[2] ? -1.0f : 1.0f);
+        const Float3 extent(METERS_TO_UNITS(10), 0.001f, METERS_TO_UNITS(10));
+        DEBUG_DRAW_BOX(BoundingBox(position - extent, position + extent), colorCollisionFill, 0.0f, true);
+        DEBUG_DRAW_WIRE_BOX(BoundingBox(position - extent, position + extent), colorCollision, 0.0f, true);
+        break;
+    }
+    // Collision (sphere)
+    case 331:
+    {
+        const Float3 position = transform.LocalToWorld((Float3)GetValue(node->GetBox(5), 8));
+        const float radius = (float)GetValue(node->GetBox(6), 9);
+        DEBUG_DRAW_SPHERE(BoundingSphere(position, radius), colorCollisionFill, 0.0f, true);
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(position, radius), colorCollision, 0.0f, true);
+        break;
+    }
+    // Collision (box)
+    case 332:
+    {
+        const Float3 center = (Float3)GetValue(node->GetBox(5), 8);
+        const Float3 size = (Float3)GetValue(node->GetBox(6), 9);
+        OrientedBoundingBox box(size * 0.5f, Transform(center));
+        box.Transform(transform);
+        DEBUG_DRAW_BOX(box, colorCollisionFill, 0.0f, true);
+        DEBUG_DRAW_WIRE_BOX(box, colorCollision, 0.0f, true);
+        break;
+    }
+    // Collision (cylinder)
+    case 333:
+    {
+        const float height = (float)GetValue(node->GetBox(6), 9);
+        const Float3 center = transform.LocalToWorld((Float3)GetValue(node->GetBox(5), 8) + Float3(0, 0, height * 0.5f));
+        const float radius = (float)GetValue(node->GetBox(7), 10);
+        DEBUG_DRAW_CYLINDER(center, transform.Orientation * Quaternion::Euler(90, 0, 0), radius, height, colorCollisionFill, 0.0f, true);
+        DEBUG_DRAW_WIRE_CYLINDER(center, transform.Orientation * Quaternion::Euler(90, 0, 0), radius, height, colorCollision, 0.0f, true);
         break;
     }
     }

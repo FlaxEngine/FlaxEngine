@@ -8,7 +8,7 @@ namespace FlaxEngine
     /// Allows to change enum type field or property display mode in the editor.
     /// </summary>
     /// <seealso cref="System.Attribute" />
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Enum)]
     public sealed class EnumDisplayAttribute : Attribute
     {
         /// <summary>

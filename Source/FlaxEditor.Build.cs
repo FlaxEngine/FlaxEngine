@@ -44,6 +44,9 @@ public class FlaxEditor : EngineTarget
     {
         base.SetupTargetEnvironment(options);
 
+        // Uncomment to get console
+        //options.LinkEnv.LinkAsConsoleProgram = true;
+
         // Setup output folder for Editor binaries
         switch (options.Platform.Target)
         {
@@ -68,6 +71,8 @@ public class FlaxEditor : EngineTarget
             break;
         case TargetPlatform.Mac:
             options.OutputFolder = Path.Combine(options.WorkingDirectory, "Binaries", "Editor", "Mac", options.Configuration.ToString());
+            if (EngineConfiguration.WithSDL(options))
+                options.DependencyFiles.Add(Path.Combine(Globals.EngineRoot, "Source", "Logo.png"));
             break;
         default: throw new InvalidPlatformException(options.Platform.Target, "Not supported Editor platform.");
         }

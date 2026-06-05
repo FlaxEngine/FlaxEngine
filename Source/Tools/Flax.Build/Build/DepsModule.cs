@@ -35,10 +35,25 @@ namespace Flax.Build
             case TargetPlatform.Switch:
             case TargetPlatform.Mac:
             case TargetPlatform.iOS:
+            case TargetPlatform.Web:
                 options.OutputFiles.Add(Path.Combine(path, string.Format("lib{0}.a", name)));
                 break;
             default: throw new InvalidPlatformException(options.Platform.Target);
             }
+        }
+    }
+
+    /// <summary>
+    /// The engine dependency module.
+    /// </summary>
+    /// <seealso cref="Flax.Build.DepsModule" />
+    public abstract class EngineDepsModule : DepsModule
+    {
+        /// <inheritdoc />
+        public EngineDepsModule()
+        {
+            // Merge third-party modules into engine binary
+            BinaryModuleName = "FlaxEngine";
         }
     }
 }

@@ -16,6 +16,7 @@
 #include "Engine/Graphics/Async/GPUTask.h"
 #include "Engine/Graphics/Async/Tasks/GPUUploadTextureMipTask.h"
 #include "Engine/Graphics/Models/MeshDeformation.h"
+#include "Engine/Graphics/Models/ModelDraw.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
@@ -71,13 +72,23 @@ public:
 REGISTER_BINARY_ASSET_WITH_UPGRADER(Model, "FlaxEngine.Model", ModelAssetUpgrader, true);
 
 static byte EnableModelSDF = 0;
+#if !USE_EDITOR
+#include "Engine/Core/Config/GraphicsSettings.h"
+#endif
 
 Model::Model(const SpawnParams& params, const AssetInfo* info)
     : ModelBase(params, info, StreamingGroups::Instance()->Models())
 {
     if (EnableModelSDF == 0 && GPUDevice::Instance)
     {
-        const bool enable = GPUDevice::Instance->GetFeatureLevel() >= FeatureLevel::SM5;
+        bool enable = GPUDevice::Instance->GetFeatureLevel() >= FeatureLevel::SM5;
+#if !USE_EDITOR
+        enable &= GraphicsSettings::Get()->EnableGlobalSDF;
+#if !BUILD_RELEASE
+        if (!enable)
+            LOG(Info, "Not using Model SDFs");
+#endif
+#endif
         EnableModelSDF = enable ? 1 : 2;
     }
 }
@@ -124,105 +135,6 @@ void Model::Draw(const RenderContext& renderContext, MaterialBase* material, con
 
     // Draw
     LODs[lodIndex].Draw(renderContext, material, world, flags, receiveDecals, DrawPass::Default, 0, sortOrder);
-}
-
-template<typename ContextType>
-FORCE_INLINE void ModelDraw(Model* model, const RenderContext& renderContext, const ContextType& context, const Mesh::DrawInfo& info)
-{
-    ASSERT(info.Buffer);
-    if (!model->CanBeRendered())
-        return;
-    if (!info.Buffer->IsValidFor(model))
-		info.Buffer->Setup(model);
-    const auto frame = Engine::FrameCount;
-    const auto modelFrame = info.DrawState->PrevFrame + 1;
-
-    // Select a proper LOD index (model may be culled)
-    int32 lodIndex;
-    if (info.ForcedLOD != -1)
-    {
-        lodIndex = info.ForcedLOD;
-    }
-    else
-    {
-        lodIndex = RenderTools::ComputeModelLOD(model, info.Bounds.Center, (float)info.Bounds.Radius, renderContext);
-        if (lodIndex == -1)
-        {
-            // Handling model fade-out transition
-            if (modelFrame == frame && info.DrawState->PrevLOD != -1 && !renderContext.View.IsSingleFrame)
-            {
-                // Check if start transition
-                if (info.DrawState->LODTransition == 255)
-                {
-                    info.DrawState->LODTransition = 0;
-                }
-
-                RenderTools::UpdateModelLODTransition(info.DrawState->LODTransition);
-
-                // Check if end transition
-                if (info.DrawState->LODTransition == 255)
-                {
-                    info.DrawState->PrevLOD = lodIndex;
-                }
-                else
-                {
-                    const auto prevLOD = model->ClampLODIndex(info.DrawState->PrevLOD);
-                    const float normalizedProgress = static_cast<float>(info.DrawState->LODTransition) * (1.0f / 255.0f);
-                    model->LODs.Get()[prevLOD].Draw(renderContext, info, normalizedProgress);
-                }
-            }
-
-            return;
-        }
-    }
-    lodIndex += info.LODBias + renderContext.View.ModelLODBias;
-    lodIndex = model->ClampLODIndex(lodIndex);
-
-    if (renderContext.View.IsSingleFrame)
-    {
-    }
-    // Check if it's the new frame and could update the drawing state (note: model instance could be rendered many times per frame to different viewports)
-    else if (modelFrame == frame)
-    {
-        // Check if start transition
-        if (info.DrawState->PrevLOD != lodIndex && info.DrawState->LODTransition == 255)
-        {
-            info.DrawState->LODTransition = 0;
-        }
-
-        RenderTools::UpdateModelLODTransition(info.DrawState->LODTransition);
-
-        // Check if end transition
-        if (info.DrawState->LODTransition == 255)
-        {
-            info.DrawState->PrevLOD = lodIndex;
-        }
-    }
-    // Check if there was a gap between frames in drawing this model instance
-    else if (modelFrame < frame || info.DrawState->PrevLOD == -1)
-    {
-        // Reset state
-        info.DrawState->PrevLOD = lodIndex;
-        info.DrawState->LODTransition = 255;
-    }
-
-    // Draw
-    if (info.DrawState->PrevLOD == lodIndex || renderContext.View.IsSingleFrame)
-    {
-        model->LODs.Get()[lodIndex].Draw(context, info, 0.0f);
-    }
-    else if (info.DrawState->PrevLOD == -1)
-    {
-        const float normalizedProgress = static_cast<float>(info.DrawState->LODTransition) * (1.0f / 255.0f);
-        model->LODs.Get()[lodIndex].Draw(context, info, 1.0f - normalizedProgress);
-    }
-    else
-    {
-        const auto prevLOD = model->ClampLODIndex(info.DrawState->PrevLOD);
-        const float normalizedProgress = static_cast<float>(info.DrawState->LODTransition) * (1.0f / 255.0f);
-        model->LODs.Get()[prevLOD].Draw(context, info, normalizedProgress);
-        model->LODs.Get()[lodIndex].Draw(context, info, normalizedProgress - 1.0f);
-    }
 }
 
 void Model::Draw(const RenderContext& renderContext, const Mesh::DrawInfo& info)
@@ -684,7 +596,10 @@ void Model::unload(bool isReloading)
 AssetChunksFlag Model::getChunksToPreload() const
 {
     // Note: we don't preload any LODs here because it's done by the Streaming Manager
-    return GET_CHUNK_FLAG(0) | GET_CHUNK_FLAG(15);
+    AssetChunksFlag result = GET_CHUNK_FLAG(0);
+    if (EnableModelSDF == 1)
+        result |= GET_CHUNK_FLAG(15);
+    return result;
 }
 
 bool ModelLOD::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, Mesh** mesh)

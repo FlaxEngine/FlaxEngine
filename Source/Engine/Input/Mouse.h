@@ -46,12 +46,14 @@ public:
 protected:
     State _state;
     State _prevState;
+    bool _relativeMode;
 
     explicit Mouse()
         : InputDevice(SpawnParams(Guid::New(), TypeInitializer), TEXT("Mouse"))
     {
         _state.Clear();
         _prevState.Clear();
+        _relativeMode = false;
     }
 
 public:
@@ -114,12 +116,33 @@ public:
         return !_state.MouseButtons[static_cast<int32>(button)] && _prevState.MouseButtons[static_cast<int32>(button)];
     }
 
+    /// <summary>
+    /// Gets the current state of mouse relative mode.
+    /// </summary>
+    /// <param name="window">The window to check against, or null to check for any window.</param>
+    /// <returns>True if mouse is in relative mode, otherwise false.</returns>
+    API_FUNCTION() virtual bool IsRelative(Window* window = nullptr) const
+    {
+        return _relativeMode;
+    }
+
 public:
     /// <summary>
     /// Sets the mouse position.
     /// </summary>
     /// <param name="newPosition">The new position.</param>
     virtual void SetMousePosition(const Float2& newPosition) = 0;
+
+    /// <summary>
+    /// Sets the mouse relative mode state. While enabled, the mouse movement tracking becomes more accurate.
+    /// The cursor will be hidden while in relative mode.
+    /// </summary>
+    /// <param name="relativeMode">The new relative mode state.</param>
+    /// <param name="window">The window.</param>
+    virtual void SetRelativeMode(bool relativeMode, Window* window)
+    {
+        _relativeMode = relativeMode;
+    }
 
     /// <summary>
     /// Called when mouse cursor gets moved by the application. Invalidates the previous cached mouse position to prevent mouse jitter when locking the cursor programmatically.
@@ -157,6 +180,13 @@ public:
     /// <param name="position">The mouse position.</param>
     /// <param name="target">The target window to receive this event, otherwise input system will pick the window automatically.</param>
     void OnMouseMove(const Float2& position, Window* target = nullptr);
+
+    /// <summary>
+    /// Called when mouse moves in relative mode.
+    /// </summary>
+    /// <param name="positionRelative">The mouse position change.</param>
+    /// <param name="target">The target window to receive this event, otherwise input system will pick the window automatically.</param>
+    void OnMouseMoveRelative(const Float2& positionRelative, Window* target = nullptr);
 
     /// <summary>
     /// Called when mouse leaves the input source area.

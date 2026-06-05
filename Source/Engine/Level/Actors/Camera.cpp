@@ -210,7 +210,7 @@ Ray Camera::ConvertMouseToRay(const Float2& mousePosition, const Viewport& viewp
 {
     Vector3 position = GetPosition();
     if (viewport.Width < ZeroTolerance || viewport.Height < ZeroTolerance || mousePosition.IsNaN())
-        return Ray(position, GetDirection());
+        return Ray(position, GetForward());
 
     // Use different logic in orthographic projection
     if (!_usePerspective)
@@ -454,6 +454,7 @@ void Camera::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(CustomAspectRatio, _customAspectRatio);
     SERIALIZE_MEMBER(Near, _near);
     SERIALIZE_MEMBER(Far, _far);
+    SERIALIZE_MEMBER(OrthoSize, _orthoSize);
     SERIALIZE_MEMBER(OrthoScale, _orthoScale);
     SERIALIZE(RenderLayersMask);
     SERIALIZE(RenderFlags);
@@ -470,6 +471,7 @@ void Camera::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier
     DESERIALIZE_MEMBER(CustomAspectRatio, _customAspectRatio);
     DESERIALIZE_MEMBER(Near, _near);
     DESERIALIZE_MEMBER(Far, _far);
+    DESERIALIZE_MEMBER(OrthoSize, _orthoSize);
     DESERIALIZE_MEMBER(OrthoScale, _orthoScale);
     DESERIALIZE(RenderLayersMask);
     DESERIALIZE(RenderFlags);

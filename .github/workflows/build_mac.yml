@@ -10,14 +10,14 @@ jobs:
   # Editor
   editor-mac:
     name: Editor (Mac, Development ARM64)
-    runs-on: "macos-14"
+    runs-on: "macos-15"
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v6
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.x
     - name: Print .NET info
@@ -35,14 +35,14 @@ jobs:
   # Game
   game-mac:
     name: Game (Mac, Release ARM64)
-    runs-on: "macos-14"
+    runs-on: "macos-15"
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v6
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.x
     - name: Print .NET info

@@ -284,9 +284,17 @@ namespace Flax.Build
             if (buildData.TargetOptions.NugetPackageReferences.Any())
             {
                 var nugetPath = Utilities.GetNugetPackagesPath();
+                var restoreOnce = true;
                 foreach (var reference in buildOptions.NugetPackageReferences)
                 {
                     var path = reference.GetLibPath(nugetPath);
+                    if (!File.Exists(path) && restoreOnce)
+                    {
+                        // Package binaries folder is missing so restore packages (incl. dependency packages)
+                        RestoreNugetPackages(graph, buildOptions.Target, buildOptions);
+                        restoreOnce = false;
+                        path = reference.GetLibPath(nugetPath);
+                    }
                     args.Add(string.Format("/reference:\"{0}\"", path));
                 }
             }

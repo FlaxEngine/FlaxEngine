@@ -1,6 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-#if PLATFORM_MAC
+#if PLATFORM_MAC && !PLATFORM_SDL
 
 #include "../Window.h"
 #include "Engine/Platform/Apple/AppleUtils.h"
@@ -18,6 +18,9 @@
 #include <Cocoa/Cocoa.h>
 #include <AppKit/AppKit.h>
 #include <QuartzCore/CAMetalLayer.h>
+
+// TODO: finish this (missing mouse up when title bar drag ends)
+#define MAC_WINDOW_TITLE_BAR_CLICK 0
 
 #if USE_EDITOR
 // Data for drawing window while doing drag&drop on Mac (engine is paused during platform tick)
@@ -283,6 +286,15 @@ NSDragOperation GetDragDropOperation(DragDropEffect dragDropEffect)
     return YES;
 }
 
+- (BOOL)canBecomeMainWindow
+{
+    if (Window && (!Window->GetSettings().AllowInput || Window->GetSettings().Type != WindowType::Regular))
+    {
+        return NO;
+    }
+    return YES;
+}
+
 - (void)windowDidBecomeKey:(NSNotification*)notification
 {
 	// Handle resizing to be sure that content has valid size when window was resized
@@ -507,7 +519,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 	Float2 mousePos = GetMousePosition(Window, event);
     mousePos = Window->ClientToScreen(mousePos);
     MouseButton mouseButton = MouseButton::Left;
-    if ([event clickCount] == 2)
+    if ([event clickCount] == 2 && !Input::Mouse->IsRelative())
         Input::Mouse->OnMouseDoubleClick(mousePos, mouseButton, Window);
     else
 	    Input::Mouse->OnMouseDown(mousePos, mouseButton, Window);
@@ -544,7 +556,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
     if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
     MouseButton mouseButton = MouseButton::Right;
-    if ([event clickCount] == 2)
+    if ([event clickCount] == 2 && !Input::Mouse->IsRelative())
         Input::Mouse->OnMouseDoubleClick(Window->ClientToScreen(mousePos), mouseButton, Window);
     else
 	    Input::Mouse->OnMouseDown(Window->ClientToScreen(mousePos), mouseButton, Window);
@@ -582,7 +594,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
     default:
         return;
     }
-    if ([event clickCount] == 2)
+    if ([event clickCount] == 2 && !Input::Mouse->IsRelative())
         Input::Mouse->OnMouseDoubleClick(Window->ClientToScreen(mousePos), mouseButton, Window);
     else
 	    Input::Mouse->OnMouseDown(Window->ClientToScreen(mousePos), mouseButton, Window);
@@ -689,14 +701,65 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 @end
 
+#if MAC_WINDOW_TITLE_BAR_CLICK
+
+@interface MacResponderImpl : NSResponder
+{
+    MacWindow* Window;
+    bool TrackingMouseDown;
+}
+
+- (void)setWindow:(MacWindow*)window;
+
+@end
+
+@implementation MacResponderImpl
+
+- (void)setWindow:(MacWindow*)window
+{
+    Window = window;
+    TrackingMouseDown = false;
+}
+
+- (void)mouseDown:(NSEvent*)event
+{
+    if (IsWindowInvalid(Window) || TrackingMouseDown) return;
+	Float2 mousePos = GetMousePosition(Window, event);
+    if (mousePos.Y < 0)
+    {
+        // Titlebar click
+        bool result = false;
+        Window->OnLeftButtonHit(WindowHitCodes::Caption, result);
+        TrackingMouseDown = result;
+    }
+}
+
+- (void)mouseUp:(NSEvent*)event
+{
+    if (IsWindowInvalid(Window)) return;
+    //NSPoint point = [event locationInWindow];
+    //LOG(Warning, "Mouse up! at: {}x{}", point.x, point.y);
+    if (TrackingMouseDown)
+    {
+        TrackingMouseDown = false;
+        Float2 mousePos = GetMousePosition(Window, event);
+        Window->OnMouseUp(mousePos, MouseButton::Left);
+    }
+}
+
+@end
+
+#endif
+
 MacWindow::MacWindow(const CreateWindowSettings& settings)
     : WindowBase(settings)
 {
+    // Setup size and styles
     _clientSize = Float2(settings.Size.X, settings.Size.Y);
     Float2 pos = AppleUtils::PosToCoca(settings.Position);
     NSRect frame = NSMakeRect(pos.X, pos.Y - settings.Size.Y, settings.Size.X, settings.Size.Y);
     NSUInteger styleMask = NSWindowStyleMaskClosable;
-    if (settings.IsRegularWindow)
+    if (settings.Type == WindowType::Regular)
     {
         styleMask |= NSWindowStyleMaskTitled;
         if (settings.AllowMinimize)
@@ -727,6 +790,7 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     frame.size.width /= screenScale;
     frame.size.height /= screenScale;
 
+    // Create window
     MacWindowImpl* window = [[MacWindowImpl alloc] initWithContentRect:frame
         styleMask:(styleMask)
         backing:NSBackingStoreBuffered
@@ -735,6 +799,7 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     view.wantsLayer = YES;
     [view setWindow:this];
     window.title = (__bridge NSString*)AppleUtils::ToString(settings.Title);
+    window.releasedWhenClosed = NO;
     [window setWindow:this];
     [window setReleasedWhenClosed:NO];
     [window setMinSize:NSMakeSize(settings.MinimumSize.X, settings.MinimumSize.Y)];
@@ -744,6 +809,8 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     [window setContentView:view];
     if (settings.AllowInput)
         [window setAcceptsMouseMovedEvents:YES];
+    if (settings.IsTopmost)
+        [window setLevel:NSFloatingWindowLevel];
     [window setDelegate:window];
     _window = window;
     _view = view;
@@ -752,14 +819,18 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
         [view registerForDraggedTypes:@[NSPasteboardTypeFileURL, NSPasteboardTypeString]];
     }
 
+#if MAC_WINDOW_TITLE_BAR_CLICK
+    // Plug into superview to receive mouse events for the title
+    MacResponderImpl* responder = [[MacResponderImpl alloc] init];
+    [responder setWindow:this];
+    NSView* superview = [[window contentView] superview];
+    [superview setNextResponder:responder];
+#endif
+
     // Rescale contents
 	CALayer* layer = [view layer];
 	if (layer)
 		layer.contentsScale = screenScale;
-
-    // TODO: impl Parent for MacWindow
-    // TODO: impl ShowInTaskbar for MacWindow
-    // TODO: impl IsTopmost for MacWindow
 }
 
 MacWindow::~MacWindow()
@@ -836,8 +907,13 @@ void MacWindow::Show()
 
         // Show
         NSWindow* window = (NSWindow*)_window;
+        if (_settings.Parent)
+        {
+            NSWindow* parent = (NSWindow*)_settings.Parent->GetNativePtr();
+            [parent addChildWindow:window ordered:NSWindowAbove];
+        }
         if (_settings.AllowInput)
-            [window makeKeyAndOrderFront:window];
+            [window makeKeyAndOrderFront:nil];
         else
             [window orderFront:window];
         if (_settings.ActivateWhenFirstShown)
@@ -855,9 +931,20 @@ void MacWindow::Hide()
     {
         SetCursor(CursorType::Default);
 
-        // Hide
+        // Hide (order out doesn't work for miniaturized windows)
         NSWindow* window = (NSWindow*)_window;
-        [window orderOut:window];
+        const BOOL wasKey = [window isKeyWindow];
+        if ([window isMiniaturized])
+            [window close];
+        else
+            [window orderOut:nil];
+
+        // Transfer focus back to the parent when hiding popup
+        if (_settings.Parent && wasKey)
+        {
+            NSWindow* parent = (NSWindow*)_settings.Parent->GetNativePtr();
+            [parent makeKeyAndOrderFront:nil];
+        }
 
         // Base
         WindowBase::Hide();

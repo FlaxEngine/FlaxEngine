@@ -12,6 +12,7 @@
 #include "Engine/Content/Assets/MaterialBase.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Profiler/Profiler.h"
+#include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUPipelineState.h"
@@ -19,6 +20,7 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/DynamicBuffer.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
@@ -48,6 +50,9 @@
 #define RENDER2D_INITIAL_DRAW_CALL_CAPACITY (512)
 
 #define RENDER2D_BLUR_MAX_SAMPLES 64
+
+#define RENDER2D_REMOVE_GAMMA_BEGIN(t, getFormat) const bool removeGamma = IsRemoveGammaEnabled && t && PixelFormatExtensions::IsSRGB(t->getFormat()); if (removeGamma) Features |= RenderingFeatures::RemoveGamma
+#define RENDER2D_REMOVE_GAMMA_END() if (removeGamma) Features &= ~RenderingFeatures::RemoveGamma
 
 // The format for the blur effect temporary buffer
 #define PS_Blur_Format PixelFormat::R8G8B8A8_UNorm
@@ -202,6 +207,7 @@ namespace
     Array<Float2> Lines2;
     bool IsScissorsRectEmpty;
     bool IsScissorsRectEnabled;
+    bool IsRemoveGammaEnabled;
 
     // Transform
     // Note: we use Matrix3x3 instead of Matrix because we use only 2D transformations on CPU side
@@ -221,8 +227,8 @@ namespace
     CachedPSO PsoDepth;
     CachedPSO PsoNoDepth;
     CachedPSO* CurrentPso = nullptr;
-    DynamicVertexBuffer VB(RENDER2D_INITIAL_VB_CAPACITY, (uint32)sizeof(Render2DVertex), TEXT("Render2D.VB"));
-    DynamicIndexBuffer IB(RENDER2D_INITIAL_IB_CAPACITY, sizeof(uint32), TEXT("Render2D.IB"));
+    DynamicVertexBuffer VB(0, (uint32)sizeof(Render2DVertex), TEXT("Render2D.VB"));
+    DynamicIndexBuffer IB(0, sizeof(uint32), TEXT("Render2D.IB"));
     uint32 VBIndex = 0;
     uint32 IBIndex = 0;
 }
@@ -627,6 +633,8 @@ bool Render2DService::Init()
     }));
 
     DrawCalls.EnsureCapacity(RENDER2D_INITIAL_DRAW_CALL_CAPACITY);
+    VB.Data.EnsureCapacity(RENDER2D_INITIAL_VB_CAPACITY);
+    IB.Data.EnsureCapacity(RENDER2D_INITIAL_IB_CAPACITY);
 
     return false;
 }
@@ -693,6 +701,7 @@ void Render2D::Begin(GPUContext* context, GPUTextureView* output, GPUTextureView
     View = viewport;
     ViewProjection = viewProjection;
     DrawCalls.Clear();
+    IsRemoveGammaEnabled = Graphics::GammaColorSpace == false;
 
     // Initialize default transform
     const Matrix3x3 defaultTransform = Matrix3x3::Identity;
@@ -1619,6 +1628,7 @@ void Render2D::DrawRectangle(const Rectangle& rect, const Color& color1, const C
 void Render2D::DrawTexture(GPUTextureView* rt, const Rectangle& rect, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
+    RENDER2D_REMOVE_GAMMA_BEGIN(rt, GetFormat);
 
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = DrawCallType::FillRT;
@@ -1626,11 +1636,14 @@ void Render2D::DrawTexture(GPUTextureView* rt, const Rectangle& rect, const Colo
     drawCall.CountIB = 6;
     drawCall.AsRT.Ptr = rt;
     WriteRect(rect, color);
+
+    RENDER2D_REMOVE_GAMMA_END();
 }
 
 void Render2D::DrawTexture(GPUTexture* t, const Rectangle& rect, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
+    RENDER2D_REMOVE_GAMMA_BEGIN(t, Format);
 
     Render2DDrawCall drawCall;
     drawCall.Type = DrawCallType::FillTexture;
@@ -1639,11 +1652,14 @@ void Render2D::DrawTexture(GPUTexture* t, const Rectangle& rect, const Color& co
     drawCall.AsTexture.Ptr = t;
     DrawCalls.Add(drawCall);
     WriteRect(rect, color);
+
+    RENDER2D_REMOVE_GAMMA_END();
 }
 
 void Render2D::DrawTexture(TextureBase* t, const Rectangle& rect, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
+    RENDER2D_REMOVE_GAMMA_BEGIN(t, Format);
 
     Render2DDrawCall drawCall;
     drawCall.Type = DrawCallType::FillTexture;
@@ -1652,6 +1668,8 @@ void Render2D::DrawTexture(TextureBase* t, const Rectangle& rect, const Color& c
     drawCall.AsTexture.Ptr = t ? t->GetTexture() : nullptr;
     DrawCalls.Add(drawCall);
     WriteRect(rect, color);
+
+    RENDER2D_REMOVE_GAMMA_END();
 }
 
 void Render2D::DrawSprite(const SpriteHandle& spriteHandle, const Rectangle& rect, const Color& color)
@@ -1659,6 +1677,7 @@ void Render2D::DrawSprite(const SpriteHandle& spriteHandle, const Rectangle& rec
     RENDER2D_CHECK_RENDERING_STATE;
     if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
         return;
+    RENDER2D_REMOVE_GAMMA_BEGIN(spriteHandle.Atlas->GetTexture(), Format);
 
     Sprite* sprite = &spriteHandle.Atlas->Sprites.At(spriteHandle.Index);
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
@@ -1667,11 +1686,14 @@ void Render2D::DrawSprite(const SpriteHandle& spriteHandle, const Rectangle& rec
     drawCall.CountIB = 6;
     drawCall.AsTexture.Ptr = spriteHandle.Atlas->GetTexture();
     WriteRect(rect, color, sprite->Area.GetUpperLeft(), sprite->Area.GetBottomRight());
+
+    RENDER2D_REMOVE_GAMMA_END();
 }
 
 void Render2D::DrawTexturePoint(GPUTexture* t, const Rectangle& rect, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
+    RENDER2D_REMOVE_GAMMA_BEGIN(t, Format);
 
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = DrawCallType::FillTexturePoint;
@@ -1679,6 +1701,8 @@ void Render2D::DrawTexturePoint(GPUTexture* t, const Rectangle& rect, const Colo
     drawCall.CountIB = 6;
     drawCall.AsTexture.Ptr = t;
     WriteRect(rect, color);
+
+    RENDER2D_REMOVE_GAMMA_END();
 }
 
 void Render2D::DrawSpritePoint(const SpriteHandle& spriteHandle, const Rectangle& rect, const Color& color)
@@ -1686,6 +1710,7 @@ void Render2D::DrawSpritePoint(const SpriteHandle& spriteHandle, const Rectangle
     RENDER2D_CHECK_RENDERING_STATE;
     if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
         return;
+    RENDER2D_REMOVE_GAMMA_BEGIN(spriteHandle.Atlas->GetTexture(), Format);
 
     Sprite* sprite = &spriteHandle.Atlas->Sprites.At(spriteHandle.Index);
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
@@ -1694,11 +1719,14 @@ void Render2D::DrawSpritePoint(const SpriteHandle& spriteHandle, const Rectangle
     drawCall.CountIB = 6;
     drawCall.AsTexture.Ptr = spriteHandle.Atlas->GetTexture();
     WriteRect(rect, color, sprite->Area.GetUpperLeft(), sprite->Area.GetBottomRight());
+
+    RENDER2D_REMOVE_GAMMA_END();
 }
 
 void Render2D::Draw9SlicingTexture(TextureBase* t, const Rectangle& rect, const Float4& border, const Float4& borderUVs, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
+    RENDER2D_REMOVE_GAMMA_BEGIN(t, Format);
 
     Render2DDrawCall drawCall;
     drawCall.Type = DrawCallType::FillTexture;
@@ -1712,6 +1740,7 @@ void Render2D::Draw9SlicingTexture(TextureBase* t, const Rectangle& rect, const 
 void Render2D::Draw9SlicingTexturePoint(TextureBase* t, const Rectangle& rect, const Float4& border, const Float4& borderUVs, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
+    RENDER2D_REMOVE_GAMMA_BEGIN(t, Format);
 
     Render2DDrawCall drawCall;
     drawCall.Type = DrawCallType::FillTexturePoint;
@@ -1727,6 +1756,7 @@ void Render2D::Draw9SlicingSprite(const SpriteHandle& spriteHandle, const Rectan
     RENDER2D_CHECK_RENDERING_STATE;
     if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
         return;
+    RENDER2D_REMOVE_GAMMA_BEGIN(spriteHandle.Atlas->GetTexture(), Format);
 
     Sprite* sprite = &spriteHandle.Atlas->Sprites.At(spriteHandle.Index);
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
@@ -1735,6 +1765,8 @@ void Render2D::Draw9SlicingSprite(const SpriteHandle& spriteHandle, const Rectan
     drawCall.CountIB = 6 * 9;
     drawCall.AsTexture.Ptr = spriteHandle.Atlas->GetTexture();
     Write9SlicingRect(rect, color, border, borderUVs, sprite->Area.Location, sprite->Area.Size);
+
+    RENDER2D_REMOVE_GAMMA_END();
 }
 
 void Render2D::Draw9SlicingSpritePoint(const SpriteHandle& spriteHandle, const Rectangle& rect, const Float4& border, const Float4& borderUVs, const Color& color)
@@ -1742,6 +1774,7 @@ void Render2D::Draw9SlicingSpritePoint(const SpriteHandle& spriteHandle, const R
     RENDER2D_CHECK_RENDERING_STATE;
     if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
         return;
+    RENDER2D_REMOVE_GAMMA_BEGIN(spriteHandle.Atlas->GetTexture(), Format);
 
     Sprite* sprite = &spriteHandle.Atlas->Sprites.At(spriteHandle.Index);
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
@@ -1750,6 +1783,8 @@ void Render2D::Draw9SlicingSpritePoint(const SpriteHandle& spriteHandle, const R
     drawCall.CountIB = 6 * 9;
     drawCall.AsTexture.Ptr = spriteHandle.Atlas->GetTexture();
     Write9SlicingRect(rect, color, border, borderUVs, sprite->Area.Location, sprite->Area.Size);
+
+    RENDER2D_REMOVE_GAMMA_END();
 }
 
 void Render2D::DrawCustom(GPUTexture* t, const Rectangle& rect, GPUPipelineState* ps, const Color& color)
@@ -1757,6 +1792,7 @@ void Render2D::DrawCustom(GPUTexture* t, const Rectangle& rect, GPUPipelineState
     RENDER2D_CHECK_RENDERING_STATE;
     if (ps == nullptr || !ps->IsValid())
         return;
+    RENDER2D_REMOVE_GAMMA_BEGIN(t, Format);
 
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = DrawCallType::Custom;
@@ -1765,6 +1801,8 @@ void Render2D::DrawCustom(GPUTexture* t, const Rectangle& rect, GPUPipelineState
     drawCall.AsCustom.Tex = t;
     drawCall.AsCustom.Pso = ps;
     WriteRect(rect, color);
+
+    RENDER2D_REMOVE_GAMMA_END();
 }
 
 #if RENDER2D_USE_LINE_AA
@@ -1985,6 +2023,9 @@ void Render2D::DrawMaterial(MaterialBase* material, const Rectangle& rect, const
     if (material == nullptr || !material->IsReady() || !material->IsGUI())
         return;
 
+    // Auto-remove gamma flag if it's disabled
+    Features &= IsRemoveGammaEnabled ? ~RenderingFeatures::None : ~RenderingFeatures::RemoveGamma;
+
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = DrawCallType::Material;
     drawCall.StartIB = IBIndex;
@@ -2067,15 +2108,17 @@ void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Float2>& vertices
     RENDER2D_CHECK_RENDERING_STATE;
     CHECK(vertices.Length() % 3 == 0);
     CHECK(vertices.Length() == uvs.Length());
+    RENDER2D_REMOVE_GAMMA_BEGIN(t, Format);
 
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = DrawCallType::FillTexture;
     drawCall.StartIB = IBIndex;
     drawCall.CountIB = vertices.Length();
     drawCall.AsTexture.Ptr = t;
-
     for (int32 i = 0; i < vertices.Length(); i += 3)
         WriteTri(vertices[i], vertices[i + 1], vertices[i + 2], uvs[i], uvs[i + 1], uvs[i + 2]);
+
+    RENDER2D_REMOVE_GAMMA_END();
 }
 
 void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Float2>& vertices, const Span<Float2>& uvs, const Color& color)
@@ -2083,15 +2126,17 @@ void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Float2>& vertices
     RENDER2D_CHECK_RENDERING_STATE;
     CHECK(vertices.Length() % 3 == 0);
     CHECK(vertices.Length() == uvs.Length());
+    RENDER2D_REMOVE_GAMMA_BEGIN(t, Format);
 
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = DrawCallType::FillTexture;
     drawCall.StartIB = IBIndex;
     drawCall.CountIB = vertices.Length();
     drawCall.AsTexture.Ptr = t;
-
     for (int32 i = 0; i < vertices.Length(); i += 3)
         WriteTri(vertices[i], vertices[i + 1], vertices[i + 2], uvs[i], uvs[i + 1], uvs[i + 2], color, color, color);
+
+    RENDER2D_REMOVE_GAMMA_END();
 }
 
 void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Float2>& vertices, const Span<Float2>& uvs, const Span<Color>& colors)
@@ -2100,15 +2145,17 @@ void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Float2>& vertices
     CHECK(vertices.Length() % 3 == 0);
     CHECK(vertices.Length() == uvs.Length());
     CHECK(vertices.Length() == colors.Length());
+    RENDER2D_REMOVE_GAMMA_BEGIN(t, Format);
 
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = DrawCallType::FillTexture;
     drawCall.StartIB = IBIndex;
     drawCall.CountIB = vertices.Length();
     drawCall.AsTexture.Ptr = t;
-
     for (int32 i = 0; i < vertices.Length(); i += 3)
         WriteTri(vertices[i], vertices[i + 1], vertices[i + 2], uvs[i], uvs[i + 1], uvs[i + 2], colors[i], colors[i + 1], colors[i + 2]);
+
+    RENDER2D_REMOVE_GAMMA_END();
 }
 
 void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<uint16>& indices, const Span<Float2>& vertices, const Span<Float2>& uvs, const Span<Color>& colors)
@@ -2116,6 +2163,7 @@ void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<uint16>& indices,
     RENDER2D_CHECK_RENDERING_STATE;
     CHECK(vertices.Length() == uvs.Length());
     CHECK(vertices.Length() == colors.Length());
+    RENDER2D_REMOVE_GAMMA_BEGIN(t, Format);
 
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = DrawCallType::FillTexture;
@@ -2130,6 +2178,8 @@ void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<uint16>& indices,
         const uint16 i2 = indices.Get()[i++];
         WriteTri(vertices[i0], vertices[i1], vertices[i2], uvs[i0], uvs[i1], uvs[i2], colors[i0], colors[i1], colors[i2]);
     }
+
+    RENDER2D_REMOVE_GAMMA_END();
 }
 
 void Render2D::FillTriangles(const Span<Float2>& vertices, const Color& color)

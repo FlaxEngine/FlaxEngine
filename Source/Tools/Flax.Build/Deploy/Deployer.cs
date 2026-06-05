@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Flax Engine. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #define USE_STD
 
@@ -86,6 +86,7 @@ namespace Flax.Deploy
                             BuildPlatform(TargetPlatform.Mac, Platform.BuildTargetArchitecture);
                             BuildPlatform(TargetPlatform.iOS, TargetArchitecture.ARM64);
                         }
+                        BuildPlatform(TargetPlatform.Web, TargetArchitecture.x86);
                     }
                     else
                     {

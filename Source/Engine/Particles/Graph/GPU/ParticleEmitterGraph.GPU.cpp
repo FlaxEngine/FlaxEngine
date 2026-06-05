@@ -3,10 +3,10 @@
 #if COMPILE_WITH_PARTICLE_GPU_GRAPH
 
 #include "ParticleEmitterGraph.GPU.h"
+#include "Engine/Core/Math/Matrix.h"
 #include "Engine/Serialization/FileReadStream.h"
 #include "Engine/Visject/ShaderGraphUtilities.h"
 #include "Engine/Engine/Globals.h"
-#include "Engine/Core/Types/CommonValue.h"
 
 /// <summary>
 /// GPU particles shader source code template has special marks for generated code.

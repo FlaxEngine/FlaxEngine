@@ -43,11 +43,18 @@ API_CLASS() class FLAXENGINE_API RenderBuffers : public ScriptingObject
         String ToString() const override;
     };
 
+private:
+    GPUTexture* HalfResDepth = nullptr;
+    GPUTexture* HiZ = nullptr;
+    uint64 LastFrameHalfResDepth = 0;
+    uint64 LastFrameHiZ = 0;
+
 protected:
     int32 _width = 0;
     int32 _height = 0;
     float _aspectRatio = 0.0f;
     bool _useAlpha = false;
+    bool _useNull = false;
     Viewport _viewport;
     Array<GPUTexture*, FixedAllocation<32>> _resources;
 
@@ -85,11 +92,6 @@ public:
         float MaxDistance;
     } VolumetricFogData;
 
-    // Helper buffer with half-resolution depth buffer shared by effects (eg. SSR, Motion Blur). Valid only during frame rendering and on request (see RequestHalfResDepth).
-    // Should be released if not used for a few frames.
-    GPUTexture* HalfResDepth = nullptr;
-    uint64 LastFrameHalfResDepth = 0;
-
     // Helper target for the temporal SSR.
     // Should be released if not used for a few frames.
     GPUTexture* TemporalSSR = nullptr;
@@ -121,6 +123,15 @@ public:
     /// <param name="context">The context.</param>
     /// <returns>The half-res depth buffer.</returns>
     GPUTexture* RequestHalfResDepth(GPUContext* context);
+
+    /// <summary>
+    /// Requests the Hierarchical Z-Buffer (closest) to be prepared for the current frame.
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <param name="fullRes">Generates the full-resolution buffer, otherwise HiZ starts at half-res of the original Depth Buffer.</param>
+    /// <param name="mipLevels">Maximum amount of mip levels to generate. Value 0 generates a full mip chain down to 1x1.</param>
+    /// <returns>The HiZ depth buffer.</returns>
+    GPUTexture* RequestHiZ(GPUContext* context, bool fullRes = false, int32 mipLevels = 0);
 
 public:
     /// <summary>

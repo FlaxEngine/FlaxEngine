@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <AppKit/AppKit.h>
+#include <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 void InitMacDialog(NSSavePanel* dialog, const StringView& initialDirectory, const StringView& filter, const StringView& title)
 {
@@ -32,18 +33,28 @@ void InitMacDialog(NSSavePanel* dialog, const StringView& initialDirectory, cons
     }
     if (filter.HasChars())
     {
-        // TODO: finish file tpye filter support
-        /*NSMutableArray* fileTypes = [[NSMutableArray alloc] init];
         Array<String> entries;
         String(filter).Split('\0', entries);
-        for (int32 i = 1; i < entries.Count(); i += 2)
+        if (entries.HasItems() && !(entries.Count() == 2 && entries[1] == TEXT("*.*")))
         {
-            String extension = entries[i];
-            if (extension.StartsWith(TEXT("*.")))
-                extension = extension.Substring(2);
-            [fileTypes addObject:(NSString*)AppleUtils::ToString(extension)];
+            NSMutableArray* fileTypes = [[NSMutableArray alloc] init];
+            for (int32 i = 1; i < entries.Count(); i += 2)
+            {
+                StringView extension = entries[i];
+                if (extension.StartsWith(TEXT("*.")))
+                    extension = extension.Substring(2);
+                NSString* extensionStr = (NSString*)AppleUtils::ToString(extension);
+#if defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && defined(__MAC_11_0) && __MAC_OS_X_VERSION_MIN_REQUIRED >= __MAC_11_0
+                UTType* type = [UTType typeWithFilenameExtension:extensionStr];
+                [fileTypes addObject:type];
+            }
+            dialog.allowedContentTypes = fileTypes;
+#else
+                [fileTypes addObject:extensionStr];
+            }
+            [dialog setAllowedFileTypes:fileTypes];
+#endif
         }
-        [dialog setAllowedFileTypes:fileTypes];*/
     }
     if (title.HasChars())
     {
@@ -133,7 +144,16 @@ bool MacFileSystem::ShowBrowseFolderDialog(Window* parentWindow, const StringVie
 
 bool MacFileSystem::ShowFileExplorer(const StringView& path)
 {
-    return [[NSWorkspace sharedWorkspace] selectFile: AppleUtils::ToNSString(FileSystem::ConvertRelativePathToAbsolute(path)) inFileViewerRootedAtPath: @""];
+    String fullPath = FileSystem::ConvertRelativePathToAbsolute(path);
+    NSString* selectFile = AppleUtils::ToNSString(fullPath);
+    NSString* inFileViewerRootedAtPath = AppleUtils::ToNSString(String::Empty);
+    if (FileSystem::DirectoryExists(fullPath))
+    {
+        // Show folder contents
+        inFileViewerRootedAtPath = selectFile;
+        selectFile = nullptr;
+    }
+    return [[NSWorkspace sharedWorkspace] selectFile: selectFile inFileViewerRootedAtPath: inFileViewerRootedAtPath];
 }
 
 #endif

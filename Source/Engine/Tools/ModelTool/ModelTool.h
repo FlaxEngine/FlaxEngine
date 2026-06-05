@@ -253,6 +253,9 @@ public:
         // If checked, the imported geometry will be shifted to the center of mass.
         API_FIELD(Attributes="EditorOrder(540), EditorDisplay(\"Transform\")")
         bool CenterGeometry = false;
+        // If checked, the importer will ignore nodes scale property.
+        API_FIELD(Attributes = "EditorOrder(545), EditorDisplay(\"Transform\")")
+        bool IgnoreNodesScale = false;
 
     public: // Animation
 
@@ -293,20 +296,32 @@ public:
         API_FIELD(Attributes="EditorOrder(1100), EditorDisplay(\"Level Of Detail\", \"Generate LODs\"), VisibleIf(nameof(ShowGeometry))")
         bool GenerateLODs = false;
         // The index of the LOD from the source model data to use as a reference for following LODs generation.
-        API_FIELD(Attributes="EditorOrder(1110), EditorDisplay(\"Level Of Detail\", \"Base LOD\"), VisibleIf(nameof(ShowGeometry)), Limit(0, 5, 0.065f)")
+        API_FIELD(Attributes="EditorOrder(1110), EditorDisplay(\"Level Of Detail\", \"Base LOD\"), VisibleIf(nameof(ShowGenerateLODs)), Limit(0, 5, 0.065f)")
         int32 BaseLOD = 0;
         // The amount of LODs to include in the model (all remaining ones starting from Base LOD will be generated).
-        API_FIELD(Attributes="EditorOrder(1120), EditorDisplay(\"Level Of Detail\", \"LOD Count\"), VisibleIf(nameof(ShowGeometry)), Limit(1, 6, 0.065f)")
+        API_FIELD(Attributes="EditorOrder(1120), EditorDisplay(\"Level Of Detail\", \"LOD Count\"), VisibleIf(nameof(ShowGenerateLODs)), Limit(1, 6, 0.065f)")
         int32 LODCount = 4;
         // The target amount of triangles for the generated LOD (based on the higher LOD). Normalized to range 0-1. For instance 0.4 cuts the triangle count to 40%.
-        API_FIELD(Attributes="EditorOrder(1130), EditorDisplay(\"Level Of Detail\"), VisibleIf(nameof(ShowGeometry)), Limit(0, 1, 0.001f)")
+        API_FIELD(Attributes="EditorOrder(1130), EditorDisplay(\"Level Of Detail\"), VisibleIf(nameof(ShowGenerateLODs)), Limit(0, 1, 0.001f)")
         float TriangleReduction = 0.5f;
         // Whether to do a sloppy mesh optimization. This is faster but does not follow the topology of the original mesh.
-        API_FIELD(Attributes="EditorOrder(1140), EditorDisplay(\"Level Of Detail\"), VisibleIf(nameof(ShowGeometry))")
+        API_FIELD(Attributes="EditorOrder(1140), EditorDisplay(\"Level Of Detail\"), VisibleIf(nameof(ShowGenerateLODs))")
         bool SloppyOptimization = false;
-        // Only used if Sloppy is false. Target error is an approximate measure of the deviation from the original mesh using distance normalized to [0..1] range (e.g. 1e-2f means that simplifier will try to maintain the error to be below 1% of the mesh extents).
-        API_FIELD(Attributes="EditorOrder(1150), EditorDisplay(\"Level Of Detail\"), VisibleIf(nameof(SloppyOptimization), true), VisibleIf(nameof(ShowGeometry)), Limit(0.01f, 1, 0.001f)")
+        // Target error is an approximate measure of the deviation from the original mesh using distance normalized to [0,1] range (e.g. 0.01 means that simplifier will try to maintain the error to be below 1% of the mesh extents). Only used if Sloppy is unchecked.
+        API_FIELD(Attributes="EditorOrder(1150), EditorDisplay(\"Level Of Detail\", \"LOD Target Error\"), VisibleIf(nameof(SloppyOptimization), true), VisibleIf(nameof(ShowGenerateLODs)), Limit(0.01f, 1, 0.001f)")
         float LODTargetError = 0.05f;
+        // If checked, vertices on topological borders (edges without a paired triangle) will not be moved during simplification. Useful for meshes that tile or share edges with other meshes.
+        API_FIELD(Attributes="EditorOrder(1170), EditorDisplay(\"Level Of Detail\", \"Lock Border\"), VisibleIf(nameof(SloppyOptimization), true), VisibleIf(nameof(ShowGenerateLODs))")
+        bool LODLockBorder = false;
+        // If checked, the target error will be treated as absolute rather than relative to the mesh extents. In that mode, error is defined in absolute units which can be universal across similar mesh types no matter their size.
+        API_FIELD(Attributes="EditorOrder(1160), EditorDisplay(\"Level Of Detail\", \"LOD Target Error Absolute\"), VisibleIf(nameof(SloppyOptimization), true), VisibleIf(nameof(ShowGenerateLODs))")
+        bool LODTargetErrorAbsolute = false;
+        // If checked, UV channels will be included in the simplification error metric to preserve UV layout. Essential for trimsheets and atlased textures.
+        API_FIELD(Attributes="EditorOrder(1180), EditorDisplay(\"Level Of Detail\", \"Preserve UVs\"), VisibleIf(nameof(SloppyOptimization), true), VisibleIf(nameof(ShowGenerateLODs))")
+        bool LODPreserveUVs = false;
+        // The weight of UV attributes in the simplification error metric. Higher values preserve UVs more aggressively at the cost of geometric quality. Only used when Preserve UVs is enabled.
+        API_FIELD(Attributes="EditorOrder(1190), EditorDisplay(\"Level Of Detail\", \"Preserve UVs Weight\"), VisibleIf(nameof(LODPreserveUVs)), VisibleIf(nameof(SloppyOptimization), true), VisibleIf(nameof(ShowGenerateLODs)), Limit(0.001f, 1, 0.001f)")
+        float LODPreserveUVsWeight = 0.01f;
 
     public: // Materials
 

@@ -32,7 +32,7 @@ API_ENUM() enum class GPUResourceType
     PipelineState,
     // GPU binding descriptor
     Descriptor,
-    // GPU timer query
+    // GPU timer or occlusion query
     Query,
     // GPU texture sampler
     Sampler,
@@ -96,11 +96,13 @@ public:
     /// <summary>
     /// Gets the resource name.
     /// </summary>
+    /// <remarks>Only available in Development and Debug builds.</remarks>
     API_PROPERTY() StringView GetName() const;
 
     /// <summary>
     /// Sets the resource name.
     /// </summary>
+    /// <remarks>Only available in Development and Debug builds.</remarks>
     API_PROPERTY() void SetName(const StringView& name);
 #endif
 
@@ -119,6 +121,10 @@ protected:
     /// Releases GPU resource data (implementation).
     /// </summary>
     virtual void OnReleaseGPU();
+
+#if !BUILD_RELEASE
+    virtual void OnRenamed();
+#endif
 
 public:
     // [ScriptingObject]

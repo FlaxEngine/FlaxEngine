@@ -5,6 +5,7 @@
 #include "Engine/Animations/AnimEvent.h"
 #include "Engine/Content/Assets/SkinnedModel.h"
 #include "Engine/Graphics/Models/SkeletonData.h"
+#include "Engine/Level/Actor.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Threading/Threading.h"
 
@@ -24,17 +25,33 @@ Transform AnimGraphImpulse::GetNodeModelTransformation(SkeletonData& skeleton, i
     return parentTransform.LocalToWorld(Nodes[nodeIndex]);
 }
 
-void AnimGraphImpulse::SetNodeModelTransformation(SkeletonData& skeleton, int32 nodeIndex, const Transform& value)
+void AnimGraphImpulse::SetNodeModelTransformation(SkeletonData& skeleton, int32 nodeIndex, const Transform& value, float weight)
 {
+    Transform transform = value;
     const int32 parentIndex = skeleton.Nodes[nodeIndex].ParentIndex;
-    if (parentIndex == -1)
+    if (parentIndex != -1)
     {
-        Nodes[nodeIndex] = value;
-        return;
+        const Transform parentTransform = GetNodeModelTransformation(skeleton, parentIndex);
+        parentTransform.WorldToLocal(transform, transform);
     }
 
-    const Transform parentTransform = GetNodeModelTransformation(skeleton, parentIndex);
-    parentTransform.WorldToLocal(value, Nodes[nodeIndex]);
+    if (weight >= 1.0f)
+        Nodes[nodeIndex] = transform;
+    else
+        Transform::Lerp(Nodes[nodeIndex], transform, weight, Nodes[nodeIndex]);
+}
+
+Transform AnimGraphImpulse::GetNodeWorldTransformation(const AnimGraphContext& context, SkeletonData& skeleton, int32 nodeIndex) const
+{
+    Transform transform = GetNodeModelTransformation(skeleton, nodeIndex);
+    return context.Data->GetObjectTransform().LocalToWorld(transform);
+}
+
+void AnimGraphImpulse::SetNodeWorldTransformation(const AnimGraphContext& context, SkeletonData& skeleton, int32 nodeIndex, const Transform& value)
+{
+    Transform transform;
+    context.Data->GetObjectTransform().WorldToLocal(value, transform);
+    SetNodeModelTransformation(skeleton, nodeIndex, transform);
 }
 
 void AnimGraphInstanceData::Clear()
@@ -56,6 +73,7 @@ void AnimGraphInstanceData::ClearState()
     RootTransform = Transform::Identity;
     RootMotion = Transform::Identity;
     State.Resize(0);
+    DynamicState.Resize(0);
     NodesPose.Resize(0);
     TraceEvents.Clear();
 }
@@ -89,6 +107,13 @@ void AnimGraphInstanceData::InvokeAnimEvents()
             }
         }
     }
+}
+
+Transform AnimGraphInstanceData::GetObjectTransform() const
+{
+    if (auto* actor = ScriptingObject::Cast<Actor>(Object))
+        return actor->GetTransform();
+    return Transform::Identity;
 }
 
 AnimGraphInstanceData::OutgoingEvent AnimGraphInstanceData::ActiveEvent::End(AnimatedModel* actor) const
@@ -140,6 +165,23 @@ AnimGraphImpulse* AnimGraphNode::GetNodes(AnimGraphExecutor* executor)
     auto& nodes = context.PoseCache[context.PoseCacheSize++];
     nodes.Nodes.Resize(count, false);
     return &nodes;
+}
+
+AnimGraphImpulse* AnimGraphNode::GetNodes(AnimGraphExecutor* executor, Variant& input)
+{
+    const auto nodes = GetNodes(executor);
+    if (ANIM_GRAPH_IS_VALID_PTR(input))
+    {
+        // Use input nodes
+        executor->CopyNodes(nodes, input);
+    }
+    else
+    {
+        // Use default nodes
+        executor->InitNodes(nodes);
+        input = nodes;
+    }
+    return nodes;
 }
 
 bool AnimGraph::Load(ReadStream* stream, bool loadMeta)
@@ -268,6 +310,7 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
         {
             // Prepare memory for buckets state information
             data.State.Resize(_graph.BucketsCountTotal, false);
+            data.DynamicState.Clear();
 
             // Initialize buckets
             ResetBuckets(context, &_graph);

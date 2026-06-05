@@ -8,6 +8,7 @@
 #include "./Flax/Common.hlsl"
 #include "./Flax/MaterialCommon.hlsl"
 #include "./Flax/GBufferCommon.hlsl"
+#include "./Flax/VolumetricFog.hlsl"
 @7
 
 // Primary constant buffer (with additional material parameters)
@@ -21,6 +22,7 @@ float Dummy0;
 float VolumetricFogMaxDistance;
 int ParticleStride;
 int ParticleIndex;
+float4 GridSliceParameters;
 @1META_CB_END
 
 // Particles attributes buffer
@@ -202,19 +204,19 @@ Material GetMaterialPS(MaterialInput input)
 META_PS(true, FEATURE_LEVEL_SM5)
 void PS_VolumetricFog(Quad_GS2PS input, out float4 VBufferA : SV_Target0, out float4 VBufferB : SV_Target1)
 {
+	// Reproject grid position back to the screen and world space
 	uint3 gridCoordinate = uint3(input.Vertex.Position.xy, input.LayerIndex);
 	float3 cellOffset = 0.5f;
 	float2 volumeUV = (gridCoordinate.xy + cellOffset.xy) / GridSize.xy;
-	float zSlice = gridCoordinate.z + cellOffset.z;
-	float sceneDepth = (zSlice / GridSize.z) * VolumetricFogMaxDistance / ViewFar;
+	float sceneDepth = GetDepthFromSlice(GridSliceParameters, gridCoordinate.z + cellOffset.z) / ViewFar;
 	float deviceDepth = (ViewInfo.w / sceneDepth) + ViewInfo.z;
 	float4 clipPos = float4(volumeUV * float2(2.0, -2.0) + float2(-1.0, 1.0), deviceDepth, 1.0);
 	float4 wsPos = mul(clipPos, InverseViewProjectionMatrix);
-	float3 positionWS = wsPos.xyz / wsPos.w;
+	wsPos.xyz /= wsPos.w;
 
 	// Get material parameters
 	MaterialInput materialInput = (MaterialInput)0;
-	materialInput.WorldPosition = positionWS;
+	materialInput.WorldPosition = wsPos.xyz;
 	materialInput.TexCoord = input.Vertex.TexCoord;
 	materialInput.ParticleIndex = ParticleIndex;
 	materialInput.TBN = float3x3(float3(1, 0, 0), float3(0, 1, 0), float3(0, 0, 1));
@@ -225,9 +227,10 @@ void PS_VolumetricFog(Quad_GS2PS input, out float4 VBufferA : SV_Target0, out fl
 	Material material = GetMaterialPS(materialInput);
 
 	// Compute fog properties
+	material.Opacity *= material.Mask;
 	float3 albedo = material.Color;
-	float extinction = material.Opacity * material.Mask * 0.001f;
-	float3 emission = material.Emissive;
+	float extinction = material.Opacity * 0.001f;
+	float3 emission = material.Emissive * material.Opacity;
 	float3 scattering = albedo * extinction;
 	float absorption = max(0.0f, extinction - Luminance(scattering));
 

@@ -60,6 +60,9 @@ public class Audio : EngineModule
         case TargetPlatform.iOS:
             useOpenAL = true;
             break;
+        case TargetPlatform.Web:
+            useOpenAL = true;
+            break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
 
@@ -98,6 +101,9 @@ public class Audio : EngineModule
                 options.OutputFiles.Add(Path.Combine(depsRoot, "libopenal.a"));
                 options.Libraries.Add("CoreAudio.framework");
                 options.Libraries.Add("AudioToolbox.framework");
+                break;
+            case TargetPlatform.Web:
+                options.LinkEnv.CustomArgs.Add("-lopenal");
                 break;
             default: throw new InvalidPlatformException(options.Platform.Target);
             }

@@ -49,6 +49,7 @@ void GPUBufferViewVulkan::Release()
 
 void GPUBufferViewVulkan::DescriptorAsUniformTexelBuffer(GPUContextVulkan* context, VkBufferView& bufferView)
 {
+    // Buffer SRV
     ASSERT_LOW_LAYER(View != VK_NULL_HANDLE);
     bufferView = View;
     context->AddBufferBarrier(Owner, VK_ACCESS_SHADER_READ_BIT);
@@ -56,18 +57,20 @@ void GPUBufferViewVulkan::DescriptorAsUniformTexelBuffer(GPUContextVulkan* conte
 
 void GPUBufferViewVulkan::DescriptorAsStorageBuffer(GPUContextVulkan* context, VkBuffer& buffer, VkDeviceSize& offset, VkDeviceSize& range)
 {
+    // Buffer UAV
     ASSERT_LOW_LAYER(Buffer);
     buffer = Buffer;
     offset = 0;
     range = Size;
-    context->AddBufferBarrier(Owner, VK_ACCESS_SHADER_READ_BIT);
+    context->AddBufferBarrier(Owner, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
 }
 
 void GPUBufferViewVulkan::DescriptorAsStorageTexelBuffer(GPUContextVulkan* context, VkBufferView& bufferView)
 {
+    // Buffer UAV
     ASSERT_LOW_LAYER(View != VK_NULL_HANDLE);
     bufferView = View;
-    context->AddBufferBarrier(Owner, VK_ACCESS_SHADER_READ_BIT);
+    context->AddBufferBarrier(Owner, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
 }
 
 GPUBufferView* GPUBufferVulkan::View() const

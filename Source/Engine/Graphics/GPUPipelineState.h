@@ -65,6 +65,11 @@ public:
         API_FIELD() bool DepthClipEnable;
 
         /// <summary>
+        /// Enable/disable depth bounds testing (min/max values provided via GPUContext::SetDepthBounds)
+        /// </summary>
+        API_FIELD() bool DepthBoundsEnable;
+
+        /// <summary>
         /// A function that compares depth data against existing depth data
         /// </summary>
         API_FIELD() ComparisonFunc DepthFunc;
@@ -208,6 +213,14 @@ public:
     FORCE_INLINE uint32 GetUsedUAsMask() const
     {
         return _meta.UsedUAsMask;
+    }
+
+    /// <summary>
+    /// Gets texture samplers mask (each set bit marks usage of the sampler slot at the bit index slot). Combined from all the used shader stages.
+    /// </summary>
+    FORCE_INLINE uint32 GetUsedSamplersMask() const
+    {
+        return _meta.UsedSamplersMask;
     }
 
 public:

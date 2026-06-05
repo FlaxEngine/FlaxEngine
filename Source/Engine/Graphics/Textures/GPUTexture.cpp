@@ -354,6 +354,7 @@ int32 GPUTexture::ComputeRowPitch(int32 mipLevel, int32 rowAlign) const
 
 bool GPUTexture::Init(const GPUTextureDescription& desc)
 {
+    PROFILE_CPU();
     PROFILE_MEM(GraphicsTextures);
 
     // Validate description
@@ -399,6 +400,7 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
         LOG(Warning, "Cannot create texture. Depth Stencil texture cannot have mip maps. Description: {0}", desc.ToString());
         return true;
     }
+    auto formatFeatures = device->GetFormatFeatures(desc.Format);
     switch (desc.Dimensions)
     {
     case TextureDimensions::Texture:
@@ -408,12 +410,19 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
             LOG(Warning, "Cannot create texture. Texture cannot have per slice views. Description: {0}", desc.ToString());
             return true;
         }
+        if (EnumHasNoneFlags(formatFeatures.Support, FormatSupport::Texture2D))
+        {
+            LOG(Warning, "Cannot create texture. Not supported format. Description: {0}", desc.ToString());
+            return true;
+        }
         if (desc.Width <= 0 || desc.Height <= 0 || desc.ArraySize <= 0
             || desc.Width > device->Limits.MaximumTexture2DSize
             || desc.Height > device->Limits.MaximumTexture2DSize
             || desc.ArraySize > device->Limits.MaximumTexture2DArraySize)
         {
             LOG(Warning, "Cannot create texture. Invalid dimensions. Description: {0}", desc.ToString());
+            if (desc.Width > 0 && desc.Height > 0 && desc.ArraySize > 0)
+                LOG(Warning, "GPU device supports max 2D texture size {} and array size: {}", device->Limits.MaximumTexture2DSize, device->Limits.MaximumTexture2DArraySize);
             return true;
         }
 
@@ -446,12 +455,19 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
             LOG(Warning, "Cannot create texture. Volume texture cannot have per slice map views if is not a render target. Description: {0}", desc.ToString());
             return true;
         }
+        if (EnumHasNoneFlags(formatFeatures.Support, FormatSupport::Texture3D))
+        {
+            LOG(Warning, "Cannot create texture. Not supported format. Description: {0}", desc.ToString());
+            return true;
+        }
         if (desc.Width <= 0 || desc.Height <= 0 || desc.Depth <= 0
             || desc.Width > device->Limits.MaximumTexture3DSize
             || desc.Height > device->Limits.MaximumTexture3DSize
             || desc.Depth > device->Limits.MaximumTexture3DSize)
         {
             LOG(Warning, "Cannot create texture. Invalid dimensions. Description: {0}", desc.ToString());
+            if (desc.Width > 0 && desc.Height > 0 && desc.Depth > 0)
+                LOG(Warning, "GPU device supports max 3D texture size {}", device->Limits.MaximumTexture3DSize);
             return true;
         }
 
@@ -464,6 +480,11 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
             LOG(Warning, "Cannot create texture. Cube texture cannot have per slice views. Description: {0}", desc.ToString());
             return true;
         }
+        if (EnumHasNoneFlags(formatFeatures.Support, FormatSupport::TextureCube))
+        {
+            LOG(Warning, "Cannot create texture. Not supported format. Description: {0}", desc.ToString());
+            return true;
+        }
         if (desc.Width <= 0 || desc.ArraySize <= 0
             || desc.Width > device->Limits.MaximumTextureCubeSize
             || desc.Height > device->Limits.MaximumTextureCubeSize
@@ -471,6 +492,8 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
             || desc.Width != desc.Height)
         {
             LOG(Warning, "Cannot create texture. Invalid dimensions. Description: {0}", desc.ToString());
+            if (desc.Width > 0 && desc.Height > 0 && desc.ArraySize > 0)
+                LOG(Warning, "GPU device supports max cue texture size {} and array size: {}", device->Limits.MaximumTextureCubeSize, device->Limits.MaximumTexture2DArraySize / 6);
             return true;
         }
 
@@ -505,6 +528,7 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
     }
 
 #if COMPILE_WITH_PROFILER
+    ZoneValue(_memoryUsage / 1024); // Memory size in kB
     auto group = ProfilerMemory::Groups::GraphicsTextures;
     if (_desc.IsRenderTarget())
         group = ProfilerMemory::Groups::GraphicsRenderTargets;

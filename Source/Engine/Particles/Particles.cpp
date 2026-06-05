@@ -41,7 +41,7 @@ PACK_STRUCT(struct SpriteParticleVertex
 class SpriteParticleRenderer
 {
 public:
-    volatile int64 Ready = 0;
+    volatile intptr Ready = 0;
     GPUBuffer* VB = nullptr;
     GPUBuffer* IB = nullptr;
     const static int32 VertexCount = 4;
@@ -1702,7 +1702,7 @@ void ParticlesSystem::Job(int32 index)
         // Calculate new time position
         const float startTime = (float)track.AsEmitter.StartFrame / fps;
         const float durationTime = (float)track.AsEmitter.DurationFrames / fps;
-        const bool canSpawn = startTime <= instance.Time && instance.Time <= startTime + durationTime;
+        const bool canSpawn = startTime <= instance.Time && instance.Time <= startTime + durationTime && effect->CanSpawn;
 
         // Update instance data
         data.Sync(effect->Instance, particleSystem, track.AsEmitter.Index);

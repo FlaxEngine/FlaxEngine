@@ -244,14 +244,14 @@ namespace Flax.Build.Platforms
             case TargetPlatform.Mac:
                 switch (architecture)
                 {
-                case TargetArchitecture.x64: return "x86_64-apple-macos" + Configuration.MacOSXMinVer;
-                case TargetArchitecture.ARM64: return "aarch64-apple-macos" + Configuration.MacOSXMinVer;
+                case TargetArchitecture.x64: return "x86_64-apple-macos" + MacConfiguration.MacOSXMinVer;
+                case TargetArchitecture.ARM64: return "aarch64-apple-macos" + MacConfiguration.MacOSXMinVer;
                 default: throw new InvalidArchitectureException(architecture);
                 }
             case TargetPlatform.iOS:
                 switch (architecture)
                 {
-                case TargetArchitecture.ARM64: return "aarch64-apple-ios" + Configuration.iOSMinVer;
+                case TargetArchitecture.ARM64: return "aarch64-apple-ios" + iOSConfiguration.MinVer;
                 default: throw new InvalidArchitectureException(architecture);
                 }
             default: throw new InvalidPlatformException(platform);
@@ -344,23 +344,6 @@ namespace Flax.Build.Platforms
             {
                 commonArgs.Add("-c");
                 commonArgs.Add("-pipe");
-                commonArgs.Add("-x");
-                commonArgs.Add("c++");
-
-                // C++ version
-                switch (compileEnvironment.CppVersion)
-                {
-                case CppVersion.Cpp14:
-                    commonArgs.Add("-std=c++14");
-                    break;
-                case CppVersion.Cpp17:
-                case CppVersion.Latest:
-                    commonArgs.Add("-std=c++17");
-                    break;
-                case CppVersion.Cpp20:
-                    commonArgs.Add("-std=c++20");
-                    break;
-                }
 
                 commonArgs.Add("-Wdelete-non-virtual-dtor");
                 commonArgs.Add("-fno-math-errno");
@@ -418,7 +401,7 @@ namespace Flax.Build.Platforms
                 commonArgs.Add(string.Format("-I\"{0}\"", includePath.Replace('\\', '/')));
             }
 
-            // Compile all C++ files
+            // Compile all C/C++ files
             var args = new List<string>();
             foreach (var sourceFile in sourceFiles)
             {
@@ -428,6 +411,30 @@ namespace Flax.Build.Platforms
                 // Use shared arguments
                 args.Clear();
                 args.AddRange(commonArgs);
+
+                // Language for the file
+                args.Add("-x");
+                if (sourceFile.EndsWith(".c", StringComparison.OrdinalIgnoreCase))
+                    args.Add("c");
+                else
+                {
+                    args.Add("c++");
+
+                    // C++ version
+                    switch (compileEnvironment.CppVersion)
+                    {
+                    case CppVersion.Cpp14:
+                        args.Add("-std=c++14");
+                        break;
+                    case CppVersion.Cpp17:
+                    case CppVersion.Latest:
+                        args.Add("-std=c++17");
+                        break;
+                    case CppVersion.Cpp20:
+                        args.Add("-std=c++20");
+                        break;
+                    }
+                }
 
                 // Object File Name
                 var objFile = Path.Combine(outputPath, sourceFilename + ".o");

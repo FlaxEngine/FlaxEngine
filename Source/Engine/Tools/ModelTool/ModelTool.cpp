@@ -92,7 +92,7 @@ class GPUModelSDFTask : public GPUTask
     GPUTexture* _sdfResult;
     Float3 _xyzToLocalMul, _xyzToLocalAdd;
 #if GPU_ALLOW_PROFILE_EVENTS
-    GPUTimerQuery* _timerQuery;
+    uint64 _timerQuery = 0;
 #endif
 
     const uint32 ThreadGroupSize = 64;
@@ -124,17 +124,11 @@ public:
         , _sdfResult(sdfResult)
         , _xyzToLocalMul(xyzToLocalMul)
         , _xyzToLocalAdd(xyzToLocalAdd)
-#if GPU_ALLOW_PROFILE_EVENTS
-        , _timerQuery(GPUDevice::Instance->CreateTimerQuery())
-#endif
     {
     }
 
     ~GPUModelSDFTask()
     {
-#if GPU_ALLOW_PROFILE_EVENTS
-        SAFE_DELETE_GPU_RESOURCE(_timerQuery);
-#endif
     }
 
     Result run(GPUTasksContext* tasksContext) override
@@ -142,7 +136,7 @@ public:
         PROFILE_GPU_CPU("GPUModelSDFTask");
         GPUContext* context = tasksContext->GPU;
 #if GPU_ALLOW_PROFILE_EVENTS
-        _timerQuery->Begin();
+        _timerQuery = context->BeginQuery(GPUQueryType::Timer);
 #endif
 
         // Allocate resources
@@ -216,7 +210,7 @@ public:
         SAFE_DELETE_GPU_RESOURCE(sdfTexture);
 
 #if GPU_ALLOW_PROFILE_EVENTS
-        _timerQuery->End();
+        context->EndQuery(_timerQuery);
 #endif
         return Result::Ok;
     }
@@ -226,8 +220,9 @@ public:
         GPUTask::OnSync();
         _signal->NotifyOne();
 #if GPU_ALLOW_PROFILE_EVENTS
-        if (_timerQuery->HasResult())
-            LOG(Info, "GPU SDF generation took {} ms", Utilities::RoundTo1DecimalPlace(_timerQuery->GetResult()));
+        uint64 time;
+        if (GPUDevice::Instance->GetQueryResult(_timerQuery, time, true))
+            LOG(Info, "GPU SDF generation took {} ms", Utilities::RoundTo1DecimalPlace(time * 0.001f));
 #endif
     }
 
@@ -576,6 +571,7 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(Translation);
     SERIALIZE(UseLocalOrigin);
     SERIALIZE(CenterGeometry);
+    SERIALIZE(IgnoreNodesScale);
     SERIALIZE(Duration);
     SERIALIZE(FramesRange);
     SERIALIZE(DefaultFrameRate);
@@ -592,6 +588,10 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(TriangleReduction);
     SERIALIZE(SloppyOptimization);
     SERIALIZE(LODTargetError);
+    SERIALIZE(LODTargetErrorAbsolute);
+    SERIALIZE(LODLockBorder);
+    SERIALIZE(LODPreserveUVs);
+    SERIALIZE(LODPreserveUVsWeight);
     SERIALIZE(ImportMaterials);
     SERIALIZE(CreateEmptyMaterialSlots);
     SERIALIZE(ImportMaterialsAsInstances);
@@ -632,6 +632,7 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(Translation);
     DESERIALIZE(UseLocalOrigin);
     DESERIALIZE(CenterGeometry);
+    DESERIALIZE(IgnoreNodesScale);
     DESERIALIZE(Duration);
     DESERIALIZE(FramesRange);
     DESERIALIZE(DefaultFrameRate);
@@ -648,6 +649,10 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(TriangleReduction);
     DESERIALIZE(SloppyOptimization);
     DESERIALIZE(LODTargetError);
+    DESERIALIZE(LODTargetErrorAbsolute);
+    DESERIALIZE(LODLockBorder);
+    DESERIALIZE(LODPreserveUVs);
+    DESERIALIZE(LODPreserveUVsWeight);
     DESERIALIZE(ImportMaterials);
     DESERIALIZE(CreateEmptyMaterialSlots);
     DESERIALIZE(ImportMaterialsAsInstances);
@@ -1342,6 +1347,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         String assetPath = GetAdditionalImportPath(autoImportOutput, importedFileNames, StringUtils::GetFileNameWithoutExtension(texture.FilePath));
 #if COMPILE_WITH_ASSETS_IMPORTER
         TextureTool::Options textureOptions;
+        textureOptions.sRGB = texture.sRGB;
         switch (texture.Type)
         {
         case TextureEntry::TypeHint::ColorRGB:
@@ -1352,6 +1358,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             break;
         case TextureEntry::TypeHint::Normals:
             textureOptions.Type = TextureFormatType::NormalMap;
+            textureOptions.sRGB = false;
             break;
         }
         AssetsImportingManager::ImportIfEdited(texture.FilePath, assetPath, texture.AssetID, &textureOptions);
@@ -1955,6 +1962,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
     // Automatic LOD generation
     if (options.GenerateLODs && options.LODCount > 1 && data.LODs.HasItems() && options.TriangleReduction < 1.0f - ZeroTolerance)
     {
+        PROFILE_CPU_NAMED("GenerateLODs");
         auto lodStartTime = DateTime::NowUTC();
         meshopt_setAllocator(MeshOptAllocate, MeshOptDeallocate);
         float triangleReduction = Math::Saturate(options.TriangleReduction);
@@ -1993,13 +2001,51 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                     continue;
                 indices.Clear();
                 indices.Resize(srcMeshIndexCount);
-                int32 dstMeshIndexCount = {};
+                int32 dstMeshIndexCount = 0;
                 if (options.SloppyOptimization)
+                {
+                    PROFILE_CPU_NAMED("meshopt_simplifySloppy");
                     dstMeshIndexCount = (int32)meshopt_simplifySloppy(indices.Get(), srcMesh->Indices.Get(), srcMeshIndexCount, (const float*)srcMesh->Positions.Get(), srcMeshVertexCount, sizeof(Float3), dstMeshIndexCountTarget, options.LODTargetError);
+                }
                 else
-                    dstMeshIndexCount = (int32)meshopt_simplify(indices.Get(), srcMesh->Indices.Get(), srcMeshIndexCount, (const float*)srcMesh->Positions.Get(), srcMeshVertexCount, sizeof(Float3), dstMeshIndexCountTarget, options.LODTargetError);
-                if (dstMeshIndexCount <= 0 || dstMeshIndexCount > indices.Count())
-                    continue;
+                {
+                    // Build simplification flags
+                    unsigned int simplifyOptions = 0;
+                    if (options.LODLockBorder)
+                        simplifyOptions |= meshopt_SimplifyLockBorder;
+                    if (options.LODTargetErrorAbsolute)
+                        simplifyOptions |= meshopt_SimplifyErrorAbsolute;
+                    if (options.LODPreserveUVs && srcMesh->UVs.HasItems())
+                    {
+                        // Pack UV channels as attributes for meshopt_simplifyWithAttributes
+                        int32 uvChannelCount = srcMesh->UVs.Count();
+                        int32 attributeCount = uvChannelCount * 2; // 2 floats (U, V) per channel
+                        Array<float> attributes;
+                        attributes.Resize(srcMeshVertexCount * attributeCount);
+                        Array<float> attributeWeights;
+                        attributeWeights.Resize(attributeCount);
+                        for (int32 ch = 0; ch < uvChannelCount; ch++)
+                        {
+                            for (int32 v = 0; v < srcMeshVertexCount; v++)
+                            {
+                                Float2 uv = srcMesh->UVs[ch][v];
+                                attributes[v * attributeCount + ch * 2 + 0] = uv.X;
+                                attributes[v * attributeCount + ch * 2 + 1] = uv.Y;
+                            }
+                            attributeWeights[ch * 2 + 0] = options.LODPreserveUVsWeight;
+                            attributeWeights[ch * 2 + 1] = options.LODPreserveUVsWeight;
+                        }
+                        PROFILE_CPU_NAMED("meshopt_simplifyWithAttributes");
+                        dstMeshIndexCount = (int32)meshopt_simplifyWithAttributes(indices.Get(), srcMesh->Indices.Get(), srcMeshIndexCount, (const float*)srcMesh->Positions.Get(), srcMeshVertexCount, sizeof(Float3), attributes.Get(), sizeof(float) * attributeCount, attributeWeights.Get(), attributeCount, nullptr, dstMeshIndexCountTarget, options.LODTargetError, simplifyOptions, nullptr);
+                    }
+                    else
+                    {
+                        PROFILE_CPU_NAMED("meshopt_simplify");
+                        dstMeshIndexCount = (int32)meshopt_simplify(indices.Get(), srcMesh->Indices.Get(), srcMeshIndexCount, (const float*)srcMesh->Positions.Get(), srcMeshVertexCount, sizeof(Float3), dstMeshIndexCountTarget, options.LODTargetError, simplifyOptions, nullptr);
+                    }
+                }
+                if (dstMeshIndexCount <= 0 || dstMeshIndexCount >= indices.Count())
+                    continue; // Skip if failed to generate LOD or it doesn't have less vertices than source
                 indices.Resize(dstMeshIndexCount);
 
                 // Generate simplified vertex buffer remapping table (use only vertices from LOD index buffer)

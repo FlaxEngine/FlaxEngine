@@ -26,6 +26,8 @@
 #include "Mac/MacGame.h"
 #elif PLATFORM_IOS
 #include "iOS/iOSGame.h"
+#elif PLATFORM_WEB
+#include "Web/WebGame.h"
 #else
 #error Missing Game implementation!
 #endif

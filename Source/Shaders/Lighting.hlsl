@@ -8,8 +8,13 @@
 ShadowSample GetShadow(LightData lightData, GBufferSample gBuffer, float4 shadowMask)
 {
     ShadowSample shadow;
+#if LIGHTING_NO_SHADOW
+    shadow.SurfaceShadow = gBuffer.AO;
+    shadow.TransmissionShadow = 1.0f;
+#else
     shadow.SurfaceShadow = gBuffer.AO * shadowMask.r;
     shadow.TransmissionShadow = shadowMask.g;
+#endif
     return shadow;
 }
 

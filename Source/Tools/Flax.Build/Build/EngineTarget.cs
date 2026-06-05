@@ -148,8 +148,12 @@ namespace Flax.Build
         {
             if (OutputType == TargetOutputType.Executable && !Configuration.BuildBindingsOnly)
             {
-                if (buildOptions.Platform.Target == TargetPlatform.Android)
+                switch (buildOptions.Platform.Target)
+                {
+                case TargetPlatform.Android:
+                case TargetPlatform.Web:
                     return false;
+                }
                 if (!buildOptions.Platform.HasModularBuildSupport)
                     return false;
                 return !IsMonolithicExecutable || (!buildOptions.Platform.HasExecutableFileReferenceSupport && UseSymbolsExports);

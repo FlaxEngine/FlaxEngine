@@ -47,7 +47,7 @@ enum class FileAccess : uint32
 /// </summary>
 enum class FileShare : uint32
 {
-    // Prevents any operations on the file file it's opened.
+    // Prevents any operations on the file it's opened.
     None = 0x00000000,
     // Allows read operations on a file.
     Read = 0x00000001,
@@ -130,12 +130,12 @@ public:
     virtual bool IsOpened() const = 0;
 
 public:
-    static bool ReadAllBytes(const StringView& path, byte* data, int32 length);
+    static bool ReadAllBytes(const StringView& path, void* data, int32 length);
     static bool ReadAllBytes(const StringView& path, Array<byte, HeapAllocation>& data);
     static bool ReadAllBytes(const StringView& path, DataContainer<byte>& data);
     static bool ReadAllText(const StringView& path, String& data);
     static bool ReadAllText(const StringView& path, StringAnsi& data);
-    static bool WriteAllBytes(const StringView& path, const byte* data, int32 length);
+    static bool WriteAllBytes(const StringView& path, const void* data, int32 length);
     static bool WriteAllBytes(const StringView& path, const Array<byte, HeapAllocation>& data);
     static bool WriteAllText(const StringView& path, const String& data, Encoding encoding);
     static bool WriteAllText(const StringView& path, const StringBuilder& data, Encoding encoding);

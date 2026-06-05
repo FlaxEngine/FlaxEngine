@@ -161,7 +161,7 @@ namespace FlaxEditor.Modules
         public ContentProxy GetProxy(string extension)
         {
             if (string.IsNullOrEmpty(extension))
-                throw new ArgumentNullException();
+                return null;
             extension = StringUtils.NormalizeExtension(extension);
             for (int i = 0; i < Proxy.Count; i++)
             {
@@ -754,6 +754,10 @@ namespace FlaxEditor.Modules
                     // Delete asset by using content pool
                     FlaxEngine.Content.DeleteAsset(path);
                 }
+                else if (item is ScriptItem)
+                {
+                    FlaxEngine.Content.DeleteScript(path);
+                }
                 else if (deletedByUser)
                 {
                     // Delete file
@@ -901,7 +905,7 @@ namespace FlaxEditor.Modules
                     {
                         // Item doesn't exist anymore
                         Editor.Log(string.Format($"Content item \'{child.Path}\' has been removed"));
-                        Delete(child, false);
+                        Delete(child);
                         i--;
                     }
                     else if (canHaveAssets && child is AssetItem childAsset)
@@ -1013,7 +1017,7 @@ namespace FlaxEditor.Modules
                     ContentItem item;
                     if (path.EndsWith(".cs"))
                         item = new CSharpScriptItem(path);
-                    else if (path.EndsWith(".cpp") || path.EndsWith(".h"))
+                    else if (path.EndsWith(".cpp") || path.EndsWith(".h") || path.EndsWith(".c") || path.EndsWith(".hpp"))
                         item = new CppScriptItem(path);
                     else if (path.EndsWith(".shader") || path.EndsWith(".hlsl"))
                         item = new ShaderSourceItem(path);
@@ -1188,6 +1192,7 @@ namespace FlaxEditor.Modules
             Proxy.Add(new SettingsProxy(typeof(AndroidPlatformSettings), Editor.Instance.Icons.AndroidSettings128));
             Proxy.Add(new SettingsProxy(typeof(MacPlatformSettings), Editor.Instance.Icons.AppleSettings128));
             Proxy.Add(new SettingsProxy(typeof(iOSPlatformSettings), Editor.Instance.Icons.AppleSettings128));
+            Proxy.Add(new SettingsProxy(typeof(WebPlatformSettings), Editor.Instance.Icons.WebSettings128));
 
             var typePS4PlatformSettings = TypeUtils.GetManagedType(GameSettings.PS4PlatformSettingsTypename);
             if (typePS4PlatformSettings != null)

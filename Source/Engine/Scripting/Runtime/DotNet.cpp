@@ -355,7 +355,7 @@ void MCore::UnloadScriptingAssemblyLoadContext()
         MAssembly* a = e.Value;
         if (!a->IsLoaded() || !a->_hasCachedClasses)
             continue;
-        for (const auto& q : a->GetClasses())
+        for (const auto& q : a->GetTypeClasses())
         {
             MClass* c = q.Value;
             c->_hasCachedAttributes = false;
@@ -781,6 +781,7 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
         MCore::GC::FreeMemory((void*)managedClasses[i].fullname);
         MCore::GC::FreeMemory((void*)managedClasses[i].namespace_);
     }
+    _typeClasses = _classes;
 
     static void* RegisterManagedClassNativePointersPtr = GetStaticMethodPointer(TEXT("RegisterManagedClassNativePointers"));
     CallStaticMethod<void, NativeClassDefinitions**, int>(RegisterManagedClassNativePointersPtr, &managedClasses, classCount);
@@ -797,6 +798,12 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
 
     _hasCachedClasses = true;
     return _classes;
+}
+
+MAssembly::ClassesDictionary& MAssembly::GetTypeClasses() const
+{
+    GetClasses();
+    return _typeClasses;
 }
 
 void GetAssemblyName(void* assemblyHandle, StringAnsi& name, StringAnsi& fullname)
@@ -828,7 +835,7 @@ DEFINE_INTERNAL_CALL(void) NativeInterop_CreateClass(NativeClassDefinitions* man
     MClass* klass = assembly->Memory.New<MClass>(assembly, managedClass->typeHandle, managedClass->name, managedClass->fullname, managedClass->namespace_, managedClass->typeAttributes);
     if (assembly != nullptr)
     {
-        auto& classes = const_cast<MAssembly::ClassesDictionary&>(assembly->GetClasses());
+        auto& classes = assembly->GetTypeClasses();
         MClass* oldKlass;
         if (classes.TryGet(klass->GetFullName(), oldKlass))
         {
@@ -1629,7 +1636,7 @@ FORCE_INLINE StringAnsiView GetPropertyMethodName(MProperty* property, StringAns
     Platform::MemoryCopy(mem, prefix.Get(), prefix.Length());
     Platform::MemoryCopy(mem + prefix.Length(), name.Get(), name.Length());
     mem[name.Length() + prefix.Length()] = 0;
-    return StringAnsiView(mem, name.Length() + prefix.Length() + 1);
+    return StringAnsiView(mem, name.Length() + prefix.Length());
 }
 
 MProperty::MProperty(MClass* parentClass, const char* name, void* handle, void* getterHandle, void* setterHandle, MMethodAttributes getterAttributes, MMethodAttributes setterAttributes)
@@ -1746,7 +1753,7 @@ MClass* GetOrCreateClass(MType* typeHandle)
         klass = assembly->Memory.New<MClass>(assembly, classInfo.typeHandle, classInfo.name, classInfo.fullname, classInfo.namespace_, classInfo.typeAttributes);
         if (assembly != nullptr)
         {
-            auto& classes = const_cast<MAssembly::ClassesDictionary&>(assembly->GetClasses());
+            auto& classes = assembly->GetTypeClasses();
             if (classes.ContainsKey(klass->GetFullName()))
             {
                 LOG(Warning, "Class '{0}' was already added to assembly '{1}'", String(klass->GetFullName()), String(assembly->GetName()));
@@ -2076,10 +2083,23 @@ static MonoAssembly* OnMonoAssemblyLoad(const char* aname)
     LOG(Info, "Loading C# assembly from path = {0}, exist = {1}", path, FileSystem::FileExists(path));
 #endif
     MonoAssembly* assembly = nullptr;
+    MonoImageOpenStatus status = MONO_IMAGE_IMAGE_INVALID;
     if (FileSystem::FileExists(path))
     {
         StringAnsi pathAnsi(path);
-        assembly = mono_assembly_open(pathAnsi.Get(), nullptr);
+#if PLATFORM_IOS
+        Array<byte> data;
+        File::ReadAllBytes(path, data);
+        const auto name = path.ToStringAnsi();
+        const auto assemblyImage = mono_image_open_from_data_with_name(reinterpret_cast<char*>(data.Get()), data.Count(), true, &status, false, name.Get());
+        if (assemblyImage)
+        {
+            assembly = mono_assembly_load_from_full(assemblyImage, name.Substring(0, name.Length() - 3).Get(), &status, false);
+            mono_image_close(assemblyImage);
+        }
+#else
+        assembly = mono_assembly_open(pathAnsi.Get(), &status);
+#endif
     }
     if (!assembly)
     {

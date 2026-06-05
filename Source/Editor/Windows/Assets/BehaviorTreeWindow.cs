@@ -509,10 +509,25 @@ namespace FlaxEditor.Windows.Assets
             // Check if don't have valid behavior picked
             if (!_behaviorPicker.Value)
             {
-                // Try to reassign the debug behavior
                 var id = _cachedBehaviorId;
+                if (id == Guid.Empty && Editor.IsPlayMode && Editor.Options.Options.General.AutoAttachDebugPreviewActor)
+                {
+                    // Auto-attach preview
+                    var behaviorTree = Asset;
+                    var behaviors = Level.GetScripts<Behavior>();
+                    foreach (var behavior in behaviors)
+                    {
+                        if (behavior.Tree == behaviorTree &&
+                            behavior.IsEnabledInHierarchy)
+                        {
+                            id = behavior.ID;
+                            break;
+                        }
+                    }
+                }
                 if (id != Guid.Empty)
                 {
+                    // Try to reassign the debug behavior
                     var obj = FlaxEngine.Object.TryFind<Behavior>(ref id);
                     if (obj && obj.Tree == Asset)
                         _behaviorPicker.Value = obj;

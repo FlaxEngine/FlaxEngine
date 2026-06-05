@@ -19,11 +19,12 @@ public:
     /// <param name="callback">The callback function.</param>
     /// <param name="threadName">Name of the thread.</param>
     /// <param name="priority">The thread priority.</param>
+    /// <param name="stackSize">The size of the stack to create. 0 means use the current thread's stack size</param>
     /// <returns>The created thread.</returns>
-    static Thread* Start(const Function<int32()>& callback, const String& threadName, ThreadPriority priority = ThreadPriority::Normal)
+    static Thread* Start(const Function<int32()>& callback, const String& threadName, ThreadPriority priority = ThreadPriority::Normal, uint32 stackSize = 0)
     {
         auto runnable = New<SimpleRunnable>(true);
         runnable->OnWork = callback;
-        return Thread::Create(runnable, threadName, priority);
+        return Thread::Create(runnable, threadName, priority, stackSize);
     }
 };

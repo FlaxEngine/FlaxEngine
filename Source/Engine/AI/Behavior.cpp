@@ -113,8 +113,6 @@ void Behavior::UpdateAsync()
     {
         // Reset State
         _result = BehaviorUpdateResult::Running;
-        _accumulatedTime = 0.0f;
-        _totalTime = 0;
     }
     else if (_result != BehaviorUpdateResult::Running)
     {

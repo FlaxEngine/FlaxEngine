@@ -9,6 +9,37 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
+#if GPU_D3D12_PSO_STREAM
+// TODO: migrate to Agility SDK and remove that custom header
+#include <ThirdParty/DirectX12Agility/d3dx12/d3dx12_pipeline_state_stream_custom.h>
+#endif
+
+#if GPU_D3D12_PSO_STREAM
+struct alignas(void*) GraphicsPipelineStateStreamDX12
+{
+    CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE pRootSignature;
+    CD3DX12_PIPELINE_STATE_STREAM_VS VS;
+    CD3DX12_PIPELINE_STATE_STREAM_PS PS;
+#if GPU_ALLOW_GEOMETRY_SHADERS
+    CD3DX12_PIPELINE_STATE_STREAM_GS GS;
+#endif
+#if GPU_ALLOW_TESSELLATION_SHADERS
+    CD3DX12_PIPELINE_STATE_STREAM_HS HS;
+    CD3DX12_PIPELINE_STATE_STREAM_DS DS;
+#endif
+    CD3DX12_PIPELINE_STATE_STREAM_BLEND_DESC BlendState;
+    CD3DX12_PIPELINE_STATE_STREAM_SAMPLE_MASK SampleMask;
+    CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER RasterizerState;
+    CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL1 DepthStencilState;
+    CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
+    CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
+    CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DSVFormat;
+    CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RTFormats;
+    CD3DX12_PIPELINE_STATE_STREAM_SAMPLE_DESC SampleDesc;
+};
+#else
+typedef D3D12_GRAPHICS_PIPELINE_STATE_DESC GraphicsPipelineStateStreamDX12;
+#endif
 
 static D3D12_STENCIL_OP ToStencilOp(StencilOperation value)
 {
@@ -80,14 +111,27 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
     ZoneText(name.Get(), name.Count() - 1);
 #endif
 
-    // Update description to match the pipeline
-    _desc.NumRenderTargets = key.RTsCount;
+    // Setup description to match the pipeline
+    GraphicsPipelineStateStreamDX12 desc = {};
+    desc.pRootSignature = _device->GetRootSignature();
+    desc.PrimitiveTopologyType = _primitiveTopology;
+    desc.DepthStencilState = _depthStencil;
+    desc.RasterizerState = _rasterizer;
+    desc.BlendState = _blend;
+#if GPU_D3D12_PSO_STREAM
+    D3D12_RT_FORMAT_ARRAY rtFormats = {};
+    rtFormats.NumRenderTargets = key.RTsCount;
     for (int32 i = 0; i < GPU_MAX_RT_BINDED; i++)
-        _desc.RTVFormats[i] = RenderToolsDX::ToDxgiFormat(key.RTVsFormats[i]);
-    _desc.SampleDesc.Count = static_cast<UINT>(key.MSAA);
-    _desc.SampleDesc.Quality = key.MSAA == MSAALevel::None ? 0 : GPUDeviceDX12::GetMaxMSAAQuality((int32)key.MSAA);
-    _desc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-    _desc.DSVFormat = RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::FindDepthStencilFormat(key.DepthFormat));
+        rtFormats.RTFormats[i] = RenderToolsDX::ToDxgiFormat(key.RTVsFormats[i]);
+    desc.RTFormats = rtFormats;
+#else
+    desc.NumRenderTargets = key.RTsCount;
+    for (int32 i = 0; i < GPU_MAX_RT_BINDED; i++)
+        desc.RTVFormats[i] = RenderToolsDX::ToDxgiFormat(key.RTVsFormats[i]);
+#endif
+    desc.SampleDesc = { (UINT)key.MSAA, key.MSAA == MSAALevel::None ? 0 : GPUDeviceDX12::GetMaxMSAAQuality((int32)key.MSAA) };
+    desc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+    desc.DSVFormat = RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::FindDepthStencilFormat(key.DepthFormat));
     if (!vertexLayout)
         vertexLayout = VertexBufferLayout; // Fallback to shader-specified layout (if using old APIs)
     if (vertexLayout)
@@ -95,17 +139,29 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
         int32 missingSlotOverride = GPU_MAX_VB_BINDED; // Use additional slot with empty VB
         if (VertexInputLayout)
             vertexLayout = (GPUVertexLayoutDX12*)GPUVertexLayout::Merge(vertexLayout, VertexInputLayout, false, true, missingSlotOverride);
-        _desc.InputLayout.pInputElementDescs = vertexLayout->InputElements;
-        _desc.InputLayout.NumElements = vertexLayout->InputElementsCount;
+        desc.InputLayout = { vertexLayout->InputElements, vertexLayout->InputElementsCount };
     }
     else
     {
-        _desc.InputLayout.pInputElementDescs = nullptr;
-        _desc.InputLayout.NumElements = 0;
+        desc.InputLayout = { nullptr, 0 };
     }
+#if GPU_ALLOW_TESSELLATION_SHADERS
+    desc.HS = _shaderHS;
+    desc.DS = _shaderDS;
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
+    desc.GS = _shaderGS;
+#endif
+    desc.VS = _shaderVS;
+    desc.PS = _shaderPS;
 
     // Create object
-    const HRESULT result = _device->GetDevice()->CreateGraphicsPipelineState(&_desc, IID_PPV_ARGS(&state));
+#if GPU_D3D12_PSO_STREAM
+    D3D12_PIPELINE_STATE_STREAM_DESC streamDesc = { sizeof(desc), &desc };
+    const HRESULT result = _device->GetDevice2()->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&state));
+#else
+    const HRESULT result = _device->GetDevice()->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&state));
+#endif
     LOG_DIRECTX_RESULT(result);
     if (FAILED(result))
     {
@@ -138,17 +194,12 @@ bool GPUPipelineStateDX12::Init(const Description& desc)
     if (IsValid())
         OnReleaseGPU();
 
-    // Create description
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC psDesc;
-    Platform::MemoryClear(&psDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-    psDesc.pRootSignature = _device->GetRootSignature();
-
     // Shaders
     Platform::MemoryClear(&Header, sizeof(Header));
 #define INIT_SHADER_STAGE(stage, type) \
     if (desc.stage) \
     { \
-        psDesc.stage = { desc.stage->GetBufferHandle(), desc.stage->GetBufferSize() }; \
+        _shader##stage = { desc.stage->GetBufferHandle(), desc.stage->GetBufferSize() }; \
         auto shader = (type*)desc.stage; \
         auto srCount = Math::FloorLog2(shader->GetBindings().UsedSRsMask) + 1; \
         for (uint32 i = 0; i < srCount; i++) \
@@ -158,7 +209,8 @@ bool GPUPipelineStateDX12::Init(const Description& desc)
         for (uint32 i = 0; i < uaCount; i++) \
             if (shader->Header.UaDimensions[i]) \
                 Header.UaDimensions[i] = shader->Header.UaDimensions[i]; \
-    }
+    } \
+    else _shader##stage = {};
 #if GPU_ALLOW_TESSELLATION_SHADERS
     INIT_SHADER_STAGE(HS, GPUShaderProgramHSDX12);
     INIT_SHADER_STAGE(DS, GPUShaderProgramDSDX12);
@@ -189,73 +241,65 @@ bool GPUPipelineStateDX12::Init(const Description& desc)
         D3D_PRIMITIVE_TOPOLOGY_LINELIST,
         D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
     };
-    psDesc.PrimitiveTopologyType = primTypes1[(int32)desc.PrimitiveTopology];
+    _primitiveTopology = primTypes1[(int32)desc.PrimitiveTopology];
     PrimitiveTopology = primTypes2[(int32)desc.PrimitiveTopology];
 #if GPU_ALLOW_TESSELLATION_SHADERS
     if (desc.HS)
     {
-        psDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
+        _primitiveTopology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
         PrimitiveTopology = (D3D_PRIMITIVE_TOPOLOGY)((int32)D3D_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST + (desc.HS->GetControlPointsCount() - 1));
     }
 #endif
 
     // Depth State
-    psDesc.DepthStencilState.DepthEnable = !!desc.DepthEnable;
-    psDesc.DepthStencilState.DepthWriteMask = desc.DepthWriteEnable ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
-    psDesc.DepthStencilState.DepthFunc = static_cast<D3D12_COMPARISON_FUNC>(desc.DepthFunc);
-    psDesc.DepthStencilState.StencilEnable = !!desc.StencilEnable;
-    psDesc.DepthStencilState.StencilReadMask = desc.StencilReadMask;
-    psDesc.DepthStencilState.StencilWriteMask = desc.StencilWriteMask;
-    psDesc.DepthStencilState.FrontFace.StencilFailOp = ToStencilOp(desc.StencilFailOp);
-    psDesc.DepthStencilState.FrontFace.StencilDepthFailOp = ToStencilOp(desc.StencilDepthFailOp);
-    psDesc.DepthStencilState.FrontFace.StencilPassOp = ToStencilOp(desc.StencilPassOp);
-    psDesc.DepthStencilState.FrontFace.StencilFunc = static_cast<D3D12_COMPARISON_FUNC>(desc.StencilFunc);
-    psDesc.DepthStencilState.BackFace = psDesc.DepthStencilState.FrontFace;
+    Platform::MemoryClear(&_depthStencil, sizeof(_depthStencil));
+    _depthStencil.DepthEnable = !!desc.DepthEnable;
+    _depthStencil.DepthWriteMask = desc.DepthWriteEnable ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
+#if GPU_D3D12_PSO_STREAM
+    _depthStencil.DepthBoundsTestEnable = !!desc.DepthBoundsEnable;
+#endif
+    _depthStencil.DepthFunc = static_cast<D3D12_COMPARISON_FUNC>(desc.DepthFunc);
+    _depthStencil.StencilEnable = !!desc.StencilEnable;
+    _depthStencil.StencilReadMask = desc.StencilReadMask;
+    _depthStencil.StencilWriteMask = desc.StencilWriteMask;
+    _depthStencil.FrontFace.StencilFailOp = ToStencilOp(desc.StencilFailOp);
+    _depthStencil.FrontFace.StencilDepthFailOp = ToStencilOp(desc.StencilDepthFailOp);
+    _depthStencil.FrontFace.StencilPassOp = ToStencilOp(desc.StencilPassOp);
+    _depthStencil.FrontFace.StencilFunc = static_cast<D3D12_COMPARISON_FUNC>(desc.StencilFunc);
+    _depthStencil.BackFace = _depthStencil.FrontFace;
 
     // Rasterizer State
-    psDesc.RasterizerState.FillMode = desc.Wireframe ? D3D12_FILL_MODE_WIREFRAME : D3D12_FILL_MODE_SOLID;
-    D3D12_CULL_MODE dxCullMode;
-    switch (desc.CullMode)
+    Platform::MemoryClear(&_rasterizer, sizeof(_rasterizer));
+    _rasterizer.FillMode = desc.Wireframe ? D3D12_FILL_MODE_WIREFRAME : D3D12_FILL_MODE_SOLID;
+    const D3D12_CULL_MODE cullModes[] =
     {
-    case CullMode::Normal:
-        dxCullMode = D3D12_CULL_MODE_BACK;
-        break;
-    case CullMode::Inverted:
-        dxCullMode = D3D12_CULL_MODE_FRONT;
-        break;
-    case CullMode::TwoSided:
-        dxCullMode = D3D12_CULL_MODE_NONE;
-        break;
-    }
-    psDesc.RasterizerState.CullMode = dxCullMode;
-    psDesc.RasterizerState.FrontCounterClockwise = FALSE;
-    psDesc.RasterizerState.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
-    psDesc.RasterizerState.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
-    psDesc.RasterizerState.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
-    psDesc.RasterizerState.DepthClipEnable = !!desc.DepthClipEnable;
-    psDesc.RasterizerState.MultisampleEnable = TRUE;
-    psDesc.RasterizerState.AntialiasedLineEnable = !!desc.Wireframe;
-    psDesc.RasterizerState.ForcedSampleCount = 0;
-    psDesc.RasterizerState.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+        D3D12_CULL_MODE_BACK,
+        D3D12_CULL_MODE_FRONT,
+        D3D12_CULL_MODE_NONE,
+    };
+    _rasterizer.CullMode = cullModes[(int32)desc.CullMode];
+    _rasterizer.FrontCounterClockwise = FALSE;
+    _rasterizer.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
+    _rasterizer.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
+    _rasterizer.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+    _rasterizer.DepthClipEnable = !!desc.DepthClipEnable;
+    _rasterizer.MultisampleEnable = TRUE;
+    _rasterizer.AntialiasedLineEnable = !!desc.Wireframe;
 
     // Blend State
-    psDesc.BlendState.AlphaToCoverageEnable = desc.BlendMode.AlphaToCoverageEnable ? TRUE : FALSE;
-    psDesc.BlendState.IndependentBlendEnable = FALSE;
-    psDesc.BlendState.RenderTarget[0].BlendEnable = desc.BlendMode.BlendEnable ? TRUE : FALSE;
-    psDesc.BlendState.RenderTarget[0].SrcBlend = (D3D12_BLEND)desc.BlendMode.SrcBlend;
-    psDesc.BlendState.RenderTarget[0].DestBlend = (D3D12_BLEND)desc.BlendMode.DestBlend;
-    psDesc.BlendState.RenderTarget[0].BlendOp = (D3D12_BLEND_OP)desc.BlendMode.BlendOp;
-    psDesc.BlendState.RenderTarget[0].SrcBlendAlpha = (D3D12_BLEND)desc.BlendMode.SrcBlendAlpha;
-    psDesc.BlendState.RenderTarget[0].DestBlendAlpha = (D3D12_BLEND)desc.BlendMode.DestBlendAlpha;
-    psDesc.BlendState.RenderTarget[0].BlendOpAlpha = (D3D12_BLEND_OP)desc.BlendMode.BlendOpAlpha;
-    psDesc.BlendState.RenderTarget[0].RenderTargetWriteMask = (UINT8)desc.BlendMode.RenderTargetWriteMask;
-#if BUILD_DEBUG
-    for (byte i = 1; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; i++)
-        psDesc.BlendState.RenderTarget[i] = psDesc.BlendState.RenderTarget[0];
-#endif
-
-    // Cache description
-    _desc = psDesc;
+    Platform::MemoryClear(&_blend, sizeof(_blend));
+    _blend.AlphaToCoverageEnable = desc.BlendMode.AlphaToCoverageEnable ? TRUE : FALSE;
+    _blend.IndependentBlendEnable = FALSE;
+    _blend.RenderTarget[0].BlendEnable = desc.BlendMode.BlendEnable ? TRUE : FALSE;
+    _blend.RenderTarget[0].SrcBlend = (D3D12_BLEND)desc.BlendMode.SrcBlend;
+    _blend.RenderTarget[0].DestBlend = (D3D12_BLEND)desc.BlendMode.DestBlend;
+    _blend.RenderTarget[0].BlendOp = (D3D12_BLEND_OP)desc.BlendMode.BlendOp;
+    _blend.RenderTarget[0].SrcBlendAlpha = (D3D12_BLEND)desc.BlendMode.SrcBlendAlpha;
+    _blend.RenderTarget[0].DestBlendAlpha = (D3D12_BLEND)desc.BlendMode.DestBlendAlpha;
+    _blend.RenderTarget[0].BlendOpAlpha = (D3D12_BLEND_OP)desc.BlendMode.BlendOpAlpha;
+    _blend.RenderTarget[0].RenderTargetWriteMask = (UINT8)desc.BlendMode.RenderTargetWriteMask;
+    for (uint32 i = 1; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; i++)
+        _blend.RenderTarget[i] = _blend.RenderTarget[0];
 
     // Set non-zero memory usage
     _memoryUsage = sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC);

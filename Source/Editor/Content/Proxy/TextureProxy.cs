@@ -50,8 +50,6 @@ namespace FlaxEditor.Content
                     Offsets = Margin.Zero,
                 };
             }
-
-            // TODO: disable streaming for asset during thumbnail rendering (and restore it after)
         }
 
         /// <inheritdoc />

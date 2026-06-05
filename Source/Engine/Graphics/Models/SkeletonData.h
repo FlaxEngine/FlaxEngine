@@ -74,7 +74,7 @@ struct TIsPODType<SkeletonBone>
 class FLAXENGINE_API SkeletonData
 {
 private:
-    mutable volatile int64 _dirty = 1;
+    mutable volatile intptr _dirty = 1;
     mutable Array<Matrix> _cachedPose;
 
 public:

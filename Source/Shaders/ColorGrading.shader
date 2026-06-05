@@ -281,8 +281,11 @@ float4 CombineLUTs(float2 uv, uint layerIndex)
 #endif
 
 	// Move from encoded LUT color space to linear color
-	//float3 linearColor = encodedColor.rgb; // Default
+#if COLOR_GRADING_LUT_LOG
 	float3 linearColor = LogToLinear(encodedColor.rgb) - LogToLinear(0); // Log
+#else
+	float3 linearColor = encodedColor.rgb; // Default
+#endif
 
 	// Apply white balance
 	linearColor = WhiteBalance(linearColor);
@@ -300,7 +303,7 @@ float4 CombineLUTs(float2 uv, uint layerIndex)
 		color = lerp(color, lutColor, LutWeight);
 	}
 
-	return float4(color, 1);
+	return float4(color / COLOR_GRADING_LUT_SCALE, 1);
 }
 
 // Vertex shader that writes to a range of slices of a volume texture
@@ -350,7 +353,7 @@ float4 PS_Lut2D(Quad_VS2PS input) : SV_Target
 	return CombineLUTs(input.TexCoord, 0);
 }
 
-META_PS(true, FEATURE_LEVEL_ES2)
+META_PS(true, FEATURE_LEVEL_SM4)
 META_PERMUTATION_1(TONE_MAPPING_MODE_NONE=1)
 META_PERMUTATION_1(TONE_MAPPING_MODE_NEUTRAL=1)
 META_PERMUTATION_1(TONE_MAPPING_MODE_ACES=1)

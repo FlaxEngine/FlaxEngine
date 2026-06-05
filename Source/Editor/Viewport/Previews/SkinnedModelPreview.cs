@@ -51,8 +51,8 @@ namespace FlaxEditor.Viewport.Previews
                 _showCurrentLODButton.IndexInParent = 2;
                 _showCurrentLODButton.CloseMenuOnClick = false;
 
-                // PreviewLODS mode widget
-                var PreviewLODSMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
+                // Preview LOD mode widget
+                var previewLODMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
                 _previewLODsWidgetButtonMenu = new ContextMenu();
                 _previewLODsWidgetButtonMenu.VisibleChanged += control =>
                 {
@@ -78,9 +78,9 @@ namespace FlaxEditor.Viewport.Previews
                 new ViewportWidgetButton("Preview LOD", SpriteHandle.Invalid, _previewLODsWidgetButtonMenu)
                 {
                     TooltipText = "Preview LOD properties",
-                    Parent = PreviewLODSMode,
+                    Parent = previewLODMode,
                 };
-                PreviewLODSMode.Parent = this;
+                previewLODMode.Parent = this;
             }
         }
 

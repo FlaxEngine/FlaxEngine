@@ -591,8 +591,8 @@ namespace Flax.Deps.Dependencies
                 {
                     var envVars = new Dictionary<string, string>
                     {
-                        { "CC", "clang-" + Configuration.LinuxClangMinVer },
-                        { "CXX", "clang++-" + Configuration.LinuxClangMinVer }
+                        { "CC", "clang-" + LinuxConfiguration.ClangMinVer },
+                        { "CXX", "clang++-" + LinuxConfiguration.ClangMinVer }
                     };
                     var monoOptions = new[]
                     {
@@ -662,7 +662,7 @@ namespace Flax.Deps.Dependencies
                 {
                     var sdk = AndroidSdk.Instance.RootPath;
                     var ndk = AndroidNdk.Instance.RootPath;
-                    var apiLevel = Configuration.AndroidPlatformApi.ToString();
+                    var apiLevel = AndroidConfiguration.PlatformApi.ToString();
                     var archName = UnixToolchain.GetToolchainName(platform, TargetArchitecture.ARM64);
                     var toolchainRoot = Path.Combine(ndk, "toolchains", "llvm", "prebuilt", AndroidSdk.GetHostName());
                     var ndkBin = Path.Combine(toolchainRoot, "bin");
@@ -779,7 +779,7 @@ namespace Flax.Deps.Dependencies
                 }
                 case TargetPlatform.Mac:
                 {
-                    var compilerFlags = string.Format("-mmacosx-version-min={0}", Configuration.MacOSXMinVer);
+                    var compilerFlags = string.Format("-mmacosx-version-min={0}", MacConfiguration.MacOSXMinVer);
                     var envVars = new Dictionary<string, string>
                     {
                         { "CFLAGS", compilerFlags },

@@ -295,6 +295,7 @@ public:
     /// <summary>
     /// Resets the all achievements progress for this game.
     /// </summary>
+    /// <remarks>Only available in Development and Debug builds.</remarks>
     /// <param name="localUser">The local user (null if use default one).</param>
     /// <returns>True if failed, otherwise false.</returns>
     API_FUNCTION() virtual bool ResetAchievements(User* localUser = nullptr) = 0;

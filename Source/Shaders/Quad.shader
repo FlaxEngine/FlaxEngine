@@ -70,7 +70,7 @@ Texture2D Source : register(t0);
 META_PS(true, FEATURE_LEVEL_ES2)
 float PS_DepthCopy(Quad_VS2PS input) : SV_Depth
 {
-	return Source.SampleLevel(SamplerPointClamp, input.TexCoord * Color.xy + Color.zw, 0).r;
+    return SAMPLE_RT_DEPTH(Source, input.TexCoord * Color.xy + Color.zw);
 }
 
 #endif

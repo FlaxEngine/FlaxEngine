@@ -21,6 +21,9 @@ struct FLAXENGINE_API ShaderBindings
     uint32 UsedCBsMask;
     uint32 UsedSRsMask;
     uint32 UsedUAsMask;
+    uint32 UsedSamplersMask;
+    uint16 InputsCount;
+    uint16 OutputsCount;
 
     FORCE_INLINE bool IsUsingCB(uint32 slotIndex) const
     {
@@ -35,6 +38,11 @@ struct FLAXENGINE_API ShaderBindings
     FORCE_INLINE bool IsUsingUA(uint32 slotIndex) const
     {
         return (UsedUAsMask & (1u << slotIndex)) != 0u;
+    }
+
+    FORCE_INLINE bool IsUsingSampler(uint32 slotIndex) const
+    {
+        return (UsedSamplersMask & (1u << slotIndex)) != 0u;
     }
 };
 

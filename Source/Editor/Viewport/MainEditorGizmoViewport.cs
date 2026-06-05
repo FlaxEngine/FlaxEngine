@@ -689,8 +689,16 @@ namespace FlaxEditor.Viewport
 
             // Don't allow rubber band selection when gizmo is controlling mouse, vertex painting mode, or cloth painting is enabled
             bool canStart = !(IsControllingMouse || IsRightMouseButtonDown || IsAltKeyDown) &&
-                            Gizmos?.Active is TransformGizmo && !Gizmos.Active.IsControllingMouse;
+                            Gizmos?.Active is TransformGizmo;
             _rubberBandSelector.TryCreateRubberBand(canStart, _viewMousePos);
+        }
+
+        /// <inheritdoc />
+        protected override void OnControlMouseBegin(Window win)
+        {
+            _rubberBandSelector.ReleaseRubberBandSelection();
+
+            base.OnControlMouseBegin(win);
         }
 
         /// <inheritdoc />
@@ -698,14 +706,15 @@ namespace FlaxEditor.Viewport
         {
             base.OnLeftMouseButtonDown();
 
-            _rubberBandSelector.TryStartingRubberBandSelection(_viewMousePos);
+            if (!IsAltKeyDown && !_directionGizmo.IsMouseOver)
+                _rubberBandSelector.TryStartingRubberBandSelection(_viewMousePos);
         }
 
         /// <inheritdoc />
         protected override void OnLeftMouseButtonUp()
         {
             // Skip if was controlling mouse or mouse is not over the area
-            if (_prevInput.IsControllingMouse || !Bounds.Contains(ref _viewMousePos))
+            if (_prevInput.IsControllingMouse || !Bounds.Contains(ref _viewMousePos) || _directionGizmo.IsMouseOver)
                 return;
 
             // Select rubberbanded rect actor nodes or pick with gizmo

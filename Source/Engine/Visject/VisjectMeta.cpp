@@ -9,13 +9,15 @@ bool VisjectMeta::Load(ReadStream* stream, bool loadData)
 {
     Release();
 
-    int32 entries;
+    int32 entries = -1;
     stream->ReadInt32(&entries);
+    if (entries < 0 || entries > MAX_uint16)
+        return true;
     Entries.Resize(entries);
 
     for (int32 i = 0; i < entries; i++)
     {
-        Entry& e = Entries[i];
+        Entry& e = Entries.Get()[i];
 
         stream->ReadInt32(&e.TypeID);
         DateTime creationTime;

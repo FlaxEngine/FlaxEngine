@@ -6,10 +6,10 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
-#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/GBufferPass.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Graphics/RenderTools.h"
 
 GPU_CB_STRUCT(Data {
     Float2 ScreenSizeInv;
@@ -18,6 +18,8 @@ GPU_CB_STRUCT(Data {
     float StationaryBlending;
     float MotionBlending;
     float Dummy0;
+    Float3 QuantizationError;
+    float Dummy1;
     ShaderGBufferData GBuffer;
     });
 
@@ -122,6 +124,7 @@ void TAA::Render(const RenderContext& renderContext, GPUTexture* input, GPUTextu
     data.Sharpness = settings.TAA_Sharpness;
     data.StationaryBlending = settings.TAA_StationaryBlending * blendStrength;
     data.MotionBlending = settings.TAA_MotionBlending * blendStrength;
+    data.QuantizationError = RenderTools::GetColorQuantizationError(tempDesc.Format);
     GBufferPass::SetInputs(renderContext.View, data.GBuffer);
     const auto cb = _shader->GetShader()->GetCB(0);
     context->UpdateCB(cb, &data);

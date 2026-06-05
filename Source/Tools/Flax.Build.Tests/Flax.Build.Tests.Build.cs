@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using Flax.Build;
+using Flax.Build.NativeCpp;
 
 /// <summary>
 /// Flax.Build.Tests project build configuration.
@@ -32,5 +33,13 @@ public class FlaxBuildTestsTarget : Target
             TargetConfiguration.Release,
         };
         CustomExternalProjectFilePath = System.IO.Path.Combine(FolderPath, "Flax.Build.Tests.csproj");
+    }
+
+    /// <inheritdoc />
+    public override void SetupTargetEnvironment(BuildOptions options)
+    {
+        base.SetupTargetEnvironment(options);
+
+        options.CompileEnv.EnableExceptions = true;
     }
 }

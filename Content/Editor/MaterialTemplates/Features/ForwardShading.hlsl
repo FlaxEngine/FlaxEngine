@@ -4,8 +4,8 @@
 #define MAX_LOCAL_LIGHTS 4
 @1// Forward Shading: Includes
 #include "./Flax/LightingCommon.hlsl"
-#if USE_REFLECTIONS
 #include "./Flax/ReflectionsCommon.hlsl"
+#if USE_REFLECTIONS
 #define MATERIAL_REFLECTIONS_SSR 1
 #if MATERIAL_REFLECTIONS == MATERIAL_REFLECTIONS_SSR
 #include "./Flax/SSR.hlsl"
@@ -14,11 +14,13 @@
 #include "./Flax/Lighting.hlsl"
 #include "./Flax/ShadowsSampling.hlsl"
 #include "./Flax/ExponentialHeightFog.hlsl"
+#include "./Flax/VolumetricFog.hlsl"
 @2// Forward Shading: Constants
 LightData DirectionalLight;
 LightData SkyLight;
-ProbeData EnvironmentProbe;
+EnvProbeData EnvironmentProbe;
 ExponentialHeightFogData ExponentialHeightFog;
+VolumetricFogData VolumetricFog;
 float3 Dummy2;
 uint LocalLightsCount;
 LightData LocalLights[MAX_LOCAL_LIGHTS];
@@ -33,8 +35,9 @@ Texture2D PreIntegratedGF : register(t__SRV__);
 // Public accessors for lighting data, use them as data binding might change but those methods will remain.
 LightData GetDirectionalLight() { return DirectionalLight; }
 LightData GetSkyLight() { return SkyLight; }
-ProbeData GetEnvironmentProbe() { return EnvironmentProbe; }
+EnvProbeData GetEnvironmentProbe() { return EnvironmentProbe; }
 ExponentialHeightFogData GetExponentialHeightFog() { return ExponentialHeightFog; }
+VolumetricFogData GetVolumetricFog() { return VolumetricFog; }
 uint GetLocalLightsCount() { return LocalLightsCount; }
 LightData GetLocalLight(uint i) { return LocalLights[i]; }
 @5// Forward Shading: Shaders
@@ -85,8 +88,12 @@ void PS_Forward(
 	gBuffer.ShadingModel = MATERIAL_SHADING_MODEL;
 
 	// Calculate lighting from a single directional light
+#if LIGHTING_NO_SHADOW
+	float4 shadowMask = (float4)1;
+#else
 	ShadowSample shadow = SampleDirectionalLightShadow(DirectionalLight, ShadowsBuffer, ShadowMap, gBuffer);
 	float4 shadowMask = GetShadowMask(shadow);
+#endif
 	float4 light = GetLighting(ViewPos, DirectionalLight, gBuffer, shadowMask, false, false);
 
 	// Calculate lighting from sky light
@@ -118,7 +125,7 @@ void PS_Forward(
 	Texture2D sceneColorTexture = MATERIAL_REFLECTIONS_SSR_COLOR;
 	float2 screenUV = materialInput.SvPosition.xy * ScreenSize.zw;
 	float stepSize = ScreenSize.z; // 1 / screenWidth
-	float maxSamples = 48;
+	float maxSamples = 50;
 	float worldAntiSelfOcclusionBias = 0.1f;
 	float brdfBias = 0.82f;
 	float drawDistance = 5000.0f;
@@ -162,16 +169,11 @@ void PS_Forward(
 #endif
 	float fogSkipDistance = max(ExponentialHeightFog.VolumetricFogMaxDistance - 100, 0);
 	float4 fog = GetExponentialHeightFog(ExponentialHeightFog, materialInput.WorldPosition, ViewPos, fogSkipDistance, fogSceneDistance);
-
 	if (ExponentialHeightFog.VolumetricFogMaxDistance > 0)
 	{
 		// Sample volumetric fog and mix it in
 		float2 screenUV = materialInput.SvPosition.xy * ScreenSize.zw;
-		float3 viewVector = materialInput.WorldPosition - ViewPos;
-		float sceneDepth = length(viewVector);
-		float depthSlice = sceneDepth / ExponentialHeightFog.VolumetricFogMaxDistance;
-		float3 volumeUV = float3(screenUV, depthSlice);
-		float4 volumetricFog = VolumetricFogTexture.SampleLevel(SamplerLinearClamp, volumeUV, 0);
+		float4 volumetricFog = SampleVolumetricFog(VolumetricFogTexture, VolumetricFog, materialInput.WorldPosition - ViewPos, screenUV, TemporalAAJitter);
 		fog = CombineVolumetricFog(fog, volumetricFog);
 	}
 

@@ -9,6 +9,7 @@
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Async/Tasks/GPUUploadTextureMipTask.h"
 #include "Engine/Scripting/Enums.h"
+#include "Engine/Tools/TextureTool/TextureTool.h"
 
 TextureHeader_Deprecated::TextureHeader_Deprecated()
 {
@@ -120,6 +121,8 @@ bool StreamingTexture::Create(const TextureHeader& header)
     }
 
     // Request resource streaming
+    if (GPUDevice::Instance && GPUDevice::Instance->GetRendererType() == RendererType::Null)
+        return false;
 #if GPU_ENABLE_TEXTURES_STREAMING
     bool isDynamic = !_header.NeverStream;
 #else
@@ -142,7 +145,10 @@ void StreamingTexture::UnloadTexture()
 uint64 StreamingTexture::GetTotalMemoryUsage() const
 {
     const uint64 arraySize = _header.IsCubeMap ? 6 : 1;
-    return RenderTools::CalculateTextureMemoryUsage(_header.Format, _header.Width, _header.Height, _header.MipLevels) * arraySize;
+    PixelFormat format = _header.Format;
+    if (_texture && _texture->IsAllocated())
+        format = _texture->Format();
+    return RenderTools::CalculateTextureMemoryUsage(format, _header.Width, _header.Height, _header.MipLevels) * arraySize;
 }
 
 String StreamingTexture::ToString() const
@@ -294,13 +300,14 @@ Task* StreamingTexture::UpdateAllocation(int32 residency)
         GPUTextureDescription desc;
         if (IsCubeMap())
         {
-            ASSERT(width == height);
+            ASSERT_LOW_LAYER(width == height);
             desc = GPUTextureDescription::NewCube(width, residency, _header.Format, GPUTextureFlags::ShaderResource);
         }
         else
         {
             desc = GPUTextureDescription::New2D(width, height, residency, _header.Format, GPUTextureFlags::ShaderResource);
         }
+        desc.Format = TextureTool::GetTextureFormat(_header.Type, desc.Format, desc.Width, desc.Height, _header.IsSRGB);
 
         // Setup texture
         if (texture->Init(desc))
@@ -367,15 +374,8 @@ protected:
     Result run(GPUTasksContext* context) override
     {
         const auto texture = _texture.Get();
-        if (texture == nullptr)
+        if (texture == nullptr || !texture->IsAllocated())
             return Result::MissingResources;
-
-        // Ensure that texture has been allocated before this task and has proper format
-        if (!texture->IsAllocated() || texture->Format() != _streamingTexture->GetHeader()->Format)
-        {
-            LOG(Error, "Cannot stream texture {0} (streaming format: {1})", texture->ToString(), ScriptingEnum::ToString(_streamingTexture->GetHeader()->Format));
-            return Result::Failed;
-        }
 
         // Get asset data
         BytesContainer data;
@@ -383,21 +383,30 @@ protected:
         _streamingTexture->GetOwner()->GetMipData(absoluteMipIndex, data);
         if (data.IsInvalid())
             return Result::MissingData;
+        PixelFormat dataFormat = _streamingTexture->GetHeader()->Format;
 
         // Cache data
         const int32 arraySize = texture->ArraySize();
         uint32 rowPitch, slicePitch;
         if (!_streamingTexture->GetOwner()->GetMipDataCustomPitch(absoluteMipIndex, rowPitch, slicePitch))
-            texture->ComputePitch(_mipIndex, rowPitch, slicePitch);
+        {
+            int32 mipWidth, mipHeight;
+            texture->GetMipSize(_mipIndex, mipWidth, mipHeight);
+            RenderTools::ComputePitch(dataFormat, mipWidth, mipHeight, rowPitch, slicePitch);
+        }
         _data.Link(data);
-        ASSERT(data.Length() >= (int32)slicePitch * arraySize);
 
         // Update all array slices
         const byte* dataSource = data.Get();
+        int32 dataPerSlice = data.Length() / arraySize; // In most cases it's a slice pitch, except when using transcoding (eg. Basis), then each slice has to use the same amount of memory
         for (int32 arrayIndex = 0; arrayIndex < arraySize; arrayIndex++)
         {
-            context->GPU->UpdateTexture(texture, arrayIndex, _mipIndex, dataSource, rowPitch, slicePitch);
-            dataSource += slicePitch;
+            if (TextureTool::UpdateTexture(context->GPU, texture, arrayIndex, _mipIndex, Span<byte>(dataSource, dataPerSlice), rowPitch, slicePitch, dataFormat))
+            {
+                LOG(Error, "Cannot stream mip {} of texture {} (format: {})", _mipIndex, texture->ToString(), ScriptingEnum::ToString(dataFormat));
+                return Result::Failed;
+            }
+            dataSource += dataPerSlice;
         }
 
         return Result::Ok;

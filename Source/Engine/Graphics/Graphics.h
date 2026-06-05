@@ -19,32 +19,32 @@ public:
     API_FIELD() static bool UseVSync;
 
     /// <summary>
-    /// Anti Aliasing quality setting.
+    /// Anti Aliasing quality setting. Available values are: Low, Medium, High, Ultra (or 0, 1, 2, 3).
     /// </summary>
     API_FIELD() static Quality AAQuality;
 
     /// <summary>
-    /// Screen Space Reflections quality setting.
+    /// Screen Space Reflections quality setting. Available values are: Low, Medium, High, Ultra (or 0, 1, 2, 3).
     /// </summary>
     API_FIELD() static Quality SSRQuality;
 
     /// <summary>
-    /// Screen Space Ambient Occlusion quality setting.
+    /// Screen Space Ambient Occlusion quality setting. Available values are: Low, Medium, High, Ultra (or 0, 1, 2, 3).
     /// </summary>
     API_FIELD() static Quality SSAOQuality;
 
     /// <summary>
-    /// Volumetric Fog quality setting.
+    /// Volumetric Fog quality setting. Available values are: Low, Medium, High, Ultra (or 0, 1, 2, 3).
     /// </summary>
     API_FIELD() static Quality VolumetricFogQuality;
 
     /// <summary>
-    /// The shadows quality.
+    /// The shadows quality. Available values are: Low, Medium, High, Ultra (or 0, 1, 2, 3).
     /// </summary>
     API_FIELD() static Quality ShadowsQuality;
 
     /// <summary>
-    /// The shadow maps quality (textures resolution).
+    /// The shadow maps quality (textures resolution). Available values are: Low, Medium, High, Ultra (or 0, 1, 2, 3).
     /// </summary>
     API_FIELD() static Quality ShadowMapsQuality;
 
@@ -59,12 +59,12 @@ public:
     API_FIELD() static bool AllowCSMBlending;
 
     /// <summary>
-    /// The Global SDF quality. Controls the volume texture resolution and amount of cascades to use.
+    /// The Global SDF quality. Controls the volume texture resolution and amount of cascades to use. Available values are: Low, Medium, High, Ultra (or 0, 1, 2, 3).
     /// </summary>
     API_FIELD() static Quality GlobalSDFQuality;
 
     /// <summary>
-    /// The Global Illumination quality. Controls the quality of the GI effect.
+    /// The Global Illumination quality. Controls the quality of the GI effect. Available values are: Low, Medium, High, Ultra (or 0, 1, 2, 3).
     /// </summary>
     API_FIELD() static Quality GIQuality;
 
@@ -78,11 +78,27 @@ public:
     /// </summary>
     API_FIELD() static PostProcessSettings PostProcessSettings;
 
+    /// <summary>
+    /// Enables Gamma color space workflow (instead of Linear). Gamma color space defines colors with an applied a gamma curve (sRGB) so they are perceptually linear.
+    /// This makes sense when the output of the rendering represent final color values that will be presented to a non-HDR screen.
+    /// </summary>
+    API_FIELD(ReadOnly) static bool GammaColorSpace;
+
 public:
     /// <summary>
     /// Debug utility to toggle graphics workloads amortization over several frames by systems such as shadows mapping, global illumination or surface atlas. Can be used to test performance in the worst-case scenario (eg. camera-cut).
     /// </summary>
     API_FIELD() static bool SpreadWorkload;
+
+#if BUILD_RELEASE && !USE_EDITOR
+    /// <summary>Unused.</summary>
+    API_FIELD() static constexpr float TestValue = 0.0f;
+#else
+    /// <summary>
+    /// Debug utility to control visual or rendering features during development. For example, can be used to branch different code paths in shaders for A/B testing (perf or quality).
+    /// </summary>
+    API_FIELD() static float TestValue;
+#endif
 
 public:
     // Shadows rendering configuration.

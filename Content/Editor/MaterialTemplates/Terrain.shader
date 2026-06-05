@@ -388,7 +388,7 @@ VertexOutput VS(TerrainVertexInput input)
 	output.Geometry.WorldPosition = mul(float4(position, 1), worldMatrix).xyz;
 
 	// Compute clip space position
-	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
+	output.Position = PROJECT_POINT(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 
 	// Pass vertex attributes
 #if USE_SMOOTH_LOD_TRANSITION
@@ -436,7 +436,7 @@ VertexOutput VS(TerrainVertexInput input)
 	// Apply world position offset per-vertex
 #if USE_POSITION_OFFSET
 	output.Geometry.WorldPosition += material.PositionOffset;
-	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
+	output.Position = PROJECT_POINT(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 #endif
 
 	// Get tessalation multiplier (per vertex)

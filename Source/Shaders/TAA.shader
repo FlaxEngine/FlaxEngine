@@ -5,6 +5,8 @@
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/GBuffer.hlsl"
+#include "./Flax/Noise.hlsl"
+#include "./Flax/Temporal.hlsl"
 
 META_CB_BEGIN(0, Data)
 float2 ScreenSizeInv;
@@ -13,6 +15,8 @@ float Sharpness;
 float StationaryBlending;
 float MotionBlending;
 float Dummy0;
+float3 QuantizationError;
+float Dummy1;
 GBufferData GBuffer;
 META_CB_END
 
@@ -20,17 +24,6 @@ Texture2D Input : register(t0);
 Texture2D InputHistory : register(t1);
 Texture2D MotionVectors : register(t2);
 Texture2D Depth : register(t3);
-
-// [Pedersen, 2016, "Temporal Reprojection Anti-Aliasing in INSIDE"]
-float4 ClipToAABB(float4 color, float4 minimum, float4 maximum)
-{
-	float4 center = (maximum + minimum) * 0.5;
-	float4 extents = (maximum - minimum) * 0.5;
-	float4 shift = color - center;
-    float4 absUnit = abs(shift / max(extents, 0.0001));
-    float maxUnit = max(max(absUnit.x, absUnit.y), absUnit.z);
-	return maxUnit > 1.0 ? center + (shift / maxUnit) : color;
-}
 
 // Pixel Shader for Temporal Anti-Aliasing
 META_PS(true, FEATURE_LEVEL_ES2)
@@ -42,7 +35,7 @@ float4 PS(Quad_VS2PS input) : SV_Target0
 	float2 velocity = SAMPLE_RT_LINEAR(MotionVectors, input.TexCoord).xy;
 	float velocityLength = length(velocity);
 	float2 prevUV = input.TexCoord - velocity;
-	float prevDepth = LinearizeZ(GBuffer, SAMPLE_RT(Depth, prevUV).r);
+	float prevDepth = LinearizeZ(GBuffer, SAMPLE_RT_DEPTH(Depth, prevUV));
 
 	// Find the closest pixel in 3x3 neighborhood
 	float currentDepth = 1;
@@ -62,7 +55,7 @@ float4 PS(Quad_VS2PS input) : SV_Target0
 			neighborhoodMax = max(neighborhoodMax, neighbor);
 			neighborhoodSum += neighbor;
 
-			float neighborDepth = LinearizeZ(GBuffer, SAMPLE_RT(Depth, sampleUV).r);
+			float neighborDepth = LinearizeZ(GBuffer, SAMPLE_RT_DEPTH(Depth, sampleUV));
 			float depthDiff = abs(max(neighborDepth - prevDepth, 0));
 			minDepthDiff = min(minDepthDiff, depthDiff);
 			if (x == 0 && y == 0)
@@ -78,6 +71,7 @@ float4 PS(Quad_VS2PS input) : SV_Target0
 	current += (current - neighborhoodAvg) * Sharpness;
 
 	// Sample history by clamp it to the nearby colors range to reduce artifacts
+	current = clamp(current, 0, HDR_CLAMP_MAX);
 	float4 history = SAMPLE_RT_LINEAR(InputHistory, prevUV);
 	float lumaOffset = abs(Luminance(neighborhoodAvg.rgb) - Luminance(current.rgb));
 	float aabbMargin = lerp(4.0, 0.25, saturate(velocityLength * 100.0)) * lumaOffset;
@@ -102,7 +96,11 @@ float4 PS(Quad_VS2PS input) : SV_Target0
 	neighborhoodSharp = float4(1, 0, 0, 1);
 #endif
 	color = lerp(color, neighborhoodSharp, saturate(miss));
-
 	color = clamp(color, 0, HDR_CLAMP_MAX);
+
+    // Apply quantization error to reduce yellowish artifacts due to R11G11B10 format
+    float noise = rand2dTo1d(input.TexCoord);
+    color.rgb = QuantizeColor(color.rgb, noise, QuantizationError);
+
 	return color;
 }

@@ -342,7 +342,7 @@ VertexOutput VS(ModelInput input)
 	output.Geometry.PrevWorldPosition = mul(float4(input.Position.xyz, 1), object.PrevWorldMatrix).xyz;
 
 	// Compute clip space position
-	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
+	output.Position = PROJECT_POINT(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 
 	// Pass vertex attributes
 	output.Geometry.TexCoords01 = float4(input.TexCoord0, input.TexCoord1);
@@ -378,7 +378,7 @@ VertexOutput VS(ModelInput input)
 #if USE_POSITION_OFFSET
 	output.Geometry.WorldPosition += material.PositionOffset;
 	output.Geometry.PrevWorldPosition += material.PositionOffset;
-	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
+	output.Position = PROJECT_POINT(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 #endif
 
 	// Get tessalation multiplier (per vertex)
@@ -412,7 +412,7 @@ float4 VS_Depth(ModelInput_PosOnly input) : SV_Position
 
 	// Transform vertex position into the screen
 	float3 worldPosition = mul(float4(input.Position.xyz, 1), object.WorldMatrix).xyz;
-	float4 position = mul(float4(worldPosition, 1), ViewProjectionMatrix);
+	float4 position = PROJECT_POINT(float4(worldPosition, 1), ViewProjectionMatrix);
 	return position;
 }
 
@@ -518,7 +518,7 @@ VertexOutput VS_Skinned(ModelInput_Skinned input)
 #endif
 
 	// Compute clip space position
-	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
+	output.Position = PROJECT_POINT(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 
 	// Pass vertex attributes
 	output.Geometry.TexCoords01 = float4(input.TexCoord0, input.TexCoord1);
@@ -549,7 +549,7 @@ VertexOutput VS_Skinned(ModelInput_Skinned input)
 #if USE_POSITION_OFFSET
 	output.Geometry.WorldPosition += material.PositionOffset;
 	output.Geometry.PrevWorldPosition += material.PositionOffset;
-	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
+	output.Position = PROJECT_POINT(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 #endif
 
 	// Get tessalation multiplier (per vertex)

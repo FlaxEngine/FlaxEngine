@@ -19,6 +19,14 @@ public class Debug : EngineModule
         {
             options.PublicDefinitions.Add("COMPILE_WITH_DEBUG_DRAW");
         }
+
+        if (options.Target.IsEditor || options.Configuration != TargetConfiguration.Release)
+        {
+            // Used by DebugCommands to parse Xml documentation
+            options.ScriptingAPI.SystemReferences.Add("System.Xml");
+            options.ScriptingAPI.SystemReferences.Add("System.Xml.ReaderWriter");
+            options.ScriptingAPI.SystemReferences.Add("System.Text.RegularExpressions");
+        }
     }
 
     /// <inheritdoc />

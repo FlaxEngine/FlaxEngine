@@ -306,6 +306,7 @@ void LocalizationService::OnLocalizationChanged()
             localeName[currentCulture.Length() + 5] = '8';
             localeName[currentCulture.Length() + 6] = 0;
         }
+#if HAS_EXCEPTIONS
         try
         {
             std::locale::global(std::locale(localeName));
@@ -316,6 +317,9 @@ void LocalizationService::OnLocalizationChanged()
         catch (...)
         {
         }
+#else
+        std::locale::global(std::locale(localeName));
+#endif
     }
 #endif
 

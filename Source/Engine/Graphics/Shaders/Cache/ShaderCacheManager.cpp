@@ -27,6 +27,7 @@ const Char* ShaderProfileCacheDirNames[] =
     TEXT("PS4"), // PS4
     TEXT("DX_SM6"), // DirectX_SM6
     TEXT("PS5"), // PS5
+    TEXT("WEB"), // WebGPU
     // @formatter:on
 };
 

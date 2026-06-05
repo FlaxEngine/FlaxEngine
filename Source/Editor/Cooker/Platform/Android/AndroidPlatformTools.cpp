@@ -138,6 +138,7 @@ Array<byte> AndroidPlatformTools::SaveCache(CookingData& data, IBuildCache* cach
     result.Add((const byte*)&platformCache, sizeof(platformCache));
     return result;
 }
+
 void AndroidPlatformTools::OnBuildStarted(CookingData& data)
 {
     // Adjust the cooking output folder to be located inside the Gradle assets directory
@@ -411,7 +412,6 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
         return true;
     }
     LOG(Info, "Output Android APK application package: {0} (size: {1} MB)", outputApk, FileSystem::GetFileSize(outputApk) / 1024 / 1024);
-    
 
     return false;
 }

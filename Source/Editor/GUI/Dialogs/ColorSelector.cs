@@ -218,6 +218,15 @@ namespace FlaxEditor.GUI.Dialogs
         }
 
         /// <inheritdoc />
+        public override void OnMouseMoveRelative(Float2 motion)
+        {
+            var location = PointFromScreen(FlaxEngine.Input.MouseScreenPosition);
+            UpdateMouse(ref location);
+
+            base.OnMouseMoveRelative(motion);
+        }
+
+        /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && _wheelRect.Contains(location))
@@ -324,6 +333,8 @@ namespace FlaxEditor.GUI.Dialogs
 
             // Cache data
             var style = Style.Current;
+            var features = Render2D.Features;
+            Render2D.Features = features & ~Render2D.RenderingFeatures.VertexSnapping;
             var hsv = _color.ToHSV();
             var hs = hsv;
             hs.Z = 1.0f;
@@ -375,6 +386,8 @@ namespace FlaxEditor.GUI.Dialogs
             // Draw one black and one white border to make the knob visible at any saturation level
             Render2D.DrawRectangle(alphaKnobRect, Color.White, _isMouseDownAlphaSlider ? 3.0f : 2.0f);
             Render2D.DrawRectangle(alphaKnobRect, Color.Black, _isMouseDownAlphaSlider ? 2.0f : 1.0f);
+
+            Render2D.Features = features;
         }
 
         /// <inheritdoc />

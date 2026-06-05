@@ -11,7 +11,11 @@
 #include "Engine/Serialization/JsonWriter.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Scripting/Enums.h"
+#include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/PixelFormatSampler.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
@@ -391,6 +395,162 @@ bool TextureTool::Resize(TextureData& dst, const TextureData& src, int32 dstWidt
 #endif
 }
 
+bool TextureTool::UpdateTexture(GPUContext* context, GPUTexture* texture, int32 arrayIndex, int32 mipIndex, Span<byte> data, uint32 rowPitch, uint32 slicePitch, PixelFormat dataFormat)
+{
+    PROFILE_MEM(GraphicsTextures);
+    PixelFormat textureFormat = texture->Format();
+
+    // Basis Universal data transcoded into the runtime GPU format (supercompressed texture)
+    if (dataFormat == PixelFormat::Basis)
+    {
+#if COMPILE_WITH_BASISU
+        return UpdateTextureBasisUniversal(context, texture, arrayIndex, mipIndex, data, rowPitch, slicePitch, dataFormat);
+#else
+        LOG(Error, "Loading Basis Universal textures is not supported on this platform.");
+#endif
+    }
+
+    // Try converting texture on the fly (slow)
+    Array<byte> tempData;
+    if (textureFormat != dataFormat)
+    {
+        PROFILE_CPU_NAMED("ConvertTexture");
+
+        int32 mipWidth, mipHeight, mipDepth;
+        texture->GetMipSize(mipIndex, mipWidth, mipHeight, mipDepth);
+
+        auto dataSampler = PixelFormatSampler::Get(dataFormat);
+        auto textureSampler = PixelFormatSampler::Get(textureFormat);
+        if (dataSampler && textureSampler)
+        {
+            // Conversion with an in-built samplers
+            auto tempRowPitch = mipWidth * textureSampler->PixelSize;
+            auto tempSlicePitch = tempRowPitch * mipHeight;
+            tempData.Resize(tempSlicePitch * mipDepth);
+            ASSERT(data.Length() / rowPitch >= (uint32)mipHeight);
+            for (int32 y = 0; y < mipHeight; y++)
+            {
+                for (int32 x = 0; x < mipWidth; x++)
+                {
+                    Color color = dataSampler->SamplePoint(data.Get(), x, y, rowPitch);
+                    textureSampler->Store(tempData.Get(), x, y, tempRowPitch, color);
+                }
+            }
+            data = ToSpan(tempData);
+            rowPitch = tempRowPitch;
+            slicePitch = tempSlicePitch;
+        }
+        else
+        {
+            // Conversion with external library
+            TextureData src, dst;
+            src.Width = mipWidth;
+            src.Height = mipHeight;
+            src.Depth = mipDepth;
+            src.Format = dataFormat;
+            auto& srcItem = src.Items.AddOne();
+            auto& srcMip = srcItem.Mips.AddOne();
+            srcMip.RowPitch = rowPitch;
+            srcMip.DepthPitch = slicePitch;
+            srcMip.Lines = slicePitch / rowPitch;
+            srcMip.Data.Link(data);
+            if (Convert(dst, src, textureFormat))
+                return true;
+            auto& dstMip = dst.Items[0].Mips[0];
+            tempData.Set(dstMip.Data.Get(), dstMip.Data.Length());
+            data = ToSpan(tempData);
+            rowPitch = dstMip.RowPitch;
+            slicePitch = dstMip.DepthPitch;
+        }
+    }
+
+    // Update texture
+    context->UpdateTexture(texture, arrayIndex, mipIndex, data.Get(), rowPitch, slicePitch);
+    return false;
+}
+
+PixelFormat TextureTool::GetTextureFormat(TextureFormatType textureType, PixelFormat dataFormat, int32 width, int32 height, bool sRGB)
+{
+    ASSERT(GPUDevice::Instance);
+    constexpr auto minSupport = FormatSupport::Texture2D | FormatSupport::ShaderSample | FormatSupport::Mip;
+#define CHECK_BLOCK_SIZE(x, y) (width % x == 0 && height % y == 0)
+
+    // Basis Universal data transcoded into the runtime GPU format (supercompressed texture)
+    if (dataFormat == PixelFormat::Basis)
+    {
+        // Check ASTC formats
+        if (EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::ASTC_4x4_UNorm).Support, minSupport) && CHECK_BLOCK_SIZE(4, 4))
+            return sRGB ? PixelFormat::ASTC_4x4_UNorm_sRGB : PixelFormat::ASTC_4x4_UNorm;
+        if (EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::ASTC_6x6_UNorm).Support, minSupport) && CHECK_BLOCK_SIZE(6, 6))
+            return sRGB ? PixelFormat::ASTC_6x6_UNorm_sRGB : PixelFormat::ASTC_6x6_UNorm;
+        if (EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::ASTC_8x8_UNorm).Support, minSupport) && CHECK_BLOCK_SIZE(8, 8))
+            return sRGB ? PixelFormat::ASTC_8x8_UNorm_sRGB : PixelFormat::ASTC_8x8_UNorm;
+        if (EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::ASTC_10x10_UNorm).Support, minSupport) && CHECK_BLOCK_SIZE(10, 10))
+            return sRGB ? PixelFormat::ASTC_10x10_UNorm_sRGB : PixelFormat::ASTC_10x10_UNorm;
+
+        // Check BCn formats
+        if (EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::BC3_UNorm).Support, minSupport) && CHECK_BLOCK_SIZE(4, 4))
+        {
+            switch (textureType)
+            {
+            case TextureFormatType::ColorRGB:
+                return sRGB ? PixelFormat::BC1_UNorm_sRGB : PixelFormat::BC1_UNorm;
+            case TextureFormatType::ColorRGBA:
+                return sRGB ? PixelFormat::BC3_UNorm_sRGB : PixelFormat::BC3_UNorm;
+            case TextureFormatType::NormalMap:
+                return PixelFormat::BC5_UNorm;
+            case TextureFormatType::GrayScale:
+                return PixelFormat::BC4_UNorm;
+            // Basic Universal doesn't support alpha in BC7 (and it can be loaded only from LDR formats)
+            /*case TextureFormatType::HdrRGBA:
+                return PixelFormat::BC7_UNorm;*/
+            case TextureFormatType::HdrRGB:
+                return PixelFormat::BC6H_Uf16;
+            }
+        }
+
+        // Use raw uncompressed as fallback
+        switch (textureType)
+        {
+        case TextureFormatType::ColorRGB:
+        case TextureFormatType::ColorRGBA:
+            return sRGB ? PixelFormat::R8G8B8A8_UNorm_sRGB : PixelFormat::R8G8B8A8_UNorm;
+        case TextureFormatType::NormalMap:
+            return PixelFormat::R8G8B8A8_UNorm;
+        case TextureFormatType::GrayScale:
+            return PixelFormat::R8G8B8A8_UNorm;
+        case TextureFormatType::HdrRGBA:
+        case TextureFormatType::HdrRGB:
+            return PixelFormat::R16G16B16A16_Float;
+        default:
+            return PixelFormat::Unknown;
+        }
+    }
+
+    // Check if the data format can be used 'as-is'
+    if (EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(dataFormat).Support, minSupport))
+        return dataFormat;
+
+    // Check if data can be converted at runtime (with perf cost)
+    if ((dataFormat == PixelFormat::R16_UNorm || dataFormat == PixelFormat::R16_SNorm || dataFormat == PixelFormat::R16_Float) &&
+        EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R32_Float).Support, minSupport) &&
+        PixelFormatSampler::Get(dataFormat))
+        return PixelFormat::R32_Float;
+    if (dataFormat == PixelFormat::R16G16_UNorm && 
+        EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R32G32_Float).Support, minSupport) &&
+        PixelFormatSampler::Get(dataFormat))
+        return PixelFormat::R32G32_Float;
+    if ((dataFormat == PixelFormat::R16G16B16A16_UNorm || dataFormat == PixelFormat::R16G16B16A16_Float) &&
+        EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R32G32B32A32_Float).Support, minSupport) &&
+        PixelFormatSampler::Get(dataFormat))
+        return PixelFormat::R32G32B32A32_Float;
+
+#undef CHECK_BLOCK_SIZE
+
+    // Every potato supports rgba8
+    return sRGB ? PixelFormat::R8G8B8A8_UNorm_sRGB : PixelFormat::R8G8B8A8_UNorm;
+}
+
 PixelFormat TextureTool::ToPixelFormat(TextureFormatType format, int32 width, int32 height, bool canCompress)
 {
     const bool canUseBlockCompression = width % 4 == 0 && height % 4 == 0;
@@ -438,6 +598,66 @@ PixelFormat TextureTool::ToPixelFormat(TextureFormatType format, int32 width, in
         return PixelFormat::Unknown;
     }
 }
+
+#if USE_EDITOR
+
+bool TextureTool::WriteTextureData(BytesContainer& result, const TextureData& textureData, int32 mipIndex)
+{
+    if (textureData.Format == PixelFormat::Basis)
+    {
+        // Store as-is, each slice is stored in a separate block with the same size
+        int32 maxDataSize = 0;
+        for (int32 arrayIndex = 0; arrayIndex < textureData.Items.Count(); arrayIndex++)
+        {
+            auto& mipData = textureData.Items[arrayIndex].Mips[mipIndex];
+            maxDataSize = Math::Max(maxDataSize, mipData.Data.Length());
+        }
+        result.Allocate(maxDataSize * textureData.GetArraySize());
+        for (int32 arrayIndex = 0; arrayIndex < textureData.Items.Count(); arrayIndex++)
+        {
+            auto& mipData = textureData.Items[arrayIndex].Mips[mipIndex];
+            byte* dst = result.Get() + maxDataSize * arrayIndex;
+            Platform::MemoryCopy(dst, mipData.Data.Get(), mipData.Data.Length());
+            Platform::MemoryClear(dst + mipData.Data.Length(), maxDataSize - mipData.Data.Length());
+        }
+        return false;
+    }
+
+    // Calculate the texture data storage layout
+    uint32 rowPitch, slicePitch;
+    const int32 mipWidth = Math::Max(1, textureData.Width >> mipIndex);
+    const int32 mipHeight = Math::Max(1, textureData.Height >> mipIndex);
+    RenderTools::ComputePitch(textureData.Format, mipWidth, mipHeight, rowPitch, slicePitch);
+    result.Allocate(slicePitch * textureData.GetArraySize());
+
+    // Copy array slices into mip data (sequential)
+    for (int32 arrayIndex = 0; arrayIndex < textureData.Items.Count(); arrayIndex++)
+    {
+        auto& mipData = textureData.Items[arrayIndex].Mips[mipIndex];
+        const byte* src = mipData.Data.Get();
+        byte* dst = result.Get() + (slicePitch * arrayIndex);
+
+        // Faster path if source and destination data layout matches
+        if (rowPitch == mipData.RowPitch && slicePitch == mipData.DepthPitch)
+        {
+            Platform::MemoryCopy(dst, src, slicePitch);
+        }
+        else
+        {
+            const uint32 copyRowSize = Math::Min(mipData.RowPitch, rowPitch);
+            for (uint32 line = 0; line < mipData.Lines; line++)
+            {
+                Platform::MemoryCopy(dst, src, copyRowSize);
+                src += mipData.RowPitch;
+                dst += rowPitch;
+            }
+        }
+    }
+
+    return false;
+}
+
+#endif
 
 bool TextureTool::GetImageType(const StringView& path, ImageType& type)
 {

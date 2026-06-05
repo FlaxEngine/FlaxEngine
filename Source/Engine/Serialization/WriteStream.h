@@ -133,7 +133,6 @@ public:
     void Write(const StringView& data, int16 lock);
     void Write(const StringAnsiView& data);
     void Write(const StringAnsiView& data, int8 lock);
-    void Write(const CommonValue& data);
     void Write(const VariantType& data);
     void Write(const Variant& data);
 
@@ -261,11 +260,6 @@ public:
     // @param data Data to write
     // @param lock Characters pass in the stream
     DEPRECATED("Use Write method") void WriteStringAnsi(const StringAnsiView& data, int8 lock);
-
-    // Writes CommonValue to the stream
-    /// [Deprecated on 11.10.2022, expires on 11.10.2024]
-    // @param data Data to write
-    DEPRECATED("Use Write method") void WriteCommonValue(const CommonValue& data);
 
     // Writes VariantType to the stream
     /// [Deprecated on 11.10.2022, expires on 11.10.2024]

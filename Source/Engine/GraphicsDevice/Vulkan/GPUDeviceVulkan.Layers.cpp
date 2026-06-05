@@ -45,7 +45,7 @@ static const char* GInstanceExtensions[] =
 #if defined(VK_KHR_display) && 0
     VK_KHR_DISPLAY_EXTENSION_NAME,
 #endif
-#if GPU_ENABLE_TRACY && VK_EXT_calibrated_timestamps && VK_EXT_host_query_reset
+#if VULKAN_USE_TRACY_GPU && VK_EXT_calibrated_timestamps && VK_EXT_host_query_reset
     VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME, // Required by VK_EXT_host_query_reset (unless using Vulkan 1.1 or newer)
 #endif
     nullptr
@@ -66,7 +66,7 @@ static const char* GDeviceExtensions[] =
 #if VK_KHR_sampler_mirror_clamp_to_edge
     VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
 #endif
-#if GPU_ENABLE_TRACY && VK_EXT_calibrated_timestamps && VK_EXT_host_query_reset
+#if VULKAN_USE_TRACY_GPU && VK_EXT_calibrated_timestamps && VK_EXT_host_query_reset
     VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME,
     VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME,
 #endif
@@ -490,12 +490,10 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
     }
 
     // Add device layers for debugging
-#ifdef VK_EXT_tooling_info
-    if (ListContains(foundUniqueExtensions, "VK_EXT_tooling_info"))
+    if (ListContains(foundUniqueLayers, "VK_LAYER_RENDERDOC_Capture"))
     {
         IsDebugToolAttached = true;
     }
-#endif
 #if VULKAN_USE_DEBUG_LAYER
     bool hasKhronosStandardValidationLayer = false, hasLunargStandardValidationLayer = false;
 #if VULKAN_USE_KHRONOS_STANDARD_VALIDATION

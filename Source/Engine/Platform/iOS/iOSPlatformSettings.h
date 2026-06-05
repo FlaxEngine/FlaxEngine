@@ -11,7 +11,7 @@
 /// </summary>
 API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API iOSPlatformSettings : public ApplePlatformSettings
 {
-    DECLARE_SCRIPTING_TYPE_MINIMAL(ApplePlatformSettings);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(iOSPlatformSettings);
     API_AUTO_SERIALIZATION();
 
     /// <summary>

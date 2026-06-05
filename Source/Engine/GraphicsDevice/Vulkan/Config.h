@@ -45,13 +45,23 @@
 #endif
 #endif
 
-#ifndef VULKAN_USE_QUERIES
-#define VULKAN_USE_QUERIES 1
+#ifndef VULKAN_USE_TIMER_QUERIES
+#define VULKAN_USE_TIMER_QUERIES 1
+#endif
+
+#ifndef VULKAN_USE_TRACY_GPU
+#define VULKAN_USE_TRACY_GPU (GPU_ENABLE_TRACY && VULKAN_USE_TIMER_QUERIES)
 #endif
 
 // Fence wait operation timeout in seconds
 #ifndef VULKAN_WAIT_TIMEOUT
 #define VULKAN_WAIT_TIMEOUT 5.0f
 #endif
+
+// Toggles GPUTimerQueryVulkan to use BeginQuery/EndQuery via GPuContext rather than old custom implementation
+#define GPU_VULKAN_QUERY_NEW 1
+
+// Toggles pausing and resuming all GPU timer queries when command buffer is being flushed (for more exact timings)
+#define GPU_VULKAN_PAUSE_QUERIES 0
 
 #endif

@@ -6,6 +6,8 @@
 #include "Engine/Core/Types/Nullable.h"
 #include "Engine/Platform/Window.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Input/Input.h"
+#include "Engine/Input/Mouse.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #include "Editor/Managed/ManagedEditor.h"
@@ -13,10 +15,15 @@
 #include "Engine/Engine/Engine.h"
 #endif
 
-Nullable<bool> Fullscreen;
-Nullable<Float2> Size;
-bool CursorVisible = true;
-CursorLockMode CursorLock = CursorLockMode::None;
+namespace
+{
+    Nullable<bool> Fullscreen;
+    Nullable<Float2> Size;
+    bool CursorVisible = true;
+    CursorLockMode CursorLock = CursorLockMode::None;
+    CursorLockMode PendingCursorLock = CursorLockMode::None;
+    bool LastGameViewportFocus = false;
+}
 
 class ScreenService : public EngineService
 {
@@ -101,9 +108,9 @@ void Screen::SetCursorVisible(const bool value)
 	const auto win = Engine::MainWindow;
 #endif
     if (win && Engine::HasGameViewportFocus())
-    {
         win->SetCursor(value ? CursorType::Default : CursorType::Hidden);
-    }
+    else if (win)
+        win->SetCursor(CursorType::Default);
     CursorVisible = value;
 }
 
@@ -116,21 +123,59 @@ void Screen::SetCursorLock(CursorLockMode mode)
 {
 #if USE_EDITOR
     const auto win = Editor::Managed->GetGameWindow(true);
+    Rectangle bounds(Editor::Managed->GameViewportToScreen(Float2::Zero), Editor::Managed->GetGameWindowSize());
+    if (win)
+    {
+        bounds = Rectangle(win->ScreenToClient(bounds.GetTopLeft()), bounds.Size);
+
+        // Don't change lock mode in play mode when viewport doesn't have focus
+        if (mode != CursorLockMode::None && Editor::IsPlayMode && !Engine::HasGameViewportFocus())
+        {
+            PendingCursorLock = mode;
+            return;
+        }
+        PendingCursorLock = CursorLockMode::None;
+    }
 #else
     const auto win = Engine::MainWindow;
-#endif
-    if (win && mode == CursorLockMode::Clipped)
+    Rectangle bounds = Rectangle::Empty;
+    if (win)
+        bounds.Size = win->GetClientSize();
+
+    // Don't change lock mode when window is not focused
+    if (mode != CursorLockMode::None && win && !win->IsFocused())
     {
-#if USE_EDITOR
-        Rectangle bounds(Editor::Managed->GameViewportToScreen(Float2::Zero), Editor::Managed->GetGameWindowSize());
-#else
-        Rectangle bounds = win->GetClientBounds();
-#endif
-        win->StartClippingCursor(bounds);
+        PendingCursorLock = mode;
+        return;
     }
-    else if (win && CursorLock == CursorLockMode::Clipped)
+    PendingCursorLock = CursorLockMode::None;
+#endif
+    if (win)
     {
-        win->EndClippingCursor();
+        bool inRelativeMode = Input::Mouse && Input::Mouse->IsRelative();
+        if (mode == CursorLockMode::Clipped)
+            win->StartClippingCursor(bounds);
+#if PLATFORM_SDL
+        else if (mode == CursorLockMode::Locked)
+        {
+            // Use mouse clip region to restrict the cursor in one spot
+            win->StartClippingCursor(Rectangle(bounds.GetCenter(), Float2(1, 1)));
+        }
+        else if (CursorLock == CursorLockMode::Locked || CursorLock == CursorLockMode::Clipped)
+            win->EndClippingCursor();
+#else
+        else if (CursorLock == CursorLockMode::Clipped)
+            win->EndClippingCursor();
+#endif
+
+        if (Input::Mouse)
+        {
+            // Enable relative mode when cursor is restricted
+            if (mode != CursorLockMode::None)
+                Input::Mouse->SetRelativeMode(true, win);
+            else if (mode == CursorLockMode::None && inRelativeMode)
+                Input::Mouse->SetRelativeMode(false, win);
+        }
     }
     CursorLock = mode;
 }
@@ -190,8 +235,16 @@ void ScreenService::Update()
 {
 #if USE_EDITOR
     // Sync current cursor state in Editor (eg. when viewport focus can change)
-    Screen::SetCursorVisible(CursorVisible);
+    const auto win = Editor::Managed->GetGameWindow(true);
+    bool gameViewportFocus = win && Engine::HasGameViewportFocus();
+    if (gameViewportFocus != LastGameViewportFocus)
+        Screen::SetCursorVisible(CursorVisible);
+    LastGameViewportFocus = gameViewportFocus;
 #endif
+
+    // Sync pending cursor lock mode
+    if (PendingCursorLock != CursorLockMode::None && Engine::HasGameViewportFocus())
+        Screen::SetCursorLock(PendingCursorLock);
 }
 
 void ScreenService::Draw()

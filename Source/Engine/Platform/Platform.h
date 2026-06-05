@@ -8,7 +8,9 @@
 #include "Types.h"
 #include "Defines.h"
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_SDL
+#include "SDL/SDLPlatform.h"
+#elif PLATFORM_WINDOWS
 #include "Windows/WindowsPlatform.h"
 #elif PLATFORM_UWP
 #include "UWP/UWPPlatform.h"
@@ -30,6 +32,8 @@
 #include "Mac/MacPlatform.h"
 #elif PLATFORM_IOS
 #include "iOS/iOSPlatform.h"
+#elif PLATFORM_WEB
+#include "Web/WebPlatform.h"
 #else
 #error Missing Platform implementation!
 #endif
@@ -70,6 +74,12 @@
     { \
         Platform::CheckFailed(#expression, __FILE__, __LINE__); \
         return returnValue; \
+    }
+// Performs a soft check of the expression. Logs the expression failure and continues execution.
+#define CHECK_NO_RETURN(expression) \
+    if (!(expression)) \
+    { \
+        Platform::CheckFailed(#expression, __FILE__, __LINE__); \
     }
 
 #if ENABLE_ASSERTION

@@ -19,6 +19,7 @@
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/SoftAssetReference.h"
+#include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Render2D/Render2D.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/Engine.h"
@@ -112,15 +113,13 @@ bool GPUPipelineState::Init(const Description& desc)
 #endif
 
     // Cache shader stages usage flags for pipeline state
-    _meta.InstructionsCount = 0;
-    _meta.UsedCBsMask = 0;
-    _meta.UsedSRsMask = 0;
-    _meta.UsedUAsMask = 0;
+    Platform::MemoryClear(&_meta, sizeof(_meta));
 #define CHECK_STAGE(stage) \
 	if (desc.stage) { \
 		_meta.UsedCBsMask |= desc.stage->GetBindings().UsedCBsMask; \
 		_meta.UsedSRsMask |= desc.stage->GetBindings().UsedSRsMask; \
 		_meta.UsedUAsMask |= desc.stage->GetBindings().UsedUAsMask; \
+		_meta.UsedSamplersMask |= desc.stage->GetBindings().UsedSamplersMask; \
 	}
     CHECK_STAGE(VS);
     CHECK_STAGE(HS);
@@ -160,6 +159,7 @@ GPUPipelineState::Description GPUPipelineState::Description::Default =
     true, // DepthEnable
     true, // DepthWriteEnable
     true, // DepthClipEnable
+    false, // DepthBoundsEnable
     ComparisonFunc::Less, // DepthFunc
     false, // StencilEnable
     0xff, // StencilReadMask
@@ -184,6 +184,7 @@ GPUPipelineState::Description GPUPipelineState::Description::DefaultNoDepth =
     false, // DepthEnable
     false, // DepthWriteEnable
     false, // DepthClipEnable
+    false, // DepthBoundsEnable
     ComparisonFunc::Less, // DepthFunc
     false, // StencilEnable
     0xff, // StencilReadMask
@@ -208,6 +209,7 @@ GPUPipelineState::Description GPUPipelineState::Description::DefaultFullscreenTr
     false, // DepthEnable
     false, // DepthWriteEnable
     false, // DepthClipEnable
+    false, // DepthBoundsEnable
     ComparisonFunc::Less, // DepthFunc
     false, // StencilEnable
     0xff, // StencilReadMask
@@ -255,8 +257,6 @@ uint64 GPUResource::GetMemoryUsage() const
     return _memoryUsage;
 }
 
-static_assert((GPU_ENABLE_RESOURCE_NAMING) == (!BUILD_RELEASE), "Update build condition on around GPUResource Name property getter/setter.");
-
 #if GPU_ENABLE_RESOURCE_NAMING
 
 StringView GPUResource::GetName() const
@@ -279,6 +279,22 @@ void GPUResource::SetName(const StringView& name)
         Platform::MemoryCopy(_namePtr, name.Get(), _nameSize * sizeof(Char));
         _namePtr[_nameSize] = 0;
     }
+    OnRenamed();
+}
+
+void GPUResource::OnRenamed()
+{
+}
+
+#elif !BUILD_RELEASE
+
+StringView GPUResource::GetName() const
+{
+    return StringView::Empty;
+}
+
+void GPUResource::SetName(const StringView& name)
+{
 }
 
 #endif
@@ -390,8 +406,6 @@ bool GPUDevice::Init()
 
     _res->TasksManager.SetExecutor(CreateTasksExecutor());
     LOG(Info, "Total graphics memory: {0}", Utilities::BytesToText(TotalGraphicsMemory));
-    if (!Limits.HasCompute)
-        LOG(Warning, "Compute Shaders are not supported");
     for (const auto& videoOutput : VideoOutputs)
         LOG(Info, "Video output '{0}' {1}x{2} {3} Hz", videoOutput.Name, videoOutput.Width, videoOutput.Height, videoOutput.RefreshRate);
     Engine::RequestingExit.Bind<GPUDevice, &GPUDevice::OnRequestingExit>(this);
@@ -498,7 +512,7 @@ void GPUDevice::DumpResourcesToLog() const
         true, // CubeTexture
         true, // VolumeTexture
         true, // Buffer
-        true, // Shader
+        false, // Shader
         false, // PipelineState
         false, // Descriptor
         false, // Query
@@ -509,35 +523,102 @@ void GPUDevice::DumpResourcesToLog() const
         const auto type = static_cast<GPUResourceType>(typeIndex);
         const auto printType = printTypes[typeIndex];
 
-        output.AppendFormat(TEXT("Group: {0}s"), ScriptingEnum::ToString(type));
-        output.AppendLine();
-
-        int32 count = 0;
+        // Get resource sof a given type
         uint64 memUsage = 0;
+        struct Resource
+        {
+            const GPUResource* Object;
+            uint64 MemoryUsage;
+
+            bool operator<(const Resource& other) const
+            {
+                if (MemoryUsage != other.MemoryUsage)
+                    return MemoryUsage > other.MemoryUsage;
+#if GPU_ENABLE_RESOURCE_NAMING
+                return Object->GetName().Compare(other.Object->GetName()) > 0;
+#else
+                return (uintptr)Object < (uintptr)other.Object;
+#endif
+            }
+        };
+        Array<Resource> resources;
         for (int32 i = 0; i < _resources.Count(); i++)
         {
             const GPUResource* resource = _resources[i];
             if (resource->GetResourceType() == type && resource->GetMemoryUsage() != 0)
             {
-                count++;
-                memUsage += resource->GetMemoryUsage();
-                auto str = resource->ToString();
-                if (str.HasChars() && printType)
-                {
-                    output.Append(TEXT('\t'));
-                    output.Append(str);
-                    output.AppendLine();
-                }
+                resources.Add({ resource, resource->GetMemoryUsage() });
             }
         }
+        if (resources.IsEmpty())
+            continue;
+        output.AppendFormat(TEXT("> {0}:"), ScriptingEnum::ToString(type));
+        output.AppendLine();
 
-        output.AppendFormat(TEXT("Total count: {0}, memory usage: {1}"), count, Utilities::BytesToText(memUsage));
+        // Sort them by size
+        Sorting::QuickSort(resources);
+
+        // Print resources
+        for (auto e : resources)
+        {
+            memUsage += e.MemoryUsage;
+            if (!printType)
+                continue;
+            output.Append(TEXT("  "));
+            output.Append(Utilities::BytesToText(e.MemoryUsage));
+            output.Append(TEXT(", "));
+            if (e.Object->Is<GPUTexture>())
+            {
+                auto texture = (GPUTexture*)e.Object;
+                auto& desc = texture->GetDescription();
+                output.AppendFormat(TEXT("Size: {}x{}x{}[{}], "), desc.Width, desc.Height, desc.Depth, desc.ArraySize);
+                if (texture->ResidentMipLevels() == desc.MipLevels)
+                    output.AppendFormat(TEXT("Mips: {}, "), desc.MipLevels);
+                else
+                    output.AppendFormat(TEXT("Mips: {}/{}, "), texture->ResidentMipLevels(), desc.MipLevels);
+#if GPU_ENABLE_RESOURCE_NAMING
+                auto name = texture->GetName();
+#else
+                StringView name;
+#endif
+                output.AppendFormat(TEXT("Format: {}, Flags: {}, {}"), ScriptingEnum::ToString(desc.Format), ScriptingEnum::ToStringFlags(desc.Flags), name);
+            }
+            else if (e.Object->Is<GPUBuffer>())
+            {
+                auto buffer = (GPUBuffer*)e.Object;
+                auto& desc = buffer->GetDescription();
+                output.AppendFormat(TEXT("Stride: {} bytes, "), desc.Stride);
+                if (desc.Format != PixelFormat::Unknown)
+                    output.AppendFormat(TEXT("Format: {}, "), ScriptingEnum::ToString(desc.Format));
+                if (desc.Usage != GPUResourceUsage::Default)
+                    output.AppendFormat(TEXT("Usage: {}, "), ScriptingEnum::ToString(desc.Usage));
+#if GPU_ENABLE_RESOURCE_NAMING
+                auto name = buffer->GetName();
+#else
+                StringView name;
+#endif
+                output.AppendFormat(TEXT("Flags: {}, {}"), ScriptingEnum::ToStringFlags(desc.Flags), name);
+            }
+            else
+            {
+                output.Append(e.Object->ToString());
+            }
+            output.AppendLine();
+        }
+
+        output.AppendFormat(TEXT("Total count: {0}, memory usage: {1}"), resources.Count(), Utilities::BytesToText(memUsage));
         output.AppendLine();
         output.AppendLine();
     }
 
     _resourcesLock.Unlock();
     LOG_STR(Info, output.ToStringView());
+}
+
+void GPUDevice::DumpResources()
+{
+    if (GPUDevice::Instance)
+        GPUDevice::Instance->DumpResourcesToLog();
 }
 
 extern void ClearVertexLayoutCache();

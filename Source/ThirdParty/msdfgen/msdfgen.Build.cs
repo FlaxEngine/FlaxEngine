@@ -7,7 +7,7 @@ using Flax.Build.NativeCpp;
 /// <summary>
 /// https://github.com/Chlumsky/msdfgen
 /// </summary>
-public class msdfgen : DepsModule
+public class msdfgen : EngineDepsModule
 {
     /// <inheritdoc />
     public override void Init()
@@ -16,9 +16,6 @@ public class msdfgen : DepsModule
 
         LicenseType = LicenseTypes.MIT;
         LicenseFilePath = "LICENSE.txt";
-
-        // Merge third-party modules into engine binary
-        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />
@@ -30,12 +27,18 @@ public class msdfgen : DepsModule
         switch (options.Platform.Target)
         {
         case TargetPlatform.Windows:
+        case TargetPlatform.XboxOne:
+        case TargetPlatform.XboxScarlett:
             options.OutputFiles.Add(Path.Combine(depsRoot, "msdfgen-core.lib"));
             break;
         case TargetPlatform.Linux:
         case TargetPlatform.Mac:
         case TargetPlatform.iOS:
         case TargetPlatform.Android:
+        case TargetPlatform.Switch:
+        case TargetPlatform.PS4:
+        case TargetPlatform.PS5:
+        case TargetPlatform.Web:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libmsdfgen-core.a"));
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);

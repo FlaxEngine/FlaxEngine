@@ -41,7 +41,7 @@ API_ENUM() enum class LogType
 /// <summary>
 /// Sends a formatted message to the log file (message type - describes level of the log (see LogType enum))
 /// </summary>
-#define LOG(messageType, format, ...) Log::Logger::Write(LogType::messageType, ::String::Format(TEXT(format), ##__VA_ARGS__))
+#define LOG(messageType, format, ...) Log::Logger::Write(LogType::messageType, TEXT(format), ##__VA_ARGS__)
 
 /// <summary>
 /// Sends a string message to the log file (message type - describes level of the log (see LogType enum))
@@ -143,9 +143,12 @@ namespace Log
         /// <param name="format">The message format string.</param>
         /// <param name="args">The format arguments.</param>
         template<typename... Args>
-        FORCE_INLINE static void Write(LogType type, const Char* format, const Args& ... args)
+        static void Write(LogType type, const Char* format, const Args& ... args)
         {
-            Write(type, String::Format(format, args...));
+            fmt_flax::allocator allocator;
+            fmt_flax::memory_buffer buffer(allocator);
+            fmt_flax::format(buffer, format, args...);
+            Write(type, StringView(buffer.data(), (int32)buffer.size()));
         }
 
         /// <summary>
@@ -177,7 +180,8 @@ namespace Log
         /// Writes a custom message to the log.
         /// </summary>
         /// <param name="msg">The message text.</param>
-        static void Write(const StringView& msg);
+        /// <param name="type">The message type.</param>
+        static void Write(const StringView& msg, LogType type = LogType::Info);
 
         /// <summary>
         /// Writes an exception formatted message to log file.

@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #if PLATFORM_MAC
+
 #include "MacFileSystemWatcher.h"
 #include "Engine/Platform/Apple/AppleUtils.h"
 #include "Engine/Platform/CriticalSection.h"
@@ -9,47 +10,32 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Types/StringView.h"
 
-void DirectoryWatchCallback( ConstFSEventStreamRef StreamRef, void* FileWatcherPtr, size_t EventCount, void* EventPaths, const FSEventStreamEventFlags EventFlags[], const FSEventStreamEventId EventIDs[] )
+void DirectoryWatchCallback( ConstFSEventStreamRef StreamRef, void* FileWatcherPtr, size_t EventCount, void* EventPaths, const FSEventStreamEventFlags EventFlags[], const FSEventStreamEventId EventIDs[])
 {
     MacFileSystemWatcher* macFileSystemWatcher = (MacFileSystemWatcher*)FileWatcherPtr;
     if (macFileSystemWatcher)
     {
         CFArrayRef EventPathArray = (CFArrayRef)EventPaths;
-        for( size_t EventIndex = 0; EventIndex < EventCount; ++EventIndex )
+        for (size_t eventIndex = 0; eventIndex < EventCount; eventIndex++)
         {
-            const FSEventStreamEventFlags Flags = EventFlags[EventIndex];
-            if( !(Flags & kFSEventStreamEventFlagItemIsFile) && !(Flags & kFSEventStreamEventFlagItemIsDir) )
+            const FSEventStreamEventFlags flags = EventFlags[eventIndex];
+            if (!(flags & kFSEventStreamEventFlagItemIsFile) && !(flags & kFSEventStreamEventFlagItemIsDir))
             {
-                // events about symlinks don't concern us
+                // Events about symlinks don't concern us
                 continue;
             }
-            
+
             auto action = FileSystemAction::Unknown;
-            
-            const bool added = ( Flags & kFSEventStreamEventFlagItemCreated );
-            const bool renamed = ( Flags & kFSEventStreamEventFlagItemRenamed );
-            const bool modified = ( Flags & kFSEventStreamEventFlagItemModified );
-            const bool removed = ( Flags & kFSEventStreamEventFlagItemRemoved );
-            
-            if (added)
-            {
+            if (flags & kFSEventStreamEventFlagItemCreated)
                 action = FileSystemAction::Create;
-            }
-            if (renamed)
-            {
+            if (flags & kFSEventStreamEventFlagItemRenamed)
                 action = FileSystemAction::Rename;
-            }
-            if (modified)
-            {
+            if (flags & kFSEventStreamEventFlagItemModified)
                 action = FileSystemAction::Modify;
-            }
-            if (removed)
-            {
+            if (flags & kFSEventStreamEventFlagItemRemoved)
                 action = FileSystemAction::Delete;
-            }
-            
-            const String resolvedPath = AppleUtils::ToString((CFStringRef)CFArrayGetValueAtIndex(EventPathArray,EventIndex));
-            
+
+            const String resolvedPath = AppleUtils::ToString((CFStringRef)CFArrayGetValueAtIndex(EventPathArray, eventIndex));
             macFileSystemWatcher->OnEvent(resolvedPath, action);
         }
     }
@@ -61,9 +47,8 @@ MacFileSystemWatcher::MacFileSystemWatcher(const String& directory, bool withSub
         
     CFStringRef FullPathMac = AppleUtils::ToString(StringView(directory));
     CFArrayRef PathsToWatch = CFArrayCreate(NULL, (const void**)&FullPathMac, 1, NULL);
-    
+
     CFAbsoluteTime Latency = 0.2;
-    
     FSEventStreamContext Context;
     Context.version = 0;
     Context.info = this;
@@ -71,7 +56,7 @@ MacFileSystemWatcher::MacFileSystemWatcher(const String& directory, bool withSub
     Context.release = NULL;
     Context.copyDescription = NULL;
 
-    EventStream = FSEventStreamCreate( NULL,
+    _eventStream = FSEventStreamCreate(NULL,
         &DirectoryWatchCallback,
         &Context,
         PathsToWatch,
@@ -82,21 +67,27 @@ MacFileSystemWatcher::MacFileSystemWatcher(const String& directory, bool withSub
     
     CFRelease(PathsToWatch);
     CFRelease(FullPathMac);
-    
-    FSEventStreamScheduleWithRunLoop( EventStream, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode );
-    FSEventStreamStart( EventStream );
-    
-    IsRunning = true;
+
+    _queue = dispatch_queue_create("MacFileSystemWatcher", NULL);
+	FSEventStreamSetDispatchQueue(_eventStream, _queue);
+    FSEventStreamStart(_eventStream);
 }
 
 MacFileSystemWatcher::~MacFileSystemWatcher()
 {
-    if (IsRunning)
+    if (_eventStream)
     {
-        FSEventStreamStop(EventStream);
-        FSEventStreamUnscheduleFromRunLoop(EventStream, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
-        FSEventStreamInvalidate(EventStream);
-        FSEventStreamRelease(EventStream);
+        FSEventStreamStop(_eventStream);
+        FSEventStreamSetDispatchQueue(_eventStream, nullptr);
+        FSEventStreamInvalidate(_eventStream);
+        FSEventStreamRelease(_eventStream);
+        _eventStream = nullptr;
+    }
+    if (_queue != nullptr)
+    {
+        dispatch_release(_queue);
+        _queue = nullptr;
     }
 }
+
 #endif

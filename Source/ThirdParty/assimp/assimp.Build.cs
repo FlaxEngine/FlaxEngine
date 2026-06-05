@@ -7,7 +7,7 @@ using Flax.Build.NativeCpp;
 /// <summary>
 /// https://www.assimp.org/
 /// </summary>
-public class assimp : DepsModule
+public class assimp : EngineDepsModule
 {
     /// <inheritdoc />
     public override void Init()
@@ -16,9 +16,6 @@ public class assimp : DepsModule
 
         LicenseType = LicenseTypes.Custom;
         LicenseFilePath = "LICENSE";
-
-        // Merge third-party modules into engine binary
-        BinaryModuleName = "FlaxEngine";
     }
 
     /// <inheritdoc />

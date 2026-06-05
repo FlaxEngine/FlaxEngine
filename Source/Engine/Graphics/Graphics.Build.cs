@@ -40,6 +40,7 @@ public abstract class GraphicsDeviceBaseModule : EngineModule
 public class Graphics : EngineModule
 {
     private static bool _logMissingVulkanSDK;
+    private static bool _logMissingWindowsSDK;
 
     /// <inheritdoc />
     public override void Setup(BuildOptions options)
@@ -59,7 +60,7 @@ public class Graphics : EngineModule
             if (windowsToolchain != null && windowsToolchain.SDK != Flax.Build.Platforms.WindowsPlatformSDK.v8_1)
                 options.PrivateDependencies.Add("GraphicsDeviceDX12");
             else
-                Log.WarningOnce(string.Format("Building for {0} without Vulkan rendering backend (Vulkan SDK is missing)", options.Platform.Target), ref _logMissingVulkanSDK);
+                Log.WarningOnce(string.Format("Building for {0} without D3D12 rendering backend (Windows SDK is missing)", options.Platform.Target), ref _logMissingWindowsSDK);
             break;
         case TargetPlatform.UWP:
             options.PrivateDependencies.Add("GraphicsDeviceDX11");
@@ -94,6 +95,9 @@ public class Graphics : EngineModule
                 options.PrivateDependencies.Add("GraphicsDeviceVulkan");
             else
                 Log.WarningOnce(string.Format("Building for {0} without Vulkan rendering backend (Vulkan SDK is missing)", options.Platform.Target), ref _logMissingVulkanSDK);
+            break;
+        case TargetPlatform.Web:
+            options.PrivateDependencies.Add("GraphicsDeviceWebGPU");
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }

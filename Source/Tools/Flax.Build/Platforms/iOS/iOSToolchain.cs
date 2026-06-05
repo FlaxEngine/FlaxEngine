@@ -6,13 +6,13 @@ using Flax.Build.NativeCpp;
 
 namespace Flax.Build
 {
-    partial class Configuration
+    partial class iOSConfiguration
     {
         /// <summary>
         /// Specifies the minimum iOS version to use (eg. 14).
         /// </summary>
-        [CommandLine("iOSMinVer", "<version>", "Specifies the minimum iOS version to use (eg. 14).")]
-        public static string iOSMinVer = "15";
+        [CommandLine("MinVer", "<version>", "Specifies the minimum iOS version to use (eg. 14).")]
+        public static string MinVer = "15";
     }
 }
 
@@ -60,7 +60,7 @@ namespace Flax.Build.Platforms
         {
             base.AddArgsCommon(options, args);
 
-            args.Add("-miphoneos-version-min=" + Configuration.iOSMinVer);
+            args.Add("-miphoneos-version-min=" + iOSConfiguration.MinVer);
         }
 
         public override bool CompileCSharp(ref CSharpOptions options)

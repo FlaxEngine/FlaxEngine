@@ -35,7 +35,7 @@ float3 GetParticleVec3(uint particleIndex, int offset)
 }
 
 // Sorting keys generation shader
-META_CS(true, FEATURE_LEVEL_SM5)
+META_CS(true, AUTO)
 META_PERMUTATION_1(SORT_MODE=0)
 META_PERMUTATION_1(SORT_MODE=1)
 META_PERMUTATION_1(SORT_MODE=2)

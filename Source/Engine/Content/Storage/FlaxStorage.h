@@ -87,10 +87,10 @@ public:
 
 protected:
     // State
-    int64 _refCount = 0;
-    int64 _chunksLock = 0;
-    int64 _files = 0;
-    int64 _isUnloadingData = 0;
+    intptr _refCount = 0;
+    intptr _chunksLock = 0;
+    intptr _files = 0;
+    intptr _isUnloadingData = 0;
     double _lastRefLostTime;
     CriticalSection _loadLocker;
 

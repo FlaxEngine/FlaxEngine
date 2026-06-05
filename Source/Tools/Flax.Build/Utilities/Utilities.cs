@@ -416,6 +416,14 @@ namespace Flax.Build
             }
         }
 
+        private static void StdLogError(object sender, DataReceivedEventArgs e)
+        {
+            if (e.Data != null)
+            {
+                Log.Error(e.Data);
+            }
+        }
+
         private static void StdLogVerbose(object sender, DataReceivedEventArgs e)
         {
             if (e.Data != null)
@@ -506,7 +514,7 @@ namespace Flax.Build
                 if (options.HasFlag(RunOptions.ConsoleLogOutput))
                 {
                     proc.OutputDataReceived += StdLogInfo;
-                    proc.ErrorDataReceived += StdLogInfo;
+                    proc.ErrorDataReceived += StdLogError;
                 }
                 else
                 {

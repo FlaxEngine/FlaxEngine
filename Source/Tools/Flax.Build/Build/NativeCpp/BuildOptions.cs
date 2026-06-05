@@ -139,7 +139,9 @@ namespace Flax.Build.NativeCpp
         {
             if (libFolder == null)
                 libFolder = GetLibFolder(nugetPath);
-            var dlls = Directory.GetFiles(libFolder, "*.dll", SearchOption.TopDirectoryOnly);
+            if (libFolder == string.Empty)
+                return string.Empty;
+            var dlls = Directory.Exists(libFolder) ? Directory.GetFiles(libFolder, "*.dll", SearchOption.TopDirectoryOnly) : [];
             if (dlls.Length == 0)
             {
                 Log.Error($"Missing NuGet package \"{Name}, {Version}, {Framework}\" binaries (folder: {libFolder})");

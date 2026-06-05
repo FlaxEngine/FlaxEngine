@@ -2,7 +2,9 @@
 
 #pragma once
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_SDL && PLATFORM_LINUX
+#include "SDL/SDLClipboard.h"
+#elif PLATFORM_WINDOWS
 #include "Windows/WindowsClipboard.h"
 #elif PLATFORM_LINUX
 #include "Linux/LinuxClipboard.h"

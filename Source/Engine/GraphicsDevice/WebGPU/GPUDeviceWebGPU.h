@@ -1,0 +1,226 @@
+// Copyright (c) Wojciech Figat. All rights reserved.
+
+#pragma once
+
+#if GRAPHICS_API_WEBGPU
+
+#include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUResource.h"
+#include "IncludeWebGPU.h"
+
+class GPUContextWebGPU;
+class GPUAdapterWebGPU;
+class GPUTextureWebGPU;
+class GPUSamplerWebGPU;
+
+namespace GPUBindGroupsWebGPU
+{
+    enum Stage
+    {
+        // Vertex shader stage
+        Vertex = 0,
+        // Pixel shader stage
+        Pixel = 1,
+        // Graphics pipeline stages count
+        GraphicsMax,
+        // Compute pipeline slot
+        Compute = 0,
+        // The maximum amount of slots for all stages
+        Max = GraphicsMax,
+    };
+};
+
+/// <summary>
+/// GPU query ID packed into 64-bits.
+/// </summary>
+struct GPUQueryWebGPU
+{
+    union
+    {
+        struct
+        {
+            uint32 Set;
+            uint32 Index;
+        };
+        uint64 Raw;
+    };
+};
+
+/// <summary>
+/// Set of GPU queries allocated in batch with functionality to read results via a separate CPU buffer.
+/// </summary>
+class GPUQuerySetWebGPU
+{
+private:
+    WGPUDevice _device;
+    uint32 _count;
+    uint32 _index = 0;
+    enum States
+    {
+        Active,
+        Resolved,
+        Mapping,
+        Mapped,
+    } _state = Active;
+#if COMPILE_WITH_PROFILER
+    uint64 _memorySize;
+#endif
+    WGPUBuffer _queryBuffer;
+    WGPUBuffer _readBuffer;
+    const uint64* _mapped = nullptr;
+
+public:
+    const GPUQueryType Type;
+    WGPUQuerySet Set;
+
+public:
+    GPUQuerySetWebGPU(WGPUDevice device, GPUQueryType type, uint32 count);
+    ~GPUQuerySetWebGPU();
+
+    bool CanAllocate() const;
+    uint32 Allocate();
+    void Resolve(WGPUCommandEncoder encoder);
+    bool Read(uint32 index, uint64& result, bool wait);
+
+private:
+    void OnRead();
+};
+
+/// <summary>
+/// Pool for uploading data to GPU buffers. It manages large buffers and suballocates for multiple small updates, minimizing the number of buffer creations and copies.
+/// </summary>
+class GPUDataUploaderWebGPU
+{
+    friend class GPUDeviceWebGPU;
+private:
+    struct Entry
+    {
+        WGPUBuffer Buffer;
+        uint32 Size;
+        uint32 ActiveOffset;
+        uint64 ActiveFrame;
+        WGPUBufferUsage Usage;
+    };
+
+    uint64 _frame = 0;
+    WGPUDevice _device;
+    Array<Entry> _entries;
+
+public:
+    struct Allocation
+    {
+        WGPUBuffer Buffer = nullptr;
+        uint32 Offset = 0;
+    };
+
+    Allocation Allocate(uint32 size, WGPUBufferUsage usage, uint32 alignment = 16);
+    void DrawBegin();
+    void ReleaseGPU();
+};
+
+/// <summary>
+/// Implementation of Graphics Device for Web GPU backend.
+/// </summary>
+class GPUDeviceWebGPU : public GPUDevice
+{
+private:
+    GPUContextWebGPU* _mainContext = nullptr;
+
+public:
+    GPUDeviceWebGPU(WGPUInstance instance, GPUAdapterWebGPU* adapter);
+    ~GPUDeviceWebGPU();
+
+public:
+    GPUAdapterWebGPU* Adapter = nullptr;
+    WGPUInstance WebGPUInstance;
+    WGPUDevice Device = nullptr;
+    WGPUQueue Queue = nullptr;
+    GPUTextureWebGPU* DefaultRenderTarget = nullptr;
+    GPUSamplerWebGPU* DefaultSamplers[6] = {};
+    GPUTextureWebGPU* DefaultTexture[10] = {};
+    WGPUBuffer DefaultBuffer = nullptr;
+    GPUDataUploaderWebGPU DataUploader;
+    uint32 MinUniformBufferOffsetAlignment = 1;
+    uint32 QueueSubmits = 0;
+    bool TimestampQuery = false;
+    uint32 QuerySetsCount = 0;
+    GPUQuerySetWebGPU* QuerySets[WEBGPU_MAX_QUERY_SETS] = {};
+
+    GPUQueryWebGPU AllocateQuery(GPUQueryType type);
+
+    // Object version counter used to track resource view permutations (to avoid pointer collisions on WGPUTexture/WGPUBuffer inside Bind Group cache)
+#ifndef __EMSCRIPTEN_PTHREADS__
+    mutable uint16 ObjectVersionCounter = 0;
+    FORCE_INLINE uint16 GetObjectVersion() const
+    {
+        return ++ObjectVersionCounter;
+    }
+#else
+    mutable volatile int64 ObjectVersionCounter = 0;
+    FORCE_INLINE uint16 GetObjectVersion() const
+    {
+        return (uint16)(Platform::InterlockedIncrement(&ObjectVersionCounter) % MAX_uint16);
+    }
+#endif
+
+public:
+    // [GPUDeviceDX]
+    GPUContext* GetMainContext() override
+    {
+        return (GPUContext*)_mainContext;
+    }
+    GPUAdapter* GetAdapter() const override
+    {
+        return (GPUAdapter*)Adapter;
+    }
+    void* GetNativePtr() const override
+    {
+        return Device;
+    }
+    bool Init() override;
+    void DrawBegin() override;
+    void Dispose() override;
+    void WaitForGPU() override;
+    bool GetQueryResult(uint64 queryID, uint64& result, bool wait = false) override;
+    GPUTexture* CreateTexture(const StringView& name) override;
+    GPUShader* CreateShader(const StringView& name) override;
+    GPUPipelineState* CreatePipelineState() override;
+    GPUTimerQuery* CreateTimerQuery() override;
+    GPUBuffer* CreateBuffer(const StringView& name) override;
+    GPUSampler* CreateSampler() override;
+    GPUVertexLayout* CreateVertexLayout(const VertexElements& elements, bool explicitOffsets) override;
+    GPUSwapChain* CreateSwapChain(Window* window) override;
+    GPUConstantBuffer* CreateConstantBuffer(uint32 size, const StringView& name) override;
+};
+
+/// <summary>
+/// GPU resource implementation for Web GPU backend.
+/// </summary>
+template<class BaseType>
+class GPUResourceWebGPU : public GPUResourceBase<GPUDeviceWebGPU, BaseType>
+{
+public:
+    GPUResourceWebGPU(GPUDeviceWebGPU* device, const StringView& name) noexcept
+        : GPUResourceBase<GPUDeviceWebGPU, BaseType>(device, name)
+    {
+    }
+};
+
+struct GPUResourceViewPtrWebGPU
+{
+    class GPUBufferViewWebGPU* BufferView;
+    class GPUTextureViewWebGPU* TextureView;
+    union
+    {
+        struct
+        {
+            uint16 ObjectVersion; // Object instance permutation
+            uint16 ViewVersion; // Specific view permutation
+        };
+        uint32 Version;
+    };
+};
+
+extern GPUDevice* CreateGPUDeviceWebGPU();
+
+#endif

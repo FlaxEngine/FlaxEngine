@@ -52,7 +52,7 @@ public class Physics : EngineModule
         if (WithPhysX)
         {
             options.PrivateDependencies.Add("PhysX");
-            if (WithCloth && options.Platform.Target != TargetPlatform.PS4) // TODO: build nvcloth for ps4 with vs2017
+            if (WithCloth)
                 options.PrivateDependencies.Add("NvCloth");
         }
         else

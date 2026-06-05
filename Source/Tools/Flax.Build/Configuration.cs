@@ -260,6 +260,42 @@ namespace Flax.Build
     }
 
     /// <summary>
+    /// Platform-specific configuration for Windows.
+    /// </summary>
+    public static partial class WindowsConfiguration
+    {
+        /// <summary>
+        /// [Windows] True if SDL support should be enabled.
+        /// </summary>
+        [CommandLine("useSdl", "1 to enable SDL support in build on Windows")]
+        public static bool UseSDL = false;
+    }
+
+    /// <summary>
+    /// Platform-specific configuration for Linux.
+    /// </summary>
+    public static partial class LinuxConfiguration
+    {
+        /// <summary>
+        /// [Linux] True if SDL support should be enabled.
+        /// </summary>
+        [CommandLine("useSdl", "1 to enable SDL support in build on Linux")]
+        public static bool UseSDL = false;
+    }
+
+    /// <summary>
+    /// Platform-specific configuration for Mac.
+    /// </summary>
+    public static partial class MacConfiguration
+    {
+        /// <summary>
+        /// [Mac] True if SDL support should be enabled.
+        /// </summary>
+        [CommandLine("useSdl", "1 to enable SDL support in build on Mac")]
+        public static bool UseSDL = false;
+    }
+
+    /// <summary>
     /// The engine configuration options.
     /// </summary>
     public static partial class EngineConfiguration
@@ -288,8 +324,16 @@ namespace Flax.Build
         [CommandLine("useLogInRelease", "Can be used to disable logging in Release game builds")]
         public static bool UseLogInRelease = true;
 
+        /// <summary>
+        /// True if SDL support should be enabled.
+        /// </summary>
+        [CommandLine("useSdl", "1 to enable SDL support in build")]
+        public static bool UseSDL = true;
+
         public static bool WithCSharp(NativeCpp.BuildOptions options)
         {
+            if (options.Platform.Target == TargetPlatform.Web)
+                return false; // TODO: implement .NET for WebAssembly
             return UseCSharp || options.Target.IsEditor;
         }
 
@@ -302,6 +346,22 @@ namespace Flax.Build
         public static bool WithDotNet(NativeCpp.BuildOptions options)
         {
             return UseDotNet;
+        }
+
+        public static bool WithSDL(NativeCpp.BuildOptions options)
+        {
+            switch (options.Platform.Target)
+            {
+            case TargetPlatform.Windows:
+                return UseSDL && WindowsConfiguration.UseSDL;
+            case TargetPlatform.Mac:
+                return UseSDL && MacConfiguration.UseSDL;
+            case TargetPlatform.Linux:
+                return UseSDL && LinuxConfiguration.UseSDL;
+            case TargetPlatform.Web:
+                return true;
+            default: return false;
+            }
         }
     }
 }

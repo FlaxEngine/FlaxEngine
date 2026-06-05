@@ -81,8 +81,8 @@ namespace Flax.Deps.Dependencies
                     {
                         var envVars = new Dictionary<string, string>
                         {
-                            { "CC", "clang-" + Configuration.LinuxClangMinVer },
-                            { "CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer },
+                            { "CC", "clang-" + LinuxConfiguration.ClangMinVer },
+                            { "CC_FOR_BUILD", "clang-" + LinuxConfiguration.ClangMinVer },
                             { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
                         };
 

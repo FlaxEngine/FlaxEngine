@@ -272,6 +272,7 @@ String Asset::ToString() const
 
 void Asset::OnDeleteObject()
 {
+    PROFILE_CPU_NAMED("Asset.Unload");
     ASSERT(IsInMainThread());
 
     // Send event to the gameplay so it can release handle to this asset
@@ -318,7 +319,7 @@ void Asset::OnDeleteObject()
 
         // Delete file
         if (!IsVirtual())
-            Content::deleteFileSafety(path, id);
+            Content::deleteFileSafety(path, &id);
     }
 #endif
 }
@@ -585,7 +586,8 @@ void Asset::startLoading()
 {
     PROFILE_MEM(ContentAssets);
     ASSERT(!IsLoaded());
-    ASSERT(Platform::AtomicRead(&_loadingTask) == 0);
+    auto task = (Task*)Platform::AtomicRead(&_loadingTask);
+    ASSERT(task == nullptr || task->IsFinished() || task->IsCanceled());
     auto loadingTask = createLoadingTask();
     ASSERT(loadingTask != nullptr);
     Platform::AtomicStore(&_loadingTask, (intptr)loadingTask);

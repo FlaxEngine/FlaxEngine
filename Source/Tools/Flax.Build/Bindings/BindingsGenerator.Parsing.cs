@@ -18,6 +18,7 @@ namespace Flax.Build.Bindings
             public Stack<ApiTypeInfo> ScopeTypeStack;
             public Stack<AccessLevel> ScopeAccessStack;
             public Dictionary<string, string> PreprocessorDefines;
+            public bool PreprocessorWaitForElse;
             public List<string> StringCache;
 
             public ApiTypeInfo ValidScopeInfoFromStack
@@ -60,6 +61,15 @@ namespace Flax.Build.Bindings
         {
             // Make it a link clickable in Visual Studio build output
             return $"{context.File.Name}({context.Tokenizer.CurrentLine}): {msg}";
+        }
+
+        private static string GetBuildErrorLocation(ApiTypeInfo typeInfo, string msg)
+        {
+            // Make it a link clickable in Visual Studio build output
+            var file = typeInfo.File;
+            if (file != null)
+                return $"{file.Name}(0): {msg}";
+            return msg;
         }
 
         private static string[] ParseComment(ref ParsingContext context)
@@ -1042,7 +1052,8 @@ namespace Flax.Build.Bindings
                 propertyInfo.Getter = functionInfo;
             else
                 propertyInfo.Setter = functionInfo;
-            propertyInfo.DeprecatedMessage = functionInfo.DeprecatedMessage;
+            if (propertyInfo.DeprecatedMessage == null)
+                propertyInfo.DeprecatedMessage = functionInfo.DeprecatedMessage;
             propertyInfo.IsHidden |= functionInfo.IsHidden;
 
             if (propertyInfo.Getter != null && propertyInfo.Setter != null)

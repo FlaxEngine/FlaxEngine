@@ -66,6 +66,9 @@ namespace Flax.Deps.Dependencies
             var commit = "aeece2f609db959d1c5e43e4f00bd177ea130575"; // 4.6.1
             CloneGitRepo(root, "https://github.com/ARM-software/astc-encoder.git", commit);
 
+            // Fix compilation on macOS
+            Utilities.ReplaceInFile(Path.Combine(root, "Source/cmake_core.cmake"), "-ffp-model=precise", "");
+
             foreach (var platform in options.Platforms)
             {
                 foreach (var architecture in options.Architectures)
@@ -84,14 +87,14 @@ namespace Flax.Deps.Dependencies
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         Utilities.FileCopy(Path.Combine(buildDir, "Source/Release", lib), Path.Combine(depsFolder, "astcenc.lib"));
                         break;
-                        }
+                    }
                     case TargetPlatform.Mac:
                     {
                         string buildDir = Path.Combine(root, "build-" + architecture);
                         var isa = architecture == TargetArchitecture.ARM64 ? "-DASTCENC_ISA_NEON=ON" : "-DASTCENC_ISA_SSE2=ON";
                         var lib = architecture == TargetArchitecture.ARM64 ? "libastcenc-neon-static.a" : "libastcenc-sse2-static.a";
                         SetupDirectory(buildDir, true);
-                        RunCmake(buildDir, platform, architecture, ".. -DCMAKE_BUILD_TYPE=Release -DASTCENC_UNIVERSAL_BUILD=OFF -DASTCENC_UNIVERSAL_BINARY=OFF " + isa);
+                        RunCmake(buildDir, platform, architecture, ".. -DCMAKE_BUILD_TYPE=Release -DASTCENC_UNIVERSAL_BUILD=OFF -DASTCENC_UNIVERSAL_BINARY=OFF -DASTCENC_INVARIANCE=OFF " + isa);
                         BuildCmake(buildDir);
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         Utilities.FileCopy(Path.Combine(buildDir, "Source", lib), Path.Combine(depsFolder, "libastcenc.a"));

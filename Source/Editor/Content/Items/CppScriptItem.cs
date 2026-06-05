@@ -20,7 +20,7 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public override string TypeDescription => Path.EndsWith(".h") ? "C++ Header File" : "C++ Source Code";
+        public override string TypeDescription => Path.EndsWith(".h") || Path.EndsWith(".hpp") ? "C++ Header File" : "C++ Source Code";
 
         /// <inheritdoc />
         public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.CPPScript128;

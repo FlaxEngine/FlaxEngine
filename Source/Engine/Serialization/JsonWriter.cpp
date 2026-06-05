@@ -2,10 +2,18 @@
 
 #include "JsonWriter.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Core/Types/CommonValue.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Core/Math/Vector2.h"
+#include "Engine/Core/Math/Vector3.h"
+#include "Engine/Core/Math/Vector4.h"
 #include "Engine/Core/Math/Color.h"
+#include "Engine/Core/Math/Ray.h"
 #include "Engine/Core/Math/Plane.h"
+#include "Engine/Core/Math/Matrix.h"
+#include "Engine/Core/Math/Rectangle.h"
+#include "Engine/Core/Math/Transform.h"
+#include "Engine/Core/Math/BoundingBox.h"
+#include "Engine/Core/Math/BoundingSphere.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Level/Prefabs/Prefab.h"
 #include "Engine/Level/SceneObject.h"
@@ -243,84 +251,6 @@ void JsonWriter::Matrix(const ::Matrix& value)
     Float(value.M44);
     EndObject();
 }
-
-PRAGMA_DISABLE_DEPRECATION_WARNINGS
-void JsonWriter::CommonValue(const ::CommonValue& value)
-{
-    // [Deprecated on 31.07.2020, expires on 31.07.2022]
-    StartObject();
-
-    JKEY("Type");
-    Int((int32)value.Type);
-
-    JKEY("Value");
-    switch (value.Type)
-    {
-    case CommonType::Bool:
-        Bool(value.AsBool);
-        break;
-    case CommonType::Integer:
-        Int(value.AsInteger);
-        break;
-    case CommonType::Float:
-        Float(value.AsFloat);
-        break;
-    case CommonType::Vector2:
-        Vector2(value.AsVector2);
-        break;
-    case CommonType::Vector3:
-        Vector3(value.AsVector3);
-        break;
-    case CommonType::Vector4:
-        Vector4(value.AsVector4);
-        break;
-    case CommonType::Color:
-        Color(value.AsColor);
-        break;
-    case CommonType::Guid:
-        Guid(value.AsGuid);
-        break;
-    case CommonType::String:
-        String(value.AsString);
-        break;
-    case CommonType::Box:
-        BoundingBox(value.AsBox);
-        break;
-    case CommonType::Rotation:
-        Quaternion(value.AsRotation);
-        break;
-    case CommonType::Transform:
-        Transform(value.AsTransform);
-        break;
-    case CommonType::Sphere:
-        BoundingSphere(value.AsSphere);
-        break;
-    case CommonType::Rectangle:
-        Rectangle(value.AsRectangle);
-        break;
-    case CommonType::Ray:
-        Ray(value.AsRay);
-        break;
-    case CommonType::Pointer:
-        Int64((int64)value.AsPointer);
-        break;
-    case CommonType::Matrix:
-        Matrix(value.AsMatrix);
-        break;
-    case CommonType::Blob:
-        Blob(value.AsBlob.Data, value.AsBlob.Length);
-        break;
-    case CommonType::Object:
-        Guid(value.GetObjectId());
-        break;
-    default:
-        CRASH;
-        break;
-    }
-
-    EndObject();
-}
-PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 void JsonWriter::Transform(const ::Transform& value)
 {

@@ -7,36 +7,11 @@
 class ScriptingObject;
 
 /// <summary>
-/// Network driver implementations enum.
-/// [Deprecated in v1.3]
-/// </summary>
-API_ENUM(Namespace="FlaxEngine.Networking") enum class DEPRECATED() NetworkDriverType
-{
-    /// <summary>
-    /// Invalid network driver implementation.
-    /// </summary>
-    Undefined = 0,
-
-    /// <summary>
-    /// ENet library based network driver implementation.
-    /// </summary>
-    ENet
-};
-
-/// <summary>
 /// Low-level network configuration structure. Provides settings for the network driver and all internal components.
 /// </summary>
 API_STRUCT(Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkConfig
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkConfig);
-
-    /// <summary>
-    /// The network driver that will be used to create the peer.
-    /// To allow two peers to connect, they must use the same host.
-    /// [Deprecated in v1.3]
-    /// </summary>
-    API_FIELD()
-    DEPRECATED("Use NetworkDriver field instead") NetworkDriverType NetworkDriverType;
 
     /// <summary>
     /// The network driver instance (implements INetworkDriver) that will be used to create and manage the peer, send and receive messages.
@@ -81,15 +56,4 @@ API_STRUCT(Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkConfi
     /// </remarks>
     API_FIELD()
     uint16 MessagePoolSize = 2048;
-
-    // Ignore deprecation warnings in defaults
-    PRAGMA_DISABLE_DEPRECATION_WARNINGS
-    NetworkConfig()
-    {
-        NetworkDriverType = NetworkDriverType::ENet;
-    }
-    NetworkConfig(const NetworkConfig& other) = default;
-    NetworkConfig(NetworkConfig&& other) = default;
-    NetworkConfig& operator=(const NetworkConfig& other) = default;
-    PRAGMA_ENABLE_DEPRECATION_WARNINGS
 };

@@ -766,7 +766,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
                 structureValue = Variant::Cast(structureValue, typeVariantType);
         }
         structureValue.InvertInline(); // Extract any Float3/Int32 into Structure type from inlined format
-        const ScriptingTypeHandle structureValueTypeHandle = Scripting::FindScriptingType(structureValue.Type.GetTypeName());
+        const ScriptingTypeHandle structureValueTypeHandle = structureValue.Type.GetScriptingType();
         if (structureValue.Type.Type != VariantType::Structure || typeHandle != structureValueTypeHandle)
         {
             OnError(node, box, String::Format(TEXT("Cannot unpack value of type {0} to structure of type {1}"), structureValue.Type, typeName));
@@ -952,7 +952,7 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
 #define SAMPLE_CURVE(id, curves, type, graphType) \
 		case id: \
 		{ \
-			const auto& curve = GetCurrentGraph()->curves[node->Data.Curve.CurveIndex]; \
+			const auto& curve = GetCurrentGraph()->curves[node->CurveIndex]; \
 			const float time = (float)tryGetValue(node->GetBox(0), Value::Zero); \
 			value.Type = VariantType(VariantType::graphType); \
 			curve.Evaluate(*(type*)value.AsData, time, false); \
@@ -1014,6 +1014,9 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
             break;
         case PlatformType::iOS:
             boxId = 12;
+            break;
+        case PlatformType::Web:
+            boxId = 13;
             break;
         default: ;
         }

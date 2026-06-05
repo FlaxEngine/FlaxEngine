@@ -98,8 +98,10 @@ class FLAXENGINE_API FileSystemBase
     /// Gets the size of the directory (in bytes) defined by size of all files contained by it.
     /// </summary>
     /// <param name="path">Directory path.</param>
+    /// <param name="searchPattern">Custom search pattern to use during that operation Use asterisk character (*) for name-based filtering (eg. `*.txt` to find all files with `.txt` extension).</param>
+    /// <param name="option">Additional search options that define rules.</param>
     /// <returns>Amount of bytes in directory, or 0 if failed.</returns>
-    static uint64 GetDirectorySize(const StringView& path);
+    static uint64 GetDirectorySize(const StringView& path, const Char* searchPattern = TEXT("*"), DirectorySearchOption option = DirectorySearchOption::AllDirectories);
 
 public:
     /// <summary>

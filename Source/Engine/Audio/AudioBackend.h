@@ -20,6 +20,8 @@ public:
         None = 0,
         // Supports multi-channel (incl. stereo) audio playback for spatial sources (3D), otherwise 3d audio needs to be in mono format.
         SpatialMultiChannel = 1,
+        // Supports HRTF audio.
+        HRTF = 2,
     };
 
     static AudioBackend* Instance;

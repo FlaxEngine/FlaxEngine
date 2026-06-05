@@ -267,15 +267,26 @@ namespace Flax.Build
                 break;
             }
 
-            options.CompileEnv.EnableExceptions = true; // TODO: try to disable this!
-            options.CompileEnv.Sanitizers = Configuration.Sanitizers;
+            switch (options.Platform.Target)
+            {
+            case TargetPlatform.Windows:
+            case TargetPlatform.XboxOne:
+            case TargetPlatform.XboxScarlett:
+            case TargetPlatform.UWP:
+            case TargetPlatform.Linux:
+            case TargetPlatform.iOS:
+            case TargetPlatform.Mac:
+                options.CompileEnv.EnableExceptions = true;
+                break;
+            }
+            options.CompileEnv.RuntimeTypeInfo = true; // TODO: try migrating from dynamic_cast to casting via ScriptingType and skip RTTI
+            options.CompileEnv.Sanitizers |= Configuration.Sanitizers;
             switch (options.Configuration)
             {
             case TargetConfiguration.Debug:
                 options.CompileEnv.PreprocessorDefinitions.Add("BUILD_DEBUG");
                 options.CompileEnv.FunctionLevelLinking = false;
                 options.CompileEnv.Optimization = false;
-                options.CompileEnv.FavorSizeOrSpeed = FavorSizeOrSpeed.Neither;
                 options.CompileEnv.DebugInformation = true;
                 options.CompileEnv.RuntimeChecks = true;
                 options.CompileEnv.StringPooling = false;
@@ -293,7 +304,8 @@ namespace Flax.Build
                 options.CompileEnv.PreprocessorDefinitions.Add("BUILD_DEVELOPMENT");
                 options.CompileEnv.FunctionLevelLinking = true;
                 options.CompileEnv.Optimization = true;
-                options.CompileEnv.FavorSizeOrSpeed = FavorSizeOrSpeed.FastCode;
+                if (options.CompileEnv.FavorSizeOrSpeed == FavorSizeOrSpeed.Neither)
+                    options.CompileEnv.FavorSizeOrSpeed = FavorSizeOrSpeed.FastCode;
                 options.CompileEnv.DebugInformation = true;
                 options.CompileEnv.RuntimeChecks = false;
                 options.CompileEnv.StringPooling = true;
@@ -311,7 +323,8 @@ namespace Flax.Build
                 options.CompileEnv.PreprocessorDefinitions.Add("BUILD_RELEASE");
                 options.CompileEnv.FunctionLevelLinking = true;
                 options.CompileEnv.Optimization = true;
-                options.CompileEnv.FavorSizeOrSpeed = FavorSizeOrSpeed.FastCode;
+                if (options.CompileEnv.FavorSizeOrSpeed == FavorSizeOrSpeed.Neither)
+                    options.CompileEnv.FavorSizeOrSpeed = FavorSizeOrSpeed.FastCode;
                 options.CompileEnv.DebugInformation = false;
                 options.CompileEnv.RuntimeChecks = false;
                 options.CompileEnv.StringPooling = true;
