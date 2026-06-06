@@ -829,15 +829,15 @@ namespace FlaxEditor.Modules
             projectPath = projectPath.Replace('/', '\\');
 #endif
 
-            string largeWorld = "Large Worlds Disabled";
+            string largeWorld = "";
 #if USE_LARGE_WORLDS
-            largeWorld = "Large Worlds Enabled";
+            largeWorld = "\nLarge Worlds Enabled";
 #endif
 
             WindowDecorations = new MainWindowDecorations(mainWindow, !Utilities.Utils.UseCustomWindowDecorations(true))
             {
                 Parent = mainWindow,
-                IconTooltipText = $"{mainWindow.RootWindow.Title}\nPath {projectPath}\n\nEngine Version {Globals.EngineVersion}\n{largeWorld}\nConfiguration {configuration}\n\nGraphics {GPUDevice.Instance.RendererType}{driver}",
+                IconTooltipText = $"{mainWindow.RootWindow.Title}\nPath {projectPath}\n\nEngine Version {Globals.EngineVersion}{largeWorld}\nConfiguration {configuration}\n\nGraphics {GPUDevice.Instance.RendererType}{driver}",
             };
         }
 
