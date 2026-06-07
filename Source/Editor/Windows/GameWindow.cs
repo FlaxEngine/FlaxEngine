@@ -821,7 +821,8 @@ namespace FlaxEditor.Windows
         {
             base.Draw();
 
-            if (Camera.MainCamera == null)
+            var mainRenderTask = MainRenderTask.Instance;
+            if (Camera.MainCamera == null && (mainRenderTask == null || !mainRenderTask.IsCustomRendering))
             {
                 var style = Style.Current;
                 Render2D.DrawText(style.FontLarge, "No camera", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
