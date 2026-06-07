@@ -82,9 +82,19 @@ namespace Flax.Deps.Dependencies
             CloneGitRepoFast(root, "https://github.com/FlaxEngine/glslang.git");
 
             // Setup the external sources
-            // Requires distutils (pip install setuptools)
+            bool canRetry = true;
+            RETRY:
             if (Utilities.Run(BuildPlatform != TargetPlatform.Mac ? "python" : "python3", "update_glslang_sources.py", null, root, Utilities.RunOptions.ConsoleLogOutput) != 0)
+            {
+                if (canRetry)
+                {
+                    // Requires distutils (pip install setuptools)
+                    canRetry = false;
+                    Utilities.Run("pip", "install setuptools", null, root, Utilities.RunOptions.ConsoleLogOutput);
+                    goto RETRY;
+                }
                 throw new Exception("Failed to update glslang sources, make sure setuptools python package is installed.");
+            }
 
             foreach (var platform in options.Platforms)
             {
