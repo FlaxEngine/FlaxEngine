@@ -213,5 +213,22 @@ public class GraphicsDeviceVulkan : GraphicsDeviceBaseModule
             options.PrivateDependencies.Add("volk");
             break;
         }
+
+        if (RenderPerf.Use(options))
+        {
+            string perfSdk = Environment.GetEnvironmentVariable("NVPERF_SDK_PATH");
+            if (string.IsNullOrEmpty(perfSdk))
+                perfSdk = @"C:\Users\nproc\Downloads\PerfSDK_2025_5";
+
+            string perfInclude = Path.Combine(perfSdk, "redist", "include");
+            if (Directory.Exists(perfInclude))
+            {
+                options.PublicDefinitions.Add("COMPILE_WITH_RENDER_PERF_NVPERF=1");
+                options.PrivateIncludePaths.Add(perfInclude);
+                options.PrivateIncludePaths.Add(Path.Combine(perfInclude, "windows-desktop-x64"));
+                options.PrivateIncludePaths.Add(Path.Combine(perfSdk, "redist", "NvPerfUtility", "include"));
+                options.PrivateIncludePaths.Add(Path.Combine(perfSdk, "Samples", "NvPerfUtility", "imports", "rapidyaml-0.4.0"));
+            }
+        }
     }
 }

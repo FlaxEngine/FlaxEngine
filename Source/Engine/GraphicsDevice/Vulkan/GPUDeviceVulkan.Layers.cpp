@@ -6,6 +6,9 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/ArrayExtensions.h"
 #include "Engine/Core/Collections/Sorting.h"
+#if COMPILE_WITH_RENDER_PERF_NVPERF
+#include "RenderPerfVulkanExtensions.h"
+#endif
 
 #if GRAPHICS_API_VULKAN
 
@@ -404,6 +407,16 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
         }
     }
 
+#if COMPILE_WITH_RENDER_PERF_NVPERF
+    {
+        Array<const char*> availableExtensions;
+        availableExtensions.EnsureCapacity(foundUniqueExtensions.Count());
+        for (int32 i = 0; i < foundUniqueExtensions.Count(); i++)
+            availableExtensions.Add(foundUniqueExtensions[i].Get());
+        RenderPerfAppendVulkanInstanceExtensions(outInstanceExtensions, availableExtensions, VULKAN_API_VERSION);
+    }
+#endif
+
     TrimDuplicates(outInstanceLayers);
     if (outInstanceLayers.HasItems())
     {
@@ -573,6 +586,14 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
             outDeviceExtensions.Add(GDeviceExtensions[i]);
         }
     }
+
+#if COMPILE_WITH_RENDER_PERF_NVPERF
+    {
+        VkPhysicalDeviceProperties gpuProps;
+        vkGetPhysicalDeviceProperties(gpu, &gpuProps);
+        RenderPerfAppendVulkanDeviceExtensions(Instance, gpu, outDeviceExtensions, availableExtensions, gpuProps.apiVersion);
+    }
+#endif
 
     if (outDeviceExtensions.HasItems())
     {

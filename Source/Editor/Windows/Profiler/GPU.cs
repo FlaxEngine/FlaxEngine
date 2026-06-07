@@ -147,6 +147,13 @@ namespace FlaxEditor.Windows.Profiler
             return ((long)x).ToString("###,###,###");
         }
 
+#if COMPILE_WITH_RENDER_PERF
+        private static void OnGpuRegionClicked(string regionName, float gpuTimeMs, long drawCalls, long triangles, long vertices)
+        {
+            GpuProfilerPerfSdk.TryOpen(regionName, gpuTimeMs, drawCalls, triangles, vertices);
+        }
+#endif
+
         /// <inheritdoc />
         public override void Clear()
         {
@@ -216,6 +223,11 @@ namespace FlaxEditor.Windows.Profiler
             }
             control.Bounds = new Rectangle(x, e.Depth * Timeline.Event.DefaultHeight, width, Timeline.Event.DefaultHeight - 1);
             control.Name = name;
+            control.GpuTimeMs = (float)e.Time;
+            control.DrawCalls = e.Stats.DrawCalls + e.Stats.DispatchCalls;
+            control.Triangles = e.Stats.Triangles;
+            control.Vertices = e.Stats.Vertices;
+            control.RegionClicked = OnGpuRegionClicked;
             control.TooltipText = string.Format("{0}, {1} ms", name, ((int)(e.Time * 10000.0) / 10000.0f));
             control.Parent = parent;
 
@@ -354,7 +366,7 @@ namespace FlaxEditor.Windows.Profiler
                 }
                 else
                 {
-                    row = new Row
+                    row = new ClickableRow
                     {
                         Values = new object[6],
                         BackgroundColors = new Color[6],
@@ -362,6 +374,11 @@ namespace FlaxEditor.Windows.Profiler
                     for (int k = 0; k < row.BackgroundColors.Length; k++)
                         row.BackgroundColors[k] = Color.Transparent;
                 }
+
+                float gpuTimeMs = (e.Time * 10000.0f) / 10000.0f;
+                long drawCalls = e.Stats.DrawCalls + e.Stats.DispatchCalls;
+                long triangles = e.Stats.Triangles;
+                long vertices = e.Stats.Vertices;
                 {
                     // Event
                     row.Values[0] = name;
@@ -372,17 +389,24 @@ namespace FlaxEditor.Windows.Profiler
                     row.BackgroundColors[1] = Color.Red.AlphaMultiplied(Mathf.Min(1, rowTimePerc) * 0.5f);
 
                     // GPU ms
-                    row.Values[2] = (e.Time * 10000.0f) / 10000.0f;
+                    row.Values[2] = gpuTimeMs;
 
                     // Draw Calls
-                    row.Values[3] = e.Stats.DrawCalls + e.Stats.DispatchCalls;
+                    row.Values[3] = drawCalls;
 
                     // Triangles
-                    row.Values[4] = e.Stats.Triangles;
+                    row.Values[4] = triangles;
 
                     // Vertices
-                    row.Values[5] = e.Stats.Vertices;
+                    row.Values[5] = vertices;
                 }
+#if COMPILE_WITH_RENDER_PERF
+                if (row is ClickableRow clickableRow)
+                {
+                    clickableRow.RowLeftClick = _ =>
+                        GpuProfilerPerfSdk.TryOpen(name, gpuTimeMs, drawCalls, triangles, vertices);
+                }
+#endif
                 row.Depth = e.Depth;
                 row.Width = _table.Width;
                 row.Visible = e.Depth < 3;

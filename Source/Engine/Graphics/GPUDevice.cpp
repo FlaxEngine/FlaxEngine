@@ -26,6 +26,9 @@
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Renderer/RenderList.h"
+#if COMPILE_WITH_RENDER_PERF
+#include "Engine/RenderPerf/RenderPerfTools.h"
+#endif
 #include "Engine/Scripting/Enums.h"
 
 GPUResourcePropertyBase::~GPUResourcePropertyBase()
@@ -794,6 +797,9 @@ void GPUDevice::Draw()
     // Perform actual drawing
     Engine::Draw();
     EngineService::OnDraw();
+#if COMPILE_WITH_RENDER_PERF
+    RenderPerfTools::OnGpuFrameBegin(context);
+#endif
     RenderTask::DrawAll();
 
     // End frame
@@ -803,6 +809,10 @@ void GPUDevice::Draw()
     context->FrameEnd();
 
     DrawEnd();
+#if COMPILE_WITH_RENDER_PERF
+    // After queue submit (present/flush) so Vulkan mini-trace frame markers align with completed work.
+    RenderPerfTools::OnGpuFrameEnd(context);
+#endif
 }
 
 void GPUDevice::Dispose()

@@ -20,6 +20,9 @@
 #include "QueueVulkan.h"
 #include "Config.h"
 #include "CmdBufferVulkan.h"
+#if COMPILE_WITH_RENDER_PERF_NVPERF
+#include "RenderPerfVulkanExtensions.h"
+#endif
 #include "FlaxEngine.Gen.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Utilities.h"
@@ -1534,6 +1537,16 @@ void* GPUDeviceVulkan::GetNativePtr() const
     return _nativePtr;
 }
 
+void* GPUDeviceVulkan::GetNativeCommandQueue() const
+{
+    return GraphicsQueue ? (void*)GraphicsQueue->GetHandle() : nullptr;
+}
+
+uint32 GPUDeviceVulkan::GetNativeCommandQueueFamilyIndex() const
+{
+    return GraphicsQueue ? GraphicsQueue->GetFamilyIndex() : 0;
+}
+
 static int32 GetMaxSampleCount(VkSampleCountFlags counts)
 {
     if (counts & VK_SAMPLE_COUNT_64_BIT)
@@ -1685,6 +1698,10 @@ bool GPUDeviceVulkan::Init()
         resetFeatures.hostQueryReset = VK_TRUE;
         deviceInfo.pNext = &resetFeatures;
     }
+#endif
+
+#if COMPILE_WITH_RENDER_PERF_NVPERF
+    RenderPerfChainVulkanDeviceCreateInfo(&deviceInfo, gpu, deviceExtensions);
 #endif
 
     // Create the device

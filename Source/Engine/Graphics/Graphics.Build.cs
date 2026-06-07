@@ -119,6 +119,9 @@ public class Graphics : EngineModule
             options.PrivateDefinitions.Add("COMPILE_WITH_GPU_PARTICLES");
         }
 
+        if (RenderPerf.Use(options))
+            options.PublicDependencies.Add("RenderPerf");
+
         // Manually include file with shared DirectX code
         if (options.PrivateDependencies.Contains("GraphicsDeviceDX11") ||
             options.PrivateDependencies.Contains("GraphicsDeviceDX12"))

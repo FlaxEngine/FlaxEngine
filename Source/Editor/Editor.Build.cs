@@ -44,6 +44,8 @@ public class Editor : EditorModule
         options.ScriptingAPI.SystemReferences.Add("System.Diagnostics.Process");
         if (Profiler.Use(options))
             options.ScriptingAPI.Defines.Add("USE_PROFILER");
+        if (RenderPerf.Use(options))
+            options.ScriptingAPI.Defines.Add("COMPILE_WITH_RENDER_PERF");
 
         // Enable optimizations for Editor, disable this for debugging the editor
         if (options.Configuration == TargetConfiguration.Development)

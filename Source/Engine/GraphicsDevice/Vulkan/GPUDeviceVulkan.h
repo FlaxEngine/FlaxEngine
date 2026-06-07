@@ -567,6 +567,8 @@ public:
     GPUContext* GetMainContext() override;
     GPUAdapter* GetAdapter() const override;
     void* GetNativePtr() const override;
+    void* GetNativeCommandQueue() const override;
+    uint32 GetNativeCommandQueueFamilyIndex() const override;
     bool Init() override;
     void DrawBegin() override;
     void Dispose() override;

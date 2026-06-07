@@ -186,6 +186,10 @@ public:
     {
         return _device;
     }
+    void* GetNativeCommandQueue() const override
+    {
+        return GetCommandQueueDX12();
+    }
     bool Init() override;
     void DrawBegin() override;
     void RenderEnd() override;

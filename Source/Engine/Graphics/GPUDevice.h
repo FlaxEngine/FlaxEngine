@@ -272,6 +272,22 @@ public:
     API_PROPERTY() virtual void* GetNativePtr() const = 0;
 
     /// <summary>
+    /// Gets the native pointer to the main graphics command queue (ID3D12CommandQueue* or VkQueue as void*). Null if not applicable.
+    /// </summary>
+    virtual void* GetNativeCommandQueue() const
+    {
+        return nullptr;
+    }
+
+    /// <summary>
+    /// Gets the Vulkan queue family index for <see cref="GetNativeCommandQueue"/>. Zero for non-Vulkan backends.
+    /// </summary>
+    virtual uint32 GetNativeCommandQueueFamilyIndex() const
+    {
+        return 0;
+    }
+
+    /// <summary>
     /// Gets the amount of memory usage by all the GPU resources (in bytes).
     /// </summary>
     API_PROPERTY() uint64 GetMemoryUsage() const;

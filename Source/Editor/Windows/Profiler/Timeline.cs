@@ -42,6 +42,32 @@ namespace FlaxEditor.Windows.Profiler
             private Color _color;
             private string _name;
             private float _nameLength = -1;
+            private bool _leftMouseDown;
+
+            /// <summary>
+            /// GPU time in milliseconds for this event (from profiler).
+            /// </summary>
+            public float GpuTimeMs;
+
+            /// <summary>
+            /// Draw calls count for this event.
+            /// </summary>
+            public long DrawCalls;
+
+            /// <summary>
+            /// Triangles count for this event.
+            /// </summary>
+            public long Triangles;
+
+            /// <summary>
+            /// Vertices count for this event.
+            /// </summary>
+            public long Vertices;
+
+            /// <summary>
+            /// Occurs when user clicks this timeline event.
+            /// </summary>
+            public System.Action<string, float, long, long, long> RegionClicked;
 
             /// <summary>
             /// The default height of the event.
@@ -93,6 +119,39 @@ namespace FlaxEditor.Windows.Profiler
                     Render2D.DrawText(style.FontMedium, _name, bounds, Style.Current.Foreground, TextAlignment.Center, TextAlignment.Center);
                     Render2D.PopClip();
                 }
+            }
+
+            /// <inheritdoc />
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && Bounds.Contains(location))
+                {
+                    _leftMouseDown = true;
+                    return true;
+                }
+
+                return base.OnMouseDown(location, button);
+            }
+
+            /// <inheritdoc />
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && _leftMouseDown && Bounds.Contains(location))
+                {
+                    _leftMouseDown = false;
+                    RegionClicked?.Invoke(_name, GpuTimeMs, DrawCalls, Triangles, Vertices);
+                    return true;
+                }
+
+                _leftMouseDown = false;
+                return base.OnMouseUp(location, button);
+            }
+
+            /// <inheritdoc />
+            public override void OnMouseLeave()
+            {
+                _leftMouseDown = false;
+                base.OnMouseLeave();
             }
         }
 

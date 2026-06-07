@@ -125,6 +125,13 @@ namespace FlaxEditor.Modules
         /// </summary>
         public ProfilerWindow ProfilerWin;
 
+#if COMPILE_WITH_RENDER_PERF
+        /// <summary>
+        /// The PerfSDK metrics window.
+        /// </summary>
+        public PerfSdkMetricsWindow PerfSdkMetricsWin;
+#endif
+
         /// <summary>
         /// The editor options window.
         /// </summary>
@@ -807,6 +814,9 @@ namespace FlaxEditor.Modules
             GraphicsQualityWin = new GraphicsQualityWindow(Editor);
             GameCookerWin = new GameCookerWindow(Editor);
             ProfilerWin = new ProfilerWindow(Editor);
+#if COMPILE_WITH_RENDER_PERF
+            PerfSdkMetricsWin = new PerfSdkMetricsWindow(Editor);
+#endif
             EditorOptionsWin = new EditorOptionsWindow(Editor);
             PluginsWin = new PluginsWindow(Editor);
             VisualScriptDebuggerWin = new VisualScriptDebuggerWindow(Editor);
