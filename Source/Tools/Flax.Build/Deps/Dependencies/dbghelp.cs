@@ -49,6 +49,9 @@ namespace Flax.Deps.Dependencies
         }
 
         /// <inheritdoc />
+        public override bool BuildByDefault => false;
+
+        /// <inheritdoc />
         public override void Build(BuildOptions options)
         {
             foreach (var platform in options.Platforms)
