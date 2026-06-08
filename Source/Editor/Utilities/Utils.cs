@@ -1293,6 +1293,12 @@ namespace FlaxEditor.Utilities
             };
 #elif PLATFORM_WINDOWS
             return !Editor.Instance.Options.Options.Interface.UseNativeWindowSystem;
+#elif PLATFORM_MAC
+            return Editor.Instance.Options.Options.Interface.WindowDecorations switch
+            {
+                Options.InterfaceOptions.WindowDecorationsType.ClientSide => true,
+                _ => false
+            };
 #else
             return false;
 #endif
