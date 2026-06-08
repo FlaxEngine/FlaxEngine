@@ -92,7 +92,7 @@ namespace Flax.Deps.Dependencies
                 os = "windows";
                 runtimeFlavor = "Mono";
                 buildMonoAotCross = true;
-                var defines = "-D_GAMING_XBOX=1-DDISABLE_JIT=1-DENABLE_PERFTRACING=0-DDISABLE_REFLECTION_EMIT=1-DDISABLE_EVENTPIPE=1-DDISABLE_COM=1-DDISABLE_PROFILER=1-DDISABLE_COMPONENTS=1";
+                var defines = "-D_GAMING_XBOX=1-DDISABLE_JIT=1-DENABLE_PERFTRACING=0-DDISABLE_REFLECTION_EMIT=1-DDISABLE_EVENTPIPE=1-DDISABLE_COM=1-DDISABLE_PROFILER=1-DDISABLE_COMPONENTS=1-DDISABLE_EMBEDDED_PDB=1";
                 defines += targetPlatform == TargetPlatform.XboxScarlett ? "-D_GAMING_XBOX_SCARLETT=1" : "-D_GAMING_XBOX_XBOXONE=1";
                 defines += "-DDISABLE_EXECUTABLES=1-DDISABLE_SHARED_LIBS=1";
                 buildArgs = $" -subset mono+libs -cmakeargs \"{defines}\" /p:FeaturePerfTracing=false /p:FeatureWin32Registry=false /p:FeatureCominteropApartmentSupport=false /p:FeatureManagedEtw=false /p:FeatureManagedEtwChannels=false /p:FeatureEtw=false /p:ApiCompatValidateAssemblies=false";
@@ -188,7 +188,15 @@ namespace Flax.Deps.Dependencies
             {
                 var doc = new XmlDocument();
                 doc.Load(Path.Combine(root, "eng", "Versions.props"));
-                version = doc["Project"]["PropertyGroup"]["ProductVersion"].InnerText;
+                var propertyGroup = doc["Project"]["PropertyGroup"];
+                if (propertyGroup.SelectSingleNode("MajorVersion") != null)
+                {
+                    version = $"{propertyGroup["MajorVersion"].InnerText}.{propertyGroup["MinorVersion"].InnerText}.{propertyGroup["PatchVersion"].InnerText}";
+                }
+                else
+                {
+                    version = propertyGroup["ProductVersion"].InnerText;
+                }
                 Log.Info("Building dotnet/runtime version " + version);
             }
 
@@ -200,7 +208,7 @@ namespace Flax.Deps.Dependencies
             Utilities.Run(Path.Combine(root, buildScript), buildArgs, null, root, Utilities.RunOptions.DefaultTool, envVars);
             if (buildMonoAotCross)
             {
-                buildMonoAotCrossArgs = $"-c {configuration} -rf {runtimeFlavor} -subset mono /p:BuildMonoAotCrossCompiler=true /p:BuildMonoAOTCrossCompilerOnly=true /p:TargetOS={os} /p:HostOS=windows -cmakeargs \"-DCMAKE_CROSSCOMPILING=True\"{buildMonoAotCrossArgs}";
+                buildMonoAotCrossArgs = $"-c {configuration} -rf {runtimeFlavor} -subset mono /p:BuildMonoAotCrossCompiler=true /p:BuildMonoAOTCrossCompilerOnly=true /p:CrossBuild=true /p:MonoCrossAOTTargetOS={os} /p:TargetOS={os} /p:HostOS=windows -cmakeargs \"-DCMAKE_CROSSCOMPILING=True\"{buildMonoAotCrossArgs}";
                 Utilities.Run(Path.Combine(root, buildScript), buildMonoAotCrossArgs, null, root, Utilities.RunOptions.DefaultTool, envVars);
             }
 
@@ -269,6 +277,39 @@ namespace Flax.Deps.Dependencies
                         "lib/System.IO.Compression.Native-Static.lib",
                     };
                     break;
+                case TargetPlatform.PS5:
+                    libs1 = new[]
+                    {
+                        "lib/libmonosgen-2.0.a",
+                        "lib/libmono-profiler-aot.a",
+                    };
+                    libs2 = new[]
+                    {
+                        "lib/libSystem.Globalization.Native.a",
+                        "lib/libSystem.IO.Compression.Native.a",
+                        "lib/libSystem.IO.Ports.Native.a",
+                        "lib/libSystem.Native.a",
+                        "lib/libbrotlicommon.a",
+                        "lib/libbrotlidec.a",
+                        "lib/libbrotlienc.a",
+                        "lib/libz.a",
+                    };
+                    break;
+                case TargetPlatform.PS4:
+                    libs1 = new[]
+                    {
+                        "lib/libmonosgen-2.0.a",
+                        "lib/libmono-profiler-aot.a",
+                    };
+                    libs2 = new[]
+                    {
+                        "lib/libSystem.Globalization.Native.a",
+                        "lib/libSystem.IO.Compression.Native.a",
+                        "lib/libSystem.IO.Ports.Native.a",
+                        "lib/libSystem.Native.a",
+                        "lib/libz.a",
+                    };
+                    break;
                 default:
                     libs1 = new[]
                     {
@@ -296,7 +337,7 @@ namespace Flax.Deps.Dependencies
                 if (buildMonoAotCross)
                 {
                     // AOT compiler
-                    Utilities.FileCopy(Path.Combine(artifacts, "bin", "mono", $"{os}.x64.{configuration}", "cross", $"{(os == "windows" ? "win" : os)}-x64", "mono-aot-cross.exe"), Path.Combine(dstPlatform, "Binaries", "Tools", "mono-aot-cross.exe"));
+                    Utilities.FileCopy(Path.Combine(artifacts, "bin", "mono", $"{os}.x64.{configuration}", "cross", $"{os}-x64", $"{os}-{arch}", "mono-aot-cross.exe"), Path.Combine(dstPlatform, "Binaries", "Tools", "mono-aot-cross.exe"));
                 }
 
                 // Class library
@@ -332,7 +373,7 @@ namespace Flax.Deps.Dependencies
             if (!Directory.Exists(Path.Combine(root, ".git")))
             {
                 CloneGitRepo(root, "https://github.com/FlaxEngine/dotnet-runtime.git", null, null, true);
-                GitCheckout(root, "flax-master-8");
+                GitCheckout(root, "flax-master-10");
                 SetupDirectory(Path.Combine(root, "src", "external"), false);
             }
 
@@ -365,13 +406,13 @@ namespace Flax.Deps.Dependencies
                     case TargetPlatform.XboxOne:
                     case TargetPlatform.XboxScarlett:
                         Build(options, platform, TargetArchitecture.x64);
-                    break;
+                        break;
                     case TargetPlatform.Android:
                         Build(options, platform, TargetArchitecture.ARM64);
-                    break;
+                        break;
                     case TargetPlatform.Switch:
                         Build(options, platform, TargetArchitecture.ARM64);
-                    break;
+                        break;
                     }
                 }
             }

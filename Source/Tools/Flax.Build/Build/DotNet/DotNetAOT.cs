@@ -318,6 +318,9 @@ namespace Flax.Build
                 var dotnetLibPath = Utilities.NormalizePath(Path.GetDirectoryName(coreLibPaths[0]));
                 Log.Info("Class library found in: " + dotnetLibPath);
 
+                // Force include lib used by corlib
+                inputFiles.Add(Path.Combine(dotnetLibPath, "System.Security.Claims.dll"));
+
                 // Build list of assemblies to process (use game assemblies as root to walk over used references from stdlib)
                 var assembliesPaths = new List<string>();
                 if (Configuration.SkipUnusedDotnetLibsPackaging)

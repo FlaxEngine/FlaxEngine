@@ -2077,6 +2077,7 @@ static MonoAssembly* OnMonoAssemblyLoad(const char* aname)
             path = fileName;
         }
     }
+    StringAsANSI<> pathAnsi(path.Get(), path.Length());
 
     // Load assembly
 #if DOTNET_HOST_MONO_DEBUG
@@ -2086,7 +2087,6 @@ static MonoAssembly* OnMonoAssemblyLoad(const char* aname)
     MonoImageOpenStatus status = MONO_IMAGE_IMAGE_INVALID;
     if (FileSystem::FileExists(path))
     {
-        StringAnsi pathAnsi(path);
 #if PLATFORM_IOS
         Array<byte> data;
         File::ReadAllBytes(path, data);
@@ -2098,6 +2098,10 @@ static MonoAssembly* OnMonoAssemblyLoad(const char* aname)
             mono_image_close(assemblyImage);
         }
 #else
+#if PLATFORM_SWITCH
+        fileName.Clear();
+        path.Clear();
+#endif
         assembly = mono_assembly_open(pathAnsi.Get(), &status);
 #endif
     }

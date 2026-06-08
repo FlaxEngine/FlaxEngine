@@ -107,6 +107,17 @@ public class nethost : ThirdPartyModule
                 options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libSystem.IO.Ports.Native.a"));
                 options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libSystem.IO.Compression.Native.a"));
                 options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libSystem.Globalization.Native.a"));
+                if (options.Platform.Target == TargetPlatform.PS5)
+                {
+                    options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libbrotlicommon.a"));
+                    options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libbrotlidec.a"));
+                    options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libbrotlienc.a"));
+                    options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libz.a"));
+                }
+                else if (options.Platform.Target == TargetPlatform.PS4)
+                {
+                    options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libz.a"));
+                }
             }
             break;
         }
