@@ -11,6 +11,7 @@
 #include "Engine/Platform/Base/DragDropHelper.h"
 #endif
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Color32.h"
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
 #include "Engine/Input/Keyboard.h"
