@@ -15,6 +15,7 @@
 #include "Engine/Input/Mouse.h"
 #include "Engine/Input/Keyboard.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/Textures/TextureData.h"
 #include <Cocoa/Cocoa.h>
 #include <AppKit/AppKit.h>
 #include <QuartzCore/CAMetalLayer.h>
@@ -1300,6 +1301,39 @@ void MacWindow::SetCursor(CursorType type)
         }
         [cursor set];
     }
+}
+
+void MacWindow::SetIcon(TextureData& icon)
+{
+    // Get pixels
+    Array<Color32> colorData;
+    icon.GetPixels(colorData);
+
+    // Convert to Cocoa image
+    NSImage* image = [[NSImage alloc] initWithSize:NSMakeSize(icon.Width, icon.Height)];
+    if (image == nil)
+        return;
+    NSBitmapImageRep* rep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
+        pixelsWide:icon.Width
+        pixelsHigh:icon.Height
+        bitsPerSample:8
+        samplesPerPixel:4
+        hasAlpha:YES
+        isPlanar:NO
+        colorSpaceName:NSDeviceRGBColorSpace
+        bytesPerRow:icon.Width * 4
+        bitsPerPixel:32];
+    if (rep == nil)
+        return;
+
+    // Copy the pixels
+    Platform::MemoryCopy([rep bitmapData], colorData.Get(), colorData.Count() * sizeof(Color32));
+
+    // Add the image representation
+    [image addRepresentation:rep];
+
+    // Set app icon
+    [NSApp setApplicationIconImage:image];
 }
 
 #endif

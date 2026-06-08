@@ -63,6 +63,7 @@ public:
     void StartTrackingMouse(bool useMouseScreenOffset) override;
     void EndTrackingMouse() override;
 	void SetCursor(CursorType type) override;
+    void SetIcon(TextureData& icon) override;
 };
 
 #endif
