@@ -84,7 +84,6 @@ namespace FlaxEditor.GUI
             {
                 new PlatformData(PlatformType.Windows, icons.WindowsIcon128, "Windows"),
                 new PlatformData(PlatformType.XboxOne, icons.XBoxOne128, "Xbox One"),
-                new PlatformData(PlatformType.UWP, icons.UWPStore128, "Windows Store"),
                 new PlatformData(PlatformType.Linux, icons.LinuxIcon128, "Linux"),
                 new PlatformData(PlatformType.PS4, icons.PS4Icon128, "PlayStation 4"),
                 new PlatformData(PlatformType.XboxScarlett, icons.XBoxScarletIcon128, "Xbox Scarlett"),
