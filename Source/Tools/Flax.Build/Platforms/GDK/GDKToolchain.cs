@@ -77,8 +77,14 @@ namespace Flax.Build.Platforms
             var paths = Directory.GetDirectories(redistToolsPath, name.Substring(0, 2) + "*");
             if (paths.Length == 0)
                 throw new Exception($"Failed to find MSVC redistribute binaries for toolset '{Toolset}' inside folder '{toolsPath}'");
-            var crtToolset = Toolset > WindowsPlatformToolset.v143 ? WindowsPlatformToolset.v143 : Toolset;
-            redistToolsPath = Path.Combine(paths[0], "x64", "Microsoft.VC" + (int)crtToolset + ".CRT");
+            int crtToolset;
+            for (crtToolset = (int)WindowsPlatformToolset.v145; crtToolset >= (int)Toolset; crtToolset--)
+            {
+                redistToolsPath = Path.Combine(paths[0], "x64", "Microsoft.VC" + (int)crtToolset + ".CRT");
+                if (Directory.Exists(redistToolsPath))
+                    break;
+            }
+            Log.Verbose("GDK CRT toolset version: " + (WindowsPlatformToolset)crtToolset);
             redistToolsPath = Utilities.RemovePathRelativeParts(redistToolsPath);
             options.DependencyFiles.Add(Path.Combine(redistToolsPath, "concrt140.dll"));
             options.DependencyFiles.Add(Path.Combine(redistToolsPath, "msvcp140.dll"));
@@ -90,7 +96,7 @@ namespace Flax.Build.Platforms
             options.DependencyFiles.Add(Path.Combine(redistToolsPath, "vcruntime140_1.dll"));
             if (OpenMP)
             {
-                redistToolsPath = Path.Combine(paths[0], "x64", "Microsoft.VC" + (int)crtToolset + ".OpenMP");
+                redistToolsPath = Path.Combine(paths[0], "x64", "Microsoft.VC" + crtToolset + ".OpenMP");
                 redistToolsPath = Utilities.RemovePathRelativeParts(redistToolsPath);
                 options.DependencyFiles.Add(Path.Combine(redistToolsPath, "vcomp140.dll"));
             }
