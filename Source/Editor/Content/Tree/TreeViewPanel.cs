@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.Options;
+using FlaxEditor.Utilities;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -196,6 +197,11 @@ public class TreeViewPanel : Panel
         var selection = ContentTree.Selection;
         if (selection.Count > 0)
         {
+            if (InputUtils.IsKeyPerformDeletion(key))
+            {
+                Delete();
+                return true;
+            }
             if (key == KeyboardKeys.Return)
             {
                 foreach (var node in selection)

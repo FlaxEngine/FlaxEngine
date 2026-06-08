@@ -6,6 +6,7 @@ using System.Linq;
 using FlaxEditor.GUI.Drag;
 using FlaxEditor.Options;
 using FlaxEditor.SceneGraph;
+using FlaxEditor.Utilities;
 using FlaxEditor.Windows;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -747,6 +748,16 @@ namespace FlaxEditor.Content.GUI
         /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)
         {
+            // Perform deletion
+            if (InputUtils.IsKeyPerformDeletion(key))
+            {
+                if (HasSelection)
+                {
+                    OnDelete?.Invoke(_selection);
+                    return true;
+                }
+            }
+
             // Navigate backward
             if (key == KeyboardKeys.Backspace)
             {
