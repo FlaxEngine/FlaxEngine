@@ -35,12 +35,18 @@ public:
     CmdBufferVulkan* SubmitCmdBuffer = nullptr;
 
     /// <summary>
+    /// The fence counter value for SubmitCmdBuffer at the time it was submitted.
+    /// </summary>
+    uint64 SubmitCmdBufferFenceCounter = 0;
+
+    /// <summary>
     /// The render target surface handle.
     /// </summary>
     GPUTextureViewVulkan Handle;
 
 public:
     void Setup(GPUSwapChainVulkan* window, VkImage backbuffer, PixelFormat format, VkExtent3D extent);
+    void WaitForSubmit();
     void Release();
 
 public:

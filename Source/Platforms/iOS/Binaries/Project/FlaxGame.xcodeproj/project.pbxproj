@@ -295,6 +295,7 @@ ${PBXResourcesGroup}
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = FlaxGame/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "${ProjectName}";
+				INFOPLIST_KEY_CADisableMinimumFrameDurationOnPhone = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -336,6 +337,7 @@ ${PBXResourcesGroup}
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = FlaxGame/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "${ProjectName}";
+				INFOPLIST_KEY_CADisableMinimumFrameDurationOnPhone = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
