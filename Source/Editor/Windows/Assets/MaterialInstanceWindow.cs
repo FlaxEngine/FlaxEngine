@@ -64,8 +64,14 @@ namespace FlaxEditor.Windows.Assets
         [CustomEditor(typeof(ParametersEditor))]
         private sealed class PropertiesProxy
         {
+            private struct ParameterState
+            {
+                public object Value;
+                public bool IsOverride;
+            }
+
             private MaterialBase _restoreBase;
-            private Dictionary<string, object> _restoreParams;
+            private Dictionary<string, ParameterState> _restoreParams;
 
             [EditorDisplay("General"), Tooltip("The base material used to override it's properties")]
             public MaterialBase BaseMaterial
@@ -181,9 +187,16 @@ namespace FlaxEditor.Windows.Assets
                 var material = Window.Asset;
                 _restoreBase = material.BaseMaterial;
                 var parameters = material.Parameters;
-                _restoreParams = new Dictionary<string, object>();
+                _restoreParams = new Dictionary<string, ParameterState>();
                 for (int i = 0; i < parameters.Length; i++)
-                    _restoreParams[parameters[i].Name] = parameters[i].Value;
+                {
+                    var p = parameters[i];
+                    _restoreParams[p.Name] = new ParameterState
+                    {
+                        Value = p.Value,
+                        IsOverride = p.IsOverride,
+                    };
+                }
             }
 
             /// <summary>
@@ -191,7 +204,7 @@ namespace FlaxEditor.Windows.Assets
             /// </summary>
             public void DiscardChanges()
             {
-                if (Window == null)
+                if (Window == null || _restoreParams == null)
                     return;
 
                 var material = Window.Asset;
@@ -200,9 +213,10 @@ namespace FlaxEditor.Windows.Assets
                 for (int i = 0; i < parameters.Length; i++)
                 {
                     var p = parameters[i];
-                    if (p.IsPublic && _restoreParams.TryGetValue(p.Name, out var value))
+                    if (p.IsPublic && _restoreParams.TryGetValue(p.Name, out var state))
                     {
-                        p.Value = value;
+                        p.Value = state.Value;
+                        p.IsOverride = state.IsOverride;
                     }
                 }
             }
