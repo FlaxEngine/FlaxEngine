@@ -157,6 +157,7 @@ namespace FlaxEditor.Windows.Assets
 
             private void Setter(object instance, int index, object value)
             {
+                CheckForNullValue(ref value, _proxy.DefaultValues[_name].GetType());
                 if (_isDefault)
                     _proxy.DefaultValues[_name] = value;
                 else
@@ -251,6 +252,8 @@ namespace FlaxEditor.Windows.Assets
                 typeof(Rectangle),
                 typeof(Matrix),
                 typeof(string),
+                typeof(Texture),
+                typeof(CubeTexture),
             };
 
             public override void Initialize(LayoutElementsContainer layout)
@@ -282,7 +285,7 @@ namespace FlaxEditor.Windows.Assets
                         var property = layout.AddPropertyItem(propertyLabel, tooltip);
                         if (value == null)
                         {
-                            property.Label("null");
+                            property.Label("null").Label.TextColor = Color.Red;
                             continue;
                         }
                         var valueContainer = new VariableValueContainer(_proxy, name, value, false);
@@ -306,7 +309,7 @@ namespace FlaxEditor.Windows.Assets
                         var property = layout.AddPropertyItem(propertyLabel, tooltip);
                         if (value == null)
                         {
-                            property.Label("null");
+                            property.Label("null").Label.TextColor = Color.Red;
                             continue;
                         }
                         var valueContainer = new VariableValueContainer(_proxy, name, value, true);
@@ -369,6 +372,7 @@ namespace FlaxEditor.Windows.Assets
                     Name = Utilities.Utils.IncrementNameNumber("New parameter", x => OnParameterRenameValidate(null, x)),
                     DefaultValue = TypeUtils.GetDefaultValue(new ScriptType(type)),
                 };
+                CheckForNullValue(ref action.DefaultValue, type);
                 _proxy.Window.Undo.AddAction(action);
                 action.Do();
             }
@@ -409,6 +413,26 @@ namespace FlaxEditor.Windows.Assets
                 };
                 _proxy.Window.Undo.AddAction(action);
                 action.Do();
+            }
+        }
+
+        private static void CheckForNullValue(ref object value, Type type)
+        {
+            if (value == null)
+            {
+                // Default values are invalid as Variant type is used in C++ to properly bind the value
+                if (typeof(CubeTexture).IsAssignableFrom(type))
+                {
+                    // Default cube texture
+                    value = FlaxEngine.Content.LoadAsyncInternal<CubeTexture>(EditorAssets.DefaultSkyCubeTexture);
+                }
+                else if (typeof(Texture).IsAssignableFrom(type))
+                {
+                    // Default texture
+                    value = FlaxEngine.Content.LoadAsyncInternal<Texture>("Engine/Textures/BlackTexture");
+                }
+                else
+                    throw new Exception("Null values are not allowed in Gameplay Globals");
             }
         }
 
