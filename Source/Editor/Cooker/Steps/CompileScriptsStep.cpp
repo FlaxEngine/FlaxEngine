@@ -103,6 +103,8 @@ bool CompileScriptsStep::DeployBinaries(CookingData& data, const String& path, c
         }
     }
 
+    const String targetName = JsonTools::GetString(document, "Name", String::Empty);
+
     // Deploy files
     Array<String> files(16);
     const String outputPath = StringUtils::GetDirectoryName(path);
@@ -124,11 +126,26 @@ bool CompileScriptsStep::DeployBinaries(CookingData& data, const String& path, c
     }
     for (auto& file : files)
     {
+        if (file.EndsWith(TEXT(".exe"), StringSearchCase::IgnoreCase))
+        {
+            const String exeName = StringUtils::GetFileNameWithoutExtension(file);
+            if (targetName.HasChars() && exeName.Compare(targetName, StringSearchCase::IgnoreCase) != 0)
+                continue;
+        }
         const String& dstPath = data.Tools->IsNativeCodeFile(data, file) ? data.NativeCodeOutputPath : data.ManagedCodeOutputPath;
         const String dst = dstPath / StringUtils::GetFileName(file);
         if (dst == file)
             continue;
-        if (EditorUtilities::CopyFileIfNewer(dst, file))
+        const bool forceCopy = file.EndsWith(TEXT(".exe"), StringSearchCase::IgnoreCase);
+        if (forceCopy)
+        {
+            if (FileSystem::CopyFile(dst, file))
+            {
+                data.Error(String::Format(TEXT("Failed to copy file from {0} to {1}."), file, dst));
+                return true;
+            }
+        }
+        else if (EditorUtilities::CopyFileIfNewer(dst, file))
         {
             data.Error(String::Format(TEXT("Failed to copy file from {0} to {1}."), file, dst));
             return true;
