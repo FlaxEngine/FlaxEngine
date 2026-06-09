@@ -22,6 +22,7 @@ namespace Flax.Build.Platforms
         {
             TargetPlatform.Windows,
             TargetPlatform.Linux,
+            TargetPlatform.Mac,
         };
 
         /// <summary>
@@ -105,6 +106,9 @@ namespace Flax.Build.Platforms
                 break;
             case TargetPlatform.Linux:
                 hostName = "linux-x86_64";
+                break;
+            case TargetPlatform.Mac:
+                hostName = "darwin-x86_64";
                 break;
             default: throw new InvalidPlatformException(Platform.BuildPlatform.Target);
             }

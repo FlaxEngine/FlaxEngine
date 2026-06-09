@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
 
@@ -37,10 +38,20 @@ namespace Flax.Build.Platforms
         : base(platform, architecture, toolchainRoot, null, string.Empty)
         {
             var toolchain = ToolsetRoot.Replace('\\', '/');
-            SystemIncludePaths.Add(Path.Combine(toolchain, "sources/usr/include/c++/v1").Replace('\\', '/'));
+            var cxxIncludePath = Path.Combine(toolchain, "sysroot/usr/include/c++/v1");
+            if (!Directory.Exists(cxxIncludePath))
+                cxxIncludePath = Path.Combine(toolchain, "sources/usr/include/c++/v1");
+            SystemIncludePaths.Add(cxxIncludePath.Replace('\\', '/'));
             SystemIncludePaths.Add(Path.Combine(toolchain, "sysroot/usr/include").Replace('\\', '/'));
             SystemIncludePaths.Add(Path.Combine(toolchain, "sysroot/usr/local/include").Replace('\\', '/'));
-            SystemIncludePaths.Add(Path.Combine(toolchain, "lib64/clang/9.0.8/include").Replace('\\', '/'));
+            var clangIncludeRoot = Path.Combine(toolchain, "lib/clang");
+            if (!Directory.Exists(clangIncludeRoot))
+                clangIncludeRoot = Path.Combine(toolchain, "lib64/clang");
+            var clangIncludePath = Directory.Exists(clangIncludeRoot)
+                ? Directory.GetDirectories(clangIncludeRoot).OrderBy(x => x).LastOrDefault()
+                : null;
+            if (clangIncludePath != null)
+                SystemIncludePaths.Add(Path.Combine(clangIncludePath, "include").Replace('\\', '/'));
         }
 
         /// <summary>

@@ -14,6 +14,7 @@ namespace FlaxEditor.Content.Settings
         internal const string PS5PlatformSettingsTypename = "FlaxEditor.Content.Settings.PS5PlatformSettings";
         internal const string XboxOnePlatformSettingsTypename = "FlaxEditor.Content.Settings.XboxOnePlatformSettings";
         internal const string XboxScarlettPlatformSettingsTypename = "FlaxEditor.Content.Settings.XboxScarlettPlatformSettings";
+        internal const string AndroidPlatformSettingsTypename = "FlaxEditor.Content.Settings.AndroidPlatformSettings";
         internal const string SwitchPlatformSettingsTypename = "FlaxEditor.Content.Settings.SwitchPlatformSettings";
 #if FLAX_EDITOR
         internal static string[] OptionalPlatformSettings =
@@ -172,9 +173,9 @@ namespace FlaxEditor.Content.Settings
 
 #if FLAX_EDITOR || PLATFORM_ANDROID
         /// <summary>
-        /// Reference to <see cref="AndroidPlatformSettings"/> asset. Used to apply configuration on Android platform.
+        /// Reference to Android Platform Settings asset. Used to apply configuration on Android platform.
         /// </summary>
-        [EditorOrder(2060), EditorDisplay("Platform Settings", "Android"), AssetReference(typeof(AndroidPlatformSettings), true), Tooltip("Reference to Android Platform Settings asset")]
+        [EditorOrder(2060), EditorDisplay("Platform Settings", "Android"), AssetReference(AndroidPlatformSettingsTypename, true), Tooltip("Reference to Android Platform Settings asset")]
         public JsonAsset AndroidPlatform;
 #endif
 
@@ -334,8 +335,8 @@ namespace FlaxEditor.Content.Settings
                 return Load(gameSettings.XboxScarlettPlatform, XboxScarlettPlatformSettingsTypename) as T;
 #endif
 #if FLAX_EDITOR || PLATFORM_ANDROID
-            if (type == typeof(AndroidPlatformSettings))
-                return Load<AndroidPlatformSettings>(gameSettings.AndroidPlatform) as T;
+            if (type.FullName == AndroidPlatformSettingsTypename)
+                return Load(gameSettings.AndroidPlatform, AndroidPlatformSettingsTypename) as T;
 #endif
 #if FLAX_EDITOR || PLATFORM_SWITCH
             if (type.FullName == SwitchPlatformSettingsTypename)
@@ -436,7 +437,7 @@ namespace FlaxEditor.Content.Settings
                 return gameSettings.XboxScarlettPlatform;
 #endif
 #if FLAX_EDITOR || PLATFORM_ANDROID
-            if (type == typeof(AndroidPlatformSettings))
+            if (type.FullName == AndroidPlatformSettingsTypename)
                 return gameSettings.AndroidPlatform;
 #endif
 #if FLAX_EDITOR || PLATFORM_SWITCH

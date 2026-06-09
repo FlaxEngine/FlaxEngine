@@ -22,6 +22,7 @@ namespace Flax.Build.Platforms
         {
             TargetPlatform.Windows,
             TargetPlatform.Linux,
+            TargetPlatform.Mac,
         };
 
         /// <summary>
