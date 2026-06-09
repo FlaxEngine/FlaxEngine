@@ -489,7 +489,9 @@ public:
     ModelBase* GetModel() override;
     bool IntersectsEntry(int32 entryIndex, const Ray& ray, Real& distance, Vector3& normal) override;
     bool IntersectsEntry(const Ray& ray, Real& distance, Vector3& normal, int32& entryIndex) override;
+PRAGMA_DISABLE_DEPRECATION_WARNINGS;
     bool GetMeshData(const MeshReference& ref, MeshBufferType type, BytesContainer& result, int32& count, GPUVertexLayout** layout) const override;
+PRAGMA_ENABLE_DEPRECATION_WARNINGS;
     MeshBase* GetMesh(const MeshReference& ref) const override;
     void UpdateBounds() override;
     MeshDeformation* GetMeshDeformation() const override;
