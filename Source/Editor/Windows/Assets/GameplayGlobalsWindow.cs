@@ -272,7 +272,6 @@ namespace FlaxEditor.Windows.Assets
                     {
                         var name = e.Key;
                         var value = _proxy.Asset.GetValue(name);
-                        var valueContainer = new VariableValueContainer(_proxy, name, value, false);
                         var propertyLabel = new PropertyNameLabel(name)
                         {
                             Tag = name,
@@ -280,7 +279,15 @@ namespace FlaxEditor.Windows.Assets
                         string tooltip = null;
                         if (_proxy.DefaultValues.TryGetValue(name, out var defaultValue))
                             tooltip = "Default value: " + defaultValue;
-                        layout.Object(propertyLabel, valueContainer, null, tooltip);
+                        var property = layout.AddPropertyItem(propertyLabel, tooltip);
+                        if (value == null)
+                        {
+                            property.Label("null");
+                            continue;
+                        }
+                        var valueContainer = new VariableValueContainer(_proxy, name, value, false);
+                        valueContainer.SetDefaultValue(defaultValue);
+                        property.Object(valueContainer);
                     }
                 }
                 else
@@ -289,19 +296,37 @@ namespace FlaxEditor.Windows.Assets
                     {
                         var name = e.Key;
                         var value = e.Value;
-                        var valueContainer = new VariableValueContainer(_proxy, name, value, true);
                         var propertyLabel = new ClickablePropertyNameLabel(name)
                         {
                             Tag = name,
                         };
                         propertyLabel.MouseLeftDoubleClick += (label, location) => StartParameterRenaming(name, label);
                         propertyLabel.SetupContextMenu += OnPropertyLabelSetupContextMenu;
-                        layout.Object(propertyLabel, valueContainer, null, "Type: " + CustomEditorsUtil.GetTypeNameUI(value.GetType()));
+                        var tooltip = value != null ? "Type: " + CustomEditorsUtil.GetTypeNameUI(value.GetType()) : string.Empty;
+                        var property = layout.AddPropertyItem(propertyLabel, tooltip);
+                        if (value == null)
+                        {
+                            property.Label("null");
+                            continue;
+                        }
+                        var valueContainer = new VariableValueContainer(_proxy, name, value, true);
+                        property.Object(valueContainer);
+                    }
+                    if (_proxy.DefaultValues.Count == 0)
+                    {
+                        var emptyLabel = layout.Label("Empty", TextAlignment.Center).Label;
+                        emptyLabel.TextColor = emptyLabel.TextColorHighlighted = FlaxEngine.GUI.Style.Current.ForegroundDisabled;
                     }
 
-                    // TODO: improve the UI
                     layout.Space(40);
-                    var addParamType = layout.ComboBox().ComboBox;
+                    var addPanel = layout.HorizontalPanel();
+                    addPanel.Panel.Size = new Float2(0, TextBox.DefaultHeight);
+                    addPanel.Panel.Margin = Margin.Zero;
+                    addPanel.Panel.Spacing = Utilities.Constants.UIMargin;
+
+                    addPanel.Label("New value type:");
+
+                    var addParamType = addPanel.ComboBox().ComboBox;
                     object lastValue = null;
                     foreach (var e in _proxy.DefaultValues)
                         lastValue = e.Value;
@@ -314,7 +339,7 @@ namespace FlaxEditor.Windows.Assets
                     addParamType.Items = allowedTypes;
                     addParamType.SelectedIndex = index;
                     _addParamType = addParamType;
-                    var addParamButton = layout.Button("Add").Button;
+                    var addParamButton = addPanel.Button("Add").Button;
                     addParamButton.Clicked += OnAddParamButtonClicked;
                 }
             }
