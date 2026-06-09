@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using Flax.Build.Projects.CMake;
 using Flax.Build.Projects.VisualStudio;
 using Flax.Build.Projects.VisualStudioCode;
 
@@ -150,6 +151,7 @@ namespace Flax.Build.Projects
             case ProjectFormat.VisualStudioCode: return type == TargetType.DotNet 
                 ? (ProjectGenerator)new CSProjectGenerator(VisualStudioVersion.VisualStudio2015)
                 : (ProjectGenerator)new VisualStudioCodeProjectGenerator();
+            case ProjectFormat.CMake: return new CMakeProjectGenerator();
             case ProjectFormat.XCode: return new XCodeProjectGenerator();
             case ProjectFormat.Custom:
                 if (CustomProjectTypes.TryGetValue(Configuration.ProjectFormatCustom, out var factory))
