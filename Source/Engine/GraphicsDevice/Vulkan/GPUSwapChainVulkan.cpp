@@ -41,6 +41,7 @@ void BackBufferVulkan::Release()
 GPUSwapChainVulkan::GPUSwapChainVulkan(GPUDeviceVulkan* device, Window* window)
     : GPUResourceVulkan(device, StringView::Empty)
     , _surface(VK_NULL_HANDLE)
+    , _surfaceWindowHandle(nullptr)
     , _swapChain(VK_NULL_HANDLE)
     , _currentImageIndex(-1)
     , _semaphoreIndex(0)
@@ -59,16 +60,17 @@ void GPUSwapChainVulkan::ReleaseBackBuffer()
     _backBuffers.Clear();
 }
 
-void GPUSwapChainVulkan::OnReleaseGPU()
+void GPUSwapChainVulkan::ReleaseSwapChain(bool releaseSurface)
 {
-    GPUDeviceLock lock(_device);
-
-    _device->WaitForGPU();
+    // The caller must ensure GPU work using the current swapchain is complete before destroying it.
+    if (_memoryUsage != 0)
+    {
+        PROFILE_MEM_DEC(Graphics, _memoryUsage);
+        _memoryUsage = 0;
+    }
 
     ReleaseBackBuffer();
 
-    // Release data
-    PROFILE_MEM_DEC(Graphics, _memoryUsage);
     _currentImageIndex = -1;
     _semaphoreIndex = 0;
     _acquiredImageIndex = -1;
@@ -78,13 +80,23 @@ void GPUSwapChainVulkan::OnReleaseGPU()
         vkDestroySwapchainKHR(_device->Device, _swapChain, nullptr);
         _swapChain = VK_NULL_HANDLE;
     }
-    if (_surface != VK_NULL_HANDLE)
+    // Resize only invalidates the swapchain. Destroy the native surface only if it is no longer valid
+    // or when the whole GPU resource is being released.
+    if (releaseSurface && _surface != VK_NULL_HANDLE)
     {
         vkDestroySurfaceKHR(GPUDeviceVulkan::Instance, _surface, nullptr);
         _surface = VK_NULL_HANDLE;
+        _surfaceWindowHandle = nullptr;
     }
     _width = _height = 0;
-    _memoryUsage = 0;
+}
+
+void GPUSwapChainVulkan::OnReleaseGPU()
+{
+    GPUDeviceLock lock(_device);
+
+    _device->WaitForGPU();
+    ReleaseSwapChain(true);
 }
 
 bool GPUSwapChainVulkan::IsFullscreen()
@@ -114,24 +126,28 @@ GPUTextureView* GPUSwapChainVulkan::GetBackBufferView()
     if (_acquiredImageIndex == -1)
     {
         PROFILE_CPU();
+        auto context = _device->MainContext;
+        auto cmdBufferManager = context->GetCmdBufferManager();
+        // Keep commands recorded before acquire independent from the image-acquired semaphore wait below.
+        if (cmdBufferManager->HasPendingActiveCmdBuffer())
+            context->Flush();
+
         if (TryPresent(DoAcquireImageIndex) < 0)
         {
             LOG(Fatal, "Swapchain acquire image index failed!");
         }
         ASSERT(_acquiredImageIndex != -1);
 
-        auto context = _device->MainContext;
         const auto backBuffer = &_backBuffers[_acquiredImageIndex].Handle;
 
-        auto cmdBufferManager = context->GetCmdBufferManager();
         auto cmdBuffer = cmdBufferManager->GetCmdBuffer();
 
         // Transition to render target (typical usage in most cases when calling backbuffer getter)
         context->AddImageBarrier(backBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         context->FlushBarriers();
 
-        // Submit here so we can add a dependency with the acquired semaphore
-        cmdBuffer->AddWaitSemaphore(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, _acquiredSemaphore);
+        // Wait until the presentation engine releases the image before the first color-output work can use it.
+        cmdBuffer->AddWaitSemaphore(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, _acquiredSemaphore);
         cmdBufferManager->SubmitActiveCmdBuffer();
         cmdBufferManager->GetNewActiveCommandBuffer();
         ASSERT(cmdBufferManager->HasPendingActiveCmdBuffer() && cmdBufferManager->GetActiveCmdBuffer()->GetState() == CmdBufferVulkan::State::IsInsideBegin);
@@ -161,8 +177,9 @@ bool GPUSwapChainVulkan::Resize(int32 width, int32 height)
     if (width == _width && height == _height)
         return false;
 
-    // Wait for GPU to flush commands
-    _device->WaitForGPU();
+    // Flush any pending commands referencing the previous backbuffer before waiting on the device.
+    if (_swapChain != VK_NULL_HANDLE)
+        _device->GetMainContext()->Flush();
 
     return CreateSwapChain(width, height);
 }
@@ -194,7 +211,7 @@ void GPUSwapChainVulkan::CopyBackbuffer(GPUContext* context, GPUTexture* dst)
     vkCmdCopyImage(contextVulkan->GetCmdBufferManager()->GetCmdBuffer()->GetHandle(), backBuffer->Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstVulkan->GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
-bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
+bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height, bool recreateSurface)
 {
     // Skip if window handle is missing (eg. Android window is not yet visible)
     auto windowHandle = _window->GetNativePtr();
@@ -203,25 +220,35 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     PROFILE_CPU();
     GPUDeviceLock lock(_device);
     const auto device = _device->Device;
-
-    // Check if surface has been created before
-    if (_surface != VK_NULL_HANDLE)
+    const bool hasSwapChain = _swapChain != VK_NULL_HANDLE;
+    if (_surface != VK_NULL_HANDLE && _surfaceWindowHandle != windowHandle)
     {
-        // Release previous data
-        ReleaseGPU();
+        // Android can replace ANativeWindow during lifecycle changes; iOS can replace the UIView/CAMetalLayer.
+        // A VkSurfaceKHR must not outlive the native object it was created from.
+        recreateSurface = true;
+    }
 
-        // Flush removed resources
+    if (recreateSurface || hasSwapChain)
+    {
+        // Retire old swapchain resources before creating replacement images. On plain resize the VkSurfaceKHR
+        // is intentionally reused; recreate it only when Vulkan or the platform window lifetime requires it.
+        _device->WaitForGPU();
+        ReleaseSwapChain(recreateSurface);
         _device->DeferredDeletionQueue.ReleaseResources(true);
     }
-    ASSERT(_surface == VK_NULL_HANDLE);
+    ASSERT(!recreateSurface || _surface == VK_NULL_HANDLE);
     ASSERT_LOW_LAYER(_backBuffers.Count() == 0);
 
-    // Create platform-dependent surface
-    VulkanPlatform::CreateSurface(_window, _device, GPUDeviceVulkan::Instance, &_surface);
+    // Create platform-dependent surface if this is the first swapchain or if the previous surface was lost.
     if (_surface == VK_NULL_HANDLE)
     {
-        LOG(Warning, "Failed to create Vulkan surface.");
-        return true;
+        VulkanPlatform::CreateSurface(_window, _device, GPUDeviceVulkan::Instance, &_surface);
+        if (_surface == VK_NULL_HANDLE)
+        {
+            LOG(Warning, "Failed to create Vulkan surface.");
+            return true;
+        }
+        _surfaceWindowHandle = windowHandle;
     }
     _memoryUsage = 1;
 
@@ -517,8 +544,8 @@ int32 GPUSwapChainVulkan::TryPresent(Function<int32(GPUSwapChainVulkan*, void*)>
         // Recreate swapchain
         ASSERT(_swapChain != VK_NULL_HANDLE);
         int32 width = _width, height = _height;
-        ReleaseGPU();
-        CreateSwapChain(width, height);
+        // Preserve the surface for regular out-of-date swaps; recreate it only when Vulkan reports loss.
+        CreateSwapChain(width, height, status == (int32)Status::LostSurface);
 
         // Flush commands
         _device->GetMainContext()->Flush();
@@ -602,7 +629,6 @@ void GPUSwapChainVulkan::Present(bool vsync)
 
         // Rebuild swapchain for the next present
         int32 width = _width, height = _height;
-        ReleaseGPU();
         CreateSwapChain(width, height);
         _device->GetMainContext()->Flush();
         _device->WaitForGPU();
