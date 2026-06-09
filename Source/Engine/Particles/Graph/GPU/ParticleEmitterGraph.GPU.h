@@ -127,7 +127,7 @@ private:
 
     Parameter* findGraphParam(const Guid& id);
     bool sampleSceneTexture(Node* caller, Box* box, const SerializedMaterialParam& texture, Value& result);
-    bool loadTexture(Node* caller, Box* box, const SerializedMaterialParam& texture, Value& result);
+    bool loadTexture(Node* caller, Box* box, const SerializedMaterialParam& texture, const Value& textureValue, Value& result);
     void sampleSceneDepth(Node* caller, Value& value, Box* box);
     void linearizeSceneDepth(Node* caller, const Value& depth, Value& value);
 
