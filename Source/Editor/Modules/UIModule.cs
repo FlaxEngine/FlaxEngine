@@ -1139,8 +1139,10 @@ namespace FlaxEditor.Modules
             _menuToolsSetTheCurrentSceneViewAsDefault.Enabled = Level.ScenesCount > 0;
             string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             GameSettings settings = GameSettings.Load<GameSettings>();
-            string path = Path.Combine(localAppData, settings.CompanyName, settings.ProductName);
-            _menuToolsOpenLocalFolder.Enabled = Directory.Exists(path);
+            _menuToolsOpenLocalFolder.Enabled = settings != null && 
+                                                !string.IsNullOrEmpty(settings.CompanyName) && 
+                                                !string.IsNullOrEmpty(settings.ProductName) && 
+                                                Directory.Exists(Path.Combine(localAppData, settings.CompanyName, settings.ProductName));
 
             c.PerformLayout();
         }
