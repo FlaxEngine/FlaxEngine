@@ -78,7 +78,7 @@ void GPUContext::OnPresent()
 
 void GPUContext::BindSR(int32 slot, GPUTexture* t)
 {
-    ASSERT_LOW_LAYER(t == nullptr || t->ResidentMipLevels() == 0 || t->IsShaderResource());
+    CHECK_DEBUG(t == nullptr || t->ResidentMipLevels() == 0 || t->IsShaderResource());
     BindSR(slot, GET_TEXTURE_VIEW_SAFE(t));
 }
 

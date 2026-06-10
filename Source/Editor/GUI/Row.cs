@@ -15,6 +15,11 @@ namespace FlaxEditor.GUI
         private Table _table;
 
         /// <summary>
+        /// True if row is selected by the user.
+        /// </summary>
+        public bool IsSelected;
+
+        /// <summary>
         /// Gets the parent table that owns this row.
         /// </summary>
         public Table Table => _table;
@@ -55,7 +60,11 @@ namespace FlaxEditor.GUI
 
             var style = Style.Current;
 
-            if (IsMouseOver)
+            if (IsSelected)
+            {
+                Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), style.BackgroundSelected);
+            }
+            else if (IsMouseOver)
             {
                 Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), style.BackgroundHighlighted * 0.7f);
             }

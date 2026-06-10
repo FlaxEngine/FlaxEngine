@@ -352,7 +352,7 @@ namespace FlaxEditor.CustomEditors
         /// <param name="undo">The undo. It's optional.</param>
         /// <param name="noSelectionText">The custom text to display when no object is selected. Default is No selection.</param>
         /// <param name="owner">The owner of the presenter.</param>
-        public CustomEditorPresenter(Undo undo, string noSelectionText = null, IPresenterOwner owner = null)
+        public CustomEditorPresenter(Undo undo = null, string noSelectionText = null, IPresenterOwner owner = null)
         {
             Undo = undo;
             Owner = owner;
