@@ -191,13 +191,9 @@ namespace FlaxEditor.Modules
             var mainWindow = MainWindow;
             if (mainWindow)
             {
-                var projectPath = Globals.ProjectFolder;
-#if PLATFORM_WINDOWS
-                projectPath = projectPath.Replace('/', '\\');
-#endif
                 var engineVersion = Editor.EngineProject.Version;
                 var engineVersionText = engineVersion.Revision > 0 ? $"{engineVersion.Major}.{engineVersion.Minor}.{engineVersion.Revision}" : $"{engineVersion.Major}.{engineVersion.Minor}";
-                var title = $"Flax Editor {engineVersionText} - \'{projectPath}\'";
+                var title = $"Flax Editor {engineVersionText} - \'{Editor.GameProject.Name}\'";
                 mainWindow.Title = title;
             }
         }
