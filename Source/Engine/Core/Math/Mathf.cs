@@ -2,6 +2,7 @@
 
 using System;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace FlaxEngine
 {
@@ -45,6 +46,7 @@ namespace FlaxEngine
         /// Returns the absolute value of f.
         /// </summary>
         /// <param name="f"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Abs(float f)
         {
             return Math.Abs(f);
@@ -54,6 +56,7 @@ namespace FlaxEngine
         /// Returns the absolute value of f.
         /// </summary>
         /// <param name="f"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Abs(double f)
         {
             return Math.Abs(f);
@@ -63,6 +66,7 @@ namespace FlaxEngine
         /// Returns the absolute value of value.
         /// </summary>
         /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Abs(int value)
         {
             return Math.Abs(value);
@@ -72,6 +76,7 @@ namespace FlaxEngine
         /// Returns the arc-cosine of f - the angle in radians whose cosine is f.
         /// </summary>
         /// <param name="f"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Acos(float f)
         {
             return MathF.Acos(f);
@@ -91,6 +96,7 @@ namespace FlaxEngine
         /// Returns the arc-sine of f - the angle in radians whose sine is f.
         /// </summary>
         /// <param name="f"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Asin(float f)
         {
             return MathF.Asin(f);
@@ -100,6 +106,7 @@ namespace FlaxEngine
         /// Returns the arc-tangent of f - the angle in radians whose tangent is f.
         /// </summary>
         /// <param name="f"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Atan(float f)
         {
             return MathF.Atan(f);
@@ -110,6 +117,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="y"></param>
         /// <param name="x"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Atan2(float y, float x)
         {
             return MathF.Atan2(y, x);
@@ -119,6 +127,7 @@ namespace FlaxEngine
         /// Returns the smallest integer greater to or equal to f.
         /// </summary>
         /// <param name="f"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Ceil(float f)
         {
             return MathF.Ceiling(f);
@@ -128,6 +137,7 @@ namespace FlaxEngine
         /// Returns the smallest integer greater to or equal to f.
         /// </summary>
         /// <param name="f"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CeilToInt(float f)
         {
             return (int)Math.Ceiling(f);
@@ -161,6 +171,7 @@ namespace FlaxEngine
         /// Returns the cosine of angle f in radians.
         /// </summary>
         /// <param name="f"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Cos(float f)
         {
             return MathF.Cos(f);
@@ -183,6 +194,7 @@ namespace FlaxEngine
         /// Returns e raised to the specified power.
         /// </summary>
         /// <param name="power"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Exp(float power)
         {
             return MathF.Exp(power);
@@ -192,6 +204,7 @@ namespace FlaxEngine
         /// Returns the largest integer smaller to or equal to f.
         /// </summary>
         /// <param name="f"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Floor(float f)
         {
             return MathF.Floor(f);
@@ -201,6 +214,7 @@ namespace FlaxEngine
         /// Returns the largest integer smaller to or equal to f.
         /// </summary>
         /// <param name="f"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int FloorToInt(float f)
         {
             return (int)Math.Floor(f);
@@ -252,6 +266,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="f"></param>
         /// <param name="p"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Log(float f, float p)
         {
             return MathF.Log(f, p);
@@ -261,6 +276,7 @@ namespace FlaxEngine
         /// Returns the natural (base e) logarithm of a specified number.
         /// </summary>
         /// <param name="f"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Log(float f)
         {
             return MathF.Log(f);
@@ -270,6 +286,7 @@ namespace FlaxEngine
         /// Returns the base 10 logarithm of a specified number.
         /// </summary>
         /// <param name="f"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Log10(float f)
         {
             return MathF.Log10(f);
@@ -280,6 +297,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Max(float a, float b)
         {
             return a <= b ? b : a;
@@ -290,6 +308,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Max(double a, double b)
         {
             return a <= b ? b : a;
@@ -300,6 +319,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long Max(long a, long b)
         {
             return a <= b ? b : a;
@@ -310,6 +330,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong Max(ulong a, ulong b)
         {
             return a <= b ? b : a;
@@ -337,6 +358,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Max(int a, int b)
         {
             return a <= b ? b : a;
@@ -347,6 +369,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint Max(uint a, uint b)
         {
             return a <= b ? b : a;
@@ -374,6 +397,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Min(float a, float b)
         {
             return a >= b ? b : a;
@@ -384,6 +408,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Min(double a, double b)
         {
             return a >= b ? b : a;
@@ -394,6 +419,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long Min(long a, long b)
         {
             return a >= b ? b : a;
@@ -404,6 +430,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong Min(ulong a, ulong b)
         {
             return a >= b ? b : a;
@@ -432,6 +459,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Min(int a, int b)
         {
             return a >= b ? b : a;
@@ -442,6 +470,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint Min(uint a, uint b)
         {
             return a >= b ? b : a;
@@ -509,6 +538,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="f"></param>
         /// <param name="p"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Pow(float f, float p)
         {
             return MathF.Pow(f, p);
@@ -528,6 +558,7 @@ namespace FlaxEngine
         /// Returns f rounded to the nearest integer.
         /// </summary>
         /// <param name="f"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Round(float f)
         {
             return MathF.Round(f);
@@ -537,6 +568,7 @@ namespace FlaxEngine
         /// Returns f rounded to the nearest integer.
         /// </summary>
         /// <param name="f"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int RoundToInt(float f)
         {
             return (int)Math.Round(f);
@@ -555,6 +587,7 @@ namespace FlaxEngine
         /// Returns the sine of angle f in radians.
         /// </summary>
         /// <param name="f"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Sin(float f)
         {
             return MathF.Sin(f);
@@ -565,6 +598,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="value">Floating point value to convert.</param>
         /// <returns>A float between [0 ; 1) for nonnegative input. A float between [-1; 0) for negative input.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Frac(float value)
         {
             return value - (int)value;
@@ -881,6 +915,7 @@ namespace FlaxEngine
         /// Returns square root of f.
         /// </summary>
         /// <param name="f"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Sqrt(float f)
         {
             return MathF.Sqrt(f);
@@ -890,6 +925,7 @@ namespace FlaxEngine
         /// Returns square root of f.
         /// </summary>
         /// <param name="f"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Sqrt(double f)
         {
             return Math.Sqrt(f);
@@ -900,6 +936,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="f">The value.</param>
         /// <returns>The value * value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Square(int f)
         {
             return f * f;
@@ -910,6 +947,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="f">The value.</param>
         /// <returns>The value * value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Square(double f)
         {
             return f * f;
@@ -920,6 +958,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="f">The value.</param>
         /// <returns>The value * value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Square(float f)
         {
             return f * f;
@@ -929,6 +968,7 @@ namespace FlaxEngine
         /// Returns the tangent of angle f in radians.
         /// </summary>
         /// <param name="f"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Tan(float f)
         {
             return MathF.Tan(f);
