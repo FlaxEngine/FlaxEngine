@@ -359,7 +359,7 @@ class GPUDeviceVulkan : public GPUDevice
 
 private:
     CriticalSection _fenceLock;
-    mutable void* _nativePtr[2];
+    mutable void* _nativePtr[4];
 
     Dictionary<RenderTargetLayoutVulkan, RenderPassVulkan*> _renderPasses;
     Dictionary<FramebufferVulkan::Key, FramebufferVulkan*> _framebuffers;
@@ -531,6 +531,13 @@ public:
     PipelineLayoutVulkan* GetOrCreateLayout(DescriptorSetLayoutInfoVulkan& key);
     void OnImageViewDestroy(VkImageView imageView);
 
+#if VULKAN_USE_PERF_SDK
+    // NVIDIA Perf SDK integration for usage in plugin
+    static bool UsePerfSDK;
+    static void PerfSDKInit();
+    void PerfSDKInitDeviceInfo(VkDeviceCreateInfo& deviceInfo, const Array<const char*>& deviceExtensions, VkPhysicalDeviceFeatures2* enabledFeatures2);
+#endif
+
 public:
     /// <summary>
     /// Setups the present queue to be ready for the given window surface.
@@ -569,6 +576,7 @@ public:
     GPUContext* GetMainContext() override;
     GPUAdapter* GetAdapter() const override;
     void* GetNativePtr() const override;
+    QueueInfo GetNativeQueue() const override;
     GPUMemoryStats GetMemoryStats() override;
     bool Init() override;
     void DrawBegin() override;

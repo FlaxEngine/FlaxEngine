@@ -384,7 +384,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     if (Platform::UsesWayland())
         backbuffersCount = Math::Max<uint32_t>(backbuffersCount, 3);
 #endif
-    
+
     ASSERT(surfProperties.minImageCount <= VULKAN_BACK_BUFFERS_COUNT_MAX);
     VkSwapchainCreateInfoKHR swapChainInfo;
     RenderToolsVulkan::ZeroStruct(swapChainInfo, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
@@ -420,11 +420,11 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfaceSupportKHR(gpu, _device->PresentQueue->GetFamilyIndex(), _surface, &supportsPresent));
     ASSERT(supportsPresent);
 #if PLATFORM_IOS
-	Function<void()> func = [this, &device, &swapChainInfo]()
-	{
+    Function<void()> func = [this, &device, &swapChainInfo]()
+    {
         VALIDATE_VULKAN_RESULT(vkCreateSwapchainKHR(device, &swapChainInfo, nullptr, &_swapChain));
-	};
-	iOSPlatform::RunOnUIThread(func, true);
+    };
+    iOSPlatform::RunOnUIThread(func, true);
 #else
     VALIDATE_VULKAN_RESULT(vkCreateSwapchainKHR(device, &swapChainInfo, nullptr, &_swapChain));
 #endif
@@ -482,6 +482,12 @@ GPUSwapChainVulkan::Status GPUSwapChainVulkan::Present(QueueVulkan* presentQueue
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = &_swapChain;
     presentInfo.pImageIndices = (uint32*)&_currentImageIndex;
+
+#if VULKAN_USE_PERF_SDK
+    // NvPerf Vulkan profiling workaround: drain the present queue before presenting so NvPerf's per-queue tracking stays in the state RangeProfiler BeginSession requires
+    if (GPUDeviceVulkan::UsePerfSDK)
+        vkQueueWaitIdle(presentQueue->GetHandle());
+#endif
 
     const VkResult presentResult = vkQueuePresentKHR(presentQueue->GetHandle(), &presentInfo);
     if (presentResult == VK_ERROR_OUT_OF_DATE_KHR)

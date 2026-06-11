@@ -143,6 +143,17 @@ public:
     };
 
     /// <summary>
+    /// Collection of internal graphics API command queue pointers. Depend on the platform.
+    /// </summary>
+    struct QueueInfo
+    {
+        // The main graphics command queue (ID3D12CommandQueue* or VkQueue as void*). Null if not applicable.
+        void* MainQueue = nullptr;
+        // Vulkan queue family index for MainQueue. Zero for non-Vulkan backends.
+        uint32 MainQueueFamilyIndex = 0;
+    };
+
+    /// <summary>
     /// The singleton instance of the graphics device.
     /// </summary>
     API_FIELD(ReadOnly) static GPUDevice* Instance;
@@ -302,6 +313,11 @@ public:
     /// Gets the native pointer to the underlying graphics device. It's a low-level platform-specific handle.
     /// </summary>
     API_PROPERTY() virtual void* GetNativePtr() const = 0;
+
+    /// <summary>
+    /// Gets the native command queue info of the underlying graphics device. It contains a low-level platform-specific data.
+    /// </summary>
+    virtual QueueInfo GetNativeQueue() const;
 
     /// <summary>
     /// Gets the amount of memory usage by all the GPU resources (in bytes). Returned value is estimated based on resources created by the engine and might not be accurate. Use GPUMemoryStats for more detailed memory budget usage.

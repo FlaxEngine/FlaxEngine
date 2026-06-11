@@ -123,9 +123,6 @@ public:
         void Clear();
     };
 
-private:
-    static int32 _depth;
-
 public:
     /// <summary>
     /// True if GPU profiling is enabled, otherwise false to disable events collecting and GPU timer queries usage. Can be changed during rendering.
@@ -146,6 +143,18 @@ public:
     /// The event buffers (one per frame).
     /// </summary>
     static EventBuffer Buffers[PROFILER_GPU_EVENTS_FRAMES];
+
+public:
+    // Callbacks used by the profiler to notify about GPU events. These can be used to integrate with external profilers like NVIDIA Nsight PerfSDK.
+    typedef void (*EventBeginDelegate)(const Char* name, int32 depth, int32 index, class GPUContext* context);
+    typedef void (*EventEndDelegate)(int32 index, class GPUContext* context);
+    static EventBeginDelegate EventBegin;
+    static EventEndDelegate EventEnd;
+
+    // Callbacks used by the profiler to notify about GPU frame begin (before commands recording) and end (after submit/present). These can be used to integrate with external profilers like NVIDIA Nsight PerfSDK.
+    typedef void (*FrameDelegate)();
+    static FrameDelegate FrameBegin;
+    static FrameDelegate FrameEnd;
 
 public:
     /// <summary>
@@ -174,7 +183,7 @@ public:
     /// Profiles next frame(s) rendering performance and dumps the results to the log (as a hierarchy structure). When using more than 1 frame, the results are averaged for more accurate profiling (especially for A/B testing).
     /// </summary>
     /// <param name="frames">Amount of frames to profile for more stable results (event durations are averaged). Value 0 uses default of 4 frames.</param>
-    API_FUNCTION(Attributes = "DebugCommand") static void Dump(int32 frames = 4);
+    API_FUNCTION(Attributes="DebugCommand") static void Dump(int32 frames = 4);
 
 private:
     static void BeginFrame();

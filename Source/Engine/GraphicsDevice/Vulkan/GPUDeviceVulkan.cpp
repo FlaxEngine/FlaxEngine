@@ -1021,6 +1021,11 @@ GPUDevice* GPUDeviceVulkan::Create()
 
     VkResult result;
 
+#if VULKAN_USE_PERF_SDK
+    // Configure the Vulkan loader for NVIDIA PerfSDK before the loader initializes its global config
+    PerfSDKInit();
+#endif
+
 #if !PLATFORM_SWITCH
     // Initialize bindings
     result = volkInitialize();
@@ -1561,10 +1566,20 @@ GPUAdapter* GPUDeviceVulkan::GetAdapter() const
 
 void* GPUDeviceVulkan::GetNativePtr() const
 {
-    // Return both Instance and Device as pointer to void*[2]
+    // Returns pointer to array of pointers with multiple device handles used by external tools and plugins:
     _nativePtr[0] = (void*)Instance;
     _nativePtr[1] = (void*)Device;
+    _nativePtr[2] = (void*)vkGetInstanceProcAddr;
+    _nativePtr[3] = (void*)vkGetDeviceProcAddr;
     return _nativePtr;
+}
+
+GPUDevice::QueueInfo GPUDeviceVulkan::GetNativeQueue() const
+{
+    QueueInfo result;
+    if (GraphicsQueue)
+        result = { (void*)GraphicsQueue->GetHandle(), GraphicsQueue->GetFamilyIndex() };
+    return result;
 }
 
 GPUMemoryStats GPUDeviceVulkan::GetMemoryStats()
@@ -1732,6 +1747,18 @@ bool GPUDeviceVulkan::Init()
     VulkanPlatform::RestrictEnabledPhysicalDeviceFeatures(PhysicalDeviceFeatures, enabledFeatures);
     deviceInfo.pEnabledFeatures = &enabledFeatures;
 
+#if VULKAN_USE_PERF_SDK
+    VkPhysicalDeviceFeatures2 enabledFeatures2 = {};
+    VkPhysicalDeviceFeatures2* enabledFeatures2Ptr = nullptr;
+    if (Adapter && UsePerfSDK)
+    {
+        RenderToolsVulkan::ZeroStruct(enabledFeatures2, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
+        enabledFeatures2.features = enabledFeatures;
+        enabledFeatures2Ptr = &enabledFeatures2;
+        deviceInfo.pEnabledFeatures = nullptr;
+    }
+#endif
+
 #if VULKAN_USE_TRACY_GPU && VK_EXT_calibrated_timestamps && VK_EXT_host_query_reset
     VkPhysicalDeviceHostQueryResetFeatures resetFeatures;
     if (PhysicalDeviceFeatures12.hostQueryReset)
@@ -1742,8 +1769,14 @@ bool GPUDeviceVulkan::Init()
     }
 #endif
 
+#if VULKAN_USE_PERF_SDK
+    if (UsePerfSDK)
+        PerfSDKInitDeviceInfo(deviceInfo, deviceExtensions, enabledFeatures2Ptr);
+#endif
+
     // Create the device
     VALIDATE_VULKAN_RESULT(vkCreateDevice(gpu, &deviceInfo, nullptr, &Device));
+    PhysicalDeviceFeatures12.pNext = nullptr;
 
 #if !PLATFORM_SWITCH
     // Optimize bindings

@@ -14,7 +14,12 @@
 
 RenderStatsData RenderStatsData::Counter;
 
-int32 ProfilerGPU::_depth = 0;
+namespace
+{
+    int32 Depth = 0;
+    int32 ExternalCounter = 0;
+}
+
 bool ProfilerGPU::Enabled = false;
 #if GPU_AUTO_PROFILE_EVENTS
 bool ProfilerGPU::EventsEnabled = true;
@@ -23,6 +28,10 @@ bool ProfilerGPU::EventsEnabled = false;
 #endif
 int32 ProfilerGPU::CurrentBuffer = 0;
 ProfilerGPU::EventBuffer ProfilerGPU::Buffers[PROFILER_GPU_EVENTS_FRAMES];
+ProfilerGPU::EventBeginDelegate ProfilerGPU::EventBegin = nullptr;
+ProfilerGPU::EventEndDelegate ProfilerGPU::EventEnd = nullptr;
+ProfilerGPU::FrameDelegate ProfilerGPU::FrameBegin = nullptr;
+ProfilerGPU::FrameDelegate ProfilerGPU::FrameEnd = nullptr;
 
 bool ProfilerGPU::EventBuffer::HasData() const
 {
@@ -99,6 +108,15 @@ int32 ProfilerGPU::BeginEvent(const Char* name)
     if (EventsEnabled)
         context->EventBegin(name);
 #endif
+
+    const int32 depth = Depth++;
+
+    if (EventBegin)
+    {
+        // External event
+        EventBegin(name, depth, ExternalCounter++, context);
+    }
+
     if (!Enabled)
         return -1;
 
@@ -106,7 +124,7 @@ int32 ProfilerGPU::BeginEvent(const Char* name)
     e.Name = name;
     e.Stats = RenderStatsData::Counter;
     e.Query = context->BeginQuery(GPUQueryType::Timer);
-    e.Depth = _depth++;
+    e.Depth = depth;
     e.QueryActive = true;
 
     auto& buffer = Buffers[CurrentBuffer];
@@ -121,9 +139,17 @@ void ProfilerGPU::EndEvent(int32 index)
     if (EventsEnabled)
         context->EventEnd();
 #endif
+
+    Depth--;
+
+    if (EventEnd)
+    {
+        // External event
+        EventEnd(--ExternalCounter, context);
+    }
+
     if (index == -1)
         return;
-    _depth--;
 
     auto& buffer = Buffers[CurrentBuffer];
     auto e = buffer.Get(index);
@@ -136,7 +162,8 @@ void ProfilerGPU::BeginFrame()
 {
     // Clear stats
     RenderStatsData::Counter = RenderStatsData();
-    _depth = 0;
+    Depth = 0;
+    ExternalCounter = 0;
     auto& buffer = Buffers[CurrentBuffer];
     buffer.FrameIndex = Engine::FrameCount;
     buffer.PresentTime = 0.0f;
@@ -163,7 +190,7 @@ void ProfilerGPU::OnPresentTime(float time)
 
 void ProfilerGPU::EndFrame()
 {
-    if (_depth)
+    if (Depth != 0)
     {
         LOG(Warning, "GPU Profiler events start/end mismatch");
     }

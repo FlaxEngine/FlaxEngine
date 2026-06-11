@@ -357,8 +357,8 @@ GPUDevice* GPUDevice::Instance = nullptr;
 
 void GPUDevice::OnRequestingExit()
 {
-    if (Engine::FatalError != FatalErrorType::GPUCrash && 
-        Engine::FatalError != FatalErrorType::GPUHang && 
+    if (Engine::FatalError != FatalErrorType::GPUCrash &&
+        Engine::FatalError != FatalErrorType::GPUHang &&
         Engine::FatalError != FatalErrorType::GPUOutOfMemory)
         return;
     OnCrash();
@@ -509,6 +509,7 @@ void GPUDevice::DumpResourcesToLog() const
 
     const bool printTypes[(int32)GPUResourceType::MAX] =
     {
+        // @formatter:off
         true, // RenderTarget
         true, // Texture
         true, // CubeTexture
@@ -519,6 +520,7 @@ void GPUDevice::DumpResourcesToLog() const
         false, // Descriptor
         false, // Query
         false, // Sampler
+        // @formatter:on
     };
     for (int32 typeIndex = 0; typeIndex < (int32)GPUResourceType::MAX; typeIndex++)
     {
@@ -672,6 +674,12 @@ void GPUDevice::DrawBegin()
 
     // Clear stats
     RenderTask::TasksDoneLastFrame = 0;
+
+#if COMPILE_WITH_PROFILER
+    // External profiler
+    if (ProfilerGPU::FrameBegin)
+        ProfilerGPU::FrameBegin();
+#endif
 }
 
 void GPUDevice::DrawEnd()
@@ -747,6 +755,12 @@ void GPUDevice::DrawEnd()
 
     _wasVSyncUsed = anyVSync;
     _isRendering = false;
+
+#if COMPILE_WITH_PROFILER
+    // External profiler
+    if (ProfilerGPU::FrameEnd)
+        ProfilerGPU::FrameEnd();
+#endif
 
     RenderTargetPool::Flush();
 }
@@ -829,6 +843,11 @@ void GPUDevice::Dispose()
     RenderList::CleanupCache();
     VideoOutputs.Resize(0);
     VideoOutputModes.Resize(0);
+}
+
+GPUDevice::QueueInfo GPUDevice::GetNativeQueue() const
+{
+    return QueueInfo();
 }
 
 uint64 GPUDevice::GetMemoryUsage() const

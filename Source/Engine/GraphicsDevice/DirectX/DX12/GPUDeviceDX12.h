@@ -201,6 +201,7 @@ public:
     {
         return _device;
     }
+    QueueInfo GetNativeQueue() const override;
     GPUMemoryStats GetMemoryStats() override;
     bool Init() override;
     void DrawBegin() override;

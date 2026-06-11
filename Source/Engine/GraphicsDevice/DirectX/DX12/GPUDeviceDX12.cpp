@@ -586,6 +586,11 @@ GPUDeviceDX12::GPUDeviceDX12(IDXGIFactory4* dxgiFactory, GPUAdapterDX* adapter)
 {
 }
 
+GPUDevice::QueueInfo GPUDeviceDX12::GetNativeQueue() const
+{
+    return { _commandQueue->GetCommandQueue() };
+}
+
 GPUMemoryStats GPUDeviceDX12::GetMemoryStats()
 {
     GPUMemoryStats stats;
