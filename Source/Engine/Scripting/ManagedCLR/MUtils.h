@@ -278,6 +278,10 @@ struct MConverter<T, typename TEnableIf<TIsBaseOf<class ScriptingObject, T>::Val
 // Converter for ScriptingObject References.
 template<typename T>
 class ScriptingObjectReference;
+template<typename T>
+class ScriptingObjectInterfaceReference;
+template<typename T>
+class SoftObjectInterfaceReference;
 
 template<typename T>
 struct MConverter<ScriptingObjectReference<T>>
@@ -309,6 +313,50 @@ struct MConverter<ScriptingObjectReference<T>>
         for (int32 i = 0; i < result.Length(); i++)
             result.Get()[i] = (T*)ScriptingObject::ToNative(dataPtr[i]);
     }
+};
+
+template<typename TReference, typename TInterface>
+struct MInterfaceReferenceConverter
+{
+    MObject* Box(const TReference& data, const MClass* klass)
+    {
+        return data.GetManagedInstance();
+    }
+
+    void Unbox(TReference& result, MObject* data)
+    {
+        result = ScriptingObject::ToInterface<TInterface>(ScriptingObject::ToNative(data));
+    }
+
+    void ToManagedArray(MArray* result, const Span<TReference>& data)
+    {
+        if (data.Length() == 0)
+            return;
+        MObject** objects = (MObject**)Allocator::Allocate(data.Length() * sizeof(MObject*));
+        for (int32 i = 0; i < data.Length(); i++)
+            objects[i] = data[i].GetManagedInstance();
+        MCore::GC::WriteArrayRef(result, Span<MObject*>(objects, data.Length()));
+        Allocator::Free(objects);
+    }
+
+    void ToNativeArray(Span<TReference>& result, const MArray* data)
+    {
+        MObject** dataPtr = MCore::Array::GetAddress<MObject*>(data);
+        for (int32 i = 0; i < result.Length(); i++)
+            result.Get()[i] = ScriptingObject::ToInterface<TInterface>(ScriptingObject::ToNative(dataPtr[i]));
+    }
+};
+
+// Converter for Scripting Interface References.
+template<typename T>
+struct MConverter<ScriptingObjectInterfaceReference<T>> : MInterfaceReferenceConverter<ScriptingObjectInterfaceReference<T>, T>
+{
+};
+
+// Converter for Soft Object Interface References.
+template<typename T>
+struct MConverter<SoftObjectInterfaceReference<T>> : MInterfaceReferenceConverter<SoftObjectInterfaceReference<T>, T>
+{
 };
 
 // Converter for Asset References.

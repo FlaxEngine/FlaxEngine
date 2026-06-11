@@ -48,7 +48,7 @@ namespace FlaxEditor.CustomEditors.Editors
         public IPresenterOwner PresenterContext;
 
         /// <summary>
-        /// Gets or sets the allowed objects type (given type and all subclasses). Must be <see cref="Object"/> type of any subclass.
+        /// Gets or sets the allowed objects type (given type and all subclasses). Must be <see cref="Object"/> type of any subclass or a scripting interface.
         /// </summary>
         public ScriptType Type
         {
@@ -57,11 +57,12 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 if (_type == value)
                     return;
-                if (value == ScriptType.Null || (value.Type != typeof(Object) && !value.IsSubclassOf(ScriptType.Object)))
+                if (value == ScriptType.Null || (!value.IsInterface && value.Type != typeof(Object) && !value.IsSubclassOf(ScriptType.Object)))
                     throw new ArgumentException(string.Format("Invalid type for FlaxObjectRefEditor. Input type: {0}", value != ScriptType.Null ? value.TypeName : "null"));
 
                 _type = value;
-                _supportsPickDropDown = new ScriptType(typeof(Actor)).IsAssignableFrom(value) || 
+                _supportsPickDropDown = value.IsInterface ||
+                                        new ScriptType(typeof(Actor)).IsAssignableFrom(value) ||
                                         new ScriptType(typeof(Script)).IsAssignableFrom(value);
 
                 // Deselect value if it's not valid now
@@ -149,13 +150,22 @@ namespace FlaxEditor.CustomEditors.Editors
         protected virtual bool IsValid(Object obj)
         {
             var type = TypeUtils.GetObjectType(obj);
-            return obj == null || _type.IsAssignableFrom(type) && (CheckValid == null || CheckValid(obj, type));
+            return obj == null || (!_type.IsInterface || obj is SceneObject) && _type.IsAssignableFrom(type) && (CheckValid == null || CheckValid(obj, type));
         }
 
         private void ShowDropDownMenu()
         {
             Focus();
-            if (new ScriptType(typeof(Actor)).IsAssignableFrom(_type))
+            if (_type.IsInterface)
+            {
+                SceneObjectSearchPopup.Show(this, new Float2(0, Height), IsValid, obj =>
+                {
+                    Value = obj;
+                    RootWindow.Focus();
+                    Focus();
+                }, PresenterContext);
+            }
+            else if (new ScriptType(typeof(Actor)).IsAssignableFrom(_type))
             {
                 ActorSearchPopup.Show(this, new Float2(0, Height), IsValid, actor =>
                 {
