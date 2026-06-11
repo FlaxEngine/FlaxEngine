@@ -51,49 +51,49 @@ public:
     /// <summary>
     /// Enables rendering synchronization with the refresh rate of the display device to avoid "tearing" artifacts.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(20), DefaultValue(false), EditorDisplay(\"General\", \"Use V-Sync\")")
+    API_FIELD(Attributes="EditorOrder(20), EditorDisplay(\"General\", \"Use V-Sync\")")
     bool UseVSync = false;
 
     /// <summary>
     /// Anti Aliasing quality setting.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(1000), DefaultValue(Quality.Medium), EditorDisplay(\"Quality\", \"AA Quality\")")
-    Quality AAQuality = Quality::Medium;
+    API_FIELD(Attributes="EditorOrder(1000), EditorDisplay(\"Quality\", \"AA Quality\")")
+    Quality AAQuality = Quality::High;
 
     /// <summary>
     /// Screen Space Reflections quality setting.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(1100), DefaultValue(Quality.Medium), EditorDisplay(\"Quality\", \"SSR Quality\")")
-    Quality SSRQuality = Quality::Medium;
+    API_FIELD(Attributes="EditorOrder(1100), EditorDisplay(\"Quality\", \"SSR Quality\")")
+    Quality SSRQuality = Quality::High;
 
     /// <summary>
     /// Screen Space Ambient Occlusion quality setting.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(1200), DefaultValue(Quality.Medium), EditorDisplay(\"Quality\", \"SSAO Quality\")")
-    Quality SSAOQuality = Quality::Medium;
+    API_FIELD(Attributes="EditorOrder(1200), EditorDisplay(\"Quality\", \"SSAO Quality\")")
+    Quality SSAOQuality = Quality::High;
 
     /// <summary>
     /// Volumetric Fog quality setting.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(1250), DefaultValue(Quality.High), EditorDisplay(\"Quality\")")
+    API_FIELD(Attributes="EditorOrder(1250), EditorDisplay(\"Quality\")")
     Quality VolumetricFogQuality = Quality::High;
 
     /// <summary>
     /// The shadows quality.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(1300), DefaultValue(Quality.Medium), EditorDisplay(\"Quality\")")
-    Quality ShadowsQuality = Quality::Medium;
+    API_FIELD(Attributes="EditorOrder(1300), EditorDisplay(\"Quality\")")
+    Quality ShadowsQuality = Quality::High;
 
     /// <summary>
     /// The shadow maps quality (textures resolution).
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(1310), DefaultValue(Quality.Medium), EditorDisplay(\"Quality\")")
-    Quality ShadowMapsQuality = Quality::Medium;
+    API_FIELD(Attributes="EditorOrder(1310), EditorDisplay(\"Quality\")")
+    Quality ShadowMapsQuality = Quality::High;
 
     /// <summary>
     /// Enables cascades splits blending for directional light shadows.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(1320), DefaultValue(false), EditorDisplay(\"Quality\", \"Allow CSM Blending\")")
+    API_FIELD(Attributes="EditorOrder(1320), EditorDisplay(\"Quality\", \"Allow CSM Blending\")")
     bool AllowCSMBlending = false;
 
     /// <summary>
@@ -130,7 +130,7 @@ public:
     /// <summary>
     /// The Global SDF quality. Controls the volume texture resolution and amount of cascades to use.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(2005), DefaultValue(Quality.High), EditorDisplay(\"Global SDF\")")
+    API_FIELD(Attributes="EditorOrder(2005), EditorDisplay(\"Global SDF\")")
     Quality GlobalSDFQuality = Quality::High;
 
 #if USE_EDITOR
@@ -144,7 +144,7 @@ public:
     /// <summary>
     /// The Global Illumination quality. Controls the quality of the GI effect.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(2100), DefaultValue(Quality.High), EditorDisplay(\"Global Illumination\")")
+    API_FIELD(Attributes="EditorOrder(2100), EditorDisplay(\"Global Illumination\")")
     Quality GIQuality = Quality::High;
 
     /// <summary>
@@ -156,7 +156,7 @@ public:
     /// <summary>
     /// Enables cascades splits blending for Global Illumination.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(2125), DefaultValue(false), EditorDisplay(\"Global Illumination\", \"GI Cascades Blending\")")
+    API_FIELD(Attributes="EditorOrder(2125), EditorDisplay(\"Global Illumination\", \"GI Cascades Blending\")")
     bool GICascadesBlending = false;
 
     /// <summary>
