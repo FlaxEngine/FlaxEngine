@@ -74,7 +74,7 @@ namespace FlaxEngine
         /// <param name="f"></param>
         public static float Acos(float f)
         {
-            return (float)Math.Acos(f);
+            return MathF.Acos(f);
         }
 
         /// <summary>
@@ -93,7 +93,7 @@ namespace FlaxEngine
         /// <param name="f"></param>
         public static float Asin(float f)
         {
-            return (float)Math.Asin(f);
+            return MathF.Asin(f);
         }
 
         /// <summary>
@@ -102,7 +102,7 @@ namespace FlaxEngine
         /// <param name="f"></param>
         public static float Atan(float f)
         {
-            return (float)Math.Atan(f);
+            return MathF.Atan(f);
         }
 
         /// <summary>
@@ -112,7 +112,7 @@ namespace FlaxEngine
         /// <param name="x"></param>
         public static float Atan2(float y, float x)
         {
-            return (float)Math.Atan2(y, x);
+            return MathF.Atan2(y, x);
         }
 
         /// <summary>
@@ -121,7 +121,7 @@ namespace FlaxEngine
         /// <param name="f"></param>
         public static float Ceil(float f)
         {
-            return (float)Math.Ceiling(f);
+            return MathF.Ceiling(f);
         }
 
         /// <summary>
@@ -163,7 +163,7 @@ namespace FlaxEngine
         /// <param name="f"></param>
         public static float Cos(float f)
         {
-            return (float)Math.Cos(f);
+            return MathF.Cos(f);
         }
 
         /// <summary>
@@ -185,7 +185,7 @@ namespace FlaxEngine
         /// <param name="power"></param>
         public static float Exp(float power)
         {
-            return (float)Math.Exp(power);
+            return MathF.Exp(power);
         }
 
         /// <summary>
@@ -194,7 +194,7 @@ namespace FlaxEngine
         /// <param name="f"></param>
         public static float Floor(float f)
         {
-            return (float)Math.Floor(f);
+            return MathF.Floor(f);
         }
 
         /// <summary>
@@ -254,7 +254,7 @@ namespace FlaxEngine
         /// <param name="p"></param>
         public static float Log(float f, float p)
         {
-            return (float)Math.Log(f, p);
+            return MathF.Log(f, p);
         }
 
         /// <summary>
@@ -263,7 +263,7 @@ namespace FlaxEngine
         /// <param name="f"></param>
         public static float Log(float f)
         {
-            return (float)Math.Log(f);
+            return MathF.Log(f);
         }
 
         /// <summary>
@@ -272,7 +272,7 @@ namespace FlaxEngine
         /// <param name="f"></param>
         public static float Log10(float f)
         {
-            return (float)Math.Log10(f);
+            return MathF.Log10(f);
         }
 
         /// <summary>
@@ -511,7 +511,7 @@ namespace FlaxEngine
         /// <param name="p"></param>
         public static float Pow(float f, float p)
         {
-            return (float)Math.Pow(f, p);
+            return MathF.Pow(f, p);
         }
 
         /// <summary>
@@ -530,7 +530,7 @@ namespace FlaxEngine
         /// <param name="f"></param>
         public static float Round(float f)
         {
-            return (float)Math.Round(f);
+            return MathF.Round(f);
         }
 
         /// <summary>
@@ -557,7 +557,7 @@ namespace FlaxEngine
         /// <param name="f"></param>
         public static float Sin(float f)
         {
-            return (float)Math.Sin(f);
+            return MathF.Sin(f);
         }
 
         /// <summary>
@@ -840,7 +840,7 @@ namespace FlaxEngine
         /// <returns>System.Int32.</returns>
         public static int NextPowerOfTwo(int size)
         {
-            return 1 << (int)Math.Ceiling(Math.Log(size, 2));
+            return 1 << (int)MathF.Ceiling(MathF.Log(size, 2));
         }
 
         /// <summary>
@@ -850,7 +850,7 @@ namespace FlaxEngine
         /// <returns>System.Int32.</returns>
         public static float NextPowerOfTwo(float size)
         {
-            return (float)Math.Pow(2, Math.Ceiling(Math.Log(size, 2)));
+            return MathF.Pow(2, MathF.Ceiling(MathF.Log(size, 2)));
         }
 
         /// <summary>
@@ -862,7 +862,7 @@ namespace FlaxEngine
         {
             if (sRgbValue < 0.04045f)
                 return sRgbValue / 12.92f;
-            return (float)Math.Pow((sRgbValue + 0.055) / 1.055, 2.4);
+            return Mathf.Pow((sRgbValue + 0.055f) / 1.055f, 2.4f);
         }
 
         /// <summary>
@@ -874,7 +874,7 @@ namespace FlaxEngine
         {
             if (linearValue < 0.0031308f)
                 return linearValue * 12.92f;
-            return (float)(1.055 * Math.Pow(linearValue, 1 / 2.4) - 0.055);
+            return (float)(1.055 * MathF.Pow(linearValue, 1.0f / 2.4f) - 0.055);
         }
 
         /// <summary>
@@ -883,7 +883,7 @@ namespace FlaxEngine
         /// <param name="f"></param>
         public static float Sqrt(float f)
         {
-            return (float)Math.Sqrt(f);
+            return MathF.Sqrt(f);
         }
 
         /// <summary>
@@ -931,7 +931,7 @@ namespace FlaxEngine
         /// <param name="f"></param>
         public static float Tan(float f)
         {
-            return (float)Math.Tan(f);
+            return MathF.Tan(f);
         }
 
         /// <summary>
@@ -1181,7 +1181,7 @@ namespace FlaxEngine
         /// <returns>Valid angle in radians.</returns>
         public static float UnwindRadians(float angle)
         {
-            var a = angle - (float)Math.Floor(angle / TwoPi) * TwoPi; // Loop function between 0 and TwoPi
+            var a = angle - (float)MathF.Floor(angle / TwoPi) * TwoPi; // Loop function between 0 and TwoPi
             return a > Pi ? a - TwoPi : a; // Change range so it become Pi and -Pi
         }
 
@@ -1208,7 +1208,7 @@ namespace FlaxEngine
         /// <returns>Valid angle in degrees.</returns>
         public static float UnwindDegrees(float angle)
         {
-            var a = angle - (float)Math.Floor(angle / 360.0f) * 360.0f; // Loop function between 0 and 360
+            var a = angle - MathF.Floor(angle / 360.0f) * 360.0f; // Loop function between 0 and 360
             return a > 180 ? a - 360.0f : a; // Change range so it become 180 and -180
         }
 
