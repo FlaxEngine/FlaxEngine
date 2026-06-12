@@ -55,6 +55,21 @@ namespace FlaxEditor.GUI.ContextMenu
         private Window _window;
         private Control _previouslyFocused;
 
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+
+        private static bool IsValidWindowBounds(Float2 location, Float2 size)
+        {
+            return IsFinite(location.X) &&
+                   IsFinite(location.Y) &&
+                   IsFinite(size.X) &&
+                   IsFinite(size.Y) &&
+                   size.X > 0.0f &&
+                   size.Y > 0.0f;
+        }
+
         /// <summary>
         /// Gets a value indicating whether use automatic popup direction fix based on the screen dimensions.
         /// </summary>
@@ -190,6 +205,11 @@ namespace FlaxEditor.GUI.ContextMenu
             var dpiSize = Size * dpiScale;
             var locationWS = parent.PointToWindow(location);
             var locationSS = parentWin.PointToScreen(locationWS);
+            if (!IsValidWindowBounds(locationSS, dpiSize))
+            {
+                Hide();
+                return;
+            }
             var monitorBounds = Platform.GetMonitorBounds(locationSS);
             var rightBottomLocationSS = locationSS + dpiSize;
             bool isUp = false, isLeft = false;
@@ -403,7 +423,31 @@ namespace FlaxEditor.GUI.ContextMenu
         {
             if (_window != null)
             {
-                _window.ClientSize = Size * _window.DpiScale;
+                var size = Size * _window.DpiScale;
+                if (!IsValidWindowBounds(_window.ClientBounds.Location, size))
+                    return;
+                _window.ClientSize = size;
+            }
+        }
+
+        /// <summary>
+        /// Gets the popup window location in screen coordinates.
+        /// </summary>
+        protected Float2 WindowLocation => _window != null ? _window.ClientBounds.Location : Float2.Zero;
+
+        /// <summary>
+        /// Moves the popup window to the given screen-space location.
+        /// </summary>
+        /// <param name="screenLocation">The popup window location in screen coordinates.</param>
+        protected void MoveWindowTo(Float2 screenLocation)
+        {
+            if (_window != null)
+            {
+                var bounds = _window.ClientBounds;
+                if (!IsValidWindowBounds(screenLocation, bounds.Size))
+                    return;
+                bounds.Location = screenLocation;
+                _window.ClientBounds = bounds;
             }
         }
 
