@@ -113,7 +113,8 @@ namespace FlaxEditor.Gizmo
                 if (cb != IntPtr.Zero)
                 {
                     var data = new Data();
-                    Matrix.Multiply(ref renderContext.View.View, ref renderContext.View.Projection, out var viewProjection);
+                    var projection = renderContext.View.GetOverlayProjection();
+                    Matrix.Multiply(ref renderContext.View.View, ref projection, out var viewProjection);
                     Matrix.Transpose(ref viewProjection, out data.ViewProjectionMatrix);
                     data.ViewPos = renderContext.View.WorldPosition;
                     data.GridColor = options.Viewport.ViewportGridColor;
