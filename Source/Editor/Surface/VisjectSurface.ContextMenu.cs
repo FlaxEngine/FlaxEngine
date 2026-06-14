@@ -183,6 +183,9 @@ namespace FlaxEditor.Surface
                 {
                     _cache.Clear();
                     _version++;
+
+                    // Mark type list as dirty to rebuild it next use.
+                    Editor.Instance.CodeEditing.AllWithStd.ClearTypes();
                 }
 
                 Editor.Instance.CodeEditing.TypesCleared -= OnCodeEditingTypesCleared;
