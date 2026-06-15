@@ -92,6 +92,9 @@ const Char* ToString(ShaderProfile value)
     case ShaderProfile::Vulkan_SM5:
         result = TEXT("Vulkan SM5");
         break;
+    case ShaderProfile::Vulkan_SM6:
+        result = TEXT("Vulkan SM6");
+        break;
     case ShaderProfile::PS4:
         result = TEXT("PS4");
         break;
@@ -262,6 +265,7 @@ FeatureLevel RenderTools::GetFeatureLevel(ShaderProfile profile)
     switch (profile)
     {
     case ShaderProfile::DirectX_SM6:
+    case ShaderProfile::Vulkan_SM6:
     case ShaderProfile::PS5:
         return FeatureLevel::SM6;
     case ShaderProfile::DirectX_SM5:
@@ -287,6 +291,7 @@ ShaderProfileFeatures RenderTools::GetShaderProfileFeatures(ShaderProfile profil
     case ShaderProfile::DirectX_SM6:
     case ShaderProfile::DirectX_SM5:
     case ShaderProfile::Vulkan_SM5:
+    case ShaderProfile::Vulkan_SM6:
         return ShaderProfileFeatures::ComputeShaders | ShaderProfileFeatures::GeometryShaders | ShaderProfileFeatures::TessellationShaders;
     case ShaderProfile::PS4:
     case ShaderProfile::PS5:
@@ -305,6 +310,7 @@ bool RenderTools::CanSupportTessellation(ShaderProfile profile)
     switch (profile)
     {
     case ShaderProfile::Vulkan_SM5:
+    case ShaderProfile::Vulkan_SM6:
     case ShaderProfile::DirectX_SM6:
     case ShaderProfile::DirectX_SM5:
     case ShaderProfile::PS4:

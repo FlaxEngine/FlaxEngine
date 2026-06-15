@@ -730,6 +730,30 @@ void GPUDeviceVulkan::GetDeviceExtensions(VkPhysicalDevice gpu, Array<const char
         }
     }
 
+#if defined(VK_KHR_acceleration_structure) && defined(VK_KHR_ray_query)
+    static const char* rayTracingExtensions[] =
+    {
+        VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+        VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+        VK_KHR_RAY_QUERY_EXTENSION_NAME,
+        VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+    };
+    bool hasAllRayTracingExtensions = true;
+    for (const char* extension : rayTracingExtensions)
+    {
+        if (!ListContains(availableExtensions, extension))
+        {
+            hasAllRayTracingExtensions = false;
+            break;
+        }
+    }
+    if (hasAllRayTracingExtensions)
+    {
+        for (const char* extension : rayTracingExtensions)
+            outDeviceExtensions.Add(extension);
+    }
+#endif
+
 #if VULKAN_USE_PERF_SDK
     if (UsePerfSDK && PerfSDK.GetRequiredDeviceExtensions && Adapter->IsNVIDIA())
     {
@@ -776,6 +800,13 @@ void GPUDeviceVulkan::ParseOptionalDeviceExtensions(const Array<const char*>& de
     OptionalDeviceExtensions.HasKHRMaintenance2 = RenderToolsVulkan::HasExtension(deviceExtensions, VK_KHR_MAINTENANCE2_EXTENSION_NAME);
 #endif
     OptionalDeviceExtensions.HasMirrorClampToEdge = RenderToolsVulkan::HasExtension(deviceExtensions, VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME);
+#if defined(VK_KHR_acceleration_structure) && defined(VK_KHR_ray_query)
+    OptionalDeviceExtensions.HasRayTracingExtensions =
+        RenderToolsVulkan::HasExtension(deviceExtensions, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME) &&
+        RenderToolsVulkan::HasExtension(deviceExtensions, VK_KHR_RAY_QUERY_EXTENSION_NAME) &&
+        RenderToolsVulkan::HasExtension(deviceExtensions, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) &&
+        RenderToolsVulkan::HasExtension(deviceExtensions, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+#endif
 #if VULKAN_USE_VALIDATION_CACHE
     OptionalDeviceExtensions.HasEXTValidationCache = RenderToolsVulkan::HasExtension(deviceExtensions, VK_EXT_VALIDATION_CACHE_EXTENSION_NAME);
 #endif

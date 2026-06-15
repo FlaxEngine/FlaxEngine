@@ -136,6 +136,9 @@ GPUContextDX12::GPUContextDX12(GPUDeviceDX12* device, D3D12_COMMAND_LIST_TYPE ty
 #ifdef __ID3D12GraphicsCommandList1_FWD_DEFINED__
     _commandList->QueryInterface(IID_PPV_ARGS(&_commandList1));
 #endif
+#ifdef __ID3D12GraphicsCommandList4_FWD_DEFINED__
+    _commandList->QueryInterface(IID_PPV_ARGS(&_commandList4));
+#endif
 #if GPU_ENABLE_RESOURCE_NAMING
     _commandList->SetName(TEXT("GPUContextDX12::CommandList"));
 #endif
@@ -148,6 +151,9 @@ GPUContextDX12::~GPUContextDX12()
 {
 #if GPU_ENABLE_TRACY
     tracy::DestroyD3D12Context(_tracyContext);
+#endif
+#ifdef __ID3D12GraphicsCommandList4_FWD_DEFINED__
+    SAFE_RELEASE(_commandList4);
 #endif
     DX_SAFE_RELEASE_CHECK(_commandList, 0);
 }
@@ -400,6 +406,11 @@ void GPUContextDX12::flushSRVs()
         {
             ASSERT(handle->SrvDimension == dimensions);
             srcDescriptorRangeStarts[i] = handle->SRV();
+#if defined(__ID3D12Device5_FWD_DEFINED__)
+            // Ray tracing acceleration structures stay permanently in D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE and have no tracked owner, so never transition them
+            if (handle->SrvDimension == D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE)
+                continue;
+#endif
             // TODO: for setup states based on binding mode
             D3D12_RESOURCE_STATES states = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
             if (handle->IsDepthStencilResource())

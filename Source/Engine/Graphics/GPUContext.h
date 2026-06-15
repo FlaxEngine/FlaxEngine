@@ -717,4 +717,13 @@ public:
     virtual void EndDrawPass()
     {
     }
+
+public:
+    // Ray Tracing (hardware-accelerated, inline ray queries only). Available when GPUDevice::Limits.HasRayTracing is true (DirectX 12 and Vulkan).
+
+    // Builds (or rebuilds) the bottom-level and top-level acceleration structures so the structure can be used in shaders via inline RayQuery.
+    // The structure must have its geometry assigned first (GPUAccelerationStructure::SetGeometry). No-op on backends without ray tracing support.
+    virtual void BuildAccelerationStructure(class GPUAccelerationStructure* accelerationStructure)
+    {
+    }
 };

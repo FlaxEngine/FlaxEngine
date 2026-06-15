@@ -483,7 +483,10 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
         }
         if (settings->SupportVulkan)
         {
-            COMPILE_PROFILE(Vulkan_SM5, SHADER_FILE_CHUNK_INTERNAL_VULKAN_SM5_CACHE);
+            // Desktop Vulkan can support hardware ray tracing, so cook the SM6 Vulkan profile (inline ray
+            // queries). Both Vulkan profiles share the same cache chunk, so the runtime device reads this
+            // regardless of whether it selects Vulkan_SM5 or Vulkan_SM6.
+            COMPILE_PROFILE(Vulkan_SM6, SHADER_FILE_CHUNK_INTERNAL_VULKAN_SM5_CACHE);
         }
         break;
     }
@@ -512,7 +515,8 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
         const auto settings = LinuxPlatformSettings::Get();
         if (settings->SupportVulkan)
         {
-            COMPILE_PROFILE(Vulkan_SM5, SHADER_FILE_CHUNK_INTERNAL_VULKAN_SM5_CACHE);
+            // Desktop Vulkan can support hardware ray tracing (inline ray queries). Same shared cache chunk.
+            COMPILE_PROFILE(Vulkan_SM6, SHADER_FILE_CHUNK_INTERNAL_VULKAN_SM5_CACHE);
         }
         break;
     }

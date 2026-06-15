@@ -133,6 +133,10 @@ ComputePipelineStateVulkan* GPUShaderProgramCSVulkan::GetOrCreateState()
         _pipelineState->DSWriteContainer.DescriptorImageInfo.AddZeroed(DescriptorInfo.ImageInfosCount);
         _pipelineState->DSWriteContainer.DescriptorBufferInfo.AddZeroed(DescriptorInfo.BufferInfosCount);
         _pipelineState->DSWriteContainer.DescriptorTexelBufferView.AddZeroed(DescriptorInfo.TexelBufferViewsCount);
+#if defined(VK_KHR_acceleration_structure)
+        _pipelineState->DSWriteContainer.DescriptorAccelerationStructureInfo.AddZeroed(DescriptorInfo.AccelerationStructureInfosCount);
+        _pipelineState->DSWriteContainer.DescriptorAccelerationStructureHandles.AddZeroed(DescriptorInfo.AccelerationStructureInfosCount);
+#endif
 
         ASSERT(DescriptorInfo.DescriptorTypesCount < 255);
         _pipelineState->DSWriteContainer.BindingToDynamicOffset.AddDefault(DescriptorInfo.DescriptorTypesCount);
@@ -143,8 +147,13 @@ ComputePipelineStateVulkan* GPUShaderProgramCSVulkan::GetOrCreateState()
         VkDescriptorBufferInfo* currentBufferInfo = _pipelineState->DSWriteContainer.DescriptorBufferInfo.Get();
         VkBufferView* currentTexelBufferView = _pipelineState->DSWriteContainer.DescriptorTexelBufferView.Get();
         uint8* currentBindingToDynamicOffsetMap = _pipelineState->DSWriteContainer.BindingToDynamicOffset.Get();
-
+#if defined(VK_KHR_acceleration_structure)
+        VkWriteDescriptorSetAccelerationStructureKHR* currentAccelerationStructureInfo = _pipelineState->DSWriteContainer.DescriptorAccelerationStructureInfo.Get();
+        VkAccelerationStructureKHR* currentAccelerationStructureHandles = _pipelineState->DSWriteContainer.DescriptorAccelerationStructureHandles.Get();
+        dynamicOffsetsCount = _pipelineState->DSWriter.SetupDescriptorWrites(DescriptorInfo, currentDescriptorWrite, currentImageInfo, currentBufferInfo, currentTexelBufferView, currentBindingToDynamicOffsetMap, currentAccelerationStructureInfo, currentAccelerationStructureHandles);
+#else
         dynamicOffsetsCount = _pipelineState->DSWriter.SetupDescriptorWrites(DescriptorInfo, currentDescriptorWrite, currentImageInfo, currentBufferInfo, currentTexelBufferView, currentBindingToDynamicOffsetMap);
+#endif
     }
 
     _pipelineState->DynamicOffsets.AddZeroed(dynamicOffsetsCount);
@@ -541,6 +550,10 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
         DSWriteContainer.DescriptorImageInfo.AddZeroed(descriptor->ImageInfosCount);
         DSWriteContainer.DescriptorBufferInfo.AddZeroed(descriptor->BufferInfosCount);
         DSWriteContainer.DescriptorTexelBufferView.AddZeroed(descriptor->TexelBufferViewsCount);
+#if defined(VK_KHR_acceleration_structure)
+        DSWriteContainer.DescriptorAccelerationStructureInfo.AddZeroed(descriptor->AccelerationStructureInfosCount);
+        DSWriteContainer.DescriptorAccelerationStructureHandles.AddZeroed(descriptor->AccelerationStructureInfosCount);
+#endif
 
         ASSERT(descriptor->DescriptorTypesCount < 255);
         DSWriteContainer.BindingToDynamicOffset.AddDefault(descriptor->DescriptorTypesCount);
@@ -552,6 +565,10 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     VkDescriptorBufferInfo* currentBufferInfo = DSWriteContainer.DescriptorBufferInfo.Get();
     VkBufferView* currentTexelBufferView = DSWriteContainer.DescriptorTexelBufferView.Get();
     byte* currentBindingToDynamicOffsetMap = DSWriteContainer.BindingToDynamicOffset.Get();
+#if defined(VK_KHR_acceleration_structure)
+    VkWriteDescriptorSetAccelerationStructureKHR* currentAccelerationStructureInfo = DSWriteContainer.DescriptorAccelerationStructureInfo.Get();
+    VkAccelerationStructureKHR* currentAccelerationStructureHandles = DSWriteContainer.DescriptorAccelerationStructureHandles.Get();
+#endif
     uint32 dynamicOffsetsStart[DescriptorSet::GraphicsStagesCount];
     uint32 dynamicOffsetsCount = 0;
     for (int32 stage = 0; stage < DescriptorSet::GraphicsStagesCount; stage++)
@@ -562,13 +579,21 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
         if (descriptor == nullptr || descriptor->DescriptorTypesCount == 0)
             continue;
 
+#if defined(VK_KHR_acceleration_structure)
+        const uint32 numDynamicOffsets = DSWriter[stage].SetupDescriptorWrites(*descriptor, currentDescriptorWrite, currentImageInfo, currentBufferInfo, currentTexelBufferView, currentBindingToDynamicOffsetMap, currentAccelerationStructureInfo, currentAccelerationStructureHandles);
+#else
         const uint32 numDynamicOffsets = DSWriter[stage].SetupDescriptorWrites(*descriptor, currentDescriptorWrite, currentImageInfo, currentBufferInfo, currentTexelBufferView, currentBindingToDynamicOffsetMap);
+#endif
         dynamicOffsetsCount += numDynamicOffsets;
 
         currentDescriptorWrite += descriptor->DescriptorTypesCount;
         currentImageInfo += descriptor->ImageInfosCount;
         currentBufferInfo += descriptor->BufferInfosCount;
         currentTexelBufferView += descriptor->TexelBufferViewsCount;
+#if defined(VK_KHR_acceleration_structure)
+        currentAccelerationStructureInfo += descriptor->AccelerationStructureInfosCount;
+        currentAccelerationStructureHandles += descriptor->AccelerationStructureInfosCount;
+#endif
         currentBindingToDynamicOffsetMap += descriptor->DescriptorTypesCount;
     }
 

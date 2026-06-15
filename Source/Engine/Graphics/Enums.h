@@ -141,6 +141,11 @@ API_ENUM() enum class ShaderProfile
     /// </summary>
     WebGPU = 9,
 
+    /// <summary>
+    /// Vulkan (Shader Model 6 compatible, eg. inline ray tracing)
+    /// </summary>
+    Vulkan_SM6 = 10,
+
     API_ENUM(Attributes="HideInEditor")
     MAX
 };

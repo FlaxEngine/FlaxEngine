@@ -21,6 +21,7 @@ typedef enum VkDescriptorType {
     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC = 9,
     VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT = 10,
     VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT = 1000138000,
+    VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR = 1000150000,
     VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV = 1000165000,
     VK_DESCRIPTOR_TYPE_BEGIN_RANGE = VK_DESCRIPTOR_TYPE_SAMPLER,
     VK_DESCRIPTOR_TYPE_END_RANGE = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
@@ -110,6 +111,7 @@ struct SpirvShaderDescriptorInfo
     uint16 ImageInfosCount;
     uint16 BufferInfosCount;
     uint32 TexelBufferViewsCount;
+    uint16 AccelerationStructureInfosCount;
     uint32 DescriptorTypesCount;
     Descriptor DescriptorTypes[MaxDescriptors];
 };

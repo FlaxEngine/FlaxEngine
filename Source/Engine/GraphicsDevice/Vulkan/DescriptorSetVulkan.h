@@ -66,6 +66,7 @@ public:
     uint32 Hash = 0;
     uint32 SetLayoutsHash = 0;
     uint32 LayoutTypes[VULKAN_DESCRIPTOR_TYPE_END + 1];
+    uint32 AccelerationStructureDescriptorsCount = 0;
     Array<SetLayout> SetLayouts;
 
 public:
@@ -256,6 +257,10 @@ struct DescriptorSetWriteContainerVulkan
     Array<VkDescriptorImageInfo> DescriptorImageInfo;
     Array<VkDescriptorBufferInfo> DescriptorBufferInfo;
     Array<VkBufferView> DescriptorTexelBufferView;
+#if defined(VK_KHR_acceleration_structure)
+    Array<VkWriteDescriptorSetAccelerationStructureKHR> DescriptorAccelerationStructureInfo;
+    Array<VkAccelerationStructureKHR> DescriptorAccelerationStructureHandles;
+#endif
     Array<VkWriteDescriptorSet> DescriptorWrites;
     Array<byte> BindingToDynamicOffset;
 
@@ -264,6 +269,10 @@ struct DescriptorSetWriteContainerVulkan
         DescriptorImageInfo.Resize(0);
         DescriptorBufferInfo.Resize(0);
         DescriptorTexelBufferView.Resize(0);
+#if defined(VK_KHR_acceleration_structure)
+        DescriptorAccelerationStructureInfo.Resize(0);
+        DescriptorAccelerationStructureHandles.Resize(0);
+#endif
         DescriptorWrites.Resize(0);
         BindingToDynamicOffset.Resize(0);
     }
@@ -278,7 +287,11 @@ public:
     uint32 WritesCount = 0;
 
 public:
-    uint32 SetupDescriptorWrites(const SpirvShaderDescriptorInfo& info, VkWriteDescriptorSet* writeDescriptors, VkDescriptorImageInfo* imageInfo, VkDescriptorBufferInfo* bufferInfo, VkBufferView* texelBufferView, byte* bindingToDynamicOffset);
+    uint32 SetupDescriptorWrites(const SpirvShaderDescriptorInfo& info, VkWriteDescriptorSet* writeDescriptors, VkDescriptorImageInfo* imageInfo, VkDescriptorBufferInfo* bufferInfo, VkBufferView* texelBufferView, byte* bindingToDynamicOffset
+#if defined(VK_KHR_acceleration_structure)
+        , VkWriteDescriptorSetAccelerationStructureKHR* accelerationStructureInfo, VkAccelerationStructureKHR* accelerationStructureHandles
+#endif
+    );
 
     bool WriteUniformBuffer(uint32 descriptorIndex, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range, uint32 index = 0) const
     {
@@ -360,6 +373,18 @@ public:
         auto* bufferInfo = const_cast<VkBufferView*>(WriteDescriptors[descriptorIndex].pTexelBufferView + index);
         return DescriptorSet::CopyAndReturnNotEqual(*bufferInfo, view);
     }
+
+#if defined(VK_KHR_acceleration_structure)
+    bool WriteAccelerationStructure(uint32 descriptorIndex, VkAccelerationStructureKHR accelerationStructure, uint32 index = 0) const
+    {
+        ASSERT(descriptorIndex < WritesCount);
+        ASSERT(WriteDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
+        auto* asWrite = (VkWriteDescriptorSetAccelerationStructureKHR*)WriteDescriptors[descriptorIndex].pNext;
+        ASSERT(asWrite);
+        auto* handle = const_cast<VkAccelerationStructureKHR*>(asWrite->pAccelerationStructures + index);
+        return DescriptorSet::CopyAndReturnNotEqual(*handle, accelerationStructure);
+    }
+#endif
 
     void SetDescriptorSet(VkDescriptorSet descriptorSet) const
     {

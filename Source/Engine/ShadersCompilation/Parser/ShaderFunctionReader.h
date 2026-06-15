@@ -391,6 +391,7 @@ namespace ShaderProcessing
                 { FeatureLevel::ES3_1, "FEATURE_LEVEL_ES3_1" },
                 { FeatureLevel::SM4, "FEATURE_LEVEL_SM4" },
                 { FeatureLevel::SM5, "FEATURE_LEVEL_SM5" },
+                { FeatureLevel::SM6, "FEATURE_LEVEL_SM6" },
             };
             bool missing = true;
             for (int32 i = 0; i < ARRAY_COUNT(levels); i++)

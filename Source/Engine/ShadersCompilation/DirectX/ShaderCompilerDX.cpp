@@ -128,30 +128,51 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
     auto containerReflection = (IDxcContainerReflection*)_containerReflection;
     auto type = meta.GetStage();
     IncludeDX include(_context, library);
-    const Char* targetProfile;
+
+    // Inline ray tracing (HLSL RayQuery) requires Shader Model 6.5. Detect ray tracing usage in the source and bump the
+    // target profile only for those shaders so the rest of the engine keeps compiling at the baseline SM 6.0.
+    bool useRayTracing = false;
+    if (options->Source)
+    {
+        const char* s = options->Source;
+        const int32 n = options->SourceLength;
+        const char* pattern = "RayQuery";
+        const int32 patternLength = 8;
+        for (int32 i = 0; i + patternLength <= n; i++)
+        {
+            if (Platform::MemoryCompare(s + i, pattern, patternLength) == 0)
+            {
+                useRayTracing = true;
+                break;
+            }
+        }
+    }
+    const Char* shaderModel = useRayTracing ? TEXT("_6_5") : TEXT("_6_0");
+    String targetProfile;
     switch (type)
     {
     case ShaderStage::Vertex:
-        targetProfile = TEXT("vs_6_0");
+        targetProfile = TEXT("vs");
         break;
     case ShaderStage::Hull:
-        targetProfile = TEXT("hs_6_0");
+        targetProfile = TEXT("hs");
         break;
     case ShaderStage::Domain:
-        targetProfile = TEXT("ds_6_0");
+        targetProfile = TEXT("ds");
         break;
     case ShaderStage::Geometry:
-        targetProfile = TEXT("gs_6_0");
+        targetProfile = TEXT("gs");
         break;
     case ShaderStage::Pixel:
-        targetProfile = TEXT("ps_6_0");
+        targetProfile = TEXT("ps");
         break;
     case ShaderStage::Compute:
-        targetProfile = TEXT("cs_6_0");
+        targetProfile = TEXT("cs");
         break;
     default:
         return true;
     }
+    targetProfile += shaderModel;
     ComPtr<IDxcBlobEncoding> textBlob;
     if (FAILED(library->CreateBlobWithEncodingFromPinned((LPBYTE)options->Source, options->SourceLength, CP_UTF8, &textBlob)))
         return true;
@@ -171,7 +192,7 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
     if (_context->Options->GenerateDebugData)
         args.Add(DXC_ARG_DEBUG);
     args.Add(TEXT("-T"));
-    args.Add(targetProfile);
+    args.Add(targetProfile.Get());
     args.Add(TEXT("-E"));
     args.Add(entryPoint.Get());
     args.Add(options->TargetName.Get());
@@ -444,6 +465,14 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
                 {
                     bindings.UsedSRsMask |= 1 << (resDesc.BindPoint + shift);
                     header.SrDimensions[resDesc.BindPoint + shift] = D3D_SRV_DIMENSION_BUFFER;
+                }
+                break;
+            // Ray Tracing Acceleration Structure (bound as a shader resource, dimension matches D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE = 11)
+            case D3D_SIT_RTACCELERATIONSTRUCTURE:
+                for (UINT shift = 0; shift < resDesc.BindCount; shift++)
+                {
+                    bindings.UsedSRsMask |= 1 << (resDesc.BindPoint + shift);
+                    header.SrDimensions[resDesc.BindPoint + shift] = 11;
                 }
                 break;
             // Unordered Access

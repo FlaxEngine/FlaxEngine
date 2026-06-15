@@ -65,6 +65,9 @@ private:
 #ifdef __ID3D12Device2_FWD_DEFINED__
     ID3D12Device2* _device2 = nullptr;
 #endif
+#ifdef __ID3D12Device5_FWD_DEFINED__
+    ID3D12Device5* _device5 = nullptr;
+#endif
     IDXGIFactory4* _factoryDXGI;
     CriticalSection _res2DisposeLock;
     Array<DisposeResourceEntry> _res2Dispose;
@@ -75,7 +78,12 @@ private:
     GPUContextDX12* _mainContext;
 
     // Heaps
+#if defined(__ID3D12Device5_FWD_DEFINED__)
+    // Sized to include the ray tracing acceleration structure SRV dimension so NullSRV() indexing stays in-bounds
+    DescriptorHeapWithSlotsDX12::Slot _nullSrv[D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE + 1];
+#else
     DescriptorHeapWithSlotsDX12::Slot _nullSrv[D3D12_SRV_DIMENSION_TEXTURECUBEARRAY + 1];
+#endif
     DescriptorHeapWithSlotsDX12::Slot _nullUav;
 
 public:
@@ -112,6 +120,10 @@ public:
 #endif
 #ifdef __ID3D12Device2_FWD_DEFINED__
     FORCE_INLINE ID3D12Device2* GetDevice2() const { return _device2; }
+#endif
+#ifdef __ID3D12Device5_FWD_DEFINED__
+    // Gets the DXR-capable device interface (null if ray tracing is unsupported).
+    FORCE_INLINE ID3D12Device5* GetDevice5() const { return _device5; }
 #endif
 
     /// <summary>
@@ -219,6 +231,7 @@ public:
     GPUVertexLayout* CreateVertexLayout(const VertexElements& elements, bool explicitOffsets) override;
     GPUSwapChain* CreateSwapChain(Window* window) override;
     GPUConstantBuffer* CreateConstantBuffer(uint32 size, const StringView& name) override;
+    GPUAccelerationStructure* CreateAccelerationStructure(const StringView& name) override;
 };
 
 /// <summary>

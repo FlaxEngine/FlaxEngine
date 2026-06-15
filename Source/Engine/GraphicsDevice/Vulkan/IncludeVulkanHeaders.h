@@ -29,6 +29,10 @@
 // License: MIT
 #include <ThirdParty/volk/volk.h>
 
+#if __has_include(<vulkan/vulkan_ray_tracing.h>)
+#include <vulkan/vulkan_ray_tracing.h>
+#endif
+
 #endif
 
 // Use Vulkan Memory Allocator for buffer and image memory allocations

@@ -1774,6 +1774,59 @@ bool GPUDeviceVulkan::Init()
         PerfSDKInitDeviceInfo(deviceInfo, deviceExtensions, enabledFeatures2Ptr);
 #endif
 
+#if defined(VK_KHR_acceleration_structure) && defined(VK_KHR_ray_query)
+    bool enableRayTracing = OptionalDeviceExtensions.HasRayTracingExtensions != 0;
+    bool vulkanRayTracingEnabled = false;
+    VkPhysicalDeviceFeatures2 enabledFeatures2Rt = {};
+    VkPhysicalDeviceRayQueryFeaturesKHR enabledRayQueryFeatures = {};
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR enabledAccelerationStructureFeatures = {};
+    VkPhysicalDeviceBufferDeviceAddressFeatures enabledBufferDeviceAddressFeatures = {};
+    if (enableRayTracing && vkGetPhysicalDeviceFeatures2)
+    {
+        VkPhysicalDeviceBufferDeviceAddressFeatures queryBufferDeviceAddress = {};
+        queryBufferDeviceAddress.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+        VkPhysicalDeviceAccelerationStructureFeaturesKHR queryAccelerationStructure = {};
+        queryAccelerationStructure.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+        queryAccelerationStructure.pNext = &queryBufferDeviceAddress;
+        VkPhysicalDeviceRayQueryFeaturesKHR queryRayQuery = {};
+        queryRayQuery.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
+        queryRayQuery.pNext = &queryAccelerationStructure;
+        VkPhysicalDeviceFeatures2 queryFeatures2 = {};
+        queryFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        queryFeatures2.pNext = &queryRayQuery;
+        vkGetPhysicalDeviceFeatures2(gpu, &queryFeatures2);
+        enableRayTracing = queryRayQuery.rayQuery && queryAccelerationStructure.accelerationStructure && queryBufferDeviceAddress.bufferDeviceAddress;
+    }
+    if (enableRayTracing)
+    {
+        RenderToolsVulkan::ZeroStruct(enabledFeatures2Rt, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
+        enabledFeatures2Rt.features = enabledFeatures;
+        RenderToolsVulkan::ZeroStruct(enabledRayQueryFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR);
+        enabledRayQueryFeatures.rayQuery = VK_TRUE;
+        RenderToolsVulkan::ZeroStruct(enabledAccelerationStructureFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR);
+        enabledAccelerationStructureFeatures.accelerationStructure = VK_TRUE;
+        RenderToolsVulkan::ZeroStruct(enabledBufferDeviceAddressFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES);
+        enabledBufferDeviceAddressFeatures.bufferDeviceAddress = VK_TRUE;
+        enabledBufferDeviceAddressFeatures.pNext = const_cast<void*>(deviceInfo.pNext);
+        enabledAccelerationStructureFeatures.pNext = &enabledBufferDeviceAddressFeatures;
+        enabledRayQueryFeatures.pNext = &enabledAccelerationStructureFeatures;
+        enabledFeatures2Rt.pNext = &enabledRayQueryFeatures;
+        deviceInfo.pEnabledFeatures = nullptr;
+        deviceInfo.pNext = &enabledFeatures2Rt;
+        vulkanRayTracingEnabled = true;
+        // Promote the device to the Shader Model 6 Vulkan profile so the shader compiler exposes SM6-only
+        // features (inline ray queries / RaytracingAccelerationStructure) and emits SPIR-V via DXC. Non-RT
+        // GPUs keep the Vulkan_SM5 profile, so this is a no-op for them.
+        _shaderProfile = ShaderProfile::Vulkan_SM6;
+        _featureLevel = FeatureLevel::SM6;
+        LOG(Info, "Vulkan ray tracing (inline ray queries) enabled.");
+    }
+    else
+    {
+        OptionalDeviceExtensions.HasRayTracingExtensions = 0;
+    }
+#endif
+
     // Create the device
     VALIDATE_VULKAN_RESULT(vkCreateDevice(gpu, &deviceInfo, nullptr, &Device));
     PhysicalDeviceFeatures12.pNext = nullptr;
@@ -1805,7 +1858,7 @@ bool GPUDeviceVulkan::Init()
         }
 
         auto& limits = Limits;
-        limits.HasCompute = GetShaderProfile() == ShaderProfile::Vulkan_SM5 && PhysicalDeviceLimits.maxComputeWorkGroupCount[0] >= GPU_MAX_CS_DISPATCH_THREAD_GROUPS && PhysicalDeviceLimits.maxComputeWorkGroupCount[1] >= GPU_MAX_CS_DISPATCH_THREAD_GROUPS;
+        limits.HasCompute = (GetShaderProfile() == ShaderProfile::Vulkan_SM5 || GetShaderProfile() == ShaderProfile::Vulkan_SM6) && PhysicalDeviceLimits.maxComputeWorkGroupCount[0] >= GPU_MAX_CS_DISPATCH_THREAD_GROUPS && PhysicalDeviceLimits.maxComputeWorkGroupCount[1] >= GPU_MAX_CS_DISPATCH_THREAD_GROUPS;
 #if GPU_ALLOW_TESSELLATION_SHADERS
         limits.HasTessellation = !!PhysicalDeviceFeatures.tessellationShader && PhysicalDeviceLimits.maxBoundDescriptorSets > (uint32_t)DescriptorSet::Domain;
 #else
@@ -1829,6 +1882,11 @@ bool GPUDeviceVulkan::Init()
         limits.HasMultisampleDepthAsSRV = !!PhysicalDeviceFeatures.sampleRateShading;
         PRAGMA_ENABLE_DEPRECATION_WARNINGS
         limits.HasTypedUAVLoad = true;
+#if defined(VK_KHR_acceleration_structure) && defined(VK_KHR_ray_query)
+        limits.HasRayTracing = vulkanRayTracingEnabled;
+#else
+        limits.HasRayTracing = false;
+#endif
         limits.MaximumMipLevelsCount = Math::Min(static_cast<int32>(log2(PhysicalDeviceLimits.maxImageDimension2D)), GPU_MAX_TEXTURE_MIP_LEVELS);
         limits.MaximumTexture1DSize = PhysicalDeviceLimits.maxImageDimension1D;
         limits.MaximumTexture1DArraySize = PhysicalDeviceLimits.maxImageArrayLayers;
@@ -1975,6 +2033,10 @@ bool GPUDeviceVulkan::Init()
         allocatorInfo.instance = Instance;
         allocatorInfo.device = Device;
         allocatorInfo.pVulkanFunctions = &vulkanFunctions;
+        // When the bufferDeviceAddress feature is enabled (required for ray tracing acceleration structures),
+        // VMA must be told about it or every buffer allocation fails with VK_ERROR_INITIALIZATION_FAILED.
+        if (OptionalDeviceExtensions.HasRayTracingExtensions != 0)
+            allocatorInfo.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
         VALIDATE_VULKAN_RESULT(vmaCreateAllocator(&allocatorInfo, &Allocator));
     }
 
