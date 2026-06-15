@@ -1137,7 +1137,8 @@ void AnimatedModel::OnSkinnedModelLoaded()
 {
     Entries.SetupIfInvalid(SkinnedModel);
     GraphInstance.Invalidate();
-    PreInitSkinningData();
+    if (IsDuringPlay())
+        PreInitSkinningData();
 }
 
 void AnimatedModel::OnGraphChanged()
