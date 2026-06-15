@@ -148,6 +148,13 @@ struct DrawCall
     /// </summary>
     int32 InstanceCount;
 
+    enum class SkinningMode
+    {
+        None = 0,
+        Active,
+        WithPrevBones,
+    };
+
     union
     {
         struct
@@ -190,9 +197,12 @@ struct DrawCall
         {
             const Lightmap* Lightmap;
             Half4 LightmapUVsArea;
-            SkinnedMeshDrawData* Skinning;
+            SkinningMode Skinning;
+            int16 PrevBonesOffset; // In Matrix3x4s, can be negative
+            byte LODDitherFactor; // The model LOD transition dither progress.
+            GPUBuffer* SkinningBones;
             Float3 GeometrySize; // Object geometry size in the world (unscaled).
-            float LODDitherFactor; // The model LOD transition dither progress.
+            uint32 SkinningBonesOffset; // In Matrix3x4s
             Matrix PrevWorld;
         } Surface;
 
@@ -276,7 +286,7 @@ struct DrawCall
     uint8 StencilValue;
 
     /// <summary>
-    /// The world matrix determinant sign (used for geometry that is two sided or has inverse scale - needs to flip normal vectors and change triangles culling).
+    /// The world matrix determinant sign (used for geometry that is two-sided or has inverse scale - needs to flip normal vectors and change triangles culling).
     /// 0 - sign is positive
     /// 1 - sign is negative (flips object surfaces)
     /// </summary>

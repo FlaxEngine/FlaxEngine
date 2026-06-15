@@ -359,6 +359,8 @@ API_CLASS(Sealed) class FLAXENGINE_API RenderList : public ScriptingObject
         IExtension();
         virtual ~IExtension();
 
+        // Event called when GPU Device is shutting down and the extension is being disposed. Used to clean up GPU resources (before scripting might destroy extension).
+        virtual void Dispose() {}
         // Event called before collecting draw calls. Can be used for initialization.
         virtual void PreDraw(GPUContext* context, RenderContextBatch& renderContextBatch) {}
         // Event called after collecting draw calls. Can be used for cleanup or to perform additional drawing using collected draw calls data such as batched data processing.
@@ -690,18 +692,18 @@ GPU_CB_STRUCT(ShaderObjectData
     {
     Float4 Raw[8];
 
-    void FLAXENGINE_API Store(const Matrix& worldMatrix, const Matrix& prevWorldMatrix, const Half4& lightmapUVsAreaPacked, const Float3& geometrySize, float perInstanceRandom = 0.0f, float worldDeterminantSign = 1.0f, float lodDitherFactor = 0.0f);
-    void FLAXENGINE_API Load(Matrix& worldMatrix, Matrix& prevWorldMatrix, Half4& lightmapUVsArea, Float3& geometrySize, float& perInstanceRandom, float& worldDeterminantSign, float& lodDitherFactor) const;
+    void FLAXENGINE_API Store(const Matrix& worldMatrix, const Matrix& prevWorldMatrix, const Half4& lightmapUVsAreaPacked, const Float3& geometrySize, float perInstanceRandom = 0.0f, float worldDeterminantSign = 1.0f, byte lodDitherFactor = 0, uint32 skinningOffset = 0, int16 skinningPrevOffset = 0);
+    void FLAXENGINE_API Load(Matrix& worldMatrix, Matrix& prevWorldMatrix, Half4& lightmapUVsArea, Float3& geometrySize, float& perInstanceRandom, float& worldDeterminantSign, byte& lodDitherFactor, uint32& skinningOffset, int16& prevBonesOffset) const;
 
     FORCE_INLINE void Store(const DrawCall& drawCall)
     {
-    Store(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, drawCall.WorldDeterminant ? -1.0f : 1.0f, drawCall.Surface.LODDitherFactor);
+    Store(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, drawCall.WorldDeterminant ? -1.0f : 1.0f, drawCall.Surface.LODDitherFactor, drawCall.Surface.SkinningBonesOffset, drawCall.Surface.PrevBonesOffset);
     }
 
     FORCE_INLINE void Load(DrawCall& drawCall) const
     {
     float worldDeterminantSign;
-    Load(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, worldDeterminantSign, drawCall.Surface.LODDitherFactor);
+    Load(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, worldDeterminantSign, drawCall.Surface.LODDitherFactor, drawCall.Surface.SkinningBonesOffset, drawCall.Surface.PrevBonesOffset);
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
     drawCall.WorldDeterminant = worldDeterminantSign < 0 ? 1 : 0;
     }

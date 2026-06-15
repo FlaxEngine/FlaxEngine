@@ -306,7 +306,7 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
     drawCall.Surface.Lightmap = (info.Flags & StaticFlags::Lightmap) != StaticFlags::None ? info.Lightmap : nullptr;
     drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Half4::Zero;
-    drawCall.Surface.LODDitherFactor = lodDitherFactor;
+    drawCall.Surface.LODDitherFactor = (byte)(lodDitherFactor * 255);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
     drawCall.StencilValue = info.StencilValue;
 #if USE_EDITOR
@@ -314,7 +314,7 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
         GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);
     if (viewMode == ViewMode::LightmapUVsDensity)
-        drawCall.Surface.LODDitherFactor = info.LightmapScale; // See LightmapUVsDensityMaterialShader
+        drawCall.Surface.SkinningBonesOffset = *(uint32*)&info.LightmapScale; // See LightmapUVsDensityMaterialShader
 #endif
 
     // Push draw call to the render list
@@ -369,7 +369,7 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
     drawCall.Surface.Lightmap = (info.Flags & StaticFlags::Lightmap) != StaticFlags::None ? info.Lightmap : nullptr;
     drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Half4::Zero;
-    drawCall.Surface.LODDitherFactor = lodDitherFactor;
+    drawCall.Surface.LODDitherFactor = (byte)(lodDitherFactor * 255);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
     drawCall.StencilValue = info.StencilValue;
 #if USE_EDITOR
@@ -377,7 +377,7 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
         GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);
     if (viewMode == ViewMode::LightmapUVsDensity)
-        drawCall.Surface.LODDitherFactor = info.LightmapScale; // See LightmapUVsDensityMaterialShader
+        drawCall.Surface.SkinningBonesOffset = *(uint32*)&info.LightmapScale; // See LightmapUVsDensityMaterialShader
 #endif
 
     // Push draw call to the render lists

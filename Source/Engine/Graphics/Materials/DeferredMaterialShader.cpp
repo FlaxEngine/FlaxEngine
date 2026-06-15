@@ -10,7 +10,6 @@
 #include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
-#include "Engine/Graphics/Models/SkinnedMeshDrawData.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/GPULimits.h"
@@ -56,19 +55,12 @@ void DeferredMaterialShader::Bind(BindParameters& params)
     MaterialParams::Bind(params.ParamsLink, bindMeta);
     context->BindSR(0, params.ObjectBuffer);
 
-    // Check if using mesh skinning
-    const bool useSkinning = drawCall.Surface.Skinning != nullptr;
-    bool perBoneMotionBlur = false;
+    // Bind skinning buffer
+    const bool useSkinning = drawCall.Surface.Skinning != DrawCall::SkinningMode::None;
+    const bool usePerBoneMotionBlur = drawCall.Surface.Skinning == DrawCall::SkinningMode::WithPrevBones;
     if (useSkinning)
     {
-        // Bind skinning buffer
-        ASSERT(drawCall.Surface.Skinning->IsReady());
-        context->BindSR(1, drawCall.Surface.Skinning->BoneMatrices->View());
-        if (drawCall.Surface.Skinning->PrevBoneMatrices && drawCall.Surface.Skinning->PrevBoneMatrices->IsAllocated())
-        {
-            context->BindSR(2, drawCall.Surface.Skinning->PrevBoneMatrices->View());
-            perBoneMotionBlur = true;
-        }
+        context->BindSR(1, drawCall.Surface.SkinningBones->View());
     }
 
     // Bind constants
@@ -90,9 +82,8 @@ void DeferredMaterialShader::Bind(BindParameters& params)
         // Invert culling when scale is negative
         cullMode = cullMode == CullMode::Normal ? CullMode::Inverted : CullMode::Normal;
     }
-    ASSERT_LOW_LAYER(!(useSkinning && params.Instanced)); // No support for instancing skinned meshes
     const auto cache = params.Instanced ? &_cacheInstanced : &_cache;
-    PipelineStateCache* psCache = cache->GetPS(view.Pass, useLightmap, useSkinning, perBoneMotionBlur);
+    PipelineStateCache* psCache = cache->GetPS(view.Pass, useLightmap, useSkinning, usePerBoneMotionBlur);
     ASSERT(psCache);
     GPUPipelineState* state = psCache->GetPS(cullMode, wireframe);
 
@@ -139,28 +130,35 @@ bool DeferredMaterialShader::Load()
     psDesc.StencilReadMask = 0;
     psDesc.StencilPassOp = StencilOperation::Replace;
 
+    auto vs = _shader->GetVS("VS");
+    auto vsInstanced = _shader->GetVS("VS", 1);
+    auto vsSkinned = _shader->GetVS("VS_Skinned");
+    auto vsSkinnedInstanced = _shader->GetVS("VS_Skinned", 2);
+
     // GBuffer Pass
-    psDesc.VS = _shader->GetVS("VS");
+    psDesc.VS = vs;
     failed |= psDesc.VS == nullptr;
     psDesc.PS = _shader->GetPS("PS_GBuffer");
     _cache.Default.Init(psDesc);
-    psDesc.VS = _shader->GetVS("VS", 1);
+    psDesc.VS = vsInstanced;
     failed |= psDesc.VS == nullptr;
     _cacheInstanced.Default.Init(psDesc);
 
-    // GBuffer Pass with lightmap (pixel shader permutation for USE_LIGHTMAP=1)
-    psDesc.VS = _shader->GetVS("VS");
+    // GBuffer Pass with lightmap (USE_LIGHTMAP=1)
+    psDesc.VS = vs;
     failed |= psDesc.VS == nullptr;
     psDesc.PS = _shader->GetPS("PS_GBuffer", 1);
     _cache.DefaultLightmap.Init(psDesc);
-    psDesc.VS = _shader->GetVS("VS", 1);
+    psDesc.VS = vsInstanced;
     failed |= psDesc.VS == nullptr;
     _cacheInstanced.DefaultLightmap.Init(psDesc);
 
-    // GBuffer Pass with skinning
-    psDesc.VS = _shader->GetVS("VS_Skinned");
+    // GBuffer Pass with skinning (USE_SKINNING=1)
+    psDesc.VS = vsSkinned;
     psDesc.PS = _shader->GetPS("PS_GBuffer");
     _cache.DefaultSkinned.Init(psDesc);
+    psDesc.VS = vsSkinnedInstanced;
+    _cacheInstanced.DefaultSkinned.Init(psDesc);
 
     psDesc.StencilEnable = false;
     psDesc.StencilPassOp = StencilOperation::Keep;
@@ -169,13 +167,15 @@ bool DeferredMaterialShader::Load()
     if (_shader->HasShader("PS_QuadOverdraw"))
     {
         // Quad Overdraw
-        psDesc.VS = _shader->GetVS("VS");
+        psDesc.VS = vs;
         psDesc.PS = _shader->GetPS("PS_QuadOverdraw");
         _cache.QuadOverdraw.Init(psDesc);
-        psDesc.VS = _shader->GetVS("VS", 1);
+        psDesc.VS = vsInstanced;
         _cacheInstanced.Depth.Init(psDesc);
-        psDesc.VS = _shader->GetVS("VS_Skinned");
+        psDesc.VS = vsSkinned;
         _cache.QuadOverdrawSkinned.Init(psDesc);
+        psDesc.VS = vsSkinnedInstanced;
+        _cacheInstanced.QuadOverdrawSkinned.Init(psDesc);
     }
 #endif
 
@@ -183,17 +183,22 @@ bool DeferredMaterialShader::Load()
     psDesc.DepthWriteEnable = false;
     psDesc.DepthEnable = true;
     psDesc.DepthFunc = ComparisonFunc::DefaultEqual;
-    psDesc.VS = _shader->GetVS("VS");
+    psDesc.VS = vs;
     psDesc.PS = _shader->GetPS("PS_MotionVectors");
     _cache.MotionVectors.Init(psDesc);
+    _cacheInstanced.MotionVectors.Init(psDesc);
 
     // Motion Vectors pass with skinning
-    psDesc.VS = _shader->GetVS("VS_Skinned");
+    psDesc.VS = vsSkinned;
     _cache.MotionVectorsSkinned.Init(psDesc);
+    psDesc.VS = vsSkinnedInstanced;
+    _cacheInstanced.MotionVectorsSkinned.Init(psDesc);
 
     // Motion Vectors pass with skinning (with per-bone motion blur)
     psDesc.VS = _shader->GetVS("VS_Skinned", 1);
     _cache.MotionVectorsSkinnedPerBone.Init(psDesc);
+    psDesc.VS = _shader->GetVS("VS_Skinned", 3);
+    _cacheInstanced.MotionVectorsSkinnedPerBone.Init(psDesc);
 
     // Depth Pass
     psDesc.CullMode = CullMode::TwoSided;
@@ -209,8 +214,8 @@ bool DeferredMaterialShader::Load()
     {
         // Materials with masking need full vertex buffer to get texcoord used to sample textures for per pixel masking.
         // Materials with world pos offset need full VB to apply offset using texcoord etc.
-        psDesc.VS = _shader->GetVS("VS");
-        instancedDepthPassVS = _shader->GetVS("VS", 1);
+        psDesc.VS = vs;
+        instancedDepthPassVS = vsInstanced;
         psDesc.PS = _shader->GetPS("PS_Depth");
     }
     else
@@ -224,8 +229,10 @@ bool DeferredMaterialShader::Load()
     _cacheInstanced.Depth.Init(psDesc);
 
     // Depth Pass with skinning
-    psDesc.VS = _shader->GetVS("VS_Skinned");
+    psDesc.VS = vsSkinned;
     _cache.DepthSkinned.Init(psDesc);
+    psDesc.VS = vsSkinnedInstanced;
+    _cacheInstanced.DepthSkinned.Init(psDesc);
 
     return failed;
 }

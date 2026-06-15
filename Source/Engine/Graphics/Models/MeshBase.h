@@ -362,7 +362,10 @@ public:
                 /// <summary>
                 /// The skinning.
                 /// </summary>
-                SkinnedMeshDrawData* Skinning;
+                GPUBuffer* SkinningBones;
+                uint32 SkinningBonesOffset; // In Matrix3x4s
+                int16 PrevBonesOffset; // In Matrix3x4s, can be negative
+                bool WithPrevBones;
             };
 
             struct
@@ -425,8 +428,18 @@ public:
         int8 SortOrder;
 
 #if USE_EDITOR
-        float LightmapScale = -1.0f;
+        float LightmapScale;
 #endif
+
+        // Zero-init.
+        FORCE_INLINE DrawInfo()
+        {
+            Platform::MemoryClear(this, sizeof(DrawInfo));
+            ForcedLOD = -1;
+#if USE_EDITOR
+            LightmapScale = -1;
+#endif
+        }
 
         // Packs object layer into the stencil bits.
         FORCE_INLINE void SetStencilValue(int32 layer)

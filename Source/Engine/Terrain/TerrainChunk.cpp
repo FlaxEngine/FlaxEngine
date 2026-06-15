@@ -126,7 +126,10 @@ void TerrainChunk::Draw(const RenderContext& renderContext) const
     drawCall.SetStencilValue(_patch->_terrain->GetLayer());
 #if USE_EDITOR
     if (renderContext.View.Mode == ViewMode::LightmapUVsDensity)
-        drawCall.Surface.LODDitherFactor = 1.0f; // See LightmapUVsDensityMaterialShader
+    {
+        float lightmapScale = 1.0f;
+        drawCall.Surface.SkinningBonesOffset = *(uint32*)&lightmapScale; // See LightmapUVsDensityMaterialShader
+    }
 #endif
 
     // Add half-texel offset for heightmap sampling in vertex shader
@@ -187,7 +190,10 @@ void TerrainChunk::Draw(const RenderContext& renderContext, MaterialBase* materi
     drawCall.SetStencilValue(_patch->_terrain->GetLayer());
 #if USE_EDITOR
     if (renderContext.View.Mode == ViewMode::LightmapUVsDensity)
-        drawCall.Surface.LODDitherFactor = 1.0f; // See LightmapUVsDensityMaterialShader
+    {
+        float lightmapScale = 1.0f;
+        drawCall.Surface.SkinningBonesOffset = *(uint32*)&lightmapScale; // See LightmapUVsDensityMaterialShader
+    }
 #endif
 
     // Add half-texel offset for heightmap sampling in vertex shader

@@ -8,7 +8,6 @@
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Graphics/RenderTask.h"
-#include "Engine/Graphics/Models/SkinnedMeshDrawData.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Renderer/DrawCall.h"
@@ -58,13 +57,11 @@ void ForwardMaterialShader::Bind(BindParameters& params)
     MaterialParams::Bind(params.ParamsLink, bindMeta);
     context->BindSR(0, params.ObjectBuffer);
 
-    // Check if using mesh skinning
-    const bool useSkinning = drawCall.Surface.Skinning != nullptr;
+    // Bind skinning buffer
+    const bool useSkinning = drawCall.Surface.Skinning != DrawCall::SkinningMode::None;
     if (useSkinning)
     {
-        // Bind skinning buffer
-        ASSERT(drawCall.Surface.Skinning->IsReady());
-        context->BindSR(1, drawCall.Surface.Skinning->BoneMatrices->View());
+        context->BindSR(1, drawCall.Surface.SkinningBones->View());
     }
 
     // Bind constants

@@ -84,16 +84,8 @@ void ViewportIconsRenderer::DrawIcons(RenderContext& renderContext, Actor* actor
         return;
 
     Mesh::DrawInfo draw;
-    draw.Lightmap = nullptr;
-    draw.LightmapUVs = nullptr;
     draw.Flags = StaticFlags::Transform;
     draw.DrawModes = DrawPass::Forward;
-    draw.PerInstanceRandom = 0;
-    draw.StencilValue = 0;
-    draw.LODBias = 0;
-    draw.ForcedLOD = -1;
-    draw.SortOrder = 0;
-    draw.VertexColors = nullptr;
 
     if (const auto scene = SceneObject::Cast<Scene>(actor))
     {

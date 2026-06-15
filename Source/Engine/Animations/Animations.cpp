@@ -95,9 +95,6 @@ void AnimationsSystem::Job(int32 index)
         ZoneName(*graphName, graphName.Length());
 #endif
 
-        // Prepare skinning data
-        animatedModel->SetupSkinningData();
-
         // Animation delta time can be based on a time since last update or the current delta
         float dt = animatedModel->UseTimeScale ? DeltaTime : UnscaledDeltaTime;
         float t = animatedModel->UseTimeScale ? Time : UnscaledTime;

@@ -334,6 +334,7 @@ void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info,
         return;
 
     // Setup draw call
+    ASSERT(info.SkinningBones);
     DrawCall drawCall;
     drawCall.Geometry.IndexBuffer = _indexBuffer;
     drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
@@ -348,8 +349,11 @@ void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info,
     drawCall.ObjectRadius = (float)info.Bounds.Radius; // TODO: should it be kept in sync with ObjectPosition?
     drawCall.Surface.GeometrySize = _box.GetSize();
     drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
-    drawCall.Surface.Skinning = info.Skinning;
-    drawCall.Surface.LODDitherFactor = lodDitherFactor;
+    drawCall.Surface.Skinning = info.WithPrevBones ? DrawCall::SkinningMode::WithPrevBones : DrawCall::SkinningMode::Active;
+    drawCall.Surface.SkinningBones = info.SkinningBones;
+    drawCall.Surface.SkinningBonesOffset = info.SkinningBonesOffset;
+    drawCall.Surface.PrevBonesOffset = info.PrevBonesOffset;
+    drawCall.Surface.LODDitherFactor = (byte)(lodDitherFactor * 255);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
     drawCall.StencilValue = info.StencilValue;
 
@@ -376,6 +380,7 @@ void SkinnedMesh::Draw(const RenderContextBatch& renderContextBatch, const DrawI
         return;
 
     // Setup draw call
+    ASSERT(info.SkinningBones);
     DrawCall drawCall;
     drawCall.Geometry.IndexBuffer = _indexBuffer;
     drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
@@ -389,8 +394,11 @@ void SkinnedMesh::Draw(const RenderContextBatch& renderContextBatch, const DrawI
     drawCall.ObjectRadius = (float)info.Bounds.Radius; // TODO: should it be kept in sync with ObjectPosition?
     drawCall.Surface.GeometrySize = _box.GetSize();
     drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
-    drawCall.Surface.Skinning = info.Skinning;
-    drawCall.Surface.LODDitherFactor = lodDitherFactor;
+    drawCall.Surface.Skinning = info.WithPrevBones ? DrawCall::SkinningMode::WithPrevBones : DrawCall::SkinningMode::Active;
+    drawCall.Surface.SkinningBones = info.SkinningBones;
+    drawCall.Surface.SkinningBonesOffset = info.SkinningBonesOffset;
+    drawCall.Surface.PrevBonesOffset = info.PrevBonesOffset;
+    drawCall.Surface.LODDitherFactor = (byte)(lodDitherFactor * 255);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
     drawCall.StencilValue = info.StencilValue;
 

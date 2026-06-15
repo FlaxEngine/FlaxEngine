@@ -104,7 +104,7 @@ void LightmapUVsDensityMaterialShader::Bind(BindParameters& params)
         data.LightmapSize = 1024.0f;
         data.LightmapArea = drawCall.Surface.LightmapUVsArea.ToFloat4();
         const ModelLOD* drawCallModelLod;
-        float scaleInLightmap = drawCall.Surface.LODDitherFactor; // Reuse field
+        float scaleInLightmap = *(float*)&drawCall.Surface.SkinningBonesOffset; // Reuse field (the same bit-depth)
         if (scaleInLightmap < 0.0f)
             data.LightmapSize = -1.0f; // Not using lightmap
         else if (GBufferPass::IndexBufferToModelLOD.TryGet(drawCall.Geometry.IndexBuffer, drawCallModelLod))

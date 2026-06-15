@@ -20,10 +20,6 @@ Buffer<float4> ObjectsBuffer : register(t0);
 #if USE_SKINNING
 // The skeletal bones matrix buffer (stored as 4x3, 3 float4 behind each other)
 Buffer<float4> BoneMatrices : register(t1);
-#if PER_BONE_MOTION_BLUR
-// The skeletal bones matrix buffer from the previous frame
-Buffer<float4> PrevBoneMatrices : register(t2);
-#endif
 #endif
 
 // Geometry data passed though the graphics rendering stages up to the pixel shader
@@ -418,32 +414,8 @@ float4 VS_Depth(ModelInput_PosOnly input) : SV_Position
 
 #if USE_SKINNING
 
-#if PER_BONE_MOTION_BLUR
-
-float3x4 GetPrevBoneMatrix(int index)
-{
-	float4 a = PrevBoneMatrices[index * 3];
-	float4 b = PrevBoneMatrices[index * 3 + 1];
-	float4 c = PrevBoneMatrices[index * 3 + 2];
-	return float3x4(a, b, c);
-}
-
-float3 SkinPrevPosition(ModelInput_Skinned input)
-{
-	float4 position = float4(input.Position.xyz, 1);
-	float weightsSum = input.BlendWeights.x + input.BlendWeights.y + input.BlendWeights.z + input.BlendWeights.w;
-	float mainWeight = input.BlendWeights.x + (1.0f - weightsSum); // Re-normalize to account for 16-bit weights encoding erros
-	float3x4 boneMatrix = mainWeight * GetPrevBoneMatrix(input.BlendIndices.x);
-	boneMatrix += input.BlendWeights.y * GetPrevBoneMatrix(input.BlendIndices.y);
-	boneMatrix += input.BlendWeights.z * GetPrevBoneMatrix(input.BlendIndices.z);
-	boneMatrix += input.BlendWeights.w * GetPrevBoneMatrix(input.BlendIndices.w);
-	return mul(boneMatrix, position);
-}
-
-#endif
-
 // Calculates the transposed transform matrix for the given bone index
-float3x4 GetBoneMatrix(int index)
+float3x4 GetBoneMatrix(uint index)
 {
 	float4 a = BoneMatrices[index * 3];
 	float4 b = BoneMatrices[index * 3 + 1];
@@ -452,14 +424,14 @@ float3x4 GetBoneMatrix(int index)
 }
 
 // Calculates the transposed transform matrix for the given vertex (uses blending)
-float3x4 GetBoneMatrix(ModelInput_Skinned input)
+float3x4 GetBoneMatrix(ModelInput_Skinned input, uint skinningOffset)
 {
 	float weightsSum = input.BlendWeights.x + input.BlendWeights.y + input.BlendWeights.z + input.BlendWeights.w;
 	float mainWeight = input.BlendWeights.x + (1.0f - weightsSum); // Re-normalize to account for 16-bit weights encoding erros
-	float3x4 boneMatrix = mainWeight * GetBoneMatrix(input.BlendIndices.x);
-	boneMatrix += input.BlendWeights.y * GetBoneMatrix(input.BlendIndices.y);
-	boneMatrix += input.BlendWeights.z * GetBoneMatrix(input.BlendIndices.z);
-	boneMatrix += input.BlendWeights.w * GetBoneMatrix(input.BlendIndices.w);
+	float3x4 boneMatrix = mainWeight * GetBoneMatrix(input.BlendIndices.x + skinningOffset);
+	boneMatrix += input.BlendWeights.y * GetBoneMatrix(input.BlendIndices.y + skinningOffset);
+	boneMatrix += input.BlendWeights.z * GetBoneMatrix(input.BlendIndices.z + skinningOffset);
+	boneMatrix += input.BlendWeights.w * GetBoneMatrix(input.BlendIndices.w + skinningOffset);
 	return boneMatrix;
 }
 
@@ -487,31 +459,40 @@ float3x3 SkinTangents(ModelInput_Skinned input, float3x4 boneMatrix)
 
 // Vertex Shader function for GBuffers/Depth Pass (skinned mesh rendering)
 META_VS(true, FEATURE_LEVEL_ES2)
-META_PERMUTATION_1(USE_SKINNING=1)
-META_PERMUTATION_2(USE_SKINNING=1, PER_BONE_MOTION_BLUR=1)
+META_PERMUTATION_2(USE_SKINNING=1, USE_INSTANCING=0)
+META_PERMUTATION_3(USE_SKINNING=1, USE_INSTANCING=0, PER_BONE_MOTION_BLUR=1)
+META_PERMUTATION_2(USE_SKINNING=1, USE_INSTANCING=1)
+META_PERMUTATION_3(USE_SKINNING=1, USE_INSTANCING=1, PER_BONE_MOTION_BLUR=1)
 META_VS_IN_ELEMENT(POSITION,     0, R32G32B32_FLOAT,   0, 0,     PER_VERTEX, 0, true)
 META_VS_IN_ELEMENT(TEXCOORD,     0, R16G16_FLOAT,      0, ALIGN, PER_VERTEX, 0, true)
 META_VS_IN_ELEMENT(NORMAL,       0, R10G10B10A2_UNORM, 0, ALIGN, PER_VERTEX, 0, true)
 META_VS_IN_ELEMENT(TANGENT,      0, R10G10B10A2_UNORM, 0, ALIGN, PER_VERTEX, 0, true)
 META_VS_IN_ELEMENT(BLENDINDICES, 0, R8G8B8A8_UINT,     0, ALIGN, PER_VERTEX, 0, true)
 META_VS_IN_ELEMENT(BLENDWEIGHTS, 0, R16G16B16A16_FLOAT,0, ALIGN, PER_VERTEX, 0, true)
+META_VS_IN_ELEMENT(ATTRIBUTE,    0, R32_UINT,          3, 0,     PER_INSTANCE, 1, USE_INSTANCING)
 VertexOutput VS_Skinned(ModelInput_Skinned input)
 {
 	VertexOutput output;
 
 	// Load object data
+#if USE_INSTANCING
+	output.Geometry.ObjectIndex = input.ObjectIndex;
+#else
 	output.Geometry.ObjectIndex = DrawObjectIndex;
+#endif
 	ObjectData object = LoadObject(ObjectsBuffer, output.Geometry.ObjectIndex);
 	
 	// Perform skinning
-	float3x4 boneMatrix = GetBoneMatrix(input);
+	float3x4 boneMatrix = GetBoneMatrix(input, object.SkinningOffset);
 	float3 position = SkinPosition(input, boneMatrix);
 	float3x3 tangentToLocal = SkinTangents(input, boneMatrix);
 	
 	// Compute world space vertex position
 	output.Geometry.WorldPosition = mul(float4(position, 1), object.WorldMatrix).xyz;
 #if PER_BONE_MOTION_BLUR
-	float3 prevPosition = SkinPrevPosition(input);
+	int prevBonesOffset = (int)object.SkinningOffset + object.PrevBonesOffset; // Offset can be negative
+	float3x4 prevBoneMatrix = GetBoneMatrix(input, (uint)prevBonesOffset);
+	float3 prevPosition = SkinPosition(input, prevBoneMatrix);
 	output.Geometry.PrevWorldPosition = mul(float4(prevPosition, 1), object.PrevWorldMatrix).xyz;
 #else
 	output.Geometry.PrevWorldPosition = mul(float4(position, 1), object.PrevWorldMatrix).xyz;

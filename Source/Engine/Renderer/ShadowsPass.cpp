@@ -19,6 +19,7 @@
 #include "Engine/Renderer/Lightmaps.h"
 #endif
 
+#define SHADOWS_USE_CACHE 1
 #define SHADOWS_POSITION_ERROR METERS_TO_UNITS(0.1f)
 #define SHADOWS_ROTATION_ERROR 0.9999f
 #define SHADOWS_MAX_TILES 6
@@ -237,6 +238,7 @@ struct ShadowAtlasLight
 
     void ValidateCache(const RenderView& view, const RenderLightData& light)
     {
+#if SHADOWS_USE_CACHE
         if (!Cache.StaticValid || !Cache.DynamicValid)
             return;
         if (!Math::NearEqual(Cache.Distance, light.ShadowsDistance) ||
@@ -286,6 +288,9 @@ struct ShadowAtlasLight
                 Cache.DynamicValid = false;
             }
         }
+#else
+        Cache.StaticValid = Cache.DynamicValid = false;
+#endif
     }
 };
 

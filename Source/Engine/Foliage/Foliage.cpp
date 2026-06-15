@@ -163,7 +163,7 @@ void Foliage::DrawInstance(DrawContext& context, FoliageInstance& instance, int3
             Matrix::Transformation(transform.Scale, transform.Orientation, translation, instance.CachedDrawWorld);
             instance.CachedDrawWorldValid = true;
         }
-        instanceData.Store(instance.CachedDrawWorld, instance.CachedDrawWorld, instance.LightmapUVsArea, drawCall.Surface.GeometrySize, instance.Random, worldDeterminantSign, lodDitherFactor);
+        instanceData.Store(instance.CachedDrawWorld, instance.CachedDrawWorld, instance.LightmapUVsArea, drawCall.Surface.GeometrySize, instance.Random, worldDeterminantSign, (byte)(lodDitherFactor * 255));
     }
 }
 
@@ -461,10 +461,6 @@ void Foliage::DrawFoliageJob(int32 i)
     Mesh::DrawInfo draw;
     draw.Flags = GetStaticFlags();
     draw.DrawModes = (DrawPass)(DrawPass::Default & renderContext.View.Pass);
-    draw.LODBias = 0;
-    draw.ForcedLOD = -1;
-    draw.VertexColors = nullptr;
-    draw.Deformation = nullptr;
     DrawType(renderContext, type, draw);
 #endif
 }
@@ -564,7 +560,7 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Me
         firstInstance.Load(batch.DrawCall);
 #if USE_EDITOR
         if (renderContext.View.Mode == ViewMode::LightmapUVsDensity)
-            batch.DrawCall.Surface.LODDitherFactor = type.ScaleInLightmap; // See LightmapUVsDensityMaterialShader
+            batch.DrawCall.Surface.SkinningBonesOffset = *(uint32*)&type.ScaleInLightmap; // See LightmapUVsDensityMaterialShader
 #endif
 
         if (EnumHasAnyFlags(drawModes, DrawPass::Forward))
@@ -1298,16 +1294,11 @@ void Foliage::Draw(RenderContext& renderContext)
         drawState.PrevWorld = world;
         Mesh::DrawInfo draw;
         draw.Flags = GetStaticFlags();
-        draw.LODBias = 0;
-        draw.ForcedLOD = -1;
-        draw.SortOrder = 0;
-        draw.VertexColors = nullptr;
         draw.Lightmap = _scene ? _scene->LightmapsData.GetReadyLightmap(instance.LightmapTextureIndex) : nullptr;
         draw.LightmapUVs = &instance.LightmapUVsArea;
         draw.Buffer = &type.Entries;
         draw.World = &world;
         draw.DrawState = &drawState;
-        draw.Deformation = nullptr;
         draw.Bounds = instance.Bounds;
         draw.PerInstanceRandom = instance.Random;
         draw.DrawModes = type._drawModes & view.Pass & view.GetShadowsDrawPassMask(type.ShadowsMode);
@@ -1321,10 +1312,6 @@ void Foliage::Draw(RenderContext& renderContext)
     Mesh::DrawInfo draw;
     draw.Flags = GetStaticFlags();
     draw.DrawModes = (DrawPass)(DrawPass::Default & view.Pass);
-    draw.LODBias = 0;
-    draw.ForcedLOD = -1;
-    draw.VertexColors = nullptr;
-    draw.Deformation = nullptr;
 #endif
 #if FOLIAGE_USE_SINGLE_QUAD_TREE
     if (Root)

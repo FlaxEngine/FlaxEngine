@@ -47,7 +47,7 @@ namespace
     }
 }
 
-void ShaderObjectData::Store(const Matrix& worldMatrix, const Matrix& prevWorldMatrix, const Half4& lightmapUVsArea, const Float3& geometrySize, float perInstanceRandom, float worldDeterminantSign, float lodDitherFactor)
+void ShaderObjectData::Store(const Matrix& worldMatrix, const Matrix& prevWorldMatrix, const Half4& lightmapUVsArea, const Float3& geometrySize, float perInstanceRandom, float worldDeterminantSign, byte lodDitherFactor, uint32 skinningOffset, int16 skinningPrevOffset)
 {
     Float2 lightmapUVsAreaPackedAliased = *(Float2*)&lightmapUVsArea;
     Raw[0] = Float4(worldMatrix.M11, worldMatrix.M12, worldMatrix.M13, worldMatrix.M41);
@@ -57,11 +57,15 @@ void ShaderObjectData::Store(const Matrix& worldMatrix, const Matrix& prevWorldM
     Raw[4] = Float4(prevWorldMatrix.M21, prevWorldMatrix.M22, prevWorldMatrix.M23, prevWorldMatrix.M42);
     Raw[5] = Float4(prevWorldMatrix.M31, prevWorldMatrix.M32, prevWorldMatrix.M33, prevWorldMatrix.M43);
     Raw[6] = Float4(geometrySize, perInstanceRandom);
-    Raw[7] = Float4(worldDeterminantSign, lodDitherFactor, lightmapUVsAreaPackedAliased.X, lightmapUVsAreaPackedAliased.Y);
-    // TODO: pack WorldDeterminantSign and LODDitherFactor
+    // 0-3 bits: LOD Dither Factor (0-1 range mapped to 0-255)
+    // 4 bit: World Determinant Sign (0 for normal or 1 for inversed)
+    // 5-15 bits: unused
+    // 16-31 bits: Offset in Skinning Bones buffer for previous frame bones (can be negative)
+    uint32 packed7x = (uint32)lodDitherFactor + (worldDeterminantSign < 0 ? 256 : 0) + ((skinningPrevOffset + 32760) << 16);
+    Raw[7] = Float4(*(float*)&packed7x, *(float*)&skinningOffset, lightmapUVsAreaPackedAliased.X, lightmapUVsAreaPackedAliased.Y);
 }
 
-void ShaderObjectData::Load(Matrix& worldMatrix, Matrix& prevWorldMatrix, Half4& lightmapUVsArea, Float3& geometrySize, float& perInstanceRandom, float& worldDeterminantSign, float& lodDitherFactor) const
+void ShaderObjectData::Load(Matrix& worldMatrix, Matrix& prevWorldMatrix, Half4& lightmapUVsArea, Float3& geometrySize, float& perInstanceRandom, float& worldDeterminantSign, byte& lodDitherFactor, uint32& skinningOffset, int16& skinningPrevOffset) const
 {
     worldMatrix.SetRow1(Float4(Float3(Raw[0]), 0.0f));
     worldMatrix.SetRow2(Float4(Float3(Raw[1]), 0.0f));
@@ -73,8 +77,11 @@ void ShaderObjectData::Load(Matrix& worldMatrix, Matrix& prevWorldMatrix, Half4&
     prevWorldMatrix.SetRow4(Float4(Raw[3].W, Raw[4].W, Raw[5].W, 1.0f));
     geometrySize = Float3(Raw[6]);
     perInstanceRandom = Raw[6].W;
-    worldDeterminantSign = Raw[7].X;
-    lodDitherFactor = Raw[7].Y;
+    uint32 packed7x = *(uint32*)&Raw[7].X;
+    lodDitherFactor = packed7x & 255;
+    worldDeterminantSign = (packed7x & 256) == 256 ? -1.0f : 1.0f;
+    skinningOffset = *(uint32*)&Raw[7].Y;
+    skinningPrevOffset = (packed7x >> 16) - 32760;
     Float2 lightmapUVsAreaPackedAliased(Raw[7].Z, Raw[7].W);
     lightmapUVsArea = *(Half4*)&lightmapUVsAreaPackedAliased;
 }
@@ -289,6 +296,11 @@ void RenderList::CleanupCache()
     // Don't call it during rendering (data may be already in use)
     ASSERT(GPUDevice::Instance == nullptr || GPUDevice::Instance->CurrentTask == nullptr);
 
+    // Free extensions
+    for (IExtension* e : GetExtensions())
+        e->Dispose();
+
+    // Free pooled memory
     MemPoolLocker.Lock();
     FreeRenderList.ClearDelete();
     for (auto& e : MemPool)
@@ -935,7 +947,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
 
 FORCE_INLINE bool CanUseInstancing(DrawPass pass)
 {
-    return pass == DrawPass::GBuffer || pass == DrawPass::Depth;
+    return pass == DrawPass::GBuffer || pass == DrawPass::Depth || pass == DrawPass::MotionVectors;
 }
 
 FORCE_INLINE bool DrawsEqual(const DrawCall* a, const DrawCall* b)
@@ -1217,15 +1229,14 @@ void SurfaceDrawCallHandler::GetHash(const DrawCall& drawCall, uint32& batchKey)
 {
     if (drawCall.Surface.Lightmap)
         CombineHash(batchKey, 1313);
-    if (drawCall.Surface.Skinning)
-        CombineHash(batchKey, 11);
+    CombineHash(batchKey, (byte)drawCall.Surface.Skinning);
 }
 
 bool SurfaceDrawCallHandler::CanBatch(const DrawCall& a, const DrawCall& b, DrawPass pass)
 {
     // TODO: find reason why batching static meshes with lightmap causes problems with sampling in shader (flickering when meshes in batch order gets changes due to async draw calls collection)
     if (a.Surface.Lightmap == nullptr && b.Surface.Lightmap == nullptr &&
-        a.Surface.Skinning == nullptr && b.Surface.Skinning == nullptr)
+        a.Surface.Skinning == b.Surface.Skinning)
     {
         auto& materialInfo = a.Material->GetInfo();
         if (a.Material != b.Material)

@@ -1089,7 +1089,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
 
         // Special case if imported model has no bones but has valid skeleton and meshes.
         // We assume that every mesh uses a single bone. Copy nodes to bones.
-        if (data.Skeleton.Bones.IsEmpty() && Math::IsInRange(data.Skeleton.Nodes.Count(), 1, MODEL_MAX_BONES_PER_MODEL))
+        if (data.Skeleton.Bones.IsEmpty() && Math::IsInRange(data.Skeleton.Nodes.Count(), 1, (int32)MODEL_MAX_BONES_PER_MODEL))
         {
             data.Skeleton.Bones.Resize(data.Skeleton.Nodes.Count());
             for (int32 i = 0; i < data.Skeleton.Nodes.Count(); i++)

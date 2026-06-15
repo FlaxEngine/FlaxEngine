@@ -366,19 +366,11 @@ void Camera::Draw(RenderContext& renderContext)
         draw.Buffer = &_previewModelBuffer;
         draw.World = &world;
         draw.DrawState = &drawState;
-        draw.Deformation = nullptr;
-        draw.Lightmap = nullptr;
-        draw.LightmapUVs = nullptr;
         draw.Flags = StaticFlags::Transform;
         draw.DrawModes = (DrawPass::Depth | DrawPass::GBuffer | DrawPass::Forward) & renderContext.View.Pass;
         BoundingSphere::FromBox(_previewModelBox, draw.Bounds);
         draw.Bounds.Center -= renderContext.View.Origin;
         draw.PerInstanceRandom = GetPerInstanceRandom();
-        draw.StencilValue = 0;
-        draw.LODBias = 0;
-        draw.ForcedLOD = -1;
-        draw.SortOrder = 0;
-        draw.VertexColors = nullptr;
         if (draw.DrawModes != DrawPass::None)
         {
             _previewModel->Draw(renderContext, draw);

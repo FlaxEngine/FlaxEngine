@@ -5,7 +5,6 @@
 #include "ModelInstanceActor.h"
 #include "Engine/Content/Assets/SkinnedModel.h"
 #include "Engine/Content/Assets/AnimationGraph.h"
-#include "Engine/Graphics/Models/SkinnedMeshDrawData.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Core/Delegate.h"
 
@@ -80,9 +79,26 @@ private:
         uint32 Usages;
     };
 
+    struct SkinnedBones
+    {
+        uint32 GlobalBufferOffset; // In bytes
+        uint16 BonesCount;
+        uint16 IsAllocated : 1;
+        uint16 IsDirty : 1;
+        uint16 IsPrevBones : 1;
+        uint16 IsPrevFlushed : 1;
+        uint16 HasPrevBones : 1;
+
+        SkinnedBones();
+        ~SkinnedBones();
+
+        void Update(const SkeletonData& skeleton, const Array<Matrix>& nodesPose, bool perBoneMotionBlur, bool reset = false);
+        void Flush();
+    };
+
     GeometryDrawStateData _drawState;
-    SkinnedMeshDrawData _skinningData;
     AnimationUpdateMode _actualMode;
+    SkinnedBones _bones;
     uint32 _counter;
     Real _lastMinDstSqr;
     bool _isDuringUpdateEvent = false;
@@ -216,8 +232,9 @@ public:
 
     /// <summary>
     /// Validates and creates a proper skinning data.
+    /// [Deprecated in v1.13]
     /// </summary>
-    API_FUNCTION() void SetupSkinningData();
+    API_FUNCTION() DEPRECATED("Not used anymore. Does nothing.") void SetupSkinningData();
 
     /// <summary>
     /// Creates and setups the skinning data (writes the identity bones transformations).

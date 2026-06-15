@@ -487,7 +487,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         switch (baseLayer->Domain)
         {
         case MaterialDomain::Surface:
-            srv = 3; // Objects + Skinning Bones + Prev Bones
+            srv = 2; // Objects + Skinning Bones
             break;
         case MaterialDomain::Decal:
             srv = 2; // Depth buffer + Stencil buffer
