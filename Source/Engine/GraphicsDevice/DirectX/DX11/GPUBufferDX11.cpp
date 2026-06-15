@@ -107,6 +107,8 @@ bool GPUBufferDX11::OnInit()
         data.SysMemSlicePitch = 0;
     }
     VALIDATE_DIRECTX_CALL(_device->GetDevice()->CreateBuffer(&bufferDesc, _desc.InitData ? &data : nullptr, &_resource));
+    if (!_resource)
+        return true;
 
     // Set state
     DX_SET_DEBUG_NAME(_resource, GetName());
