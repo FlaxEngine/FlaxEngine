@@ -242,6 +242,11 @@ public:
     API_FUNCTION() void PreInitSkinningData();
 
     /// <summary>
+    /// Gets the skeleton bones data used for skinning. It contains the reference to GPU buffer with final transformations of the skeleton nodes (bones) that are used for skinning the mesh inside vertex shader.
+    /// </summary>
+    API_PROPERTY() SkinnedMeshBones GetSkinnedMeshBones() const;
+
+    /// <summary>
     /// Gets the per-node final transformations (skeleton pose).
     /// </summary>
     /// <param name="nodesTransformation">The output per-node final transformation matrices.</param>

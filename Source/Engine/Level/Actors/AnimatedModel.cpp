@@ -357,6 +357,31 @@ void AnimatedModel::PreInitSkinningData()
     UpdateSockets();
 }
 
+SkinnedMeshBones AnimatedModel::GetSkinnedMeshBones() const
+{
+    SkinnedMeshBones result;
+    if (_bones.IsAllocated)
+    {
+        // Flush skinning data with GPU
+        // TODO: what if it's called outside the rendering?outside PreDraw/PostDraw on AnimatedModelRenderListExtension?
+        if (_bones.IsDirty && GPUDevice::Instance->IsRendering())
+            const_cast<SkinnedBones&>(_bones).Flush();
+
+        result.BoneMatrices = RenderListExtension.GlobalBuffer;
+        result.BoneOffset = _bones.GlobalBufferOffset / sizeof(Matrix3x4);
+        if (_bones.HasPrevBones && _bones.IsPrevFlushed)
+        {
+            result.PrevBonesOffset = _bones.BonesCount;
+            if (_bones.IsPrevBones)
+            {
+                result.BoneOffset += result.PrevBonesOffset;
+                result.PrevBonesOffset = -result.PrevBonesOffset;
+            }
+        }
+    }
+    return result;
+}
+
 void AnimatedModel::GetCurrentPose(Array<Matrix>& nodesTransformation, bool worldSpace) const
 {
     if (GraphInstance.NodesPose.IsEmpty())

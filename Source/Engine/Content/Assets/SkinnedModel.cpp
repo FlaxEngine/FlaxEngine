@@ -235,6 +235,25 @@ BoundingBox SkinnedModel::GetBox(int32 lodIndex) const
     return LODs[lodIndex].GetBox();
 }
 
+void SkinnedModel::Draw(const RenderContext& renderContext, const SkinnedMeshBones& pose, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, int8 sortOrder) const
+{
+    if (!CanBeRendered() || !pose)
+        return;
+
+    // Select a proper LOD index (model may be culled)
+    const BoundingBox box = GetBox(world);
+    BoundingSphere sphere;
+    BoundingSphere::FromBox(box, sphere);
+    int32 lodIndex = RenderTools::ComputeModelLOD(this, sphere.Center - renderContext.View.Origin, (float)sphere.Radius, renderContext);
+    if (lodIndex == -1)
+        return;
+    lodIndex += renderContext.View.ModelLODBias;
+    lodIndex = ClampLODIndex(lodIndex);
+
+    // Draw
+    LODs[lodIndex].Draw(renderContext, pose, material, world, flags, receiveDecals, DrawPass::Default, 0, sortOrder);
+}
+
 void SkinnedModel::Draw(const RenderContext& renderContext, const SkinnedMesh::DrawInfo& info)
 {
     ModelDraw(this, renderContext, renderContext, info);

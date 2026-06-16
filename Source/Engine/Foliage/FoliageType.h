@@ -3,9 +3,10 @@
 #pragma once
 
 #include "Config.h"
+#include "Engine/Core/ISerializable.h"
 #include "Engine/Core/Collections/ChunkedArray.h"
 #include "Engine/Content/Assets/Model.h"
-#include "Engine/Core/ISerializable.h"
+#include "Engine/Graphics/Models/ModelInstanceEntry.h"
 
 /// <summary>
 /// The foliage instances scaling modes.

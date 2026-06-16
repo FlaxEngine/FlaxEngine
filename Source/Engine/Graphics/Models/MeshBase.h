@@ -19,6 +19,7 @@ struct RenderContext;
 struct RenderContextBatch;
 class Task;
 class ModelBase;
+class MaterialBase;
 class Lightmap;
 class GPUBuffer;
 class SkinnedMeshDrawData;

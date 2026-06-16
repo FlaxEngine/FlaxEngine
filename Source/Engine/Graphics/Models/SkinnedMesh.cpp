@@ -309,6 +309,37 @@ bool SkinnedMesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const Flo
     return ::UpdateMesh(this, vertexCount, triangleCount, PixelFormat::R16_UInt, vertices, triangles, blendIndices, blendWeights, normals, tangents, uvs, colors);
 }
 
+void SkinnedMesh::Draw(const RenderContext& renderContext, const SkinnedMeshBones& pose, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, DrawPass drawModes, float perInstanceRandom, int8 sortOrder, uint8 stencilValue) const
+{
+    if (!material || !material->IsSurface() || !IsInitialized() || !pose)
+        return;
+    drawModes &= material->GetDrawModes();
+    if (drawModes == DrawPass::None)
+        return;
+
+    // Setup draw call
+    DrawCall drawCall;
+    drawCall.Geometry.IndexBuffer = _indexBuffer;
+    drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
+    drawCall.Draw.IndicesCount = _triangles * 3;
+    drawCall.InstanceCount = 1;
+    drawCall.Material = material;
+    drawCall.World = world;
+    drawCall.ObjectPosition = drawCall.World.GetTranslation();
+    drawCall.ObjectRadius = (float)_sphere.Radius * drawCall.World.GetScaleVector().GetAbsolute().MaxValue();
+    drawCall.Surface.GeometrySize = _box.GetSize();
+    drawCall.Surface.PrevWorld = world;
+    drawCall.Surface.Skinning = pose.PrevBonesOffset != 0 ? DrawCall::SkinningMode::WithPrevBones : DrawCall::SkinningMode::Active;
+    drawCall.Surface.SkinningBones = pose.BoneMatrices;
+    drawCall.Surface.SkinningBonesOffset = pose.BoneOffset;
+    drawCall.Surface.PrevBonesOffset = pose.PrevBonesOffset;
+    drawCall.PerInstanceRandom = perInstanceRandom;
+    drawCall.StencilValue = stencilValue;
+
+    // Push draw call to the render list
+    renderContext.List->AddDrawCall(renderContext, drawModes, flags, drawCall, receiveDecals, sortOrder);
+}
+
 void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float lodDitherFactor) const
 {
     const auto& entry = info.Buffer->At(_materialSlotIndex);
@@ -340,7 +371,6 @@ void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info,
     drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
     if (info.Deformation)
         info.Deformation->RunDeformers(this, MeshBufferType::Vertex0, drawCall.Geometry.VertexBuffers[0]);
-    drawCall.Draw.StartIndex = 0;
     drawCall.Draw.IndicesCount = _triangles * 3;
     drawCall.InstanceCount = 1;
     drawCall.Material = material;

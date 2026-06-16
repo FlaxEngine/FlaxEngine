@@ -47,6 +47,24 @@ public:
     bool Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal, SkinnedMesh** mesh);
 
     /// <summary>
+    /// Draws the meshes from the model LOD.
+    /// </summary>
+    /// <param name="renderContext">The rendering context.</param>
+    /// <param name="pose">The Animated Model to use its skeleton bones pose for rendering skinned mesh.</param>
+    /// <param name="material">The material to use for rendering.</param>
+    /// <param name="world">The world transformation of the model.</param>
+    /// <param name="flags">The object static flags.</param>
+    /// <param name="receiveDecals">True if rendered geometry can receive decals, otherwise false.</param>
+    /// <param name="drawModes">The draw passes to use for rendering this object.</param>
+    /// <param name="perInstanceRandom">The random per-instance value (normalized to range 0-1).</param>
+    /// <param name="sortOrder">Object sorting key.</param>
+    API_FUNCTION() void Draw(API_PARAM(Ref) const RenderContext& renderContext, const SkinnedMeshBones& pose, MaterialBase* material, API_PARAM(Ref) const Matrix& world, StaticFlags flags = StaticFlags::None, bool receiveDecals = true, DrawPass drawModes = DrawPass::Default, float perInstanceRandom = 0.0f, int8 sortOrder = 0) const
+    {
+        for (int32 i = 0; i < Meshes.Count(); i++)
+            Meshes.Get()[i].Draw(renderContext, pose, material, world, flags, receiveDecals, drawModes, perInstanceRandom, sortOrder);
+    }
+
+    /// <summary>
     /// Draws the meshes. Binds vertex and index buffers and invokes the draw calls.
     /// </summary>
     /// <param name="context">The GPU context to draw with.</param>
@@ -248,6 +266,18 @@ public:
     {
         LODs[lodIndex].Render(context);
     }
+
+    /// <summary>
+    /// Draws the model.
+    /// </summary>
+    /// <param name="renderContext">The rendering context.</param>
+    /// <param name="pose">The skeleton bones pose to use for rendering skinned mesh.</param>
+    /// <param name="material">The material to use for rendering.</param>
+    /// <param name="world">The world transformation of the model.</param>
+    /// <param name="flags">The object static flags.</param>
+    /// <param name="receiveDecals">True if rendered geometry can receive decals, otherwise false.</param>
+    /// <param name="sortOrder">Object sorting key.</param>
+    API_FUNCTION() void Draw(API_PARAM(Ref) const RenderContext& renderContext, const SkinnedMeshBones& pose, MaterialBase* material, API_PARAM(Ref) const Matrix& world, StaticFlags flags = StaticFlags::None, bool receiveDecals = true, int8 sortOrder = 0) const;
 
     /// <summary>
     /// Draws the model.

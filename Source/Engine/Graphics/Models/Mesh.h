@@ -3,11 +3,8 @@
 #pragma once
 
 #include "MeshBase.h"
-#include "ModelInstanceEntry.h"
 #include "Config.h"
 #include "Types.h"
-
-class Lightmap;
 
 /// <summary>
 /// Represents part of the model that is made of vertices and can be rendered using custom material and transformation.

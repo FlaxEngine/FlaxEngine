@@ -6,6 +6,26 @@
 #include "BlendShape.h"
 
 /// <summary>
+/// Contains skeletal bones pose data for skinned mesh rendering.
+/// </summary>
+API_STRUCT(NoDefault) struct FLAXENGINE_API SkinnedMeshBones
+{
+    DECLARE_SCRIPTING_TYPE_MINIMAL(SkinnedMeshBones);
+
+    // Buffer with skinned mesh bones  data (array of Matrix3x4, one per bone). Used for GPU skinning in the vertex shader.
+    API_FIELD() GPUBuffer* BoneMatrices = nullptr;
+    // Offset in the bones buffer where data starts (in Matrix3x4s).
+    API_FIELD() uint32 BoneOffset = 0;
+    // Offset in the bones buffer where previous-frame bones data starts (in Matrix3x4s). Can be negative, value 0 means it's unsued (single-frame data provided).
+    API_FIELD() int16 PrevBonesOffset = 0;
+
+    FORCE_INLINE operator bool() const
+    {
+        return BoneMatrices != nullptr;
+    }
+};
+
+/// <summary>
 /// Represents part of the skinned model that is made of vertices and can be rendered using custom material, transformation and skeleton bones hierarchy.
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API SkinnedMesh : public MeshBase
@@ -124,6 +144,21 @@ public:
     bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const Float3* vertices, const uint32* triangles, const Int4* blendIndices, const Float4* blendWeights, const Float3* normals = nullptr, const Float3* tangents = nullptr, const Float2* uvs = nullptr, const Color32* colors = nullptr);
 
 public:
+    /// <summary>
+    /// Draws the mesh.
+    /// </summary>
+    /// <param name="renderContext">The rendering context.</param>
+    /// <param name="pose">The skeleton bones pose to use for rendering skinned mesh.</param>
+    /// <param name="material">The material to use for rendering.</param>
+    /// <param name="world">The world transformation of the model.</param>
+    /// <param name="flags">The object static flags.</param>
+    /// <param name="receiveDecals">True if rendered geometry can receive decals, otherwise false.</param>
+    /// <param name="drawModes">The draw passes to use for rendering this object.</param>
+    /// <param name="perInstanceRandom">The random per-instance value (normalized to range 0-1).</param>
+    /// <param name="sortOrder">Object sorting key.</param>
+    /// <param name="stencilValue">Object stencil value.</param>
+    API_FUNCTION() void Draw(API_PARAM(Ref) const RenderContext& renderContext, const SkinnedMeshBones& pose, MaterialBase* material, API_PARAM(Ref) const Matrix& world, StaticFlags flags = StaticFlags::None, bool receiveDecals = true, DrawPass drawModes = DrawPass::Default, float perInstanceRandom = 0.0f, int8 sortOrder = 0, uint8 stencilValue = 0) const;
+
     /// <summary>
     /// Draws the mesh.
     /// </summary>
