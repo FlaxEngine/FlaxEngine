@@ -794,6 +794,9 @@ bool GPUDeviceDX12::Init()
 #ifdef __ID3D12Device2_FWD_DEFINED__
     _device->QueryInterface(IID_PPV_ARGS(&_device2));
 #endif
+#ifdef __ID3D12Device5_FWD_DEFINED__
+    _device->QueryInterface(IID_PPV_ARGS(&_device5));
+#endif
 
     // Change state
     _state = DeviceState::Created;
@@ -849,6 +852,16 @@ bool GPUDeviceDX12::Init()
         D3D12_FEATURE_DATA_D3D12_OPTIONS2 options2 = {};
         if (SUCCEEDED(_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS2, &options2, sizeof(options2))))
             limits.HasDepthBounds = !!options2.DepthBoundsTestSupported;
+
+        // Detect hardware ray tracing support (inline ray queries require DXR Tier 1.1 and an ID3D12Device5 interface)
+#if defined(__ID3D12Device5_FWD_DEFINED__) && !PLATFORM_XBOX_SCARLETT && !PLATFORM_XBOX_ONE
+        D3D12_FEATURE_DATA_D3D12_OPTIONS5 options5 = {};
+        if (_device5 && SUCCEEDED(_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &options5, sizeof(options5))))
+        {
+            LOG(Info, "Raytracing Tier: {0}", (int32)options5.RaytracingTier);
+            limits.HasRayTracing = options5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_1;
+        }
+#endif
     }
 
 #if USE_EDITOR || !BUILD_RELEASE
@@ -1128,6 +1141,9 @@ void GPUDeviceDX12::Dispose()
 
     // Clear DirectX stuff
     SAFE_DELETE(_adapter);
+#ifdef __ID3D12Device5_FWD_DEFINED__
+    SAFE_RELEASE(_device5);
+#endif
     SAFE_RELEASE(_device);
     SAFE_RELEASE(_factoryDXGI);
 

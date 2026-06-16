@@ -41,6 +41,9 @@ private:
 #ifdef __ID3D12GraphicsCommandList1_FWD_DEFINED__
     ID3D12GraphicsCommandList1* _commandList1;
 #endif
+#ifdef __ID3D12GraphicsCommandList4_FWD_DEFINED__
+    ID3D12GraphicsCommandList4* _commandList4 = nullptr;
+#endif
     ID3D12CommandAllocator* _currentAllocator;
     GPUPipelineStateDX12* _currentState;
     GPUShaderProgramCS* _currentCompute;
@@ -92,6 +95,13 @@ public:
     {
         return _commandList;
     }
+#ifdef __ID3D12GraphicsCommandList4_FWD_DEFINED__
+    // Gets the DXR-capable command list interface (null if ray tracing is unsupported).
+    FORCE_INLINE ID3D12GraphicsCommandList4* GetCommandList4() const
+    {
+        return _commandList4;
+    }
+#endif
 
     // Flag for command list state.
     bool IsOpen = false;
@@ -225,6 +235,7 @@ public:
     void ForceRebindDescriptors() override;
     void Transition(GPUResource* resource, GPUResourceAccess access) override;
     void OverlapUA(bool end) override;
+    void BuildAccelerationStructure(GPUAccelerationStructure* accelerationStructure) override;
 };
 
 #endif

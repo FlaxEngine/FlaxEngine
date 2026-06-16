@@ -539,6 +539,17 @@ public:
     virtual GPUConstantBuffer* CreateConstantBuffer(uint32 size, const StringView& name = StringView::Empty) = 0;
 
     /// <summary>
+    /// Creates a hardware ray tracing acceleration structure. Returns null if the backend does not support ray tracing
+    /// (check Limits.HasRayTracing first). Only implemented by the DirectX 12 and Vulkan backends.
+    /// </summary>
+    /// <param name="name">The resource name.</param>
+    /// <returns>The acceleration structure, or null if ray tracing is not supported.</returns>
+    virtual class GPUAccelerationStructure* CreateAccelerationStructure(const StringView& name = StringView::Empty)
+    {
+        return nullptr;
+    }
+
+    /// <summary>
     /// Creates the GPU tasks context.
     /// </summary>
     /// <returns>The GPU tasks context.</returns>

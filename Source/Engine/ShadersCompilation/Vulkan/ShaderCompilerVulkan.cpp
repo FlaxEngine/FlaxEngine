@@ -4,6 +4,7 @@
 
 #include "ShaderCompilerVulkan.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Platform/StringUtils.h"
 #include "Engine/Platform/Platform.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
@@ -22,6 +23,10 @@
 #include <ThirdParty/glslang/MachineIndependent/iomapper.h>
 #include <ThirdParty/glslang/SPIRV/GlslangToSpv.h>
 #include <ThirdParty/spirv-tools/libspirv.hpp>
+
+#if COMPILE_WITH_VK_DXC_SPIRV
+#include "ShaderCompilerVulkan.DxcSpirv.h"
+#endif
 
 #define PRINT_UNIFORMS 0
 #define PRINT_DESCRIPTORS 0
@@ -622,6 +627,16 @@ bool ShaderCompilerVulkan::CompileShader(ShaderFunctionMeta& meta, WritePermutat
 
     // Compile all shader function permutations
     AdditionalDataVS additionalDataVS;
+#if COMPILE_WITH_VK_DXC_SPIRV
+    // Inline ray queries (RaytracingAccelerationStructure / RayQuery) are SM6-only HLSL that glslang cannot
+    // parse. When the shader source uses them, only the SM6 entry points that actually need them (eg.
+    // PS_SceneRT) are routed through DXC; the rest stay on glslang. But glslang parses the whole translation
+    // unit, so it would still trip over the SM6-guarded ray-tracing declarations shared in the file. For the
+    // glslang functions we therefore lower FEATURE_LEVEL to SM5 so that the '#if FEATURE_LEVEL >=
+    // FEATURE_LEVEL_SM6' ray-tracing block is preprocessed out (DXC keeps the real SM6 feature level).
+    const bool fileUsesRayQuery = ShaderCompilerVulkan_UsesRayQuery(_context->Options->Source, _context->Options->SourceLength);
+    const bool useRayTracing = meta.MinFeatureLevel >= FeatureLevel::SM6 && fileUsesRayQuery;
+#endif
     for (int32 permutationIndex = 0; permutationIndex < meta.Permutations.Count(); permutationIndex++)
     {
 #if PRINT_DESCRIPTORS
@@ -663,6 +678,29 @@ bool ShaderCompilerVulkan::CompileShader(ShaderFunctionMeta& meta, WritePermutat
             LOG(Error, "Unknown shader type.");
             return true;
         }
+
+#if COMPILE_WITH_VK_DXC_SPIRV
+        if (useRayTracing)
+        {
+            if (CompileRayTracingPermutation(meta, customDataWrite, permutationIndex, stageSet, type))
+                return true;
+            continue;
+        }
+
+        // glslang cannot parse the SM6 ray-tracing declarations that may live in this shared source, so hide
+        // them by compiling this (non-ray-query) function as SM5. Only needed when the file uses ray queries.
+        if (fileUsesRayQuery)
+        {
+            for (int32 i = 0; i < _macros.Count(); i++)
+            {
+                if (_macros[i].Name && StringUtils::Compare(_macros[i].Name, "FEATURE_LEVEL") == 0)
+                {
+                    _macros[i].Definition = "4"; // FEATURE_LEVEL_SM5
+                    break;
+                }
+            }
+        }
+#endif
 
         // Parse HLSL shader using glslang
         glslang::TShader shader(lang);

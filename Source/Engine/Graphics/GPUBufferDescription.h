@@ -58,6 +58,11 @@ API_ENUM(Attributes="Flags") enum class GPUBufferFlags
     Structured = 0x080,
 
     /// <summary>
+    /// Create a buffer that can be referenced by GPU virtual address (required for ray tracing acceleration structure builds on Vulkan).
+    /// </summary>
+    ShaderDeviceAddress = 0x200,
+
+    /// <summary>
     /// Flag for raw buffers.
     /// </summary>
     RawBuffer = 0x100,

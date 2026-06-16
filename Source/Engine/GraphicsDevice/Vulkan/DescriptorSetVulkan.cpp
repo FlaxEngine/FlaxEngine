@@ -29,6 +29,11 @@ void DescriptorSetLayoutInfoVulkan::AddBindingsForStage(VkShaderStageFlagBits st
         binding.descriptorType = descriptor.DescriptorType;
         binding.descriptorCount = descriptor.Count;
 
+#if defined(VK_KHR_acceleration_structure)
+        if (binding.descriptorType == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
+            AccelerationStructureDescriptorsCount += binding.descriptorCount;
+        else
+#endif
         LayoutTypes[binding.descriptorType]++;
         descSetLayout.LayoutBindings.Add(binding);
         Hash = Crc::MemCrc32(&binding, sizeof(binding), Hash);
@@ -125,6 +130,15 @@ DescriptorPoolVulkan::DescriptorPoolVulkan(GPUDeviceVulkan* device, const Descri
             type.descriptorCount = typesUsed * MaxSetsAllocations;
         }
     }
+#if defined(VK_KHR_acceleration_structure)
+    if (_layout.AccelerationStructureDescriptorsCount > 0)
+    {
+        VkDescriptorPoolSize& type = types.AddOne();
+        Platform::MemoryClear(&type, sizeof(type));
+        type.type = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+        type.descriptorCount = _layout.AccelerationStructureDescriptorsCount * MaxSetsAllocations;
+    }
+#endif
 
     VkDescriptorPoolCreateInfo createInfo;
     RenderToolsVulkan::ZeroStruct(createInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
@@ -340,7 +354,11 @@ PipelineLayoutVulkan::~PipelineLayoutVulkan()
         Device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::PipelineLayout, Handle);
 }
 
-uint32 DescriptorSetWriterVulkan::SetupDescriptorWrites(const SpirvShaderDescriptorInfo& info, VkWriteDescriptorSet* writeDescriptors, VkDescriptorImageInfo* imageInfo, VkDescriptorBufferInfo* bufferInfo, VkBufferView* texelBufferView, uint8* bindingToDynamicOffset)
+uint32 DescriptorSetWriterVulkan::SetupDescriptorWrites(const SpirvShaderDescriptorInfo& info, VkWriteDescriptorSet* writeDescriptors, VkDescriptorImageInfo* imageInfo, VkDescriptorBufferInfo* bufferInfo, VkBufferView* texelBufferView, uint8* bindingToDynamicOffset
+#if defined(VK_KHR_acceleration_structure)
+    , VkWriteDescriptorSetAccelerationStructureKHR* accelerationStructureInfo, VkAccelerationStructureKHR* accelerationStructureHandles
+#endif
+)
 {
     ASSERT(info.DescriptorTypesCount <= SpirvShaderDescriptorInfo::MaxDescriptors);
     WriteDescriptors = writeDescriptors;
@@ -379,6 +397,18 @@ uint32 DescriptorSetWriterVulkan::SetupDescriptorWrites(const SpirvShaderDescrip
             writeDescriptors->pTexelBufferView = texelBufferView;
             texelBufferView += descriptor.Count;
             break;
+#if defined(VK_KHR_acceleration_structure)
+        case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+        {
+            writeDescriptors->pNext = accelerationStructureInfo;
+            accelerationStructureInfo->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
+            accelerationStructureInfo->pAccelerationStructures = accelerationStructureHandles;
+            accelerationStructureInfo->accelerationStructureCount = descriptor.Count;
+            accelerationStructureInfo++;
+            accelerationStructureHandles += descriptor.Count;
+            break;
+        }
+#endif
         default:
             CRASH;
             break;

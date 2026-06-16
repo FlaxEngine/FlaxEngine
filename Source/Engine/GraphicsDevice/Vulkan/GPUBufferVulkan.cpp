@@ -102,6 +102,8 @@ bool GPUBufferVulkan::OnInit()
     bufferInfo.size = _desc.Size;
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::ShaderDeviceAddress))
+        bufferInfo.usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
     if (useSRV && !(_desc.Flags & GPUBufferFlags::Structured))
         bufferInfo.usage |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
     if (useUAV || EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::RawBuffer | GPUBufferFlags::Structured))

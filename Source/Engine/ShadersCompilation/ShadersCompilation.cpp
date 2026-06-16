@@ -249,6 +249,7 @@ ShaderCompiler* ShadersCompilation::RequestCompiler(ShaderProfile profile, Platf
 #endif
 #if COMPILE_WITH_VK_SHADER_COMPILER
     case ShaderProfile::Vulkan_SM5:
+    case ShaderProfile::Vulkan_SM6:
         compiler = New<ShaderCompilerVulkan>(profile);
         break;
 #endif

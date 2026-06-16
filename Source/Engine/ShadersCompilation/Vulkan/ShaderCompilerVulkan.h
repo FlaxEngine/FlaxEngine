@@ -38,6 +38,10 @@ protected:
     bool CompileShader(ShaderFunctionMeta& meta, WritePermutationData customDataWrite = nullptr) override;
     bool OnCompileBegin() override;
 
+#if COMPILE_WITH_VK_DXC_SPIRV
+    bool CompileRayTracingPermutation(ShaderFunctionMeta& meta, WritePermutationData customDataWrite, int32 permutationIndex, int32 stageSet, ShaderStage type);
+#endif
+
 protected:
     virtual void InitParsing(ShaderCompilationContext* context, glslang::TShader& shader);
     virtual void InitCodegen(ShaderCompilationContext* context, glslang::SpvOptions& spvOptions);

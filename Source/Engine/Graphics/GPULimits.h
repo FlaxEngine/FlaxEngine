@@ -333,6 +333,11 @@ API_STRUCT(NoDefault) struct GPULimits
     API_FIELD() bool HasTypedUAVLoad = false;
 
     /// <summary>
+    /// True if device supports hardware ray tracing with inline ray queries (DXR 1.1 RayQuery on DirectX 12, VK_KHR_ray_query on Vulkan). Never set for DirectX 11.
+    /// </summary>
+    API_FIELD() bool HasRayTracing = false;
+
+    /// <summary>
     /// The maximum amount of texture mip levels.
     /// </summary>
     API_FIELD() int32 MaximumMipLevelsCount = 1;

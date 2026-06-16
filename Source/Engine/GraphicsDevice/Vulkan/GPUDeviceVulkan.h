@@ -390,6 +390,7 @@ public:
 #if VULKAN_USE_VALIDATION_CACHE
         uint32 HasEXTValidationCache : 1;
 #endif
+        uint32 HasRayTracingExtensions : 1;
     };
 
     static OptionalVulkanDeviceExtensions OptionalDeviceExtensions;
@@ -592,6 +593,7 @@ public:
     GPUVertexLayout* CreateVertexLayout(const VertexElements& elements, bool explicitOffsets) override;
     GPUSwapChain* CreateSwapChain(Window* window) override;
     GPUConstantBuffer* CreateConstantBuffer(uint32 size, const StringView& name) override;
+    GPUAccelerationStructure* CreateAccelerationStructure(const StringView& name = StringView::Empty) override;
 };
 
 /// <summary>
@@ -699,6 +701,14 @@ public:
     /// <param name="range">The range size (in bytes).</param>
     /// <param name="dynamicOffset">The dynamic offset (in bytes).</param>
     virtual void DescriptorAsDynamicUniformBuffer(GPUContextVulkan* context, VkBuffer& buffer, VkDeviceSize& offset, VkDeviceSize& range, uint32& dynamicOffset)
+    {
+        CRASH;
+    }
+
+    /// <summary>
+    /// Gets the acceleration structure descriptor (VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR).
+    /// </summary>
+    virtual void DescriptorAsAccelerationStructure(GPUContextVulkan* context, VkAccelerationStructureKHR& accelerationStructure)
     {
         CRASH;
     }

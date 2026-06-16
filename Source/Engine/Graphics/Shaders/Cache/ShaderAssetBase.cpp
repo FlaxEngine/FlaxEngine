@@ -69,6 +69,7 @@ int32 ShaderAssetBase::GetCacheChunkIndex(ShaderProfile profile)
         result = SHADER_FILE_CHUNK_INTERNAL_GLSL_440_CACHE;
         break;
     case ShaderProfile::Vulkan_SM5:
+    case ShaderProfile::Vulkan_SM6:
         result = SHADER_FILE_CHUNK_INTERNAL_VULKAN_SM5_CACHE;
         break;
     default:

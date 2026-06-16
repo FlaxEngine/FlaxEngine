@@ -718,6 +718,17 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
                 needsWrite |= dsWriter.WriteDynamicUniformBuffer(descriptorIndex, buffer, offset, range, dynamicOffset, index);
                 break;
             }
+#if defined(VK_KHR_acceleration_structure)
+            case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+            {
+                auto handle = handles[slot];
+                VkAccelerationStructureKHR accelerationStructure = VK_NULL_HANDLE;
+                if (handle)
+                    handle->DescriptorAsAccelerationStructure(this, accelerationStructure);
+                needsWrite |= dsWriter.WriteAccelerationStructure(descriptorIndex, accelerationStructure, index);
+                break;
+            }
+#endif
             default:
                 // Unknown or invalid descriptor type
                 CRASH;
