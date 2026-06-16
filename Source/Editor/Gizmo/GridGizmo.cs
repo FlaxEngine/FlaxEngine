@@ -113,7 +113,7 @@ namespace FlaxEditor.Gizmo
                 if (cb != IntPtr.Zero)
                 {
                     var data = new Data();
-                    var projection = renderContext.View.GetOverlayProjection();
+                    renderContext.View.GetOverlayProjection(out var projection);
                     Matrix.Multiply(ref renderContext.View.View, ref projection, out var viewProjection);
                     Matrix.Transpose(ref viewProjection, out data.ViewProjectionMatrix);
                     data.ViewPos = renderContext.View.WorldPosition;

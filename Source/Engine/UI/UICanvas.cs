@@ -90,7 +90,7 @@ namespace FlaxEngine
             Matrix.Multiply(ref worldMatrix, ref renderContext.View.View, out Matrix viewMatrix);
             Matrix projectionMatrix = renderContext.View.Projection;
             if (worldSpace && (Canvas.RenderLocation == PostProcessEffectLocation.Default || Canvas.RenderLocation == PostProcessEffectLocation.AfterAntiAliasingPass))
-                projectionMatrix = renderContext.View.GetOverlayProjection(); // Fix TAA jittering when rendering UI in world after TAA resolve
+                renderContext.View.GetOverlayProjection(out projectionMatrix); // Fix TAA jittering when rendering UI in world after TAA resolve
             Matrix.Multiply(ref viewMatrix, ref projectionMatrix, out Matrix viewProjectionMatrix);
 
             // Pick a depth buffer
