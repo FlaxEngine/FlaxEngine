@@ -131,7 +131,6 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Scene
     Matrix m1, m2, world;
     GeometryDrawStateData drawState;
     draw.DrawState = &drawState;
-    draw.Deformation = nullptr;
     draw.World = &world;
     AssetReference<Texture> texture;
     for (Actor* icon : icons)
@@ -214,7 +213,6 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Actor
         // Draw icon
         GeometryDrawStateData drawState;
         draw.DrawState = &drawState;
-        draw.Deformation = nullptr;
 
         // Support custom icons through types, but not ones that were added through actors, since they cant register while in prefab view anyway
         if (ActorTypeToTexture.TryGet(actor->GetTypeHandle(), texture))

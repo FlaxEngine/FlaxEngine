@@ -5,15 +5,17 @@
 #include "MaterialParams.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderView.h"
-#include "Engine/Renderer/DrawCall.h"
-#include "Engine/Renderer/RenderList.h"
-#include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Renderer/DrawCall.h"
+#include "Engine/Renderer/RenderList.h"
+#if USE_EDITOR
+#include "Engine/Renderer/Lightmaps.h"
+#endif
 
 DrawPass DeferredMaterialShader::GetDrawModes() const
 {
@@ -37,7 +39,7 @@ void DeferredMaterialShader::Bind(BindParameters& params)
     auto& view = params.RenderContext.View;
     auto& drawCall = *params.DrawCall;
     Span<byte> cb(_cbData.Get(), _cbData.Count());
-    int32 srv = 3;
+    int32 srv = 2;
 
     // Setup features
     const bool useLightmap = _info.BlendMode == MaterialBlendMode::Opaque && LightmapFeature::Bind(params, cb, srv);

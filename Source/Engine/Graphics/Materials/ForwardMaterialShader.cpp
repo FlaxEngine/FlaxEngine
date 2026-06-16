@@ -35,7 +35,7 @@ void ForwardMaterialShader::Bind(BindParameters& params)
     auto& view = params.RenderContext.View;
     auto& drawCall = *params.DrawCall;
     Span<byte> cb(_cbData.Get(), _cbData.Count());
-    int32 srv = 3;
+    int32 srv = 2;
 
     // Setup features
     if ((_info.FeaturesFlags & MaterialFeaturesFlags::GlobalIllumination) != MaterialFeaturesFlags::None)
