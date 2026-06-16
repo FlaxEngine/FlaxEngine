@@ -154,7 +154,7 @@ namespace FlaxEditor.Surface
 
                     // This ensures that the node is not resized below min size, but also keeps the resize behavior like expected (which just Max() -ing the value does not)
                     var emptySize = ResizableNode.CalculateNodeSize(0, 0);
-                    var minSize = ResizableNode.sizeMin;
+                    var minSize = ResizableNode._sizeMin;
                     noClampedSize = noClampedSize + uiControlDelta * resizeAxisPos - uiControlDelta * resizeAxisNeg;
                     if (noClampedSize.X < minSize.X && noClampedSize.X < ResizableNode.Size.X)
                         resizeAxisAbs.X = resizeAxisPos.X = resizeAxisNeg.X = 0f;
@@ -264,7 +264,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Minimum node size.
         /// </summary>
-        protected Float2 sizeMin = new Float2(240, 160);
+        protected Float2 _sizeMin = new Float2(240, 160);
 
         private Float2 SizeValue
         {
