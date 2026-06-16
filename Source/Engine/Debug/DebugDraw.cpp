@@ -357,7 +357,7 @@ struct DebugDrawContext
     Vector3 Origin = Vector3::Zero;
     DebugDrawData DebugDrawDefault;
     DebugDrawData DebugDrawDepthTest;
-    Float3 LastViewPos = Float3::Zero;
+    Vector3 LastViewPosition = Vector3::Zero;
     Matrix LastViewProjection = Matrix::Identity;
     BoundingFrustum LastViewFrustum;
 
@@ -790,9 +790,14 @@ bool DebugDraw::CanClear(void* context)
 
 #endif
 
-Vector3 DebugDraw::GetViewPos()
+Vector3 DebugDraw::GetViewPosition()
 {
-    return Context->LastViewPos;
+    return Context->LastViewPosition;
+}
+
+Vector3 DebugDraw::GetViewOrigin()
+{
+    return Context->Origin;
 }
 
 BoundingFrustum DebugDraw::GetViewFrustum()
@@ -802,7 +807,7 @@ BoundingFrustum DebugDraw::GetViewFrustum()
 
 void DebugDraw::SetView(const RenderView& view)
 {
-    Context->LastViewPos = view.Position;
+    Context->LastViewPosition = view.WorldPosition;
     Context->LastViewProjection = view.Projection;
     Context->LastViewFrustum = view.Frustum;
 }
@@ -1420,7 +1425,8 @@ void DebugDraw::DrawWireSphere(const BoundingSphere& sphere, const Color& color,
     int32 index;
     const Float3 centerF = sphere.Center - Context->Origin;
     const float radiusF = (float)sphere.Radius;
-    const float screenRadiusSquared = RenderTools::ComputeBoundsScreenRadiusSquared(centerF, radiusF, Context->LastViewPos, Context->LastViewProjection);
+    const Float3 drawPos = Context->LastViewPosition - Context->Origin;
+    const float screenRadiusSquared = RenderTools::ComputeBoundsScreenRadiusSquared(centerF, radiusF, drawPos, Context->LastViewProjection);
     if (screenRadiusSquared > DEBUG_DRAW_SPHERE_LOD0_SCREEN_SIZE * DEBUG_DRAW_SPHERE_LOD0_SCREEN_SIZE * 0.25f)
         index = 0;
     else if (screenRadiusSquared > DEBUG_DRAW_SPHERE_LOD1_SCREEN_SIZE * DEBUG_DRAW_SPHERE_LOD1_SCREEN_SIZE * 0.25f)
