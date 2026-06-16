@@ -62,6 +62,14 @@ public:
     }
 
     /// <summary>
+    /// Performs custom scene drawing to collect draw calls. Can be used to draw custom objects or visuals (eg. outline meshes). After that draw calls are processed (sorted and batched).
+    /// </summary>
+    /// <param name="renderContextBatch">The rendering context batch.</param>
+    API_FUNCTION() virtual void CollectDrawCalls(API_PARAM(Ref) RenderContextBatch& renderContextBatch)
+    {
+    }
+
+    /// <summary>
     /// Performs custom postFx rendering.
     /// </summary>
     /// <param name="context">The GPU commands context.</param>

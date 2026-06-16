@@ -481,6 +481,11 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
             GlobalSignDistanceFieldPass::Instance()->OnCollectDrawCalls(renderContextBatch);
         if (setup.UseGlobalSurfaceAtlas)
             GlobalSurfaceAtlasPass::Instance()->OnCollectDrawCalls(renderContextBatch);
+        if (EnumHasAllFlags(renderContext.View.Flags, ViewFlags::CustomPostProcess))
+        {
+            for (PostProcessEffect* fx : renderContext.List->PostFx)
+                fx->CollectDrawCalls(renderContextBatch);
+        }
 
         // Wait for async jobs to finish
         JobSystem::SetJobStartingOnDispatch(true);

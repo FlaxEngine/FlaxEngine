@@ -2,6 +2,14 @@
 
 namespace FlaxEngine
 {
+    partial struct RenderContextBatch
+    {
+        /// <summary>
+        /// Gets the main rendering context (for the main view). Returns the first context, other ones are usually used for shadow map projections.
+        /// </summary>
+        public ref RenderContext MainContext => ref Contexts[0];
+    }
+
     partial struct RenderView
     {
         /// <summary>
