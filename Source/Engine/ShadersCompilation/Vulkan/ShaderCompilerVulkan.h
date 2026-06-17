@@ -20,6 +20,18 @@ class ShaderCompilerVulkan : public ShaderCompiler
 {
 private:
     Array<char> _funcNameDefineBuffer;
+#if PLATFORM_WINDOWS
+    // Cooperative-vector (NVIDIA Neural Shading) shaders cannot be translated by glslang, so they are
+    // routed through DXC to emit SPV_NV_cooperative_vector SPIR-V. DXC is loaded lazily on demand.
+    void* _dxcModule = nullptr;
+    void* _dxcCompiler = nullptr;
+    void* _dxcLibrary = nullptr;
+    bool _dxcInitDone = false;
+
+    bool InitDXC();
+    // Returns: 0 = compiled and written, 1 = hard error (may be partially written), 2 = not handled (nothing written, fall back to glslang).
+    int32 CompileShaderCoopVec(ShaderFunctionMeta& meta, WritePermutationData customDataWrite);
+#endif
 
 public:
     /// <summary>

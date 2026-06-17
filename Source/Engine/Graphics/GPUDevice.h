@@ -9,6 +9,7 @@
 #include "Engine/Scripting/ScriptingObject.h"
 #include "GPUAdapter.h"
 #include "GPULimits.h"
+#include "CooperativeVector.h"
 #include "Enums.h"
 #include "Config.h"
 
@@ -537,6 +538,16 @@ public:
     /// <param name="size">The buffer size (in bytes).</param>
     /// <returns>The constant buffer.</returns>
     virtual GPUConstantBuffer* CreateConstantBuffer(uint32 size, const StringView& name = StringView::Empty) = 0;
+
+    /// <summary>
+    /// Queries the required destination buffer size (in bytes) to hold a cooperative-vector matrix of the
+    /// given dimensions in the requested layout and element type. Only valid when Limits.HasCooperativeVector
+    /// is set; returns 0 if cooperative vectors are not supported.
+    /// </summary>
+    virtual uint32 GetCooperativeVectorMatrixSize(CooperativeVectorDataType dataType, CooperativeVectorMatrixLayout layout, uint32 numRows, uint32 numColumns, uint32 stride = 0)
+    {
+        return 0;
+    }
 
     /// <summary>
     /// Creates the GPU tasks context.

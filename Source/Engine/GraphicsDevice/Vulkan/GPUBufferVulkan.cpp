@@ -91,6 +91,16 @@ void GPUBufferVulkan::Unmap()
     vmaUnmapMemory(_device->Allocator, _allocation);
 }
 
+VkDeviceAddress GPUBufferVulkan::GetDeviceAddress() const
+{
+    if (_buffer == VK_NULL_HANDLE || !_device->BufferDeviceAddressEnabled)
+        return 0;
+    VkBufferDeviceAddressInfo info;
+    RenderToolsVulkan::ZeroStruct(info, VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO);
+    info.buffer = _buffer;
+    return vkGetBufferDeviceAddress(_device->Device, &info);
+}
+
 bool GPUBufferVulkan::OnInit()
 {
     const bool useSRV = IsShaderResource();
@@ -118,6 +128,9 @@ bool GPUBufferVulkan::OnInit()
         bufferInfo.usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
     if (IsStaging() || EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::UnorderedAccess))
         bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    // Storage buffers can be addressed by GPU virtual address (needed by cooperative-vector matrix conversion).
+    if (_device->BufferDeviceAddressEnabled && (useUAV || EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::RawBuffer | GPUBufferFlags::Structured)))
+        bufferInfo.usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
     // Create buffer
     VmaAllocationCreateInfo allocInfo = {};

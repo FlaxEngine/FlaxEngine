@@ -146,8 +146,9 @@ ShaderFlags ShaderProcessing::ParseShaderFlags(const Token& token)
         _PARSE_ENTRY(Hidden),
         _PARSE_ENTRY(NoFastMath),
         _PARSE_ENTRY(VertexToGeometryShader),
+        _PARSE_ENTRY(CooperativeVector),
     };
-    static_assert(ARRAY_COUNT(data) == 4, "Invalid amount of Shader Flag data entries.");
+    static_assert(ARRAY_COUNT(data) == 5, "Invalid amount of Shader Flag data entries.");
 #undef _PARSE_ENTRY
 
     for (int32 i = 0; i < ARRAY_COUNT(data); i++)

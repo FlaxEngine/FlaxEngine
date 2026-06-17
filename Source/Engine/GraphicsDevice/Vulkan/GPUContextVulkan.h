@@ -227,6 +227,7 @@ public:
     void CopyResource(GPUResource* dstResource, GPUResource* srcResource) override;
     void CopySubresource(GPUResource* dstResource, uint32 dstSubresource, GPUResource* srcResource, uint32 srcSubresource) override;
     void Transition(GPUResource* resource, GPUResourceAccess access) override;
+    void ConvertCooperativeVectorMatrices(const CooperativeVectorMatrixConvert* conversions, int32 count) override;
     void MemoryBarrier() override;
     void OverlapUA(bool end) override;
     void BeginDrawPass(GPUDrawPass& pass) override;

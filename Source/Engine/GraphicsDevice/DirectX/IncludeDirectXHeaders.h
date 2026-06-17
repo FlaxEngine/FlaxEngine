@@ -35,7 +35,15 @@ typedef IGraphicsUnknown IDXGISwapChain3;
 #else
 
 #if GRAPHICS_API_DIRECTX12
+#if GPU_ENABLE_COOPERATIVE_VECTOR
+// Use the vendored DirectX 12 Agility SDK preview header (Shader Model 6.9 + cooperative vectors).
+// The Windows SDK include paths precede module include paths, so a plain <D3D12.h> would resolve to the
+// system header (which lacks the preview interfaces). Include it explicitly by path; its include guard
+// (__d3d12_h__) prevents any later system <D3D12.h> from being pulled in.
+#include <ThirdParty/DirectX12Agility/d3d12.h>
+#else
 #include <D3D12.h>
+#endif
 #endif
 #include <d3dcommon.h>
 #if GRAPHICS_API_DIRECTX11

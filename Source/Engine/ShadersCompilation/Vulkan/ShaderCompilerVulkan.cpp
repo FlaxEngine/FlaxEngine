@@ -23,6 +23,20 @@
 #include <ThirdParty/glslang/SPIRV/GlslangToSpv.h>
 #include <ThirdParty/spirv-tools/libspirv.hpp>
 
+#if PLATFORM_WINDOWS
+// Cooperative-vector shaders are compiled with DXC (HLSL dx::linalg -> SPV_NV_cooperative_vector).
+#include "Engine/Core/Types/StringView.h"
+#include "Engine/Utilities/StringConverter.h"
+#include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
+// COM base types required by dxcapi.h (IncludeWindowsHeaders.h uses WIN32_LEAN_AND_MEAN which omits them).
+#include <unknwn.h>     // IUnknown
+#include <oaidl.h>      // BSTR
+#include <objidl.h>     // IStream
+#include <combaseapi.h> // IID_PPV_ARGS
+#include "Engine/Platform/Windows/ComPtr.h"
+#include <ThirdParty/DirectXShaderCompiler/dxcapi.h>
+#endif
+
 #define PRINT_UNIFORMS 0
 #define PRINT_DESCRIPTORS 0
 
@@ -87,6 +101,14 @@ ShaderCompilerVulkan::ShaderCompilerVulkan(ShaderProfile profile)
 ShaderCompilerVulkan::~ShaderCompilerVulkan()
 {
     ScopeLock lock(CompileShaderVulkanLocker);
+#if PLATFORM_WINDOWS
+    if (_dxcCompiler)
+        ((IUnknown*)_dxcCompiler)->Release();
+    if (_dxcLibrary)
+        ((IUnknown*)_dxcLibrary)->Release();
+    if (_dxcModule)
+        Platform::FreeLibrary(_dxcModule);
+#endif
     CompileShaderVulkanInstances--;
     if (CompileShaderVulkanInstances == 0)
     {
@@ -581,6 +603,650 @@ public:
     }
 };
 
+#if PLATFORM_WINDOWS
+
+// ---------------------------------------------------------------------------
+// Cooperative-vector (NVIDIA Neural Shading) shaders are compiled with DXC to SPIR-V because glslang
+// cannot translate the dx::linalg intrinsics. DXC emits resources in descriptor set 0 with bindings
+// derived from the HLSL register (offset by the -fvk-*-shift values below). We reflect the module to
+// build Flax's SpirvShaderDescriptorInfo and rewrite each resource decoration to the engine convention
+// (set = pipeline stage set, binding = sequential index), matching what the glslang path produces.
+// ---------------------------------------------------------------------------
+
+namespace SpvConst
+{
+    enum { MagicNumber = 0x07230203, HeaderWords = 5 };
+    enum Op
+    {
+        OpName = 5,
+        OpMemoryModel = 14,
+        OpTypeImage = 25,
+        OpTypeSampler = 26,
+        OpTypeArray = 28,
+        OpTypeRuntimeArray = 29,
+        OpTypeStruct = 30,
+        OpTypePointer = 32,
+        OpConstant = 43,
+        OpVariable = 59,
+        OpDecorate = 71,
+    };
+    enum Decoration
+    {
+        DecorationBlock = 2,
+        DecorationBufferBlock = 3,
+        DecorationLocation = 30,
+        DecorationBinding = 33,
+        DecorationDescriptorSet = 34,
+    };
+    enum StorageClass
+    {
+        StorageClassUniformConstant = 0,
+        StorageClassInput = 1,
+        StorageClassUniform = 2,
+        StorageClassOutput = 3,
+        StorageClassStorageBuffer = 12,
+    };
+    enum Dim
+    {
+        Dim1D = 0,
+        Dim3D = 2,
+        DimCube = 3,
+        DimBuffer = 5,
+    };
+}
+
+struct SpvIdInfo
+{
+    uint16 Op = 0;
+    int32 Set = -1;
+    int32 Binding = -1;
+    int32 SetWordIndex = -1;
+    int32 BindingWordIndex = -1;
+    uint32 StorageClass = 0xFFFFFFFF;
+    uint32 TypeRef = 0;
+    uint32 ElementType = 0;
+    uint32 ArrayLen = 1;
+    uint32 ConstValue = 0;
+    uint32 ImgDim = 0;
+    uint32 ImgSampled = 0;
+    bool HasLocation = false;
+    bool IsStruct = false;
+    bool IsImage = false;
+    bool IsSampler = false;
+    bool IsArray = false;
+    bool IsRuntimeArray = false;
+    bool IsBlock = false;
+    bool IsBufferBlock = false;
+};
+
+// The SPIR-V CooperativeVectorNV capability requires the Vulkan memory model, which in turn
+// requires OpMemoryModel to select the Vulkan memory model (DXC emits GLSL450 by default).
+// Patch the memory-model operand in place (the addressing model is left untouched).
+static void PatchSpirvVulkanMemoryModel(std::vector<unsigned>& spirv)
+{
+    using namespace SpvConst;
+    if (spirv.size() < HeaderWords || spirv[0] != MagicNumber)
+        return;
+    enum { MemoryModelVulkan = 3 };
+    size_t i = HeaderWords;
+    while (i < spirv.size())
+    {
+        const uint32 word0 = spirv[i];
+        const uint16 op = (uint16)(word0 & 0xFFFFu);
+        const uint16 wordCount = (uint16)(word0 >> 16);
+        if (wordCount == 0 || i + wordCount > spirv.size())
+            return;
+        if (op == OpMemoryModel && wordCount >= 3)
+        {
+            spirv[i + 2] = MemoryModelVulkan;
+            return;
+        }
+        i += wordCount;
+    }
+}
+
+static bool ReflectAndRemapCoopVecSpirv(std::vector<unsigned>& spirv, int32 stageSet, SpirvShaderHeader& header, ShaderBindings& bindings)
+{
+    using namespace SpvConst;
+    if (spirv.size() < HeaderWords || spirv[0] != MagicNumber)
+    {
+        LOG(Warning, "CoopVec reflect: bad SPIR-V header (size={0} words, magic=0x{1:x}).", (int32)spirv.size(), spirv.empty() ? 0u : spirv[0]);
+        return false;
+    }
+    const uint32 bound = spirv[3]; // SPIR-V header: [0]=magic [1]=version [2]=generator [3]=bound [4]=schema
+    if (bound == 0)
+    {
+        LOG(Warning, "CoopVec reflect: SPIR-V id bound is 0.");
+        return false;
+    }
+    std::vector<SpvIdInfo> ids((size_t)bound);
+
+    // Pass 1: scan the module
+    size_t i = HeaderWords;
+    while (i < spirv.size())
+    {
+        const uint32 word0 = spirv[i];
+        const uint16 op = (uint16)(word0 & 0xFFFFu);
+        const uint16 wordCount = (uint16)(word0 >> 16);
+        if (wordCount == 0 || i + wordCount > spirv.size())
+        {
+            LOG(Warning, "CoopVec reflect: malformed instruction at word {0} (op={1}, wordCount={2}, total={3}).", (int32)i, (int32)op, (int32)wordCount, (int32)spirv.size());
+            return false;
+        }
+        switch (op)
+        {
+        case OpDecorate:
+            if (wordCount >= 3)
+            {
+                const uint32 target = spirv[i + 1];
+                const uint32 deco = spirv[i + 2];
+                if (target < bound)
+                {
+                    auto& d = ids[(int32)target];
+                    if (deco == DecorationBinding && wordCount >= 4)
+                    {
+                        d.Binding = (int32)spirv[i + 3];
+                        d.BindingWordIndex = (int32)(i + 3);
+                    }
+                    else if (deco == DecorationDescriptorSet && wordCount >= 4)
+                    {
+                        d.Set = (int32)spirv[i + 3];
+                        d.SetWordIndex = (int32)(i + 3);
+                    }
+                    else if (deco == DecorationLocation)
+                        d.HasLocation = true;
+                    else if (deco == DecorationBlock)
+                        d.IsBlock = true;
+                    else if (deco == DecorationBufferBlock)
+                        d.IsBufferBlock = true;
+                }
+            }
+            break;
+        case OpTypePointer:
+            if (wordCount >= 4)
+            {
+                const uint32 res = spirv[i + 1];
+                if (res < bound)
+                {
+                    auto& d = ids[(int32)res];
+                    d.Op = OpTypePointer;
+                    d.StorageClass = spirv[i + 2];
+                    d.TypeRef = spirv[i + 3];
+                }
+            }
+            break;
+        case OpTypeStruct:
+            if (wordCount >= 2)
+            {
+                const uint32 res = spirv[i + 1];
+                if (res < bound)
+                    ids[(int32)res].IsStruct = true;
+            }
+            break;
+        case OpTypeImage:
+            if (wordCount >= 8)
+            {
+                const uint32 res = spirv[i + 1];
+                if (res < bound)
+                {
+                    auto& d = ids[(int32)res];
+                    d.IsImage = true;
+                    d.ImgDim = spirv[i + 3];
+                    d.ImgSampled = spirv[i + 7];
+                }
+            }
+            break;
+        case OpTypeSampler:
+            if (wordCount >= 2)
+            {
+                const uint32 res = spirv[i + 1];
+                if (res < bound)
+                    ids[(int32)res].IsSampler = true;
+            }
+            break;
+        case OpTypeArray:
+            if (wordCount >= 4)
+            {
+                const uint32 res = spirv[i + 1];
+                if (res < bound)
+                {
+                    auto& d = ids[(int32)res];
+                    d.IsArray = true;
+                    d.ElementType = spirv[i + 2];
+                    const uint32 lenId = spirv[i + 3];
+                    d.ArrayLen = (lenId < bound && ids[(int32)lenId].ConstValue > 0) ? ids[(int32)lenId].ConstValue : 1;
+                }
+            }
+            break;
+        case OpTypeRuntimeArray:
+            if (wordCount >= 3)
+            {
+                const uint32 res = spirv[i + 1];
+                if (res < bound)
+                {
+                    auto& d = ids[(int32)res];
+                    d.IsRuntimeArray = true;
+                    d.ElementType = spirv[i + 2];
+                }
+            }
+            break;
+        case OpConstant:
+            if (wordCount >= 4)
+            {
+                const uint32 res = spirv[i + 2];
+                if (res < bound)
+                    ids[(int32)res].ConstValue = spirv[i + 3];
+            }
+            break;
+        case OpVariable:
+            if (wordCount >= 4)
+            {
+                const uint32 res = spirv[i + 2];
+                if (res < bound)
+                {
+                    auto& d = ids[(int32)res];
+                    d.Op = OpVariable;
+                    d.TypeRef = spirv[i + 1];
+                    d.StorageClass = spirv[i + 3];
+                }
+            }
+            break;
+        default:
+            break;
+        }
+        i += wordCount;
+    }
+
+    // Pass 2: build descriptors and rewrite bindings
+    auto& info = header.DescriptorInfo;
+    int32 inputs = 0, outputs = 0;
+    for (uint32 id = 0; id < bound; id++)
+    {
+        const SpvIdInfo& v = ids[(int32)id];
+        if (v.Op != OpVariable)
+            continue;
+        if (v.StorageClass == StorageClassInput)
+        {
+            if (v.HasLocation)
+                inputs++;
+            continue;
+        }
+        if (v.StorageClass == StorageClassOutput)
+        {
+            if (v.HasLocation)
+                outputs++;
+            continue;
+        }
+        if (v.StorageClass != StorageClassUniform && v.StorageClass != StorageClassStorageBuffer && v.StorageClass != StorageClassUniformConstant)
+            continue;
+        if (v.Binding < 0 || v.BindingWordIndex < 0 || v.TypeRef >= bound)
+            continue;
+
+        // Resolve the variable's pointee type, unwrapping resource arrays
+        uint32 baseId = ids[(int32)v.TypeRef].TypeRef;
+        uint32 count = 1;
+        while (baseId < bound && (ids[(int32)baseId].IsArray || ids[(int32)baseId].IsRuntimeArray))
+        {
+            const SpvIdInfo& a = ids[(int32)baseId];
+            if (a.IsArray)
+                count *= a.ArrayLen;
+            baseId = a.ElementType;
+        }
+        if (baseId >= bound)
+            continue;
+        const SpvIdInfo& base = ids[(int32)baseId];
+
+        const int32 btype = v.Binding / 100; // 0=b,1=t,2=u,3=s (from -fvk-*-shift)
+        const int32 reg = v.Binding % 100;
+
+        SpirvShaderResourceBindingType bindingType = SpirvShaderResourceBindingType::INVALID;
+        VkDescriptorType descriptorType = VK_DESCRIPTOR_TYPE_MAX_ENUM;
+        SpirvShaderResourceType resourceType = SpirvShaderResourceType::Unknown;
+        if (base.IsStruct)
+        {
+            if (v.StorageClass == StorageClassUniform && base.IsBlock && !base.IsBufferBlock)
+            {
+                bindingType = SpirvShaderResourceBindingType::CB;
+                descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+                resourceType = SpirvShaderResourceType::ConstantBuffer;
+            }
+            else
+            {
+                bindingType = (btype == 2) ? SpirvShaderResourceBindingType::UAV : SpirvShaderResourceBindingType::SRV;
+                descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                resourceType = SpirvShaderResourceType::Buffer;
+            }
+        }
+        else if (base.IsImage)
+        {
+            const bool isStorage = base.ImgSampled == 2 || btype == 2;
+            bindingType = isStorage ? SpirvShaderResourceBindingType::UAV : SpirvShaderResourceBindingType::SRV;
+            if (base.ImgDim == DimBuffer)
+            {
+                resourceType = SpirvShaderResourceType::Buffer;
+                descriptorType = isStorage ? VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER : VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+            }
+            else
+            {
+                descriptorType = isStorage ? VK_DESCRIPTOR_TYPE_STORAGE_IMAGE : VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+                switch (base.ImgDim)
+                {
+                case Dim1D: resourceType = SpirvShaderResourceType::Texture1D; break;
+                case Dim3D: resourceType = SpirvShaderResourceType::Texture3D; break;
+                case DimCube: resourceType = SpirvShaderResourceType::TextureCube; break;
+                default: resourceType = SpirvShaderResourceType::Texture2D; break;
+                }
+            }
+        }
+        else if (base.IsSampler)
+        {
+            bindingType = SpirvShaderResourceBindingType::SAMPLER;
+            descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+            resourceType = SpirvShaderResourceType::Sampler;
+        }
+        else
+        {
+            continue;
+        }
+
+        if (info.DescriptorTypesCount >= SpirvShaderDescriptorInfo::MaxDescriptors)
+        {
+            LOG(Warning, "Too many descriptors in cooperative-vector shader.");
+            return false;
+        }
+        const int32 newBinding = (int32)info.DescriptorTypesCount;
+        auto& d = info.DescriptorTypes[info.DescriptorTypesCount++];
+        d.Binding = (byte)newBinding;
+        d.Set = (byte)stageSet;
+        d.Slot = (byte)reg;
+        d.BindingType = bindingType;
+        d.DescriptorType = descriptorType;
+        d.ResourceType = resourceType;
+        d.ResourceFormat = PixelFormat::Unknown;
+        d.Count = count;
+
+        // Rewrite SPIR-V decorations to match the engine convention
+        spirv[v.BindingWordIndex] = (uint32)newBinding;
+        if (v.SetWordIndex >= 0)
+            spirv[v.SetWordIndex] = (uint32)stageSet;
+
+        switch (descriptorType)
+        {
+        case VK_DESCRIPTOR_TYPE_SAMPLER:
+        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+        case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+            info.ImageInfosCount += (uint16)count;
+            break;
+        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+        case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+            info.BufferInfosCount += (uint16)count;
+            break;
+        case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+        case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+            info.TexelBufferViewsCount += count;
+            break;
+        default:
+            break;
+        }
+        switch (bindingType)
+        {
+        case SpirvShaderResourceBindingType::SAMPLER: bindings.UsedSamplersMask |= 1 << reg; break;
+        case SpirvShaderResourceBindingType::CB: bindings.UsedCBsMask |= 1 << reg; break;
+        case SpirvShaderResourceBindingType::SRV: bindings.UsedSRsMask |= 1 << reg; break;
+        case SpirvShaderResourceBindingType::UAV: bindings.UsedUAsMask |= 1 << reg; break;
+        default: break;
+        }
+    }
+
+    bindings.InputsCount = inputs;
+    bindings.OutputsCount = outputs;
+    return true;
+}
+
+// DXC include handler that resolves engine shader includes (mirrors the DirectX backend handler).
+class CoopVecIncludeDX : public IDxcIncludeHandler
+{
+private:
+    ShaderCompilationContext* _context;
+    IDxcLibrary* _library;
+
+public:
+    CoopVecIncludeDX(ShaderCompilationContext* context, IDxcLibrary* library)
+        : _context(context)
+        , _library(library)
+    {
+    }
+
+    ULONG STDMETHODCALLTYPE AddRef() override { return 1; }
+    ULONG STDMETHODCALLTYPE Release() override { return 1; }
+
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject) override
+    {
+        if (riid == __uuidof(IDxcIncludeHandler) || riid == __uuidof(IUnknown))
+        {
+            AddRef();
+            *ppvObject = this;
+            return S_OK;
+        }
+        *ppvObject = nullptr;
+        return E_NOINTERFACE;
+    }
+
+    HRESULT STDMETHODCALLTYPE LoadSource(LPCWSTR pFilename, IDxcBlob** ppIncludeSource) override
+    {
+        *ppIncludeSource = nullptr;
+        const char* source;
+        int32 sourceLength;
+        StringAnsi filename(pFilename);
+        filename.Replace('\\', '/');
+        if (ShaderCompiler::GetIncludedFileSource(_context, "", filename.Get(), source, sourceLength))
+            return E_FAIL;
+        IDxcBlobEncoding* textBlob;
+        if (FAILED(_library->CreateBlobWithEncodingFromPinned((LPBYTE)source, sourceLength, CP_UTF8, &textBlob)))
+            return E_FAIL;
+        *ppIncludeSource = textBlob;
+        return S_OK;
+    }
+};
+
+bool ShaderCompilerVulkan::InitDXC()
+{
+    if (_dxcInitDone)
+        return _dxcCompiler != nullptr && _dxcLibrary != nullptr;
+    _dxcInitDone = true;
+
+    // dxcompiler.dll is deployed next to the executable by the DirectX shader compiler module.
+    _dxcModule = (void*)LoadLibraryW(L"dxcompiler.dll");
+    if (!_dxcModule)
+    {
+        LOG(Warning, "Failed to load dxcompiler.dll for cooperative-vector SPIR-V compilation.");
+        return false;
+    }
+    const auto createInstance = (DxcCreateInstanceProc)Platform::GetProcAddress(_dxcModule, "DxcCreateInstance");
+    if (!createInstance)
+    {
+        LOG(Warning, "dxcompiler.dll is missing DxcCreateInstance.");
+        return false;
+    }
+    IDxcCompiler3* compiler = nullptr;
+    IDxcLibrary* library = nullptr;
+    if (FAILED(createInstance(CLSID_DxcCompiler, __uuidof(IDxcCompiler3), (void**)&compiler)) ||
+        FAILED(createInstance(CLSID_DxcLibrary, __uuidof(IDxcLibrary), (void**)&library)))
+    {
+        LOG(Warning, "DxcCreateInstance failed for cooperative-vector SPIR-V compilation.");
+        return false;
+    }
+    _dxcCompiler = compiler;
+    _dxcLibrary = library;
+    return true;
+}
+
+int32 ShaderCompilerVulkan::CompileShaderCoopVec(ShaderFunctionMeta& meta, WritePermutationData customDataWrite)
+{
+    auto options = _context->Options;
+    auto compiler = (IDxcCompiler3*)_dxcCompiler;
+    auto library = (IDxcLibrary*)_dxcLibrary;
+    const auto type = meta.GetStage();
+    CoopVecIncludeDX include(_context, library);
+
+    const Char* targetProfile = type == ShaderStage::Compute ? TEXT("cs_6_9") : TEXT("ps_6_9");
+    const int32 stageSet = type == ShaderStage::Compute ? 0 : 1;
+
+    ComPtr<IDxcBlobEncoding> textBlob;
+    if (FAILED(library->CreateBlobWithEncodingFromPinned((LPBYTE)options->Source, options->SourceLength, CP_UTF8, &textBlob)))
+        return 2;
+    DxcBuffer textBuffer;
+    textBuffer.Ptr = textBlob->GetBufferPointer();
+    textBuffer.Size = textBlob->GetBufferSize();
+    textBuffer.Encoding = DXC_CP_ACP;
+    const StringAsUTF16<> entryPoint(meta.Name.Get(), meta.Name.Length());
+    // Force the SPIR-V entry point name to match the engine convention (the Vulkan runtime binds the
+    // stage with pName = shader program name), as DXC may otherwise rename the entry to "main".
+    String entryNameArg(TEXT("-fspv-entrypoint-name="));
+    entryNameArg += entryPoint.Get();
+
+    // Phase 1: compile and reflect every permutation. This is all-or-nothing: if DXC cannot emit
+    // cooperative-vector SPIR-V (old compiler, unsupported intrinsics, ...), bail out before writing
+    // anything so the caller can fall back to the glslang fp32 path.
+    struct CompiledPermutation
+    {
+        std::vector<unsigned> Spirv;
+        SpirvShaderHeader Header;
+        ShaderBindings Bindings;
+    };
+    std::vector<CompiledPermutation> compiled((size_t)meta.Permutations.Count());
+    for (int32 permutationIndex = 0; permutationIndex < meta.Permutations.Count(); permutationIndex++)
+    {
+        _macros.Clear();
+        meta.GetDefinitionsForPermutation(permutationIndex, _macros);
+        GetDefineForFunction(meta, _macros);
+        _macros.Add(_context->Options->Macros);
+        _macros.Add(_globalMacros);
+
+        // Convert defines to "NAME[=VALUE]" UTF-16 strings
+        const int32 macrosCount = _macros.Count() - 1;
+        Array<String> definesStrings;
+        definesStrings.Resize(macrosCount);
+        for (int32 m = 0; m < macrosCount; m++)
+        {
+            auto& macro = _macros[m];
+            auto& define = definesStrings[m];
+            define = macro.Name;
+            if (macro.Definition && *macro.Definition)
+            {
+                define += TEXT("=");
+                define += macro.Definition;
+            }
+        }
+
+        // Build DXC arguments
+        Array<const Char*> args;
+        args.Add(options->NoOptimize ? DXC_ARG_SKIP_OPTIMIZATIONS : DXC_ARG_OPTIMIZATION_LEVEL3);
+        args.Add(TEXT("-enable-16bit-types"));
+        args.Add(TEXT("-spirv"));
+        // SPV_NV_cooperative_vector requires SPIR-V 1.6 (Vulkan 1.3) and the Vulkan memory model.
+        args.Add(TEXT("-fspv-target-env=vulkan1.3"));
+        // Skip DXC's bundled spirv-val: its SPV_NV_cooperative_vector support is incomplete and it
+        // rejects spec-legal constructs (e.g. single-scalar OpCompositeConstruct splat of a cooperative
+        // vector). The NVIDIA driver validates/compiles the cooperative-vector module at pipeline creation.
+        args.Add(TEXT("-Vd"));
+        // Do not pass -fspv-extension: that flag *restricts* the allowed extensions and some DXC builds
+        // do not recognize the 'SPV_NV_cooperative_vector' name even when their codegen can emit it.
+        // Omitting it lets DXC auto-enable whatever extensions the cooperative-vector lowering needs.
+        args.Add(TEXT("-fvk-use-dx-layout"));
+        // Map b/t/u/s register classes into disjoint binding ranges so the reflector can recover the
+        // HLSL register index from the SPIR-V binding (binding = register + 100 * classIndex).
+        args.Add(TEXT("-fvk-b-shift")); args.Add(TEXT("0")); args.Add(TEXT("0"));
+        args.Add(TEXT("-fvk-t-shift")); args.Add(TEXT("100")); args.Add(TEXT("0"));
+        args.Add(TEXT("-fvk-u-shift")); args.Add(TEXT("200")); args.Add(TEXT("0"));
+        args.Add(TEXT("-fvk-s-shift")); args.Add(TEXT("300")); args.Add(TEXT("0"));
+        args.Add(TEXT("-T")); args.Add(targetProfile);
+        args.Add(TEXT("-E")); args.Add(entryPoint.Get());
+        args.Add(*entryNameArg);
+        args.Add(options->TargetName.Get());
+        for (auto& define : definesStrings)
+        {
+            args.Add(TEXT("-D"));
+            args.Add(*define);
+        }
+
+        // Compile
+        ComPtr<IDxcResult> results;
+        HRESULT result = compiler->Compile(&textBuffer, (LPCWSTR*)args.Get(), args.Count(), &include, IID_PPV_ARGS(&results));
+        if (SUCCEEDED(result) && results)
+            results->GetStatus(&result);
+        if (FAILED(result))
+        {
+            if (results)
+            {
+                ComPtr<IDxcBlobEncoding> error;
+                results->GetErrorBuffer(&error);
+                if (error && error->GetBufferSize() > 0)
+                {
+                    ComPtr<IDxcBlobEncoding> errorUtf8;
+                    library->GetBlobAsUtf8(error, &errorUtf8);
+                    if (errorUtf8)
+                        LOG(Warning, "DXC cooperative-vector SPIR-V compile failed for '{0}': {1}", String(meta.Name), String((const char*)errorUtf8->GetBufferPointer()));
+                }
+            }
+            return 2;
+        }
+
+        // Get the SPIR-V output
+        ComPtr<IDxcBlob> shaderBuffer;
+        if (FAILED(results->GetResult(&shaderBuffer)) || !shaderBuffer || shaderBuffer->GetBufferSize() < SpvConst::HeaderWords * sizeof(unsigned))
+        {
+            LOG(Warning, "DXC produced no SPIR-V for cooperative-vector shader '{0}'.", String(meta.Name));
+            return 2;
+        }
+        CompiledPermutation& cp = compiled[permutationIndex];
+        const int32 spirvWords = (int32)(shaderBuffer->GetBufferSize() / sizeof(unsigned));
+        cp.Spirv.resize((size_t)spirvWords);
+        Platform::MemoryCopy(cp.Spirv.data(), shaderBuffer->GetBufferPointer(), (uint64)spirvWords * sizeof(unsigned));
+
+        // Cooperative vectors require the Vulkan memory model to be declared in the module.
+        PatchSpirvVulkanMemoryModel(cp.Spirv);
+
+        // Reflect and remap the bindings to the engine layout
+        Platform::MemoryClear(&cp.Header, sizeof(cp.Header));
+        cp.Bindings = {};
+        if (!ReflectAndRemapCoopVecSpirv(cp.Spirv, stageSet, cp.Header, cp.Bindings))
+        {
+            LOG(Warning, "Failed to reflect cooperative-vector SPIR-V for shader '{0}'.", String(meta.Name));
+            return 2;
+        }
+    }
+
+    // Phase 2: everything compiled - commit the results to the shader cache
+    for (int32 permutationIndex = 0; permutationIndex < (int32)compiled.size(); permutationIndex++)
+    {
+        CompiledPermutation& cp = compiled[(size_t)permutationIndex];
+        if (Write(_context, meta, permutationIndex, cp.Bindings, cp.Header, cp.Spirv))
+        {
+            LOG(Error, "Failed to write cooperative-vector shader '{0}'.", String(meta.Name));
+            return 1; // Hard failure mid-write; do not fall back (cache is already partially written)
+        }
+        if (customDataWrite)
+        {
+            // Rebuild the permutation macros for the custom data writer (matches the glslang path)
+            _macros.Clear();
+            meta.GetDefinitionsForPermutation(permutationIndex, _macros);
+            GetDefineForFunction(meta, _macros);
+            _macros.Add(_context->Options->Macros);
+            _macros.Add(_globalMacros);
+            if (customDataWrite(_context, meta, permutationIndex, _macros, nullptr))
+                return 1;
+        }
+    }
+
+    if (WriteShaderFunctionEnd(_context, meta))
+        return 1;
+    LOG(Info, "Compiled cooperative-vector SPIR-V (SPV_NV_cooperative_vector) for shader '{0}' via DXC.", String(meta.Name));
+    return 0;
+}
+
+#endif
+
 bool ShaderCompilerVulkan::CompileShader(ShaderFunctionMeta& meta, WritePermutationData customDataWrite)
 {
     // TODO: test without locking
@@ -591,6 +1257,26 @@ bool ShaderCompilerVulkan::CompileShader(ShaderFunctionMeta& meta, WritePermutat
     if (WriteShaderFunctionBegin(_context, meta))
         return true;
     auto type = meta.GetStage();
+
+#if PLATFORM_WINDOWS
+    // Cooperative-vector shaders (NVIDIA Neural Shading) use cooperative-vector intrinsics that glslang
+    // cannot translate, so they are routed through DXC to emit SPV_NV_cooperative_vector SPIR-V. There
+    // is no fp32 fallback: a coopvec-flagged shader requires DXC and must compile, otherwise it is a
+    // hard error (the HLSL has no non-coopvec body for glslang to compile).
+    if (EnumHasAnyFlags(meta.Flags, ShaderFlags::CooperativeVector) && (type == ShaderStage::Pixel || type == ShaderStage::Compute))
+    {
+        if (!InitDXC())
+        {
+            LOG(Error, "Cooperative-vector shader '{0}' requires DXC, but dxcompiler could not be initialized.", String(meta.Name));
+            return true;
+        }
+        const int32 r = CompileShaderCoopVec(meta, customDataWrite);
+        if (r == 0)
+            return false; // Compiled real cooperative-vector SPIR-V (success)
+        LOG(Error, "Cooperative-vector shader '{0}' failed to compile via DXC (no fp32 fallback).", String(meta.Name));
+        return true;
+    }
+#endif
 
     // Prepare
     EShLanguage lang = EShLanguage::EShLangCount;

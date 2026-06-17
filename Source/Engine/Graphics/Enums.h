@@ -1240,6 +1240,13 @@ enum class ShaderFlags : uint32
     /// Indicates that vertex shader function outputs data for the geometry shader.
     /// </summary>
     VertexToGeometryShader = 4,
+
+    /// <summary>
+    /// Compiles the shader with cooperative-vector support (NVIDIA Neural Shading). Bumps the compiled
+    /// profile to Shader Model 6.9 (preview) and enables native 16-bit types so the shader can use the
+    /// dx::linalg cooperative-vector intrinsics. Only honored on backends/devices that report support.
+    /// </summary>
+    CooperativeVector = 8,
 };
 
 DECLARE_ENUM_OPERATORS(ShaderFlags);

@@ -6,7 +6,9 @@
 
 #if GRAPHICS_API_VULKAN && PLATFORM_WIN32
 
-#define VULKAN_API_VERSION VK_API_VERSION_1_2
+// Vulkan 1.3 is required so the device accepts SPIR-V 1.6 modules used by the
+// NV cooperative-vector neural shading path (SPV_NV_cooperative_vector + VulkanMemoryModel).
+#define VULKAN_API_VERSION VK_API_VERSION_1_3
 #define VULKAN_USE_PLATFORM_WIN32_KHR 1
 #define VULKAN_USE_PLATFORM_WIN32_KHX 1
 #define VULKAN_USE_CREATE_WIN32_SURFACE 1
