@@ -1008,7 +1008,8 @@ void AnimatedModel::RunBlendShapeDeformer(const MeshBase* mesh, MeshDeformationD
 
 void AnimatedModel::BeginPlay(SceneBeginData* data)
 {
-    PreInitSkinningData();
+    if (GraphInstance.NodesPose.IsEmpty())
+        PreInitSkinningData();
 
     // Base
     ModelInstanceActor::BeginPlay(data);
@@ -1161,7 +1162,7 @@ void AnimatedModel::OnSkinnedModelLoaded()
 {
     Entries.SetupIfInvalid(SkinnedModel);
     GraphInstance.Invalidate();
-    if (IsDuringPlay())
+    if (IsDuringPlay() || GraphInstance.NodesPose.IsEmpty())
         PreInitSkinningData();
 }
 
