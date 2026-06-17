@@ -10,6 +10,7 @@
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Platform/Base/DragDropHelper.h"
 #endif
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Input/Input.h"
@@ -100,8 +101,8 @@ KeyboardKeys GetKey(NSEvent* event)
     case 0x33: return KeyboardKeys::Backspace;
     //case 0x34:
     case 0x35: return KeyboardKeys::Escape;
-    case 0x36: return KeyboardKeys::Control; // Command (right)
-    case 0x37: return KeyboardKeys::Control; // Command (left)
+    case 0x36: return KeyboardKeys::Command; // Command (right)
+    case 0x37: return KeyboardKeys::Command; // Command (left)
     case 0x38: return KeyboardKeys::Shift;
     case 0x39: return KeyboardKeys::Capital;
     case 0x3A: return KeyboardKeys::Alt;
@@ -182,6 +183,11 @@ KeyboardKeys GetKey(NSEvent* event)
     default:
         return KeyboardKeys::None;
     }
+}
+
+bool IsModifierKey(KeyboardKeys key)
+{
+    return key == KeyboardKeys::Command || key == KeyboardKeys::Shift || key == KeyboardKeys::Control || key == KeyboardKeys::Alt;
 }
 
 Float2 GetWindowTitleSize(const MacWindow* window)
@@ -372,11 +378,13 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
     MacWindow* Window;
     NSTrackingArea* TrackingArea;
     bool IsMouseOver;
+    Array<KeyboardKeys, InlinedAllocation<4>> CommandModifiedKeys;
 }
 
 - (void)setWindow:(MacWindow*)window;
 - (CALayer*)makeBackingLayer;
 - (BOOL)wantsUpdateLayer;
+- (void)releaseCommandModifiedKeys;
 
 @end
 
@@ -397,6 +405,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
     Window = window;
     TrackingArea = nil;
     IsMouseOver = false;
+    CommandModifiedKeys.Clear();
 }
 
 - (CALayer*)makeBackingLayer
@@ -429,14 +438,27 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
     [self addTrackingArea:TrackingArea];
 }
 
+- (void)releaseCommandModifiedKeys
+{
+    for (const KeyboardKeys key : CommandModifiedKeys)
+        Input::Keyboard->OnKeyUp(key, Window);
+    CommandModifiedKeys.Clear();
+}
+
 - (void)keyDown:(NSEvent*)event
 {
     if (IsWindowInvalid(Window)) return;
     KeyboardKeys key = GetKey(event);
     if (key != KeyboardKeys::None)
-	    Input::Keyboard->OnKeyDown(key, Window);
+    {
+        Input::Keyboard->OnKeyDown(key, Window);
+        if (([event modifierFlags] & NSEventModifierFlagCommand) != 0 && !IsModifierKey(key))
+            CommandModifiedKeys.AddUnique(key);
+    }
 
 	// Send a text input event
+    if (([event modifierFlags] & NSEventModifierFlagCommand) != 0)
+        return;
     switch (key)
     {
         // Ignore text from special keys
@@ -465,7 +487,10 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
     if (IsWindowInvalid(Window)) return;
     KeyboardKeys key = GetKey(event);
     if (key != KeyboardKeys::None)
-	    Input::Keyboard->OnKeyUp(key, Window);
+    {
+        CommandModifiedKeys.Remove(key);
+        Input::Keyboard->OnKeyUp(key, Window);
+    }
 }
 
 - (void)flagsChanged:(NSEvent*)event
@@ -488,9 +513,15 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
     {
         int32 modifierFlags = [event modifierFlags];
         if ((modifierFlags & modMask) == modMask)
-	        Input::Keyboard->OnKeyDown(key, Window);
+        {
+            Input::Keyboard->OnKeyDown(key, Window);
+        }
         else
-	        Input::Keyboard->OnKeyUp(key, Window);
+        {
+            if (key == KeyboardKeys::Command)
+                [self releaseCommandModifiedKeys];
+            Input::Keyboard->OnKeyUp(key, Window);
+        }
     }
 }
 

@@ -568,12 +568,12 @@ namespace FlaxEditor.GUI.Tree
                 InputOptions options = Editor.Instance.Options.Options.Input;
 
                 // Select all expanded nodes
-                if (options.SelectAll.Process(this))
+                if (options.SelectAll.Process(this, key))
                 {
                     SelectAllExpanded();
                     return true;
                 }
-                else if (options.DeselectAll.Process(this))
+                else if (options.DeselectAll.Process(this, key))
                 {
                     DeselectAll();
                     return true;
