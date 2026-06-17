@@ -639,7 +639,7 @@ public:
     /// <param name="pass">The draw pass (optional).</param>
     API_FUNCTION() FORCE_INLINE void SortDrawCalls(API_PARAM(Ref) const RenderContext& renderContext, bool reverseDistance, DrawCallsListType listType, DrawPass pass = DrawPass::All)
     {
-        SortDrawCalls(renderContext, reverseDistance, DrawCallsLists[(int32)listType], DrawCalls, listType);
+        SortDrawCalls(renderContext, reverseDistance, DrawCallsLists[(int32)listType], DrawCalls, listType, pass);
     }
 
     /// <summary>

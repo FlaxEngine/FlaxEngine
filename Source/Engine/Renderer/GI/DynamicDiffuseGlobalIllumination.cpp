@@ -790,12 +790,24 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
             _debugModel = Content::LoadAsyncInternal<Model>(TEXT("Editor/Primitives/Sphere"));
         if (!_debugMaterial)
             _debugMaterial = Content::LoadAsyncInternal<MaterialBase>(TEXT("Editor/DebugMaterials/DDGIDebugProbes"));
-        if (_debugModel && _debugModel->IsLoaded() && _debugModel->CanBeRendered() && _debugMaterial && _debugMaterial->IsLoaded())
+        if (_debugModel && _debugModel->IsLoaded() && _debugModel->CanBeRendered() && _debugModel->IsInitialized() && _debugMaterial && _debugMaterial->IsLoaded())
         {
             RenderContext debugRenderContext(renderContext);
             Matrix world;
             Matrix::Scaling(Float3(0.2f), world);
             const Mesh& debugMesh = _debugModel->LODs[0].Meshes[0];
+            DrawCall drawCall;
+            {
+                // Setup draw call
+                debugMesh.GetDrawCallGeometry(drawCall);
+                drawCall.InstanceCount = 1;
+                drawCall.Material = _debugMaterial;
+                drawCall.World = world;
+                drawCall.ObjectPosition = drawCall.World.GetTranslation();
+                drawCall.ObjectRadius = (float)debugMesh.GetSphere().Radius * drawCall.World.GetScaleVector().GetAbsolute().MaxValue();
+                drawCall.Surface.GeometrySize = debugMesh.GetBox().GetSize();
+                drawCall.Surface.PrevWorld = world;
+            }
             constexpr int32 maxProbesPerDrawing = 32 * 1024;
             int32 probesDrawingStart = 0;
             while (probesDrawingStart < ddgiData.ProbesCountTotal)
@@ -803,10 +815,19 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
                 debugRenderContext.List = RenderList::GetFromPool();
                 debugRenderContext.View.Pass = DrawPass::GBuffer;
                 debugRenderContext.View.Prepare(debugRenderContext);
-                // TODO: refactor this into BatchedDrawCalls for faster draw calls processing
                 const int32 probesDrawingEnd = Math::Min(probesDrawingStart + maxProbesPerDrawing, ddgiData.ProbesCountTotal);
+                BatchedDrawCall batchedDrawCall(debugRenderContext.List);
+                batchedDrawCall.DrawCall = drawCall;
+                batchedDrawCall.DrawCall.InstanceCount = probesDrawingEnd - probesDrawingStart;
+                batchedDrawCall.Instances.AddUninitialized(batchedDrawCall.DrawCall.InstanceCount);
+                ShaderObjectData* instances = batchedDrawCall.Instances.Get();
                 for (int32 probeIndex = probesDrawingStart; probeIndex < probesDrawingEnd; probeIndex++)
-                    debugMesh.Draw(debugRenderContext, _debugMaterial, world, StaticFlags::None, true, DrawPass::GBuffer, (float)probeIndex);
+                {
+                    drawCall.PerInstanceRandom = (float)probeIndex; // Used by DDGIDebugProbes material to fetch probe data
+                    instances[probeIndex].Store(drawCall);
+                }
+                const int32 batchIndex = debugRenderContext.List->BatchedDrawCalls.Add(MoveTemp(batchedDrawCall));
+                debugRenderContext.List->DrawCallsLists[(int32)DrawCallsListType::GBuffer].PreBatchedDrawCalls.Add(batchIndex);
                 debugRenderContext.List->SortDrawCalls(debugRenderContext, false, DrawCallsListType::GBuffer);
                 context->SetViewportAndScissors(debugRenderContext.View.ScreenSize.X, debugRenderContext.View.ScreenSize.Y);
                 GPUTextureView* targetBuffers[5] =
