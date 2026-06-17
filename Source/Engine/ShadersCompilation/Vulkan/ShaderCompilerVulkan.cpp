@@ -27,6 +27,8 @@
 // Cooperative-vector shaders are compiled with DXC (HLSL dx::linalg -> SPV_NV_cooperative_vector).
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Utilities/StringConverter.h"
+#include "Engine/Engine/Globals.h"
+#include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
 // COM base types required by dxcapi.h (IncludeWindowsHeaders.h uses WIN32_LEAN_AND_MEAN which omits them).
 #include <unknwn.h>     // IUnknown
@@ -1055,8 +1057,16 @@ bool ShaderCompilerVulkan::InitDXC()
         return _dxcCompiler != nullptr && _dxcLibrary != nullptr;
     _dxcInitDone = true;
 
-    // dxcompiler.dll is deployed next to the executable by the DirectX shader compiler module.
-    _dxcModule = (void*)LoadLibraryW(L"dxcompiler.dll");
+    // Cooperative vectors need a SPIR-V-enabled DXC. The stock dxcompiler.dll deployed next to the
+    // executable (from the Windows SDK) is built WITHOUT SPIR-V codegen and fails with
+    // "SPIR-V CodeGen not available", so prefer the SPIR-V-enabled build vendored in the engine's
+    // ThirdParty deps folder (where the README has the user drop the preview DXC). Platform::LoadLibrary
+    // also adds that folder to the DLL search path so the sibling dxil.dll resolves.
+    const String depsDxc = Globals::StartupFolder / TEXT("Source/Platforms/Windows/Binaries/ThirdParty/x64/dxcompiler.dll");
+    if (FileSystem::FileExists(depsDxc))
+        _dxcModule = Platform::LoadLibrary(depsDxc.Get());
+    if (!_dxcModule)
+        _dxcModule = (void*)LoadLibraryW(L"dxcompiler.dll"); // fall back to the copy next to the executable
     if (!_dxcModule)
     {
         LOG(Warning, "Failed to load dxcompiler.dll for cooperative-vector SPIR-V compilation.");
