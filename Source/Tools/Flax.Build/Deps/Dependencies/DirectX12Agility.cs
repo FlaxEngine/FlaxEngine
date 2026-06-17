@@ -55,7 +55,7 @@ namespace Flax.Deps.Dependencies
             var packagePath = Path.Combine(root, "package.zip");
 
             // Download package
-            var version = "1.618.5";
+            var version = "1.619.3";
             if (!File.Exists(packagePath))
                 Downloader.DownloadFileFromUrlToPath("https://www.nuget.org/api/v2/package/Microsoft.Direct3D.D3D12/" + version, packagePath);
             using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
