@@ -532,6 +532,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         {
             // Invalidate cached types
             All.ClearTypes();
+            AllWithStd.ClearTypes();
             VisualScriptPropertyTypes.ClearTypes();
             Actors.ClearTypes();
             Scripts.ClearTypes();
