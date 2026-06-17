@@ -145,7 +145,8 @@ float4 SampleGlobalSurfaceAtlasTile(const GlobalSurfaceAtlasData data, GlobalSur
     float2 atlasUV = tileUV * tile.AtlasRectUV.zw + tile.AtlasRectUV.xy;
 
     // Calculate bilinear weights
-    float2 bilinearWeightsUV = frac(atlasUV * data.Resolution + 0.5f);
+    float texelPrecisionOffset = 1.0f / 512.0f; // https://www.reedbeta.com/blog/texture-gathers-and-coordinate-precision/
+    float2 bilinearWeightsUV = frac(atlasUV * data.Resolution + 0.5f + texelPrecisionOffset);
     float4 bilinearWeights;
     bilinearWeights.x = (1 - bilinearWeightsUV.x) * (bilinearWeightsUV.y);
     bilinearWeights.y = (bilinearWeightsUV.x) * (bilinearWeightsUV.y);
