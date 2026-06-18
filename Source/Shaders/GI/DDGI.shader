@@ -11,7 +11,7 @@
 
 // Use point sampling in software raytracing
 #define GLOBAL_SURFACE_ATLAS_SAMPLER SamplerPointClamp
-#define GLOBAL_SDF_SAMPLER SamplerPointClamp
+//#define GLOBAL_SDF_SAMPLER SamplerPointClamp
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/Math.hlsl"
