@@ -262,7 +262,8 @@ float3 SampleGlobalSDFGradient(const GlobalSDFData data, Texture3D<snorm float> 
 
 // Ray traces the Global SDF.
 // cascadeTraceStartBias - scales the trace start position offset (along the trace direction) by cascade voxel size (reduces artifacts on far cascades). Use it for shadow rays to prevent self-occlusion when tracing from object surface that looses quality in far cascades.
-GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<snorm float> tex, Texture3D<snorm float> mip, const GlobalSDFTrace trace, float cascadeTraceStartBias = 0.0f)
+// stepScale - scales the step size used for ray marching. Can be variable per-pixel noise to smooth results (esp. for temporal accumulation).
+GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<snorm float> tex, Texture3D<snorm float> mip, const GlobalSDFTrace trace, float cascadeTraceStartBias = 0.0f, float stepScale = 1.0f)
 {
     GlobalSDFHit hit = (GlobalSDFHit)0;
     hit.HitTime = -1.0f;
@@ -324,7 +325,7 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<snorm float> 
                 }
 
                 // Move forward
-                stepTime += max(stepDistance, voxelSize);
+                stepTime += max(stepDistance, voxelSize) * stepScale;
             }
             hit.StepsCount += step;
         }

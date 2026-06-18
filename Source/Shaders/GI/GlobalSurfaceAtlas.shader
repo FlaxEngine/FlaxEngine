@@ -5,6 +5,7 @@
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/Math.hlsl"
+#include "./Flax/Noise.hlsl"
 #include "./Flax/LightingCommon.hlsl"
 #include "./Flax/GlobalSignDistanceField.hlsl"
 #include "./Flax/GI/GlobalSurfaceAtlas.hlsl"
@@ -350,7 +351,9 @@ float4 PS_Debug(Quad_VS2PS input) : SV_Target
 	float3 viewRay = lerp(lerp(ViewFrustumWorldRays[3], ViewFrustumWorldRays[0], input.TexCoord.x), lerp(ViewFrustumWorldRays[2], ViewFrustumWorldRays[1], input.TexCoord.x), 1 - input.TexCoord.y).xyz;
 	viewRay = normalize(viewRay - ViewWorldPos);
 	trace.Init(ViewWorldPos, viewRay, ViewNearPlane, ViewFarPlane);
-	GlobalSDFHit hit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, trace);
+    trace.WorldPosition += rand3dTo3d(float3(input.TexCoord, viewRay.x)); // Noise a bit
+    float stepScale = lerp(rand3dTo1d(trace.WorldPosition), 0.7f, 0.9f); // Boost precision
+	GlobalSDFHit hit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, trace, 0.0f, stepScale);
 
     float3 color;
 	if (hit.IsHit())
