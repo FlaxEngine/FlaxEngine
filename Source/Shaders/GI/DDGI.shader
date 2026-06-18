@@ -848,10 +848,11 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     //historyWeight = 0.0f; // Debug no-blend
     if (wasActivated)
         historyWeight = 0.0f;
+    result.rgb = max(result.rgb, 0);
 #if DDGI_PROBE_UPDATE_MODE == 0
     result *= DDGI.IndirectLightingIntensity;
-#if DDGI_SRGB_BLENDING
-    result.rgb = pow(max(result.rgb, 0), 1.0f / DDGI.IrradianceGamma);
+#if DDGI_SRGB_BLENDING == 1
+    result.rgb = pow(result.rgb, 0.5f / DDGI_SRGB_BLENDING_GAMMA);
 #endif
     if (irradianceDeltaLen > 2.0f)
     {

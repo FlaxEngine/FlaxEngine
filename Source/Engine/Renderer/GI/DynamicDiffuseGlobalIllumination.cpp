@@ -507,6 +507,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
 
     // Upload constants
     {
+        Platform::MemoryClear(&ddgiData.Result.Constants, sizeof(ConstantsData));
         ddgiData.Result.Constants.CascadesCount = cascadesCount;
         ddgiData.Result.Constants.ProbesCounts[0] = probesCounts.X;
         ddgiData.Result.Constants.ProbesCounts[1] = probesCounts.Y;
@@ -522,7 +523,6 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         ddgiData.Result.Constants.ViewPos = renderContext.View.Position;
         ddgiData.Result.Constants.RaysCount = probeRaysCount;
         ddgiData.Result.Constants.ProbeHistoryWeight = probeHistoryWeight;
-        ddgiData.Result.Constants.IrradianceGamma = 1.5f;
         ddgiData.Result.Constants.IndirectLightingIntensity = indirectLightingIntensity;
         ddgiData.Result.Constants.FallbackIrradiance = settings.FallbackIrradiance.ToFloat4();
         ddgiData.Result.ProbesData = ddgiData.ProbesData->View();

@@ -19,7 +19,7 @@ public:
         Int4 ProbesScrollOffsets[4]; // w is unused
         uint32 ProbesCounts[3];
         uint32 CascadesCount;
-        float IrradianceGamma;
+        float Padding;
         float ProbeHistoryWeight;
         float RayMaxDistance;
         float IndirectLightingIntensity;

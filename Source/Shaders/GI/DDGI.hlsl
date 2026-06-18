@@ -24,7 +24,8 @@
 #ifndef DDGI_CASCADE_BLEND_SMOOTH
 #define DDGI_CASCADE_BLEND_SMOOTH 0 // Enables smooth cascade blending, otherwise dithering will be used
 #endif
-#define DDGI_SRGB_BLENDING 1 // Enables blending in sRGB color space, otherwise irradiance blending is done in linear space
+#define DDGI_SRGB_BLENDING 2 // Enables blending in sRGB color space (1 - with custom gamma, 2 - simple square/sqrt), otherwise irradiance blending is done in linear space
+#define DDGI_SRGB_BLENDING_GAMMA 0.75f
 #define DDGI_DEFAULT_BIAS 0.2f // Default value for DDGI sampling bias
 #define DDGI_FALLBACK_COORDS_ENCODE(coord) ((float3)(coord + 1) / 128.0f)
 #define DDGI_FALLBACK_COORDS_DECODE(data) (uint3)(data.xyz * 128.0f - 1)
@@ -40,7 +41,7 @@ struct DDGIData
     int4 ProbesScrollOffsets[4]; // w is unused
     uint3 ProbesCounts;
     uint CascadesCount;
-    float IrradianceGamma;
+    float Padding;
     float ProbeHistoryWeight;
     float RayMaxDistance;
     float IndirectLightingIntensity;
@@ -174,9 +175,8 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
         float2 octahedralCoords = GetOctahedralCoords(worldNormal);
         float2 uv = GetDDGIProbeUV(data, cascadeIndex, 0, octahedralCoords, DDGI_PROBE_RESOLUTION_IRRADIANCE);
         float3 probeIrradiance = probesIrradiance.SampleLevel(SamplerLinearClamp, uv, 0).rgb;
-#if DDGI_SRGB_BLENDING
-        probeIrradiance = pow(probeIrradiance, data.IrradianceGamma * 0.5f);
-        probeIrradiance *= probeIrradiance;
+#if DDGI_SRGB_BLENDING == 1
+        probeIrradiance = Square(pow(probeIrradiance, DDGI_SRGB_BLENDING_GAMMA));
 #endif
         probeIrradiance *= 2.0f * PI;
         return probeIrradiance;
@@ -263,8 +263,10 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
         octahedralCoords = GetOctahedralCoords(worldNormal);
         uv = GetDDGIProbeUV(data, cascadeIndex, probeIndex, octahedralCoords, DDGI_PROBE_RESOLUTION_IRRADIANCE);
         float3 probeIrradiance = probesIrradiance.SampleLevel(SamplerLinearClamp, uv, 0).rgb;
-#if DDGI_SRGB_BLENDING
-        probeIrradiance = pow(probeIrradiance, data.IrradianceGamma * 0.5f);
+#if DDGI_SRGB_BLENDING == 1
+        probeIrradiance = pow(probeIrradiance, DDGI_SRGB_BLENDING_GAMMA);
+#elif DDGI_SRGB_BLENDING == 2
+        probeIrradiance = sqrt(probeIrradiance);
 #endif
 
         // Accumulate weighted irradiance
