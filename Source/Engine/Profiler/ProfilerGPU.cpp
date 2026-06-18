@@ -475,6 +475,10 @@ void GraphicsDumping::Print()
         }
         sb.AppendLine();
     }
+    {
+        // Summary at the bottom (eg. when used in Editor/log to quickly find total time)
+        sb.AppendFormat(TEXT("(avg: {} ms, {} FPS)"), Utilities::RoundTo2DecimalPlaces(draw.Time), (int32)(1000.0f / draw.Time)).AppendLine();
+    }
     LOG_STR(Info, sb.ToStringView());
 }
 
