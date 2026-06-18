@@ -1062,13 +1062,17 @@ void AnimatedModel::UpdateBounds()
         GetLocalToWorldMatrix(world);
         const BoundingBox modelBox = model->GetBox(world);
         BoundingBox box = modelBox;
-        if (GraphInstance.NodesPose.Count() != 0)
+        auto& skeleton = model->Skeleton;
+        if (GraphInstance.NodesPose.Count() == skeleton.Nodes.Count())
         {
             // Per-bone bounds estimated from positions
-            auto& skeleton = model->Skeleton;
             const int32 bonesCount = skeleton.Bones.Count();
             for (int32 boneIndex = 0; boneIndex < bonesCount; boneIndex++)
-                box.Merge(_transform.LocalToWorld(GraphInstance.NodesPose[skeleton.Bones.Get()[boneIndex].NodeIndex].GetTranslation()));
+            {
+                int32 nodeIndex = skeleton.Bones.Get()[boneIndex].NodeIndex;
+                if (GraphInstance.NodesPose.IsValidIndex(nodeIndex))
+                    box.Merge(_transform.LocalToWorld(GraphInstance.NodesPose.Get()[nodeIndex].GetTranslation()));
+            }
         }
 
         // Apply margin based on model dimensions
