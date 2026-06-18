@@ -2087,6 +2087,7 @@ namespace FlaxEditor.Viewport
             new ViewModeOptions(ViewMode.Unlit, "Unlit", Editor.Instance.Options.Options.Input.Unlit),
             new ViewModeOptions(ViewMode.NoPostFx, "No PostFx", Editor.Instance.Options.Options.Input.NoPostFX),
             new ViewModeOptions(ViewMode.Wireframe, "Wireframe", Editor.Instance.Options.Options.Input.Wireframe),
+            new ViewModeOptions(ViewMode.Lighting, "Lighting"),
             new ViewModeOptions(ViewMode.LightBuffer, "Light Buffer", Editor.Instance.Options.Options.Input.LightBuffer),
             new ViewModeOptions(ViewMode.Reflections, "Reflections Buffer", Editor.Instance.Options.Options.Input.ReflectionsBuffer),
             new ViewModeOptions("GBuffer", new[]

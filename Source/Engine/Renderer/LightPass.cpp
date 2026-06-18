@@ -175,7 +175,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
     const bool disableSpecular = (view.Flags & ViewFlags::SpecularLight) == ViewFlags::None;
 
     // Check if debug lights
-    if (renderContext.View.Mode == ViewMode::LightBuffer)
+    if (renderContext.View.Mode == ViewMode::LightBuffer || renderContext.View.Mode == ViewMode::Lighting)
     {
         // Clear diffuse
         if (!_psClearDiffuse)

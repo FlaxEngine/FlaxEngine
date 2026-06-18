@@ -1010,6 +1010,11 @@ API_ENUM() enum class ViewMode
     /// Draw Global Sign Distant Field (SDF) overdraw to visualize performance of SDF tracing.
     /// </summary>
     GlobalSDFOverdraw = 27,
+
+    /// <summary>
+    /// Draw lighting without diffuse color from materials to inspect both diffuse and specular light contributions.
+    /// </summary>
+    Lighting = 28,
 };
 
 /// <summary>
