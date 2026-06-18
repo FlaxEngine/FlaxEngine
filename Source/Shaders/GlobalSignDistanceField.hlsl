@@ -11,7 +11,9 @@
 #define GLOBAL_SDF_WORLD_SIZE 60000.0f
 #define GLOBAL_SDF_MIN_VALID 0.9f
 #define GLOBAL_SDF_CHUNK_MARGIN_SCALE 4.0f
+#ifndef GLOBAL_SDF_SAMPLER
 #define GLOBAL_SDF_SAMPLER SamplerLinearClamp
+#endif
 
 // Global SDF data for a constant buffer
 struct GlobalSDFData

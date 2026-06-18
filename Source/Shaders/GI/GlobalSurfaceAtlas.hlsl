@@ -25,6 +25,9 @@
 #define GLOBAL_SURFACE_ATLAS_TILE_NORMAL_WEIGHT_ENABLED 0
 #define GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD 0
 #endif
+#ifndef GLOBAL_SURFACE_ATLAS_SAMPLER
+#define GLOBAL_SURFACE_ATLAS_SAMPLER SamplerLinearClamp
+#endif
 
 struct GlobalSurfaceTile
 {
@@ -119,9 +122,9 @@ struct GlobalSurfaceAtlasData
 
 float3 SampleGlobalSurfaceAtlasTex(Texture2D atlas, float2 atlasUV, float4 bilinearWeights)
 {
-    float4 sampleX = atlas.GatherRed(SamplerLinearClamp, atlasUV);
-    float4 sampleY = atlas.GatherGreen(SamplerLinearClamp, atlasUV);
-    float4 sampleZ = atlas.GatherBlue(SamplerLinearClamp, atlasUV);
+    float4 sampleX = atlas.GatherRed(GLOBAL_SURFACE_ATLAS_SAMPLER, atlasUV);
+    float4 sampleY = atlas.GatherGreen(GLOBAL_SURFACE_ATLAS_SAMPLER, atlasUV);
+    float4 sampleZ = atlas.GatherBlue(GLOBAL_SURFACE_ATLAS_SAMPLER, atlasUV);
     return float3(dot(sampleX, bilinearWeights), dot(sampleY, bilinearWeights), dot(sampleZ, bilinearWeights));
 }
 
@@ -154,7 +157,7 @@ float4 SampleGlobalSurfaceAtlasTile(const GlobalSurfaceAtlasData data, GlobalSur
     bilinearWeights.w = (1 - bilinearWeightsUV.x) * (1 - bilinearWeightsUV.y);
 
     // Tile depth weight based on sample position occlusion
-    float4 tileZ = depth.Gather(SamplerLinearClamp, atlasUV);
+    float4 tileZ = depth.Gather(GLOBAL_SURFACE_ATLAS_SAMPLER, atlasUV);
     float depthThreshold = 2.0f * surfaceThreshold / tile.ViewBoundsSize.z;
     float4 depthVisibility = 1.0f;
     UNROLL

@@ -9,6 +9,10 @@
 // "Scaling Probe-Based Real-Time Dynamic Global Illumination for Production", https://jcgt.org/published/0010/02/01/
 // "Dynamic Diffuse Global Illumination with Ray-Traced Irradiance Fields", https://jcgt.org/published/0008/02/01/
 
+// Use point sampling in software raytracing
+#define GLOBAL_SURFACE_ATLAS_SAMPLER SamplerPointClamp
+#define GLOBAL_SDF_SAMPLER SamplerPointClamp
+
 #include "./Flax/Common.hlsl"
 #include "./Flax/Math.hlsl"
 #include "./Flax/Noise.hlsl"
