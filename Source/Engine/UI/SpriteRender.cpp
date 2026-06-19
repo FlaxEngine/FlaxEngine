@@ -87,12 +87,20 @@ void SpriteRender::SetImageParam()
 {
     TextureBase* image = Image.Get();
     Vector4 imageMAD(Vector2::One, Vector2::Zero);
+    Float2 newSize = _size;
     if (!image && _sprite.IsValid())
     {
         image = _sprite.Atlas.Get();
         Sprite* sprite = &_sprite.Atlas->Sprites.At(_sprite.Index);
         imageMAD = Vector4(sprite->Area.Size, sprite->Area.Location);
+        newSize = sprite->Area.Size * image->Size();
     }
+    else if (image != nullptr)
+    {
+        newSize = image->Size();
+    }
+
+    SetSize(newSize);
     if (_paramImage)
     {
         _paramImage->SetValue(image);
