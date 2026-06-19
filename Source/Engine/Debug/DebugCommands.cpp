@@ -265,8 +265,23 @@ namespace
         if (auto* managedModule = dynamic_cast<ManagedBinaryModule*>(module))
         {
             const MClass* attribute = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->GetClass("FlaxEngine.DebugCommand");
+            const MMethod* getInfo = attribute->GetMethod("GetInfoInternal", 1);
             ASSERT_LOW_LAYER(attribute);
             const auto& classes = managedModule->Assembly->GetClasses();
+#define FILTER(type) \
+    if (useClass && type->GetVisibility() != MVisibility::Public) \
+        continue; \
+    MObject* attr = type->GetAttribute(attribute); \
+    if (!useClass && !attr) \
+        continue; \
+    if (attr) \
+    { \
+        bool hide = false; \
+        void* params[1] = { &hide }; \
+        getInfo->Invoke(attr, params, nullptr); \
+        if (hide) \
+            continue; \
+    }
             for (const auto& e : classes)
             {
                 MClass* mclass = e.Value;
@@ -292,10 +307,7 @@ namespace
                         name.StartsWith("add_") ||
                         name.StartsWith("remove_"))
                         continue;
-                    if (!useClass && !method->HasAttribute(attribute))
-                        continue;
-                    if (useClass && method->GetVisibility() != MVisibility::Public)
-                        continue;
+                    FILTER(method);
 
                     auto& commandData = Commands.AddOne();
                     BuildName(commandData, mclass, method->GetName());
@@ -309,10 +321,7 @@ namespace
                 {
                     if (!field->IsStatic())
                         continue;
-                    if (!useClass && !field->HasAttribute(attribute))
-                        continue;
-                    if (useClass && field->GetVisibility() != MVisibility::Public)
-                        continue;
+                    FILTER(field);
 
                     auto& commandData = Commands.AddOne();
                     BuildName(commandData, mclass, field->GetName());
@@ -326,10 +335,7 @@ namespace
                 {
                     if (!property->IsStatic())
                         continue;
-                    if (!useClass && !property->HasAttribute(attribute))
-                        continue;
-                    if (useClass && property->GetVisibility() != MVisibility::Public)
-                        continue;
+                    FILTER(property);
 
                     auto& commandData = Commands.AddOne();
                     BuildName(commandData, mclass, property->GetName());
@@ -338,6 +344,7 @@ namespace
                     commandData.MethodSet = property->GetSetMethod();
                 }
             }
+#undef FILTER
         }
         else
 #endif

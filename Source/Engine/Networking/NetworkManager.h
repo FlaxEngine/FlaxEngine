@@ -151,14 +151,14 @@ public:
     /// </summary>
     /// <param name="connection">Network connection identifier.</param>
     /// <returns>Found client or null.</returns>
-    API_FUNCTION() static NetworkClient* GetClient(API_PARAM(Ref) const NetworkConnection& connection);
+    API_FUNCTION(Attributes="DebugCommand(Hide=true)") static NetworkClient* GetClient(API_PARAM(Ref) const NetworkConnection& connection);
 
     /// <summary>
     /// Gets the network client with a given identifier. Returns null if failed to find it.
     /// </summary>
     /// <param name="clientId">Network client identifier (synchronized on all peers).</param>
     /// <returns>Found client or null.</returns>
-    API_FUNCTION() static NetworkClient* GetClient(uint32 clientId);
+    API_FUNCTION(Attributes="DebugCommand(Hide=true)") static NetworkClient* GetClient(uint32 clientId);
 
 public:
     /// <summary>

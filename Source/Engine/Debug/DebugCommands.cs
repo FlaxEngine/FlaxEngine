@@ -22,6 +22,15 @@ namespace FlaxEngine
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Property)]
     public sealed class DebugCommand : Attribute
     {
+        /// <summary>
+        /// Hides the entry from the Debug Commands. Can be used to exclude specific members from class marked as debug commands contains as a whole.
+        /// </summary>
+        public bool Hide;
+
+        internal void GetInfoInternal(out bool hide)
+        {
+            hide = Hide;
+        }
     }
 
     partial class DebugCommands
