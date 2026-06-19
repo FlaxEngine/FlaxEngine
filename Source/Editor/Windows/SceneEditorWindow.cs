@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using FlaxEditor.SceneGraph;
+using FlaxEditor.Utilities;
 using FlaxEditor.Viewport;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -30,6 +31,21 @@ namespace FlaxEditor.Windows
         public void DeleteSelection()
         {
             Editor.SceneEditing.Delete();
+        }
+
+        /// <inheritdoc />
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            if (base.OnKeyDown(key))
+                return true;
+
+            if (InputUtils.IsKeyPerformDeletion(key) && Editor.SceneEditing.HasSthSelected)
+            {
+                Editor.SceneEditing.Delete();
+                return true;
+            }
+
+            return false;
         }
 
         /// <inheritdoc />

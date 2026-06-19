@@ -8,6 +8,7 @@ using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Options;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
+using FlaxEditor.Utilities;
 using FlaxEditor.Viewport.Modes;
 using FlaxEditor.Viewport.Widgets;
 using FlaxEditor.Windows;
@@ -874,6 +875,21 @@ namespace FlaxEditor.Viewport
                 _savedTask = null;
             }
             Object.Destroy(ref _savedBackBuffer);
+        }
+
+        /// <inheritdoc />
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            if (base.OnKeyDown(key))
+                return true;
+
+            if (InputUtils.IsKeyPerformDeletion(key) && _editor.SceneEditing.HasSthSelected)
+            {
+                _editor.SceneEditing.Delete();
+                return true;
+            }
+
+            return false;
         }
 
         private void ReleaseResources()
