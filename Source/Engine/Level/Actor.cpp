@@ -1496,23 +1496,23 @@ void Actor::Draw(RenderContextBatch& renderContextBatch)
         Draw(renderContext);
 }
 
-#if USE_EDITOR
-
 void Actor::OnDebugDraw()
 {
+#if USE_EDITOR
     for (auto* script : Scripts)
         if (script->GetEnabled())
             script->OnDebugDraw();
+#endif
 }
 
 void Actor::OnDebugDrawSelected()
 {
+#if USE_EDITOR
     for (auto* script : Scripts)
         if (script->GetEnabled())
             script->OnDebugDrawSelected();
-}
-
 #endif
+}
 
 void Actor::ChangeScriptOrder(Script* script, int32 newIndex)
 {
