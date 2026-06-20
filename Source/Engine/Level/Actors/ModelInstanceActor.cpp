@@ -39,6 +39,9 @@ void ModelInstanceActor::SetMaterial(int32 entryIndex, MaterialBase* material)
     WaitForModelLoad();
     if (Entries.Count() == 0 && !material)
         return;
+    const int32 slotsCount = GetMaterialSlots().Length();
+    if (Entries.Count() != slotsCount)
+        Entries.Setup(slotsCount);
     CHECK(entryIndex >= 0 && entryIndex < Entries.Count());
     if (Entries[entryIndex].Material == material)
         return;
@@ -50,6 +53,10 @@ void ModelInstanceActor::SetMaterial(int32 entryIndex, MaterialBase* material)
 MaterialInstance* ModelInstanceActor::CreateAndSetVirtualMaterialInstance(int32 entryIndex)
 {
     WaitForModelLoad();
+    const int32 slotsCount = GetMaterialSlots().Length();
+    CHECK_RETURN(entryIndex >= 0 && entryIndex < slotsCount, nullptr);
+    if (Entries.Count() != slotsCount)
+        Entries.Setup(slotsCount);
     MaterialBase* material = GetMaterial(entryIndex);
     CHECK_RETURN(material && !material->WaitForLoaded(), nullptr);
     MaterialInstance* result = material->CreateVirtualInstance();
