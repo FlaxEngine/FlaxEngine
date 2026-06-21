@@ -580,7 +580,7 @@ void ParticleEmitterGraphCPUExecutor::Update(ParticleEmitter* emitter, ParticleE
                 ribbonOrderData[j] = j;
             }
 
-            if (sortKeyData.IsValid())
+            if (sortKeyData.IsValid() && data.Buffer->CPU.Count == cpu.Count)
             {
                 Sorting::SortArray(ribbonOrderData, cpu.Count, SortRibbonParticles, &sortKeyData);
             }
