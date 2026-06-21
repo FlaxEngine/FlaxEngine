@@ -105,6 +105,7 @@ public:
     int32 CascadesCount = 0;
     int32 ProbeRaysCount = 0;
     int32 ProbesCountTotal = 0;
+    int32 FramesSinceClear = 0;
     Int3 ProbeCounts = Int3::Zero;
     GPUTexture* ProbesTrace = nullptr; // Probes ray tracing: (RGB: hit radiance, A: hit distance)
     GPUTexture* ProbesData = nullptr; // Probes data: (RGB: probe-space offset, A: state/data)
@@ -148,6 +149,12 @@ public:
     {
         Release();
     }
+
+    bool IsFresh() const
+    {
+        // Allow to use data from the previous frame (eg. particles in Editor using the Editor viewport in Game viewport - Game render task runs first)
+        return LastFrameUsed + 1 >= Engine::FrameCount;
+    }
 };
 
 void CalculateVolumeRandomRotation(Matrix3x3& matrix)
@@ -180,6 +187,20 @@ void CalculateVolumeRandomRotation(Matrix3x3& matrix)
     matrix.M31 = cos1 * (sq3 * cos2) - sin1 * (sq3 * sin2);
     matrix.M32 = sin1 * (sq3 * cos2) + cos1 * (sq3 * sin2);
     matrix.M33 = 1.0f - 2.0f * u3;
+}
+
+float Graphics::GI::GetConvergence(const RenderBuffers* buffers)
+{
+    float result = 0;
+    auto* ddgiData = buffers ? buffers->FindCustomBuffer<DDGICustomBuffer>(TEXT("DDGI")) : nullptr;
+    if (ddgiData && ddgiData->IsFresh())
+    {
+        // This depends on scene complexity and lighting conditions so fake it
+        // Potentially could use probes variance readback to estimate it but that's probably too much trouble
+        constexpr int32 framesToCoverage = 30;
+        result = Math::Saturate((float)ddgiData->FramesSinceClear / framesToCoverage + 0.01f);
+    }
+    return result;
 }
 
 String DynamicDiffuseGlobalIlluminationPass::ToString() const
@@ -286,7 +307,7 @@ void DynamicDiffuseGlobalIlluminationPass::Dispose()
 bool DynamicDiffuseGlobalIlluminationPass::Get(const RenderBuffers* buffers, BindingData& result)
 {
     auto* ddgiData = buffers ? buffers->FindCustomBuffer<DDGICustomBuffer>(TEXT("DDGI")) : nullptr;
-    if (ddgiData && ddgiData->LastFrameUsed + 1 >= Engine::FrameCount) // Allow to use data from the previous frame (eg. particles in Editor using the Editor viewport in Game viewport - Game render task runs first)
+    if (ddgiData && ddgiData->IsFresh())
     {
         result = ddgiData->Result;
         return false;
@@ -450,8 +471,10 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
 #if DDGI_DEBUG_INSTABILITY
         context->ClearUA(ddgiData.ProbesInstability, Float4::Zero);
 #endif
+        ddgiData.FramesSinceClear = 0;
     }
     ddgiData.LastFrameUsed = Engine::FrameCount;
+    ddgiData.FramesSinceClear++;
 
     // Calculate which cascades should be updated this frame
     const uint64 cascadeFrequencies[] = { 2, 3, 5, 7 };
@@ -725,7 +748,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
             if (auto* sceneTask = ScriptingObject::Cast<SceneRenderTask>(task))
             {
                 auto* sceneTaskDDGI = sceneTask->Buffers ? sceneTask->Buffers->FindCustomBuffer<DDGICustomBuffer>(TEXT("DDGI")) : nullptr;
-                if (sceneTaskDDGI && sceneTaskDDGI->LastFrameUsed + 1 >= Engine::FrameCount)
+                if (sceneTaskDDGI && sceneTaskDDGI->IsFresh())
                 {
                     // Reuse DDGI from this task
                     renderBuffers = sceneTask->Buffers;

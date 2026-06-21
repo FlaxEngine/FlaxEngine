@@ -128,6 +128,16 @@ public:
         API_FIELD() static bool ColorGradingVolumeLUT;
     };
 
+    // Global Illumination rendering configuration and API.
+    API_CLASS(Static, Attributes="DebugCommand") class FLAXENGINE_API GI
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(GI);
+
+        // Gets the normalized 0-1 progress of the Global Illumination lighting bounces convergence (0 = no GI, 1 = full GI convergence). Can be used to continue displaying loading screen after scene load to ensure indirect lighting has been evaluated. Non-zero value means GI has started to be calculated.
+        API_FUNCTION(Attributes="DebugCommand(Hide=true)")
+        static float GetConvergence(const RenderBuffers* buffers);
+    };
+
 public:
     /// <summary>
     /// Disposes the device.
