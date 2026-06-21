@@ -16,6 +16,7 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUPass.h"
+#include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
@@ -259,8 +260,7 @@ public:
 
     void GetOptions(const RenderContext& renderContext, int32& resolution, float& distance)
     {
-        auto* graphicsSettings = GraphicsSettings::Get();
-        resolution = Math::Clamp(graphicsSettings->GlobalSurfaceAtlasResolution, 256, GPU_MAX_TEXTURE_SIZE);
+        resolution = Math::Clamp(Graphics::GlobalSurfaceAtlasResolution, 256, GPU_MAX_TEXTURE_SIZE);
         auto& giSettings = renderContext.List->Settings.GlobalIllumination;
         distance = giSettings.Distance;
     }

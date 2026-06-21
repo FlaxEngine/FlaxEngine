@@ -328,8 +328,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
 
     // Setup options
     auto& settings = renderContext.List->Settings.GlobalIllumination;
-    auto* graphicsSettings = GraphicsSettings::Get();
-    const float probesSpacing = Math::Clamp(graphicsSettings->GIProbesSpacing, 10.0f, 1000.0f); // GI probes placement spacing nearby camera (for closest cascade; gets automatically reduced for further cascades)
+    const float probesSpacing = Math::Clamp(Graphics::GIProbesSpacing, 10.0f, 1000.0f); // GI probes placement spacing nearby camera (for closest cascade; gets automatically reduced for further cascades)
     int32 probeRaysCount; // Amount of rays to trace randomly around each probe
     switch (Graphics::GIQuality) // Ensure to match CS_TraceRays permutations
     {

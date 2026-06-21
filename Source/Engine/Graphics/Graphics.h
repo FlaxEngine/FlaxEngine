@@ -69,9 +69,19 @@ public:
     API_FIELD() static Quality GIQuality;
 
     /// <summary>
+    /// The Global Illumination probes spacing distance (in world units). Defines the quality of the GI resolution. Adjust to 200-500 to improve performance and lower frequency GI data.
+    /// </summary>
+    API_FIELD() static float GIProbesSpacing;
+
+    /// <summary>
     /// Enables cascades splits blending for Global Illumination.
     /// </summary>
     API_FIELD() static bool GICascadesBlending;
+
+    /// <summary>
+    /// The Global Surface Atlas resolution. Adjust it if atlas `flickers` due to overflow (eg. to 4096).
+    /// </summary>
+    API_FIELD() static int32 GlobalSurfaceAtlasResolution;
 
     /// <summary>
     /// The default Post Process settings. Can be overriden by PostFxVolume on a level locally, per camera or for a whole map.
