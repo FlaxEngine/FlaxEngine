@@ -42,7 +42,7 @@
 #define Colormap CARD32
 #define GContext CARD32
 #define Atom CARD32
-#define Time CARD32
+#define XXTime CARD32
 #define KeyCode CARD8
 #define KeySym CARD32
 #define RROutput CARD32
@@ -116,8 +116,8 @@ typedef struct {
     CARD16  sequenceNumber B16;
     CARD32  length B32;
     Window  root B32;
-    Time    timestamp B32;
-    Time    configTimestamp B32;
+    XXTime    timestamp B32;
+    XXTime    configTimestamp B32;
     CARD16  nSizes B16;
     SizeID  sizeID B16;
     Rotation  rotation B16;
@@ -132,8 +132,8 @@ typedef struct {
     CARD8    randrReqType;
     CARD16   length B16;
     Drawable drawable B32;
-    Time     timestamp B32;
-    Time     configTimestamp B32;
+    XXTime     timestamp B32;
+    XXTime     configTimestamp B32;
     SizeID   sizeID B16;
     Rotation rotation B16;
 } xRR1_0SetScreenConfigReq;
@@ -144,8 +144,8 @@ typedef struct {
     CARD8    randrReqType;
     CARD16   length B16;
     Drawable drawable B32;
-    Time     timestamp B32;
-    Time     configTimestamp B32;
+    XXTime     timestamp B32;
+    XXTime     configTimestamp B32;
     SizeID   sizeID B16;
     Rotation rotation B16;
     CARD16   rate B16;
@@ -158,8 +158,8 @@ typedef struct {
     CARD8   status;
     CARD16  sequenceNumber B16;
     CARD32  length B32;
-    Time    newTimestamp B32;  
-    Time    newConfigTimestamp B32;
+    XXTime    newTimestamp B32;
+    XXTime    newConfigTimestamp B32;
     Window  root;
     CARD16  subpixelOrder B16;
     CARD16  pad4 B16;
@@ -248,8 +248,8 @@ typedef struct {
     CARD8	pad;
     CARD16	sequenceNumber B16;
     CARD32	length B32;
-    Time	timestamp B32;
-    Time	configTimestamp B32;
+    XXTime	timestamp B32;
+    XXTime	configTimestamp B32;
     CARD16	nCrtcs B16;
     CARD16	nOutputs B16;
     CARD16	nModes B16;
@@ -264,7 +264,7 @@ typedef struct {
     CARD8	randrReqType;
     CARD16	length B16;
     RROutput	output B32;
-    Time	configTimestamp B32;
+    XXTime	configTimestamp B32;
 } xRRGetOutputInfoReq;
 #define sz_xRRGetOutputInfoReq		12
 
@@ -273,7 +273,7 @@ typedef struct {
     CARD8	status;
     CARD16	sequenceNumber B16;
     CARD32	length B32;
-    Time	timestamp B32;
+    XXTime	timestamp B32;
     RRCrtc	crtc B32;
     CARD32	mmWidth B32;
     CARD32	mmHeight B32;
@@ -458,7 +458,7 @@ typedef struct {
     CARD8	randrReqType;
     CARD16	length B16;
     RRCrtc	crtc B32;
-    Time	configTimestamp B32;
+    XXTime	configTimestamp B32;
 } xRRGetCrtcInfoReq; 
 #define sz_xRRGetCrtcInfoReq		12
 
@@ -467,7 +467,7 @@ typedef struct {
     CARD8	status;
     CARD16	sequenceNumber B16;
     CARD32	length B32;
-    Time	timestamp B32;
+    XXTime	timestamp B32;
     INT16	x B16;
     INT16	y B16;
     CARD16	width B16;
@@ -485,8 +485,8 @@ typedef struct {
     CARD8	randrReqType;
     CARD16	length B16;
     RRCrtc	crtc B32;
-    Time	timestamp B32;
-    Time    	configTimestamp B32;
+    XXTime	timestamp B32;
+    XXTime    	configTimestamp B32;
     INT16	x B16;
     INT16	y B16;
     RRMode	mode B32;
@@ -500,7 +500,7 @@ typedef struct {
     CARD8	status;
     CARD16	sequenceNumber B16;
     CARD32	length B32;
-    Time	newTimestamp B32;
+    XXTime	newTimestamp B32;
     CARD32	pad1 B32;
     CARD32	pad2 B16;
     CARD32	pad3 B32;
@@ -679,7 +679,7 @@ typedef struct {
     CARD8	randrReqType;
     CARD16	length B16;
     RRProvider	provider B32;
-    Time	configTimestamp B32;
+    XXTime	configTimestamp B32;
 } xRRGetProviderInfoReq;
 #define sz_xRRGetProviderInfoReq 12
 
@@ -688,7 +688,7 @@ typedef struct {
     CARD8	status;
     CARD16	sequenceNumber B16;
     CARD32	length B32;
-    Time	timestamp B32;
+    XXTime	timestamp B32;
     CARD32	capabilities B32;
     CARD16	nCrtcs B16;
     CARD16	nOutputs B16;
@@ -705,7 +705,7 @@ typedef struct {
     CARD16	length B16;
     RRProvider  provider B32;
     RRProvider  source_provider B32;
-    Time	configTimestamp B32;
+    XXTime	configTimestamp B32;
 } xRRSetProviderOutputSourceReq;
 #define sz_xRRSetProviderOutputSourceReq 16
 
@@ -715,7 +715,7 @@ typedef struct {
     CARD16	length B16;
     RRProvider  provider B32;
     RRProvider  sink_provider B32;
-    Time	configTimestamp B32;
+    XXTime	configTimestamp B32;
 } xRRSetProviderOffloadSinkReq;
 #define sz_xRRSetProviderOffloadSinkReq 16
 
@@ -883,8 +883,8 @@ typedef struct {
     CARD8 type;				/* always evBase + ScreenChangeNotify */
     CARD8 rotation;			/* new rotation */
     CARD16 sequenceNumber B16;
-    Time timestamp B32;			/* time screen was changed */
-    Time configTimestamp B32;		/* time config data was changed */
+    XXTime timestamp B32;			/* time screen was changed */
+    XXTime configTimestamp B32;		/* time config data was changed */
     Window root B32;			/* root window */
     Window window B32;			/* window requesting notification */
     SizeID sizeID B16;			/* new size ID */
@@ -900,7 +900,7 @@ typedef struct {
     CARD8 type;				/* always evBase + RRNotify */
     CARD8 subCode;			/* RRNotify_CrtcChange */
     CARD16 sequenceNumber B16;
-    Time timestamp B32;			/* time crtc was changed */
+    XXTime timestamp B32;			/* time crtc was changed */
     Window window B32;			/* window requesting notification */
     RRCrtc crtc B32;			/* affected CRTC */
     RRMode mode B32;			/* current mode */
@@ -917,8 +917,8 @@ typedef struct {
     CARD8 type;				/* always evBase + RRNotify */
     CARD8 subCode;			/* RRNotify_OutputChange */
     CARD16 sequenceNumber B16;
-    Time timestamp B32;			/* time output was changed */
-    Time configTimestamp B32;		/* time config was changed */
+    XXTime timestamp B32;			/* time output was changed */
+    XXTime configTimestamp B32;		/* time config was changed */
     Window window B32;			/* window requesting notification */
     RROutput output B32;		/* affected output */
     RRCrtc crtc B32;			/* current crtc */
@@ -936,7 +936,7 @@ typedef struct {
     Window window B32;			/* window requesting notification */
     RROutput output B32;		/* affected output */
     Atom atom B32;			/* property name */
-    Time timestamp B32;			/* time crtc was changed */
+    XXTime timestamp B32;			/* time crtc was changed */
     CARD8 state;			/* NewValue or Deleted */
     CARD8 pad1;
     CARD16 pad2 B16;
@@ -949,7 +949,7 @@ typedef struct {
     CARD8 type;				/* always evBase + RRNotify */
     CARD8 subCode;			/* RRNotify_ProviderChange */
     CARD16 sequenceNumber B16;
-    Time timestamp B32;			/* time provider was changed */
+    XXTime timestamp B32;			/* time provider was changed */
     Window window B32;			/* window requesting notification */
     RRProvider provider B32;		/* affected provider */
     CARD32 pad1 B32;
@@ -966,7 +966,7 @@ typedef struct {
     Window window B32;			/* window requesting notification */
     RRProvider provider B32;		/* affected provider */
     Atom atom B32;			/* property name */
-    Time timestamp B32;			/* time provider was changed */
+    XXTime timestamp B32;			/* time provider was changed */
     CARD8 state;			/* NewValue or Deleted */
     CARD8 pad1;
     CARD16 pad2 B16;
@@ -979,7 +979,7 @@ typedef struct {
     CARD8 type;				/* always evBase + RRNotify */
     CARD8 subCode;			/* RRNotify_ResourceChange */
     CARD16 sequenceNumber B16;
-    Time timestamp B32;			/* time resource was changed */
+    XXTime timestamp B32;			/* time resource was changed */
     Window window B32;			/* window requesting notification */
     CARD32 pad1 B32;
     CARD32 pad2 B32;
@@ -993,7 +993,7 @@ typedef struct {
     CARD8 type;				/* always evBase + RRNotify */
     CARD8 subCode;			/* RRNotify_Lease */
     CARD16 sequenceNumber B16;
-    Time timestamp B32;			/* time resource was changed */
+    XXTime timestamp B32;			/* time resource was changed */
     Window window B32;			/* window requesting notification */
     RRLease lease B32;
     CARD8 created;			/* created/deleted */
@@ -1018,7 +1018,7 @@ typedef struct {
     CARD8	status;
     CARD16	sequenceNumber B16;
     CARD32	length B32;
-    Time	timestamp B32;
+    XXTime	timestamp B32;
     CARD16	left B16;
     CARD16	top B16;
     CARD16	width B16;
@@ -1039,7 +1039,7 @@ typedef struct {
     CARD8	randrReqType;
     CARD16	length B16;
     RRCrtc	crtc B32;
-    Time	timestamp B32;
+    XXTime	timestamp B32;
     CARD16	left B16;
     CARD16	top B16;
     CARD16	width B16;
@@ -1060,7 +1060,7 @@ typedef struct {
     CARD8	status;
     CARD16	sequenceNumber B16;
     CARD32	length B32;
-    Time	newTimestamp B32;
+    XXTime	newTimestamp B32;
     CARD32      pad1 B32;
     CARD32      pad2 B32;
     CARD32      pad3 B32;
@@ -1099,7 +1099,7 @@ typedef struct {
     CARD8	status;
     CARD16	sequenceNumber B16;
     CARD32	length B32;
-    Time	timestamp B32;
+    XXTime	timestamp B32;
     CARD32	nmonitors B32;
     CARD32	noutputs B32;
     CARD32      pad1 B32;
@@ -1141,7 +1141,7 @@ typedef struct {
 #undef Colormap
 #undef GContext
 #undef Atom
-#undef Time
+#undef XXTime
 #undef KeyCode
 #undef KeySym
 #undef Rotation

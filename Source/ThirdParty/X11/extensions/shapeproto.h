@@ -35,7 +35,7 @@ in this Software without prior written authorization from The Open Group.
  */
 
 #define Window CARD32
-#define Time CARD32
+#define XXTime CARD32
 
 #define X_ShapeQueryVersion		0
 #define X_ShapeRectangles		1
@@ -175,7 +175,7 @@ typedef struct _ShapeNotify {
 	INT16	y B16;		/* extents of new shape */
 	CARD16	width B16;
 	CARD16	height B16;
-	Time	time B32;	/* time of change */
+    XXTime	time B32;	/* time of change */
 	BYTE	shaped;		/* set when a shape actual exists */
 	BYTE	pad0;
 	CARD16	pad1 B16;
@@ -232,6 +232,6 @@ typedef struct {
 #define sz_xShapeGetRectanglesReply 32
 
 #undef Window
-#undef Time
+#undef XXTime
 
 #endif /* _SHAPEPROTO_H_ */

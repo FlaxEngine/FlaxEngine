@@ -67,7 +67,7 @@ restoring the definitions in X.h.  */
 #define GContext CARD32
 #define Atom CARD32
 #define VisualID CARD32
-#define Time CARD32
+#define XXTime CARD32
 #define KeyCode CARD8
 #define KeySym CARD32
 
@@ -121,7 +121,7 @@ typedef struct _AppleWMNotify {
 	BYTE	type;		/* always eventBase + event type */
 	BYTE	kind;
 	CARD16	sequenceNumber B16;
-	Time	time B32;	/* time of change */
+	XXTime	time B32;	/* time of change */
 	CARD16	pad1 B16;
 	CARD32	arg B32;
 	CARD32	pad3 B32;
@@ -286,7 +286,7 @@ typedef struct _AppleWMFrameDraw {
 #undef GContext
 #undef Atom
 #undef VisualID
-#undef Time
+#undef XXTime
 #undef KeyCode
 #undef KeySym
 

@@ -59,7 +59,7 @@ SOFTWARE.
 #define VisualID CARD32
 #define Drawable CARD32
 #define GContext CARD32
-#define Time CARD32
+#define XXTime CARD32
 #define Atom CARD32
 
 /* Structures */
@@ -268,7 +268,7 @@ typedef struct {
   CARD8 xvReqType;
   CARD16 length B16;
   XvPortID port B32;
-  Time time B32;
+  XXTime time B32;
 } xvGrabPortReq;
 #define sz_xvGrabPortReq 12
 
@@ -277,7 +277,7 @@ typedef struct {
   CARD8 xvReqType;
   CARD16 length B16;
   XvPortID port B32;
-  Time time B32;
+  XXTime time B32;
 } xvUngrabPortReq;
 #define sz_xvUngrabPortReq 12
 
@@ -567,7 +567,7 @@ typedef struct {
       BYTE type;
       BYTE reason;
       CARD16 sequenceNumber B16;
-      Time time B32;
+      XXTime time B32;
       Drawable drawable B32;
       XvPortID port B32;
       CARD32 padl5 B32;
@@ -579,7 +579,7 @@ typedef struct {
       BYTE type;
       BYTE padb1;
       CARD16 sequenceNumber B16;
-      Time time B32;
+      XXTime time B32;
       XvPortID port B32;
       Atom attribute B32;
       INT32 value B32;
@@ -596,7 +596,7 @@ typedef struct {
 #undef VisualID
 #undef Drawable
 #undef GContext
-#undef Time
+#undef XXTime
 #undef Atom
 
 #endif /* XVPROTO_H */

@@ -37,7 +37,7 @@
 #define GContext CARD32
 #define Atom CARD32
 #define VisualID CARD32
-#define Time CARD32
+#define XXTime CARD32
 #define KeyCode CARD8
 #define KeySym CARD32
 #define Picture CARD32
@@ -134,7 +134,7 @@ typedef struct {
     CARD16	sequenceNumber B16;
     Drawable	drawable B32;
     Damage	damage B32;
-    Time	timestamp B32;
+    XXTime	timestamp B32;
     xRectangle	area;
     xRectangle	geometry;
 } xDamageNotifyEvent;
@@ -151,7 +151,7 @@ typedef struct {
 #undef GContext
 #undef Atom
 #undef VisualID
-#undef Time
+#undef XXTime
 #undef KeyCode
 #undef KeySym
 
