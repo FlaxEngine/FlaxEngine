@@ -13,7 +13,7 @@ GBufferData GBuffer;
 LightData Light;
 float4x4 WVP;
 float4x4 ViewProjectionMatrix;
-float Dummy0;
+uint FrameIndexMod8;
 float TemporalTime;
 float ContactShadowsDistance;
 float ContactShadowsLength;
@@ -26,7 +26,9 @@ DECLARE_GBUFFERDATA_ACCESS(GBuffer)
 
 #if CONTACT_SHADOWS
 
-float RayCastScreenSpaceShadow(GBufferData gBufferData, GBufferSample gBuffer, float3 rayStartWS, float3 rayDirWS, float rayLength)
+#include "./Flax/Noise.hlsl"
+
+float RayCastScreenSpaceShadow(GBufferData gBufferData, GBufferSample gBuffer, float3 rayStartWS, float3 rayDirWS, float rayLength, float dither = 0.5f)
 {
     uint2 depthSize;
     Depth.GetDimensions(depthSize.x, depthSize.y);
@@ -53,7 +55,7 @@ float RayCastScreenSpaceShadow(GBufferData gBufferData, GBufferSample gBuffer, f
     float rayStepDstMin = min(rayStepDst.x, rayStepDst.y);
     float3 rayStepMin = raySize / max(min(maxSteps, rayStepDstMin), 1);
     float3 rayStep = raySize / maxSteps;
-    float3 ray = rayStart + rayStepMin * 1.5f;
+    float3 ray = rayStart + rayStepMin * (dither * 2 + 1.0f);
 
     // Sample over the ray
     float lightAmountMax = 0;
@@ -113,8 +115,10 @@ float4 PS_DirLight(Quad_VS2PS input) : SV_Target0
     ShadowSample shadow = SampleDirectionalLightShadow(Light, ShadowsBuffer, ShadowMap, gBuffer, TemporalTime);
 
 #if CONTACT_SHADOWS
-	// Calculate screen-space contact shadow
-	shadow.SurfaceShadow *= RayCastScreenSpaceShadow(gBufferData, gBuffer, gBuffer.WorldPos, Light.Direction, ContactShadowsLength);
+    // Calculate screen-space contact shadow
+    float dither = InterleavedGradientNoise(input.Position.xy, FrameIndexMod8);
+    float contactShadow = RayCastScreenSpaceShadow(gBufferData, gBuffer, gBuffer.WorldPos, Light.Direction, ContactShadowsLength, dither);
+    shadow.SurfaceShadow = min(shadow.SurfaceShadow, contactShadow);
 #endif
 
 	return GetShadowMask(shadow);
@@ -155,8 +159,10 @@ float4 PS_LocalLight(Model_VS2PS input) : SV_Target0
 #endif
 
 #if CONTACT_SHADOWS
-	// Calculate screen-space contact shadow
-	shadow.SurfaceShadow *= RayCastScreenSpaceShadow(gBufferData, gBuffer, gBuffer.WorldPos, normalize(Light.Position - gBuffer.WorldPos), ContactShadowsLength);
+    // Calculate screen-space contact shadow
+    float dither = InterleavedGradientNoise(input.ScreenPos.xy, FrameIndexMod8);
+    float contactShadow = RayCastScreenSpaceShadow(gBufferData, gBuffer, gBuffer.WorldPos, normalize(Light.Position - gBuffer.WorldPos), ContactShadowsLength, dither);
+    shadow.SurfaceShadow = min(shadow.SurfaceShadow, contactShadow);
 #endif
 
 	return GetShadowMask(shadow);

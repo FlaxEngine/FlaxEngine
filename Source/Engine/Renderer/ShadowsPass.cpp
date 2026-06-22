@@ -34,7 +34,7 @@ GPU_CB_STRUCT(Data {
     ShaderLightData Light;
     Matrix WVP;
     Matrix ViewProjectionMatrix;
-    float Dummy0;
+    uint32 FrameIndexMod8;
     float TemporalTime;
     float ContactShadowsDistance;
     float ContactShadowsLength;
@@ -1718,6 +1718,7 @@ void ShadowsPass::RenderShadowMask(RenderContextBatch& renderContextBatch, Rende
     else if (light.IsSpotLight)
         ((RenderSpotLightData&)light).SetShaderData(sperLight.Light, true);
     Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
+    sperLight.FrameIndexMod8 = renderContext.List->Setup.UseTemporalAAJitter ? (int32)(Engine::FrameCount % 8) : 0;
     sperLight.TemporalTime = renderContext.List->Setup.UseTemporalAAJitter ? RenderTools::ComputeTemporalTime() : 0.0f;
     sperLight.ContactShadowsDistance = light.ShadowsDistance;
     sperLight.ContactShadowsLength = EnumHasAnyFlags(view.Flags, ViewFlags::ContactShadows) ? light.ContactShadowsLength : 0.0f;

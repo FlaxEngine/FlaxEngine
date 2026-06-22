@@ -162,7 +162,7 @@ public:
     /// <summary>
     /// The length of the rays for contact shadows computed via the screen-space tracing. Set this to values higher than 0 to enable screen-space shadows rendering for this light. This improves the shadowing details. Actual ray distance is based on the pixel distance from the camera.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(99), EditorDisplay(\"Shadow\"), Limit(0.0f, 0.1f, 0.001f)")
+    API_FIELD(Attributes="EditorOrder(99), EditorDisplay(\"Shadow\"), Limit(0.0f, 0.4f, 0.001f)")
     float ContactShadowsLength = 0.0f;
 
     /// <summary>
