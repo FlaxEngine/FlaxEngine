@@ -140,10 +140,8 @@ META_PERMUTATION_3(SHADOWS_QUALITY=2,CONTACT_SHADOWS=1,LIGHT_TYPE=1)
 META_PERMUTATION_3(SHADOWS_QUALITY=3,CONTACT_SHADOWS=1,LIGHT_TYPE=1)
 float4 PS_LocalLight(Model_VS2PS input) : SV_Target0
 {
-	// Obtain texture coordinates corresponding to the current pixel
-	float2 uv = (input.ScreenPos.xy / input.ScreenPos.w) * float2(0.5, -0.5) + float2(0.5, 0.5);
-
 	// Sample GBuffer
+	float2 uv = ProjectClipToUV(input.ScreenPos.xy / input.ScreenPos.w);
 	GBufferData gBufferData = GetGBufferData();
 	GBufferSample gBuffer = SampleGBuffer(gBufferData, uv);
 

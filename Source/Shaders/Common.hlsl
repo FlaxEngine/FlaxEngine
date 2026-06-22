@@ -181,48 +181,6 @@ float4 LoadTextureWGSL(Texture2D tex, float2 uv)
 #define PI 3.1415926535897932
 #define UNITS_TO_METERS_SCALE 0.01f
 
-// Structure that contains information about GBuffer
-struct GBufferData
-{
-    // If reverse Z enabled:
-    //     x-1/Projection[0,0], y-1/Projection[1,1], z-(-Near / (Far - Near)), w-((Far * Near) / (Far - Near) / Far)
-    // Otherwise:
-    //     x-1/Projection[0,0], y-1/Projection[1,1], z-(Far / (Far - Near)), w-(-(Far * Near) / (Far - Near) / Far)
-    float4 ViewInfo;
-    float4 ScreenSize; // x-Width, y-Height, z-1/Width, w-1/Height
-    float3 ViewPos; // view position (in world space)
-    float ViewFar; // view far plane distance (in world space)
-    float4x4 InvViewMatrix; // inverse view matrix (4 rows by 4 columns)
-    float4x4 InvProjectionMatrix; // inverse projection matrix (4 rows by 4 columns)
-};
-
-#ifdef PLATFORM_ANDROID
-// #AdrenoVK_CB_STRUCT_MEMBER_ACCESS_BUG
-#define DECLARE_GBUFFERDATA_ACCESS(uniformName) GBufferData Get##uniformName##Data() { GBufferData tmp; tmp.ViewInfo = uniformName.ViewInfo; tmp.ScreenSize = uniformName.ScreenSize; tmp.ViewPos = uniformName.ViewPos; tmp.ViewFar = uniformName.ViewFar; tmp.InvViewMatrix = uniformName.InvViewMatrix; tmp.InvProjectionMatrix = uniformName.InvProjectionMatrix; return tmp; }
-#else
-#define DECLARE_GBUFFERDATA_ACCESS(uniformName) GBufferData Get##uniformName##Data() { return uniformName; }
-#endif
-
-// Structure that contains information about atmosphere fog
-struct AtmosphericFogData
-{
-    float AtmosphericFogDensityScale;
-    float AtmosphericFogSunDiscScale;
-    float AtmosphericFogDistanceScale;
-    float AtmosphericFogGroundOffset;
-
-    float AtmosphericFogAltitudeScale;
-    float AtmosphericFogStartDistance;
-    float AtmosphericFogPower;
-    float AtmosphericFogDistanceOffset;
-
-    float3 AtmosphericFogSunDirection;
-    float AtmosphericFogSunPower;
-
-    float3 AtmosphericFogSunColor;
-    float AtmosphericFogDensityOffset;
-};
-
 struct Quad_VS2PS
 {
     float4 Position : SV_Position;
@@ -275,6 +233,26 @@ float4 SampleUnwrappedTexture3D(Texture2D tex, SamplerState s, float3 uvw, float
 float4x4 ToMatrix4x4(float4x3 m)
 {
     return float4x4(float4(m[0].xyz, 0.0f), float4(m[1].xyz, 0.0f), float4(m[2].xyz, 0.0f), float4(m._m30, m._m31, m._m32, 1.0f));
+}
+
+// Maps clip-space position into screen-UV space. 1:-1 to 0:1
+float2 ProjectClipToUV(float2 clipPos)
+{
+    return clipPos * float2(0.5, -0.5) + float2(0.5, 0.5);
+}
+
+// Projects world-space position into clip-space space. (-1:1 from bottom/left to up/right)
+float3 ProjectWorldToClip(float3 wsPos, float4x4 viewProjectionMatrix)
+{
+    float4 clipPos = PROJECT_POINT(float4(wsPos, 1), viewProjectionMatrix);
+    return clipPos.xyz / clipPos.w;
+}
+
+// Projects world-space position into screen-UV space. (0:1 from top/left to bottom/right)
+float3 ProjectWorldToUV(float3 wsPos, float4x4 viewProjectionMatrix)
+{
+    float3 clipPos = ProjectWorldToClip(wsPos, viewProjectionMatrix);
+    return float3(ProjectClipToUV(clipPos.xy), clipPos.z);
 }
 
 #endif

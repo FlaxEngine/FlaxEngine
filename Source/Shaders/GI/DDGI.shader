@@ -16,6 +16,7 @@
 #include "./Flax/Common.hlsl"
 #include "./Flax/Math.hlsl"
 #include "./Flax/Noise.hlsl"
+#include "./Flax/GBufferCommon.hlsl"
 #include "./Flax/Quaternion.hlsl"
 #include "./Flax/MonteCarlo.hlsl"
 #include "./Flax/GlobalSignDistanceField.hlsl"

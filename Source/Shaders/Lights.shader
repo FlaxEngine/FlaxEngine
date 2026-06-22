@@ -80,10 +80,8 @@ void PS_LocalLight(Model_VS2PS input, out float4 output : SV_Target0)
 {
 	output = 0;
 
-	// Obtain UVs corresponding to the current pixel
-	float2 uv = (input.ScreenPos.xy / input.ScreenPos.w) * float2(0.5, -0.5) + float2(0.5, 0.5);
-
 	// Sample GBuffer
+	float2 uv = ProjectClipToUV(input.ScreenPos.xy / input.ScreenPos.w);
 	GBufferData gBufferData = GetGBufferData();
 	GBufferSample gBuffer = SampleGBuffer(gBufferData, uv);
 
@@ -117,10 +115,8 @@ float4 PS_Sky(Model_VS2PS input) : SV_Target0
 {
 	float4 output = 0;
 
-	// Obtain UVs corresponding to the current pixel
-	float2 uv = (input.ScreenPos.xy / input.ScreenPos.w) * float2(0.5, -0.5) + float2(0.5, 0.5);
-
 	// Sample GBuffer
+	float2 uv = ProjectClipToUV(input.ScreenPos.xy / input.ScreenPos.w);
 	GBufferData gBufferData = GetGBufferData();
 	GBufferSample gBuffer = SampleGBuffer(gBufferData, uv);
 

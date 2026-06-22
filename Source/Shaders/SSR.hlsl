@@ -12,26 +12,6 @@
 #include "./FlaxThirdParty/FidelityFX/ffx_sssr.h"
 #endif
 
-// 1:-1 to 0:1
-float2 ClipToUv(float2 clipPos)
-{
-    return clipPos * float2(0.5, -0.5) + float2(0.5, 0.5);
-}
-
-// go into clip space (-1:1 from bottom/left to up/right)
-float3 ProjectWorldToClip(float3 wsPos, float4x4 viewProjectionMatrix)
-{
-    float4 clipPos = PROJECT_POINT(float4(wsPos, 1), viewProjectionMatrix);
-    return clipPos.xyz / clipPos.w;
-}
-
-// go into UV space. (0:1 from top/left to bottom/right)
-float3 ProjectWorldToUv(float3 wsPos, float4x4 viewProjectionMatrix)
-{
-    float3 clipPos = ProjectWorldToClip(wsPos, viewProjectionMatrix);
-    return float3(ClipToUv(clipPos.xy), clipPos.z);
-}
-
 float3 TangentToWorld(float3 N, float4 H)
 {
     float3 upVector = abs(N.z) < 0.999 ? float3(0.0, 0.0, 1.0) : float3(1.0, 0.0, 0.0);
@@ -88,8 +68,8 @@ float3 TraceScreenSpaceReflection(
     worldAntiSelfOcclusionBias *= 10.0f; // Higher bias for HZB trace to reduce artifacts
 #endif
     float3 startWS = gBuffer.WorldPos + gBuffer.Normal * worldAntiSelfOcclusionBias;
-    float3 startUV = ProjectWorldToUv(startWS, viewProjectionMatrix);
-    float3 endUV = ProjectWorldToUv(startWS + reflectWS, viewProjectionMatrix);
+    float3 startUV = ProjectWorldToUV(startWS, viewProjectionMatrix);
+    float3 endUV = ProjectWorldToUV(startWS + reflectWS, viewProjectionMatrix);
     float3 rayUV = endUV - startUV;
     float2 rayUVAbs = abs(rayUV.xy);
     rayUV *= stepSize / max(rayUVAbs.x, rayUVAbs.y);

@@ -40,10 +40,8 @@ Model_VS2PS VS_Model(ModelInput_PosOnly input)
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_EnvProbe(Model_VS2PS input) : SV_Target0
 {
-	// Obtain UVs corresponding to the current pixel
-	float2 uv = (input.ScreenPos.xy / input.ScreenPos.w) * float2(0.5, -0.5) + float2(0.5, 0.5);
-
 	// Sample GBuffer
+	float2 uv = ProjectClipToUV(input.ScreenPos.xy / input.ScreenPos.w);
 	GBufferData gBufferData = GetGBufferData();
 	GBufferSample gBuffer = SampleGBuffer(gBufferData, uv);
 

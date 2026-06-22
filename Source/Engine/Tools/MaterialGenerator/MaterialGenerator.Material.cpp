@@ -56,7 +56,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         {
             // Transform world position into main viewport texcoord space
             Value clipPosition = writeLocal(VariantType::Float4, TEXT("PROJECT_POINT(float4(input.WorldPosition.xyz, 1), MainViewProjectionMatrix)"), node);
-            Value uvPos = writeLocal(VariantType::Float2, String::Format(TEXT("(({0}.xy / {0}.w) * float2(0.5, -0.5) + float2(0.5, 0.5))"), clipPosition.Value), node);
+            Value uvPos = writeLocal(VariantType::Float2, String::Format(TEXT("ProjectClipToUV({0}.xy / {0}.w)"), clipPosition.Value), node);
 
             // Position
             if (box->ID == 0)

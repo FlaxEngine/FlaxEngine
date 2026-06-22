@@ -55,7 +55,7 @@ GBufferOutput PS_Sky(MaterialInput input)
     float4 color = GetAtmosphericFog(AtmosphericFog, gBufferData.ViewFar, gBufferData.ViewPos + ViewOffset, viewVector, gBufferData.ViewFar, float3(0, 0, 0));
 
     // Apply dithering to hide banding artifacts
-    float2 uv = (input.ScreenPos.xy / input.ScreenPos.w) * float2(0.5, -0.5) + float2(0.5, 0.5);
+    float2 uv = ProjectClipToUV(input.ScreenPos.xy / input.ScreenPos.w);
     float luminance = Luminance(saturate(color.rgb));
     color.rgb += rand2dTo1d(uv) * luminance * NoiseScale;
 

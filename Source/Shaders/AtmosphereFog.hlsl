@@ -22,6 +22,26 @@
 
 #include "./Flax/Atmosphere.hlsl"
 
+// Structure that contains information about atmosphere fog
+struct AtmosphericFogData
+{
+    float AtmosphericFogDensityScale;
+    float AtmosphericFogSunDiscScale;
+    float AtmosphericFogDistanceScale;
+    float AtmosphericFogGroundOffset;
+
+    float AtmosphericFogAltitudeScale;
+    float AtmosphericFogStartDistance;
+    float AtmosphericFogPower;
+    float AtmosphericFogDistanceOffset;
+
+    float3 AtmosphericFogSunDirection;
+    float AtmosphericFogSunPower;
+
+    float3 AtmosphericFogSunColor;
+    float AtmosphericFogDensityOffset;
+};
+
 static const float HeightOffset = 0.01f;
 
 // inscattered light along ray x+tv, when sun in direction s (=S[L]-T(x,x0)S[L]|x0)
