@@ -136,7 +136,7 @@ typedef DebugDraw::Vertex Vertex;
 
 GPU_CB_STRUCT(ShaderData {
     Matrix ViewProjection;
-    Float2 Padding;
+    Float2 SceneDepthUVScale;
     float ClipPosZBias;
     uint32 EnableDepthTest;
     });
@@ -861,6 +861,9 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
     Matrix::Multiply(view.View, view.Projection, vp);
     Matrix::Transpose(vp, data.ViewProjection);
     data.ClipPosZBias = view.IsPerspectiveProjection() ? -0.2f : 0.0f; // Reduce Z-fighting artifacts (eg. editor grid)
+    data.SceneDepthUVScale = Float2::One;
+    if (enableDepthTest && renderContext.Buffers->DepthBuffer && target && ScriptingObject::Cast<GPUTexture>(target->GetParent()))
+        data.SceneDepthUVScale = renderContext.Buffers->DepthBuffer->Size() / ((GPUTexture*)target->GetParent())->Size();
     data.EnableDepthTest = enableDepthTest;
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);

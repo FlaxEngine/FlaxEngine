@@ -4,7 +4,7 @@
 
 META_CB_BEGIN(0, Data)
 float4x4 ViewProjection;
-float2 Padding;
+float2 SceneDepthUVScale;
 float ClipPosZBias;
 bool EnableDepthTest;
 META_CB_END
@@ -39,7 +39,7 @@ float4 PS(VS2PS input) : SV_Target
 	FLATTEN
 	if (EnableDepthTest)
 	{
-		float sceneDepthDeviceZ = SceneDepthTexture.Load(int3(input.Position.xy, 0)).r;
+		float sceneDepthDeviceZ = SceneDepthTexture.Load(int3(input.Position.xy * SceneDepthUVScale, 0)).r;
 		float interpolatedDeviceZ = input.Position.z;
 		clip(DEPTH_DIFF(sceneDepthDeviceZ, interpolatedDeviceZ));
 	}
