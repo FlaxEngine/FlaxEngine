@@ -647,6 +647,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     // Render lighting
     renderContextBatch.GetMainContext() = renderContext; // Sync render context in batch with the current value
     ShadowsPass::Instance()->RenderShadowMaps(renderContextBatch);
+    context->SetViewportAndScissors((float)tempDesc.Width, (float)tempDesc.Height);
     LightPass::Instance()->RenderLights(renderContextBatch, *lightBuffer);
     if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::GI))
     {
@@ -741,7 +742,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         Swap(frameBuffer, tempBuffer);
     }
 
-    // Upscaling after scene rendering but before post processing
+    // Upscaling after scene rendering but before post-processing
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
     bool useUpscaling = task->RenderingPercentage * task->RenderScale < 1.0f;
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
@@ -758,7 +759,7 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
             renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::CustomUpscale, frameBuffer, tempBuffer);
         else
             MultiScaler::Instance()->Upscale(context, outputViewport, frameBuffer, tempBuffer->View());
-        if (tempBuffer->Width() == tempDesc.Width)
+        if (tempBuffer->Width() == tempDesc.Width && tempBuffer->Height() == tempDesc.Height)
             Swap(frameBuffer, tempBuffer);
         RenderTargetPool::Release(tempBuffer);
         tempBuffer = RenderTargetPool::Get(tempDesc);

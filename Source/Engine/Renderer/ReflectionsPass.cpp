@@ -315,7 +315,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     if (renderProbes)
     {
         PROFILE_GPU_CPU("Env Probes");
-
+        context->SetViewportAndScissors((float)tempDesc.Width, (float)tempDesc.Height);
         context->SetRenderTarget(depthBufferRTV, *reflectionsBuffer);
 
         // Sort probes by the radius
@@ -382,7 +382,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
         context->BindSR(1, renderContext.Buffers->GBuffer1);
         context->BindSR(2, renderContext.Buffers->GBuffer2);
         context->BindSR(3, depthBufferSRV);
-        context->SetViewportAndScissors(renderContext.Task->GetViewport());
+        context->SetViewportAndScissors((float)tempDesc.Width, (float)tempDesc.Height);
     }
 
     if (renderContext.View.Mode == ViewMode::Reflections)

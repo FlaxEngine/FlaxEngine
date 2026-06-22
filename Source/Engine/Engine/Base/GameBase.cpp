@@ -242,7 +242,7 @@ void GameBaseImpl::OnPostRender(GPUContext* context, RenderContext& renderContex
         fade = 1.0f - (SplashScreenTime - fadeTime - showTime) / fadeTime;
 
     // Calculate image area (fill screen, keep aspect ratio, and snap to pixels)
-    const auto viewport = renderContext.Task->GetViewport();
+    const auto viewport = renderContext.Task->GetOutputViewport();
     const Rectangle screenRect(viewport.X, viewport.Y, viewport.Width, viewport.Height);
     Rectangle imageArea = screenRect;
     imageArea.Scale(0.6f);

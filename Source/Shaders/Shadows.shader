@@ -28,33 +28,48 @@ DECLARE_GBUFFERDATA_ACCESS(GBuffer)
 
 float RayCastScreenSpaceShadow(GBufferData gBufferData, GBufferSample gBuffer, float3 rayStartWS, float3 rayDirWS, float rayLength)
 {
+    uint2 depthSize;
+    Depth.GetDimensions(depthSize.x, depthSize.y);
 #if SHADOWS_QUALITY == 3
-	const uint maxSteps = 16;
+    const uint maxSteps = 16;
 #elif SHADOWS_QUALITY == 2
-	const uint maxSteps = 12;
+    const uint maxSteps = 12;
 #else
-	const uint maxSteps = 8;
+    const uint maxSteps = 8;
 #endif
-	float distanceFade = 1 - saturate(pow(length(gBuffer.WorldPos - gBufferData.ViewPos) / ContactShadowsDistance, 2));
-	float maxShadowLength = gBufferData.InvProjectionMatrix[1][1] * gBuffer.ViewPos.z * rayLength * distanceFade;
-	float4 rayStartCS = PROJECT_POINT(float4(rayStartWS, 1), ViewProjectionMatrix);
-	float4 rayEndCS = PROJECT_POINT(float4(rayStartWS + rayDirWS * maxShadowLength, 1), ViewProjectionMatrix);
-	float4 rayStepCS = (rayEndCS - rayStartCS) / maxSteps;
-	float4 rayCS = rayStartCS + rayStepCS;
-	float lightAmountMax = 0;
-	for (uint step = 0; step < maxSteps; step++)
-	{
-		float3 rayUV = rayCS.xyz / rayCS.w;
-		rayUV.xy = rayUV.xy * float2(0.5, -0.5) + float2(0.5, 0.5);
-		float sceneDepth = SampleDepth(gBufferData, rayUV.xy) * gBufferData.ViewFar;
-		float rayDepth = LinearizeZ(gBufferData, rayUV.z) * gBufferData.ViewFar * 0.998;
-		float surfaceThickness = 0.035f + rayDepth * rayLength;
-		float depthTestHardness = 0.005f;
-		float lightAmount = saturate((rayDepth - sceneDepth) / depthTestHardness) * saturate((sceneDepth + surfaceThickness - rayDepth) / depthTestHardness);
-		lightAmountMax = max(lightAmountMax, lightAmount);
-		rayCS += rayStepCS;
-	}
-	return 1 - lightAmountMax;
+
+    // Build start and end points of the trace
+    float distanceFade = 1 - saturate(pow(length(gBuffer.WorldPos - gBufferData.ViewPos) / ContactShadowsDistance, 2));
+    float maxShadowLength = gBufferData.InvProjectionMatrix[1][1] * gBuffer.ViewPos.z * rayLength * distanceFade;
+    float4 rayStartCS = PROJECT_POINT(float4(rayStartWS, 1), ViewProjectionMatrix);
+    float4 rayDirCS = PROJECT_POINT(float4(rayDirWS * maxShadowLength, 0), ViewProjectionMatrix);
+    float4 rayEndCS = rayStartCS + rayDirCS;
+    float3 rayStart = rayStartCS.xyz / rayStartCS.w;
+    float3 rayEnd = rayEndCS.xyz / rayEndCS.w;
+
+    // Use initial ray step that isn't sub-pixel to avoid in low-resolution
+    float3 raySize = rayEnd - rayStart;
+    float2 rayStepDst = abs(raySize).xy * depthSize;
+    float rayStepDstMin = min(rayStepDst.x, rayStepDst.y);
+    float3 rayStepMin = raySize / max(min(maxSteps, rayStepDstMin), 1);
+    float3 rayStep = raySize / maxSteps;
+    float3 ray = rayStart + rayStepMin * 1.5f;
+
+    // Sample over the ray
+    float lightAmountMax = 0;
+    for (uint step = 0; step < maxSteps; step++)
+    {
+        float2 rayUV = ProjectClipToUV(ray.xy);
+        float sceneDepth = SampleDepth(gBufferData, rayUV) * gBufferData.ViewFar;
+        float rayDepth = LinearizeZ(gBufferData, ray.z) * gBufferData.ViewFar * 0.998;
+        float surfaceThickness = 0.035f + rayDepth * rayLength;
+        float depthTestHardness = 0.005f;
+        float lightAmount = saturate((rayDepth - sceneDepth) / depthTestHardness) * saturate((sceneDepth + surfaceThickness - rayDepth) / depthTestHardness);
+        lightAmountMax = max(lightAmountMax, lightAmount);
+        ray += rayStep;
+    }
+
+    return 1 - lightAmountMax * distanceFade;
 }
 
 #endif
