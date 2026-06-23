@@ -13,6 +13,7 @@ namespace FlaxEngine.Json.JsonCustomSerializers
     internal class ExtendedDefaultContractResolver : DefaultContractResolver
     {
         private readonly Type _flaxType = typeof(Object);
+        private static readonly JsonConverter InterfaceObjectReferenceConverterInstance = new InterfaceObjectReferenceConverter();
 
         private readonly Type[] AttributesIgnoreList =
         {
@@ -32,6 +33,88 @@ namespace FlaxEngine.Json.JsonCustomSerializers
         public ExtendedDefaultContractResolver(bool isManagedOnly)
         {
             _attributesIgnoreList = isManagedOnly ? AttributesIgnoreListManaged : AttributesIgnoreList;
+        }
+
+        private static bool HasObjectInterfaceReferenceAttribute(IEnumerable<Attribute> attributes)
+        {
+            return attributes.Any(x => x is ScriptingObjectInterfaceReferenceAttribute || x is SoftObjectInterfaceReferenceAttribute);
+        }
+
+        private static Type GetCollectionItemType(Type type)
+        {
+            if (type.IsArray)
+                return type.GetElementType();
+            if (!type.IsGenericType || type == typeof(string))
+                return null;
+
+            var types = type.GetInterfaces().Concat(new[] { type });
+            var dictionaryType = types.FirstOrDefault(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IDictionary<,>));
+            if (dictionaryType != null)
+                return dictionaryType.GetGenericArguments()[1];
+            var enumerableType = types.FirstOrDefault(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+            return enumerableType?.GetGenericArguments()[0];
+        }
+
+        private static void SetupInterfaceObjectReferenceItems(JsonContainerContract contract, Type itemType)
+        {
+            if (itemType?.IsInterface == true)
+            {
+                contract.ItemReferenceLoopHandling = ReferenceLoopHandling.Serialize;
+                contract.ItemConverter = InterfaceObjectReferenceConverterInstance;
+            }
+        }
+
+        private void SetupObjectReferenceProperty(JsonProperty jsonProperty, Type type, IEnumerable<Attribute> attributes)
+        {
+            var hasObjectInterfaceReferenceAttribute = HasObjectInterfaceReferenceAttribute(attributes);
+            if (_flaxType.IsAssignableFrom(type) || (type.IsInterface && hasObjectInterfaceReferenceAttribute))
+            {
+                jsonProperty.ReferenceLoopHandling = ReferenceLoopHandling.Serialize;
+                jsonProperty.Converter = JsonSerializer.ObjectConverter;
+            }
+            if (hasObjectInterfaceReferenceAttribute && GetCollectionItemType(type)?.IsInterface == true)
+            {
+                jsonProperty.ItemReferenceLoopHandling = ReferenceLoopHandling.Serialize;
+                jsonProperty.ItemConverter = JsonSerializer.ObjectConverter;
+            }
+        }
+
+        private sealed class InterfaceObjectReferenceConverter : JsonConverter
+        {
+            public override unsafe void WriteJson(JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
+            {
+                if (value is Object obj)
+                {
+                    var id = obj.ID;
+                    writer.WriteValue(JsonSerializer.GetStringID(&id));
+                }
+                else if (value == null)
+                {
+                    writer.WriteNull();
+                }
+                else
+                {
+                    serializer.Serialize(writer, value, value.GetType());
+                }
+            }
+
+            public override object ReadJson(JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
+            {
+                if (reader.TokenType == JsonToken.String && JsonSerializer.TryParseID((string)reader.Value, out var id))
+                {
+                    return Object.Find(ref id, objectType, true);
+                }
+                if (reader.TokenType == JsonToken.Null)
+                    return null;
+                // objectType is the same interface item type that selected this converter. Passing it back to
+                // Newtonsoft can cause this converter to be chosen again and recurse until the stack overflows.
+                return Newtonsoft.Json.Linq.JToken.Load(reader).ToObject<object>(serializer);
+            }
+
+            public override bool CanConvert(Type objectType)
+            {
+                return objectType.IsInterface;
+            }
         }
 
         /// <inheritdoc />
@@ -56,9 +139,21 @@ namespace FlaxEngine.Json.JsonCustomSerializers
         }
 
         /// <inheritdoc />
+        protected override JsonArrayContract CreateArrayContract(Type objectType)
+        {
+            var contract = base.CreateArrayContract(objectType);
+
+            SetupInterfaceObjectReferenceItems(contract, contract.CollectionItemType);
+
+            return contract;
+        }
+
+        /// <inheritdoc />
         protected override JsonDictionaryContract CreateDictionaryContract(Type objectType)
         {
             var contract = base.CreateDictionaryContract(objectType);
+
+            SetupInterfaceObjectReferenceItems(contract, contract.DictionaryValueType);
 
             // Override contract to save enums keys as integer
             var keyType = contract.DictionaryKeyType;
@@ -116,11 +211,7 @@ namespace FlaxEngine.Json.JsonCustomSerializers
                 jsonProperty.Writable = true;
                 jsonProperty.Readable = true;
 
-                if (_flaxType.IsAssignableFrom(f.FieldType))
-                {
-                    jsonProperty.ReferenceLoopHandling = ReferenceLoopHandling.Serialize;
-                    jsonProperty.Converter = JsonSerializer.ObjectConverter;
-                }
+                SetupObjectReferenceProperty(jsonProperty, f.FieldType, attributes);
 
                 result.Add(jsonProperty);
             }
@@ -159,11 +250,7 @@ namespace FlaxEngine.Json.JsonCustomSerializers
                 jsonProperty.Writable = true;
                 jsonProperty.Readable = !isObsolete;
 
-                if (_flaxType.IsAssignableFrom(p.PropertyType))
-                {
-                    jsonProperty.ReferenceLoopHandling = ReferenceLoopHandling.Serialize;
-                    jsonProperty.Converter = JsonSerializer.ObjectConverter;
-                }
+                SetupObjectReferenceProperty(jsonProperty, p.PropertyType, attributes);
 
                 result.Add(jsonProperty);
             }

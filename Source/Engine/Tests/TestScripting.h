@@ -6,6 +6,8 @@
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingObject.h"
+#include "Engine/Scripting/ScriptingObjectInterfaceReference.h"
+#include "Engine/Scripting/SoftObjectInterfaceReference.h"
 #include "Engine/Scripting/SerializableScriptingObject.h"
 #include "Engine/Scripting/SoftTypeReference.h"
 #include "Engine/Content/SceneReference.h"
@@ -177,6 +179,10 @@ public:
 
     // Test struct
     API_FIELD() TestStruct SimpleStruct;
+    // Test interface reference
+    API_FIELD() ScriptingObjectInterfaceReference<ITestInterface> InterfaceRef;
+    // Test soft interface reference
+    API_FIELD() SoftObjectInterfaceReference<ITestInterface> SoftInterfaceRef;
 
     // Test event
     API_EVENT() Delegate<int32, Float3, const String&, String&, TestStruct&, const Array<TestStruct>&, Array<TestStruct>&> SimpleEvent;
