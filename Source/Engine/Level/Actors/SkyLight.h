@@ -28,6 +28,11 @@ public:
         /// The custom cube texture will be used as a light source.
         /// </summary>
         CustomTexture = 1,
+
+        /// <summary>
+        /// Realtime skybox will be used as a light source. Uses low-res cubemap generated from the sky/skybox (used by Global Illumination for fallback traces). Offers optimized dynamic ambient lighting.
+        /// </summary>
+        RealtimeSkybox = 2,
     };
 
 private:
@@ -44,13 +49,13 @@ public:
     /// <summary>
     /// Distance from the light at which any geometry should be treated as part of the sky.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(45), DefaultValue(150000.0f), Limit(0), EditorDisplay(\"Probe\")")
+    API_FIELD(Attributes="EditorOrder(45), Limit(0), EditorDisplay(\"Probe\")")
     float SkyDistanceThreshold = 150000.0f;
 
     /// <summary>
     /// The current light source mode.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(40), DefaultValue(Modes.CustomTexture), EditorDisplay(\"Probe\")")
+    API_FIELD(Attributes="EditorOrder(40), EditorDisplay(\"Probe\")")
     Modes Mode = Modes::CustomTexture;
 
     /// <summary>

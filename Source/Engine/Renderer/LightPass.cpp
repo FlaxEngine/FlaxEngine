@@ -384,7 +384,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         Matrix::Transpose(wvp, perLight.WVP);
 
         // Bind source image
-        context->BindSR(7, light.Image ? light.Image->GetTexture() : nullptr);
+        context->BindSR(7, light.CubemapImageView);
 
         // Calculate lighting
         if (_depthBounds)

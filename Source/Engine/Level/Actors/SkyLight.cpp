@@ -5,13 +5,17 @@
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/ProbesRenderer.h"
+#include "Engine/Renderer/GBufferPass.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
-#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Level/Scene/Scene.h"
 
 SkyLight::SkyLight(const SpawnParams& params)
@@ -57,10 +61,9 @@ void SkyLight::SetProbeData(TextureData& data)
     // Validate input data
     ASSERT(data.GetArraySize() == 6);
 
-    // Check if was using custom probe
-    if (Mode == Modes::CustomTexture)
+    // Check if wasn't using captured probe
+    if (Mode != Modes::CaptureScene)
     {
-        // Set
         Mode = Modes::CaptureScene;
         _bakedProbe = nullptr;
     }
@@ -122,7 +125,18 @@ void SkyLight::Draw(RenderContext& renderContext)
         data.AdditiveColor = AdditiveColor.ToFloat3() * (AdditiveColor.A * brightness);
         data.IndirectLightingIntensity = IndirectLightingIntensity;
         data.Radius = GetScaledRadius();
-        data.Image = GetSource();
+        if (Mode == Modes::RealtimeSkybox)
+        {
+            if (GPUTextureView* skybox = GBufferPass::Instance()->RenderSkybox(renderContext, GPUDevice::Instance->GetMainContext()))
+            {
+                data.CubemapImageView = skybox;
+            }
+        }
+        else if (CubeTexture* image = GetSource())
+        {
+            data.CubemapImageView = GET_TEXTURE_VIEW_SAFE(image->GetTexture());
+            data.CubemapImageMip = image->StreamingTexture()->TotalMipLevels() - 2.0;
+        }
         data.StaticFlags = GetStaticFlags();
         data.ID = GetID();
         data.ScreenSize = Math::Min(1.0f, Math::Sqrt(RenderTools::ComputeBoundsScreenRadiusSquared(position, (float)_sphere.Radius, renderContext.View)));

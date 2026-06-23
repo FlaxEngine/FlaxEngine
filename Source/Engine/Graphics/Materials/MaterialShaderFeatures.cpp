@@ -60,8 +60,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     {
         auto& skyLight = cache->SkyLights.First();
         skyLight.SetShaderData(data.SkyLight, false);
-        const auto texture = skyLight.Image ? skyLight.Image->GetTexture() : nullptr;
-        params.GPUContext->BindSR(skyLightShaderRegisterIndex, GET_TEXTURE_VIEW_SAFE(texture));
+        params.GPUContext->BindSR(skyLightShaderRegisterIndex, skyLight.CubemapImageView);
     }
     else
     {

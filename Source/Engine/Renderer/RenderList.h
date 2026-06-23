@@ -144,7 +144,8 @@ struct RenderSkyLightData : RenderLightData
     Float3 AdditiveColor;
     float Radius;
 
-    CubeTexture* Image;
+    GPUTextureView* CubemapImageView;
+    float CubemapImageMip;
 
     RenderSkyLightData()
     {

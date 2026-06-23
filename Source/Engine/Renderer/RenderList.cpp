@@ -181,7 +181,7 @@ void RenderSkyLightData::SetShaderData(ShaderLightData& data, bool useShadow) co
     data.SpotAngles.X = AdditiveColor.X;
     data.SpotAngles.Y = AdditiveColor.Y;
     data.SourceRadius = AdditiveColor.Z;
-    data.SourceLength = Image ? Image->StreamingTexture()->TotalMipLevels() - 2.0f : 0.0f;
+    data.SourceLength = CubemapImageMip;
     data.Color = Color;
     data.MinRoughness = MIN_ROUGHNESS;
     data.Position = Position;

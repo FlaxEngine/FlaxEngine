@@ -483,7 +483,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     }
 
     // Init sky light data
-    GPUTexture* skyLightImage = nullptr;
+    GPUTextureView* skyLightImage = nullptr;
     Platform::MemoryClear(&cache.Data.SkyLight, sizeof(cache.Data.SkyLight));
     if (renderContext.List->SkyLights.HasItems() && !useDDGI)
     {
@@ -493,8 +493,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
             cache.Data.SkyLight.MultiplyColor = skyLight.Color;
             cache.Data.SkyLight.AdditiveColor = skyLight.AdditiveColor;
             cache.Data.SkyLight.VolumetricScatteringIntensity = skyLight.VolumetricScatteringIntensity;
-            const auto source = skyLight.Image;
-            skyLightImage = source ? source->GetTexture() : nullptr;
+            skyLightImage = skyLight.CubemapImageView;
         }
     }
 
