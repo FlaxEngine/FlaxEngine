@@ -546,6 +546,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         ddgiData.Result.Constants.RaysCount = probeRaysCount;
         ddgiData.Result.Constants.ProbeHistoryWeight = probeHistoryWeight;
         ddgiData.Result.Constants.IndirectLightingIntensity = indirectLightingIntensity;
+        ddgiData.Result.Constants.IndirectShadowsStrength = settings.IndirectShadowsStrength;
         ddgiData.Result.Constants.FallbackIrradiance = settings.FallbackIrradiance.ToFloat4();
         ddgiData.Result.ProbesData = ddgiData.ProbesData->View();
         ddgiData.Result.ProbesDistance = ddgiData.ProbesDistance->View();

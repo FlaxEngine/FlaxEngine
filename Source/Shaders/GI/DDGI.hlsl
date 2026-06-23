@@ -41,10 +41,10 @@ struct DDGIData
     int4 ProbesScrollOffsets[4]; // w is unused
     uint3 ProbesCounts;
     uint CascadesCount;
-    float Padding;
     float ProbeHistoryWeight;
     float RayMaxDistance;
     float IndirectLightingIntensity;
+    float IndirectShadowsStrength;
     float3 ViewPos;
     uint RaysCount;
     float4 FallbackIrradiance;
@@ -245,6 +245,7 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
         {
             float variance = abs(Square(probeDistance.x) - probeDistance.y);
             float visibilityWeight = variance / (variance + Square(biasedPosToProbeDist - probeDistance.x));
+            visibilityWeight = lerp(1, visibilityWeight, data.IndirectShadowsStrength);
             weights *= max(visibilityWeight * visibilityWeight * visibilityWeight, 0.0f);
         }
 
@@ -294,7 +295,8 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
 #if !DDGI_FALLBACK_OUTER_DEDICATED_PROBE
     canNormalize += invalidCascade ? 1 : 0; // Normalize when outside the last cascade to preserve ambient GI when not using ambient probe
 #endif
-    totalIrradiance.rgb /= lerp(1, totalIrradiance.a, saturate(canNormalize));
+    float shadowNormalization = lerp(1, totalIrradiance.a, saturate(canNormalize));
+    totalIrradiance.rgb /= lerp(totalIrradiance.a, shadowNormalization, data.IndirectShadowsStrength);
     if (fallbacks >= 5 && totalIrradianceNonDir.a > 0.00001f)
     {
         // Use non-directional irradiance when sampling mostly fallback probes (out of place)

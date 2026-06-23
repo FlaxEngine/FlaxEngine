@@ -335,9 +335,14 @@ API_ENUM(Attributes="Flags") enum class GlobalIlluminationSettingsOverride : int
     BounceIntensity = 1 << 5,
 
     /// <summary>
+    /// Overrides <see cref="GlobalIlluminationSettings.IndirectShadowsStrength"/> property.
+    /// </summary>
+    IndirectShadowsStrength = 1 << 6,
+
+    /// <summary>
     /// All properties.
     /// </summary>
-    All = Mode | Intensity | TemporalResponse | Distance | FallbackIrradiance | BounceIntensity,
+    All = Mode | Intensity | TemporalResponse | Distance | FallbackIrradiance | BounceIntensity | IndirectShadowsStrength,
 };
 
 /// <summary>
@@ -384,6 +389,12 @@ API_STRUCT() struct FLAXENGINE_API GlobalIlluminationSettings : ISerializable
     /// </summary>
     API_FIELD(Attributes="EditorOrder(30), Limit(1000), PostProcessSetting((int)GlobalIlluminationSettingsOverride.Distance), ValueCategory(Utils.ValueCategory.Distance)")
     float Distance = 20000.0f;
+
+    /// <summary>
+    /// Indirect lighting shadows intensity. Default is 1 for fully opaque shadowing, lower values bleed the lighting into shadowed areas. Can be sued for artistic control over GI.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(35), Limit(0.0f, 1.0f, 0.001f), PostProcessSetting((int)GlobalIlluminationSettingsOverride.IndirectShadowsStrength)")
+    float IndirectShadowsStrength = 1.0f;
 
     /// <summary>
     /// The irradiance lighting outside the GI range used as a fallback to prevent pure-black scene outside the Global Illumination range.
