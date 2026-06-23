@@ -1654,6 +1654,22 @@ bool GPUDeviceVulkan::Init()
     GetDeviceExtensions(gpu, deviceExtensions);
     ParseOptionalDeviceExtensions(deviceExtensions);
 
+#if VK_NV_cooperative_vector
+    // Cooperative vectors (NVIDIA Neural Shading) require VK_NV_cooperative_vector and the matching feature,
+    // plus bufferDeviceAddress (the conversion command reads/writes matrices through GPU virtual addresses).
+    VkPhysicalDeviceCooperativeVectorFeaturesNV coopVecFeatures;
+    RenderToolsVulkan::ZeroStruct(coopVecFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_VECTOR_FEATURES_NV);
+    bool coopVecSupported = false;
+    if (OptionalDeviceExtensions.HasNVCooperativeVector && vkGetPhysicalDeviceFeatures2 && PhysicalDeviceFeatures12.bufferDeviceAddress)
+    {
+        VkPhysicalDeviceFeatures2 coopVecQuery;
+        RenderToolsVulkan::ZeroStruct(coopVecQuery, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
+        coopVecQuery.pNext = &coopVecFeatures;
+        vkGetPhysicalDeviceFeatures2(gpu, &coopVecQuery);
+        coopVecSupported = coopVecFeatures.cooperativeVector == VK_TRUE;
+    }
+#endif
+
     // Setup device info
     VkDeviceCreateInfo deviceInfo;
     RenderToolsVulkan::ZeroStruct(deviceInfo, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
@@ -1774,6 +1790,31 @@ bool GPUDeviceVulkan::Init()
         PerfSDKInitDeviceInfo(deviceInfo, deviceExtensions, enabledFeatures2Ptr);
 #endif
 
+#if VK_NV_cooperative_vector
+    // Enable bufferDeviceAddress + cooperativeVector at device creation by prepending the feature structs to the
+    // pNext chain (preserves any chain set up above). Kept in function scope so they outlive vkCreateDevice.
+    VkPhysicalDeviceVulkan12Features coopVecEnable12;
+    VkPhysicalDeviceCooperativeVectorFeaturesNV coopVecEnable;
+    if (coopVecSupported)
+    {
+        RenderToolsVulkan::ZeroStruct(coopVecEnable12, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES);
+        coopVecEnable12.bufferDeviceAddress = VK_TRUE;
+        // The SPIR-V CooperativeVectorNV capability requires the Vulkan memory model to be enabled.
+        // Device-scope is needed for the training (OuterProductAccumulate/ReduceSumAccumulate) atomics.
+        coopVecEnable12.vulkanMemoryModel = PhysicalDeviceFeatures12.vulkanMemoryModel;
+        coopVecEnable12.vulkanMemoryModelDeviceScope = PhysicalDeviceFeatures12.vulkanMemoryModelDeviceScope;
+        coopVecEnable12.pNext = (void*)deviceInfo.pNext;
+
+        RenderToolsVulkan::ZeroStruct(coopVecEnable, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_VECTOR_FEATURES_NV);
+        coopVecEnable.cooperativeVector = VK_TRUE;
+        coopVecEnable.cooperativeVectorTraining = coopVecFeatures.cooperativeVectorTraining;
+        coopVecEnable.pNext = &coopVecEnable12;
+
+        deviceInfo.pNext = &coopVecEnable;
+        BufferDeviceAddressEnabled = true;
+    }
+#endif
+
     // Create the device
     VALIDATE_VULKAN_RESULT(vkCreateDevice(gpu, &deviceInfo, nullptr, &Device));
     PhysicalDeviceFeatures12.pNext = nullptr;
@@ -1781,6 +1822,22 @@ bool GPUDeviceVulkan::Init()
 #if !PLATFORM_SWITCH
     // Optimize bindings
     volkLoadDevice(Device);
+#endif
+
+#if VK_NV_cooperative_vector
+    // Load cooperative-vector entry points manually (vendored volk predates the extension).
+    if (coopVecSupported)
+    {
+        CoopVecConvert = (PFN_vkConvertCooperativeVectorMatrixNV)vkGetDeviceProcAddr(Device, "vkConvertCooperativeVectorMatrixNV");
+        CoopVecCmdConvert = (PFN_vkCmdConvertCooperativeVectorMatrixNV)vkGetDeviceProcAddr(Device, "vkCmdConvertCooperativeVectorMatrixNV");
+        if (!CoopVecConvert || !CoopVecCmdConvert)
+        {
+            LOG(Warning, "Failed to load VK_NV_cooperative_vector entry points; cooperative vectors disabled.");
+            CoopVecConvert = nullptr;
+            CoopVecCmdConvert = nullptr;
+            coopVecSupported = false;
+        }
+    }
 #endif
 
     // Create queues
@@ -1819,6 +1876,12 @@ bool GPUDeviceVulkan::Init()
         limits.HasInstancing = true;
         limits.HasVolumeTextureRendering = true;
         limits.HasDrawIndirect = PhysicalDeviceLimits.maxDrawIndirectCount >= 1;
+#if VK_NV_cooperative_vector
+        limits.HasCooperativeVector = coopVecSupported;
+        limits.HasCooperativeVectorTraining = coopVecSupported && coopVecFeatures.cooperativeVectorTraining == VK_TRUE;
+        if (coopVecSupported)
+            LOG(Info, "Cooperative Vector supported (VK_NV_cooperative_vector, inference: 1, training: {0})", limits.HasCooperativeVectorTraining ? 1 : 0);
+#endif
         limits.HasAppendConsumeBuffers = false;
         limits.HasDepthClip = PhysicalDeviceFeatures.depthClamp;
         limits.HasDepthBounds = PhysicalDeviceFeatures.depthBounds;
@@ -1975,6 +2038,12 @@ bool GPUDeviceVulkan::Init()
         allocatorInfo.instance = Instance;
         allocatorInfo.device = Device;
         allocatorInfo.pVulkanFunctions = &vulkanFunctions;
+        if (BufferDeviceAddressEnabled)
+        {
+            // Required so VMA-created buffers may use VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT (cooperative vectors).
+            // VMA adds VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT to allocations; the address itself is fetched by the engine.
+            allocatorInfo.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+        }
         VALIDATE_VULKAN_RESULT(vmaCreateAllocator(&allocatorInfo, &Allocator));
     }
 
@@ -2285,6 +2354,89 @@ GPUConstantBuffer* GPUDeviceVulkan::CreateConstantBuffer(uint32 size, const Stri
 {
     PROFILE_MEM(GraphicsShaders);
     return New<GPUConstantBufferVulkan>(this, size);
+}
+
+#if VK_NV_cooperative_vector
+
+// Maps the backend-agnostic cooperative-vector element type to the Vulkan component type.
+VkComponentTypeKHR CooperativeVectorDataTypeToVk(CooperativeVectorDataType type)
+{
+    switch (type)
+    {
+    case CooperativeVectorDataType::SInt16: return VK_COMPONENT_TYPE_SINT16_KHR;
+    case CooperativeVectorDataType::UInt16: return VK_COMPONENT_TYPE_UINT16_KHR;
+    case CooperativeVectorDataType::SInt32: return VK_COMPONENT_TYPE_SINT32_KHR;
+    case CooperativeVectorDataType::UInt32: return VK_COMPONENT_TYPE_UINT32_KHR;
+    case CooperativeVectorDataType::Float16: return VK_COMPONENT_TYPE_FLOAT16_KHR;
+    case CooperativeVectorDataType::Float32: return VK_COMPONENT_TYPE_FLOAT32_KHR;
+    case CooperativeVectorDataType::SInt8x4Packed: return VK_COMPONENT_TYPE_SINT8_PACKED_NV;
+    case CooperativeVectorDataType::UInt8x4Packed: return VK_COMPONENT_TYPE_UINT8_PACKED_NV;
+    case CooperativeVectorDataType::UInt8: return VK_COMPONENT_TYPE_UINT8_KHR;
+    case CooperativeVectorDataType::SInt8: return VK_COMPONENT_TYPE_SINT8_KHR;
+    case CooperativeVectorDataType::FloatE4M3: return VK_COMPONENT_TYPE_FLOAT8_E4M3_EXT;
+    case CooperativeVectorDataType::FloatE5M2: return VK_COMPONENT_TYPE_FLOAT8_E5M2_EXT;
+    default: return VK_COMPONENT_TYPE_FLOAT16_KHR;
+    }
+}
+
+// Maps the backend-agnostic cooperative-vector matrix layout to the Vulkan layout (values match by design).
+VkCooperativeVectorMatrixLayoutNV CooperativeVectorLayoutToVk(CooperativeVectorMatrixLayout layout)
+{
+    switch (layout)
+    {
+    case CooperativeVectorMatrixLayout::RowMajor: return VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_ROW_MAJOR_NV;
+    case CooperativeVectorMatrixLayout::ColumnMajor: return VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_COLUMN_MAJOR_NV;
+    case CooperativeVectorMatrixLayout::MulOptimal: return VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV;
+    case CooperativeVectorMatrixLayout::OuterProductOptimal: return VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_TRAINING_OPTIMAL_NV;
+    default: return VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_ROW_MAJOR_NV;
+    }
+}
+
+// Byte size of a single cooperative-vector matrix element (used for the row-major source stride).
+static uint32 CooperativeVectorDataTypeSize(CooperativeVectorDataType type)
+{
+    switch (type)
+    {
+    case CooperativeVectorDataType::SInt8:
+    case CooperativeVectorDataType::UInt8:
+    case CooperativeVectorDataType::SInt8x4Packed:
+    case CooperativeVectorDataType::UInt8x4Packed:
+    case CooperativeVectorDataType::FloatE4M3:
+    case CooperativeVectorDataType::FloatE5M2: return 1;
+    case CooperativeVectorDataType::SInt16:
+    case CooperativeVectorDataType::UInt16:
+    case CooperativeVectorDataType::Float16: return 2;
+    default: return 4;
+    }
+}
+#endif
+
+uint32 GPUDeviceVulkan::GetCooperativeVectorMatrixSize(CooperativeVectorDataType dataType, CooperativeVectorMatrixLayout layout, uint32 numRows, uint32 numColumns, uint32 stride)
+{
+#if VK_NV_cooperative_vector
+    if (CoopVecConvert)
+    {
+        // Query the destination byte size by running a host conversion with a null destination address.
+        size_t dstSize = 0;
+        VkConvertCooperativeVectorMatrixInfoNV info;
+        RenderToolsVulkan::ZeroStruct(info, VK_STRUCTURE_TYPE_CONVERT_COOPERATIVE_VECTOR_MATRIX_INFO_NV);
+        info.numRows = numRows;
+        info.numColumns = numColumns;
+        info.srcComponentType = CooperativeVectorDataTypeToVk(dataType);
+        info.dstComponentType = CooperativeVectorDataTypeToVk(dataType);
+        info.srcLayout = VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_ROW_MAJOR_NV;
+        info.srcStride = (size_t)numColumns * CooperativeVectorDataTypeSize(dataType);
+        info.dstLayout = CooperativeVectorLayoutToVk(layout);
+        info.dstStride = stride;
+        info.pDstSize = &dstSize;
+        info.srcData.hostAddress = nullptr;
+        info.dstData.hostAddress = nullptr;
+        info.srcSize = 0;
+        CoopVecConvert(Device, &info);
+        return (uint32)dstSize;
+    }
+#endif
+    return 0;
 }
 
 SemaphoreVulkan::SemaphoreVulkan(GPUDeviceVulkan* device)

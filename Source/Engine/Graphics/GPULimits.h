@@ -333,6 +333,16 @@ API_STRUCT(NoDefault) struct GPULimits
     API_FIELD() bool HasTypedUAVLoad = false;
 
     /// <summary>
+    /// True if device supports cooperative vectors (neural shading matrix-vector ops). On DirectX 12 this requires Shader Model 6.9 preview + the cooperative vector experimental feature (tier 1.0+); on Vulkan it requires VK_NV_cooperative_vector. Enables MLP inference in shaders.
+    /// </summary>
+    API_FIELD() bool HasCooperativeVector = false;
+
+    /// <summary>
+    /// True if device supports cooperative vector training (outer-product and reduce-sum accumulate). On DirectX 12 this requires cooperative vector tier 1.1+; on Vulkan it requires the training-capable VK_NV_cooperative_vector path. Enables on-GPU MLP training.
+    /// </summary>
+    API_FIELD() bool HasCooperativeVectorTraining = false;
+
+    /// <summary>
     /// The maximum amount of texture mip levels.
     /// </summary>
     API_FIELD() int32 MaximumMipLevelsCount = 1;

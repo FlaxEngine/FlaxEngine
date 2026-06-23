@@ -68,6 +68,9 @@ static const char* GDeviceExtensions[] =
 #if VK_KHR_sampler_mirror_clamp_to_edge
     VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
 #endif
+#if VK_NV_cooperative_vector
+    VK_NV_COOPERATIVE_VECTOR_EXTENSION_NAME, // NVIDIA Neural Shading: cooperative-vector matrix-vector ops
+#endif
 #if VULKAN_USE_TRACY_GPU && VK_EXT_calibrated_timestamps && VK_EXT_host_query_reset
     VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME,
     VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME,
@@ -778,6 +781,9 @@ void GPUDeviceVulkan::ParseOptionalDeviceExtensions(const Array<const char*>& de
     OptionalDeviceExtensions.HasMirrorClampToEdge = RenderToolsVulkan::HasExtension(deviceExtensions, VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME);
 #if VULKAN_USE_VALIDATION_CACHE
     OptionalDeviceExtensions.HasEXTValidationCache = RenderToolsVulkan::HasExtension(deviceExtensions, VK_EXT_VALIDATION_CACHE_EXTENSION_NAME);
+#endif
+#if VK_NV_cooperative_vector
+    OptionalDeviceExtensions.HasNVCooperativeVector = RenderToolsVulkan::HasExtension(deviceExtensions, VK_NV_COOPERATIVE_VECTOR_EXTENSION_NAME);
 #endif
 }
 

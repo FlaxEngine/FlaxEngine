@@ -2057,6 +2057,66 @@ void GPUContextVulkan::Transition(GPUResource* resource, GPUResourceAccess acces
     }
 }
 
+void GPUContextVulkan::ConvertCooperativeVectorMatrices(const CooperativeVectorMatrixConvert* conversions, int32 count)
+{
+#if VK_NV_cooperative_vector
+    if (!conversions || count <= 0 || !_device->CoopVecCmdConvert)
+        return;
+    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+
+    // The conversion command must run outside a render pass; flush any pending barriers first.
+    if (cmdBuffer->IsInsideRenderPass())
+        EndRenderPass();
+    FlushBarriers();
+
+    // Ensure prior writes to the source matrices (eg. an fp16 packing compute dispatch) are visible to the convert.
+    {
+        VkMemoryBarrier preBarrier;
+        RenderToolsVulkan::ZeroStruct(preBarrier, VK_STRUCTURE_TYPE_MEMORY_BARRIER);
+        preBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+        preBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 1, &preBarrier, 0, nullptr, 0, nullptr);
+    }
+
+    Array<VkConvertCooperativeVectorMatrixInfoNV> infos;
+    Array<size_t> dstSizes;
+    infos.Resize(count);
+    dstSizes.Resize(count);
+    for (int32 i = 0; i < count; i++)
+    {
+        const CooperativeVectorMatrixConvert& c = conversions[i];
+        auto src = static_cast<GPUBufferVulkan*>(c.SrcBuffer);
+        auto dst = static_cast<GPUBufferVulkan*>(c.DstBuffer);
+        dstSizes[i] = c.DstSize;
+
+        VkConvertCooperativeVectorMatrixInfoNV& info = infos[i];
+        RenderToolsVulkan::ZeroStruct(info, VK_STRUCTURE_TYPE_CONVERT_COOPERATIVE_VECTOR_MATRIX_INFO_NV);
+        info.numRows = c.NumRows;
+        info.numColumns = c.NumColumns;
+        info.srcComponentType = CooperativeVectorDataTypeToVk(c.SrcDataType);
+        info.dstComponentType = CooperativeVectorDataTypeToVk(c.DstDataType);
+        info.srcLayout = CooperativeVectorLayoutToVk(c.SrcLayout);
+        info.srcStride = c.SrcStride;
+        info.dstLayout = CooperativeVectorLayoutToVk(c.DstLayout);
+        info.dstStride = c.DstStride;
+        info.srcSize = c.SrcSize;
+        info.pDstSize = &dstSizes[i];
+        info.srcData.deviceAddress = src->GetDeviceAddress() + c.SrcOffset;
+        info.dstData.deviceAddress = dst->GetDeviceAddress() + c.DstOffset;
+    }
+    _device->CoopVecCmdConvert(cmdBuffer->GetHandle(), (uint32)count, infos.Get());
+
+    // Make the converted matrices visible to subsequent shader reads (inference).
+    {
+        VkMemoryBarrier postBarrier;
+        RenderToolsVulkan::ZeroStruct(postBarrier, VK_STRUCTURE_TYPE_MEMORY_BARRIER);
+        postBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+        postBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 1, &postBarrier, 0, nullptr, 0, nullptr);
+    }
+#endif
+}
+
 void GPUContextVulkan::MemoryBarrier()
 {
     AddMemoryBarrier();

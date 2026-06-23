@@ -42,6 +42,15 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Gets projection matrix for overlay geometry rendered after temporal anti-aliasing has been resolved.
+        /// </summary>
+        /// <param name="projection">Projection matrix valid for rendering before or after (matches current TAA jitter stage).</param>
+        public void GetOverlayProjection(out Matrix projection)
+        {
+            projection = IsTaaResolved ? NonJitteredProjection : Projection;
+        }
+
+        /// <summary>
         /// Initializes render view data.
         /// </summary>
         /// <param name="view">The view.</param>

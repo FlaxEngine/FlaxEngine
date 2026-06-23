@@ -7,6 +7,7 @@
 #include "Engine/Core/Math/Rectangle.h"
 #include "Engine/Core/Math/Viewport.h"
 #include "PixelFormat.h"
+#include "CooperativeVector.h"
 #include "Config.h"
 
 #if PLATFORM_WIN32
@@ -320,6 +321,17 @@ public:
     /// <param name="srcResource">The source resource.</param>
     /// <param name="srcSubresource">The source subresource index.</param>
     API_FUNCTION() virtual void CopySubresource(GPUResource* dstResource, uint32 dstSubresource, GPUResource* srcResource, uint32 srcSubresource) = 0;
+
+    /// <summary>
+    /// Records GPU cooperative-vector matrix layout/precision conversions (NVIDIA Neural Shading). Used to convert
+    /// row-major authored weights into the hardware-optimal layouts read by dx::linalg cooperative-vector ops.
+    /// No-op on backends/devices without cooperative-vector support (see GPUDevice::Limits.HasCooperativeVector).
+    /// </summary>
+    /// <param name="conversions">The array of matrix conversions to record.</param>
+    /// <param name="count">The number of conversions.</param>
+    virtual void ConvertCooperativeVectorMatrices(const CooperativeVectorMatrixConvert* conversions, int32 count)
+    {
+    }
 
 public:
     /// <summary>

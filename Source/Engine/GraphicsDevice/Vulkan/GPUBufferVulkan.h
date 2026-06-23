@@ -91,6 +91,12 @@ public:
     }
 
     /// <summary>
+    /// Gets the buffer GPU virtual address. Requires the buffer to be created with device-address usage
+    /// (only when GPUDeviceVulkan::BufferDeviceAddressEnabled). Returns 0 otherwise.
+    /// </summary>
+    VkDeviceAddress GetDeviceAddress() const;
+
+    /// <summary>
     /// The current buffer access flags.
     /// </summary>
     VkAccessFlags Access;

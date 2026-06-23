@@ -28,6 +28,12 @@ class GPUDeviceVulkan;
 class UniformBufferUploaderVulkan;
 class DescriptorPoolsManagerVulkan;
 
+#if VK_NV_cooperative_vector
+// Maps the backend-agnostic cooperative-vector enums to Vulkan (shared by device + context).
+VkComponentTypeKHR CooperativeVectorDataTypeToVk(CooperativeVectorDataType type);
+VkCooperativeVectorMatrixLayoutNV CooperativeVectorLayoutToVk(CooperativeVectorMatrixLayout layout);
+#endif
+
 /// <summary>
 /// GPU query ID packed into 64-bits.
 /// </summary>
@@ -390,6 +396,9 @@ public:
 #if VULKAN_USE_VALIDATION_CACHE
         uint32 HasEXTValidationCache : 1;
 #endif
+#if VK_NV_cooperative_vector
+        uint32 HasNVCooperativeVector : 1;
+#endif
     };
 
     static OptionalVulkanDeviceExtensions OptionalDeviceExtensions;
@@ -519,6 +528,21 @@ public:
     VkPhysicalDeviceFeatures PhysicalDeviceFeatures;
     VkPhysicalDeviceVulkan12Features PhysicalDeviceFeatures12;
 
+    /// <summary>
+    /// True if VK_KHR_buffer_device_address (Vulkan 1.2 bufferDeviceAddress) was enabled on the device.
+    /// Required by the cooperative-vector matrix conversion which reads/writes via GPU virtual addresses.
+    /// </summary>
+    bool BufferDeviceAddressEnabled = false;
+
+#if VK_NV_cooperative_vector
+    /// <summary>
+    /// Cooperative-vector (NVIDIA Neural Shading, VK_NV_cooperative_vector) entry points, loaded manually via
+    /// vkGetDeviceProcAddr because the vendored volk loader predates the extension. Null when unsupported.
+    /// </summary>
+    PFN_vkConvertCooperativeVectorMatrixNV CoopVecConvert = nullptr;
+    PFN_vkCmdConvertCooperativeVectorMatrixNV CoopVecCmdConvert = nullptr;
+#endif
+
     Array<BufferedQueryPoolVulkan*> QueryPools;
     Array<GPUQueryVulkan> QueriesToRelease;
 #if VULKAN_RESET_QUERY_POOLS
@@ -592,6 +616,7 @@ public:
     GPUVertexLayout* CreateVertexLayout(const VertexElements& elements, bool explicitOffsets) override;
     GPUSwapChain* CreateSwapChain(Window* window) override;
     GPUConstantBuffer* CreateConstantBuffer(uint32 size, const StringView& name) override;
+    uint32 GetCooperativeVectorMatrixSize(CooperativeVectorDataType dataType, CooperativeVectorMatrixLayout layout, uint32 numRows, uint32 numColumns, uint32 stride) override;
 };
 
 /// <summary>

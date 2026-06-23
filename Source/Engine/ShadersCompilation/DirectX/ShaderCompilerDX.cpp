@@ -128,6 +128,12 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
     auto containerReflection = (IDxcContainerReflection*)_containerReflection;
     auto type = meta.GetStage();
     IncludeDX include(_context, library);
+
+    // Cooperative-vector shaders (NVIDIA Neural Shading) require Shader Model 6.9 preview and the
+    // dx::linalg intrinsics. They are opted-in per shader function with META_FLAG(CooperativeVector)
+    // and are supported for compute (cs_6_9) and pixel (ps_6_9) shaders in this engine.
+    const bool useCoopVec = EnumHasAnyFlags(meta.Flags, ShaderFlags::CooperativeVector) && (type == ShaderStage::Compute || type == ShaderStage::Pixel);
+
     const Char* targetProfile;
     switch (type)
     {
@@ -144,10 +150,10 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
         targetProfile = TEXT("gs_6_0");
         break;
     case ShaderStage::Pixel:
-        targetProfile = TEXT("ps_6_0");
+        targetProfile = useCoopVec ? TEXT("ps_6_9") : TEXT("ps_6_0");
         break;
     case ShaderStage::Compute:
-        targetProfile = TEXT("cs_6_0");
+        targetProfile = useCoopVec ? TEXT("cs_6_9") : TEXT("cs_6_0");
         break;
     default:
         return true;
@@ -170,6 +176,14 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
         args.Add(DXC_ARG_WARNINGS_ARE_ERRORS);
     if (_context->Options->GenerateDebugData)
         args.Add(DXC_ARG_DEBUG);
+    if (useCoopVec)
+    {
+        // Cooperative vectors operate on native 16-bit types and target a preview shader model that the
+        // external DXIL validator does not recognize, so emit unvalidated DXIL (the device opts into
+        // experimental shader models at creation time to run it).
+        args.Add(TEXT("-enable-16bit-types"));
+        args.Add(DXC_ARG_SKIP_VALIDATION); // -Vd
+    }
     args.Add(TEXT("-T"));
     args.Add(targetProfile);
     args.Add(TEXT("-E"));
