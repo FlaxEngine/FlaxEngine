@@ -22,6 +22,9 @@
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Level/Actors/StaticModel.h"
 #include "Engine/Threading/JobSystem.h"
+#if USE_EDITOR
+#include "Editor/Editor.h"
+#endif
 
 // Some of those constants must match in shader
 #define GLOBAL_SDF_FORMAT PixelFormat::R8_SNorm
@@ -201,6 +204,9 @@ struct CascadeData
         // Invalidate static chunks intersecting with dirty bounds
         RasterizeChunkKey key;
         key.Layer = 0;
+#if USE_EDITOR
+        bool isSceneEditView = !Editor::IsPlayMode;
+#endif
         for (key.Coord.Z = objectChunkMin.Z; key.Coord.Z <= objectChunkMax.Z; key.Coord.Z++)
         {
             for (key.Coord.Y = objectChunkMin.Y; key.Coord.Y <= objectChunkMax.Y; key.Coord.Y++)
@@ -209,9 +215,18 @@ struct CascadeData
                 {
                     key.Hash = KEY_GET_HASH(key);
                     if (isStatic)
+                    {
                         StaticChunks.Remove(key);
+                    }
+#if USE_EDITOR
+                    // Treat static objects as dynamic while editing scene to improve responsiveness and accuracy
+                    if (!isStatic || isSceneEditView)
+#else
                     else
+#endif
+                    {
                         DynamicDirtyChunks.Add(key);
+                    }
                 }
             }
         }
