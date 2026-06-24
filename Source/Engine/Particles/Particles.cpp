@@ -710,7 +710,7 @@ void DrawEmittersGPU(GPUContext* context, RenderContextBatch& renderContextBatch
     }
     else if (!GPUParticlesSortingCB)
     {
-        const auto shader = GPUParticlesSorting->GetShader();
+        const auto shader = GPUParticlesSorting->GPU;
         const StringAnsiView CS_Sort("CS_Sort");
         GPUParticlesSortingCS[0] = shader->GetCS(CS_Sort, 0);
         GPUParticlesSortingCS[1] = shader->GetCS(CS_Sort, 1);

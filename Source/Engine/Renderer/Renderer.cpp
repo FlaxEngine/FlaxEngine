@@ -385,6 +385,21 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         const int32 screenWidth = renderContext.Buffers->GetWidth();
         const int32 screenHeight = renderContext.Buffers->GetHeight();
         setup.UpscaleLocation = renderContext.Task->UpscaleLocation;
+        setup.UseShadows = !isGBufferDebug && EnumHasAnyFlags(view.Flags, ViewFlags::Shadows) && ShadowsPass::Instance()->IsReady();
+        switch (renderContext.View.Mode)
+        {
+        case ViewMode::QuadOverdraw:
+        case ViewMode::Emissive:
+        case ViewMode::LightmapUVsDensity:
+        case ViewMode::GlobalSurfaceAtlas:
+        case ViewMode::GlobalSDF:
+        case ViewMode::GlobalSDFOverdraw:
+        case ViewMode::MaterialComplexity:
+        case ViewMode::VertexColors:
+        case ViewMode::LightOverlap:
+            setup.UseShadows = false;
+            break;
+        }
         if (screenWidth < 16 || screenHeight < 16 || renderContext.Task->IsCameraCut || isGBufferDebug || renderContext.View.Mode == ViewMode::NoPostFx)
             setup.UseMotionVectors = false;
         else
@@ -453,22 +468,8 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         renderContextBatch.GetMainContext() = renderContext; // Sync render context in batch with the current value
         renderContext.List->PreDraw(context, renderContextBatch);
 
-        bool drawShadows = !isGBufferDebug && EnumHasAnyFlags(view.Flags, ViewFlags::Shadows) && ShadowsPass::Instance()->IsReady();
-        switch (renderContext.View.Mode)
-        {
-        case ViewMode::QuadOverdraw:
-        case ViewMode::Emissive:
-        case ViewMode::LightmapUVsDensity:
-        case ViewMode::GlobalSurfaceAtlas:
-        case ViewMode::GlobalSDF:
-        case ViewMode::GlobalSDFOverdraw:
-        case ViewMode::MaterialComplexity:
-        case ViewMode::VertexColors:
-            drawShadows = false;
-            break;
-        }
         LightPass::Instance()->SetupLights(renderContext, renderContextBatch);
-        if (drawShadows)
+        if (setup.UseShadows)
             ShadowsPass::Instance()->SetupShadows(renderContext, renderContextBatch);
 #if USE_EDITOR
         GBufferPass::Instance()->PreOverrideDrawCalls(renderContext);

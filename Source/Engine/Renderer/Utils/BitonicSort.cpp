@@ -49,7 +49,7 @@ bool BitonicSort::setupResources()
 {
     if (!_shader->IsLoaded())
         return true;
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     _cb = shader->GetCB(0);
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 

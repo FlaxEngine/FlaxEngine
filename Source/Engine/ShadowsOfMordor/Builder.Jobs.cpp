@@ -116,7 +116,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
 
             // Render entry
             auto& entry = scene->Entries[lightmapEntry.Entries[_workerStagePosition1]];
-            auto cb = _shader->GetShader()->GetCB(0);
+            auto cb = _shader->GPU->GetCB(0);
             switch (entry.Type)
             {
             case GeometryType::StaticModel:
@@ -259,7 +259,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
 
         ShaderData shaderData;
         shaderData.AtlasSize = atlasSize;
-        auto cb = _shader->GetShader()->GetCB(0);
+        auto cb = _shader->GPU->GetCB(0);
         context->UpdateCB(cb, &shaderData);
         context->BindCB(0, cb);
 
@@ -405,12 +405,12 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
             shaderData.TexelAddress = (hemisphere.TexelY * atlasSize + hemisphere.TexelX) * NUM_SH_TARGETS;
 
             // Calculate per pixel irradiance using compute shaders
-            auto cb = _shader->GetShader()->GetCB(0);
+            auto cb = _shader->GPU->GetCB(0);
             context->UpdateCB(cb, &shaderData);
             context->BindCB(0, cb);
             context->BindUA(0, _irradianceReduction->View());
             context->BindSR(0, radianceMap);
-            context->Dispatch(_shader->GetShader()->GetCS("CS_Integrate"), 1, HEMISPHERES_RESOLUTION, 1);
+            context->Dispatch(_shader->GPU->GetCS("CS_Integrate"), 1, HEMISPHERES_RESOLUTION, 1);
             context->ResetUA();
             context->ResetSR();
 
@@ -418,7 +418,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
             context->BindUA(0, lightmapEntry.LightmapData->View());
             context->BindSR(0, _irradianceReduction->View());
             // TODO: cache shader handle
-            context->Dispatch(_shader->GetShader()->GetCS("CS_Reduction"), 1, NUM_SH_TARGETS, 1);
+            context->Dispatch(_shader->GPU->GetCS("CS_Reduction"), 1, NUM_SH_TARGETS, 1);
 
             // Unbind slots now to make rendering backend live easier
             context->ResetSR();
@@ -467,7 +467,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
         auto& lightmapEntry = scene->Lightmaps[_workerStagePosition0];
         ShaderData shaderData;
         shaderData.AtlasSize = atlasSize;
-        auto cb = _shader->GetShader()->GetCB(0);
+        auto cb = _shader->GPU->GetCB(0);
         context->UpdateCB(cb, &shaderData);
         context->BindCB(0, cb);
 
@@ -475,7 +475,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
         context->ResetRenderTarget();
         context->BindSR(0, lightmapEntry.LightmapData->View());
         context->BindUA(0, scene->TempLightmapData->View());
-        context->Dispatch(_shader->GetShader()->GetCS("CS_BlurEmpty"), atlasSize, atlasSize, 1);
+        context->Dispatch(_shader->GPU->GetCS("CS_BlurEmpty"), atlasSize, atlasSize, 1);
 
         // Swap temporary buffer used as output with lightmap entry data (these buffers are the same)
         // So we can rewrite data from one buffer to another with custom sampling
@@ -492,7 +492,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
 
             context->BindSR(0, lightmapEntry.LightmapData->View());
             context->BindUA(0, scene->TempLightmapData->View());
-            context->Dispatch(_shader->GetShader()->GetCS("CS_Dilate"), atlasSize, atlasSize, 1);
+            context->Dispatch(_shader->GPU->GetCS("CS_Dilate"), atlasSize, atlasSize, 1);
 
             Swap(scene->TempLightmapData, lightmapEntry.LightmapData);
         }
@@ -500,7 +500,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
         context->BindUA(0, lightmapEntry.LightmapData->View());
 
         // Remove the BACKGROUND_TEXELS_MARK from the unused texels (see shader for more info)
-        context->Dispatch(_shader->GetShader()->GetCS("CS_Finalize"), atlasSize, atlasSize, 1);
+        context->Dispatch(_shader->GPU->GetCS("CS_Finalize"), atlasSize, atlasSize, 1);
 
         // Move to another lightmap
         _workerStagePosition0++;

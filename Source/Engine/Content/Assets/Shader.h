@@ -30,8 +30,9 @@ public:
 
     /// <summary>
     /// Gets the GPU shader object.
+    /// [Deprecated in v1.10]
     /// </summary>
-    FORCE_INLINE GPUShader* GetShader() const
+    FORCE_INLINE DEPRECATED("Use GPU field directly.") GPUShader* GetShader() const
     {
         return GPU;
     }

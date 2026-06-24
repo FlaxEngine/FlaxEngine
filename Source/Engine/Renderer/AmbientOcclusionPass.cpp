@@ -117,7 +117,7 @@ bool AmbientOcclusionPass::setupResources()
     // Check shader
     if (!_shader->IsLoaded())
         return true;
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, ASSAOConstants);
 
     // Create pipeline states
@@ -313,7 +313,7 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
     }
 
     // Update and bind constant buffer
-    const auto cb = _shader->GetShader()->GetCB(SSAO_CONSTANTS_BUFFER_SLOT);
+    const auto cb = _shader->GPU->GetCB(SSAO_CONSTANTS_BUFFER_SLOT);
     ASSAOConstants _constantsBufferData;
     {
         const auto& view = renderContext.View;

@@ -39,7 +39,7 @@ bool TAA::setupResources()
 {
     if (!_shader->IsLoaded())
         return true;
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
     GPUPipelineState::Description psDesc;
     if (!_psTAA.IsValid())
@@ -123,7 +123,7 @@ void TAA::Render(const RenderContext& renderContext, GPUTexture* input, GPUTextu
     data.MotionScale = 0.1f / data.ScreenSizeInv; // Hardcoded scale
     data.QuantizationError = RenderTools::GetColorQuantizationError(tempDesc.Format);
     GBufferPass::SetInputs(renderContext.View, data.GBuffer);
-    const auto cb = _shader->GetShader()->GetCB(0);
+    const auto cb = _shader->GPU->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
     context->BindSR(0, input);

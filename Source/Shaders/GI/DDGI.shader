@@ -49,7 +49,7 @@ float ResetBlend;
 float TemporalTime;
 int4 ProbeScrollClears[4];
 float3 ViewDir;
-float Padding1;
+float TestValue;
 float3 QuantizationError;
 uint FrameIndexMod8;
 META_CB_END

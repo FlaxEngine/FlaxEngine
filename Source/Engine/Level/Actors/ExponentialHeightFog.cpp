@@ -55,7 +55,7 @@ void ExponentialHeightFog::Draw(RenderContext& renderContext)
             psDesc.BlendMode.DestBlendAlpha = BlendingMode::Blend::Zero;
             psDesc.BlendMode.BlendOpAlpha = BlendingMode::Operation::Add;
             psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
-            if (_psFog.Create(psDesc, _shader->GetShader(), "PS_Fog"))
+            if (_psFog.Create(psDesc, _shader->GPU, "PS_Fog"))
             {
                 LOG(Warning, "Cannot create graphics pipeline state object for '{0}'.", ToString());
                 return;
@@ -198,7 +198,7 @@ void ExponentialHeightFog::DrawFog(GPUContext* context, RenderContext& renderCon
     data.ExponentialHeightFog = renderContext.List->Fog.ExponentialHeightFogData;
     data.VolumetricFog = renderContext.List->Fog.VolumetricFogData;
     data.TemporalAAJitter = renderContext.View.TemporalAAJitter;
-    auto cb = _shader->GetShader()->GetCB(0);
+    auto cb = _shader->GPU->GetCB(0);
     ASSERT_LOW_LAYER(cb->GetSize() == sizeof(Data));
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);

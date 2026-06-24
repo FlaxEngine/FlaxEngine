@@ -686,7 +686,7 @@ void DebugDrawService::Update()
     if (DebugDrawPsWireTrianglesDepthTest.Depth == nullptr && DebugDrawShader && DebugDrawShader->IsLoaded())
     {
         bool failed = false;
-        const auto shader = DebugDrawShader->GetShader();
+        const auto shader = DebugDrawShader->GPU;
 
         // Create pipeline states
         GPUPipelineState::Description desc = GPUPipelineState::Description::Default;
@@ -855,7 +855,7 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
     }
 
     // Update constant buffer
-    const auto cb = DebugDrawShader->GetShader()->GetCB(0);
+    const auto cb = DebugDrawShader->GPU->GetCB(0);
     ShaderData data;
     Matrix vp;
     Matrix::Multiply(view.View, view.Projection, vp);

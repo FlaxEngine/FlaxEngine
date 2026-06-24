@@ -757,7 +757,7 @@ void Render2D::End()
             Output = nullptr;
             return;
         }
-        shader = GUIShader->GetShader();
+        shader = GUIShader->GPU;
     }
 
     // Flush geometry buffers
@@ -783,8 +783,8 @@ void Render2D::End()
     // Prepare PSO
     if (!PsoDepth.Inited)
     {
-        PsoDepth.Init(GUIShader.Get()->GetShader(), true);
-        PsoNoDepth.Init(GUIShader.Get()->GetShader(), false);
+        PsoDepth.Init(GUIShader.Get()->GPU, true);
+        PsoNoDepth.Init(GUIShader.Get()->GPU, false);
     }
     CurrentPso = DepthBuffer ? &PsoDepth : &PsoNoDepth;
 
@@ -1045,7 +1045,7 @@ void DrawBatch(int32 startIndex, int32 count)
         Context->DrawIndexed(countIb, 0, d.StartIB);
 
         // Restore pipeline (material apply overrides it)
-        const auto cb = GUIShader->GetShader()->GetCB(0);
+        const auto cb = GUIShader->GPU->GetCB(0);
         Context->BindCB(0, cb);
 
         return;
@@ -1074,7 +1074,7 @@ void DrawBatch(int32 startIndex, int32 count)
         Context->DrawIndexed(countIb, 0, d.StartIB);
 
         // Restore pipeline (material apply overrides it)
-        const auto cb = GUIShader->GetShader()->GetCB(0);
+        const auto cb = GUIShader->GPU->GetCB(0);
         Context->BindCB(0, cb);
 
         return;
@@ -1120,7 +1120,7 @@ void DrawBatch(int32 startIndex, int32 count)
         data.InvBufferSize.X = 1.0f / (float)renderTargetWidth;
         data.InvBufferSize.Y = 1.0f / (float)renderTargetHeight;
         data.SampleCount = ComputeBlurWeights(kernelSize, blurStrength, data.WeightAndOffsets);
-        const auto cb = GUIShader->GetShader()->GetCB(1);
+        const auto cb = GUIShader->GPU->GetCB(1);
         Context->UpdateCB(cb, &data);
         Context->BindCB(1, cb);
 

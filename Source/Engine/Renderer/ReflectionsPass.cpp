@@ -189,7 +189,7 @@ bool ReflectionsPass::setupResources()
     // Wait for the assets
     if (!_sphereModel->CanBeRendered() || !_boxModel->CanBeRendered() || !_preIntegratedGF->IsLoaded() || !_shader->IsLoaded())
         return true;
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 
     // Create pipeline stages
@@ -278,7 +278,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     bool useSSR = EnumHasAnyFlags(view.Flags, ViewFlags::SSR) && renderContext.List->Settings.ScreenSpaceReflections.Intensity > ZeroTolerance;
     int32 probesCount = renderContext.List->EnvironmentProbes.Count();
     bool renderProbes = probesCount > 0;
-    auto shader = _shader->GetShader();
+    auto shader = _shader->GPU;
     auto cb = shader->GetCB(0);
 
     // Check if no need to render reflection environment

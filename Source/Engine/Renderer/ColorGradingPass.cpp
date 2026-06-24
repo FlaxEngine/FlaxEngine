@@ -130,7 +130,7 @@ bool ColorGradingPass::setupResources()
 {
     if (!_shader || !_shader->IsLoaded())
         return true;
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 
     // Create pipeline stage
@@ -247,7 +247,7 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
     // Render LUT
     PROFILE_GPU("Color Grading LUT");
     auto context = device->GetMainContext();
-    const auto cb = _shader->GetShader()->GetCB(0);
+    const auto cb = _shader->GPU->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
     context->SetViewportAndScissors((float)lutDesc.Width, (float)lutDesc.Height);

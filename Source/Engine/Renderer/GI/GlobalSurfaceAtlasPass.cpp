@@ -796,7 +796,7 @@ bool GlobalSurfaceAtlasPass::setupResources()
         return true;
 
     const auto device = GPUDevice::Instance;
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     _cb0 = shader->GetCB(0);
     if (!_cb0)
         return true;

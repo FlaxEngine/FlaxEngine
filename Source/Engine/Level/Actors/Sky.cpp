@@ -90,7 +90,7 @@ void Sky::Draw(RenderContext& renderContext)
         // Ensure to have pipeline state cache created
         if (_psSky == nullptr)
         {
-            const auto shader = _shader->GetShader();
+            const auto shader = _shader->GPU;
 
             // Create pipeline states
             if (_psSky == nullptr)
@@ -198,7 +198,7 @@ void Sky::ApplySky(GPUContext* context, RenderContext& renderContext, const Matr
     }
 
     // Bind pipeline
-    auto cb = _shader->GetShader()->GetCB(0);
+    auto cb = _shader->GPU->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
     context->SetState(_psSky);

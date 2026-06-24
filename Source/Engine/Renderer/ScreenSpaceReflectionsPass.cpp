@@ -79,7 +79,7 @@ bool ScreenSpaceReflectionsPass::setupResources()
         return true;
     if (!_shader->IsLoaded())
         return true;
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 
     // Create pipeline stages
@@ -141,7 +141,7 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
     // Cache data
     auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     auto cb = shader->GetCB(0);
     auto& settings = renderContext.List->Settings.ScreenSpaceReflections;
     const bool useTemporal = settings.TemporalEffect && !renderContext.Task->IsCameraCut && renderContext.List->Setup.UseMotionVectors;

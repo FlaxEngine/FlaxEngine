@@ -143,7 +143,7 @@ public:
         // Allocate resources
         if (_shader == nullptr || _shader->WaitForLoaded())
             return Result::Failed;
-        GPUShader* shader = _shader->GetShader();
+        GPUShader* shader = _shader->GPU;
         const uint32 resolutionSize = _resolution.X * _resolution.Y * _resolution.Z;
         auto cb = shader->GetCB(0);
         Data data;

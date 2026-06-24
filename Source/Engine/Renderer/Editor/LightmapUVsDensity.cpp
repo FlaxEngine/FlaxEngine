@@ -56,7 +56,7 @@ const MaterialInfo& LightmapUVsDensityMaterialShader::GetInfo() const
 
 GPUShader* LightmapUVsDensityMaterialShader::GetShader() const
 {
-    return _shader->GetShader();
+    return _shader->GPU;
 }
 
 bool LightmapUVsDensityMaterialShader::IsReady() const
@@ -76,7 +76,7 @@ void LightmapUVsDensityMaterialShader::Bind(BindParameters& params)
     auto& drawCall = *params.DrawCall;
 
     // Setup
-    auto shader = _shader->GetShader();
+    auto shader = _shader->GPU;
     auto cb = shader->GetCB(0);
     if (!_ps->IsValid())
     {

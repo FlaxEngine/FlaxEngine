@@ -63,7 +63,7 @@ bool LightPass::setupResources()
     // Wait for the assets
     if (!_sphereModel->CanBeRendered() || !_shader->IsLoaded())
         return true;
-    auto shader = _shader->GetShader();
+    auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, PerLight);
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 1, PerFrame);
 
@@ -167,14 +167,10 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
     if (checkIfSkipPass())
         return;
     PROFILE_GPU_CPU("Lights");
-
-    // Cache data
-    auto device = GPUDevice::Instance;
-    auto context = device->GetMainContext();
+    auto context = GPUDevice::Instance->GetMainContext();
     auto& renderContext = renderContextBatch.GetMainContext();
     auto& view = renderContext.View;
     auto mainCache = renderContext.List;
-    const auto lightShader = _shader->GetShader();
     const bool disableSpecular = (view.Flags & ViewFlags::SpecularLight) == ViewFlags::None;
 
     // Check if debug lights
@@ -188,13 +184,13 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         {
             auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
             psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB; // Leave AO in Alpha channel unmodified
-            psDesc.PS = quadShader->GetShader()->GetPS("PS_Clear");
+            psDesc.PS = quadShader->GPU->GetPS("PS_Clear");
             _psClearDiffuse->Init(psDesc);
         }
         if (_psClearDiffuse->IsValid())
         {
             context->SetRenderTarget(renderContext.Buffers->GBuffer0->View());
-            auto cb = quadShader->GetShader()->GetCB(0);
+            auto cb = quadShader->GPU->GetCB(0);
             context->UpdateCB(cb, &Color::White);
             context->BindCB(0, cb);
             context->SetState(_psClearDiffuse);
@@ -221,8 +217,8 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
 
     // Set per frame data
     GBufferPass::SetInputs(renderContext.View, perFrame.GBuffer);
-    auto cb0 = lightShader->GetCB(0);
-    auto cb1 = lightShader->GetCB(1);
+    auto cb0 = _shader->GPU->GetCB(0);
+    auto cb1 = _shader->GPU->GetCB(1);
     context->UpdateCB(cb1, &perFrame);
 
     // Bind inputs

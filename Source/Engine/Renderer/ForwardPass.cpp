@@ -46,7 +46,7 @@ bool ForwardPass::setupResources()
     {
         return true;
     }
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
 
     // Create pipeline stages
     GPUPipelineState::Description psDesc;

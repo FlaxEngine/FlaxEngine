@@ -517,7 +517,7 @@ bool ShadowsPass::setupResources()
     // Wait for the assets
     if (!_sphereModel->CanBeRendered() || !_shader->IsLoaded())
         return true;
-    auto shader = _shader->GetShader();
+    auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 
     // Create pipeline stages
@@ -1695,7 +1695,7 @@ void ShadowsPass::RenderShadowMask(RenderContextBatch& renderContextBatch, Rende
     const ShadowsCustomBuffer& shadows = *renderContext.Buffers->FindCustomBuffer<ShadowsCustomBuffer>(TEXT("Shadows"), false);
     ASSERT(shadows.LastFrameUsed == Engine::FrameCount);
     auto& view = renderContext.View;
-    auto shader = _shader->GetShader();
+    auto shader = _shader->GPU;
     const bool isLocalLight = light.IsPointLight || light.IsSpotLight;
     int32 shadowQuality = shadows.MaxShadowsQuality;
     if (isLocalLight)

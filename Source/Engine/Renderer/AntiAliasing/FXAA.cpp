@@ -36,7 +36,7 @@ bool FXAA::setupResources()
     {
         return true;
     }
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 
     GPUPipelineState::Description psDesc;
@@ -76,7 +76,7 @@ void FXAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureVie
     // Bind input
     Data data;
     data.ScreenSize = renderContext.View.ScreenSize;
-    const auto cb = _shader->GetShader()->GetCB(0);
+    const auto cb = _shader->GPU->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
     context->BindSR(0, input);

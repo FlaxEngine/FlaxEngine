@@ -70,7 +70,7 @@ GPU_CB_STRUCT(Data0 {
     float TemporalTime;
     Int4 ProbeScrollClears[4];
     Float3 ViewDir;
-    float Padding1;
+    float TestValue;
     Float3 QuantizationError;
     int32 FrameIndexMod8;
     });
@@ -250,7 +250,7 @@ bool DynamicDiffuseGlobalIlluminationPass::setupResources()
         return true;
 
     // Initialize resources
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     _cb0 = shader->GetCB(0);
     _cb1 = shader->GetCB(1);
     if (!_cb0 || !_cb1)
@@ -601,6 +601,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         data.TemporalTime = renderContext.List->Setup.UseTemporalAAJitter ? RenderTools::ComputeTemporalTime() : 0.0f;
         data.ViewDir = renderContext.View.Direction;
         data.SkyboxIntensity = renderContext.List->Sky ? renderContext.List->Sky->GetIndirectLightingIntensity() : 1.0f;
+        data.TestValue = Graphics::TestValue;
         data.QuantizationError = RenderTools::GetColorQuantizationError(ddgiData.ProbesIrradiance->Format());
         data.FrameIndexMod8 = (int32)(Engine::FrameCount % 8);
         GBufferPass::SetInputs(renderContext.View, data.GBuffer);

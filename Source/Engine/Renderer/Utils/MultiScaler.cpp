@@ -41,7 +41,7 @@ bool MultiScaler::setupResources()
     // Check if shader has not been loaded
     if (!_shader->IsLoaded())
         return true;
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 
     // Create pipeline states
@@ -140,7 +140,7 @@ void MultiScaler::Filter(FilterMode mode, GPUContext* context, int32 width, int3
     Data data;
     data.TexelSize.X = 1.0f / (float)width;
     data.TexelSize.Y = 1.0f / (float)height;
-    auto cb = _shader->GetShader()->GetCB(0);
+    auto cb = _shader->GPU->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
     auto rtAction = GPUDrawPassAction::Store;
@@ -197,7 +197,7 @@ void MultiScaler::Filter(FilterMode mode, GPUContext* context, int32 width, int3
     Data data;
     data.TexelSize.X = 1.0f / (float)width;
     data.TexelSize.Y = 1.0f / (float)height;
-    auto cb = _shader->GetShader()->GetCB(0);
+    auto cb = _shader->GPU->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
     auto rtAction = GPUDrawPassAction::Store;
@@ -241,7 +241,7 @@ void MultiScaler::DownscaleDepth(GPUContext* context, int32 dstWidth, int32 dstH
     Data data;
     data.TexelSize.X = 1.0f / (float)src->Width();
     data.TexelSize.Y = 1.0f / (float)src->Height();
-    auto cb = _shader->GetShader()->GetCB(0);
+    auto cb = _shader->GPU->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
 
@@ -324,7 +324,7 @@ void MultiScaler::Upscale(GPUContext* context, const Viewport& viewport, GPUText
         Data data;
         data.TexelSize.X = 1.0f / (float)src->Width();
         data.TexelSize.Y = 1.0f / (float)src->Height();
-        auto cb = _shader->GetShader()->GetCB(0);
+        auto cb = _shader->GPU->GetCB(0);
         context->UpdateCB(cb, &data);
         context->BindCB(0, cb);
         context->BindSR(0, src);

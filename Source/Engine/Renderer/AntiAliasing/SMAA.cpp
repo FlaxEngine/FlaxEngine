@@ -44,7 +44,7 @@ bool SMAA::setupResources()
     {
         return true;
     }
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 
     // Create pipeline state
@@ -115,7 +115,7 @@ void SMAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureVie
     data.RtSize.Y = 1.0f / tempDesc.Height;
     data.RtSize.Z = (float)tempDesc.Width;
     data.RtSize.W = (float)tempDesc.Height;
-    const auto cb = _shader->GetShader()->GetCB(0);
+    const auto cb = _shader->GPU->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
 

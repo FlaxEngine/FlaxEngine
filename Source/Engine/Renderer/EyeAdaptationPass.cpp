@@ -90,7 +90,7 @@ void EyeAdaptationPass::Render(RenderContext& renderContext, GPUTexture* colorBu
     data.DropHistory = dropHistory ? 1.0f : 0.0f;
 
     // Update constants
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     const auto cb0 = shader->GetCB(0);
     context->UpdateCB(cb0, &data);
     context->BindCB(0, cb0);
@@ -258,7 +258,7 @@ bool EyeAdaptationPass::setupResources()
     // Wait for shader
     if (!_shader->IsLoaded())
         return true;
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, EyeAdaptationData);
 
     // Create pipeline stages

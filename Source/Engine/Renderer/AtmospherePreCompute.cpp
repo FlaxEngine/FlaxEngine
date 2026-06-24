@@ -141,7 +141,7 @@ bool InitAtmospherePreCompute()
         LOG(Warning, "Loading AtmospherePreCompute shader timeout!");
         return true;
     }
-    auto shader = _shader->GetShader();
+    auto shader = _shader->GPU;
     ASSERT(shader->GetCB(0) != nullptr);
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
     auto device = GPUDevice::Instance;
@@ -353,7 +353,7 @@ void AtmospherePreComputeImpl::Render(RenderTask* task, GPUContext* context)
     RENDER_TARGET_POOL_SET_NAME(AtmosphereDeltaSM, "AtmospherePreCompute.DeltaSM");
     RENDER_TARGET_POOL_SET_NAME(AtmosphereDeltaJ, "AtmospherePreCompute.DeltaJ");
 
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     const auto cb = shader->GetCB(0);
     Data data;
 

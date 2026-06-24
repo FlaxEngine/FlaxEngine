@@ -40,7 +40,7 @@ GPUBuffer* HistogramPass::Render(RenderContext& renderContext, GPUTexture* color
     GetHistogramMad(data.HistogramMul, data.HistogramAdd);
 
     // Update constants
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     const auto cb0 = shader->GetCB(0);
     context->UpdateCB(cb0, &data);
     context->BindCB(0, cb0);
@@ -112,7 +112,7 @@ bool HistogramPass::setupResources()
     // Wait for shader
     if (!_shader->IsLoaded())
         return true;
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, HistogramData);
 
     _csClearHistogram = shader->GetCS("CS_ClearHistogram");

@@ -350,12 +350,6 @@ public:
         return Frustum.GetMatrix();
     }
 
-    // Camera's View * Projection matrix
-    FORCE_INLINE Matrix ViewProjection()
-    {
-        return Frustum.GetMatrix();
-    }
-
     // Calculates the world matrix for the given transformation instance rendering.
     void GetWorldMatrix(const Transform& transform, Matrix& world) const;
 

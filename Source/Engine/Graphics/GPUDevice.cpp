@@ -420,7 +420,7 @@ bool GPUDevice::LoadContent()
     _res->QuadShader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Quad"));
     if (_res->QuadShader == nullptr || _res->QuadShader->WaitForLoaded())
         return true;
-    QuadShader = _res->QuadShader->GetShader();
+    QuadShader = _res->QuadShader->GPU;
     GPUPipelineState::Description::DefaultFullscreenTriangle.VS = QuadShader->GetVS("VS");
     _res->PS_CopyLinear = CreatePipelineState();
     GPUPipelineState::Description desc = GPUPipelineState::Description::DefaultFullscreenTriangle;

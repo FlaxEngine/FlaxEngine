@@ -47,7 +47,7 @@ bool ContrastAdaptiveSharpeningPass::setupResources()
     }
     if (!_shader || !_shader->IsLoaded())
         return true;
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 
     // Create pipeline stage
@@ -82,7 +82,7 @@ void ContrastAdaptiveSharpeningPass::Render(const RenderContext& renderContext, 
     data.EdgeSharpening = antiAliasing.CAS_EdgeSharpening;
     data.MinEdgeThreshold = antiAliasing.CAS_MinEdgeThreshold;
     data.OverBlurLimit = antiAliasing.CAS_OverBlurLimit;
-    const auto cb = _shader->GetShader()->GetCB(0);
+    const auto cb = _shader->GPU->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
     context->BindSR(0, input);

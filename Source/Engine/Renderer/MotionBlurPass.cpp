@@ -85,7 +85,7 @@ bool MotionBlurPass::setupResources()
     // Check shader
     if (!_shader->IsLoaded())
         return true;
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 
     // Create pipeline state
@@ -199,7 +199,7 @@ void MotionBlurPass::RenderMotionVectors(RenderContext& renderContext)
     Matrix::Transpose(renderContext.View.PrevViewProjection, data.PreviousVP);
     data.TemporalAAJitter = renderContext.View.TemporalAAJitter;
     data.PrevWorldOriginOffset = renderContext.View.Origin - renderContext.View.PrevOrigin;
-    auto cb = _shader->GetShader()->GetCB(0);
+    auto cb = _shader->GPU->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
     context->BindSR(0, depthBuffer);
@@ -314,7 +314,7 @@ void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& frame, GP
     data.MaxBlurSamples = Math::Clamp(settings.SampleCount / 2, 1, 64); // 2x samples in loop
     data.VariableTileLoopCount = tileSize / 8;
     data.Input0SizeInv = Float2(1.0f / (float)motionVectorsWidth, 1.0f / (float)motionVectorsWidth);
-    const auto cb = _shader->GetShader()->GetCB(0);
+    const auto cb = _shader->GPU->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
 

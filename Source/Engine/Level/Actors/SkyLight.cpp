@@ -135,7 +135,7 @@ void SkyLight::Draw(RenderContext& renderContext)
         else if (CubeTexture* image = GetSource())
         {
             data.CubemapImageView = GET_TEXTURE_VIEW_SAFE(image->GetTexture());
-            data.CubemapImageMip = image->StreamingTexture()->TotalMipLevels() - 2.0;
+            data.CubemapImageMip = (float)image->StreamingTexture()->TotalMipLevels() - 2.0f;
         }
         data.StaticFlags = GetStaticFlags();
         data.ID = GetID();

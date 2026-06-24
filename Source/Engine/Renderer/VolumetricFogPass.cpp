@@ -117,7 +117,7 @@ bool VolumetricFogPass::setupResources()
 {
     if (!_shader->IsLoaded())
         return true;
-    auto shader = _shader->GetShader();
+    auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
     // CB1 is used for per-draw info (ObjectIndex)
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 2, PerLight);
@@ -339,7 +339,7 @@ bool VolumetricFogPass::Init(FrameCache& cache, RenderContext& renderContext, GP
     }
 
     // Set constant buffer data
-    auto cb0 = _shader->GetShader()->GetCB(0);
+    auto cb0 = _shader->GPU->GetCB(0);
     context->UpdateCB(cb0, &cache.Data);
 
     // Clear local lights scattering table if was used and will be probably reused later
@@ -498,7 +498,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     }
 
     // Set constant buffer data
-    auto cb0 = _shader->GetShader()->GetCB(0);
+    auto cb0 = _shader->GPU->GetCB(0);
     context->UpdateCB(cb0, &cache.Data);
     context->BindCB(0, cb0);
 
@@ -542,7 +542,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
 
         MaterialBase::BindParameters bindParams(context, renderContext);
         CustomData customData;
-        customData.Shader = _shader->GetShader();
+        customData.Shader = _shader->GPU;
         customData.GridSize = cache.GridSize;
         customData.VolumetricFogMaxDistance = cache.Data.VolumetricFogRange.Y;
         customData.GridSliceParameters = cache.Data.GridSliceParameters;
@@ -564,7 +564,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
 
             // Setup volumetric shader data
             PerLight perLight;
-            auto cb2 = _shader->GetShader()->GetCB(2);
+            auto cb2 = _shader->GPU->GetCB(2);
             perLight.SliceToDepth.X = cache.Data.GridSize.Z;
             perLight.SliceToDepth.Y = cache.Data.VolumetricFogRange.Y;
             perLight.MinZ = sphere.VolumeZBoundsMin;
@@ -622,7 +622,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
             PerLight perLight;
             perLight.SliceToDepth.X = cache.Data.GridSize.Z;
             perLight.SliceToDepth.Y = cache.Data.VolumetricFogRange.Y;
-            auto cb2 = _shader->GetShader()->GetCB(2);
+            auto cb2 = _shader->GPU->GetCB(2);
 
             // Bind the output
             context->SetRenderTarget(localShadowedLightScattering);

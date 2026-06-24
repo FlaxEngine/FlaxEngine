@@ -706,7 +706,7 @@ bool GlobalSignDistanceFieldPass::setupResources()
         return true;
 
     const auto device = GPUDevice::Instance;
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
 
     // Check shader
     _cb0 = shader->GetCB(0);
@@ -1208,7 +1208,7 @@ void GlobalSignDistanceFieldPass::RenderDebug(RenderContext& renderContext, GPUC
         int32 chunkRes = sdfData.Resolution / GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
         OverdrawData data;
         GBufferPass::SetInputs(renderContext.View, data.GBuffer);
-        GPUConstantBuffer* cb2 = _shader->GetShader()->GetCB(2);
+        GPUConstantBuffer* cb2 = _shader->GPU->GetCB(2);
         context->BindCB(2, cb2);
         context->BindSR(0, renderContext.Buffers->DepthBuffer);
         context->BindSR(1, renderContext.Buffers->GBuffer0);

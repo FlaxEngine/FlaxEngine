@@ -44,7 +44,7 @@ const MaterialInfo& VertexColorsMaterialShader::GetInfo() const
 
 GPUShader* VertexColorsMaterialShader::GetShader() const
 {
-    return _shader->GetShader();
+    return _shader->GPU;
 }
 
 bool VertexColorsMaterialShader::IsReady() const
@@ -64,7 +64,7 @@ void VertexColorsMaterialShader::Bind(BindParameters& params)
     auto& drawCall = *params.DrawCall;
 
     // Setup
-    auto shader = _shader->GetShader();
+    auto shader = _shader->GPU;
     auto cb = shader->GetCB(0);
     if (!_ps->IsValid())
     {

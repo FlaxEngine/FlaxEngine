@@ -66,7 +66,7 @@ bool GBufferPass::setupResources()
 {
     if (!_gBufferShader || !_gBufferShader->IsLoaded())
         return true;
-    auto gbuffer = _gBufferShader->GetShader();
+    auto gbuffer = _gBufferShader->GPU;
 
     // Validate shader constant buffers sizes
     if (gbuffer->GetCB(0)->GetSize() != sizeof(GBufferPassData))
@@ -264,7 +264,7 @@ void GBufferPass::RenderDebug(RenderContext& renderContext)
     // Cache data
     auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
-    auto lights = _gBufferShader->GetShader();
+    auto lights = _gBufferShader->GPU;
     GBufferPassData data;
 
     // Set constants buffer

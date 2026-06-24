@@ -314,7 +314,7 @@ bool ProbesRendererService::LazyInit()
 
 bool ProbesRendererService::InitShader()
 {
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
     _psFilterFace = GPUDevice::Instance->CreatePipelineState();
     auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
@@ -468,7 +468,7 @@ void ProbesRendererService::OnRender(RenderTask* task, GPUContext* context)
         return;
     }
     ASSERT(_updateFrameNumber == 0);
-    auto shader = _shader->GetShader();
+    auto shader = _shader->GPU;
     PROFILE_GPU("Render Probe");
 
 #if COMPILE_WITH_DEV_ENV

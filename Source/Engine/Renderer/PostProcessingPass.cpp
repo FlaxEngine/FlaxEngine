@@ -104,7 +104,7 @@ bool PostProcessingPass::setupResources()
     // Wait for shader
     if (!_shader->IsLoaded())
         return true;
-    auto shader = _shader->GetShader();
+    auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 1, GaussianBlurData);
 
@@ -286,7 +286,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     }
 
     // Cache data
-    auto shader = _shader->GetShader();
+    auto shader = _shader->GPU;
     auto cb0 = shader->GetCB(0);
     auto cb1 = shader->GetCB(1);
 

@@ -173,7 +173,7 @@ void MaterialComplexityMaterialShader::Draw(RenderContext& renderContext, GPUCon
         {
             _ps = GPUDevice::Instance->CreatePipelineState();
             auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
-            psDesc.PS = _shader->GetShader()->GetPS("PS");
+            psDesc.PS = _shader->GPU->GetPS("PS");
             _ps->Init(psDesc);
         }
         context->BindSR(0, lightBuffer);

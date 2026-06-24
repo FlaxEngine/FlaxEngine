@@ -116,7 +116,7 @@ bool DepthOfFieldPass::setupResources()
     // Wait for shader
     if (!_shader->IsLoaded())
         return true;
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 
     // Create pipeline stages
@@ -207,7 +207,7 @@ void DepthOfFieldPass::Render(RenderContext& renderContext, GPUTexture*& frame, 
     auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
     const auto depthBuffer = renderContext.Buffers->DepthBuffer;
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     PROFILE_GPU_CPU("Depth Of Field");
 
     context->ResetSR();
