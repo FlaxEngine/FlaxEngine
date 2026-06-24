@@ -711,9 +711,11 @@ Texture2D<float4> ProbesTrace : register(t1);
 ByteAddressBuffer ActiveProbes : register(t2);
 
 // Compute shader for updating probes irradiance or distance texture.
+#define DDGI_PROBE_UPDATE_IRRADIANCE 0
+#define DDGI_PROBE_UPDATE_DISTANCE 1
 META_CS(true, FEATURE_LEVEL_SM5)
-META_PERMUTATION_1(DDGI_PROBE_UPDATE_MODE=0)
-META_PERMUTATION_1(DDGI_PROBE_UPDATE_MODE=1)
+META_PERMUTATION_1(DDGI_PROBE_UPDATE_MODE=0) // Irradiance
+META_PERMUTATION_1(DDGI_PROBE_UPDATE_MODE=1) // Distance
 [numthreads(DDGI_PROBE_RESOLUTION, DDGI_PROBE_RESOLUTION, 1)]
 void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_GroupID, uint GroupIndex : SV_GroupIndex)
 {
@@ -725,7 +727,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     probeIndex = GetDDGIScrollingProbeIndex(DDGI, CascadeIndex, probeCoords);
 
     // Load probe data
-#if DDGI_PROBE_UPDATE_MODE == 0
+#if DDGI_PROBE_UPDATE_MODE == DDGI_PROBE_UPDATE_IRRADIANCE
     int2 probeDataCoords = GetDDGIProbeTexelCoords(DDGI, CascadeIndex, probeIndex);
     float4 probeData = RWProbesData[probeDataCoords];
 #else
@@ -735,7 +737,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     uint probeState = DecodeDDGIProbeState(probeData);
     uint probeRaysCount = GetProbeRaysCount(DDGI, probeAttention);
 
-#if DDGI_PROBE_UPDATE_MODE == 0
+#if DDGI_PROBE_UPDATE_MODE == DDGI_PROBE_UPDATE_IRRADIANCE
     uint backfacesCount = 0;
     uint backfacesLimit = uint(probeRaysCount * 0.1f);
 #else
@@ -750,7 +752,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     for (uint i = 0; i < raysCount; i++)
     {
         uint rayIndex = raysStart + i;
-#if DDGI_PROBE_UPDATE_MODE == 0
+#if DDGI_PROBE_UPDATE_MODE == DDGI_PROBE_UPDATE_IRRADIANCE
         CachedProbesTraceRadiance[rayIndex] = ProbesTrace[uint2(rayIndex, GroupId.x)];
 #else
         float rayDistance = ProbesTrace[uint2(rayIndex, GroupId.x)].w;
@@ -773,7 +775,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
         float3 rayDirection = CachedProbesTraceDirection[rayIndex];
         float rayWeight = max(dot(octahedralDirection, rayDirection), 0.0f);
 
-#if DDGI_PROBE_UPDATE_MODE == 0
+#if DDGI_PROBE_UPDATE_MODE == DDGI_PROBE_UPDATE_IRRADIANCE
         float4 rayRadiance = CachedProbesTraceRadiance[rayIndex];
 #if DDGI_TRACE_NEGATIVE
         if (rayRadiance.w < 0.0f)
@@ -814,7 +816,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     if (wasActivated)
         previous = result.rgb;
 
-#if DDGI_PROBE_UPDATE_MODE == 0
+#if DDGI_PROBE_UPDATE_MODE == DDGI_PROBE_UPDATE_IRRADIANCE
     // Calculate instability of the irradiance
     float previousLuma = Luminance(previous.rgb);
     float resultLuma = Luminance(result.rgb);
@@ -834,7 +836,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     // Blend current value with the previous probe data
     float historyWeightFast = DDGI.ProbeHistoryWeight;
     float historyWeightSlow = 0.97f;
-#if DDGI_PROBE_UPDATE_MODE == 0
+#if DDGI_PROBE_UPDATE_MODE == DDGI_PROBE_UPDATE_IRRADIANCE
     float3 irradianceDelta = result.rgb - previous;
     float irradianceDeltaMax = Max3(abs(irradianceDelta));
     float irradianceDeltaLen = length(irradianceDelta);
@@ -847,10 +849,15 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     float historyWeight = lerp(historyWeightSlow, historyWeightFast, probeAttention * probeAttention * probeAttention);
     //historyWeight = 1.0f; // Debug full-blend
     //historyWeight = 0.0f; // Debug no-blend
+#if DDGI_PROBE_UPDATE_MODE == DDGI_PROBE_UPDATE_DISTANCE
+    // Reduce blending when the distance changes too much to avoid ghosting artifacts
+    float instability = abs(previous.x - result.x) / previous.x;
+    if (instability > 0.5f) historyWeight *= 0.5f;
+#endif
     if (wasActivated)
         historyWeight = 0.0f;
     result.rgb = max(result.rgb, 0);
-#if DDGI_PROBE_UPDATE_MODE == 0
+#if DDGI_PROBE_UPDATE_MODE == DDGI_PROBE_UPDATE_IRRADIANCE
     result *= DDGI.IndirectLightingIntensity;
 #if DDGI_SRGB_BLENDING == 1
     result.rgb = pow(result.rgb, 0.5f / DDGI_SRGB_BLENDING_GAMMA);
@@ -874,7 +881,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
 
     uint2 baseCoords = GetDDGIProbeTexelCoords(DDGI, CascadeIndex, probeIndex) * (DDGI_PROBE_RESOLUTION + 2);
 
-#if DDGI_PROBE_UPDATE_MODE == 0
+#if DDGI_PROBE_UPDATE_MODE == DDGI_PROBE_UPDATE_IRRADIANCE
     // The first thread updates the probe attention based on the instability of all texels
     BRANCH
     if (GroupIndex == 0 && probeState != DDGI_PROBE_STATE_INACTIVE)

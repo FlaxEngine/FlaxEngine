@@ -45,6 +45,7 @@
 #define DDGI_PROBE_EMPTY_AREA_DENSITY 8 // Spacing (in probe grid) between fallback probes placed into empty areas to provide valid GI for nearby dynamic objects or transparency
 #define DDGI_DEBUG_STATS 0 // Enables additional GPU-driven stats for probe/rays count
 #define DDGI_DEBUG_INSTABILITY 0 // Enables additional probe irradiance instability debugging
+#define DDGI_DEBUG_FORCE_UPDATE 0 // Forces to update all cascades every frame
 
 #if DDGI_DEBUG_STATS
 #include "Engine/Core/Collections/SamplesBuffer.h"
@@ -91,6 +92,7 @@ public:
         float ProbesSpacing = 0.0f;
         Int3 ProbeScrollOffsets;
         bool PendingUpdate = true;
+        mutable bool PendingDirtyRegion = false;
         Int3 ProbeScrollClears;
 
         void Clear()
@@ -99,6 +101,19 @@ public:
             ProbeScrollOffsets = Int3::Zero;
             ProbeScrollClears = Int3::Zero;
             PendingUpdate = true;
+            PendingDirtyRegion = false;
+        }
+
+        Float3 GetOrigin() const
+        {
+            return ProbesOrigin + Float3(ProbeScrollOffsets) * ProbesSpacing;
+        }
+
+        BoundingBox GetBounds(const DDGICustomBuffer& ddgiData) const
+        {
+            Float3 origin = GetOrigin();
+            Float3 extent = Float3(ddgiData.ProbeCounts - 1) * ProbesSpacing;
+            return BoundingBox(origin - extent, origin + extent);
         }
     } Cascades[4];
 
@@ -485,9 +500,20 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
     for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
     {
         auto& cascade = ddgiData.Cascades[cascadeIndex];
+#if DDGI_DEBUG_FORCE_UPDATE
+        cascade.PendingUpdate = true;
+        cascadeSkipUpdate[cascadeIndex] = false;
+#else
         cascade.PendingUpdate |= !clear && (ddgiData.LastFrameUsed % cascadeFrequencies[cascadeIndex]) != 0;
         cascade.PendingUpdate |= !GPU_SPREAD_WORKLOAD;
+        cascade.PendingUpdate |= cascade.PendingDirtyRegion;
         cascadeSkipUpdate[cascadeIndex] = !cascade.PendingUpdate || maxCascadesPerFrame-- <= 0;
+        if (cascadeFrequencies[cascadeIndex] == 1)
+        {
+            cascade.PendingUpdate = true;
+            cascadeSkipUpdate[cascadeIndex] = false;
+        }
+#endif
     }
 
     // Compute scrolling (probes are placed around camera but are scrolling to increase stability during movement)
@@ -497,9 +523,10 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
             continue;
         auto& cascade = ddgiData.Cascades[cascadeIndex];
         cascade.PendingUpdate = false;
+        cascade.PendingDirtyRegion = false;
 
         // Calculate the count of grid cells between the view origin and the scroll anchor
-        const Float3 volumeOrigin = cascade.ProbesOrigin + Float3(cascade.ProbeScrollOffsets) * cascade.ProbesSpacing;
+        const Float3 volumeOrigin = cascade.GetOrigin();
         const Float3 translation = viewOrigins[cascadeIndex] - volumeOrigin;
         for (int32 axis = 0; axis < 3; axis++)
         {
@@ -892,4 +919,24 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
     context->ResetUA();
     context->SetViewportAndScissors(renderContext.View.ScreenSize.X, renderContext.View.ScreenSize.Y);
     return false;
+}
+
+void DynamicDiffuseGlobalIlluminationPass::UpdateRegions(const RenderBuffers* buffers, Span<BoundingBox> regions)
+{
+#if !DDGI_DEBUG_FORCE_UPDATE
+    auto* ddgiData = buffers->FindCustomBuffer<DDGICustomBuffer>(TEXT("DDGI"));
+    if (ddgiData && ddgiData->CascadesCount != 0)
+    {
+        // TODO: this should build a list of probe indices to update and use it in the next frame to update only those probes (in CS_UpdateProbes) - only if next frame is in-between normal cascade updates
+        // TODO: test on other cascades than the first one
+        auto& cascade = ddgiData->Cascades[0];
+        auto cascadeBounds = cascade.GetBounds(*ddgiData);
+        for (const BoundingBox& region : regions)
+        {
+            cascade.PendingDirtyRegion |= region.Intersects(cascadeBounds);
+            if (cascade.PendingDirtyRegion)
+                return;
+        }
+    }
+#endif
 }

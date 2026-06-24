@@ -72,6 +72,13 @@ public:
     /// <returns>True if failed to render (platform doesn't support it, out of video memory, disabled feature or effect is not ready), otherwise false.</returns>
     bool Render(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer);
 
+    /// <summary>
+    /// Forces DDGI update for a specific regions (eg. when object is moved). It will refresh the probes in the given regions on the next GI update.
+    /// </summary>
+    /// <param name="buffers">The rendering buffers.</param>
+    /// <param name="regions">The list of regions to invalidate.</param>
+    void UpdateRegions(const RenderBuffers* buffers, Span<BoundingBox> regions);
+
 private:
 #if COMPILE_WITH_DEV_ENV
     uint64 LastFrameShaderReload = 0;

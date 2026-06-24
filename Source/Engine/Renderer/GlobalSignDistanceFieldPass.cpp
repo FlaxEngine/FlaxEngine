@@ -3,6 +3,7 @@
 #include "GlobalSignDistanceFieldPass.h"
 #include "GBufferPass.h"
 #include "RenderList.h"
+#include "GI/DynamicDiffuseGlobalIllumination.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Matrix3x4.h"
 #include "Engine/Core/Collections/HashSet.h"
@@ -1115,7 +1116,16 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         }
 
         // Empty updated dynamic chunks
-        cascade.DynamicDirtyChunks.Clear();
+        if (cascade.DynamicDirtyChunks.HasItems())
+        {
+            // Feed DDGI with updated chunks to speed up probes update in that region (cascades are not updated every frame)
+            if (cascade.DirtyDynamicOnly)
+            {
+                // TDO: this should give a list of individual chunk bounds that were updated (not the whole dirty bounds)
+                DynamicDiffuseGlobalIlluminationPass::Instance()->UpdateRegions(renderContext.Buffers, ToSpan(&cascade.CullingBounds, 1));
+            }
+            cascade.DynamicDirtyChunks.Clear();
+        }
     }
 
     RenderTargetPool::Release(tmpMip);

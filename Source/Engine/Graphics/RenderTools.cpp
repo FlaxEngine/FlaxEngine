@@ -534,7 +534,7 @@ void RenderTools::ComputeCascadeUpdateFrequency(int32 cascadeIndex, int32 cascad
             }
         }
         break;
-    case 2: // 2 cascade2 update per frame
+    case 2: // 2 cascades update per frame
         switch (cascadeIndex)
         {
         case 0: // Cascade 0
