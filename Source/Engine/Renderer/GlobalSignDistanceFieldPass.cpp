@@ -32,6 +32,7 @@
 #define GLOBAL_SDF_RASTERIZE_MIP_FACTOR 4 // Global SDF mip resolution downscale factor.
 #define GLOBAL_SDF_MIP_GROUP_SIZE 4
 #define GLOBAL_SDF_MIP_FLOODS 5 // Amount of flood fill passes for mip.
+#define GLOBAL_SDF_DYNAMIC_UPDATES 1 // Enables updating dirty dynamic chunks without a whole cascade update
 #define GLOBAL_SDF_DEBUG_CHUNKS 0 // Toggles debug drawing of Global SDF chunks bounds including objects count label (only for the first cascade)
 #define GLOBAL_SDF_DEBUG_FORCE_REDRAW 0 // Forces to redraw all SDF cascades every frame
 #define GLOBAL_SDF_ACTOR_IS_STATIC(actor) EnumHasAllFlags(actor->GetStaticFlags(), StaticFlags::Lightmap | StaticFlags::Transform)
@@ -120,6 +121,7 @@ struct RasterizeObject
 constexpr int32 RasterizeChunkKeyHashResolution = GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
 #define KEY_GET_HASH(key) key.Coord.Z * (RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution) + key.Coord.Y * RasterizeChunkKeyHashResolution + key.Coord.X
 
+// Key for a single chunk within Global SDF cascade. Chunks use integer coordinates with layering (to handle multiple overdraws) and are hashed.
 struct RasterizeChunkKey
 {
     uint32 Hash;
@@ -144,15 +146,18 @@ uint32 GetHash(const RasterizeChunkKey& key)
     return key.Hash;
 }
 
+// Data container for a single cascade within Global SDF.
 struct CascadeData
 {
     bool Dirty;
+    bool DirtyDynamicOnly;
+    bool Draw;
     int32 Index;
     float ChunkSize;
     float MaxDistanceTex;
     float MaxDistanceMip;
     Float3 Position;
-    float VoxelSize;
+    float VoxelSize = 0;
     float Extent;
     BoundingBox Bounds;
     BoundingBox CullingBounds;
@@ -161,6 +166,7 @@ struct CascadeData
     Vector3 OriginMax;
     HashSet<RasterizeChunkKey> NonEmptyChunks;
     HashSet<RasterizeChunkKey> StaticChunks;
+    HashSet<RasterizeChunkKey> DynamicDirtyChunks;
 
     // Cache
     Dictionary<RasterizeChunkKey, RasterizeChunk> Chunks;
@@ -172,11 +178,16 @@ struct CascadeData
     HashSet<GPUTexture*> PendingSDFTextures;
     HashSet<ScriptingTypeHandle> PendingObjectTypes;
 
-    void OnSceneRenderingDirty(const BoundingBox& objectBounds)
+    void OnSceneRenderingDirty(const BoundingBox& objectBounds, bool isStatic)
     {
-        if (StaticChunks.IsEmpty() || !Bounds.Intersects(objectBounds))
+        if (!Bounds.Intersects(objectBounds)) // Skip updates outside the cascade
+            return;
+        if (isStatic && StaticChunks.IsEmpty()) // Skip static updates when nothing is static
+            return;
+        if (!isStatic && Index != 0) // Skip dynamic updates for cascades other than the first one (due to perf)
             return;
 
+        // Quantize the bounds to the cascade chunks
         BoundingBox objectBoundsCascade;
         const float objectMargin = VoxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN;
         Vector3::Clamp(objectBounds.Minimum - objectMargin, Bounds.Minimum, Bounds.Maximum, objectBoundsCascade.Minimum);
@@ -196,13 +207,17 @@ struct CascadeData
                 for (key.Coord.X = objectChunkMin.X; key.Coord.X <= objectChunkMax.X; key.Coord.X++)
                 {
                     key.Hash = KEY_GET_HASH(key);
-                    StaticChunks.Remove(key);
+                    if (isStatic)
+                        StaticChunks.Remove(key);
+                    else
+                        DynamicDirtyChunks.Add(key);
                 }
             }
         }
     }
 };
 
+// Data container for a Global SDF.
 class GlobalSignDistanceFieldCustomBuffer : public RenderBuffers::CustomBuffer, public ISceneRenderingListener
 {
 public:
@@ -336,7 +351,9 @@ public:
             auto& cascade = Cascades[cascadeIndex];
             cascade.Index = cascadeIndex;
             cascade.Dirty = !useCache || RenderTools::ShouldUpdateCascade(FrameIndex, cascadeIndex, cascadesCount, maxCascadeUpdatesPerFrame, updateEveryFrame);
-            if (!cascade.Dirty)
+            cascade.DirtyDynamicOnly = useCache && !cascade.Dirty && cascade.DynamicDirtyChunks.HasItems() && cascade.VoxelSize > 0.0f && !DebugOverdraw && GLOBAL_SDF_DYNAMIC_UPDATES;
+            cascade.Draw = cascade.Dirty || cascade.DirtyDynamicOnly;
+            if (!cascade.Draw)
                 continue;
             const float cascadeExtent = distanceExtent * CascadesDistanceScales[cascadeIndex];
             const float cascadeSize = cascadeExtent * 2;
@@ -354,6 +371,25 @@ public:
             // TODO: cache RasterizeObjects size from the previous frame (for this cascade) and preallocate it here once RendererAllocation is used
             cascade.RasterizeObjects.Clear();
             cascade.PendingSDFTextures.Clear();
+            if (!cascade.DirtyDynamicOnly)
+                cascade.DynamicDirtyChunks.Clear();
+
+            // Don't modify cascade options when updating specific chunks-only
+            if (cascade.DirtyDynamicOnly)
+            {
+                bool first = true;
+                for (const auto& e : cascade.DynamicDirtyChunks)
+                {
+                    Float3 chunkMin = cascade.Bounds.Minimum + Float3(e.Item.Coord) * cascade.ChunkSize;
+                    BoundingBox chunkBounds(chunkMin, chunkMin + cascade.ChunkSize);
+                    if (first)
+                        cascade.CullingBounds = chunkBounds;
+                    else
+                        BoundingBox::Merge(cascade.CullingBounds, chunkBounds, cascade.CullingBounds);
+                    first = false;
+                }
+                continue;
+            }
 
             // Check if cascade center has been moved
             if (!(useCache && Float3::NearEqual(cascade.Position, center, cascadeVoxelSize)))
@@ -402,47 +438,46 @@ public:
         AsyncDrawWaitLabels.Clear();
     }
 
-    FORCE_INLINE void OnSceneRenderingDirty(const BoundingBox& objectBounds)
+    void OnSceneRenderingDirty(const Actor* a, const BoundingSphere* prevBounds = nullptr, UpdateFlags flags = UpdateFlags::Auto)
     {
+        if (!ObjectTypes.Contains(a->GetTypeHandle()))
+            return;
+
+        BoundingBox bounds = a->GetBox();
+        bool isStatic = GLOBAL_SDF_ACTOR_IS_STATIC(a);
+        // TODO: early out if the bounds are outside cascade 0 for dynamic objects
+        if (prevBounds && flags != DrawModes && flags != Layer && flags != StaticFlags)
+            BoundingBox::Merge(bounds, BoundingBox::FromSphere(*prevBounds), bounds);
+
+        ScopeWriteLock lock(Locker);
         for (auto& cascade : Cascades)
-            cascade.OnSceneRenderingDirty(objectBounds);
+            cascade.OnSceneRenderingDirty(bounds, isStatic);
     }
 
     // [ISceneRenderingListener]
     void OnSceneRenderingAddActor(Actor* a) override
     {
-        if (GLOBAL_SDF_ACTOR_IS_STATIC(a) && ObjectTypes.Contains(a->GetTypeHandle()))
-        {
-            ScopeWriteLock lock(Locker);
-            OnSceneRenderingDirty(a->GetBox());
-        }
+        OnSceneRenderingDirty(a);
     }
 
     void OnSceneRenderingUpdateActor(Actor* a, const BoundingSphere& prevBounds, UpdateFlags flags) override
     {
-        if (GLOBAL_SDF_ACTOR_IS_STATIC(a) && ObjectTypes.Contains(a->GetTypeHandle()))
-        {
-            ScopeWriteLock lock(Locker);
-            if (flags != DrawModes && flags != Layer && flags != StaticFlags)
-                OnSceneRenderingDirty(BoundingBox::FromSphere(prevBounds));
-            OnSceneRenderingDirty(a->GetBox());
-        }
+        OnSceneRenderingDirty(a, &prevBounds, flags);
     }
 
     void OnSceneRenderingRemoveActor(Actor* a) override
     {
-        if (GLOBAL_SDF_ACTOR_IS_STATIC(a) && ObjectTypes.Contains(a->GetTypeHandle()))
-        {
-            ScopeWriteLock lock(Locker);
-            OnSceneRenderingDirty(a->GetBox());
-        }
+        OnSceneRenderingDirty(a);
     }
 
     void OnSceneRenderingClear(SceneRendering* scene) override
     {
         ScopeWriteLock lock(Locker);
         for (auto& cascade : Cascades)
+        {
             cascade.StaticChunks.Clear();
+            cascade.DynamicDirtyChunks.Clear();
+        }
     }
 };
 
@@ -598,12 +633,26 @@ void GlobalSignDistanceFieldCustomBuffer::WriteCascadeObjects(CascadeData& casca
 void GlobalSignDistanceFieldCustomBuffer::DrawCascadeJob(int32 cascadeIndex)
 {
     auto& cascade = Cascades[cascadeIndex];
-    if (!cascade.Dirty)
+    if (!cascade.Draw)
         return;
     PROFILE_CPU();
     ScopeReadLock lock(Locker);
     CurrentCascade.Set(&cascade);
     DrawCascadeActors(cascade);
+#if GLOBAL_SDF_DYNAMIC_UPDATES
+    if (cascade.DirtyDynamicOnly)
+    {
+        // Remove chunks that are not in the dirty dynamic subset (when doing partial update)
+        for (auto it = cascade.Chunks.Begin(); it.IsNotEnd(); ++it)
+        {
+            auto key = it->Key;
+            key.Layer = 0;
+            key.Hash = KEY_GET_HASH(key);
+            if (!cascade.DynamicDirtyChunks.Contains(key))
+                cascade.Chunks.Remove(it);
+        }
+    }
+#endif
     UpdateCascadeChunks(cascade);
     WriteCascadeObjects(cascade);
 }
@@ -815,6 +864,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         {
             cascade.NonEmptyChunks.Clear();
             cascade.StaticChunks.Clear();
+            cascade.DynamicDirtyChunks.Clear();
         }
         context->ClearUA(sdfData.Texture, Float4::One);
         context->ClearUA(sdfData.TextureMip, Float4::One);
@@ -835,7 +885,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
     {
         auto& cascade = sdfData.Cascades[cascadeIndex];
-        if (!cascade.Dirty)
+        if (!cascade.Draw)
             continue;
 
         // Process all pending SDF textures tracking
@@ -870,7 +920,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         context->BindCB(1, _cb1);
         constexpr int32 chunkDispatchGroups = GLOBAL_SDF_RASTERIZE_CHUNK_SIZE / GLOBAL_SDF_RASTERIZE_GROUP_SIZE;
         int32 chunkDispatches = 0;
-        if (!reset && cascade.NonEmptyChunks.HasItems())
+        if (!reset && cascade.NonEmptyChunks.HasItems() && !cascade.DirtyDynamicOnly)
         {
             PROFILE_GPU_CPU_NAMED("Clear Chunks");
             GPUComputePass pass(context);
@@ -1006,7 +1056,8 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         }
 
         // Generate mip out of cascade (empty chunks have distance value 1 which is incorrect so mip will be used as a fallback - lower res)
-        if (reset || chunkDispatches != 0)
+        // Skip building mip for dynamic per-chunk updates to save on perf (next cascade update will covert it)
+        if (reset || (chunkDispatches != 0 && !cascade.DirtyDynamicOnly))
         {
             PROFILE_GPU_CPU_NAMED("Generate Mip");
             context->ResetUA();
@@ -1062,6 +1113,9 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                 context->Dispatch(_csGenerateMip, mipDispatchGroups, mipDispatchGroups, mipDispatchGroups);
             }
         }
+
+        // Empty updated dynamic chunks
+        cascade.DynamicDirtyChunks.Clear();
     }
 
     RenderTargetPool::Release(tmpMip);
