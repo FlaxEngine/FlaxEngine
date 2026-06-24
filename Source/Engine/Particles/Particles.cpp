@@ -175,7 +175,9 @@ void Particles::OnEffectDestroy(ParticleEffect* effect)
 {
     UpdateList.Remove(effect);
 #if COMPILE_WITH_GPU_PARTICLES
+    GpuUpdateListLocker.Lock();
     GpuUpdateList.Remove(effect);
+    GpuUpdateListLocker.Unlock();
 #endif
 }
 
