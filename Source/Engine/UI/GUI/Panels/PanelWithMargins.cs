@@ -36,6 +36,11 @@ namespace FlaxEngine.GUI
         protected TextAlignment _alignment = TextAlignment.Near;
 
         /// <summary>
+        /// The force child expand flag.
+        /// </summary>
+        protected bool _forceChildExpand;  
+
+        /// <summary>
         /// Gets or sets the left margin.
         /// </summary>
         [HideInEditor, NoSerialize]
@@ -161,6 +166,21 @@ namespace FlaxEngine.GUI
         public bool ControlChildSize { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets the value indicating whenever the panel will force expand children width.
+        /// <para>Logic is disabled when <see cref="AutoSize"/> is true</para>
+        /// </summary>
+        [EditorOrder(36), DefaultValue(false), Tooltip("If checked, the panel will force expand/shrink children."), VisibleIf(nameof(AutoSize), true)]
+        public bool ForceChildExpand
+        {
+            get { return ControlChildSize &&  _forceChildExpand; }  // False when ControlChildSize is false. 
+            set
+            {
+                _forceChildExpand = value;  // Set the value to the backing field
+                PerformLayoutAfterChildren();    // Trigger the layout function whenever set
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the panel area margin.
         /// </summary>
         [EditorOrder(40), Tooltip("The panel area margin.")]
@@ -201,6 +221,21 @@ namespace FlaxEngine.GUI
         : base(0, 0, 64, 64)
         {
             AutoFocus = false;
+        }
+
+        internal override void RemoveChildInternal(Control child)
+        {
+            base.RemoveChildInternal(child);
+            if (ForceChildExpand)
+                PerformLayoutAfterChildren();
+        }
+
+        /// <summary>
+        /// Logic for performing expansion/contraction of the children.
+        /// </summary>
+        protected virtual void PerformExpansion()
+        {
+
         }
 
         /// <inheritdoc />
