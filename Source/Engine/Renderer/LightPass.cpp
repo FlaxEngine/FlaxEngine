@@ -128,6 +128,9 @@ void LightPass::Dispose()
     SAFE_DELETE_GPU_RESOURCE(_psLightSky);
     SAFE_DELETE_GPU_RESOURCE(_psLightSkyInside);
     SAFE_DELETE_GPU_RESOURCE(_psClearDiffuse);
+    SAFE_DELETE_GPU_RESOURCE(_psComplexity);
+    SAFE_DELETE_GPU_RESOURCE(_psLightOverlap[0]);
+    SAFE_DELETE_GPU_RESOURCE(_psLightOverlap[1]);
     _sphereModel = nullptr;
 }
 
@@ -407,4 +410,89 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
     context->ResetRenderTarget();
     context->ResetSR();
     context->ResetCB();
+}
+
+// Config for light complexity
+#define LIGHT_COMPLEXITY_DIR_COST 0.05f
+#define LIGHT_COMPLEXITY_LOCAL_COST 0.08f
+#define LIGHT_COMPLEXITY_SHADOW_COST 0.1f
+
+void LightPass::RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output)
+{
+    if (checkIfSkipPass())
+        return;
+    if (!_psComplexity)
+    {
+        // Lazy-init PSOs
+        auto psDesc = GPUPipelineState::Description::DefaultNoDepth;
+        psDesc.BlendMode = BlendingMode::Add;
+        psDesc.VS = _shader->GPU->GetVS("VS_Model");
+        psDesc.PS = _shader->GPU->GetPS("PS_Overlap");
+        psDesc.DepthEnable = true;
+        psDesc.DepthBoundsEnable = _depthBounds;
+        psDesc.CullMode = CullMode::Normal;
+        _psLightOverlap[0] = GPUDevice::Instance->CreatePipelineState();
+        _psLightOverlap[0]->Init(psDesc);
+        psDesc.DepthFunc = ComparisonFunc::DefaultInv;
+        psDesc.CullMode = CullMode::Inverted;
+        _psLightOverlap[1] = GPUDevice::Instance->CreatePipelineState();
+        _psLightOverlap[1]->Init(psDesc);
+        psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+        psDesc.PS = _shader->GPU->GetPS("PS_Complexity");
+        _psComplexity = GPUDevice::Instance->CreatePipelineState();
+        _psComplexity->Init(psDesc);
+    }
+    PROFILE_GPU_CPU("Lights Overlap");
+
+    // Draw lights with additive mode to sum up complexity per-pixel
+    auto complexity = RenderTargetPool::Get(GPUTextureDescription::New2D(output->Width(), output->Height(), PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget));
+    float baseCost = 0;
+    for (auto& light : renderContext.List->DirectionalLights)
+        baseCost += LIGHT_COMPLEXITY_DIR_COST + (light.HasShadow ? LIGHT_COMPLEXITY_SHADOW_COST : 0);
+    context->Clear(complexity->View(), Color(baseCost));
+    GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
+    const bool depthBufferReadOnly = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView);
+    GPUTextureView* depthBufferRTV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : nullptr;
+    GPUTextureView* depthBufferSRV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
+    context->SetRenderTarget(depthBufferRTV, complexity->View());
+    context->SetViewportAndScissors((float)complexity->Width(), (float)complexity->Height());
+    for (auto& light : renderContext.List->PointLights)
+        RenderDebugSphere(renderContext, context, light, light.Radius);
+    for (auto& light : renderContext.List->SpotLights)
+        RenderDebugSphere(renderContext, context, light, light.Radius);
+    for (auto& light : renderContext.List->SkyLights)
+        RenderDebugSphere(renderContext, context, light, light.Radius);
+    context->ResetRenderTarget();
+
+    // Draw complexity visualization based on accumulated complexity
+    context->SetRenderTarget(output->View());
+    context->BindSR(0, complexity->View());
+    context->BindSR(3, depthBufferSRV);
+    context->SetState(_psComplexity);
+    context->DrawFullscreenTriangle();
+
+    if (_depthBounds)
+        context->SetDepthBounds();
+    RenderTargetPool::Release(complexity);
+}
+
+void LightPass::RenderDebugSphere(RenderContext& renderContext, GPUContext* context, const RenderLightData& light, float radius) const
+{
+    PerLight perLight;
+    Matrix world, wvp;
+    bool isViewInside;
+    RenderTools::ComputeSphereModelDrawMatrix(renderContext.View, light.Position, radius, world, isViewInside);
+    Matrix::Multiply(world, renderContext.View.ViewProjection(), wvp);
+    Matrix::Transpose(wvp, perLight.WVP);
+    if (_depthBounds)
+    {
+        Float2 minMaxDepth = RenderTools::GetDepthBounds(renderContext.View, BoundingSphere(light.Position, radius));
+        context->SetDepthBounds(GPU_DEPTH_RANGE_BOUNDS(minMaxDepth.X, minMaxDepth.Y));
+    }
+    perLight.Light.Radius = LIGHT_COMPLEXITY_LOCAL_COST + (light.HasShadow ? LIGHT_COMPLEXITY_SHADOW_COST : 0);
+    auto cb0 = _shader->GPU->GetCB(0);
+    context->UpdateCB(cb0, &perLight);
+    context->BindCB(0, cb0);
+    context->SetState(_psLightOverlap[isViewInside]);
+    _sphereModel->LODs[0].Meshes[0].Render(context);
 }

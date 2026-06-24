@@ -431,6 +431,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         case ViewMode::NoPostFx:
         case ViewMode::VertexColors:
         case ViewMode::QuadOverdraw:
+        case ViewMode::LightOverlap:
             setup.UseTemporalAAJitter = false;
             break;
         }
@@ -600,13 +601,23 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     GBufferPass::Instance()->Fill(renderContext, lightBuffer);
 
     // Debug drawing
-    if (renderContext.View.Mode == ViewMode::GlobalSDF || renderContext.View.Mode == ViewMode::GlobalSDFOverdraw)
+    switch (renderContext.View.Mode)
+    {
+    case ViewMode::LightOverlap:
+        LightPass::Instance()->RenderDebug(renderContext, context, lightBuffer);
+        break;
+    case ViewMode::GlobalSDF:
+    case ViewMode::GlobalSDFOverdraw:
         GlobalSignDistanceFieldPass::Instance()->RenderDebug(renderContext, context, lightBuffer);
-    else if (renderContext.View.Mode == ViewMode::GlobalSurfaceAtlas)
+        break;
+    case ViewMode::GlobalSurfaceAtlas:
         GlobalSurfaceAtlasPass::Instance()->RenderDebug(renderContext, context, lightBuffer);
+        break;
+    }
     if (renderContext.View.Mode == ViewMode::Emissive ||
         renderContext.View.Mode == ViewMode::VertexColors ||
         renderContext.View.Mode == ViewMode::LightmapUVsDensity ||
+        renderContext.View.Mode == ViewMode::LightOverlap ||
         renderContext.View.Mode == ViewMode::GlobalSurfaceAtlas ||
         renderContext.View.Mode == ViewMode::GlobalSDF ||
         renderContext.View.Mode == ViewMode::GlobalSDFOverdraw)

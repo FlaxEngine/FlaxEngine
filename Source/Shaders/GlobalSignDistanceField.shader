@@ -364,6 +364,7 @@ float4 PS_Debug(Quad_VS2PS input) : SV_Target
 #define NO_GBUFFER_SAMPLING
 #include "./Flax/GBuffer.hlsl"
 #include "./Flax/Noise.hlsl"
+#include "./Flax/Outlines.hlsl"
 
 META_CB_BEGIN(2, OverdrawData)
 GBufferData GBuffer;
@@ -376,12 +377,6 @@ META_CB_END
 
 Texture2D Depth : register(t0);
 Texture2D GBuffer0 : register(t1);
-
-float GteOutline(float baseDepth, float2 uv, float2 offset, float2 depthSizeInv)
-{
-    float neighborDepth = SAMPLE_RT_DEPTH(Depth, uv + offset * depthSizeInv);
-    return DEPTH_DIFF(baseDepth, neighborDepth) * 1000.0f;
-}
 
 float4 GetHeatmap(float value)
 {
@@ -414,14 +409,7 @@ float4 PS_Overdraw(Quad_VS2PS input) : SV_Target
     // Make depth-based outlines
     float baseDepth = SAMPLE_RT_DEPTH(Depth, input.TexCoord);
     if (DEPTH_01(baseDepth) > 0.999999f) return 0; // Skip background
-    float2 depthSize;
-    Depth.GetDimensions(depthSize.x, depthSize.y);
-    float2 depthSizeInv = 1.0f / depthSize;
-    float outline = GteOutline(baseDepth, input.TexCoord, float2(1, 0), depthSizeInv);
-    outline += GteOutline(baseDepth, input.TexCoord, float2(0, 1), depthSizeInv);
-    outline += GteOutline(baseDepth, input.TexCoord, float2(-1, 0), depthSizeInv);
-    outline += GteOutline(baseDepth, input.TexCoord, float2(0, -1), depthSizeInv);
-    outline = 1 - saturate(outline);
+    float outline = DepthOutline(Depth, input.TexCoord);
 
     // Get position inside chunk used by the pixel position
     float3 worldPos = GetWorldPos(GBuffer, input.TexCoord, baseDepth);

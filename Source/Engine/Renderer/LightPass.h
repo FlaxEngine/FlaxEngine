@@ -21,6 +21,8 @@ private:
     GPUPipelineState* _psLightSky = nullptr;
     GPUPipelineState* _psLightSkyInside = nullptr;
     GPUPipelineState* _psClearDiffuse = nullptr;
+    GPUPipelineState* _psComplexity = nullptr;
+    GPUPipelineState* _psLightOverlap[2] = {};
     AssetReference<Model> _sphereModel;
     PixelFormat _shadowMaskFormat;
     bool _depthBounds = false;
@@ -38,6 +40,14 @@ public:
     /// <param name="lightBuffer">The light accumulation buffer (input and output).</param>
     void RenderLights(RenderContextBatch& renderContextBatch, GPUTextureView* lightBuffer);
 
+    /// <summary>
+    /// Renders the debug view.
+    /// </summary>
+    /// <param name="renderContext">The rendering context.</param>
+    /// <param name="context">The GPU context.</param>
+    /// <param name="output">The output buffer.</param>
+    void RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output);
+
 private:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
@@ -47,9 +57,15 @@ private:
         _psLightLocalInside.Release();
         _psLightSky->ReleaseGPU();
         _psLightSkyInside->ReleaseGPU();
+        if (_psClearDiffuse)
+            _psClearDiffuse->ReleaseGPU();
+        SAFE_DELETE_GPU_RESOURCE(_psComplexity);
+        SAFE_DELETE_GPU_RESOURCE(_psLightOverlap[0]);
+        SAFE_DELETE_GPU_RESOURCE(_psLightOverlap[1]);
         invalidateResources();
     }
 #endif
+    void RenderDebugSphere(RenderContext& renderContext, GPUContext* context, const struct RenderLightData& light, float radius) const;
 
 public:
     // [RendererPass]

@@ -1015,6 +1015,11 @@ API_ENUM() enum class ViewMode
     /// Draw lighting without diffuse color from materials to inspect both diffuse and specular light contributions.
     /// </summary>
     Lighting = 28,
+
+    /// <summary>
+    /// Draw local light volumes overlaps complexity to visualize how many lights affect each pixel (for performance optimization).
+    /// </summary>
+    LightOverlap = 29,
 };
 
 /// <summary>

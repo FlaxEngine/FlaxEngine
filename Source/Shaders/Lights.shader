@@ -131,3 +131,45 @@ float4 PS_Sky(Model_VS2PS input) : SV_Target0
 
 	return output;
 }
+
+// Pixel shader for light overlap rendering
+META_PS(true, FEATURE_LEVEL_ES2)
+float4 PS_Overlap(Model_VS2PS input) : SV_Target0
+{
+	return Light.Radius.xxxx;
+}
+
+#ifdef _PS_Complexity
+
+#include "./Flax/Outlines.hlsl"
+
+// Pixel shader for light complexity rendering
+META_PS(true, FEATURE_LEVEL_ES2)
+float4 PS_Complexity(Quad_VS2PS input) : SV_Target0
+{
+    // Make depth-based outlines
+    float baseDepth = SAMPLE_RT_DEPTH(Depth, input.TexCoord);
+    if (DEPTH_01(baseDepth) > 0.999999f) return float4(0, 0, 0.2, 1); // Skip background
+    float outline = DepthOutline(Depth, input.TexCoord);
+
+    // Sample accumulated complexity
+    float complexity = SAMPLE_RT(GBuffer0, input.TexCoord);
+
+    // Custom coloring
+    const uint colorsCount = 9;
+    const float4 colors[colorsCount] =
+    {
+        float4(0.0, 1.0, 0.12, 1.0),
+        float4(0.0, 1.0, 0.0, 1.0),
+        float4(0.04, 0.5, 0.0, 1.0),
+        float4(0.21, 0.21, 0.0, 1.0),
+        float4(0.52, 0.04, 0.0, 1.0),
+        float4(0.7, 0.0, 0.0, 1.0),
+        float4(1.0, 0.0, 0.0, 1.0),
+        float4(1.0, 0.0, 0.5, 1.0),
+        float4(1.0, 0.9, 0.9, 1.0)
+    };
+    return colors[min(complexity * colorsCount, colorsCount - 1)] * outline;
+}
+
+#endif
