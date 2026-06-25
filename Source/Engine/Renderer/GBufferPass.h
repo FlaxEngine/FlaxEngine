@@ -3,7 +3,7 @@
 #pragma once
 
 #include "RendererPass.h"
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
 #include "Engine/Core/Collections/Dictionary.h"
 #endif
 
