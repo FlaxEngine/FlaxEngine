@@ -177,6 +177,8 @@ namespace FlaxEditor.Windows
                         {
                             // Focus back the input field as user want to modify command from history
                             Owner.HideHistory();
+                            if (Owner == null)
+                                return true;
                             Owner.HideSearch();
                             Owner.RootWindow.Focus();
                             Owner.Focus();

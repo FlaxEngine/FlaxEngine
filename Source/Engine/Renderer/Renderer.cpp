@@ -41,6 +41,8 @@
 #include "Engine/Profiler/ProfilerMemory.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
+#endif
+#if GPU_ENABLE_DEVELOPMENT
 #include "Editor/QuadOverdrawPass.h"
 #endif
 
@@ -48,6 +50,8 @@
 // Additional options used in editor for lightmaps baking
 bool IsRunningRadiancePass = false;
 bool IsBakingLightmaps = false;
+#endif
+#if GPU_ENABLE_DEVELOPMENT
 bool EnableLightmapsUsage = true;
 #endif
 
@@ -97,17 +101,15 @@ bool RendererService::Init()
     PassList.Add(GlobalSignDistanceFieldPass::Instance());
     PassList.Add(GlobalSurfaceAtlasPass::Instance());
     PassList.Add(DynamicDiffuseGlobalIlluminationPass::Instance());
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     PassList.Add(QuadOverdrawPass::Instance());
 #endif
 
+#if GPU_ENABLE_PRELOADING_RESOURCES
     // Skip when using Null renderer
     if (GPUDevice::Instance->GetRendererType() == RendererType::Null)
-    {
         return false;
-    }
 
-#if GPU_ENABLE_PRELOADING_RESOURCES
     // Init child services
     for (int32 i = 0; i < PassList.Count(); i++)
     {
@@ -471,7 +473,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         LightPass::Instance()->SetupLights(renderContext, renderContextBatch);
         if (setup.UseShadows)
             ShadowsPass::Instance()->SetupShadows(renderContext, renderContextBatch);
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
         GBufferPass::Instance()->PreOverrideDrawCalls(renderContext);
 #endif
 
@@ -498,7 +500,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
             renderContextBatch.Contexts[i].List->DrainDelayedDraws(context, renderContextBatch, i);
         renderContext.List->PostDraw(context, renderContextBatch);
 
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
         GBufferPass::Instance()->OverrideDrawCalls(renderContext);
 #endif
     }
@@ -578,7 +580,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     auto lightBuffer = RenderTargetPool::Get(tempDesc);
     RENDER_TARGET_POOL_SET_NAME(lightBuffer, "LightBuffer");
 
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     if (renderContext.View.Mode == ViewMode::QuadOverdraw)
     {
         QuadOverdrawPass::Instance()->Render(renderContext, context, lightBuffer->View());
@@ -602,8 +604,13 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     GBufferPass::Instance()->Fill(renderContext, lightBuffer);
 
     // Debug drawing
+#if GPU_ENABLE_DEVELOPMENT
     switch (renderContext.View.Mode)
     {
+    case ViewMode::MaterialComplexity:
+        GBufferPass::Instance()->DrawMaterialComplexity(renderContext, context, lightBuffer->View());
+        RenderTargetPool::Release(lightBuffer);
+        return;
     case ViewMode::LightOverlap:
         LightPass::Instance()->RenderDebug(renderContext, context, lightBuffer);
         break;
@@ -622,6 +629,9 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         renderContext.View.Mode == ViewMode::GlobalSurfaceAtlas ||
         renderContext.View.Mode == ViewMode::GlobalSDF ||
         renderContext.View.Mode == ViewMode::GlobalSDFOverdraw)
+#else
+    if (renderContext.View.Mode == ViewMode::Emissive)
+#endif
     {
         context->ResetRenderTarget();
         context->SetRenderTarget(task->GetOutputView());
@@ -630,14 +640,6 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         RenderTargetPool::Release(lightBuffer);
         return;
     }
-#if USE_EDITOR
-    if (renderContext.View.Mode == ViewMode::MaterialComplexity)
-    {
-        GBufferPass::Instance()->DrawMaterialComplexity(renderContext, context, lightBuffer->View());
-        RenderTargetPool::Release(lightBuffer);
-        return;
-    }
-#endif
 
     // Render motion vectors
     MotionBlurPass::Instance()->RenderMotionVectors(renderContext);
@@ -806,6 +808,7 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
     context->ResetSR();
     context->FlushState();
 
+#if GPU_ENABLE_DEVELOPMENT
     // Debug motion vectors
     if (renderContext.View.Mode == ViewMode::MotionVectors)
     {
@@ -814,6 +817,7 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
         RenderTargetPool::Release(frameBuffer);
         return;
     }
+#endif
 
     // Anti Aliasing
     GPUTextureView* outputView = task->GetOutputView();

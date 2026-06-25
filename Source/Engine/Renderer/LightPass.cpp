@@ -408,6 +408,8 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
     context->ResetCB();
 }
 
+#if GPU_ENABLE_DEVELOPMENT
+
 // Config for light complexity
 #define LIGHT_COMPLEXITY_DIR_COST 0.05f
 #define LIGHT_COMPLEXITY_LOCAL_COST 0.08f
@@ -492,3 +494,5 @@ void LightPass::RenderDebugSphere(RenderContext& renderContext, GPUContext* cont
     context->SetState(_psLightOverlap[isViewInside]);
     _sphereModel->LODs[0].Meshes[0].Render(context);
 }
+
+#endif

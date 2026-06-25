@@ -36,24 +36,24 @@ protected:
 
         PipelineStateCache()
         {
-            Platform::MemoryClear(PS, sizeof(PS));
+            Platform::MemoryClear(this, sizeof(*this));
         }
 
-        void Init(GPUPipelineState::Description& desc)
+        void Init(const GPUPipelineState::Description& desc)
         {
             Desc = desc;
         }
 
-        GPUPipelineState* GetPS(CullMode mode, bool wireframe)
+        GPUPipelineState* GetPS(const MaterialShader* owner, CullMode mode, bool wireframe)
         {
             const int32 index = static_cast<int32>(mode) + (wireframe ? 3 : 0);
             auto ps = PS[index];
             if (!ps)
-                PS[index] = ps = InitPS(mode, wireframe);
+                PS[index] = ps = InitPS(owner, mode, wireframe);
             return ps;
         }
 
-        GPUPipelineState* InitPS(CullMode mode, bool wireframe);
+        GPUPipelineState* InitPS(const MaterialShader* owner, CullMode mode, bool wireframe);
 
         void Release()
         {

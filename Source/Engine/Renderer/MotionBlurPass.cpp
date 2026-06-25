@@ -50,7 +50,9 @@ bool MotionBlurPass::Init()
 {
     // Create pipeline states
     _psCameraMotionVectors = GPUDevice::Instance->CreatePipelineState();
+#if GPU_ENABLE_DEVELOPMENT
     _psMotionVectorsDebug = GPUDevice::Instance->CreatePipelineState();
+#endif
     _psTileMax = GPUDevice::Instance->CreatePipelineState();
     _psTileMaxVariable = GPUDevice::Instance->CreatePipelineState();
     _psNeighborMax = GPUDevice::Instance->CreatePipelineState();
@@ -96,12 +98,14 @@ bool MotionBlurPass::setupResources()
         if (_psCameraMotionVectors->Init(psDesc))
             return true;
     }
+#if GPU_ENABLE_DEVELOPMENT
     if (!_psMotionVectorsDebug->IsValid())
     {
         psDesc.PS = shader->GetPS("PS_MotionVectorsDebug");
         if (_psMotionVectorsDebug->Init(psDesc))
             return true;
     }
+#endif
     if (!_psTileMax->IsValid())
     {
         psDesc.PS = shader->GetPS("PS_TileMax");
@@ -137,7 +141,9 @@ void MotionBlurPass::Dispose()
 
     // Cleanup
     SAFE_DELETE_GPU_RESOURCE(_psCameraMotionVectors);
+#if GPU_ENABLE_DEVELOPMENT
     SAFE_DELETE_GPU_RESOURCE(_psMotionVectorsDebug);
+#endif
     SAFE_DELETE_GPU_RESOURCE(_psTileMax);
     SAFE_DELETE_GPU_RESOURCE(_psTileMaxVariable);
     SAFE_DELETE_GPU_RESOURCE(_psNeighborMax);
@@ -234,6 +240,8 @@ void MotionBlurPass::RenderMotionVectors(RenderContext& renderContext)
     }
 }
 
+#if GPU_ENABLE_DEVELOPMENT
+
 void MotionBlurPass::RenderDebug(RenderContext& renderContext, GPUTextureView* frame)
 {
     auto outputView = renderContext.Task->GetOutputView();
@@ -274,6 +282,8 @@ void MotionBlurPass::RenderDebug(RenderContext& renderContext, GPUTextureView* f
 
     RenderTargetPool::Release(motionObjectsDepth);
 }
+
+#endif
 
 void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& frame, GPUTexture*& tmp)
 {

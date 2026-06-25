@@ -18,13 +18,13 @@
 #include "ShaderFunctionReader.CS.h"
 #include "Config.h"
 
-ShaderProcessing::Parser::Parser(const String& targetName, const char* source, int32 sourceLength, ParserMacros macros, ShaderProfile profile)
+ShaderProcessing::Parser::Parser(const String& targetName, const char* source, int32 sourceLength, ParserMacros macros, ShaderProfile profile, ShaderProfileFeatures features)
     : failed(false)
     , targetName(targetName)
     , text(source, sourceLength)
     , _macros(macros)
     , _featureLevel(RenderTools::GetFeatureLevel(profile))
-    , _features(RenderTools::GetShaderProfileFeatures(profile))
+    , _features(features)
 {
 }
 
@@ -32,10 +32,10 @@ ShaderProcessing::Parser::~Parser()
 {
 }
 
-bool ShaderProcessing::Parser::Process(const String& targetName, const char* source, int32 sourceLength, ParserMacros macros, ShaderProfile profile, ShaderMeta* result)
+bool ShaderProcessing::Parser::Process(const String& targetName, const char* source, int32 sourceLength, ParserMacros macros, ShaderProfile profile, ShaderProfileFeatures features, ShaderMeta* result)
 {
     PROFILE_CPU_NAMED("Shader.Parse");
-    Parser parser(targetName, source, sourceLength, macros, profile);
+    Parser parser(targetName, source, sourceLength, macros, profile, features);
     parser.Process(result);
     return parser.Failed();
 }

@@ -62,6 +62,11 @@ public:
     bool TreatWarningsAsErrors = false;
 
     /// <summary>
+    /// Enables compilation of development-only shaders for. Used in non-release or editor builds.
+    /// </summary>
+    bool DevelopmentShaders = true;
+
+    /// <summary>
     /// Custom macros for the shader compilation
     /// </summary>
     Array<ShaderMacro> Macros;

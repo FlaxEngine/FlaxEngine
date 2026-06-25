@@ -242,6 +242,11 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
         LOG(Info, "{0} option has been modified.", TEXT("ShadersReverseZ"));
         invalidateShaders = true;
     }
+    if ((data.Configuration != BuildConfiguration::Release) != Settings.Global.ShadersDevelopment)
+    {
+        LOG(Info, "{0} option has been modified.", TEXT("ShadersDevelopment"));
+        invalidateShaders = true;
+    }
 #if PLATFORM_TOOLS_WINDOWS
     if (data.Platform == BuildPlatform::Windows32 || data.Platform == BuildPlatform::Windows64)
     {
@@ -432,6 +437,7 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
     options.NoOptimize = data.Cache.Settings.Global.ShadersNoOptimize;
     options.GenerateDebugData = data.Cache.Settings.Global.ShadersGenerateDebugData;
     options.TreatWarningsAsErrors = false;
+    options.DevelopmentShaders = data.Cache.Settings.Global.ShadersDevelopment;
     options.Output = &cacheStream;
     options.Platform = data.Data.Tools->GetPlatform();
     Array<String> includes;
@@ -1086,6 +1092,7 @@ bool CookAssetsStep::Perform(CookingData& data)
         cache.Settings.Global.ShadersNoOptimize = buildSettings->ShadersNoOptimize;
         cache.Settings.Global.ShadersGenerateDebugData = buildSettings->ShadersGenerateDebugData;
         cache.Settings.Global.ShadersReverseZ = REVERSE_Z;
+        cache.Settings.Global.ShadersDevelopment = data.Configuration != BuildConfiguration::Release;
         cache.Settings.Global.StreamingSettingsAssetId = gameSettings->Streaming;
         cache.Settings.Global.ShadersVersion = GPU_SHADER_CACHE_VERSION;
         cache.Settings.Global.MaterialGraphVersion = MATERIAL_GRAPH_VERSION;

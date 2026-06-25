@@ -1,8 +1,9 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-#if USE_EDITOR
-
 #include "QuadOverdrawPass.h"
+
+#if GPU_ENABLE_DEVELOPMENT
+
 #include "Engine/Engine/Time.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Material.h"

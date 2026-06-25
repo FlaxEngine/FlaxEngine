@@ -391,6 +391,7 @@ namespace ShaderProcessing
                 { FeatureLevel::ES3_1, "FEATURE_LEVEL_ES3_1" },
                 { FeatureLevel::SM4, "FEATURE_LEVEL_SM4" },
                 { FeatureLevel::SM5, "FEATURE_LEVEL_SM5" },
+                { FeatureLevel::SM6, "FEATURE_LEVEL_SM6" },
             };
             bool missing = true;
             for (int32 i = 0; i < ARRAY_COUNT(levels); i++)
@@ -430,10 +431,14 @@ namespace ShaderProcessing
                 current.Permutations.Add(ShaderPermutation());
             }
 
+            // Development-only shaders need a flag from the parser (setup by compilation pipeline)
+            if (EnumHasAllFlags(current.Flags, ShaderFlags::DevelopmentOnly))
+                current.MinFeatures |= ShaderProfileFeatures::DevelopmentShaders;
+
             // Check if use this shader program
-            if ((current.Flags & ShaderFlags::Hidden) == (ShaderFlags)0 && 
-                current.MinFeatureLevel <= parser->GetFeatureLevel() &&
-                EnumHasAllFlags(parser->GetFeatures(), current.MinFeatures))
+            if ((current.Flags & ShaderFlags::Hidden) == (ShaderFlags)0 && // Is not hidden
+                current.MinFeatureLevel <= parser->GetFeatureLevel() && // Matches minimum Feature Level
+                EnumHasAllFlags(parser->GetFeatures(), current.MinFeatures)) // All GPU features are supported
             {
                 // Cache read function
                 ShaderMetaReaderType::_cache.Add(current);

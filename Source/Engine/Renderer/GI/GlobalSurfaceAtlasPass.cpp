@@ -804,6 +804,7 @@ bool GlobalSurfaceAtlasPass::setupResources()
 
     // Create pipeline state
     GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+#if GPU_ENABLE_DEVELOPMENT
     if (!_psDebug0)
     {
         _psDebug0 = device->CreatePipelineState();
@@ -815,6 +816,7 @@ bool GlobalSurfaceAtlasPass::setupResources()
         if (_psDebug1->Init(psDesc))
             return true;
     }
+#endif
     psDesc.DepthEnable = true;
     psDesc.DepthWriteEnable = true;
     psDesc.DepthFunc = ComparisonFunc::Always;
@@ -874,8 +876,10 @@ void GlobalSurfaceAtlasPass::OnShaderReloading(Asset* obj)
     SAFE_DELETE_GPU_RESOURCE(_psDirectLighting0);
     SAFE_DELETE_GPU_RESOURCE(_psDirectLighting1);
     SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting);
+#if GPU_ENABLE_DEVELOPMENT
     SAFE_DELETE_GPU_RESOURCE(_psDebug0);
     SAFE_DELETE_GPU_RESOURCE(_psDebug1);
+#endif
     invalidateResources();
 }
 
@@ -894,8 +898,10 @@ void GlobalSurfaceAtlasPass::Dispose()
     SAFE_DELETE_GPU_RESOURCE(_psDirectLighting0);
     SAFE_DELETE_GPU_RESOURCE(_psDirectLighting1);
     SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting);
+#if GPU_ENABLE_DEVELOPMENT
     SAFE_DELETE_GPU_RESOURCE(_psDebug0);
     SAFE_DELETE_GPU_RESOURCE(_psDebug1);
+#endif
     _cb0 = nullptr;
     _shader = nullptr;
 }
@@ -1711,6 +1717,8 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     return notReady;
 }
 
+#if GPU_ENABLE_DEVELOPMENT
+
 void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output)
 {
     // Render all dependant effects before
@@ -1806,6 +1814,8 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         context->DrawFullscreenTriangle();
     }
 }
+
+#endif
 
 void GlobalSurfaceAtlasPass::GetCullingData(Vector4& cullingPosDistance) const
 {

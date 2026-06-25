@@ -2,7 +2,7 @@
 
 #include "GBufferPass.h"
 #include "RenderList.h"
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
 #include "Engine/Renderer/Editor/VertexColors.h"
 #include "Engine/Renderer/Editor/LightmapUVsDensity.h"
 #include "Engine/Renderer/Editor/LODPreview.h"
@@ -31,7 +31,7 @@ GPU_CB_STRUCT(GBufferPassData {
     int32 ViewMode;
     });
 
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
 Dictionary<GPUBuffer*, const ModelLOD*> GBufferPass::IndexBufferToModelLOD;
 CriticalSection GBufferPass::Locker;
 #endif
@@ -104,7 +104,7 @@ void GBufferPass::Dispose()
     _gBufferShader = nullptr;
     _skyModel = nullptr;
     _boxModel = nullptr;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     SAFE_DELETE(_lightmapUVsDensity);
     SAFE_DELETE(_vertexColors);
     SAFE_DELETE(_lodPreview);
@@ -113,7 +113,7 @@ void GBufferPass::Dispose()
 #endif
 }
 
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
 
 void DebugOverrideDrawCallsMaterial(const RenderContext& renderContext, IMaterial* material)
 {
@@ -193,7 +193,7 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTexture* lightBuffer)
     if (checkIfSkipPass())
         return;
 
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     // Special debug drawing
     if (renderContext.View.Mode == ViewMode::MaterialComplexity)
     {
@@ -371,7 +371,7 @@ GPUTextureView* GBufferPass::RenderSkybox(RenderContext& renderContext, GPUConte
     return result;
 }
 
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
 
 void GBufferPass::PreOverrideDrawCalls(RenderContext& renderContext)
 {

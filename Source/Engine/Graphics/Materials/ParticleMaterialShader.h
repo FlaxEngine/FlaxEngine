@@ -15,7 +15,7 @@ private:
         PipelineStateCache Default;
         PipelineStateCache Depth;
         PipelineStateCache Distortion;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
         PipelineStateCache QuadOverdraw;
 #endif
 
@@ -29,7 +29,7 @@ private:
                 return &Distortion;
             case DrawPass::Forward:
                 return &Default;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
             case DrawPass::QuadOverdraw:
                 return &QuadOverdraw;
 #endif
@@ -43,7 +43,7 @@ private:
             Default.Release();
             Depth.Release();
             Distortion.Release();
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
             QuadOverdraw.Release();
 #endif
         }

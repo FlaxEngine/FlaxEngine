@@ -125,7 +125,7 @@ bool LightmapFeature::Bind(MaterialShader::BindParameters& params, Span<byte>& c
     auto& drawCall = *params.DrawCall;
 
     const bool useLightmap = EnumHasAnyFlags(params.RenderContext.View.Flags, ViewFlags::GI)
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
             && EnableLightmapsUsage
 #endif
             && drawCall.Surface.Lightmap != nullptr;

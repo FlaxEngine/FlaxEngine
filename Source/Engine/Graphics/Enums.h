@@ -172,6 +172,11 @@ API_ENUM() enum class ShaderProfileFeatures
     /// </summary>
     TessellationShaders = 4,
 
+    /// <summary>
+    /// Development-only shaders are supported. Enabled in Editor or non-Release builds.
+    /// </summary>
+    DevelopmentShaders = 8,
+
     API_ENUM(Attributes = "HideInEditor")
     MAX
 };
@@ -1250,6 +1255,11 @@ enum class ShaderFlags : uint32
     /// Indicates that vertex shader function outputs data for the geometry shader.
     /// </summary>
     VertexToGeometryShader = 4,
+
+    /// <summary>
+    /// Marks shader as used only in development builds: non-release or in editor. Shader won't be compiled for final game release build.
+    /// </summary>
+    DevelopmentOnly = 8,
 };
 
 DECLARE_ENUM_OPERATORS(ShaderFlags);

@@ -87,7 +87,7 @@ void ForwardMaterialShader::Bind(BindParameters& params)
     const auto cacheObj = params.Instanced ? &_cacheInstanced : &_cache;
     PipelineStateCache* psCache = cacheObj->GetPS(view.Pass, useSkinning);
     ASSERT(psCache);
-    GPUPipelineState* state = psCache->GetPS(cullMode, wireframe);
+    GPUPipelineState* state = psCache->GetPS(this, cullMode, wireframe);
 
     // Bind pipeline
     context->SetState(state);
@@ -120,7 +120,7 @@ bool ForwardMaterialShader::Load()
     }
 #endif
 
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     if (_shader->HasShader("PS_QuadOverdraw"))
     {
         // Quad Overdraw

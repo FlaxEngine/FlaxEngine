@@ -252,6 +252,7 @@ bool ShaderAssetBase::LoadShaderCache(ShaderCacheResult& result)
         options.SourceLength = sourceLength;
         options.Profile = shaderProfile;
         options.Output = &cacheStream;
+        options.DevelopmentShaders = GPU_ENABLE_DEVELOPMENT;
         if (CommandLine::Options.ShaderDebug.IsTrue())
         {
             options.GenerateDebugData = true;

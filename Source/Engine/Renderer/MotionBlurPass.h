@@ -14,7 +14,9 @@ private:
     PixelFormat _motionVectorsFormat;
     AssetReference<Shader> _shader;
     GPUPipelineState* _psCameraMotionVectors = nullptr;
+#if GPU_ENABLE_DEVELOPMENT
     GPUPipelineState* _psMotionVectorsDebug = nullptr;
+#endif
     GPUPipelineState* _psTileMax = nullptr;
     GPUPipelineState* _psTileMaxVariable = nullptr;
     GPUPipelineState* _psNeighborMax = nullptr;
@@ -35,12 +37,14 @@ public:
     /// <param name="renderContext">The rendering context.</param>
     void RenderMotionVectors(RenderContext& renderContext);
 
+#if GPU_ENABLE_DEVELOPMENT
     /// <summary>
     /// Renders the motion vectors debug view.
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="frame">The source frame.</param>
     void RenderDebug(RenderContext& renderContext, GPUTextureView* frame);
+#endif
 
     /// <summary>
     /// Renders the motion blur. Swaps the input with output if rendering is performed. Does nothing if rendering is not performed.
@@ -56,7 +60,9 @@ private:
     void OnShaderReloading(Asset* obj)
     {
         _psCameraMotionVectors->ReleaseGPU();
+#if GPU_ENABLE_DEVELOPMENT
         _psMotionVectorsDebug->ReleaseGPU();
+#endif
         _psTileMax->ReleaseGPU();
         _psTileMaxVariable->ReleaseGPU();
         _psNeighborMax->ReleaseGPU();

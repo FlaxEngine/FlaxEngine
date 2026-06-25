@@ -87,7 +87,7 @@ void DeferredMaterialShader::Bind(BindParameters& params)
     const auto cache = params.Instanced ? &_cacheInstanced : &_cache;
     PipelineStateCache* psCache = cache->GetPS(view.Pass, useLightmap, useSkinning, usePerBoneMotionBlur);
     ASSERT(psCache);
-    GPUPipelineState* state = psCache->GetPS(cullMode, wireframe);
+    GPUPipelineState* state = psCache->GetPS(this, cullMode, wireframe);
 
     // Bind pipeline
     context->SetState(state);
@@ -165,7 +165,7 @@ bool DeferredMaterialShader::Load()
     psDesc.StencilEnable = false;
     psDesc.StencilPassOp = StencilOperation::Keep;
 
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     if (_shader->HasShader("PS_QuadOverdraw"))
     {
         // Quad Overdraw

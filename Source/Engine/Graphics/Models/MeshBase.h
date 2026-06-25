@@ -428,7 +428,7 @@ public:
         /// </summary>
         int8 SortOrder;
 
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
         float LightmapScale;
 #endif
 
@@ -437,7 +437,7 @@ public:
         {
             Platform::MemoryClear(this, sizeof(DrawInfo));
             ForcedLOD = -1;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
             LightmapScale = -1;
 #endif
         }

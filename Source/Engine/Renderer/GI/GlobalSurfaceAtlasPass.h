@@ -49,8 +49,10 @@ private:
     GPUPipelineState* _psDirectLighting0 = nullptr;
     GPUPipelineState* _psDirectLighting1 = nullptr;
     GPUPipelineState* _psIndirectLighting = nullptr;
+#if GPU_ENABLE_DEVELOPMENT
     GPUPipelineState* _psDebug0 = nullptr;
     GPUPipelineState* _psDebug1 = nullptr;
+#endif
     GPUConstantBuffer* _cb0 = nullptr;
     GPUShaderProgramCS* _csCullObjects;
 
@@ -85,6 +87,7 @@ public:
     /// <returns>True if failed to render (platform doesn't support it, out of video memory, disabled feature or effect is not ready), otherwise false.</returns>
     bool Render(RenderContext& renderContext, GPUContext* context, BindingData& result);
 
+#if GPU_ENABLE_DEVELOPMENT
     /// <summary>
     /// Renders the debug view.
     /// </summary>
@@ -92,6 +95,7 @@ public:
     /// <param name="context">The GPU context.</param>
     /// <param name="output">The output buffer.</param>
     void RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output);
+#endif
 
     // Gets the culling view position (xyz) and view distance (w)
     void GetCullingData(Vector4& cullingPosDistance) const;

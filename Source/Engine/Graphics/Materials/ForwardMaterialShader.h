@@ -18,7 +18,7 @@ private:
         PipelineStateCache DepthSkinned;
         PipelineStateCache Distortion;
         PipelineStateCache DistortionSkinned;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
         PipelineStateCache QuadOverdraw;
         PipelineStateCache QuadOverdrawSkinned;
 #endif
@@ -33,7 +33,7 @@ private:
                 return useSkinning ? &DistortionSkinned : &Distortion;
             case DrawPass::Forward:
                 return useSkinning ? &DefaultSkinned : &Default;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
             case DrawPass::QuadOverdraw:
                 return useSkinning ? &QuadOverdrawSkinned : &QuadOverdraw;
 #endif
@@ -50,6 +50,10 @@ private:
             DepthSkinned.Release();
             Distortion.Release();
             DistortionSkinned.Release();
+#if GPU_ENABLE_DEVELOPMENT
+            QuadOverdraw.Release();
+            QuadOverdrawSkinned.Release();
+#endif
         }
     };
 

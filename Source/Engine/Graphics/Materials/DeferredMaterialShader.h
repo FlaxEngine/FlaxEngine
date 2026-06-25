@@ -20,7 +20,7 @@ private:
         PipelineStateCache MotionVectors;
         PipelineStateCache MotionVectorsSkinned;
         PipelineStateCache MotionVectorsSkinnedPerBone;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
         PipelineStateCache QuadOverdraw;
         PipelineStateCache QuadOverdrawSkinned;
 #endif
@@ -37,7 +37,7 @@ private:
                 return useLightmap ? &DefaultLightmap : (useSkinning ? &DefaultSkinned : &Default);
             case DrawPass::MotionVectors:
                 return useSkinning ? (perBoneMotionBlur ? &MotionVectorsSkinnedPerBone : &MotionVectorsSkinned) : &MotionVectors;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
             case DrawPass::QuadOverdraw:
                 return useSkinning ? &QuadOverdrawSkinned : &QuadOverdraw;
 #endif
@@ -55,7 +55,7 @@ private:
             DepthSkinned.Release();
             MotionVectors.Release();
             MotionVectorsSkinned.Release();
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
             QuadOverdraw.Release();
             QuadOverdrawSkinned.Release();
 #endif

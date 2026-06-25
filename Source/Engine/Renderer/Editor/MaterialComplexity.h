@@ -2,7 +2,9 @@
 
 #pragma once
 
-#if USE_EDITOR
+#include "Engine/Graphics/Config.h"
+
+#if GPU_ENABLE_DEVELOPMENT
 
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Content/Assets/Material.h"

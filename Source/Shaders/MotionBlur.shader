@@ -69,6 +69,7 @@ float4 MotionVectorToColor(float2 v)
 
 // Pixel shader for motion vectors debug view
 META_PS(true, FEATURE_LEVEL_ES2)
+META_FLAG(DevelopmentOnly)
 float4 PS_MotionVectorsDebug(Quad_VS2PS input) : SV_Target
 {
 	float4 color = SAMPLE_RT(Input0, input.TexCoord);

@@ -155,7 +155,10 @@ bool ShadersCompilation::Compile(ShaderCompilationOptions& options)
 
     // Process shader source to collect metadata
     ShaderMeta meta;
-    if (ShaderProcessing::Parser::Process(options.TargetName, options.Source, options.SourceLength, options.Macros, options.Profile, &meta))
+    auto shaderFeatures = RenderTools::GetShaderProfileFeatures(options.Profile);
+    if (options.DevelopmentShaders)
+        shaderFeatures |= ShaderProfileFeatures::DevelopmentShaders;
+    if (ShaderProcessing::Parser::Process(options.TargetName, options.Source, options.SourceLength, options.Macros, options.Profile, shaderFeatures , &meta))
     {
         LOG(Warning, "Failed to parse source code.");
         return true;

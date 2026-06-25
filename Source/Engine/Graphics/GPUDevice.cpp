@@ -107,6 +107,10 @@ void GPUPipelineState::GetDebugName(DebugName& name) const
 
 bool GPUPipelineState::Init(const Description& desc)
 {
+#if GPU_ENABLE_DEVELOPMENT
+    CHECK_RETURN(desc.VS, true);
+#endif
+
     // Cache description in development builds
 #if !BUILD_RELEASE
     DebugDesc = desc;
@@ -128,7 +132,7 @@ bool GPUPipelineState::Init(const Description& desc)
     CHECK_STAGE(PS);
 #undef CHECK_STAGE
 
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     // Estimate somehow performance cost of this pipeline state for the content profiling
     const int32 textureLookupCost = 20;
     const int32 tessCost = 300;

@@ -91,7 +91,7 @@ void DeformableMaterialShader::Bind(BindParameters& params)
     }
     PipelineStateCache* psCache = _cache.GetPS(view.Pass);
     ASSERT(psCache);
-    GPUPipelineState* state = psCache->GetPS(cullMode, wireframe);
+    GPUPipelineState* state = psCache->GetPS(this, cullMode, wireframe);
 
     // Bind pipeline
     context->SetState(state);
@@ -123,7 +123,7 @@ bool DeformableMaterialShader::Load()
     }
 #endif
 
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     if (_shader->HasShader("PS_QuadOverdraw"))
     {
         // Quad Overdraw
@@ -178,11 +178,7 @@ bool DeformableMaterialShader::Load()
     psDesc.DepthClipEnable = false;
     psDesc.DepthWriteEnable = true;
     psDesc.DepthEnable = true;
-#if REVERSE_Z
-    psDesc.DepthFunc = ComparisonFunc::Greater;
-#else
-    psDesc.DepthFunc = ComparisonFunc::Less;
-#endif
+    psDesc.DepthFunc = ComparisonFunc::Default;
     psDesc.HS = nullptr;
     psDesc.DS = nullptr;
     _cache.Depth.Init(psDesc);

@@ -10,6 +10,8 @@
 // Additional options used in editor for lightmaps baking
 extern bool IsRunningRadiancePass;
 extern bool IsBakingLightmaps;
+#endif
+#if GPU_ENABLE_DEVELOPMENT
 extern bool EnableLightmapsUsage;
 #endif
 

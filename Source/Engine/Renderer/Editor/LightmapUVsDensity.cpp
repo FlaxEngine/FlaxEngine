@@ -1,8 +1,9 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-#if USE_EDITOR
-
 #include "LightmapUVsDensity.h"
+
+#if GPU_ENABLE_DEVELOPMENT
+
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Graphics/GPUDevice.h"

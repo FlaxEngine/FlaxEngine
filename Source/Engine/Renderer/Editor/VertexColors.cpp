@@ -1,8 +1,9 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-#if USE_EDITOR
-
 #include "VertexColors.h"
+
+#if GPU_ENABLE_DEVELOPMENT
+
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUContext.h"

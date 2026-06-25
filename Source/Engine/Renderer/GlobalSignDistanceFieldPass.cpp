@@ -704,8 +704,6 @@ bool GlobalSignDistanceFieldPass::setupResources()
     }
     if (!_shader->IsLoaded())
         return true;
-
-    const auto device = GPUDevice::Instance;
     const auto shader = _shader->GPU;
 
     // Check shader
@@ -723,25 +721,6 @@ bool GlobalSignDistanceFieldPass::setupResources()
     if (!_objectsBuffer)
         _objectsBuffer = New<DynamicStructuredBuffer>(0, (uint32)sizeof(ObjectRasterizeData), false, TEXT("GlobalSDF.ObjectsBuffer"));
 
-    // Create pipeline state
-    // TODO: don't compile those shaders in Release builds (and skip PSOs)
-    GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
-    if (!_psDebug)
-    {
-        _psDebug = device->CreatePipelineState();
-        psDesc.PS = shader->GetPS("PS_Debug");
-        if (_psDebug->Init(psDesc))
-            return true;
-    }
-    if (!_psOverdraw)
-    {
-        _psOverdraw = device->CreatePipelineState();
-        psDesc.PS = shader->GetPS("PS_Overdraw");
-        psDesc.BlendMode = BlendingMode::AlphaBlend;
-        if (_psOverdraw->Init(psDesc))
-            return true;
-    }
-
     return false;
 }
 
@@ -749,8 +728,10 @@ bool GlobalSignDistanceFieldPass::setupResources()
 
 void GlobalSignDistanceFieldPass::OnShaderReloading(Asset* obj)
 {
+#if GPU_ENABLE_DEVELOPMENT
     SAFE_DELETE_GPU_RESOURCE(_psDebug);
     SAFE_DELETE_GPU_RESOURCE(_psOverdraw);
+#endif
     _csRasterizeModel0 = nullptr;
     _csRasterizeModel1 = nullptr;
     _csRasterizeHeightfield = nullptr;
@@ -769,7 +750,10 @@ void GlobalSignDistanceFieldPass::Dispose()
 
     // Cleanup
     SAFE_DELETE(_objectsBuffer);
+#if GPU_ENABLE_DEVELOPMENT
     SAFE_DELETE_GPU_RESOURCE(_psDebug);
+    SAFE_DELETE_GPU_RESOURCE(_psOverdraw);
+#endif
     _shader = nullptr;
 }
 
@@ -1178,6 +1162,8 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     return false;
 }
 
+#if GPU_ENABLE_DEVELOPMENT
+
 void GlobalSignDistanceFieldPass::RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output)
 {
     BindingData bindingData;
@@ -1185,6 +1171,18 @@ void GlobalSignDistanceFieldPass::RenderDebug(RenderContext& renderContext, GPUC
     {
         context->Draw(output, renderContext.Buffers->GBuffer0);
         return;
+    }
+    if (!_psDebug)
+    {
+        // Lazy init PSOs
+        auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+        _psDebug = GPUDevice::Instance->CreatePipelineState();
+        psDesc.PS = _shader->GPU->GetPS("PS_Debug");
+        _psDebug->Init(psDesc);
+        _psOverdraw = GPUDevice::Instance->CreatePipelineState();
+        psDesc.PS = _shader->GPU->GetPS("PS_Overdraw");
+        psDesc.BlendMode = BlendingMode::AlphaBlend;
+        _psOverdraw->Init(psDesc);
     }
 
     PROFILE_GPU_CPU("Global SDF Debug");
@@ -1275,6 +1273,8 @@ void GlobalSignDistanceFieldPass::RenderDebug(RenderContext& renderContext, GPUC
         context->DrawFullscreenTriangle();
     }
 }
+
+#endif
 
 void GlobalSignDistanceFieldPass::GetCullingData(BoundingBox& bounds) const
 {

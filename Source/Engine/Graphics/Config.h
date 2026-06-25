@@ -91,6 +91,9 @@
 // True if use debug tools and flow for shaders
 #define GPU_ENABLE_SHADERS_DEBUG_LAYER (BUILD_DEBUG)
 
+// True if use development features for graphics (eg. debug view shaders)
+#define GPU_ENABLE_DEVELOPMENT (!BUILD_RELEASE || USE_EDITOR)
+
 // Maximum size of the texture that is supported by the engine (specific platforms can have lower limit)
 #define GPU_MAX_TEXTURE_SIZE 16384
 #define GPU_MAX_TEXTURE_MIP_LEVELS 15

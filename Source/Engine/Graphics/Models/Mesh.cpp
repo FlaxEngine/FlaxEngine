@@ -15,7 +15,7 @@
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Profiler/ProfilerMemory.h"
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
 #include "Engine/Renderer/GBufferPass.h"
 #endif
 
@@ -242,7 +242,7 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
     drawCall.Surface.PrevWorld = world;
     drawCall.PerInstanceRandom = perInstanceRandom;
     drawCall.StencilValue = stencilValue;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     const ViewMode viewMode = renderContext.View.Mode;
     if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
         GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);
@@ -309,7 +309,7 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.Surface.LODDitherFactor = (byte)(lodDitherFactor * 255);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
     drawCall.StencilValue = info.StencilValue;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     const ViewMode viewMode = renderContext.View.Mode;
     if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
         GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);
@@ -372,7 +372,7 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     drawCall.Surface.LODDitherFactor = (byte)(lodDitherFactor * 255);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
     drawCall.StencilValue = info.StencilValue;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     const ViewMode viewMode = renderContextBatch.GetMainContext().View.Mode;
     if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
         GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);

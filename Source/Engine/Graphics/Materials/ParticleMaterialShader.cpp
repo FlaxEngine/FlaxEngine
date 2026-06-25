@@ -160,7 +160,7 @@ void ParticleMaterialShader::Bind(BindParameters& params)
     }
     }
     ASSERT(psCache);
-    GPUPipelineState* state = psCache->GetPS(cullMode, wireframe);
+    GPUPipelineState* state = psCache->GetPS(this, cullMode, wireframe);
 
     // Bind constants
     if (_cb)
@@ -195,7 +195,7 @@ bool ParticleMaterialShader::Load()
     auto vsMesh = _shader->GetVS("VS_Model");
     auto vsRibbon = _shader->GetVS("VS_Ribbon");
 
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     if (_shader->HasShader("PS_QuadOverdraw"))
     {
         // Quad Overdraw

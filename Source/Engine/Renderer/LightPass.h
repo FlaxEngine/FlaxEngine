@@ -40,6 +40,7 @@ public:
     /// <param name="lightBuffer">The light accumulation buffer (input and output).</param>
     void RenderLights(RenderContextBatch& renderContextBatch, GPUTextureView* lightBuffer);
 
+#if GPU_ENABLE_DEVELOPMENT
     /// <summary>
     /// Renders the debug view.
     /// </summary>
@@ -47,6 +48,7 @@ public:
     /// <param name="context">The GPU context.</param>
     /// <param name="output">The output buffer.</param>
     void RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output);
+#endif
 
 private:
 #if COMPILE_WITH_DEV_ENV
@@ -65,7 +67,9 @@ private:
         invalidateResources();
     }
 #endif
+#if GPU_ENABLE_DEVELOPMENT
     void RenderDebugSphere(RenderContext& renderContext, GPUContext* context, const struct RenderLightData& light, float radius) const;
+#endif
 
 public:
     // [RendererPass]

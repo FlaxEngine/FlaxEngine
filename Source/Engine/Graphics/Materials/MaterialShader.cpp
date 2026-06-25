@@ -117,12 +117,21 @@ void IMaterial::BindParameters::BindDrawData()
     GPUContext->BindCB(2, PerDrawConstants);
 }
 
-GPUPipelineState* MaterialShader::PipelineStateCache::InitPS(CullMode mode, bool wireframe)
+GPUPipelineState* MaterialShader::PipelineStateCache::InitPS(const MaterialShader* owner, CullMode mode, bool wireframe)
 {
     Desc.CullMode = mode;
     Desc.Wireframe = wireframe;
     auto ps = GPUDevice::Instance->CreatePipelineState();
-    ps->Init(Desc);
+    if (ps->Init(Desc))
+    {
+#if GPU_ENABLE_RESOURCE_NAMING
+        LOG(Error, "Failed to initialize PSO for material '{}'", owner->GetShader()->GetName());
+#else
+        LOG(Error, "Failed to initialize PSO");
+#endif
+        SAFE_DELETE_GPU_RESOURCE(ps);
+        return nullptr;
+    }
     return ps;
 }
 

@@ -417,6 +417,13 @@ bool DeployDataStep::Perform(CookingData& data)
     data.AddRootEngineAsset(TEXT("Shaders/SSR"));
     data.AddRootEngineAsset(TEXT("Shaders/SDF"));
     data.AddRootEngineAsset(TEXT("Shaders/VolumetricFog"));
+    if (data.Configuration != BuildConfiguration::Release)
+    {
+        data.AddRootEngineAsset(TEXT("Shaders/Editor/LightmapUVsDensity"));
+        data.AddRootEngineAsset(TEXT("Shaders/Editor/MaterialComplexity"));
+        data.AddRootEngineAsset(TEXT("Shaders/Editor/QuadOverdraw"));
+        data.AddRootEngineAsset(TEXT("Shaders/Editor/VertexColors"));
+    }
     data.AddRootEngineAsset(TEXT("Engine/DefaultMaterial"));
     data.AddRootEngineAsset(TEXT("Engine/DefaultDeformableMaterial"));
     data.AddRootEngineAsset(TEXT("Engine/DefaultTerrainMaterial"));

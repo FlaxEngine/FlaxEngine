@@ -15,7 +15,7 @@ private:
         PipelineStateCache Default;
         PipelineStateCache DefaultLightmap;
         PipelineStateCache Depth;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
         PipelineStateCache QuadOverdraw;
 #endif
 
@@ -29,7 +29,7 @@ private:
             case DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas:
             case DrawPass::GlobalSurfaceAtlas:
                 return useLightmap ? &DefaultLightmap : &Default;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
             case DrawPass::QuadOverdraw:
                 return &QuadOverdraw;
 #endif
@@ -43,7 +43,7 @@ private:
             Default.Release();
             DefaultLightmap.Release();
             Depth.Release();
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
             QuadOverdraw.Release();
 #endif
         }

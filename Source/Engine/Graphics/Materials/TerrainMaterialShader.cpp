@@ -115,7 +115,7 @@ void TerrainMaterialShader::Bind(BindParameters& params)
     }
     const PipelineStateCache* psCache = _cache.GetPS(view.Pass, useLightmap);
     ASSERT(psCache);
-    GPUPipelineState* state = ((PipelineStateCache*)psCache)->GetPS(cullMode, wireframe);
+    GPUPipelineState* state = ((PipelineStateCache*)psCache)->GetPS(this, cullMode, wireframe);
 
     // Bind pipeline
     context->SetState(state);
@@ -174,7 +174,7 @@ bool TerrainMaterialShader::Load()
     psDesc.PS = _shader->GetPS("PS_GBuffer", 1);
     _cache.DefaultLightmap.Init(psDesc);
 
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     if (_shader->HasShader("PS_QuadOverdraw"))
     {
         // Quad Overdraw

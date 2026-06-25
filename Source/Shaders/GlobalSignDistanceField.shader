@@ -288,6 +288,7 @@ Texture3D<snorm float> GlobalSDFMip : register(t1);
 
 // Pixel shader for Global SDF debug drawing
 META_PS(true, FEATURE_LEVEL_SM5)
+META_FLAG(DevelopmentOnly)
 float4 PS_Debug(Quad_VS2PS input) : SV_Target
 {
 #if 0
@@ -402,6 +403,7 @@ float4 GetHeatmap(float value)
 
 // Pixel shader for Global SDF overdraw drawing
 META_PS(true, FEATURE_LEVEL_SM5)
+META_FLAG(DevelopmentOnly)
 float4 PS_Overdraw(Quad_VS2PS input) : SV_Target
 {
     // Use over-exposed diffuse as a base for scene identification

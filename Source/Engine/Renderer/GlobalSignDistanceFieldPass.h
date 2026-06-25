@@ -33,8 +33,10 @@ public:
 private:
     bool _supported = false;
     AssetReference<Shader> _shader;
+#if GPU_ENABLE_DEVELOPMENT
     GPUPipelineState* _psDebug = nullptr;
     GPUPipelineState* _psOverdraw = nullptr;
+#endif
     GPUShaderProgramCS* _csRasterizeModel0 = nullptr;
     GPUShaderProgramCS* _csRasterizeModel1 = nullptr;
     GPUShaderProgramCS* _csRasterizeHeightfield = nullptr;
@@ -68,6 +70,7 @@ public:
     /// <returns>True if failed to render (platform doesn't support it, out of video memory, disabled feature or effect is not ready), otherwise false.</returns>
     bool Render(RenderContext& renderContext, GPUContext* context, BindingData& result);
 
+#if GPU_ENABLE_DEVELOPMENT
     /// <summary>
     /// Renders the debug view.
     /// </summary>
@@ -75,6 +78,7 @@ public:
     /// <param name="context">The GPU context.</param>
     /// <param name="output">The output buffer.</param>
     void RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output);
+#endif
 
     void GetCullingData(BoundingBox& bounds) const;
 

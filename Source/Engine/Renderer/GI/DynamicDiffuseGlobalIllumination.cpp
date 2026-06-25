@@ -313,7 +313,7 @@ void DynamicDiffuseGlobalIlluminationPass::Dispose()
     _shader = nullptr;
     SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting[0]);
     SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting[1]);
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     _debugModel = nullptr;
     _debugMaterial = nullptr;
 #endif
@@ -833,7 +833,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         context->DrawFullscreenTriangle();
     }
 
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     // Probes debug drawing
     if (renderContext.View.Mode == ViewMode::GlobalIllumination && lightBuffer)
     {

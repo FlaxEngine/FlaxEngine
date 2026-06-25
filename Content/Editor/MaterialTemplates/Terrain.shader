@@ -471,6 +471,7 @@ void PS_Depth(PixelInput input)
 // Pixel Shader function for Quad Overdraw Pass (editor-only)
 [earlydepthstencil]
 META_PS(USE_EDITOR, FEATURE_LEVEL_SM5)
+META_FLAG(DevelopmentOnly)
 void PS_QuadOverdraw(float4 svPos : SV_Position, uint primId : SV_PrimitiveID)
 {
 	DoQuadOverdraw(svPos, primId);

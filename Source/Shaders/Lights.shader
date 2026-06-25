@@ -134,6 +134,7 @@ float4 PS_Sky(Model_VS2PS input) : SV_Target0
 
 // Pixel shader for light overlap rendering
 META_PS(true, FEATURE_LEVEL_ES2)
+META_FLAG(DevelopmentOnly)
 float4 PS_Overlap(Model_VS2PS input) : SV_Target0
 {
 	return Light.Radius.xxxx;
@@ -145,6 +146,7 @@ float4 PS_Overlap(Model_VS2PS input) : SV_Target0
 
 // Pixel shader for light complexity rendering
 META_PS(true, FEATURE_LEVEL_ES2)
+META_FLAG(DevelopmentOnly)
 float4 PS_Complexity(Quad_VS2PS input) : SV_Target0
 {
     // Make depth-based outlines
