@@ -638,13 +638,18 @@ namespace Flax.Build
                 Log.Verbose("No target selected for build");
                 return;
             }
-            if (!target.Platforms.Contains(buildData.Platform.Target) || !target.Architectures.Contains(buildData.Architecture))
-            {
-                Log.Verbose($"Referenced target {reference.Project.Name} doesn't support {buildData.Platform.Target} {buildData.Architecture}");
-                return;
-            }
             if (!buildContext.TryGetValue(target, out var referencedBuildData))
             {
+                if (!target.CanBuild(buildData.TargetOptions))
+                {
+                    Log.Verbose($"Referenced target {reference.Project.Name} doesn't build for {buildData.Platform.Target} {buildData.Architecture} {buildData.Configuration}");
+                    return;
+                }
+                if (!target.Platforms.Contains(buildData.Platform.Target) || !target.Architectures.Contains(buildData.Architecture))
+                {
+                    Log.Verbose($"Referenced target {reference.Project.Name} doesn't support {buildData.Platform.Target} {buildData.Architecture}");
+                    return;
+                }
                 Log.Info($"Building referenced target {reference.Project.Name}");
 
                 // Build target
@@ -706,6 +711,11 @@ namespace Flax.Build
             }
             if (!buildContext.TryGetValue(target, out var referencedBuildData))
             {
+                if (!target.CanBuild(buildData.TargetOptions))
+                {
+                    Log.Verbose($"Referenced target {reference.Project.Name} doesn't build for {buildData.Platform.Target} {buildData.Architecture} {buildData.Configuration}");
+                    return;
+                }
                 Log.Info($"Building referenced target {reference.Project.Name}");
 
                 // Build target

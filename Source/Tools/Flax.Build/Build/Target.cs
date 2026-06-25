@@ -208,6 +208,16 @@ namespace Flax.Build
         }
 
         /// <summary>
+        /// Checks if this target can be built for a given build options. Can be used to skip compiling for unsupported platforms or unused configurations (eg. development-only plugins).
+        /// </summary>
+        /// <param name="options">The build options.</param>
+        /// <returns>True if can build target, otherwise false.</returns>
+        public virtual bool CanBuild(BuildOptions options)
+        {
+            return true;
+        }
+
+        /// <summary>
         /// Gets the output file path.
         /// </summary>
         /// <param name="options">The build options.</param>
