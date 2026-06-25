@@ -118,6 +118,13 @@ public:
 
         // The minimum size in pixels of objects to cast shadows. Improves performance by skipping too small objects (eg. sub-pixel) from rendering into shadow maps.
         API_FIELD() static float MinObjectPixelSize;
+
+#if COMPILE_WITH_PROFILER
+        /// <summary>
+        /// Dumps active shadow projections info to the log (the next frame). Can be used to inspect what lights are casting shadows (for optimization).
+        /// </summary>
+        API_FUNCTION(Attributes="DebugCommand") static void Dump();
+#endif
     };
 
     // Motion Vectors rendering configuration.

@@ -12,6 +12,7 @@
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/Units.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Level/Actors/PointLight.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Scripting/Enums.h"
 #include "Engine/Utilities/RectPack.h"
@@ -200,6 +201,15 @@ struct ShadowAtlasLight
     Float4 CascadeSplits;
     ShadowAtlasLightTile Tiles[SHADOWS_MAX_TILES];
     ShadowAtlasLightCache Cache;
+#if COMPILE_WITH_PROFILER
+    enum Types
+    {
+        Point,
+        Spot,
+        Directional,
+    } Type;
+    float CachedUpdateRateInv[SHADOWS_MAX_TILES];
+#endif
 
     ShadowAtlasLight()
     {
@@ -466,6 +476,114 @@ void ShadowAtlasLightTile::FreeStatic(ShadowsCustomBuffer* buffer)
         StaticRectTile = nullptr;
     }
 }
+
+#if COMPILE_WITH_PROFILER
+
+#include "Engine/Core/Utilities.h"
+#include "Engine/Scripting/Scripting.h"
+#include "Engine/Level/Actors/Light.h"
+
+uint64 DumpShadowsFrame = MAX_uint64;
+
+void Graphics::Shadows::Dump()
+{
+    DumpShadowsFrame = Engine::FrameCount + 1;
+}
+
+void UpdateDumpShadows(ShadowsCustomBuffer* shadows = nullptr)
+{
+    if (DumpShadowsFrame != Engine::FrameCount)
+        return;
+    if (!shadows)
+    {
+        LOG(Info, "No active shadows");
+        return;
+    }
+
+    LOG(Info, "Shadows atlas:");
+    if (shadows->Atlas.Width > 0)
+    {
+        float usage = (float)shadows->AtlasPixelsUsed / (shadows->Atlas.Width * shadows->Atlas.Height);
+        LOG(Info, "  > Dynamic {}x{}, {}% used, {} tiles", shadows->Atlas.Width, shadows->Atlas.Height, (int32)(usage * 100), shadows->Atlas.Count());
+    }
+    if (shadows->StaticAtlas.Width > 0)
+    {
+        float usage = (float)shadows->StaticAtlasPixelsUsed / (shadows->StaticAtlas.Width * shadows->StaticAtlas.Height);
+        LOG(Info, "  > Static {}x{}, {}% used, {} tiles", shadows->Atlas.Width, shadows->Atlas.Height, (int32)(usage * 100), shadows->StaticAtlas.Count());
+    }
+    LOG(Info, "  > Buffer size: {}", Utilities::BytesToText(shadows->ShadowsBuffer.Data.Count()));
+    LOG(Info, "  > Lights: {}", shadows->Lights.Count());
+
+    LOG(Info, "Shadows:");
+    for (const auto& e : shadows->Lights)
+    {
+        auto& atlasLight = e.Value;
+        const Char* type;
+        switch (atlasLight.Type)
+        {
+        case ShadowAtlasLight::Point:
+            type = TEXT("Point");
+            break;
+        case ShadowAtlasLight::Spot:
+            type = TEXT("Spot");
+            break;
+        case ShadowAtlasLight::Directional:
+            type = TEXT("Directional");
+            break;
+        }
+        auto lightActor = Scripting::TryFindObject<Light>(e.Key);
+        if (lightActor)
+            LOG(Info, "  > {} Light, '{}', {}", type, lightActor->GetNamePath(), e.Key);
+        else
+            LOG(Info, "  > {} Light, {}", type, e.Key);
+        LOG(Info, "    Projections: {}", atlasLight.TilesCount);
+        LOG(Info, "    Resolution: {}", atlasLight.Resolution);
+        if (atlasLight.CachedUpdateRateInv[0] > 0)
+        {
+            if (atlasLight.Type == ShadowAtlasLight::Directional)
+            {
+                String updateRates;
+                for (int32 i = 0; i < atlasLight.TilesCount; i++)
+                {
+                    if (i != 0)
+                        updateRates += TEXT(", ");
+                    updateRates += StringUtils::ToString(1.0f / atlasLight.CachedUpdateRateInv[i]);
+                }
+                LOG(Info, "    Cascade Update Rates: {}", updateRates);
+            }
+            else
+                LOG(Info, "    Update Rate: {}", 1.0f / atlasLight.CachedUpdateRateInv[0]);
+        }
+
+        if (atlasLight.StaticState != ShadowAtlasLight::Unused)
+        {
+            const Char* staticState;
+            switch (atlasLight.StaticState)
+            {
+            case ShadowAtlasLight::WaitForGeometryCheck:
+                staticState = TEXT("WaitForGeometryCheck");
+                break;
+            case ShadowAtlasLight::UpdateStaticShadow:
+                staticState = TEXT("UpdateStaticShadow");
+                break;
+            case ShadowAtlasLight::CopyStaticShadow:
+                staticState = TEXT("CopyStaticShadow");
+                break;
+            case ShadowAtlasLight::NoStaticGeometry:
+                staticState = TEXT("NoStaticGeometry");
+                break;
+            case ShadowAtlasLight::FailedToInsertTiles:
+                staticState = TEXT("FailedToInsertTiles");
+                break;
+            }
+            LOG(Info, "    Static State: {}", staticState);
+            LOG(Info, "    Static Resolution: {}", atlasLight.StaticResolution);
+            LOG(Info, "    Has Static Geometry: {}", atlasLight.HasStaticGeometry());
+        }
+    }
+}
+
+#endif
 
 String ShadowsPass::ToString() const
 {
@@ -824,6 +942,9 @@ bool ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     // Calculate update rate based on the distance to the view
     bool freezeUpdate;
     const float updateRateInv = atlasLight.CalculateUpdateRateInv(light, dstLightToView, freezeUpdate);
+#if COMPILE_WITH_PROFILER
+    atlasLight.CachedUpdateRateInv[0] = updateRateInv;
+#endif
     float& framesToUpdate = atlasLight.Tiles[0].FramesToUpdate; // Use the first tile for all local light projections to be in sync
     if ((framesToUpdate > 0.0f || freezeUpdate) && atlasLight.Cache.DynamicValid && !atlasLight.HasStaticShadowContext)
     {
@@ -852,6 +973,9 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
 {
     SetupLight(shadows, renderContext, renderContextBatch, (RenderLightData&)light, atlasLight);
 
+#if COMPILE_WITH_PROFILER
+    atlasLight.Type = ShadowAtlasLight::Directional;
+#endif
     const int32 csmCount = atlasLight.TilesCount;
     const auto shadowMapsSize = (float)atlasLight.Resolution;
     atlasLight.BlendCSM = Graphics::AllowCSMBlending;
@@ -937,6 +1061,9 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
         float dstToCascade = cascadeIndex == 0 ? 0 : atlasLight.CascadeSplits.Raw[cascadeIndex - 1];
         bool freezeUpdate;
         const float updateRateInv = atlasLight.CalculateUpdateRateInv(light, dstToCascade, freezeUpdate, cascadeIndex != 0);
+#if COMPILE_WITH_PROFILER
+        atlasLight.CachedUpdateRateInv[cascadeIndex] = updateRateInv;
+#endif
         auto& tile = atlasLight.Tiles[cascadeIndex];
         if ((tile.FramesToUpdate > 0.0f || freezeUpdate) && atlasLight.Cache.DynamicValid)
         {
@@ -1087,6 +1214,9 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     Matrix borderScaleMatrix;
     Matrix::Scaling(borderScale, borderScale, 1.0f, borderScaleMatrix);
 
+#if COMPILE_WITH_PROFILER
+    atlasLight.Type = ShadowAtlasLight::Point;
+#endif
     atlasLight.ContextIndex = renderContextBatch.Contexts.Count();
     atlasLight.ContextCount = atlasLight.HasStaticShadowContext ? 12 : 6;
     renderContextBatch.Contexts.AddDefault(atlasLight.ContextCount);
@@ -1123,6 +1253,9 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     if (SetupLight(shadows, renderContext, renderContextBatch, (RenderLocalLightData&)light, atlasLight))
         return;
 
+#if COMPILE_WITH_PROFILER
+    atlasLight.Type = ShadowAtlasLight::Spot;
+#endif
     atlasLight.ContextIndex = renderContextBatch.Contexts.Count();
     atlasLight.ContextCount = atlasLight.HasStaticShadowContext ? 2 : 1;
     renderContextBatch.Contexts.AddDefault(atlasLight.ContextCount);
@@ -1223,6 +1356,9 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
             if (old->LastFrameUsed == currentFrame)
                 old->LastFrameUsed = 0;
         }
+#if COMPILE_WITH_PROFILER
+        UpdateDumpShadows();
+#endif
         return;
     }
 
@@ -1535,6 +1671,10 @@ RETRY_ATLAS_SETUP:
     GPUContext* context = GPUDevice::Instance->GetMainContext();
     shadows.ShadowsBuffer.Flush(context);
     shadows.ShadowsBufferView = shadows.ShadowsBuffer.GetBuffer()->View();
+
+#if COMPILE_WITH_PROFILER
+    UpdateDumpShadows(&shadows);
+#endif
 }
 
 void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
