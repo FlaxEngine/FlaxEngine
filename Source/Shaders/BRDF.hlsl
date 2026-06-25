@@ -12,19 +12,18 @@ float3 Diffuse_Lambert(float3 diffuseColor)
 
 // GGX / Trowbridge-Reitz
 // [Walter et al. 2007, "Microfacet models for refraction through rough surfaces"]
-float D_GGX(float roughness, float NoH)
+float D_GGX(float roughnessSq, float NoH)
 {
-    float a = roughness * roughness;
-    float a2 = a * a;
+    float a2 = roughnessSq * roughnessSq;
     float d = (NoH * a2 - NoH) * NoH + 1;
     return a2 / (PI * d * d);
 }
 
 // Tuned to match behavior of V_Smith
 // [Schlick 1994, "An Inexpensive BRDF Model for Physically-Based Rendering"]
-float V_Schlick(float roughness, float NoV, float NoL)
+float V_Schlick(float roughnessSq, float NoV, float NoL)
 {
-    float k = Square(roughness) * 0.5;
+    float k = roughnessSq * 0.5;
     float visSchlickV = NoV * (1 - k) + k;
     float visSchlickL = NoL * (1 - k) + k;
     return 0.25 / (visSchlickV * visSchlickL);
@@ -32,10 +31,9 @@ float V_Schlick(float roughness, float NoV, float NoL)
 
 // Smith term for GGX
 // [Smith 1967, "Geometrical shadowing of a random rough surface"]
-float V_Smith(float roughness, float NoV, float NoL)
+float V_Smith(float roughnessSq, float NoV, float NoL)
 {
-    float a = Square(roughness);
-    float a2 = a * a;
+    float a2 = roughnessSq * roughnessSq;
     float visSmithV = NoV + sqrt(NoV * (NoV - NoV * a2) + a2);
     float visSmithL = NoL + sqrt(NoL * (NoL - NoL * a2) + a2);
     return rcp(visSmithV * visSmithL);
@@ -43,11 +41,10 @@ float V_Smith(float roughness, float NoV, float NoL)
 
 // Appoximation of joint Smith term for GGX
 // [Heitz 2014, "Understanding the Masking-Shadowing Function in Microfacet-Based BRDFs"]
-float V_SmithJointApprox(float roughness, float NoV, float NoL)
+float V_SmithJointApprox(float roughnessSq, float NoV, float NoL)
 {
-    float a = Square(roughness);
-    float visSmithV = NoL * (NoV * (1 - a) + a);
-    float visSmithL = NoV * (NoL * (1 - a) + a);
+    float visSmithV = NoL * (NoV * (1 - roughnessSq) + roughnessSq);
+    float visSmithL = NoV * (NoL * (1 - roughnessSq) + roughnessSq);
     return 0.5 * rcp(visSmithV + visSmithL);
 }
 

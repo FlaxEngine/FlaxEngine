@@ -33,9 +33,10 @@ LightSample StandardShading(GBufferSample gBuffer, float energy, float3 L, float
     lighting.Specular = 0;
 #else
     float3 specularColor = GetSpecularColor(gBuffer);
+    float roughnessSq = Square(gBuffer.Roughness);
     float3 F = F_Schlick(specularColor, VoH);
-    float D = D_GGX(gBuffer.Roughness, NoH) * energy;
-    float Vis = V_SmithJointApprox(gBuffer.Roughness, NoV, NoL);
+    float D = D_GGX(roughnessSq, NoH) * energy;
+    float Vis = V_SmithJointApprox(roughnessSq, NoV, NoL);
     // TODO: apply energy compensation to specular (1.0 + specularColor * (1.0 / PreIntegratedGF.y - 1.0))
     lighting.Specular = (D * Vis) * F;
 #endif
@@ -67,7 +68,7 @@ LightSample FoliageShading(GBufferSample gBuffer, float energy, float3 L, float3
     float3 subsurfaceColor = gBuffer.CustomData.rgb;
     float wrapNoL = saturate((-dot(N, L) + 0.5f) / 2.25);
     float VoL = dot(V, L);
-    float scatter = D_GGX(0.36, saturate(-VoL));
+    float scatter = D_GGX(Square(0.36), saturate(-VoL));
     lighting.Transmission = subsurfaceColor * (wrapNoL * scatter);
 #endif
     return lighting;
