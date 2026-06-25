@@ -188,7 +188,7 @@ void RenderLightBuffer(const SceneRenderTask* task, GPUContext* context, RenderC
     auto tempBuffer = RenderTargetPool::Get(tempDesc);
     RENDER_TARGET_POOL_SET_NAME(tempBuffer, "TempBuffer");
     EyeAdaptationPass::Instance()->Render(renderContext, lightBuffer);
-    PostProcessingPass::Instance()->Render(renderContext, lightBuffer, tempBuffer, colorGradingLUT);
+    PostProcessingPass::Instance()->Render(renderContext, lightBuffer, tempBuffer->View(), Viewport(tempBuffer->Size()), colorGradingLUT);
     context->ResetRenderTarget();
     if (renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing)
     {
@@ -790,7 +790,21 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
     // Post-processing
     EyeAdaptationPass::Instance()->Render(renderContext, frameBuffer);
-    PostProcessingPass::Instance()->Render(renderContext, frameBuffer, tempBuffer, colorGradingLUT);
+    if (!useUpscaling &&
+        !renderContext.List->HasAnyPostFx(renderContext, PostProcessEffectLocation::AfterAntiAliasingPass, MaterialPostFxLocation::AfterAntiAliasingPass) &&
+        !renderContext.List->HasAnyPostFx(renderContext, PostProcessEffectLocation::Default, MaterialPostFxLocation::AfterPostProcessingPass) &&
+        !renderContext.List->HasAnyPostFx(renderContext, MaterialPostFxLocation::AfterCustomPostEffects) &&
+        renderContext.View.Mode != ViewMode::MotionVectors
+        )
+    {
+        // PostFx -> Back Buffer
+        GPUTextureView* outputView = task->GetOutputView();
+        PostProcessingPass::Instance()->Render(renderContext, frameBuffer, outputView, outputViewport, colorGradingLUT);
+        RenderTargetPool::Release(tempBuffer);
+        RenderTargetPool::Release(frameBuffer);
+        return;
+    }
+    PostProcessingPass::Instance()->Render(renderContext, frameBuffer, tempBuffer->View(), Viewport(tempBuffer->Size()), colorGradingLUT);
     Swap(frameBuffer, tempBuffer);
 
     // Cleanup

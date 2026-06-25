@@ -3,6 +3,7 @@
 #pragma once
 
 #include "RendererPass.h"
+#include "Engine/Core/Math/Viewport.h"
 #include "Engine/Graphics/GPUPipelineStatePermutations.h"
 
 /// <summary>
@@ -30,8 +31,9 @@ public:
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="input">Target with rendered HDR frame to post process</param>
     /// <param name="output">Output frame</param>
+    /// <param name="outputViewport">Output viewport</param>
     /// <param name="colorGradingLUT">The prebaked LUT for color grading and tonemapping.</param>
-    void Render(RenderContext& renderContext, GPUTexture* input, GPUTexture* output, GPUTexture* colorGradingLUT);
+    void Render(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output, const Viewport& outputViewport, GPUTexture* colorGradingLUT);
 
 private:
 #if COMPILE_WITH_DEV_ENV

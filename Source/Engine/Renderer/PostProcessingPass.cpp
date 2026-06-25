@@ -249,7 +249,7 @@ int32 CalculateBloomMipCount(int32 width, int32 height)
     return mipCount;
 }
 
-void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input, GPUTexture* output, GPUTexture* colorGradingLUT)
+void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output, const Viewport& outputViewport, GPUTexture* colorGradingLUT)
 {
     PROFILE_GPU_CPU("Post Processing");
     auto device = GPUDevice::Instance;
@@ -279,8 +279,8 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     if (!(useBloom || useToneMapping || useCameraArtifacts || colorGradingLUT) || checkIfSkipPass() || w8 <= 1 || h8 <= 1)
     {
         // Resources are missing. Do not perform rendering. Just copy raw frame
-        context->SetViewportAndScissors((float)output->Width(), (float)output->Height());
-        context->SetRenderTarget(*output);
+        context->SetViewportAndScissors(outputViewport);
+        context->SetRenderTarget(output);
         context->Draw(input);
         return;
     }
@@ -304,7 +304,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
         data.GrainAmount = settings.CameraArtifacts.GrainAmount;
         data.GrainParticleSize = Math::Max(0.0001f, settings.CameraArtifacts.GrainParticleSize);
         data.GrainTime = time * 0.5f * settings.CameraArtifacts.GrainSpeed;
-        data.ChromaticDistortion = Math::Saturate(settings.CameraArtifacts.ChromaticDistortion * (float)output->Width() / 1080.0f); // Rescale based on reference 1080p resolution
+        data.ChromaticDistortion = Math::Saturate(settings.CameraArtifacts.ChromaticDistortion * outputViewport.Width / 1080.0f); // Rescale based on reference 1080p resolution
         data.ScreenFadeColor = settings.CameraArtifacts.ScreenFadeColor;
     }
     else
@@ -363,7 +363,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
         data.LensFlareIntensity = 0;
         data.LensDirtIntensity = 0;
     }
-    data.QuantizationError = RenderTools::GetColorQuantizationError(output->Format());
+    data.QuantizationError = RenderTools::GetColorQuantizationError(output->GetFormat());
     data.PostExposure = Math::Exp2(settings.EyeAdaptation.PostExposure);
     data.InputSize = Float2(static_cast<float>(w1), static_cast<float>(h1));
     data.InvInputSize = Float2(1.0f / static_cast<float>(w1), 1.0f / static_cast<float>(h1));
@@ -384,7 +384,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     ////////////////////////////////////////////////////////////////////////////////////
     // Bloom
 
-    auto tempDesc = GPUTextureDescription::New2D(w2, h2, bloomMipCount, output->Format(), GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews);
+    auto tempDesc = GPUTextureDescription::New2D(w2, h2, bloomMipCount, output->GetFormat(), GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews);
     GPUTexture* bloomBuffer1 = nullptr, *bloomBuffer2 = nullptr;
     if (useBloom || useLensFlares)
     {
@@ -566,10 +566,9 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
 
     // Composite final frame during single pass (done in full resolution)
     {
-        auto rt = output->View();
         auto rtAction = GPUDrawPassAction::Store;
-        GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
-        context->SetViewportAndScissors((float)output->Width(), (float)output->Height());
+        GPUDrawPass drawPass(context, ToSpan(&output, 1), ToSpan(&rtAction, 1));
+        context->SetViewportAndScissors(outputViewport);
         context->SetState(_psComposite.Get(compositePermutationIndex));
         context->DrawFullscreenTriangle();
     }

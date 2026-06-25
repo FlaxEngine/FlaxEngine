@@ -1000,7 +1000,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 return true;
             memUsage += surfaceAtlasData.ChunksBuffer->GetMemoryUsage();
         }
-        surfaceAtlasData.MemoryUsage = memUsage;
+        surfaceAtlasData.MemoryUsage = (uint32)memUsage;
         LOG(Info, "Global Surface Atlas resolution: {0}, memory usage: {1} MB", resolution, memUsage / (1024 * 1024));
 
         context->Clear(surfaceAtlasData.AtlasLighting->View(), Color::Transparent);
@@ -1786,7 +1786,7 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         context->ResetRenderTarget();
         auto colorGradingLUT = ColorGradingPass::Instance()->RenderLUT(renderContext);
         EyeAdaptationPass::Instance()->Render(renderContext, tempBuffer);
-        PostProcessingPass::Instance()->Render(renderContext, tempBuffer, output, colorGradingLUT);
+        PostProcessingPass::Instance()->Render(renderContext, tempBuffer, output->View(), Viewport(output->Size()), colorGradingLUT);
         RenderTargetPool::Release(tempBuffer);
         context->ResetRenderTarget();
 
