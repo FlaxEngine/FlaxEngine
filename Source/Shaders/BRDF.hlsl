@@ -20,9 +20,9 @@ float D_GGX(float roughness, float NoH)
     return a2 / (PI * d * d);
 }
 
-// Tuned to match behavior of Vis_Smith
+// Tuned to match behavior of V_Smith
 // [Schlick 1994, "An Inexpensive BRDF Model for Physically-Based Rendering"]
-float Vis_Schlick(float roughness, float NoV, float NoL)
+float V_Schlick(float roughness, float NoV, float NoL)
 {
     float k = Square(roughness) * 0.5;
     float visSchlickV = NoV * (1 - k) + k;
@@ -32,7 +32,7 @@ float Vis_Schlick(float roughness, float NoV, float NoL)
 
 // Smith term for GGX
 // [Smith 1967, "Geometrical shadowing of a random rough surface"]
-float Vis_Smith(float roughness, float NoV, float NoL)
+float V_Smith(float roughness, float NoV, float NoL)
 {
     float a = Square(roughness);
     float a2 = a * a;
@@ -43,7 +43,7 @@ float Vis_Smith(float roughness, float NoV, float NoL)
 
 // Appoximation of joint Smith term for GGX
 // [Heitz 2014, "Understanding the Masking-Shadowing Function in Microfacet-Based BRDFs"]
-float Vis_SmithJointApprox(float roughness, float NoV, float NoL)
+float V_SmithJointApprox(float roughness, float NoV, float NoL)
 {
     float a = Square(roughness);
     float visSmithV = NoL * (NoV * (1 - a) + a);

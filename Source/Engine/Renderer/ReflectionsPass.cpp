@@ -61,12 +61,12 @@ namespace PreIntegratedGF
         return Float3(sinTheta * cosf(phi), sinTheta * sinf(phi), cosTheta);
 	}
 
-    float Vis_SmithJointApprox(float roughness, float NoV, float NoL)
+    float V_SmithJointApprox(float roughness, float NoV, float NoL)
 	{
         float a = roughness * roughness;
-        float Vis_SmithV = NoL * (NoV * (1 - a) + a);
-        float Vis_SmithL = NoV * (NoL * (1 - a) + a);
-		return 0.5f / (Vis_SmithV + Vis_SmithL);
+        float V_SmithV = NoL * (NoV * (1 - a) + a);
+        float V_SmithL = NoV * (NoL * (1 - a) + a);
+		return 0.5f / (V_SmithV + V_SmithL);
 	}
 
     Float2 IntegrateBRDF(float roughness, float NoV)
@@ -87,12 +87,12 @@ namespace PreIntegratedGF
 
 			if (NoL > 0)
 			{
-                float Vis = Vis_SmithJointApprox(roughness, NoV, NoL);
-                float NoL_Vis_PDF = NoL * Vis * (4 * VoH / NoH);
+                float Vis = V_SmithJointApprox(roughness, NoV, NoL);
+                float NoL_V_PDF = NoL * Vis * (4 * VoH / NoH);
 
                 float Fc = powf(1 - VoH, 5);
-				a += NoL_Vis_PDF * (1 - Fc);
-				b += NoL_Vis_PDF * Fc;
+				a += NoL_V_PDF * (1 - Fc);
+				b += NoL_V_PDF * Fc;
 			}
 		}
 		return Float2(a, b) / (float)NumSamples;

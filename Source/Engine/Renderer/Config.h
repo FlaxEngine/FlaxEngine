@@ -102,7 +102,7 @@ GPU_CB_STRUCT(ShaderEnvProbeData {
     Float4 Data2;
     });
 
-// Minimum roughness value used for shading (prevent 0 roughness which causes NaNs in Vis_SmithJointApprox)
+// Minimum roughness value used for shading (prevent 0 roughness which causes NaNs in V_SmithJointApprox)
 #define MIN_ROUGHNESS 0.04f
 
 // Maximum amount of directional light cascades (using CSM technique)
