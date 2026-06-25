@@ -367,6 +367,10 @@ public:
             auto& cascade = Cascades[cascadeIndex];
             cascade.Index = cascadeIndex;
             cascade.Dirty = !useCache || RenderTools::ShouldUpdateCascade(FrameIndex, cascadeIndex, cascadesCount, maxCascadeUpdatesPerFrame, updateEveryFrame);
+#if COMPILE_WITH_PROFILER
+            extern uint64 DumpGIFrame;
+            cascade.Dirty |= DumpGIFrame == Engine::FrameCount; // Force update of all cascades when dumping info (to collect dynamic objects)
+#endif
             cascade.DirtyDynamicOnly = useCache && !cascade.Dirty && cascade.DynamicDirtyChunks.HasItems() && cascade.VoxelSize > 0.0f && !DebugOverdraw && GLOBAL_SDF_DYNAMIC_UPDATES;
             cascade.Draw = cascade.Dirty || cascade.DirtyDynamicOnly;
             if (!cascade.Draw)
@@ -1271,6 +1275,59 @@ void GlobalSignDistanceFieldPass::RenderDebug(RenderContext& renderContext, GPUC
         context->BindSR(1, bindingData.TextureMip ? bindingData.TextureMip->ViewVolume() : nullptr);
         context->SetState(_psDebug);
         context->DrawFullscreenTriangle();
+    }
+}
+
+#endif
+
+#if COMPILE_WITH_PROFILER
+
+#include "Engine/Core/Utilities.h"
+#include "Engine/Engine/Units.h"
+
+extern uint64 DumpGIFrame;
+
+void GlobalSignDistanceFieldPass::Dump(const RenderBuffers* buffers) const
+{
+    auto sdfDataPtr = buffers->FindCustomBuffer<GlobalSignDistanceFieldCustomBuffer>(TEXT("GlobalSignDistanceField"));
+    if (!sdfDataPtr)
+        return;
+    auto& sdfData = *sdfDataPtr;
+    LOG(Info, "Global SDF:");
+    LOG(Info, "  > Cascades: {}, Resolution: {}", sdfData.Cascades.Count(), sdfData.Resolution);
+    uint32 memoryUsage = sdfData.Texture->GetMemoryUsage() + sdfData.TextureMip->GetMemoryUsage();
+    if (_objectsBuffer && _objectsBuffer->GetBuffer())
+        memoryUsage += _objectsBuffer->GetBuffer()->GetSize();
+    LOG(Info, "  > Memory Usage: {}", Utilities::BytesToText(memoryUsage));
+    for (int32 i = 0; i < sdfData.Cascades.Count(); i++)
+    {
+        const auto& cascade = sdfData.Cascades[i];
+        LOG(Info, "  > Cascade {}, range: {}m", i, UNITS_TO_METERS(cascade.Extent));
+        if (cascade.VoxelSize < METERS_TO_UNITS(1))
+            LOG(Info, "    > Voxel size: {} cm", Utilities::RoundTo2DecimalPlaces(UNITS_TO_METERS(cascade.VoxelSize) * 100));
+        else
+            LOG(Info, "    > Voxel size: {} m", Utilities::RoundTo2DecimalPlaces(UNITS_TO_METERS(cascade.VoxelSize)));
+        LOG(Info, "    > Chunks: {} ({} static, {} dynamic)", cascade.NonEmptyChunks.Count(), cascade.StaticChunks.Count(), cascade.NonEmptyChunks.Count() - cascade.StaticChunks.Count());
+        LOG(Info, "    > Objects: {}", cascade.RasterizeObjects.Count());
+    }
+
+    // Dynamic objects cause frequent chunk updates so list them when profiling content
+    HashSet<Actor*> dynamicObjects;
+    for (const auto& cascade : sdfData.Cascades)
+    {
+        for (const auto& object : cascade.RasterizeObjects)
+        {
+            if (!GLOBAL_SDF_ACTOR_IS_STATIC(object.Actor))
+                dynamicObjects.Add(object.Actor);
+        }
+    }
+    LOG(Info, "  > Dynamic objects: {}", dynamicObjects.Count());
+    if (dynamicObjects.HasItems())
+    {
+        for (auto& e : dynamicObjects)
+        {
+            LOG(Info, "    > '{}'", e.Item->GetNamePath());
+        }
     }
 }
 

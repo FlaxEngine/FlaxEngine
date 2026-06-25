@@ -97,6 +97,11 @@ public:
     void RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output);
 #endif
 
+#if COMPILE_WITH_PROFILER
+    // Dumps the info to the log.
+    static void Dump(const RenderBuffers* buffers);
+#endif
+
     // Gets the culling view position (xyz) and view distance (w)
     void GetCullingData(Vector4& cullingPosDistance) const;
 

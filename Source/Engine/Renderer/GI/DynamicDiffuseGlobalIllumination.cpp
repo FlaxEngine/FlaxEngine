@@ -13,6 +13,7 @@
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/Units.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Core/Utilities.h"
 #include "Engine/Debug/DebugDraw.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
@@ -121,6 +122,7 @@ public:
     int32 ProbeRaysCount = 0;
     int32 ProbesCountTotal = 0;
     int32 FramesSinceClear = 0;
+    uint32 MemoryUsage = 0;
     Int3 ProbeCounts = Int3::Zero;
     GPUTexture* ProbesTrace = nullptr; // Probes ray tracing: (RGB: hit radiance, A: hit distance)
     GPUTexture* ProbesData = nullptr; // Probes data: (RGB: probe-space offset, A: state/data)
@@ -217,6 +219,29 @@ float Graphics::GI::GetConvergence(const RenderBuffers* buffers)
     }
     return result;
 }
+
+#if COMPILE_WITH_PROFILER
+
+uint64 DumpGIFrame = MAX_uint64;
+
+void Graphics::GI::Dump()
+{
+    DumpGIFrame = Engine::FrameCount + 1;
+}
+
+void UpdateGIDump(const RenderBuffers* buffers, DDGICustomBuffer& ddgiData)
+{
+    if (DumpGIFrame != Engine::FrameCount)
+        return;
+
+    LOG(Info, "DDGI:");
+    LOG(Info, "  > Cascades: {}, Probes: {}, Ray Limit: {}", ddgiData.CascadesCount, ddgiData.ProbesCountTotal, ddgiData.ProbeRaysCount);
+    LOG(Info, "  > Memory Usage: {}", Utilities::BytesToText(ddgiData.MemoryUsage));
+    GlobalSurfaceAtlasPass::Dump(buffers);
+    GlobalSignDistanceFieldPass::Instance()->Dump(buffers);
+}
+
+#endif
 
 String DynamicDiffuseGlobalIlluminationPass::ToString() const
 {
@@ -469,6 +494,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         INIT_BUFFER(StatsRead, "DDGI.StatsRead");
 #endif
 #undef INIT_BUFFER
+        ddgiData.MemoryUsage = memUsage;
         LOG(Info, "Dynamic Diffuse Global Illumination probes: {0}, memory usage: {1} MB", probesCountTotal, memUsage / (1024 * 1024));
         clear = true;
     }
@@ -755,6 +781,10 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         }
 #endif
     }
+
+#if COMPILE_WITH_PROFILER
+    UpdateGIDump(renderContext.Buffers, ddgiData);
+#endif
 
     return false;
 }

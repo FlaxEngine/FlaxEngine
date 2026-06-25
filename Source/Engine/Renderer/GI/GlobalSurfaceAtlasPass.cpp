@@ -173,6 +173,7 @@ public:
     float ResolutionInv;
     int32 AtlasPixelsTotal = 0;
     int32 AtlasPixelsUsed = 0;
+    uint32 MemoryUsage = 0;
     uint64 LastFrameAtlasInsertFail = 0;
     uint64 LastFrameAtlasDefragmentation = 0;
     GPUTexture* AtlasDepth = nullptr;
@@ -999,6 +1000,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 return true;
             memUsage += surfaceAtlasData.ChunksBuffer->GetMemoryUsage();
         }
+        surfaceAtlasData.MemoryUsage = memUsage;
         LOG(Info, "Global Surface Atlas resolution: {0}, memory usage: {1} MB", resolution, memUsage / (1024 * 1024));
 
         context->Clear(surfaceAtlasData.AtlasLighting->View(), Color::Transparent);
@@ -1355,8 +1357,10 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         if (surfaceAtlasData.CulledObjectsBuffer->GetSize() < objectsBufferCapacity)
         {
             const auto desc = GPUBufferDescription::Raw(objectsBufferCapacity, GPUBufferFlags::UnorderedAccess | GPUBufferFlags::ShaderResource);
+            surfaceAtlasData.MemoryUsage -= surfaceAtlasData.CulledObjectsBuffer->GetSize();
             if (surfaceAtlasData.CulledObjectsBuffer->Init(desc))
                 return true;
+            surfaceAtlasData.MemoryUsage += desc.Size;
         }
         objectsBufferCapacity = surfaceAtlasData.CulledObjectsBuffer->GetSize();
         ZoneValue(objectsBufferCapacity / 1024); // CulledObjectsBuffer size in kB
@@ -1813,6 +1817,29 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         context->SetViewportAndScissors(Viewport(outputSizeTwoThird.X, outputSizeTwoThird.Y, outputSizeThird.X, outputSizeThird.Y));
         context->DrawFullscreenTriangle();
     }
+}
+
+#endif
+
+#if COMPILE_WITH_PROFILER
+
+#include "Engine/Core/Utilities.h"
+
+void GlobalSurfaceAtlasPass::Dump(const RenderBuffers* buffers)
+{
+    auto surfaceAtlasDataPtr = buffers->FindCustomBuffer<GlobalSurfaceAtlasCustomBuffer>(TEXT("GlobalSurfaceAtlas"));
+    if (!surfaceAtlasDataPtr)
+        return;
+    auto& surfaceAtlasData = *surfaceAtlasDataPtr;
+    LOG(Info, "Global Surface Atlas:");
+    LOG(Info, "  > Resolution: {}, Usage: {}%", surfaceAtlasData.Resolution, (int32)((float)surfaceAtlasData.AtlasPixelsUsed / surfaceAtlasData.AtlasPixelsTotal * 100));
+    uint32 memoryUsage = surfaceAtlasData.MemoryUsage;
+    if (surfaceAtlasData.ObjectsBuffer.GetBuffer())
+        memoryUsage += surfaceAtlasData.ObjectsBuffer.GetBuffer()->GetSize();
+    if (surfaceAtlasData.ObjectsListBuffer.GetBuffer())
+        memoryUsage += surfaceAtlasData.ObjectsListBuffer.GetBuffer()->GetSize();
+    LOG(Info, "  > Memory Usage: {}", Utilities::BytesToText(memoryUsage));
+    LOG(Info, "  > Objects: {}, Tiles: {}, Lights: {}", surfaceAtlasData.Objects.Count(), surfaceAtlasData.Atlas.Count(), surfaceAtlasData.Lights.Count());
 }
 
 #endif

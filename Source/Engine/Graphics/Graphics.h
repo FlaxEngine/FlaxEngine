@@ -153,6 +153,13 @@ public:
         // Gets the normalized 0-1 progress of the Global Illumination lighting bounces convergence (0 = no GI, 1 = full GI convergence). Can be used to continue displaying loading screen after scene load to ensure indirect lighting has been evaluated. Non-zero value means GI has started to be calculated.
         API_FUNCTION(Attributes="DebugCommand(Hide=true)")
         static float GetConvergence(const RenderBuffers* buffers);
+
+#if COMPILE_WITH_PROFILER
+        /// <summary>
+        /// Dumps Global Illumination rendering info to the log (the next frame). Can be used to inspect DDGI, Global Surface Atlas and Global SDF memory and usage (for optimization). Prints info about the number of probes, cascades and draw state.
+        /// </summary>
+        API_FUNCTION(Attributes="DebugCommand") static void Dump();
+#endif
     };
 
 public:

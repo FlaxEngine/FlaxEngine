@@ -80,6 +80,11 @@ public:
     void RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output);
 #endif
 
+#if COMPILE_WITH_PROFILER
+    // Dumps the info to the log.
+    void Dump(const RenderBuffers* buffers) const;
+#endif
+
     void GetCullingData(BoundingBox& bounds) const;
 
     // Rasterize Model SDF into the Global SDF. Call it from actor Draw() method during DrawPass::GlobalSDF.
