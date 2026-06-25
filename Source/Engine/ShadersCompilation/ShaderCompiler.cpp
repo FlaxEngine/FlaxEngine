@@ -253,6 +253,11 @@ bool ShaderCompiler::OnCompileBegin()
     _globalMacros.Add({ "REVERSE_Z", "1"});
 #endif
 
+    // Setup version macros
+    _macroVersionMinor = StringAnsi::Format("{}", FLAXENGINE_VERSION_MINOR);
+    _globalMacros.Add({ "FLAXENGINE_VERSION_MAJOR", Numbers[FLAXENGINE_VERSION_MAJOR] });
+    _globalMacros.Add({ "FLAXENGINE_VERSION_MINOR", _macroVersionMinor.Get() });
+
     return false;
 }
 

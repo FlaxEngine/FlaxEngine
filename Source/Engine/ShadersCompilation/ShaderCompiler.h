@@ -26,6 +26,7 @@ private:
     ShaderProfile _profile;
     PlatformType _platform;
     Array<char> _funcNameDefineBuffer;
+    StringAnsi _macroVersionMinor;
 
 protected:
     ShaderCompilationContext* _context = nullptr;
