@@ -153,7 +153,7 @@ float4 PS_Complexity(Quad_VS2PS input) : SV_Target0
     float outline = DepthOutline(Depth, input.TexCoord);
 
     // Sample accumulated complexity
-    float complexity = SAMPLE_RT(GBuffer0, input.TexCoord);
+    float complexity = SAMPLE_RT(GBuffer0, input.TexCoord).r;
 
     // Custom coloring
     const uint colorsCount = 9;

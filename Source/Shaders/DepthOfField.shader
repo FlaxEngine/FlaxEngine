@@ -185,7 +185,7 @@ void CS_DepthOfField(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupT
 	GroupMemoryBarrierWithGroupSync();
 
 	// Don't continue for threads in the apron, and threads outside the render target size
-	if (grid >= 0 && grid < DOF_GRID_SIZE && samplePos.DOF_COMP >= 0 && samplePos.DOF_COMP < textureSize.DOF_COMP)
+	if (grid >= 0 && grid < DOF_GRID_SIZE && samplePos.DOF_COMP >= 0 && samplePos.DOF_COMP < (int)textureSize.DOF_COMP)
 	{
 		BRANCH
 		if (cocSize > 0.0f)

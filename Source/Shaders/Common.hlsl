@@ -115,6 +115,7 @@
 
 // Avoids flow control constructs.
 #define UNROLL [unroll]
+#define UNROLL_N(n) [unroll(n)]
 
 // Gives preference to flow control constructs.
 #define LOOP [loop]
@@ -139,6 +140,7 @@
 // Compiler attribute fallback
 #ifndef UNROLL
 #define UNROLL
+#define UNROLL_N(n)
 #endif
 #ifndef LOOP
 #define LOOP

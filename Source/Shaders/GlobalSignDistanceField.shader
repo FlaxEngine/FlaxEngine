@@ -136,6 +136,7 @@ void CS_RasterizeModel(uint3 DispatchThreadId : SV_DispatchThreadID)
 #if READ_SDF
 	minDistance *= GlobalSDFTex[voxelCoord];
 #endif
+    UNROLL_N(GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT)
 	for (uint i = 0; i < ObjectsCount; i++)
 	{
 		ObjectRasterizeData objectData = ObjectsBuffer[Objects[i / 4][i % 4]];
@@ -164,6 +165,7 @@ void CS_RasterizeHeightfield(uint3 DispatchThreadId : SV_DispatchThreadID)
 	voxelCoord.x += CascadeIndex * CascadeResolution;
 	float minDistance = MaxDistance * GlobalSDFTex[voxelCoord];
 	float thickness = -300.0f;
+    UNROLL_N(GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT)
 	for (uint i = 0; i < ObjectsCount; i++)
 	{
 		ObjectRasterizeData objectData = ObjectsBuffer[Objects[i / 4][i % 4]];

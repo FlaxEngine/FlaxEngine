@@ -26,7 +26,6 @@ struct ModelInput
 struct VertexOutput
 {
     float4 Position : SV_Position;
-    float2 TexCoord : TEXCOORD0;
     float3 WorldPosition : TEXCOORD1;
 };
 
@@ -34,7 +33,6 @@ struct VertexOutput
 struct PixelInput
 {
     float4 Position : SV_Position;
-    noperspective float2 TexCoord : TEXCOORD0;
     float3 WorldPosition : TEXCOORD1;
 };
 

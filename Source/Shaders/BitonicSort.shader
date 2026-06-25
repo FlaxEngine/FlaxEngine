@@ -62,7 +62,7 @@ void CS_IndirectArgs(uint groupIndex : SV_GroupIndex)
 		return;
 
 	uint count = CounterBuffer.Load(CounterOffset);
-	uint k = 2048 << groupIndex;
+	uint k = 2048u << groupIndex;
 
 	// We need one more iteration every time the number of thread groups doubles
 	if (k > NextPow2((count + 2047) & ~2047))
