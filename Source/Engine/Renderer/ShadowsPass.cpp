@@ -1144,6 +1144,8 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
 
 void ShadowsPass::ClearShadowMapTile(GPUContext* context, GPUConstantBuffer* quadShaderCB, QuadShaderData& quadShaderData) const
 {
+    PROFILE_GPU("Clear Tile");
+
     // Color.r is used by PS_DepthClear in Quad shader to clear depth
     quadShaderData.Color = GPU_DEPTH_RANGE_MAX;
     context->UpdateCB(quadShaderCB, &quadShaderData);
@@ -1156,6 +1158,8 @@ void ShadowsPass::ClearShadowMapTile(GPUContext* context, GPUConstantBuffer* qua
 
 void ShadowsPass::CopyShadowMapTile(GPUContext* context, GPUConstantBuffer* quadShaderCB, QuadShaderData& quadShaderData, const GPUTexture* srcShadowMap, const ShadowsAtlasRectTile* srcTile) const
 {
+    PROFILE_GPU("Copy Tile");
+
     // Color.xyzw is used by PS_DepthCopy in Quad shader to scale input texture UVs
     const float staticAtlasResolutionInv = 1.0f / (float)srcShadowMap->Width();
     quadShaderData.Color = Float4(srcTile->Width, srcTile->Height, srcTile->X, srcTile->Y) * staticAtlasResolutionInv;
