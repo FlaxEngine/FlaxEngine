@@ -1548,7 +1548,7 @@ void DebugDraw::DrawPoint(const Vector3& position, float radius, const Color& co
     Matrix::CreateWorld(positionF, normal, up, world);
     Matrix::Multiply(scale, world, matrix);
 
-    // Draw lines of the unit circle after linear transform
+    // Build a filled disc as a triangle fan from the center over the transformed unit circle points
     PROFILE_MEM(EngineDebug);
     Float3 prev = Float3::Transform(CircleCache[0], matrix);
     for (int32 i = 1; i < DEBUG_DRAW_CIRCLE_VERTICES;)
