@@ -253,6 +253,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Init()
     // Check platform support
     const auto device = GPUDevice::Instance;
     _supported = device->GetFeatureLevel() >= FeatureLevel::SM5 && device->Limits.HasCompute && device->Limits.HasTypedUAVLoad;
+    _depthBounds = device->Limits.HasDepthBounds && device->Limits.HasReadOnlyDepth;
     return false;
 }
 
@@ -299,11 +300,13 @@ bool DynamicDiffuseGlobalIlluminationPass::setupResources()
         if (_psIndirectLighting[2]->Init(psDesc))
             return true;
         psDesc.BlendMode = BlendingMode::Add;
+        psDesc.DepthEnable = psDesc.DepthBoundsEnable = _depthBounds;
         if (_psIndirectLighting[0]->Init(psDesc))
             return true;
         psDesc.PS = shader->GetPS("PS_IndirectLighting", 1);
         if (_psIndirectLighting[1]->Init(psDesc))
             return true;
+        psDesc.DepthEnable = psDesc.DepthBoundsEnable = false;
         psDesc.BlendMode = BlendingMode::Opaque;
         if (_psIndirectLighting[3]->Init(psDesc))
             return true;
@@ -497,7 +500,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         INIT_BUFFER(StatsRead, "DDGI.StatsRead");
 #endif
 #undef INIT_BUFFER
-        ddgiData.MemoryUsage = memUsage;
+        ddgiData.MemoryUsage = (uint32)memUsage;
         LOG(Info, "Dynamic Diffuse Global Illumination probes: {0}, memory usage: {1} MB", probesCountTotal, memUsage / (1024 * 1024));
         clear = true;
     }
@@ -853,10 +856,11 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
             context->UpdateCB(_cb0, &data);
             context->BindCB(0, _cb0);
         }
+        GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
         context->BindSR(0, renderContext.Buffers->GBuffer0->View());
         context->BindSR(1, renderContext.Buffers->GBuffer1->View());
         context->BindSR(2, renderContext.Buffers->GBuffer2->View());
-        context->BindSR(3, renderContext.Buffers->DepthBuffer->View());
+        context->BindSR(3, depthBuffer->View());
         context->BindSR(4, ddgiData.Result.ProbesData);
         context->BindSR(5, ddgiData.Result.ProbesDistance);
         context->BindSR(6, ddgiData.Result.ProbesIrradiance);
@@ -864,10 +868,15 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         if (settings.IndirectResolution == ResolutionMode::Full || !MultiScaler::Instance()->IsReady())
         {
             // Full-res
+            GPUTextureView* depthBufferRTV = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView) ? depthBuffer->ViewReadOnlyDepth() : nullptr;
+            if (_depthBounds)
+                context->SetDepthBounds(GPU_DEPTH_RANGE_BOUNDS(GPU_DEPTH_RANGE_MIN, RenderTools::DepthBoundMaxBackground));
             context->SetViewportAndScissors(renderContext.View.ScreenSize.X, renderContext.View.ScreenSize.Y);
-            context->SetRenderTarget(lightBuffer);
+            context->SetRenderTarget(depthBufferRTV, lightBuffer);
             context->SetState(_psIndirectLighting[Graphics::GICascadesBlending ? 1 : 0]);
             context->DrawFullscreenTriangle();
+            if (_depthBounds)
+                context->SetDepthBounds();
         }
         else
         {
@@ -880,7 +889,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
             context->SetState(_psIndirectLighting[Graphics::GICascadesBlending ? 3 : 2]);
             context->DrawFullscreenTriangle();
             context->ResetRenderTarget();
-            MultiScaler::Instance()->BilateralUpscale(context, Viewport(Float2(renderContext.View.ScreenSize)), temp, lightBuffer, renderContext.Buffers->DepthBuffer, renderContext.Buffers->GBuffer1, BlendingMode::Add);
+            MultiScaler::Instance()->BilateralUpscale(context, Viewport(Float2(renderContext.View.ScreenSize)), temp, lightBuffer, depthBuffer, renderContext.Buffers->GBuffer1, BlendingMode::Add);
             RenderTargetPool::Release(temp);
             context->SetViewportAndScissors(renderContext.View.ScreenSize.X, renderContext.View.ScreenSize.Y);
         }

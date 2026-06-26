@@ -1295,7 +1295,7 @@ void GlobalSignDistanceFieldPass::Dump(const RenderBuffers* buffers) const
     auto& sdfData = *sdfDataPtr;
     LOG(Info, "Global SDF:");
     LOG(Info, "  > Cascades: {}, Resolution: {}", sdfData.Cascades.Count(), sdfData.Resolution);
-    uint32 memoryUsage = sdfData.Texture->GetMemoryUsage() + sdfData.TextureMip->GetMemoryUsage();
+    uint32 memoryUsage = (uint32)sdfData.Texture->GetMemoryUsage() + (uint32)sdfData.TextureMip->GetMemoryUsage();
     if (_objectsBuffer && _objectsBuffer->GetBuffer())
         memoryUsage += _objectsBuffer->GetBuffer()->GetSize();
     LOG(Info, "  > Memory Usage: {}", Utilities::BytesToText(memoryUsage));

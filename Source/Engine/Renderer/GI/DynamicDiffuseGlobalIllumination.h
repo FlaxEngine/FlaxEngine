@@ -39,6 +39,7 @@ public:
 
 private:
     bool _supported = false;
+    bool _depthBounds = false;
     AssetReference<Shader> _shader;
     GPUConstantBuffer* _cb0 = nullptr;
     GPUConstantBuffer* _cb1 = nullptr;
