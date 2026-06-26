@@ -238,7 +238,7 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
         // Sample distance texture
         float2 octahedralCoords = GetOctahedralCoords(-biasedPosToProbe);
         float2 uv = GetDDGIProbeUV(data, cascadeIndex, probeIndex, octahedralCoords, DDGI_PROBE_RESOLUTION_DISTANCE);
-        float2 probeDistance = probesDistance.SampleLevel(SamplerLinearClamp, uv, 0).rg * 2.0f;
+        float2 probeDistance = probesDistance.SampleLevel(SamplerLinearClamp, uv, 0).rg;
 
         // Visibility weight (Chebyshev)
         if (biasedPosToProbeDist > probeDistance.x && useVisibility)

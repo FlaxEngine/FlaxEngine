@@ -807,7 +807,11 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
 
     // Normalize results
     float epsilon = (float)probeRaysCount * 1e-9f;
+#if DDGI_PROBE_UPDATE_MODE == DDGI_PROBE_UPDATE_IRRADIANCE
     result.rgb *= 1.0f / (2.0f * max(result.a, epsilon));
+#else
+    result.rgb *= 1.0f / max(result.a, epsilon);
+#endif
 
     // Load current probe value
     uint2 outputCoords = GetDDGIProbeTexelCoords(DDGI, CascadeIndex, probeIndex) * (DDGI_PROBE_RESOLUTION + 2) + 1 + GroupThreadId.xy;
