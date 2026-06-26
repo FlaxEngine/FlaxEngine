@@ -3,7 +3,7 @@
 #pragma once
 
 #include "../RendererPass.h"
-#include "Engine/Graphics/GPUContext.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Graphics/GPUPipelineStatePermutations.h"
 
 /// <summary>
@@ -18,6 +18,7 @@ private:
     GPUPipelineStatePermutationsPs<2> _psBlur13;
     GPUPipelineStatePermutationsPs<3> _psHalfDepth;
     GPUPipelineState* _psUpscale = nullptr;
+    Dictionary<BlendingMode, GPUPipelineState*> _psBilateralUpscale;
 
 public:
     /// <summary>
@@ -83,13 +84,25 @@ public:
     void BuildHiZ(GPUContext* context, GPUTexture* srcDepth, GPUTexture* dstHiZ);
 
     /// <summary>
-    /// Upscales the texture.
+    /// Upscales the texture using Catmull-Rom filtering with 9-taps.
     /// </summary>
     /// <param name="context">The context.</param>
     /// <param name="viewport">The viewport of the destination texture.</param>
     /// <param name="src">The source texture.</param>
     /// <param name="dst">The destination texture.</param>
     void Upscale(GPUContext* context, const Viewport& viewport, GPUTexture* src, GPUTextureView* dst);
+
+    /// <summary>
+    /// Upscales the texture using bilateral filtering (depth+normal weighting).
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <param name="viewport">The viewport of the destination texture.</param>
+    /// <param name="src">The source texture.</param>
+    /// <param name="dst">The destination texture.</param>
+    /// <param name="depth">The depth buffer (hardware depth).</param>
+    /// <param name="normal">The normal buffer (RGB encoded for GBuffer).</param>
+    /// <param name="blendMode">The blending mode to use when drawing the image. Can be used to composite upscaled image in additive mode (eg. into lighting/reflections buffer).</param>
+    void BilateralUpscale(GPUContext* context, const Viewport& viewport, GPUTexture* src, GPUTextureView* dst, GPUTexture* depth, GPUTexture* normal, const BlendingMode& blendMode = BlendingMode::Opaque);
 
 public:
     // [RendererPass]
@@ -99,6 +112,9 @@ public:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
+        for (const auto& e : _psBilateralUpscale)
+            e.Value->ReleaseGPU();
+        _psBilateralUpscale.ClearDelete();
         _psUpscale->ReleaseGPU();
         _psBlur5.Release();
         _psBlur9.Release();

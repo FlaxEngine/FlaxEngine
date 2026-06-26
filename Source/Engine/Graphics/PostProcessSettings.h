@@ -340,9 +340,14 @@ API_ENUM(Attributes="Flags") enum class GlobalIlluminationSettingsOverride : int
     IndirectShadowsStrength = 1 << 6,
 
     /// <summary>
+    /// Overrides <see cref="GlobalIlluminationSettings.IndirectResolution"/> property.
+    /// </summary>
+    IndirectResolution = 1 << 7,
+
+    /// <summary>
     /// All properties.
     /// </summary>
-    All = Mode | Intensity | TemporalResponse | Distance | FallbackIrradiance | BounceIntensity | IndirectShadowsStrength,
+    All = Mode | Intensity | TemporalResponse | Distance | FallbackIrradiance | BounceIntensity | IndirectShadowsStrength | IndirectResolution,
 };
 
 /// <summary>
@@ -393,7 +398,7 @@ API_STRUCT() struct FLAXENGINE_API GlobalIlluminationSettings : ISerializable
     /// <summary>
     /// Indirect lighting shadows intensity. Default is 1 for fully opaque shadowing, lower values bleed the lighting into shadowed areas. Can be sued for artistic control over GI.
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(35), Limit(0.0f, 1.0f, 0.001f), PostProcessSetting((int)GlobalIlluminationSettingsOverride.IndirectShadowsStrength)")
+    API_FIELD(Attributes="EditorOrder(35), Limit(0.0f, 1.0f, 0.001f), PostProcessSetting((int)GlobalIlluminationSettingsOverride.IndirectShadowsStrength)")
     float IndirectShadowsStrength = 1.0f;
 
     /// <summary>
@@ -401,6 +406,12 @@ API_STRUCT() struct FLAXENGINE_API GlobalIlluminationSettings : ISerializable
     /// </summary>
     API_FIELD(Attributes="EditorOrder(40), PostProcessSetting((int)GlobalIlluminationSettingsOverride.FallbackIrradiance)")
     Color FallbackIrradiance = Color::Transparent;
+
+    /// <summary>
+    /// The indirect lighting render resolution. Full gives better quality, but half improves performance.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(50), PostProcessSetting((int)GlobalIlluminationSettingsOverride.IndirectResolution)")
+    ResolutionMode IndirectResolution = ResolutionMode::Full;
 
 public:
     /// <summary>

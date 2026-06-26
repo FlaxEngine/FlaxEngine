@@ -26,6 +26,7 @@
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Level/Actors/BrushMode.h"
 #include "Engine/Renderer/GBufferPass.h"
+#include "Engine/Renderer/Utils/MultiScaler.h"
 
 // Implementation based on:
 // "Dynamic Diffuse Global Illumination with Ray-Traced Irradiance Probes", Journal of Computer Graphics Tools, April 2019
@@ -292,14 +293,19 @@ bool DynamicDiffuseGlobalIlluminationPass::setupResources()
     auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
     if (!_psIndirectLighting[0])
     {
-        _psIndirectLighting[0] = device->CreatePipelineState();
-        _psIndirectLighting[1] = device->CreatePipelineState();
+        for (auto& pso : _psIndirectLighting)
+            pso = device->CreatePipelineState();
         psDesc.PS = shader->GetPS("PS_IndirectLighting");
+        if (_psIndirectLighting[2]->Init(psDesc))
+            return true;
         psDesc.BlendMode = BlendingMode::Add;
         if (_psIndirectLighting[0]->Init(psDesc))
             return true;
         psDesc.PS = shader->GetPS("PS_IndirectLighting", 1);
         if (_psIndirectLighting[1]->Init(psDesc))
+            return true;
+        psDesc.BlendMode = BlendingMode::Opaque;
+        if (_psIndirectLighting[3]->Init(psDesc))
             return true;
     }
 
@@ -320,8 +326,7 @@ void DynamicDiffuseGlobalIlluminationPass::OnShaderReloading(Asset* obj)
     _csTraceRays[3] = nullptr;
     _csUpdateProbesIrradiance = nullptr;
     _csUpdateProbesDistance = nullptr;
-    SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting[0]);
-    SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting[1]);
+    SAFE_DELETE_GPU_RESOURCES(_psIndirectLighting)
     invalidateResources();
 }
 
@@ -335,8 +340,7 @@ void DynamicDiffuseGlobalIlluminationPass::Dispose()
     _cb0 = nullptr;
     _cb1 = nullptr;
     _shader = nullptr;
-    SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting[0]);
-    SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting[1]);
+    SAFE_DELETE_GPU_RESOURCES(_psIndirectLighting)
 #if GPU_ENABLE_DEVELOPMENT
     _debugModel = nullptr;
     _debugMaterial = nullptr;
@@ -856,10 +860,30 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         context->BindSR(4, ddgiData.Result.ProbesData);
         context->BindSR(5, ddgiData.Result.ProbesDistance);
         context->BindSR(6, ddgiData.Result.ProbesIrradiance);
-        context->SetViewportAndScissors(renderContext.View.ScreenSize.X, renderContext.View.ScreenSize.Y);
-        context->SetRenderTarget(lightBuffer);
-        context->SetState(_psIndirectLighting[Graphics::GICascadesBlending ? 1 : 0]);
-        context->DrawFullscreenTriangle();
+        auto& settings = renderContext.List->Settings.GlobalIllumination;
+        if (settings.IndirectResolution == ResolutionMode::Full || !MultiScaler::Instance()->IsReady())
+        {
+            // Full-res
+            context->SetViewportAndScissors(renderContext.View.ScreenSize.X, renderContext.View.ScreenSize.Y);
+            context->SetRenderTarget(lightBuffer);
+            context->SetState(_psIndirectLighting[Graphics::GICascadesBlending ? 1 : 0]);
+            context->DrawFullscreenTriangle();
+        }
+        else
+        {
+            // Upscale
+            auto width = RenderTools::GetResolution((int32)renderContext.View.ScreenSize.X, settings.IndirectResolution);
+            auto height = RenderTools::GetResolution((int32)renderContext.View.ScreenSize.Y, settings.IndirectResolution);
+            auto temp = RenderTargetPool::Get(GPUTextureDescription::New2D(width, height, lightBuffer->GetFormat(), GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget));
+            context->SetViewportAndScissors((float)width, (float)height);
+            context->SetRenderTarget(temp->View());
+            context->SetState(_psIndirectLighting[Graphics::GICascadesBlending ? 3 : 2]);
+            context->DrawFullscreenTriangle();
+            context->ResetRenderTarget();
+            MultiScaler::Instance()->BilateralUpscale(context, Viewport(Float2(renderContext.View.ScreenSize)), temp, lightBuffer, renderContext.Buffers->DepthBuffer, renderContext.Buffers->GBuffer1, BlendingMode::Add);
+            RenderTargetPool::Release(temp);
+            context->SetViewportAndScissors(renderContext.View.ScreenSize.X, renderContext.View.ScreenSize.Y);
+        }
     }
 
 #if GPU_ENABLE_DEVELOPMENT

@@ -969,20 +969,15 @@ Texture2D<float4> ProbesIrradiance : register(t6);
 META_PS(true, FEATURE_LEVEL_SM5)
 META_PERMUTATION_1(DDGI_CASCADE_BLEND_SMOOTH=0)
 META_PERMUTATION_1(DDGI_CASCADE_BLEND_SMOOTH=1)
-void PS_IndirectLighting(Quad_VS2PS input, out float4 output : SV_Target0)
+float4 PS_IndirectLighting(Quad_VS2PS input) : SV_Target0
 {
-    output = 0;
-
     // Sample GBuffer
     GBufferSample gBuffer = SampleGBuffer(GBuffer, input.TexCoord);
 
     // Check if cannot shadow pixel
     BRANCH
     if (gBuffer.ShadingModel == SHADING_MODEL_UNLIT)
-    {
-        discard;
-        return;
-    }
+        return float4(0, 0, 0, 0);
 
     // Sample irradiance
     float dither = RandN2(input.TexCoord + TemporalTime).x;
@@ -992,7 +987,7 @@ void PS_IndirectLighting(Quad_VS2PS input, out float4 output : SV_Target0)
     // Calculate lighting
     float3 diffuseColor = GetDiffuseColor(gBuffer);
     float3 diffuse = Diffuse_Lambert(diffuseColor);
-    output.rgb = diffuse * irradiance * gBuffer.AO;
+    return float4(diffuse * irradiance * gBuffer.AO, 1);
 }
 
 #endif

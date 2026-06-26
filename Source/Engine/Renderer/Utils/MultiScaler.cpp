@@ -94,7 +94,9 @@ void MultiScaler::Dispose()
     RendererPass::Dispose();
 
     // Cleanup
-    SAFE_DELETE_GPU_RESOURCE(_psUpscale);
+    for (const auto& e : _psBilateralUpscale)
+        e.Value->ReleaseGPU();
+    _psBilateralUpscale.ClearDelete();
     _psBlur5.Delete();
     _psBlur9.Delete();
     _psBlur13.Delete();
@@ -331,6 +333,51 @@ void MultiScaler::Upscale(GPUContext* context, const Viewport& viewport, GPUText
         context->SetState(_psUpscale);
         context->DrawFullscreenTriangle();
         context->UnBindCB(0);
+    }
+
+    context->ResetRenderTarget();
+}
+
+void MultiScaler::BilateralUpscale(GPUContext* context, const Viewport& viewport, GPUTexture* src, GPUTextureView* dst, GPUTexture* depth, GPUTexture* normal, const BlendingMode& blendMode)
+{
+    PROFILE_GPU_CPU("Bilateral Upscale");
+
+    auto rtAction = GPUDrawPassAction::Store;
+    GPUDrawPass drawPass(context, ToSpan(&dst, 1), ToSpan(&rtAction, 1));
+    context->SetViewportAndScissors(viewport);
+
+    if (checkIfSkipPass())
+    {
+        context->Draw(src);
+    }
+    else if (depth && normal)
+    {
+        GPUPipelineState* pso;
+        if (!_psBilateralUpscale.TryGet(blendMode, pso))
+        {
+            pso = GPUDevice::Instance->CreatePipelineState();
+            auto desc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+            desc.PS = _shader->GPU->GetPS("PS_BilateralUpscale");
+            desc.BlendMode = blendMode;
+            pso->Init(desc);
+            _psBilateralUpscale.Add(blendMode, pso);
+        }
+        Data data;
+        data.TexelSize.X = 1.0f / (float)src->Width();
+        data.TexelSize.Y = 1.0f / (float)src->Height();
+        auto cb = _shader->GPU->GetCB(0);
+        context->UpdateCB(cb, &data);
+        context->BindCB(0, cb);
+        context->BindSR(0, src);
+        context->BindSR(1, depth);
+        context->BindSR(2, normal);
+        context->SetState(pso);
+        context->DrawFullscreenTriangle();
+        context->UnBindCB(0);
+    }
+    else
+    {
+        Upscale(context, viewport, src, dst);
     }
 
     context->ResetRenderTarget();

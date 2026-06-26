@@ -212,3 +212,61 @@ float4 PS_Upscale(Quad_VS2PS input) : SV_Target0
 	// Catmull-Rom filtering with 9-taps
 	return SampleTextureCatmullRom(Input, SamplerLinearClamp, input.TexCoord, TexelSize);
 }
+
+#ifdef _PS_BilateralUpscale
+
+#include "./Flax/GBufferCommon.hlsl"
+
+Texture2D Depths : register(t1);
+Texture2D Normals : register(t2);
+
+// Pixel Shader for upscaling image with bilateral filtering (depth and normal weighting)
+META_PS(true, FEATURE_LEVEL_ES2)
+float4 PS_BilateralUpscale(Quad_VS2PS input) : SV_Target0
+{
+    const float epsilon = 0.0001f;
+
+    float2 inputSize = floor(1.0f / TexelSize);
+    float2 baseUV = floor(input.TexCoord * inputSize - 0.5f) / inputSize + 0.5f * TexelSize;
+    float2 bilinear = (input.TexCoord - baseUV) * inputSize;
+    float4 weights = float4((1 - bilinear.y) * (1 - bilinear.x), (1 - bilinear.y) * bilinear.x, bilinear.y * (1 - bilinear.x), bilinear.y * bilinear.x);
+
+    float4 values00 = SAMPLE_RT_LINEAR(Input, baseUV);
+    float4 values10 = SAMPLE_RT_LINEAR(Input, baseUV + float2(TexelSize.x, 0));
+    float4 values01 = SAMPLE_RT_LINEAR(Input, baseUV + float2(0, TexelSize.y));
+    float4 values11 = SAMPLE_RT_LINEAR(Input, baseUV + TexelSize);
+
+    float depth00 = SAMPLE_RT_DEPTH(Depths, baseUV);
+    float depth10 = SAMPLE_RT_DEPTH(Depths, baseUV + float2(TexelSize.x, 0));
+    float depth01 = SAMPLE_RT_DEPTH(Depths, baseUV + float2(0, TexelSize.y));
+    float depth11 = SAMPLE_RT_DEPTH(Depths, baseUV + TexelSize);
+
+    float minDepth = min(min(min(depth00, depth10), depth01), depth11);
+    float maxDepth = max(max(max(depth00, depth10), depth01), depth11);
+    if (maxDepth / minDepth > 1.021f)
+    {
+        float depth = SAMPLE_RT_DEPTH(Depths, input.TexCoord);
+        weights *= 1.0f / (abs(float4(depth00, depth10, depth01, depth11) - depth.xxxx) + epsilon);
+    }
+
+    float3 normal00 = DecodeNormal(SAMPLE_RT_LINEAR(Normals, baseUV).rgb);
+    float3 normal10 = DecodeNormal(SAMPLE_RT_LINEAR(Normals, baseUV + float2(TexelSize.x, 0)).rgb);
+    float3 normal01 = DecodeNormal(SAMPLE_RT_LINEAR(Normals, baseUV + float2(0, TexelSize.y)).rgb);
+    float3 normal11 = DecodeNormal(SAMPLE_RT_LINEAR(Normals, baseUV + TexelSize).rgb);
+
+    float3 normal = DecodeNormal(SAMPLE_RT(Normals, input.TexCoord).rgb);
+    float normalPower = 2;
+    weights.x *= min(pow(saturate(dot(normal, normal00)), normalPower), 1.0);
+    weights.y *= min(pow(saturate(dot(normal, normal10)), normalPower), 1.0);
+    weights.z *= min(pow(saturate(dot(normal, normal01)), normalPower), 1.0);
+    weights.w *= min(pow(saturate(dot(normal, normal11)), normalPower), 1.0);
+
+    values00 *= weights.x;
+    values10 *= weights.y;
+    values01 *= weights.z;
+    values11 *= weights.w;
+
+    return (values00 + values10 + values01 + values11) / (dot(weights, 1) + epsilon);
+}
+
+#endif

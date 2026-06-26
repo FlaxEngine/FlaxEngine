@@ -35,6 +35,7 @@ void GlobalIlluminationSettings::BlendWith(GlobalIlluminationSettings& other, fl
     BLEND_FLOAT(Distance);
     BLEND_FLOAT(IndirectShadowsStrength);
     BLEND_COL(FallbackIrradiance);
+    BLEND_ENUM(IndirectResolution);
 }
 
 void BloomSettings::BlendWith(BloomSettings& other, float weight)
