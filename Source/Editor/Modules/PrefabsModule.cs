@@ -50,9 +50,6 @@ namespace FlaxEditor.Modules
         /// </remarks>
         public void CreatePrefab()
         {
-            var folder = GetDefaultPrefabFolder();
-            if (folder != null)
-                Editor.Windows.ContentWin.Navigate(folder.Node);
             CreatePrefab(Editor.SceneEditing.Selection);
         }
 
@@ -70,6 +67,9 @@ namespace FlaxEditor.Modules
                 selection = Editor.SceneEditing.Selection;
             if (selection.Count == 1 && selection[0] is ActorNode actorNode && actorNode.CanCreatePrefab)
             {
+                var folder = GetDefaultPrefabFolder();
+                if (folder != null)
+                    Editor.Windows.ContentWin.Navigate(folder.Node);
                 CreatePrefab(actorNode.Actor, true, prefabWindow);
             }
         }

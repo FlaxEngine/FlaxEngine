@@ -139,7 +139,7 @@ namespace FlaxEditor.Windows
 
             b = contextMenu.AddButton("Create Prefab", Editor.Prefabs.CreatePrefab);
             // Skip if we cannot create assets in the given location
-            // Or DefualtPrefabFolder setting is invalid
+            // Or DefaultPrefabFolder setting is invalid
             b.Enabled = isSingleActorSelected &&
                         (firstSelection != null ? firstSelection.CanCreatePrefab : false) &&
                         (Editor.Windows.ContentWin.CurrentViewFolder.CanHaveAssets
