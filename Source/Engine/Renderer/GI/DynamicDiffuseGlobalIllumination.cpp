@@ -41,7 +41,6 @@
 #define DDGI_TRACE_RAYS_LIMIT 256 // Limit of rays per-probe (runtime value can be smaller)
 #define DDGI_PROBE_RESOLUTION_IRRADIANCE 6 // Resolution (in texels) for probe irradiance data (excluding 1px padding on each side)
 #define DDGI_PROBE_RESOLUTION_DISTANCE 14 // Resolution (in texels) for probe distance data (excluding 1px padding on each side)
-#define DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE 8
 #define DDGI_PROBE_CLASSIFY_GROUP_SIZE 32
 #define DDGI_PROBE_EMPTY_AREA_DENSITY 8 // Spacing (in probe grid) between fallback probes placed into empty areas to provide valid GI for nearby dynamic objects or transparency
 #define DDGI_DEBUG_STATS 0 // Enables additional GPU-driven stats for probe/rays count

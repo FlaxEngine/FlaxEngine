@@ -1638,7 +1638,7 @@ void Foliage::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
     {
         const DeserializeStream& items = foliageInstancesMember->value;
         int32 chunksCount = (int32)items.Size() - 1;
-        if (chunksCount <= 0)
+        if (chunksCount <= 0 || !items[0].IsInt())
             return;
         int32 foliageInstancesCount = items[0].GetInt();
         Instances.Resize(foliageInstancesCount);
