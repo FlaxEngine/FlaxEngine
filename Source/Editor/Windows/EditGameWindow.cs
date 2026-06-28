@@ -450,6 +450,9 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
+            if (!Editor.Options.Options.Viewport.UsePersistenceOverDefaults)
+                return;
+            
             if (bool.TryParse(node.GetAttribute("GridEnabled"), out bool value1))
                 Viewport.Grid.Enabled = value1;
             if (bool.TryParse(node.GetAttribute("ShowFpsCounter"), out value1))
