@@ -1526,6 +1526,42 @@ void DebugDraw::DrawCircle(const Vector3& position, const Float3& normal, float 
     }
 }
 
+void DebugDraw::DrawPoint(const Vector3& position, float radius, const Color& color, float duration, bool depthTest)
+{
+    Float3 normal = (Float3)(Context->LastViewPosition - position);
+    if (normal.Length() < ZeroTolerance)
+        normal = Float3::Up;
+    normal.Normalize();
+    
+    // Create matrix transform for unit circle points
+    Matrix world, scale, matrix;
+    Float3 right, up;
+    if (Float3::Dot(normal, Float3::Up) > 0.99f)
+        right = Float3::Right;
+    else if (Float3::Dot(normal, Float3::Down) > 0.99f)
+        right = Float3::Left;
+    else
+        Float3::Cross(normal, Float3::Up, right);
+    Float3::Cross(right, normal, up);
+    Matrix::Scaling(radius, scale);
+    const Float3 positionF = position - Context->Origin;
+    Matrix::CreateWorld(positionF, normal, up, world);
+    Matrix::Multiply(scale, world, matrix);
+
+    // Build a filled disc as a triangle fan from the center over the transformed unit circle points
+    PROFILE_MEM(EngineDebug);
+    for (int32 i = 0; i < DEBUG_DRAW_CIRCLE_VERTICES; i += 2)
+    {
+        DebugTriangle t;
+        t.Color = Color32(color);
+        t.TimeLeft = duration;
+        t.V0 = positionF;
+        t.V1 = Float3::Transform(CircleCache[i], matrix);
+        t.V2 = Float3::Transform(CircleCache[i + 1], matrix);
+        (depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault).Add(t);
+    }
+}
+
 void DebugDraw::DrawWireTriangle(const Vector3& v0, const Vector3& v1, const Vector3& v2, const Color& color, float duration, bool depthTest)
 {
     DrawLine(v0, v1, color, duration, depthTest);
