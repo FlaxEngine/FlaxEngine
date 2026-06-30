@@ -295,3 +295,12 @@ void RenderBuffers::Release()
 #undef UPDATE_LAZY_KEEP_RT
     CustomBuffers.ClearDelete();
 }
+
+RenderBuffers::ReadOnlyDepthBuffer RenderBuffers::GetReadOnlyDepthBuffer() const
+{
+    GPUTexture* depthBuffer = DepthBuffer;
+    const bool depthBufferReadOnly = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView);
+    GPUTextureView* depthBufferRTV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : nullptr;
+    GPUTextureView* depthBufferSRV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
+    return { depthBufferRTV, depthBufferSRV };
+}

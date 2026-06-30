@@ -236,7 +236,9 @@ void ReflectionsPass::Dispose()
     SAFE_DELETE_GPU_RESOURCE(_psProbe);
     SAFE_DELETE_GPU_RESOURCE(_psProbeInside);
     SAFE_DELETE_GPU_RESOURCE(_psCombinePass);
+#if GPU_ENABLE_DEVELOPMENT
     SAFE_DELETE_GPU_RESOURCE(_psDrawSSR);
+#endif
     _shader = nullptr;
     _boxModel = nullptr;
     _sphereModel = nullptr;
@@ -295,14 +297,11 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     data.SSRTexelSize = Float2(1.0f / (float)RenderTools::GetResolution(width, ssrSettings.ResolvePassResolution), 1.0f / (float)RenderTools::GetResolution(height, ssrSettings.ResolvePassResolution));
 
     // Bind GBuffer inputs
-    GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
-    const bool depthBufferReadOnly = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView);
-    GPUTextureView* depthBufferRTV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : nullptr;
-    GPUTextureView* depthBufferSRV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
+    auto depthBuffer = renderContext.Buffers->GetReadOnlyDepthBuffer();
     context->BindSR(0, renderContext.Buffers->GBuffer0);
     context->BindSR(1, renderContext.Buffers->GBuffer1);
     context->BindSR(2, renderContext.Buffers->GBuffer2);
-    context->BindSR(3, depthBufferSRV);
+    context->BindSR(3, depthBuffer.SRV);
 
     auto tempDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), PixelFormat::R11G11B10_Float);
     auto reflectionsBuffer = RenderTargetPool::Get(tempDesc);
@@ -316,7 +315,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     {
         PROFILE_GPU_CPU("Env Probes");
         context->SetViewportAndScissors((float)tempDesc.Width, (float)tempDesc.Height);
-        context->SetRenderTarget(depthBufferRTV, *reflectionsBuffer);
+        context->SetRenderTarget(depthBuffer.RTV, *reflectionsBuffer);
 
         // Sort probes by the radius
         Sorting::QuickSort(renderContext.List->EnvironmentProbes.Get(), renderContext.List->EnvironmentProbes.Count(), &SortProbes);
@@ -381,12 +380,13 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
         context->BindSR(0, renderContext.Buffers->GBuffer0);
         context->BindSR(1, renderContext.Buffers->GBuffer1);
         context->BindSR(2, renderContext.Buffers->GBuffer2);
-        context->BindSR(3, depthBufferSRV);
+        context->BindSR(3, depthBuffer.SRV);
         context->SetViewportAndScissors((float)tempDesc.Width, (float)tempDesc.Height);
     }
 
     if (renderContext.View.Mode == ViewMode::Reflections)
     {
+#if GPU_ENABLE_DEVELOPMENT
         // If SSR is in use, then draw it with alpha blending into reflections buffer
         if (ssrBuffer)
         {
@@ -405,6 +405,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
             context->DrawFullscreenTriangle();
             context->ResetRenderTarget();
         }
+#endif
 
         // Override light buffer with the reflections buffer
         context->SetRenderTarget(lightBuffer);
@@ -416,7 +417,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
         PROFILE_GPU("Combine");
         if (_depthBounds)
         {
-            context->SetRenderTarget(depthBufferRTV, lightBuffer);
+            context->SetRenderTarget(depthBuffer.RTV, lightBuffer);
             context->SetDepthBounds(GPU_DEPTH_RANGE_BOUNDS(GPU_DEPTH_RANGE_MIN, RenderTools::DepthBoundMaxBackground));
         }
         else

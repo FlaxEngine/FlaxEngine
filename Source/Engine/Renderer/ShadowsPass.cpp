@@ -1883,9 +1883,8 @@ void ShadowsPass::RenderShadowMask(RenderContextBatch& renderContextBatch, Rende
     context->BindSR(5, shadows.ShadowsBufferView);
     context->BindSR(6, shadows.ShadowMapAtlas);
     const int32 permutationIndex = shadowQuality + (sperLight.ContactShadowsLength > ZeroTolerance ? 4 : 0);
-    GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
-    const bool depthBufferReadOnly = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView);
-    context->SetRenderTarget(depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : nullptr, shadowMask);
+    auto depthBuffer = renderContext.Buffers->GetReadOnlyDepthBuffer();
+    context->SetRenderTarget(depthBuffer.RTV, shadowMask);
     if (_depthBounds)
     {
         Float2 minMaxDepth;

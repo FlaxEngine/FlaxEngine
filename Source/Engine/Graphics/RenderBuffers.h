@@ -43,6 +43,15 @@ API_CLASS() class FLAXENGINE_API RenderBuffers : public ScriptingObject
         String ToString() const override;
     };
 
+    /// <summary>
+    /// Helper container for depth buffer binding as read-only as both shader resource and render target.
+    /// </summary>
+    struct ReadOnlyDepthBuffer
+    {
+        GPUTextureView* RTV;
+        GPUTextureView* SRV;
+    };
+
 private:
     GPUTexture* HalfResDepth = nullptr;
     GPUTexture* HiZ = nullptr;
@@ -254,4 +263,9 @@ public:
     /// Release the buffers data.
     /// </summary>
     API_FUNCTION() void Release();
+
+    /// <summary>
+    /// Gets the depth buffer binding for rendering as read-only (both shader resource and render target).
+    /// </summary>
+    ReadOnlyDepthBuffer GetReadOnlyDepthBuffer() const;
 };

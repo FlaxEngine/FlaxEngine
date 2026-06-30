@@ -209,11 +209,8 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
     auto& sphereMesh = _sphereModel->LODs.Get()[0].Meshes.Get()[0];
 
     // Bind output
-    GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
-    const bool depthBufferReadOnly = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView);
-    GPUTextureView* depthBufferRTV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : nullptr;
-    GPUTextureView* depthBufferSRV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
-    context->SetRenderTarget(depthBufferRTV, lightBuffer);
+    auto depthBuffer = renderContext.Buffers->GetReadOnlyDepthBuffer();
+    context->SetRenderTarget(depthBuffer.RTV, lightBuffer);
 
     // Set per frame data
     GBufferPass::SetInputs(renderContext.View, perFrame.GBuffer);
@@ -225,7 +222,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
     context->BindSR(0, renderContext.Buffers->GBuffer0);
     context->BindSR(1, renderContext.Buffers->GBuffer1);
     context->BindSR(2, renderContext.Buffers->GBuffer2);
-    context->BindSR(3, depthBufferSRV);
+    context->BindSR(3, depthBuffer.SRV);
     context->BindSR(4, renderContext.Buffers->GBuffer3);
 
     // Fullscreen shadow mask buffer
@@ -256,7 +253,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         {
             GET_SHADOW_MASK();
             ShadowsPass::Instance()->RenderShadowMask(renderContextBatch, light, shadowMaskView);
-            context->SetRenderTarget(depthBufferRTV, lightBuffer);
+            context->SetRenderTarget(depthBuffer.RTV, lightBuffer);
             context->BindSR(5, shadowMaskView);
         }
         else
@@ -304,7 +301,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         {
             GET_SHADOW_MASK();
             ShadowsPass::Instance()->RenderShadowMask(renderContextBatch, light, shadowMaskView);
-            context->SetRenderTarget(depthBufferRTV, lightBuffer);
+            context->SetRenderTarget(depthBuffer.RTV, lightBuffer);
             context->BindSR(5, shadowMaskView);
         }
         else
@@ -345,7 +342,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         {
             GET_SHADOW_MASK();
             ShadowsPass::Instance()->RenderShadowMask(renderContextBatch, light, shadowMaskView);
-            context->SetRenderTarget(depthBufferRTV, lightBuffer);
+            context->SetRenderTarget(depthBuffer.RTV, lightBuffer);
             context->BindSR(5, shadowMaskView);
         }
         else
@@ -448,11 +445,8 @@ void LightPass::RenderDebug(RenderContext& renderContext, GPUContext* context, G
     for (auto& light : renderContext.List->DirectionalLights)
         baseCost += LIGHT_COMPLEXITY_DIR_COST + (light.HasShadow ? LIGHT_COMPLEXITY_SHADOW_COST : 0);
     context->Clear(complexity->View(), Color(baseCost));
-    GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
-    const bool depthBufferReadOnly = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView);
-    GPUTextureView* depthBufferRTV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : nullptr;
-    GPUTextureView* depthBufferSRV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
-    context->SetRenderTarget(depthBufferRTV, complexity->View());
+    auto depthBuffer = renderContext.Buffers->GetReadOnlyDepthBuffer();
+    context->SetRenderTarget(depthBuffer.RTV, complexity->View());
     context->SetViewportAndScissors((float)complexity->Width(), (float)complexity->Height());
     for (auto& light : renderContext.List->PointLights)
         RenderDebugSphere(renderContext, context, light, light.Radius);
@@ -465,7 +459,7 @@ void LightPass::RenderDebug(RenderContext& renderContext, GPUContext* context, G
     // Draw complexity visualization based on accumulated complexity
     context->SetRenderTarget(output->View());
     context->BindSR(0, complexity->View());
-    context->BindSR(3, depthBufferSRV);
+    context->BindSR(3, depthBuffer.SRV);
     context->SetState(_psComplexity);
     context->DrawFullscreenTriangle();
 
