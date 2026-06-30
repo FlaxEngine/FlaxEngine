@@ -1550,6 +1550,8 @@ void DebugDraw::DrawPoint(const Vector3& position, float radius, const Color& co
 
     // Build a filled disc as a triangle fan from the center over the transformed unit circle points
     PROFILE_MEM(EngineDebug);
+    auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
+    auto& debugDrawList = duration > 0 ? debugDrawData.DefaultTriangles : debugDrawData.OneFrameTriangles;
     for (int32 i = 0; i < DEBUG_DRAW_CIRCLE_VERTICES; i += 2)
     {
         DebugTriangle t;
@@ -1558,7 +1560,7 @@ void DebugDraw::DrawPoint(const Vector3& position, float radius, const Color& co
         t.V0 = positionF;
         t.V1 = Float3::Transform(CircleCache[i], matrix);
         t.V2 = Float3::Transform(CircleCache[i + 1], matrix);
-        (depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault).Add(t);
+        debugDrawList.Add(t);
     }
 }
 
