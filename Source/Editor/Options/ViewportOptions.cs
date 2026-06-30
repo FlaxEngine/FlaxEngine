@@ -136,6 +136,13 @@ namespace FlaxEditor.Options
         [DefaultValue(50.0f), Limit(25.0f, 500.0f, 5.0f)]
         [EditorDisplay("Defaults"), EditorOrder(220), Tooltip("The default editor viewport grid scale.")]
         public float ViewportGridScale { get; set; } = 50.0f;
+        
+        /// <summary>
+        /// Gets or sets the use persistence over defaults setting
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Defaults"), EditorOrder(230), Tooltip("Allow persistence setting from last session to override default settings")]
+        public bool UsePersistenceOverDefaults { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the view distance you can see the grid.
