@@ -350,7 +350,13 @@ MessagePipeline MainThreadPipeline;
 
     // Create UI thread update callback
     self.displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(UIThreadMain)];
-    self.displayLink.preferredFramesPerSecond = 60;
+    const int32 targetFrameRate = 60;
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000
+    if (@available(iOS 15.0, *))
+        self.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(targetFrameRate, targetFrameRate, targetFrameRate);
+    else
+#endif
+        self.displayLink.preferredFramesPerSecond = targetFrameRate;
     [self.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
 
     // Run engine on a separate main thread
