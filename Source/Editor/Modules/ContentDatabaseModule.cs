@@ -1261,7 +1261,6 @@ namespace FlaxEditor.Modules
 
         private void OnImportFileDone(string path)
         {
-            // Check if already has that element
             var item = Find(path);
             if (item is BinaryAssetItem binaryAssetItem)
             {
@@ -1284,9 +1283,6 @@ namespace FlaxEditor.Modules
                         binaryAssetItem.OnReimport(ref assetInfo.ID);
                     }
                 }
-
-                // Refresh content view (not the best design because window could also track this event but it gives better performance)
-                Editor.Windows.ContentWin?.RefreshView();
             }
         }
 

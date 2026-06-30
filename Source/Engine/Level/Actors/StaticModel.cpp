@@ -154,7 +154,7 @@ MaterialBase* StaticModel::GetMaterial(int32 meshIndex, int32 lodIndex) const
         Math::IsInRange(meshIndex, 0, model->LODs[lodIndex].Meshes.Count()));
     const auto& mesh = model->LODs[lodIndex].Meshes[meshIndex];
     const auto materialSlotIndex = mesh.GetMaterialSlotIndex();
-    MaterialBase* material = Entries[materialSlotIndex].Material.Get();
+    MaterialBase* material = materialSlotIndex < Entries.Count() ? Entries[materialSlotIndex].Material.Get() : nullptr;
     return material ? material : model->MaterialSlots[materialSlotIndex].Material.Get();
 }
 
@@ -607,9 +607,9 @@ MaterialBase* StaticModel::GetMaterial(int32 entryIndex)
 {
     if (!Model || Model->WaitForLoaded())
         return nullptr;
-    CHECK_RETURN(entryIndex >= 0 && entryIndex < Entries.Count(), nullptr);
-    MaterialBase* material = Entries[entryIndex].Material.Get();
-    if (!material && entryIndex < Model->MaterialSlots.Count())
+    CHECK_RETURN(entryIndex >= 0 && entryIndex < Model->MaterialSlots.Count(), nullptr);
+    MaterialBase* material = entryIndex < Entries.Count() ? Entries[entryIndex].Material.Get() : nullptr;
+    if (!material)
     {
         material = Model->MaterialSlots[entryIndex].Material.Get();
         if (!material)

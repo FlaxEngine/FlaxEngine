@@ -1516,8 +1516,8 @@ MaterialBase* AnimatedModel::GetMaterial(int32 entryIndex)
         SkinnedModel->WaitForLoaded();
     else
         return nullptr;
-    CHECK_RETURN(entryIndex >= 0 && entryIndex < Entries.Count(), nullptr);
-    MaterialBase* material = Entries[entryIndex].Material.Get();
+    CHECK_RETURN(entryIndex >= 0 && entryIndex < SkinnedModel->MaterialSlots.Count(), nullptr);
+    MaterialBase* material = entryIndex < Entries.Count() ? Entries[entryIndex].Material.Get() : nullptr;
     if (!material)
     {
         material = SkinnedModel->MaterialSlots[entryIndex].Material.Get();

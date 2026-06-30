@@ -247,6 +247,13 @@ FORCE_INLINE void ApplyTransform(const Float2& value, Float2& result)
     Matrix3x3::Transform2DPoint(value, TransformCached, result);
 }
 
+FORCE_INLINE float GetTransformScale()
+{
+    const Float2 axisX(TransformCached.M11, TransformCached.M12);
+    const Float2 axisY(TransformCached.M21, TransformCached.M22);
+    return (axisX.Length() + axisY.Length()) * 0.5f;
+}
+
 void ApplyTransform(const Rectangle& value, RotatedRectangle& result)
 {
     const RotatedRectangle rotated(value);
@@ -1464,7 +1471,7 @@ void Render2D::DrawRectangle(const Rectangle& rect, const Color& color1, const C
 
     const auto& mask = ClipLayersStack.Peek().Mask;
     float thick = thickness;
-    thickness *= (TransformCached.M11 + TransformCached.M22 + TransformCached.M33) * 0.3333333f;
+    thickness *= GetTransformScale();
 
     // When lines thickness is very large, don't use corner caps and place line ends to not overlap
     if (thickness > 4.0f)
@@ -1840,7 +1847,7 @@ void DrawLines(const Float2* points, int32 pointsCount, const Color& color1, con
     ASSERT(points && pointsCount >= 2);
     const auto& mask = ClipLayersStack.Peek().Mask;
 
-    thickness *= (TransformCached.M11 + TransformCached.M22 + TransformCached.M33) * 0.3333333f;
+    thickness *= GetTransformScale();
 
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.StartIB = IBIndex;
