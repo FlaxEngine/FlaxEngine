@@ -138,9 +138,12 @@ namespace FlaxEditor.Windows
             b.Enabled = canEditScene && hasSthSelected && firstSelection?.Actor is not Scene;
 
             b = contextMenu.AddButton("Create Prefab", Editor.Prefabs.CreatePrefab);
+            // Skip if we cannot create assets in the given location
+            // Or DefaultPrefabFolder setting is invalid
             b.Enabled = isSingleActorSelected &&
                         (firstSelection != null ? firstSelection.CanCreatePrefab : false) &&
-                        Editor.Windows.ContentWin.CurrentViewFolder.CanHaveAssets;
+                        (Editor.Windows.ContentWin.CurrentViewFolder.CanHaveAssets
+                            || Editor.Prefabs.GetDefaultPrefabFolder() != null);
 
             bool hasPrefabLink = canEditScene && isSingleActorSelected && (firstSelection != null ? firstSelection.HasPrefabLink : false);
             if (hasPrefabLink)

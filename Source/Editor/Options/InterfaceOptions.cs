@@ -313,6 +313,14 @@ namespace FlaxEditor.Options
         [EditorDisplay("Interface"), EditorOrder(322)]
         public bool ScrollToScriptOnAdd { get; set; } = true;
 
+        /// <summary>
+        /// If set, prefabs created from the scene tree are placed in this folder instead of the current content folder.
+        /// (Relative to the project's Content folder)
+        /// </summary>
+        [DefaultValue(null)]
+        [EditorDisplay("Interface"), EditorOrder(323)]
+        public string DefaultPrefabFolder { get; set; }
+
 #if PLATFORM_SDL || PLATFORM_MAC
         /// <summary>
         /// Gets or sets a value indicating whether use native window title bar decorations in child windows. Editor restart required.
