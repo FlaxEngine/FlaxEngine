@@ -70,8 +70,7 @@ namespace
             if (accessor.AllocateBuffer(MeshBufferType::Vertex0, vertexCount, vb0layout))
                 return true;
             auto positionStream = accessor.Position();
-            ASSERT(positionStream.IsLinear(PixelFormat::R32G32B32_Float));
-            positionStream.SetLinear(vertices);
+            positionStream.Set(Span<Float3>(vertices, vertexCount));
         }
 
         // Vertex Buffer 1 (general purpose components)

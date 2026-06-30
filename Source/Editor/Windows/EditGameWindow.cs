@@ -433,25 +433,34 @@ namespace FlaxEditor.Windows
             writer.WriteAttributeString("GridEnabled", Viewport.Grid.Enabled.ToString());
             writer.WriteAttributeString("ShowFpsCounter", Viewport.ShowFpsCounter.ToString());
             writer.WriteAttributeString("ShowNavigation", Viewport.ShowNavigation.ToString());
+            writer.WriteAttributeString("UseOrthographicProjection", Viewport.UseOrthographicProjection.ToString());
             writer.WriteAttributeString("NearPlane", Viewport.NearPlane.ToString());
             writer.WriteAttributeString("FarPlane", Viewport.FarPlane.ToString());
             writer.WriteAttributeString("FieldOfView", Viewport.FieldOfView.ToString());
             writer.WriteAttributeString("MovementSpeed", Viewport.MovementSpeed.ToString());
+            writer.WriteAttributeString("Brightness", Viewport.Brightness.ToString());
             writer.WriteAttributeString("ViewportIconsScale", ViewportIconsRenderer.Scale.ToString());
+            writer.WriteAttributeString("ResolutionScale", Viewport.ResolutionScale.ToString());
             writer.WriteAttributeString("OrthographicScale", Viewport.OrthographicScale.ToString());
-            writer.WriteAttributeString("UseOrthographicProjection", Viewport.UseOrthographicProjection.ToString());
             writer.WriteAttributeString("ViewFlags", ((ulong)Viewport.Task.View.Flags).ToString());
+            writer.WriteAttributeString("DebugView", ((int)Viewport.Task.ViewMode).ToString());
+            writer.WriteAttributeString("LayerMask", Viewport.Task.ViewLayersMask.Mask.ToString());
         }
 
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
+            if (!Editor.Options.Options.Viewport.UsePersistenceOverDefaults)
+                return;
+            
             if (bool.TryParse(node.GetAttribute("GridEnabled"), out bool value1))
                 Viewport.Grid.Enabled = value1;
             if (bool.TryParse(node.GetAttribute("ShowFpsCounter"), out value1))
                 Viewport.ShowFpsCounter = value1;
             if (bool.TryParse(node.GetAttribute("ShowNavigation"), out value1))
                 Viewport.ShowNavigation = value1;
+            if (bool.TryParse(node.GetAttribute("UseOrthographicProjection"), out value1))
+                Viewport.UseOrthographicProjection = value1;
             if (float.TryParse(node.GetAttribute("NearPlane"), out float value2))
                 Viewport.NearPlane = value2;
             if (float.TryParse(node.GetAttribute("FarPlane"), out value2))
@@ -460,18 +469,28 @@ namespace FlaxEditor.Windows
                 Viewport.FieldOfView = value2;
             if (float.TryParse(node.GetAttribute("MovementSpeed"), out value2))
                 Viewport.MovementSpeed = value2;
+            if (float.TryParse(node.GetAttribute("Brightness"), out value2))
+                Viewport.Brightness = value2;
+            if (float.TryParse(node.GetAttribute("ResolutionScale"), out value2))
+                Viewport.ResolutionScale = value2;
             if (float.TryParse(node.GetAttribute("ViewportIconsScale"), out value2))
                 ViewportIconsRenderer.Scale = value2;
             if (float.TryParse(node.GetAttribute("OrthographicScale"), out value2))
                 Viewport.OrthographicScale = value2;
-            if (bool.TryParse(node.GetAttribute("UseOrthographicProjection"), out value1))
-                Viewport.UseOrthographicProjection = value1;
             if (ulong.TryParse(node.GetAttribute("ViewFlags"), out ulong value3))
                 Viewport.Task.ViewFlags = (ViewFlags)value3;
-
-            // Reset view flags if opening with different engine version (ViewFlags enum could be modified)
+            if (int.TryParse(node.GetAttribute("DebugView"), out int value4))
+                Viewport.Task.ViewMode = (ViewMode)value4;
+            if (uint.TryParse(node.GetAttribute("LayerMask"), out uint value5))
+                Viewport.Task.ViewLayersMask = new LayersMask(value5);
+            
+            // Reset view flags and view mode if opening with different engine version
+            // (ViewFlags and ViewMode enums could be modified)
             if (Editor.LastProjectOpenedEngineBuild != Globals.EngineBuildNumber)
+            {
                 Viewport.Task.ViewFlags = ViewFlags.DefaultEditor;
+                Viewport.Task.ViewMode = ViewMode.Default;
+            }
         }
 
         /// <inheritdoc />

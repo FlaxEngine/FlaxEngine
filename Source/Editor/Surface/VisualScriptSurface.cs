@@ -39,8 +39,16 @@ namespace FlaxEditor.Surface
         {
             "Newtonsoft.Json.",
             "System.Array",
+            "System.ComponentModel.",
             "System.Linq.Expressions.",
             "System.Reflection.",
+            "System.Runtime.CompilerServices.",
+            "System.Runtime.InteropServices.",
+            "System.Runtime.Intrinsics.",
+            "System.Security.",
+            "System.Text.",
+            "System.Xml.",
+            "MS.",
         };
 
         private static NodesCache _nodesCache = new NodesCache(IterateNodesCache);
