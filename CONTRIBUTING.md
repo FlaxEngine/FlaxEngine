@@ -26,7 +26,7 @@ Go check out our [Trello](https://trello.com/b/NQjLXRCP/flax-roadmap).
 * For feature PR's the first thing you should evaluate is the value of your contribution, as in, what would it bring to this engine? Is it really required?
   If its a small change you could preferably suggest it to us on our discord, else feel free to open up a PR for it.
   
-* Ensure when creating a PR that your contribution is well explained with a adequate description and title.
+* Ensure when creating a PR that your contribution is well explained with an adequate description and title.
 
 * Generally, good code quality is expected, make sure your contribution works as intended and is appropriately commented where necessary.
 
