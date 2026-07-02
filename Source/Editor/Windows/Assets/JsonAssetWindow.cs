@@ -243,6 +243,14 @@ namespace FlaxEditor.Windows.Assets
             base.OnAssetLoaded();
         }
 
+        /// <inheritdoc />
+        protected override void DiscardChanges()
+        {
+            Asset?.ClearInstance();
+            _object = null;
+            base.DiscardChanges();
+        }
+
         private void OpenOptionsContextMenu()
         {
             if (_optionsCM != null)
