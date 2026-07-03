@@ -278,14 +278,55 @@ void GPUDeviceVulkan::PerfSDKInit()
     if (Platform::GetEnvironmentVariable(TEXT("NVPERF_SDK_PATH"), PerfSDK.Path) || PerfSDK.Path.IsEmpty() || !FileSystem::DirectoryExists(PerfSDK.Path))
         return;
 
-    // The Nsight Perf SDK host library is named 'nvperf_grfx_host.dll' (see nvperf_host_impl.h). Older/other
-    // packages used 'nvperf.dll'. Try the modern name first, then fall back, so the engine can query the
-    // Range Profiler's REQUIRED Vulkan instance/device extensions at device creation. Without these the
-    // VkDevice is created with only the mini-trace fallback extensions and NVPW_VK_Profiler_Queue_BeginSession
-    // fails with NVPA_STATUS_INVALID_CONTEXT_STATE.
+    // The Nsight Perf SDK host library is named 'nvperf_grfx_host.dll' / 'libnvperf_grfx_host.so'
+    // (see nvperf_host_impl.h / nvperf_grfx_host_impl.h). Older packages used 'nvperf.dll'. Try the
+    // modern name first, then fall back, so the engine can query the Range Profiler's REQUIRED Vulkan
+    // instance/device extensions at device creation. Without these the VkDevice is created with only
+    // the mini-trace fallback extensions and NVPW_VK_Profiler_Queue_BeginSession fails with
+    // NVPA_STATUS_INVALID_CONTEXT_STATE.
+    String loadedPath;
+#if PLATFORM_LINUX
+    static const Char* libSubdirs[] =
+    {
+        TEXT("NvPerf/lib/a64"),
+        TEXT("NvPerf/lib/x64"),
+    };
+    static const Char* soNames[] = { TEXT("libnvperf_grfx_host.so"), TEXT("libnvperf.so") };
+    for (const Char* libSubdir : libSubdirs)
+    {
+        const String libDir = PerfSDK.Path / libSubdir;
+        if (!FileSystem::DirectoryExists(libDir))
+            continue;
+
+        String ldPath;
+        Platform::GetEnvironmentVariable(TEXT("LD_LIBRARY_PATH"), ldPath);
+        if (ldPath.IsEmpty())
+            ldPath = libDir;
+        else if (!ldPath.Contains(libDir))
+            ldPath = libDir + TEXT(":") + ldPath;
+        Platform::SetEnvironmentVariable(TEXT("LD_LIBRARY_PATH"), ldPath);
+
+        for (const Char* soName : soNames)
+        {
+            const String soPath = libDir / soName;
+            PerfSDK.Module = Platform::LoadLibrary(soPath.Get());
+            if (PerfSDK.Module)
+            {
+                loadedPath = soPath;
+                break;
+            }
+        }
+        if (PerfSDK.Module)
+            break;
+    }
+    if (!PerfSDK.Module)
+    {
+        LOG(Warning, "Nsight PerfSDK: failed to load NvPerf host library from '{0}/NvPerf/lib/a64' (tried libnvperf_grfx_host.so and libnvperf.so)", PerfSDK.Path);
+        return;
+    }
+#else
     const String binDir = PerfSDK.Path / TEXT("NvPerf") / TEXT("bin") / TEXT("x64");
     const Char* dllNames[] = { TEXT("nvperf_grfx_host.dll"), TEXT("nvperf.dll") };
-    String loadedPath;
     for (const Char* dllName : dllNames)
     {
         const String dllPath = binDir / dllName;
@@ -301,6 +342,7 @@ void GPUDeviceVulkan::PerfSDKInit()
         LOG(Warning, "Nsight PerfSDK: failed to load NvPerf host library from '{0}' (tried nvperf_grfx_host.dll and nvperf.dll)", binDir);
         return;
     }
+#endif
 
     // Initialize host library
     auto initializeHost = (PFN_NVPW_InitializeHost)Platform::GetProcAddress(PerfSDK.Module, "NVPW_InitializeHost");
