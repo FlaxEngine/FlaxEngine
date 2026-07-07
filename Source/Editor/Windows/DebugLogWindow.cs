@@ -70,22 +70,61 @@ namespace FlaxEditor.Windows
 
         private class LogEntry : Control
         {
+            /// <summary>
+            /// Text block with only color available, no other styling.
+            /// </summary>
             private struct TextColorBlock
             {
+                /// <summary>
+                /// Color of this block.
+                /// </summary>
                 public Color TextColor;
+
+                /// <summary>
+                /// Range of the text.
+                /// </summary>
                 public TextRange Range;
-                public Float2 Location;
-                public Float2 Size;
+
+                /// <summary>
+                /// The text location and size.
+                /// </summary>
+                public Rectangle Bounds;
             }
 
+            /// <summary>
+            /// Rich text parsing context.
+            /// </summary>
             private struct ColorParseContext
             {
+                /// <summary>
+                /// LogEntry control.
+                /// </summary>
                 public LogEntry Control;
+
+                /// <summary>
+                /// Caret location for the next text block.
+                /// </summary>
                 public Float2 Caret;
+
+                /// <summary>
+                /// Current parsed color.
+                /// </summary>
                 public Color CurrentColor;
+
+                /// <summary>
+                /// Default color, for reverting color on closing tags.
+                /// </summary>
                 public Color DefaultColor;
+
+                /// <summary>
+                /// Current text font for text processing.
+                /// </summary>
                 public Font TextFont;
 
+                /// <summary>
+                /// Add text block to the control.
+                /// </summary>
+                /// <param name="block">The text block to add.</param>
                 public void AddBlock(ref TextColorBlock block)
                 {
                     Control._textBlocks.Add(block);
@@ -163,18 +202,27 @@ namespace FlaxEditor.Windows
                     }
                 }
 
+                // Processing leftover text
                 ProcessTextBlock(ref context, pointerPos, Desc.Title.Length);
             }
 
+            /// <summary>
+            /// Processing the text block within given range and adding it to the list.
+            /// </summary>
+            /// <param name="context">The parsing context.</param>
+            /// <param name="startPos">Start of the range.(Character index)</param>
+            /// <param name="endPos">End of the range.(Character index)</param>
             private void ProcessTextBlock(ref ColorParseContext context, int startPos, int endPos)
             {
+                // Text block preset
                 var textBlock = new TextColorBlock()
                 {
                     TextColor = context.CurrentColor,
                     Range = new TextRange(startPos, endPos),
-                    Location = context.Caret
+                    Bounds = new Rectangle(context.Caret, Float2.Zero)
                 };
 
+                // Processing the text with selected font. (Handle newlines, text offsets)
                 var lines = context.TextFont.ProcessText(Desc.Title, ref textBlock.Range);
 
                 if (lines == null || lines.Length == 0)
@@ -190,18 +238,20 @@ namespace FlaxEditor.Windows
                         EndIndex = startPos + line.LastCharIndex + 1
                     };
 
+                    // Move to the next line
                     if (i != 0)
                     {
                         context.Caret.Y += line.Size.Y;
-                        textBlock.Location.X = 0;
-                        textBlock.Location.Y += line.Size.Y;
+                        textBlock.Bounds.X = 0;
+                        textBlock.Bounds.Y += line.Size.Y;
                     }
 
-                    textBlock.Location.X += line.Location.X;
-                    textBlock.Size = line.Size;
+                    textBlock.Bounds.X += line.Location.X;
+                    textBlock.Bounds.Size = line.Size;
                     context.AddBlock(ref textBlock);
                 }
 
+                // Caret location for the next text block
                 var lastLine = lines[lines.Length - 1];
                 if (lines.Length == 1)
                 {
@@ -213,20 +263,31 @@ namespace FlaxEditor.Windows
                 }
             }
 
+            /// <summary>
+            /// Parse color info from the tag and handle closing tags.
+            /// </summary>
+            /// <param name="context">The parsing context.</param>
+            /// <param name="tag">Tag to process.</param>
             private static void ProcessColorTag(ref ColorParseContext context, ref HtmlTag tag)
             {
+                // Closing tag
                 if (tag.IsSlash)
                 {
                     context.CurrentColor = context.DefaultColor;
                 }
                 else
                 {
+                    // Parse color
                     if (tag.Attributes.TryGetValue(string.Empty, out string colorText))
                     {
                         if (Color.TryParse(colorText, out Color colorVal))
                         {
                             context.CurrentColor = colorVal;
                         }
+                    }
+                    else
+                    {
+                        context.CurrentColor = context.DefaultColor;
                     }
                 }
             }
@@ -265,25 +326,27 @@ namespace FlaxEditor.Windows
                 Render2D.DrawSprite(Icon, new Rectangle(8, 0, 32, 32), color);
 
                 // Title
-                var textRect = new Rectangle(43, 2, clientRect.Width - 40, clientRect.Height - 10);
+                var textLocation = new Float2(43, 2);
                 Render2D.PushClip(ref clientRect);
                 bool coloredText = _window._colorDebugLogText;
 
+                // Render text blocks with their colors
                 for (int i = 0; i < _textBlocks.Count; i++)
                 {
                     TextColorBlock block = _textBlocks[i];
                     Render2D.DrawText(style.FontMedium, Desc.Title, ref block.Range,
-                        coloredText ? block.TextColor : style.Foreground, textRect.TopLeft + block.Location);
+                        coloredText ? block.TextColor : style.Foreground, textLocation + block.Bounds.Location);
                 }
 
+                // Adding log counter for collapsed logs
                 if (LogCount > 1)
                 {
-                    Float2 numberLocation = textRect.TopLeft;
+                    Float2 numberLocation = textLocation;
                     if (_textBlocks.Count > 0)
                     {
                         TextColorBlock block = _textBlocks[_textBlocks.Count - 1];
-                        numberLocation += block.Location;
-                        numberLocation.X += block.Size.X;
+                        numberLocation += block.Bounds.Location;
+                        numberLocation.X += block.Bounds.Size.X;
                     }
 
                     Render2D.DrawText(style.FontMedium, $" ({LogCount})", color, numberLocation);
