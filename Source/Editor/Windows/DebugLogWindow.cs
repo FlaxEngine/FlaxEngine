@@ -13,6 +13,7 @@ using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.Assertions;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Windows
@@ -69,6 +70,28 @@ namespace FlaxEditor.Windows
 
         private class LogEntry : Control
         {
+            private struct TextColorBlock
+            {
+                public Color TextColor;
+                public TextRange Range;
+                public Float2 Location;
+                public Float2 Size;
+            }
+
+            private struct ColorParseContext
+            {
+                public LogEntry Control;
+                public Float2 Caret;
+                public Color CurrentColor;
+                public Color DefaultColor;
+                public Font TextFont;
+
+                public void AddBlock(ref TextColorBlock block)
+                {
+                    Control._textBlocks.Add(block);
+                }
+            }
+
             private bool _isRightMouseDown;
 
             /// <summary>
@@ -81,6 +104,8 @@ namespace FlaxEditor.Windows
             public LogEntryDescription Desc;
             public SpriteHandle Icon;
             public int LogCount = 1;
+
+            private readonly List<TextColorBlock> _textBlocks = new List<TextColorBlock>();
 
             public LogEntry(DebugLogWindow window, ref LogEntryDescription desc)
             : base(0, 0, 120, DefaultHeight)
@@ -105,6 +130,104 @@ namespace FlaxEditor.Windows
                     Group = LogGroup.Error;
                     Icon = _window._iconError;
                     break;
+                }
+
+                // Color parsing
+                var style = Style.Current;
+                var color = Group == LogGroup.Error ? _window._colorError : (Group == LogGroup.Warning ? _window._colorWarning : _window._colorInfo);
+
+                HtmlParser parser = new();
+
+                parser.Reset(Desc.Title);
+
+                var context = new ColorParseContext
+                {
+                    Control = this,
+                    Caret = Float2.Zero,
+                    CurrentColor = color,
+                    DefaultColor = color,
+                    TextFont = style.FontMedium,
+                };
+
+                int pointerPos = 0;
+
+                while (parser.ParseNext(out var tag))
+                {
+                    if (tag.Name.ToLower() == "color")
+                    {
+                        ProcessTextBlock(ref context, pointerPos, tag.StartPosition);
+
+                        pointerPos = tag.EndPosition;
+
+                        ProcessColorTag(ref context, ref tag);
+                    }
+                }
+
+                ProcessTextBlock(ref context, pointerPos, Desc.Title.Length);
+            }
+
+            private void ProcessTextBlock(ref ColorParseContext context, int startPos, int endPos)
+            {
+                var textBlock = new TextColorBlock()
+                {
+                    TextColor = context.CurrentColor,
+                    Range = new TextRange(startPos, endPos),
+                    Location = context.Caret
+                };
+
+                var lines = context.TextFont.ProcessText(Desc.Title, ref textBlock.Range);
+
+                if (lines == null || lines.Length == 0)
+                {
+                    return;
+                }
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    ref var line = ref lines[i];
+                    textBlock.Range = new TextRange
+                    {
+                        StartIndex = startPos + line.FirstCharIndex,
+                        EndIndex = startPos + line.LastCharIndex + 1
+                    };
+
+                    if (i != 0)
+                    {
+                        context.Caret.Y += line.Size.Y;
+                        textBlock.Location.X = 0;
+                        textBlock.Location.Y += line.Size.Y;
+                    }
+
+                    textBlock.Location.X += line.Location.X;
+                    textBlock.Size = line.Size;
+                    context.AddBlock(ref textBlock);
+                }
+
+                var lastLine = lines[lines.Length - 1];
+                if (lines.Length == 1)
+                {
+                    context.Caret.X += lastLine.Size.X;
+                }
+                else
+                {
+                    context.Caret.X = lastLine.Size.X;
+                }
+            }
+
+            private static void ProcessColorTag(ref ColorParseContext context, ref HtmlTag tag)
+            {
+                if (tag.IsSlash)
+                {
+                    context.CurrentColor = context.DefaultColor;
+                }
+                else
+                {
+                    if (tag.Attributes.TryGetValue(string.Empty, out string colorText))
+                    {
+                        if (Color.TryParse(colorText, out Color colorVal))
+                        {
+                            context.CurrentColor = colorVal;
+                        }
+                    }
                 }
             }
 
@@ -145,13 +268,25 @@ namespace FlaxEditor.Windows
                 var textRect = new Rectangle(43, 2, clientRect.Width - 40, clientRect.Height - 10);
                 Render2D.PushClip(ref clientRect);
                 bool coloredText = _window._colorDebugLogText;
-                if (LogCount == 1)
+
+                for (int i = 0; i < _textBlocks.Count; i++)
                 {
-                    Render2D.DrawText(style.FontMedium, Desc.Title, textRect, coloredText ? color : style.Foreground);
+                    TextColorBlock block = _textBlocks[i];
+                    Render2D.DrawText(style.FontMedium, Desc.Title, ref block.Range,
+                        coloredText ? block.TextColor : style.Foreground, textRect.TopLeft + block.Location);
                 }
-                else if (LogCount > 1)
+
+                if (LogCount > 1)
                 {
-                    Render2D.DrawText(style.FontMedium, $"{Desc.Title} ({LogCount})", textRect, coloredText ? color : style.Foreground);
+                    Float2 numberLocation = textRect.TopLeft;
+                    if (_textBlocks.Count > 0)
+                    {
+                        TextColorBlock block = _textBlocks[_textBlocks.Count - 1];
+                        numberLocation += block.Location;
+                        numberLocation.X += block.Size.X;
+                    }
+
+                    Render2D.DrawText(style.FontMedium, $" ({LogCount})", color, numberLocation);
                 }
                 Render2D.PopClip();
             }
