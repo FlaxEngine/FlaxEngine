@@ -362,6 +362,13 @@ void WindowsWindow::BringToFront(bool force)
 {
     ASSERT(HasHWND());
 
+    HWND hWndInsertAfter = HWND_TOP;
+    uint32 flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER;
+    if (_settings.IsTopmost)
+    {
+        hWndInsertAfter = HWND_TOPMOST;
+    }
+
     if (_settings.Type == WindowType::Regular)
     {
         if (IsIconic(_handle))
@@ -372,20 +379,13 @@ void WindowsWindow::BringToFront(bool force)
         {
             SetActiveWindow(_handle);
         }
+        SetWindowPos(_handle, hWndInsertAfter, 0, 0, 0, 0, flags);
     }
     else
     {
-        HWND hWndInsertAfter = HWND_TOP;
-        uint32 flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER;
-
         if (!force)
         {
             flags |= SWP_NOACTIVATE;
-        }
-
-        if (_settings.IsTopmost)
-        {
-            hWndInsertAfter = HWND_TOPMOST;
         }
 
         SetWindowPos(_handle, hWndInsertAfter, 0, 0, 0, 0, flags);
@@ -614,6 +614,7 @@ void WindowsWindow::SetOpacity(const float opacity)
 void WindowsWindow::Focus()
 {
     ASSERT(HasHWND());
+    BringToFront();
     if (GetFocus() != _handle)
     {
         SetFocus(_handle);
@@ -1129,6 +1130,10 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
                 return 0;
             }
         }
+        break;
+    case WM_MOUSEACTIVATE:
+        if (_settings.Type == WindowType::Regular)
+            BringToFront();
         break;
     case WM_CREATE:
         return 0;
