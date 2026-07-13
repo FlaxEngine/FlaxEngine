@@ -5,6 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml;
 using FlaxEditor.CustomEditors;
+using FlaxEditor.CustomEditors.Elements;
+using FlaxEditor.CustomEditors.GUI;
+using FlaxEditor.GUI.Input;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Viewport;
 using FlaxEngine;
@@ -23,6 +26,8 @@ namespace FlaxEditor.Windows
 
         private readonly Dictionary<Guid, float> _actorScrollValues = new Dictionary<Guid, float>();
         private bool _lockObjects = false;
+        private SearchBox _searchBox;
+        private Panel _scrollingPanel;
 
         /// <inheritdoc />
         public override bool UseLayoutData => true;
@@ -66,18 +71,42 @@ namespace FlaxEditor.Windows
         /// </summary>
         /// <param name="editor">The editor.</param>
         public PropertiesWindow(Editor editor)
-        : base(editor, true, ScrollBars.Vertical)
+        : base(editor, true, ScrollBars.None)
         {
             Title = "Properties";
             Icon = editor.Icons.Build64;
             AutoFocus = true;
 
+            var headerPanel = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                BackgroundColor = Style.Current.Background,
+                IsScrollable = false,
+                Offsets = new Margin(0, 0, 0, 18 + 6),
+                Parent = this,
+            };
+            _searchBox = new SearchBox
+            {
+                AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
+                Parent = headerPanel,
+                Bounds = new Rectangle(4, 4, headerPanel.Width - 8, 18),
+            };
+            _searchBox.TextChanged += ApplySearchFilter;
+
+            _scrollingPanel = new Panel(ScrollBars.Vertical)
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = new Margin(0, 0, headerPanel.Bottom, 0),
+                Parent = this,
+            };
+
             Presenter = new CustomEditorPresenter(editor.Undo, null, this);
-            Presenter.Panel.Parent = this;
+            Presenter.Panel.Parent = _scrollingPanel;
             Presenter.GetUndoObjects += GetUndoObjects;
             Presenter.Features |= FeatureFlags.CacheExpandedGroups;
+            Presenter.AfterLayout += OnPresenterAfterLayout;
 
-            VScrollBar.ValueChanged += OnScrollValueChanged;
+            _scrollingPanel.VScrollBar.ValueChanged += OnScrollValueChanged;
             Editor.SceneEditing.SelectionChanged += OnSelectionChanged;
         }
 
@@ -115,7 +144,8 @@ namespace FlaxEditor.Windows
                 }
             }
             
-            _actorScrollValues[Editor.SceneEditing.Selection[0].ID] = VScrollBar.TargetValue;
+            if (_scrollingPanel.VScrollBar != null)
+                _actorScrollValues[Editor.SceneEditing.Selection[0].ID] = _scrollingPanel.VScrollBar.TargetValue;
         }
 
         private IEnumerable<object> GetUndoObjects(CustomEditorPresenter customEditorPresenter)
@@ -135,8 +165,18 @@ namespace FlaxEditor.Windows
             Presenter.Select(objects);
 
             // Set scroll value of window if it exists
-            if (Editor.SceneEditing.SelectionCount == 1)
-                VScrollBar.TargetValue = _actorScrollValues.GetValueOrDefault(Editor.SceneEditing.Selection[0].ID, 0);
+            if (Editor.SceneEditing.SelectionCount == 1 && _scrollingPanel.VScrollBar != null)
+                _scrollingPanel.VScrollBar.TargetValue = _actorScrollValues.GetValueOrDefault(Editor.SceneEditing.Selection[0].ID, 0);
+        }
+
+        private void OnPresenterAfterLayout(LayoutElementsContainer layout)
+        {
+            ApplySearchFilter();
+        }
+
+        private void ApplySearchFilter()
+        {
+            Presenter.ApplySearchFilter(_searchBox.Text);
         }
 
         /// <inheritdoc />

@@ -1337,10 +1337,7 @@ namespace FlaxEditor
         {
             var scenes = Level.Scenes;
             for (int i = 0; i < scenes.Length; i++)
-            {
                 scenes[i].ClearLightmaps();
-            }
-
             Scene.MarkSceneEdited(scenes);
         }
 
@@ -1384,6 +1381,7 @@ namespace FlaxEditor
             var scenes = Level.Scenes;
             Navigation.BuildNavMesh();
             Scene.MarkSceneEdited(scenes);
+            ProgressReporting.NavMeshBuilding.DirtyScenesOnEnd = true;
         }
 
         /// <summary>

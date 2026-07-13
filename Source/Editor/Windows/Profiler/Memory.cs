@@ -84,6 +84,8 @@ namespace FlaxEditor.Windows.Profiler
             var textColor = style.Foreground;
             _table = new Table
             {
+                RowColorEven = Color.Transparent,
+                RowColorOdd = style.Background * 1.4f,
                 Columns = new[]
                 {
                     new ColumnDefinition
@@ -236,7 +238,6 @@ namespace FlaxEditor.Windows.Profiler
             });
 
             // Add rows
-            var rowColor2 = Style.Current.Background * 1.4f;
             for (int i = 0; i < (int)ProfilerMemory.Groups.MAX; i++)
             {
                 var group = _groupOrder[i];
@@ -278,7 +279,6 @@ namespace FlaxEditor.Windows.Profiler
                     row.BackgroundColors[3] = Color.Red.AlphaMultiplied(Mathf.Min(1, (float)groupCount / totalCount) * 0.5f);
                 }
                 row.Width = _table.Width;
-                row.BackgroundColor = i % 2 == 1 ? rowColor2 : Color.Transparent;
                 row.Parent = _table;
 
                 var useBackground = group != (int)ProfilerMemory.Groups.Total &&

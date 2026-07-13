@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.GUI;
+using FlaxEditor.GUI.Input;
 using FlaxEditor.GUI.Tabs;
 using FlaxEditor.Options;
 using FlaxEngine;
@@ -25,6 +26,7 @@ namespace FlaxEditor.Windows
         private ToolStripButton _saveButton;
         private readonly Undo _undo;
         private readonly List<Tab> _customTabs = new List<Tab>();
+        private SearchBox _searchBox;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EditorOptionsWindow"/> class.
@@ -48,15 +50,33 @@ namespace FlaxEditor.Windows
             _saveButton = (ToolStripButton)toolstrip.AddButton(editor.Icons.Save64, SaveData).LinkTooltip("Save.");
             _saveButton.Enabled = false;
 
+            // Header panel for search
+            var headerPanel = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                BackgroundColor = Style.Current.Background,
+                IsScrollable = false,
+                Offsets = new Margin(0, 0, toolstrip.Bottom, 18 + 6),
+                Parent = this,
+            };
+            _searchBox = new SearchBox
+            {
+                AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
+                Parent = headerPanel,
+                Bounds = new Rectangle(4, 4, headerPanel.Width - 8, 18),
+            };
+            _searchBox.TextChanged += ApplySearchFilter;
+
             _tabs = new Tabs
             {
                 Orientation = Orientation.Vertical,
                 AnchorPreset = AnchorPresets.StretchAll,
-                Offsets = new Margin(0, 0, toolstrip.Bottom, 0),
+                Offsets = new Margin(0, 0, headerPanel.Bottom, 0),
                 TabsSize = new Float2(120, 32),
                 UseScroll = true,
                 Parent = this
             };
+            _tabs.SelectedTabChanged += OnSelectedTabChanged;
 
             CreateTab("General", () => _options.General);
             CreateTab("Interface", () => _options.Interface);
@@ -94,6 +114,13 @@ namespace FlaxEditor.Windows
             settings.Panel.Parent = panel;
             settings.Panel.Tag = getValue;
             settings.Modified += MarkAsEdited;
+            settings.AfterLayout += layout =>
+            {
+                if (_tabs.SelectedTab == tab)
+                {
+                    ApplySearchFilter();
+                }
+            };
 
             return tab;
         }
@@ -279,6 +306,26 @@ namespace FlaxEditor.Windows
             }
 
             return base.OnClosing(reason);
+        }
+
+        private void OnSelectedTabChanged(Tabs tabs)
+        {
+            ApplySearchFilter();
+        }
+
+        private CustomEditorPresenter GetTabPresenter(Tab tab)
+        {
+            if (tab == null)
+                return null;
+            var panel = tab.GetChild<Panel>();
+            var settingsPanel = panel?.GetChild<CustomEditorPresenter.PresenterPanel>();
+            return settingsPanel?.Presenter;
+        }
+
+        private void ApplySearchFilter()
+        {
+            var presenter = GetTabPresenter(_tabs.SelectedTab);
+            presenter?.ApplySearchFilter(_searchBox.Text);
         }
     }
 }

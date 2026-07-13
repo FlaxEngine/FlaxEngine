@@ -5,6 +5,7 @@ using FlaxEditor.Content;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Input;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
@@ -67,6 +68,8 @@ namespace FlaxEditor.Windows.Assets
         }
         
         private readonly CustomEditorPresenter _presenter;
+        private SearchBox _searchBox;
+        private Panel _scrollingPanel;
         private readonly ToolStripButton _saveButton;
         private readonly ToolStripButton _undoButton;
         private readonly ToolStripButton _redoButton;
@@ -100,18 +103,35 @@ namespace FlaxEditor.Windows.Assets
             _undoButton = _toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo", ref inputOptions.Undo);
             _redoButton = _toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo", ref inputOptions.Redo);
 
-            // Panel
-            var panel = new Panel(ScrollBars.Vertical)
+            // Header panel for search
+            var headerPanel = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                BackgroundColor = Style.Current.Background,
+                IsScrollable = false,
+                Offsets = new Margin(0, 0, _toolstrip.Bottom, 18 + 6),
+                Parent = this,
+            };
+            _searchBox = new SearchBox
+            {
+                AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
+                Parent = headerPanel,
+                Bounds = new Rectangle(4, 4, headerPanel.Width - 8, 18),
+            };
+            _searchBox.TextChanged += ApplySearchFilter;
+
+            _scrollingPanel = new Panel(ScrollBars.Vertical)
             {
                 AnchorPreset = AnchorPresets.StretchAll,
-                Offsets = new Margin(0, 0, _toolstrip.Bottom, 0),
-                Parent = this
+                Offsets = new Margin(0, 0, headerPanel.Bottom, 0),
+                Parent = this,
             };
 
             // Properties
             _presenter = new CustomEditorPresenter(_undo, "Loading...");
-            _presenter.Panel.Parent = panel;
+            _presenter.Panel.Parent = _scrollingPanel;
             _presenter.Modified += MarkAsEdited;
+            _presenter.AfterLayout += OnPresenterAfterLayout;
 
             // Setup input actions
             InputActions.Add(options => options.Undo, _undo.PerformUndo);
@@ -348,6 +368,16 @@ namespace FlaxEditor.Windows.Assets
             }
             _optionsCM?.Dispose();
             _typeText = null;
+        }
+
+        private void OnPresenterAfterLayout(LayoutElementsContainer layout)
+        {
+            ApplySearchFilter();
+        }
+
+        private void ApplySearchFilter()
+        {
+            _presenter.ApplySearchFilter(_searchBox.Text);
         }
     }
 }
