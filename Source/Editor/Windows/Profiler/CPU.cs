@@ -106,6 +106,8 @@ namespace FlaxEditor.Windows.Profiler
             var textColor = style.Foreground;
             _table = new Table
             {
+                RowColorEven = Color.Transparent,
+                RowColorOdd = style.Background * 1.4f,
                 Columns = new[]
                 {
                     new ColumnDefinition
@@ -464,7 +466,6 @@ namespace FlaxEditor.Windows.Profiler
             float totalTimeMs = _mainChart.SelectedSample;
 
             // Add rows
-            var rowColor2 = Style.Current.Background * 1.4f;
             for (int j = 0; j < data.Length; j++)
             {
                 var events = data[j].Events;
@@ -540,7 +541,6 @@ namespace FlaxEditor.Windows.Profiler
                     row.Depth = e.Depth;
                     row.Width = _table.Width;
                     row.Visible = e.Depth < 2;
-                    row.BackgroundColor = i % 2 == 1 ? rowColor2 : Color.Transparent;
                     row.Parent = _table;
                 }
             }

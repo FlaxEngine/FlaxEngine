@@ -82,6 +82,53 @@ namespace FlaxEditor.GUI
             }
         }
 
+        private bool _alternateRows = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether alternate row background colors should be applied.
+        /// </summary>
+        public bool AlternateRows
+        {
+            get => _alternateRows;
+            set
+            {
+                if (_alternateRows != value)
+                {
+                    _alternateRows = value;
+                    PerformLayout();
+                }
+            }
+        }
+
+        private Color? _rowColorEven;
+        private Color? _rowColorOdd;
+
+        /// <summary>
+        /// Gets or sets the background color of even rows.
+        /// </summary>
+        public Color RowColorEven
+        {
+            get => _rowColorEven ?? Color.Transparent;
+            set
+            {
+                _rowColorEven = value;
+                PerformLayout();
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the background color of odd rows.
+        /// </summary>
+        public Color RowColorOdd
+        {
+            get => _rowColorOdd ?? (Style.Current != null ? Style.Current.Background * 1.4f : Color.Transparent);
+            set
+            {
+                _rowColorOdd = value;
+                PerformLayout();
+            }
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Table"/> class.
         /// </summary>
@@ -250,6 +297,7 @@ namespace FlaxEditor.GUI
 
             // Arrange rows
             float y = _headerHeight;
+            int visibleRowIndex = 0;
             for (int i = 0; i < Children.Count; i++)
             {
                 var c = Children[i];
@@ -260,6 +308,12 @@ namespace FlaxEditor.GUI
                     bounds.Y = y;
                     c.Bounds = bounds;
                     y += bounds.Height + 1;
+
+                    if (_alternateRows && c is Row row)
+                    {
+                        row.BackgroundColor = visibleRowIndex % 2 == 1 ? RowColorOdd : RowColorEven;
+                        visibleRowIndex++;
+                    }
                 }
             }
 

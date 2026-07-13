@@ -603,6 +603,9 @@ namespace FlaxEditor.Windows.Assets
         public IEnumerable<ScriptType> NewParameterTypes => Editor.CodeEditing.VisualScriptPropertyTypes.Get();
 
         /// <inheritdoc />
+        public int ParamToRename { get; set; } = -1;
+
+        /// <inheritdoc />
         public event Action SurfaceLoaded;
 
         /// <inheritdoc />

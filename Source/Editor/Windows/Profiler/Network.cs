@@ -190,7 +190,6 @@ namespace FlaxEditor.Windows.Profiler
                 var rowCount = Int2.Zero;
                 if (events != null && events.Length != 0)
                 {
-                    var rowColor2 = Style.Current.Background * 1.4f;
                     for (int i = 0; i < events.Length; i++)
                     {
                         var e = events[i];
@@ -230,7 +229,6 @@ namespace FlaxEditor.Windows.Profiler
 
                         var table = isRpc ? _tableRpc : _tableRep;
                         row.Width = table.Width;
-                        row.BackgroundColor = rowCount[isRpc ? 0 : 1] % 2 == 1 ? rowColor2 : Color.Transparent;
                         row.Parent = table;
                         if (isRpc)
                             rowCount.X++;
@@ -266,6 +264,8 @@ namespace FlaxEditor.Windows.Profiler
             var textColor = style.Foreground;
             var table = new Table
             {
+                RowColorEven = Color.Transparent,
+                RowColorOdd = style.Background * 1.4f,
                 Columns = new[]
                 {
                     new ColumnDefinition

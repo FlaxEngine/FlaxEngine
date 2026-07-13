@@ -73,6 +73,14 @@ namespace FlaxEditor.States
             {
                 StateMachine.GoToState<EndState>();
             }
+
+            protected void ConditionalDirtyScenes()
+            {
+                if (((SubStateMachine)StateMachine).States.Any(x => ((SubState)x).DirtyScenes))
+                {
+                    Editor.Instance.Scene.MarkAllScenesEdited();
+                }
+            }
         }
 
         private sealed class BeginState : SubState
@@ -83,18 +91,12 @@ namespace FlaxEditor.States
         {
             public override void OnEnter()
             {
-                var stateMachine = (SubStateMachine)StateMachine;
-                var scenesDirty = false;
-                foreach (var state in stateMachine.States)
+                var states = ((SubStateMachine)StateMachine).States;
+                foreach (var state in states)
                 {
                     ((SubState)state).Before();
-                    scenesDirty |= ((SubState)state).DirtyScenes;
                 }
-                if (scenesDirty)
-                {
-                    foreach (var scene in Level.Scenes)
-                        Editor.Instance.Scene.MarkSceneEdited(scene);
-                }
+                ConditionalDirtyScenes();
                 Done();
             }
         }
@@ -262,6 +264,7 @@ namespace FlaxEditor.States
         {
             public override void OnEnter()
             {
+                ConditionalDirtyScenes();
                 Editor.Instance.StateMachine.GoToState<EditingSceneState>();
             }
         }
