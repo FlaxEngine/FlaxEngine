@@ -43,6 +43,12 @@ namespace FlaxEditor.Surface
         IEnumerable<ScriptType> NewParameterTypes { get; }
 
         /// <summary>
+        /// Index of the parameter to start renaming once the properties panel is next rebuilt, or -1 if none.
+        /// Used to auto-start renaming of a freshly added parameter.
+        /// </summary>
+        int ParamToRename { get; set; }
+
+        /// <summary>
         /// Event called when surface gets loaded (eg. after opening the window).
         /// </summary>
         event Action SurfaceLoaded;
@@ -589,6 +595,7 @@ namespace FlaxEditor.Surface
             if (Utilities.Utils.OnAssetProperties(layout, asset))
                 return;
             var parameters = window.VisjectSurface.Parameters;
+            ParameterPropertyNameLabel labelToRename = null;
             CustomEditors.Editors.GenericEditor.OnGroupsBegin();
             for (int i = 0; i < parameters.Count; i++)
             {
@@ -643,6 +650,8 @@ namespace FlaxEditor.Surface
                     tooltipText += '\n' + tooltip.Text;
                 propertyLabel.MouseLeftDoubleClick += (label, location) => StartParameterRenaming(pIndex, label);
                 propertyLabel.SetupContextMenu += OnPropertyLabelSetupContextMenu;
+                if (pIndex == window.ParamToRename)
+                    labelToRename = propertyLabel;
                 var property = itemLayout.AddPropertyItem(propertyLabel, tooltipText);
                 property.Property("Value", propertyValue);
             }
@@ -656,6 +665,21 @@ namespace FlaxEditor.Surface
                 var newParam = layout.Button("Add parameter...");
                 newParam.Button.ButtonClicked += OnAddParameterButtonClicked;
                 layout.Space(10);
+            }
+            // Defer renaming a newly added param once its label is built and laid out
+            // Adding a param can rebuild the panel more than once (disposing earlier labels) 
+            // Because of this every rebuild recaptures the current label, only the surviving one actually calls StartParameterRenaming
+            if (labelToRename != null)
+            {
+                var index = window.ParamToRename;
+                var label = labelToRename;
+                FlaxEngine.Scripting.InvokeOnUpdate(() =>
+                {
+                    if (label.IsDisposing)
+                        return; // A latter rebuild replaced this label, its own callback will handle it
+                    window.ParamToRename = -1;
+                    StartParameterRenaming(index, label);
+                });
             }
         }
 
@@ -695,6 +719,7 @@ namespace FlaxEditor.Surface
             };
             window.VisjectSurface.Undo.AddAction(action);
             action.Do();
+            window.ParamToRename = action.Index;
         }
 
         private DragData OnDragParameter(DraggablePropertyNameLabel label)
@@ -1275,6 +1300,9 @@ namespace FlaxEditor.Surface
 
         /// <inheritdoc />
         public abstract IEnumerable<ScriptType> NewParameterTypes { get; }
+
+        /// <inheritdoc />
+        public int ParamToRename { get; set; } = -1;
 
         /// <inheritdoc />
         public event Action SurfaceLoaded;
