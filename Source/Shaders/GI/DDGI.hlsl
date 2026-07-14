@@ -349,6 +349,14 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
     return totalIrradiance.rgb;
 }
 
+// Cheap, deterministic 3D hash function in range [-1; 1]
+float3 DDGIHash3D(float3 p)
+{
+    p = frac(p * float3(443.8975, 397.2973, 491.1871));
+    p += dot(p.xyz, p.yzx + 19.19);
+    return frac(frac(p.xxy * p.yzz) * 2.0 - 1.0);
+}
+
 float3 SampleDDGISpecularCascade(DDGIData data, Texture2D<snorm float4> probesData, Texture2D<float4> probesDistance, Texture2D<float4> probesRadiance, float3 worldPosition, float3 worldNormal, float3 reflection, DDGICascadeSampling cascade)
 {
     bool invalidCascade = cascade.CascadeIndex >= data.CascadesCount;
@@ -365,6 +373,7 @@ float3 SampleDDGISpecularCascade(DDGIData data, Texture2D<snorm float4> probesDa
 #endif
 
     DDGIProbeBase base = GetDDGIProbeBase(data, cascade, worldPosition);
+    float3 worldNoise = DDGIHash3D(worldPosition) * 0.1f;
 
     // Loop over the closest probes to accumulate their contributions
     float4 totalRadiance = float4(0, 0, 0, 0);
@@ -376,6 +385,9 @@ float3 SampleDDGISpecularCascade(DDGIData data, Texture2D<snorm float4> probesDa
         // Parallax correction
         //float3 sampleVector = normalize((worldPosition - probe.ProbePosition) / (cascade.ProbesSpacing * 2) + reflection);
         float3 sampleVector = reflection;
+
+        // Randomize sample vector to reduce blocky artifacts (due to low-res of probe)
+        sampleVector += worldNoise;
 
         // Sample radiance texture
         float2 octahedralCoords = GetOctahedralCoords(sampleVector);
