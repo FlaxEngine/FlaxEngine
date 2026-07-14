@@ -229,17 +229,19 @@ void EnvironmentProbe::OnDebugDrawSelected()
 {
     // Draw influence range
     auto rangeColor = Color::CornflowerBlue;
-    auto rangeColorAlpha = rangeColor.AlphaMultiplied(0.2f);
+    auto rangeColorAlpha = rangeColor.AlphaMultiplied(0.1f);
     if (BoxProjection)
     {
         OrientedBoundingBox box(_radius, _transform);
         DEBUG_DRAW_WIRE_BOX(box, rangeColorAlpha, 0, false);
         DEBUG_DRAW_WIRE_BOX(box, rangeColor, 0, true);
+        DEBUG_DRAW_BOX(box, rangeColorAlpha, 0, true);
     }
     else
     {
         DEBUG_DRAW_WIRE_SPHERE(_sphere, rangeColorAlpha, 0, false);
         DEBUG_DRAW_WIRE_SPHERE(_sphere, rangeColor, 0, true);
+        DEBUG_DRAW_SPHERE(_sphere, rangeColorAlpha, 0, true);
     }
 
     // Draw capture point (if offset)
