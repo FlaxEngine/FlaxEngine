@@ -482,7 +482,7 @@ RWByteAddressBuffer RWStats : register(u1);
 Texture3D<snorm float> GlobalSDFTex : register(t0);
 Texture3D<snorm float> GlobalSDFMip : register(t1);
 ByteAddressBuffer GlobalSurfaceAtlasChunks : register(t2);
-ByteAddressBuffer RWGlobalSurfaceAtlasCulledObjects : register(t3);
+ByteAddressBuffer GlobalSurfaceAtlasCulledObjects : register(t3);
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t4);
 Texture2D GlobalSurfaceAtlasDepth : register(t5);
 Texture2D GlobalSurfaceAtlasTex : register(t6);
@@ -545,7 +545,7 @@ void CS_TraceRays(uint3 DispatchThreadId : SV_DispatchThreadID)
             // Sample Global Surface Atlas to get the lighting at the hit location
             float3 hitPosition = hit.GetHitPosition(trace);
             float surfaceThreshold = GetGlobalSurfaceAtlasThreshold(GlobalSDF, hit);
-            float4 surfaceColor = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasChunks, RWGlobalSurfaceAtlasCulledObjects, GlobalSurfaceAtlasObjects, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hitPosition, -probeRayDirection, surfaceThreshold);
+            float4 surfaceColor = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasChunks, GlobalSurfaceAtlasCulledObjects, GlobalSurfaceAtlasObjects, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hitPosition, -probeRayDirection, surfaceThreshold);
             radiance = float4(surfaceColor.rgb, hit.HitTime);
 
             // Add some bias to prevent self occlusion artifacts in Chebyshev due to Global SDF being very incorrect in small scale
@@ -586,6 +586,10 @@ groupshared float OutputInstability[DDGI_PROBE_RESOLUTION * DDGI_PROBE_RESOLUTIO
 // Update distance
 #define DDGI_PROBE_RESOLUTION DDGI_PROBE_RESOLUTION_DISTANCE
 groupshared float CachedProbesTraceDistance[DDGI_TRACE_RAYS_LIMIT];
+#elif DDGI_PROBE_UPDATE_RADIANCE
+// Update radiance
+#define DDGI_PROBE_RESOLUTION DDGI_PROBE_RESOLUTION_RADIANCE
+groupshared float4 CachedProbesTraceRadiance[DDGI_TRACE_RAYS_LIMIT];
 #endif
 
 // Source: https://github.com/turanszkij/WickedEngine
@@ -699,13 +703,9 @@ static const uint4 BorderOffsets[BorderOffsetsSize] = {
 groupshared float3 CachedProbesTraceDirection[DDGI_TRACE_RAYS_LIMIT];
 
 RWTexture2D<float4> RWOutput : register(u0);
-#if DDGI_PROBE_UPDATE_IRRADIANCE
-RWTexture2D<snorm float4> RWProbesData : register(u1);
-#if DDGI_DEBUG_INSTABILITY
+RWTexture2D<snorm float4> ProbesData : register(u1);
+#if DDGI_PROBE_UPDATE_IRRADIANCE && DDGI_DEBUG_INSTABILITY
 RWTexture2D<float> RWOutputInstability : register(u2);
-#endif
-#elif DDGI_PROBE_UPDATE_DEPTH
-Texture2D<snorm float4> ProbesData : register(t0);
 #endif
 Texture2D<float4> ProbesTrace : register(t1);
 ByteAddressBuffer ActiveProbes : register(t2);
@@ -714,6 +714,7 @@ ByteAddressBuffer ActiveProbes : register(t2);
 META_CS(true, FEATURE_LEVEL_SM5)
 META_PERMUTATION_1(DDGI_PROBE_UPDATE_IRRADIANCE=1)
 META_PERMUTATION_1(DDGI_PROBE_UPDATE_DEPTH=1)
+META_PERMUTATION_1(DDGI_PROBE_UPDATE_RADIANCE=1)
 [numthreads(DDGI_PROBE_RESOLUTION, DDGI_PROBE_RESOLUTION, 1)]
 void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_GroupID, uint GroupIndex : SV_GroupIndex)
 {
@@ -725,12 +726,8 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     probeIndex = GetDDGIScrollingProbeIndex(DDGI, CascadeIndex, probeCoords);
 
     // Load probe data
-#if DDGI_PROBE_UPDATE_IRRADIANCE
     int2 probeDataCoords = GetDDGIProbeTexelCoords(DDGI, CascadeIndex, probeIndex);
-    float4 probeData = RWProbesData[probeDataCoords];
-#elif DDGI_PROBE_UPDATE_DEPTH
-    float4 probeData = LoadDDGIProbeData(DDGI, ProbesData, CascadeIndex, probeIndex);
-#endif
+    float4 probeData = ProbesData[probeDataCoords];
     float probeAttention = DecodeDDGIProbeAttention(probeData);
     uint probeState = DecodeDDGIProbeState(probeData);
     uint probeRaysCount = GetProbeRaysCount(DDGI, probeAttention);
@@ -750,7 +747,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     for (uint i = 0; i < raysCount; i++)
     {
         uint rayIndex = raysStart + i;
-#if DDGI_PROBE_UPDATE_IRRADIANCE
+#if DDGI_PROBE_UPDATE_IRRADIANCE || DDGI_PROBE_UPDATE_RADIANCE
         CachedProbesTraceRadiance[rayIndex] = ProbesTrace[uint2(rayIndex, GroupId.x)];
 #elif DDGI_PROBE_UPDATE_DEPTH
         float rayDistance = ProbesTrace[uint2(rayIndex, GroupId.x)].w;
@@ -800,6 +797,14 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
         // Add distance (R), distance^2 (G) and weight (A)
         float rayDistance = CachedProbesTraceDistance[rayIndex];
         result += float4(rayDistance, rayDistance * rayDistance, 0.0f, 1.0f) * rayWeight;
+#elif DDGI_PROBE_UPDATE_RADIANCE
+        // Clamped cosine filtering
+        // ["Ray tracing the world of Assassin's Creed Shadows", SIGGRAPH 2025]
+        rayWeight = pow(saturate((rayWeight - 0.75) / (1 - 0.75)), 4);
+
+        // Add radiance (RGB) and weight (A)
+        float4 rayRadiance = CachedProbesTraceRadiance[rayIndex];
+        result += float4(rayRadiance.rgb * rayWeight, rayWeight);
 #endif
     }
 
@@ -807,7 +812,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     float epsilon = (float)probeRaysCount * 1e-9f;
 #if DDGI_PROBE_UPDATE_IRRADIANCE
     result.rgb *= 1.0f / (2.0f * max(result.a, epsilon));
-#elif DDGI_PROBE_UPDATE_DEPTH
+#elif DDGI_PROBE_UPDATE_DEPTH || DDGI_PROBE_UPDATE_RADIANCE
     result.rgb *= 1.0f / max(result.a, epsilon);
 #endif
 
@@ -829,7 +834,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     instability *= 2.0f; // Make it stronger on scene changes
     //instability = saturate(instability);
     OutputInstability[GroupIndex] = instability;
-#if DDGI_DEBUG_INSTABILITY
+#if DDGI_PROBE_UPDATE_IRRADIANCE && DDGI_DEBUG_INSTABILITY
     RWOutputInstability[outputCoords] = instability;
     //RWOutputInstability[outputCoords] = probeAttention; // Debug test probe attention visualization
 #endif
@@ -870,12 +875,18 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
         //result.rgb = previous + (irradianceDelta * 0.25f);
     }
     result = float4(lerp(result.rgb, previous.rgb, historyWeight), 1.0f);
+#elif DDGI_PROBE_UPDATE_RADIANCE
+    historyWeightSlow = 0.98f;
+    historyWeight = lerp(historyWeightSlow, min(historyWeightFast * 1.1f, historyWeightSlow), probeAttention * probeAttention);
+    result.rgb = lerp(result.rgb, previous, historyWeight);
+#elif DDGI_PROBE_UPDATE_DEPTH
+    result = float4(lerp(result.rg, previous.rg, historyWeight), 0.0f, 1.0f);
+#endif
 
+#if DDGI_PROBE_UPDATE_IRRADIANCE || DDGI_PROBE_UPDATE_RADIANCE
     // Apply quantization error to reduce yellowish artifacts due to R11G11B10 format
     float noise = InterleavedGradientNoise(octahedralCoords * 10, FrameIndexMod8);
     result.rgb = QuantizeColor(result.rgb, noise, QuantizationError);
-#elif DDGI_PROBE_UPDATE_DEPTH
-    result = float4(lerp(result.rg, previous.rg, historyWeight), 0.0f, 1.0f);
 #endif
 
     RWOutput[outputCoords] = result;
@@ -909,7 +920,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
 
         // Update probe data for the next frame
         probeState = DDGI_PROBE_STATE_ACTIVE;
-        RWProbesData[probeDataCoords] = EncodeDDGIProbeData(probeData.xyz, probeState, probeAttention);
+        ProbesData[probeDataCoords] = EncodeDDGIProbeData(probeData.xyz, probeState, probeAttention);
     }
 
 #if DDGI_DEBUG_INSTABILITY && defined(BorderOffsetsSize)
@@ -955,7 +966,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
 
 #endif
 
-#ifdef _PS_IndirectLighting
+#if defined(_PS_IndirectLighting) || defined(_PS_SpecularLighting)
 
 #include "./Flax/GBuffer.hlsl"
 #include "./Flax/Random.hlsl"
@@ -963,6 +974,15 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
 
 Texture2D<snorm float4> ProbesData : register(t4);
 Texture2D<float4> ProbesDistance : register(t5);
+
+// Shared code for both irradiance and specular sampling
+#define DDGI_GET_DITHER RandN2(input.TexCoord + TemporalTime).x
+#define DDGI_GET_SAMPLE_POS gBuffer.WorldPos + gBuffer.Normal * (dither * 0.1f + 0.1f)
+
+#endif
+
+#ifdef _PS_IndirectLighting
+
 Texture2D<float4> ProbesIrradiance : register(t6);
 
 // Pixel shader for drawing indirect lighting in fullscreen
@@ -973,21 +993,43 @@ float4 PS_IndirectLighting(Quad_VS2PS input) : SV_Target0
 {
     // Sample GBuffer
     GBufferSample gBuffer = SampleGBuffer(GBuffer, input.TexCoord);
-
-    // Check if cannot shadow pixel
     BRANCH
     if (gBuffer.ShadingModel == SHADING_MODEL_UNLIT)
         return float4(0, 0, 0, 0);
 
     // Sample irradiance
-    float dither = RandN2(input.TexCoord + TemporalTime).x;
-    float3 samplePos = gBuffer.WorldPos + gBuffer.Normal * (dither * 0.1f + 0.1f);
+    float dither = DDGI_GET_DITHER;
+    float3 samplePos = DDGI_GET_SAMPLE_POS;
     float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesData, ProbesDistance, ProbesIrradiance, samplePos, gBuffer.Normal, DDGI_DEFAULT_BIAS, dither);
 
     // Calculate lighting
     float3 diffuseColor = GetDiffuseColor(gBuffer);
     float3 diffuse = Diffuse_Lambert(diffuseColor);
     return float4(diffuse * irradiance * gBuffer.AO, 1);
+}
+
+#endif
+
+#ifdef _PS_SpecularLighting
+
+Texture2D<float4> ProbesRadiance : register(t6);
+
+// Pixel shader for drawing specular lighting in fullscreen
+META_PS(true, FEATURE_LEVEL_SM5)
+float4 PS_SpecularLighting(Quad_VS2PS input) : SV_Target0
+{
+    // Sample GBuffer
+    GBufferSample gBuffer = SampleGBuffer(GBuffer, input.TexCoord);
+    BRANCH
+    if (gBuffer.ShadingModel == SHADING_MODEL_UNLIT)
+        return float4(0, 0, 0, 0);
+
+    // Sample specular reflection
+    float dither = DDGI_GET_DITHER;
+    float3 samplePos = DDGI_GET_SAMPLE_POS;
+    float3 specular = SampleDDGISpecular(DDGI, ProbesData, ProbesDistance, ProbesRadiance, samplePos, gBuffer.Normal, gBuffer.Roughness, DDGI_DEFAULT_BIAS, dither);
+
+    return float4(specular, 1);
 }
 
 #endif

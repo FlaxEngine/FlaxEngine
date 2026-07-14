@@ -35,6 +35,7 @@ public:
         GPUTextureView* ProbesData;
         GPUTextureView* ProbesDistance;
         GPUTextureView* ProbesIrradiance;
+        GPUTextureView* ProbesRadiance;
     };
 
 private:
@@ -49,7 +50,9 @@ private:
     GPUShaderProgramCS* _csTraceRays[4];
     GPUShaderProgramCS* _csUpdateProbesIrradiance;
     GPUShaderProgramCS* _csUpdateProbesDistance;
+    GPUShaderProgramCS* _csUpdateProbesRadiance;
     GPUPipelineState* _psIndirectLighting[4] = {};
+    GPUPipelineState* _psSpecularLighting = nullptr;
 #if GPU_ENABLE_DEVELOPMENT
     AssetReference<Model> _debugModel;
     AssetReference<MaterialBase> _debugMaterial;
@@ -74,6 +77,15 @@ public:
     bool Render(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer);
 
     /// <summary>
+    /// Renders the DDGI Reflections.
+    /// </summary>
+    /// <param name="renderContext">The rendering context.</param>
+    /// <param name="context">The GPU context.</param>
+    /// <param name="reflectionsBuffer">The reflections buffer (output).</param>
+    /// <returns>True if failed to render (platform doesn't support it, out of video memory, disabled feature or effect is not ready), otherwise false.</returns>
+    bool RenderReflections(RenderContext& renderContext, GPUContext* context, GPUTextureView* reflectionsBuffer);
+
+    /// <summary>
     /// Forces DDGI update for a specific regions (eg. when object is moved). It will refresh the probes in the given regions on the next GI update.
     /// </summary>
     /// <param name="buffers">The rendering buffers.</param>
@@ -85,6 +97,7 @@ private:
     uint64 LastFrameShaderReload = 0;
     void OnShaderReloading(Asset* obj);
 #endif
+    bool Render(RenderContext& renderContext, GPUContext* context, class DDGICustomBuffer*& ddgiDataPtr, bool& render);
     bool RenderInner(RenderContext& renderContext, GPUContext* context, class DDGICustomBuffer& ddgiData);
 
 public:

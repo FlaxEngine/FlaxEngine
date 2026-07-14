@@ -416,6 +416,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         }
         setup.UseTemporalAAJitter = renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing;
         setup.UseGlobalSurfaceAtlas = renderContext.View.Mode == ViewMode::GlobalSurfaceAtlas ||
+                (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Reflections) && renderContext.List->Settings.GlobalIllumination.Reflections == ReflectionsMode::DDGI) ||
                 (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::GI) && renderContext.List->Settings.GlobalIllumination.Mode == GlobalIlluminationMode::DDGI);
         setup.UseGlobalSDF = (graphicsSettings->EnableGlobalSDF && EnumHasAnyFlags(view.Flags, ViewFlags::GlobalSDF)) ||
                 renderContext.View.Mode == ViewMode::GlobalSDF ||
@@ -438,7 +439,6 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         case ViewMode::SpecularColor:
         case ViewMode::SubsurfaceColor:
         case ViewMode::ShadingModel:
-        case ViewMode::Reflections:
         case ViewMode::GlobalSDF:
         case ViewMode::GlobalSDFOverdraw:
         case ViewMode::GlobalSurfaceAtlas:

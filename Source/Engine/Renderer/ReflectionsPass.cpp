@@ -4,6 +4,7 @@
 #include "GBufferPass.h"
 #include "RenderList.h"
 #include "ScreenSpaceReflectionsPass.h"
+#include "GI/DynamicDiffuseGlobalIllumination.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Core/Math/OrientedBoundingBox.h"
@@ -266,47 +267,36 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
 {
     auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
-    if (checkIfSkipPass())
+    bool useReflections = EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Reflections);
+    bool useSSR = EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::SSR) && renderContext.List->Settings.ScreenSpaceReflections.Intensity > ZeroTolerance;
+    int32 probesCount = renderContext.List->EnvironmentProbes.Count();
+    bool renderProbes = probesCount > 0 && renderContext.List->Settings.GlobalIllumination.Reflections == ReflectionsMode::EnvironmentProbes;
+    bool renderDDGI = renderContext.List->Settings.GlobalIllumination.Reflections == ReflectionsMode::DDGI;
+    auto shader = _shader->GPU;
+    auto cb = shader->GetCB(0);
+
+    // Check if no need to render reflection environment
+    if (!useReflections || !(renderProbes || useSSR || renderDDGI) || checkIfSkipPass())
     {
         // Skip pass (just clear buffer when doing debug preview)
         if (renderContext.View.Mode == ViewMode::Reflections)
             context->Clear(lightBuffer, Color::Black);
         return;
     }
-
-    // Cache data
-    auto& view = renderContext.View;
-    bool useReflections = EnumHasAnyFlags(view.Flags, ViewFlags::Reflections);
-    bool useSSR = EnumHasAnyFlags(view.Flags, ViewFlags::SSR) && renderContext.List->Settings.ScreenSpaceReflections.Intensity > ZeroTolerance;
-    int32 probesCount = renderContext.List->EnvironmentProbes.Count();
-    bool renderProbes = probesCount > 0;
-    auto shader = _shader->GPU;
-    auto cb = shader->GetCB(0);
-
-    // Check if no need to render reflection environment
-    if (!useReflections || !(renderProbes || useSSR))
-        return;
     PROFILE_GPU_CPU("Reflections");
 
     // Setup data
     const int32 width = renderContext.Buffers->GetWidth();
     const int32 height = renderContext.Buffers->GetHeight();
     Data data;
-    GBufferPass::SetInputs(view, data.GBuffer);
+    GBufferPass::SetInputs(renderContext.View, data.GBuffer);
     auto& ssrSettings = renderContext.List->Settings.ScreenSpaceReflections;
     data.SSRTexelSize = Float2(1.0f / (float)RenderTools::GetResolution(width, ssrSettings.ResolvePassResolution), 1.0f / (float)RenderTools::GetResolution(height, ssrSettings.ResolvePassResolution));
-
-    // Bind GBuffer inputs
     auto depthBuffer = renderContext.Buffers->GetReadOnlyDepthBuffer();
-    context->BindSR(0, renderContext.Buffers->GBuffer0);
-    context->BindSR(1, renderContext.Buffers->GBuffer1);
-    context->BindSR(2, renderContext.Buffers->GBuffer2);
-    context->BindSR(3, depthBuffer.SRV);
 
     auto tempDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), PixelFormat::R11G11B10_Float);
     auto reflectionsBuffer = RenderTargetPool::Get(tempDesc);
     RENDER_TARGET_POOL_SET_NAME(reflectionsBuffer, "Reflections");
-    context->Clear(*reflectionsBuffer, Color::Black);
 
     // Reflection Probes pass
     if (!useSSR && renderContext.View.Mode == ViewMode::Reflections)
@@ -316,16 +306,22 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
         PROFILE_GPU_CPU("Env Probes");
         context->SetViewportAndScissors((float)tempDesc.Width, (float)tempDesc.Height);
         context->SetRenderTarget(depthBuffer.RTV, *reflectionsBuffer);
+        context->Clear(*reflectionsBuffer, Color::Black);
+        context->BindSR(0, renderContext.Buffers->GBuffer0);
+        context->BindSR(1, renderContext.Buffers->GBuffer1);
+        context->BindSR(2, renderContext.Buffers->GBuffer2);
+        context->BindSR(3, depthBuffer.SRV);
 
-        // Sort probes by the radius
+        // TODO: sort probes in async during draw calls sorting
         Sorting::QuickSort(renderContext.List->EnvironmentProbes.Get(), renderContext.List->EnvironmentProbes.Count(), &SortProbes);
 
         // Render all env probes
         auto& sphereMesh = _sphereModel->LODs.Get()[0].Meshes.Get()[0];
         auto& boxMesh = _boxModel->LODs.Get()[0].Meshes.Get()[0];
+        auto probes = renderContext.List->EnvironmentProbes.Get();
         for (int32 i = 0; i < probesCount; i++)
         {
-            const RenderEnvironmentProbeData& probe = renderContext.List->EnvironmentProbes.Get()[i];
+            const RenderEnvironmentProbeData& probe = probes[i];
 
             // Calculate world*view*projection matrix
             Matrix world, wvp;
@@ -334,15 +330,15 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
             if (probe.BoxProjection)
             {
                 OrientedBoundingBox bounds(probe.Radius, Transform(probe.Position, probe.Orientation, probe.Scale));
-                minMaxDepth = RenderTools::GetDepthBounds(view, bounds);
+                minMaxDepth = RenderTools::GetDepthBounds(renderContext.View, bounds);
                 RenderTools::ComputeBoxModelDrawMatrix(renderContext.View, bounds, world, isViewInside);
             }
             else
             {
-                minMaxDepth = RenderTools::GetDepthBounds(view, BoundingSphere(probe.Position, probe.Radius));
+                minMaxDepth = RenderTools::GetDepthBounds(renderContext.View, BoundingSphere(probe.Position, probe.Radius));
                 RenderTools::ComputeSphereModelDrawMatrix(renderContext.View, probe.Position, probe.Radius, world, isViewInside);
             }
-            Matrix::Multiply(world, view.ViewProjection(), wvp);
+            Matrix::Multiply(world, renderContext.View.ViewProjection(), wvp);
 
             // Setup depth bounds (if device supports it)
             if (_depthBounds)
@@ -369,20 +365,28 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
         if (_depthBounds)
             context->SetDepthBounds();
     }
+    else if (renderDDGI)
+    {
+        if (DynamicDiffuseGlobalIlluminationPass::Instance()->RenderReflections(renderContext, context, *reflectionsBuffer))
+            context->Clear(*reflectionsBuffer, Color::Black);
+    }
+    else
+    {
+        context->Clear(*reflectionsBuffer, Color::Black);
+    }
 
     // Screen Space Reflections pass
     GPUTexture* ssrBuffer = nullptr;
     if (useSSR)
     {
         ssrBuffer = ScreenSpaceReflectionsPass::Instance()->Render(renderContext, *reflectionsBuffer, lightBuffer);
-
-        // Restore
-        context->BindSR(0, renderContext.Buffers->GBuffer0);
-        context->BindSR(1, renderContext.Buffers->GBuffer1);
-        context->BindSR(2, renderContext.Buffers->GBuffer2);
-        context->BindSR(3, depthBuffer.SRV);
         context->SetViewportAndScissors((float)tempDesc.Width, (float)tempDesc.Height);
     }
+
+    context->BindSR(0, renderContext.Buffers->GBuffer0);
+    context->BindSR(1, renderContext.Buffers->GBuffer1);
+    context->BindSR(2, renderContext.Buffers->GBuffer2);
+    context->BindSR(3, depthBuffer.SRV);
 
     if (renderContext.View.Mode == ViewMode::Reflections)
     {

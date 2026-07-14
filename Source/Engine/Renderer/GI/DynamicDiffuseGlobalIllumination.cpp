@@ -41,6 +41,7 @@
 #define DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT 4096 // Maximum amount of probes to update at once during rays tracing and blending
 #define DDGI_TRACE_RAYS_LIMIT 256 // Limit of rays per-probe (runtime value can be smaller)
 #define DDGI_PROBE_RESOLUTION_IRRADIANCE 6 // Resolution (in texels) for probe irradiance data (excluding 1px padding on each side)
+#define DDGI_PROBE_RESOLUTION_RADIANCE 14 // Resolution (in texels) for probe radiance data (excluding 1px padding on each side)
 #define DDGI_PROBE_RESOLUTION_DISTANCE 14 // Resolution (in texels) for probe distance data (excluding 1px padding on each side)
 #define DDGI_PROBE_CLASSIFY_GROUP_SIZE 32
 #define DDGI_PROBE_EMPTY_AREA_DENSITY 8 // Spacing (in probe grid) between fallback probes placed into empty areas to provide valid GI for nearby dynamic objects or transparency
@@ -127,6 +128,7 @@ public:
     GPUTexture* ProbesTrace = nullptr; // Probes ray tracing: (RGB: hit radiance, A: hit distance)
     GPUTexture* ProbesData = nullptr; // Probes data: (RGB: probe-space offset, A: state/data)
     GPUTexture* ProbesIrradiance = nullptr; // Probes irradiance (RGB: sRGB color)
+    GPUTexture* ProbesRadiance = nullptr; // Probes radiance (RGB: HDR color)
     GPUTexture* ProbesDistance = nullptr; // Probes distance (R: mean distance, G: mean distance^2)
     GPUBuffer* ActiveProbes = nullptr; // List with indices of the active probes (built during probes classification to use indirect dispatches for probes updating), counter at 0
     GPUBuffer* UpdateProbesInitArgs = nullptr; // Indirect dispatch buffer for active-only probes updating (trace+blend)
@@ -147,7 +149,13 @@ public:
         RenderTargetPool::Release(ProbesTrace);
         RenderTargetPool::Release(ProbesData);
         RenderTargetPool::Release(ProbesIrradiance);
+        RenderTargetPool::Release(ProbesRadiance);
         RenderTargetPool::Release(ProbesDistance);
+        ProbesTrace = nullptr;
+        ProbesData = nullptr;
+        ProbesIrradiance = nullptr;
+        ProbesRadiance = nullptr;
+        ProbesDistance = nullptr;
         SAFE_DELETE_GPU_RESOURCE(ActiveProbes);
         SAFE_DELETE_GPU_RESOURCE(UpdateProbesInitArgs);
 #if DDGI_DEBUG_STATS
@@ -290,6 +298,7 @@ bool DynamicDiffuseGlobalIlluminationPass::setupResources()
     _csTraceRays[3] = shader->GetCS("CS_TraceRays", 3);
     _csUpdateProbesIrradiance = shader->GetCS("CS_UpdateProbes", 0);
     _csUpdateProbesDistance = shader->GetCS("CS_UpdateProbes", 1);
+    _csUpdateProbesRadiance = shader->GetCS("CS_UpdateProbes", 2);
     auto device = GPUDevice::Instance;
     auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
     if (!_psIndirectLighting[0])
@@ -311,6 +320,15 @@ bool DynamicDiffuseGlobalIlluminationPass::setupResources()
         if (_psIndirectLighting[3]->Init(psDesc))
             return true;
     }
+    if (!_psSpecularLighting)
+    {
+        _psSpecularLighting = device->CreatePipelineState();
+        psDesc.DepthEnable = psDesc.DepthBoundsEnable = false;
+        psDesc.BlendMode = BlendingMode::Opaque;
+        psDesc.PS = shader->GetPS("PS_SpecularLighting");
+        if (_psSpecularLighting->Init(psDesc))
+            return true;
+    }
 
     return false;
 }
@@ -329,7 +347,9 @@ void DynamicDiffuseGlobalIlluminationPass::OnShaderReloading(Asset* obj)
     _csTraceRays[3] = nullptr;
     _csUpdateProbesIrradiance = nullptr;
     _csUpdateProbesDistance = nullptr;
-    SAFE_DELETE_GPU_RESOURCES(_psIndirectLighting)
+    _csUpdateProbesRadiance = nullptr;
+    SAFE_DELETE_GPU_RESOURCES(_psIndirectLighting);
+    SAFE_DELETE_GPU_RESOURCE(_psSpecularLighting);
     invalidateResources();
 }
 
@@ -343,7 +363,8 @@ void DynamicDiffuseGlobalIlluminationPass::Dispose()
     _cb0 = nullptr;
     _cb1 = nullptr;
     _shader = nullptr;
-    SAFE_DELETE_GPU_RESOURCES(_psIndirectLighting)
+    SAFE_DELETE_GPU_RESOURCES(_psIndirectLighting);
+    SAFE_DELETE_GPU_RESOURCE(_psSpecularLighting);
 #if GPU_ENABLE_DEVELOPMENT
     _debugModel = nullptr;
     _debugMaterial = nullptr;
@@ -371,6 +392,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
     if (GlobalSurfaceAtlasPass::Instance()->Render(renderContext, context, bindingDataSurfaceAtlas))
         return true;
     GPUTextureView* skybox = GBufferPass::Instance()->RenderSkybox(renderContext, context);
+    PROFILE_GPU_CPU("Dynamic Diffuse Global Illumination");
 
     // Setup options
     auto& settings = renderContext.List->Settings.GlobalIllumination;
@@ -413,7 +435,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
     const float distanceExtent = distance / cascadesDistanceScales[cascadesCount - 1];
     const float verticalRangeScale = 0.8f; // Scales the probes volume size at Y axis (horizontal aspect ratio makes the DDGI use less probes vertically to cover whole screen)
     Int3 probesCounts(Float3::Ceil(Float3(distanceExtent, distanceExtent * verticalRangeScale, distanceExtent) / probesSpacing));
-    const int32 maxProbeSize = Math::Max(DDGI_PROBE_RESOLUTION_IRRADIANCE, DDGI_PROBE_RESOLUTION_DISTANCE) + 2;
+    const int32 maxProbeSize = Math::Max(DDGI_PROBE_RESOLUTION_IRRADIANCE, DDGI_PROBE_RESOLUTION_RADIANCE, DDGI_PROBE_RESOLUTION_DISTANCE) + 2;
     const int32 maxTextureSize = Math::Min(GPUDevice::Instance->Limits.MaximumTexture2DSize, GPU_MAX_TEXTURE_SIZE);
     while (probesCounts.X * probesCounts.Y * maxProbeSize > maxTextureSize
         || probesCounts.Z * cascadesCount * maxProbeSize > maxTextureSize)
@@ -458,7 +480,8 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
     int32 probesCountTotalX = probesCountCascadeX;
     int32 probesCountTotalY = probesCountCascadeY * cascadesCount;
     bool clear = false;
-    if (ddgiData.CascadesCount != cascadesCount || Math::NotNearEqual(ddgiData.Cascades[0].ProbesSpacing, probesSpacing) || ddgiData.ProbeCounts != probesCounts || ddgiData.ProbeRaysCount != probeRaysCount)
+    bool withRadiance = EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Reflections) && renderContext.List->Settings.GlobalIllumination.Reflections == ReflectionsMode::DDGI;
+    if (ddgiData.CascadesCount != cascadesCount || Math::NotNearEqual(ddgiData.Cascades[0].ProbesSpacing, probesSpacing) || ddgiData.ProbeCounts != probesCounts || ddgiData.ProbeRaysCount != probeRaysCount || withRadiance != (ddgiData.ProbesRadiance != nullptr))
     {
         PROFILE_CPU_NAMED("Init");
         ddgiData.Release();
@@ -483,6 +506,10 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         INIT_TEXTURE(ProbesData, PixelFormat::R8G8B8A8_SNorm, probesCountTotalX, probesCountTotalY);
         // TODO: add BC6H compression to probes data (https://github.com/knarkowicz/GPURealTimeBC6H)
         INIT_TEXTURE(ProbesIrradiance, PixelFormat::R11G11B10_Float, probesCountTotalX * (DDGI_PROBE_RESOLUTION_IRRADIANCE + 2), probesCountTotalY * (DDGI_PROBE_RESOLUTION_IRRADIANCE + 2));
+        if (withRadiance)
+        {
+            INIT_TEXTURE(ProbesRadiance, PixelFormat::R11G11B10_Float, probesCountTotalX * (DDGI_PROBE_RESOLUTION_RADIANCE + 2), probesCountTotalY * (DDGI_PROBE_RESOLUTION_RADIANCE + 2));
+        }
         INIT_TEXTURE(ProbesDistance, PixelFormat::R16G16_Float, probesCountTotalX * (DDGI_PROBE_RESOLUTION_DISTANCE + 2), probesCountTotalY * (DDGI_PROBE_RESOLUTION_DISTANCE + 2));
 #if DDGI_DEBUG_INSTABILITY
         INIT_TEXTURE(ProbesInstability, PixelFormat::R16_Float, probesCountTotalX * (DDGI_PROBE_RESOLUTION_IRRADIANCE + 2), probesCountTotalY * (DDGI_PROBE_RESOLUTION_IRRADIANCE + 2));
@@ -513,6 +540,8 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         PROFILE_GPU("Clear");
         context->ClearUA(ddgiData.ProbesData, Float4::Zero);
         context->ClearUA(ddgiData.ProbesIrradiance, Float4::Zero);
+        if (ddgiData.ProbesRadiance)
+            context->ClearUA(ddgiData.ProbesRadiance, Float4::Zero);
         context->ClearUA(ddgiData.ProbesDistance, Float4::Zero);
 #if DDGI_DEBUG_INSTABILITY
         context->ClearUA(ddgiData.ProbesInstability, Float4::Zero);
@@ -610,6 +639,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         ddgiData.Result.ProbesData = ddgiData.ProbesData->View();
         ddgiData.Result.ProbesDistance = ddgiData.ProbesDistance->View();
         ddgiData.Result.ProbesIrradiance = ddgiData.ProbesIrradiance->View();
+        ddgiData.Result.ProbesRadiance = ddgiData.ProbesRadiance ? ddgiData.ProbesRadiance->View() : nullptr;
 
         Data0 data;
 
@@ -643,7 +673,6 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
 
     // Update probes
     {
-        PROFILE_GPU_CPU_NAMED("Probes Update");
         uint32 threadGroupsX;
 #if DDGI_DEBUG_STATS
         uint32 zero[4] = {};
@@ -739,18 +768,27 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
                     PROFILE_GPU_CPU_NAMED("Update Probes");
                     GPUComputePass pass(context);
 
+                    // Batch barriers to avoid them mid-pass
+                    pass.Transition(ddgiData.ProbesData, GPUResourceAccess::UnorderedAccess);
+                    pass.Transition(ddgiData.ProbesIrradiance, GPUResourceAccess::UnorderedAccess);
+                    if (ddgiData.ProbesRadiance)
+                        pass.Transition(ddgiData.ProbesRadiance, GPUResourceAccess::UnorderedAccess);
+
                     // Distance
-                    context->BindSR(0, ddgiData.Result.ProbesData);
                     context->BindSR(1, ddgiData.ProbesTrace->View());
                     context->BindSR(2, ddgiData.ActiveProbes->View());
                     context->BindUA(0, ddgiData.Result.ProbesDistance);
+                    context->BindUA(1, ddgiData.Result.ProbesData);
                     context->DispatchIndirect(_csUpdateProbesDistance, ddgiData.UpdateProbesInitArgs, arg);
-                    context->ResetUA();
-                    context->ResetSR();
+
+                    // Radiance
+                    if (ddgiData.ProbesRadiance)
+                    {
+                        context->BindUA(0, ddgiData.Result.ProbesRadiance);
+                        context->DispatchIndirect(_csUpdateProbesRadiance, ddgiData.UpdateProbesInitArgs, arg);
+                    }
 
                     // Irradiance
-                    context->BindSR(1, ddgiData.ProbesTrace->View());
-                    context->BindSR(2, ddgiData.ActiveProbes->View());
                     context->BindUA(0, ddgiData.Result.ProbesIrradiance);
                     context->BindUA(1, ddgiData.Result.ProbesData);
 #if DDGI_DEBUG_INSTABILITY
@@ -795,14 +833,14 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
     return false;
 }
 
-bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer)
+bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, GPUContext* context, DDGICustomBuffer*& ddgiDataPtr, bool& render)
 {
     if (checkIfSkipPass())
         return true;
     if (renderContext.List->Scenes.Count() == 0)
         return true;
     RenderBuffers* renderBuffers = renderContext.Buffers;
-    bool render = true;
+    render = true;
     if (renderContext.View.IsOfflinePass)
     {
         // During offline pass (eg. probes rendering) we can try reuse main game viewport or editor viewport DDGI probes
@@ -823,9 +861,9 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         }
     }
     auto& ddgiData = *renderBuffers->GetCustomBuffer<DDGICustomBuffer>(TEXT("DDGI"));
+    ddgiDataPtr = &ddgiData;
     if (render && ddgiData.LastFrameUsed == Engine::FrameCount)
         render = false;
-    PROFILE_GPU_CPU("Dynamic Diffuse Global Illumination");
 
     if (render)
     {
@@ -839,6 +877,17 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         }
     }
 
+    return false;
+}
+
+bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer)
+{
+    // Get DDGI
+    DDGICustomBuffer* ddgiData = nullptr;
+    bool render = false;
+    if (Render(renderContext, context, ddgiData, render))
+        return true;
+
     // Render indirect lighting
     if (lightBuffer)
     {
@@ -850,8 +899,9 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         if (!render)
         {
             Data0 data;
-            data.DDGI = ddgiData.Result.Constants;
-            data.TemporalTime = 0.0f;
+            data.DDGI = ddgiData->Result.Constants;
+            data.TemporalTime = renderContext.List->Setup.UseTemporalAAJitter ? RenderTools::ComputeTemporalTime() : 0.0f;
+            data.FrameIndexMod8 = (int32)(Engine::FrameCount % 8);
             GBufferPass::SetInputs(renderContext.View, data.GBuffer);
             context->UpdateCB(_cb0, &data);
             context->BindCB(0, _cb0);
@@ -861,9 +911,9 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         context->BindSR(1, renderContext.Buffers->GBuffer1->View());
         context->BindSR(2, renderContext.Buffers->GBuffer2->View());
         context->BindSR(3, depthBuffer->View());
-        context->BindSR(4, ddgiData.Result.ProbesData);
-        context->BindSR(5, ddgiData.Result.ProbesDistance);
-        context->BindSR(6, ddgiData.Result.ProbesIrradiance);
+        context->BindSR(4, ddgiData->Result.ProbesData);
+        context->BindSR(5, ddgiData->Result.ProbesDistance);
+        context->BindSR(6, ddgiData->Result.ProbesIrradiance);
         auto& settings = renderContext.List->Settings.GlobalIllumination;
         if (settings.IndirectResolution == ResolutionMode::Full || !MultiScaler::Instance()->IsReady())
         {
@@ -889,6 +939,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
             context->SetState(_psIndirectLighting[Graphics::GICascadesBlending ? 3 : 2]);
             context->DrawFullscreenTriangle();
             context->ResetRenderTarget();
+            // TODO: consider mixing with temporal-filter to reduce flickering (GI is quite smooth so easy to get rid of ghosting)
             MultiScaler::Instance()->BilateralUpscale(context, Viewport(Float2(renderContext.View.ScreenSize)), temp, lightBuffer, depthBuffer, renderContext.Buffers->GBuffer1, BlendingMode::Add);
             RenderTargetPool::Release(temp);
             context->SetViewportAndScissors(renderContext.View.ScreenSize.X, renderContext.View.ScreenSize.Y);
@@ -924,12 +975,12 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
             }
             constexpr int32 maxProbesPerDrawing = 32 * 1024;
             int32 probesDrawingStart = 0;
-            while (probesDrawingStart < ddgiData.ProbesCountTotal)
+            while (probesDrawingStart < ddgiData->ProbesCountTotal)
             {
                 debugRenderContext.List = RenderList::GetFromPool();
                 debugRenderContext.View.Pass = DrawPass::GBuffer;
                 debugRenderContext.View.Prepare(debugRenderContext);
-                const int32 probesDrawingEnd = Math::Min(probesDrawingStart + maxProbesPerDrawing, ddgiData.ProbesCountTotal);
+                const int32 probesDrawingEnd = Math::Min(probesDrawingStart + maxProbesPerDrawing, ddgiData->ProbesCountTotal);
                 BatchedDrawCall batchedDrawCall(debugRenderContext.List);
                 batchedDrawCall.DrawCall = drawCall;
                 batchedDrawCall.DrawCall.InstanceCount = probesDrawingEnd - probesDrawingStart;
@@ -955,17 +1006,18 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
                 context->SetRenderTarget(*renderContext.Buffers->DepthBuffer, ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)));
                 {
                     // Pass DDGI data to the material
-                    _debugMaterial->SetParameterValue(TEXT("ProbesData"), Variant(ddgiData.ProbesData));
+                    _debugMaterial->SetParameterValue(TEXT("ProbesData"), Variant(ddgiData->ProbesData));
     #if DDGI_DEBUG_INSTABILITY
-                    _debugMaterial->SetParameterValue(TEXT("ProbesIrradiance"), Variant(ddgiData.ProbesInstability));
+                    _debugMaterial->SetParameterValue(TEXT("ProbesIrradiance"), Variant(ddgiData->ProbesInstability));
     #else
-                    _debugMaterial->SetParameterValue(TEXT("ProbesIrradiance"), Variant(ddgiData.ProbesIrradiance));
+                    _debugMaterial->SetParameterValue(TEXT("ProbesIrradiance"), Variant(ddgiData->ProbesIrradiance));
     #endif
-                    _debugMaterial->SetParameterValue(TEXT("ProbesDistance"), Variant(ddgiData.ProbesDistance));
+                    _debugMaterial->SetParameterValue(TEXT("ProbesDistance"), Variant(ddgiData->ProbesDistance));
+                    _debugMaterial->SetParameterValue(TEXT("ProbesRadiance"), Variant(ddgiData->ProbesRadiance));
                     auto cb = _debugMaterial->GetShader()->GetCB(3);
                     if (cb)
                     {
-                        context->UpdateCB(cb, &ddgiData.Result.Constants);
+                        context->UpdateCB(cb, &ddgiData->Result.Constants);
                         context->BindCB(3, cb);
                     }
                 }
@@ -981,6 +1033,52 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
     context->ResetSR();
     context->ResetUA();
     context->SetViewportAndScissors(renderContext.View.ScreenSize.X, renderContext.View.ScreenSize.Y);
+    return false;
+}
+
+bool DynamicDiffuseGlobalIlluminationPass::RenderReflections(RenderContext& renderContext, GPUContext* context, GPUTextureView* reflectionsBuffer)
+{
+    // Get DDGI
+    DDGICustomBuffer* ddgiData = nullptr;
+    bool render = false;
+    if (Render(renderContext, context, ddgiData, render))
+        return true;
+
+    // Render specular lighting
+    if (reflectionsBuffer && ddgiData->Result.ProbesRadiance)
+    {
+        PROFILE_GPU_CPU_NAMED("Specular Lighting");
+        if (!render)
+        {
+            Data0 data;
+            data.DDGI = ddgiData->Result.Constants;
+            data.TemporalTime = renderContext.List->Setup.UseTemporalAAJitter ? RenderTools::ComputeTemporalTime() : 0.0f;
+            data.FrameIndexMod8 = (int32)(Engine::FrameCount % 8);
+            GBufferPass::SetInputs(renderContext.View, data.GBuffer);
+            context->UpdateCB(_cb0, &data);
+            context->BindCB(0, _cb0);
+        }
+        context->BindSR(0, renderContext.Buffers->GBuffer0->View());
+        context->BindSR(1, renderContext.Buffers->GBuffer1->View());
+        context->BindSR(2, renderContext.Buffers->GBuffer2->View());
+        context->BindSR(3, renderContext.Buffers->DepthBuffer->View());
+        context->BindSR(4, ddgiData->Result.ProbesData);
+        context->BindSR(5, ddgiData->Result.ProbesDistance);
+        context->BindSR(6, ddgiData->Result.ProbesRadiance);
+        auto& settings = renderContext.List->Settings.GlobalIllumination;
+        {
+            // Full-res
+            auto rtAction = GPUDrawPassAction::Store;
+            GPUDrawPass pass(context, ToSpan(&reflectionsBuffer, 1), ToSpan(&rtAction, 1));
+            context->SetViewportAndScissors(renderContext.View.ScreenSize.X, renderContext.View.ScreenSize.Y);
+            context->SetRenderTarget(reflectionsBuffer);
+            context->SetState(_psSpecularLighting);
+            context->DrawFullscreenTriangle();
+        }
+        context->ResetSR();
+        context->ResetRenderTarget();
+    }
+
     return false;
 }
 

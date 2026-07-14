@@ -23,7 +23,7 @@ API_ENUM() enum class GlobalIlluminationMode
     None = 0,
 
     /// <summary>
-    /// Dynamic Diffuse Global Illumination algorithm with scrolling probes volume (with cascades). Uses software raytracing - requires Global SDF and Global Surface Atlas.
+    /// Dynamic Diffuse Global Illumination algorithm with scrolling probes volume (and cascades). Uses software raytracing - requires Global SDF and Global Surface Atlas.
     /// </summary>
     DDGI = 1,
 
@@ -159,6 +159,22 @@ API_ENUM() enum class ResolutionMode : int32
     /// Half resolution
     /// </summary>
     Half = 2,
+};
+
+/// <summary>
+/// The reflections modes.
+/// </summary>
+API_ENUM() enum class ReflectionsMode : int32
+{
+    /// <summary>
+    /// Reflections from Environment Probes placed on the scene.
+    /// </summary>
+    EnvironmentProbes = 0,
+
+    /// <summary>
+    /// Reflections from Dynamic Diffuse Global Illumination algorithm with scrolling probes volume (and cascades). Uses software raytracing - requires Global SDF and Global Surface Atlas.
+    /// </summary>
+    DDGI = 1,
 };
 
 /// <summary>
@@ -345,9 +361,14 @@ API_ENUM(Attributes="Flags") enum class GlobalIlluminationSettingsOverride : int
     IndirectResolution = 1 << 7,
 
     /// <summary>
+    /// Overrides <see cref="GlobalIlluminationSettings.Reflections"/> property.
+    /// </summary>
+    Reflections = 1 << 8,
+
+    /// <summary>
     /// All properties.
     /// </summary>
-    All = Mode | Intensity | TemporalResponse | Distance | FallbackIrradiance | BounceIntensity | IndirectShadowsStrength | IndirectResolution,
+    All = Mode | Intensity | TemporalResponse | Distance | FallbackIrradiance | BounceIntensity | IndirectShadowsStrength | IndirectResolution | Reflections,
 };
 
 /// <summary>
@@ -412,6 +433,12 @@ API_STRUCT() struct FLAXENGINE_API GlobalIlluminationSettings : ISerializable
     /// </summary>
     API_FIELD(Attributes="EditorOrder(50), PostProcessSetting((int)GlobalIlluminationSettingsOverride.IndirectResolution)")
     ResolutionMode IndirectResolution = ResolutionMode::Full;
+
+    /// <summary>
+    /// The indirect specular reflections rendering mode to use.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(100), PostProcessSetting((int)GlobalIlluminationSettingsOverride.Reflections)")
+    ReflectionsMode Reflections = ReflectionsMode::EnvironmentProbes;
 
 public:
     /// <summary>
