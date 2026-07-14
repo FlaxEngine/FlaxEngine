@@ -795,16 +795,17 @@ int32 GameCookerImpl::ThreadFunction()
     IsThreadRunning = true;
 
     CriticalSection mutex;
+    mutex.Lock();
     while (Platform::AtomicRead(&CancelThreadFlag) == 0)
     {
         if (IsRunning)
         {
             Build();
         }
-
         ThreadCond.Wait(mutex);
     }
 
+    mutex.Unlock();
     IsThreadRunning = false;
     return 0;
 }
