@@ -597,6 +597,7 @@ bool MeshData::GenerateTangents(float smoothingAngle)
     Tangents.Resize(vertexCount, false);
     smoothingAngle = Math::Clamp(smoothingAngle, 0.0f, 45.0f);
 
+    // TODO: use meshoptimizer 1.2 with new meshopt_generateTangents
 #if USE_MIKKTSPACE
     SMikkTSpaceInterface callbacks = {
         GetNumFaces,
