@@ -317,6 +317,7 @@ bool DeployDataStep::Perform(CookingData& data)
                 switch (data.Platform)
                 {
 #define DEPLOY_NATIVE_FILE(filename) failed |= FileSystem::CopyFile(data.NativeCodeOutputPath / TEXT(filename), srcDotnet / TEXT(filename));
+#define DEPLOY_NATIVE_FILE_DOTNET(filename) failed |= FileSystem::CopyFile(data.NativeCodeOutputPath / TEXT("Dotnet") / TEXT(filename), srcDotnet / TEXT(filename));
                 case BuildPlatform::AndroidARM64:
                     if (data.Configuration != BuildConfiguration::Release)
                     {
@@ -339,10 +340,12 @@ bool DeployDataStep::Perform(CookingData& data)
                     break;
                 case BuildPlatform::XboxOne:
                 case BuildPlatform::XboxScarlett:
-                    DEPLOY_NATIVE_FILE("System.IO.Compression.Native.dll");
-                    DEPLOY_NATIVE_FILE("System.Globalization.Native.dll");
+                    FileSystem::CreateDirectory(data.NativeCodeOutputPath / TEXT("Dotnet"));
+                    DEPLOY_NATIVE_FILE_DOTNET("System.IO.Compression.Native.dll");
+                    DEPLOY_NATIVE_FILE_DOTNET("System.Globalization.Native.dll");
                     break;
 #undef DEPLOY_NATIVE_FILE
+#undef DEPLOY_NATIVE_FILE_DOTNET
                 default: ;
                 }
                 if (failed)
