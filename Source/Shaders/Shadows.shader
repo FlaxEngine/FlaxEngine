@@ -53,7 +53,7 @@ float RayCastScreenSpaceShadow(GBufferData gBufferData, GBufferSample gBuffer, f
     float3 raySize = rayEnd - rayStart;
     float2 rayStepDst = abs(raySize).xy * depthSize;
     float rayStepDstMin = min(rayStepDst.x, rayStepDst.y);
-    float3 rayStepMin = raySize / max(min(maxSteps, rayStepDstMin), 1);
+    float3 rayStepMin = raySize / max(min((float)maxSteps, rayStepDstMin), 1);
     float3 rayStep = raySize / maxSteps;
     float3 ray = rayStart + rayStepMin * (dither * 2 + 1.0f);
 
