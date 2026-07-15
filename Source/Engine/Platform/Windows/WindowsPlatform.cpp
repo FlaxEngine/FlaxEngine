@@ -1145,6 +1145,8 @@ void ReadPipe(HANDLE pipe, Array<char>& rawData, Array<Char>& logData, LogType l
         {
             // Skip Windows-style lines
             rawData.RemoveAllKeepOrder('\r');
+            if (rawData.IsEmpty())
+                return;
 
             // Remove last new line character
             if (rawData.Last() == '\n')
