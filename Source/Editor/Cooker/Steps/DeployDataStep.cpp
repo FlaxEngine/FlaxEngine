@@ -337,6 +337,11 @@ bool DeployDataStep::Perform(CookingData& data)
                     DEPLOY_NATIVE_FILE("libSystem.Net.Security.Native.dylib");
                     DEPLOY_NATIVE_FILE("libSystem.Security.Cryptography.Native.Apple.dylib");
                     break;
+                case BuildPlatform::XboxOne:
+                case BuildPlatform::XboxScarlett:
+                    DEPLOY_NATIVE_FILE("System.IO.Compression.Native.dll");
+                    DEPLOY_NATIVE_FILE("System.Globalization.Native.dll");
+                    break;
 #undef DEPLOY_NATIVE_FILE
                 default: ;
                 }

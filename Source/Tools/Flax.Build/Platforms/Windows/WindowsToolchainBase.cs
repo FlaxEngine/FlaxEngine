@@ -446,8 +446,10 @@ namespace Flax.Build.Platforms
             {
                 string binRootDir = Directory.GetParent(_resourceCompilerPath).FullName;
                 var path = Environment.GetEnvironmentVariable("PATH");
-                if (!string.IsNullOrEmpty(_resourceCompilerPath) && !path.Contains(binRootDir))
+                if (path != null && !path.Contains(binRootDir))
                     Environment.SetEnvironmentVariable("PATH", path + ";" + binRootDir);
+                else if (path == null)
+                    Environment.SetEnvironmentVariable("PATH", binRootDir);
             }
         }
 

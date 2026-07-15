@@ -94,7 +94,7 @@ namespace Flax.Deps.Dependencies
                 buildMonoAotCross = true;
                 var defines = "-D_GAMING_XBOX=1-DDISABLE_JIT=1-DENABLE_PERFTRACING=0-DDISABLE_REFLECTION_EMIT=1-DDISABLE_EVENTPIPE=1-DDISABLE_COM=1-DDISABLE_PROFILER=1-DDISABLE_COMPONENTS=1-DDISABLE_EMBEDDED_PDB=1";
                 defines += targetPlatform == TargetPlatform.XboxScarlett ? "-D_GAMING_XBOX_SCARLETT=1" : "-D_GAMING_XBOX_XBOXONE=1";
-                defines += "-DDISABLE_EXECUTABLES=1-DDISABLE_SHARED_LIBS=1";
+                defines += "-DDISABLE_EXECUTABLES=1-DDISABLE_SHARED_LIBS=0";
                 buildArgs = $" -subset mono+libs -cmakeargs \"{defines}\" /p:FeaturePerfTracing=false /p:FeatureWin32Registry=false /p:FeatureCominteropApartmentSupport=false /p:FeatureManagedEtw=false /p:FeatureManagedEtwChannels=false /p:FeatureEtw=false /p:ApiCompatValidateAssemblies=false";
                 envVars.Add("_GAMING_XBOX", "1");
                 envVars.Add(targetPlatform == TargetPlatform.XboxScarlett ? "_GAMING_XBOX_SCARLETT" : "_GAMING_XBOX_XBOXONE", "1");
@@ -273,8 +273,8 @@ namespace Flax.Deps.Dependencies
                     };
                     libs2 = new[]
                     {
-                        "lib/System.Globalization.Native-Static.lib",
-                        "lib/System.IO.Compression.Native-Static.lib",
+                        "System.Globalization.Native.dll",
+                        "System.IO.Compression.Native.dll",
                     };
                     break;
                 case TargetPlatform.PS5:
@@ -347,6 +347,18 @@ namespace Flax.Deps.Dependencies
                 SetupDirectory(dstDotnetLib, true);
                 Utilities.FileCopy(Path.Combine(artifacts, "bin", "mono", $"{os}.{arch}.{configuration}", privateCoreLib), Path.Combine(dstDotnetLib, privateCoreLib));
                 Utilities.DirectoryCopy(Path.Combine(artifacts, "bin", "runtime", $"{framework}-{os}-{configuration}-{arch}"), dstDotnetLib, false, true, "*.dll");
+
+                switch (targetPlatform)
+                {
+                    case TargetPlatform.XboxOne:
+                    case TargetPlatform.XboxScarlett:
+                        // Native shared libs are deployed to ThirdParty binaries folder
+                        Utilities.FileDelete(Path.Combine(dstDotnetLib, "System.Globalization.Native.dll"));
+                        Utilities.FileDelete(Path.Combine(dstDotnetLib, "System.IO.Compression.Native.dll"));
+                        break;
+                    default:
+                        break;
+                }
             }
         }
 
