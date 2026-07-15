@@ -906,4 +906,5 @@ public:
 };
 
 extern FLAXENGINE_API const Char* ToString(PlatformType type);
+extern FLAXENGINE_API const Char* ToStringExact(PlatformType type);
 extern FLAXENGINE_API const Char* ToString(ArchitectureType type);

@@ -845,6 +845,39 @@ const Char* ToString(PlatformType type)
     }
 }
 
+const Char* ToStringExact(PlatformType type)
+{
+    switch (type)
+    {
+    case PlatformType::Windows:
+        return TEXT("Windows");
+    case PlatformType::XboxOne:
+        return TEXT("XboxOne");
+    case PlatformType::UWP:
+        return TEXT("UWP");
+    case PlatformType::Linux:
+        return TEXT("Linux");
+    case PlatformType::PS4:
+        return TEXT("PS4");
+    case PlatformType::XboxScarlett:
+        return TEXT("XboxScarlett");
+    case PlatformType::Android:
+        return TEXT("Android");
+    case PlatformType::Switch:
+        return TEXT("Switch");
+    case PlatformType::PS5:
+        return TEXT("PS5");
+    case PlatformType::Mac:
+        return TEXT("Mac");
+    case PlatformType::iOS:
+        return TEXT("iOS");
+    case PlatformType::Web:
+        return TEXT("Web");
+    default:
+        return TEXT("");
+    }
+}
+
 const Char* ToString(ArchitectureType type)
 {
     switch (type)

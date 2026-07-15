@@ -369,13 +369,13 @@ bool Scripting::LoadBinaryModules(const String& path, const String& projectFolde
     const String architecture = JsonTools::GetString(document, "Architecture");
     const String configuration = JsonTools::GetString(document, "Configuration");
     const Char* engineConfiguration = BUILD_DEBUG ? TEXT("Debug") : (BUILD_DEVELOPMENT ? TEXT("Development") : TEXT("Release"));
-    if (platform != ToString(PLATFORM_TYPE) ||
+    if (platform != ToStringExact(PLATFORM_TYPE) ||
         architecture != ToString(PLATFORM_ARCH) ||
         configuration != engineConfiguration)
     {
         LOG(Error, "Incorrect binary modules configuration!");
         LOG(Error, "Loaded: {}, {}, {}", platform, architecture, configuration);
-        LOG(Error, "Expected: {}, {}, {}", ToString(PLATFORM_TYPE), ToString(PLATFORM_ARCH), engineConfiguration);
+        LOG(Error, "Expected: {}, {}, {}", ToStringExact(PLATFORM_TYPE), ToString(PLATFORM_ARCH), engineConfiguration);
     }
 #endif
     auto versionControlInfoMember = document.FindMember("VersionControlInfo");
