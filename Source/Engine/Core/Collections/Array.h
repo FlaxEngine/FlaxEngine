@@ -370,10 +370,7 @@ public:
     {
         T* data = Get();
         for (int32 i = 0; i < _count; i++)
-        {
-            if (data[i])
-                Delete(data[i]);
-        }
+            AllocationUtils::DeleteHelper(data[i]);
         Clear();
     }
 

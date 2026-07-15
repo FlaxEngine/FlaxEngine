@@ -21,4 +21,18 @@ namespace AllocationUtils
             from.Free();
         }
     }
+
+    template<typename T>
+    static typename TEnableIf<TIsPointer<T>::Value>::Type DeleteHelper(T& ptr)
+    {
+        if (ptr)
+        {
+            Memory::DestructItem(ptr);
+            Allocator::Free(ptr);
+        }
+    }
+    template<typename T>
+    static typename TEnableIf<!TIsPointer<T>::Value>::Type DeleteHelper(T& ptr)
+    {
+    }
 }
