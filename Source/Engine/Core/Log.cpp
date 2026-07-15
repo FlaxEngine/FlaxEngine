@@ -54,6 +54,9 @@ bool Log::Logger::Init()
 #endif
     if (FileSystem::CreateDirectory(logsDirectory))
     {
+#if !BUILD_RELEASE
+        Platform::Log(String(TEXT("Failed to create logs directory: ")) + logsDirectory);
+#endif
         return true;
     }
 
@@ -90,8 +93,14 @@ bool Log::Logger::Init()
     LogFile = FileWriteStream::Open(LogFilePath);
     if (LogFile == nullptr)
     {
+#if !BUILD_RELEASE
+        Platform::Log(String(TEXT("Failed to create log file: ")) + LogFilePath);
+#endif
         return true;
     }
+#if !BUILD_RELEASE && PLATFORM_CONSOLE
+    Platform::Log(String(TEXT("Log file: ")) + LogFilePath);
+#endif
     LogTotalErrorsCnt = 0;
     LogAfterInit = true;
 #if LOG_ENABLE_WINDOWS_SINGLE_NEW_LINE_CHAR
