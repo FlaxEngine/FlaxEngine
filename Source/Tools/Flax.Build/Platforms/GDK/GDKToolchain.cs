@@ -74,13 +74,21 @@ namespace Flax.Build.Platforms
                 throw new Exception("Don't use debug CRT on GDK.");
             var name = Path.GetFileName(toolsetPath);
             var redistToolsPath = Path.Combine(toolsPath, "..", "..", "..", "..", "..", "..", "Redist/MSVC/");
+            redistToolsPath = Utilities.RemovePathRelativeParts(redistToolsPath);
             var paths = Directory.GetDirectories(redistToolsPath, name.Substring(0, 2) + "*");
             if (paths.Length == 0)
                 throw new Exception($"Failed to find MSVC redistribute binaries for toolset '{Toolset}' inside folder '{toolsPath}'");
-            int crtToolset;
-            for (crtToolset = (int)WindowsPlatformToolset.v145; crtToolset >= (int)Toolset; crtToolset--)
+            int crtToolset = 0;
+            string redistToolsPathBase = string.Empty;
+            for (int i = 0; i < paths.Length; i++)
             {
-                redistToolsPath = Path.Combine(paths[0], "x64", "Microsoft.VC" + (int)crtToolset + ".CRT");
+                redistToolsPathBase = paths[i];
+                for (crtToolset = (int)WindowsPlatformToolset.v145; crtToolset >= (int)Toolset; crtToolset--)
+                {
+                    redistToolsPath = Path.Combine(redistToolsPathBase, "x64", "Microsoft.VC" + (int)crtToolset + ".CRT");
+                    if (Directory.Exists(redistToolsPath))
+                        break;
+                }
                 if (Directory.Exists(redistToolsPath))
                     break;
             }
@@ -96,7 +104,7 @@ namespace Flax.Build.Platforms
             options.DependencyFiles.Add(Path.Combine(redistToolsPath, "vcruntime140_1.dll"));
             if (OpenMP)
             {
-                redistToolsPath = Path.Combine(paths[0], "x64", "Microsoft.VC" + crtToolset + ".OpenMP");
+                redistToolsPath = Path.Combine(redistToolsPathBase, "x64", "Microsoft.VC" + crtToolset + ".OpenMP");
                 redistToolsPath = Utilities.RemovePathRelativeParts(redistToolsPath);
                 options.DependencyFiles.Add(Path.Combine(redistToolsPath, "vcomp140.dll"));
             }
