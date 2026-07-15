@@ -33,6 +33,8 @@ namespace Flax.Build.Projects.VisualStudio
 
                 var gen = (VisualStudioProjectGenerator)Generator;
                 var projectFileToolVersion = gen.ProjectFileToolVersion;
+                if (projectFileToolVersion == "18.0")
+                    projectFileToolVersion = "17.0"; // Downgrade minimum to Visual Studio 2022 for better compatibility with console-plugins
                 var vcProjectFileContent = new StringBuilder();
                 vcProjectFileContent.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
                 vcProjectFileContent.AppendLine(string.Format("<Project DefaultTargets=\"Build\" ToolsVersion=\"{0}\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">", projectFileToolVersion));
