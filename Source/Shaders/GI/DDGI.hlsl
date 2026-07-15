@@ -295,7 +295,7 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
     // Loop over the closest probes to accumulate their contributions
     float4 totalIrradiance = float4(0, 0, 0, 0);
     float4 totalIrradianceNonDir = float4(0, 0, 0, 0);
-    float fallbacks = 0;
+    uint fallbacks = 0;
     for (uint i = 0; i < 8; i++)
     {
         DDGIProbeSample probe = SampleDDGIProbe(data, probesData, probesDistance, worldPosition, worldNormal, cascade, base, i, fallbacks);
@@ -377,7 +377,7 @@ float3 SampleDDGISpecularCascade(DDGIData data, Texture2D<snorm float4> probesDa
 
     // Loop over the closest probes to accumulate their contributions
     float4 totalRadiance = float4(0, 0, 0, 0);
-    float fallbacks = 0;
+    uint fallbacks = 0;
     for (uint i = 0; i < 8; i++)
     {
         DDGIProbeSample probe = SampleDDGIProbe(data, probesData, probesDistance, worldPosition, worldNormal, cascade, base, i, fallbacks);

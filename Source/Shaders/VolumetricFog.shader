@@ -355,7 +355,7 @@ void CS_FinalIntegration(uint3 DispatchThreadId : SV_DispatchThreadID)
 		float3 scatteringIntegratedOverSlice = (scatteringExtinction.rgb - scatteringExtinction.rgb * transmittance) / max(scatteringExtinction.w, 0.00001f);
 
         // Apply distance fade
-        float distanceFade = Remap(layerIndex, GridSizeInt.z * 0.8f, GridSizeInt.z - 1, 1, 0);
+        float distanceFade = Remap((float)layerIndex, GridSizeInt.z * 0.8f, (float)GridSizeInt.z - 1, 1, 0);
         scatteringIntegratedOverSlice *= distanceFade;
 
         // Accumulate
