@@ -278,6 +278,7 @@ namespace Flax.Deps.Dependencies
                     };
                     break;
                 case TargetPlatform.PS5:
+                case TargetPlatform.PS4:
                     libs1 = new[]
                     {
                         "lib/libmonosgen-2.0.a",
@@ -292,21 +293,6 @@ namespace Flax.Deps.Dependencies
                         "lib/libbrotlicommon.a",
                         "lib/libbrotlidec.a",
                         "lib/libbrotlienc.a",
-                        "lib/libz.a",
-                    };
-                    break;
-                case TargetPlatform.PS4:
-                    libs1 = new[]
-                    {
-                        "lib/libmonosgen-2.0.a",
-                        "lib/libmono-profiler-aot.a",
-                    };
-                    libs2 = new[]
-                    {
-                        "lib/libSystem.Globalization.Native.a",
-                        "lib/libSystem.IO.Compression.Native.a",
-                        "lib/libSystem.IO.Ports.Native.a",
-                        "lib/libSystem.Native.a",
                         "lib/libz.a",
                     };
                     break;
