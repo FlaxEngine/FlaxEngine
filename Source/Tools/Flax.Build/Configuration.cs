@@ -106,7 +106,7 @@ namespace Flax.Build
         public static bool ConsoleLog = false;
 
         /// <summary>
-        /// Enables logging only messages into console (general info logs will be ignored)."
+        /// Enables logging only messages into console (general info logs will be ignored).
         /// </summary>
         [CommandLine("logMessagesOnly", "Enables logging only messages into console (general info logs will be ignored).")]
         public static bool LogMessagesOnly = false;

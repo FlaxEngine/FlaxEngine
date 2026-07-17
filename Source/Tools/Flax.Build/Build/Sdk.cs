@@ -60,11 +60,13 @@ namespace Flax.Build
             {
                 Print(e.Value);
             }
-            foreach (var e in WindowsPlatformBase.GetSDKs())
+            var windowsSDKs = WindowsPlatformBase.GetSDKs().OrderByDescending(x => x.Key);
+            foreach (var e in windowsSDKs)
             {
                 Log.Message("Windows SDK " + e.Key + ", " + WindowsPlatformBase.GetSDKVersion(e.Key) + ", " + e.Value);
             }
-            foreach (var e in WindowsPlatformBase.GetToolsets())
+            var windowsToolsets = WindowsPlatformBase.GetToolsets().OrderByDescending(x => x.Key);
+            foreach (var e in windowsToolsets)
             {
                 Log.Message("Windows Toolset " + e.Key + ", " + e.Value);
             }
