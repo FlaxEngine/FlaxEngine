@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "EditorUtilities.h"
+#include "Editor/Scripting/ScriptsBuilder.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
@@ -308,6 +309,46 @@ bool EditorUtilities::GenerateCertificate(const String& name, const String& outp
     }
 
     return false;
+}
+
+String EditorUtilities::GetSDK(StringView sdk, StringView customArgs, StringView logFilePath, String* version)
+{
+    String logTempPath;
+    if (logFilePath.IsEmpty())
+    {
+        logTempPath = Globals::TemporaryFolder / TEXT("SDKs.txt");
+        logFilePath = logTempPath;
+    }
+
+    // Log to file
+    if (ScriptsBuilder::RunBuildTool(String::Format(TEXT("-log -logMessagesOnly -logFileWithConsole -logfile=\"{}\" -printSDKs {}"), logFilePath, customArgs)))
+        return String::Empty;
+
+    // Read outputs
+    String sdks;
+    if (File::ReadAllText(logFilePath, sdks))
+        return String::Empty;
+
+    // Search SDK path in the log
+    int32 idx = sdks.Find(*sdk, StringSearchCase::CaseSensitive), end;
+    if (idx != -1)
+    {
+        // Format: "Name, Version, Path\n"
+        idx = sdks.Find(TEXT(", "), StringSearchCase::CaseSensitive, idx + sdk.Length());
+        if (version)
+        {
+            end = sdks.Find(TEXT(", "), StringSearchCase::CaseSensitive, idx + 2);
+            *version = String(sdks.Get() + idx + 2, end - idx - 2).TrimTrailing();
+        }
+        idx = sdks.Find(TEXT(", "), StringSearchCase::CaseSensitive, idx + 2);
+        idx += 2;
+        end = sdks.Find(TEXT("\n"), StringSearchCase::CaseSensitive, idx);
+        if (sdks[end] == '\r')
+            end--;
+        return String(sdks.Get() + idx, end - idx).TrimTrailing();
+    }
+
+    return String::Empty;
 }
 
 bool EditorUtilities::IsInvalidPathChar(Char c)

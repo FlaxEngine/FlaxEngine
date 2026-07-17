@@ -86,20 +86,8 @@ bool DeployDataStep::Perform(CookingData& data)
             if (canUseSystemDotnet && (aotMode == DotNetAOTModes::None || aotMode == DotNetAOTModes::ILC))
             {
                 // Ask Flax.Build to provide .NET SDK location for the current platform
-                String sdks;
-                bool failed = ScriptsBuilder::RunBuildTool(String::Format(TEXT("-log -logMessagesOnly -logFileWithConsole -logfile=SDKs.txt -printSDKs {}"), data.GetDotnetCommandArg()), data.CacheDirectory);
-                failed |= File::ReadAllText(data.CacheDirectory / TEXT("SDKs.txt"), sdks);
-                int32 idx = sdks.Find(TEXT("DotNetSdk, "), StringSearchCase::CaseSensitive);
-                if (idx != -1)
-                {
-                    idx = sdks.Find(TEXT(", "), StringSearchCase::CaseSensitive, idx + 12);
-                    idx += 2;
-                    int32 end = sdks.Find(TEXT("\n"), StringSearchCase::CaseSensitive, idx);
-                    if (sdks[end] == '\r')
-                        end--;
-                    srcDotnet = String(sdks.Get() + idx, end - idx).TrimTrailing();
-                }
-                if (failed || !FileSystem::DirectoryExists(srcDotnet))
+                srcDotnet = EditorUtilities::GetSDK(TEXT("DotNetSdk"), data.GetDotnetCommandArg(), data.CacheDirectory / TEXT("SDKs.txt"));
+                if (srcDotnet.IsEmpty() || !FileSystem::DirectoryExists(srcDotnet))
                 {
                     data.Error(TEXT("Failed to get .NET SDK location for the current host platform."));
                     return true;
@@ -161,6 +149,7 @@ bool DeployDataStep::Perform(CookingData& data)
                 FileSystem::CopyFile(dstDotnet / TEXT("LICENSE.TXT"), srcDotnet / TEXT("LICENSE.TXT"));
                 FileSystem::CopyFile(dstDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"), srcDotnet / TEXT("ThirdPartyNotices.txt"));
                 FileSystem::CopyFile(dstDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"), srcDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"));
+                bool failed = false;
                 if (usAOT)
                 {
                     failed |= EditorUtilities::CopyDirectoryIfNewer(dstDotnet, srcDotnet / TEXT("shared/Microsoft.NETCore.App") / version);
