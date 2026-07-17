@@ -296,24 +296,17 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
 #endif
             {
 #if DDGI_PROBE_RELOCATE_FIND_BEST
-                // Sample Global SDF around the probe base location
+                // Sample Global SDF around the probe base location and select the best probe offset
                 uint sdfCascade = GetGlobalSDFCascade(GlobalSDF, probeBasePosition);
-                float4 CachedProbeOffsets[64];
+                float4 bestOffset = float4(0, 0, 0, 0);
                 for (uint x = 0; x < 4; x++)
                 for (uint y = 0; y < 4; y++)
                 for (uint z = 0; z < 4; z++)
                 {
                     float3 offset = Remap(float3(x, y, z), 0, 3, -0.707f, 0.707f) * relocateLimit;
                     float offsetSdf = SampleGlobalSDFCascade(GlobalSDF, GlobalSDFTex, probeBasePosition + offset, sdfCascade);
-                    CachedProbeOffsets[x * 16 + y * 4 + z] = float4(offset, offsetSdf);
-                }
-
-                // Select the best probe location around the base position
-                float4 bestOffset = CachedProbeOffsets[0];
-                for (uint i = 1; i < 64; i++)
-                {
-                    if (CachedProbeOffsets[i].w > bestOffset.w)
-                        bestOffset = CachedProbeOffsets[i];
+                    if (offsetSdf > bestOffset.w)
+                        bestOffset = float4(offset, offsetSdf);
                 }
                 if (bestOffset.w <= voxelLimit)
                 {

@@ -79,7 +79,7 @@ bool FFX_SSSR_AdvanceRay(float3 origin, float3 direction, float3 inv_direction, 
 }
 
 float2 FFX_SSSR_GetMipResolution(float2 screen_dimensions, int mip_level) {
-    return screen_dimensions * pow(0.5, mip_level);
+    return screen_dimensions * pow(0.5, (float)mip_level);
 }
 
 // Requires origin and direction of the ray to be in screen space [0, 1] x [0, 1]
@@ -95,11 +95,11 @@ float3 FFX_SSSR_HierarchicalRaymarch(Texture2D depthBuffer, uint hzbMips, float 
 
     // Offset to the bounding boxes uv space to intersect the ray with the center of the next pixel.
     // This means we ever so slightly over shoot into the next region. 
-    float2 uv_offset = 0.005 * exp2(most_detailed_mip) / screen_size;
+    float2 uv_offset = 0.005 * exp2((float)most_detailed_mip) / screen_size;
     uv_offset = select(direction.xy < 0, -uv_offset, uv_offset);
 
     // Offset applied depending on current mip resolution to move the boundary to the left/right upper/lower border depending on ray direction.
-    float2 floor_offset = select(direction.xy < 0, 0, 1);
+    float2 floor_offset = select(direction.xy < 0, float2(0, 0), float2(1, 1));
     
     // Initially advance ray to avoid immediate self intersections.
     float current_t;

@@ -238,7 +238,7 @@ float cubic_basis_shaper
 	if ((x > knots[0]) && (x < knots[4]))
 	{  
 		float knot_coord = (x - knots[0]) * 4.0 / w;
-		int j = knot_coord;
+        int j = (int)knot_coord;
 		float t = knot_coord - j;
       
 		float monomials[4] = { t*t*t, t*t, t, 1.0 };
@@ -338,7 +338,7 @@ float segmented_spline_c5_fwd( float x )
 	else if (( logx > log10(C.minPoint.x) ) && ( logx < log10(C.midPoint.x) ))
 	{
 		float knot_coord = (N_KNOTS_LOW-1) * (logx-log10(C.minPoint.x))/(log10(C.midPoint.x)-log10(C.minPoint.x));
-		int j = knot_coord;
+        int j = (int)knot_coord;
 		float t = knot_coord - j;
 
 		float3 cf = { C.coefsLow[ j], C.coefsLow[ j + 1], C.coefsLow[ j + 2]};
@@ -349,7 +349,7 @@ float segmented_spline_c5_fwd( float x )
 	else if (( logx >= log10(C.midPoint.x) ) && ( logx < log10(C.maxPoint.x) ))
 	{
 		float knot_coord = (N_KNOTS_HIGH-1) * (logx-log10(C.midPoint.x))/(log10(C.maxPoint.x)-log10(C.midPoint.x));
-		int j = knot_coord;
+        int j = (int)knot_coord;
 		float t = knot_coord - j;
 
 		float3 cf = { C.coefsHigh[ j], C.coefsHigh[ j + 1], C.coefsHigh[ j + 2]};
@@ -486,7 +486,7 @@ float segmented_spline_c9_fwd( float x, const SegmentedSplineParams_c9 C )
 	else if ((logx > log10(C.minPoint.x)) && (logx < log10(C.midPoint.x)))
 	{
 		float knot_coord = (N_KNOTS_LOW - 1) * (logx - log10(C.minPoint.x)) / (log10(C.midPoint.x) - log10(C.minPoint.x));
-		int j = knot_coord;
+        int j = (int)knot_coord;
 		float t = knot_coord - j;
 
 		float3 cf = { C.coefsLow[j], C.coefsLow[j + 1], C.coefsLow[j + 2] };
@@ -497,7 +497,7 @@ float segmented_spline_c9_fwd( float x, const SegmentedSplineParams_c9 C )
 	else if ((logx >= log10(C.midPoint.x)) && (logx < log10(C.maxPoint.x)))
 	{
 		float knot_coord = (N_KNOTS_HIGH - 1) * (logx - log10(C.midPoint.x)) / (log10(C.maxPoint.x) - log10(C.midPoint.x));
-		int j = knot_coord;
+        int j = (int)knot_coord;
 		float t = knot_coord - j;
 
 		float3 cf = { C.coefsHigh[j], C.coefsHigh[j + 1], C.coefsHigh[j + 2] };

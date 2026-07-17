@@ -328,7 +328,7 @@ float4 PS_Debug(Quad_VS2PS input) : SV_Target
 	if (hit.IsHit())
     {
         // Normalize step count back to default scale (higher precision is just for preview)
-        hit.StepsCount *= stepScale;
+        hit.StepsCount = (uint)(hit.StepsCount * stepScale);
 
 #if 1
         float3 hitPosition = hit.GetHitPosition(trace);

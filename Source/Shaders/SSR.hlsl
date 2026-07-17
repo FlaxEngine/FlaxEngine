@@ -89,7 +89,7 @@ float3 TraceScreenSpaceReflection(
     bool validHit = false;
     uint2 depthBufferSize;
     depthBuffer.GetDimensions(depthBufferSize.x, depthBufferSize.y);
-    float3 hit = FFX_SSSR_HierarchicalRaymarch(depthBuffer, hzbMips, depthDiffError, uncertainHit, startUV, rayUV, depthBufferSize, 0, numSamples, validHit);
+    float3 hit = FFX_SSSR_HierarchicalRaymarch(depthBuffer, hzbMips, depthDiffError, uncertainHit, startUV, rayUV, (float2)depthBufferSize, 0, (uint)numSamples, validHit);
     if (!validHit)
         return 0;
     currOffset = hit;

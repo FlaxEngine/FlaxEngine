@@ -171,7 +171,7 @@ float4 PS_Complexity(Quad_VS2PS input) : SV_Target0
         float4(1.0, 0.0, 0.5, 1.0),
         float4(1.0, 0.9, 0.9, 1.0)
     };
-    return colors[min(complexity * colorsCount, colorsCount - 1)] * outline;
+    return colors[min((uint)(complexity * colorsCount), colorsCount - 1)] * outline;
 }
 
 #endif
