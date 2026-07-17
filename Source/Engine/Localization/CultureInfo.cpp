@@ -35,6 +35,11 @@ namespace
     }
 };
 
+CultureInfo::CultureInfo()
+    : CultureInfo(127) // Invariant Culture
+{
+}
+
 CultureInfo::CultureInfo(int32 lcid)
 {
     _lcid = lcid;
@@ -150,6 +155,11 @@ bool CultureInfo::operator==(const CultureInfo& other) const
     return _lcid == other._lcid;
 }
 
+bool CultureInfo::operator!=(const CultureInfo& other) const
+{
+    return _lcid != other._lcid;
+}
+
 void* MUtils::ToManaged(const CultureInfo& value)
 {
 #if USE_CSHARP
@@ -186,4 +196,25 @@ CultureInfo MUtils::ToNative(void* value)
     }
 #endif
     return CultureInfo(lcid);
+}
+
+void Serialization::Serialize(ISerializable::SerializeStream& stream, const CultureInfo& v, const void* otherObj)
+{
+    stream.String(v.GetName());
+}
+
+void Serialization::Deserialize(ISerializable::DeserializeStream& stream, CultureInfo& v, ISerializeModifier* modifier)
+{
+    if (stream.IsString())
+    {
+        v = CultureInfo(stream.GetText());
+    }
+    else if (stream.IsInt())
+    {
+        v = CultureInfo(stream.GetInt());
+    }
+    else
+    {
+        v = CultureInfo();
+    }
 }
