@@ -67,9 +67,9 @@ namespace FlaxEditor.CustomEditors.Editors
             }
             set
             {
-                if (Values[0] is CultureInfo)
+                if (Values[0] is CultureInfo || Values.Type == typeof(CultureInfo))
                     SetValue(value);
-                else if (Values[0] is string)
+                else if (Values[0] is string || Values.Type == typeof(string))
                     SetValue(value.Name);
             }
         }
