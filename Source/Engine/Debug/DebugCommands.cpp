@@ -7,6 +7,7 @@
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Threading/Task.h"
+#include "Engine/Threading/MainThreadTask.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Scripting/BinaryModule.h"
@@ -364,6 +365,7 @@ namespace
     {
         ASSERT_LOW_LAYER(!Inited);
         PROFILE_CPU();
+        MCore::Thread::Attach();
 
         // Cache existing modules
         const auto& modules = BinaryModule::GetModules();
@@ -445,6 +447,34 @@ DebugCommandsService DebugCommandsServiceInstance;
 
 void DebugCommands::Execute(StringView command)
 {
+    if (!IsInMainThread())
+    {
+        // Route to the main thread to avoid threading issues
+        struct Action
+        {
+            String Command;
+
+            Action(StringView cmd)
+                : Command(cmd)
+            {
+            }
+
+            void Run()
+            {
+                DebugCommands::Execute(Command);
+                Delete(this);
+            }
+
+            void Start()
+            {
+                Function<void()> action;
+                action.Bind<Action, &Action::Run>(this);
+                Task::StartNew(New<MainThreadActionTask>(action));
+            }
+        };
+        New<Action>(command)->Start();
+        return;
+    }
     PROFILE_MEM(EngineDebug);
     // TODO: fix missing string handle on 1st command execution (command gets invalid after InitCommands due to dotnet GC or dotnet interop handles flush)
     String commandCopy = command;
