@@ -442,10 +442,15 @@ namespace Flax.Build
                     var assemblyFileName = Path.GetFileName(assemblyPath);
                     if (Configuration.AOTMode == DotNetAOTModes.MonoAOTDynamic)
                     {
+                        // Class library goes to 'Dotnet' while other assemblies go to the output root
+                        var outputRoot = dotnetOutputPath;
+                        if (Utilities.NormalizePath(Path.GetDirectoryName(assemblyPath)) == Utilities.NormalizePath(aotAssembliesPath))
+                            outputRoot = outputPath;
+
                         {
                             // Copy assembly
-                            var outputFile = Path.Combine(dotnetOutputPath, assemblyFileName);
-                            var deployedFilePath = Path.Combine(dotnetOutputPath, Path.GetFileName(outputFile));
+                            var outputFile = Path.Combine(outputRoot, assemblyFileName);
+                            var deployedFilePath = Path.Combine(outputRoot, Path.GetFileName(outputFile));
                             if (!File.Exists(deployedFilePath) || File.GetLastWriteTime(outputFile) > File.GetLastWriteTime(deployedFilePath))
                             {
                                 Utilities.FileCopy(assemblyPath, outputFile);
@@ -456,13 +461,13 @@ namespace Flax.Build
                         foreach (var outputFile in options.OutputFiles)
                         {
                             // Skip if deployed file is already valid
-                            var deployedFilePath = Path.Combine(dotnetOutputPath, Path.GetFileName(outputFile));
+                            var deployedFilePath = Path.Combine(outputRoot, Path.GetFileName(outputFile));
                             if (!File.Exists(deployedFilePath) || File.GetLastWriteTime(outputFile) > File.GetLastWriteTime(deployedFilePath))
                             {
                                 // Copy to the destination folder
                                 Utilities.FileCopy(outputFile, deployedFilePath);
                                 if (useDebug && File.Exists(outputFile + ".pdb"))
-                                    Utilities.FileCopy(outputFile + ".pdb", Path.Combine(dotnetOutputPath, Path.GetFileName(outputFile + ".pdb")));
+                                    Utilities.FileCopy(outputFile + ".pdb", Path.Combine(outputRoot, Path.GetFileName(outputFile + ".pdb")));
                                 validCache = false;
                             }
                         }
