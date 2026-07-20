@@ -2066,8 +2066,15 @@ static MonoAssembly* OnMonoAssemblyLoad(const char* aname)
     LOG(Info, "Loading C# assembly {0}", name);
 #endif
     String fileName = name;
+#ifdef USE_MONO_DLL_EXT
+    if (name.EndsWith(TEXT(".dll")))
+        fileName = fileName.Substring(fileName.Length() - 4);
+    if (!name.EndsWith(TEXT(USE_MONO_DLL_EXT)))
+        fileName += TEXT(USE_MONO_DLL_EXT);
+#else
     if (!name.EndsWith(TEXT(".dll")) && !name.EndsWith(TEXT(".exe")))
         fileName += TEXT(".dll");
+#endif
     String path = Globals::ProjectFolder / fileName;
     if (!FileSystem::FileExists(path))
     {

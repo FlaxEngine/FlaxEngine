@@ -360,18 +360,21 @@ namespace Flax.Build
 
                 // Run compilation
                 bool failed = false, validCache = true, coreLibDirty = false;
-                string platformToolsPath;
+                Toolchain.CSharpOptions baseOptions;
                 {
                     // Get platform tools
-                    var options = new Toolchain.CSharpOptions
+                    baseOptions = new Toolchain.CSharpOptions
                     {
                         Action = Toolchain.CSharpOptions.ActionTypes.GetPlatformTools,
                         AssembliesPath = aotAssembliesPath,
+                        ManagedAssemblyExtension = ".dll",
                         ClassLibraryPath = dotnetLibPath,
                         EnableToolDebug = dotnetAotDebug,
                     };
-                    buildToolchain.CompileCSharp(ref options);
-                    platformToolsPath = options.PlatformToolsPath;
+                    buildToolchain.CompileCSharp(ref baseOptions);
+                    if (!Directory.Exists(baseOptions.PlatformToolsPath))
+                        throw new Exception("Missing platform tools " + baseOptions.PlatformToolsPath);
+                    Log.Info("Platform tools found in: " + baseOptions.PlatformToolsPath);
                 }
                 {
                     // Check if core library has been modified
@@ -382,16 +385,13 @@ namespace Flax.Build
                         OutputFiles = new List<string>(),
                         AssembliesPath = aotAssembliesPath,
                         ClassLibraryPath = dotnetLibPath,
-                        PlatformToolsPath = platformToolsPath,
+                        PlatformToolsPath = baseOptions.PlatformToolsPath,
                         EnableDebugSymbols = false,
                         EnableToolDebug = dotnetAotDebug,
                     };
                     buildToolchain.CompileCSharp(ref options);
                     coreLibDirty = File.GetLastWriteTime(options.InputFiles[0]) > File.GetLastWriteTime(options.OutputFiles[0]);
                 }
-                if (!Directory.Exists(platformToolsPath))
-                    throw new Exception("Missing platform tools " + platformToolsPath);
-                Log.Info("Platform tools found in: " + platformToolsPath);
                 var compileAssembly = (string assemblyPath) =>
                 {
                     // Determinate whether use debug information for that assembly
@@ -410,7 +410,7 @@ namespace Flax.Build
                         OutputFiles = new List<string>(),
                         AssembliesPath = aotAssembliesPath,
                         ClassLibraryPath = dotnetLibPath,
-                        PlatformToolsPath = platformToolsPath,
+                        PlatformToolsPath = baseOptions.PlatformToolsPath,
                         EnableDebugSymbols = useDebug,
                         EnableToolDebug = dotnetAotDebug,
                     };
@@ -447,13 +447,24 @@ namespace Flax.Build
                         if (Utilities.NormalizePath(Path.GetDirectoryName(assemblyPath)) == Utilities.NormalizePath(aotAssembliesPath))
                             outputRoot = outputPath;
 
+                        // Certain platforms prohibit using managed libraries in a game package (strict policy) so rename assemblies to avoid shipping them as .dll
+                        var outputName = Path.GetFileNameWithoutExtension(assemblyFileName) + baseOptions.ManagedAssemblyExtension;
+
                         {
                             // Copy assembly
-                            var outputFile = Path.Combine(outputRoot, assemblyFileName);
-                            var deployedFilePath = Path.Combine(outputRoot, Path.GetFileName(outputFile));
-                            if (!File.Exists(deployedFilePath) || File.GetLastWriteTime(outputFile) > File.GetLastWriteTime(deployedFilePath))
+                            var deployedFilePath = Path.Combine(outputRoot, outputName);
+                            deployedFilePath = Utilities.NormalizePath(deployedFilePath);
+                            if (!File.Exists(deployedFilePath) || File.GetLastWriteTime(assemblyPath) > File.GetLastWriteTime(deployedFilePath))
                             {
-                                Utilities.FileCopy(assemblyPath, outputFile);
+                                Utilities.FileCopy(assemblyPath, deployedFilePath);
+                            }
+
+                            // Get rid of the original assembly in the destination folder to avoid shipping it if extension has to be different
+                            var outputFile = Path.Combine(outputRoot, assemblyFileName);
+                            outputFile = Utilities.NormalizePath(outputFile);
+                            if (outputFile != deployedFilePath && File.Exists(outputFile))
+                            {
+                                File.Delete(outputFile);
                             }
                         }
 
@@ -462,6 +473,7 @@ namespace Flax.Build
                         {
                             // Skip if deployed file is already valid
                             var deployedFilePath = Path.Combine(outputRoot, Path.GetFileName(outputFile));
+                            deployedFilePath = deployedFilePath.Replace(Path.GetFileNameWithoutExtension(outputFile), outputName);
                             if (!File.Exists(deployedFilePath) || File.GetLastWriteTime(outputFile) > File.GetLastWriteTime(deployedFilePath))
                             {
                                 // Copy to the destination folder
@@ -502,7 +514,7 @@ namespace Flax.Build
                         OutputFiles = new List<string>() { outputAotLib },
                         AssembliesPath = aotAssembliesPath,
                         ClassLibraryPath = dotnetLibPath,
-                        PlatformToolsPath = platformToolsPath,
+                        PlatformToolsPath = baseOptions.ManagedAssemblyExtension,
                         EnableDebugSymbols = configuration != TargetConfiguration.Release,
                         EnableToolDebug = dotnetAotDebug,
                     };
