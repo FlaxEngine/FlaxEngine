@@ -366,9 +366,14 @@ API_ENUM(Attributes="Flags") enum class GlobalIlluminationSettingsOverride : int
     Reflections = 1 << 8,
 
     /// <summary>
+    /// Overrides <see cref="GlobalIlluminationSettings.ReflectionsResolution"/> property.
+    /// </summary>
+    ReflectionsResolution = 1 << 9,
+
+    /// <summary>
     /// All properties.
     /// </summary>
-    All = Mode | Intensity | TemporalResponse | Distance | FallbackIrradiance | BounceIntensity | IndirectShadowsStrength | IndirectResolution | Reflections,
+    All = Mode | Intensity | TemporalResponse | Distance | FallbackIrradiance | BounceIntensity | IndirectShadowsStrength | IndirectResolution | Reflections | ReflectionsResolution,
 };
 
 /// <summary>
@@ -439,6 +444,12 @@ API_STRUCT() struct FLAXENGINE_API GlobalIlluminationSettings : ISerializable
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(100), PostProcessSetting((int)GlobalIlluminationSettingsOverride.Reflections)")
     ReflectionsMode Reflections = ReflectionsMode::EnvironmentProbes;
+
+    /// <summary>
+    /// The indirect specular reflections render resolution. Full gives better quality, but half improves performance.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(110), PostProcessSetting((int)GlobalIlluminationSettingsOverride.ReflectionsResolution)")
+    ResolutionMode ReflectionsResolution = ResolutionMode::Full;
 
 public:
     /// <summary>

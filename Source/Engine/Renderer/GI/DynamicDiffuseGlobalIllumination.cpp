@@ -75,6 +75,9 @@ GPU_CB_STRUCT(Data0 {
     float TestValue;
     Float3 QuantizationError;
     int32 FrameIndexMod8;
+    Float2 Padding0;
+    float ResolveDitherScaleIndirect;
+    float ResolveDitherScaleSpecular;
     });
 
 GPU_CB_STRUCT(Data1 {
@@ -181,6 +184,19 @@ public:
         return LastFrameUsed + 1 >= Engine::FrameCount;
     }
 };
+
+void InitData0Shared(const RenderContext& renderContext, const DDGICustomBuffer& ddgiData, Data0& data)
+{
+    data.DDGI = ddgiData.Result.Constants;
+    data.TestValue = Graphics::TestValue;
+    data.TemporalTime = renderContext.List->Setup.UseTemporalAAJitter ? RenderTools::ComputeTemporalTime() : 0.0f;
+    data.FrameIndexMod8 = (int32)(Engine::FrameCount % 8);
+    auto& settings = renderContext.List->Settings.GlobalIllumination;
+    constexpr float DitherScaleHalfRes = 0.1f; // Hardcoded to reduce noise at half-res due to TAA not being able to filter this out (in future BilateralUpscale could try smooth it)
+    data.ResolveDitherScaleIndirect = settings.IndirectResolution == ResolutionMode::Full ? 1.0f : DitherScaleHalfRes;
+    data.ResolveDitherScaleSpecular = settings.ReflectionsResolution == ResolutionMode::Full ? 1.0f : DitherScaleHalfRes;
+    GBufferPass::SetInputs(renderContext.View, data.GBuffer);
+}
 
 void CalculateVolumeRandomRotation(Matrix3x3& matrix)
 {
@@ -650,7 +666,6 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         Quaternion::RotationMatrix(raysRotationMatrix, raysRotation);
         raysRotation.Conjugate();
 
-        data.DDGI = ddgiData.Result.Constants;
         data.GlobalSDF = bindingDataSDF.Constants;
         data.GlobalSurfaceAtlas = bindingDataSurfaceAtlas.Constants;
         data.ProbesCount = data.DDGI.ProbesCounts[0] * data.DDGI.ProbesCounts[1] * data.DDGI.ProbesCounts[2];
@@ -660,12 +675,10 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
             auto& cascade = ddgiData.Cascades[cascadeIndex];
             data.ProbeScrollClears[cascadeIndex] = Int4(cascade.ProbeScrollClears, 0);
         }
-        data.TemporalTime = renderContext.List->Setup.UseTemporalAAJitter ? RenderTools::ComputeTemporalTime() : 0.0f;
         data.ViewDir = renderContext.View.Direction;
         data.SkyboxIntensity = renderContext.List->Sky ? renderContext.List->Sky->GetIndirectLightingIntensity() : 1.0f;
-        data.TestValue = Graphics::TestValue;
         data.QuantizationError = RenderTools::GetColorQuantizationError(ddgiData.ProbesIrradiance->Format());
-        data.FrameIndexMod8 = (int32)(Engine::FrameCount % 8);
+        InitData0Shared(renderContext, ddgiData, data);
         GBufferPass::SetInputs(renderContext.View, data.GBuffer);
         context->UpdateCB(_cb0, &data);
         context->BindCB(0, _cb0);
@@ -899,10 +912,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         if (!render)
         {
             Data0 data;
-            data.DDGI = ddgiData->Result.Constants;
-            data.TemporalTime = renderContext.List->Setup.UseTemporalAAJitter ? RenderTools::ComputeTemporalTime() : 0.0f;
-            data.FrameIndexMod8 = (int32)(Engine::FrameCount % 8);
-            GBufferPass::SetInputs(renderContext.View, data.GBuffer);
+            InitData0Shared(renderContext, *ddgiData, data);
             context->UpdateCB(_cb0, &data);
             context->BindCB(0, _cb0);
         }
@@ -1051,10 +1061,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderReflections(RenderContext& rend
         if (!render)
         {
             Data0 data;
-            data.DDGI = ddgiData->Result.Constants;
-            data.TemporalTime = renderContext.List->Setup.UseTemporalAAJitter ? RenderTools::ComputeTemporalTime() : 0.0f;
-            data.FrameIndexMod8 = (int32)(Engine::FrameCount % 8);
-            GBufferPass::SetInputs(renderContext.View, data.GBuffer);
+            InitData0Shared(renderContext, *ddgiData, data);
             context->UpdateCB(_cb0, &data);
             context->BindCB(0, _cb0);
         }
@@ -1066,6 +1073,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderReflections(RenderContext& rend
         context->BindSR(5, ddgiData->Result.ProbesDistance);
         context->BindSR(6, ddgiData->Result.ProbesRadiance);
         auto& settings = renderContext.List->Settings.GlobalIllumination;
+        if (settings.ReflectionsResolution == ResolutionMode::Full || !MultiScaler::Instance()->IsReady())
         {
             // Full-res
             auto rtAction = GPUDrawPassAction::Store;
@@ -1074,6 +1082,21 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderReflections(RenderContext& rend
             context->SetRenderTarget(reflectionsBuffer);
             context->SetState(_psSpecularLighting);
             context->DrawFullscreenTriangle();
+        }
+        else
+        {
+            // Upscale
+            auto width = RenderTools::GetResolution((int32)renderContext.View.ScreenSize.X, settings.ReflectionsResolution);
+            auto height = RenderTools::GetResolution((int32)renderContext.View.ScreenSize.Y, settings.ReflectionsResolution);
+            auto temp = RenderTargetPool::Get(GPUTextureDescription::New2D(width, height, reflectionsBuffer->GetFormat(), GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget));
+            context->SetViewportAndScissors((float)width, (float)height);
+            context->SetRenderTarget(temp->View());
+            context->SetState(_psSpecularLighting);
+            context->DrawFullscreenTriangle();
+            context->ResetRenderTarget();
+            MultiScaler::Instance()->BilateralUpscale(context, Viewport(Float2(renderContext.View.ScreenSize)), temp, reflectionsBuffer, renderContext.Buffers->DepthBuffer, renderContext.Buffers->GBuffer1);
+            RenderTargetPool::Release(temp);
+            context->SetViewportAndScissors(renderContext.View.ScreenSize.X, renderContext.View.ScreenSize.Y);
         }
         context->ResetSR();
         context->ResetRenderTarget();
