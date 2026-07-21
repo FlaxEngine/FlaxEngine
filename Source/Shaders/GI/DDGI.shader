@@ -52,9 +52,8 @@ float3 ViewDir;
 float TestValue;
 float3 QuantizationError;
 uint FrameIndexMod8;
+float2 ResolveDitherScale;
 float2 Padding0;
-float ResolveDitherScaleIndirect;
-float ResolveDitherScaleSpecular;
 META_CB_END
 
 META_CB_BEGIN(1, Data1)
@@ -994,7 +993,7 @@ float4 PS_IndirectLighting(Quad_VS2PS input) : SV_Target0
         return float4(0, 0, 0, 0);
 
     // Sample irradiance
-    float dither = DDGI_GET_DITHER * ResolveDitherScaleIndirect;
+    float dither = DDGI_GET_DITHER * ResolveDitherScale.x;
     float3 samplePos = DDGI_GET_SAMPLE_POS;
     float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesData, ProbesDistance, ProbesIrradiance, samplePos, gBuffer.Normal, DDGI_DEFAULT_BIAS, dither);
 
@@ -1021,7 +1020,7 @@ float4 PS_SpecularLighting(Quad_VS2PS input) : SV_Target0
         return float4(0, 0, 0, 0);
 
     // Sample specular reflection
-    float dither = DDGI_GET_DITHER * ResolveDitherScaleSpecular;
+    float dither = DDGI_GET_DITHER * ResolveDitherScale.y;
     float3 samplePos = DDGI_GET_SAMPLE_POS;
     float3 specular = SampleDDGISpecular(DDGI, ProbesData, ProbesDistance, ProbesRadiance, samplePos, gBuffer.Normal, gBuffer.Roughness, DDGI_DEFAULT_BIAS, dither);
 

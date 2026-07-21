@@ -160,7 +160,7 @@ float2 GetDDGIProbeUV(DDGIData data, uint cascadeIndex, uint probeIndex, float2 
     float probeTexelSize = resolution + 2.0f;
     float2 textureSize = float2(data.ProbesCounts.x * data.ProbesCounts.y, data.ProbesCounts.z * data.CascadesCount) * probeTexelSize;
     float2 uv = float2(coords.x * probeTexelSize, coords.y * probeTexelSize) + (probeTexelSize * 0.5f);
-    uv += octahedralCoords.xy * (resolution * 0.5f);
+    uv += octahedralCoords * (resolution * 0.5f);
     uv /= textureSize;
     return uv;
 }
@@ -275,11 +275,11 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
 {
     bool invalidCascade = cascade.CascadeIndex >= data.CascadesCount;
     cascade.CascadeIndex = min(cascade.CascadeIndex, data.CascadesCount - 1);
+    float2 octahedralCoords = GetOctahedralCoords(worldNormal);
 #if DDGI_FALLBACK_OUTER_DEDICATED_PROBE
     if (invalidCascade)
     {
         // Sample a special probe as a fallback for ambient GI outside the last cascade
-        float2 octahedralCoords = GetOctahedralCoords(worldNormal);
         float2 uv = GetDDGIProbeUV(data, cascade.CascadeIndex, 0, octahedralCoords, DDGI_PROBE_RESOLUTION_IRRADIANCE);
         float3 probeIrradiance = probesIrradiance.SampleLevel(SamplerLinearClamp, uv, 0).rgb;
 #if DDGI_SRGB_BLENDING == 1
@@ -301,7 +301,6 @@ float3 SampleDDGIIrradianceCascade(DDGIData data, Texture2D<snorm float4> probes
         DDGIProbeSample probe = SampleDDGIProbe(data, probesData, probesDistance, worldPosition, worldNormal, cascade, base, i, fallbacks);
 
         // Sample irradiance texture
-        float2 octahedralCoords = GetOctahedralCoords(worldNormal);
         float2 uv = GetDDGIProbeUV(data, cascade.CascadeIndex, probe.ProbeIndex, octahedralCoords, DDGI_PROBE_RESOLUTION_IRRADIANCE);
         float3 probeIrradiance = probesIrradiance.SampleLevel(SamplerLinearClamp, uv, 0).rgb;
 #if DDGI_SRGB_BLENDING == 1
@@ -357,7 +356,33 @@ float3 DDGIHash3D(float3 p)
     return frac(frac(p.xxy * p.yzz) * 2.0 - 1.0);
 }
 
-float3 SampleDDGISpecularCascade(DDGIData data, Texture2D<snorm float4> probesData, Texture2D<float4> probesDistance, Texture2D<float4> probesRadiance, float3 worldPosition, float3 worldNormal, float3 reflection, DDGICascadeSampling cascade)
+float3 FilterProbeRadiance(DDGIData data, Texture2D<float4> probesRadiance, float roughness, uint cascadeIndex, uint probeIndex, float3 direction)
+{
+    uint2 coords = GetDDGIProbeTexelCoords(data, cascadeIndex, probeIndex);
+    const float probeTexelSize = DDGI_PROBE_RESOLUTION_RADIANCE + 2.0f;
+    float2 uv = float2(coords.x * probeTexelSize, coords.y * probeTexelSize) + (probeTexelSize * 0.5f);
+    uv += GetOctahedralCoords(direction) * (DDGI_PROBE_RESOLUTION_RADIANCE * 0.5f);
+    float2 textureSize = float2(data.ProbesCounts.x * data.ProbesCounts.y, data.ProbesCounts.z * data.CascadesCount) * probeTexelSize;
+    uv /= textureSize;
+    float3 radiance = probesRadiance.SampleLevel(SamplerLinearClamp, uv, 0).rgb;
+
+    // Box-blur filter for roughness (not physically correct, but cheap)
+    float2 uvBase = float2(coords.x * probeTexelSize, coords.y * probeTexelSize) + 1; // The first texel of the probe (skip 1px padding)
+    float2 uvMin = uvBase / textureSize;
+    float2 uvMax = (uvBase + float2(DDGI_PROBE_RESOLUTION_RADIANCE, DDGI_PROBE_RESOLUTION_RADIANCE)) / textureSize;
+    float2 filterSize = (float2)1.0f / textureSize;
+    float3 radiance00 = probesRadiance.SampleLevel(SamplerLinearClamp, clamp(uv - filterSize, uvMin, uvMax), 0).rgb;
+    float3 radiance10 = probesRadiance.SampleLevel(SamplerLinearClamp, clamp(uv + float2(filterSize.x, -filterSize.y), uvMin, uvMax), 0).rgb;
+    float3 radiance01 = probesRadiance.SampleLevel(SamplerLinearClamp, clamp(uv + float2(-filterSize.x, filterSize.y), uvMin, uvMax), 0).rgb;
+    float3 radiance11 = probesRadiance.SampleLevel(SamplerLinearClamp, clamp(uv + filterSize, uvMin, uvMax), 0).rgb;
+    float3 radianceRough = (radiance00 + radiance10 + radiance01 + radiance11) * 0.25f;
+    float alpha = (roughness - 0.4f) / 0.6f; // Remap [0.4; 1] to [0; 1]
+    radiance = lerp(radiance, radianceRough, saturate(alpha));
+
+    return radiance;
+}
+
+float3 SampleDDGISpecularCascade(DDGIData data, Texture2D<snorm float4> probesData, Texture2D<float4> probesDistance, Texture2D<float4> probesRadiance, float3 worldPosition, float3 worldNormal, float roughness, float3 reflection, DDGICascadeSampling cascade)
 {
     bool invalidCascade = cascade.CascadeIndex >= data.CascadesCount;
     cascade.CascadeIndex = min(cascade.CascadeIndex, data.CascadesCount - 1);
@@ -365,10 +390,7 @@ float3 SampleDDGISpecularCascade(DDGIData data, Texture2D<snorm float4> probesDa
     if (invalidCascade)
     {
         // Sample a special probe as a fallback for ambient sky reflection outside the last cascade
-        float2 octahedralCoords = GetOctahedralCoords(reflection);
-        float2 uv = GetDDGIProbeUV(data, cascade.CascadeIndex, 0, octahedralCoords, DDGI_PROBE_RESOLUTION_RADIANCE);
-        float3 probeRadiance = probesRadiance.SampleLevel(SamplerLinearClamp, uv, 0).rgb;
-        return probeRadiance;
+        return FilterProbeRadiance(data, probesRadiance, roughness, cascade.CascadeIndex, 0, reflection);
     }
 #endif
 
@@ -390,11 +412,7 @@ float3 SampleDDGISpecularCascade(DDGIData data, Texture2D<snorm float4> probesDa
         sampleVector += worldNoise;
 
         // Sample radiance texture
-        float2 octahedralCoords = GetOctahedralCoords(sampleVector);
-        float2 uv = GetDDGIProbeUV(data, cascade.CascadeIndex, probe.ProbeIndex, octahedralCoords, DDGI_PROBE_RESOLUTION_RADIANCE);
-        float3 probeRadiance = probesRadiance.SampleLevel(SamplerLinearClamp, uv, 0).rgb;
-        // TODO: filter radiance based on roughness
-        // TODO: or maybe build mip-chain for updated probes radiance texture and sample it based on roughness like env probes?
+        float3 probeRadiance = FilterProbeRadiance(data, probesRadiance, roughness, cascade.CascadeIndex, probe.ProbeIndex, sampleVector);
 
         // Accumulate weighted radiance
         totalRadiance += float4(probeRadiance * probe.Weights.x, probe.Weights.x);
@@ -516,7 +534,7 @@ float3 SampleDDGISpecular(DDGIData data, Texture2D<snorm float4> probesData, Tex
 
     // Sample cascade
     float3 reflection = reflect(normalize(worldPosition - data.ViewPos), worldNormal);
-    float3 specular = SampleDDGISpecularCascade(data, probesData, probesDistance, probesRadiance, worldPosition, worldNormal, reflection, cascade);
+    float3 specular = SampleDDGISpecularCascade(data, probesData, probesDistance, probesRadiance, worldPosition, worldNormal, roughness, reflection, cascade);
 
     return specular;
 }

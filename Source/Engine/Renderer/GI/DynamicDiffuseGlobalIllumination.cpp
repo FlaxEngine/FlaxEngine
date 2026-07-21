@@ -75,9 +75,8 @@ GPU_CB_STRUCT(Data0 {
     float TestValue;
     Float3 QuantizationError;
     int32 FrameIndexMod8;
+    Float2 ResolveDitherScale;
     Float2 Padding0;
-    float ResolveDitherScaleIndirect;
-    float ResolveDitherScaleSpecular;
     });
 
 GPU_CB_STRUCT(Data1 {
@@ -185,16 +184,18 @@ public:
     }
 };
 
-void InitData0Shared(const RenderContext& renderContext, const DDGICustomBuffer& ddgiData, Data0& data)
+void InitData0(const RenderContext& renderContext, const DDGICustomBuffer& ddgiData, Data0& data)
 {
+    Platform::MemoryClear((byte*)&data + sizeof(data.DDGI), sizeof(Data0) - sizeof(data.DDGI));
     data.DDGI = ddgiData.Result.Constants;
+    data.ProbesCount = data.DDGI.ProbesCounts[0] * data.DDGI.ProbesCounts[1] * data.DDGI.ProbesCounts[2];
     data.TestValue = Graphics::TestValue;
     data.TemporalTime = renderContext.List->Setup.UseTemporalAAJitter ? RenderTools::ComputeTemporalTime() : 0.0f;
     data.FrameIndexMod8 = (int32)(Engine::FrameCount % 8);
     auto& settings = renderContext.List->Settings.GlobalIllumination;
     constexpr float DitherScaleHalfRes = 0.1f; // Hardcoded to reduce noise at half-res due to TAA not being able to filter this out (in future BilateralUpscale could try smooth it)
-    data.ResolveDitherScaleIndirect = settings.IndirectResolution == ResolutionMode::Full ? 1.0f : DitherScaleHalfRes;
-    data.ResolveDitherScaleSpecular = settings.ReflectionsResolution == ResolutionMode::Full ? 1.0f : DitherScaleHalfRes;
+    data.ResolveDitherScale.X = settings.IndirectResolution == ResolutionMode::Full ? 1.0f : DitherScaleHalfRes;
+    data.ResolveDitherScale.Y = settings.ReflectionsResolution == ResolutionMode::Full ? 1.0f : DitherScaleHalfRes;
     GBufferPass::SetInputs(renderContext.View, data.GBuffer);
 }
 
@@ -301,6 +302,8 @@ bool DynamicDiffuseGlobalIlluminationPass::setupResources()
 
     // Initialize resources
     const auto shader = _shader->GPU;
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data0);
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 1, Data1);
     _cb0 = shader->GetCB(0);
     _cb1 = shader->GetCB(1);
     if (!_cb0 || !_cb1)
@@ -658,6 +661,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         ddgiData.Result.ProbesRadiance = ddgiData.ProbesRadiance ? ddgiData.ProbesRadiance->View() : nullptr;
 
         Data0 data;
+        InitData0(renderContext, ddgiData, data);
 
         // Compute random rotation matrix for probe rays orientation (randomized every frame)
         Matrix3x3 raysRotationMatrix;
@@ -668,7 +672,6 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
 
         data.GlobalSDF = bindingDataSDF.Constants;
         data.GlobalSurfaceAtlas = bindingDataSurfaceAtlas.Constants;
-        data.ProbesCount = data.DDGI.ProbesCounts[0] * data.DDGI.ProbesCounts[1] * data.DDGI.ProbesCounts[2];
         data.ResetBlend = clear ? 1.0f : 0.0f;
         for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
         {
@@ -678,8 +681,6 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         data.ViewDir = renderContext.View.Direction;
         data.SkyboxIntensity = renderContext.List->Sky ? renderContext.List->Sky->GetIndirectLightingIntensity() : 1.0f;
         data.QuantizationError = RenderTools::GetColorQuantizationError(ddgiData.ProbesIrradiance->Format());
-        InitData0Shared(renderContext, ddgiData, data);
-        GBufferPass::SetInputs(renderContext.View, data.GBuffer);
         context->UpdateCB(_cb0, &data);
         context->BindCB(0, _cb0);
     }
@@ -911,8 +912,9 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
 #endif
         if (!render)
         {
+            // Bind constants if not set to draw DDGI
             Data0 data;
-            InitData0Shared(renderContext, *ddgiData, data);
+            InitData0(renderContext, *ddgiData, data);
             context->UpdateCB(_cb0, &data);
             context->BindCB(0, _cb0);
         }
@@ -1060,8 +1062,9 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderReflections(RenderContext& rend
         PROFILE_GPU_CPU_NAMED("Specular Lighting");
         if (!render)
         {
+            // Bind constants if not set to draw DDGI
             Data0 data;
-            InitData0Shared(renderContext, *ddgiData, data);
+            InitData0(renderContext, *ddgiData, data);
             context->UpdateCB(_cb0, &data);
             context->BindCB(0, _cb0);
         }
