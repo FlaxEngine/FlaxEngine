@@ -112,12 +112,17 @@ void PS_Forward(
 	// Calculate lighting from Global Illumination
 #if USE_GI
 	light += GetGlobalIlluminationLighting(gBuffer);
+    // TODO: when using both indirect and specular lighting from DDGI, merge cascade selection and probes visibility resolving to be done once
 #endif
 
 	// Calculate reflections
 #if USE_REFLECTIONS
-	float4 reflections = SampleReflectionProbe(ViewPos, EnvProbe, EnvironmentProbe, gBuffer.WorldPos, gBuffer.Normal, gBuffer.Roughness);
-	reflections.rgb *= reflections.a;
+    float4 reflectionsProbe = SampleReflectionProbe(ViewPos, EnvProbe, EnvironmentProbe, gBuffer.WorldPos, gBuffer.Normal, gBuffer.Roughness);
+    float3 reflections = reflectionsProbe.rgb * reflectionsProbe.a;
+#if USE_GI
+    float4 reflectionsGI = GetGlobalIlluminationSpecular(gBuffer);
+    reflections = lerp(reflections, reflectionsGI.rgb, reflectionsGI.a);
+#endif
 
 #if MATERIAL_REFLECTIONS == MATERIAL_REFLECTIONS_SSR
 	// Screen Space Reflections
@@ -133,7 +138,7 @@ void PS_Forward(
 	if (hit.z > 0)
 	{
 		float3 screenColor = sceneColorTexture.SampleLevel(SamplerPointClamp, hit.xy, 0).rgb;
-		reflections.rgb = lerp(reflections.rgb, screenColor, hit.z);
+		reflections = lerp(reflections, screenColor, hit.z);
 	}
 
 	// Fallback to software tracing if possible
@@ -145,18 +150,17 @@ void PS_Forward(
 		if (TraceSDFSoftwareReflections(gBuffer, reflectWS, surfaceAtlas))
 		{
 			float3 screenColor = sceneColorTexture.SampleLevel(SamplerPointClamp, hit.xy, 0).rgb;
-        	reflections.rgb = lerp(surfaceAtlas, float4(screenColor, 1), hit.z);
+        	reflections = lerp(surfaceAtlas, float4(screenColor, 1), hit.z);
 		}
 	}
 #endif
 #endif
 
-	light.rgb += reflections.rgb * GetReflectionSpecularLighting(PreIntegratedGF, ViewPos, gBuffer);
+	light.rgb += reflections * GetReflectionSpecularLighting(PreIntegratedGF, ViewPos, gBuffer);
 #endif
 
 	// Add lighting
 	output.rgb += light.rgb;
-
 #endif
 
 #if USE_FOG && MATERIAL_SHADING_MODEL != SHADING_MODEL_UNLIT

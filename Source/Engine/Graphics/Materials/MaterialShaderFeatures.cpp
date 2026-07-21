@@ -172,6 +172,7 @@ bool GlobalIlluminationFeature::Bind(MaterialShader::BindParameters& params, Spa
                 params.GPUContext->BindSR(srv + 0, bindingDataDDGI.ProbesData);
                 params.GPUContext->BindSR(srv + 1, bindingDataDDGI.ProbesDistance);
                 params.GPUContext->BindSR(srv + 2, bindingDataDDGI.ProbesIrradiance);
+                params.GPUContext->BindSR(srv + 3, bindingDataDDGI.ProbesRadiance);
             }
             break;
         }
@@ -185,6 +186,7 @@ bool GlobalIlluminationFeature::Bind(MaterialShader::BindParameters& params, Spa
         params.GPUContext->UnBindSR(srv + 0);
         params.GPUContext->UnBindSR(srv + 1);
         params.GPUContext->UnBindSR(srv + 2);
+        params.GPUContext->UnBindSR(srv + 3);
     }
 
     cb = cb.Slice(sizeof(Data));

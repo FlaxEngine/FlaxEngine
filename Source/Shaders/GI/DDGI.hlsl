@@ -38,7 +38,7 @@
 struct DDGIData
 {
     float4 ProbesOriginAndSpacing[4];
-    float4 BlendOrigin[4]; // w is unused
+    float4 BlendOrigin[4]; // [0] w is flag for specular usage, [1-3] w is unused
     int4 ProbesScrollOffsets[4]; // w is unused
     uint3 ProbesCounts;
     uint CascadesCount;

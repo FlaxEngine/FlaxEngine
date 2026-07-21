@@ -648,6 +648,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
             ddgiData.Result.Constants.BlendOrigin[cascadeIndex] = Float4(blendOrigins[cascadeIndex], 0.0f);
             ddgiData.Result.Constants.ProbesScrollOffsets[cascadeIndex] = Int4(cascade.ProbeScrollOffsets, 0);
         }
+        ddgiData.Result.Constants.BlendOrigin[0].W = ddgiData.ProbesRadiance ? 1.0f : 0.0f; // Use radiance flag
         ddgiData.Result.Constants.RayMaxDistance = distance;
         ddgiData.Result.Constants.ViewPos = renderContext.View.Position;
         ddgiData.Result.Constants.RaysCount = probeRaysCount;

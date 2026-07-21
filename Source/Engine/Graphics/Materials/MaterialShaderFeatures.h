@@ -73,7 +73,7 @@ struct LightmapFeature : MaterialShaderFeature
 // Material shader feature that adds Global Illumination sampling feature (light probes).
 struct GlobalIlluminationFeature : MaterialShaderFeature
 {
-    enum { SRVs = 3 };
+    enum { SRVs = 4 };
 
     PACK_STRUCT(struct Data {
         DynamicDiffuseGlobalIlluminationPass::ConstantsData DDGI;
