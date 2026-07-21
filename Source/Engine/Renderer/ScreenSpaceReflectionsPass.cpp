@@ -42,6 +42,8 @@ GPU_CB_STRUCT(Data {
     float TemporalEffect;
     float Intensity;
     float FadeOutDistance;
+    Float3 Padding0;
+    float RayTraceSDFStepScale;
     Matrix ViewMatrix;
     Matrix ViewProjectionMatrix;
     GlobalSignDistanceFieldPass::ConstantsData GlobalSDF;
@@ -191,21 +193,26 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
     // Pick effect settings
     int32 maxTraceSamples = 60;
     int32 resolveSamples = settings.ResolveSamples;
+    Data data;
     switch (Graphics::SSRQuality)
     {
     case Quality::Low:
         maxTraceSamples = 40;
         resolveSamples = Math::Min(resolveSamples, 2);
+        data.RayTraceSDFStepScale = 1.5f;
         break;
     case Quality::Medium:
         maxTraceSamples = 55;
         resolveSamples = Math::Min(resolveSamples, 4);
+        data.RayTraceSDFStepScale = 1.0f;
         break;
     case Quality::High:
         maxTraceSamples = 70;
+        data.RayTraceSDFStepScale = 0.8f;
         break;
     case Quality::Ultra:
         maxTraceSamples = 120;
+        data.RayTraceSDFStepScale = 0.6f;
         break;
     }
     int32 resolvePassIndex = 0;
@@ -217,7 +224,6 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
         resolvePassIndex = 1;
 
     // Setup data
-    Data data;
     GBufferPass::SetInputs(view, data.GBuffer);
     data.RoughnessFade = Math::Saturate(settings.RoughnessThreshold);
     data.MaxTraceSamples = static_cast<float>(maxTraceSamples);

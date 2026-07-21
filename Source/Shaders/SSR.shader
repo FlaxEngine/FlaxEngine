@@ -37,6 +37,8 @@ float RayTraceStep;
 float TemporalEffect;
 float Intensity;
 float FadeOutDistance;
+float3 Padding0;
+float RayTraceSDFStepScale;
 float4x4 ViewMatrix;
 float4x4 ViewProjectionMatrix;
 GlobalSDFData GlobalSDF;
@@ -155,7 +157,7 @@ float4 PS_RayTracePass(Quad_VS2PS input) : SV_Target0
     GlobalSDFTrace sdfTrace;
     float maxDistance = GLOBAL_SDF_WORLD_SIZE;
     sdfTrace.Init(gBuffer.WorldPos, reflectWS, 0.0f, maxDistance);
-    GlobalSDFHit sdfHit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, sdfTrace, 2.0f);
+    GlobalSDFHit sdfHit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, sdfTrace, 2.0f, RayTraceSDFStepScale);
     if (sdfHit.IsHit())
     {
         // Sample Global Surface Atlas
