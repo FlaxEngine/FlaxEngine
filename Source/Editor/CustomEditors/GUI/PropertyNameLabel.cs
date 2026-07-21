@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.Utilities;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -46,6 +47,34 @@ namespace FlaxEditor.CustomEditors.GUI
         public Color HighlightStripColor;
 
         /// <summary>
+        /// The active search text query used to highlight matching parts of the label.
+        /// </summary>
+        public string SearchText = string.Empty;
+
+        private string _lastSearchText;
+        private string _lastText;
+        private QueryFilterHelper.Range[] _highlightRanges;
+
+        private void UpdateHighlights()
+        {
+            var text = Text?.ToString() ?? string.Empty;
+            if (_lastSearchText == SearchText && _lastText == text)
+                return;
+
+            _lastSearchText = SearchText;
+            _lastText = text;
+
+            if (!string.IsNullOrEmpty(SearchText))
+            {
+                QueryFilterHelper.Match(SearchText, text, out _highlightRanges);
+            }
+            else
+            {
+                _highlightRanges = null;
+            }
+        }
+
+        /// <summary>
         /// Occurs when label creates the context menu popup for th property. Can be used to add some custom logic per property editor.
         /// </summary>
         public event SetupContextMenuDelegate SetupContextMenu;
@@ -82,6 +111,31 @@ namespace FlaxEditor.CustomEditors.GUI
             if (HighlightStripColor.A > 0.0f)
             {
                 Render2D.FillRectangle(new Rectangle(0, 0, 2, Height), HighlightStripColor);
+            }
+
+            UpdateHighlights();
+
+            if (_highlightRanges != null && _highlightRanges.Length > 0)
+            {
+                var text = Text.ToString();
+                var font = Font?.GetFont();
+                if (font != null)
+                {
+                    var style = Style.Current;
+                    var color = style.ProgressNormal * 0.6f;
+                    var margin = Margin;
+                    var textSize = font.MeasureText(text);
+                    var textX = margin.Left;
+                    var textY = margin.Top + (Height - margin.Height - textSize.Y) * 0.5f;
+
+                    for (int i = 0; i < _highlightRanges.Length; i++)
+                    {
+                        var start = font.GetCharPosition(text, _highlightRanges[i].StartIndex);
+                        var end = font.GetCharPosition(text, _highlightRanges[i].EndIndex);
+                        var highlightRect = new Rectangle(start.X + textX, textY, end.X - start.X, textSize.Y);
+                        Render2D.FillRectangle(highlightRect, color);
+                    }
+                }
             }
         }
 

@@ -868,6 +868,28 @@ namespace FlaxEditor.CustomEditors.Editors
                         if (c.LabelIndex != -1 && c.PropertiesList != null && c.PropertiesList.Labels.Count > c.LabelIndex)
                         {
                             var label = c.PropertiesList.Labels[c.LabelIndex];
+                            if (visible && Presenter != null && !string.IsNullOrEmpty(Presenter.SearchText))
+                            {
+                                bool match = label.Text.ToString().IndexOf(Presenter.SearchText, StringComparison.OrdinalIgnoreCase) >= 0;
+                                if (!match)
+                                {
+                                    var p = label.Parent;
+                                    while (p != null)
+                                    {
+                                        if (p is DropPanel dropPanel)
+                                        {
+                                            var headerText = dropPanel.HeaderText;
+                                            if (headerText != null && headerText.IndexOf(Presenter.SearchText, StringComparison.OrdinalIgnoreCase) >= 0)
+                                            {
+                                                match = true;
+                                                break;
+                                            }
+                                        }
+                                        p = p.Parent;
+                                    }
+                                }
+                                visible = match;
+                            }
                             label.Visible = visible;
                             for (int j = label.FirstChildControlIndex; j < c.PropertiesList.Properties.Children.Count; j++)
                             {
@@ -907,6 +929,10 @@ namespace FlaxEditor.CustomEditors.Editors
                     // Remove rules to prevent error in loop
                     _visibleIfCaches = null;
                 }
+            }
+            if (Presenter != null && !string.IsNullOrEmpty(Presenter.SearchText))
+            {
+                Presenter.UpdateGroupsAndListsVisibility();
             }
 
             base.Refresh();

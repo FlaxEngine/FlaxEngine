@@ -148,8 +148,7 @@ namespace FlaxEditor.Actions
             // Prefab links are broken by the C++ backend on actor reparenting
 
             // Mark scenes as edited
-            foreach (var scene in scenes)
-                Editor.Instance.Scene.MarkSceneEdited(scene);
+            Editor.Instance.Scene.MarkSceneEdited(scenes);
         }
 
         public void Undo()
