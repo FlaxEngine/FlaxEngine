@@ -53,6 +53,7 @@ Delegate<User*> PlatformBase::UserAdded;
 Delegate<User*> PlatformBase::UserRemoved;
 void* OutOfMemoryBuffer = nullptr;
 volatile int64 FatalReporting = 0;
+CPUInfo CpuInfo;
 
 const Char* ToString(NetworkConnectionType value)
 {
@@ -308,6 +309,11 @@ bool PlatformBase::Is64BitPlatform()
 #else
     return false;
 #endif
+}
+
+CPUInfo PlatformBase::GetCPUInfo()
+{
+    return CpuInfo;
 }
 
 int32 PlatformBase::GetCacheLineSize()

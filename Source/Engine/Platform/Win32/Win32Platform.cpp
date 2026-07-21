@@ -25,7 +25,6 @@ static_assert(sizeof(int32) == sizeof(long), "Invalid long size for Interlocked 
 namespace
 {
     Guid DeviceId;
-    CPUInfo CpuInfo;
     uint64 ProgramSizeMemory;
     uint64 ClockFrequency;
     double CyclesToSeconds;
@@ -150,6 +149,7 @@ bool Win32Platform::Init()
     free(buffer);
 
     // Set info about the CPU
+    extern CPUInfo CpuInfo;
     CpuInfo.ProcessorPackageCount = processorPackageCount;
     CpuInfo.ProcessorCoreCount = processorCoreCount;
     CpuInfo.LogicalProcessorCount = logicalProcessorCount;
@@ -312,11 +312,6 @@ bool Win32Platform::Is64BitPlatform()
 	IsWow64Process(GetCurrentProcess(), &result);
 	return result == TRUE;
 #endif
-}
-
-CPUInfo Win32Platform::GetCPUInfo()
-{
-    return CpuInfo;
 }
 
 MemoryStats Win32Platform::GetMemoryStats()

@@ -113,7 +113,6 @@ public:
     }
     static String GetSystemName();
     static Version GetSystemVersion();
-    static CPUInfo GetCPUInfo();
     static MemoryStats GetMemoryStats();
     static ProcessMemoryStats GetProcessMemoryStats();
     static void SetThreadPriority(ThreadPriority priority);

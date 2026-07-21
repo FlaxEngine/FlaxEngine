@@ -86,7 +86,6 @@ public:
     static bool Is64BitPlatform();
     static String GetSystemName();
     static Version GetSystemVersion();
-    static CPUInfo GetCPUInfo();
     static MemoryStats GetMemoryStats();
     static ProcessMemoryStats GetProcessMemoryStats();
     static uint64 GetCurrentThreadID()

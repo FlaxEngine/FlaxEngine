@@ -26,6 +26,7 @@
 #include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Platform/CPUInfo.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Threading/TaskGraph.h"
 #if USE_EDITOR
@@ -100,6 +101,14 @@ int32 Engine::OnInit(const Char* cmdLine)
     {
         Platform::Fatal(TEXT("Cannot init platform."));
         return -1;
+    }
+    int32 coreLimit;
+    if (CommandLine::Get(TEXT("CoreLimit"), coreLimit) && coreLimit > 0)
+    {
+        // Limit CPU cores availability for the engine
+        extern CPUInfo CpuInfo;
+        CpuInfo.ProcessorCoreCount = Math::Min<uint32>(CpuInfo.ProcessorCoreCount, coreLimit);
+        CpuInfo.LogicalProcessorCount = Math::Min<uint32>(CpuInfo.LogicalProcessorCount, coreLimit);
     }
 #if COMPILE_WITH_PROFILER
     InitProfilerMemory(cmdLine, 1);

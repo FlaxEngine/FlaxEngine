@@ -30,7 +30,6 @@
 
 namespace
 {
-    CPUInfo Cpu;
     double DateStart = emscripten_get_now();
     String UserAgent;
 };
@@ -152,11 +151,6 @@ String WebPlatform::GetSystemName()
 Version WebPlatform::GetSystemVersion()
 {
     return Version(1, 0);
-}
-
-CPUInfo WebPlatform::GetCPUInfo()
-{
-    return Cpu;
 }
 
 MemoryStats WebPlatform::GetMemoryStats()
@@ -315,11 +309,12 @@ bool WebPlatform::Init()
 #endif
 
     // Set info about the CPU
-    Platform::MemoryClear(&Cpu, sizeof(Cpu));
-    Cpu.ProcessorPackageCount = 1;
-    Cpu.ProcessorCoreCount = Math::Min(emscripten_num_logical_cores(), PLATFORM_THREADS_LIMIT);
-    Cpu.LogicalProcessorCount = Cpu.ProcessorCoreCount;
-    Cpu.ClockSpeed = GetClockFrequency();
+    extern CPUInfo CpuInfo;
+    Platform::MemoryClear(&CpuInfo, sizeof(CpuInfo));
+    CpuInfo.ProcessorPackageCount = 1;
+    CpuInfo.ProcessorCoreCount = Math::Min(emscripten_num_logical_cores(), PLATFORM_THREADS_LIMIT);
+    CpuInfo.LogicalProcessorCount = CpuInfo.ProcessorCoreCount;
+    CpuInfo.ClockSpeed = GetClockFrequency();
 
     // Cache browser information
     char* userAgent = getUserAgent();

@@ -330,7 +330,6 @@ namespace
 {
     android_app* App = nullptr;
     ANativeWindow* AppWindow = nullptr;
-    CPUInfo AndroidCpu;
     int ClockSource;
     bool HasFocus = false;
     bool IsStarted = false;
@@ -754,11 +753,6 @@ bool AndroidPlatform::Is64BitPlatform()
 #endif
 }
 
-CPUInfo AndroidPlatform::GetCPUInfo()
-{
-    return AndroidCpu;
-}
-
 MemoryStats AndroidPlatform::GetMemoryStats()
 {
     const uint64 pageSize = getpagesize();
@@ -881,27 +875,26 @@ bool AndroidPlatform::Init()
 	ProgramSizeMemory = Platform::GetProcessMemoryStats().UsedPhysicalMemory;
 
     // Set info about the CPU
+    extern CPUInfo CpuInfo;
     cpu_set_t cpus;
     CPU_ZERO(&cpus);
     if (sched_getaffinity(0, sizeof(cpus), &cpus) == 0)
     {
-        AndroidCpu.ProcessorCoreCount = AndroidCpu.LogicalProcessorCount = CPU_COUNT(&cpus);
+        CpuInfo.ProcessorCoreCount = CpuInfo.LogicalProcessorCount = CPU_COUNT(&cpus);
     }
     else
     {
-        AndroidCpu.ProcessorCoreCount = AndroidCpu.LogicalProcessorCount = 1;
+        CpuInfo.ProcessorCoreCount = CpuInfo.LogicalProcessorCount = 1;
     }
-    AndroidCpu.ProcessorPackageCount = 1;
-    AndroidCpu.L1CacheSize = 0;
-    AndroidCpu.L2CacheSize = 0;
-    AndroidCpu.L3CacheSize = 0;
-    AndroidCpu.PageSize = sysconf(_SC_PAGESIZE);
-    AndroidCpu.ClockSpeed = GetClockFrequency();
-    AndroidCpu.CacheLineSize = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
-    if (!AndroidCpu.CacheLineSize)
-    {
-        AndroidCpu.CacheLineSize = PLATFORM_CACHE_LINE_SIZE;
-    }
+    CpuInfo.ProcessorPackageCount = 1;
+    CpuInfo.L1CacheSize = 0;
+    CpuInfo.L2CacheSize = 0;
+    CpuInfo.L3CacheSize = 0;
+    CpuInfo.PageSize = sysconf(_SC_PAGESIZE);
+    CpuInfo.ClockSpeed = GetClockFrequency();
+    CpuInfo.CacheLineSize = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+    if (!CpuInfo.CacheLineSize)
+        CpuInfo.CacheLineSize = PLATFORM_CACHE_LINE_SIZE;
 
     UnixGetMacAddress(MacAddress);
 

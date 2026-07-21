@@ -393,8 +393,7 @@ public:
     /// <summary>
     /// Gets the CPU information.
     /// </summary>
-    /// <returns>The CPU info.</returns>
-    API_PROPERTY() static CPUInfo GetCPUInfo() = delete;
+    API_PROPERTY() static CPUInfo GetCPUInfo();
 
     /// <summary>
     /// Gets the CPU cache line size.
