@@ -3,16 +3,15 @@
 #pragma once
 
 #include "Engine/Core/Types/String.h"
+#include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/Nullable.h"
-#include "Engine/Core/Collections/Array.h"
 
 /// <summary>
 /// Command line options helper.
 /// </summary>
-class CommandLine
+class FLAXENGINE_API CommandLine
 {
 public:
-
     struct OptionsData
     {
         /// <summary>
@@ -199,19 +198,46 @@ public:
     static OptionsData Options;
 
 public:
+    /// <summary>
+    /// The command line option data.
+    /// </summary>
+    struct FLAXENGINE_API Arg
+    {
+        // The name.
+        StringView Name;
+        // The value.
+        StringView Value;
+    };
 
     /// <summary>
-    /// Parses the input command line.
+    /// Gets the specific command line option value. Returns true if given argument has been set.
     /// </summary>
-    /// <param name="cmdLine">The command line.</param>
-    /// <returns>True if failed, otherwise false.</returns>
-    static bool Parse(const Char* cmdLine);
+    /// <returns>True if given argument has been provided in program command line.</returns>
+    static bool Get(const StringView& arg);
 
     /// <summary>
-    /// Parses the command line arguments string into string list of arguments.
+    /// Gets the specific command line option value. Returns true if given argument has been set and provides it's value (as string).
     /// </summary>
-    /// <param name="cmdLine">The command line.</param>
-    /// <param name="arguments">The parsed arguments</param>
+    /// <returns>True if given argument has been provided in program command line.</returns>
+    static bool Get(const StringView& arg, StringView& value);
+
+    /// <summary>
+    /// Gets the specific command line option value. Returns true if given argument has been set and provides it's value (as boolean). Returns ture if argument doesn't have specific value.
+    /// </summary>
+    /// <returns>True if given argument has been provided in program command line.</returns>
+    static bool Get(const StringView& arg, bool& value);
+
+    /// <summary>
+    /// Gets the specific command line option value. Returns true if given argument has been set and provides it's value (as integer).
+    /// </summary>
+    /// <returns>True if given argument has been provided in program command line.</returns>
+    static bool Get(const StringView& arg, int32& value);
+
+    /// <summary>
+    /// Parses the specified command line.
+    /// </summary>
+    /// <param name="cmdLine">The input command line.</param>
+    /// <param name="args">The parsed arguments</param>
     /// <returns>True if failed, otherwise false.</returns>
-    static bool ParseArguments(const StringView& cmdLine, Array<StringAnsi>& arguments);
+    static bool Parse(const StringView& cmdLine, Array<Arg, HeapAllocation>& args);
 };

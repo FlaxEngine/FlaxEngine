@@ -382,6 +382,11 @@ public:
     /// <returns>The substring created from String data.</returns>
     StringView Substring(int32 startIndex, int32 count) const;
 
+    /// <summary>
+    /// Removes trailing whitespace characters from end and begin of the string.
+    /// </summary>
+    StringView Trim() const;
+
 public:
     String ToString() const;
     StringAnsi ToStringAnsi() const;

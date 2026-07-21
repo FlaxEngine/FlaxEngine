@@ -336,7 +336,11 @@ public:
     // Parses text to the scalar value. Returns true if failed to convert the value.
     static bool Parse(const char* str, float* result);
 
+    // Parses text to the boolean value. Returns true if failed to convert the value.
+    static bool Parse(const Char* str, int32 length, bool* result);
+
 public:
+    static String ToString(bool value);
     static String ToString(int32 value);
     static String ToString(int64 value);
     static String ToString(uint32 value);

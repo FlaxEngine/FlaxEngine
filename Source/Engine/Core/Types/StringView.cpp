@@ -50,6 +50,33 @@ StringView StringView::Substring(int32 startIndex, int32 count) const
     return StringView(Get() + startIndex, count);
 }
 
+StringView StringView::Trim() const
+{
+    if (IsEmpty())
+        return *this;
+
+    int32 start = 0;
+    int32 end = Length() - 1;
+
+    while (start <= end)
+    {
+        if (!StringUtils::IsWhitespace((*this)[start]))
+            break;
+        start++;
+    }
+    while (end >= 0)
+    {
+        if (!StringUtils::IsWhitespace((*this)[end]))
+            break;
+        end--;
+    }
+
+    const int32 count = end - start + 1;
+    if (start >= 0 && start + count <= Length() && count >= 0)
+        return StringView(_data + start, count);
+    return Empty;
+}
+
 String StringView::ToString() const
 {
     return String(_data, _length);

@@ -87,7 +87,8 @@ int32 Engine::OnInit(const Char* cmdLine)
 
     EngineService::Sort();
 
-    if (CommandLine::Parse(cmdLine))
+    extern bool InitCommandLine(const Char* cmdLine);
+    if (InitCommandLine(cmdLine))
     {
         Platform::Fatal(TEXT("Invalid command line."));
         return -1;

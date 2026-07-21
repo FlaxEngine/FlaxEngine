@@ -499,6 +499,28 @@ bool StringUtils::Parse(const char* str, float* result)
 #endif
 }
 
+bool StringUtils::Parse(const Char* str, int32 length, bool* result)
+{
+    if ((length == 1 && CompareIgnoreCase(str, TEXT("1"), length) == 0) ||
+        (length == 4 && CompareIgnoreCase(str, TEXT("true"), length) == 0))
+    {
+        *result = true;
+        return false;
+    }
+    if ((length == 1 && CompareIgnoreCase(str, TEXT("0"), length) == 0) ||
+        (length == 5 && CompareIgnoreCase(str, TEXT("false"), length) == 0))
+    {
+        *result = false;
+        return false;
+    }
+    return true;
+}
+
+String StringUtils::ToString(bool value)
+{
+    return value ? TEXT("true") : TEXT("false");
+}
+
 String StringUtils::ToString(int32 value)
 {
     return String::Format(TEXT("{}"), value);

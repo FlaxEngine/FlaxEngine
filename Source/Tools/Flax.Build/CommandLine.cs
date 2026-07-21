@@ -266,6 +266,8 @@ namespace Flax.Build
                 int nameStart = i;
                 while (i < length && commandLine[i] != '-' && commandLine[i] != '=' && !char.IsWhiteSpace(commandLine[i]))
                     i++;
+                if (wholeQuote)
+                    i--;
                 int nameEnd = i;
                 string name = commandLine.Substring(nameStart, nameEnd - nameStart);
 
