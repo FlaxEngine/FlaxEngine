@@ -613,8 +613,7 @@ namespace FlaxEditor.Windows.Profiler
         {
             var e = (Resource)row.Tag;
             var assetItem = Editor.Instance.ContentDatabase.FindAsset(e.AssetId);
-            if (assetItem != null)
-                Editor.Instance.ContentEditing.Open(assetItem);
+            Editor.Instance.ContentEditing.Open(assetItem);
         }
 
         private void ShowResourcePanel(bool visible = true)

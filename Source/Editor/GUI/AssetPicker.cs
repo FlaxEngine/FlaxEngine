@@ -347,7 +347,6 @@ namespace FlaxEditor.GUI
                 Editor.Instance.ContentEditing.Open(Validator.SelectedItem);
             }
 
-            // Handled
             return true;
         }
 

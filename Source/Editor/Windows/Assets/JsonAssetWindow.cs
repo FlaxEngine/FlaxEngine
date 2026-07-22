@@ -309,14 +309,8 @@ namespace FlaxEditor.Windows.Assets
             _optionsCM.AddSeparator();
             if (_optionsButton.Tag is ContentItem item)
             {
-                _optionsCM.AddButton("Edit asset code", () =>
-                {
-                    Editor.Instance.ContentEditing.Open(item);
-                });
-                _optionsCM.AddButton("Show asset code item in content window", () =>
-                {
-                    Editor.Instance.Windows.ContentWin.Select(item);
-                });
+                _optionsCM.AddButton("Edit asset code", () => Editor.Instance.ContentEditing.Open(item));
+                _optionsCM.AddButton("Show asset code item in content window", () => Editor.Instance.Windows.ContentWin.Select(item));
             }
             
             _optionsCM.Show(_optionsButton, _optionsButton.PointFromScreen(Input.MouseScreenPosition));

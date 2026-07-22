@@ -743,12 +743,8 @@ namespace FlaxEditor.Modules
             // Check if it's an asset ID
             if (Guid.TryParse(typename, out Guid id))
             {
-                var el = Editor.ContentDatabase.Find(id);
-                if (el != null)
-                {
-                    // Open asset
-                    return Editor.ContentEditing.Open(el, true);
-                }
+                // Open asset
+                return Editor.ContentEditing.Open(Editor.ContentDatabase.Find(id), true);
             }
 
             return null;

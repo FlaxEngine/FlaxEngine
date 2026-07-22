@@ -1129,8 +1129,7 @@ namespace FlaxEditor.Windows
                 throw new ArgumentNullException();
 
             var item = Editor.ContentDatabase.Find(asset.ID);
-            if (item != null)
-                Select(item);
+            Select(item);
         }
 
         /// <summary>
@@ -1142,8 +1141,7 @@ namespace FlaxEditor.Windows
         public void Select(ContentItem item, bool fastScroll = false, bool additive = false)
         {
             if (item == null)
-                throw new ArgumentNullException();
-
+                return;
             if (!_navigationUnlocked)
                 return;
             var parent = item.ParentFolder;

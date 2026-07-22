@@ -1131,25 +1131,22 @@ namespace FlaxEditor.Surface.Archetypes
                     // Open function content item if exists
                     var method = GetMethod(out var scriptType, out _, out _);
                     var item = scriptType.ContentItem;
-                    if (item != null)
-                    {
-                        var window = Editor.Instance.ContentEditing.Open(item);
+                    var window = Editor.Instance.ContentEditing.Open(item);
 
-                        // Focus method
-                        if (window is VisualScriptWindow vsWindow && method)
+                    // Focus method
+                    if (window is VisualScriptWindow vsWindow && method)
+                    {
+                        foreach (var node in vsWindow.Surface.Nodes)
                         {
-                            foreach (var node in vsWindow.Surface.Nodes)
+                            if (node is VisualScriptFunctionNode functionNode &&
+                                method.Name == functionNode._signature.Name &&
+                                ((method.ParametersCount == 0 && functionNode._signature.Parameters == null) || method.ParametersCount == functionNode._signature.Parameters.Length) &&
+                                method.IsVirtual == functionNode._signature.IsVirtual &&
+                                method.IsStatic == functionNode._signature.IsStatic &&
+                                method.ValueType == functionNode._signature.ReturnType)
                             {
-                                if (node is VisualScriptFunctionNode functionNode &&
-                                    method.Name == functionNode._signature.Name &&
-                                    ((method.ParametersCount == 0 && functionNode._signature.Parameters == null) || method.ParametersCount == functionNode._signature.Parameters.Length) &&
-                                    method.IsVirtual == functionNode._signature.IsVirtual &&
-                                    method.IsStatic == functionNode._signature.IsStatic &&
-                                    method.ValueType == functionNode._signature.ReturnType)
-                                {
-                                    vsWindow.ShowNode(node);
-                                    break;
-                                }
+                                vsWindow.ShowNode(node);
+                                break;
                             }
                         }
                     }

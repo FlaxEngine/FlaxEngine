@@ -168,8 +168,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var actor = (Actor)Values[0];
             var scriptType = TypeUtils.GetType(actor.TypeName);
             var item = scriptType.ContentItem;
-            if (item != null)
-                Editor.Instance.ContentEditing.Open(item);
+            Editor.Instance.ContentEditing.Open(item);
         }
 
         private void OnClickShowActorType()
@@ -177,8 +176,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var actor = (Actor)Values[0];
             var scriptType = TypeUtils.GetType(actor.TypeName);
             var item = scriptType.ContentItem;
-            if (item != null)
-                Editor.Instance.Windows.ContentWin.Select(item);
+            Editor.Instance.Windows.ContentWin.Select(item);
         }
 
         /// <inheritdoc />

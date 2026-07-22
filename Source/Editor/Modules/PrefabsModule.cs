@@ -128,8 +128,7 @@ namespace FlaxEditor.Modules
             }
 
             var item = Editor.ContentDatabase.Find(prefabID);
-            if (item != null)
-                Editor.ContentEditing.Open(item);
+            Editor.ContentEditing.Open(item);
         }
 
         private void OnPrefabCreated(ContentItem contentItem, Actor actor, Windows.Assets.PrefabWindow prefabWindow)

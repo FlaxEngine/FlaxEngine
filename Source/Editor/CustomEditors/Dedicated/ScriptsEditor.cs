@@ -1044,9 +1044,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             var script = (Script)button.ParentContextMenu.Tag;
             var scriptType = TypeUtils.GetType(script.TypeName);
-            var item = scriptType.ContentItem;
-            if (item != null)
-                Editor.Instance.ContentEditing.Open(item);
+            Editor.Instance.ContentEditing.Open(scriptType.ContentItem);
         }
 
         private void OnClickShowScript(ContextMenuButton button)
@@ -1054,8 +1052,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var script = (Script)button.ParentContextMenu.Tag;
             var scriptType = TypeUtils.GetType(script.TypeName);
             var item = scriptType.ContentItem;
-            if (item != null)
-                Editor.Instance.Windows.ContentWin.Select(item);
+            Editor.Instance.Windows.ContentWin.Select(item);
         }
 
         /// <inheritdoc />

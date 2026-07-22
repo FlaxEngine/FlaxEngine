@@ -279,8 +279,7 @@ namespace FlaxEditor.Windows.Profiler
         {
             var assetId = (Guid)row.Tag;
             var assetItem = Editor.Instance.ContentDatabase.FindAsset(assetId);
-            if (assetItem != null)
-                Editor.Instance.ContentEditing.Open(assetItem);
+            Editor.Instance.ContentEditing.Open(assetItem);
         }
 
         private void OnRowRightClick(ClickableRow row)

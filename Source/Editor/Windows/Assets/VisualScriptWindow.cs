@@ -766,15 +766,12 @@ namespace FlaxEditor.Windows.Assets
             {
                 _debugStepOutNodesIds.Clear();
                 var item = Editor.ContentDatabase.Find(flowInfo.Script.ID);
-                if (item != null)
+                var editor = Editor.ContentEditing.Open(item);
+                if (editor is VisualScriptWindow vsWindow)
                 {
-                    var editor = Editor.ContentEditing.Open(item);
-                    if (editor is VisualScriptWindow vsWindow)
-                    {
-                        lock (vsWindow._debugFlows)
-                            vsWindow._debugFlows.Add(flowInfo);
-                        vsWindow.OnDebugBreakpointHit(ref flowInfo, vsWindow.Surface.FindNode(flowInfo.NodeId));
-                    }
+                    lock (vsWindow._debugFlows)
+                        vsWindow._debugFlows.Add(flowInfo);
+                    vsWindow.OnDebugBreakpointHit(ref flowInfo, vsWindow.Surface.FindNode(flowInfo.NodeId));
                 }
                 return;
             }

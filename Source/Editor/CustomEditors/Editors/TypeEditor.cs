@@ -235,9 +235,7 @@ namespace FlaxEditor.CustomEditors.Editors
             // Navigate to types from game project
             if (button == MouseButton.Left && _value != ScriptType.Null)
             {
-                var item = _value.ContentItem;
-                if (item != null)
-                    Editor.Instance.ContentEditing.Open(item);
+                Editor.Instance.ContentEditing.Open(_value.ContentItem);
             }
 
             return base.OnMouseDoubleClick(location, button);
