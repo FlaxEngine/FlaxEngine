@@ -50,6 +50,8 @@ namespace
     InputDevice::EventQueue InputEvents;
 }
 
+double LastInputReadTime = 0;
+
 class InputService : public EngineService
 {
 public:
@@ -860,6 +862,7 @@ void InputService::Update()
     const auto frame = Time::Update.TicksCount;
     const auto dt = Time::Update.UnscaledDeltaTime.GetTotalSeconds();
     InputEvents.Clear();
+    LastInputReadTime = Platform::GetTimeSeconds();
 
     // If application has no user focus then simply clear the state
     if (!Engine::HasFocus)

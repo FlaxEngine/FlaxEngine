@@ -753,6 +753,8 @@ void GPUDevice::DrawEnd()
     }
 #if COMPILE_WITH_PROFILER
     const double presentEnd = Platform::GetTimeSeconds();
+    extern double LastInputLatency, LastInputReadTime;
+    LastInputLatency = (float)(presentEnd - LastInputReadTime);
     ProfilerGPU::OnPresentTime((float)((presentEnd - presentStart) * 1000.0));
 #endif
     GetMainContext()->OnPresent();
