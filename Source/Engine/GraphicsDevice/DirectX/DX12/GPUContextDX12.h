@@ -45,7 +45,6 @@ private:
     GPUPipelineStateDX12* _currentState;
     GPUShaderProgramCS* _currentCompute;
 
-    int32 _swapChainsUsed;
     int32 _vbCount;
     int32 _rtCount;
     int32 _rbBufferSize;
@@ -74,6 +73,7 @@ private:
     D3D12_RESOURCE_BARRIER _rbBuffer[DX12_RB_BUFFER_SIZE];
     GPUConstantBufferDX12* _cbHandles[GPU_MAX_CB_BINDED];
     GPUSamplerDX12* _samplers[GPU_MAX_SAMPLER_BINDED - GPU_STATIC_SAMPLERS_COUNT];
+    Array<ResourceOwnerDX12*, InlinedAllocation<USE_EDITOR ? 32 : 2>> _swapChains;
 
 #if COMPILE_WITH_PROFILER
     void* _tracyContext;
@@ -135,9 +135,9 @@ public:
     uint64 Execute(bool waitForCompletion = false);
 
     /// <summary>
-    /// External event called by swap chain after using context end
+    /// External event called by swap chain after using context ends.
     /// </summary>
-    void OnSwapChainFlush();
+    void OnSwapChainFlush(ResourceOwnerDX12* backBuffer);
 
     /// <summary>
     /// Flush pending resource barriers

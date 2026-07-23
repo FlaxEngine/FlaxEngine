@@ -212,6 +212,7 @@ void RenderView::CopyFrom(const Camera* camera, const Viewport* viewport)
     RenderLayersMask = camera->RenderLayersMask;
     Flags = camera->RenderFlags;
     Mode = camera->RenderMode;
+    ViewportRect = camera->ViewportRect;
 }
 
 void RenderView::GetWorldMatrix(const Transform& transform, Matrix& world) const

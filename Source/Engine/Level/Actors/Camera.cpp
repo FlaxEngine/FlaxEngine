@@ -290,15 +290,20 @@ void Camera::GetMatrices(Matrix& view, Matrix& projection, const Viewport& viewp
 
 void Camera::GetMatrices(Matrix& view, Matrix& projection, const Viewport& viewport, const Vector3& origin) const
 {
+    // Adjust viewport rectangle
+    Viewport viewportRect = viewport;
+    viewportRect.Location += viewportRect.Size * Float2(ViewportRect.X, ViewportRect.Y);
+    viewportRect.Size *= Float2(ViewportRect.Z, ViewportRect.W);
+
     // Create projection matrix
-    const float aspect = _customAspectRatio <= 0.0f ? viewport.GetAspectRatio() : _customAspectRatio;
+    const float aspect = _customAspectRatio <= 0.0f ? viewportRect.GetAspectRatio() : _customAspectRatio;
     if (_usePerspective)
     {
         Matrix::PerspectiveFov(_fov * DegreesToRadians, aspect, _near, _far, projection);
     }
     else
     {
-        const float orthoSize = (_orthoSize > 0.0f ? _orthoSize : viewport.Height) * _orthoScale;
+        const float orthoSize = (_orthoSize > 0.0f ? _orthoSize : viewportRect.Height) * _orthoScale;
         Matrix::Ortho(orthoSize * aspect, orthoSize, _near, _far, projection);
     }
 
@@ -451,6 +456,7 @@ void Camera::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(RenderLayersMask);
     SERIALIZE(RenderFlags);
     SERIALIZE(RenderMode);
+    SERIALIZE(ViewportRect);
 }
 
 void Camera::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -468,6 +474,7 @@ void Camera::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier
     DESERIALIZE(RenderLayersMask);
     DESERIALIZE(RenderFlags);
     DESERIALIZE(RenderMode);
+    DESERIALIZE(ViewportRect);
 }
 
 void Camera::OnEnable()

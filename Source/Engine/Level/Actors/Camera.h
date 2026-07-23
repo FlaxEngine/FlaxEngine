@@ -159,6 +159,12 @@ public:
     API_FIELD(Attributes="EditorOrder(120), EditorDisplay(\"Camera\")")
     ViewMode RenderMode = ViewMode::Default;
 
+    /// <summary>
+    /// Four values that define where on the screen this camera should be drawn. Measured in normalized coordinates (range 0-1). Order: X, Y, Width, Height. For example (0, 0, 1, 1) means full screen, (0, 0, 0.5, 1) means left half of the screen and (0.5, 0, 0.5, 1) means right half of the screen.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(130), EditorDisplay(\"Camera\"), Limit(0, 1, 0.001f)")
+    Float4 ViewportRect = Float4(0, 0, 1, 1);
+
 public:
     /// <summary>
     /// Projects the point from 3D world-space to game window coordinates (in screen pixels for default viewport calculated from <see cref="Viewport"/>).
@@ -217,6 +223,7 @@ public:
     /// <summary>
     /// Gets the camera viewport.
     /// </summary>
+    /// <remarks>Doesn't include scaling/offset from ViewportRect which is applied to projection matrix in GetMatrices.</remarks>
     API_PROPERTY() Viewport GetViewport() const;
 
     /// <summary>

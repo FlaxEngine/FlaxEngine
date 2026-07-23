@@ -66,6 +66,11 @@ public:
     API_FIELD() bool Enabled = true;
 
     /// <summary>
+    /// Gets or sets a value indicating whether task is doing composition over other task (eg. layered cameras stacking for local co-op).
+    /// </summary>
+    API_FIELD() bool IsComposite = false;
+
+    /// <summary>
     /// The order of the task. Used for tasks rendering order. Lower first, higher later.
     /// </summary>
     API_FIELD() int32 Order = 0;
@@ -402,11 +407,13 @@ public:
     /// <summary>
     /// Gets the rendering render task viewport (before upsampling).
     /// </summary>
+    /// <remarks>Includes rendering scale and ViewportRect sizing (but no viewport offset, origin at 0,0).</remarks>
     API_PROPERTY() Viewport GetViewport() const;
 
     /// <summary>
     /// Gets the rendering output viewport (after upsampling).
     /// </summary>
+    /// <remarks>Includes ViewportRect placement within output. Doesn't contain any render scale.</remarks>
     API_PROPERTY() Viewport GetOutputViewport() const;
 
     /// <summary>

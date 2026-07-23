@@ -31,6 +31,11 @@ Array<PostProcessEffect*> SceneRenderTask::GlobalCustomPostFx;
 MainRenderTask* MainRenderTask::Instance;
 CriticalSection RenderContext::GPULocker;
 
+Viewport CalculateViewport(int32 width, int32 height, const Float4& viewportRect)
+{
+    return Viewport((float)width * viewportRect.X, (float)height * viewportRect.Y, (float)width * viewportRect.Z, (float)height * viewportRect.W);
+}
+
 PostProcessEffect::PostProcessEffect(const SpawnParams& params)
     : Script(params)
 {
@@ -92,7 +97,7 @@ void RenderTask::OnIdle()
 void RenderTask::OnBegin(GPUContext* context)
 {
     Begin(this, context);
-    if (SwapChain)
+    if (SwapChain && !IsComposite)
         SwapChain->Begin(this);
 
     _prevTask = GPUDevice::Instance->CurrentTask;
@@ -105,7 +110,7 @@ void RenderTask::OnRender(GPUContext* context)
 {
     Render(this, context);
 
-    if (SwapChain)
+    if (SwapChain && !IsComposite)
     {
         PROFILE_GPU_CPU_NAMED("GUI");
         const Viewport viewport(0, 0, static_cast<float>(SwapChain->GetWidth()), static_cast<float>(SwapChain->GetHeight()));
@@ -120,14 +125,14 @@ void RenderTask::OnEnd(GPUContext* context)
     GPUDevice::Instance->CurrentTask = _prevTask;
 
     _prevTask = nullptr;
-    if (SwapChain)
+    if (SwapChain && !IsComposite)
         SwapChain->End(this);
     End(this, context);
 }
 
 void RenderTask::OnPresent(bool vsync)
 {
-    if (SwapChain)
+    if (SwapChain && !IsComposite)
         SwapChain->Present(vsync);
     Present(this);
 }
@@ -356,22 +361,22 @@ Viewport SceneRenderTask::GetViewport() const
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
     float renderScale = RenderingPercentage * RenderScale;
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
-    viewport.Width *= renderScale;
-    viewport.Height *= renderScale;
+    viewport.Width *= renderScale * View.ViewportRect.Z;
+    viewport.Height *= renderScale * View.ViewportRect.W;
     return viewport;
 }
 
 Viewport SceneRenderTask::GetOutputViewport() const
 {
     if (Output && Output->IsAllocated())
-        return Viewport(0, 0, static_cast<float>(Output->Width()), static_cast<float>(Output->Height()));
+        return CalculateViewport(Output->Width(), Output->Height(), View.ViewportRect);
     if (SwapChain)
     {
 #if PLATFORM_WEB
         // Hack fix for Web where swapchain texture might have different size than actual current size of the backbuffer, just precache it (GetBackBufferView might resize internally)
         SwapChain->GetBackBufferView();
 #endif
-        return Viewport(0, 0, static_cast<float>(SwapChain->GetWidth()), static_cast<float>(SwapChain->GetHeight()));
+        return CalculateViewport(SwapChain->GetWidth(), SwapChain->GetHeight(), View.ViewportRect);
     }
     return GetViewport();
 }
@@ -392,6 +397,7 @@ void SceneRenderTask::OnBegin(GPUContext* context)
     // Copy view info if camera is specified
     if (Camera)
     {
+        View.ViewportRect = Float4(0, 0, 1, 1); // Get viewport without any scaling
         auto viewport = GetViewport();
         View.CopyFrom(Camera, &viewport);
     }
@@ -400,13 +406,14 @@ void SceneRenderTask::OnBegin(GPUContext* context)
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
     float renderScale = RenderingPercentage * RenderScale;
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
+    Float2 viewportScale = Float2(View.ViewportRect.Z, View.ViewportRect.W) * renderScale;
     if (Output)
     {
-        Buffers->Init((int32)((float)Output->Width() * renderScale), (int32)((float)Output->Height() * renderScale));
+        Buffers->Init((int32)((float)Output->Width() * viewportScale.X), (int32)((float)Output->Height() * viewportScale.Y));
     }
     else if (SwapChain)
     {
-        Buffers->Init((int32)((float)SwapChain->GetWidth() * renderScale), (int32)((float)SwapChain->GetHeight() * renderScale));
+        Buffers->Init((int32)((float)SwapChain->GetWidth() * viewportScale.X), (int32)((float)SwapChain->GetHeight() * viewportScale.Y));
     }
 }
 
@@ -443,7 +450,8 @@ bool SceneRenderTask::Resize(int32 width, int32 height)
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
     float renderScale = RenderingPercentage * RenderScale;
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
-    if (Buffers && Buffers->Init((int32)((float)width * renderScale), (int32)((float)height * renderScale)))
+    Float2 viewportScale = Float2(View.ViewportRect.Z, View.ViewportRect.W) * renderScale;
+    if (Buffers && Buffers->Init((int32)((float)width * viewportScale.X), (int32)((float)height * viewportScale.Y)))
         return true;
     return false;
 }

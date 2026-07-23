@@ -114,7 +114,6 @@ GPUContextDX12::GPUContextDX12(GPUDeviceDX12* device, D3D12_COMMAND_LIST_TYPE ty
     , _currentAllocator(nullptr)
     , _currentState(nullptr)
     , _currentCompute(nullptr)
-    , _swapChainsUsed(0)
     , _vbCount(0)
     , _rtCount(0)
     , _rbBufferSize(0)
@@ -296,7 +295,7 @@ void GPUContextDX12::Reset()
     _ibHandle = nullptr;
     Platform::MemoryClear(&_cbHandles, sizeof(_cbHandles));
     Platform::MemoryClear(&_samplers, sizeof(_samplers));
-    _swapChainsUsed = 0;
+    _swapChains.Clear();
     
     // Bind dummy vertex buffer (used by missing bindings)
     D3D12_VERTEX_BUFFER_VIEW dummyVBView;
@@ -342,12 +341,12 @@ uint64 GPUContextDX12::Execute(bool waitForCompletion)
     return fenceValue;
 }
 
-void GPUContextDX12::OnSwapChainFlush()
+void GPUContextDX12::OnSwapChainFlush(ResourceOwnerDX12* backBuffer)
 {
-    _swapChainsUsed++;
+    _swapChains.Add(backBuffer);
 
     // Flush per-window (excluding the main window)
-    if (_swapChainsUsed > 1)
+    if (_swapChains.Count() > 1)
     {
         // Flush GPU commands
         Flush();
@@ -754,6 +753,13 @@ void GPUContextDX12::FrameBegin()
 
 void GPUContextDX12::FrameEnd()
 {
+    // Transition swapchains to the present state
+    for (ResourceOwnerDX12* backBuffer : _swapChains)
+    {
+        SetResourceState(backBuffer, D3D12_RESOURCE_STATE_PRESENT);
+    }
+    _swapChains.Clear();
+
     // Base
     GPUContext::FrameEnd();
 

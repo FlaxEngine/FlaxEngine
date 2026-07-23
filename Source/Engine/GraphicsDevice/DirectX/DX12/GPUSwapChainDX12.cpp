@@ -354,13 +354,7 @@ void GPUSwapChainDX12::End(RenderTask* task)
     GPUSwapChain::End(task);
 
     auto context = _device->GetMainContextDX12();
-
-    // Indicate that the back buffer will be used to present a frame
-    // Note: after that we should not use this backbuffer
-    context->SetResourceState(&_backBuffers[_currentFrameIndex], D3D12_RESOURCE_STATE_PRESENT);
-
-    // Send event
-    context->OnSwapChainFlush();
+    context->OnSwapChainFlush(&_backBuffers[_currentFrameIndex]);
 }
 
 void GPUSwapChainDX12::Present(bool vsync)

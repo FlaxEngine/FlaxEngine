@@ -25,6 +25,7 @@ namespace FlaxEngine
 #pragma warning restore 0612
             Flags = ViewFlags.DefaultGame;
             Mode = ViewMode.Default;
+            ViewportRect = new Float4(0, 0, 1, 1);
         }
 
         /// <summary>
@@ -122,6 +123,7 @@ namespace FlaxEngine
             RenderLayersMask = camera.RenderLayersMask;
             Flags = camera.RenderFlags;
             Mode = camera.RenderMode;
+            ViewportRect = camera.ViewportRect;
 
             UpdateCachedData();
         }
