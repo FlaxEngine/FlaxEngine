@@ -310,6 +310,8 @@ namespace FlaxEditor.Windows
 
         private void OnSelectedTabChanged(Tabs tabs)
         {
+            if (IsDisposing)
+                return;
             ApplySearchFilter();
         }
 
