@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using FlaxEditor.History;
@@ -131,6 +132,18 @@ namespace FlaxEditor.GUI
             SortItems();
         }
 
+        private TypeSearchPopup(IEnumerable<ScriptType> items, Action<ScriptType> selected)
+        {
+            _isValid = null;
+            _selected = selected;
+
+            ItemClicked += OnItemClicked;
+
+            foreach (var item in items)
+                AddItem(new TypeItemView(item));
+            SortItems();
+        }
+
         private bool IsHideAttributes(object[] attributes)
         {
             return attributes.FirstOrDefault(IsHideAttribute) == null;
@@ -158,6 +171,21 @@ namespace FlaxEditor.GUI
         public static TypeSearchPopup Show(Control showTarget, Float2 showTargetLocation, IsValidDelegate isValid, Action<ScriptType> selected)
         {
             var popup = new TypeSearchPopup(isValid, selected);
+            popup.Show(showTarget, showTargetLocation);
+            return popup;
+        }
+
+        /// <summary>
+        /// Shows the popup.
+        /// </summary>
+        /// <param name="showTarget">The show target.</param>
+        /// <param name="showTargetLocation">The show target location.</param>
+        /// <param name="items">Collection of types to display available to pick.</param>
+        /// <param name="selected">Event called on asset item pick.</param>
+        /// <returns>The dialog.</returns>
+        public static TypeSearchPopup Show(Control showTarget, Float2 showTargetLocation, IEnumerable<ScriptType> items, Action<ScriptType> selected)
+        {
+            var popup = new TypeSearchPopup(items, selected);
             popup.Show(showTarget, showTargetLocation);
             return popup;
         }

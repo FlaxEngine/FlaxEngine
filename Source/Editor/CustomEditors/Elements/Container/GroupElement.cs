@@ -55,7 +55,7 @@ namespace FlaxEditor.CustomEditors.Elements
             const float padding = 2.0f;
             var settingsButtonSize = Panel.HeaderHeight;
             Panel.HeaderTextMargin = Panel.HeaderTextMargin with { Right = settingsButtonSize + Utilities.Constants.UIMargin };
-;           return new Image
+            return new Image
             {
                 TooltipText = tooltipText,
                 AutoFocus = true,
