@@ -1544,7 +1544,7 @@ namespace FlaxEditor.Surface.Elements
 
             object obj;
             var type = CurrentType;
-            if (ScriptType.FlaxObject.IsAssignableFrom(type))
+            if (type.IsScriptingObject)
             {
                 // Object reference
                 if (text.Length != 32)
