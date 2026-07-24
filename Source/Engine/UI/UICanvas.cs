@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -114,6 +115,7 @@ namespace FlaxEngine
         private readonly CanvasRootControl _guiRoot;
         private CanvasRenderer _renderer;
         private bool _isLoading, _isRegisteredForTick, _isRegisteredForOnDraw;
+        private Float4 _viewportRect = new Float4(0, 0, 1, 1);
 
         /// <summary>
         /// Gets or sets the canvas rendering mode.
@@ -221,6 +223,21 @@ namespace FlaxEngine
         /// </summary>
         [EditorOrder(70), NoSerialize, EditorDisplay("Canvas"), VisibleIf("Editor_IsGPUTexture")]
         public GPUTexture OutputTexture { get; set; }
+
+        /// <summary>
+        /// Four values that define where on the screen this canvas should be drawn. Measured in normalized coordinates (range 0-1). Order: X, Y, Width, Height. For example (0, 0, 1, 1) means full screen, (0, 0, 0.5, 1) means left half of the screen and (0.5, 0, 0.5, 1) means right half of the screen.
+        /// </summary>
+        [EditorOrder(80), EditorDisplay("Canvas"), Limit(0, 1, 0.001f)]
+        [DefaultValue(typeof(Float4), "0,0,1,1")]
+        public Float4 ViewportRect
+        {
+            get => _viewportRect;
+            set
+            {
+                _viewportRect = value;
+                _guiRoot.PerformLayout();
+            }
+        }
 
         /// <summary>
         /// Gets the canvas GUI root control.
@@ -686,6 +703,21 @@ namespace FlaxEngine
                 {
                     jsonWriter.WritePropertyName("Distance");
                     jsonWriter.WriteValue(Distance);
+                }
+
+                if (noOther || _viewportRect != other._viewportRect)
+                {
+                    jsonWriter.WritePropertyName("ViewportRect");
+                    jsonWriter.WriteStartObject();
+                    jsonWriter.WritePropertyName("X");
+                    jsonWriter.WriteValue(_viewportRect.X);
+                    jsonWriter.WritePropertyName("Y");
+                    jsonWriter.WriteValue(_viewportRect.Y);
+                    jsonWriter.WritePropertyName("Z");
+                    jsonWriter.WriteValue(_viewportRect.Z);
+                    jsonWriter.WritePropertyName("W");
+                    jsonWriter.WriteValue(_viewportRect.W);
+                    jsonWriter.WriteEndObject();
                 }
 
                 bool saveSize = RenderMode == CanvasRenderMode.WorldSpace || RenderMode == CanvasRenderMode.WorldSpaceFaceCamera;

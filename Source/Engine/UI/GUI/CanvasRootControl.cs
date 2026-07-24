@@ -198,6 +198,14 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        public override void GetDesireClientArea(out Rectangle rect)
+        {
+            var size = Size;
+            var viewportRect = _canvas.ViewportRect;
+            rect = new Rectangle(size * new Float2(viewportRect.X, viewportRect.Y), size * new Float2(viewportRect.Z, viewportRect.W));
+        }
+
+        /// <inheritdoc />
         public override void Update(float deltaTime)
         {
             base.Update(deltaTime);
