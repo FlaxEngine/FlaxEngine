@@ -61,10 +61,16 @@ public:
     API_PROPERTY() static AudioDevice* GetActiveDevice();
 
     /// <summary>
-    /// Gets the index of the active device.
+    /// Gets the index of the active device. Returns -1 if set to system default mode.
     /// </summary>
     /// <returns>The active device index.</returns>
     API_PROPERTY() static int32 GetActiveDeviceIndex();
+
+    /// <summary>
+    /// Gets the resolved index in Devices array of the device currently playing (resolves system default mode to the actual device index).
+    /// </summary>
+    /// <returns>The resolved active device index.</returns>
+    API_PROPERTY() static int32 GetActiveDeviceResolvedIndex();
 
     /// <summary>
     /// Sets the index of the active device.

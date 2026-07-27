@@ -120,6 +120,20 @@ int32 Audio::GetActiveDeviceIndex()
     return ActiveDeviceIndex;
 }
 
+int32 Audio::GetActiveDeviceResolvedIndex()
+{
+    AudioDevice* active = GetActiveDevice();
+    if (active != nullptr)
+    {
+        for (int32 i = 0; i < Devices.Count(); i++)
+        {
+            if (&Devices[i] == active)
+                return i;
+        }
+    }
+    return -1;
+}
+
 void Audio::SetActiveDeviceIndex(int32 index)
 {
     index = Math::Clamp(index, -1, Devices.Count() - 1);
