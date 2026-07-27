@@ -195,13 +195,14 @@ void AudioSource::Stop()
     _state = States::Stopped;
     _isActuallyPlayingSth = false;
     _streamingFirstChunk = 0;
+    _savedTime = 0.0f;
     if (SourceID)
         AudioBackend::Source::Stop(SourceID);
 }
 
 float AudioSource::GetTime() const
 {
-    if (_state == States::Stopped || SourceID == 0 || !Clip->IsLoaded())
+    if (_state == States::Stopped || SourceID == 0 || Clip == nullptr || !Clip->IsLoaded())
         return 0.0f;
 
     float time = AudioBackend::Source::GetCurrentBufferTime(SourceID);
@@ -215,6 +216,11 @@ float AudioSource::GetTime() const
     }
 
     time = Math::Clamp(time, 0.0f, Clip->GetLength());
+
+    if (time <= 0.0001f && _savedTime > 0.0001f)
+    {
+        time = _savedTime;
+    }
 
     return time;
 }
@@ -232,6 +238,9 @@ void AudioSource::SetTime(float time)
     {
         Stop();
     }
+
+    // Restore _savedTime after Stop() resets it
+    _savedTime = time;
 
     if (UseStreaming())
     {
@@ -402,16 +411,24 @@ void AudioSource::Update()
         AudioBackend::Source::VelocityChanged(SourceID, _velocity);
     }
 
+    float curTime = 0.0f;
+    if (_state != States::Stopped && SourceID && Clip && Clip->IsLoaded())
+    {
+        curTime = GetTime();
+        if (curTime > 0.0001f)
+            _savedTime = curTime;
+    }
+
     // Reset starting to play value once time is greater than zero
-    if (_startingToPlay && GetTime() > 0.0f)
+    if (_startingToPlay && curTime > 0.0f)
     {
         _startingToPlay = false;
     }
 
-    if (Math::NearEqual(GetTime(), _startTime) && _isActuallyPlayingSth && _startingToPlay)
+    if (Math::NearEqual(curTime, _startTime) && _isActuallyPlayingSth && _startingToPlay)
         ClipStarted();
 
-    if (!UseStreaming() && Math::NearEqual(GetTime(), 0.0f) && _isActuallyPlayingSth && !_startingToPlay)
+    if (!UseStreaming() && Math::NearEqual(curTime, 0.0f) && _isActuallyPlayingSth && !_startingToPlay)
     {
         int32 queuedBuffers;
         AudioBackend::Source::GetQueuedBuffersCount(SourceID, queuedBuffers);

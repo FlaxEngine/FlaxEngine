@@ -3,6 +3,7 @@
 #if AUDIO_API_OPENAL
 
 #include "AudioBackendOAL.h"
+#include "Engine/Platform/Platform.h"
 #include "Engine/Platform/StringUtils.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Dictionary.h"
@@ -10,6 +11,7 @@
 #include "Engine/Engine/Units.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
+#include "Engine/Engine/Time.h"
 #include "Engine/Audio/Audio.h"
 #include "Engine/Audio/AudioListener.h"
 #include "Engine/Audio/AudioSource.h"
@@ -204,23 +206,61 @@ namespace ALC
             Listener::Rebuild(listener);
     }
     
-    void RebuildSources(const Array<AudioSourceState>& states)
+    void RebuildSources(const Array<AudioSourceState>& states, float elapsedTime = 0.0f)
     {
         for (int32 i = 0; i < states.Count(); i++)
         {
             AudioSource* source = Audio::Sources[i];
             Source::Rebuild(source->SourceID, source->GetPosition(), source->GetOrientation(), source->GetVolume(), source->GetPitch(), source->GetPan(), source->GetIsLooping() && !source->UseStreaming(), source->Is3D(), source->GetAttenuation(), source->GetMinDistance(), source->GetDopplerFactor());
 
-            if (states.HasItems() && source->SourceID)
+            if (source->SourceID)
             {
-                // Restore playback state
+                // Restore playback state and time position without restarting or pausing
                 auto& state = states[i];
                 if (state.State != AudioSource::States::Stopped)
-                    source->Play();
-                if (state.State == AudioSource::States::Paused)
-                    source->Pause();
-                if (state.State != AudioSource::States::Stopped)
-                    source->SetTime(state.Time);
+                {
+                    if (source->Clip && source->Clip->IsLoaded())
+                    {
+                        float targetTime = state.Time;
+                        if (state.State == AudioSource::States::Playing && elapsedTime > 0.0f)
+                        {
+                            targetTime += elapsedTime;
+                            const float clipLength = source->Clip->GetLength();
+                            if (clipLength > 0.0001f)
+                            {
+                                if (source->GetIsLooping())
+                                {
+                                    targetTime = fmodf(targetTime, clipLength);
+                                }
+                                else
+                                {
+                                    targetTime = Math::Min(targetTime, clipLength);
+                                }
+                            }
+                        }
+
+                        if (source->UseStreaming())
+                        {
+                            float relativeTime = 0;
+                            const int32 chunkIndex = source->Clip->GetFirstBufferIndex(targetTime, relativeTime);
+                            AudioBackend::Source::SetStreamingFirstChunk(source, chunkIndex);
+                            source->RequestStreamingBuffersUpdate();
+                        }
+                        else
+                        {
+                            if (source->Clip->Buffers.HasItems() && source->Clip->Buffers[0] != 0)
+                            {
+                                AudioBackend::Source::SetNonStreamingBuffer(source->SourceID, source->Clip->Buffers[0]);
+                                AudioBackend::Source::SetCurrentBufferTime(source->SourceID, targetTime);
+                            }
+                        }
+
+                        if (state.State == AudioSource::States::Playing)
+                            source->Play();
+                        else if (state.State == AudioSource::States::Paused)
+                            source->Pause();
+                    }
+                }
             }
         }
     }
@@ -658,13 +698,14 @@ void AudioBackendOAL::Base_OnActiveDeviceChanged()
 {
     PROFILE_CPU();
     PROFILE_MEM(Audio);
-
     // Fast-path on startup
     if (!ALC::Inited && ALC::Device)
     {
         ALC::RebuildContext();
         return;
     }
+
+    const double startTime = Platform::GetTimeSeconds();
 
     // Cleanup
     Array<ALC::AudioSourceState> states;
@@ -687,15 +728,41 @@ void AudioBackendOAL::Base_OnActiveDeviceChanged()
     }
 
     // Open device
-    const StringAnsi& name = Audio::GetActiveDevice()->InternalName;
-    ALC::Device = alcOpenDevice(name.Get());
+    const StringAnsi* namePtr = (Audio::Devices.HasItems() && Audio::GetActiveDeviceIndex() >= 0 && Audio::GetActiveDeviceIndex() < Audio::Devices.Count()) ? &Audio::GetActiveDevice()->InternalName : nullptr;
+    if (namePtr)
+    {
+        ALC::Device = alcOpenDevice(namePtr->Get());
+        if (ALC::Device == nullptr)
+        {
+            LOG(Warning, "Failed to open active OpenAL device ({0}). Trying default device...", String(*namePtr));
+            ALC::Device = alcOpenDevice(nullptr);
+        }
+    }
+    else
+    {
+        ALC::Device = alcOpenDevice(nullptr);
+    }
+
+    if (ALC::Device == nullptr && Audio::Devices.HasItems())
+    {
+        for (int32 i = 0; i < Audio::Devices.Count(); i++)
+        {
+            ALC::Device = alcOpenDevice(Audio::Devices[i].InternalName.Get());
+            if (ALC::Device != nullptr)
+                break;
+        }
+    }
+
     if (ALC::Device == nullptr)
     {
-        LOG(Fatal, "Failed to open OpenAL device ({0}).", String(name));
+        LOG(Warning, "Failed to open any OpenAL audio device.");
         return;
     }
     if (ALC::Inited)
-        LOG(Info, "Changed audio device to: {}", String(Audio::GetActiveDevice()->Name));
+    {
+        const AudioDevice* activeDev = Audio::GetActiveDevice();
+        LOG(Info, "Changed audio device to: {}", activeDev ? String(activeDev->Name) : TEXT("Default"));
+    }
 
     // Rebuild context
     ALC::RebuildContext();
@@ -719,11 +786,16 @@ void AudioBackendOAL::Base_OnActiveDeviceChanged()
             else
             {
                 // Reload audio clip
-                auto assetLock = audioClip->Storage->Lock();
-                audioClip->LoadChunk(0);
-                audioClip->Buffers[0] = AudioBackend::Buffer::Create();
-                audioClip->WriteBuffer(0);
-
+                if (audioClip->Storage)
+                {
+                    auto assetLock = audioClip->Storage->Lock();
+                    audioClip->LoadChunk(0);
+                }
+                if (audioClip->Buffers.HasItems())
+                {
+                    audioClip->Buffers[0] = AudioBackend::Buffer::Create();
+                    audioClip->WriteBuffer(0);
+                }
             }
         }
 
@@ -739,8 +811,9 @@ void AudioBackendOAL::Base_OnActiveDeviceChanged()
             player.AudioSource = 0;
         }
     }
+    const float elapsedTime = static_cast<float>(Platform::GetTimeSeconds() - startTime);
     ALC::RebuildListeners();
-    ALC::RebuildSources(states);
+    ALC::RebuildSources(states, elapsedTime);
 }
 
 void AudioBackendOAL::Base_SetDopplerFactor(float value)
@@ -786,6 +859,7 @@ bool AudioBackendOAL::Base_Init()
         const ALCchar* devicesStr = alcGetString(nullptr, ALC_ALL_DEVICES_SPECIFIER);
 
         const StringAnsi defaultDeviceName(defaultDevice);
+        Audio::SetSystemDefaultDeviceName(defaultDeviceName);
 
         devices.Clear();
         devices.EnsureCapacity(8);
@@ -848,13 +922,9 @@ bool AudioBackendOAL::Base_Init()
     }
 
     // Init
-    alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED); // Default attenuation model
-    if (Audio::GetActiveDeviceIndex() == Math::Clamp(activeDeviceIndex, -1, Audio::Devices.Count() - 1))
-    {
-        // Manually create context if SetActiveDeviceIndex won't call it
-        Base_OnActiveDeviceChanged();
-    }
-    Audio::SetActiveDeviceIndex(activeDeviceIndex);
+    // Create context and open initial device
+    Base_OnActiveDeviceChanged();
+    Audio::SetActiveDeviceIndexSilent(activeDeviceIndex);
 #ifdef AL_SOFT_source_spatialize
     if (ALC::IsExtensionSupported("AL_SOFT_source_spatialize"))
         ALC::Features = EnumAddFlags(ALC::Features, FeatureFlags::SpatialMultiChannel);
@@ -875,8 +945,204 @@ bool AudioBackendOAL::Base_Init()
     return false;
 }
 
+#ifndef ALC_CONNECTED
+#define ALC_CONNECTED 0x313
+#endif
+
 void AudioBackendOAL::Base_Update()
 {
+    // Check if active audio device got disconnected or invalidated (WASAPI AUDCLNT_E_DEVICE_INVALIDATED 0x88890004)
+    bool forceCheck = false;
+    if (ALC::Device != nullptr)
+    {
+        ALCint connected = ALC_TRUE;
+        alcGetIntegerv(ALC::Device, ALC_CONNECTED, 1, &connected);
+        if (connected == ALC_FALSE || alcGetError(ALC::Device) != ALC_NO_ERROR)
+        {
+            LOG(Warning, "Active audio device disconnected. Swapping active audio device...");
+            forceCheck = true;
+        }
+    }
+
+#if ALC_ENUMERATE_ALL_EXT
+
+    // Update audio devices list periodically (throttled every 0.25 seconds / 250ms, or immediately if disconnected)
+    static float deviceCheckTimer = 0.0f;
+    static StringAnsi lastDefaultDeviceName;
+    deviceCheckTimer += Time::Update.UnscaledDeltaTime.GetTotalSeconds();
+    if (deviceCheckTimer >= 0.25f || forceCheck)
+    {
+        deviceCheckTimer = 0.0f;
+        if (ALC::IsExtensionSupported("ALC_ENUMERATE_ALL_EXT"))
+        {
+            const ALCchar* defaultDevice = alcGetString(nullptr, ALC_DEFAULT_ALL_DEVICES_SPECIFIER);
+            const StringAnsi defaultDeviceName(defaultDevice);
+            Audio::SetSystemDefaultDeviceName(defaultDeviceName);
+            const ALCchar* devicesStr = alcGetString(nullptr, ALC_ALL_DEVICES_SPECIFIER);
+            Array<AudioDevice> newDevices;
+            int32 defaultDeviceIndex = -1;
+
+            while (devicesStr && *devicesStr)
+            {
+                const int32 i = newDevices.Count();
+                auto& device = newDevices.AddOne();
+                device.InternalName = devicesStr;
+                device.Name = String(device.InternalName).TrimTrailing();
+                device.Name.Replace(TEXT("OpenAL Soft on "), TEXT(""));
+
+                if (device.InternalName == defaultDeviceName)
+                {
+                    defaultDeviceIndex = i;
+                }
+
+                devicesStr += (device.InternalName.Length() + 1) * sizeof(ALCchar);
+            }
+
+            if (defaultDeviceIndex == -1 && !newDevices.IsEmpty())
+                defaultDeviceIndex = 0;
+
+            bool devicesListChanged = newDevices.Count() != Audio::Devices.Count();
+            if (!devicesListChanged)
+            {
+                for (int32 i = 0; i < newDevices.Count(); i++)
+                {
+                    if (newDevices[i].InternalName != Audio::Devices[i].InternalName)
+                    {
+                        devicesListChanged = true;
+                        break;
+                    }
+                }
+            }
+
+            const int32 currentActiveIndex = Audio::GetActiveDeviceIndex();
+            const StringAnsi& explicitDeviceName = Audio::GetExplicitDeviceName();
+
+            // Determine the internal name of the currently active device.
+            // When in System Default Mode (index -1), fall back to the OS default name so
+            // comparisons correctly identify "no change" and avoid spurious device swaps.
+            StringAnsi currentActiveInternalName;
+            if (currentActiveIndex >= 0 && currentActiveIndex < Audio::Devices.Count())
+                currentActiveInternalName = Audio::Devices[currentActiveIndex].InternalName;
+            else if (explicitDeviceName.IsEmpty())
+                currentActiveInternalName = defaultDeviceName; // System Default Mode: treat current as OS default
+
+            int32 currentActiveNewIndex = -1;
+            int32 explicitDeviceNewIndex = -1;
+
+            for (int32 i = 0; i < newDevices.Count(); i++)
+            {
+                if (!currentActiveInternalName.IsEmpty() && newDevices[i].InternalName == currentActiveInternalName)
+                {
+                    currentActiveNewIndex = i;
+                }
+                if (!explicitDeviceName.IsEmpty() && newDevices[i].InternalName == explicitDeviceName)
+                {
+                    explicitDeviceNewIndex = i;
+                }
+            }
+
+            bool defaultDeviceChanged = (!lastDefaultDeviceName.IsEmpty() && lastDefaultDeviceName != defaultDeviceName);
+            lastDefaultDeviceName = defaultDeviceName;
+
+            int32 targetActiveIndex = -1;
+            if (!explicitDeviceName.IsEmpty())
+            {
+                // Explicit Device Lock Mode: User selected a specific audio device
+                if (explicitDeviceNewIndex != -1)
+                {
+                    // Explicit device is available (stay locked or re-claim explicit device)
+                    targetActiveIndex = explicitDeviceNewIndex;
+                }
+                else if (forceCheck || currentActiveNewIndex == -1)
+                {
+                    // Explicit device disconnected -> Fallback to system default
+                    targetActiveIndex = (defaultDeviceIndex != -1) ? defaultDeviceIndex : 0;
+                }
+                else
+                {
+                    targetActiveIndex = currentActiveNewIndex;
+                }
+            }
+            else
+            {
+                // Dynamic System Default Mode: Automatically follow OS default device changes
+                if (forceCheck)
+                {
+                    targetActiveIndex = (defaultDeviceIndex != -1) ? defaultDeviceIndex : 0;
+                }
+                else if (defaultDeviceChanged && defaultDeviceIndex != -1)
+                {
+                    targetActiveIndex = defaultDeviceIndex;
+                }
+                else if (currentActiveNewIndex != -1)
+                {
+                    targetActiveIndex = currentActiveNewIndex;
+                }
+                else if (defaultDeviceIndex != -1)
+                {
+                    targetActiveIndex = defaultDeviceIndex;
+                }
+            }
+
+            if (devicesListChanged)
+            {
+                // Fire DeviceAdded for each device in newDevices not present in old list
+                for (int32 i = 0; i < newDevices.Count(); i++)
+                {
+                    bool found = false;
+                    for (int32 j = 0; j < Audio::Devices.Count(); j++)
+                    {
+                        if (Audio::Devices[j].InternalName == newDevices[i].InternalName)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found)
+                        Audio::DeviceAdded();
+                }
+
+                // Fire DeviceRemoved for each device in old list not present in newDevices
+                for (int32 i = 0; i < Audio::Devices.Count(); i++)
+                {
+                    bool found = false;
+                    for (int32 j = 0; j < newDevices.Count(); j++)
+                    {
+                        if (newDevices[j].InternalName == Audio::Devices[i].InternalName)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found)
+                        Audio::DeviceRemoved();
+                }
+
+                Audio::Devices = newDevices;
+                Audio::DevicesChanged();
+            }
+
+            if (targetActiveIndex != -1)
+            {
+                StringAnsi targetActiveInternalName = newDevices[targetActiveIndex].InternalName;
+                if (forceCheck)
+                {
+                    Audio::SetActiveDeviceIndexSilent(targetActiveIndex);
+                    Base_OnActiveDeviceChanged();
+                }
+                else if (targetActiveInternalName != currentActiveInternalName)
+                {
+                    Audio::SetActiveDeviceIndexSilent(targetActiveIndex);
+                    Base_OnActiveDeviceChanged();
+                }
+                else
+                {
+                    Audio::SetActiveDeviceIndexSilent(targetActiveIndex);
+                }
+            }
+        }
+    }
+#endif
 }
 
 void AudioBackendOAL::Base_Dispose()
