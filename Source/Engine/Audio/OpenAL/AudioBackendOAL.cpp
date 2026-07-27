@@ -229,13 +229,9 @@ namespace ALC
                             if (clipLength > 0.0001f)
                             {
                                 if (source->GetIsLooping())
-                                {
                                     targetTime = fmodf(targetTime, clipLength);
-                                }
                                 else
-                                {
                                     targetTime = Math::Min(targetTime, clipLength);
-                                }
                             }
                         }
 
