@@ -798,7 +798,7 @@ public:
     /// Tries to find the actor of the given type in this actor hierarchy (checks this actor and all children hierarchy).
     /// </summary>
     /// <param name="type">Type of the actor to search for. Includes any actors derived from the type. Supports interface types.</param>
-    /// <param name="activeOnly">Finds only a active actor.</param>
+    /// <param name="activeOnly">Finds only an active actor.</param>
     /// <returns>Actor instance if found, null otherwise.</returns>
     API_FUNCTION() Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, bool activeOnly = false) const;
 
@@ -822,33 +822,36 @@ public:
     /// <summary>
     /// Tries to find the actor of the given type in this actor hierarchy (checks this actor and all children hierarchy).
     /// </summary>
+    /// <param name="activeOnly">Finds only an active actor.</param>
     /// <returns>Actor instance if found, null otherwise.</returns>
     template<typename T>
-    FORCE_INLINE T* FindActor() const
+    FORCE_INLINE T* FindActor(bool activeOnly = false) const
     {
-        return (T*)FindActor(T::GetStaticClass());
+        return (T*)FindActor(T::GetStaticClass(), activeOnly);
     }
 
     /// <summary>
     /// Tries to find the actor of the given type and name in this actor hierarchy (checks this actor and all children hierarchy).
     /// </summary>
     /// <param name="name">The name of the actor.</param>
+    /// <param name="activeOnly">Finds only an active actor.</param>
     /// <returns>Actor instance if found, null otherwise.</returns>
     template<typename T>
-    FORCE_INLINE T* FindActor(const StringView& name) const
+    FORCE_INLINE T* FindActor(const StringView& name, bool activeOnly = false) const
     {
-        return (T*)FindActor(T::GetStaticClass(), name);
+        return (T*)FindActor(T::GetStaticClass(), name, activeOnly);
     }
 
     /// <summary>
     /// Tries to find the actor of the given type and tag in this actor hierarchy (checks this actor and all children hierarchy).
     /// </summary>
     /// <param name="tag">The tag of the actor to search for.</param>
+    /// <param name="activeOnly">Finds only an active actor.</param>
     /// <returns>Actor instance if found, null otherwise.</returns>
     template<typename T>
-    FORCE_INLINE T* FindActor(const Tag& tag) const
+    FORCE_INLINE T* FindActor(const Tag& tag, bool activeOnly = false) const
     {
-        return (T*)FindActor(T::GetStaticClass(), tag);
+        return (T*)FindActor(T::GetStaticClass(), tag, activeOnly);
     }
 
     /// <summary>

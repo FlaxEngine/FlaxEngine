@@ -884,6 +884,8 @@ namespace FlaxEditor.Modules
                 return;
             var folder = node.Folder;
             var path = folder.Path;
+            if (!Directory.Exists(path))
+                return;
             var canHaveAssets = node.CanHaveAssets;
 
             if (_isDuringFastSetup)

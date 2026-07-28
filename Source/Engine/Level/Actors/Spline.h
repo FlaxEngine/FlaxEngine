@@ -39,70 +39,70 @@ public:
     /// <summary>
     /// Evaluates the spline curve at the given time and calculates the point location in 3D (world-space).
     /// </summary>
-    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp).</param>
+    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp). Time corresponds to curve keyframes Time, not the length.</param>
     /// <returns>The calculated curve point location (world-space).</returns>
     API_FUNCTION() Vector3 GetSplinePoint(float time) const;
 
     /// <summary>
     /// Evaluates the spline curve at the given time and calculates the point location in 3D (local-space).
     /// </summary>
-    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp).</param>
+    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp). Time corresponds to curve keyframes Time, not the length.</param>
     /// <returns>The calculated curve point location (local-space).</returns>
     API_FUNCTION() Vector3 GetSplineLocalPoint(float time) const;
 
     /// <summary>
     /// Evaluates the spline curve at the given time and calculates the point rotation in 3D (world-space).
     /// </summary>
-    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp).</param>
+    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp). Time corresponds to curve keyframes Time, not the length.</param>
     /// <returns>The calculated curve point rotation (world-space).</returns>
     API_FUNCTION() Quaternion GetSplineOrientation(float time) const;
 
     /// <summary>
     /// Evaluates the spline curve at the given time and calculates the point rotation in 3D (local-space).
     /// </summary>
-    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp).</param>
+    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp). Time corresponds to curve keyframes Time, not the length.</param>
     /// <returns>The calculated curve point rotation (local-space).</returns>
     API_FUNCTION() Quaternion GetSplineLocalOrientation(float time) const;
 
     /// <summary>
     /// Evaluates the spline curve at the given time and calculates the point scale in 3D (world-space).
     /// </summary>
-    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp).</param>
+    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp). Time corresponds to curve keyframes Time, not the length.</param>
     /// <returns>The calculated curve point scale (world-space).</returns>
     API_FUNCTION() Vector3 GetSplineScale(float time) const;
 
     /// <summary>
     /// Evaluates the spline curve at the given time and calculates the point scale in 3D (local-space).
     /// </summary>
-    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp).</param>
+    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp). Time corresponds to curve keyframes Time, not the length.</param>
     /// <returns>The calculated curve point scale (local-space).</returns>
     API_FUNCTION() Vector3 GetSplineLocalScale(float time) const;
 
     /// <summary>
     /// Evaluates the spline curve at the given time and calculates the transformation in 3D (world-space).
     /// </summary>
-    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp).</param>
+    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp). Time corresponds to curve keyframes Time, not the length.</param>
     /// <returns>The calculated curve point transformation (world-space).</returns>
     API_FUNCTION() Transform GetSplineTransform(float time) const;
 
     /// <summary>
     /// Evaluates the spline curve at the given time and calculates the transformation in 3D (local-space).
     /// </summary>
-    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp).</param>
+    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp). Time corresponds to curve keyframes Time, not the length.</param>
     /// <returns>The calculated curve point transformation (local-space).</returns>
     API_FUNCTION() Transform GetSplineLocalTransform(float time) const;
 
     /// <summary>
     /// Evaluates the spline curve direction (forward vector, aka position 1st derivative) at the given time in 3D (world-space).
     /// </summary>
-    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp).</param>
+    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp). Time corresponds to curve keyframes Time, not the length.</param>
     /// <returns>The calculated curve direction (world-space).</returns>
     API_FUNCTION() Vector3 GetSplineDirection(float time) const;
 
     /// <summary>
     /// Evaluates the spline curve direction (forward vector, aka position 1st derivative) at the given time in 3D (local-space).
     /// </summary>
-    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp).</param>
+    /// <param name="time">The time value. Can be negative or larger than curve length (curve will loop or clamp). Time corresponds to curve keyframes Time, not the length.</param>
     /// <returns>The calculated curve direction (local-space).</returns>
     API_FUNCTION() Vector3 GetSplineLocalDirection(float time) const;
 
