@@ -79,9 +79,7 @@ bool DepthOfFieldPass::Init()
         _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/DepthOfField"));
         if (_shader == nullptr)
             return true;
-#if COMPILE_WITH_DEV_ENV
-        _shader.Get()->OnReloading.Bind<DepthOfFieldPass, &DepthOfFieldPass::OnShaderReloading>(this);
-#endif
+        BIND_SHADER_RELOADING(_shader, DepthOfFieldPass, OnShaderReloading);
     }
 
     return false;

@@ -260,9 +260,7 @@ bool ProbesRendererService::LazyInit()
         _initFailed = _shader == nullptr;
         if (_initFailed)
             return false;
-#if COMPILE_WITH_DEV_ENV
-        _shader->OnReloading.Bind<ProbesRendererService, &ProbesRendererService::OnShaderReloading>(this);
-#endif
+        BIND_SHADER_RELOADING(_shader, ProbesRendererService, OnShaderReloading);
     }
     if (!_shader->IsLoaded())
         return true;

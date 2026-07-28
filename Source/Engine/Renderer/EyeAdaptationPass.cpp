@@ -232,9 +232,7 @@ bool EyeAdaptationPass::Init()
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/EyeAdaptation"));
     if (_shader == nullptr)
         return true;
-#if COMPILE_WITH_DEV_ENV
-    _shader.Get()->OnReloading.Bind<EyeAdaptationPass, &EyeAdaptationPass::OnShaderReloading>(this);
-#endif
+    BIND_SHADER_RELOADING(_shader, EyeAdaptationPass, OnShaderReloading);
 
     return false;
 }

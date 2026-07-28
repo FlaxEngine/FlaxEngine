@@ -27,7 +27,7 @@ ExponentialHeightFog::ExponentialHeightFog(const SpawnParams& params)
         LOG(Fatal, "Cannot load fog shader.");
     }
 #if COMPILE_WITH_DEV_ENV
-    _shader.Get()->OnReloading.Bind<ExponentialHeightFog, &ExponentialHeightFog::OnShaderReloading>(this);
+    _shader.Get()->Reloading.Bind<ExponentialHeightFog, &ExponentialHeightFog::OnShaderReloading>(this);
 #endif
 }
 

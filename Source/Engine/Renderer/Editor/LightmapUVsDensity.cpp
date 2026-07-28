@@ -35,9 +35,7 @@ LightmapUVsDensityMaterialShader::LightmapUVsDensityMaterialShader()
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Editor/LightmapUVsDensity"));
     if (!_shader)
         return;
-#if COMPILE_WITH_DEV_ENV
-    _shader.Get()->OnReloading.Bind<LightmapUVsDensityMaterialShader, &LightmapUVsDensityMaterialShader::OnShaderReloading>(this);
-#endif
+    BIND_SHADER_RELOADING(_shader, LightmapUVsDensityMaterialShader, OnShaderReloading);
     _gridTexture = Content::LoadAsyncInternal<Texture>(TEXT("Engine/Textures/Tiles_M"));
 }
 

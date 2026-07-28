@@ -48,28 +48,24 @@ bool GBufferPass::Init()
     _psLinearToSrgb = GPUDevice::Instance->CreatePipelineState();
 
     // Load assets
-    _gBufferShader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/GBuffer"));
+    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/GBuffer"));
     _skyModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/Sphere"));
     _boxModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/SimpleBox"));
-    if (_gBufferShader == nullptr || _skyModel == nullptr || _boxModel == nullptr)
-    {
+    if (_shader == nullptr || _skyModel == nullptr || _boxModel == nullptr)
         return true;
-    }
-#if COMPILE_WITH_DEV_ENV
-    _gBufferShader.Get()->OnReloading.Bind<GBufferPass, &GBufferPass::OnShaderReloading>(this);
-#endif
+    BIND_SHADER_RELOADING(_shader, GBufferPass, OnShaderReloading);
 
     return false;
 }
 
 bool GBufferPass::setupResources()
 {
-    if (!_gBufferShader || !_gBufferShader->IsLoaded())
+    if (!_shader || !_shader->IsLoaded())
         return true;
-    auto gbuffer = _gBufferShader->GPU;
+    auto shader = _shader->GPU;
 
     // Validate shader constant buffers sizes
-    if (gbuffer->GetCB(0)->GetSize() != sizeof(GBufferPassData))
+    if (shader->GetCB(0)->GetSize() != sizeof(GBufferPassData))
     {
         LOG(Warning, "GBuffer shader has incorrct constant buffers sizes.");
         return true;
@@ -79,13 +75,13 @@ bool GBufferPass::setupResources()
     GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
     if (!_psDebug->IsValid())
     {
-        psDesc.PS = gbuffer->GetPS("PS_DebugView");
+        psDesc.PS = shader->GetPS("PS_DebugView");
         if (_psDebug->Init(psDesc))
             return true;
     }
     if (!_psLinearToSrgb->IsValid())
     {
-        psDesc.PS = gbuffer->GetPS("PS_LinearToSrgb");
+        psDesc.PS = shader->GetPS("PS_LinearToSrgb");
         if (_psLinearToSrgb->Init(psDesc))
             return true;
     }
@@ -101,7 +97,7 @@ void GBufferPass::Dispose()
     // Cleanup
     SAFE_DELETE_GPU_RESOURCE(_psDebug);
     SAFE_DELETE_GPU_RESOURCE(_psLinearToSrgb);
-    _gBufferShader = nullptr;
+    _shader = nullptr;
     _skyModel = nullptr;
     _boxModel = nullptr;
 #if GPU_ENABLE_DEVELOPMENT
@@ -257,14 +253,10 @@ bool SortDecal(RenderDecalData const& a, RenderDecalData const& b)
 
 void GBufferPass::RenderDebug(RenderContext& renderContext)
 {
-    // Check if has resources loaded
     if (checkIfSkipPass())
         return;
-
-    // Cache data
     auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
-    auto lights = _gBufferShader->GPU;
     GBufferPassData data;
 
     // Set constants buffer
@@ -278,7 +270,7 @@ void GBufferPass::RenderDebug(RenderContext& renderContext)
         break;
     }
     data.ViewMode = static_cast<int32>(renderContext.View.Mode);
-    auto cb = lights->GetCB(0);
+    auto cb = _shader->GPU->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
 

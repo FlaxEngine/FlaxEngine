@@ -680,7 +680,7 @@ void DebugDrawService::Update()
             LOG(Fatal, "Cannot load DebugDraw shader");
         }
 #if COMPILE_WITH_DEV_ENV
-        DebugDrawShader->OnReloading.Bind(&OnShaderReloading);
+        DebugDrawShader->Reloading.Bind(&OnShaderReloading);
 #endif
     }
     if (DebugDrawPsWireTrianglesDepthTest.Depth == nullptr && DebugDrawShader && DebugDrawShader->IsLoaded())

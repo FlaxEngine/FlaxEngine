@@ -29,9 +29,7 @@ bool MultiScaler::Init()
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/MultiScaler"));
     if (_shader == nullptr)
         return true;
-#if COMPILE_WITH_DEV_ENV
-    _shader.Get()->OnReloading.Bind<MultiScaler, &MultiScaler::OnShaderReloading>(this);
-#endif
+    BIND_SHADER_RELOADING(_shader, MultiScaler, OnShaderReloading);
 
     return false;
 }

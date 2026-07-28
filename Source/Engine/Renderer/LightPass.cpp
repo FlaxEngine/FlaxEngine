@@ -42,10 +42,7 @@ bool LightPass::Init()
     _sphereModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/Sphere"));
     if (_shader == nullptr || _sphereModel == nullptr)
         return true;
-
-#if COMPILE_WITH_DEV_ENV
-    _shader.Get()->OnReloading.Bind<LightPass, &LightPass::OnShaderReloading>(this);
-#endif
+    BIND_SHADER_RELOADING(_shader, LightPass, OnShaderReloading);
 
     // Pick the format for shadow mask (rendered shadow projection into screen-space)
     auto format = PixelFormat::R8G8_UNorm;

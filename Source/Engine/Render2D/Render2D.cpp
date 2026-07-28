@@ -628,7 +628,7 @@ bool Render2DService::Init()
     if (GUIShader == nullptr)
         return true;
 #if COMPILE_WITH_DEV_ENV
-    GUIShader.Get()->OnReloading.Bind<OnGUIShaderReloading>();
+    GUIShader.Get()->Reloading.Bind<OnGUIShaderReloading>();
 #endif
 
     VB.SetLayout(GPUVertexLayout::Get({

@@ -5,6 +5,7 @@
 #include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPULimits.h"
+#include "Engine/Renderer/GI/GlobalSurfaceAtlasPass.h"
 
 GPU_CB_STRUCT(Data {
     float NullItemKey;
@@ -38,9 +39,7 @@ bool BitonicSort::Init()
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/BitonicSort"));
     if (_shader == nullptr)
         return true;
-#if COMPILE_WITH_DEV_ENV
-    _shader.Get()->OnReloading.Bind<BitonicSort, &BitonicSort::OnShaderReloading>(this);
-#endif
+    BIND_SHADER_RELOADING(_shader, BitonicSort, OnShaderReloading);
 
     return false;
 }

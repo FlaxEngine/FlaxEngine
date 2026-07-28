@@ -78,18 +78,36 @@ public:
 
     /// <summary>
     /// Action called when asset gets loaded
+    /// [Deprecated in v1.13]
     /// </summary>
-    EventType OnLoaded;
+    DEPRECATED("Use Loaded event instead.") EventType OnLoaded;
+
+    /// <summary>
+    /// Action called when asset gets loaded. Always called from the main thread.
+    /// </summary>
+    API_EVENT() Delegate<Asset*> Loaded;
+
+    /// <summary>
+    /// Action called when asset start reloading (e.g. after reimport). Always called from the main thread.
+    /// [Deprecated in v1.13]
+    /// </summary>
+    DEPRECATED("Use Reloading event instead.") EventType OnReloading;
 
     /// <summary>
     /// Action called when asset start reloading (e.g. after reimport). Always called from the main thread.
     /// </summary>
-    EventType OnReloading;
+    Delegate<Asset*> Reloading;
 
     /// <summary>
-    /// Action called when asset gets unloaded
+    /// Action called when asset gets unloaded. Always called from the main thread.
+    /// [Deprecated in v1.13]
     /// </summary>
-    EventType OnUnloaded;
+    DEPRECATED("Use Unloaded event instead.") EventType OnUnloaded;
+
+    /// <summary>
+    /// Action called when asset gets unloaded. Always called from the main thread.
+    /// </summary>
+    Delegate<Asset*> Unloaded;
 
     /// <summary>
     /// General purpose mutex for an asset object. Should guard most of the asset functionalities to be secure.

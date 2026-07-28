@@ -103,12 +103,8 @@ bool VolumetricFogPass::Init()
     // Load assets
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/VolumetricFog"));
     if (_shader == nullptr)
-    {
         return true;
-    }
-#if COMPILE_WITH_DEV_ENV
-    _shader.Get()->OnReloading.Bind<VolumetricFogPass, &VolumetricFogPass::OnShaderReloading>(this);
-#endif
+    BIND_SHADER_RELOADING(_shader, VolumetricFogPass, OnShaderReloading);
 
     return false;
 }

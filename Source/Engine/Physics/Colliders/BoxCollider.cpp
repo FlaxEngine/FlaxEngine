@@ -144,7 +144,7 @@ void BoxCollider::OnDebugDrawSelf()
 void BoxCollider::OnDebugDrawSelected()
 {
     OnDebugDrawSelf();
-
+    DEBUG_DRAW_BOX(_bounds, Color::GreenYellow.AlphaMultiplied(0.1f), 0, true);
     if (_contactOffset > 0)
     {
         OrientedBoundingBox contactBounds = _bounds;

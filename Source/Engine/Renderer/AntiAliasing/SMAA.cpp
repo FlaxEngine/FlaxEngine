@@ -36,9 +36,7 @@ bool SMAA::setupResources()
         _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/SMAA"));
         if (_shader == nullptr)
             return true;
-#if COMPILE_WITH_DEV_ENV
-        _shader.Get()->OnReloading.Bind<SMAA, &SMAA::OnShaderReloading>(this);
-#endif
+        BIND_SHADER_RELOADING(_shader, SMAA, OnShaderReloading);
     }
     if (!_shader->IsLoaded())
     {

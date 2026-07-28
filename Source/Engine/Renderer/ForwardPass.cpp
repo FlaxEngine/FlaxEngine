@@ -29,23 +29,16 @@ bool ForwardPass::Init()
     _psApplyDistortion = GPUDevice::Instance->CreatePipelineState();
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Forward"));
     if (_shader == nullptr)
-    {
         return true;
-    }
-#if COMPILE_WITH_DEV_ENV
-    _shader.Get()->OnReloading.Bind<ForwardPass, &ForwardPass::OnShaderReloading>(this);
-#endif
+    BIND_SHADER_RELOADING(_shader, ForwardPass, OnShaderReloading);
 
     return false;
 }
 
 bool ForwardPass::setupResources()
 {
-    // Check shader
     if (!_shader->IsLoaded())
-    {
         return true;
-    }
     const auto shader = _shader->GPU;
 
     // Create pipeline stages

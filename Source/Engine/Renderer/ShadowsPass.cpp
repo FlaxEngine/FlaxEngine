@@ -614,10 +614,7 @@ bool ShadowsPass::Init()
     _sphereModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/Sphere"));
     if (_shader == nullptr || _sphereModel == nullptr)
         return true;
-
-#if COMPILE_WITH_DEV_ENV
-    _shader.Get()->OnReloading.Bind<ShadowsPass, &ShadowsPass::OnShaderReloading>(this);
-#endif
+    BIND_SHADER_RELOADING(_shader, ShadowsPass, OnShaderReloading);
 
     // Select format for shadow maps
     _shadowMapFormat = PixelFormat::Unknown;

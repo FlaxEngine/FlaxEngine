@@ -700,7 +700,7 @@ void DrawEmittersGPU(GPUContext* context, RenderContextBatch& renderContextBatch
         GPUParticlesSorting = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/GPUParticlesSorting"));
 #if COMPILE_WITH_DEV_ENV
         if (GPUParticlesSorting)
-            GPUParticlesSorting.Get()->OnReloading.Bind<OnShaderReloading>();
+            GPUParticlesSorting.Get()->Reloading.Bind<OnShaderReloading>();
 #endif
     }
     if (GPUParticlesSorting == nullptr || !GPUParticlesSorting->IsLoaded())

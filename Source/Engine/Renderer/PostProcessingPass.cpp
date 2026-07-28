@@ -92,16 +92,13 @@ bool PostProcessingPass::Init()
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/PostProcessing"));
     if (_shader == nullptr)
         return true;
-#if COMPILE_WITH_DEV_ENV
-    _shader.Get()->OnReloading.Bind<PostProcessingPass, &PostProcessingPass::OnShaderReloading>(this);
-#endif
+    BIND_SHADER_RELOADING(_shader, PostProcessingPass, OnShaderReloading);
 
     return false;
 }
 
 bool PostProcessingPass::setupResources()
 {
-    // Wait for shader
     if (!_shader->IsLoaded())
         return true;
     auto shader = _shader->GPU;

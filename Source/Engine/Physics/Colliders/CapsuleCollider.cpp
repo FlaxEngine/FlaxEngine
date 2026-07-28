@@ -72,7 +72,7 @@ void CapsuleCollider::OnDebugDrawSelected()
     const float height = Math::Max(Math::Abs(_height) * _cachedScale, minSize);
     const Vector3 position = _transform.LocalToWorld(_center);
     DEBUG_DRAW_WIRE_CAPSULE(position, rotation, radius, height, Color::GreenYellow, 0, false);
-
+    DEBUG_DRAW_CAPSULE(position, rotation, radius, height, Color::GreenYellow.AlphaMultiplied(0.1f), 0, true);
     if (_contactOffset > 0)
     {
         DEBUG_DRAW_WIRE_CAPSULE(position, rotation, radius + _contactOffset, height, Color::Blue.AlphaMultiplied(0.2f), 0, false);

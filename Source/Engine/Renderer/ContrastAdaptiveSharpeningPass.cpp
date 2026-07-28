@@ -41,9 +41,7 @@ bool ContrastAdaptiveSharpeningPass::setupResources()
         _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/CAS"));
         if (!_shader)
             return true;
-#if COMPILE_WITH_DEV_ENV
-        _shader.Get()->OnReloading.Bind<ContrastAdaptiveSharpeningPass, &ContrastAdaptiveSharpeningPass::OnShaderReloading>(this);
-#endif
+        BIND_SHADER_RELOADING(_shader, ContrastAdaptiveSharpeningPass, OnShaderReloading);
     }
     if (!_shader || !_shader->IsLoaded())
         return true;

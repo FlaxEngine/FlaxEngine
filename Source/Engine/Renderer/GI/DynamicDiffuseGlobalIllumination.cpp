@@ -293,9 +293,7 @@ bool DynamicDiffuseGlobalIlluminationPass::setupResources()
         _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/GI/DDGI"));
         if (_shader == nullptr)
             return true;
-#if COMPILE_WITH_DEV_ENV
-        _shader.Get()->OnReloading.Bind<DynamicDiffuseGlobalIlluminationPass, &DynamicDiffuseGlobalIlluminationPass::OnShaderReloading>(this);
-#endif
+        BIND_SHADER_RELOADING(_shader, DynamicDiffuseGlobalIlluminationPass, OnShaderReloading);
     }
     if (!_shader->IsLoaded())
         return true;

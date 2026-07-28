@@ -62,9 +62,7 @@ bool MotionBlurPass::Init()
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/MotionBlur"));
     if (_shader == nullptr)
         return true;
-#if COMPILE_WITH_DEV_ENV
-    _shader.Get()->OnReloading.Bind<MotionBlurPass, &MotionBlurPass::OnShaderReloading>(this);
-#endif
+    BIND_SHADER_RELOADING(_shader, MotionBlurPass, OnShaderReloading);
 
     // Prepare formats for the buffers
     auto format = PixelFormat::R16G16_Float;
@@ -84,7 +82,6 @@ bool MotionBlurPass::Init()
 
 bool MotionBlurPass::setupResources()
 {
-    // Check shader
     if (!_shader->IsLoaded())
         return true;
     const auto shader = _shader->GPU;

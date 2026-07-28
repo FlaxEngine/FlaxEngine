@@ -403,7 +403,10 @@ uint64 Asset::GetMemoryUsage() const
     Locker.Lock();
     if (Platform::AtomicRead(&_loadingTask))
         result += sizeof(ContentLoadTask);
+    result += (Loaded.Capacity() + Reloading.Capacity() + Unloaded.Capacity()) * sizeof(Delegate<Asset*>::FunctionType);
+PRAGMA_DISABLE_DEPRECATION_WARNINGS;
     result += (OnLoaded.Capacity() + OnReloading.Capacity() + OnUnloaded.Capacity()) * sizeof(EventType::FunctionType);
+PRAGMA_ENABLE_DEPRECATION_WARNINGS;
     result += _references.Capacity() * sizeof(HashSet<IAssetReference*>::Bucket);
     Locker.Unlock();
     return result;
@@ -426,7 +429,10 @@ void Asset::Reload()
         // Fire event
         if (!IsInternalType())
             Content::AssetReloading(this);
+PRAGMA_DISABLE_DEPRECATION_WARNINGS;
         OnReloading(this);
+        Reloading(this);
+PRAGMA_ENABLE_DEPRECATION_WARNINGS;
 
         ScopeLock lock(Locker);
 
@@ -676,14 +682,17 @@ bool Asset::onLoad(LoadAssetTask* task)
     return failed;
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS;
+
 void Asset::onLoaded()
 {
     if (IsInMainThread())
     {
         onLoaded_MainThread();
     }
-    else if (OnLoaded.IsBinded() || _references.HasItems())
+    else if (OnLoaded.IsBinded() || Loaded.IsBinded() || _references.HasItems())
     {
+        // Delay event call to the main thread
         Function<void()> action;
         action.Bind<Asset, &Asset::onLoaded>(this);
         Task::StartNew(New<MainThreadActionTask>(action, this));
@@ -699,12 +708,12 @@ void Asset::onLoaded_MainThread()
     for (const auto& e : _references)
         e.Item->OnAssetLoaded(this, this);
     OnLoaded(this);
+    Loaded(this);
 }
 
 void Asset::onUnload_MainThread()
 {
     // Note: asset should not be locked now (Locker should be free) so other thread won't be locked.
-
     ASSERT(IsInMainThread());
 
     // Cancel any streaming before calling OnUnloaded event
@@ -715,7 +724,10 @@ void Asset::onUnload_MainThread()
     for (const auto& e : _references)
         e.Item->OnAssetUnloaded(this, this);
     OnUnloaded(this);
+    Unloaded(this);
 }
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS;
 
 bool Asset::WaitForInitGraphics()
 {

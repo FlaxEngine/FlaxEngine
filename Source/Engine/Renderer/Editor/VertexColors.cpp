@@ -12,6 +12,7 @@
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Renderer/DrawCall.h"
+#include "Engine/Renderer/RendererPass.h"
 
 GPU_CB_STRUCT(VertexColorsMaterialShaderData {
     Matrix ViewProjectionMatrix;
@@ -24,9 +25,7 @@ VertexColorsMaterialShader::VertexColorsMaterialShader()
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Editor/VertexColors"));
     if (!_shader)
         return;
-#if COMPILE_WITH_DEV_ENV
-    _shader.Get()->OnReloading.Bind<VertexColorsMaterialShader, &VertexColorsMaterialShader::OnShaderReloading>(this);
-#endif
+    BIND_SHADER_RELOADING(_shader, VertexColorsMaterialShader, OnShaderReloading);
 }
 
 #if COMPILE_WITH_DEV_ENV

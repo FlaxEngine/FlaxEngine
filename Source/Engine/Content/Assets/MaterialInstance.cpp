@@ -25,7 +25,7 @@ void MaterialInstance::OnBaseSet()
     ASSERT(_baseMaterial->IsLoaded());
 
     _baseMaterial->AddReference();
-    _baseMaterial->OnUnloaded.Bind<MaterialInstance, &MaterialInstance::OnBaseUnloaded>(this);
+    _baseMaterial->Unloaded.Bind<MaterialInstance, &MaterialInstance::OnBaseUnloaded>(this);
     _baseMaterial->ParamsChanged.Bind<MaterialInstance, &MaterialInstance::OnBaseParamsChanged>(this);
 
     // Sync parameters with the base parameters to ensure all data is valid for rendering (constants offset and resource register)
@@ -63,7 +63,7 @@ void MaterialInstance::OnBaseSet()
 void MaterialInstance::OnBaseUnset()
 {
     _baseMaterial->RemoveReference();
-    _baseMaterial->OnUnloaded.Unbind<MaterialInstance, &MaterialInstance::OnBaseUnloaded>(this);
+    _baseMaterial->Unloaded.Unbind<MaterialInstance, &MaterialInstance::OnBaseUnloaded>(this);
     _baseMaterial->ParamsChanged.Unbind<MaterialInstance, &MaterialInstance::OnBaseParamsChanged>(this);
 }
 

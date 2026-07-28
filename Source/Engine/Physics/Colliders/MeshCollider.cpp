@@ -97,6 +97,13 @@ void MeshCollider::OnDebugDrawSelf()
 void MeshCollider::OnDebugDrawSelected()
 {
     OnDebugDrawSelf();
+    if (CollisionData && CollisionData->IsLoaded())
+    {
+        Array<Float3>* vertexBuffer;
+        Array<int32>* indexBuffer;
+        CollisionData->GetDebugTriangles(vertexBuffer, indexBuffer);
+        DEBUG_DRAW_TRIANGLES_EX2(*vertexBuffer, *indexBuffer, _transform.GetWorld(), Color::GreenYellow.AlphaMultiplied(0.1f), 0, true);
+    }
 
     // Base
     Collider::OnDebugDrawSelected();

@@ -68,9 +68,7 @@ bool ScreenSpaceReflectionsPass::Init()
     _preIntegratedGF = Content::LoadAsyncInternal<Texture>(PRE_INTEGRATED_GF_ASSET_NAME);
     if (_shader == nullptr || _preIntegratedGF == nullptr)
         return true;
-#if COMPILE_WITH_DEV_ENV
-    _shader.Get()->OnReloading.Bind<ScreenSpaceReflectionsPass, &ScreenSpaceReflectionsPass::OnShaderReloading>(this);
-#endif
+    BIND_SHADER_RELOADING(_shader, ScreenSpaceReflectionsPass, OnShaderReloading);
 
     return false;
 }

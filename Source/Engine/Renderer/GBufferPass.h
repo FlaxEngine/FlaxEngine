@@ -13,8 +13,7 @@
 class GBufferPass : public RendererPass<GBufferPass>
 {
 private:
-
-    AssetReference<Shader> _gBufferShader;
+    AssetReference<Shader> _shader;
     GPUPipelineState* _psDebug = nullptr;
     GPUPipelineState* _psLinearToSrgb = nullptr;
     AssetReference<Model> _skyModel;

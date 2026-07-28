@@ -178,9 +178,7 @@ bool ReflectionsPass::Init()
     _preIntegratedGF = Content::LoadAsyncInternal<Texture>(PRE_INTEGRATED_GF_ASSET_NAME);
     if (_shader == nullptr || _sphereModel == nullptr || _boxModel == nullptr || _preIntegratedGF == nullptr)
         return true;
-#if COMPILE_WITH_DEV_ENV
-    _shader.Get()->OnReloading.Bind<ReflectionsPass, &ReflectionsPass::OnShaderReloading>(this);
-#endif
+    BIND_SHADER_RELOADING(_shader, ReflectionsPass, OnShaderReloading);
 
     return false;
 }

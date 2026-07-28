@@ -197,9 +197,9 @@ SkinnedModel::SkeletonMapping SkinnedModel::GetSkeletonMapping(Asset* source, bo
 
         // Add to cache
         _skeletonMappingCache.Add(source, mappingData);
-        source->OnUnloaded.Bind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+        source->Unloaded.Bind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
 #if USE_EDITOR
-        source->OnReloading.Bind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+        source->Reloading.Bind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
 #endif
     }
     mapping.SourceSkeleton = mappingData.SourceSkeleton;
@@ -756,9 +756,9 @@ void SkinnedModel::ClearSkeletonMapping()
 {
     for (const auto& e : _skeletonMappingCache)
     {
-        e.Key->OnUnloaded.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+        e.Key->Unloaded.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
 #if USE_EDITOR
-        e.Key->OnReloading.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+        e.Key->Reloading.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
 #endif
         Allocator::Free((void*)e.Value.NodesMapping.Get());
     }
@@ -773,9 +773,9 @@ void SkinnedModel::OnSkeletonMappingSourceAssetUnloaded(Asset* obj)
     ASSERT(found);
 
     // Unlink event
-    obj->OnUnloaded.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+    obj->Unloaded.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
 #if USE_EDITOR
-    obj->OnReloading.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+    obj->Reloading.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
 #endif
 
     // Clear cache

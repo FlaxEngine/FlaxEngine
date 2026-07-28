@@ -138,9 +138,7 @@ bool QuadOverdrawPass::setupResources()
         _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Editor/QuadOverdraw"));
         if (!_shader)
             return true;
-#if COMPILE_WITH_DEV_ENV
-        _shader.Get()->OnReloading.Bind<QuadOverdrawPass, &QuadOverdrawPass::OnShaderReloading>(this);
-#endif
+        BIND_SHADER_RELOADING(_shader, QuadOverdrawPass, OnShaderReloading);
     }
     if (!_shader->IsLoaded())
         return true;

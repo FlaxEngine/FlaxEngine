@@ -43,7 +43,7 @@ void SphereCollider::OnDebugDrawSelf()
 void SphereCollider::OnDebugDrawSelected()
 {
     OnDebugDrawSelf();
-
+    DEBUG_DRAW_SPHERE(_sphere, Color::GreenYellow.AlphaMultiplied(0.1f), 0, true);
     if (_contactOffset > 0)
     {
         BoundingSphere contactBounds = _sphere;

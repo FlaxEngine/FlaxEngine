@@ -43,7 +43,7 @@ Sky::Sky(const SpawnParams& params)
         return;
     }
 #if COMPILE_WITH_DEV_ENV
-    _shader.Get()->OnReloading.Bind<Sky, &Sky::OnShaderReloading>(this);
+    _shader.Get()->Reloading.Bind<Sky, &Sky::OnShaderReloading>(this);
 #endif
 }
 
