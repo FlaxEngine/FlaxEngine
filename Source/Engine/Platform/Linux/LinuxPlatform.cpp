@@ -1981,7 +1981,7 @@ bool LinuxPlatform::Init()
     if (sched_getaffinity(0, sizeof(cpus), &cpus) == 0)
     {
         int32 numberOfCores = 0;
-        struct CpuInfo
+        struct CpuData
         {
             int32 Core;
             int32 Package;

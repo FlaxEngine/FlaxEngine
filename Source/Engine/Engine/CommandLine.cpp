@@ -140,9 +140,8 @@ bool CommandLine::Parse(const StringView& commandLine, Array<Arg>& args)
             i++;
         if (i == length)
             break;
-        if (commandLine[i] == '-')
-            i++;
-        else if (commandLine[i] == '/')
+        bool hasArgPrefix = commandLine[i] == '-' || commandLine[i] == '/';
+        if (hasArgPrefix)
             i++;
 
         // Skip white space
@@ -159,7 +158,7 @@ bool CommandLine::Parse(const StringView& commandLine, Array<Arg>& args)
         StringView name = commandLine.Substring(nameStart, nameEnd - nameStart);
 
         // If previous argument was empty and this one is a quote then assume it's a value for the previous argument (without '=')
-        if (wholeQuote && addedEmptyArg)
+        if ((wholeQuote || !hasArgPrefix) && addedEmptyArg)
         {
             args.Last().Value = name;
             i++;
@@ -177,7 +176,7 @@ bool CommandLine::Parse(const StringView& commandLine, Array<Arg>& args)
             addedEmptyArg = true;
             if (wholeQuote)
                 i++;
-            if (i < length && commandLine[i] != '\"')
+            if (i < length && commandLine[i] == '\"')
                 i++;
             continue;
         }
