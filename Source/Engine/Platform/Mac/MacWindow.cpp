@@ -1306,7 +1306,7 @@ void MacWindow::SetCursor(CursorType type)
     }
 }
 
-void MacWindow::SetIcon(TextureData& icon)
+void MacWindow::SetIcon(const TextureData& icon)
 {
     // Get pixels
     Array<Color32> colorData;
