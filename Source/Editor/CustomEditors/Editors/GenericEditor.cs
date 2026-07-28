@@ -741,7 +741,7 @@ namespace FlaxEditor.CustomEditors.Editors
                             if (types.Length == 1)
                             {
                                 // Single type
-                                button.Clicked += () => SetValue(Values.Type.CreateInstance());
+                                button.Clicked += () => SetValue(types[0].CreateInstance());
                             }
                             else
                             {
