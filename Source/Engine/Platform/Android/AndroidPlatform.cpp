@@ -917,7 +917,7 @@ bool AndroidPlatform::Init()
         DeviceId.C = (uint32)Platform::GetMemoryStats().TotalPhysicalMemory;
 
         // D - cpuid
-        DeviceId.D = (uint32)AndroidCpu.ClockSpeed * AndroidCpu.LogicalProcessorCount * AndroidCpu.ProcessorCoreCount * AndroidCpu.CacheLineSize;
+        DeviceId.D = (uint32)CpuInfo.ClockSpeed * CpuInfo.LogicalProcessorCount * CpuInfo.ProcessorCoreCount * CpuInfo.CacheLineSize;
     }
 
     AndroidRegisterCrashHandling();

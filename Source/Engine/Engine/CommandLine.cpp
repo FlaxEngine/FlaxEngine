@@ -152,7 +152,7 @@ bool CommandLine::Parse(const StringView& commandLine, Array<Arg>& args)
         int32 nameStart = i;
         while (i < length && commandLine[i] != '-' && commandLine[i] != '=' && !StringUtils::IsWhitespace(commandLine[i]))
             i++;
-        if (wholeQuote)
+        if (wholeQuote && commandLine[i] == '\"')
             i--;
         int32 nameEnd = i;
         StringView name = commandLine.Substring(nameStart, nameEnd - nameStart);
