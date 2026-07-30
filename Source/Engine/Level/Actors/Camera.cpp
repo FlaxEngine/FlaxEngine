@@ -493,7 +493,7 @@ void Camera::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 #endif
-    Cameras.Remove(this);
+    Cameras.RemoveKeepOrder(this);
     if (CutSceneCamera == this)
         CutSceneCamera = nullptr;
 
