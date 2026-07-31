@@ -1011,6 +1011,11 @@ namespace FlaxEngine.Interop
             scriptingAssemblyLoadContext = new AssemblyLoadContext("Flax", isCollectible: false);
 #endif
             DelegateHelpers.InitMethods();
+            
+#if FLAX_EDITOR
+            // Load Microsoft.CSharp assembly into collectible ALC for dynamic binder support
+            scriptingAssemblyLoadContext.LoadFromAssemblyPath(typeof(Microsoft.CSharp.RuntimeBinder.Binder).Assembly.Location);
+#endif
         }
 
         [UnmanagedCallersOnly]

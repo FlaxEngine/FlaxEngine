@@ -1758,9 +1758,6 @@ namespace FlaxEngine.Interop
                 assembly.GetType("System.Linq.Expressions.Compiler.DelegateHelpers")
                         .GetMethod("MakeNewCustomDelegate", BindingFlags.NonPublic | BindingFlags.Static).CreateDelegate<Func<Type[], Type>>();
 
-                // Load Microsoft.CSharp assembly into collectible ALC for dynamic binder support
-                scriptingAssemblyLoadContext.LoadFromAssemblyPath(typeof(Microsoft.CSharp.RuntimeBinder.Binder).Assembly.Location);
-
                 // Create dummy delegates to force the dynamic Snippets assembly to be loaded in correcet ALCs
                 MakeNewCustomDelegateFunc(new[] { typeof(void) });
                 {
