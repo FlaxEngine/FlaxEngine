@@ -381,21 +381,26 @@ namespace FlaxEngine.GUI
 
             // Organize whole line horizontally
             var sizeOffset = Size - lineSize;
-            if ((lineAlignments & TextBlockStyle.Alignments.Center) == TextBlockStyle.Alignments.Center)
+            switch (lineAlignments & TextBlockStyle.Alignments.HorizontalMask)
             {
-                sizeOffset.X *= 0.5f;
-                for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
+                case TextBlockStyle.Alignments.Center:
                 {
-                    ref TextBlock textBlock = ref textBlocks[i];
-                    textBlock.Bounds.Location.X += sizeOffset.X;
+                    sizeOffset.X *= 0.5f;
+                    for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
+                    {
+                        ref TextBlock textBlock = ref textBlocks[i];
+                        textBlock.Bounds.Location.X += sizeOffset.X;
+                    }
+                    break;
                 }
-            }
-            else if ((lineAlignments & TextBlockStyle.Alignments.Right) == TextBlockStyle.Alignments.Right)
-            {
-                for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
+                case TextBlockStyle.Alignments.Right:
                 {
-                    ref TextBlock textBlock = ref textBlocks[i];
-                    textBlock.Bounds.Location.X += sizeOffset.X;
+                    for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
+                    {
+                        ref TextBlock textBlock = ref textBlocks[i];
+                        textBlock.Bounds.Location.X += sizeOffset.X;
+                    }
+                    break;
                 }
             }
 
