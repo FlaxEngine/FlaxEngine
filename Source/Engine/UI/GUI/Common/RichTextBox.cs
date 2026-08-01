@@ -49,6 +49,8 @@ namespace FlaxEngine.GUI
             get => _wrapping;
             set
             {
+                if (_wrapping == value)
+                    return;
                 _wrapping = value;
                 UpdateTextBlocks();
             }
