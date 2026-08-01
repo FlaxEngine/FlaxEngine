@@ -225,10 +225,11 @@ namespace FlaxEngine.GUI
             var lines = font.ProcessText(_text, ref textBlock.Range);
             if (lines == null || lines.Length == 0)
                 return;
+            var wrapWidth = Wrapping != TextWrapping.NoWrap ? Width : -1.0f;
             for (int i = 0; i < lines.Length; i++)
             {
                 ref var line = ref lines[i];
-                textBlock.Range = new TextRange
+                var lineRange = new TextRange
                 {
                     StartIndex = start + line.FirstCharIndex,
                     EndIndex = start + line.LastCharIndex + 1,
@@ -236,24 +237,83 @@ namespace FlaxEngine.GUI
                 if (i != 0)
                 {
                     context.Caret.X = 0;
-                    OnLineAdded(ref context, textBlock.Range.StartIndex - 1);
+                    OnLineAdded(ref context, lineRange.StartIndex - 1);
                 }
-                textBlock.Bounds = new Rectangle(context.Caret, line.Size);
-                textBlock.Bounds.X += line.Location.X;
 
-                context.AddTextBlock(ref textBlock);
+                if (wrapWidth > 0 && context.Caret.X + line.Size.X > wrapWidth)
+                {
+                    // Line overflows the available width - split it into multiple wrapped lines
+                    AddWrappedTextBlocks(ref context, ref textBlock, font, lineRange, wrapWidth);
+                }
+                else
+                {
+                    textBlock.Range = lineRange;
+                    textBlock.Bounds = new Rectangle(context.Caret, line.Size);
+                    textBlock.Bounds.X += line.Location.X;
+                    context.AddTextBlock(ref textBlock);
+                    context.Caret.X += line.Size.X;
+                }
             }
+        }
 
-            // Update the caret location
-            ref var lastLine = ref lines[lines.Length - 1];
-            if (lines.Length == 1)
+        /// <summary>
+        /// Splits the given text range into multiple text blocks (lines) so it fits within the available wrapping width. Breaks only occur at whitespace boundaries (word wrapping) and correctly continues from the current caret position (eg. when a differently-styled text run follows on the same line).
+        /// </summary>
+        /// <param name="context">The parsing context.</param>
+        /// <param name="textBlock">The template text block (style is reused, range and bounds get overriden per produced block).</param>
+        /// <param name="font">The font used to measure and render the text.</param>
+        /// <param name="range">The text range to wrap (single logical line - no explicit newlines inside).</param>
+        /// <param name="wrapWidth">The maximum available width (in control-space) that a single visual line can use.</param>
+        private void AddWrappedTextBlocks(ref ParsingContext context, ref TextBlock textBlock, Font font, TextRange range, float wrapWidth)
+        {
+            int segmentStart = range.StartIndex;
+            float segmentWidth = 0.0f;
+            int pos = range.StartIndex;
+            while (pos < range.EndIndex)
             {
-                context.Caret.X += lastLine.Size.X;
+                // Consume the next word plus any whitespace that follows it
+                int wordStart = pos;
+                while (pos < range.EndIndex && !char.IsWhiteSpace(_text[pos]))
+                    pos++;
+                while (pos < range.EndIndex && char.IsWhiteSpace(_text[pos]))
+                    pos++;
+                var wordRange = new TextRange { StartIndex = wordStart, EndIndex = pos };
+                var wordWidth = font.MeasureText(_text, ref wordRange).X;
+
+                if ((segmentWidth > 0.0f || context.Caret.X > 0.0f) && context.Caret.X + segmentWidth + wordWidth > wrapWidth)
+                {
+                    // The next word no longer fits - emit the accumulated segment (if any) and start a new line
+                    if (segmentStart < wordStart)
+                        AddWrappedTextBlock(ref context, ref textBlock, font, segmentStart, wordStart);
+                    context.Caret.X = 0;
+                    OnLineAdded(ref context, wordStart - 1);
+                    segmentStart = wordStart;
+                    segmentWidth = 0.0f;
+                }
+                segmentWidth += wordWidth;
+
+                // Handle a single word that alone is wider than the whole available width (cannot be split further)
+                if (context.Caret.X <= 0.0f && segmentStart == wordStart && segmentWidth > wrapWidth && pos < range.EndIndex)
+                {
+                    AddWrappedTextBlock(ref context, ref textBlock, font, segmentStart, pos);
+                    context.Caret.X = 0;
+                    OnLineAdded(ref context, pos - 1);
+                    segmentStart = pos;
+                    segmentWidth = 0.0f;
+                }
             }
-            else
-            {
-                context.Caret.X = lastLine.Size.X;
-            }
+            if (segmentStart < range.EndIndex)
+                AddWrappedTextBlock(ref context, ref textBlock, font, segmentStart, range.EndIndex);
+        }
+
+        private void AddWrappedTextBlock(ref ParsingContext context, ref TextBlock textBlock, Font font, int start, int end)
+        {
+            var range = new TextRange { StartIndex = start, EndIndex = end };
+            var size = font.MeasureText(_text, ref range);
+            textBlock.Range = range;
+            textBlock.Bounds = new Rectangle(context.Caret, size);
+            context.AddTextBlock(ref textBlock);
+            context.Caret.X += size.X;
         }
 
         private void OnLineAdded(ref ParsingContext context, int lineEnd)
@@ -333,7 +393,7 @@ namespace FlaxEngine.GUI
             // Move to the next line
             context.LineStartCharacterIndex = lineEnd + 1;
             context.LineStartTextBlockIndex = _textBlocks.Count;
-            context.Caret.Y += lineSize.Y;
+            context.Caret.Y += lineSize.Y * BaseLinesGapScale;
         }
     }
 }

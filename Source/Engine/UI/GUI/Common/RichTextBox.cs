@@ -38,6 +38,42 @@ namespace FlaxEngine.GUI
         [EditorOrder(40)]
         public Dictionary<string, IBrush> Images = new Dictionary<string, IBrush>();
 
+        private TextWrapping _wrapping = TextWrapping.NoWrap;
+
+        /// <summary>
+        /// Gets or sets the text wrapping within the control bounds.
+        /// </summary>
+        [EditorDisplay("Text Style"), EditorOrder(50), Tooltip("The text wrapping within the control bounds.")]
+        public TextWrapping Wrapping
+        {
+            get => _wrapping;
+            set
+            {
+                if (_wrapping == value)
+                    return;
+                _wrapping = value;
+                UpdateTextBlocks();
+            }
+        }
+
+        private float _baseLinesGapScale = 1.0f;
+
+        /// <summary>
+        /// Gets or sets the gap between lines when wrapping and more than a single line is displayed.
+        /// </summary>
+        [EditorDisplay("Text Style"), EditorOrder(60), Tooltip("The gap between lines when wrapping and more than a single line is displayed."), Limit(0f)]
+        public float BaseLinesGapScale
+        {
+            get => _baseLinesGapScale;
+            set
+            {
+                if (Mathf.NearEqual(_baseLinesGapScale, value))
+                    return;
+                _baseLinesGapScale = value;
+                UpdateTextBlocks();
+            }
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="RichTextBox"/> class.
         /// </summary>
