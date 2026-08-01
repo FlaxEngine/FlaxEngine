@@ -43,7 +43,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the text wrapping within the control bounds.
         /// </summary>
-        [EditorDisplay("Text Style"), EditorOrder(50), Tooltip("The text wrapping within the control bounds.")]
+        [EditorOrder(50), Tooltip("The text wrapping within the control bounds.")]
         public TextWrapping Wrapping
         {
             get => _wrapping;
@@ -59,7 +59,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the gap between lines when wrapping and more than a single line is displayed.
         /// </summary>
-        [EditorDisplay("Text Style"), EditorOrder(60), Tooltip("The gap between lines when wrapping and more than a single line is displayed."), Limit(0f)]
+        [EditorOrder(60), Tooltip("The gap between lines when wrapping and more than a single line is displayed."), Limit(0f)]
         public float BaseLinesGapScale
         {
             get => _baseLinesGapScale;
