@@ -29,21 +29,9 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// The collection of custom text styles to apply (named).
-        /// </summary>
-        [EditorOrder(30)]
-        public Dictionary<string, TextBlockStyle> Styles = new Dictionary<string, TextBlockStyle>();
-
-        /// <summary>
-        /// The collection of custom images/sprites that can be inlined in text (named).
-        /// </summary>
-        [EditorOrder(40)]
-        public Dictionary<string, IBrush> Images = new Dictionary<string, IBrush>();
-
-        /// <summary>
         /// Gets or sets the text wrapping within the control bounds.
         /// </summary>
-        [EditorOrder(50), Tooltip("The text wrapping within the control bounds.")]
+        [EditorOrder(30), Tooltip("The text wrapping within the control bounds.")]
         public TextWrapping Wrapping
         {
             get => _wrapping;
@@ -59,7 +47,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the gap between lines when wrapping and more than a single line is displayed.
         /// </summary>
-        [EditorOrder(60), Tooltip("The gap between lines when wrapping and more than a single line is displayed."), Limit(0f)]
+        [EditorOrder(40), Tooltip("The gap between lines when wrapping and more than a single line is displayed."), Limit(0f)]
         public float BaseLinesGapScale
         {
             get => _baseLinesGapScale;
@@ -71,6 +59,19 @@ namespace FlaxEngine.GUI
                 UpdateTextBlocks();
             }
         }
+
+        /// <summary>
+        /// The collection of custom text styles to apply (named).
+        /// </summary>
+        [EditorOrder(50)]
+        public Dictionary<string, TextBlockStyle> Styles = new Dictionary<string, TextBlockStyle>();
+
+        /// <summary>
+        /// The collection of custom images/sprites that can be inlined in text (named).
+        /// </summary>
+        [EditorOrder(60)]
+        public Dictionary<string, IBrush> Images = new Dictionary<string, IBrush>();
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RichTextBox"/> class.
