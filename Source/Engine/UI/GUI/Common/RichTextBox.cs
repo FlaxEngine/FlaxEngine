@@ -11,6 +11,8 @@ namespace FlaxEngine.GUI
     public partial class RichTextBox : RichTextBoxBase
     {
         private TextBlockStyle _textStyle;
+        private TextWrapping _wrapping = TextWrapping.NoWrap;
+        private float _baseLinesGapScale = 1.0f;
 
         /// <summary>
         /// The default text style applied to the whole text.
@@ -38,8 +40,6 @@ namespace FlaxEngine.GUI
         [EditorOrder(40)]
         public Dictionary<string, IBrush> Images = new Dictionary<string, IBrush>();
 
-        private TextWrapping _wrapping = TextWrapping.NoWrap;
-
         /// <summary>
         /// Gets or sets the text wrapping within the control bounds.
         /// </summary>
@@ -49,14 +49,10 @@ namespace FlaxEngine.GUI
             get => _wrapping;
             set
             {
-                if (_wrapping == value)
-                    return;
                 _wrapping = value;
                 UpdateTextBlocks();
             }
         }
-
-        private float _baseLinesGapScale = 1.0f;
 
         /// <summary>
         /// Gets or sets the gap between lines when wrapping and more than a single line is displayed.

@@ -229,30 +229,31 @@ namespace FlaxEngine.GUI
             for (int i = 0; i < lines.Length; i++)
             {
                 ref var line = ref lines[i];
+
                 var lineRange = new TextRange
                 {
                     StartIndex = start + line.FirstCharIndex,
                     EndIndex = start + line.LastCharIndex + 1,
                 };
+
                 if (i != 0)
                 {
                     context.Caret.X = 0;
                     OnLineAdded(ref context, lineRange.StartIndex - 1);
                 }
 
+                // Line overflows the available width - split it into multiple wrapped lines
                 if (wrapWidth > 0 && context.Caret.X + line.Size.X > wrapWidth)
                 {
-                    // Line overflows the available width - split it into multiple wrapped lines
                     AddWrappedTextBlocks(ref context, ref textBlock, font, lineRange, wrapWidth);
+                    return;
                 }
-                else
-                {
-                    textBlock.Range = lineRange;
-                    textBlock.Bounds = new Rectangle(context.Caret, line.Size);
-                    textBlock.Bounds.X += line.Location.X;
-                    context.AddTextBlock(ref textBlock);
-                    context.Caret.X += line.Size.X;
-                }
+
+                textBlock.Range = lineRange;
+                textBlock.Bounds = new Rectangle(context.Caret, line.Size);
+                textBlock.Bounds.X += line.Location.X;
+                context.AddTextBlock(ref textBlock);
+                context.Caret.X += line.Size.X;
             }
         }
 
@@ -273,9 +274,7 @@ namespace FlaxEngine.GUI
             {
                 // Consume the next word plus any whitespace that follows it
                 int wordStart = pos;
-                while (pos < range.EndIndex && !char.IsWhiteSpace(_text[pos]))
-                    pos++;
-                while (pos < range.EndIndex && char.IsWhiteSpace(_text[pos]))
+                while (pos < range.EndIndex && (char.IsWhiteSpace(_text[pos]) || !char.IsWhiteSpace(_text[pos])))
                     pos++;
                 var wordRange = new TextRange { StartIndex = wordStart, EndIndex = pos };
                 var wordWidth = font.MeasureText(_text, ref wordRange).X;
@@ -285,6 +284,7 @@ namespace FlaxEngine.GUI
                     // The next word no longer fits - emit the accumulated segment (if any) and start a new line
                     if (segmentStart < wordStart)
                         AddWrappedTextBlock(ref context, ref textBlock, font, segmentStart, wordStart);
+
                     context.Caret.X = 0;
                     OnLineAdded(ref context, wordStart - 1);
                     segmentStart = wordStart;
@@ -302,6 +302,7 @@ namespace FlaxEngine.GUI
                     segmentWidth = 0.0f;
                 }
             }
+
             if (segmentStart < range.EndIndex)
                 AddWrappedTextBlock(ref context, ref textBlock, font, segmentStart, range.EndIndex);
         }
@@ -372,21 +373,26 @@ namespace FlaxEngine.GUI
 
             // Organize whole line horizontally
             var sizeOffset = Size - lineSize;
-            if ((lineAlignments & TextBlockStyle.Alignments.Center) == TextBlockStyle.Alignments.Center)
+            switch (lineAlignments & TextBlockStyle.Alignments.HorizontalMask)
             {
-                sizeOffset.X *= 0.5f;
-                for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
+                case TextBlockStyle.Alignments.Center:
                 {
-                    ref TextBlock textBlock = ref textBlocks[i];
-                    textBlock.Bounds.Location.X += sizeOffset.X;
+                   sizeOffset.X *= 0.5f;
+                   for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
+                   {
+                      ref TextBlock textBlock = ref textBlocks[i];
+                      textBlock.Bounds.Location.X += sizeOffset.X;
+                   }
+                   break;
                 }
-            }
-            else if ((lineAlignments & TextBlockStyle.Alignments.Right) == TextBlockStyle.Alignments.Right)
-            {
-                for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
+                case TextBlockStyle.Alignments.Right:
                 {
-                    ref TextBlock textBlock = ref textBlocks[i];
-                    textBlock.Bounds.Location.X += sizeOffset.X;
+                   for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
+                   {
+                      ref TextBlock textBlock = ref textBlocks[i];
+                      textBlock.Bounds.Location.X += sizeOffset.X;
+                   }
+                   break;
                 }
             }
 
