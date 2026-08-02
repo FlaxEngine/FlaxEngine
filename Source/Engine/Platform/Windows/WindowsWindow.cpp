@@ -5,7 +5,7 @@
 #include "WindowsWindow.h"
 #include "WindowsPlatform.h"
 #include "WindowsInput.h"
-#include "Engine/Core/Log.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Graphics/GPUSwapChain.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -731,7 +731,7 @@ void WindowsWindow::SetCursor(CursorType type)
     UpdateCursor();
 }
 
-void WindowsWindow::CheckForWindowResize()
+void WindowsWindow::CheckForWindowResize(bool force)
 {
     // Skip for minimized window (GetClientRect for minimized window returns 0)
     if (_minimized)
@@ -766,7 +766,7 @@ void WindowsWindow::CheckForWindowResize()
     _clientSize = Float2(static_cast<float>(width), static_cast<float>(height));
 
     // Check if window size has been changed
-    if (width > 0 && height > 0 && (_swapChain == nullptr || width != _swapChain->GetWidth() || height != _swapChain->GetHeight()))
+    if (width > 0 && height > 0 && (force || _swapChain == nullptr || width != _swapChain->GetWidth() || height != _swapChain->GetHeight()))
     {
         UpdateRegion();
         OnResize(width, height);
@@ -919,16 +919,24 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_PAINT:
     {
         // Check if window is during resizing
-        if (_isResizing && _swapChain)
+        if ((_isResizing || _forceRedrawOnPaint) && _swapChain)
         {
-            // Redraw window backbuffer on DX11
-            switch (GPUDevice::Instance->GetRendererType())
+            _forceRedrawOnPaint = false;
+            if (GPUDevice::Instance && !GPUDevice::Instance->IsRendering() && GPUDevice::Instance->CanDraw())
             {
-            case RendererType::DirectX10:
-            case RendererType::DirectX10_1:
-            case RendererType::DirectX11:
-                _swapChain->Present(false);
-                break;
+                Engine::OnDraw();
+            }
+            else if (GPUDevice::Instance)
+            {
+                // Redraw window backbuffer on DX11
+                switch (GPUDevice::Instance->GetRendererType())
+                {
+                case RendererType::DirectX10:
+                case RendererType::DirectX10_1:
+                case RendererType::DirectX11:
+                    _swapChain->Present(false);
+                    break;
+                }
             }
         }
         break;
@@ -1228,8 +1236,8 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
                 else if (_isResizing)
                 {
                     // If we're neither maximized nor minimized, the window size is changing by the user dragging the window edges.
-                    // In this case, we don't resize yet -- we wait until the user stops dragging, and a WM_EXITSIZEMOVE message comes.
-                    UpdateRegion();
+                    CheckForWindowResize();
+                    RedrawWindow(_handle, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW);
                 }
                 else if (_isSwitchingFullScreen)
                 {
@@ -1251,6 +1259,10 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         _dpiScale = (float)_dpi / (float)DefaultDPI;
         RECT* windowRect = (RECT*)lParam;
         SetWindowPos(_handle, nullptr, windowRect->left, windowRect->top, windowRect->right - windowRect->left, windowRect->bottom - windowRect->top, SWP_NOZORDER | SWP_NOACTIVATE);
+        CheckForWindowResize(true);
+        UpdateRegion();
+        _forceRedrawOnPaint = true;
+        RedrawWindow(_handle, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW);
         // TODO: Recalculate fonts
         return 0;
     }
