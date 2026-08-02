@@ -159,21 +159,28 @@ namespace FlaxEngine.GUI
                 var totalSize = lastBlock.Bounds.BottomRight;
                 var sizeOffset = Size - totalSize;
                 var textBlocks = CollectionsMarshal.AsSpan(_textBlocks);
-                if ((verticalAlignments & TextBlockStyle.Alignments.Middle) == TextBlockStyle.Alignments.Middle)
+
+                switch (verticalAlignments)
                 {
-                    sizeOffset.Y *= 0.5f;
-                    for (int i = 0; i < _textBlocks.Count; i++)
+                    case TextBlockStyle.Alignments.Middle:
                     {
-                        ref TextBlock textBlock = ref textBlocks[i];
-                        textBlock.Bounds.Location.Y += sizeOffset.Y;
+                        sizeOffset.Y *= 0.5f;
+                        for (int i = 0; i < _textBlocks.Count; i++)
+                        {
+                            ref TextBlock textBlock = ref textBlocks[i];
+                            textBlock.Bounds.Location.Y += sizeOffset.Y;
+                        }
+                        break;
                     }
-                }
-                else if ((verticalAlignments & TextBlockStyle.Alignments.Bottom) == TextBlockStyle.Alignments.Bottom)
-                {
-                    for (int i = 0; i < _textBlocks.Count; i++)
+
+                    case TextBlockStyle.Alignments.Bottom:
                     {
-                        ref TextBlock textBlock = ref textBlocks[i];
-                        textBlock.Bounds.Location.Y += sizeOffset.Y;
+                        for (int i = 0; i < _textBlocks.Count; i++)
+                        {
+                            ref TextBlock textBlock = ref textBlocks[i];
+                            textBlock.Bounds.Location.Y += sizeOffset.Y;
+                        }
+                        break;
                     }
                 }
             }
@@ -226,14 +233,17 @@ namespace FlaxEngine.GUI
                 return;
 
             var wrapWidth = Wrapping != TextWrapping.NoWrap ? Width : -1.0f;
+            
             for (int i = 0; i < lines.Length; i++)
             {
                 ref var line = ref lines[i];
+
                 var lineRange = new TextRange
                 {
                     StartIndex = start + line.FirstCharIndex,
                     EndIndex = start + line.LastCharIndex + 1,
                 };
+
                 if (i != 0)
                 {
                     context.Caret.X = 0;
@@ -301,7 +311,7 @@ namespace FlaxEngine.GUI
                 }
                 segmentWidth += chunkWidth;
 
-                // WrapWords only: a single word wider than the whole available width can't be split further, so force it onto its own line
+                // For Wrap Words mode: A single word wider than the whole available width can't be split further, so force it onto its own line
                 if (wrapping == TextWrapping.WrapWords && context.Caret.X <= 0.0f && segmentStart == chunkStart && segmentWidth > wrapWidth && pos < range.EndIndex)
                 {
                     AddWrappedTextBlock(ref context, ref textBlock, font, segmentStart, pos);
@@ -315,6 +325,14 @@ namespace FlaxEngine.GUI
                 AddWrappedTextBlock(ref context, ref textBlock, font, segmentStart, range.EndIndex);
         }
 
+        /// <summary>
+        /// Adds a single text block to the control, using the current caret position as the origin and moving the caret forward by the width of the text block.
+        /// </summary>
+        /// <param name="context">The parsing context.</param>
+        /// <param name="textBlock">The text block to add.</param>
+        /// <param name="font">The font to use for measurement.</param>
+        /// <param name="start">The start index of the text range.</param>
+        /// <param name="end">The end index of the text range.</param>
         private void AddWrappedTextBlock(ref ParsingContext context, ref TextBlock textBlock, Font font, int start, int end)
         {
             var range = new TextRange { StartIndex = start, EndIndex = end };
@@ -325,6 +343,12 @@ namespace FlaxEngine.GUI
             context.Caret.X += size.X;
         }
 
+        /// <summary>
+        /// Called when a new line is added (eg. after a newline character or when the text overflows the available width). 
+        /// It organizes the text blocks within the line and moves the caret to the next line.
+        /// </summary>
+        /// <param name="context">The parsing context.</param>
+        /// <param name="lineEnd">The index of the last character in the line.</param>
         private void OnLineAdded(ref ParsingContext context, int lineEnd)
         {
             // Calculate size of the line
@@ -332,6 +356,7 @@ namespace FlaxEngine.GUI
             var lineOrigin = textBlocks[context.LineStartTextBlockIndex].Bounds.Location;
             var lineSize = Float2.Zero;
             var lineAscender = 0.0f;
+
             for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
             {
                 ref TextBlock textBlock = ref textBlocks[i];
@@ -347,40 +372,44 @@ namespace FlaxEngine.GUI
             {
                 ref TextBlock textBlock = ref textBlocks[i];
                 var vOffset = lineSize.Y - textBlock.Bounds.Height;
-                if (i == context.LineStartTextBlockIndex)
-                    lineAlignments = textBlock.Style.Alignment;
-                else
-                    lineAlignments &= textBlock.Style.Alignment;
+
+                lineAlignments = (i == context.LineStartTextBlockIndex) ? textBlock.Style.Alignment :
+                    lineAlignments & textBlock.Style.Alignment;
+                
                 switch (textBlock.Style.Alignment & TextBlockStyle.Alignments.VerticalMask)
                 {
-                case TextBlockStyle.Alignments.Baseline:
-                {
-                    // Match the baseline of the line (use ascender)
-                    var ascender = textBlock.GetAscender();
-                    vOffset = lineAscender - ascender;
-                    textBlock.Bounds.Location.Y += vOffset;
-                    break;
-                }
-                case TextBlockStyle.Alignments.Top:
-                {
-                    textBlock.Bounds.Location.Y = lineOrigin.Y;
-                    break;
-                }
-                case TextBlockStyle.Alignments.Middle:
-                {
-                    textBlock.Bounds.Location.Y = lineOrigin.Y + vOffset * 0.5f;
-                    break;
-                }
-                case TextBlockStyle.Alignments.Bottom:
-                {
-                    textBlock.Bounds.Location.Y = lineOrigin.Y + vOffset;
-                    break;
-                }
+                    case TextBlockStyle.Alignments.Baseline:
+                    {
+                        // Match the baseline of the line (use ascender)
+                        var ascender = textBlock.GetAscender();
+                        vOffset = lineAscender - ascender;
+                        textBlock.Bounds.Location.Y += vOffset;
+                        break;
+                    }
+
+                    case TextBlockStyle.Alignments.Top:
+                    {
+                        textBlock.Bounds.Location.Y = lineOrigin.Y;
+                        break;
+                    }
+
+                    case TextBlockStyle.Alignments.Middle:
+                    {
+                        textBlock.Bounds.Location.Y = lineOrigin.Y + vOffset * 0.5f;
+                        break;
+                    }
+
+                    case TextBlockStyle.Alignments.Bottom:
+                    {
+                        textBlock.Bounds.Location.Y = lineOrigin.Y + vOffset;
+                        break;
+                    }
                 }
             }
 
             // Organize whole line horizontally
             var sizeOffset = Size - lineSize;
+
             switch (lineAlignments & TextBlockStyle.Alignments.HorizontalMask)
             {
                 case TextBlockStyle.Alignments.Center:
@@ -393,6 +422,7 @@ namespace FlaxEngine.GUI
                     }
                     break;
                 }
+
                 case TextBlockStyle.Alignments.Right:
                 {
                     for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
