@@ -356,8 +356,6 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, Mesh::D
                 Matrix::Transformation(transform.Scale, transform.Orientation, translation, world);
 
                 // Disable motion blur
-                GeometryDrawStateData drawState;
-                drawState.PrevWorld = world;
                 instance.DrawState.PrevWorld = world;
 
                 // Draw model
@@ -365,7 +363,6 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, Mesh::D
                 draw.LightmapUVs = &instance.Lightmap.UVsArea;
                 draw.Buffer = &type.Entries;
                 draw.World = &world;
-                draw.DrawState = &drawState;
                 draw.Bounds = sphere;
                 draw.PerInstanceRandom = instance.Random;
                 draw.DrawModes = type._drawModes;
@@ -1290,15 +1287,12 @@ void Foliage::Draw(RenderContext& renderContext)
         Matrix world;
         const Transform transform = _transform.LocalToWorld(instance.Transform);
         renderContext.View.GetWorldMatrix(transform, world);
-        GeometryDrawStateData drawState;
-        drawState.PrevWorld = world;
         Mesh::DrawInfo draw;
         draw.Flags = GetStaticFlags();
         draw.Lightmap = _scene ? _scene->LightmapsData.GetReadyLightmap(instance.LightmapTextureIndex) : nullptr;
         draw.LightmapUVs = &instance.LightmapUVsArea;
         draw.Buffer = &type.Entries;
         draw.World = &world;
-        draw.DrawState = &drawState;
         draw.Bounds = instance.Bounds;
         draw.PerInstanceRandom = instance.Random;
         draw.DrawModes = type._drawModes & view.Pass & view.GetShadowsDrawPassMask(type.ShadowsMode);

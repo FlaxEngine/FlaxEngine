@@ -5,7 +5,6 @@
 #include "ModelInstanceActor.h"
 #include "Engine/Content/Assets/SkinnedModel.h"
 #include "Engine/Content/Assets/AnimationGraph.h"
-#include "Engine/Renderer/DrawCall.h"
 #include "Engine/Core/Delegate.h"
 
 /// <summary>
@@ -96,7 +95,6 @@ private:
         void Flush();
     };
 
-    GeometryDrawStateData _drawState;
     AnimationUpdateMode _actualMode;
     SkinnedBones _bones;
     uint32 _counter;

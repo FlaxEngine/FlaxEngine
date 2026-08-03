@@ -4,7 +4,6 @@
 
 #include "ModelInstanceActor.h"
 #include "Engine/Content/Assets/Model.h"
-#include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/Lightmaps.h"
 
 /// <summary>
@@ -15,15 +14,14 @@ class FLAXENGINE_API StaticModel : public ModelInstanceActor, IAssetReference
 {
     DECLARE_SCENE_OBJECT(StaticModel);
 private:
-    GeometryDrawStateData _drawState;
     float _scaleInLightmap;
     float _boundsScale;
+    DrawPass _drawModes = DrawPass::Default;
     char _lodBias;
     char _forcedLod;
     bool _vertexColorsDirty;
     byte _vertexColorsCount;
     int8 _sortOrder;
-    DrawPass _drawModes = DrawPass::Default;
     Array<Color32> _vertexColorsData[MODEL_MAX_LODS];
     GPUBuffer* _vertexColorsBuffer[MODEL_MAX_LODS];
     Model* _residencyChangedModel = nullptr;

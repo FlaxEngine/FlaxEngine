@@ -1,11 +1,13 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+// Enable to put CPU profiler sections for each actor drawing to inspect slow actors draw issues
 #define SCENE_RENDERING_USE_PROFILER_PER_ACTOR 0
 
 #include "SceneRendering.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Threading/JobSystem.h"
 #include "Engine/Physics/Actors/IPhysicsDebug.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -38,6 +40,7 @@ void ISceneRenderingListener::ListenSceneRendering(SceneRendering* scene)
 {
     if (!_scenes.Contains(scene))
     {
+        PROFILE_MEM(Graphics);
         _scenes.Add(scene);
         scene->_listeners.Add(this);
     }
@@ -67,6 +70,8 @@ void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory c
         // Register scene
         for (const auto& renderContext : renderContextBatch.Contexts)
             renderContext.List->Scenes.Add(this);
+        auto buffers = renderContextBatch.GetMainContext().Buffers;
+        buffers->OnSceneRendering(this);
     }
     else if (category == PostRender)
     {
@@ -188,7 +193,7 @@ void SceneRendering::AddActor(Actor* a, int32& key)
     e.Bounds = a->GetSphere();
     e.NoCulling = a->_drawNoCulling;
     for (auto* listener : _listeners)
-        listener->OnSceneRenderingAddActor(a);
+        listener->OnSceneRenderingAddActor(this, key, a);
 }
 
 void SceneRendering::UpdateActor(Actor* a, int32& key, ISceneRenderingListener::UpdateFlags flags)
@@ -204,7 +209,7 @@ void SceneRendering::UpdateActor(Actor* a, int32& key, ISceneRenderingListener::
         if (e.Actor == a)
         {
             for (auto* listener : _listeners)
-                listener->OnSceneRenderingUpdateActor(a, e.Bounds, flags);
+                listener->OnSceneRenderingUpdateActor(this, key, a, e.Bounds, flags);
             if (flags & ISceneRenderingListener::Layer)
                 e.LayerMask = a->GetLayerMask();
             if (flags & ISceneRenderingListener::Bounds)
@@ -227,7 +232,7 @@ void SceneRendering::RemoveActor(Actor* a, int32& key)
         if (e.Actor == a)
         {
             for (auto* listener : _listeners)
-                listener->OnSceneRenderingRemoveActor(a);
+                listener->OnSceneRenderingRemoveActor(this, key, a);
             e.Actor = nullptr;
             e.LayerMask = 0;
             FreeActors[category].Add(key);

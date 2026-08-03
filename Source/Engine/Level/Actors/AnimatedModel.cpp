@@ -16,8 +16,10 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/Models/MeshAccessor.h"
 #include "Engine/Graphics/Models/MeshDeformation.h"
+#include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/SceneObjectsFactory.h"
@@ -1256,8 +1258,9 @@ void AnimatedModel::Draw(RenderContext& renderContext)
         return;
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
         return; // Not supported
+    auto drawState = renderContext.Buffers->GetGeometryDrawState(&GetScene()->Rendering, _sceneRenderingKey, this);
     ACTOR_GET_WORLD_MATRIX(this, view, world);
-    GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
+    GEOMETRY_DRAW_STATE_EVENT_BEGIN(drawState, world);
 
     _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.WorldPosition));
     if (_bones.IsAllocated)
@@ -1281,7 +1284,7 @@ void AnimatedModel::Draw(RenderContext& renderContext)
             }
         }
         draw.World = &world;
-        draw.DrawState = &_drawState;
+        draw.DrawState = drawState;
         draw.Deformation = _deformation;
         PRAGMA_DISABLE_DEPRECATION_WARNINGS
         draw.DrawModes = DrawModes & renderContext.View.GetShadowsDrawPassMask(ShadowsMode);
@@ -1297,7 +1300,7 @@ void AnimatedModel::Draw(RenderContext& renderContext)
         SkinnedModel->Draw(renderContext, draw);
     }
 
-    GEOMETRY_DRAW_STATE_EVENT_END(_drawState, world);
+    GEOMETRY_DRAW_STATE_EVENT_END(drawState, world);
 }
 
 void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
@@ -1308,7 +1311,8 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
     Matrix world;
     const Float3 translation = _transform.Translation - renderContext.View.Origin;
     Matrix::Transformation(_transform.Scale, _transform.Orientation, translation, world);
-    GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
+    auto drawState = renderContext.Buffers->GetGeometryDrawState(&GetScene()->Rendering, _sceneRenderingKey, this);
+    GEOMETRY_DRAW_STATE_EVENT_BEGIN(drawState, world);
 
     _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.WorldPosition));
     if (_bones.IsAllocated)
@@ -1332,7 +1336,7 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
             }
         }
         draw.World = &world;
-        draw.DrawState = &_drawState;
+        draw.DrawState = drawState;
         draw.Deformation = _deformation;
         draw.DrawModes = DrawModes;
         draw.Bounds = _sphere;
@@ -1361,7 +1365,7 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
         PRAGMA_ENABLE_DEPRECATION_WARNINGS
     }
 
-    GEOMETRY_DRAW_STATE_EVENT_END(_drawState, world);
+    GEOMETRY_DRAW_STATE_EVENT_END(drawState, world);
 }
 
 #if USE_EDITOR

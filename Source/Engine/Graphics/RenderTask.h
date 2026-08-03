@@ -468,12 +468,12 @@ API_STRUCT(NoDefault) struct FLAXENGINE_API RenderContext
     DECLARE_SCRIPTING_TYPE_MINIMAL(RenderContext);
 
     /// <summary>
-    /// The render buffers.
+    /// The render buffers that contain drawing state (eg. LOD transitions) and scene buffers (eg. GBuffer, DDGI, Shadow Maps).
     /// </summary>
     API_FIELD() RenderBuffers* Buffers = nullptr;
 
     /// <summary>
-    /// The render list.
+    /// The render list that collects draw calls.
     /// </summary>
     API_FIELD() RenderList* List = nullptr;
 

@@ -4,8 +4,11 @@
 
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
+#include "Engine/Level/Scene/SceneRendering.h"
+#include "Engine/Renderer/DrawCall.h"
 
 // GBuffer render targets formats
 #define GBUFFER0_FORMAT PixelFormat::R8G8B8A8_UNorm
@@ -24,10 +27,13 @@
 // [7] | <unsued>
 #define STENCIL_BUFFER_OBJECT_LAYER(value) uint8(value & 0x1f)
 
+class Actor;
+class SceneRendering;
+
 /// <summary>
 /// The scene rendering buffers container.
 /// </summary>
-API_CLASS() class FLAXENGINE_API RenderBuffers : public ScriptingObject
+API_CLASS() class FLAXENGINE_API RenderBuffers : public ScriptingObject, private ISceneRenderingListener
 {
     DECLARE_SCRIPTING_TYPE(RenderBuffers);
 
@@ -113,6 +119,14 @@ public:
 
     // Maps the custom buffer type into the object that holds the state.
     Array<CustomBuffer*, HeapAllocation> CustomBuffers;
+
+    // Scene drawing cache with the per-object state (eg. LOD transitions, motion-vectors movement)
+    struct SceneData
+    {
+        // Per-object drawing state (eg. LOD transition). Indexing matches actor/object key of object registered in SceneRendering.
+        Array<GeometryDrawState> Geo[SceneRendering::DrawCategory::MAX];
+    };
+    Dictionary<SceneRendering*, SceneData> Scenes;
 
 public:
     /// <summary>
@@ -268,4 +282,19 @@ public:
     /// Gets the depth buffer binding for rendering as read-only (both shader resource and render target).
     /// </summary>
     ReadOnlyDepthBuffer GetReadOnlyDepthBuffer() const;
+
+    // Internal event called by SceneRendering to initiate drawing.
+    void OnSceneRendering(SceneRendering* scene);
+
+    /// <summary>
+    /// Gets the geometry drawing state container for a specific actor/object. Returns null for invalid object (-1) or when view is not using LOD transitions (single-shot frame).
+    /// </summary>
+    GeometryDrawState* GetGeometryDrawState(SceneRendering* scene, int32 key, const Actor* actor) const;
+
+public:
+    // [ISceneRenderingListener]
+    void OnSceneRenderingAddActor(SceneRendering* scene, int32 key, Actor* a) override;
+    void OnSceneRenderingUpdateActor(SceneRendering* scene, int32 key, Actor* a, const BoundingSphere& prevBounds, UpdateFlags flags) override;
+    void OnSceneRenderingRemoveActor(SceneRendering* scene, int32 key, Actor* a) override;
+    void OnSceneRenderingClear(SceneRendering* scene) override;
 };

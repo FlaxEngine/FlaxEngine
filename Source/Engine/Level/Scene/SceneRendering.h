@@ -51,22 +51,22 @@ public:
     // Actor properties that were modified.
     enum UpdateFlags
     {
-        Visual = 1,
-        Bounds = 2,
-        Layer = 4,
-        StaticFlags = 8,
-        AutoDelayDuringRendering = 16, // Conditionally allow updating data during rendering when writes are locked
-        DrawModes = 32,
-        Auto = Visual | Bounds | Layer,
+        Visual = 1, // Visual appearance of the object (eg. material changed).
+        Bounds = 2, // Object bounding volume was changed (eg. after scaling).
+        Layer = 4, // Object changed layer.
+        StaticFlags = 8, // Object changed static state.
+        AutoDelayDuringRendering = 16, // Conditionally allow updating data during rendering when writes are locked.
+        DrawModes = 32, // Object changed draw modes flags.
+        Auto = Visual | Bounds | Layer, // Default set of flags for common changes.
     };
 
     // Starts listening to the scene rendering events.
     void ListenSceneRendering(SceneRendering* scene);
 
     // Events called by Scene Rendering
-    virtual void OnSceneRenderingAddActor(Actor* a) = 0;
-    virtual void OnSceneRenderingUpdateActor(Actor* a, const BoundingSphere& prevBounds, UpdateFlags flags = Auto) = 0;
-    virtual void OnSceneRenderingRemoveActor(Actor* a) = 0;
+    virtual void OnSceneRenderingAddActor(SceneRendering* scene, int32 key, Actor* a) = 0;
+    virtual void OnSceneRenderingUpdateActor(SceneRendering* scene, int32 key, Actor* a, const BoundingSphere& prevBounds, UpdateFlags flags = Auto) = 0;
+    virtual void OnSceneRenderingRemoveActor(SceneRendering* scene, int32 key, Actor* a) = 0;
     virtual void OnSceneRenderingClear(SceneRendering* scene) = 0;
 };
 

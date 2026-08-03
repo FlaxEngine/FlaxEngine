@@ -304,3 +304,66 @@ RenderBuffers::ReadOnlyDepthBuffer RenderBuffers::GetReadOnlyDepthBuffer() const
     GPUTextureView* depthBufferSRV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
     return { depthBufferRTV, depthBufferSRV };
 }
+
+void RenderBuffers::OnSceneRendering(SceneRendering* scene)
+{
+    if (!Scenes.ContainsKey(scene))
+    {
+        PROFILE_CPU_NAMED("Init Scene");
+
+        // Register scene
+        auto& sceneData = Scenes[scene];
+        ListenSceneRendering(scene);
+
+        // Put all existing actors into the render buffer geo storage used for LOD transitions, etc.
+        for (int32 i = 0; i < SceneRendering::MAX; i++)
+        {
+            auto& list = scene->Actors[i];
+            auto& geo = sceneData.Geo[i];
+            geo.Resize(list.Count());
+            auto geoPtr = geo.Get();
+            for (int32 j = 0; j < list.Count(); j++)
+                geoPtr[j] = GeometryDrawState();
+        }
+    }
+}
+
+GeometryDrawState* RenderBuffers::GetGeometryDrawState(SceneRendering* scene, int32 key, const Actor* actor) const
+{
+    if (auto* sceneData = Scenes.TryGet(scene))
+    {
+        auto& list = sceneData->Geo[actor->_drawCategory];
+        if (list.IsValidIndex(key))
+        {
+            return list.Get() + key;
+        }
+    }
+    // TODO: what about loose actors drawn from code? dynamically manage their state here?
+    return nullptr;
+}
+
+void RenderBuffers::OnSceneRenderingAddActor(SceneRendering* scene, int32 key, Actor* a)
+{
+    // Init geo state of that object
+    if (auto* sceneData = Scenes.TryGet(scene))
+    {
+        auto& list = sceneData->Geo[a->_drawCategory];
+        ASSERT(key >= 0);
+        if (list.Count() <= key)
+            list.Resize(key + 1);
+        list.Get()[key] = GeometryDrawState();
+    }
+}
+
+void RenderBuffers::OnSceneRenderingUpdateActor(SceneRendering* scene, int32 key, Actor* a, const BoundingSphere& prevBounds, UpdateFlags flags)
+{
+}
+
+void RenderBuffers::OnSceneRenderingRemoveActor(SceneRendering* scene, int32 key, Actor* a)
+{
+}
+
+void RenderBuffers::OnSceneRenderingClear(SceneRendering* scene)
+{
+    Scenes.Remove(scene);
+}

@@ -8,12 +8,14 @@
 #include "Engine/Graphics/GPUBufferDescription.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Prefabs/PrefabManager.h"
 #include "Engine/Level/Scene/Scene.h"
+#include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
 #include "Engine/Renderer/GI/GlobalSurfaceAtlasPass.h"
 #include "Engine/Utilities/Encryption.h"
@@ -380,15 +382,16 @@ void StaticModel::Draw(RenderContext& renderContext)
             GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, this, _sphere, _transform, Model->LODs.Last().GetBox());
         return;
     }
+    auto drawState = renderContext.Buffers->GetGeometryDrawState(&GetScene()->Rendering, _sceneRenderingKey, this);
     ACTOR_GET_WORLD_MATRIX(this, view, world);
-    GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
+    GEOMETRY_DRAW_STATE_EVENT_BEGIN(drawState, world);
     if (_vertexColorsDirty)
         FlushVertexColors();
 
     Mesh::DrawInfo draw;
     draw.Buffer = &Entries;
     draw.World = &world;
-    draw.DrawState = &_drawState;
+    draw.DrawState = drawState;
     draw.Deformation = _deformation;
     draw.Lightmap = _scene && Lightmap.TextureIndex != -1 ? _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex) : nullptr;
     draw.LightmapUVs = &Lightmap.UVsArea;
@@ -409,7 +412,7 @@ void StaticModel::Draw(RenderContext& renderContext)
 
     Model->Draw(renderContext, draw);
 
-    GEOMETRY_DRAW_STATE_EVENT_END(_drawState, world);
+    GEOMETRY_DRAW_STATE_EVENT_END(drawState, world);
 }
 
 void StaticModel::Draw(RenderContextBatch& renderContextBatch)
@@ -417,15 +420,16 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
     if (!Model || !Model->IsLoaded())
         return;
     const RenderContext& renderContext = renderContextBatch.GetMainContext();
+    auto drawState = renderContext.Buffers->GetGeometryDrawState(&GetScene()->Rendering, _sceneRenderingKey, this);
     ACTOR_GET_WORLD_MATRIX(this, view, world);
-    GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
+    GEOMETRY_DRAW_STATE_EVENT_BEGIN(drawState, world);
     if (_vertexColorsDirty)
         FlushVertexColors();
 
     Mesh::DrawInfo draw;
     draw.Buffer = &Entries;
     draw.World = &world;
-    draw.DrawState = &_drawState;
+    draw.DrawState = drawState;
     draw.Deformation = _deformation;
     draw.Lightmap = _scene && Lightmap.TextureIndex != -1 ? _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex) : nullptr;
     draw.LightmapUVs = &Lightmap.UVsArea;
@@ -446,7 +450,7 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
 
     Model->Draw(renderContextBatch, draw);
 
-    GEOMETRY_DRAW_STATE_EVENT_END(_drawState, world);
+    GEOMETRY_DRAW_STATE_EVENT_END(drawState, world);
 }
 
 bool StaticModel::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)

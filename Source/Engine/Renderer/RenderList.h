@@ -328,7 +328,7 @@ struct RenderListAlloc
 };
 
 /// <summary>
-/// Rendering cache container object for the draw calls collecting, sorting and executing.
+/// Rendering cache container object for the draw calls collecting, sorting and executing. Reusable between frames or drawing tasks.
 /// </summary>
 API_CLASS(Sealed) class FLAXENGINE_API RenderList : public ScriptingObject
 {

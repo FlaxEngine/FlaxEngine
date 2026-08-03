@@ -5,6 +5,8 @@
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Renderer/Renderer.h"
+#include "Engine/Renderer/DrawCall.h"
+#include "Engine/Renderer/Lightmaps.h"
 #include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Level/Actors/StaticModel.h"
 #include "Engine/Level/Actors/BoxBrush.h"

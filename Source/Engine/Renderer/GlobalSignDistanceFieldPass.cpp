@@ -475,17 +475,17 @@ public:
     }
 
     // [ISceneRenderingListener]
-    void OnSceneRenderingAddActor(Actor* a) override
+    void OnSceneRenderingAddActor(SceneRendering* scene, int32 key, Actor* a) override
     {
         OnSceneRenderingDirty(a);
     }
 
-    void OnSceneRenderingUpdateActor(Actor* a, const BoundingSphere& prevBounds, UpdateFlags flags) override
+    void OnSceneRenderingUpdateActor(SceneRendering* scene, int32 key, Actor* a, const BoundingSphere& prevBounds, UpdateFlags flags) override
     {
         OnSceneRenderingDirty(a, &prevBounds, flags);
     }
 
-    void OnSceneRenderingRemoveActor(Actor* a) override
+    void OnSceneRenderingRemoveActor(SceneRendering* scene, int32 key, Actor* a) override
     {
         OnSceneRenderingDirty(a);
     }

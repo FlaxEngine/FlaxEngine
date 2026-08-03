@@ -409,13 +409,13 @@ public:
     }
 
     // [ISceneRenderingListener]
-    void OnSceneRenderingAddActor(Actor* a) override
+    void OnSceneRenderingAddActor(SceneRendering* scene, int32 key, Actor* a) override
     {
         if (a->HasStaticFlag(StaticFlags::Shadow))
             DirtyStaticBounds(a->GetSphere());
     }
 
-    void OnSceneRenderingUpdateActor(Actor* a, const BoundingSphere& prevBounds, UpdateFlags flags) override
+    void OnSceneRenderingUpdateActor(SceneRendering* scene, int32 key, Actor* a, const BoundingSphere& prevBounds, UpdateFlags flags) override
     {
         // Dirty static objects to redraw when changed (eg. material modification)
         if (a->HasStaticFlag(StaticFlags::Shadow))
@@ -438,7 +438,7 @@ public:
         }
     }
 
-    void OnSceneRenderingRemoveActor(Actor* a) override
+    void OnSceneRenderingRemoveActor(SceneRendering* scene, int32 key, Actor* a) override
     {
         if (a->HasStaticFlag(StaticFlags::Shadow))
             DirtyStaticBounds(a->GetSphere());

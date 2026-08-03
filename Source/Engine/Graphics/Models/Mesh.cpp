@@ -302,7 +302,7 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
     drawCall.ObjectRadius = (float)info.Bounds.Radius; // TODO: should it be kept in sync with ObjectPosition?
     drawCall.Surface.GeometrySize = _box.GetSize();
-    drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
+    drawCall.Surface.PrevWorld = info.DrawState ? info.DrawState->PrevWorld : drawCall.World;
     drawCall.Surface.Lightmap = (info.Flags & StaticFlags::Lightmap) != StaticFlags::None ? info.Lightmap : nullptr;
     drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Half4::Zero;
     drawCall.Surface.LODDitherFactor = (int8)(lodDitherFactor * 127);
@@ -365,7 +365,7 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
     drawCall.ObjectRadius = (float)info.Bounds.Radius; // TODO: should it be kept in sync with ObjectPosition?
     drawCall.Surface.GeometrySize = _box.GetSize();
-    drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
+    drawCall.Surface.PrevWorld = info.DrawState ? info.DrawState->PrevWorld : drawCall.World;
     drawCall.Surface.Lightmap = (info.Flags & StaticFlags::Lightmap) != StaticFlags::None ? info.Lightmap : nullptr;
     drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Half4::Zero;
     drawCall.Surface.LODDitherFactor = (int8)(lodDitherFactor * 127);

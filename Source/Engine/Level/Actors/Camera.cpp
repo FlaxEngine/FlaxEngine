@@ -366,11 +366,9 @@ void Camera::Draw(RenderContext& renderContext)
         renderContext.View.GetWorldMatrix(_transform, tmp);
         Matrix::RotationY(PI * -0.5f, rot);
         Matrix::Multiply(rot, tmp, world);
-        GeometryDrawStateData drawState;
         Mesh::DrawInfo draw;
         draw.Buffer = &_previewModelBuffer;
         draw.World = &world;
-        draw.DrawState = &drawState;
         draw.Flags = StaticFlags::Transform;
         draw.DrawModes = (DrawPass::Depth | DrawPass::GBuffer | DrawPass::Forward) & renderContext.View.Pass;
         BoundingSphere::FromBox(_previewModelBox, draw.Bounds);

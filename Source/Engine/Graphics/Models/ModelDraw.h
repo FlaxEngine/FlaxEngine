@@ -31,6 +31,18 @@ FORCE_INLINE void ModelDraw(ModelType* model, const RenderContext& renderContext
         return;
     if (!info.Buffer->IsValidFor(model))
         info.Buffer->Setup(model);
+    if (!info.DrawState || renderContext.View.IsSingleFrame)
+    {
+        // No LOD transition
+        int32 lodIndex = info.ForcedLOD != -1 ? info.ForcedLOD : RenderTools::ComputeModelLOD(model, info.Bounds.Center, (float)info.Bounds.Radius, renderContext);
+        if (lodIndex != -1)
+        {
+            lodIndex += info.LODBias + renderContext.View.ModelLODBias;
+            lodIndex = model->ClampLODIndex(lodIndex);
+            model->LODs.Get()[lodIndex].Draw(context, info, 0.0f);
+        }
+        return;
+    }
     const auto frame = Engine::FrameCount;
     const auto modelFrame = info.DrawState->PrevFrame + 1;
 
@@ -46,7 +58,7 @@ FORCE_INLINE void ModelDraw(ModelType* model, const RenderContext& renderContext
         if (lodIndex == -1)
         {
             // Handling model fade-out transition
-            if (modelFrame == frame && info.DrawState->PrevLOD != -1 && !renderContext.View.IsSingleFrame && ModelDrawTransition(model, info))
+            if (modelFrame == frame && info.DrawState->PrevLOD != -1 && ModelDrawTransition(model, info))
             {
                 // Check if start transition
                 if (info.DrawState->LODTransition == 255)
@@ -75,11 +87,8 @@ FORCE_INLINE void ModelDraw(ModelType* model, const RenderContext& renderContext
     lodIndex += info.LODBias + renderContext.View.ModelLODBias;
     lodIndex = model->ClampLODIndex(lodIndex);
 
-    if (renderContext.View.IsSingleFrame)
-    {
-    }
     // Check if it's the new frame and could update the drawing state (note: model instance could be rendered many times per frame to different viewports)
-    else if (modelFrame == frame)
+    if (modelFrame == frame)
     {
         // Check if materials use transition
         if (!ModelDrawTransition(model, info))
@@ -111,7 +120,7 @@ FORCE_INLINE void ModelDraw(ModelType* model, const RenderContext& renderContext
     }
 
     // Draw
-    if (info.DrawState->PrevLOD == lodIndex || info.DrawState->LODTransition == 255 || renderContext.View.IsSingleFrame)
+    if (info.DrawState->PrevLOD == lodIndex || info.DrawState->LODTransition == 255)
     {
         model->LODs.Get()[lodIndex].Draw(context, info, 0.0f);
     }

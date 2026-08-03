@@ -32,6 +32,7 @@ API_CLASS(Abstract) class FLAXENGINE_API Actor : public SceneObject
     friend SceneRendering;
     friend Prefab;
     friend PrefabInstanceData;
+    friend class RenderBuffers;
 protected:
     uint16 _isActive : 1;
     uint16 _isActiveInHierarchy : 1;
@@ -48,7 +49,7 @@ protected:
     BoundingBox _box;
     String _name;
     Scene* _scene;
-    PhysicsScene* _physicsScene;
+    PhysicsScene* _physicsScene; // TODO: move it into physics-related actors (coliders, rigidbodies, etc.)
 
 private:
     // Disable copying

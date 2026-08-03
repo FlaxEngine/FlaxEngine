@@ -7,7 +7,9 @@
 #include "Engine/Graphics/Models/Types.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Graphics/RenderTask.h"
-#include "Engine/Level/Scene/SceneRendering.h"
+#include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Render2D/Font.h"
 #include "Engine/Render2D/FontAsset.h"
 #include "Engine/Render2D/FontManager.h"
@@ -20,8 +22,8 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Deprecated.h"
 #include "Engine/Core/Types/Variant.h"
-#include "Engine/Graphics/RenderTools.h"
-#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
+#include "Engine/Level/Scene/Scene.h"
+#include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Localization/Localization.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
@@ -370,7 +372,8 @@ void TextRender::Draw(RenderContext& renderContext)
         UpdateLayout();
     Matrix world;
     renderContext.View.GetWorldMatrix(_transform, world);
-    GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
+    auto drawState = renderContext.Buffers->GetGeometryDrawState(&GetScene()->Rendering, _sceneRenderingKey, this);
+    GEOMETRY_DRAW_STATE_EVENT_BEGIN(drawState, world);
 
     const DrawPass drawModes = DrawModes & renderContext.View.Pass & renderContext.View.GetShadowsDrawPassMask(ShadowsMode);
     if (_vb.Data.Count() > 0 && drawModes != DrawPass::None)
@@ -389,7 +392,7 @@ void TextRender::Draw(RenderContext& renderContext)
         drawCall.ObjectPosition = drawCall.World.GetTranslation();
         drawCall.ObjectRadius = (float)_sphere.Radius;
         drawCall.Surface.GeometrySize = _localBox.GetSize();
-        drawCall.Surface.PrevWorld = _drawState.PrevWorld;
+        drawCall.Surface.PrevWorld = drawState ? drawState->PrevWorld : world;
         drawCall.PerInstanceRandom = GetPerInstanceRandom();
         drawCall.SetStencilValue(_layer);
         drawCall.Geometry.IndexBuffer = _ib.GetBuffer();
@@ -409,7 +412,7 @@ void TextRender::Draw(RenderContext& renderContext)
         }
     }
 
-    GEOMETRY_DRAW_STATE_EVENT_END(_drawState, world);
+    GEOMETRY_DRAW_STATE_EVENT_END(drawState, world);
 }
 
 #if USE_EDITOR

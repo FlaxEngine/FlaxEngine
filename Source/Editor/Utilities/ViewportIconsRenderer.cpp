@@ -130,8 +130,6 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Scene
     const BoundingFrustum frustum = view.Frustum;
     const auto& icons = scene->GetSceneRendering()->ViewportIcons;
     Matrix m1, m2, world;
-    GeometryDrawStateData drawState;
-    draw.DrawState = &drawState;
     draw.World = &world;
     AssetReference<Texture> texture;
     for (Actor* icon : icons)
@@ -211,10 +209,6 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Actor
         Matrix::Billboard(sphere.Center, view.Position, Vector3::Up, view.Direction, m2);
         Matrix::Multiply(m1, m2, world);
 
-        // Draw icon
-        GeometryDrawStateData drawState;
-        draw.DrawState = &drawState;
-
         // Support custom icons through types, but not ones that were added through actors, since they cant register while in prefab view anyway
         if (ActorTypeToTexture.TryGet(actor->GetTypeHandle(), texture))
         {
@@ -227,9 +221,7 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Actor
                 draw.Buffer->At(0).ReceiveDecals = false;
                 draw.Buffer->At(0).ShadowsMode = ShadowsCastingMode::None;
             }
-
             AssetReference<MaterialBase> material;
-
             if (!TextureToMaterial.TryGet(texture, material))
             {
                 // Create custom material per custom texture
@@ -237,7 +229,6 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Actor
                 TextureToMaterial[texture]->SetParameterValue(TEXT("Image"), Variant(texture));
                 material = TextureToMaterial[texture];
             }
-
             draw.Buffer->At(0).Material = material;
         }
         else
@@ -246,6 +237,7 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Actor
             draw.Buffer = &InstanceBuffers[static_cast<int32>(iconType)];
         }
 
+        // Draw icon
         draw.World = &world;
         draw.Bounds = sphere;
         QuadModel->Draw(renderContext, draw);

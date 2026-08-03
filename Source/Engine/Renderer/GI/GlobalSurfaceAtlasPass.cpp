@@ -716,11 +716,11 @@ public:
     }
 
     // [ISceneRenderingListener]
-    void OnSceneRenderingAddActor(Actor* a) override
+    void OnSceneRenderingAddActor(SceneRendering* scene, int32 key, Actor* a) override
     {
     }
 
-    void OnSceneRenderingUpdateActor(Actor* a, const BoundingSphere& prevBounds, UpdateFlags flags) override
+    void OnSceneRenderingUpdateActor(SceneRendering* scene, int32 key, Actor* a, const BoundingSphere& prevBounds, UpdateFlags flags) override
     {
         GlobalSurfaceAtlasObject* object = Objects.TryGet(a);
         if (object)
@@ -744,7 +744,7 @@ public:
         }
     }
 
-    void OnSceneRenderingRemoveActor(Actor* a) override
+    void OnSceneRenderingRemoveActor(SceneRendering* scene, int32 key, Actor* a) override
     {
         // TODO: use it to speed up atlas/buffers defragmentation when streaming out scenes (CompactObjects cleans up objects)
     }

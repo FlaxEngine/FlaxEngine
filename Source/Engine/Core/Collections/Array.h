@@ -228,7 +228,7 @@ public:
     /// </summary>
     /// <param name="index">The index.</param>
     /// <returns><c>true</c> if is valid a index; otherwise, <c>false</c>.</returns>
-    bool IsValidIndex(const int32 index) const
+    FORCE_INLINE bool IsValidIndex(const int32 index) const
     {
         return index < _count && index >= 0;
     }

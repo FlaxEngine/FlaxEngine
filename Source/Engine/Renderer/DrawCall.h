@@ -322,7 +322,7 @@ struct TIsPODType<DrawCall>
 /// Data container for meshes and skinned meshes rendering with minimal state caching. 
 /// Used to update previous world transformation matrix for motion vectors pass and handle LOD transitions blending.
 /// </summary>
-struct GeometryDrawStateData
+struct GeometryDrawState
 {
     /// <summary>
     /// The previous frame world transformation matrix for the given geometry instance.
@@ -347,23 +347,23 @@ struct GeometryDrawStateData
 };
 
 template<>
-struct TIsPODType<GeometryDrawStateData>
+struct TIsPODType<GeometryDrawState>
 {
     enum { Value = true };
 };
 
 #define GEOMETRY_DRAW_STATE_EVENT_BEGIN(drawState, worldMatrix) \
     const auto frame = Engine::FrameCount; \
-	if (drawState.PrevFrame + 1 < frame && !renderContext.View.IsSingleFrame) \
+	if (drawState && drawState->PrevFrame + 1 < frame && !renderContext.View.IsSingleFrame) \
 	{ \
-        drawState.PrevWorld = worldMatrix; \
+        drawState->PrevWorld = worldMatrix; \
     }
 
 #define GEOMETRY_DRAW_STATE_EVENT_END(drawState, worldMatrix) \
-	if (drawState.PrevFrame != frame && !renderContext.View.IsSingleFrame) \
+	if (drawState && drawState->PrevFrame != frame && !renderContext.View.IsSingleFrame) \
 	{ \
-		drawState.PrevWorld = worldMatrix; \
-		drawState.PrevFrame = frame; \
+		drawState->PrevWorld = worldMatrix; \
+		drawState->PrevFrame = frame; \
 	}
 
 #if USE_LARGE_WORLDS

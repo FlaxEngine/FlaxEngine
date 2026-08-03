@@ -377,7 +377,7 @@ void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info,
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
     drawCall.ObjectRadius = (float)info.Bounds.Radius; // TODO: should it be kept in sync with ObjectPosition?
     drawCall.Surface.GeometrySize = _box.GetSize();
-    drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
+    drawCall.Surface.PrevWorld = info.DrawState ? info.DrawState->PrevWorld : drawCall.World;
     drawCall.Surface.Skinning = info.WithPrevBones ? DrawCall::SkinningMode::WithPrevBones : DrawCall::SkinningMode::Active;
     drawCall.Surface.SkinningBones = info.SkinningBones;
     drawCall.Surface.SkinningBonesOffset = info.SkinningBonesOffset;
@@ -422,7 +422,7 @@ void SkinnedMesh::Draw(const RenderContextBatch& renderContextBatch, const DrawI
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
     drawCall.ObjectRadius = (float)info.Bounds.Radius; // TODO: should it be kept in sync with ObjectPosition?
     drawCall.Surface.GeometrySize = _box.GetSize();
-    drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
+    drawCall.Surface.PrevWorld = info.DrawState ? info.DrawState->PrevWorld : drawCall.World;
     drawCall.Surface.Skinning = info.WithPrevBones ? DrawCall::SkinningMode::WithPrevBones : DrawCall::SkinningMode::Active;
     drawCall.Surface.SkinningBones = info.SkinningBones;
     drawCall.Surface.SkinningBonesOffset = info.SkinningBonesOffset;

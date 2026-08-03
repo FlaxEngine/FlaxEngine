@@ -14,7 +14,7 @@
 #include "CollisionProxy.h"
 #endif
 
-struct GeometryDrawStateData;
+struct GeometryDrawState;
 struct RenderContext;
 struct RenderContextBatch;
 class Task;
@@ -347,9 +347,9 @@ public:
         Matrix* World;
 
         /// <summary>
-        /// The instance drawing state data container. Used for LOD transition handling and previous world transformation matrix updating.
+        /// The instance drawing state data container (optional). Used for LOD transition handling and previous world transformation matrix updating.
         /// </summary>
-        GeometryDrawStateData* DrawState;
+        GeometryDrawState* DrawState;
 
         /// <summary>
         /// The instance deformation utility.
