@@ -653,7 +653,7 @@ void Foliage::UpdateBounds()
     typeBounds.Resize(FoliageTypes.Count());
     for (int32 i = 0; i < typeBounds.Count(); i++)
     {
-        auto& type = FoliageTypes[i];
+        const auto& type = FoliageTypes[i];
         bool ready = type.IsReady();
         typeReady.Set(i, ready);
         if (ready)
@@ -661,16 +661,14 @@ void Foliage::UpdateBounds()
     }
 
     // Update bounds for all instances
-    Matrix foliageWorld, instanceLocal, instanceWorld;
-    GetLocalToWorldMatrix(foliageWorld);
+    Transform globalTransform = _transform, transform;
     for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
     {
         auto& instance = *i;
         if (typeReady.Get(instance.Type))
         {
-            instance.Transform.GetWorld(instanceLocal);
-            Matrix::Multiply(foliageWorld, instanceLocal, instanceWorld);
-            BoundingSphere::Transform(typeBounds[instance.Type], instanceWorld, instance.Bounds);
+            globalTransform.LocalToWorld(instance.Transform, transform);
+            BoundingSphere::Transform(typeBounds[instance.Type], transform, instance.Bounds);
         }
         else
         {
@@ -837,11 +835,8 @@ void Foliage::SetInstanceTransform(int32 index, const Transform& value)
     {
         BoundingSphere typeBounds;
         BoundingSphere::FromBox(type.Model->GetBox(), typeBounds);
-        Matrix foliageWorld, instanceLocal, instanceWorld;
-        GetLocalToWorldMatrix(foliageWorld);
-        instance.Transform.GetWorld(instanceLocal);
-        Matrix::Multiply(foliageWorld, instanceLocal, instanceWorld);
-        BoundingSphere::Transform(typeBounds, instanceWorld, instance.Bounds);
+        const Transform transform = _transform.LocalToWorld(instance.Transform);
+        BoundingSphere::Transform(typeBounds, transform, instance.Bounds);
     }
     else
     {
@@ -868,8 +863,7 @@ void Foliage::OnFoliageTypeModelLoaded(int32 index)
 
         BoundingSphere typeBounds;
         BoundingSphere::FromBox(type.Model->GetBox(), typeBounds);
-        Matrix foliageWorld, instanceLocal, instanceWorld;
-        GetLocalToWorldMatrix(foliageWorld);
+        Transform globalTransform = _transform, transform;
 
         for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
         {
@@ -877,9 +871,8 @@ void Foliage::OnFoliageTypeModelLoaded(int32 index)
             if (instance.Type != index)
                 continue;
 
-            instance.Transform.GetWorld(instanceLocal);
-            Matrix::Multiply(foliageWorld, instanceLocal, instanceWorld);
-            BoundingSphere::Transform(typeBounds, instanceWorld, instance.Bounds);
+            globalTransform.LocalToWorld(instance.Transform, transform);
+            BoundingSphere::Transform(typeBounds, transform, instance.Bounds);
 
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE
             BoundingBox::FromSphere(instance.Bounds, box);

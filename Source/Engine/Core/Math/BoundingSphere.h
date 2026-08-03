@@ -224,6 +224,14 @@ public:
     /// <param name="matrix">The matrix.</param>
     /// <param name="result">The result transformed sphere.</param>
     static void Transform(const BoundingSphere& sphere, const Matrix& matrix, BoundingSphere& result);
+
+    /// <summary>
+    /// Transforms the bounding sphere using the specified transformation.
+    /// </summary>
+    /// <param name="sphere">The sphere.</param>
+    /// <param name="transform">The transform.</param>
+    /// <param name="result">The result transformed sphere.</param>
+    static void Transform(const BoundingSphere& sphere, const ::Transform& transform, BoundingSphere& result);
 };
 
 template<>

@@ -4,6 +4,7 @@
 #include "BoundingBox.h"
 #include "Matrix.h"
 #include "Ray.h"
+#include "Transform.h"
 #include "../Types/String.h"
 
 const BoundingSphere BoundingSphere::Empty(Vector3(0, 0, 0), 0);
@@ -219,4 +220,10 @@ void BoundingSphere::Transform(const BoundingSphere& sphere, const Matrix& matri
 {
     Vector3::Transform(sphere.Center, matrix, result.Center);
     result.Radius = sphere.Radius * matrix.GetScaleVector().GetAbsolute().MaxValue();
+}
+
+void BoundingSphere::Transform(const BoundingSphere& sphere, const ::Transform& transform, BoundingSphere& result)
+{
+    Vector3::Transform(sphere.Center, transform, result.Center);
+    result.Radius = sphere.Radius * transform.Scale.GetAbsolute().MaxValue();
 }

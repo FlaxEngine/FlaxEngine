@@ -394,6 +394,30 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Transforms the bounding sphere using the specified transformation.
+        /// </summary>
+        /// <param name="sphere">The sphere.</param>
+        /// <param name="transform">The transform.</param>
+        /// <remarks>The result transformed sphere.</remarks>
+        public static BoundingSphere Transform(BoundingSphere sphere, Transform transform)
+        {
+            Transform(ref sphere, ref transform, out var result);
+            return result;
+        }
+
+        /// <summary>
+        /// Transforms the bounding sphere using the specified transformation.
+        /// </summary>
+        /// <param name="sphere">The sphere.</param>
+        /// <param name="transform">The transform.</param>
+        /// <param name="result">The result transformed sphere.</param>
+        public static void Transform(ref BoundingSphere sphere, ref Transform transform, out BoundingSphere result)
+        {
+            Vector3.Transform(ref sphere.Center, ref transform, out result.Center);
+            result.Radius = sphere.Radius * transform.Scale.Absolute.MaxValue;
+        }
+
+        /// <summary>
         /// Tests for equality between two objects.
         /// </summary>
         /// <param name="left">The first value to compare.</param>
