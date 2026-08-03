@@ -78,7 +78,7 @@ void ShaderObjectData::Load(Matrix& worldMatrix, Matrix& prevWorldMatrix, Half4&
     geometrySize = Float3(Raw[6]);
     perInstanceRandom = Raw[6].W;
     uint32 packed7x = *(uint32*)&Raw[7].X;
-    lodDitherFactor = packed7x & 255;
+    lodDitherFactor = (packed7x & 127) * ((packed7x & 128) == 128 ? -1 : 1);
     worldDeterminantSign = (packed7x & 256) == 256 ? -1.0f : 1.0f;
     skinningOffset = *(uint32*)&Raw[7].Y;
     skinningPrevOffset = (packed7x >> 16) - 32760;

@@ -163,7 +163,7 @@ void Foliage::DrawInstance(DrawContext& context, FoliageInstance& instance, int3
             Matrix::Transformation(transform.Scale, transform.Orientation, translation, instance.CachedDrawWorld);
             instance.CachedDrawWorldValid = true;
         }
-        instanceData.Store(instance.CachedDrawWorld, instance.CachedDrawWorld, instance.LightmapUVsArea, drawCall.Surface.GeometrySize, instance.Random, worldDeterminantSign, (byte)(lodDitherFactor * 255));
+        instanceData.Store(instance.CachedDrawWorld, instance.CachedDrawWorld, instance.LightmapUVsArea, drawCall.Surface.GeometrySize, instance.Random, worldDeterminantSign, (int8)(lodDitherFactor * 127));
     }
 }
 
