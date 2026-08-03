@@ -382,7 +382,7 @@ void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info,
     drawCall.Surface.SkinningBones = info.SkinningBones;
     drawCall.Surface.SkinningBonesOffset = info.SkinningBonesOffset;
     drawCall.Surface.PrevBonesOffset = info.PrevBonesOffset;
-    drawCall.Surface.LODDitherFactor = (byte)(lodDitherFactor * 255);
+    drawCall.Surface.LODDitherFactor = (int8)(lodDitherFactor * 127);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
     drawCall.StencilValue = info.StencilValue;
 
@@ -427,7 +427,7 @@ void SkinnedMesh::Draw(const RenderContextBatch& renderContextBatch, const DrawI
     drawCall.Surface.SkinningBones = info.SkinningBones;
     drawCall.Surface.SkinningBonesOffset = info.SkinningBonesOffset;
     drawCall.Surface.PrevBonesOffset = info.PrevBonesOffset;
-    drawCall.Surface.LODDitherFactor = (byte)(lodDitherFactor * 255);
+    drawCall.Surface.LODDitherFactor = (int8)(lodDitherFactor * 127);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
     drawCall.StencilValue = info.StencilValue;
 

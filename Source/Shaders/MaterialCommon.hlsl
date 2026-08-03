@@ -119,7 +119,7 @@ ObjectData LoadObject(Buffer<float4> objectsBuffer, uint objectIndex)
     object.PerInstanceRandom = vector6.w;
     uint packed7x = asuint(vector7.x);
     object.WorldDeterminantSign = (packed7x & 256) == 256 ? -1.0f : 1.0f;
-    object.LODDitherFactor = (packed7x & 255) / 255.0f;
+    object.LODDitherFactor = (packed7x & 127) / 127.0f * ((packed7x & 128) == 128 ? -1.0f : 1.0f);
     object.SkinningOffset = asuint(vector7.y);
     object.PrevBonesOffset = (int)(packed7x >> 16) - 32760;
     object.LightmapArea.xy = UnpackHalf2(asuint(vector7.z));

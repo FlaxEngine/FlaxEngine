@@ -199,7 +199,7 @@ struct DrawCall
             Half4 LightmapUVsArea;
             SkinningMode Skinning;
             int16 PrevBonesOffset; // In Matrix3x4s, can be negative
-            byte LODDitherFactor; // The model LOD transition dither progress.
+            int8 LODDitherFactor; // The model LOD transition dither progress. [-127; 127] that maps into [-1;1] inside shader
             GPUBuffer* SkinningBones;
             Float3 GeometrySize; // Object geometry size in the world (unscaled).
             uint32 SkinningBonesOffset; // In Matrix3x4s

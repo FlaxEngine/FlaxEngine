@@ -305,7 +305,7 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
     drawCall.Surface.Lightmap = (info.Flags & StaticFlags::Lightmap) != StaticFlags::None ? info.Lightmap : nullptr;
     drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Half4::Zero;
-    drawCall.Surface.LODDitherFactor = (byte)(lodDitherFactor * 255);
+    drawCall.Surface.LODDitherFactor = (int8)(lodDitherFactor * 127);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
     drawCall.StencilValue = info.StencilValue;
 #if GPU_ENABLE_DEVELOPMENT
@@ -368,7 +368,7 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
     drawCall.Surface.Lightmap = (info.Flags & StaticFlags::Lightmap) != StaticFlags::None ? info.Lightmap : nullptr;
     drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Half4::Zero;
-    drawCall.Surface.LODDitherFactor = (byte)(lodDitherFactor * 255);
+    drawCall.Surface.LODDitherFactor = (int8)(lodDitherFactor * 127);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
     drawCall.StencilValue = info.StencilValue;
 #if GPU_ENABLE_DEVELOPMENT
