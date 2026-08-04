@@ -330,18 +330,16 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
     GameCooker::PackageFiles();
 
     // Validate environment variables
-    Dictionary<String, String> envVars;
-    Platform::GetEnvironmentVariables(envVars);
     String javaHome;
-    if (!envVars.TryGet(TEXT("JAVA_HOME"), javaHome) || !FileSystem::DirectoryExists(javaHome))
+    if (Platform::GetEnvironmentVariable(TEXT("JAVA_HOME"), javaHome) || !FileSystem::DirectoryExists(javaHome))
     {
         LOG(Error, "Missing or invalid JAVA_HOME env variable. {0}", javaHome);
         return true;
     }
     String androidSdk;
-    if (!envVars.TryGet(TEXT("ANDROID_HOME"), androidSdk) || !FileSystem::DirectoryExists(androidSdk))
+    if (Platform::GetEnvironmentVariable(TEXT("ANDROID_HOME"), androidSdk) || !FileSystem::DirectoryExists(androidSdk))
     {
-        if (!envVars.TryGet(TEXT("ANDROID_SDK"), androidSdk) || !FileSystem::DirectoryExists(androidSdk))
+        if (Platform::GetEnvironmentVariable(TEXT("ANDROID_SDK"), androidSdk) || !FileSystem::DirectoryExists(androidSdk))
         {
             LOG(Error, "Missing or invalid ANDROID_HOME env variable. {0}", androidSdk);
             return true;
@@ -355,10 +353,11 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
 #else
     const Char* gradlew = TEXT("gradlew");
 #endif
-#if PLATFORM_LINUX
+#if PLATFORM_LINUX || PLATFORM_MAC
     {
         CreateProcessSettings procSettings;
-        procSettings.FileName = String::Format(TEXT("chmod +x \"{0}/gradlew\""), data.OriginalOutputPath);
+        procSettings.FileName = TEXT("/bin/chmod");
+        procSettings.Arguments = String::Format(TEXT("+x \"{0}\""), data.OriginalOutputPath / gradlew);
         procSettings.WorkingDirectory = data.OriginalOutputPath;
         procSettings.HiddenWindow = true;
         Platform::CreateProcess(procSettings);
@@ -371,7 +370,8 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
         // .aab
         {
             CreateProcessSettings procSettings;
-            procSettings.FileName = String::Format(TEXT("\"{0}\" {1}"), data.OriginalOutputPath / gradlew, distributionPackage ? TEXT(":app:bundle") : TEXT(":app:bundleDebug"));
+            procSettings.FileName = data.OriginalOutputPath / gradlew;
+            procSettings.Arguments = distributionPackage ? TEXT("--console=plain :app:bundle") : TEXT("--console=plain :app:bundleDebug");
             procSettings.WorkingDirectory = data.OriginalOutputPath;
             const int32 result = Platform::CreateProcess(procSettings);
             if (result != 0)
@@ -394,7 +394,8 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
     // .apk
     {
         CreateProcessSettings procSettings;
-        procSettings.FileName = String::Format(TEXT("\"{0}\" {1}"), data.OriginalOutputPath / gradlew, distributionPackage ? TEXT("assemble") : TEXT("assembleDebug"));
+        procSettings.FileName = data.OriginalOutputPath / gradlew;
+        procSettings.Arguments = distributionPackage ? TEXT("--console=plain assemble") : TEXT("--console=plain assembleDebug");
         procSettings.WorkingDirectory = data.OriginalOutputPath;
         const int32 result = Platform::CreateProcess(procSettings);
         if (result != 0)
