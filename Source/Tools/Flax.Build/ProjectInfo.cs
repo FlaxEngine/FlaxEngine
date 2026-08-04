@@ -390,6 +390,10 @@ namespace Flax.Build
                 {
                     // Ignored
                 }
+
+                // Empty repo (no commits yet)
+                if (_versionControlBranch == "HEAD" || _versionControlCommit == "HEAD")
+                    _versionControlBranch = _versionControlCommit = string.Empty;
             }
         }
 
