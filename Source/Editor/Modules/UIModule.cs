@@ -845,7 +845,6 @@ namespace FlaxEditor.Modules
             if (!string.IsNullOrEmpty(driver))
                 tooltip.Append($" ({driver})");
 #endif
-            tooltip.AppendLine();
 
             WindowDecorations = new MainWindowDecorations(mainWindow, !Utilities.Utils.UseCustomWindowDecorations(true))
             {
