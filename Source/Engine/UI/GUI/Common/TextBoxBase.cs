@@ -563,7 +563,7 @@ namespace FlaxEngine.GUI
                                      caretPos.X - (caretWidth * 0.5f),
                                      caretPos.Y,
                                      caretWidth,
-                                     height * DpiScale);
+                                     height);
             }
         }
 
