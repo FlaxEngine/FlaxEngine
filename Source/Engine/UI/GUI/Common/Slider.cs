@@ -102,6 +102,7 @@ public class Slider : ContainerControl
     private Float2 _thumbSize = new Float2(16, 16);
     private bool _isSliding;
     private bool _mouseOverThumb;
+    private const float _step = 10;
 
     /// <summary>
     /// Gets or sets the value (normalized to range 0-100).
@@ -341,6 +342,13 @@ public class Slider : ContainerControl
         }
     }
 
+    private void StartSliding()
+    {
+        _isSliding = true;
+        StartMouseCapture();
+        SlidingStart?.Invoke();
+    }
+
     private void EndSliding()
     {
         _isSliding = false;
@@ -412,19 +420,18 @@ public class Slider : ContainerControl
     /// <inheritdoc />
     public override Control OnNavigate(NavDirection direction, Float2 location, Control caller, List<Control> visited)
     {
-        bool _isHorizontal = Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft;
-        
-        float _keyOrGamepadPosition = _isHorizontal ? location.X : location.Y;
+        // Auto-focus self when navigation comes in
+        if (!IsNavFocused)
+            return this;
 
-        if (_thumbRect.Contains(ref location))
+        // Control slider via navigation actions
+        if (IsNavFocused && _isSliding)
         {
-            _isSliding = true;
-            SlidingStart?.Invoke();
+            var isNavUp = direction == NavDirection.Right || direction == NavDirection.Up;
+            var isDirUp = _direction == SliderDirection.HorizontalRight || _direction == SliderDirection.VerticalUp;
+            Value += (isNavUp == isDirUp ? 1 : -1) * _step;
             return this;
         }
-
-        var SliderPosition = (Direction == SliderDirection.HorizontalRight || Direction == SliderDirection.VerticalDown) ? _keyOrGamepadPosition : - _keyOrGamepadPosition;
-        Value += (SliderPosition < _thumbCenter ? -1 : 1) * 10;
 
         return base.OnNavigate(direction, location, caller, visited);
     }
@@ -441,39 +448,44 @@ public class Slider : ContainerControl
         return base.OnKeyDown(key);
     }
 
+    private void OnClick(Float2 location)
+    {
+        Focus();
+        float mousePosition = Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft ? location.X : location.Y;
+
+        if (_thumbRect.Contains(ref location))
+        {
+            StartSliding();
+        }
+        else
+        {
+            // Click change
+            switch (Direction)
+            {
+            case SliderDirection.HorizontalRight or SliderDirection.VerticalDown:
+                Value += (mousePosition < _thumbCenter ? -1 : 1) * _step;
+                break;
+            case SliderDirection.HorizontalLeft or SliderDirection.VerticalUp:
+                Value -= (mousePosition < _thumbCenter ? -1 : 1) * _step;
+                break;
+            default: break;
+            }
+        }
+    }
+
     /// <inheritdoc />
     public override bool OnMouseDown(Float2 location, MouseButton button)
     {
+        if (base.OnMouseDown(location, button))
+            return true;
+
         if (button == MouseButton.Left)
         {
-            Focus();
-            float mousePosition = Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft ? location.X : location.Y;
-
-            if (_thumbRect.Contains(ref location))
-            {
-                // Start sliding
-                _isSliding = true;
-                StartMouseCapture();
-                SlidingStart?.Invoke();
-                return true;
-            }
-            else
-            {
-                // Click change
-                switch (Direction)
-                {
-                case SliderDirection.HorizontalRight or SliderDirection.VerticalDown:
-                    Value += (mousePosition < _thumbCenter ? -1 : 1) * 10;
-                    break;
-                case SliderDirection.HorizontalLeft or SliderDirection.VerticalUp:
-                    Value -= (mousePosition < _thumbCenter ? -1 : 1) * 10;
-                    break;
-                default: break;
-                }
-            }
+            OnClick(location);
+            return true;
         }
 
-        return base.OnMouseDown(location, button);
+        return false;
     }
 
     /// <inheritdoc />
@@ -482,13 +494,8 @@ public class Slider : ContainerControl
         if (base.OnTouchDown(location, pointerId))
             return true;
 
-        if (!new Rectangle(Float2.Zero, Size).Contains(ref location))
-        {
-            Defocus();
-            return true;
-        }
-
-        return false;
+        OnClick(location);
+        return true;
     }
 
     /// <inheritdoc />
@@ -549,13 +556,40 @@ public class Slider : ContainerControl
     /// <inheritdoc />
     public override bool OnTouchUp(Float2 location, int pointerId)
     {
-        if (base.OnTouchUp(location, pointerId) && _isSliding)
+        if (base.OnTouchUp(location, pointerId))
+            return true;
+
+        if (_isSliding)
         {
             EndSliding();
-            return true;
         }
+        return true;
+    }
 
-        return false;
+    /// <inheritdoc />
+    public override void OnTouchMove(Float2 location, int pointerId)
+    {
+        base.OnTouchMove(location, pointerId);
+
+        if (_isSliding)
+        {
+            OnMouseMove(location);
+        }
+    }
+
+    /// <inheritdoc />
+    public override void OnSubmit()
+    {
+        base.OnSubmit();
+
+        if (_isSliding)
+        {
+            EndSliding();
+        }
+        else
+        {
+            StartSliding();
+        }
     }
 
     /// <inheritdoc />
