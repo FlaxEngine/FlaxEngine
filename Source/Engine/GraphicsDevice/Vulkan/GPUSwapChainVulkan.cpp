@@ -145,8 +145,6 @@ GPUTextureView* GPUSwapChainVulkan::GetBackBufferView()
         }
         ASSERT(_acquiredImageIndex != -1);
 
-        auto context = _device->MainContext;
-
         // Wait for prior GPU work that used this acquired image before recording
         // commands against it again. Waiting before acquire can target a different image
         // and unnecessarily serialize frames when the swapchain has multiple images.
