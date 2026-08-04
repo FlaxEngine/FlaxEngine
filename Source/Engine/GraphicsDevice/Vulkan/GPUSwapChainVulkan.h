@@ -61,6 +61,7 @@ class GPUSwapChainVulkan : public GPUResourceVulkan<GPUSwapChain>, public Resour
 
 private:
     VkSurfaceKHR _surface;
+    void* _surfaceWindowHandle;
     VkSwapchainKHR _swapChain;
     int32 _currentImageIndex;
     int32 _semaphoreIndex;
@@ -107,7 +108,11 @@ public:
 
 private:
     void ReleaseBackBuffer();
-    bool CreateSwapChain(int32 width, int32 height);
+    // Releases swapchain-owned images and synchronization state. Keeps the VkSurfaceKHR alive during
+    // normal resize so the native surface is rebuilt only after surface loss or native window replacement.
+    void ReleaseSwapChain(bool releaseSurface);
+    // Recreates the swapchain for the requested size. Set recreateSurface when the VkSurfaceKHR is no longer valid.
+    bool CreateSwapChain(int32 width, int32 height, bool recreateSurface = false);
 
 public:
     // [GPUSwapChain]
