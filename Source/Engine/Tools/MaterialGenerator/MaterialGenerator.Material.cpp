@@ -140,7 +140,9 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
 
         // Write code
         _writer.Write(TEXT("{\n"));
-        _writer.Write(*code);
+        _writer.Write(code);
+        if (!code.EndsWith(TEXT("\n")) && !code.EndsWith(TEXT(" ")))
+            _writer.Write(TEXT("\n"));
         _writer.Write(TEXT("}\n"));
 
         // Link output values to boxes
