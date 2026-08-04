@@ -1318,10 +1318,10 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         }
         break;
     case ModelType::SkinnedModel:
-        if (data.LODs.Count() > 1)
+        if (data.LODs.IsEmpty() || data.LODs[0].Meshes.IsEmpty())
         {
-            LOG(Warning, "Imported skinned model has more than one LOD. Removing the lower LODs. Only single one is supported.");
-            data.LODs.Resize(1);
+            errorMsg = TEXT("Imported skinned model has no valid geometry.");
+            return true;
         }
         break;
     case ModelType::Animation:
