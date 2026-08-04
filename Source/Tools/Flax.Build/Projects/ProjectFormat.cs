@@ -48,6 +48,11 @@ namespace Flax.Build.Projects
         VisualStudioCode,
 
         /// <summary>
+        /// CMake.
+        /// </summary>
+        CMake,
+
+        /// <summary>
         /// XCode.
         /// </summary>
         XCode,
