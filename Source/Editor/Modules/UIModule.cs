@@ -817,27 +817,40 @@ namespace FlaxEditor.Modules
         private void InitWindowDecorations(RootControl mainWindow)
         {
             ScriptsBuilder.GetBinariesConfiguration(out _, out _, out _, out var configuration);
-            string driver = string.Empty;
-#if PLATFORM_LINUX
-            driver = LinuxPlatform.DisplayServer;
-            if (!string.IsNullOrEmpty(driver))
-                driver = $" ({driver})";
-#endif
 
+            var tooltip = new System.Text.StringBuilder();
+
+            // Project info
+            tooltip.AppendLine(Editor.GameProject.Name);
             var projectPath = Globals.ProjectFolder;
 #if PLATFORM_WINDOWS
             projectPath = projectPath.Replace('/', '\\');
 #endif
+            tooltip.AppendLine(projectPath);
 
-            string largeWorld = "";
+            // Engine info
+            tooltip.Append("Engine Version: ").AppendLine(Globals.EngineVersion);
+            var engineNickname = Editor.EngineProject.EngineNickname;
+            if (!string.IsNullOrEmpty(engineNickname))
+                tooltip.Append($" ({engineNickname})");
+
+            // Build info
 #if USE_LARGE_WORLDS
-            largeWorld = "\nLarge Worlds Enabled";
+            tooltip.AppendLine("Large Worlds Enabled");
 #endif
+            tooltip.Append("Configuration: ").AppendLine(configuration);
+            tooltip.Append("Graphics: ").Append(GPUDevice.Instance.RendererType);
+#if PLATFORM_LINUX
+            var driver = LinuxPlatform.DisplayServer;
+            if (!string.IsNullOrEmpty(driver))
+                tooltip.Append($" ({driver})");
+#endif
+            tooltip.AppendLine();
 
             WindowDecorations = new MainWindowDecorations(mainWindow, !Utilities.Utils.UseCustomWindowDecorations(true))
             {
                 Parent = mainWindow,
-                IconTooltipText = $"{mainWindow.RootWindow.Title}\nPath {projectPath}\n\nEngine Version {Globals.EngineVersion}{largeWorld}\nConfiguration {configuration}\n\nGraphics {GPUDevice.Instance.RendererType}{driver}",
+                IconTooltipText = tooltip.ToString(),
             };
         }
 
