@@ -162,7 +162,10 @@ namespace FlaxEngine.GUI
 
             if (_splitterClicked)
             {
-                SplitterValue = _orientation == Orientation.Horizontal ? location.X / Width : location.Y / Height;
+                if (_orientation == Orientation.Horizontal && Width > 0)
+                    SplitterValue = location.X / Width;
+                else if (_orientation == Orientation.Vertical && Height > 0)
+                    SplitterValue = location.Y / Height;
                 Cursor = _orientation == Orientation.Horizontal ? CursorType.SizeWE : CursorType.SizeNS;
                 _cursorChanged = true;
             }

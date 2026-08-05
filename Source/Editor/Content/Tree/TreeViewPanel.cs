@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.Options;
 using FlaxEngine;
@@ -54,6 +54,10 @@ public class TreeViewPanel : Panel
             {
                 Editor.Instance.Windows.ContentWin.Rename(contentNode.Item);
             }
+            else if (node is ContentFolderTreeNode folderNode)
+            {
+                Editor.Instance.Windows.ContentWin.Rename(folderNode.Folder);
+            }
         }
     }
 
@@ -102,6 +106,10 @@ public class TreeViewPanel : Panel
                 {
                     items.Add(contentNode.Item);
                 }
+                else if (node is ContentFolderTreeNode folderNode)
+                {
+                    items.Add(folderNode.Folder);
+                }
             }
 
             Editor.Instance.Windows.ContentWin.Duplicate(items);
@@ -121,8 +129,12 @@ public class TreeViewPanel : Panel
             return;
         var filePaths = new List<string>();
         foreach (var node in selection)
+        {
             if (node is ContentItemTreeNode contentNode)
                 filePaths.Add(contentNode.Item.Path);
+            else if (node is ContentFolderTreeNode folderNode)
+                filePaths.Add(folderNode.Folder.Path);
+        }
 
         Clipboard.Files = filePaths.ToArray();
         UpdateContentItemCut(false);
@@ -168,6 +180,8 @@ public class TreeViewPanel : Panel
             {
                 if (node is ContentItemTreeNode contentNode)
                     _cutItems.Add(contentNode.Item);
+                else if (node is ContentFolderTreeNode folderNode)
+                    _cutItems.Add(folderNode.Folder);
             }
         }
             
