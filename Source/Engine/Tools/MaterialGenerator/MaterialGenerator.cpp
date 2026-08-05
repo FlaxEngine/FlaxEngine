@@ -627,8 +627,9 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
                 if (in.Length() > 0)
                 {
                     tmp.EnsureCapacity(in.Length() + 1, false);
-                    StringUtils::ConvertUTF162ANSI(*in, tmp.Get(), in.Length());
+                    StringUtils::ConvertUTF162ASCII(*in, tmp.Get(), in.Length());
                     source.WriteBytes(tmp.Get(), in.Length());
+                    tmp.Clear();
                 }
             }
         }

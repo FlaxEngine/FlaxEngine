@@ -150,6 +150,9 @@ public:
     // Converts characters from UTF-16 to ANSI
     static void ConvertUTF162ANSI(const Char* from, char* to, int32 len);
 
+    // Converts characters from UTF-16 to ASCII
+    static void ConvertUTF162ASCII(const Char* from, char* to, int32 len);
+
     // Convert characters from UTF-8 to UTF-16
     static void ConvertUTF82UTF16(const char* from, Char* to, int32 fromLength, int32& toLength);
 

@@ -88,6 +88,20 @@ const char* StringUtils::FindIgnoreCase(const char* str, const char* toFind)
     return nullptr;
 }
 
+void StringUtils::ConvertUTF162ASCII(const Char* from, char* to, int32 len)
+{
+    if (!from || !to)
+        return;
+    for (int32 i = 0; i < len; i++)
+    {
+        Char c = from[i];
+        if ((c == 0x09 || c == 0x0A || c == 0x0D || (0x20 <= c && c <= 0x7F)))
+            to[i] = (char)c;
+        else
+            to[i] = ' ';
+    }
+}
+
 void PrintUTF8Error(const char* from, uint32 fromLength)
 {
     LOG(Error, "Not a UTF-8 string. Length: {0}", fromLength);

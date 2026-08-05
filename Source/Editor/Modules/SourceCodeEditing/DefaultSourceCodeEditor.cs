@@ -40,6 +40,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             var codeEditing = Editor.Instance.CodeEditing;
             var vsCode = codeEditing.GetInBuildEditor(CodeEditorTypes.VSCode);
             var rider = codeEditing.GetInBuildEditor(CodeEditorTypes.Rider);
+            var clion = codeEditing.GetInBuildEditor(CodeEditorTypes.CLion);
 
 #if PLATFORM_WINDOWS
             // Favor the newest Visual Studio
@@ -66,6 +67,8 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                 _currentEditor = vsCode;
             else if (rider != null)
                 _currentEditor = rider;
+            else if (clion != null)
+                _currentEditor = clion;
             else
                 _currentEditor = codeEditing.GetInBuildEditor(CodeEditorTypes.SystemDefault);
         }
