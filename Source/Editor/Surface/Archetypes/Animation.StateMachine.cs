@@ -1110,7 +1110,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Render2D.DrawText(style.FontLarge, Title, _textRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
 
                 // Close button
-                Render2D.DrawSprite(style.Cross, _closeButtonRect, _closeButtonRect.Contains(_mousePosition) ? style.Foreground : style.ForegroundGrey);
+                EditorGlyphs.DrawCross(_closeButtonRect, _closeButtonRect.Contains(_mousePosition) ? style.Foreground : style.ForegroundGrey);
 
                 // Debug outline
                 if (_debugActive)

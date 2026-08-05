@@ -119,7 +119,7 @@ namespace FlaxEditor.GUI
 
             // Draw asset picker button
             if (CanEdit)
-                Render2D.DrawSprite(style.ArrowDown, button1Rect, button1Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
+                EditorGlyphs.DrawArrowDown(button1Rect, button1Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
 
             if (DifferentValues)
             {
@@ -136,7 +136,7 @@ namespace FlaxEditor.GUI
                 if (CanEdit)
                 {
                     Render2D.DrawSprite(style.Search, button2Rect, button2Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
-                    Render2D.DrawSprite(style.Cross, button3Rect, button3Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
+                    EditorGlyphs.DrawCross(button3Rect, button3Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
                 }
                 else
                 {
@@ -167,7 +167,7 @@ namespace FlaxEditor.GUI
             else if (Validator.SelectedAsset)
             {
                 // Draw remove button
-                Render2D.DrawSprite(style.Cross, button3Rect, button3Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
+                EditorGlyphs.DrawCross(button3Rect, button3Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
 
                 // Draw name
                 float sizeForTextLeft = Width - button1Rect.Right;

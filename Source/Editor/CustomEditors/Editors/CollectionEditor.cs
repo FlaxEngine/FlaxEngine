@@ -238,9 +238,8 @@ namespace FlaxEditor.CustomEditors.Editors
                 HeaderHeight = 18;
                 _canReorder = canReorder;
                 EnableDropDownIcon = true;
-                var icons = FlaxEditor.Editor.Instance.Icons;
-                ArrowImageClosed = new SpriteBrush(icons.ArrowRight12);
-                ArrowImageOpened = new SpriteBrush(icons.ArrowDown12);
+                ArrowImageClosed = new ArrowRightBrush();
+                ArrowImageOpened = new ArrowDownBrush();
                 HeaderText = $"Element {index}";
                 
                 string saveName = string.Empty;

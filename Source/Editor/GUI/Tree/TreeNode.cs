@@ -714,7 +714,11 @@ namespace FlaxEditor.GUI.Tree
             // Draw arrow
             if (HasAnyVisibleChild)
             {
-                Render2D.DrawSprite(_opened ? style.ArrowDown : style.ArrowRight, ArrowRect, _mouseOverHeader ? style.Foreground : style.ForegroundGrey);
+                var arrowColor = _mouseOverHeader ? style.Foreground : style.ForegroundGrey;
+                if (_opened)
+                    EditorGlyphs.DrawArrowDown(ArrowRect, arrowColor);
+                else
+                    EditorGlyphs.DrawArrowRight(ArrowRect, arrowColor);
             }
 
             // Draw icon

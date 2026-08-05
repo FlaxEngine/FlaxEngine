@@ -277,7 +277,7 @@ namespace FlaxEditor.GUI.Docking
                     bool isMouseOverCross = isMouseOver && crossRect.Contains(MousePosition);
                     if (isMouseOverCross)
                         Render2D.FillRectangle(crossRect, (containsFocus ? style.BackgroundSelected : style.LightBackground) * 1.3f);
-                    Render2D.DrawSprite(style.Cross, crossRect, isMouseOverCross ? style.Foreground : style.ForegroundGrey);
+                    EditorGlyphs.DrawCross(crossRect, isMouseOverCross ? style.Foreground : style.ForegroundGrey);
                 }
             }
             else
@@ -347,7 +347,7 @@ namespace FlaxEditor.GUI.Docking
                         bool isMouseOverCross = isMouseOver && crossRect.Contains(MousePosition);
                         if (isMouseOverCross)
                             Render2D.FillRectangle(crossRect, tabColor * 1.3f);
-                        Render2D.DrawSprite(style.Cross, crossRect, isMouseOverCross ? style.Foreground : style.ForegroundGrey);
+                        EditorGlyphs.DrawCross(crossRect, isMouseOverCross ? style.Foreground : style.ForegroundGrey);
                     }
 
                     // Set the start position for the next tab

@@ -156,7 +156,7 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 // Draw deselect button
                 if (_type == ScriptType.Null)
-                    Render2D.DrawSprite(style.Cross, button1Rect, button1Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
+                    EditorGlyphs.DrawCross(button1Rect, button1Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
 
                 // Draw name
                 Render2D.PushClip(nameRect);
@@ -171,7 +171,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
             // Draw picker button
             var pickerRect = isSelected && _type == ScriptType.Null ? button2Rect : button1Rect;
-            Render2D.DrawSprite(style.ArrowDown, pickerRect, pickerRect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
+            EditorGlyphs.DrawArrowDown(pickerRect, pickerRect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
 
             // Check if drag is over
             if (IsDragOver && _hasValidDragOver)

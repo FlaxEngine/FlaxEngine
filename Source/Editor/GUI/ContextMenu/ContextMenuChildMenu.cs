@@ -53,7 +53,7 @@ namespace FlaxEditor.GUI.ContextMenu
 
             // Draw arrow
             if (ContextMenu.HasChildren)
-                Render2D.DrawSprite(style.ArrowRight, new Rectangle(Width - 15 + ExtraAdjustmentAmount, (Height - 12) / 2, 12, 12), Enabled ? isCMopened ? style.BackgroundSelected : style.Foreground : style.ForegroundDisabled);
+                EditorGlyphs.DrawArrowRight(new Rectangle(Width - 15 + ExtraAdjustmentAmount, (Height - 12) / 2, 12, 12), Enabled ? isCMopened ? style.BackgroundSelected : style.Foreground : style.ForegroundDisabled);
         }
 
         /// <inheritdoc />

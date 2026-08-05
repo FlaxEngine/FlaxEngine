@@ -113,7 +113,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     Render2D.PopClip();
 
                     // Draw deselect button
-                    Render2D.DrawSprite(style.Cross, button1Rect, isEnabled && button1Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
+                    EditorGlyphs.DrawCross(button1Rect, isEnabled && button1Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
                 }
                 else
                 {
@@ -123,7 +123,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
                 // Draw picker button
                 var pickerRect = isSelected ? button2Rect : button1Rect;
-                Render2D.DrawSprite(style.ArrowDown, pickerRect, isEnabled && pickerRect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
+                EditorGlyphs.DrawArrowDown(pickerRect, isEnabled && pickerRect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
             }
 
             /// <inheritdoc />

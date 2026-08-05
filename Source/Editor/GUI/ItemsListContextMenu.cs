@@ -453,8 +453,8 @@ namespace FlaxEditor.GUI
                     var categoryPanel = new DropPanel
                     {
                         HeaderText = item.Category,
-                        ArrowImageOpened = new SpriteBrush(Editor.Instance.Icons.ArrowDown12),
-                        ArrowImageClosed = new SpriteBrush(Editor.Instance.Icons.ArrowRight12),
+                        ArrowImageOpened = new ArrowDownBrush(),
+                        ArrowImageClosed = new ArrowRightBrush(),
                         EnableDropDownIcon = true,
                         ItemsMargin = new Margin(28, 0, 2, 2),
                         HeaderColor = Style.Current.Background,

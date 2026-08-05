@@ -970,7 +970,11 @@ namespace FlaxEditor.GUI.Timeline
             // Draw arrow
             if (CanExpand)
             {
-                Render2D.DrawSprite(_opened ? style.ArrowDown : style.ArrowRight, ArrowRect, isMouseOver ? style.Foreground : style.ForegroundGrey);
+                var arrowColor = isMouseOver ? style.Foreground : style.ForegroundGrey;
+                if (_opened)
+                    EditorGlyphs.DrawArrowDown(ArrowRect, arrowColor);
+                else
+                    EditorGlyphs.DrawArrowRight(ArrowRect, arrowColor);
             }
 
             // Draw icon

@@ -3,11 +3,32 @@
 #include "Font.h"
 #include "FontAsset.h"
 #include "FontManager.h"
+#include "Engine/Content/Content.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Threading/Threading.h"
 #include "IncludeFreeType.h"
 
 Array<AssetReference<FontAsset>, HeapAllocation> Font::FallbackFonts;
+
+float Font::GetGlobalScale()
+{
+    return FontManager::FontScale;
+}
+
+void Font::SetGlobalScale(float scale)
+{
+    if (scale <= 0.0f || Math::NearEqual(FontManager::FontScale, scale))
+        return;
+    FontManager::FontScale = scale;
+    // Invalidate all loaded font assets so cached glyphs are re-rasterized and Font metrics are recomputed at the new scale
+    auto assets = Content::GetAssets<FontAsset>();
+    for (auto* asset : assets)
+    {
+        if (asset)
+            asset->Invalidate();
+    }
+    FontManager::Flush();
+}
 
 Font::Font(FontAsset* parentAsset, float size)
     : ManagedScriptingObject(SpawnParams(Guid::New(), Font::TypeInitializer))

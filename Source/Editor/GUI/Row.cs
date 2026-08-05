@@ -105,7 +105,11 @@ namespace FlaxEditor.GUI
                             {
                                 // Tree node arrow                  
                                 var arrowRect = new Rectangle(x + leftDepthMargin - arrowSize, (Height - arrowSize) * 0.5f, arrowSize, arrowSize);
-                                Render2D.DrawSprite(row.Visible ? style.ArrowDown : style.ArrowRight, arrowRect, IsMouseOver ? style.Foreground : style.ForegroundGrey);
+                                var arrowColor = IsMouseOver ? style.Foreground : style.ForegroundGrey;
+                                if (row.Visible)
+                                    EditorGlyphs.DrawArrowDown(arrowRect, arrowColor);
+                                else
+                                    EditorGlyphs.DrawArrowRight(arrowRect, arrowColor);
                             }
                         }
                     }
