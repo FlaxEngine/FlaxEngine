@@ -204,6 +204,8 @@ namespace Flax.Build
                     projectFormats.Add(ProjectFormat.VisualStudio2015);
                 if (Configuration.ProjectFormatVSCode)
                     projectFormats.Add(ProjectFormat.VisualStudioCode);
+                if (Configuration.ProjectFormatCLion)
+                    projectFormats.Add(ProjectFormat.CMake);
                 if (Configuration.ProjectFormatRider)
                     projectFormats.Add(ProjectFormat.VisualStudio2022);
                 if (!string.IsNullOrEmpty(Configuration.ProjectFormatCustom))
