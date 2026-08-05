@@ -25,16 +25,23 @@ void BackBufferVulkan::Setup(GPUSwapChainVulkan* window, VkImage backbuffer, Pix
     ImageAcquiredSemaphore = New<SemaphoreVulkan>(Device);
 }
 
+void BackBufferVulkan::WaitForSubmit()
+{
+    if (SubmitCmdBuffer)
+    {
+        if (SubmitCmdBufferFenceCounter == SubmitCmdBuffer->GetFenceSignaledCounter())
+            SubmitCmdBuffer->Wait();
+        SubmitCmdBuffer = nullptr;
+        SubmitCmdBufferFenceCounter = 0;
+    }
+}
+
 void BackBufferVulkan::Release()
 {
+    WaitForSubmit();
     Handle.Release();
     Delete(RenderingDoneSemaphore);
     Delete(ImageAcquiredSemaphore);
-    if (SubmitCmdBuffer)
-    {
-        SubmitCmdBuffer->Wait();
-        SubmitCmdBuffer = nullptr;
-    }
     Device = nullptr;
 }
 
@@ -138,6 +145,12 @@ GPUTextureView* GPUSwapChainVulkan::GetBackBufferView()
         }
         ASSERT(_acquiredImageIndex != -1);
 
+        // Wait for prior GPU work that used this acquired image before recording
+        // commands against it again. Waiting before acquire can target a different image
+        // and unnecessarily serialize frames when the swapchain has multiple images.
+        auto& acquiredBackBuffer = _backBuffers[_acquiredImageIndex];
+        acquiredBackBuffer.WaitForSubmit();
+
         const auto backBuffer = &_backBuffers[_acquiredImageIndex].Handle;
 
         auto cmdBuffer = cmdBufferManager->GetCmdBuffer();
@@ -158,17 +171,6 @@ GPUTextureView* GPUSwapChainVulkan::GetBackBufferView()
 void GPUSwapChainVulkan::Begin(RenderTask* task)
 {
     GPUSwapChain::Begin(task);
-
-    // Wait for the backbuffer to be available
-    if (_currentImageIndex != -1)
-    {
-        auto& backBuffer = _backBuffers[_currentImageIndex];
-        if (backBuffer.SubmitCmdBuffer)
-        {
-            backBuffer.SubmitCmdBuffer->Wait();
-            backBuffer.SubmitCmdBuffer = nullptr;
-        }
-    }
 }
 
 bool GPUSwapChainVulkan::Resize(int32 width, int32 height)
@@ -616,6 +618,7 @@ void GPUSwapChainVulkan::Present(bool vsync)
     acquiredBackBuffer.SubmitCmdBuffer = context->GetCmdBufferManager()->GetActiveCmdBuffer();
 
     context->GetCmdBufferManager()->SubmitActiveCmdBuffer(_backBuffers[_acquiredImageIndex].RenderingDoneSemaphore);
+    acquiredBackBuffer.SubmitCmdBufferFenceCounter = acquiredBackBuffer.SubmitCmdBuffer->GetSubmittedFenceCounter();
 
     // Present the back buffer to the viewport window
     const auto result = TryPresent(DoPresent, _device->PresentQueue, true);
