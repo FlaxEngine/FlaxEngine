@@ -29,8 +29,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
                                             patchesCount,
                                             patchesCount * 16,
                                             chunkSize,
-                                            1.0f / (resolution.X + 1e-9f),
-                                            1.0f / (resolution.Z + 1e-9f),
+                                            Mathf.Abs(resolution.X),
+                                            Mathf.Abs(resolution.Z),
                                             totalSize.X / Units.Meters2Units * 0.001f,
                                             totalSize.Z / Units.Meters2Units * 0.001f
                 );

@@ -214,6 +214,12 @@ namespace Flax.Build
         public static bool ProjectFormatVSCode = false;
 
         /// <summary>
+        /// Generates CMake facade project files for CLion. Valid only with -genproject option.
+        /// </summary>
+        [CommandLine("clion", "Generates CMake facade project files for CLion. Valid only with -genproject option.")]
+        public static bool ProjectFormatCLion = false;
+
+        /// <summary>
         /// Generates Visual Studio 2022 project format files for Rider. Valid only with -genproject option.
         /// </summary>
         [CommandLine("rider", "Generates Visual Studio 2022 project format files for Rider. Valid only with -genproject option.")]
