@@ -662,11 +662,9 @@ namespace FlaxEditor.Windows
         {
             base.OnMouseLeave();
 
-            // Remove focus from game window when mouse moves out and the cursor is hidden during game
-            if (ContainsFocus && Parent != null && Editor.IsPlayMode && !Screen.CursorVisible && Screen.CursorLock == CursorLockMode.None)
-            {
+            // Remove focus from game window
+            if ((ContainsFocus && Parent != null) && !Editor.IsPlayMode || Editor.IsPlayMode && !Screen.CursorVisible && Screen.CursorLock == CursorLockMode.None)
                 Parent.Focus();
-            }
         }
 
         /// <inheritdoc />
