@@ -271,7 +271,11 @@ void ScreenService::Draw()
 		auto win = Engine::MainWindow;
 		if (win)
 		{
-			win->SetClientSize(Size.GetValue());
+            Float2 sizeDelta = Size.GetValue() - win->GetClientSize();
+            Rectangle newBiunds(win->GetClientPosition(), Size.GetValue());
+            if (!win->IsMaximized())
+                newBiunds -= sizeDelta * 0.5f;
+            win->SetClientBounds(newBiunds);
 		}
 
 		Size.Reset();
