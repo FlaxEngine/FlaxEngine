@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.CustomEditors.GUI;
+using FlaxEditor.GUI;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Content;
 using FlaxEditor.CustomEditors.Elements;
