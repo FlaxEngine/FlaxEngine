@@ -471,9 +471,13 @@ namespace Flax.Build
                         // Copy AOT build products
                         foreach (var outputFile in options.OutputFiles)
                         {
-                            // Skip if deployed file is already valid
                             var deployedFilePath = Path.Combine(outputRoot, Path.GetFileName(outputFile));
-                            deployedFilePath = deployedFilePath.Replace(Path.GetFileNameWithoutExtension(outputFile), outputName);
+                            if (baseOptions.ManagedAssemblyExtension != ".dll")
+                            {
+                                deployedFilePath = deployedFilePath.Replace(Path.GetFileNameWithoutExtension(outputFile), outputName);
+                            }
+
+                            // Skip if deployed file is already up-to-date
                             if (!File.Exists(deployedFilePath) || File.GetLastWriteTime(outputFile) > File.GetLastWriteTime(deployedFilePath))
                             {
                                 // Copy to the destination folder
