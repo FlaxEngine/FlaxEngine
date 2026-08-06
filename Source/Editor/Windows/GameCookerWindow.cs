@@ -1023,7 +1023,7 @@ namespace FlaxEditor.Windows
         }
 
         /// <summary>
-        /// Runs the cooked game for this platform on this device.
+        /// Runs the cooked game from the last build.
         /// </summary>
         public void RunCooked()
         {
