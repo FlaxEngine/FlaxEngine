@@ -129,10 +129,13 @@ namespace FlaxEditor.Options
 
                     float prevInterfaceScale = Options.Interface.InterfaceScale;
                     Options = options;
-                    OnOptionsChanged();
 
-                    // Scale interface relative to the current value (eg. when using system-provided Dpi Scale)
+                    // Scale interface relative to the current value (eg. when using system-provided Dpi Scale).
+                    // Apply this before OnOptionsChanged so newly created fonts get rasterized at the target DPI scale (avoids blurry text).
                     Platform.CustomDpiScale *= Options.Interface.InterfaceScale / prevInterfaceScale;
+                    Font.SetGlobalScale(Platform.DpiScale);
+
+                    OnOptionsChanged();
                 }
                 else
                 {

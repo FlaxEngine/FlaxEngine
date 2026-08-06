@@ -262,6 +262,18 @@ public:
     API_FIELD() static Array<AssetReference<FontAsset>, HeapAllocation> FallbackFonts;
 
     /// <summary>
+    /// Gets the global font scaling factor used to rasterize font glyphs at higher resolutions (eg. for high-DPI displays or UI scaling).
+    /// </summary>
+    API_PROPERTY() static float GetGlobalScale();
+
+    /// <summary>
+    /// Sets the global font scaling factor used to rasterize font glyphs at higher resolutions (eg. for high-DPI displays or UI scaling).
+    /// Calling this rebuilds the cached glyphs and metrics of every loaded font so text rendered afterwards stays crisp at the new scale.
+    /// </summary>
+    /// <param name="scale">The new font scale (must be greater than 0).</param>
+    API_FUNCTION() static void SetGlobalScale(float scale);
+
+    /// <summary>
     /// Gets parent font asset that contains font family used by this font.
     /// </summary>
     API_PROPERTY() FORCE_INLINE FontAsset* GetAsset() const
