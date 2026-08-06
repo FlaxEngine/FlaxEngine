@@ -380,7 +380,7 @@ API_STRUCT() struct FLAXENGINE_API GlobalIlluminationSettings : ISerializable
     float TemporalResponse = 0.9f;
 
     /// <summary>
-    /// Draw distance of the Global Illumination effect. Scene outside the range will use fallback irradiance.
+    /// Camera-centered draw distance of the Global Illumination effect. Scene outside the range will use fallback irradiance. DDGI automatically derives its cascade layout from this distance and the global probe spacing, so continuously blending this value can recreate probe resources and cause a visible lighting reset.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(30), Limit(1000), PostProcessSetting((int)GlobalIlluminationSettingsOverride.Distance)")
     float Distance = 20000.0f;
