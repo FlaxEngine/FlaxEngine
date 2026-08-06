@@ -63,7 +63,13 @@ namespace FlaxEditor.Windows
                 foreach (var e in PerPlatformOptions)
                 {
                     var str = e.Key.ToString();
-                    e.Value.Init("Output/" + str, str);
+                    e.Value.Init("Output/" + str, str, (target) =>
+                    {
+                        GameCookerWin._lastBuilt = new QueueItem() {
+                            Target = target,
+                            Options = BuildOptions.None,
+                        };
+                    });
                 }
             }
 
@@ -90,6 +96,8 @@ namespace FlaxEditor.Windows
 
                 protected abstract BuildPlatform BuildPlatform { get; }
 
+                private Action<BuildTarget> OnBuild = delegate { };
+
                 protected virtual BuildOptions Options
                 {
                     get
@@ -101,7 +109,7 @@ namespace FlaxEditor.Windows
                     }
                 }
 
-                public virtual void Init(string output, string platformDataSubDir)
+                public virtual void Init(string output, string platformDataSubDir, Action<BuildTarget> onBuild)
                 {
                     Output = output;
 
@@ -152,6 +160,8 @@ namespace FlaxEditor.Windows
 
                     // Check if can find installed tools for this platform
                     IsAvailable = Directory.Exists(Path.Combine(Globals.StartupFolder, "Source", "Platforms", platformDataSubDir, "Binaries"));
+
+                    OnBuild = onBuild;
                 }
 
                 public virtual void OnNotAvailableLayout(LayoutElementsContainer layout)
@@ -207,6 +217,12 @@ namespace FlaxEditor.Windows
                 {
                     var output = StringUtils.ConvertRelativePathToAbsolute(Globals.ProjectFolder, StringUtils.NormalizePath(Output));
                     GameCooker.Build(BuildPlatform, ConfigurationMode, output, Options, CustomDefines);
+                    OnBuild?.Invoke(new BuildTarget() {
+                        Platform = BuildPlatform,
+                        Mode = ConfigurationMode,
+                        Output = output,
+                        CustomDefines = CustomDefines
+                    });
                 }
             }
 
