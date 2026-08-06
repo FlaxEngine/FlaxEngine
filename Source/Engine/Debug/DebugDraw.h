@@ -74,8 +74,10 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     API_FUNCTION() static bool CanClear(void* context = nullptr);
 #endif
 
-    // Gets the last view position when rendering the current context. Can be used for custom culling or LODing when drawing more complex shapes.
-    static Vector3 GetViewPos();
+    // Gets the last view position (world-space) when rendering the current context. Can be used for custom culling or LODing when drawing more complex shapes.
+    static Vector3 GetViewPosition();
+    // Gets the last view origin (world-space) when rendering the current context. Can be used for custom culling or LODing when drawing more complex shapes.
+    static Vector3 GetViewOrigin();
     // Gets the last view frustum when rendering the current context. Can be used for custom culling or LODing when drawing more complex shapes.
     static BoundingFrustum GetViewFrustum();
 
@@ -265,6 +267,16 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
     API_FUNCTION() static void DrawCircle(const Vector3& position, const Float3& normal, float radius, const Color& color = Color::White, float duration = 0.0f, bool depthTest = true);
+    
+    /// <summary>
+    /// Draws the point facing camera.
+    /// </summary>
+    /// <param name="position">The center position.</param>
+    /// <param name="radius">The radius.</param>
+    /// <param name="color">The color.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    API_FUNCTION() static void DrawPoint(const Vector3& position, float radius, const Color& color = Color::White, float duration = 0.0f, bool depthTest = true);
 
     /// <summary>
     /// Draws the wireframe triangle.
@@ -778,6 +790,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
 #define DEBUG_DRAW_LINES(lines, transform, color, duration, depthTest)                                      DebugDraw::DrawLines(lines, transform, color, duration, depthTest)
 #define DEBUG_DRAW_BEZIER(p1, p2, p3, p4, color, duration, depthTest)                                       DebugDraw::DrawBezier(p1, p2, p3, p4, color, duration, depthTest)
 #define DEBUG_DRAW_CIRCLE(position, normal, radius, color, duration, depthTest)                             DebugDraw::DrawCircle(position, normal, radius, color, duration, depthTest)
+#define DEBUG_DRAW_POINT(position, radius, color, duration, depthTest)                                      DebugDraw::DrawPoint(position, radius, color, duration, depthTest)
 #define DEBUG_DRAW_TRIANGLE(v0, v1, v2, color, duration, depthTest)                                         DebugDraw::DrawTriangle(v0, v1, v2, color, duration, depthTest)
 #define DEBUG_DRAW_TRIANGLES(vertices, color, duration, depthTest)                                          DebugDraw::DrawTriangles(vertices, color, duration, depthTest)
 #define DEBUG_DRAW_TRIANGLES_EX(vertices, indices, color, duration, depthTest)                              DebugDraw::DrawTriangles(vertices, indices, color, duration, depthTest)

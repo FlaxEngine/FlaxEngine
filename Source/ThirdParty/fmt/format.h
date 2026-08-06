@@ -37,7 +37,6 @@
 #include <stdint.h>
 #include <limits>
 #include <initializer_list>
-#include <iterator>
 
 #include "core.h"
 
@@ -464,10 +463,12 @@ FMT_INLINE void assume(bool condition) {
 #endif
 }
 
+#if FMT_USE_ITERATOR
 // An approximation of iterator_t for pre-C++20 systems.
 template <typename T>
 using iterator_t = decltype(std::begin(std::declval<T&>()));
 template <typename T> using sentinel_t = decltype(std::end(std::declval<T&>()));
+#endif
 
 #if FMT_USE_STRING
 // A workaround for std::string not having mutable data() until C++17.
@@ -3407,6 +3408,7 @@ auto join(It begin, Sentinel end, string_view sep) -> join_view<It, Sentinel> {
   return {begin, end, sep};
 }
 
+#if FMT_USE_ITERATOR
 /**
   \rst
   Returns a view that formats `range` with elements separated by `sep`.
@@ -3428,6 +3430,7 @@ auto join(Range&& range, string_view sep)
     -> join_view<detail::iterator_t<Range>, detail::sentinel_t<Range>> {
   return join(std::begin(range), std::end(range), sep);
 }
+#endif
 
 #if FMT_USE_STRING
 /**

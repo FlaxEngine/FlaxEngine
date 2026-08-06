@@ -21,27 +21,7 @@
 
 String AudioTool::Options::ToString() const
 {
-    return String::Format(TEXT("Format:{}, DisableStreaming:{}, Is3D:{}, Quality:{}, BitDepth:{}"), ScriptingEnum::ToString(Format), DisableStreaming, Is3D, Quality, (int32)BitDepth);
-}
-
-void AudioTool::Options::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    SERIALIZE_GET_OTHER_OBJ(AudioTool::Options);
-
-    SERIALIZE(Format);
-    SERIALIZE(DisableStreaming);
-    SERIALIZE(Is3D);
-    SERIALIZE(Quality);
-    SERIALIZE(BitDepth);
-}
-
-void AudioTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    DESERIALIZE(Format);
-    DESERIALIZE(DisableStreaming);
-    DESERIALIZE(Is3D);
-    DESERIALIZE(Quality);
-    DESERIALIZE(BitDepth);
+    return String::Format(TEXT("Volume: {}, Format:{}, DisableStreaming:{}, Is3D:{}, Quality:{}, BitDepth:{}"), Volume, ScriptingEnum::ToString(Format), DisableStreaming, Is3D, Quality, (int32)BitDepth);
 }
 
 #endif

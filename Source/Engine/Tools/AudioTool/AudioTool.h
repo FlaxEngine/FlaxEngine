@@ -42,6 +42,13 @@ public:
     API_STRUCT(Attributes="HideInEditor") struct FLAXENGINE_API Options : public ISerializable
     {
         DECLARE_SCRIPTING_TYPE_MINIMAL(Options);
+        API_AUTO_SERIALIZATION();
+
+        /// <summary>
+        /// The audio volume. Can be used to scale source audio data at import time.
+        /// </summary>
+        API_FIELD(Attributes="EditorOrder(5), Limit(0, 10, 0.01f)")
+        float Volume = 1;
 
         /// <summary>
         /// The audio data format to import the audio clip as.
@@ -74,10 +81,6 @@ public:
         BitDepth BitDepth = BitDepth::_16;
 
         String ToString() const;
-
-        // [ISerializable]
-        void Serialize(SerializeStream& stream, const void* otherObj) override;
-        void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     };
 #endif
 

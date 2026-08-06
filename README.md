@@ -80,7 +80,7 @@ Follow the instructions below to compile and run the engine from source.
 * Open workspace with XCode or Visual Studio Code
 * Build and run (configuration `Editor.Mac.Development`)
 
-#### Troubleshooting
+## Troubleshooting
 
 * `Could not execute because the specified command or file was not found.`
 

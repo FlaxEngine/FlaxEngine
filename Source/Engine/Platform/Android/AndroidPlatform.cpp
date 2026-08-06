@@ -963,7 +963,7 @@ void AndroidPlatform::Tick()
     // Pool app events
     int events;
     android_poll_source* source;
-    while (ALooper_pollAll(0, nullptr, &events, reinterpret_cast<void**>(&source)) >= 0)
+    while (ALooper_pollOnce(0, nullptr, &events, reinterpret_cast<void**>(&source)) >= 0)
     {
         // Process event
         if (source != nullptr)

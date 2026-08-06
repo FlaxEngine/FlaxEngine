@@ -149,6 +149,18 @@ bool GameplayGlobals::Save(const StringView& path)
     return false;
 }
 
+void GameplayGlobals::GetReferences(Array<Guid>& assets, Array<String>& files) const
+{
+    BinaryAsset::GetReferences(assets, files);
+
+    for (auto& e : Variables)
+    {
+        auto asset = (Asset*)e.Value.DefaultValue;
+        if (asset)
+            assets.Add(asset->GetID());
+    }
+}
+
 #endif
 
 void GameplayGlobals::InitAsVirtual()

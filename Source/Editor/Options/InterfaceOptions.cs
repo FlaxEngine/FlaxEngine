@@ -189,12 +189,18 @@ namespace FlaxEditor.Options
             /// <summary>
             /// Determined automatically based on the system and any known compatibility issues with native decorations.
             /// </summary>
+#if PLATFORM_MAC && !PLATFORM_SDL
+            [HideInEditor]
+#endif
             Auto,
 
             /// <summary>
             /// Automatically choose most compatible window decorations for child windows, prefer custom decorations on main window.
             /// </summary>
             [EditorDisplay(Name = "Auto (Child Only)")]
+#if PLATFORM_MAC && !PLATFORM_SDL
+            [HideInEditor]
+#endif
             AutoChildOnly,
 
             /// <summary>
@@ -307,18 +313,18 @@ namespace FlaxEditor.Options
         [EditorDisplay("Interface"), EditorOrder(322)]
         public bool ScrollToScriptOnAdd { get; set; } = true;
 
-#if PLATFORM_SDL
+#if PLATFORM_SDL || PLATFORM_MAC
         /// <summary>
         /// Gets or sets a value indicating whether use native window title bar decorations in child windows. Editor restart required.
         /// </summary>
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS || PLATFORM_MAC
         [DefaultValue(WindowDecorationsType.ClientSide)]
 #else
         [DefaultValue(WindowDecorationsType.AutoChildOnly)]
 #endif
         [EditorDisplay("Tabs & Windows"), EditorOrder(70), Tooltip("Determines whether use native window title bar decorations. Editor restart required.")]
         public WindowDecorationsType WindowDecorations { get; set; } =
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS || PLATFORM_MAC
             WindowDecorationsType.ClientSide;
 #else
             WindowDecorationsType.AutoChildOnly;

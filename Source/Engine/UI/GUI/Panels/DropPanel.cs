@@ -73,6 +73,33 @@ namespace FlaxEngine.GUI
         public string HeaderText { get; set; }
 
         /// <summary>
+        /// The active search text query used to highlight matching parts of the header text.
+        /// </summary>
+        public string SearchText = string.Empty;
+
+        private string _lastSearchText;
+        private string _lastHeaderText;
+        private int _highlightIndex = -1;
+
+        private void UpdateHighlights()
+        {
+            if (_lastSearchText == SearchText && _lastHeaderText == HeaderText)
+                return;
+
+            _lastSearchText = SearchText;
+            _lastHeaderText = HeaderText;
+
+            if (!string.IsNullOrEmpty(SearchText) && !string.IsNullOrEmpty(HeaderText))
+            {
+                _highlightIndex = HeaderText.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                _highlightIndex = -1;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the height of the header.
         /// </summary>
         [EditorOrder(20), Limit(1, 10000, 0.1f), Tooltip("The height of the panel header.")]
@@ -411,6 +438,21 @@ namespace FlaxEngine.GUI
 
             Render2D.PushClip(textRect);
             Render2D.DrawText(HeaderTextFont.GetFont(), HeaderTextMaterial, HeaderText, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
+            UpdateHighlights();
+            if (_highlightIndex >= 0)
+            {
+                var font = HeaderTextFont.GetFont();
+                if (font != null)
+                {
+                    var highlightColor = Style.Current.ProgressNormal * 0.6f;
+                    var textSize = font.MeasureText(HeaderText);
+                    var textY = (HeaderHeight - textSize.Y) * 0.5f;
+                    var start = font.GetCharPosition(HeaderText, _highlightIndex);
+                    var end = font.GetCharPosition(HeaderText, _highlightIndex + SearchText.Length);
+                    var highlightRect = new Rectangle(start.X + textRect.X, textY, end.X - start.X, textSize.Y);
+                    Render2D.FillRectangle(highlightRect, highlightColor);
+                }
+            }
             Render2D.PopClip();
 
             if (!_isClosed && EnableContainmentLines)

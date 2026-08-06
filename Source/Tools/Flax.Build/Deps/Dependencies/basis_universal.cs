@@ -134,6 +134,8 @@ namespace Flax.Deps.Dependencies
                     case TargetPlatform.Windows:
                     {
                         cmakeArgs = ".. -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL " + cmakeArgs;
+                        if (architecture == TargetArchitecture.ARM64)
+                            cmakeArgs += " -DBASISU_SSE=OFF";
                         RunCmake(buildDir, platform, architecture, cmakeArgs);
                         BuildCmake(buildDir, configuration, options:Utilities.RunOptions.ConsoleLogOutput);
                         CopyLib(platform, Path.Combine(buildDir, configuration), depsFolder, "basisu_encoder"); 

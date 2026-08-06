@@ -85,6 +85,7 @@ public:
     void InitAsVirtual() override;
 #if USE_EDITOR
     bool Save(const StringView& path = StringView::Empty) override;
+    void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
 #endif
 
 protected:

@@ -86,7 +86,8 @@ public:
     StringAsUTF8(const Char* text, int32 length)
     {
         int32 lengthUtf8;
-        if (length + 1 < InlinedSize)
+        // UTF-8 can use up to 3 bytes per UTF-16 code unit
+        if (length * 3 + 1 < InlinedSize)
         {
             StringUtils::ConvertUTF162UTF8(text, this->_inlined, length, lengthUtf8);
             this->_inlined[lengthUtf8] = 0;

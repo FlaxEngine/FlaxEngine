@@ -81,28 +81,10 @@ namespace FlaxEditor.Windows
                     _navigationUndo.Push(source);
                 }
 
-                // Show folder contents and select tree node
-                if (!_showAllContentInTree)
-                    RefreshView(target);
-                _tree.Select(target);
-                target.ExpandAllParents();
-
                 // Clear redo list
                 _navigationRedo.Clear();
 
-                // Set valid sizes for stacks
-                //RedoList.SetSize(32);
-                //UndoList.SetSize(32);
-
-                // Update search
-                if (!_showAllContentInTree)
-                    UpdateItemsSearch();
-
-                // Unlock navigation
-                _navigationUnlocked = true;
-
-                // Update UI
-                UpdateUI();
+                DoNavigate(target);
             }
         }
 
@@ -123,25 +105,7 @@ namespace FlaxEditor.Windows
                 // Add to Redo list
                 _navigationRedo.Push(SelectedNode);
 
-                // Select node
-                if (!_showAllContentInTree)
-                    RefreshView(node);
-                _tree.Select(node);
-                node.ExpandAllParents();
-
-                // Set valid sizes for stacks
-                //RedoList.SetSize(32);
-                //UndoList.SetSize(32);
-
-                // Update search
-                if (!_showAllContentInTree)
-                    UpdateItemsSearch();
-
-                // Unlock navigation
-                _navigationUnlocked = true;
-
-                // Update UI
-                UpdateUI();
+                DoNavigate(node);
                 if (!_showAllContentInTree)
                     _view.SelectFirstItem();
             }
@@ -164,25 +128,7 @@ namespace FlaxEditor.Windows
                 // Add to Undo list
                 _navigationUndo.Push(SelectedNode);
 
-                // Select node
-                if (!_showAllContentInTree)
-                    RefreshView(node);
-                _tree.Select(node);
-                node.ExpandAllParents();
-
-                // Set valid sizes for stacks
-                //RedoList.SetSize(32);
-                //UndoList.SetSize(32);
-
-                // Update search
-                if (!_showAllContentInTree)
-                    UpdateItemsSearch();
-
-                // Unlock navigation
-                _navigationUnlocked = true;
-
-                // Update UI
-                UpdateUI();
+                DoNavigate(node);
                 if (!_showAllContentInTree)
                     _view.SelectFirstItem();
             }
@@ -212,6 +158,32 @@ namespace FlaxEditor.Windows
             _navigationUndo.Clear();
             _navigationRedo.Clear();
             UpdateUI();
+        }
+
+        private void DoNavigate(ContentFolderTreeNode node)
+        {
+            // Select node
+            if (!_showAllContentInTree)
+                RefreshView(node);
+            _tree.Select(node);
+            node.ExpandAllParents();
+
+            // Set valid sizes for stacks
+            //RedoList.SetSize(32);
+            //UndoList.SetSize(32);
+
+            // Update search
+            if (!_showAllContentInTree)
+                UpdateItemsSearch();
+
+            // Unlock navigation
+            _navigationUnlocked = true;
+
+            UpdateUI();
+
+            // Clear auto-select cache for new/imported files
+            _newFilesCache?.Clear();
+            _newFilesCacheSize = 0;
         }
 
         private void UpdateNavigationBar()

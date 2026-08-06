@@ -431,7 +431,7 @@ namespace FlaxEditor.Viewport.Previews
         {
             base.Draw();
 
-            if (_showCurrentLOD)
+            if (_showCurrentLOD && Model)
             {
                 var asset = Model;
                 var lodIndex = ComputeLODIndex(asset, out var screenSize);

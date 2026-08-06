@@ -66,7 +66,7 @@ namespace FlaxEngine.GUI
         }
         
         /// <summary>
-        /// The vertical alignment of the text.
+        /// The horizontal alignment of the text.
         /// </summary>
         [EditorDisplay("Text Style"), EditorOrder(2024), Tooltip("The horizontal alignment of the text.")]
         public TextAlignment HorizontalAlignment
@@ -268,7 +268,7 @@ namespace FlaxEngine.GUI
                 if (selectedLinesCount == 1)
                 {
                     // Selected is part of single line
-                    Rectangle r1 = new Rectangle(leftEdge.X, leftEdge.Y, rightEdge.X - leftEdge.X, fontHeight);
+                    Rectangle r1 = new Rectangle(leftEdge.X, leftEdge.Y, rightEdge.X - leftEdge.X, textHeight);
                     Render2D.FillRectangle(r1, selectionColor);
                 }
                 else
@@ -276,17 +276,17 @@ namespace FlaxEngine.GUI
                     float leftMargin = _layout.Bounds.Location.X;
 
                     // Selected is more than one line
-                    Rectangle r1 = new Rectangle(leftEdge.X, leftEdge.Y, 1000000000, fontHeight);
+                    Rectangle r1 = new Rectangle(leftEdge.X, leftEdge.Y, 1000000000, textHeight);
                     Render2D.FillRectangle(r1, selectionColor);
                     //
                     for (int i = 3; i <= selectedLinesCount; i++)
                     {
                         leftEdge.Y += textHeight;
-                        Rectangle r = new Rectangle(leftMargin, leftEdge.Y, 1000000000, fontHeight);
+                        Rectangle r = new Rectangle(leftMargin, leftEdge.Y, 1000000000, textHeight);
                         Render2D.FillRectangle(r, selectionColor);
                     }
                     //
-                    Rectangle r2 = new Rectangle(leftMargin, rightEdge.Y, rightEdge.X - leftMargin, fontHeight);
+                    Rectangle r2 = new Rectangle(leftMargin, rightEdge.Y, rightEdge.X - leftMargin, textHeight);
                     Render2D.FillRectangle(r2, selectionColor);
                 }
             }

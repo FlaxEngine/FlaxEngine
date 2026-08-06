@@ -496,7 +496,7 @@ namespace
     FORCE_INLINE float NodeSizeByDistance(const Vector3& nodePosition, bool scaleByDistance)
     {
         if (scaleByDistance)
-            return (float)(Vector3::Distance(DebugDraw::GetViewPos(), nodePosition) / 100);
+            return (float)(Vector3::Distance(DebugDraw::GetViewPosition(), nodePosition) / 100);
         return 5.0f;
     }
 
@@ -507,7 +507,7 @@ namespace
             return;
         Spline::Keyframe* prev = spline->Curve.GetKeyframes().Get();
         Vector3 prevPos = transform.LocalToWorld(prev->Value.Translation);
-        Real distance = Vector3::Distance(prevPos, DebugDraw::GetViewPos());
+        Real distance = Vector3::Distance(prevPos, DebugDraw::GetViewPosition());
         if (distance < METERS_TO_UNITS(800)) // 800m
         {
             // Bezier curve
@@ -540,7 +540,9 @@ namespace
 
 void Spline::OnDebugDraw()
 {
-    if (DebugDraw::GetViewFrustum().Intersects(_sphere))
+    BoundingSphere sphere(_sphere);
+    sphere.Center -= DebugDraw::GetViewOrigin();
+    if (DebugDraw::GetViewFrustum().Intersects(sphere))
         DrawSpline(this, GetSplineColor().AlphaMultiplied(0.7f), _transform, true);
 
     // Base

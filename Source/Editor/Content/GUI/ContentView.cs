@@ -384,7 +384,7 @@ namespace FlaxEditor.Content.GUI
         /// Selects the specified item.
         /// </summary>
         /// <param name="item">The item.</param>
-        /// <param name="additive">If set to <c>true</c> item will be added to the current selection. Otherwise selection will be cleared before.</param>
+        /// <param name="additive">If set to <c>true</c> item will be added to the current selection. Otherwise, selection will be cleared before.</param>
         public void Select(ContentItem item, bool additive = false)
         {
             if (item == null)

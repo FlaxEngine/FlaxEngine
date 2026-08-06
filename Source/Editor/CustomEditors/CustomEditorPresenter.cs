@@ -8,6 +8,7 @@ using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
+using FlaxEditor.CustomEditors.GUI;
 
 namespace FlaxEditor.CustomEditors
 {
@@ -244,9 +245,14 @@ namespace FlaxEditor.CustomEditors
         protected readonly RootEditor Editor;
 
         /// <summary>
-        /// The selected objects list (read-only).
+        /// The current selection.
         /// </summary>
         public readonly ValueContainer Selection = new ValueContainer(ScriptMemberInfo.Null);
+
+        /// <summary>
+        /// The current properties search query.
+        /// </summary>
+        public string SearchText = string.Empty;
 
         /// <summary>
         /// The undo object used by this editor.
@@ -527,6 +533,256 @@ namespace FlaxEditor.CustomEditors
             }
 
             Editor?.RefreshInternal();
+        }
+
+        /// <summary>
+        /// Applies search filter query to the presenter layout controls.
+        /// </summary>
+        public void ApplySearchFilter(string query)
+        {
+            SearchText = query;
+            if (Root == null)
+                return;
+
+            var isQueryEmpty = string.IsNullOrEmpty(query);
+            var groupMatchCache = new Dictionary<DropPanel, bool>();
+            UpdateFilter(Root, query, isQueryEmpty, groupMatchCache);
+            UpdatePropertiesListsVisibility(Panel, query);
+            UpdateGroupsVisibility(Panel, query);
+            Panel.PerformLayout();
+        }
+
+        /// <summary>
+        /// Updates the visibility of properties lists and drop panels based on the current search query.
+        /// </summary>
+        public void UpdateGroupsAndListsVisibility()
+        {
+            if (string.IsNullOrEmpty(SearchText))
+            {
+                RestoreVisibilities(Panel);
+            }
+            else
+            {
+                UpdatePropertiesListsVisibility(Panel, SearchText);
+                UpdateGroupsVisibility(Panel, SearchText);
+            }
+            Panel.PerformLayout();
+        }
+
+        private void RestoreVisibilities(Control control)
+        {
+            if (control is DropPanel dropPanel)
+            {
+                dropPanel.SearchText = string.Empty;
+                dropPanel.Visible = true;
+            }
+            else if (control is PropertiesList list)
+            {
+                list.Visible = true;
+            }
+
+            if (control is ContainerControl container)
+            {
+                for (int i = 0; i < container.ChildrenCount; i++)
+                {
+                    RestoreVisibilities(container.GetChild(i));
+                }
+            }
+        }
+
+        private void UpdatePropertiesListsVisibility(Control control, string query)
+        {
+            if (control is PropertiesList list)
+            {
+                if (string.IsNullOrEmpty(query))
+                {
+                    list.Visible = true;
+                }
+                else
+                {
+                    bool anyVisible = false;
+                    foreach (var label in list.Element.Labels)
+                    {
+                        if (label.Visible)
+                        {
+                            anyVisible = true;
+                            break;
+                        }
+                    }
+                    list.Visible = anyVisible;
+                }
+            }
+
+            if (control is ContainerControl container)
+            {
+                for (int i = 0; i < container.ChildrenCount; i++)
+                {
+                    UpdatePropertiesListsVisibility(container.GetChild(i), query);
+                }
+            }
+        }
+
+        private void UpdateGroupsVisibility(Control control, string query)
+        {
+            if (control is DropPanel dropPanel)
+            {
+                dropPanel.SearchText = query;
+                for (int i = 0; i < dropPanel.ChildrenCount; i++)
+                {
+                    UpdateGroupsVisibility(dropPanel.GetChild(i), query);
+                }
+
+                if (string.IsNullOrEmpty(query))
+                {
+                    dropPanel.Visible = true;
+                }
+                else
+                {
+                    dropPanel.Visible = HasVisibleDescendants(dropPanel);
+                }
+            }
+            else if (control is ContainerControl container)
+            {
+                for (int i = 0; i < container.ChildrenCount; i++)
+                {
+                    UpdateGroupsVisibility(container.GetChild(i), query);
+                }
+            }
+        }
+
+        private bool HasVisibleDescendants(ContainerControl container)
+        {
+            for (int i = 0; i < container.ChildrenCount; i++)
+            {
+                var child = container.GetChild(i);
+                if (child is PropertyNameLabel label && label.Visible)
+                {
+                    return true;
+                }
+                if (child is DropPanel dropPanel && dropPanel.Visible)
+                {
+                    return true;
+                }
+                if (child is ContainerControl subContainer && subContainer.Visible && HasVisibleDescendants(subContainer))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private bool IsInMatchingGroup(Control control, string query, Dictionary<DropPanel, bool> groupMatchCache)
+        {
+            if (string.IsNullOrEmpty(query))
+                return false;
+
+            var p = control.Parent;
+            while (p != null)
+            {
+                if (p is DropPanel dropPanel)
+                {
+                    if (!groupMatchCache.TryGetValue(dropPanel, out bool matches))
+                    {
+                        var headerText = dropPanel.HeaderText;
+                        matches = headerText != null && headerText.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
+                        groupMatchCache[dropPanel] = matches;
+                    }
+                    if (matches)
+                        return true;
+                }
+                p = p.Parent;
+            }
+            return false;
+        }
+
+        private bool UpdateFilter(CustomEditor editor, string query, bool forceVisible, Dictionary<DropPanel, bool> groupMatchCache)
+        {
+            bool isVisible = false;
+
+            bool labelMatches = false;
+            if (editor.LinkedLabel != null)
+            {
+                editor.LinkedLabel.SearchText = query;
+                if (forceVisible)
+                {
+                    labelMatches = true;
+                }
+                else if (!string.IsNullOrEmpty(query))
+                {
+                    var labelText = editor.LinkedLabel.Text.ToString();
+                    if (labelText.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        labelMatches = true;
+                    }
+                    else if (IsInMatchingGroup(editor.LinkedLabel, query, groupMatchCache))
+                    {
+                        labelMatches = true;
+                    }
+                }
+            }
+
+            bool isThisEditorVisible = forceVisible || labelMatches;
+
+            bool anyChildVisible = false;
+            bool forceChildrenVisible = isThisEditorVisible;
+
+            foreach (var child in editor.ChildrenEditors)
+            {
+                if (UpdateFilter(child, query, forceChildrenVisible, groupMatchCache))
+                {
+                    anyChildVisible = true;
+                }
+            }
+
+            isVisible = isThisEditorVisible || anyChildVisible;
+
+            if (editor.LinkedLabel != null)
+            {
+                SetLabelAndControlsVisible(editor.LinkedLabel, isVisible);
+            }
+
+            if (editor.Style == DisplayStyle.Group && editor.Layout != null && editor.Layout.Control != null)
+            {
+                editor.Layout.Control.Visible = isVisible;
+            }
+
+            return isVisible;
+        }
+
+        private void SetLabelAndControlsVisible(PropertyNameLabel label, bool visible)
+        {
+            label.Visible = visible;
+            var container = label.FirstChildControlContainer ?? label.Parent as PropertiesList;
+            if (container != null)
+            {
+                int startIndex = label.FirstChildControlIndex;
+                if (startIndex >= 0)
+                {
+                    int endIndex = container.Children.Count;
+                    var labels = container.Element.Labels;
+                    int labelIndex = labels.IndexOf(label);
+                    if (labelIndex >= 0 && labelIndex < labels.Count - 1)
+                    {
+                        for (int i = labelIndex + 1; i < labels.Count; i++)
+                        {
+                            var nextContainer = labels[i].FirstChildControlContainer ?? labels[i].Parent as PropertiesList;
+                            if (nextContainer == container)
+                            {
+                                endIndex = labels[i].FirstChildControlIndex - 1;
+                                break;
+                            }
+                        }
+                    }
+
+                    for (int i = startIndex; i < endIndex; i++)
+                    {
+                        if (i < container.Children.Count)
+                        {
+                            container.Children[i].Visible = visible;
+                        }
+                    }
+                }
+            }
         }
 
         /// <inheritdoc />

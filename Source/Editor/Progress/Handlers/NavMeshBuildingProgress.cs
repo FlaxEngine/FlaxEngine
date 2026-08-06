@@ -12,6 +12,8 @@ namespace FlaxEditor.Progress.Handlers
     {
         private bool _isActive;
 
+        internal bool DirtyScenesOnEnd;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="NavMeshBuildingProgress"/> class.
         /// </summary>
@@ -34,6 +36,11 @@ namespace FlaxEditor.Progress.Handlers
                 }
                 else
                 {
+                    if (DirtyScenesOnEnd)
+                    {
+                        DirtyScenesOnEnd = false;
+                        Editor.Instance.Scene.MarkAllScenesEdited();
+                    }
                     OnEnd();
                 }
             }

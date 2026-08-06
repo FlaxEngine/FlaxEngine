@@ -850,6 +850,11 @@ namespace FlaxEditor.Scripting
         public bool IsVoid => _managed == typeof(void);
 
         /// <summary>
+        /// Gets a value indicating whether this type is <see cref="FlaxEngine.Object"/> (eg. script or actor).
+        /// </summary>
+        public bool IsScriptingObject => FlaxObject.IsAssignableFrom(this);
+
+        /// <summary>
         /// Gets a value indicating whether the type is static.
         /// </summary>
         public bool IsStatic => _managed != null ? _managed.IsSealed && _managed.IsAbstract : _custom != null && _custom.IsStatic;

@@ -138,7 +138,8 @@ namespace FlaxEditor.GUI.Tree
         /// Selects single tree node.
         /// </summary>
         /// <param name="node">Node to select.</param>
-        public void Select(TreeNode node)
+        /// <param name="additive">If set to <c>true</c> item will be added to the current selection. Otherwise, selection will be cleared before.</param>
+        public void Select(TreeNode node, bool additive = false)
         {
             if (node == null)
                 throw new ArgumentNullException();
@@ -151,8 +152,16 @@ namespace FlaxEditor.GUI.Tree
             var prev = new List<TreeNode>(Selection);
 
             // Update selection
-            Selection.Clear();
-            Selection.Add(node);
+            if (additive)
+            {
+                if (!Selection.Contains(node))
+                    Selection.Add(node);
+            }
+            else
+            {
+                Selection.Clear();
+                Selection.Add(node);
+            }
 
             // Ensure that node can be visible (all it's parents are expanded)
             node.ExpandAllParents();

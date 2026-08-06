@@ -356,8 +356,8 @@ MaterialBase* SplineModel::GetMaterial(int32 entryIndex)
         Model->WaitForLoaded();
     else
         return nullptr;
-    CHECK_RETURN(entryIndex >= 0 && entryIndex < Entries.Count(), nullptr);
-    MaterialBase* material = Entries[entryIndex].Material.Get();
+    CHECK_RETURN(entryIndex >= 0 && entryIndex < Model->MaterialSlots.Count(), nullptr);
+    MaterialBase* material = entryIndex < Entries.Count() ? Entries[entryIndex].Material.Get() : nullptr;
     if (!material)
     {
         material = Model->MaterialSlots[entryIndex].Material.Get();

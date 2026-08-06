@@ -85,21 +85,31 @@ CreateAssetResult ImportAudio::Import(CreateAssetContext& context, AudioDecoder&
     LOG(Info, "Audio: {0}kHz, channels: {1}, Bit depth: {2}, Length: {3}s", info.SampleRate / 1000.0f, info.NumChannels, info.BitDepth, info.GetLength());
 
     // Load the whole audio data
-    uint32 bytesPerSample = info.BitDepth / 8;
-    uint32 bufferSize = info.NumSamples * bytesPerSample;
     DataContainer<byte> sampleBuffer;
-    sampleBuffer.Link(audioData.Get());
+    sampleBuffer.Link(audioData.Get(), info.NumSamples * (info.BitDepth / 8));
+
+    if (!Math::IsOne(options.Volume))
+    {
+        // Scale PCM signal
+        Array<float> pcm;
+        pcm.Resize(info.NumSamples);
+        AudioTool::ConvertToFloat(sampleBuffer.Get(), info.BitDepth, pcm.Get(), info.NumSamples);
+        for (float& e : pcm)
+            e *= options.Volume;
+        sampleBuffer.Allocate(info.NumSamples * sizeof(int32));
+        AudioTool::ConvertFromFloat(pcm.Get(), (int32*)sampleBuffer.Get(), info.NumSamples);
+        info.BitDepth = 32;
+    }
 
     // Convert bit depth if need to
     uint32 outputBitDepth = (uint32)options.BitDepth;
     if (outputBitDepth != info.BitDepth)
     {
+        DataContainer<byte> sampleBufferPrev = MoveTemp(sampleBuffer);
         const uint32 outBufferSize = info.NumSamples * (outputBitDepth / 8);
         sampleBuffer.Allocate(outBufferSize);
-        AudioTool::ConvertBitDepth(audioData.Get(), info.BitDepth, sampleBuffer.Get(), outputBitDepth, info.NumSamples);
+        AudioTool::ConvertBitDepth(sampleBufferPrev.Get(), info.BitDepth, sampleBuffer.Get(), outputBitDepth, info.NumSamples);
         info.BitDepth = outputBitDepth;
-        bytesPerSample = info.BitDepth / 8;
-        bufferSize = outBufferSize;
     }
 
     // Base
@@ -157,13 +167,14 @@ CreateAssetResult ImportAudio::Import(CreateAssetContext& context, AudioDecoder&
         if (context.AllocateChunk(0))
             return CreateAssetResult::CannotAllocateChunk;
 
-        WRITE_DATA(0, sampleBuffer.Get(), bufferSize);
+        WRITE_DATA(0, sampleBuffer.Get(), sampleBuffer.Length());
     }
     else
     {
         // Split audio data into a several chunks (uniform data spread)
         const uint32 minChunkSize = 1 * 1024 * 1024; // 1 MB
-        const uint32 dataAlignment = info.NumChannels * bytesPerSample * ASSET_FILE_DATA_CHUNKS; // Ensure to never split samples in-between (eg. 24-bit that uses 3 bytes)
+        const uint32 bufferSize = sampleBuffer.Length();
+        const uint32 dataAlignment = info.NumChannels * (info.BitDepth / 8) * ASSET_FILE_DATA_CHUNKS; // Ensure to never split samples in-between (eg. 24-bit that uses 3 bytes)
         const uint32 chunkSize = Math::AlignUp(Math::Max(minChunkSize, bufferSize / ASSET_FILE_DATA_CHUNKS), dataAlignment);
         const int32 chunksCount = Math::CeilToInt((float)bufferSize / (float)chunkSize);
         ASSERT(chunksCount > 0 && chunksCount <= ASSET_FILE_DATA_CHUNKS);

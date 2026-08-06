@@ -707,29 +707,58 @@ namespace FlaxEditor.CustomEditors.Editors
             if (!HasDifferentTypes)
             {
                 var value = Values[0];
+                var type = Values.Type;
                 if (value == null)
                 {
                     // Check if it's an object type that can be created in editor
-                    var type = Values.Type;
-                    if (type != ScriptMemberInfo.Null && type.CanCreateInstance)
+                    if (type != ScriptMemberInfo.Null)
                     {
-                        layout = layout.Space(20);
-
-                        const float ButtonSize = 14.0f;
-                        var button = new Button
+                        ScriptType[] types = null;
+                        if (type.IsAbstract || type.IsInterface)
                         {
-                            Text = "+",
-                            TooltipText = "Create a new instance of the object",
-                            Size = new Float2(ButtonSize, ButtonSize),
-                            AnchorPreset = AnchorPresets.MiddleRight,
-                            Parent = layout.ContainerControl,
-                            Location = new Float2(layout.ContainerControl.Width - ButtonSize - 4, (layout.ContainerControl.Height - ButtonSize) * 0.5f),
-                        };
-                        button.Clicked += () => SetValue(Values.Type.CreateInstance());
+                            // Show picker with all types that implement specific class/interface but are not abstract
+                            types = Editor.Instance.CodeEditing.All.Get().Where(x => !x.IsAbstract && x.CanCreateInstance && type.IsAssignableFrom(x)).ToArray();
+                        }
+                        else if (type.CanCreateInstance)
+                        {
+                            types = [type];
+                        }
+
+                        if (types != null && types.Length != 0)
+                        {
+                            layout = layout.Space(20);
+
+                            const float ButtonSize = 14.0f;
+                            var button = new Button
+                            {
+                                Text = "+",
+                                TooltipText = "Create a new instance of the object",
+                                Size = new Float2(ButtonSize, ButtonSize),
+                                AnchorPreset = AnchorPresets.MiddleRight,
+                                Parent = layout.ContainerControl,
+                                Location = new Float2(layout.ContainerControl.Width - ButtonSize - 4, (layout.ContainerControl.Height - ButtonSize) * 0.5f),
+                            };
+                            if (types.Length == 1)
+                            {
+                                // Single type
+                                button.Clicked += () => SetValue(types[0].CreateInstance());
+                            }
+                            else
+                            {
+                                // Picker
+                                button.Clicked += () => FlaxEditor.GUI.TypeSearchPopup.Show(button, new Float2(0, button.Height), types, scriptType => { SetValue(scriptType.CreateInstance()); });
+                            }
+                        }
                     }
 
                     layout.Label("<null>");
                     return;
+                }
+                if (!type.IsArray && !type.IsStructure && !type.IsScriptingObject && (type.IsAbstract || type.IsInterface) && value.GetType() != type.Type && layout is GroupElement group)
+                {
+                    // Add button to unset the value to null (eg. to edit it to different type)
+                    var button = group.AddHeaderButton("Reset value to null", 0, FlaxEngine.GUI.Style.Current.Cross);
+                    button.Clicked += (_, _) => SetValue(null);
                 }
 
                 items = GetItemsForType(TypeUtils.GetObjectType(value));
@@ -868,6 +897,28 @@ namespace FlaxEditor.CustomEditors.Editors
                         if (c.LabelIndex != -1 && c.PropertiesList != null && c.PropertiesList.Labels.Count > c.LabelIndex)
                         {
                             var label = c.PropertiesList.Labels[c.LabelIndex];
+                            if (visible && Presenter != null && !string.IsNullOrEmpty(Presenter.SearchText))
+                            {
+                                bool match = label.Text.ToString().IndexOf(Presenter.SearchText, StringComparison.OrdinalIgnoreCase) >= 0;
+                                if (!match)
+                                {
+                                    var p = label.Parent;
+                                    while (p != null)
+                                    {
+                                        if (p is DropPanel dropPanel)
+                                        {
+                                            var headerText = dropPanel.HeaderText;
+                                            if (headerText != null && headerText.IndexOf(Presenter.SearchText, StringComparison.OrdinalIgnoreCase) >= 0)
+                                            {
+                                                match = true;
+                                                break;
+                                            }
+                                        }
+                                        p = p.Parent;
+                                    }
+                                }
+                                visible = match;
+                            }
                             label.Visible = visible;
                             for (int j = label.FirstChildControlIndex; j < c.PropertiesList.Properties.Children.Count; j++)
                             {
@@ -907,6 +958,10 @@ namespace FlaxEditor.CustomEditors.Editors
                     // Remove rules to prevent error in loop
                     _visibleIfCaches = null;
                 }
+            }
+            if (Presenter != null && !string.IsNullOrEmpty(Presenter.SearchText))
+            {
+                Presenter.UpdateGroupsAndListsVisibility();
             }
 
             base.Refresh();

@@ -1,8 +1,8 @@
-#if PLATFORM_WINDOWS || PLATFORM_SDL
+#if PLATFORM_WINDOWS || PLATFORM_SDL || PLATFORM_MAC
 #define USE_IS_FOREGROUND
 #else
 #endif
-#if PLATFORM_SDL
+#if PLATFORM_SDL || PLATFORM_MAC
 #define USE_SDL_WORKAROUNDS
 #endif
 // Copyright (c) Wojciech Figat. All rights reserved.

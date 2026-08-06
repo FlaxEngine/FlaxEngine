@@ -475,7 +475,11 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
                 uv = MaterialValue::Cast(tryGetValue(uvBox, getUVs), VariantType::Float2).Value;
             else
                 uv = TEXT("input.TexCoord.xy");
-            value = writeLocal(VariantType::Float3, String::Format(TEXT("GetWorldPos({1}, {0}.rgb)"), depthSample->Value, uv), node);
+            const auto layer = GetRootLayer();
+            if (layer && layer->Domain == MaterialDomain::PostProcess)
+                value = writeLocal(VariantType::Float3, String::Format(TEXT("GetWorldPos({1}, {0})"), depthSample->Value, uv), node);
+            else // TODO: reimpl GetWorldPos() for other domains (see 'Content/Editor/MaterialTemplates/PostProcess.shader'), can be via matrix inverse in a shader
+                value = ShaderGraphValue::InitForZero(VariantType::Float3);
             break;
         }
         case MaterialSceneTextures::SceneStencil:

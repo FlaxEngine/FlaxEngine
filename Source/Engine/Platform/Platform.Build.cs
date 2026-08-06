@@ -36,7 +36,7 @@ public class Platform : EngineModule
             {
                 options.OutputFiles.Add("dbghelp.lib");
                 options.DelayLoadLibraries.Add("dbghelp.dll");
-                options.DependencyFiles.Add(Path.Combine(options.DepsFolder, "dbghelp.dll"));
+                options.OptionalDependencyFiles.Add(Path.Combine(options.DepsFolder, "dbghelp.dll"));
             }
             if (options.Target.IsEditor)
             {

@@ -472,7 +472,24 @@ void MaterialParameter::Bind(BindMeta& meta) const
                     ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)(_offset + sizeof(Int4)));
                     *((Int4*)(meta.Constants.Get() + _offset)) = (Int4)e->Value.AsInt4();
                     break;
-                default: ;
+                case VariantType::Asset:
+                {
+                    auto texture = Cast<TextureBase>(e->Value.AsAsset);
+                    meta.Context->BindSR(_registerIndex, texture ? texture->GetTexture() : nullptr);
+                    break;
+                }
+                case VariantType::Object:
+                {
+                    // GPU Texture bind must match dimensions of the value archetype (eg. 2d or cube texture)
+                    auto gpuTexture = Cast<GPUTexture>(e->Value.AsObject);
+                    meta.Context->BindSR(_registerIndex, gpuTexture);
+                    break;
+                }
+                default:
+#if !BUILD_RELEASE
+                    LOG(Warning, "Invalid Gameplay Global '{}' ({}) value type '{}' to bind to material", _name, _asAsset->GetPath(), e->Value.Type.ToString());
+#endif
+                    break;
                 }
             }
         }

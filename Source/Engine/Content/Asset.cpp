@@ -430,7 +430,7 @@ void Asset::Reload()
 
         ScopeLock lock(Locker);
 
-        if (IsLoaded())
+        if (IsLoaded() || LastLoadFailed())
         {
             // Unload current data
             unload(true);

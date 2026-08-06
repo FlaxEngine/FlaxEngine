@@ -239,7 +239,7 @@ String CookingData::GetGameBinariesPath() const
         archDir = TEXT("ARM64");
         break;
     default:
-    CRASH;
+        CRASH;
         return String::Empty;
     }
 

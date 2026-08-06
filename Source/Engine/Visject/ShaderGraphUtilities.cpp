@@ -7,6 +7,8 @@
 #include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Core/Math/Vector4.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Content/Assets/Texture.h"
+#include "Engine/Content/Assets/CubeTexture.h"
 #include "Engine/Engine/GameplayGlobals.h"
 #include "Engine/Graphics/Config.h"
 #include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
@@ -172,6 +174,26 @@ const Char* ShaderGraphUtilities::GenerateShaderResources(TextWriterUnicode& wri
         case MaterialParameterType::GPUTextureVolume:
             format = TEXT("Texture3D {0} : register(t{1});");
             break;
+        case MaterialParameterType::GameplayGlobal:
+        {
+            auto asset = Content::LoadAsync<GameplayGlobals>(param.AsGuid);
+            if (!asset || asset->WaitForLoaded())
+                break;
+            GameplayGlobals::Variable variable;
+            if (!asset->Variables.TryGet(param.Name, variable))
+                break;
+            if (Texture::GetStaticType().Fullname == variable.DefaultValue.Type.TypeName)
+            {
+                // Texture
+                format = TEXT("Texture2D {0} : register(t{1});");
+            }
+            else if (CubeTexture::GetStaticType().Fullname == variable.DefaultValue.Type.TypeName)
+            {
+                // Cube Texture
+                format = TEXT("TextureCube {0} : register(t{1});");
+            }
+            break;
+        }
         case MaterialParameterType::GlobalSDF:
             format = TEXT("Texture3D<snorm float> {0}_Tex : register(t{1});\nTexture3D<snorm float> {0}_Mip : register(t{2});");
             zeroOffset = false;

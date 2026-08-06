@@ -10,6 +10,7 @@ struct Transform;
 template<typename T>
 class AssetReference;
 struct ScriptingTypeHandle;
+template<typename Type> ScriptingTypeHandle StaticType();
 
 /// <summary>
 /// Represents an object type that can be interpreted as more than one type.

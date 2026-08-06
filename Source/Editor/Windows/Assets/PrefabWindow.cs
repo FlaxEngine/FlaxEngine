@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Xml;
 using FlaxEditor.Content;
 using FlaxEditor.CustomEditors;
+using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Input;
@@ -29,6 +30,8 @@ namespace FlaxEditor.Windows.Assets
         private readonly PrefabTree _tree;
         private readonly PrefabWindowViewport _viewport;
         private readonly CustomEditorPresenter _propertiesEditor;
+        private SearchBox _propertiesSearchBox;
+        private Panel _propertiesScrollingPanel;
 
         private readonly ToolStripButton _saveButton;
         private readonly ToolStripButton _toolStripUndo;
@@ -142,7 +145,7 @@ namespace FlaxEditor.Windows.Assets
             };
 
             // Split Panel 2
-            _split2 = new SplitPanel(Orientation.Horizontal, ScrollBars.None, ScrollBars.Vertical)
+            _split2 = new SplitPanel(Orientation.Horizontal, ScrollBars.None, ScrollBars.None)
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
@@ -197,9 +200,33 @@ namespace FlaxEditor.Windows.Assets
             _viewport.TransformGizmo.ModeChanged += UpdateToolstrip;
 
             // Prefab properties editor
+            var propHeaderPanel = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                BackgroundColor = Style.Current.Background,
+                IsScrollable = false,
+                Offsets = new Margin(0, 0, 0, 18 + 6),
+                Parent = _split2.Panel2,
+            };
+            _propertiesSearchBox = new SearchBox
+            {
+                AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
+                Parent = propHeaderPanel,
+                Bounds = new Rectangle(4, 4, propHeaderPanel.Width - 8, 18),
+            };
+            _propertiesSearchBox.TextChanged += ApplyPropertiesSearchFilter;
+
+            _propertiesScrollingPanel = new Panel(ScrollBars.Vertical)
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = new Margin(0, 0, propHeaderPanel.Bottom, 0),
+                Parent = _split2.Panel2,
+            };
+
             _propertiesEditor = new CustomEditorPresenter(_undo, null, this);
-            _propertiesEditor.Panel.Parent = _split2.Panel2;
+            _propertiesEditor.Panel.Parent = _propertiesScrollingPanel;
             _propertiesEditor.Modified += MarkAsEdited;
+            _propertiesEditor.AfterLayout += OnPresenterAfterLayout;
 
             // Toolstrip
             _saveButton = _toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save", ref inputOptions.Save);
@@ -579,6 +606,16 @@ namespace FlaxEditor.Windows.Assets
 
         /// <inheritdoc />
         public EditorViewport PresenterViewport => _viewport;
+
+        private void OnPresenterAfterLayout(LayoutElementsContainer layout)
+        {
+            ApplyPropertiesSearchFilter();
+        }
+
+        private void ApplyPropertiesSearchFilter()
+        {
+            _propertiesEditor.ApplySearchFilter(_propertiesSearchBox.Text);
+        }
 
         /// <inheritdoc />
         EditorViewport ISceneEditingContext.Viewport => Viewport;

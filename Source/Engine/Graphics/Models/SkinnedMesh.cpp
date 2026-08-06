@@ -44,7 +44,7 @@ namespace
 
         // Index Buffer
         {
-            if (accessor.AllocateBuffer(MeshBufferType::Index, triangleCount, indexFormat))
+            if (accessor.AllocateBuffer(MeshBufferType::Index, triangleCount * 3, indexFormat))
                 return true;
             auto indexStream = accessor.Index();
             ASSERT(indexStream.IsLinear(indexFormat));
@@ -73,8 +73,7 @@ namespace
                 return true;
 
             auto positionStream = accessor.Position();
-            ASSERT(positionStream.IsLinear(PixelFormat::R32G32B32_Float));
-            positionStream.SetLinear(vertices);
+            positionStream.Set(Span<Float3>(vertices, vertexCount));
             if (normals)
             {
                 auto normalStream = accessor.Normal();

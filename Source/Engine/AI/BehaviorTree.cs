@@ -81,7 +81,7 @@ namespace FlaxEngine
                    !type.IsAbstract &&
                    !type.IsArray &&
                    !type.IsVoid &&
-                   (type.IsStructure || ScriptType.FlaxObject.IsAssignableFrom(type)) &&
+                   (type.IsStructure || type.IsScriptingObject) &&
                    type.IsPublic &&
                    type.CanCreateInstance;
         }

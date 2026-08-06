@@ -69,8 +69,6 @@ bool ValidateStep::Perform(CookingData& data)
             return true;
         }
 
-        // TODO: validate version
-
         AssetInfo info;
         if (!Content::GetAssetInfo(gameSettings->FirstScene, info))
         {
@@ -78,10 +76,6 @@ bool ValidateStep::Perform(CookingData& data)
             return true;
         }
     }
-
-    // TODO: validate more game config
-
-    // TODO: validate all input scenes?
 
     return false;
 }

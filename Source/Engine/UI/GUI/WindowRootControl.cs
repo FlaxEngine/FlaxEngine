@@ -119,7 +119,8 @@ namespace FlaxEngine.GUI
         /// <param name="force">True if move to the front by force, otherwise false.</param>
         public void BringToFront(bool force = false)
         {
-            _window.BringToFront(force);
+            if (_window && _window.IsVisible)
+                _window.BringToFront(force);
         }
 
         /// <summary>

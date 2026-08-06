@@ -21,6 +21,7 @@ namespace FlaxEditor.Content.Import
     {
         private TreeNode _rootNode;
         private CustomEditorPresenter _settingsEditor;
+        private Tree _tree;
 
         /// <summary>
         /// Gets the entries count.
@@ -106,11 +107,11 @@ namespace FlaxEditor.Content.Import
             _settingsEditor.Panel.Parent = splitPanel.Panel2;
 
             // Setup tree
-            var tree = new Tree(true)
+            _tree = new Tree(true)
             {
                 Parent = splitPanel.Panel1
             };
-            tree.RightClick += OnTreeRightClick;
+            _tree.RightClick += OnTreeRightClick;
             _rootNode = new TreeNode(false);
             for (int i = 0; i < entries.Count; i++)
             {
@@ -124,12 +125,12 @@ namespace FlaxEditor.Content.Import
             }
             _rootNode.Expand();
             _rootNode.ChildrenIndent = 0;
-            _rootNode.Parent = tree;
-            tree.Margin = new Margin(0.0f, 0.0f, -14.0f, 2.0f); // Hide root node
-            tree.SelectedChanged += OnSelectedChanged;
+            _rootNode.Parent = _tree;
+            _tree.Margin = new Margin(0.0f, 0.0f, -16.0f, 2.0f); // Hide root node
+            _tree.SelectedChanged += OnSelectedChanged;
 
             // Select the first item
-            tree.Select(_rootNode.Children[0] as TreeNode);
+            _tree.Select(_rootNode.Children[0] as TreeNode);
 
             _dialogSize = new Float2(TotalWidth, EditorHeight + splitPanel.Offsets.Height);
         }
@@ -256,6 +257,13 @@ namespace FlaxEditor.Content.Import
 
             settings.MinimumSize = new Float2(300, 400);
             settings.HasSizingFrame = true;
+        }
+
+        /// <inheritdoc />
+        public override void Focus()
+        {
+            base.Focus();
+            _tree.SelectedNode?.Focus();
         }
     }
 }

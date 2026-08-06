@@ -52,8 +52,67 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// </summary>
         public Script Script
         {
-            get => FlaxEngine.Object.TryFind<Script>(ref ScriptID);
-            set => ScriptID = value?.ID ?? Guid.Empty;
+            get
+            {
+                if (Flags.HasFlag(TrackFlags.PrefabObject))
+                {
+                    // TODO: reuse cached script to improve perf
+                    foreach (var window in Editor.Instance.Windows.Windows)
+                    {
+                        if (window is Windows.Assets.PrefabWindow prefabWindow && prefabWindow.Graph.MainActor)
+                        {
+                            var script = FindScriptWithPrefabObjectID(prefabWindow.Graph.MainActor, ref ScriptID);
+                            if (script != null)
+                                return script;
+                        }
+                    }
+                    return null;
+                }
+                return FlaxEngine.Object.TryFind<Script>(ref ScriptID);
+            }
+            set
+            {
+                if (value != null)
+                {
+                    if (value.HasPrefabLink && !value.HasScene)
+                    {
+                        // Track with prefab object reference assigned in Editor
+                        ScriptID = value.PrefabObjectID;
+                        Flags |= TrackFlags.PrefabObject;
+                    }
+                    else
+                    {
+                        ScriptID = value.ID;
+                        Flags &= ~TrackFlags.PrefabObject;
+                    }
+                }
+                else
+                {
+                    ScriptID = Guid.Empty;
+                    Flags &= ~TrackFlags.PrefabObject;
+                }
+            }
+        }
+
+        private static Script FindScriptWithPrefabObjectID(Actor actor, ref Guid id)
+        {
+            if (actor == null)
+                return null;
+
+            var scripts = actor.Scripts;
+            for (int i = 0; i < scripts.Length; i++)
+            {
+                var script = scripts[i];
+                if (script && script.PrefabObjectID == id)
+                    return script;
+            }
+            for (int i = 0; i < actor.ChildrenCount; i++)
+            {
+                var e = FindScriptWithPrefabObjectID(actor.GetChild(i), ref id);
+                if (e != null)
+                    return e;
+            }
+            return null;
         }
 
         /// <inheritdoc />

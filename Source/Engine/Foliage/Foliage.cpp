@@ -909,7 +909,7 @@ void Foliage::RebuildClusters()
         _box = BoundingBox(_transform.Translation, _transform.Translation);
         _sphere = BoundingSphere(_transform.Translation, 0.0f);
         if (_sceneRenderingKey != -1)
-            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Bounds);
         return;
     }
 

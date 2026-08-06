@@ -228,19 +228,27 @@ namespace FlaxEngine.GUI
             float progressNormalized = Mathf.InverseLerp(_minimum, _maximum, _current);
             if (progressNormalized > 0.001f)
             {
-                Rectangle barRect = new Rectangle(0, 0, Width * progressNormalized, Height);
+                Rectangle rect = new Rectangle(0, 0, Width, Height);
+                BarMargin.ShrinkRectangle(ref rect);
+                if (rect.Width <= 0.0f || rect.Height <= 0.0f)
+                    return;
+
+                Rectangle barRect = rect;
                 switch (Origin)
                 {
                 case BarOrigin.HorizontalLeft:
+                    barRect.Width *= progressNormalized;
                     break;
                 case BarOrigin.HorizontalRight:
-                    barRect = new Rectangle(Width - Width * progressNormalized, 0, Width * progressNormalized, Height);
+                    barRect.Width *= progressNormalized;
+                    barRect.X = rect.Right - barRect.Width;
                     break;
                 case BarOrigin.VerticalTop:
-                    barRect = new Rectangle(0, 0, Width, Height * progressNormalized);
+                    barRect.Height *= progressNormalized;
                     break;
                 case BarOrigin.VerticalBottom:
-                    barRect = new Rectangle(0, Height - Height * progressNormalized, Width, Height * progressNormalized);
+                    barRect.Height *= progressNormalized;
+                    barRect.Y = rect.Bottom - barRect.Height;
                     break;
                 default: break;
                 }
@@ -248,15 +256,12 @@ namespace FlaxEngine.GUI
                 switch (Method)
                 {
                 case BarMethod.Stretch:
-                    BarMargin.ShrinkRectangle(ref barRect);
                     if (BarBrush != null)
                         BarBrush.Draw(barRect, BarColor);
                     else
                         Render2D.FillRectangle(barRect, BarColor);
                     break;
                 case BarMethod.Clip:
-                    var rect = new Rectangle(0, 0, Width, Height);
-                    BarMargin.ShrinkRectangle(ref rect);
                     Render2D.PushClip(ref barRect);
                     if (BarBrush != null)
                         BarBrush.Draw(rect, BarColor);

@@ -651,10 +651,16 @@ namespace FlaxEditor.Surface.Archetypes
                     foreach (var e in values)
                     {
                         _combobox.AddItem(e.Key);
-                        tooltips[i++] = "Type: " + CustomEditorsUtil.GetTypeNameUI(e.Value.GetType()) + ", default value: " + e.Value;
+                        var value = e.Value;
+                        if (value == null)
+                        {
+                            tooltips[i++] = "null";
+                            continue;
+                        }
+                        tooltips[i++] = "Type: " + CustomEditorsUtil.GetTypeNameUI(value.GetType()) + ", default value: " + value;
                         if (toSelect == e.Key)
                         {
-                            type = e.Value.GetType();
+                            type = value.GetType();
                         }
                     }
                     _combobox.Tooltips = tooltips;
