@@ -1000,9 +1000,23 @@ namespace FlaxEditor.Windows
         public void BuildAndRun()
         {
             Editor.Log("Building and running");
-            GameCooker.GetCurrentPlatform(out var platform, out var buildPlatform, out _);
+            if (_lastBuilt == null)
+            {
+                GameCooker.GetCurrentPlatform(out var platform, out var buildPlatform, out _);
+                var buildConfig = Editor.Options.Options.Interface.CookAndRunBuildConfiguration;
+
+                _lastBuilt = new QueueItem()
+                {
+                    Target = new BuildTarget()
+                    {
+                        Output = _buildTabProxy.PerPlatformOptions[platform].Output,
+                        Platform = buildPlatform,
+                        Mode = buildConfig,
+                    },
+                    Options = BuildOptions.AutoRun,
+                };
+            }
             var numberOfClients = Editor.Options.Options.Interface.NumberOfGameClientsToLaunch;
-            var buildConfig = Editor.Options.Options.Interface.CookAndRunBuildConfiguration;
             for (int i = 0; i < numberOfClients; i++)
             {
                 var buildOptions = BuildOptions.AutoRun;
@@ -1011,13 +1025,9 @@ namespace FlaxEditor.Windows
 
                 _buildingQueue.Enqueue(new QueueItem
                 {
-                    Target = new BuildTarget
-                    {
-                        Output = _buildTabProxy.PerPlatformOptions[platform].Output,
-                        Platform = buildPlatform,
-                        Mode = buildConfig,
-                    },
+                    Target = _lastBuilt?.Target,
                     Options = buildOptions,
+                    PresetName = _lastBuilt?.PresetName,
                 });
             }
         }
