@@ -844,6 +844,7 @@ namespace FlaxEditor.Windows
         private string _postBuildAction;
         private BuildPreset[] _data;
         private bool _isDataDirty, _exitOnBuildEnd, _lastBuildFailed;
+        private QueueItem? _lastBuilt = null;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GameCookerWindow"/> class.
@@ -1011,20 +1012,19 @@ namespace FlaxEditor.Windows
         public void RunCooked()
         {
             Editor.Log("Running cooked build");
-            GameCooker.GetCurrentPlatform(out var platform, out var buildPlatform, out _);
+            if (_lastBuilt == null)
+            {
+                Editor.LogError("No cooked build found");
+                return;
+            }
             var numberOfClients = Editor.Options.Options.Interface.NumberOfGameClientsToLaunch;
-            var buildConfig = Editor.Options.Options.Interface.CookAndRunBuildConfiguration;
             for (int i = 0; i < numberOfClients; i++)
             {
                 _buildingQueue.Enqueue(new QueueItem
                 {
-                    Target = new BuildTarget
-                    {
-                        Output = _buildTabProxy.PerPlatformOptions[platform].Output,
-                        Platform = buildPlatform,
-                        Mode = buildConfig,
-                    },
+                    Target = _lastBuilt?.Target,
                     Options = BuildOptions.AutoRun | BuildOptions.NoCook,
+                    PresetName = _lastBuilt?.PresetName,
                 });
             }
         }
@@ -1305,6 +1305,10 @@ namespace FlaxEditor.Windows
                     {
                         _exitOnBuildEnd = false;
                         Engine.RequestExit(1);
+                    }
+                    if (!failed)
+                    {
+                        _lastBuilt = item;
                     }
                 }
                 else if (_exitOnBuildEnd)
