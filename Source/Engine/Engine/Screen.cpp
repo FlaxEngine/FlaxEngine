@@ -209,8 +209,6 @@ void Screen::SetGameWindowMode(GameWindowMode windowMode)
     switch (windowMode)
     {
     case GameWindowMode::Windowed:
-        if (GetIsFullscreen())
-            SetIsFullscreen(false);
         win->SetBorderless(false, false);
         break;
     case GameWindowMode::Fullscreen:

@@ -265,8 +265,13 @@ void WindowsWindow::SetBorderless(bool isBorderless, bool maximized)
 {
     ASSERT(HasHWND());
 
+    Float2 preserveSize(0, 0);
     if (IsFullscreen())
+    {
+        if (_swapChain && !maximized)
+            preserveSize = _swapChain->GetSize();
         SetIsFullscreen(false);
+    }
 
     // Fixes issue of borderless window not going full screen
     if (IsMaximized())
@@ -301,6 +306,16 @@ void WindowsWindow::SetBorderless(bool isBorderless, bool maximized)
         {
             ShowWindow(_handle, SW_SHOW);
         }
+
+        // Maintain resolution when going out the fullscreen
+        if (preserveSize != Float2::Zero)
+        {
+            Int4 monitorBounds;
+            GetScreenInfo(monitorBounds.X, monitorBounds.Y, monitorBounds.Z, monitorBounds.W);
+            monitorBounds.X += (monitorBounds.Z - (int32)preserveSize.X) / 2;
+            monitorBounds.Y += (monitorBounds.W - (int32)preserveSize.Y) / 2;
+            SetWindowPos(_handle, nullptr, monitorBounds.X, monitorBounds.Y, (int32)preserveSize.X, (int32)preserveSize.Y, SWP_NOZORDER | SWP_NOACTIVATE);
+        }
     }
     else
     {
@@ -313,13 +328,22 @@ void WindowsWindow::SetBorderless(bool isBorderless, bool maximized)
         if (_settings.HasSizingFrame)
             lStyle |= WS_THICKFRAME;
         lStyle |= WS_OVERLAPPED | WS_SYSMENU | WS_BORDER | WS_CAPTION;
-
         SetWindowLong(_handle, GWL_STYLE, lStyle);
+
         const Float2 clientSize = GetClientSize();
         const Float2 desktopSize = Platform::GetDesktopSize();
-        // Move window and half size if it is larger than desktop size
-        if (clientSize.X >= desktopSize.X && clientSize.Y >= desktopSize.Y)
+        if (preserveSize != Float2::Zero)
         {
+            // Maintain resolution when going out the fullscreen
+            Int4 monitorBounds;
+            GetScreenInfo(monitorBounds.X, monitorBounds.Y, monitorBounds.Z, monitorBounds.W);
+            monitorBounds.X += (monitorBounds.Z - (int32)preserveSize.X) / 2;
+            monitorBounds.Y += (monitorBounds.W - (int32)preserveSize.Y) / 2;
+            SetWindowPos(_handle, nullptr, monitorBounds.X, monitorBounds.Y, (int32)preserveSize.X, (int32)preserveSize.Y, SWP_NOZORDER | SWP_NOACTIVATE);
+        }
+        else if (clientSize.X >= desktopSize.X && clientSize.Y >= desktopSize.Y)
+        {
+            // Move window and half size if it is larger than desktop size
             const Float2 halfSize = desktopSize * 0.5f;
             const Float2 middlePos = halfSize * 0.5f;
             SetWindowPos(_handle, nullptr, (int)middlePos.X, (int)middlePos.Y, (int)halfSize.X, (int)halfSize.Y, SWP_FRAMECHANGED | SWP_NOZORDER | SWP_NOACTIVATE);
