@@ -409,6 +409,17 @@ void WindowsWindow::SetClientBounds(const Rectangle& clientArea)
     int32 width = (int32)clientArea.GetWidth();
     int32 height = (int32)clientArea.GetHeight();
 
+    // Resize during fullscreen
+    if (changeSize && _swapChain && _swapChain->IsFullscreen())
+    {
+        // Go out fullscreen, resize, and then go back in
+        _swapChain->SetFullscreen(false);
+        _clientSize = clientArea.Size;
+        OnResize(width, height);
+        _swapChain->SetFullscreen(true);
+        return;
+    }
+
     if (changeSize)
     {
         _clientSize = clientArea.Size;
