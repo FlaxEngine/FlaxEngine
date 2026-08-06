@@ -995,7 +995,8 @@ namespace FlaxEditor.Windows
         }
 
         /// <summary>
-        /// Builds the target for this platform and runs it on this device.
+        /// Builds the target with last used build settings if exists. Otherwise builds for this platform.
+        /// Runs the build on this device after build completes.
         /// </summary>
         public void BuildAndRun()
         {
