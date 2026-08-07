@@ -14,6 +14,7 @@ private:
     {
         PipelineStateCache Default;
         PipelineStateCache Depth;
+        PipelineStateCache Distortion;
 #if USE_EDITOR
         PipelineStateCache QuadOverdraw;
 #endif
@@ -29,6 +30,8 @@ private:
             case DrawPass::GlobalSurfaceAtlas:
             case DrawPass::Forward:
                 return &Default;
+            case DrawPass::Distortion:
+                return &Distortion;
 #if USE_EDITOR
             case DrawPass::QuadOverdraw:
                 return &QuadOverdraw;
@@ -42,6 +45,7 @@ private:
         {
             Default.Release();
             Depth.Release();
+            Distortion.Release();
 #if USE_EDITOR
             QuadOverdraw.Release();
 #endif
