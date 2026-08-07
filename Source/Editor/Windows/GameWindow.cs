@@ -147,21 +147,27 @@ namespace FlaxEditor.Windows
             new PlayModeFocusOptions
             {
                 Name = "None",
-                Tooltip = "Don't change focus.",
+                Tooltip = "Don't change window focus when entering play mode.",
                 FocusOption = InterfaceOptions.PlayModeFocus.None,
             },
             new PlayModeFocusOptions
             {
                 Name = "Game Window",
-                Tooltip = "Focus the Game Window.",
+                Tooltip = "Focus the Game Window when entering play mode.",
                 FocusOption = InterfaceOptions.PlayModeFocus.GameWindow,
             },
             new PlayModeFocusOptions
             {
                 Name = "Game Window Then Restore",
-                Tooltip = "Focus the Game Window. On play mode end restore focus to the previous window.",
+                Tooltip = "Focus the Game Window when entering play mode. Restore focus to the previous window when exiting play mode.",
                 FocusOption = InterfaceOptions.PlayModeFocus.GameWindowThenRestore,
             },
+            new PlayModeFocusOptions
+            {
+                Name = "Game Window Then Restore Editor",
+                Tooltip = "Focus the Game Window when entering play mode and then restore the focus to the editor window when exiting play mode.",
+                FocusOption = InterfaceOptions.PlayModeFocus.GameWindowThenRestoreEditor
+            }
         };
 
         /// <summary>
