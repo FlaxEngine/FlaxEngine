@@ -589,7 +589,18 @@ bool GPUDeviceDX11::Init()
     else
 #endif
     {
-        VALIDATE_DIRECTX_CALL(D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, flags, &targetFeatureLevel, 1, D3D11_SDK_VERSION, &_device, &createdFeatureLevel, &_imContext));
+        HRESULT createResult = D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, flags, &targetFeatureLevel, 1, D3D11_SDK_VERSION, &_device, &createdFeatureLevel, &_imContext);
+#if GPU_ENABLE_DEBUG_LAYER
+        if (createResult == DXGI_ERROR_SDK_COMPONENT_MISSING)
+        {
+            // The Direct3D debug layer is an optional Windows component
+            flags &= ~D3D11_CREATE_DEVICE_DEBUG;
+            createResult = D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, flags, &targetFeatureLevel, 1, D3D11_SDK_VERSION, &_device, &createdFeatureLevel, &_imContext);
+            if (SUCCEEDED(createResult))
+                LOG(Warning, "Direct3D SDK debug layers were requested, but not available. Continuing without them.");
+        }
+#endif
+        VALIDATE_DIRECTX_CALL(createResult);
     }
     if (!_device || !_imContext)
         return true;

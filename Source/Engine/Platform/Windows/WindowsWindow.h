@@ -24,6 +24,7 @@ private:
     Windows::ULONG _refCount;
 #endif
     bool _isResizing = false;
+    bool _forceRedrawOnPaint = false;
     bool _isSwitchingFullScreen = false;
     bool _trackingMouse = false;
     bool _clipCursorSet = false;
@@ -87,7 +88,7 @@ public:
     Windows::LRESULT WndProc(Windows::UINT msg, Windows::WPARAM wParam, Windows::LPARAM lParam);
 
 private:
-    void CheckForWindowResize();
+    void CheckForWindowResize(bool force = false);
     void UpdateCursor();
     void UpdateRegion();
 

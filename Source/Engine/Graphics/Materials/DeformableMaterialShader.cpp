@@ -112,6 +112,7 @@ bool DeformableMaterialShader::Load()
     auto psDesc = GPUPipelineState::Description::Default;
     psDesc.DepthEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthTest) == MaterialFeaturesFlags::None;
     psDesc.DepthWriteEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthWrite) == MaterialFeaturesFlags::None;
+    psDesc.VS = _shader->GetVS("VS_SplineModel");
 
 #if GPU_ALLOW_TESSELLATION_SHADERS
     // Check if use tessellation (both material and runtime supports it)
@@ -127,7 +128,6 @@ bool DeformableMaterialShader::Load()
     if (_shader->HasShader("PS_QuadOverdraw"))
     {
         // Quad Overdraw
-        psDesc.VS = _shader->GetVS("VS_SplineModel");
         psDesc.PS = _shader->GetPS("PS_QuadOverdraw");
         _cache.QuadOverdraw.Init(psDesc);
     }
@@ -142,7 +142,6 @@ bool DeformableMaterialShader::Load()
         psDesc.StencilPassOp = StencilOperation::Replace;
 
         // GBuffer Pass
-        psDesc.VS = _shader->GetVS("VS_SplineModel");
         psDesc.PS = _shader->GetPS("PS_GBuffer");
         _cache.Default.Init(psDesc);
 
@@ -154,7 +153,6 @@ bool DeformableMaterialShader::Load()
         _drawModes |= DrawPass::Forward;
 
         // Forward Pass
-        psDesc.VS = _shader->GetVS("VS_SplineModel");
         psDesc.PS = _shader->GetPS("PS_Forward");
         psDesc.DepthWriteEnable = false;
         psDesc.BlendMode = BlendingMode::AlphaBlend;
@@ -171,6 +169,18 @@ bool DeformableMaterialShader::Load()
             break;
         }
         _cache.Default.Init(psDesc);
+
+        // Check if use transparent distortion pass
+        if (_shader->HasShader("PS_Distortion"))
+        {
+            _drawModes |= DrawPass::Distortion;
+
+            // Accumulate Distortion Pass
+            psDesc.PS = _shader->GetPS("PS_Distortion");
+            psDesc.BlendMode = BlendingMode::Add;
+            psDesc.DepthWriteEnable = false;
+            _cache.Distortion.Init(psDesc);
+        }
     }
 
     // Depth Pass

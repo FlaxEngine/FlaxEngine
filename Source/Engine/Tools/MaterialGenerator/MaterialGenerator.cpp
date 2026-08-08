@@ -246,7 +246,9 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
             ADD_FEATURE(TessellationFeature);
         if (isOpaque)
             ADD_FEATURE(DeferredShadingFeature);
-        if (materialInfo.BlendMode != MaterialBlendMode::Opaque)
+        if (!isOpaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == MaterialFeaturesFlags::None)
+            ADD_FEATURE(DistortionFeature);
+        if (!isOpaque)
             ADD_FEATURE(ForwardShadingFeature);
         break;
     default:

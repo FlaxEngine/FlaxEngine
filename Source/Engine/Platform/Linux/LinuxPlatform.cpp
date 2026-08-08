@@ -1802,7 +1802,11 @@ const String& LinuxPlatform::GetHomeDirectory()
 
 String LinuxPlatform::GetDisplayServer()
 {
+#if PLATFORM_SDL
+    return SDLPlatform::GetDisplayServer();
+#else
     return xDisplay ? TEXT("X11") : TEXT("");
+#endif
 }
 
 bool LinuxPlatform::Is64BitPlatform()
