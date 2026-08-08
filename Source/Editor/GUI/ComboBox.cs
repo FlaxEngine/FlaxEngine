@@ -173,6 +173,11 @@ namespace FlaxEditor.GUI
         public event Action<ComboBox> PopupShowing;
 
         /// <summary>
+        /// Occurs when popup is shown (after event). Can be used to customize item controls collection after creation.
+        /// </summary>
+        public event Action<ComboBox> PopupShown;
+
+        /// <summary>
         /// Custom popup creation function.
         /// </summary>
         public event Func<ComboBox, ContextMenu.ContextMenu> PopupCreate;
@@ -435,6 +440,8 @@ namespace FlaxEditor.GUI
                     var position = _popupMenu.RootWindow.Window.Position;
                     _popupMenu.RootWindow.Window.Position = new Float2(position.X, position.Y - Height);
                 }
+
+                PopupShown?.Invoke(this);
             }
         }
 

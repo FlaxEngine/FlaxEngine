@@ -287,6 +287,7 @@ namespace FlaxEditor.Modules
                 case Options.InterfaceOptions.PlayModeFocus.None: break;
 
                 case Options.InterfaceOptions.PlayModeFocus.GameWindow:
+                case Options.InterfaceOptions.PlayModeFocus.GameWindowThenRestoreEditor:    
                     gameWin.FocusGameViewport();
                     break;
 
@@ -319,6 +320,11 @@ namespace FlaxEditor.Modules
                             break;
                         _previousWindow.Focus();
                     }
+                    break;
+                case Options.InterfaceOptions.PlayModeFocus.GameWindowThenRestoreEditor:
+                    var editorWin = Editor.Windows.EditWin;
+                    if (editorWin != null && !editorWin.IsDisposing)
+                        editorWin.Focus();
                     break;
                 }
             }

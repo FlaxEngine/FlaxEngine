@@ -352,10 +352,12 @@ void CS_UpdateProbesInitArgs()
 {
     uint activeProbesCount = ActiveProbes.Load(0); // Counter at 0
     activeProbesCount = min(activeProbesCount, ProbesCount);
+    // The CPU submits every allocated batch, so always overwrite all arguments to avoid
+    // dispatching stale work left by a previous cascade or frame.
     uint arg = 0;
-    for (uint probesOffset = 0; probesOffset < activeProbesCount; probesOffset += DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT)
+    for (uint probesOffset = 0; probesOffset < ProbesCount; probesOffset += DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT)
     {
-        uint probesBatchSize = min(activeProbesCount - probesOffset, DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT);
+        uint probesBatchSize = probesOffset < activeProbesCount ? min(activeProbesCount - probesOffset, DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT) : 0;
         UpdateProbesInitArgs[arg++] = probesBatchSize;
         UpdateProbesInitArgs[arg++] = 1;
         UpdateProbesInitArgs[arg++] = 1;

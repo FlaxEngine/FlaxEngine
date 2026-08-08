@@ -65,7 +65,7 @@ namespace FlaxEditor.Viewport
         {
             if (_previewStaticModel)
                 debugDrawData.HighlightModel(_previewStaticModel, _previewModelEntryIndex);
-            if (_previewBrushSurface.Brush != null)
+            if (_previewBrushSurface.Brush)
                 debugDrawData.HighlightBrushSurface(_previewBrushSurface);
         }
 
@@ -120,10 +120,12 @@ namespace FlaxEditor.Viewport
             if (_dragAssets.HasValidDrag && _dragAssets.Objects[0].IsOfType<MaterialBase>())
             {
                 GetHitLocation(ref location, out var hit, out _, out _);
-                ClearDragEffects();
                 var material = FlaxEngine.Content.LoadAsync<MaterialBase>(_dragAssets.Objects[0].ID);
-                if (material.IsDecal)
+                if (material && material.IsDecal)
+                {
+                    ClearDragEffects();
                     return;
+                }
 
                 if (hit is StaticModelNode staticModelNode)
                 {
@@ -135,6 +137,14 @@ namespace FlaxEditor.Viewport
                 {
                     _previewBrushSurface = brushSurfaceNode.Surface;
                 }
+                else
+                {
+                    ClearDragEffects();
+                }
+            }
+            else
+            {
+                ClearDragEffects();
             }
         }
 
