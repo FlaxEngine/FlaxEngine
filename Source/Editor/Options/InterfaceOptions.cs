@@ -179,6 +179,11 @@ namespace FlaxEditor.Options
             /// Focus the Game Window. On play mode end restore focus to the previous window.
             /// </summary>
             GameWindowThenRestore,
+            
+            /// <summary>
+            /// Focus the Game Window. On play mode end restore focus to the editor window.
+            /// </summary>
+            GameWindowThenRestoreEditor
         }
 
         /// <summary>
@@ -520,9 +525,9 @@ namespace FlaxEditor.Options
         /// <summary>
         /// Gets or sets a value indicating what panel should be focused when play mode start.
         /// </summary>
-        [DefaultValue(PlayModeFocus.GameWindow)]
+        [DefaultValue(PlayModeFocus.GameWindowThenRestoreEditor)]
         [EditorDisplay("Play In-Editor", "Focus On Play"), EditorOrder(500), Tooltip("Set what panel to focus on play mode start.")]
-        public PlayModeFocus FocusOnPlayMode { get; set; } = PlayModeFocus.GameWindow;
+        public PlayModeFocus FocusOnPlayMode { get; set; } = PlayModeFocus.GameWindowThenRestoreEditor;
 
         /// <summary>
         /// Gets or sets a value indicating what action should be taken upon pressing the play button.

@@ -1,10 +1,12 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System.Collections.Generic;
 using FlaxEditor.Content.Settings;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace FlaxEditor.CustomEditors.Editors
 {
@@ -13,7 +15,11 @@ namespace FlaxEditor.CustomEditors.Editors
     /// </summary>
     public sealed class ActorLayerEditor : CustomEditor
     {
+        private const string AddOrEditLayersOption = "Add or Edit Layers...";
+
         private ComboBoxElement element;
+        private int _layerCount;
+        private bool _updatingItems;
 
         /// <inheritdoc />
         public override DisplayStyle Style => DisplayStyle.Inline;
@@ -22,14 +28,64 @@ namespace FlaxEditor.CustomEditors.Editors
         public override void Initialize(LayoutElementsContainer layout)
         {
             element = layout.ComboBox();
-            element.ComboBox.SetItems(LayersAndTagsSettings.GetCurrentLayers());
-            element.ComboBox.SelectedIndex = (int)Values[0];
+            UpdateLayerItems((int)Values[0]);
+            element.ComboBox.PopupShowing += OnPopupShowing;
+            element.ComboBox.PopupShown += OnPopupShown;
             element.ComboBox.SelectedIndexChanged += OnSelectedIndexChanged;
+        }
+
+        private void OnPopupShowing(ComboBox comboBox)
+        {
+            UpdateLayerItems(HasDifferentValues ? -1 : (int)Values[0]);
+        }
+
+        private void OnPopupShown(ComboBox comboBox)
+        {
+            var addOrEditLayersOption = (ContextMenuButton)comboBox.Popup.Items.FirstOrDefault(x => x is ContextMenuButton b && b.Text == AddOrEditLayersOption);
+            if (addOrEditLayersOption != null)
+                addOrEditLayersOption.Icon = Editor.Instance.Icons.Settings12;
+        }
+
+        private void UpdateLayerItems(int selectedIndex)
+        {
+            _updatingItems = true;
+            var layers = LayersAndTagsSettings.GetCurrentLayers();
+            _layerCount = layers.Length;
+            element.ComboBox.SetItems(layers);
+            element.ComboBox.AddItem(AddOrEditLayersOption);
+            element.ComboBox.SelectedIndex = selectedIndex >= 0 && selectedIndex < _layerCount ? selectedIndex : -1;
+            _updatingItems = false;
+        }
+
+        private void SelectCurrentLayer()
+        {
+            UpdateLayerItems(HasDifferentValues ? -1 : (int)Values[0]);
+        }
+
+        private void OpenLayersAndTagsSettings()
+        {
+            var asset = GameSettings.LoadAsset<LayersAndTagsSettings>();
+            if (!asset)
+            {
+                GameSettings.Save(new LayersAndTagsSettings());
+                asset = GameSettings.LoadAsset<LayersAndTagsSettings>();
+            }
+            if (asset)
+                Editor.Instance.ContentEditing.Open(asset);
         }
 
         private void OnSelectedIndexChanged(ComboBox comboBox)
         {
+            if (_updatingItems)
+                return;
+
             int value = comboBox.SelectedIndex;
+            if (value == _layerCount)
+            {
+                OpenLayersAndTagsSettings();
+                SelectCurrentLayer();
+                return;
+            }
             if (value == -1)
                 value = 0;
 
@@ -87,7 +143,7 @@ namespace FlaxEditor.CustomEditors.Editors
             }
             else
             {
-                element.ComboBox.SelectedIndex = (int)Values[0];
+                UpdateLayerItems((int)Values[0]);
             }
         }
     }

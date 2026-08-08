@@ -768,9 +768,11 @@ namespace FlaxEditor.Windows
                 _newElement.Dispose();
                 _newElement = null;
 
+#if !PLATFORM_SDL
                 // Focus content window
                 Focus();
                 RootWindow?.Focus();
+#endif
             }
 
             // Refresh database and view now

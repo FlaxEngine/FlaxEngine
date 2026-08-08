@@ -647,10 +647,12 @@ namespace FlaxEditor.Viewport
         /// <inheritdoc />
         public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
-            DragHandlers.ClearDragEffects();
             var result = base.OnDragMove(ref location, data);
             if (result != DragDropEffect.None)
+            {
+                DragHandlers.ClearDragEffects();
                 return result;
+            }
             return DragHandlers.DragEnter(ref location, data);
         }
 
