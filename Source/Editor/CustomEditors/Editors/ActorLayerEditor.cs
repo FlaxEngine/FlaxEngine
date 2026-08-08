@@ -41,8 +41,9 @@ namespace FlaxEditor.CustomEditors.Editors
 
         private void OnPopupShown(ComboBox comboBox)
         {
-            var addOrEditLayersOption = (ContextMenuButton)comboBox.Popup.Items.FirstOrDefault(x => x is FlaxEditor.GUI.ContextMenu.ContextMenuButton b && b.Text == AddOrEditLayersOption);
-            addOrEditLayersOption?.Icon = Editor.Instance.Icons.Settings12;
+            var addOrEditLayersOption = (ContextMenuButton)comboBox.Popup.Items.FirstOrDefault(x => x is ContextMenuButton b && b.Text == AddOrEditLayersOption);
+            if (addOrEditLayersOption != null)
+                addOrEditLayersOption.Icon = Editor.Instance.Icons.Settings12;
         }
 
         private void UpdateLayerItems(int selectedIndex)
