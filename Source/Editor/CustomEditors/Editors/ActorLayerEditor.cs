@@ -1,10 +1,12 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System.Collections.Generic;
 using FlaxEditor.Content.Settings;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace FlaxEditor.CustomEditors.Editors
 {
@@ -13,7 +15,7 @@ namespace FlaxEditor.CustomEditors.Editors
     /// </summary>
     public sealed class ActorLayerEditor : CustomEditor
     {
-        private const string AddOrEditLayersOption = "Add or Edit Layers";
+        private const string AddOrEditLayersOption = "Add or Edit Layers...";
 
         private ComboBoxElement element;
         private int _layerCount;
@@ -28,12 +30,19 @@ namespace FlaxEditor.CustomEditors.Editors
             element = layout.ComboBox();
             UpdateLayerItems((int)Values[0]);
             element.ComboBox.PopupShowing += OnPopupShowing;
+            element.ComboBox.PopupShown += OnPopupShown;
             element.ComboBox.SelectedIndexChanged += OnSelectedIndexChanged;
         }
 
         private void OnPopupShowing(ComboBox comboBox)
         {
             UpdateLayerItems(HasDifferentValues ? -1 : (int)Values[0]);
+        }
+
+        private void OnPopupShown(ComboBox comboBox)
+        {
+            var addOrEditLayersOption = (ContextMenuButton)comboBox.Popup.Items.FirstOrDefault(x => x is FlaxEditor.GUI.ContextMenu.ContextMenuButton b && b.Text == AddOrEditLayersOption);
+            addOrEditLayersOption?.Icon = Editor.Instance.Icons.Settings12;
         }
 
         private void UpdateLayerItems(int selectedIndex)
