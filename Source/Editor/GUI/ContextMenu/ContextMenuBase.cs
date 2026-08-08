@@ -299,7 +299,9 @@ namespace FlaxEditor.GUI.ContextMenu
             PerformLayout();
             if (UseVisibilityControl)
             {
+#if !PLATFORM_SDL
                 _previouslyFocused = parentWin.FocusedControl;
+#endif
                 Focus();
                 OnShow();
             }

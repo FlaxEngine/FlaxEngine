@@ -5,7 +5,7 @@
 #include "WindowsWindow.h"
 #include "WindowsPlatform.h"
 #include "WindowsInput.h"
-#include "Engine/Core/Log.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Graphics/GPUSwapChain.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -265,8 +265,13 @@ void WindowsWindow::SetBorderless(bool isBorderless, bool maximized)
 {
     ASSERT(HasHWND());
 
+    Float2 preserveSize(0, 0);
     if (IsFullscreen())
+    {
+        if (_swapChain && !maximized)
+            preserveSize = _swapChain->GetSize();
         SetIsFullscreen(false);
+    }
 
     // Fixes issue of borderless window not going full screen
     if (IsMaximized())
@@ -301,6 +306,16 @@ void WindowsWindow::SetBorderless(bool isBorderless, bool maximized)
         {
             ShowWindow(_handle, SW_SHOW);
         }
+
+        // Maintain resolution when going out the fullscreen
+        if (preserveSize != Float2::Zero)
+        {
+            Int4 monitorBounds;
+            GetScreenInfo(monitorBounds.X, monitorBounds.Y, monitorBounds.Z, monitorBounds.W);
+            monitorBounds.X += (monitorBounds.Z - (int32)preserveSize.X) / 2;
+            monitorBounds.Y += (monitorBounds.W - (int32)preserveSize.Y) / 2;
+            SetWindowPos(_handle, nullptr, monitorBounds.X, monitorBounds.Y, (int32)preserveSize.X, (int32)preserveSize.Y, SWP_NOZORDER | SWP_NOACTIVATE);
+        }
     }
     else
     {
@@ -313,13 +328,22 @@ void WindowsWindow::SetBorderless(bool isBorderless, bool maximized)
         if (_settings.HasSizingFrame)
             lStyle |= WS_THICKFRAME;
         lStyle |= WS_OVERLAPPED | WS_SYSMENU | WS_BORDER | WS_CAPTION;
-
         SetWindowLong(_handle, GWL_STYLE, lStyle);
+
         const Float2 clientSize = GetClientSize();
         const Float2 desktopSize = Platform::GetDesktopSize();
-        // Move window and half size if it is larger than desktop size
-        if (clientSize.X >= desktopSize.X && clientSize.Y >= desktopSize.Y)
+        if (preserveSize != Float2::Zero)
         {
+            // Maintain resolution when going out the fullscreen
+            Int4 monitorBounds;
+            GetScreenInfo(monitorBounds.X, monitorBounds.Y, monitorBounds.Z, monitorBounds.W);
+            monitorBounds.X += (monitorBounds.Z - (int32)preserveSize.X) / 2;
+            monitorBounds.Y += (monitorBounds.W - (int32)preserveSize.Y) / 2;
+            SetWindowPos(_handle, nullptr, monitorBounds.X, monitorBounds.Y, (int32)preserveSize.X, (int32)preserveSize.Y, SWP_NOZORDER | SWP_NOACTIVATE);
+        }
+        else if (clientSize.X >= desktopSize.X && clientSize.Y >= desktopSize.Y)
+        {
+            // Move window and half size if it is larger than desktop size
             const Float2 halfSize = desktopSize * 0.5f;
             const Float2 middlePos = halfSize * 0.5f;
             SetWindowPos(_handle, nullptr, (int)middlePos.X, (int)middlePos.Y, (int)halfSize.X, (int)halfSize.Y, SWP_FRAMECHANGED | SWP_NOZORDER | SWP_NOACTIVATE);
@@ -408,6 +432,17 @@ void WindowsWindow::SetClientBounds(const Rectangle& clientArea)
     int32 y = (int32)clientArea.GetY();
     int32 width = (int32)clientArea.GetWidth();
     int32 height = (int32)clientArea.GetHeight();
+
+    // Resize during fullscreen
+    if (changeSize && _swapChain && _swapChain->IsFullscreen())
+    {
+        // Go out fullscreen, resize, and then go back in
+        _swapChain->SetFullscreen(false);
+        _clientSize = clientArea.Size;
+        OnResize(width, height);
+        _swapChain->SetFullscreen(true);
+        return;
+    }
 
     if (changeSize)
     {
@@ -696,7 +731,7 @@ void WindowsWindow::SetCursor(CursorType type)
     UpdateCursor();
 }
 
-void WindowsWindow::CheckForWindowResize()
+void WindowsWindow::CheckForWindowResize(bool force)
 {
     // Skip for minimized window (GetClientRect for minimized window returns 0)
     if (_minimized)
@@ -731,7 +766,7 @@ void WindowsWindow::CheckForWindowResize()
     _clientSize = Float2(static_cast<float>(width), static_cast<float>(height));
 
     // Check if window size has been changed
-    if (width > 0 && height > 0 && (_swapChain == nullptr || width != _swapChain->GetWidth() || height != _swapChain->GetHeight()))
+    if (width > 0 && height > 0 && (force || _swapChain == nullptr || width != _swapChain->GetWidth() || height != _swapChain->GetHeight()))
     {
         UpdateRegion();
         OnResize(width, height);
@@ -884,16 +919,24 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_PAINT:
     {
         // Check if window is during resizing
-        if (_isResizing && _swapChain)
+        if ((_isResizing || _forceRedrawOnPaint) && _swapChain)
         {
-            // Redraw window backbuffer on DX11
-            switch (GPUDevice::Instance->GetRendererType())
+            _forceRedrawOnPaint = false;
+            if (GPUDevice::Instance && !GPUDevice::Instance->IsRendering() && GPUDevice::Instance->CanDraw())
             {
-            case RendererType::DirectX10:
-            case RendererType::DirectX10_1:
-            case RendererType::DirectX11:
-                _swapChain->Present(false);
-                break;
+                Engine::OnDraw();
+            }
+            else if (GPUDevice::Instance)
+            {
+                // Redraw window backbuffer on DX11
+                switch (GPUDevice::Instance->GetRendererType())
+                {
+                case RendererType::DirectX10:
+                case RendererType::DirectX10_1:
+                case RendererType::DirectX11:
+                    _swapChain->Present(false);
+                    break;
+                }
             }
         }
         break;
@@ -1193,8 +1236,8 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
                 else if (_isResizing)
                 {
                     // If we're neither maximized nor minimized, the window size is changing by the user dragging the window edges.
-                    // In this case, we don't resize yet -- we wait until the user stops dragging, and a WM_EXITSIZEMOVE message comes.
-                    UpdateRegion();
+                    CheckForWindowResize();
+                    RedrawWindow(_handle, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW);
                 }
                 else if (_isSwitchingFullScreen)
                 {
@@ -1216,6 +1259,10 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         _dpiScale = (float)_dpi / (float)DefaultDPI;
         RECT* windowRect = (RECT*)lParam;
         SetWindowPos(_handle, nullptr, windowRect->left, windowRect->top, windowRect->right - windowRect->left, windowRect->bottom - windowRect->top, SWP_NOZORDER | SWP_NOACTIVATE);
+        CheckForWindowResize(true);
+        UpdateRegion();
+        _forceRedrawOnPaint = true;
+        RedrawWindow(_handle, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW);
         // TODO: Recalculate fonts
         return 0;
     }

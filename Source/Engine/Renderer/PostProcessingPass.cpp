@@ -273,6 +273,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     int32 h4 = h2 >> 1;
     int32 h8 = h4 >> 1;
     int32 bloomMipCount = CalculateBloomMipCount(w1, h1);
+    useLensFlares &= bloomMipCount > 1;
 
     // Ensure to have valid data and if at least one effect should be applied
     if (!(useBloom || useToneMapping || useCameraArtifacts || colorGradingLUT) || checkIfSkipPass() || w8 <= 1 || h8 <= 1)
@@ -450,7 +451,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
         // Set bloom output
         context->UnBindSR(0);
         context->UnBindSR(1);
-        context->BindSR(2, bloomBuffer2->View(0, 0));
+        context->BindSR(2, (bloomMipCount > 1 ? bloomBuffer2 : bloomBuffer1)->View(0, 0));
     }
     else
     {

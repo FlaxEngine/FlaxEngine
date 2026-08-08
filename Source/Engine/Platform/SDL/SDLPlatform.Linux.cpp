@@ -297,12 +297,10 @@ namespace WaylandImpl
             textData.Text = *DraggingData;
             wl_data_source_add_listener(dataSource, &DataSourceListener, &textData);
 
-            // Begin dragging operation
             auto draggedWindow = Window->GetSDLWindow();
             auto dragStartWindow = DragSourceWindow != nullptr ? DragSourceWindow->GetSDLWindow() : draggedWindow;
             wl_surface* originSurface = static_cast<wl_surface*>(SDL_GetPointerProperty(SDL_GetWindowProperties(dragStartWindow), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr));
             wl_surface* iconSurface = nullptr;
-            wl_data_device_start_drag(WrappedDataDevice, dataSource, originSurface, iconSurface, DragSerial);
 
             Platform::AtomicStore(&StartFlag, 1);
 
@@ -321,11 +319,13 @@ namespace WaylandImpl
                         if (Platform::AtomicRead(&DragOverFlag) == 1 || Platform::AtomicRead(&Serial) != DragSerial)
                             break;
 
-                        // Attach the window to the ongoing drag operation
+                        // Begin dragging operation
                         wrappedToplevel = static_cast<xdg_toplevel*>(wl_proxy_create_wrapper(toplevel));
                         wl_proxy_set_queue(reinterpret_cast<wl_proxy*>(wrappedToplevel), EventQueue);
                         toplevelDrag = xdg_toplevel_drag_manager_v1_get_xdg_toplevel_drag(DragManager, dataSource);
-
+                        wl_data_device_start_drag(WrappedDataDevice, dataSource, originSurface, iconSurface, DragSerial);
+                        
+                        // Attach the window to the ongoing drag operation
                         Float2 scaledOffset = DragOffset / Window->GetDpiScale();
                         xdg_toplevel_drag_v1_attach(toplevelDrag, wrappedToplevel, static_cast<int32>(scaledOffset.X), static_cast<int32>(scaledOffset.Y));
                     }

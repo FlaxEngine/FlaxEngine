@@ -270,6 +270,11 @@ namespace FlaxEditor.CustomEditors.Editors
                 for (int i = 0; i < properties.Length; i++)
                 {
                     var p = properties[i];
+
+                    // Indexed properties require arguments and cannot be represented by a normal property row (eg. IList.Item[index])
+                    if (p.Type is PropertyInfo managedProperty && managedProperty.GetIndexParameters().Length != 0)
+                        continue;
+
                     var attributes = p.GetAttributes(true);
                     var showInEditor = attributes.Any(x => x is ShowInEditorAttribute);
 

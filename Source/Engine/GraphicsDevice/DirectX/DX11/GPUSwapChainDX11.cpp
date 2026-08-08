@@ -162,11 +162,8 @@ void GPUSwapChainDX11::Present(bool vsync)
 
 bool GPUSwapChainDX11::Resize(int32 width, int32 height)
 {
-    // Check if size won't change
     if (width == _width && height == _height)
-    {
         return false;
-    }
 
     _device->WaitForGPU();
     GPUDeviceLock lock(_device);
@@ -174,6 +171,10 @@ bool GPUSwapChainDX11::Resize(int32 width, int32 height)
     _allowTearing = _device->_allowTearing;
 #endif
     _format = GPU_BACK_BUFFER_PIXEL_FORMAT;
+    if (_memoryUsage != 0)
+    {
+        PROFILE_MEM_DEC(Graphics, _memoryUsage);
+    }
 
 #if PLATFORM_WINDOWS
     DXGI_SWAP_CHAIN_DESC swapChainDesc;
