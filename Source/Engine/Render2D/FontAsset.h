@@ -105,6 +105,11 @@ API_STRUCT() struct FontOptions
     /// The font rasterization mode.
     /// </summary>
     API_FIELD() FontRasterMode RasterMode;
+
+    /// <summary>
+    /// The font size used when generating MSDF font atlases.
+    /// </summary>
+    API_FIELD() float MSDFSize;
 };
 
 /// <summary>
@@ -112,7 +117,7 @@ API_STRUCT() struct FontOptions
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API FontAsset : public BinaryAsset
 {
-    DECLARE_BINARY_ASSET_HEADER(FontAsset, 4);
+    DECLARE_BINARY_ASSET_HEADER(FontAsset, 5);
     friend Font;
 
 private:

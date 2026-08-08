@@ -1,5 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
 using System.ComponentModel;
 using FlaxEditor.Content;
 using FlaxEditor.CustomEditors;
@@ -25,6 +26,10 @@ namespace FlaxEditor.Windows.Assets
             [EditorOrder(5), EditorDisplay("Properties"), Tooltip("The rasterization mode used when generating font atlases.")]
             public FontRasterMode RasterMode;
 
+            [DefaultValue(32.0f)]
+            [EditorOrder(6), EditorDisplay("Properties"), Tooltip("The font size used when generating MSDF font atlases.")]
+            public float MSDFSize;
+
             [DefaultValue(FontHinting.Default)]
             [EditorOrder(10), EditorDisplay("Properties"), Tooltip("The font hinting used when rendering characters.")]
             public FontHinting Hinting;
@@ -47,6 +52,7 @@ namespace FlaxEditor.Windows.Assets
                 {
                     Hinting = Hinting,
                     RasterMode = RasterMode,
+                    MSDFSize = MSDFSize,
                 };
                 if (AntiAliasing)
                     options.Flags |= FontFlags.AntiAliasing;
@@ -63,6 +69,7 @@ namespace FlaxEditor.Windows.Assets
                 Bold = (options.Flags & FontFlags.Bold) == FontFlags.Bold;
                 Italic = (options.Flags & FontFlags.Italic) == FontFlags.Italic;
                 RasterMode = options.RasterMode;
+                MSDFSize = options.MSDFSize;
             }
         }
 
