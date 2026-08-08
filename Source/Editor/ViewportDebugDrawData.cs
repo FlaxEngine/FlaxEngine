@@ -50,11 +50,10 @@ namespace FlaxEditor
         /// Highlights the model.
         /// </summary>
         /// <param name="model">The model.</param>
-        public void HighlightModel(StaticModel model)
+        public void HighlightModel(ModelInstanceActor model)
         {
-            if (model.Model == null)
+            if (!model)
                 return;
-
             var entries = model.Entries;
             for (var i = 0; i < entries.Length; i++)
                 HighlightModel(model, i);
@@ -65,7 +64,7 @@ namespace FlaxEditor
         /// </summary>
         /// <param name="model">The model.</param>
         /// <param name="entryIndex">Index of the entry to highlight.</param>
-        public void HighlightModel(StaticModel model, int entryIndex)
+        public void HighlightModel(ModelInstanceActor model, int entryIndex)
         {
             _highlights.Add(new HighlightData
             {
@@ -141,6 +140,32 @@ namespace FlaxEditor
                         if (lod.Meshes[meshIndex].MaterialSlotIndex == highlight.EntryIndex)
                         {
                             lod.Meshes[meshIndex].Draw(ref renderContext, _highlightMaterial, ref world);
+                        }
+                    }
+                }
+                else if (highlight.Target is AnimatedModel animatedModel)
+                {
+                    var model = animatedModel.SkinnedModel;
+                    if (model == null)
+                        continue;
+                    animatedModel.Transform.GetWorld(out world);
+                    var bounds = BoundingSphere.FromBox(animatedModel.Box);
+                    var bones = animatedModel.SkinnedMeshBones;
+
+                    // Pick a proper LOD
+                    Float3 center = bounds.Center - renderContext.View.Origin;
+                    int lodIndex = RenderTools.ComputeModelLOD(model, ref center, (float)bounds.Radius, ref renderContext);
+                    var lods = model.LODs;
+                    if (lods == null || lods.Length < lodIndex || lodIndex < 0)
+                        continue;
+                    var lod = lods[lodIndex];
+
+                    // Draw meshes
+                    for (int meshIndex = 0; meshIndex < lod.Meshes.Length; meshIndex++)
+                    {
+                        if (lod.Meshes[meshIndex].MaterialSlotIndex == highlight.EntryIndex)
+                        {
+                            lod.Meshes[meshIndex].Draw(ref renderContext, bones, _highlightMaterial, ref world);
                         }
                     }
                 }
