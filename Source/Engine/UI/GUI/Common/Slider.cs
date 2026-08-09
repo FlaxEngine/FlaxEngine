@@ -432,7 +432,7 @@ public class Slider : ContainerControl
         {
             // Control slider via navigation actions
             float thumbLoc = Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft ? location.X : location.Y;
-            float numValue = WholeNumbers ? 1 : 0.01f;
+            float numValue = WholeNumbers ? 0.1f : 0.001f;
 
             switch (Direction)
             {
