@@ -427,17 +427,23 @@ public class Slider : ContainerControl
         {
             NavigationFocus();
             _isSliding = true;
+            return base.OnNavigate(direction, location, caller, visited);
         }
 
         // Control slider via navigation actions
-        var isHorizontal = Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft;
-        var isDirHorizontal = direction is NavDirection.Left or NavDirection.Right;
-        var loc = (isHorizontal && isDirHorizontal) ? location.X : location.Y;
+        float thumbLoc = Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft ? location.X : location.Y;
         float numValue = WholeNumbers ? 1 : 0.01f;
-        float value = (isHorizontal == isDirHorizontal) ? numValue : -numValue;
-        Value += (loc + value) * _step;
-        Debug.Log(Value);
-        UpdateThumb();
+
+        switch (Direction)
+        {
+            case SliderDirection.HorizontalRight or SliderDirection.VerticalDown:
+                Value += (thumbLoc < _thumbCenter ? -numValue : numValue) * _step;               
+            break;
+            
+            case SliderDirection.HorizontalLeft or SliderDirection.VerticalUp:
+                Value -= (thumbLoc < _thumbCenter ? -numValue : numValue) * _step;
+                break;
+        }
 
         return base.OnNavigate(direction, location, caller, visited);
     }
