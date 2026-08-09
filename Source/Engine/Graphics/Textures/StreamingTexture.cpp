@@ -252,6 +252,7 @@ protected:
 
     void OnSync() override
     {
+        // Update residency
         _newTexture->SetResidentMipLevels(_uploadedMipCount);
         Swap(_streamingTexture->_texture, _newTexture);
         SAFE_DELETE_GPU_RESOURCE(_newTexture);
@@ -408,6 +409,8 @@ protected:
             }
             dataSource += dataPerSlice;
         }
+
+        UpdateResidency(texture);
 
         return Result::Ok;
     }

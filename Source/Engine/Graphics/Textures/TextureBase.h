@@ -25,17 +25,17 @@ API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API TextureBase : public BinaryAss
         struct MipData
         {
             BytesContainer Data;
-            uint32 RowPitch;
-            uint32 SlicePitch;
+            uint32 RowPitch = 0;
+            uint32 SlicePitch = 0;
 
             MipData() = default;
             MipData(MipData&& other) noexcept;
         };
 
-        PixelFormat Format;
-        int32 Width;
-        int32 Height;
-        int32 ArraySize;
+        PixelFormat Format = PixelFormat::Unknown;
+        int32 Width = 0;
+        int32 Height = 0;
+        int32 ArraySize = 1;
         Array<MipData, FixedAllocation<14>> Mips;
 
         InitData() = default;

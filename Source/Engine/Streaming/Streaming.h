@@ -7,6 +7,7 @@
 #include "TextureGroup.h"
 
 class GPUSampler;
+class StreamableResource;
 
 // Streaming service statistics container.
 API_STRUCT(NoDefault) struct FLAXENGINE_API StreamingStats
@@ -46,4 +47,10 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Streaming);
     /// <param name="index">The texture group index.</param>
     /// <returns>The texture sampler (always valid).</returns>
     API_FUNCTION() static GPUSampler* GetTextureGroupSampler(int32 index);
+
+    /// <summary>
+    /// Manually updates a specific resource (calculates capacity and spawns streaming in/out async tasks). Usefull to force stream speciifc resource without delay or waiting for the next streaming update.
+    /// </summary>
+    /// <param name="resource">The resource to update (eg. texture or mesh).</param>
+    static void UpdateResource(StreamableResource* resource);
 };

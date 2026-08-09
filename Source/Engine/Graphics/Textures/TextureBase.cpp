@@ -13,6 +13,7 @@
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Graphics/PixelFormatSampler.h"
 #include "Engine/Scripting/Enums.h"
+#include "Engine/Streaming/Streaming.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Threading/Threading.h"
 #if GPU_ENABLE_RESOURCE_NAMING && !USE_EDITOR
@@ -705,6 +706,9 @@ bool TextureBase::Init(InitData* initData)
         LOG(Warning, "Cannot initialize texture.");
         return true;
     }
+
+    // Speed up update texture uplaod to GPU by alocating texture async task now to run before next frame rendering
+    Streaming::UpdateResource(&_texture);
 
     return false;
 }
