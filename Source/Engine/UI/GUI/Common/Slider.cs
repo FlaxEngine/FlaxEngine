@@ -421,17 +421,23 @@ public class Slider : ContainerControl
     public override Control OnNavigate(NavDirection direction, Float2 location, Control caller, List<Control> visited)
     {
         // Auto-focus self when navigation comes in
-        if (!IsNavFocused)
-            return this;
+        Focus();
+
+        if (!(IsNavFocused && _isSliding))
+        {
+            NavigationFocus();
+            _isSliding = true;
+        }
 
         // Control slider via navigation actions
-        if (IsNavFocused && _isSliding)
-        {
-            var isNavUp = direction == NavDirection.Right || direction == NavDirection.Up;
-            var isDirUp = _direction == SliderDirection.HorizontalRight || _direction == SliderDirection.VerticalUp;
-            Value += (isNavUp == isDirUp ? 1 : -1) * _step;
-            return this;
-        }
+        var isHorizontal = Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft;
+        var isDirHorizontal = direction is NavDirection.Left or NavDirection.Right;
+        var loc = (isHorizontal && isDirHorizontal) ? location.X : location.Y;
+        float numValue = WholeNumbers ? 1 : 0.01f;
+        float value = (isHorizontal == isDirHorizontal) ? numValue : -numValue;
+        Value += (loc + value) * _step;
+        Debug.Log(Value);
+        UpdateThumb();
 
         return base.OnNavigate(direction, location, caller, visited);
     }
