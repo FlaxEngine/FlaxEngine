@@ -1,9 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using FlaxEditor.Surface.Elements;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 
 namespace FlaxEngine.GUI;
 
