@@ -1,5 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using FlaxEditor.Surface.Elements;
 using System;
 using System.Collections.Generic;
 
@@ -428,44 +429,56 @@ public class Slider : ContainerControl
         if (_isNavSliding)
         {
             // Control slider via navigation actions
-            bool isNavDirHorizontal = direction is NavDirection.Right or NavDirection.Left;
-            bool isHorizontal = (Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft) && isNavDirHorizontal;
+            bool isHorizontal = (Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft) && 
+                direction is NavDirection.Right or NavDirection.Left;
             float thumbLoc = isHorizontal ? location.X : location.Y;
-            float numValue = WholeNumbers ? 0.1f : 0.001f;
 
-            if (isHorizontal)
-            {
-                switch (Direction)
-                {
-                    case SliderDirection.HorizontalRight:
-                        Value += (thumbLoc < _thumbCenter ? -numValue : numValue) * _step;
-                        break;
+            NavValueChanged(isHorizontal, thumbLoc);
+        }
 
-                    case SliderDirection.HorizontalLeft:
-                        Value -= (thumbLoc < _thumbCenter ? -numValue : numValue) * _step;
-                        break;
+        return base.OnNavigate(direction, location, caller, visited);
+    }
 
-                    default: break;
-                }
+    /// <summary>
+    /// Slider's value changed via the UI navigation.
+    /// </summary>
+    /// <param name="horizontal">If the Slider's direction is horizontal.</param>
+    /// <param name="thumbLocation">The thumb location.</param>
+    private void NavValueChanged(bool horizontal, float thumbLocation)
+    {
+        float numLocation = WholeNumbers ? 0.1f : 0.01f;
+        var thumbValue = MathF.Round((thumbLocation < _thumbCenter ? -numLocation : numLocation) * _step, 2);
 
-                return base.OnNavigate(direction, location, caller, visited);
-            }
-
+        if (horizontal)
+        {
             switch (Direction)
             {
-                case SliderDirection.VerticalDown:
-                    Value += (thumbLoc < _thumbCenter ? -numValue : numValue) * _step;
+                case SliderDirection.HorizontalRight:
+                    Value += thumbValue;
                     break;
 
-                case SliderDirection.VerticalUp:
-                    Value -= (thumbLoc < _thumbCenter ? -numValue : numValue) * _step;
+                case SliderDirection.HorizontalLeft:
+                    Value -= thumbValue;
                     break;
 
                 default: break;
             }
+
+            return;
         }
 
-        return base.OnNavigate(direction, location, caller, visited);
+        switch (Direction)
+        {
+            case SliderDirection.VerticalDown:
+                Value += thumbValue;
+                break;
+
+            case SliderDirection.VerticalUp:
+                Value -= thumbValue;
+                break;
+
+            default: break;
+        }
     }
 
     /// <inheritdoc />
