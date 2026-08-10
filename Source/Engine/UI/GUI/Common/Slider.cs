@@ -1,7 +1,9 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using FlaxEditor.Surface.Elements;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace FlaxEngine.GUI;
 
@@ -431,40 +433,8 @@ public class Slider : ContainerControl
             bool isHorizontal = (Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft) && 
                 direction is NavDirection.Right or NavDirection.Left;
             float thumbLocation = isHorizontal ? location.X : location.Y;
-            float numLocation = WholeNumbers ? 0.1f : 0.01f;
             
-            var thumbValue = (thumbLocation < _thumbCenter ? -numLocation : numLocation) * _step;
-
-            if (isHorizontal)
-            {
-                switch (Direction)
-                {
-                    case SliderDirection.HorizontalRight:
-                        Value += thumbValue;
-                        break;
-
-                    case SliderDirection.HorizontalLeft:
-                        Value -= thumbValue;
-                        break;
-
-                    default: break;
-                }
-
-                return base.OnNavigate(direction, location, caller, visited); ;
-            }
-
-            switch (Direction)
-            {
-                case SliderDirection.VerticalDown:
-                    Value += thumbValue;
-                    break;
-
-                case SliderDirection.VerticalUp:
-                    Value -= thumbValue;
-                    break;
-
-                default: break;
-            }
+            NavValueChanged(isHorizontal, thumbLocation);
         }
 
         return base.OnNavigate(direction, location, caller, visited);
@@ -477,7 +447,39 @@ public class Slider : ContainerControl
     /// <param name="thumbLocation">The thumb location.</param>
     private void NavValueChanged(bool horizontal, float thumbLocation)
     {
-        
+        float numLocation = WholeNumbers ? 0.1f : 0.01f;
+        var thumbValue = (thumbLocation < _thumbCenter ? -numLocation : numLocation) * _step;
+
+        if (horizontal)
+        {
+            switch (Direction)
+            {
+                case SliderDirection.HorizontalRight:
+                    Value += thumbValue;
+                    break;
+
+                case SliderDirection.HorizontalLeft:
+                    Value -= thumbValue;
+                    break;
+
+                default: break;
+            }
+
+            return;
+        }
+
+        switch (Direction)
+        {
+            case SliderDirection.VerticalDown:
+                Value += thumbValue;
+                break;
+
+            case SliderDirection.VerticalUp:
+                Value -= thumbValue;
+                break;
+
+            default: break;
+        }
     }
 
     /// <inheritdoc />
