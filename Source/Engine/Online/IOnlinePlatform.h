@@ -7,6 +7,8 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/DateTime.h"
 
+class Texture;
+
 /// <summary>
 /// Online platform user presence common states.
 /// </summary>
@@ -256,6 +258,15 @@ public:
     /// <param name="localUser">The local user (null if use default one).</param>
     /// <returns>True if failed, otherwise false.</returns>
     API_FUNCTION() virtual bool GetUser(API_PARAM(Out) OnlineUser& user, User* localUser = nullptr) = 0;
+
+    /// <summary>
+    /// Gets the player avatar image.
+    /// </summary>
+    /// <remarks>Caller has to destroy the returned virtual texture.</remarks>
+    /// <param name="user">The player to get avatar for.</param>
+    /// <param name="avatar">The loaded avatar texture, null if cannot get it. Caller has to destroy the returned virtual texture once unused.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() virtual bool GetUserAvarar(const OnlineUser& user, API_PARAM(Out) Texture*& avatar) = 0;
 
     /// <summary>
     /// Gets the list of friends of the user from the online platform.
