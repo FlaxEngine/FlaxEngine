@@ -431,9 +431,41 @@ public class Slider : ContainerControl
             // Control slider via navigation actions
             bool isHorizontal = (Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft) && 
                 direction is NavDirection.Right or NavDirection.Left;
-            float thumbLoc = isHorizontal ? location.X : location.Y;
+            float thumbLocation = isHorizontal ? location.X : location.Y;
+            float numLocation = WholeNumbers ? 0.1f : 0.01f;
+            
+            var thumbValue = (thumbLocation < _thumbCenter ? -numLocation : numLocation) * _step;
 
-            NavValueChanged(isHorizontal, thumbLoc);
+            if (isHorizontal)
+            {
+                switch (Direction)
+                {
+                    case SliderDirection.HorizontalRight:
+                        Value += thumbValue;
+                        break;
+
+                    case SliderDirection.HorizontalLeft:
+                        Value -= thumbValue;
+                        break;
+
+                    default: break;
+                }
+
+                return base.OnNavigate(direction, location, caller, visited); ;
+            }
+
+            switch (Direction)
+            {
+                case SliderDirection.VerticalDown:
+                    Value += thumbValue;
+                    break;
+
+                case SliderDirection.VerticalUp:
+                    Value -= thumbValue;
+                    break;
+
+                default: break;
+            }
         }
 
         return base.OnNavigate(direction, location, caller, visited);
@@ -446,39 +478,7 @@ public class Slider : ContainerControl
     /// <param name="thumbLocation">The thumb location.</param>
     private void NavValueChanged(bool horizontal, float thumbLocation)
     {
-        float numLocation = WholeNumbers ? 0.1f : 0.01f;
-        var thumbValue = (thumbLocation < _thumbCenter ? -numLocation : numLocation) * _step;
-
-        if (horizontal)
-        {
-            switch (Direction)
-            {
-                case SliderDirection.HorizontalRight:
-                    Value += thumbValue;
-                    break;
-
-                case SliderDirection.HorizontalLeft:
-                    Value -= thumbValue;
-                    break;
-
-                default: break;
-            }
-
-            return;
-        }
-
-        switch (Direction)
-        {
-            case SliderDirection.VerticalDown:
-                Value += thumbValue;
-                break;
-
-            case SliderDirection.VerticalUp:
-                Value -= thumbValue;
-                break;
-
-            default: break;
-        }
+        
     }
 
     /// <inheritdoc />
