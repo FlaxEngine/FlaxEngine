@@ -260,7 +260,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     var overrideEditor = overrideEditorType != null ? (CustomEditor)Activator.CreateInstance(overrideEditorType) : null;
                     var property = panel.AddPropertyItem(new DictionaryItemLabel(this, key));
                     var itemLayout = useSharedLayout ? (LayoutElementsContainer)property : property.VerticalPanel();
-                    itemLayout.Object(new DictionaryValueContainer(valuesType, key, Values), overrideEditor);
+                    itemLayout.Object(new DictionaryValueContainer(valuesType, key, Values, attributes), overrideEditor);
                     if (_readOnly && itemLayout.Children.Count > 0)
                         GenericEditor.OnReadOnlyProperty(itemLayout);
                 }

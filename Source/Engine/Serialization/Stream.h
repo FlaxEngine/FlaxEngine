@@ -17,7 +17,11 @@ class ScriptingObject;
 template<typename T>
 class ScriptingObjectReference;
 template<typename T>
+class ScriptingObjectInterfaceReference;
+template<typename T>
 class SoftObjectReference;
+template<typename T>
+class SoftObjectInterfaceReference;
 template<typename T>
 class AssetReference;
 template<typename T>
