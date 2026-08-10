@@ -428,10 +428,10 @@ public class Slider : ContainerControl
         if (_isNavSliding)
         {
             // Control slider via navigation actions
-            bool isHorizontal = (Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft) && 
+            bool isHorizontal = (Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft) &&
                 direction is NavDirection.Right or NavDirection.Left;
             float thumbLocation = isHorizontal ? location.X : location.Y;
-            
+
             NavValueChanged(isHorizontal, thumbLocation);
         }
 
@@ -448,36 +448,20 @@ public class Slider : ContainerControl
         float numLocation = WholeNumbers ? 0.1f : 0.01f;
         var thumbValue = (thumbLocation < _thumbCenter ? -numLocation : numLocation) * _step;
 
-        if (horizontal)
+        switch (horizontal , Direction)
         {
-            switch (Direction)
-            {
-                case SliderDirection.HorizontalRight:
-                    Value += thumbValue;
-                    break;
-
-                case SliderDirection.HorizontalLeft:
-                    Value -= thumbValue;
-                    break;
-
-                default: break;
-            }
-
-            return;
-        }
-
-        switch (Direction)
-        {
-            case SliderDirection.VerticalDown:
+            case (true, SliderDirection.HorizontalRight) or (false, SliderDirection.VerticalDown):
                 Value += thumbValue;
                 break;
 
-            case SliderDirection.VerticalUp:
+            case (true, SliderDirection.HorizontalLeft) or (false, SliderDirection.VerticalUp):
                 Value -= thumbValue;
                 break;
 
             default: break;
         }
+
+        Value = MathF.Round(Value, 2);
     }
 
     /// <inheritdoc />
