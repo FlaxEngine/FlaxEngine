@@ -36,7 +36,8 @@ namespace Flax.Build.Platforms
             SystemIncludePaths.Add(Path.Combine(GDK.Instance.RootPath, "GRDK\\GameKit\\Include"));
             SystemLibraryPaths.Add(Path.Combine(GDK.Instance.RootPath, "GRDK\\GameKit\\Lib\\amd64"));
             var xboxServicesToolset = XboxServicesToolset;
-            var xboxServicesPath = Path.Combine(GDK.Instance.RootPath, "GRDK\\ExtensionLibraries\\Xbox.Services.API.C\\DesignTime\\CommonConfiguration\\Neutral\\");
+            var extensionLibraries = Path.Combine(GDK.Instance.RootPath, "GRDK\\ExtensionLibraries");
+            var xboxServicesPath = Path.Combine(extensionLibraries, "Xbox.Services.API.C\\DesignTime\\CommonConfiguration\\Neutral\\");
             if (Directory.Exists(xboxServicesPath))
             {
                 SystemLibraryPaths.Add(xboxServicesPath + "Lib\\Release\\" + xboxServicesToolset);
@@ -44,11 +45,16 @@ namespace Flax.Build.Platforms
             else
             {
                 // New location since 250402
-                xboxServicesPath = Path.Combine(GDK.Instance.RootPath, "GRDK\\ExtensionLibraries\\Xbox.Services.API.C\\");
+                xboxServicesPath = Path.Combine(extensionLibraries, "Xbox.Services.API.C\\");
                 SystemLibraryPaths.Add(xboxServicesPath + "Lib\\x64\\Release\\" + xboxServicesToolset);
+
+                // httpClient.h
+                SystemIncludePaths.Add(Path.Combine(extensionLibraries, "Xbox.LibHttpClient\\Include"));
+                SystemLibraryPaths.Add(Path.Combine(extensionLibraries, "Xbox.LibHttpClient\\Lib\\x64"));
+                SystemLibraryPaths.Add(Path.Combine(extensionLibraries, "Xbox.XCurl.API\\Lib\\x64"));
             }
             SystemIncludePaths.Add(xboxServicesPath + "Include");
-            var curlPath = Path.Combine(GDK.Instance.RootPath, "GRDK\\ExtensionLibraries\\Xbox.XCurl.API\\DesignTime\\CommonConfiguration\\Neutral\\");
+            var curlPath = Path.Combine(extensionLibraries, "Xbox.XCurl.API\\DesignTime\\CommonConfiguration\\Neutral\\");
             SystemIncludePaths.Add(curlPath + "Include");
             SystemLibraryPaths.Add(curlPath + "Lib");
         }
