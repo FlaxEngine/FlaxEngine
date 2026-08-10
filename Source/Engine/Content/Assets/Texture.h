@@ -49,6 +49,25 @@ public:
     /// <returns>The loaded texture (virtual asset) or null if fails.</returns>
     API_FUNCTION() static Texture* FromFile(const StringView& path, bool generateMips = false);
 
+    /// <summary>
+    /// Loads the texture from the image memory. Supported data formats depend on a runtime platform. All platform support loading PNG, BMP, TGA, HDR and JPEG files.
+    /// </summary>
+    /// <remarks>Valid only for virtual assets.</remarks>
+    /// <param name="data">The source image file data (eg. raw PNG file contents).</param>
+    /// <param name="format">The source image file format (from extension).</param>
+    /// <param name="generateMips">True if generate mipmaps for the imported texture.</param>
+    /// <returns>True if fails, otherwise false.</returns>
+    API_FUNCTION() bool LoadMemory(Span<byte> data, ImageFormat format, bool generateMips = false);
+
+    /// <summary>
+    /// Loads the texture from the image memory and creates the virtual texture asset for it. Supported data formats depend on a runtime platform. All platform support loading PNG, BMP, TGA, HDR and JPEG files.
+    /// </summary>
+    /// <param name="data">The source image file data (eg. raw PNG file contents).</param>
+    /// <param name="format">The source image file format (from extension).</param>
+    /// <param name="generateMips">True if generate mipmaps for the imported texture.</param>
+    /// <returns>The loaded texture (virtual asset) or null if fails.</returns>
+    API_FUNCTION() static Texture* FromMemory(Span<byte> data, ImageFormat format, bool generateMips = false);
+
 public:
     // [TextureBase]
 #if USE_EDITOR

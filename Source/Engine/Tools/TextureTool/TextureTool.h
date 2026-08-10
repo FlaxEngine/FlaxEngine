@@ -136,6 +136,8 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
         void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     };
 
+    typedef ImageFormat ImageType;
+
 public:
 #if USE_EDITOR
     /// <summary>
@@ -147,7 +149,7 @@ public:
 #endif
 
     /// <summary>
-    /// Imports the texture.
+    /// Imports the texture from file.
     /// </summary>
     /// <param name="path">The file path.</param>
     /// <param name="textureData">The output data.</param>
@@ -155,7 +157,7 @@ public:
     static bool ImportTexture(const StringView& path, TextureData& textureData);
 
     /// <summary>
-    /// Imports the texture.
+    /// Imports the texture from file with custom options.
     /// </summary>
     /// <param name="path">The file path.</param>
     /// <param name="textureData">The output data.</param>
@@ -163,6 +165,15 @@ public:
     /// <param name="errorMsg">The error message container.</param>
     /// <returns>True if fails, otherwise false.</returns>
     static bool ImportTexture(const StringView& path, TextureData& textureData, Options options, String& errorMsg);
+
+    /// <summary>
+    /// Imports the texture from memory.
+    /// </summary>
+    /// <param name="data">The file data.</param>
+    /// <param name="type">The file type.</param>
+    /// <param name="textureData">The output data.</param>
+    /// <returns>True if fails, otherwise false.</returns>
+    static bool ImportTexture(const Span<byte>& data, ImageType type, TextureData& textureData);
 
     /// <summary>
     /// Exports the texture.
@@ -222,35 +233,20 @@ public:
 #endif
 
 private:
-    enum class ImageType
-    {
-        DDS,
-        TGA,
-        PNG,
-        BMP,
-        GIF,
-        TIFF,
-        JPEG,
-        HDR,
-        RAW,
-        EXR,
-        Internal,
-    };
-
     static bool GetImageType(const StringView& path, ImageType& type);
     static bool Transform(TextureData& texture, const Function<void(Color&)>& transformation);
 
 #if COMPILE_WITH_DIRECTXTEX
     static bool ExportTextureDirectXTex(ImageType type, const StringView& path, const TextureData& textureData);
-    static bool ImportTextureDirectXTex(ImageType type, const StringView& path, TextureData& textureData, bool& hasAlpha);
-    static bool ImportTextureDirectXTex(ImageType type, const StringView& path, TextureData& textureData, const Options& options, String& errorMsg, bool& hasAlpha);
+    static bool ImportTextureDirectXTex(ImageType type, Span<byte> bytes, TextureData& textureData, bool& hasAlpha);
+    static bool ImportTextureDirectXTex(ImageType type, Span<byte> bytes, TextureData& textureData, const Options& options, String& errorMsg, bool& hasAlpha);
     static bool ConvertDirectXTex(TextureData& dst, const TextureData& src, const PixelFormat dstFormat);
     static bool ResizeDirectXTex(TextureData& dst, const TextureData& src, int32 dstWidth, int32 dstHeight);
 #endif
 #if COMPILE_WITH_STB
     static bool ExportTextureStb(ImageType type, const StringView& path, const TextureData& textureData);
-    static bool ImportTextureStb(ImageType type, const StringView& path, TextureData& textureData, bool& hasAlpha);
-    static bool ImportTextureStb(ImageType type, const StringView& path, TextureData& textureData, const Options& options, String& errorMsg, bool& hasAlpha);
+    static bool ImportTextureStb(ImageType type, Span<byte> bytes, TextureData& textureData, bool& hasAlpha);
+    static bool ImportTextureStb(ImageType type, Span<byte> bytes, TextureData& textureData, const Options& options, String& errorMsg, bool& hasAlpha);
     static bool ConvertStb(TextureData& dst, const TextureData& src, const PixelFormat dstFormat);
     static bool ResizeStb(PixelFormat format, TextureMipData& dstMip, const TextureMipData& srcMip, int32 dstMipWidth, int32 dstMipHeight);
     static bool ResizeStb(TextureData& dst, const TextureData& src, int32 dstWidth, int32 dstHeight);

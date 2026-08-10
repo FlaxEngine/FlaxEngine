@@ -186,3 +186,34 @@ Texture* Texture::FromFile(const StringView& path, bool generateMips)
     }
     return texture;
 }
+
+bool Texture::LoadMemory(Span<byte> data, ImageFormat format, bool generateMips)
+{
+    if (!IsVirtual())
+    {
+        LOG(Error, "Loading image from file is supported only for virtual textures.");
+        return true;
+    }
+
+    TextureData textureData;
+    if (TextureTool::ImportTexture(data, format, textureData))
+    {
+        return true;
+    }
+
+    auto initData = New<InitData>();
+    initData->FromTextureData(textureData, generateMips);
+
+    return Init(initData);
+}
+
+Texture* Texture::FromMemory(Span<byte> data, ImageFormat format, bool generateMips)
+{
+    auto texture = Content::CreateVirtualAsset<Texture>();
+    if (texture->LoadMemory(data, format, generateMips))
+    {
+        texture->DeleteObject();
+        texture = nullptr;
+    }
+    return texture;
+}

@@ -6,7 +6,6 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Config/GraphicsSettings.h"
-#include "Engine/Platform/File.h"
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Platform/ConditionVariable.h"
 #include "Engine/Graphics/RenderTools.h"
@@ -290,21 +289,13 @@ bool TextureTool::ExportTextureDirectXTex(ImageType type, const StringView& path
     return false;
 }
 
-HRESULT LoadFromRAWFile(const StringView& path, DirectX::ScratchImage& image)
+HRESULT LoadFromRAWFile(Span<byte> bytes, DirectX::ScratchImage& image)
 {
     // Assume 16-bit, grayscale .RAW file in little-endian byte order
 
-    // Load raw bytes from file
-    Array<byte> data;
-    if (File::ReadAllBytes(path, data))
-    {
-        LOG(Warning, "Failed to load file data.");
-        return ERROR_PATH_NOT_FOUND;
-    }
-
     // Check size
-    const auto size = (int32)Math::Sqrt(data.Count() / 2.0f);
-    if (data.Count() != size * size * 2)
+    const auto size = (int32)Math::Sqrt(bytes.Length() / 2.0f);
+    if (bytes.Length() != size * size * 2)
     {
         LOG(Warning, "Invalid RAW file data size or format. Use 16-bit .RAW file in little-endian byte order (square dimensions).");
         return ERROR_BAD_FORMAT;
@@ -315,25 +306,24 @@ HRESULT LoadFromRAWFile(const StringView& path, DirectX::ScratchImage& image)
     img.format = DXGI_FORMAT_R16_UNORM;
     img.width = size;
     img.height = size;
-    img.rowPitch = data.Count() / size;
-    img.slicePitch = data.Count();
+    img.rowPitch = bytes.Length() / size;
+    img.slicePitch = bytes.Length();
 
     // Link data
-    img.pixels = data.Get();
+    img.pixels = bytes.Get();
 
     // Init
     return image.InitializeFromImage(img);
 }
 
-HRESULT LoadFromEXRFile(const StringView& path, DirectX::ScratchImage& image)
+HRESULT LoadFromEXRFile(Span<byte> bytes, DirectX::ScratchImage& image)
 {
 #if USE_EDITOR
     // Load exr file
-    AnsiPathTempFile tempFile(path);
     float* pixels;
     int width, height;
     const char* err = nullptr;
-    int ret = LoadEXR(&pixels, &width, &height, tempFile.Path.Get(), &err);
+    int ret = LoadEXRFromMemory(&pixels, &width, &height, bytes.Get(), bytes.Length(), &err);
     if (ret != TINYEXR_SUCCESS)
     {
         if (err)
@@ -368,7 +358,7 @@ HRESULT LoadFromEXRFile(const StringView& path, DirectX::ScratchImage& image)
 #endif
 }
 
-bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path, TextureData& textureData, bool& hasAlpha)
+bool TextureTool::ImportTextureDirectXTex(ImageType type, Span<byte> bytes, TextureData& textureData, bool& hasAlpha)
 {
     // Load image data
     DirectX::ScratchImage image;
@@ -380,22 +370,22 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     case ImageType::TIFF:
     case ImageType::JPEG:
     case ImageType::PNG:
-        result = DirectX::LoadFromWICFile(*path, DirectX::WIC_FLAGS_NONE, nullptr, image);
+        result = DirectX::LoadFromWICMemory(bytes.Get(), bytes.Length(), DirectX::WIC_FLAGS_NONE, nullptr, image);
         break;
     case ImageType::DDS:
-        result = DirectX::LoadFromDDSFile(*path, DirectX::DDS_FLAGS_NONE, nullptr, image);
+        result = DirectX::LoadFromDDSMemory(bytes.Get(), bytes.Length(), DirectX::DDS_FLAGS_NONE, nullptr, image);
         break;
     case ImageType::TGA:
-        result = DirectX::LoadFromTGAFile(*path, nullptr, image);
+        result = DirectX::LoadFromTGAMemory(bytes.Get(), bytes.Length(), nullptr, image);
         break;
     case ImageType::HDR:
-        result = DirectX::LoadFromHDRFile(*path, nullptr, image);
+        result = DirectX::LoadFromHDRMemory(bytes.Get(), bytes.Length(), nullptr, image);
         break;
     case ImageType::RAW:
-        result = LoadFromRAWFile(path, image);
+        result = LoadFromRAWFile(bytes, image);
         break;
     case ImageType::EXR:
-        result = LoadFromEXRFile(path, image);
+        result = LoadFromEXRFile(bytes, image);
         break;
     default:
         result = DXGI_ERROR_INVALID_CALL;
@@ -581,7 +571,7 @@ HRESULT CustomGenerateMipMaps(const DirectX::Image* srcImages, size_t nimages, c
     return S_OK;
 }
 
-bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path, TextureData& textureData, const Options& options, String& errorMsg, bool& hasAlpha)
+bool TextureTool::ImportTextureDirectXTex(ImageType type, Span<byte> bytes, TextureData& textureData, const Options& options, String& errorMsg, bool& hasAlpha)
 {
 #define SET_CURRENT_IMG(x) currentImage = &x
 #define GET_TMP_IMG() (currentImage != &image1 ? image1 : image2)
@@ -599,22 +589,22 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     case ImageType::TIFF:
     case ImageType::JPEG:
     case ImageType::PNG:
-        result = DirectX::LoadFromWICFile(*path, DirectX::WIC_FLAGS_NONE, nullptr, image1);
+        result = DirectX::LoadFromWICMemory(bytes.Get(), bytes.Length(), DirectX::WIC_FLAGS_NONE, nullptr, image1);
         break;
     case ImageType::DDS:
-        result = DirectX::LoadFromDDSFile(*path, DirectX::DDS_FLAGS_NONE, nullptr, image1);
+        result = DirectX::LoadFromDDSMemory(bytes.Get(), bytes.Length(), DirectX::DDS_FLAGS_NONE, nullptr, image1);
         break;
     case ImageType::TGA:
-        result = DirectX::LoadFromTGAFile(*path, nullptr, image1);
+        result = DirectX::LoadFromTGAMemory(bytes.Get(), bytes.Length(), nullptr, image1);
         break;
     case ImageType::HDR:
-        result = DirectX::LoadFromHDRFile(*path, nullptr, image1);
+        result = DirectX::LoadFromHDRMemory(bytes.Get(), bytes.Length(), nullptr, image1);
         break;
     case ImageType::RAW:
-        result = LoadFromRAWFile(path, image1);
+        result = LoadFromRAWFile(bytes, image1);
         break;
     case ImageType::EXR:
-        result = LoadFromEXRFile(path, image1);
+        result = LoadFromEXRFile(bytes, image1);
         break;
     case ImageType::Internal:
     {
@@ -724,7 +714,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     }
     if (options.GenerateMipMaps && !isPowerOfTwo)
     {
-        LOG(Warning, "Cannot generate mip maps for texture '{}' that size is not power of two. Use Resize or Max Size to change dimensions.", StringUtils::GetFileName(path), width, height);
+        LOG(Warning, "Cannot generate mip maps for texture that size is not power of two ({}x{}). Use Resize or Max Size to change dimensions.", width, height);
     }
 
     // Allocate memory for texture data
@@ -987,7 +977,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         }
         if (FAILED(result))
         {
-            errorMsg = String::Format(TEXT("Cannot generate texture mip maps chain, error: {1:x}"), *path, static_cast<uint32>(result));
+            errorMsg = String::Format(TEXT("Cannot generate texture mip maps chain, error: {0:x}"), (uint32)result);
             return true;
         }
         SET_CURRENT_IMG(tmpImg);
@@ -1002,7 +992,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         result = tmpImg.Initialize(info);
         if (FAILED(result))
         {
-            errorMsg = String::Format(TEXT("Failed initialize image, error: {1:x}"), *path, static_cast<uint32>(result));
+            errorMsg = String::Format(TEXT("Failed initialize image, error: {0:x}"), (uint32)result);
             return true;
         }
 
@@ -1014,7 +1004,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
             result = ScaleMipMapsAlphaForCoverage(img, info.mipLevels, info, item, options.PreserveAlphaCoverageReference, tmpImg);
             if (FAILED(result))
             {
-                errorMsg = String::Format(TEXT("Failed to scale mip maps alpha for coverage, error: {1:x}"), *path, static_cast<uint32>(result));
+                errorMsg = String::Format(TEXT("Failed to scale mip maps alpha for coverage, error: {0:x}"), (uint32)result);
                 return true;
             }
         }

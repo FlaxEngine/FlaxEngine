@@ -7,6 +7,7 @@
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Math/Vector2.h"
+#include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Serialization/JsonWriter.h"
 #include "Engine/Serialization/JsonTools.h"
@@ -224,12 +225,20 @@ bool TextureTool::ImportTexture(const StringView& path, TextureData& textureData
     if (GetImageType(path, type))
         return true;
 
+    // Load raw bytes from file
+    Array<byte> bytes;
+    if (File::ReadAllBytes(path, bytes))
+    {
+        LOG(Warning, "Failed to load file data.");
+        return true;
+    }
+
     // Import
     bool hasAlpha = false;
 #if COMPILE_WITH_DIRECTXTEX
-    const auto failed = ImportTextureDirectXTex(type, path, textureData, hasAlpha);
+    const auto failed = ImportTextureDirectXTex(type, ToSpan(bytes), textureData, hasAlpha);
 #elif COMPILE_WITH_STB
-    const auto failed = ImportTextureStb(type, path, textureData, hasAlpha);
+    const auto failed = ImportTextureStb(type, ToSpan(bytes), textureData, hasAlpha);
 #else
     const auto failed = true;
     LOG(Warning, "Importing textures is not supported on this platform.");
@@ -269,6 +278,14 @@ bool TextureTool::ImportTexture(const StringView& path, TextureData& textureData
             return true;
     }
 
+    // Load raw bytes from file
+    Array<byte> bytes;
+    if (File::ReadAllBytes(path, bytes))
+    {
+        LOG(Warning, "Failed to load file data.");
+        return true;
+    }
+
     // Clamp values
     options.MaxSize = Math::Clamp(options.MaxSize, 1, GPU_MAX_TEXTURE_SIZE);
     options.SizeX = Math::Clamp(options.SizeX, 1, GPU_MAX_TEXTURE_SIZE);
@@ -277,9 +294,9 @@ bool TextureTool::ImportTexture(const StringView& path, TextureData& textureData
     // Import
     bool hasAlpha = false;
 #if COMPILE_WITH_DIRECTXTEX
-    const auto failed = ImportTextureDirectXTex(type, path, textureData, options, errorMsg, hasAlpha);
+    const auto failed = ImportTextureDirectXTex(type, ToSpan(bytes), textureData, options, errorMsg, hasAlpha);
 #elif COMPILE_WITH_STB
-    const auto failed = ImportTextureStb(type, path, textureData, options, errorMsg, hasAlpha);
+    const auto failed = ImportTextureStb(type, ToSpan(bytes), textureData, options, errorMsg, hasAlpha);
 #else
     const auto failed = true;
     LOG(Warning, "Importing textures is not supported on this platform.");
@@ -297,6 +314,22 @@ bool TextureTool::ImportTexture(const StringView& path, TextureData& textureData
         LOG(Info, "Texture imported in {0} ms", static_cast<int32>((DateTime::NowUTC() - startTime).GetTotalMilliseconds()));
     }
 
+    return failed;
+}
+
+bool TextureTool::ImportTexture(const Span<byte>& data, ImageType type, TextureData& textureData)
+{
+    PROFILE_CPU();
+    PROFILE_MEM(GraphicsTextures);
+    bool hasAlpha = false;
+#if COMPILE_WITH_DIRECTXTEX
+    const auto failed = ImportTextureDirectXTex(type, data, textureData, hasAlpha);
+#elif COMPILE_WITH_STB
+    const auto failed = ImportTextureStb(type, data, textureData, hasAlpha);
+#else
+    const auto failed = true;
+    LOG(Warning, "Importing textures is not supported on this platform.");
+#endif
     return failed;
 }
 
