@@ -116,7 +116,8 @@ namespace Flax.Build.Bindings
                 else
                 {
                     // Pass as pointer to local variable converted for managed runtime
-                    if (paramType.IsPtr)
+                    var paramApiType = FindApiTypeInfo(buildData, paramType, caller);
+                    if (paramType.IsPtr && (paramApiType == null || !paramApiType.IsScriptingObject))
                         result = string.Format(nativeToManaged, '*' + paramName);
                     contents.Append($"        auto __param_{paramName} = {result};").AppendLine();
                     result = $"&__param_{paramName}";
