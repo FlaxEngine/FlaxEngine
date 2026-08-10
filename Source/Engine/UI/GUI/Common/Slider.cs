@@ -447,7 +447,7 @@ public class Slider : ContainerControl
     private void NavValueChanged(bool horizontal, float thumbLocation)
     {
         float numLocation = WholeNumbers ? 0.1f : 0.01f;
-        var thumbValue = MathF.Round((thumbLocation < _thumbCenter ? -numLocation : numLocation) * _step, 2);
+        var thumbValue = (thumbLocation < _thumbCenter ? -numLocation : numLocation) * _step;
 
         if (horizontal)
         {
