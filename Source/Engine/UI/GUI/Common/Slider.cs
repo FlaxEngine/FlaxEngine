@@ -431,35 +431,25 @@ public class Slider : ContainerControl
             bool isHorizontal = (Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft) &&
                 direction is NavDirection.Right or NavDirection.Left;
             float thumbLocation = isHorizontal ? location.X : location.Y;
+            
+            float numLocation = WholeNumbers ? 0.1f : 0.01f;
+            var thumbValue = (thumbLocation < _thumbCenter ? -numLocation : numLocation) * _step;
 
-            NavValueChanged(isHorizontal, thumbLocation);
+            switch (isHorizontal, Direction)
+            {
+                case (true, SliderDirection.HorizontalRight) or (false, SliderDirection.VerticalDown):
+                    Value += thumbValue;
+                    break;
+
+                case (true, SliderDirection.HorizontalLeft) or (false, SliderDirection.VerticalUp):
+                    Value -= thumbValue;
+                    break;
+
+                default: break;
+            }
         }
 
         return base.OnNavigate(direction, location, caller, visited);
-    }
-
-    /// <summary>
-    /// Slider's value changed via the UI navigation.
-    /// </summary>
-    /// <param name="horizontal">If the Slider's direction is horizontal.</param>
-    /// <param name="thumbLocation">The thumb location.</param>
-    private void NavValueChanged(bool horizontal, float thumbLocation)
-    {
-        float numLocation = WholeNumbers ? 0.1f : 0.01f;
-        var thumbValue = (thumbLocation < _thumbCenter ? -numLocation : numLocation) * _step;
-
-        switch (horizontal, Direction)
-        {
-            case (true, SliderDirection.HorizontalRight) or (false, SliderDirection.VerticalDown):
-                Value += thumbValue;
-                break;
-
-            case (true, SliderDirection.HorizontalLeft) or (false, SliderDirection.VerticalUp):
-                Value -= thumbValue;
-                break;
-
-            default: break;
-        }
     }
 
     /// <inheritdoc />
