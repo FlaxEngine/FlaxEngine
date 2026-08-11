@@ -425,9 +425,9 @@ public class Slider : ContainerControl
     {
         _isNavSliding = IsFocused && direction != NavDirection.None;
 
+        // Control slider via navigation actions
         if (_isNavSliding)
         {
-            // Control slider via navigation actions
             bool isHorizontal = (Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft) &&
                 direction is NavDirection.Right or NavDirection.Left;
             float thumbLocation = isHorizontal ? location.X : location.Y;
@@ -445,8 +445,8 @@ public class Slider : ContainerControl
     /// <param name="thumbLocation">The thumb location.</param>
     private void NavValueChanged(bool horizontal, float thumbLocation)
     {
-        float numLocation = WholeNumbers ? 0.1f : 0.01f;
-        var thumbValue = (thumbLocation < _thumbCenter ? -numLocation : numLocation) * _step;
+        float numLocation = WholeNumbers ? 1 : 0.1f;
+        var thumbValue = (thumbLocation < _thumbCenter ? -numLocation : numLocation);
 
         switch (horizontal , Direction)
         {
