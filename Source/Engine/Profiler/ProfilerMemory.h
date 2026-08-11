@@ -104,6 +104,9 @@ public:
         // Total memory allocated by input system.
         Input,
 
+        // Total online system memory.
+        Online,
+
         // Total localization system memory.
         Localization,
 
