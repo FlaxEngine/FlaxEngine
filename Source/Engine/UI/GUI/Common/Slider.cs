@@ -445,10 +445,10 @@ public class Slider : ContainerControl
     /// <param name="thumbLocation">The thumb location.</param>
     private void NavValueChanged(bool horizontal, float thumbLocation)
     {
-        float numLocation = WholeNumbers ? 1 : 0.1f;
-        var thumbValue = (thumbLocation < _thumbCenter ? -numLocation : numLocation);
+        float numLocation = WholeNumbers ? 0.1f : 0.01f;
+        var thumbValue = (thumbLocation < _thumbCenter ? -numLocation : numLocation) * _step;
 
-        switch (horizontal , Direction)
+        switch (horizontal, Direction)
         {
             case (true, SliderDirection.HorizontalRight) or (false, SliderDirection.VerticalDown):
                 Value += thumbValue;
@@ -460,8 +460,6 @@ public class Slider : ContainerControl
 
             default: break;
         }
-
-        Value = MathF.Round(Value, 2);
     }
 
     /// <inheritdoc />
