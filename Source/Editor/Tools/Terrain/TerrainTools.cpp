@@ -21,7 +21,7 @@ bool TerrainTools::TryGetPatchCoordToAdd(Terrain* terrain, const Ray& ray, Int2&
 {
     CHECK_RETURN(terrain, true);
     result = Int2::Zero;
-    const float patchSize = terrain->GetChunkSize() * TERRAIN_UNITS_PER_VERTEX * Terrain::ChunksCountEdge;
+    const auto patchSize = terrain->GetChunkSize() * TERRAIN_UNITS_PER_VERTEX * Terrain::ChunksCountEdge * terrain->GetScale();
 
     // Try to pick any of the patch edges
     for (int32 patchIndex = 0; patchIndex < terrain->GetPatchesCount(); patchIndex++)
@@ -36,7 +36,7 @@ bool TerrainTools::TryGetPatchCoordToAdd(Terrain* terrain, const Ray& ray, Int2&
 #define CHECK_EDGE(dx, dz) \
 			if (terrain->GetPatch(x + dx, z + dz) == nullptr) \
 			{ \
-				if (bounds.MakeOffsetted(Vector3(patchSize * dx, 0, patchSize * dz)).Intersects(ray)) \
+				if (bounds.MakeOffsetted(Vector3(patchSize.X * dx, 0, patchSize.Z * dz)).Intersects(ray)) \
 				{ \
 					result = Int2(x + dx, z + dz); \
 					return true; \
