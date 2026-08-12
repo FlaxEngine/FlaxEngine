@@ -38,7 +38,7 @@ API_ENUM(Namespace="FlaxEngine.Online") enum class OnlinePresenceStates
 /// <summary>
 /// Online platform user description.
 /// </summary>
-API_STRUCT(Namespace="FlaxEngine.Online") struct FLAXENGINE_API OnlineUser
+API_STRUCT(Namespace="FlaxEngine.Online", NoDefault) struct FLAXENGINE_API OnlineUser
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(OnlineUser);
 
@@ -53,9 +53,19 @@ API_STRUCT(Namespace="FlaxEngine.Online") struct FLAXENGINE_API OnlineUser
     API_FIELD() String Name;
 
     /// <summary>
+    /// The current player rich-presence status text.
+    /// </summary>
+    API_FIELD() String PresenceStatus;
+
+    /// <summary>
     /// The current player presence state.
     /// </summary>
-    API_FIELD() OnlinePresenceStates PresenceState;
+    API_FIELD() OnlinePresenceStates PresenceState = OnlinePresenceStates::Online;
+
+    /// <summary>
+    /// The current game identifier that the user is playing. Empty if not playing any game or not supported by the platform. Can be used to check if the user is playing this game (IOnlinePlatform.GameId) or a different one.
+    /// </summary>
+    API_FIELD() Guid GameId = Guid::Empty;
 };
 
 /// <summary>
@@ -270,6 +280,12 @@ API_INTERFACE(Namespace="FlaxEngine.Online") class FLAXENGINE_API IOnlinePlatfor
     /// <remarks>Called only by Online system. Can be used to destroy the object.</remarks>
     API_FUNCTION() virtual void Deinitialize() = 0;
 
+    /// <summary>
+    /// Gets the platform-specific identifier of this game. The same for all players playing this game. Can be used to check if the user is playing this game or a different one.
+    /// </summary>
+    /// <returns>Game identifier.</returns>
+    API_FUNCTION() virtual Guid GetGameId() = 0;
+
 public:
     /// <summary>
     /// Logins the local user into the online platform.
@@ -316,6 +332,14 @@ public:
     /// <param name="localUser">The local user (null if use default one).</param>
     /// <returns>True if failed, otherwise false.</returns>
     API_FUNCTION() virtual bool GetFriends(API_PARAM(Out) Array<OnlineUser, HeapAllocation>& friends, User* localUser = nullptr) = 0;
+
+    /// <summary>
+    /// Sets the rich-presence status text for the local user. Can be used to display custom status message in the friends list or other places.
+    /// </summary>
+    /// <param name="status">The status text. Empty to clear presence status.</param>
+    /// <param name="localUser">The local user (null if use default one).</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() virtual bool SetPresence(const StringView& status, User* localUser = nullptr) = 0;
 
 public:
     /// <summary>
