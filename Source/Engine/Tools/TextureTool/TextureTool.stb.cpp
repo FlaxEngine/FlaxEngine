@@ -455,7 +455,7 @@ bool TextureTool::ImportTextureStb(ImageType type, Span<byte> bytes, TextureData
     {
 #if USE_EDITOR
         // Load image as stream of bytes
-        const unsigned char* ddsData = static_cast<const unsigned char*>(fileData.Get());
+        const unsigned char* ddsData = static_cast<const unsigned char*>(bytes.Get());
 
         // Decode header and get pointer to initial data
         ddspp::Descriptor desc;

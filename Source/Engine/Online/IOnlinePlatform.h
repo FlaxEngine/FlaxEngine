@@ -323,7 +323,7 @@ public:
     /// <param name="user">The player to get avatar for.</param>
     /// <param name="avatar">The loaded avatar texture, null if cannot get it. Caller has to destroy the returned virtual texture once unused.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() virtual bool GetUserAvarar(const OnlineUser& user, API_PARAM(Out) Texture*& avatar) = 0;
+    API_FUNCTION() virtual bool GetUserAvatar(const OnlineUser& user, API_PARAM(Out) Texture*& avatar) = 0;
 
     /// <summary>
     /// Gets the list of friends of the user from the online platform.
