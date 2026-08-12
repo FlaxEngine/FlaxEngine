@@ -205,6 +205,47 @@ API_STRUCT(Namespace="FlaxEngine.Online") struct FLAXENGINE_API OnlineLeaderboar
 };
 
 /// <summary>
+/// Online platform game overlay dialog types.
+/// </summary>
+API_ENUM(Namespace="FlaxEngine.Online") enum class OnlineOverlayDialog
+{
+    /// <summary>
+    /// Displays the user login page.
+    /// </summary>
+    Login = 0,
+
+    /// <summary>
+    /// Displays the uweb browser.
+    /// </summary>
+    Website,
+
+    /// <summary>
+    /// Displays the user profile page.
+    /// </summary>
+    Profile,
+
+    /// <summary>
+    /// Displays the page with achievements list.
+    /// </summary>
+    Achievements,
+
+    /// <summary>
+    /// Displays the page with stats list.
+    /// </summary>
+    Stats,
+
+    /// <summary>
+    /// Displays the page with friends list.
+    /// </summary>
+    Friends,
+
+    /// <summary>
+    /// Displays the page with text chat.
+    /// </summary>
+    Chat,
+};
+
+/// <summary>
 /// Interface for online platform providers for communicating with various multiplayer services such as player info, achievements, game lobby or in-game store.
 /// </summary>
 API_INTERFACE(Namespace="FlaxEngine.Online") class FLAXENGINE_API IOnlinePlatform
@@ -416,4 +457,28 @@ public:
     /// <param name="localUser">The local user (null if use default one).</param>
     /// <returns>True if failed, otherwise false.</returns>
     API_FUNCTION() virtual bool SetSaveGame(const StringView& name, const Span<byte>& data, User* localUser = nullptr) = 0;
+
+public:
+    /// <summary>
+    /// Opens the game store overlay to a specific place. Avaliability depends on the platform and store.
+    /// </summary>
+    /// <param name="dialog">The dialog to display.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() virtual bool OpenOverlay(OnlineOverlayDialog dialog) = 0;
+
+    /// <summary>
+    /// Opens the game store overlay to a specific place for a given website URL. Avaliability depends on the platform and store.
+    /// </summary>
+    /// <param name="url">The URL of the website to open. Full address with protocol type is required, e.g. https://www.flaxengine.com/.</param>
+    /// <param name="dialog">The dialog to display.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() virtual bool OpenOverlayUrl(const StringView& url, OnlineOverlayDialog dialog = OnlineOverlayDialog::Website) = 0;
+
+    /// <summary>
+    /// Opens the game store overlay to a specific place for a given user. Avaliability depends on the platform and store.
+    /// </summary>
+    /// <param name="user">The user to show Profile/Achievements/Stats pages of.</param>
+    /// <param name="dialog">The dialog to display.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() virtual bool OpenOverlayUser(const OnlineUser& user, OnlineOverlayDialog dialog = OnlineOverlayDialog::Profile) = 0;
 };
