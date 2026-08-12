@@ -417,11 +417,10 @@ bool TextureTool::ImportTextureStb(ImageType type, Span<byte> bytes, TextureData
     {
 #if USE_EDITOR
         // Load exr file
-        AnsiPathTempFile tempFile(path);
         float* pixels;
         int width, height;
         const char* err = nullptr;
-        int ret = LoadEXR(&pixels, &width, &height, tempFile.Path.Get(), &err);
+        int ret = LoadEXRFromMemory(&pixels, &width, &height, bytes.Get(), bytes.Length(), &err);
         if (ret != TINYEXR_SUCCESS)
         {
             if (err)
