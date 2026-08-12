@@ -8,6 +8,7 @@
 class GPUTexture;
 class GPUContext;
 struct RenderContext;
+struct RenderContextBatch;
 
 /// <summary>
 /// Custom PostFx which can modify final image by processing it with material based filters. The base class for all post process effects used by the graphics pipeline. Allows to extend frame rendering logic and apply custom effects such as outline, night vision, contrast etc.
