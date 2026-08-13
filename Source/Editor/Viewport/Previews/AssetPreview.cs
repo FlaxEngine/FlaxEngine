@@ -225,6 +225,17 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <summary>
+        /// Draws the bounds of object.
+        /// </summary>
+        /// <param name="box">Object bounding box.</param>
+        protected void DebugDrawBounds(BoundingBox box)
+        {
+            var color = Color.Violet.RGBMultiplied(0.8f);
+            DebugDraw.DrawWireBox(box, color.AlphaMultiplied(0.3f), 0, false);
+            DebugDraw.DrawWireBox(box, color, 0, true);
+        }
+
+        /// <summary>
         /// Called when drawing debug shapes with <see cref="DebugDraw"/> for this viewport.
         /// </summary>
         /// <param name="context">The GPU context.</param>
