@@ -301,6 +301,8 @@ namespace WaylandImpl
             auto dragStartWindow = DragSourceWindow != nullptr ? DragSourceWindow->GetSDLWindow() : draggedWindow;
             wl_surface* originSurface = static_cast<wl_surface*>(SDL_GetPointerProperty(SDL_GetWindowProperties(dragStartWindow), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr));
             wl_surface* iconSurface = nullptr;
+            if (!dragWindow)
+                wl_data_device_start_drag(WrappedDataDevice, dataSource, originSurface, iconSurface, DragSerial);
 
             Platform::AtomicStore(&StartFlag, 1);
 
