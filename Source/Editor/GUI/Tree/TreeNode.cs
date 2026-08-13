@@ -508,9 +508,9 @@ namespace FlaxEditor.GUI.Tree
         /// <returns>True if event has been handled.</returns>
         protected virtual bool OnMouseDoubleClickHeader(ref Float2 location, MouseButton button)
         {
-            if (HasAnyVisibleChild)
+            if (HasAnyVisibleChild && _animationProgress >= 1.0f)
             {
-                // Toggle open state
+                // Toggle open state (ignored while an expand/collapse animation is running)
                 if (_opened)
                     Collapse();
                 else
@@ -966,8 +966,8 @@ namespace FlaxEditor.GUI.Tree
                     }
                 }
 
-                // Check if mouse hits arrow
-                if (_mouseOverArrow && HasAnyVisibleChild)
+                // Check if mouse hits arrow (ignored while an expand/collapse animation is running)
+                if (_mouseOverArrow && HasAnyVisibleChild && _animationProgress >= 1.0f)
                 {
                     if (ParentTree.Root.GetKey(KeyboardKeys.Alt))
                     {
@@ -1322,7 +1322,19 @@ namespace FlaxEditor.GUI.Tree
             // Skip full layout if it's fully collapsed
             if (_opened || _animationProgress < 1.0f)
             {
-                y -= _cachedHeight * (_opened ? 1.0f - _animationProgress : _animationProgress);
+                // Measure the total children height this frame instead of relying on the previously cached one.
+                // Using the stale _cachedHeight causes a visible 3-frame flicker on first expand (down -> up -> down).
+                // Frame 1 uses the collapsed cache (~header height) so children snap to fully-open.
+                // Frame 2 uses the just-refreshed full height so they snap behind the header.
+                // At the end subsequent frames slide back down.
+                float childrenHeight = 0.0f;
+                for (int i = 0; i < _children.Count; i++)
+                {
+                    if (_children[i] is TreeNode node && node.Visible)
+                        childrenHeight += node.Height + DefaultNodeOffsetY;
+                }
+
+                y -= childrenHeight * (_opened ? 1.0f - _animationProgress : _animationProgress);
                 for (int i = 0; i < _children.Count; i++)
                 {
                     if (_children[i] is TreeNode node && node.Visible)
