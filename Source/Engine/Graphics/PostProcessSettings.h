@@ -986,7 +986,7 @@ API_STRUCT() struct FLAXENGINE_API EyeAdaptationSettings : ISerializable
     /// The effect rendering mode used for the exposure processing.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(0), PostProcessSetting((int)EyeAdaptationSettingsOverride.Mode)")
-    EyeAdaptationMode Mode = EyeAdaptationMode::AutomaticHistogram;
+    EyeAdaptationMode Mode = EyeAdaptationMode::None;
 
     /// <summary>
     /// The speed at which the exposure changes when the scene brightness moves from a dark area to a bright area (brightness goes up).
@@ -1616,7 +1616,7 @@ API_STRUCT() struct FLAXENGINE_API MotionBlurSettings : ISerializable
     /// If checked, the motion blur effect will be rendered.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(0), PostProcessSetting((int)MotionBlurSettingsOverride.Enabled)")
-    bool Enabled = true;
+    bool Enabled = false;
 
     /// <summary>
     /// The blur effect strength. A value of 0 disables it, while higher values increase the effect.
