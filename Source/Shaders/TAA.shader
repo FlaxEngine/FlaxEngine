@@ -160,9 +160,9 @@ float4 PS(Quad_VS2PS input) : SV_Target0
 
     // Sample image and history
 #if UNJITTER_INPUT
-    float4 current = SAMPLE_RT(Input, input.TexCoord - JitterInv.xy);
+    float4 current = SAMPLE_RT_LINEAR(Input, input.TexCoord - JitterInv.xy);
 #else
-    float4 current = SAMPLE_RT(Input, input.TexCoord);
+    float4 current = SAMPLE_RT_LINEAR(Input, input.TexCoord);
 #endif
     float4 history = SAMPLE_RT_LINEAR(InputHistory, input.TexCoord - velocityDepth.xy);
 
@@ -176,15 +176,15 @@ float4 PS(Quad_VS2PS input) : SV_Target0
     float2 du = float2(ScreenSizeInv.x, 0.0);
     float2 dv = float2(0.0, ScreenSizeInv.y);
 
-    float4 ctl = SAMPLE_RT(Input, uv - dv - du);
-    float4 ctc = SAMPLE_RT(Input, uv - dv);
-    float4 ctr = SAMPLE_RT(Input, uv - dv + du);
-    float4 cml = SAMPLE_RT(Input, uv - du);
-    float4 cmc = SAMPLE_RT(Input, uv);
-    float4 cmr = SAMPLE_RT(Input, uv + du);
-    float4 cbl = SAMPLE_RT(Input, uv + dv - du);
-    float4 cbc = SAMPLE_RT(Input, uv + dv);
-    float4 cbr = SAMPLE_RT(Input, uv + dv + du);
+    float4 ctl = SAMPLE_RT_LINEAR(Input, uv - dv - du);
+    float4 ctc = SAMPLE_RT_LINEAR(Input, uv - dv);
+    float4 ctr = SAMPLE_RT_LINEAR(Input, uv - dv + du);
+    float4 cml = SAMPLE_RT_LINEAR(Input, uv - du);
+    float4 cmc = SAMPLE_RT_LINEAR(Input, uv);
+    float4 cmr = SAMPLE_RT_LINEAR(Input, uv + du);
+    float4 cbl = SAMPLE_RT_LINEAR(Input, uv + dv - du);
+    float4 cbc = SAMPLE_RT_LINEAR(Input, uv + dv);
+    float4 cbr = SAMPLE_RT_LINEAR(Input, uv + dv + du);
 
     float4 cMin = min(ctl, min(ctc, min(ctr, min(cml, min(cmc, min(cmr, min(cbl, min(cbc, cbr))))))));
     float4 cMax = max(ctl, max(ctc, max(ctr, max(cml, max(cmc, max(cmr, max(cbl, max(cbc, cbr))))))));

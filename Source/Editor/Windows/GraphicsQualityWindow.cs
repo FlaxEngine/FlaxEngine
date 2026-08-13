@@ -104,7 +104,7 @@ namespace FlaxEditor.Windows
                 set => MainRenderTask.Instance.RenderScale = value;
             }
 
-            [NoSerialize, DefaultValue(RenderingUpscaleLocation.AfterAntiAliasingPass), VisibleIf(nameof(UpscaleLocation_Visible))]
+            [NoSerialize, DefaultValue(RenderingUpscaleLocation.DuringAntiAliasing), VisibleIf(nameof(UpscaleLocation_Visible))]
             [EditorOrder(1401), EditorDisplay("Quality")]
             [Tooltip("The image resolution upscale location within rendering pipeline.")]
             public RenderingUpscaleLocation UpscaleLocation

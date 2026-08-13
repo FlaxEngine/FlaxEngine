@@ -58,24 +58,26 @@ void TAA::Dispose()
     _shader = nullptr;
 }
 
-void TAA::Render(const RenderContext& renderContext, GPUTexture* input, GPUTextureView* output)
+void TAA::Render(const RenderContext& renderContext, GPUTexture* input, GPUTexture* output)
 {
+    auto viewport = Viewport(0, 0, (float)output->Width(), (float)output->Height());
+    auto inputSize = Float2((float)input->Width(), (float)input->Height());
     auto context = GPUDevice::Instance->GetMainContext();
     if (checkIfSkipPass())
     {
         // Resources are missing. Do not perform rendering, just copy source frame.
-        context->SetRenderTarget(output);
+        context->SetViewportAndScissors(viewport);
+        context->SetRenderTarget(output->View());
         context->Draw(input);
         return;
     }
     const auto& settings = renderContext.List->Settings.AntiAliasing;
-
     PROFILE_GPU_CPU("Temporal Antialiasing");
 
     // Get history buffers
     bool resetHistory = renderContext.Task->IsCameraCut;
     renderContext.Buffers->LastFrameTemporalAA = Engine::FrameCount;
-    const auto tempDesc = GPUTextureDescription::New2D(input->Width(), input->Height(), input->Format());
+    const auto tempDesc = GPUTextureDescription::New2D(output->Width(), output->Height(), output->Format());
     if (renderContext.Buffers->TemporalAA == nullptr)
     {
         // Missing temporal buffer
@@ -99,13 +101,11 @@ void TAA::Render(const RenderContext& renderContext, GPUTexture* input, GPUTextu
     float blendStrength = 1.0f;
     if (resetHistory)
     {
-#if 0
-        context->CopyTexture(inputHistory, 0, 0, 0, 0, input, 0);
-#else
+        context->SetViewportAndScissors(viewport);
         context->SetRenderTarget(inputHistory->View());
+        // TODO: when using upscalimg, copu history via MultiScaler to reduce aliasing
         context->Draw(input);
         context->ResetRenderTarget();
-#endif
         blendStrength = 0.0f;
     }
 
@@ -113,8 +113,8 @@ void TAA::Render(const RenderContext& renderContext, GPUTexture* input, GPUTextu
     Data data;
     data.ScreenSizeInv.X = renderContext.View.ScreenSize.Z;
     data.ScreenSizeInv.Y = renderContext.View.ScreenSize.W;
-    data.JitterInv.X = renderContext.View.TemporalAAJitter.X / (float)tempDesc.Width;
-    data.JitterInv.Y = renderContext.View.TemporalAAJitter.Y / (float)tempDesc.Height;
+    data.JitterInv.X = renderContext.View.TemporalAAJitter.X / inputSize.X;
+    data.JitterInv.Y = renderContext.View.TemporalAAJitter.Y / inputSize.Y;
     data.Sharpness = settings.TAA_Sharpness * 3; // Hardcoded scale
     data.StationaryBlending = settings.TAA_StationaryBlending * blendStrength;
     data.MotionBlending = settings.TAA_MotionBlending * blendStrength;
@@ -130,7 +130,8 @@ void TAA::Render(const RenderContext& renderContext, GPUTexture* input, GPUTextu
     context->BindSR(3, renderContext.Buffers->DepthBuffer);
 
     // Render
-    context->SetRenderTarget(output);
+    context->SetViewportAndScissors(viewport);
+    context->SetRenderTarget(output->View());
     int qualityLevel;
     switch (Graphics::AAQuality)
     {

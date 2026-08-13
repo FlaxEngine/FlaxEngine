@@ -21,7 +21,7 @@ public:
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="input">The input render target.</param>
     /// <param name="output">The output render target.</param>
-    void Render(const RenderContext& renderContext, GPUTexture* input, GPUTextureView* output);
+    void Render(const RenderContext& renderContext, GPUTexture* input, GPUTexture* output);
 
 private:
 #if COMPILE_WITH_DEV_ENV

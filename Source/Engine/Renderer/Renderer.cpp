@@ -192,7 +192,7 @@ void RenderLightBuffer(const SceneRenderTask* task, GPUContext* context, RenderC
     context->ResetRenderTarget();
     if (renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing)
     {
-        TAA::Instance()->Render(renderContext, tempBuffer, lightBuffer->View());
+        TAA::Instance()->Render(renderContext, tempBuffer, lightBuffer);
         Swap(lightBuffer, tempBuffer);
     }
     RenderTargetPool::Release(lightBuffer);
@@ -387,6 +387,8 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         const int32 screenWidth = renderContext.Buffers->GetWidth();
         const int32 screenHeight = renderContext.Buffers->GetHeight();
         setup.UpscaleLocation = renderContext.Task->UpscaleLocation;
+        if (setup.UpscaleLocation == RenderingUpscaleLocation::DuringAntiAliasing && renderContext.List->Settings.AntiAliasing.Mode != AntialiasingMode::TemporalAntialiasing)
+            setup.UpscaleLocation = RenderingUpscaleLocation::AfterAntiAliasing; // Fall-back when AA doesn't support uplscaling
         setup.UseShadows = !isGBufferDebug && EnumHasAnyFlags(view.Flags, ViewFlags::Shadows) && ShadowsPass::Instance()->IsReady();
         switch (renderContext.View.Mode)
         {
@@ -750,18 +752,35 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::BeforePostProcessingPass, frameBuffer, tempBuffer);
 
     // Temporal Anti-Aliasing (goes before post processing)
-    if (renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing)
-    {
-        TAA::Instance()->Render(renderContext, frameBuffer, tempBuffer->View());
-        Swap(frameBuffer, tempBuffer);
-    }
-
-    // Upscaling after scene rendering but before post-processing
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
     bool useUpscaling = task->RenderingPercentage * task->RenderScale < 1.0f;
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
     const Viewport outputViewport = task->GetOutputViewport();
-    if (useUpscaling && setup.UpscaleLocation == RenderingUpscaleLocation::BeforePostProcessingPass)
+    if (renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing)
+    {
+        if (useUpscaling && setup.UpscaleLocation == RenderingUpscaleLocation::DuringAntiAliasing)
+        {
+            // TAAU
+            useUpscaling = false;
+            RenderTargetPool::Release(tempBuffer);
+            tempDesc.Width = (int32)outputViewport.Width;
+            tempDesc.Height = (int32)outputViewport.Height;
+            tempBuffer = RenderTargetPool::Get(tempDesc);
+            context->ResetSR();
+            TAA::Instance()->Render(renderContext, frameBuffer, tempBuffer);
+            RenderTargetPool::Release(frameBuffer);
+            frameBuffer = RenderTargetPool::Get(tempDesc);
+        }
+        else
+        {
+            // TAA
+            TAA::Instance()->Render(renderContext, frameBuffer, tempBuffer);
+        }
+        Swap(frameBuffer, tempBuffer);
+    }
+
+    // Upscaling after scene rendering but before post-processing
+    if (useUpscaling && setup.UpscaleLocation == RenderingUpscaleLocation::BeforePostProcessing)
     {
         useUpscaling = false;
         RenderTargetPool::Release(tempBuffer);

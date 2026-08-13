@@ -206,12 +206,17 @@ API_ENUM() enum class RenderingUpscaleLocation
     /// <summary>
     /// The up-scaling happens directly to the output buffer (backbuffer) after post processing and anti-aliasing.
     /// </summary>
-    AfterAntiAliasingPass = 0,
+    AfterAntiAliasing = 0,
     
     /// <summary>
     /// The up-scaling happens before the post processing after scene rendering (after geometry, lighting, volumetrics, transparency and SSR/SSAO).
     /// </summary>
-    BeforePostProcessingPass = 1,
+    BeforePostProcessing = 1,
+
+    /// <summary>
+    /// The up-scaling happens during anti-aliasing. For example, when using Temporal Anti-Aliasing (TAA) it work as Temporal Anti-Aliasing Upsampling (TAAU) to both remove aliasing and upscale the image.
+    /// </summary>
+    DuringAntiAliasing = 2,
 };
 
 /// <summary>
@@ -285,7 +290,7 @@ public:
     /// <summary>
     /// The image resolution upscale location within rendering pipeline. Unused if RenderingPercentage is 1.
     /// </summary>
-    API_FIELD() RenderingUpscaleLocation UpscaleLocation = RenderingUpscaleLocation::AfterAntiAliasingPass;
+    API_FIELD() RenderingUpscaleLocation UpscaleLocation = RenderingUpscaleLocation::DuringAntiAliasing;
 
 public:
     /// <summary>
