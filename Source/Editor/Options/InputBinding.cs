@@ -85,12 +85,11 @@ namespace FlaxEditor.Options
                 result = KeyboardKeys.Control;
                 return true;
             }
-
             return Enum.TryParse(value, true, out result);
         }
 
         /// <summary>
-        /// Returns a <see cref="System.String" /> that represents the key enum (for UI).
+        /// Returns a <see cref="System.String" /> that represents the key enum for serialization.
         /// </summary>
         /// <param name="key">The key.</param>
         /// <returns>A <see cref="System.String" /> that represents the key.</returns>
@@ -99,6 +98,29 @@ namespace FlaxEditor.Options
             switch (key)
             {
             case KeyboardKeys.Control: return "Ctrl";
+            case KeyboardKeys.Command: return "Command";
+            case KeyboardKeys.Shortcut: return "Shortcut";
+            default: return key.ToString();
+            }
+        }
+
+        /// <summary>
+        /// Returns a user-facing string that represents the key.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <returns>A user-facing string that represents the key.</returns>
+        public static string ToDisplayString(KeyboardKeys key)
+        {
+            switch (key)
+            {
+            case KeyboardKeys.Control: return "Ctrl";
+            case KeyboardKeys.Command: return "Command";
+            case KeyboardKeys.Shortcut:
+#if PLATFORM_MAC
+                return "Command";
+#else
+                return "Ctrl";
+#endif
             default: return key.ToString();
             }
         }
@@ -150,49 +172,56 @@ namespace FlaxEditor.Options
             bool ctrlPressed = getKeyFunc(KeyboardKeys.Control);
             bool shiftPressed = getKeyFunc(KeyboardKeys.Shift);
             bool altPressed = getKeyFunc(KeyboardKeys.Alt);
+            bool commandPressed = getKeyFunc(KeyboardKeys.Command);
+            bool shortcutPressed = getKeyFunc(KeyboardKeys.Shortcut);
 
-            bool mod1 = false;
-            if (Modifier1 == KeyboardKeys.None)
-                mod1 = true;
-            else if (Modifier1 == KeyboardKeys.Control)
-            {
-                mod1 = ctrlPressed;
-                ctrlPressed = false;
-            }
-            else if (Modifier1 == KeyboardKeys.Shift)
-            {
-                mod1 = shiftPressed;
-                shiftPressed = false;
-            }
-            else if (Modifier1 == KeyboardKeys.Alt)
-            {
-                mod1 = altPressed;
-                altPressed = false;
-            }
-
-            bool mod2 = false;
-            if (Modifier2 == KeyboardKeys.None)
-                mod2 = true;
-            else if (Modifier2 == KeyboardKeys.Control)
-            {
-                mod2 = ctrlPressed;
-                ctrlPressed = false;
-            }
-            else if (Modifier2 == KeyboardKeys.Shift)
-            {
-                mod2 = shiftPressed;
-                shiftPressed = false;
-            }
-            else if (Modifier2 == KeyboardKeys.Alt)
-            {
-                mod2 = altPressed;
-                altPressed = false;
-            }
+            bool mod1 = ProcessModifier(Modifier1, shortcutPressed, ref ctrlPressed, ref shiftPressed, ref altPressed, ref commandPressed);
+            bool mod2 = ProcessModifier(Modifier2, shortcutPressed, ref ctrlPressed, ref shiftPressed, ref altPressed, ref commandPressed);
 
             // Check if any unhandled modifiers are not pressed
             if (mod1 && mod2)
-                return !ctrlPressed && !shiftPressed && !altPressed;
+                return !ctrlPressed && !shiftPressed && !altPressed && !commandPressed;
             return false;
+        }
+
+        private static bool ProcessModifier(KeyboardKeys modifier, bool shortcutPressed, ref bool ctrlPressed, ref bool shiftPressed, ref bool altPressed, ref bool commandPressed)
+        {
+            switch (modifier)
+            {
+            case KeyboardKeys.None:
+                return true;
+            case KeyboardKeys.Control:
+                if (!ctrlPressed)
+                    return false;
+                ctrlPressed = false;
+                return true;
+            case KeyboardKeys.Shift:
+                if (!shiftPressed)
+                    return false;
+                shiftPressed = false;
+                return true;
+            case KeyboardKeys.Alt:
+                if (!altPressed)
+                    return false;
+                altPressed = false;
+                return true;
+            case KeyboardKeys.Command:
+                if (!commandPressed)
+                    return false;
+                commandPressed = false;
+                return true;
+            case KeyboardKeys.Shortcut:
+                if (!shortcutPressed)
+                    return false;
+#if PLATFORM_MAC
+                commandPressed = false;
+#else
+                ctrlPressed = false;
+#endif
+                return true;
+            default:
+                return false;
+            }
         }
 
         /// <summary>
@@ -233,22 +262,35 @@ namespace FlaxEditor.Options
         /// <inheritdoc />
         public override string ToString()
         {
+            return ToString(key => ToString(key));
+        }
+
+        /// <summary>
+        /// Returns a user-facing string that represents the input binding.
+        /// </summary>
+        public string ToDisplayString()
+        {
+            return ToString(key => ToDisplayString(key));
+        }
+
+        private string ToString(Func<KeyboardKeys, string> keyToString)
+        {
             string result = string.Empty;
             if (Modifier2 != KeyboardKeys.None)
             {
-                result = ToString(Modifier2);
+                result = keyToString(Modifier2);
             }
             if (Modifier1 != KeyboardKeys.None)
             {
                 if (result.Length != 0)
                     result += '+';
-                result += ToString(Modifier1);
+                result += keyToString(Modifier1);
             }
             if (Key != KeyboardKeys.None)
             {
                 if (result.Length != 0)
                     result += '+';
-                result += ToString(Key);
+                result += keyToString(Key);
             }
             return result;
         }
@@ -336,6 +378,17 @@ namespace FlaxEditor.Options
         {
             private InputBinding _binding;
 
+            public InputBinding CapturedBinding => _binding;
+
+            private static KeyboardKeys NormalizeCapturedKey(KeyboardKeys key)
+            {
+#if PLATFORM_MAC
+                return key == KeyboardKeys.Command ? KeyboardKeys.Shortcut : key;
+#else
+                return key == KeyboardKeys.Control ? KeyboardKeys.Shortcut : key;
+#endif
+            }
+
             /// <inheritdoc />
             protected override void OnEditBegin()
             {
@@ -356,6 +409,8 @@ namespace FlaxEditor.Options
             /// <inheritdoc />
             public override bool OnKeyDown(KeyboardKeys key)
             {
+                key = NormalizeCapturedKey(key);
+
                 // Skip already added keys
                 if (_binding.Key == key || _binding.Modifier1 == key || _binding.Modifier2 == key)
                     return true;
@@ -367,16 +422,19 @@ namespace FlaxEditor.Options
 
                 // Modifiers
                 case KeyboardKeys.Control:
+                case KeyboardKeys.Alt:
+                case KeyboardKeys.Command:
+                case KeyboardKeys.Shortcut:
                 case KeyboardKeys.Shift:
                     if (_binding.Modifier1 == KeyboardKeys.None)
                     {
                         _binding.Modifier1 = key;
-                        _text = _binding.ToString();
+                        _text = _binding.ToDisplayString();
                     }
                     else if (_binding.Modifier2 == KeyboardKeys.None)
                     {
                         _binding.Modifier2 = key;
-                        _text = _binding.ToString();
+                        _text = _binding.ToDisplayString();
                     }
                     break;
 
@@ -385,7 +443,7 @@ namespace FlaxEditor.Options
                     if (_binding.Key == KeyboardKeys.None)
                     {
                         _binding.Key = key;
-                        _text = _binding.ToString();
+                        _text = _binding.ToDisplayString();
                         Defocus();
                     }
                     break;
@@ -431,7 +489,12 @@ namespace FlaxEditor.Options
 
         private void OnValueChanged()
         {
-            if (InputBinding.TryParse(_element.CustomControl.Text, out var value))
+            var input = _element.CustomControl;
+            if (input.CapturedBinding.Key != KeyboardKeys.None)
+                SetValue(input.CapturedBinding);
+            else if (input.CapturedBinding != new InputBinding())
+                SetText();
+            else if (InputBinding.TryParse(input.Text, out var value))
                 SetValue(value);
             else
                 SetText();
@@ -439,7 +502,7 @@ namespace FlaxEditor.Options
 
         private void SetText()
         {
-            _element.CustomControl.Text = ((InputBinding)Values[0]).ToString();
+            _element.CustomControl.Text = ((InputBinding)Values[0]).ToDisplayString();
         }
 
         /// <inheritdoc />
