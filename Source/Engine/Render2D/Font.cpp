@@ -13,7 +13,6 @@ Font::Font(FontAsset* parentAsset, float size)
     : ManagedScriptingObject(SpawnParams(Guid::New(), Font::TypeInitializer))
     , _asset(parentAsset)
     , _size(size)
-    , _characters(512)
 {
     _asset->_fonts.Add(this);
 
@@ -37,13 +36,14 @@ Font::~Font()
 void Font::GetCharacter(Char c, FontCharacterEntry& result, bool enableFallback)
 {
     // Try to get the character or cache it if cannot be found
-    if (!_characters.TryGet(c, result))
+    const auto key = Pair<float, Char>(_asset->GetOptions().RasterMode == FontRasterMode::MSDF ? _asset->GetOptions().MSDFSize : GetSize(), c);
+    if (!_asset->_characterCache.TryGet(key, result))
     {
         // This thread race condition may happen in editor but in game we usually do all stuff with fonts on main thread (chars caching)
         ScopeLock lock(_asset->Locker);
 
         // Handle situation when more than one thread wants to get the same character
-        if (_characters.TryGet(c, result))
+        if (_asset->_characterCache.TryGet(key, result))
             return;
 
         // Try to use fallback font if character is missing
@@ -69,7 +69,7 @@ void Font::GetCharacter(Char c, FontCharacterEntry& result, bool enableFallback)
         ASSERT(result.Font);
 
         // Add to the dictionary
-        _characters.Add(c, result);
+        _asset->_characterCache.Add(key, result);
     }
 }
 
@@ -110,17 +110,6 @@ void Font::CacheText(const StringView& text)
     {
         GetCharacter(text[i], entry, false);
     }
-}
-
-void Font::Invalidate()
-{
-    ScopeLock lock(_asset->Locker);
-
-    for (auto i = _characters.Begin(); i.IsNotEnd(); ++i)
-    {
-        FontManager::Invalidate(i->Value);
-    }
-    _characters.Clear();
 }
 
 void Font::ProcessText(const StringView& text, Array<FontLineCache, InlinedAllocation<8>>& outputLines, const TextLayoutOptions& layout)

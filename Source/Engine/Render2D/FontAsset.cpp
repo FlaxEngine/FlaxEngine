@@ -214,8 +214,10 @@ bool FontAsset::ContainsChar(Char c) const
 void FontAsset::Invalidate()
 {
     ScopeLock lock(Locker);
-    for (auto font : _fonts)
-        font->Invalidate();
+    for (auto& entry : _characterCache)
+        FontManager::Invalidate(entry.Value);
+
+    _characterCache.Clear();
 }
 
 uint64 FontAsset::GetMemoryUsage() const
