@@ -302,7 +302,7 @@ namespace FlaxEditor.Viewport.Previews
             // Draw bounds
             if (_showBounds)
             {
-                DebugDraw.DrawWireBox(_previewModel.Box, Color.Violet.RGBMultiplied(0.8f), 0, false);
+                DebugDrawBounds(_previewModel.Box);
             }
 
             // Draw normals

@@ -148,6 +148,7 @@ namespace FlaxEditor.Viewport.Previews
             // Setup preview scene
             _previewModel = new StaticModel();
             SelectedModelIndex = 0;
+            Task.ViewFlags &= ~ViewFlags.EyeAdaptation;
 
             // Link actors for rendering
             Task.AddCustomActor(_previewModel);
