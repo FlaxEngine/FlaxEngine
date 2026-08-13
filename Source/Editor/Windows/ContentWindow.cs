@@ -928,15 +928,20 @@ namespace FlaxEditor.Windows
         /// <param name="isCutting">Whether a cutting action is occuring.</param>
         public void Paste(string[] files, bool isCutting)
         {
+            var folder = CurrentViewFolder;
+
+            // Copy or move assets
             var importFiles = new List<string>();
+            var pastedFiles = new List<string>();
             foreach (var sourcePath in files)
             {
                 var item = Editor.ContentDatabase.Find(sourcePath);
                 if (item != null)
                 {
-                    var newPath = StringUtils.NormalizePath(Path.Combine(CurrentViewFolder.Path, item.FileName));
+                    var newPath = StringUtils.NormalizePath(Path.Combine(folder.Path, item.FileName));
                     if (sourcePath.Equals(newPath))
                         newPath = GetClonedAssetPath(item);
+                    pastedFiles.Add(newPath);
                     if (isCutting)
                         Editor.ContentDatabase.Move(item, newPath);
                     else
@@ -945,7 +950,25 @@ namespace FlaxEditor.Windows
                 else
                     importFiles.Add(sourcePath);
             }
-            Editor.ContentImporting.Import(importFiles, CurrentViewFolder);
+
+            // Import any new files
+            Editor.ContentImporting.Import(importFiles, folder);
+
+            // Auto-select pasted files
+            if (pastedFiles.Count != 0 && importFiles.Count == 0)
+            {
+                Editor.ContentDatabase.RefreshFolder(folder, false);
+                bool additive = false;
+                foreach (var pastedFile in pastedFiles)
+                {
+                    var pastedItem = folder.FindChild(pastedFile);
+                    if (pastedItem != null)
+                    {
+                        Select(pastedItem, true, additive);
+                        additive = true; // Clear selection on first item
+                    }
+                }
+            }
         }
 
         /// <summary>

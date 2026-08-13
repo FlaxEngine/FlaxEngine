@@ -223,9 +223,9 @@ namespace FlaxEngine.GUI
         public bool IsScrollable { get; set; } = true;
 
         /// <summary>
-        /// Gets or sets a value indicating whether the control can respond to user interaction
+        /// Gets or sets a value indicating whether the control can respond to user interaction. Disabled control remains visible but is grayed out.
         /// </summary>
-        [EditorOrder(520), Tooltip("If checked, control will receive input events of the user interaction.")]
+        [EditorOrder(520), Tooltip("If checked, control will receive input events of the user interaction. Disabled control remains visible but is grayed out.")]
         public bool Enabled
         {
             get => _isEnabled;
