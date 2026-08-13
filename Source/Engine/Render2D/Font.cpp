@@ -133,7 +133,7 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache, InlinedAlloc
     FontLineCache tmpLine;
     FontCharacterEntry entry;
     FontCharacterEntry previous;
-    float scale = layout.Scale / FontManager::FontScale;
+    float scale = layout.Scale / FontManager::FontScale * (_asset->GetOptions().RasterMode == FontRasterMode::MSDF ? _size / _asset->GetOptions().MSDFSize : 1.0f);
     float boundsWidth = layout.Bounds.GetWidth();
     float baseLinesDistance = static_cast<float>(_height) * layout.BaseLinesGapScale * scale;
     tmpLine.Location = Float2::Zero;
@@ -339,7 +339,7 @@ int32 Font::HitTestText(const StringView& text, const Float2& location, const Te
     Array<FontLineCache, InlinedAllocation<8>> lines;
     ProcessText(text, lines, layout);
     ASSERT(lines.HasItems());
-    float scale = layout.Scale / FontManager::FontScale;
+    float scale = layout.Scale / FontManager::FontScale * (_asset->GetOptions().RasterMode == FontRasterMode::MSDF ? _size / _asset->GetOptions().MSDFSize : 1.0f);
     float baseLinesDistance = static_cast<float>(_height) * layout.BaseLinesGapScale * scale;
 
     // Offset position to match lines origin space
@@ -427,7 +427,7 @@ Float2 Font::GetCharPosition(const StringView& text, int32 index, const TextLayo
     Array<FontLineCache, InlinedAllocation<8>> lines;
     ProcessText(text, lines, layout);
     ASSERT(lines.HasItems());
-    float scale = layout.Scale / FontManager::FontScale;
+    float scale = layout.Scale / FontManager::FontScale * (_asset->GetOptions().RasterMode == FontRasterMode::MSDF ? _size / _asset->GetOptions().MSDFSize : 1.0f);
     float baseLinesDistance = static_cast<float>(_height) * layout.BaseLinesGapScale * scale;
 
     // Find line with that position
@@ -474,7 +474,9 @@ void Font::FlushFaceSize() const
 {
     // Set the character size
     const FT_Face face = _asset->GetFTFace();
-    const FT_Error error = FT_Set_Char_Size(face, 0, ConvertPixelTo26Dot6<FT_F26Dot6>(_size * FontManager::FontScale), DefaultDPI, DefaultDPI);
+    FontOptions options = _asset->GetOptions();
+    float size = options.RasterMode == FontRasterMode::MSDF ? options.MSDFSize : _size;
+    const FT_Error error = FT_Set_Char_Size(face, 0, ConvertPixelTo26Dot6<FT_F26Dot6>(size * FontManager::FontScale), DefaultDPI, DefaultDPI);
     if (error)
     {
         LOG_FT_ERROR(error);

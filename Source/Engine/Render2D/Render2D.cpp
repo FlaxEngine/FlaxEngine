@@ -1203,7 +1203,8 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     Float2 invAtlasSize = Float2::One;
     FontCharacterEntry previous;
     int32 kerning;
-    float scale = 1.0f / FontManager::FontScale;
+    FontOptions options = font->GetAsset()->GetOptions();
+    float scale = 1.0f / FontManager::FontScale * (options.RasterMode == FontRasterMode::MSDF ? font->GetSize() / options.MSDFSize : 1.0f);
     const bool enableFallbackFonts = EnumHasAllFlags(Features, RenderingFeatures::FallbackFonts);
 
     // Render all characters
@@ -1216,7 +1217,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     }
     else
     {
-        drawCall.Type = font->GetAsset()->GetOptions().RasterMode == FontRasterMode::MSDF ? DrawCallType::DrawCharMSDF : DrawCallType::DrawChar;
+        drawCall.Type = options.RasterMode == FontRasterMode::MSDF ? DrawCallType::DrawCharMSDF : DrawCallType::DrawChar;
         drawCall.AsChar.Mat = nullptr;
     }
     Float2 pointer = location;
@@ -1318,7 +1319,8 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     Float2 invAtlasSize = Float2::One;
     FontCharacterEntry previous;
     int32 kerning;
-    float scale = layout.Scale / FontManager::FontScale;
+    FontOptions options = font->GetAsset()->GetOptions();
+    float scale = layout.Scale / FontManager::FontScale * (options.RasterMode == FontRasterMode::MSDF ? font->GetSize() / options.MSDFSize : 1.0f);
     const bool enableFallbackFonts = EnumHasAllFlags(Features, RenderingFeatures::FallbackFonts);
 
     // Process text to get lines
@@ -1335,7 +1337,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     }
     else
     {
-        drawCall.Type = font->GetAsset()->GetOptions().RasterMode == FontRasterMode::MSDF ? DrawCallType::DrawCharMSDF : DrawCallType::DrawChar;
+        drawCall.Type = options.RasterMode == FontRasterMode::MSDF ? DrawCallType::DrawCharMSDF : DrawCallType::DrawChar;
         drawCall.AsChar.Mat = nullptr;
     }
     for (int32 lineIndex = 0; lineIndex < Lines.Count(); lineIndex++)
