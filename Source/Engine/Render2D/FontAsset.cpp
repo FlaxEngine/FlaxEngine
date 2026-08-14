@@ -101,6 +101,26 @@ FontFlags FontAsset::GetStyle() const
 void FontAsset::SetOptions(const FontOptions& value)
 {
     _options = value;
+    Invalidate();
+
+    if (_virtualBold)
+    {
+        auto options = _options;
+        options.Flags |= FontFlags::Bold;
+        _virtualBold->SetOptions(options);
+    }
+    if (_virtualItalic)
+    {
+        auto options = _options;
+        options.Flags |= FontFlags::Italic;
+        _virtualItalic->SetOptions(options);
+    }
+    if (_virtualMSDF)
+    {
+        auto options = _options;
+        options.RasterMode = FontRasterMode::MSDF;
+        _virtualMSDF->SetOptions(options);
+    }
 }
 
 Font* FontAsset::CreateFont(float size)
@@ -218,6 +238,10 @@ void FontAsset::Invalidate()
         FontManager::Invalidate(entry.Value);
 
     _characterCache.Clear();
+
+    // Refresh cached metrics of all fonts created from this asset
+    for (auto font : _fonts)
+        font->Invalidate();
 }
 
 uint64 FontAsset::GetMemoryUsage() const

@@ -112,6 +112,21 @@ void Font::CacheText(const StringView& text)
     }
 }
 
+void Font::Invalidate()
+{
+    ScopeLock lock(_asset->Locker);
+
+    FlushFaceSize();
+    const FT_Face face = _asset->GetFTFace();
+    ASSERT(face != nullptr);
+    _height = Convert26Dot6ToRoundedPixel<int32>(FT_MulFix(face->height, face->size->metrics.y_scale));
+    _hasKerning = FT_HAS_KERNING(face) != 0;
+    _ascender = Convert26Dot6ToRoundedPixel<int16>(face->size->metrics.ascender);
+    _descender = Convert26Dot6ToRoundedPixel<int16>(face->size->metrics.descender);
+    _lineGap = _height - _ascender + _descender;
+    _kerningTable.Clear();
+}
+
 void Font::ProcessText(const StringView& text, Array<FontLineCache, InlinedAllocation<8>>& outputLines, const TextLayoutOptions& layout)
 {
     int32 textLength = text.Length();
@@ -463,8 +478,7 @@ void Font::FlushFaceSize() const
 {
     // Set the character size
     const FT_Face face = _asset->GetFTFace();
-    FontOptions options = _asset->GetOptions();
-    float size = options.RasterMode == FontRasterMode::MSDF ? options.MSDFSize : _size;
+    float size = _asset->GetOptions().RasterMode == FontRasterMode::MSDF ? _asset->GetOptions().MSDFSize : _size;
     const FT_Error error = FT_Set_Char_Size(face, 0, ConvertPixelTo26Dot6<FT_F26Dot6>(size * FontManager::FontScale), DefaultDPI, DefaultDPI);
     if (error)
     {

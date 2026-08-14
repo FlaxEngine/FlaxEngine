@@ -228,6 +228,11 @@ public:
     /// <param name="text">The text witch characters to cache.</param>
     API_FUNCTION() void CacheText(const StringView& text);
 
+    /// <summary>
+    /// Refresh cached metrics. Can be used after changing font asset options.
+    /// </summary>
+    API_FUNCTION() void Invalidate();
+
 public:
     /// <summary>
     /// Processes text to get cached lines for rendering.
