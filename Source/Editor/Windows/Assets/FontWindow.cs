@@ -27,7 +27,7 @@ namespace FlaxEditor.Windows.Assets
             public FontRasterMode RasterMode;
 
             [DefaultValue(32.0f)]
-            [EditorOrder(6), EditorDisplay("Properties"), Tooltip("The font size used when generating MSDF font atlases.")]
+            [EditorOrder(6), Limit(4, 512), EditorDisplay("Properties"), Tooltip("The font size used when generating MSDF font atlases.")]
             public float MSDFSize;
 
             [DefaultValue(FontHinting.Default)]
