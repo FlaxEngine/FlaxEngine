@@ -4,6 +4,9 @@
 
 #include "Engine/Content/BinaryAsset.h"
 #include "Engine/Content/AssetReference.h"
+#include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Core/Math/Vector2.h"
 
 class Font;
 class FontManager;
