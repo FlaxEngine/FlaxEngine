@@ -37,14 +37,23 @@ void Font::GetCharacter(Char c, FontCharacterEntry& result, bool enableFallback)
 {
     // Try to get the character or cache it if cannot be found
     const auto key = Pair<float, Char>(_asset->GetOptions().RasterMode == FontRasterMode::MSDF ? _asset->GetOptions().MSDFSize : GetSize(), c);
-    if (!_asset->_characterCache.TryGet(key, result))
+    if (_asset->_characterCache.TryGet(key, result))
+    {
+        // With MSDF font introduced, cached entry may be created by a different font (with same MSDFSize)
+        // This is to ensure returned entry has a reference to a font whose size matches the font being used to render
+        result.Font = this;
+    }
+    else
     {
         // This thread race condition may happen in editor but in game we usually do all stuff with fonts on main thread (chars caching)
         ScopeLock lock(_asset->Locker);
 
         // Handle situation when more than one thread wants to get the same character
         if (_asset->_characterCache.TryGet(key, result))
+        {
+            result.Font = this;
             return;
+        }
 
         // Try to use fallback font if character is missing
         if (enableFallback && !_asset->ContainsChar(c))
@@ -52,13 +61,9 @@ void Font::GetCharacter(Char c, FontCharacterEntry& result, bool enableFallback)
             for (int32 fallbackIndex = 0; fallbackIndex < FallbackFonts.Count(); fallbackIndex++)
             {
                 FontAsset* fallbackFont = FallbackFonts.Get()[fallbackIndex].Get();
-                if (fallbackFont && _asset->GetOptions().RasterMode == FontRasterMode::MSDF)
-                {
-                    fallbackFont = fallbackFont->GetMSDF();
-                }
                 if (fallbackFont && fallbackFont->ContainsChar(c))
                 {
-                    fallbackFont->CreateFont(GetSize())->GetCharacter(c, result, enableFallback);
+                    fallbackFont->GetRasterMode(_asset->GetOptions().RasterMode)->CreateFont(GetSize())->GetCharacter(c, result, enableFallback);
                     return;
                 }
             }
@@ -127,6 +132,11 @@ void Font::Invalidate()
     _kerningTable.Clear();
 }
 
+float Font::GetScale(float layoutScale) const
+{
+    return layoutScale / FontManager::FontScale * (_asset->GetOptions().RasterMode == FontRasterMode::MSDF ? _size / _asset->GetOptions().MSDFSize : 1.0f);
+}
+
 void Font::ProcessText(const StringView& text, Array<FontLineCache, InlinedAllocation<8>>& outputLines, const TextLayoutOptions& layout)
 {
     int32 textLength = text.Length();
@@ -137,7 +147,7 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache, InlinedAlloc
     FontLineCache tmpLine;
     FontCharacterEntry entry;
     FontCharacterEntry previous;
-    float scale = layout.Scale / FontManager::FontScale * (_asset->GetOptions().RasterMode == FontRasterMode::MSDF ? _size / _asset->GetOptions().MSDFSize : 1.0f);
+    const float scale = GetScale(layout.Scale);
     float boundsWidth = layout.Bounds.GetWidth();
     float baseLinesDistance = static_cast<float>(_height) * layout.BaseLinesGapScale * scale;
     tmpLine.Location = Float2::Zero;
@@ -181,6 +191,7 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache, InlinedAlloc
         {
             // Get character entry
             GetCharacter(currentChar, entry);
+            const float entryScale = entry.Font->GetScale(layout.Scale);
 
             // Get kerning
             if (!isWhitespace && previous.IsValid)
@@ -192,7 +203,7 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache, InlinedAlloc
                 kerning = 0;
             }
             previous = entry;
-            xAdvance = (kerning + entry.AdvanceX) * scale;
+            xAdvance = (kerning + entry.AdvanceX) * entryScale;
 
             // Check if character fits the line or skip wrapping
             if (cursorX + xAdvance <= boundsWidth || layout.TextWrapping == TextWrapping::NoWrap)
@@ -343,7 +354,7 @@ int32 Font::HitTestText(const StringView& text, const Float2& location, const Te
     Array<FontLineCache, InlinedAllocation<8>> lines;
     ProcessText(text, lines, layout);
     ASSERT(lines.HasItems());
-    float scale = layout.Scale / FontManager::FontScale * (_asset->GetOptions().RasterMode == FontRasterMode::MSDF ? _size / _asset->GetOptions().MSDFSize : 1.0f);
+    const float scale = GetScale(layout.Scale);
     float baseLinesDistance = static_cast<float>(_height) * layout.BaseLinesGapScale * scale;
 
     // Offset position to match lines origin space
@@ -364,12 +375,13 @@ int32 Font::HitTestText(const StringView& text, const Float2& location, const Te
         // Cache current character
         const Char currentChar = text[currentIndex];
         GetCharacter(currentChar, entry);
+        const float entryScale = entry.Font->GetScale(layout.Scale);
         const bool isWhitespace = StringUtils::IsWhitespace(currentChar);
 
         // Apply kerning
         if (!isWhitespace && previous.IsValid)
         {
-            x += entry.Font->GetKerning(previous.Character, entry.Character);
+            x += entry.Font->GetKerning(previous.Character, entry.Character) * entryScale;
         }
         previous = entry;
 
@@ -388,7 +400,7 @@ int32 Font::HitTestText(const StringView& text, const Float2& location, const Te
         }
 
         // Move
-        x += entry.AdvanceX * scale;
+        x += entry.AdvanceX * entryScale;
     }
 
     // Test line end edge
@@ -431,7 +443,7 @@ Float2 Font::GetCharPosition(const StringView& text, int32 index, const TextLayo
     Array<FontLineCache, InlinedAllocation<8>> lines;
     ProcessText(text, lines, layout);
     ASSERT(lines.HasItems());
-    float scale = layout.Scale / FontManager::FontScale * (_asset->GetOptions().RasterMode == FontRasterMode::MSDF ? _size / _asset->GetOptions().MSDFSize : 1.0f);
+    const float scale = GetScale(layout.Scale);
     float baseLinesDistance = static_cast<float>(_height) * layout.BaseLinesGapScale * scale;
 
     // Find line with that position
@@ -452,17 +464,18 @@ Float2 Font::GetCharPosition(const StringView& text, int32 index, const TextLayo
                 // Cache current character
                 const Char currentChar = text[currentIndex];
                 GetCharacter(currentChar, entry);
+                const float entryScale = entry.Font->GetScale(layout.Scale);
                 const bool isWhitespace = StringUtils::IsWhitespace(currentChar);
 
                 // Apply kerning
                 if (!isWhitespace && previous.IsValid)
                 {
-                    charPos.X += entry.Font->GetKerning(previous.Character, entry.Character);
+                    charPos.X += entry.Font->GetKerning(previous.Character, entry.Character) * entryScale;
                 }
                 previous = entry;
 
                 // Move
-                charPos.X += entry.AdvanceX * scale;
+                charPos.X += entry.AdvanceX * entryScale;
             }
 
             // Upper left corner of the character

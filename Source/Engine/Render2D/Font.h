@@ -235,6 +235,13 @@ public:
 
 public:
     /// <summary>
+    /// Gets the scale factor that maps the rasterized font size to the actual rendered size.
+    /// </summary>
+    /// <param name="layoutScale">The layout scale.</param>
+    /// <returns>The scale factor.</returns>
+    float GetScale(float layoutScale) const;
+
+    /// <summary>
     /// Processes text to get cached lines for rendering.
     /// </summary>
     /// <param name="text">The input text.</param>
