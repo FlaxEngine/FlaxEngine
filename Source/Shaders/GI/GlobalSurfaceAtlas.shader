@@ -271,11 +271,12 @@ void CS_CullObjects(uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupId 
 		}
 	}
 	GroupMemoryBarrierWithGroupSync();
+    uint culledObjectsCount = min(SharedCulledObjectsCount, GLOBAL_SURFACE_ATLAS_SHARED_CULL_SIZE);
 
     // Cull objects from the shared buffer against active thread's chunk
     uint objectsCount = 0;
 	LOOP
-	for (uint i = 0; i < SharedCulledObjectsCount; i++)
+	for (uint i = 0; i < culledObjectsCount; i++)
 	{
         uint objectAddress = SharedCulledObjects[i];
 		float4 objectBounds = LoadGlobalSurfaceAtlasObjectBounds(GlobalSurfaceAtlasObjects, objectAddress);
@@ -310,7 +311,7 @@ void CS_CullObjects(uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupId 
 
 	// Copy objects data in this chunk (cull from the shared buffer)
     LOOP
-	for (uint i = 0; i < SharedCulledObjectsCount; i++)
+	for (uint i = 0; i < culledObjectsCount; i++)
     {
         uint objectAddress = SharedCulledObjects[i];
 		float4 objectBounds = LoadGlobalSurfaceAtlasObjectBounds(GlobalSurfaceAtlasObjects, objectAddress);
