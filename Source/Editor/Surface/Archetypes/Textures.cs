@@ -316,7 +316,7 @@ namespace FlaxEditor.Surface.Archetypes
                 DefaultValues = new object[]
                 {
                     (int)CommonSamplerType.LinearClamp, // Sampler
-                    -1.0f, // Level
+                    -1.0f, // Level (-1 when unused)
                     0, // Texture Group
                 },
                 Elements = new[]
@@ -476,7 +476,7 @@ namespace FlaxEditor.Surface.Archetypes
                 DefaultValues = new object[]
                 {
                     (int)CommonSamplerType.LinearWrap, // Sampler
-                    -1.0f, // Level
+                    -1.0f, // Level (-1 when unused)
                     0, // Texture Group
                 },
                 Elements = new[]

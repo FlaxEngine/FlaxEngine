@@ -37,7 +37,8 @@ GPU_CB_STRUCT(MaterialShaderDataPerView {
     Float4 TemporalAAJitter;
     Float3 LargeWorldsChunkIndex;
     float LargeWorldsChunkSize;
-    Float3 ViewPadding0;
+    float MaterialTextureMipBias;
+    float ViewPadding0;
     float TestValue;
     float ScaledTimeParam;
     });
@@ -87,6 +88,7 @@ void IMaterial::BindParameters::BindViewData()
     cb.TemporalAAJitter = view.TemporalAAJitter;
     cb.LargeWorldsChunkIndex = LargeWorlds::Enable ? (Float3)Int3(view.Origin / LargeWorlds::ChunkSize) : Float3::Zero;
     cb.LargeWorldsChunkSize = LargeWorlds::ChunkSize;
+    cb.MaterialTextureMipBias = RenderContext.List->Setup.MaterialTextureMipBias;
     cb.TestValue = Graphics::TestValue;
 
     // Update constants

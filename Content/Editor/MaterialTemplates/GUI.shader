@@ -2,6 +2,7 @@
 // Version: @0
 
 #define MATERIAL 1
+#define MaterialTextureMipBias 0.0f
 @3
 #include "./Flax/Common.hlsl"
 #include "./Flax/MaterialCommon.hlsl"

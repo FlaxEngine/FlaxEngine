@@ -287,6 +287,11 @@ public:
     API_FIELD() float RenderScale = 1.0f;
 
     /// <summary>
+    /// The texture mip level bias for materials. Positive values make textures appear blurrier; negative values sharpen.
+    /// </summary>
+    API_FIELD() float MaterialTextureMipBias = 0.0f;
+
+    /// <summary>
     /// The image resolution upscale location within rendering pipeline. Unused if RenderingPercentage is 1.
     /// </summary>
     API_FIELD() RenderingUpscaleLocation UpscaleLocation = RenderingUpscaleLocation::DuringAntiAliasing;

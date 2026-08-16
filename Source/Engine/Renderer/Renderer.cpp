@@ -426,6 +426,11 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
         setup.UseGlobalSurfaceAtlas;
     setup.UseVolumetricFog = (renderContext.View.Flags & ViewFlags::Fog) != ViewFlags::None;
 
+    // Calculate material texture mip bias
+    setup.MaterialTextureMipBias = renderContext.Task->MaterialTextureMipBias;
+    if (setup.RenderScale < 1.0f) // Increase textures sharpness when upscaling (eg. -1.0 bias when using 2x upscaling)
+        setup.MaterialTextureMipBias += Math::Log2(setup.RenderScale);
+
     // Disable TAA jitter in debug modes
     switch (renderContext.View.Mode)
     {

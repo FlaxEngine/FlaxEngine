@@ -71,11 +71,13 @@ void MaterialGenerator::ProcessGroupParameters(Box* box, Node* node, Value& valu
             case MaterialParameterType::CubeTexture:
             case MaterialParameterType::NormalMap:
             case MaterialParameterType::Texture:
+                sampleTexture(node, value, box, param, true);
+                break;
             case MaterialParameterType::GPUTextureArray:
             case MaterialParameterType::GPUTextureCube:
             case MaterialParameterType::GPUTextureVolume:
             case MaterialParameterType::GPUTexture:
-                sampleTexture(node, value, box, param);
+                sampleTexture(node, value, box, param, false);
                 break;
             default: CRASH;
                 break;
