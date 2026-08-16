@@ -197,7 +197,7 @@ bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const Float3* ve
 
 bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const Float3* vertices, const uint32* triangles, const Float3* normals, const Float3* tangents, const Float2* uvs, const Color32* colors)
 {
-    return ::UpdateMesh(this, vertexCount, triangleCount, PixelFormat::R16_UInt, vertices, triangles, normals, tangents, uvs, colors);
+    return ::UpdateMesh(this, vertexCount, triangleCount, PixelFormat::R32_UInt, vertices, triangles, normals, tangents, uvs, colors);
 }
 
 bool Mesh::Load(uint32 vertices, uint32 triangles, const void* vb0, const void* vb1, const void* vb2, const void* ib, bool use16BitIndexBuffer)
