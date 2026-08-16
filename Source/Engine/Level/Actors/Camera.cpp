@@ -12,7 +12,7 @@
 #include "Editor/Editor.h"
 #include "Editor/Managed/ManagedEditor.h"
 #include "Engine/Renderer/DrawCall.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 #else
 #include "Engine/Engine/Engine.h"

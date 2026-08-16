@@ -6,8 +6,8 @@
 #include "Engine/Core/Math/Double4x4.h"
 #include "Engine/Renderer/RenderList.h"
 #include "RenderBuffers.h"
-#include "RenderTask.h"
 #include "RenderTools.h"
+#include "RenderContext.h"
 
 void RenderView::Prepare(RenderContext& renderContext)
 {

@@ -4,7 +4,7 @@
 #define SCENE_RENDERING_USE_PROFILER_PER_ACTOR 0
 
 #include "SceneRendering.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Graphics/RenderBuffers.h"

@@ -14,6 +14,7 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"

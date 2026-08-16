@@ -6,7 +6,7 @@
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Graphics/RenderView.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderTools.h"
 
 Decal::Decal(const SpawnParams& params)

@@ -7,7 +7,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Assets/MaterialInstance.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Level/Actors/Camera.h"
 #include "Engine/Serialization/Serialization.h"
 

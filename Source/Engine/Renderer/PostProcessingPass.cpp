@@ -7,6 +7,7 @@
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Graphics/GPUPass.h"

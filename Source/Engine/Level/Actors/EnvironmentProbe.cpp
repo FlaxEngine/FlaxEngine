@@ -8,6 +8,7 @@
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Renderer/ProbesRenderer.h"
 #include "Engine/Renderer/ReflectionsPass.h"
 #include "Engine/Content/Content.h"

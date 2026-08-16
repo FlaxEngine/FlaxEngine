@@ -10,6 +10,7 @@
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Core/Math/OrientedBoundingBox.h"
 #include "Engine/Level/Scene/Scene.h"
 #if USE_EDITOR

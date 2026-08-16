@@ -12,7 +12,7 @@
 #include "Engine/Graphics/GPUPipelineState.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Foliage/Foliage.h"
 #include "Engine/ShadowsOfMordor/Builder.Config.h"

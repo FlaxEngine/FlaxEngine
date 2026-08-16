@@ -14,6 +14,7 @@
 #include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/Graphics.h"

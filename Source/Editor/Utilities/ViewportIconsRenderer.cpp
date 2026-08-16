@@ -20,6 +20,7 @@
 #include "Engine/Audio/AudioListener.h"
 #include "Engine/Audio/AudioSource.h"
 #include "Engine/Particles/ParticleEffect.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"
 #include "Engine/Animations/SceneAnimations/SceneAnimationPlayer.h"
 #include "Engine/Engine/EngineService.h"

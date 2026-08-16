@@ -8,7 +8,7 @@
 #include "Engine/Content/Upgraders/ModelAssetUpgrader.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Graphics/RenderTools.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"
 #include "Engine/Streaming/StreamingGroup.h"
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"

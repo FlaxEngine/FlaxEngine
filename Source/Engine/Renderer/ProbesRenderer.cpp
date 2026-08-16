@@ -23,7 +23,7 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/Textures/TextureData.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Threading/ThreadPoolTask.h"

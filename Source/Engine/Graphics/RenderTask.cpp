@@ -2,6 +2,7 @@
 
 #include "RenderTask.h"
 #include "RenderBuffers.h"
+#include "RenderContext.h"
 #include "GPUDevice.h"
 #include "GPUSwapChain.h"
 #include "PostProcessEffect.h"

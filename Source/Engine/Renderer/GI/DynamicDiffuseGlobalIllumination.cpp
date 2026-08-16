@@ -23,6 +23,7 @@
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Level/Actors/BrushMode.h"
 #include "Engine/Renderer/GBufferPass.h"

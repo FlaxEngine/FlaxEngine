@@ -7,6 +7,7 @@
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Renderer/GBufferPass.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/Graphics.h"

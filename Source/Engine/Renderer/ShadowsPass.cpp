@@ -5,7 +5,7 @@
 #include "VolumetricFogPass.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GPUContext.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Content/Content.h"

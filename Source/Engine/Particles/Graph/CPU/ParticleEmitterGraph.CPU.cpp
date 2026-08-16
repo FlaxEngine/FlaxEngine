@@ -4,6 +4,7 @@
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Particles/ParticleEffect.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Profiler/ProfilerCPU.h"

@@ -10,7 +10,7 @@
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Audio/AudioClip.h"
 #include "Engine/Audio/AudioSource.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Scripting/Scripting.h"

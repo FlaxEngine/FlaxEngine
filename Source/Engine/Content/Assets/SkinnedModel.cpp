@@ -8,7 +8,7 @@
 #include "Engine/Streaming/StreamingGroup.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Graphics/RenderTools.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/Models/Config.h"
 #include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"

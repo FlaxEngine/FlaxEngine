@@ -10,6 +10,7 @@
 struct FLAXENGINE_API RenderSetup
 {
     RenderingUpscaleLocation UpscaleLocation = RenderingUpscaleLocation::DuringAntiAliasing;
+    float RenderScale = 1.0f;
     bool UseShadows = false;
     bool UseMotionVectors = false;
     bool UseTemporalAAJitter = false;

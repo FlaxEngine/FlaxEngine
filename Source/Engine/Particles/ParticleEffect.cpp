@@ -10,6 +10,7 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Graphics/RenderContext.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #include "Editor/Managed/ManagedEditor.h"

@@ -3093,6 +3093,7 @@ namespace Flax.Build.Bindings
                     else
                         throw new Exception("Not supported Non-POD type " + apiType);
                     CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
+                    CppIncludeFiles.Add(apiType.File.Name);
 
                     // Get the full typename with nested parent prefix
                     var fullName = apiType.FullNameNative;

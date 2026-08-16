@@ -4,6 +4,7 @@
 #include "Engine/Content/Deprecated.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/Serialization.h"
