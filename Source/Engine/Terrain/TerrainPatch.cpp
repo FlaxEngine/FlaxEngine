@@ -2227,9 +2227,9 @@ void TerrainPatch::DestroyCollision()
     ScopeLock lock(_collisionLocker);
     ASSERT(HasCollision());
 
-    void* scene = _terrain->GetPhysicsScene()->GetPhysicsScene();
+    void* scene = _terrain->GetPhysicsScene() ? _terrain->GetPhysicsScene()->GetPhysicsScene() : nullptr;
     PhysicsBackend::RemoveCollider(_terrain);
-    if (_terrain->IsDuringPlay() && _terrain->IsActiveInHierarchy())
+    if (scene && _terrain->IsDuringPlay() && _terrain->IsActiveInHierarchy())
         PhysicsBackend::RemoveSceneActor(scene, _physicsActor);
     PhysicsBackend::DestroyActor(_physicsActor);
     PhysicsBackend::DestroyShape(_physicsShape);
