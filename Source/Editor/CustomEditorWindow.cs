@@ -1,8 +1,10 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.GUI.Docking;
 using FlaxEditor.Windows;
+using FlaxEngine;
 using FlaxEngine.GUI;
 
 namespace FlaxEditor
@@ -89,8 +91,20 @@ namespace FlaxEditor
             {
                 Editor.Instance.Windows.AddToRestore(this);
             }
-            Window.Close();
-            Window.Dispose();
+            Window.Close(ClosingReason.ScriptsReload);
+        }
+        
+        /// <summary>
+        /// Reattaches the window control to existing floating window.
+        /// </summary>
+        /// <param name="windowHandle">The window handle.</param>
+        /// <param name="state">Initial window state.</param>
+        /// <param name="toDock">The panel to dock to, if any.</param>
+        /// <param name="autoSelect">Only used if <paramref name="toDock"/> is set. If true the window will be selected after docking it.</param>
+        /// <param name="splitterValue">The splitter value to use if toDock is not null. If not specified, a default value will be used.</param>
+        public void Restore(IntPtr windowHandle, DockState state = DockState.Float, DockPanel toDock = null, bool autoSelect = true, float? splitterValue = null)
+        {
+            _win.Restore(windowHandle, state, toDock, autoSelect, splitterValue);
         }
 
         /// <summary>

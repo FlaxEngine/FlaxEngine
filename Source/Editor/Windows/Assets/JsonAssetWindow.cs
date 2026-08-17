@@ -148,7 +148,7 @@ namespace FlaxEditor.Windows.Assets
         protected override void OnScriptsReloadBegin()
         {
             base.OnScriptsReloadBegin();
-            Close();
+            Close(ClosingReason.ScriptsReload);
         }
 
         /// <inheritdoc />
