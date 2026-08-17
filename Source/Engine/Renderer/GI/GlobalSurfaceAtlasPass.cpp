@@ -1272,7 +1272,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     // Init constants
     result.Constants.ViewPos = renderContext.View.Position;
     result.Constants.Resolution = (float)resolution;
-    result.Constants.ChunkSize = distance * 2.0f / (float)GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION;
+    result.Constants.ChunkSize = distance / (float)GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION;
     result.Constants.ObjectsCount = surfaceAtlasData.Objects.Count();
 
     // If we don't know the culled objects buffer capacity then we shouldn't use atlas results as many objects are still missing (see CulledObjectsCounterIndex usage)
