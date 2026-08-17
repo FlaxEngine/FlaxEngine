@@ -635,7 +635,7 @@ namespace Flax.Build.Projects.VisualStudio
                 var configuration = "$(FlaxConfiguration)";
                 var editorPath = Utilities.NormalizePath(Path.Combine(Globals.EngineRoot, Platform.GetEditorBinaryDirectory(), configuration, $"FlaxEditor{Utilities.GetPlatformExecutableExt()}")).Replace('\\', '/');
                 var workspacePath = Utilities.NormalizePath(solutionDirectory).Replace('\\', '/');
-                var args = Globals.Project.Name == "Flax" ? "" : $"-project \\\"{workspacePath}\\\"";
+                var args = Globals.Project.Name == "Flax" ? "" : $"-project=\\\"{workspacePath}\\\"";
                 foreach (var project in projects)
                 {
                     if (project.Type == TargetType.DotNetCore)

@@ -740,7 +740,7 @@ namespace FlaxEditor
                 var procSettings = new CreateProcessSettings
                 {
                     FileName = Platform.ExecutableFilePath,
-                    Arguments = string.Format("-project \"{0}\"" + (_projectIsNew ? " -new" : string.Empty), _projectToOpen),
+                    Arguments = string.Format("-project=\"{0}\"" + (_projectIsNew ? " -new" : string.Empty), _projectToOpen),
                     ShellExecute = true,
                     WaitForEnd = false,
                     HiddenWindow = false,

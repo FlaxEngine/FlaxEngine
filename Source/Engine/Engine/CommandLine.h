@@ -124,7 +124,7 @@ public:
 
 #if USE_EDITOR
         /// <summary>
-        /// -project !path! (Startup project path)
+        /// -project=<path> (Startup project path)
         /// </summary>
         String Project;
 
@@ -154,7 +154,7 @@ public:
         Nullable<bool> ClearCookerCache;
 
         /// <summary>
-        /// The build preset (-build !preset.target! or -build !preset!) (run game building on startup and exit app on end).
+        /// The build preset (-build=<preset.target> or -build=<preset>) (run game building on startup and exit app on end).
         /// </summary>
         Nullable<String> Build;
 
@@ -174,7 +174,7 @@ public:
         Nullable<bool> Exit;
 
         /// <summary>
-        /// -play !guid! ( Scene to play, can be empty to use default )
+        /// -play=<guid> ( Scene to play, can be empty to use default )
         /// </summary>
         Nullable<String> Play;
 #endif

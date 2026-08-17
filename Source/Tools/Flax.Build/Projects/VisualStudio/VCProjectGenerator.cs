@@ -401,7 +401,7 @@ namespace Flax.Build.Projects.VisualStudio
                 cppTargetsFileContent.AppendLine("    <TargetName>$(RootNamespace)$(Configuration.Split('.')[0])</TargetName>");
                 cppTargetsFileContent.AppendLine("    <TargetPath>$(OutDir)/$(TargetName)$(TargetExt)</TargetPath>");
                 if (!string.IsNullOrEmpty(debuggerProjectPath))
-                    cppTargetsFileContent.AppendLine(string.Format("    <LocalDebuggerCommandArguments>-project \"{0}\"</LocalDebuggerCommandArguments>", debuggerProjectPath));
+                    cppTargetsFileContent.AppendLine(string.Format("    <LocalDebuggerCommandArguments>-project=\"{0}\"</LocalDebuggerCommandArguments>", debuggerProjectPath));
                 else
                     cppTargetsFileContent.AppendLine("    <LocalDebuggerCommandArguments></LocalDebuggerCommandArguments>");
                 cppTargetsFileContent.AppendLine(string.Format("    <LocalDebuggerCommand>{0}</LocalDebuggerCommand>", editorPath));
