@@ -29,7 +29,7 @@ const Char* SplashScreenQuotes[] =
 #elif PLATFORM_LINUX
     TEXT("Try it on a Raspberry"),
     TEXT("Trying to exit vim"),
-    TEXT("sudo flax --project HelloWorld.flaxproj"),
+    TEXT("sudo flax --project=HelloWorld.flaxproj"),
 #elif PLATFORM_MAC
     TEXT("don't compare Macbooks to oranges."),
     TEXT("Why does macbook heat up?\nBecause it doesn't have windows"),
