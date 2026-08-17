@@ -16,6 +16,7 @@
 #include "Engine/Content/JsonAsset.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Render2D/Render2D.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
