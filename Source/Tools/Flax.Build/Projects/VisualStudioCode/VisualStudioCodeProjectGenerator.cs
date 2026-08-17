@@ -344,8 +344,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                                         {
                                             if (configuration.Platform == TargetPlatform.Linux || configuration.Platform == TargetPlatform.Mac)
                                                 json.AddUnnamedField("-std");
-                                            json.AddUnnamedField("-project");
-                                            json.AddUnnamedField(buildToolWorkspace);
+                                            json.AddUnnamedField($"-project=\"{buildToolWorkspace}\"");
                                             json.AddUnnamedField("-skipCompile");
                                             if (hasMonoProjects)
                                             {
@@ -399,8 +398,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                                         {
                                             if (configuration.Platform == TargetPlatform.Linux || configuration.Platform == TargetPlatform.Mac)
                                                 json.AddUnnamedField("-std");
-                                            json.AddUnnamedField("-project");
-                                            json.AddUnnamedField(buildToolWorkspace);
+                                            json.AddUnnamedField($"-project=\"{buildToolWorkspace}\"");
                                             json.AddUnnamedField("-skipCompile");
                                         }
                                         json.EndArray();
