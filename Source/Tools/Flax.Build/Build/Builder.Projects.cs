@@ -150,28 +150,38 @@ namespace Flax.Build
                             var toolchain = platform.TryGetToolchain(architecture);
                             var targetBuildOptions = GetBuildOptions(target, platform, toolchain, architecture, configuration, project.WorkspaceRootPath);
                             targetBuildOptions.Flags |= BuildFlags.GenerateProject;
-                            var modules = CollectModules(rules, platform, target, targetBuildOptions, toolchain, architecture, configuration);
-                            foreach (var module in modules)
+                            try
                             {
-                                // This merges private module build options into global target - not the best option but helps with syntax highlighting and references collecting
-                                module.Key.Setup(targetBuildOptions);
-                                module.Key.SetupEnvironment(targetBuildOptions);
-                            }
+                                var modules = CollectModules(rules, platform, target, targetBuildOptions, toolchain, architecture, configuration);
+                                foreach (var module in modules)
+                                {
+                                    // This merges private module build options into global target - not the best option but helps with syntax highlighting and references collecting
+                                    module.Key.Setup(targetBuildOptions);
+                                    module.Key.SetupEnvironment(targetBuildOptions);
+                                }
 
-                            project.Configurations.Add(new Project.ConfigurationData
+                                project.Configurations.Add(new Project.ConfigurationData
+                                {
+                                    Name = configurationText + '|' + architectureName,
+                                    Text = configurationText,
+                                    Platform = targetPlatform,
+                                    PlatformName = platformName,
+                                    Architecture = architecture,
+                                    ArchitectureName = architectureName,
+                                    Configuration = configuration,
+                                    ConfigurationName = configurationName,
+                                    Target = target,
+                                    TargetBuildOptions = targetBuildOptions,
+                                    Modules = modules,
+                                });
+                            }
+                            catch (Exception ex)
                             {
-                                Name = configurationText + '|' + architectureName,
-                                Text = configurationText,
-                                Platform = targetPlatform,
-                                PlatformName = platformName,
-                                Architecture = architecture,
-                                ArchitectureName = architectureName,
-                                Configuration = configuration,
-                                ConfigurationName = configurationName,
-                                Target = target,
-                                TargetBuildOptions = targetBuildOptions,
-                                Modules = modules,
-                            });
+                                Log.Warning($"Unsupported project '{project.Name}' configuration {configurationName} to {platformName}");
+                                Log.Verbose(ex.Message);
+                                Log.Verbose(ex.StackTrace);
+                                //Log.Exception(ex);
+                            }
                         }
                     }
                 }
