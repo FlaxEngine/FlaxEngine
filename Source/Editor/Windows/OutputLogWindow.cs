@@ -104,18 +104,21 @@ namespace FlaxEditor.Windows
             /// <inheritdoc />
             public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
             {
-                // Click on text block
-                int textLength = TextLength;
-                if (textLength != 0)
+                if (button == MouseButton.Left)
                 {
-                    var hitPos = CharIndexAtPoint(ref location);
-                    if (hitPos != -1 && GetTextBlock(hitPos, out var textBlock) && textBlock.Tag is TextBlockTag tag)
+                    // Click on text block
+                    int textLength = TextLength;
+                    if (textLength != 0)
                     {
-                        switch (tag.Type)
+                        var hitPos = CharIndexAtPoint(ref location);
+                        if (hitPos != -1 && GetTextBlock(hitPos, out var textBlock) && textBlock.Tag is TextBlockTag tag)
                         {
-                        case TextBlockTag.Types.CodeLocation:
-                            Window.Editor.CodeEditing.OpenFile(tag.Url, tag.Line);
-                            return true;
+                            switch (tag.Type)
+                            {
+                            case TextBlockTag.Types.CodeLocation:
+                                Window.Editor.CodeEditing.OpenFile(tag.Url, tag.Line);
+                                return true;
+                            }
                         }
                     }
                 }

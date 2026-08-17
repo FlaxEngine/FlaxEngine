@@ -186,8 +186,13 @@ namespace FlaxEditor.Content.Import
             /// <inheritdoc />
             protected override bool OnMouseDoubleClickHeader(ref Float2 location, MouseButton button)
             {
-                StartRenaming();
-                return true;
+                if (button == MouseButton.Left)
+                {
+                    StartRenaming();
+                    return true;
+                }
+
+                return false;
             }
 
             public override bool OnKeyDown(KeyboardKeys key)
