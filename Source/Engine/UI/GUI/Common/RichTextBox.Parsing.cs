@@ -159,21 +159,28 @@ namespace FlaxEngine.GUI
                 var totalSize = lastBlock.Bounds.BottomRight;
                 var sizeOffset = Size - totalSize;
                 var textBlocks = CollectionsMarshal.AsSpan(_textBlocks);
-                if ((verticalAlignments & TextBlockStyle.Alignments.Middle) == TextBlockStyle.Alignments.Middle)
+
+                switch (verticalAlignments)
                 {
-                    sizeOffset.Y *= 0.5f;
-                    for (int i = 0; i < _textBlocks.Count; i++)
+                    case TextBlockStyle.Alignments.Middle:
                     {
-                        ref TextBlock textBlock = ref textBlocks[i];
-                        textBlock.Bounds.Location.Y += sizeOffset.Y;
+                        sizeOffset.Y *= 0.5f;
+                        for (int i = 0; i < _textBlocks.Count; i++)
+                        {
+                            ref TextBlock textBlock = ref textBlocks[i];
+                            textBlock.Bounds.Location.Y += sizeOffset.Y;
+                        }
+                        break;
                     }
-                }
-                else if ((verticalAlignments & TextBlockStyle.Alignments.Bottom) == TextBlockStyle.Alignments.Bottom)
-                {
-                    for (int i = 0; i < _textBlocks.Count; i++)
+
+                    case TextBlockStyle.Alignments.Bottom:
                     {
-                        ref TextBlock textBlock = ref textBlocks[i];
-                        textBlock.Bounds.Location.Y += sizeOffset.Y;
+                        for (int i = 0; i < _textBlocks.Count; i++)
+                        {
+                            ref TextBlock textBlock = ref textBlocks[i];
+                            textBlock.Bounds.Location.Y += sizeOffset.Y;
+                        }
+                        break;
                     }
                 }
             }
@@ -220,42 +227,128 @@ namespace FlaxEngine.GUI
 
             // Process text into text blocks (handle newlines etc.)
             var font = textBlock.Style.Font.GetFont();
-            if (!font)
-                return;
             var lines = font.ProcessText(_text, ref textBlock.Range);
-            if (lines == null || lines.Length == 0)
+            
+            if (!font || (lines == null || lines.Length == 0))
                 return;
+
+            var wrapWidth = Wrapping != TextWrapping.NoWrap ? Width : -1.0f;
+            
             for (int i = 0; i < lines.Length; i++)
             {
                 ref var line = ref lines[i];
-                textBlock.Range = new TextRange
+
+                var lineRange = new TextRange
                 {
                     StartIndex = start + line.FirstCharIndex,
                     EndIndex = start + line.LastCharIndex + 1,
                 };
+
                 if (i != 0)
                 {
                     context.Caret.X = 0;
-                    OnLineAdded(ref context, textBlock.Range.StartIndex - 1);
+                    OnLineAdded(ref context, lineRange.StartIndex - 1);
                 }
-                textBlock.Bounds = new Rectangle(context.Caret, line.Size);
-                textBlock.Bounds.X += line.Location.X;
 
-                context.AddTextBlock(ref textBlock);
-            }
-
-            // Update the caret location
-            ref var lastLine = ref lines[lines.Length - 1];
-            if (lines.Length == 1)
-            {
-                context.Caret.X += lastLine.Size.X;
-            }
-            else
-            {
-                context.Caret.X = lastLine.Size.X;
+                if (wrapWidth > 0 && context.Caret.X + line.Size.X > wrapWidth)
+                {
+                    // Line overflows the available width - split it into multiple wrapped lines
+                    AddWrappedTextBlocks(ref context, ref textBlock, font, lineRange, wrapWidth, Wrapping);
+                }
+                else
+                {
+                    textBlock.Range = lineRange;
+                    textBlock.Bounds = new Rectangle(context.Caret, line.Size);
+                    textBlock.Bounds.X += line.Location.X;
+                    context.AddTextBlock(ref textBlock);
+                    context.Caret.X += line.Size.X;
+                }
             }
         }
 
+        /// <summary>
+        /// Splits the given text range into multiple text blocks (lines) so it fits within the available wrapping width, correctly continuing from the current caret position (eg. when a differently-styled text run follows on the same line).
+        /// </summary>
+        /// <param name="context">The parsing context.</param>
+        /// <param name="textBlock">The template text block (style is reused, range and bounds get overriden per produced block).</param>
+        /// <param name="font">The font used to measure and render the text.</param>
+        /// <param name="range">The text range to wrap (single logical line - no explicit newlines inside).</param>
+        /// <param name="wrapWidth">The maximum available width (in control-space) that a single visual line can use.</param>
+        /// <param name="wrapping">The wrapping mode - either whole-word (breaks only at whitespace) or per-character (can break in the middle of a word).</param>
+        private void AddWrappedTextBlocks(ref ParsingContext context, ref TextBlock textBlock, Font font, TextRange range, float wrapWidth, TextWrapping wrapping)
+        {
+            int segmentStart = range.StartIndex;
+            float segmentWidth = 0.0f;
+            int pos = range.StartIndex;
+            while (pos < range.EndIndex)
+            {
+                // Consume the next "chunk" - a single character for WrapChars, or a whole word (plus trailing whitespace) for WrapWords
+                int chunkStart = pos;
+                if (wrapping == TextWrapping.WrapChars)
+                {
+                    pos++;
+                }
+                else
+                {
+                    while (pos < range.EndIndex && !char.IsWhiteSpace(_text[pos]))
+                        pos++;
+                    while (pos < range.EndIndex && char.IsWhiteSpace(_text[pos]))
+                        pos++;
+                }
+
+                var chunkRange = new TextRange { StartIndex = chunkStart, EndIndex = pos };
+                var chunkWidth = font.MeasureText(_text, ref chunkRange).X;
+
+                if ((segmentWidth > 0.0f || context.Caret.X > 0.0f) && context.Caret.X + segmentWidth + chunkWidth > wrapWidth)
+                {
+                    // The next chunk no longer fits - emit the accumulated segment (if any) and start a new line
+                    if (segmentStart < chunkStart)
+                        AddWrappedTextBlock(ref context, ref textBlock, font, segmentStart, chunkStart);
+                    context.Caret.X = 0;
+                    OnLineAdded(ref context, chunkStart - 1);
+                    segmentStart = chunkStart;
+                    segmentWidth = 0.0f;
+                }
+                segmentWidth += chunkWidth;
+
+                // For Wrap Words mode: A single word wider than the whole available width can't be split further, so force it onto its own line
+                if (wrapping == TextWrapping.WrapWords && context.Caret.X <= 0.0f && segmentStart == chunkStart && segmentWidth > wrapWidth && pos < range.EndIndex)
+                {
+                    AddWrappedTextBlock(ref context, ref textBlock, font, segmentStart, pos);
+                    context.Caret.X = 0;
+                    OnLineAdded(ref context, pos - 1);
+                    segmentStart = pos;
+                    segmentWidth = 0.0f;
+                }
+            }
+            if (segmentStart < range.EndIndex)
+                AddWrappedTextBlock(ref context, ref textBlock, font, segmentStart, range.EndIndex);
+        }
+
+        /// <summary>
+        /// Adds a single text block to the control, using the current caret position as the origin and moving the caret forward by the width of the text block.
+        /// </summary>
+        /// <param name="context">The parsing context.</param>
+        /// <param name="textBlock">The text block to add.</param>
+        /// <param name="font">The font to use for measurement.</param>
+        /// <param name="start">The start index of the text range.</param>
+        /// <param name="end">The end index of the text range.</param>
+        private void AddWrappedTextBlock(ref ParsingContext context, ref TextBlock textBlock, Font font, int start, int end)
+        {
+            var range = new TextRange { StartIndex = start, EndIndex = end };
+            var size = font.MeasureText(_text, ref range);
+            textBlock.Range = range;
+            textBlock.Bounds = new Rectangle(context.Caret, size);
+            context.AddTextBlock(ref textBlock);
+            context.Caret.X += size.X;
+        }
+
+        /// <summary>
+        /// Called when a new line is added (eg. after a newline character or when the text overflows the available width). 
+        /// It organizes the text blocks within the line and moves the caret to the next line.
+        /// </summary>
+        /// <param name="context">The parsing context.</param>
+        /// <param name="lineEnd">The index of the last character in the line.</param>
         private void OnLineAdded(ref ParsingContext context, int lineEnd)
         {
             // Calculate size of the line
@@ -263,6 +356,7 @@ namespace FlaxEngine.GUI
             var lineOrigin = textBlocks[context.LineStartTextBlockIndex].Bounds.Location;
             var lineSize = Float2.Zero;
             var lineAscender = 0.0f;
+
             for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
             {
                 ref TextBlock textBlock = ref textBlocks[i];
@@ -278,62 +372,72 @@ namespace FlaxEngine.GUI
             {
                 ref TextBlock textBlock = ref textBlocks[i];
                 var vOffset = lineSize.Y - textBlock.Bounds.Height;
-                if (i == context.LineStartTextBlockIndex)
-                    lineAlignments = textBlock.Style.Alignment;
-                else
-                    lineAlignments &= textBlock.Style.Alignment;
+
+                lineAlignments = (i == context.LineStartTextBlockIndex) ? textBlock.Style.Alignment :
+                    lineAlignments & textBlock.Style.Alignment;
+                
                 switch (textBlock.Style.Alignment & TextBlockStyle.Alignments.VerticalMask)
                 {
-                case TextBlockStyle.Alignments.Baseline:
-                {
-                    // Match the baseline of the line (use ascender)
-                    var ascender = textBlock.GetAscender();
-                    vOffset = lineAscender - ascender;
-                    textBlock.Bounds.Location.Y += vOffset;
-                    break;
-                }
-                case TextBlockStyle.Alignments.Top:
-                {
-                    textBlock.Bounds.Location.Y = lineOrigin.Y;
-                    break;
-                }
-                case TextBlockStyle.Alignments.Middle:
-                {
-                    textBlock.Bounds.Location.Y = lineOrigin.Y + vOffset * 0.5f;
-                    break;
-                }
-                case TextBlockStyle.Alignments.Bottom:
-                {
-                    textBlock.Bounds.Location.Y = lineOrigin.Y + vOffset;
-                    break;
-                }
+                    case TextBlockStyle.Alignments.Baseline:
+                    {
+                        // Match the baseline of the line (use ascender)
+                        var ascender = textBlock.GetAscender();
+                        vOffset = lineAscender - ascender;
+                        textBlock.Bounds.Location.Y += vOffset;
+                        break;
+                    }
+
+                    case TextBlockStyle.Alignments.Top:
+                    {
+                        textBlock.Bounds.Location.Y = lineOrigin.Y;
+                        break;
+                    }
+
+                    case TextBlockStyle.Alignments.Middle:
+                    {
+                        textBlock.Bounds.Location.Y = lineOrigin.Y + vOffset * 0.5f;
+                        break;
+                    }
+
+                    case TextBlockStyle.Alignments.Bottom:
+                    {
+                        textBlock.Bounds.Location.Y = lineOrigin.Y + vOffset;
+                        break;
+                    }
                 }
             }
 
             // Organize whole line horizontally
             var sizeOffset = Size - lineSize;
-            if ((lineAlignments & TextBlockStyle.Alignments.Center) == TextBlockStyle.Alignments.Center)
+
+            switch (lineAlignments & TextBlockStyle.Alignments.HorizontalMask)
             {
-                sizeOffset.X *= 0.5f;
-                for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
+                case TextBlockStyle.Alignments.Center:
                 {
-                    ref TextBlock textBlock = ref textBlocks[i];
-                    textBlock.Bounds.Location.X += sizeOffset.X;
+                    sizeOffset.X *= 0.5f;
+                    for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
+                    {
+                        ref TextBlock textBlock = ref textBlocks[i];
+                        textBlock.Bounds.Location.X += sizeOffset.X;
+                    }
+                    break;
                 }
-            }
-            else if ((lineAlignments & TextBlockStyle.Alignments.Right) == TextBlockStyle.Alignments.Right)
-            {
-                for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
+
+                case TextBlockStyle.Alignments.Right:
                 {
-                    ref TextBlock textBlock = ref textBlocks[i];
-                    textBlock.Bounds.Location.X += sizeOffset.X;
+                    for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
+                    {
+                        ref TextBlock textBlock = ref textBlocks[i];
+                        textBlock.Bounds.Location.X += sizeOffset.X;
+                    }
+                    break;
                 }
             }
 
             // Move to the next line
             context.LineStartCharacterIndex = lineEnd + 1;
             context.LineStartTextBlockIndex = _textBlocks.Count;
-            context.Caret.Y += lineSize.Y;
+            context.Caret.Y += lineSize.Y * BaseLinesGapScale;
         }
     }
 }
