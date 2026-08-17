@@ -28,6 +28,11 @@ namespace Flax.Deps.Dependencies
                     {
                         TargetPlatform.Mac,
                     };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetPlatform.Linux,
+                    };
                 default: return new TargetPlatform[0];
                 }
             }
@@ -51,6 +56,11 @@ namespace Flax.Deps.Dependencies
                     {
                         TargetArchitecture.x64,
                         TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
                     };
                 default: return new TargetArchitecture[0];
                 }
@@ -95,6 +105,18 @@ namespace Flax.Deps.Dependencies
                         var lib = architecture == TargetArchitecture.ARM64 ? "libastcenc-neon-static.a" : "libastcenc-sse2-static.a";
                         SetupDirectory(buildDir, true);
                         RunCmake(buildDir, platform, architecture, ".. -DCMAKE_BUILD_TYPE=Release -DASTCENC_UNIVERSAL_BUILD=OFF -DASTCENC_UNIVERSAL_BINARY=OFF -DASTCENC_INVARIANCE=OFF " + isa);
+                        BuildCmake(buildDir);
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        Utilities.FileCopy(Path.Combine(buildDir, "Source", lib), Path.Combine(depsFolder, "libastcenc.a"));
+                        break;
+                    }
+                    case TargetPlatform.Linux:
+                    {
+                        string buildDir = Path.Combine(root, "build-" + architecture);
+                        var isa = architecture == TargetArchitecture.ARM64 ? "-DASTCENC_ISA_NEON=ON" : "-DASTCENC_ISA_SSE2=ON";
+                        var lib = architecture == TargetArchitecture.ARM64 ? "libastcenc-neon-static.a" : "libastcenc-sse2-static.a";
+                        SetupDirectory(buildDir, true);
+                        RunCmake(buildDir, platform, architecture, ".. -DCMAKE_BUILD_TYPE=Release -DASTCENC_CLI=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON " + isa);
                         BuildCmake(buildDir);
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         Utilities.FileCopy(Path.Combine(buildDir, "Source", lib), Path.Combine(depsFolder, "libastcenc.a"));
