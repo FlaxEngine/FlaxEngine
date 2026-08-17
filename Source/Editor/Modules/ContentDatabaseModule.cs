@@ -826,23 +826,29 @@ namespace FlaxEditor.Modules
             var startTime = Platform.TimeSeconds;
             _rebuildFlag = false;
             _rebuildInitFlag = false;
-            _enableEvents = false;
 
-            // Load all folders
-            // TODO: we should create async task for gathering content and whole workspace contents if it takes too long
-            // TODO: create progress bar in content window and after end we should enable events and update it
+            _enableEvents = false;
             _isDuringFastSetup = true;
             var startItems = _itemsCreated;
-            foreach (var project in Projects)
+            try
             {
-                if (project.Content != null)
-                    LoadFolder(project.Content, true);
-                if (project.Source != null)
-                    LoadFolder(project.Source, true);
+                // Load all folders
+                // TODO: we should create async task for gathering content and whole workspace contents if it takes too long
+                // TODO: create progress bar in content window and after end we should enable events and update it
+                foreach (var project in Projects)
+                {
+                    if (project.Content != null)
+                        LoadFolder(project.Content, true);
+                    if (project.Source != null)
+                        LoadFolder(project.Source, true);
+                }
             }
-            _isDuringFastSetup = false;
-
-            _enableEvents = enableEvents;
+            finally
+            {
+                _isDuringFastSetup = false;
+                _enableEvents = enableEvents;
+            }
+            
             var endTime = Platform.TimeSeconds;
             Editor.Log(string.Format("Project database created in {0} ms. Items count: {1}", (int)((endTime - startTime) * 1000.0), _itemsCreated - startItems));
             Profiler.EndEvent();
@@ -1333,39 +1339,44 @@ namespace FlaxEditor.Modules
             _enableEvents = false;
             _isDuringFastSetup = true;
             var startItems = _itemsCreated;
-            foreach (var project in Projects)
+            try
             {
-                if (project.Content != null)
+                foreach (var project in Projects)
                 {
-                    //Dispose(project.Content.Folder);
-                    for (int i = 0; i < project.Content.Folder.Children.Count; i++)
+                    if (project.Content != null)
                     {
-                        Dispose(project.Content.Folder.Children[i]);
-                        i--;
+                        //Dispose(project.Content.Folder);
+                        for (int i = 0; i < project.Content.Folder.Children.Count; i++)
+                        {
+                            Dispose(project.Content.Folder.Children[i]);
+                            i--;
+                        }
+                    }
+                    if (project.Source != null)
+                    {
+                        //Dispose(project.Source.Folder);
+                        for (int i = 0; i < project.Source.Folder.Children.Count; i++)
+                        {
+                            Dispose(project.Source.Folder.Children[i]);
+                            i--;
+                        }
                     }
                 }
-                if (project.Source != null)
+
+                List<ContentProxy> removeProxies = new List<ContentProxy>();
+                foreach (var proxy in Editor.Instance.ContentDatabase.Proxy)
                 {
-                    //Dispose(project.Source.Folder);
-                    for (int i = 0; i < project.Source.Folder.Children.Count; i++)
-                    {
-                        Dispose(project.Source.Folder.Children[i]);
-                        i--;
-                    }
+                    if (proxy.GetType().IsCollectible)
+                        removeProxies.Add(proxy);
                 }
+                foreach (var proxy in removeProxies)
+                    RemoveProxy(proxy, false);
             }
-
-            List<ContentProxy> removeProxies = new List<ContentProxy>();
-            foreach (var proxy in Editor.Instance.ContentDatabase.Proxy)
+            finally
             {
-                if (proxy.GetType().IsCollectible)
-                    removeProxies.Add(proxy);
+                _isDuringFastSetup = false;
+                _enableEvents = enabledEvents;
             }
-            foreach (var proxy in removeProxies)
-                RemoveProxy(proxy, false);
-
-            _isDuringFastSetup = false;
-            _enableEvents = enabledEvents;
         }
 
         private void OnScriptsReloadEnd()

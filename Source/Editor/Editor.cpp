@@ -642,9 +642,11 @@ int32 Editor::LoadProduct()
         }
     }
 
+#if !FLAX_TESTS
     // Update the last opened project path
     if (lastProjectPath.Compare(Project->ProjectFolderPath) != 0)
         File::WriteAllText(lastProjectSettingPath, Project->ProjectFolderPath, Encoding::UTF8);
+#endif
 
     return 0;
 }
