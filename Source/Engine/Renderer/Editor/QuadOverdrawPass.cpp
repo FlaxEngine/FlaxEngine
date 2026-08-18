@@ -17,6 +17,25 @@
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Graphics/RenderTools.h"
 
+void CheckDrawListQuadOverdraw(RenderList* list, DrawCallsListType type)
+{
+    DrawCallsList& drawCallsList = list->DrawCallsLists[(int32)type];
+    const auto* listData = drawCallsList.Indices.Get();
+    const auto* drawCallsData = list->DrawCalls.Get();
+    const auto* batchesData = drawCallsList.Batches.Get();
+    for (int32 i = 0; i < drawCallsList.Batches.Count(); i++)
+    {
+        const DrawBatch& batch = batchesData[i];
+        uint32 drawCallIndex = listData[batch.StartIndex];
+        const DrawCall& drawCall = drawCallsData[drawCallIndex];
+        if (EnumHasNoneFlags(drawCall.Material->GetDrawModes(), DrawPass::QuadOverdraw))
+        {
+            // Don't draw it
+            drawCallsList.Batches.RemoveAt(i--);
+        }
+    }
+}
+
 void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer)
 {
     if (checkIfSkipPass())
@@ -25,6 +44,12 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
         return;
     }
     PROFILE_GPU_CPU("Quad Overdraw");
+
+    // Process draw calls to skip materials that don't support Quad Overdraw pass
+    CheckDrawListQuadOverdraw(renderContext.List, DrawCallsListType::GBuffer);
+    CheckDrawListQuadOverdraw(renderContext.List, DrawCallsListType::GBufferNoDecals);
+    CheckDrawListQuadOverdraw(renderContext.List, DrawCallsListType::Forward);
+    CheckDrawListQuadOverdraw(renderContext.List, DrawCallsListType::Distortion);
 
     // Setup resources
     const int32 width = renderContext.Buffers->GetWidth();
