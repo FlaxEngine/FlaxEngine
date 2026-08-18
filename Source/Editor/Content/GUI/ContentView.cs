@@ -674,6 +674,20 @@ namespace FlaxEditor.Content.GUI
         }
 
         /// <inheritdoc />
+        public override void OnGotFocus()
+        {
+            StartTextInput();
+            base.OnGotFocus();
+        }
+
+        /// <inheritdoc />
+        public override void OnLostFocus()
+        {
+            EndTextInput();
+            base.OnLostFocus();
+        }
+
+        /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (base.OnMouseDown(location, button))
