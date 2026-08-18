@@ -21,6 +21,8 @@ private:
 #if GPU_ENABLE_DEVELOPMENT
         PipelineStateCache QuadOverdraw;
         PipelineStateCache QuadOverdrawSkinned;
+        PipelineStateCache Wireframe;
+        PipelineStateCache WireframeSkinned;
 #endif
 
         FORCE_INLINE PipelineStateCache* GetPS(const DrawPass pass, const bool useSkinning)
@@ -36,6 +38,8 @@ private:
 #if GPU_ENABLE_DEVELOPMENT
             case DrawPass::QuadOverdraw:
                 return useSkinning ? &QuadOverdrawSkinned : &QuadOverdraw;
+            case DrawPass::Wireframe:
+                return useSkinning ? &WireframeSkinned : &Wireframe;
 #endif
             default:
                 return nullptr;
@@ -53,6 +57,8 @@ private:
 #if GPU_ENABLE_DEVELOPMENT
             QuadOverdraw.Release();
             QuadOverdrawSkinned.Release();
+            Wireframe.Release();
+            WireframeSkinned.Release();
 #endif
         }
     };
@@ -60,7 +66,6 @@ private:
 private:
     Cache _cache;
     Cache _cacheInstanced;
-    DrawPass _drawModes = DrawPass::None;
 
 public:
     /// <summary>

@@ -17,11 +17,6 @@
 #include "Engine/Renderer/Lightmaps.h"
 #endif
 
-DrawPass DeferredMaterialShader::GetDrawModes() const
-{
-    return DrawPass::Depth | DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas | DrawPass::MotionVectors | DrawPass::QuadOverdraw;
-}
-
 bool DeferredMaterialShader::CanUseLightmap() const
 {
     return true;
@@ -73,7 +68,6 @@ void DeferredMaterialShader::Bind(BindParameters& params)
     }
 
     // Select pipeline state based on current pass and render mode
-    const bool wireframe = (_info.FeaturesFlags & MaterialFeaturesFlags::Wireframe) != MaterialFeaturesFlags::None || view.Mode == ViewMode::Wireframe;
     CullMode cullMode = view.Pass == DrawPass::Depth ? CullMode::TwoSided : _info.CullMode;
 #if USE_EDITOR
     if (IsRunningRadiancePass)
@@ -87,7 +81,7 @@ void DeferredMaterialShader::Bind(BindParameters& params)
     const auto cache = params.Instanced ? &_cacheInstanced : &_cache;
     PipelineStateCache* psCache = cache->GetPS(view.Pass, useLightmap, useSkinning, usePerBoneMotionBlur);
     ASSERT(psCache);
-    GPUPipelineState* state = psCache->GetPS(this, cullMode, wireframe);
+    GPUPipelineState* state = psCache->GetPS(this, cullMode);
 
     // Bind pipeline
     context->SetState(state);
@@ -107,10 +101,12 @@ bool DeferredMaterialShader::Load()
 {
     // TODO: support instancing when using ForwardShadingFeature
     _instanced = _info.BlendMode == MaterialBlendMode::Opaque && _info.ShadingModel != MaterialShadingModel::CustomLit;
-
+    _drawModes = DrawPass::Depth | DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas | DrawPass::MotionVectors | DrawPass::Wireframe;
     bool failed = false;
     auto psDesc = GPUPipelineState::Description::Default;
-    psDesc.DepthWriteEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthWrite) == MaterialFeaturesFlags::None;
+    psDesc.DepthWriteEnable = EnumHasNoneFlags(_info.FeaturesFlags, MaterialFeaturesFlags::DisableDepthWrite);
+    psDesc.Wireframe = EnumHasAnyFlags(_info.FeaturesFlags, MaterialFeaturesFlags::Wireframe);
+    psDesc.CullMode = _info.CullMode;
     if (EnumHasAnyFlags(_info.FeaturesFlags, MaterialFeaturesFlags::DisableDepthTest))
     {
         psDesc.DepthFunc = ComparisonFunc::Always;
@@ -136,23 +132,23 @@ bool DeferredMaterialShader::Load()
     auto vsInstanced = _shader->GetVS("VS", 1);
     auto vsSkinned = _shader->GetVS("VS_Skinned");
     auto vsSkinnedInstanced = _shader->GetVS("VS_Skinned", 2);
+    failed |= vs == nullptr;
+    failed |= vsInstanced == nullptr;
+    failed |= vsSkinned == nullptr;
+    failed |= vsSkinnedInstanced == nullptr;
 
     // GBuffer Pass
     psDesc.VS = vs;
-    failed |= psDesc.VS == nullptr;
     psDesc.PS = _shader->GetPS("PS_GBuffer");
     _cache.Default.Init(psDesc);
     psDesc.VS = vsInstanced;
-    failed |= psDesc.VS == nullptr;
     _cacheInstanced.Default.Init(psDesc);
 
     // GBuffer Pass with lightmap (USE_LIGHTMAP=1)
     psDesc.VS = vs;
-    failed |= psDesc.VS == nullptr;
     psDesc.PS = _shader->GetPS("PS_GBuffer", 1);
     _cache.DefaultLightmap.Init(psDesc);
     psDesc.VS = vsInstanced;
-    failed |= psDesc.VS == nullptr;
     _cacheInstanced.DefaultLightmap.Init(psDesc);
 
     // GBuffer Pass with skinning (USE_SKINNING=1)
@@ -169,16 +165,34 @@ bool DeferredMaterialShader::Load()
     if (_shader->HasShader("PS_QuadOverdraw"))
     {
         // Quad Overdraw
+        _drawModes |= DrawPass::QuadOverdraw;
         psDesc.VS = vs;
         psDesc.PS = _shader->GetPS("PS_QuadOverdraw");
         _cache.QuadOverdraw.Init(psDesc);
         psDesc.VS = vsInstanced;
-        _cacheInstanced.Depth.Init(psDesc);
+        _cacheInstanced.QuadOverdraw.Init(psDesc);
         psDesc.VS = vsSkinned;
         _cache.QuadOverdrawSkinned.Init(psDesc);
         psDesc.VS = vsSkinnedInstanced;
         _cacheInstanced.QuadOverdrawSkinned.Init(psDesc);
     }
+
+    // Wireframe
+    psDesc.Wireframe = true;
+    psDesc.DepthWriteEnable = false;
+    psDesc.BlendMode = BlendingMode::AlphaBlend;
+    psDesc.PS = GPUDevice::Instance->QuadShader->GetPS("PS_Wireframe");
+    psDesc.VS = vs;
+    _cache.Wireframe.Init(psDesc);
+    psDesc.VS = vsInstanced;
+    _cacheInstanced.Wireframe.Init(psDesc);
+    psDesc.VS = vsSkinned;
+    _cache.WireframeSkinned.Init(psDesc);
+    psDesc.VS = vsSkinnedInstanced;
+    _cacheInstanced.WireframeSkinned.Init(psDesc);
+    psDesc.DepthWriteEnable = EnumHasNoneFlags(_info.FeaturesFlags, MaterialFeaturesFlags::DisableDepthWrite);
+    psDesc.Wireframe = EnumHasAnyFlags(_info.FeaturesFlags, MaterialFeaturesFlags::Wireframe);
+    psDesc.BlendMode = BlendingMode::Opaque;
 #endif
 
     // Motion Vectors pass

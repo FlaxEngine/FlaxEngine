@@ -851,10 +851,16 @@ API_ENUM(Attributes="Flags") enum class DrawPass : int32
     GlobalSurfaceAtlas = 1 << 6,
 
     /// <summary>
-    /// The debug quad overdraw rendering (editor-only).
+    /// The debug quad overdraw rendering (development-only).
     /// </summary>
     API_ENUM(Attributes="HideInEditor")
     QuadOverdraw = 1 << 20,
+
+    /// <summary>
+    /// The debug wireframe rendering (development-only).
+    /// </summary>
+    API_ENUM(Attributes="HideInEditor")
+    Wireframe = 1 << 21,
 
     /// <summary>
     /// The default set of draw passes for the scene objects.
@@ -947,7 +953,7 @@ API_ENUM() enum class ViewMode
     Reflections = 13,
 
     /// <summary>
-    /// Draw scene objects in wireframe mode
+    /// Draw scene objects in wireframe mode (development-only)
     /// </summary>
     Wireframe = 14,
 

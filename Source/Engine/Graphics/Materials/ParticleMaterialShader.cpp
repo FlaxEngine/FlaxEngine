@@ -38,11 +38,6 @@ PACK_STRUCT(struct ParticleMaterialShaderData {
     Matrix3x4 WorldMatrixInverseTransposed;
     });
 
-DrawPass ParticleMaterialShader::GetDrawModes() const
-{
-    return _drawModes;
-}
-
 void ParticleMaterialShader::Bind(BindParameters& params)
 {
     // Prepare
@@ -119,7 +114,6 @@ void ParticleMaterialShader::Bind(BindParameters& params)
     }
 
     // Select pipeline state based on current pass and render mode
-    bool wireframe = EnumHasAnyFlags(_info.FeaturesFlags, MaterialFeaturesFlags::Wireframe) || view.Mode == ViewMode::Wireframe;
     CullMode cullMode = view.Pass == DrawPass::Depth ? CullMode::TwoSided : _info.CullMode;
     PipelineStateCache* psCache = nullptr;
     switch (drawCall.Particle.Module->TypeID)
@@ -160,7 +154,7 @@ void ParticleMaterialShader::Bind(BindParameters& params)
     }
     }
     ASSERT(psCache);
-    GPUPipelineState* state = psCache->GetPS(this, cullMode, wireframe);
+    GPUPipelineState* state = psCache->GetPS(this, cullMode);
 
     // Bind constants
     if (_cb)
@@ -186,44 +180,52 @@ void ParticleMaterialShader::Unload()
 
 bool ParticleMaterialShader::Load()
 {
-    _drawModes = DrawPass::Depth | DrawPass::Forward | DrawPass::QuadOverdraw;
-    GPUPipelineState::Description psDesc = GPUPipelineState::Description::Default;
-    psDesc.DepthEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthTest) == MaterialFeaturesFlags::None;
-    psDesc.DepthWriteEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthWrite) == MaterialFeaturesFlags::None;
+    _drawModes = DrawPass::Depth | DrawPass::Forward | DrawPass::Wireframe;
+    auto psDesc = GPUPipelineState::Description::Default;
+    psDesc.DepthEnable = EnumHasNoneFlags(_info.FeaturesFlags, MaterialFeaturesFlags::DisableDepthTest);
+    psDesc.DepthWriteEnable = EnumHasNoneFlags(_info.FeaturesFlags, MaterialFeaturesFlags::DisableDepthWrite);
+    psDesc.Wireframe = EnumHasAnyFlags(_info.FeaturesFlags, MaterialFeaturesFlags::Wireframe);
+    psDesc.CullMode = _info.CullMode;
 
     auto vsSprite = _shader->GetVS("VS_Sprite");
     auto vsMesh = _shader->GetVS("VS_Model");
     auto vsRibbon = _shader->GetVS("VS_Ribbon");
+#define INIT_CACHE(type) \
+    psDesc.VS = vsSprite; \
+    _cacheSprite.type.Init(psDesc); \
+    psDesc.VS = vsMesh; \
+    _cacheModel.type.Init(psDesc); \
+    psDesc.VS = vsRibbon; \
+    _cacheRibbon.type.Init(psDesc)
 
 #if GPU_ENABLE_DEVELOPMENT
     if (_shader->HasShader("PS_QuadOverdraw"))
     {
         // Quad Overdraw
+        _drawModes |= DrawPass::QuadOverdraw;
         psDesc.PS = _shader->GetPS("PS_QuadOverdraw");
-        psDesc.VS = vsSprite;
-        _cacheSprite.QuadOverdraw.Init(psDesc);
-        psDesc.VS = vsMesh;
-        _cacheModel.QuadOverdraw.Init(psDesc);
-        psDesc.VS = vsRibbon;
-        _cacheRibbon.QuadOverdraw.Init(psDesc);
+        INIT_CACHE(QuadOverdraw);
     }
+
+    // Wireframe
+    psDesc.Wireframe = true;
+    psDesc.DepthWriteEnable = false;
+    psDesc.BlendMode = BlendingMode::AlphaBlend;
+    psDesc.PS = GPUDevice::Instance->QuadShader->GetPS("PS_Wireframe");
+    INIT_CACHE(Wireframe);
+    psDesc.DepthWriteEnable = EnumHasNoneFlags(_info.FeaturesFlags, MaterialFeaturesFlags::DisableDepthWrite);
+    psDesc.Wireframe = EnumHasAnyFlags(_info.FeaturesFlags, MaterialFeaturesFlags::Wireframe);
 #endif
 
     // Check if use transparent distortion pass
     if (_shader->HasShader("PS_Distortion"))
     {
-        _drawModes |= DrawPass::Distortion;
-
         // Accumulate Distortion Pass
+        _drawModes |= DrawPass::Distortion;
         psDesc.PS = _shader->GetPS("PS_Distortion");
         psDesc.BlendMode = BlendingMode::Add;
         psDesc.DepthWriteEnable = false;
-        psDesc.VS = vsSprite;
-        _cacheSprite.Distortion.Init(psDesc);
-        psDesc.VS = vsMesh;
-        _cacheModel.Distortion.Init(psDesc);
-        psDesc.VS = vsRibbon;
-        _cacheRibbon.Distortion.Init(psDesc);
+        INIT_CACHE(Distortion);
     }
 
     // Forward Pass
@@ -242,12 +244,7 @@ bool ParticleMaterialShader::Load()
         psDesc.BlendMode = BlendingMode::Multiply;
         break;
     }
-    psDesc.VS = vsSprite;
-    _cacheSprite.Default.Init(psDesc);
-    psDesc.VS = vsMesh;
-    _cacheModel.Default.Init(psDesc);
-    psDesc.VS = vsRibbon;
-    _cacheRibbon.Default.Init(psDesc);
+    INIT_CACHE(Default);
 
     // Depth Pass
     psDesc = GPUPipelineState::Description::Default;
@@ -255,12 +252,7 @@ bool ParticleMaterialShader::Load()
     psDesc.DepthClipEnable = false;
     psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::None;
     psDesc.PS = _shader->GetPS("PS_Depth");
-    psDesc.VS = vsSprite;
-    _cacheSprite.Depth.Init(psDesc);
-    psDesc.VS = vsMesh;
-    _cacheModel.Depth.Init(psDesc);
-    psDesc.VS = vsRibbon;
-    _cacheRibbon.Depth.Init(psDesc);
+    INIT_CACHE(Depth);
 
     // Lazy initialization
     _cacheVolumetricFog.Desc.PS = nullptr;

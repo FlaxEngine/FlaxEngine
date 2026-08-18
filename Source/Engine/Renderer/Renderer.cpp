@@ -403,6 +403,12 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
     case ViewMode::LightOverlap:
         setup.UseShadows = false;
         break;
+#if GPU_ENABLE_DEVELOPMENT
+    case ViewMode::Wireframe:
+        // Use FXAA in wireframe view to improve readability (compared to TAA)
+        renderContext.List->Settings.AntiAliasing.Mode = AntialiasingMode::FastApproximateAntialiasing;
+        break;
+#endif
     }
     if (screenWidth < 16 || screenHeight < 16 || renderContext.Task->IsCameraCut || isGBufferDebug || renderContext.View.Mode == ViewMode::NoPostFx)
         setup.UseMotionVectors = false;
@@ -451,7 +457,6 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
     case ViewMode::GlobalSurfaceAtlas:
     case ViewMode::LightmapUVsDensity:
     case ViewMode::MaterialComplexity:
-    case ViewMode::Wireframe:
     case ViewMode::NoPostFx:
     case ViewMode::VertexColors:
     case ViewMode::QuadOverdraw:
@@ -749,15 +754,46 @@ void RenderInner(RenderContext& renderContext, RenderContextBatch& renderContext
     renderContext.List->RunMaterialPostFxPass(context, renderContext, MaterialPostFxLocation::AfterForwardPass, frameBuffer, lightBuffer);
     renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::AfterForwardPass, frameBuffer, lightBuffer);
 
+#if GPU_ENABLE_DEVELOPMENT
+    // Debug drawing
+    if (renderContext.View.Mode == ViewMode::Wireframe)
+    {
+        // Compose wireframe on top of the scene
+        PROFILE_GPU_CPU_NAMED("Wireframe");
+        renderContext.View.Pass = DrawPass::Wireframe;
+        auto depthBuffer = renderContext.Buffers->GetReadOnlyDepthBuffer();
+        auto cb = GPUDevice::Instance->QuadShader->GetCB(3);
+        GPU_CB_STRUCT(WireframeData {
+            Float4 ColorNear;
+            Float4 ColorFar;
+            });
+        WireframeData data;
+        context->BindCB(3, cb);
+        context->SetRenderTarget(nullptr, *frameBuffer); // 1st pass without depth buffer
+        data.ColorNear = Float4(0.07f, 0.15f, 0.07f, 0.2f);
+        data.ColorFar = Float4(0.06f, 0.06f, 0.1f, 0.05f);
+        context->UpdateCB(cb, &data);
+        renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::GBuffer);
+        renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::GBufferNoDecals);
+        renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::Forward);
+        context->SetRenderTarget(depthBuffer.RTV, *frameBuffer); // 2nd pass with depth buffer (read-only)
+        data.ColorNear = Float4(0.2f, 0.1f, 0.15f, 1.0);
+        data.ColorFar = Float4(0.1f, 0.15f, 0.4f, 0.7f);
+        context->UpdateCB(cb, &data);
+        renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::GBuffer);
+        renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::GBufferNoDecals);
+        renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::Forward);
+    }
+#endif
+
     // Cleanup
     context->ResetRenderTarget();
     context->ResetSR();
     context->FlushState();
     RenderTargetPool::Release(lightBuffer);
-
-    // Check if skip post-processing
-    if (renderContext.View.Mode == ViewMode::NoPostFx || renderContext.View.Mode == ViewMode::Wireframe)
+    if (renderContext.View.Mode == ViewMode::NoPostFx)
     {
+        // Skip post-processing
         context->SetRenderTarget(renderContext.Task->GetOutputView());
         context->SetViewportAndScissors(renderContext.Task->GetOutputViewport());
         if (!Graphics::GammaColorSpace)

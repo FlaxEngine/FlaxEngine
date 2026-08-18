@@ -30,11 +30,6 @@ PACK_STRUCT(struct TerrainMaterialShaderData {
     Float4 LightmapArea;
     });
 
-DrawPass TerrainMaterialShader::GetDrawModes() const
-{
-    return DrawPass::Depth | DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas;
-}
-
 bool TerrainMaterialShader::CanUseLightmap() const
 {
     return true;
@@ -101,7 +96,6 @@ void TerrainMaterialShader::Bind(BindParameters& params)
     }
 
     // Select pipeline state based on current pass and render mode
-    const bool wireframe = EnumHasAnyFlags(_info.FeaturesFlags, MaterialFeaturesFlags::Wireframe) || view.Mode == ViewMode::Wireframe;
     CullMode cullMode = view.Pass == DrawPass::Depth ? CullMode::TwoSided : _info.CullMode;
 #if USE_EDITOR
     if (IsRunningRadiancePass)
@@ -112,9 +106,10 @@ void TerrainMaterialShader::Bind(BindParameters& params)
         // Invert culling when scale is negative
         cullMode = cullMode == CullMode::Normal ? CullMode::Inverted : CullMode::Normal;
     }
+    auto hass = _shader->HasShader("PS_QuadOverdraw");
     const PipelineStateCache* psCache = _cache.GetPS(view.Pass, useLightmap);
     ASSERT(psCache);
-    GPUPipelineState* state = ((PipelineStateCache*)psCache)->GetPS(this, cullMode, wireframe);
+    GPUPipelineState* state = ((PipelineStateCache*)psCache)->GetPS(this, cullMode);
 
     // Bind pipeline
     context->SetState(state);
@@ -131,9 +126,12 @@ void TerrainMaterialShader::Unload()
 
 bool TerrainMaterialShader::Load()
 {
-    GPUPipelineState::Description psDesc = GPUPipelineState::Description::Default;
-    psDesc.DepthEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthTest) == MaterialFeaturesFlags::None;
-    psDesc.DepthWriteEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthWrite) == MaterialFeaturesFlags::None;
+    _drawModes = DrawPass::Depth | DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas | DrawPass::Wireframe;
+    auto psDesc = GPUPipelineState::Description::Default;
+    psDesc.DepthEnable = EnumHasNoneFlags(_info.FeaturesFlags, MaterialFeaturesFlags::DisableDepthTest);
+    psDesc.DepthWriteEnable = EnumHasNoneFlags(_info.FeaturesFlags, MaterialFeaturesFlags::DisableDepthWrite);
+    psDesc.Wireframe = EnumHasAnyFlags(_info.FeaturesFlags, MaterialFeaturesFlags::Wireframe);
+    psDesc.CullMode = _info.CullMode;
 
     psDesc.StencilEnable = true;
     psDesc.StencilReadMask = 0;
@@ -177,9 +175,20 @@ bool TerrainMaterialShader::Load()
     if (_shader->HasShader("PS_QuadOverdraw"))
     {
         // Quad Overdraw
+        _drawModes |= DrawPass::QuadOverdraw;
         psDesc.PS = _shader->GetPS("PS_QuadOverdraw");
         _cache.QuadOverdraw.Init(psDesc);
     }
+
+    // Wireframe
+    psDesc.Wireframe = true;
+    psDesc.DepthWriteEnable = false;
+    psDesc.BlendMode = BlendingMode::AlphaBlend;
+    psDesc.PS = GPUDevice::Instance->QuadShader->GetPS("PS_Wireframe");
+    _cache.Wireframe.Init(psDesc);
+    psDesc.DepthWriteEnable = EnumHasNoneFlags(_info.FeaturesFlags, MaterialFeaturesFlags::DisableDepthWrite);
+    psDesc.Wireframe = EnumHasAnyFlags(_info.FeaturesFlags, MaterialFeaturesFlags::Wireframe);
+    psDesc.BlendMode = BlendingMode::Opaque;
 #endif
 
     // Depth Pass

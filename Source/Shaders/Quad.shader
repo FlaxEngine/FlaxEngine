@@ -134,3 +134,22 @@ float4 PS_DecodeNV12(Quad_VS2PS input) : SV_Target
 }
 
 #endif
+
+#ifdef _PS_Wireframe
+
+META_CB_BEGIN(3, WireframeData)
+float4 ColorNear;
+float4 ColorFar;
+META_CB_END
+
+// Pixel Shader function for wireframe debug view
+META_PS(true, FEATURE_LEVEL_ES2)
+META_FLAG(DevelopmentOnly)
+float4 PS_Wireframe(float4 SvPosition : SV_Position) : SV_Target0
+{
+    // Depth-based gradient
+    float alpha = saturate(SvPosition.w * UNITS_TO_METERS_SCALE * 0.1f);
+    return lerp(ColorNear, ColorFar, alpha);
+}
+
+#endif

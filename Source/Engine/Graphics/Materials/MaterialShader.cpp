@@ -118,10 +118,9 @@ void IMaterial::BindParameters::BindDrawData()
     GPUContext->BindCB(2, PerDrawConstants);
 }
 
-GPUPipelineState* MaterialShader::PipelineStateCache::InitPS(const MaterialShader* owner, CullMode mode, bool wireframe)
+GPUPipelineState* MaterialShader::PipelineStateCache::InitPS(const MaterialShader* owner, CullMode mode)
 {
     Desc.CullMode = mode;
-    Desc.Wireframe = wireframe;
     auto ps = GPUDevice::Instance->CreatePipelineState();
     if (ps->Init(Desc))
     {
@@ -231,6 +230,11 @@ GPUShader* MaterialShader::GetShader() const
     return _shader;
 }
 
+DrawPass MaterialShader::GetDrawModes() const
+{
+    return _drawModes;
+}
+
 const MaterialInfo& MaterialShader::GetInfo() const
 {
     return _info;
@@ -248,6 +252,7 @@ bool MaterialShader::Load(MemoryReadStream& shaderCacheStream, const MaterialInf
 
     // Cache material info
     _info = info;
+    _drawModes = DrawPass::None;
 
     // Create shader
     if (_shader->Create(shaderCacheStream))
