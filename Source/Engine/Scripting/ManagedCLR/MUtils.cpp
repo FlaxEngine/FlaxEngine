@@ -41,11 +41,11 @@ namespace
     }
 }
 
-StringView MUtils::ToString(MString* str)
+String MUtils::ToString(MString* str)
 {
     if (str == nullptr)
         return StringView::Empty;
-    return MCore::String::GetChars(str);
+    return String(MCore::String::GetChars(str));
 }
 
 StringAnsi MUtils::ToStringAnsi(MString* str)
