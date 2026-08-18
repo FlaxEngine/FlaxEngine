@@ -298,7 +298,7 @@ SDLWindow::~SDLWindow()
 
     // The text input events seems to be controlled globally on macOS,
     // calling this for closing window seems to remove keyboard focus from other windows...
-#if !PLATFORM_MAC
+#if !PLATFORM_MAC // TODO: Verify if this is still needed
     if (_settings.AllowInput && SDL_TextInputActive(_window))
         SDL_StopTextInput(_window);
 #endif
@@ -514,7 +514,11 @@ void SDLWindow::HandleEvent(SDL_Event& event)
     case SDL_EVENT_WINDOW_FOCUS_GAINED:
     {
         OnGotFocus();
+#if PLATFORM_MAC // TODO: Verify if this is still needed
         if (_settings.AllowInput && !SDLPlatform::UsesX11())
+            SDL_StartTextInput(_window);
+#endif
+        if (_isTextInputEnabled)
             SDL_StartTextInput(_window);
         if (_isClippingCursor)
         {
@@ -537,7 +541,11 @@ void SDLWindow::HandleEvent(SDL_Event& event)
     }
     case SDL_EVENT_WINDOW_FOCUS_LOST:
     {
+#if PLATFORM_MAC // TODO: Verify if this is still needed
         if (_settings.AllowInput && !SDLPlatform::UsesX11())
+            SDL_StopTextInput(_window);
+#endif
+        if (_isTextInputEnabled)
             SDL_StopTextInput(_window);
         if (_isClippingCursor)
             SDL_SetWindowMouseRect(_window, nullptr);
@@ -908,6 +916,28 @@ void SDLWindow::EndTrackingMouse()
 
     Input::Mouse->SetRelativeMode(false, this);
     _restoreRelativeMode = false;
+}
+
+void SDLWindow::StartTextInput()
+{
+#if !PLATFORM_MAC // TODO: Verify if this is still needed
+    if (_isTextInputEnabled || !_settings.AllowInput || SDLPlatform::UsesX11())
+        return;
+    
+    _isTextInputEnabled = true;
+    SDL_StartTextInput(_window);
+#endif
+}
+
+void SDLWindow::EndTextInput()
+{
+#if !PLATFORM_MAC // TODO: Verify if this is still needed
+    if (!_isTextInputEnabled || !_settings.AllowInput || SDLPlatform::UsesX11())
+        return;
+    
+    _isTextInputEnabled = false;
+    SDL_StopTextInput(_window);
+#endif
 }
 
 void SDLWindow::StartClippingCursor(const Rectangle& bounds)

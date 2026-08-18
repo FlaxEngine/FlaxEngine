@@ -195,6 +195,18 @@ namespace FlaxEngine.GUI
                 _window.EndTrackingMouse();
             }
         }
+        
+        /// <inheritdoc />
+        public override void StartTextInput()
+        {
+            _window.StartTextInput();
+        }
+
+        /// <inheritdoc />
+        public override void EndTextInput()
+        {
+            _window.EndTextInput();
+        }
 
         /// <inheritdoc />
         public override bool GetKey(KeyboardKeys key)
