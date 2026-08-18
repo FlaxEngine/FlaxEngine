@@ -1286,7 +1286,7 @@ namespace FlaxEditor.GUI.Timeline
             if (base.OnMouseDoubleClick(location, button))
                 return true;
 
-            if (CanRename && TestHeaderHit(ref location))
+            if (button == MouseButton.Left && CanRename && TestHeaderHit(ref location))
             {
                 StartRenaming();
                 return true;

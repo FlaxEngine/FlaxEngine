@@ -341,7 +341,7 @@ namespace FlaxEditor.GUI
         {
             Focus();
 
-            if (Validator.SelectedItem != null && IconRect.Contains(location))
+            if (button == MouseButton.Left && Validator.SelectedItem != null && IconRect.Contains(location))
             {
                 // Open it
                 Editor.Instance.ContentEditing.Open(Validator.SelectedItem);

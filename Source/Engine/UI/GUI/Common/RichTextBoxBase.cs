@@ -257,17 +257,20 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
-            // Select the word under the mouse
-            int textLength = TextLength;
-            if (textLength != 0 && IsSelectable)
+            if (button == MouseButton.Left)
             {
-                var hitPos = CharIndexAtPoint(ref location);
-                int spaceLoc = _text.LastIndexOfAny(Separators, hitPos - 2);
-                var left = spaceLoc == -1 ? 0 : spaceLoc + 1;
-                spaceLoc = _text.IndexOfAny(Separators, Math.Min(hitPos + 1, _text.Length));
-                var right = spaceLoc == -1 ? textLength : spaceLoc;
-                Deselect();
-                SetSelection(left, right);
+                // Select the word under the mouse
+                int textLength = TextLength;
+                if (textLength != 0 && IsSelectable)
+                {
+                    var hitPos = CharIndexAtPoint(ref location);
+                    int spaceLoc = _text.LastIndexOfAny(Separators, hitPos - 2);
+                    var left = spaceLoc == -1 ? 0 : spaceLoc + 1;
+                    spaceLoc = _text.IndexOfAny(Separators, Math.Min(hitPos + 1, _text.Length));
+                    var right = spaceLoc == -1 ? textLength : spaceLoc;
+                    Deselect();
+                    SetSelection(left, right);
+                }
             }
 
             return base.OnMouseDoubleClick(location, button);
