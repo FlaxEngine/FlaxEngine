@@ -534,13 +534,18 @@ void GPUContextDX11::ResolveMultisample(GPUTexture* sourceMultisampleTexture, GP
 
 void GPUContextDX11::DrawInstanced(uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex)
 {
+    if (_currentState == nullptr)
+        return;
     onDrawCall();
+    ASSERT(CurrentPrimitiveTopology != 0);
     _context->DrawInstanced(verticesCount, instanceCount, startVertex, startInstance);
     RENDER_STAT_DRAW_CALL(verticesCount * instanceCount, verticesCount * instanceCount / 3);
 }
 
 void GPUContextDX11::DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex)
 {
+    if (_currentState == nullptr)
+        return;
     onDrawCall();
     _context->DrawIndexedInstanced(indicesCount, instanceCount, startIndex, startVertex, startInstance);
     RENDER_STAT_DRAW_CALL(indicesCount * instanceCount, indicesCount / 3 * instanceCount);
@@ -548,10 +553,10 @@ void GPUContextDX11::DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCo
 
 void GPUContextDX11::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
+    if (_currentState == nullptr)
+        return;
     ASSERT(bufferForArgs && EnumHasAnyFlags(bufferForArgs->GetFlags(), GPUBufferFlags::Argument));
-
     const auto bufferForArgsDX11 = static_cast<GPUBufferDX11*>(bufferForArgs);
-
     onDrawCall();
     _context->DrawInstancedIndirect(bufferForArgsDX11->GetBuffer(), offsetForArgs);
     RENDER_STAT_DRAW_CALL(0, 0);
@@ -559,10 +564,10 @@ void GPUContextDX11::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offs
 
 void GPUContextDX11::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
+    if (_currentState == nullptr)
+        return;
     ASSERT(bufferForArgs && EnumHasAnyFlags(bufferForArgs->GetFlags(), GPUBufferFlags::Argument));
-
     const auto bufferForArgsDX11 = static_cast<GPUBufferDX11*>(bufferForArgs);
-
     onDrawCall();
     _context->DrawIndexedInstancedIndirect(bufferForArgsDX11->GetBuffer(), offsetForArgs);
     RENDER_STAT_DRAW_CALL(0, 0);
