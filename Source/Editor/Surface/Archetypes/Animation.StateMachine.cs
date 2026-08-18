@@ -213,7 +213,7 @@ namespace FlaxEditor.Surface.Archetypes
                 if (base.OnMouseDoubleClick(location, button))
                     return true;
 
-                if (_headerRect.Contains(ref location))
+                if (button == MouseButton.Left && _headerRect.Contains(ref location))
                 {
                     StartRenaming();
                     return true;
@@ -1129,7 +1129,7 @@ namespace FlaxEditor.Surface.Archetypes
                 if (base.OnMouseDoubleClick(location, button))
                     return true;
 
-                if (_renameButtonRect.Contains(ref location) || _closeButtonRect.Contains(ref location))
+                if (button == MouseButton.Left && _renameButtonRect.Contains(ref location) || _closeButtonRect.Contains(ref location))
                     return true;
 
                 return false;
@@ -1489,8 +1489,13 @@ namespace FlaxEditor.Surface.Archetypes
                 if (base.OnMouseDoubleClick(location, button))
                     return true;
 
-                Edit();
-                return true;
+                if (button == MouseButton.Left)
+                {
+                    Edit();
+                    return true;
+                }
+
+                return false;
             }
 
             /// <inheritdoc />

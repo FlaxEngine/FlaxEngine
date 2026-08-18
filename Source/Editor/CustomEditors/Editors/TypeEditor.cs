@@ -236,6 +236,7 @@ namespace FlaxEditor.CustomEditors.Editors
             if (button == MouseButton.Left && _value != ScriptType.Null)
             {
                 Editor.Instance.ContentEditing.Open(_value.ContentItem);
+                return true;
             }
 
             return base.OnMouseDoubleClick(location, button);

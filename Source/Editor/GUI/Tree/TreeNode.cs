@@ -508,17 +508,18 @@ namespace FlaxEditor.GUI.Tree
         /// <returns>True if event has been handled.</returns>
         protected virtual bool OnMouseDoubleClickHeader(ref Float2 location, MouseButton button)
         {
-            if (HasAnyVisibleChild && _animationProgress >= 1.0f)
+            if (button == MouseButton.Left && HasAnyVisibleChild && _animationProgress >= 1.0f)
             {
                 // Toggle open state (ignored while an expand/collapse animation is running)
                 if (_opened)
                     Collapse();
                 else
                     Expand();
+                
+                return true;
             }
 
-            // Handled
-            return true;
+            return false;
         }
 
         /// <summary>

@@ -239,8 +239,13 @@ namespace FlaxEditor.Windows
 
             public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
             {
-                Open();
-                return true;
+                if (button == MouseButton.Left)
+                {
+                    Open();
+                    return true;
+                }
+
+                return false;
             }
 
             /// <inheritdoc />

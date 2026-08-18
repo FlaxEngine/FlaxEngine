@@ -236,7 +236,7 @@ namespace FlaxEditor.Surface
                 return true;
 
             // Rename
-            if (_headerRect.Contains(ref location) && Surface.CanEdit)
+            if (button == MouseButton.Left && _headerRect.Contains(ref location) && Surface.CanEdit)
             {
                 StartRenaming();
                 return true;

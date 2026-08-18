@@ -554,16 +554,19 @@ namespace FlaxEditor.GUI
                 if (base.OnMouseDoubleClick(location, button))
                     return true;
 
-                // Add keyframe on double click
-                var child = GetChildAt(location);
-                if (child is not KeyframePoint &&
-                    child is not TangentPoint &&
-                    _editor.KeyframesCount < _editor.MaxKeyframes)
+                if (button == MouseButton.Left)
                 {
-                    var viewRect = _editor._mainPanel.GetClientArea();
-                    var pos = PointToKeyframes(location, ref viewRect);
-                    _editor.AddKeyframe(pos);
-                    return true;
+                    // Add keyframe on double click
+                    var child = GetChildAt(location);
+                    if (child is not KeyframePoint &&
+                        child is not TangentPoint &&
+                        _editor.KeyframesCount < _editor.MaxKeyframes)
+                    {
+                        var viewRect = _editor._mainPanel.GetClientArea();
+                        var pos = PointToKeyframes(location, ref viewRect);
+                        _editor.AddKeyframe(pos);
+                        return true;
+                    }
                 }
 
                 return false;

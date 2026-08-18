@@ -464,7 +464,7 @@ namespace FlaxEditor.Surface
                 CustomMouseDoubleClick?.Invoke(ref location, button, ref handled);
 
             // Insert reroute node
-            if (!handled && CanEdit && CanUseNodeType(7, 29))
+            if (button == MouseButton.Left && !handled && CanEdit && CanUseNodeType(7, 29))
             {
                 var mousePos = _rootControl.PointFromParent(ref _mousePos);
                 if (IntersectsConnection(mousePos, out InputBox inputBox, out OutputBox outputBox, MouseOverConnectionDistance) && GetControlUnderMouse() == null)
