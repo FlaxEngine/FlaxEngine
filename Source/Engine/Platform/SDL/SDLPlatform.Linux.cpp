@@ -203,8 +203,11 @@ namespace WaylandImpl
             if (inputData->GetType() == IGuiData::Type::Text)
             {
                 UnixFile file(fd);
-                StringAnsi text = StringAnsi(inputData->GetAsText());
-                file.Write(text.Get(), text.Length() * sizeof(StringAnsi::CharType));
+                if (StringUtils::Compare(mime_type, "text/plain;charset=utf-8") == 0)
+                {
+                    StringAnsi text = StringAnsi(inputData->GetAsText());
+                    file.Write(text.Get(), text.Length() * sizeof(StringAnsi::CharType));
+                }
                 file.Close();
             }
         },
@@ -212,8 +215,7 @@ namespace WaylandImpl
         {
             // Clipboard: other application has replaced the content in clipboad
             wl_data_source_destroy(source);
-            
-            IGuiData* inputData = static_cast<IGuiData*>(data);
+
             Platform::AtomicStore(&WaylandImpl::DragOverFlag, 1);
         },
         [](void* data, wl_data_source* source) { }, // DnD drop performed event
@@ -222,7 +224,6 @@ namespace WaylandImpl
             // The destination has finally accepted the last given dnd_action
             wl_data_source_destroy(source);
 
-            IGuiData* inputData = static_cast<IGuiData*>(data);
             Platform::AtomicStore(&WaylandImpl::DragOverFlag, 1);
         },
         [](void* data, wl_data_source* source, uint32_t dnd_action) { }, // Action event
@@ -294,7 +295,7 @@ namespace WaylandImpl
                 wl_data_source_set_actions(dataSource, WL_DATA_DEVICE_MANAGER_DND_ACTION_MOVE | WL_DATA_DEVICE_MANAGER_DND_ACTION_COPY);
             }
             LinuxDropTextData textData;
-            textData.Text = *DraggingData;
+            textData.Text = DraggingData;
             wl_data_source_add_listener(dataSource, &DataSourceListener, &textData);
 
             auto draggedWindow = Window->GetSDLWindow();
@@ -369,7 +370,7 @@ namespace WaylandImpl
                 wl_event_queue_destroy(WaylandQueue);
                 WaylandQueue = nullptr;
             }*/
-
+            
             return false;
         }
     };
@@ -688,7 +689,7 @@ DragDropEffect Window::DoDragDropWayland(const StringView& data, Window* dragSou
     }
     
     WaylandImpl::DraggingActive = true;
-    WaylandImpl::DraggingData = StringView(data.Get(), data.Length());
+    WaylandImpl::DraggingData = data;
     WaylandImpl::DragOverFlag = 0;
 
     auto task = New<WaylandImpl::DragDropJob>();
