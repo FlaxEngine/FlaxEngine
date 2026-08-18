@@ -44,6 +44,11 @@ namespace FlaxEngine.GUI
             float h = Height - _margin.Height;
             float maxHeight = h;
             bool hasAnyLeft = false, hasAnyRight = false;
+
+            float totalGaps = (_children.Count - 1) * Spacing;
+            float availableWidth = Width - totalGaps - LeftMargin - RightMargin;
+            float itemWidth = availableWidth / _children.Count;
+
             for (int i = 0; i < _children.Count; i++)
             {
                 Control c = _children[i];
@@ -64,6 +69,11 @@ namespace FlaxEngine.GUI
                         hasAnyRight = true;
                     }
                     maxHeight = Mathf.Max(maxHeight, ch);
+
+                    if (ExpandChildren)
+                    {
+                        c.Width = itemWidth;                       
+                    }
                 }
             }
             if (hasAnyLeft)
