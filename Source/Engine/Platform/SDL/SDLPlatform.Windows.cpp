@@ -45,9 +45,6 @@ bool SDLCALL SDLPlatform::EventMessageHook(void* userdata, MSG* msg)
         bool result = false;
         WindowHitCodes hit = static_cast<WindowHitCodes>(msg->wParam);
         window->OnHitTest(mousePosition, hit, result);
-        //if (result && hit != WindowHitCodes::Caption)
-        //    return false;
-
         if (hit == WindowHitCodes::Caption)
         {
             SDL_Event event{ 0 };
@@ -79,6 +76,15 @@ bool SDLPlatform::InitInternal()
 
 bool SDLPlatform::EventFilterCallback(void* userdata, SDL_Event* event)
 {
+    if (event->type == SDL_EVENT_WINDOW_EXPOSED)
+    {
+        // Keep the engine running, the exposed event is sent while in modal loop
+        // during window dragging or resize operations.
+        if (!Engine::ShouldExit())
+            Engine::OnLoop(false);
+        return true;
+    }
+
     Window* draggedWindow = *(Window**)userdata;
     if (draggedWindow == nullptr)
         return true;
@@ -86,31 +92,19 @@ bool SDLPlatform::EventFilterCallback(void* userdata, SDL_Event* event)
     // When the window is being dragged on Windows, the internal message loop is blocking
     // the SDL event queue. We need to handle all relevant events in this event watch callback
     // to ensure dragging related functionality doesn't break due to engine not getting updated.
-    // This also happens to fix the engine freezing during the dragging operation.
-
     SDLWindow* window = SDLWindow::GetWindowFromEvent(*event);
-    if (event->type == SDL_EVENT_WINDOW_EXPOSED)
+    if (window != nullptr)
     {
-        // The internal timer is sending exposed events every ~16ms
-        Engine::OnUpdate(); // For docking updates
-        Engine::OnDraw();
-        return false;
-    }
-    else if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN)
-    {
-        if (window)
+        if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN)
         {
             bool result = false;
             window->OnLeftButtonHit(WindowHitCodes::Caption, result);
             //if (result)
             //    return false;
             window->HandleEvent(*event);
+            return false;
         }
-        return false;
-    }
-    else if (event->type == SDL_EVENT_WINDOW_MOVED)
-    {
-        if (window)
+        else if (event->type == SDL_EVENT_WINDOW_MOVED)
         {
             window->HandleEvent(*event);
 
@@ -134,13 +128,12 @@ bool SDLPlatform::EventFilterCallback(void* userdata, SDL_Event* event)
             mouseMovedEvent.motion.x = mousePosition.X;
             mouseMovedEvent.motion.y = mousePosition.Y;
             window->HandleEvent(mouseMovedEvent);
+            return false;
         }
-        return false;
-    }
-    if (window)
         window->HandleEvent(*event);
+    }
     
-    return false;
+    return true;
 }
 
 void SDLPlatform::PreHandleEvents()
