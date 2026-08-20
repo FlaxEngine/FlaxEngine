@@ -51,6 +51,7 @@ namespace FlaxEditor.Tools.Terrain
             [EditorOrder(300), EditorDisplay("Import Data"), DefaultValue(null), Tooltip("Custom heightmap texture to import. Used as a source for height field values (from channel Red).")]
             public Texture Heightmap;
 
+            [ValueCategory(Utils.ValueCategory.Distance)]
             [EditorOrder(310), EditorDisplay("Import Data"), DefaultValue(5000.0f), Tooltip("Custom heightmap texture values scale. Applied to adjust the normalized heightmap values into the world units.")]
             public float HeightmapScale = 5000.0f;
 
@@ -60,6 +61,7 @@ namespace FlaxEditor.Tools.Terrain
             [EditorOrder(330), EditorDisplay("Import Data"), DefaultValue(null), Tooltip("Custom terrain splat map used as a source of the terrain layers weights. Each channel from RGBA is used as an independent layer weight for terrain layers compositing.")]
             public Texture Splatmap2;
 
+            [ValueCategory(Utils.ValueCategory.Distance)]
             [EditorOrder(400), EditorDisplay("Transform", "Position"), DefaultValue(typeof(Double3), "0,0,0"), Tooltip("Position of the terrain (importer offset it on the Y axis.)")]
             public Double3 Position = new Double3(0.0f, 0.0f, 0.0f);
 

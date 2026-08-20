@@ -636,7 +636,9 @@ void ParticleEffect::Draw(RenderContextBatch& renderContextBatch)
 
 void ParticleEffect::OnDebugDrawSelected()
 {
-    DEBUG_DRAW_WIRE_BOX(_box, Color::Violet * 0.7f, 0, true);
+    auto color = Color::Violet * 0.7f;
+    DEBUG_DRAW_WIRE_BOX(_box, color, 0, true);
+    DEBUG_DRAW_WIRE_BOX(_box, color.AlphaMultiplied(0.1f), 0, false);
 
     Actor::OnDebugDrawSelected();
 }
