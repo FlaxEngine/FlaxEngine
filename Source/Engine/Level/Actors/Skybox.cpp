@@ -29,7 +29,7 @@ void Skybox::setupProxy()
     }
 }
 
-void Skybox::Draw(RenderContext& renderContext)
+void Skybox::Draw(RenderContextBatch& renderContextBatch)
 {
     bool isReady;
     if (CustomMaterial)
@@ -41,6 +41,7 @@ void Skybox::Draw(RenderContext& renderContext)
         setupProxy();
         isReady = _proxyMaterial && _proxyMaterial->IsReady();
     }
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     if (isReady && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Sky))
     {
         renderContext.List->Sky = this;

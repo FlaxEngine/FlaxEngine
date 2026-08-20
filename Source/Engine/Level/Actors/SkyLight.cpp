@@ -108,8 +108,9 @@ void SkyLight::UpdateBounds()
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Bounds);
 }
 
-void SkyLight::Draw(RenderContext& renderContext)
+void SkyLight::Draw(RenderContextBatch& renderContextBatch)
 {
+    RenderContext& renderContext = renderContextBatch.GetMainContext();
     float brightness = Brightness;
     AdjustBrightness(renderContext.View, brightness);
     const Float3 position = GetPosition() - renderContext.View.Origin;

@@ -541,18 +541,6 @@ void Terrain::Draw(RenderContextBatch& renderContextBatch)
     }
 }
 
-void Terrain::Draw(RenderContext& renderContext)
-{
-    const DrawPass drawModes = DrawModes & renderContext.View.Pass;
-    if (drawModes == DrawPass::None)
-        return;
-    PROFILE_CPU();
-    if (DrawSetup(renderContext))
-        return;
-    HashSet<TerrainChunk*, RendererAllocation> drawnChunks;
-    DrawImpl(renderContext, drawnChunks);
-}
-
 bool Terrain::DrawSetup(RenderContext& renderContext)
 {
     // Special drawing modes

@@ -17,8 +17,9 @@ DirectionalLight::DirectionalLight(const SpawnParams& params)
     Brightness = 8.0f;
 }
 
-void DirectionalLight::Draw(RenderContext& renderContext)
+void DirectionalLight::Draw(RenderContextBatch& renderContextBatch)
 {
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     float brightness = Brightness;
     AdjustBrightness(renderContext.View, brightness);
     Float3 color = Color.ToFloat3() * (Color.A * brightness);

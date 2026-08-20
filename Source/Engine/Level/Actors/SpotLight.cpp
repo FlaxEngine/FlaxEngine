@@ -128,8 +128,9 @@ void SpotLight::OnTransformChanged()
     UpdateBounds();
 }
 
-void SpotLight::Draw(RenderContext& renderContext)
+void SpotLight::Draw(RenderContextBatch& renderContextBatch)
 {
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     float brightness = ComputeBrightness();
     AdjustBrightness(renderContext.View, brightness);
     Float3 position;

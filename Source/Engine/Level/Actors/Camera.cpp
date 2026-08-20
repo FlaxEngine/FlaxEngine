@@ -355,8 +355,9 @@ bool Camera::HasContentLoaded() const
     return _previewModel == nullptr || _previewModel->IsLoaded();
 }
 
-void Camera::Draw(RenderContext& renderContext)
+void Camera::Draw(RenderContextBatch& renderContextBatch)
 {
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::EditorSprites)
         && renderContext.View.CullingFrustum.Intersects(_previewModelBox)
         && _previewModel

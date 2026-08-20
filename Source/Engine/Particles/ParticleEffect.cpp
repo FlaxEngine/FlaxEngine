@@ -605,21 +605,13 @@ bool ParticleEffect::HasContentLoaded() const
     return true;
 }
 
-void ParticleEffect::Draw(RenderContext& renderContext)
-{
-    if (renderContext.View.Pass == DrawPass::GlobalSDF || 
-        renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas ||
-        EnumHasNoneFlags(renderContext.View.Flags, ViewFlags::Particles))
-        return;
-    _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(GetPosition(), renderContext.View.WorldPosition));
-    RenderContextBatch renderContextBatch(renderContext);
-    Particles::DrawParticles(renderContextBatch, this);
-}
-
 void ParticleEffect::Draw(RenderContextBatch& renderContextBatch)
 {
-    const RenderView& mainView = renderContextBatch.GetMainContext().View;
-    if (EnumHasNoneFlags(mainView.Flags, ViewFlags::Particles))
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
+    const RenderView& mainView = renderContext.View;
+    if (mainView.Pass == DrawPass::GlobalSDF ||
+        mainView.Pass == DrawPass::GlobalSurfaceAtlas ||
+        EnumHasNoneFlags(mainView.Flags, ViewFlags::Particles))
         return;
     Particles::DrawParticles(renderContextBatch, this);
 

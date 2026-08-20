@@ -342,19 +342,24 @@ void Renderer::DrawPostFxMaterial(GPUContext* context, const RenderContext& rend
 
 void Renderer::DrawActors(RenderContext& renderContext, const Array<Actor*>& customActors)
 {
+    RenderContextBatch renderContextBatch(renderContext);
+    DrawActors(renderContextBatch, customActors);
+}
+
+void Renderer::DrawActors(RenderContextBatch& renderContextBatch, const Array<Actor*>& customActors)
+{
     if (customActors.HasItems())
     {
         // Draw custom actors
         for (Actor* actor : customActors)
         {
             if (actor && actor->GetIsActive())
-                actor->Draw(renderContext);
+                actor->Draw(renderContextBatch);
         }
     }
     else
     {
         // Draw scene actors
-        RenderContextBatch renderContextBatch(renderContext);
         JobSystem::SetJobStartingOnDispatch(false);
         Level::DrawActors(renderContextBatch, SceneRendering::DrawCategory::SceneDraw);
         Level::DrawActors(renderContextBatch, SceneRendering::DrawCategory::SceneDrawAsync);

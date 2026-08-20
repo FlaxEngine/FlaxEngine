@@ -382,12 +382,12 @@ bool SplineModel::HasContentLoaded() const
     return (Model == nullptr || Model->IsLoaded()) && Entries.HasContentLoaded();
 }
 
-void SplineModel::Draw(RenderContext& renderContext)
+void SplineModel::Draw(RenderContextBatch& renderContextBatch)
 {
-    const DrawPass actorDrawModes = DrawModes & renderContext.View.Pass;
-    if (!_spline || !Model || !Model->IsLoaded() || !Model->CanBeRendered() || actorDrawModes == DrawPass::None)
-        return;
     auto model = Model.Get();
+    if (!_spline || !model || !model->IsLoaded() || !model->CanBeRendered())
+        return;
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
         return; // TODO: Spline Model rendering to Global SDF
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
@@ -466,14 +466,14 @@ void SplineModel::Draw(RenderContext& renderContext)
 
             // Check if skip rendering
             const auto shadowsMode = entry.ShadowsMode & slot.ShadowsMode;
-            const auto drawModes = actorDrawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode) & material->GetDrawModes();
+            const auto drawModes = DrawModes & material->GetDrawModes();
             if (drawModes == DrawPass::None)
                 continue;
 
             // Submit draw call
             mesh->GetDrawCallGeometry(drawCall);
             drawCall.Material = material;
-            renderContext.List->AddDrawCall(renderContext, drawModes, _staticFlags, drawCall, entry.ReceiveDecals);
+            renderContext.List->AddDrawCall(renderContextBatch, drawModes, _staticFlags, shadowsMode, instanceSphere, drawCall, entry.ReceiveDecals);
         }
     }
 }

@@ -17,7 +17,6 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/Graphics.h"
-#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
@@ -219,7 +218,7 @@ public:
     Array<void*> FailedObjects;
     Array<void*> PrevFrameFailedObjects;
     Array<int64> AsyncScenesDrawCounters[2];
-    RenderContext AsyncRenderContext;
+    RenderContextBatch AsyncRenderContextBatch;
 
     GlobalSurfaceAtlasCustomBuffer()
         : ObjectsBuffer(256 * (GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE + GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE * 3 / 4), PixelFormat::R32G32B32A32_Float, false, TEXT("GlobalSurfaceAtlas.ObjectsBuffer"))
@@ -280,9 +279,10 @@ public:
         auto drawCategory = index >= 0 ? SceneRendering::SceneDrawAsync : SceneRendering::SceneDraw;
         const Vector3 cullingPos(CullingPosDistance);
         const Real cullingDistance = CullingPosDistance.W;
-        const uint32 viewMask = AsyncRenderContext.View.RenderLayersMask;
+        const RenderContext& renderContext = AsyncRenderContextBatch.GetMainContext();
+        const uint32 viewMask = renderContext.View.RenderLayersMask;
         const float minObjectRadius = MinObjectRadius;
-        auto& scenes = AsyncRenderContext.List->Scenes;
+        auto& scenes = renderContext.List->Scenes;
         auto& drawCounters = AsyncScenesDrawCounters[index >= 0 ? 1 : 0];
 
         // Draw all scenes and all actors (cooperative with other jobs)
@@ -297,7 +297,7 @@ public:
                 if (e.Bounds.Radius >= minObjectRadius && viewMask & e.LayerMask && Vector3::Distance(e.Bounds.Center, cullingPos) - e.Bounds.Radius < cullingDistance)
                 {
                     //PROFILE_CPU_ACTOR(e.Actor);
-                    e.Actor->Draw(AsyncRenderContext);
+                    e.Actor->Draw(AsyncRenderContextBatch);
                 }
             }
         }
@@ -373,8 +373,8 @@ public:
         // TODO: add DetailsScale param to adjust quality of scene details in Global Surface Atlas
         MinObjectRadius = METERS_TO_UNITS(0.2f); // Skip too small objects
         CullingPosDistance = Vector4(renderContext.View.Position, distance);
-        AsyncRenderContext = renderContext;
-        AsyncRenderContext.View.Pass = DrawPass::GlobalSurfaceAtlas;
+        AsyncRenderContextBatch = RenderContext(renderContext);
+        AsyncRenderContextBatch.GetMainContext().View.Pass = DrawPass::GlobalSurfaceAtlas;
 
         // Each scene uses own atomic counter to draw all actors
         AsyncScenesDrawCounters[0].Resize(renderContext.List->Scenes.Count());
@@ -1135,7 +1135,8 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         PROFILE_GPU_CPU_NAMED("Rasterize Tiles");
 
         // Init rendering context
-        RenderContext renderContextTiles = renderContext;
+        RenderContextBatch renderContextBatchTiles(renderContext);
+        RenderContext& renderContextTiles = renderContextBatchTiles.GetMainContext();
         renderContextTiles.List = RenderList::GetFromPool();
         renderContextTiles.View.Pass = DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas;
         renderContextTiles.View.Mode = ViewMode::Default;
@@ -1218,7 +1219,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
 
             // Collect draw calls for the object
             _currentActorObject = actorObject;
-            object.Actor->Draw(renderContextTiles);
+            object.Actor->Draw(renderContextBatchTiles);
 
             // Render all tiles into the atlas
 #if GLOBAL_SURFACE_ATLAS_DEBUG_DRAW_OBJECTS

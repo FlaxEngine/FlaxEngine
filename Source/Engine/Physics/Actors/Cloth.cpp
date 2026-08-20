@@ -908,12 +908,6 @@ void Cloth::OnPostUpdate()
     }
 }
 
-void Cloth::Draw(RenderContext& renderContext)
-{
-    // Update min draw distance for the next simulation tick
-    _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.WorldPosition));
-}
-
 void Cloth::Draw(RenderContextBatch& renderContextBatch)
 {
     // Update min draw distance for the next simulation tick

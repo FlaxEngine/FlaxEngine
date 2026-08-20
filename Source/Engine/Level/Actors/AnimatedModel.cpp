@@ -1250,64 +1250,14 @@ void AnimatedModel::Update()
     _lastMinDstSqr = MAX_Real;
 }
 
-void AnimatedModel::Draw(RenderContext& renderContext)
-{
-    if (!SkinnedModel || !SkinnedModel->IsLoaded())
-        return;
-    if (renderContext.View.Pass == DrawPass::GlobalSDF)
-        return;
-    if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
-        return; // Not supported
-    auto drawState = renderContext.Buffers->GetGeometryDrawState(&GetScene()->Rendering, _sceneRenderingKey, this);
-    ACTOR_GET_WORLD_MATRIX(this, view, world);
-    GEOMETRY_DRAW_STATE_EVENT_BEGIN(drawState, world);
-
-    _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.WorldPosition));
-    if (_bones.IsAllocated)
-    {
-        // Flush skinning data with GPU
-        if (_bones.IsDirty)
-            _bones.Flush();
-
-        SkinnedMesh::DrawInfo draw;
-        draw.Buffer = &Entries;
-        draw.SkinningBones = RenderListExtension.GlobalBuffer;
-        draw.SkinningBonesOffset = _bones.GlobalBufferOffset / sizeof(Matrix3x4);
-        draw.WithPrevBones = _bones.HasPrevBones && _bones.IsPrevFlushed;
-        if (draw.WithPrevBones)
-        {
-            draw.PrevBonesOffset = _bones.BonesCount;
-            if (_bones.IsPrevBones)
-            {
-                draw.SkinningBonesOffset += draw.PrevBonesOffset;
-                draw.PrevBonesOffset = -draw.PrevBonesOffset;
-            }
-        }
-        draw.World = &world;
-        draw.DrawState = drawState;
-        draw.Deformation = _deformation;
-        PRAGMA_DISABLE_DEPRECATION_WARNINGS
-        draw.DrawModes = DrawModes & renderContext.View.GetShadowsDrawPassMask(ShadowsMode);
-        PRAGMA_ENABLE_DEPRECATION_WARNINGS
-        draw.Bounds = _sphere;
-        draw.Bounds.Center -= renderContext.View.Origin;
-        draw.PerInstanceRandom = GetPerInstanceRandom();
-        draw.LODBias = LODBias;
-        draw.ForcedLOD = ForcedLOD;
-        draw.SortOrder = SortOrder;
-        draw.SetStencilValue(_layer);
-
-        SkinnedModel->Draw(renderContext, draw);
-    }
-
-    GEOMETRY_DRAW_STATE_EVENT_END(drawState, world);
-}
-
 void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
 {
-    if (!SkinnedModel || !SkinnedModel->IsLoaded())
+    auto model = SkinnedModel.Get();
+    if (!model || !model->IsLoaded())
         return;
     const RenderContext& renderContext = renderContextBatch.GetMainContext();
+    if (renderContext.View.Pass == DrawPass::GlobalSDF || renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
+        return; // Not supported
     Matrix world;
     const Float3 translation = _transform.Translation - renderContext.View.Origin;
     Matrix::Transformation(_transform.Scale, _transform.Orientation, translation, world);
@@ -1331,6 +1281,7 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
             draw.PrevBonesOffset = _bones.BonesCount;
             if (_bones.IsPrevBones)
             {
+                // Swap bone buffer chunks
                 draw.SkinningBonesOffset += draw.PrevBonesOffset;
                 draw.PrevBonesOffset = -draw.PrevBonesOffset;
             }
@@ -1347,7 +1298,7 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
         draw.SortOrder = SortOrder;
         draw.SetStencilValue(_layer);
 
-        PRAGMA_DISABLE_DEPRECATION_WARNINGS
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
         if (ShadowsMode != ShadowsCastingMode::All)
         {
             // To handle old ShadowsMode option for all meshes we need to call per-context drawing (no batching opportunity)
@@ -1355,14 +1306,14 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
             for (auto& e : renderContextBatch.Contexts)
             {
                 draw.DrawModes = DrawModes & e.View.GetShadowsDrawPassMask(ShadowsMode);
-                SkinnedModel->Draw(e, draw);
+                model->Draw(e, draw);
             }
         }
         else
         {
-            SkinnedModel->Draw(renderContextBatch, draw);
+            model->Draw(renderContextBatch, draw);
         }
-        PRAGMA_ENABLE_DEPRECATION_WARNINGS
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
     }
 
     GEOMETRY_DRAW_STATE_EVENT_END(drawState, world);

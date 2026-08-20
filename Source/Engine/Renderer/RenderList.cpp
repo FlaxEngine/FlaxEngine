@@ -749,7 +749,7 @@ void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawP
     // Add draw call to proper draw lists
     DrawPass modes = drawModes & mainRenderContext.View.GetShadowsDrawPassMask(shadowsMode);
     drawModes = modes & mainRenderContext.View.Pass;
-    if (drawModes != DrawPass::None && mainRenderContext.View.CullingFrustum.Intersects(bounds))
+    if (drawModes != DrawPass::None && (mainRenderContext.View.IsCullingDisabled || mainRenderContext.View.CullingFrustum.Intersects(bounds)))
     {
         if ((drawModes & DrawPass::Depth) != DrawPass::None)
         {

@@ -276,7 +276,7 @@ void SceneRendering::DrawActorsJob(int32 i)
         FOR_EACH_BATCH_ACTOR
             if (CHECK_ACTOR_SINGLE_FRUSTUM)
             {
-                DRAW_ACTOR(mainContext);
+                DRAW_ACTOR(*_drawBatch);
             }
         }
     }

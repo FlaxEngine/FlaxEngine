@@ -181,8 +181,9 @@ void EnvironmentProbe::UpdateBounds()
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Bounds);
 }
 
-void EnvironmentProbe::Draw(RenderContext& renderContext)
+void EnvironmentProbe::Draw(RenderContextBatch& renderContextBatch)
 {
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     if (Brightness > ZeroTolerance &&
         EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Reflections) &&
         EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GBuffer))

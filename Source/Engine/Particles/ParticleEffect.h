@@ -414,7 +414,6 @@ private:
 public:
     // [Actor]
     bool HasContentLoaded() const override;
-    void Draw(RenderContext& renderContext) override;
     void Draw(RenderContextBatch& renderContextBatch) override;
 #if USE_EDITOR
     void OnDebugDrawSelected() override;

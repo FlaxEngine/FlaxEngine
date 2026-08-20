@@ -81,8 +81,9 @@ void PointLight::OnTransformChanged()
     UpdateBounds();
 }
 
-void PointLight::Draw(RenderContext& renderContext)
+void PointLight::Draw(RenderContextBatch& renderContextBatch)
 {
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     float brightness = ComputeBrightness();
     AdjustBrightness(renderContext.View, brightness);
     Float3 position;

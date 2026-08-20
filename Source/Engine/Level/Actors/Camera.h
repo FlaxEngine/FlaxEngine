@@ -266,7 +266,7 @@ public:
 #if USE_EDITOR
     BoundingBox GetEditorBox() const override;
     bool HasContentLoaded() const override;
-    void Draw(RenderContext& renderContext) override;
+    void Draw(RenderContextBatch& renderContextBatch) override;
     void OnDebugDrawSelected() override;
 #endif
     void Serialize(SerializeStream& stream, const void* otherObj) override;

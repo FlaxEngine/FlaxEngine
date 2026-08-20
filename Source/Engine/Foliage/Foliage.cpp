@@ -1205,16 +1205,16 @@ bool Foliage::Intersects(const Ray& ray, Real& distance, Vector3& normal, int32&
     return false;
 }
 
-void Foliage::Draw(RenderContext& renderContext)
+void Foliage::Draw(RenderContextBatch& renderContextBatch)
 {
     if (Instances.IsEmpty())
         return;
-    PROFILE_CPU();
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     const RenderView& view = renderContext.View;
-    PreDraw(view);
 
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
     {
+        // Draw into Global SDF
         auto globalSDF = GlobalSignDistanceFieldPass::Instance();
         BoundingBox globalSDFBounds;
         globalSDF->GetCullingData(globalSDFBounds);
@@ -1240,7 +1240,6 @@ void Foliage::Draw(RenderContext& renderContext)
 #endif
         return;
     }
-
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
     {
         // Draw foliage instances into Global Surface Atlas
@@ -1294,34 +1293,8 @@ void Foliage::Draw(RenderContext& renderContext)
         return;
     }
 
-    // Draw visible clusters
-#if FOLIAGE_USE_SINGLE_QUAD_TREE || !FOLIAGE_USE_DRAW_CALLS_BATCHING
-    Mesh::DrawInfo draw;
-    draw.Flags = GetStaticFlags();
-    draw.DrawModes = (DrawPass)(DrawPass::Default & view.Pass);
-#endif
-#if FOLIAGE_USE_SINGLE_QUAD_TREE
-    if (Root)
-        DrawCluster(renderContext, Root, draw);
-#else
-    for (auto& type : FoliageTypes)
-    {
-#if !FOLIAGE_USE_SINGLE_QUAD_TREE && FOLIAGE_USE_DRAW_CALLS_BATCHING
-        DrawCallsList draw[MODEL_MAX_LODS];
-#endif
-        DrawType(renderContext, type, draw);
-    }
-#endif
-}
-
-void Foliage::Draw(RenderContextBatch& renderContextBatch)
-{
-    if (Instances.IsEmpty())
-        return;
-
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE
     // Run async job for each foliage type
-    const RenderView& view = renderContextBatch.GetMainContext().View;
     if (EnumHasAnyFlags(view.Pass, DrawPass::GBuffer) && !(view.Pass & (DrawPass::GlobalSDF | DrawPass::GlobalSurfaceAtlas)) && renderContextBatch.EnableAsync)
     {
         PreDraw(view);
@@ -1336,8 +1309,28 @@ void Foliage::Draw(RenderContextBatch& renderContextBatch)
     }
 #endif
 
-    // Fallback to default rendering
-    Actor::Draw(renderContextBatch);
+    // Draw visible clusters
+#if FOLIAGE_USE_SINGLE_QUAD_TREE || !FOLIAGE_USE_DRAW_CALLS_BATCHING
+    Mesh::DrawInfo draw;
+    draw.Flags = GetStaticFlags();
+    draw.DrawModes = (DrawPass)(DrawPass::Default & view.Pass);
+#endif
+#if FOLIAGE_USE_SINGLE_QUAD_TREE
+    if (Root)
+    {
+        for (RenderContext& c : renderContextBatch.Contexts)
+            DrawCluster(c, Root, draw);
+    }
+#else
+    for (auto& type : FoliageTypes)
+    {
+#if !FOLIAGE_USE_SINGLE_QUAD_TREE && FOLIAGE_USE_DRAW_CALLS_BATCHING
+        DrawCallsList draw[MODEL_MAX_LODS];
+#endif
+        for (RenderContext& c : renderContextBatch.Contexts)
+            DrawType(c, type, draw);
+    }
+#endif
 }
 
 bool Foliage::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)

@@ -83,8 +83,9 @@ void Sky::InitConfig(ShaderAtmosphericFogData& config) const
     }
 }
 
-void Sky::Draw(RenderContext& renderContext)
+void Sky::Draw(RenderContextBatch& renderContextBatch)
 {
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     if (HasContentLoaded() && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Sky))
     {
         // Ensure to have pipeline state cache created

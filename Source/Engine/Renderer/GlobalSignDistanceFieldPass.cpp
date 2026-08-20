@@ -251,7 +251,7 @@ public:
 
     // Async objects drawing cache
     Array<int64, FixedAllocation<1>> AsyncDrawWaitLabels;
-    RenderContext AsyncRenderContext;
+    RenderContextBatch AsyncRenderContextBatch;
 
     ~GlobalSignDistanceFieldCustomBuffer()
     {
@@ -351,8 +351,8 @@ public:
         // Setup data for rendering
         if (FrameIndex++ > 128)
             FrameIndex = 0;
-        AsyncRenderContext = renderContext;
-        AsyncRenderContext.View.Pass = DrawPass::GlobalSDF;
+        AsyncRenderContextBatch = RenderContextBatch(renderContext);
+        AsyncRenderContextBatch.GetMainContext().View.Pass = DrawPass::GlobalSDF;
         DebugOverdraw = renderContext.View.Mode == ViewMode::GlobalSDFOverdraw;
         const bool useCache = !reset && !GLOBAL_SDF_DEBUG_FORCE_REDRAW;
         static_assert(GLOBAL_SDF_RASTERIZE_CHUNK_SIZE % GLOBAL_SDF_RASTERIZE_GROUP_SIZE == 0, "Invalid chunk size for Global SDF rasterization group size.");
@@ -511,12 +511,13 @@ void GlobalSignDistanceFieldCustomBuffer::DrawCascadeActors(const CascadeData& c
 {
     PROFILE_CPU();
     const BoundingBox cullingBounds = cascade.CullingBounds;
-    const uint32 viewMask = AsyncRenderContext.View.RenderLayersMask;
+    auto& renderContext = AsyncRenderContextBatch.GetMainContext();
+    const uint32 viewMask = renderContext.View.RenderLayersMask;
     // TODO: add scene detail scale factor to PostFx settings (eg. to increase or decrease scene details and quality)
     const float minObjectRadius = Math::Max(20.0f, cascade.VoxelSize * 2.0f); // Skip too small objects for this cascade
     int32 actorsDrawn = 0;
     SceneRendering::DrawCategory drawCategories[] = { SceneRendering::SceneDraw, SceneRendering::SceneDrawAsync };
-    for (auto* scene : AsyncRenderContext.List->Scenes)
+    for (auto* scene : renderContext.List->Scenes)
     {
         for (SceneRendering::DrawCategory drawCategory : drawCategories)
         {
@@ -526,7 +527,7 @@ void GlobalSignDistanceFieldCustomBuffer::DrawCascadeActors(const CascadeData& c
                 if (e.Bounds.Radius >= minObjectRadius && viewMask & e.LayerMask && CollisionsHelper::BoxIntersectsSphere(cullingBounds, e.Bounds))
                 {
                     //PROFILE_CPU_ACTOR(e.Actor);
-                    e.Actor->Draw(AsyncRenderContext);
+                    e.Actor->Draw(AsyncRenderContextBatch);
 #if COMPILE_WITH_PROFILER
                     actorsDrawn++;
 #endif

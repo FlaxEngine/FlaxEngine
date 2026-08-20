@@ -366,20 +366,22 @@ bool StaticModel::HasContentLoaded() const
     return (Model == nullptr || Model->IsLoaded()) && Entries.HasContentLoaded();
 }
 
-void StaticModel::Draw(RenderContext& renderContext)
+void StaticModel::Draw(RenderContextBatch& renderContextBatch)
 {
-    if (!Model || !Model->IsLoaded() || !Model->CanBeRendered())
+    auto model = Model.Get();
+    if (!model || !model->IsLoaded())
         return;
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
     {
-        if (EnumHasAnyFlags(_drawModes, DrawPass::GlobalSDF) && Model->SDF.Texture)
-            GlobalSignDistanceFieldPass::Instance()->RasterizeModelSDF(this, Model->SDF, _transform, _box);
+        if (EnumHasAnyFlags(_drawModes, DrawPass::GlobalSDF) && model->SDF.Texture)
+            GlobalSignDistanceFieldPass::Instance()->RasterizeModelSDF(this, model->SDF, _transform, _box);
         return;
     }
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
     {
-        if (EnumHasAnyFlags(_drawModes, DrawPass::GlobalSurfaceAtlas) && Model->SDF.Texture)
-            GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, this, _sphere, _transform, Model->LODs.Last().GetBox());
+        if (EnumHasAnyFlags(_drawModes, DrawPass::GlobalSurfaceAtlas) && model->SDF.Texture)
+            GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, this, _sphere, _transform, model->LODs.Last().GetBox());
         return;
     }
     auto drawState = renderContext.Buffers->GetGeometryDrawState(&GetScene()->Rendering, _sceneRenderingKey, this);
@@ -410,45 +412,7 @@ void StaticModel::Draw(RenderContext& renderContext)
         draw.LightmapScale = _scaleInLightmap;
 #endif
 
-    Model->Draw(renderContext, draw);
-
-    GEOMETRY_DRAW_STATE_EVENT_END(drawState, world);
-}
-
-void StaticModel::Draw(RenderContextBatch& renderContextBatch)
-{
-    if (!Model || !Model->IsLoaded())
-        return;
-    const RenderContext& renderContext = renderContextBatch.GetMainContext();
-    auto drawState = renderContext.Buffers->GetGeometryDrawState(&GetScene()->Rendering, _sceneRenderingKey, this);
-    ACTOR_GET_WORLD_MATRIX(this, view, world);
-    GEOMETRY_DRAW_STATE_EVENT_BEGIN(drawState, world);
-    if (_vertexColorsDirty)
-        FlushVertexColors();
-
-    Mesh::DrawInfo draw;
-    draw.Buffer = &Entries;
-    draw.World = &world;
-    draw.DrawState = drawState;
-    draw.Deformation = _deformation;
-    draw.Lightmap = _scene && Lightmap.TextureIndex != -1 ? _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex) : nullptr;
-    draw.LightmapUVs = &Lightmap.UVsArea;
-    draw.Flags = _staticFlags;
-    draw.DrawModes = _drawModes;
-    draw.Bounds = _sphere;
-    draw.Bounds.Center -= renderContext.View.Origin;
-    draw.PerInstanceRandom = GetPerInstanceRandom();
-    draw.LODBias = _lodBias;
-    draw.ForcedLOD = _forcedLod;
-    draw.SortOrder = _sortOrder;
-    draw.VertexColors = _vertexColorsCount ? _vertexColorsBuffer : nullptr;
-    draw.SetStencilValue(_layer);
-#if GPU_ENABLE_DEVELOPMENT
-    if (HasStaticFlag(StaticFlags::Lightmap))
-        draw.LightmapScale = _scaleInLightmap;
-#endif
-
-    Model->Draw(renderContextBatch, draw);
+    model->Draw(renderContextBatch, draw);
 
     GEOMETRY_DRAW_STATE_EVENT_END(drawState, world);
 }

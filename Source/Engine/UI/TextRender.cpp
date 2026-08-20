@@ -362,54 +362,54 @@ bool TextRender::HasContentLoaded() const
     return (Material == nullptr || Material->IsLoaded()) && (Font == nullptr || Font->IsLoaded());
 }
 
-void TextRender::Draw(RenderContext& renderContext)
+void TextRender::Draw(RenderContextBatch& renderContextBatch)
 {
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
         return; // TODO: Text rendering to Global SDF
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
         return; // TODO: Text rendering to Global Surface Atlas
     if (_isDirty)
         UpdateLayout();
+    if (_vb.Data.IsEmpty())
+        return;
     Matrix world;
     renderContext.View.GetWorldMatrix(_transform, world);
     auto drawState = renderContext.Buffers->GetGeometryDrawState(&GetScene()->Rendering, _sceneRenderingKey, this);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(drawState, world);
 
-    const DrawPass drawModes = DrawModes & renderContext.View.Pass & renderContext.View.GetShadowsDrawPassMask(ShadowsMode);
-    if (_vb.Data.Count() > 0 && drawModes != DrawPass::None)
+    // Flush buffers
+    if (_buffersDirty)
     {
-        // Flush buffers
-        if (_buffersDirty)
-        {
-            _buffersDirty = false;
-            _ib.Flush();
-            _vb.Flush();
-        }
+        _buffersDirty = false;
+        _ib.Flush();
+        _vb.Flush();
+    }
 
-        // Setup draw call
-        DrawCall drawCall;
-        drawCall.World = world;
-        drawCall.ObjectPosition = drawCall.World.GetTranslation();
-        drawCall.ObjectRadius = (float)_sphere.Radius;
-        drawCall.Surface.GeometrySize = _localBox.GetSize();
-        drawCall.Surface.PrevWorld = drawState ? drawState->PrevWorld : world;
-        drawCall.PerInstanceRandom = GetPerInstanceRandom();
-        drawCall.SetStencilValue(_layer);
-        drawCall.Geometry.IndexBuffer = _ib.GetBuffer();
-        drawCall.Geometry.VertexBuffers[0] = _vb.GetBuffer();
-        drawCall.InstanceCount = 1;
+    // Setup draw call
+    DrawCall drawCall;
+    drawCall.World = world;
+    drawCall.ObjectPosition = drawCall.World.GetTranslation();
+    drawCall.ObjectRadius = (float)_sphere.Radius;
+    drawCall.Surface.GeometrySize = _localBox.GetSize();
+    drawCall.Surface.PrevWorld = drawState ? drawState->PrevWorld : world;
+    drawCall.PerInstanceRandom = GetPerInstanceRandom();
+    drawCall.SetStencilValue(_layer);
+    drawCall.Geometry.IndexBuffer = _ib.GetBuffer();
+    drawCall.Geometry.VertexBuffers[0] = _vb.GetBuffer();
+    drawCall.InstanceCount = 1;
 
-        // Submit draw calls
-        for (const auto& e : _drawChunks)
-        {
-            const DrawPass chunkDrawModes = drawModes & e.Material->GetDrawModes();
-            if (chunkDrawModes == DrawPass::None)
-                continue;
-            drawCall.Draw.IndicesCount = e.IndicesCount;
-            drawCall.Draw.StartIndex = e.StartIndex;
-            drawCall.Material = e.Material;
-            renderContext.List->AddDrawCall(renderContext, chunkDrawModes, GetStaticFlags(), drawCall, true, SortOrder);
-        }
+    // Submit draw calls
+    const DrawPass drawModes = DrawModes & renderContext.View.GetShadowsDrawPassMask(ShadowsMode);
+    for (const auto& e : _drawChunks)
+    {
+        const DrawPass chunkDrawModes = drawModes & e.Material->GetDrawModes();
+        if (chunkDrawModes == DrawPass::None)
+            continue;
+        drawCall.Draw.IndicesCount = e.IndicesCount;
+        drawCall.Draw.StartIndex = e.StartIndex;
+        drawCall.Material = e.Material;
+        renderContext.List->AddDrawCall(renderContextBatch, chunkDrawModes, GetStaticFlags(), ShadowsMode, _sphere, drawCall, true, SortOrder);
     }
 
     GEOMETRY_DRAW_STATE_EVENT_END(drawState, world);

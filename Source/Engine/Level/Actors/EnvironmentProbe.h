@@ -158,7 +158,7 @@ public:
         return BoundingBox(_transform.Translation - size, _transform.Translation + size);
     }
 #endif
-    void Draw(RenderContext& renderContext) override;
+    void Draw(RenderContextBatch& renderContextBatch) override;
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
 #endif

@@ -91,7 +91,7 @@ private:
 
 public:
     // [LightWithShadow]
-    void Draw(RenderContext& renderContext) override;
+    void Draw(RenderContextBatch& renderContextBatch) override;
 #if USE_EDITOR
     void OnDebugDraw() override;
     void OnDebugDrawSelected() override;

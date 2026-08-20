@@ -19,7 +19,6 @@
 #include "Engine/Core/Collections/CollectionPoolCache.h"
 #include "Engine/Core/Math/Double4x4.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
-#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Physics/Physics.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
@@ -1485,15 +1484,8 @@ void Actor::InitializeHierarchy()
         Children[i]->InitializeHierarchy();
 }
 
-void Actor::Draw(RenderContext& renderContext)
-{
-}
-
 void Actor::Draw(RenderContextBatch& renderContextBatch)
 {
-    // Default impl calls single-context
-    for (RenderContext& renderContext : renderContextBatch.Contexts)
-        Draw(renderContext);
 }
 
 #if USE_EDITOR

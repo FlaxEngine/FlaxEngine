@@ -119,8 +119,9 @@ bool SpriteRender::HasContentLoaded() const
     return (Material == nullptr || Material->IsLoaded()) && (Image == nullptr || Image->IsLoaded());
 }
 
-void SpriteRender::Draw(RenderContext& renderContext)
+void SpriteRender::Draw(RenderContextBatch& renderContextBatch)
 {
+    RenderContext& renderContext = renderContextBatch.GetMainContext();
     if (renderContext.View.Pass == DrawPass::GlobalSDF || renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
         return;
     if (!Material || !Material->IsLoaded() || !_quadModel || !_quadModel->IsLoaded())
@@ -145,7 +146,7 @@ void SpriteRender::Draw(RenderContext& renderContext)
         view.GetWorldMatrix(_transform, m2);
         Matrix::Multiply(m1, m2, world);
     }
-    model->LODs[0].Draw(renderContext, _materialInstance, world, GetStaticFlags(), false, DrawModes, GetPerInstanceRandom(), SortOrder);
+    model->LODs[0].Draw(renderContextBatch, _materialInstance, world, GetStaticFlags(), false, DrawModes, GetPerInstanceRandom(), SortOrder);
 }
 
 void SpriteRender::Serialize(SerializeStream& stream, const void* otherObj)

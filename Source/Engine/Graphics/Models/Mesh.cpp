@@ -251,6 +251,42 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
     renderContext.List->AddDrawCall(renderContext, drawModes, flags, drawCall, receiveDecals, sortOrder);
 }
 
+void Mesh::Draw(const RenderContextBatch& renderContextBatch, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, DrawPass drawModes, float perInstanceRandom, int8 sortOrder, uint8 stencilValue, ShadowsCastingMode shadowsMode) const
+{
+    if (!material || !material->IsSurface() || !IsInitialized())
+        return;
+    drawModes &= material->GetDrawModes();
+    if (drawModes == DrawPass::None)
+        return;
+
+    // Setup draw call
+    DrawCall drawCall;
+    drawCall.Geometry.IndexBuffer = _indexBuffer;
+    drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
+    drawCall.Geometry.VertexBuffers[1] = _vertexBuffers[1];
+    drawCall.Geometry.VertexBuffers[2] = _vertexBuffers[2];
+    drawCall.Draw.IndicesCount = _triangles * 3;
+    drawCall.InstanceCount = 1;
+    drawCall.Material = material;
+    drawCall.World = world;
+    drawCall.ObjectPosition = drawCall.World.GetTranslation();
+    drawCall.ObjectRadius = (float)_sphere.Radius * drawCall.World.GetScaleVector().GetAbsolute().MaxValue();
+    drawCall.Surface.GeometrySize = _box.GetSize();
+    drawCall.Surface.PrevWorld = world;
+    drawCall.PerInstanceRandom = perInstanceRandom;
+    drawCall.StencilValue = stencilValue;
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
+#if GPU_ENABLE_DEVELOPMENT
+    const ViewMode viewMode = renderContext.View.Mode;
+    if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
+        GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);
+#endif
+
+    // Push draw call to the render list
+    BoundingSphere bounds(drawCall.ObjectPosition, drawCall.ObjectRadius);
+    renderContext.List->AddDrawCall(renderContextBatch, drawModes, flags, shadowsMode, bounds, drawCall, receiveDecals, sortOrder);
+}
+
 void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float lodDitherFactor) const
 {
     const auto& entry = info.Buffer->At(_materialSlotIndex);

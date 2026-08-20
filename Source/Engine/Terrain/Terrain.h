@@ -462,7 +462,6 @@ private:
 public:
     // [PhysicsColliderActor]
     void Draw(RenderContextBatch& renderContextBatch) override;
-    void Draw(RenderContext& renderContext) override;
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
 #endif

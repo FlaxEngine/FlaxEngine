@@ -31,10 +31,9 @@ ExponentialHeightFog::ExponentialHeightFog(const SpawnParams& params)
 #endif
 }
 
-void ExponentialHeightFog::Draw(RenderContext& renderContext)
+void ExponentialHeightFog::Draw(RenderContextBatch& renderContextBatch)
 {
-    // Render only when shader is valid and fog can be rendered
-    // Do not render exponential fog in orthographic views
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Fog)
         && EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GBuffer)
         && _shader

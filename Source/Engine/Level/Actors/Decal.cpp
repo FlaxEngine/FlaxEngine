@@ -67,8 +67,9 @@ void Decal::OnLayerChanged()
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Layer);
 }
 
-void Decal::Draw(RenderContext& renderContext)
+void Decal::Draw(RenderContextBatch& renderContextBatch)
 {
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     MaterialBase* material = Material;
     if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Decals) &&
         EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GBuffer) &&

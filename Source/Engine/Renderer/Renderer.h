@@ -8,6 +8,7 @@ class GPUContext;
 class GPUTexture;
 class GPUTextureView;
 struct RenderContext;
+struct RenderContextBatch;
 class RenderTask;
 class SceneRenderTask;
 class MaterialBase;
@@ -56,4 +57,11 @@ public:
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="customActors">The custom set of actors to render. If empty, the loaded scenes will be rendered.</param>
     API_FUNCTION() static void DrawActors(API_PARAM(Ref) RenderContext& renderContext, API_PARAM(DefaultValue=null) const Array<Actor*, HeapAllocation>& customActors);
+
+    /// <summary>
+    /// Invoked drawing of the scene objects (collects draw calls into RenderList for all contexts in a batch).
+    /// </summary>
+    /// <param name="renderContextBatch">The rendering context batch.</param>
+    /// <param name="customActors">The custom set of actors to render. If empty, the loaded scenes will be rendered.</param>
+    API_FUNCTION() static void DrawActors(API_PARAM(Ref) RenderContextBatch& renderContextBatch, API_PARAM(DefaultValue=null) const Array<Actor*, HeapAllocation>& customActors);
 };
