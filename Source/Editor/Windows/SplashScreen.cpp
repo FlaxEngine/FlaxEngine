@@ -141,6 +141,12 @@ const Char* SplashScreenQuotes[] =
     TEXT("We do this not because it is easy,\nbut because we thought it would be easy"),
 };
 
+namespace
+{
+    constexpr float SplashScreenWidth = 500.0f;
+    constexpr float SplashScreenHeight = 170.0f;
+}
+
 SplashScreen::~SplashScreen()
 {
     // Ensure to be closed
@@ -159,8 +165,8 @@ void SplashScreen::Show()
     const float dpiScale = Platform::GetDpiScale();
     CreateWindowSettings settings;
     settings.Title = TEXT("Flax Editor");
-    settings.Size.X = 500 * dpiScale;
-    settings.Size.Y = 170 * dpiScale;
+    settings.Size.X = SplashScreenWidth * dpiScale;
+    settings.Size.Y = SplashScreenHeight * dpiScale;
     settings.HasBorder = false;
     settings.AllowInput = true;
     settings.AllowMinimize = false;
@@ -191,7 +197,9 @@ void SplashScreen::Show()
 
     // Setup
     _dpiScale = dpiScale;
-    _size = settings.Size;
+    UpdateLayoutScale(true);
+    UpdateTargetMonitorBounds();
+    CenterWindow();
     _startTime = DateTime::NowUTC();
     auto str = Globals::ProjectFolder;
 #if PLATFORM_WIN32
@@ -203,17 +211,17 @@ void SplashScreen::Show()
     _quote = SplashScreenQuotes[rand() % ARRAY_COUNT(SplashScreenQuotes)];
 
     // Load font
-    auto font = Content::LoadAsyncInternal<FontAsset>(TEXT("Editor/Fonts/Roboto-Regular"));
-    if (font == nullptr)
+    _fontAsset = Content::LoadAsyncInternal<FontAsset>(TEXT("Editor/Fonts/Roboto-Regular"));
+    if (_fontAsset == nullptr)
     {
         LOG(Fatal, "Cannot load GUI primary font.");
     }
     else
     {
-        if (font->IsLoaded())
-            OnFontLoaded(font);
+        if (_fontAsset->IsLoaded())
+            OnFontLoaded(_fontAsset.Get());
         else
-            font->OnLoaded.Bind<SplashScreen, &SplashScreen::OnFontLoaded>(this);
+            _fontAsset->OnLoaded.Bind<SplashScreen, &SplashScreen::OnFontLoaded>(this);
     }
 
     // Load custom image
@@ -238,7 +246,63 @@ void SplashScreen::Close()
 
     _titleFont = nullptr;
     _subtitleFont = nullptr;
+    _fontAsset = nullptr;
     _splashTexture = nullptr;
+}
+
+void SplashScreen::UpdateLayoutScale(bool resizeWindow)
+{
+    if (!_window)
+        return;
+
+    const float oldDpiScale = _dpiScale;
+    _dpiScale = _window->GetDpiScale();
+    _size = Float2(SplashScreenWidth, SplashScreenHeight) * _dpiScale;
+    if (resizeWindow)
+    {
+        if (!Float2::NearEqual(_window->GetClientSize(), _size))
+            _window->SetClientSize(_size);
+    }
+    else
+    {
+        _size = _window->GetClientSize();
+    }
+
+    if (!Math::NearEqual(oldDpiScale, _dpiScale) && _fontAsset && _fontAsset->IsLoaded())
+        CreateFonts();
+}
+
+void SplashScreen::CreateFonts()
+{
+    if (!_fontAsset)
+        return;
+
+    const float s = _dpiScale;
+    _titleFont = _fontAsset->CreateFont(35 * s);
+    _subtitleFont = _fontAsset->CreateFont(9 * s);
+}
+
+void SplashScreen::UpdateTargetMonitorBounds()
+{
+    if (!_window)
+        return;
+
+#if PLATFORM_MAC && !PLATFORM_SDL
+    const auto monitorPoint = Platform::GetMousePosition();
+#else
+    const auto monitorPoint = _window->GetPosition() + _window->GetSize() * 0.5f;
+#endif
+    _targetMonitorBounds = Platform::GetMonitorBounds(monitorPoint);
+}
+
+void SplashScreen::CenterWindow()
+{
+    if (!_window)
+        return;
+
+    if (_targetMonitorBounds.Size.IsZero())
+        UpdateTargetMonitorBounds();
+    _window->SetPosition(_targetMonitorBounds.Location + (_targetMonitorBounds.Size - _window->GetSize()) * 0.5f);
 }
 
 void SplashScreen::OnShown()
@@ -250,6 +314,8 @@ void SplashScreen::OnShown()
 
 void SplashScreen::OnDraw()
 {
+    UpdateLayoutScale(false);
+
     const float s = _dpiScale;
     const float width = _size.X;
     const float height = _size.Y;
@@ -335,23 +401,26 @@ bool SplashScreen::HasLoadedFonts() const
 void SplashScreen::OnFontLoaded(Asset* asset)
 {
     ASSERT(asset && asset->IsLoaded());
-    auto font = (FontAsset*)asset;
+    _fontAsset = (FontAsset*)asset;
 
-    font->OnLoaded.Unbind<SplashScreen, &SplashScreen::OnFontLoaded>(this);
-
-    // Create fonts
-    const float s = _dpiScale;
-    _titleFont = font->CreateFont(35 * s);
-    _subtitleFont = font->CreateFont(9 * s);
+    _fontAsset->OnLoaded.Unbind<SplashScreen, &SplashScreen::OnFontLoaded>(this);
+    CreateFonts();
 }
 
 void SplashScreen::OnSplashLoaded()
 {
     // Resize window to be larger if texture is being used
-    auto desktopSize = Platform::GetDesktopSize();
-    auto xSize = (desktopSize.X / (600.0f * 3.0f)) * 600.0f;
-    auto ySize = (desktopSize.Y / (200.0f * 3.0f)) * 200.0f;
+    if (_targetMonitorBounds.Size.IsZero())
+        UpdateTargetMonitorBounds();
+    auto clientDesktopSize = _targetMonitorBounds.Size;
+#if PLATFORM_MAC && !PLATFORM_SDL
+    // macOS monitor bounds are stored in the global virtual screen scale.
+    // Convert them to the splash window backing-pixel scale before using them as a client size.
+    clientDesktopSize *= _window->GetDpiScale() / Platform::CustomDpiScale;
+#endif
+    auto xSize = (clientDesktopSize.X / (600.0f * 3.0f)) * 600.0f;
+    auto ySize = (clientDesktopSize.Y / (200.0f * 3.0f)) * 200.0f;
     _window->SetClientSize(Float2(xSize, ySize));
-    _size = _window->GetSize();
-    _window->SetPosition((desktopSize - _size) * 0.5f);
+    _size = _window->GetClientSize();
+    CenterWindow();
 }

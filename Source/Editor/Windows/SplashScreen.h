@@ -4,11 +4,13 @@
 
 #include "Engine/Content/Assets/Texture.h"
 #include "Engine/Content/AssetReference.h"
+#include "Engine/Core/Math/Rectangle.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Platform/Window.h"
 
 class Asset;
 class Font;
+class FontAsset;
 
 /// <summary>
 /// Splash Screen popup
@@ -18,6 +20,7 @@ class SplashScreen
 private:
 
     Window* _window = nullptr;
+    AssetReference<FontAsset> _fontAsset;
     Font* _titleFont = nullptr;
     Font* _subtitleFont = nullptr;
     AssetReference<Texture> _splashTexture;
@@ -26,6 +29,7 @@ private:
     String _infoText;
     float _dpiScale;
     Float2 _size;
+    Rectangle _targetMonitorBounds = Rectangle(Float2::Zero, Float2::Zero);
     StringView _quote;
 
 public:
@@ -78,6 +82,10 @@ public:
 
 private:
 
+    void UpdateLayoutScale(bool resizeWindow);
+    void UpdateTargetMonitorBounds();
+    void CreateFonts();
+    void CenterWindow();
     void OnShown();
     void OnDraw();
     bool HasLoadedFonts() const;
