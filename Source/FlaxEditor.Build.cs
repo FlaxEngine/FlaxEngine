@@ -30,6 +30,7 @@ public class FlaxEditor : EngineTarget
             TargetArchitecture.ARM64,
         };
         GlobalDefinitions.Add("USE_EDITOR");
+        GlobalDefinitions.Add("FLAX_EDITOR");
 
         Modules.Add("Editor");
         Modules.Add("CSG");
