@@ -463,6 +463,8 @@ namespace FlaxEngine.GUI
                     // Click change
                     Value = _value + (mousePosition < _thumbCenter ? -1 : 1) * _clickChange;
                 }
+
+                return true;
             }
 
             return base.OnMouseDown(location, button);
