@@ -47,6 +47,67 @@ PACK_STRUCT(struct TextRenderVertex
     }
 });
 
+namespace
+{
+
+template<typename ProcessGlyph>
+BoundingBox ProcessTextGlyphs(Font* font, const String& text, const Array<FontLineCache, InlinedAllocation<8>>& lines, const TextLayoutOptions& layoutOptions, float scale, const ProcessGlyph& processGlyph)
+{
+    FontCharacterEntry previous;
+    int32 kerning;
+    FontCharacterEntry entry;
+    BoundingBox box = BoundingBox::Empty;
+
+    for (int32 lineIndex = 0; lineIndex < lines.Count(); lineIndex++)
+    {
+        const FontLineCache& line = lines[lineIndex];
+        Float2 pointer = line.Location;
+
+        for (int32 charIndex = line.FirstCharIndex; charIndex <= line.LastCharIndex; charIndex++)
+        {
+            const Char c = text[charIndex];
+            if (c == '\n')
+                continue;
+
+            font->GetCharacter(c, entry);
+
+            const bool isWhitespace = StringUtils::IsWhitespace(c);
+            if (!isWhitespace && previous.IsValid)
+                kerning = entry.Font->GetKerning(previous.Character, entry.Character);
+            else
+                kerning = 0;
+            pointer.X += (float)kerning * scale;
+            previous = entry;
+
+            Rectangle charRect = Rectangle::Empty;
+            Float3 positions[4];
+            if (!isWhitespace)
+            {
+                const float x = pointer.X + (float)entry.OffsetX * scale;
+                const float y = pointer.Y + (float)(font->GetHeight() + font->GetDescender() - entry.OffsetY) * scale;
+
+                charRect = Rectangle(x, y, entry.UVSize.X * scale, entry.UVSize.Y * scale);
+                charRect.Offset(layoutOptions.Bounds.Location);
+
+                positions[0] = Float3(-charRect.GetBottomRight(), 0.0f);
+                positions[1] = Float3(-charRect.GetBottomLeft(), 0.0f);
+                positions[2] = Float3(-charRect.GetUpperLeft(), 0.0f);
+                positions[3] = Float3(-charRect.GetUpperRight(), 0.0f);
+                for (int32 i = 0; i < 4; i++)
+                    box.Merge(positions[i]);
+            }
+
+            processGlyph(entry, charRect, isWhitespace ? nullptr : positions, !isWhitespace);
+
+            pointer.X += (float)entry.AdvanceX * scale;
+        }
+    }
+
+    return box == BoundingBox::Empty ? BoundingBox(Vector3::Zero) : box;
+}
+
+}
+
 TextRender::TextRender(const SpawnParams& params)
     : Actor(params)
     , _size(32)
@@ -63,9 +124,10 @@ TextRender::TextRender(const SpawnParams& params)
     _layoutOptions.BaseLinesGapScale = 1.0f;
 
     // Link events
-    Font.Changed.Bind<TextRender, &TextRender::Invalidate>(this);
-    Font.Unload.Bind<TextRender, &TextRender::Invalidate>(this);
-    Material.Changed.Bind<TextRender, &TextRender::Invalidate>(this);
+    Font.Changed.Bind<TextRender, &TextRender::InvalidateLayout>(this);
+    Font.Loaded.Bind<TextRender, &TextRender::InvalidateLayout>(this);
+    Font.Unload.Bind<TextRender, &TextRender::InvalidateLayout>(this);
+    Material.Changed.Bind<TextRender, &TextRender::InvalidateDraw>(this);
 }
 
 const LocalizedString& TextRender::GetText() const
@@ -78,7 +140,7 @@ void TextRender::SetText(const LocalizedString& value)
     if (_text != value)
     {
         _text = value;
-        _isDirty = true;
+        InvalidateLayout();
     }
 }
 
@@ -92,7 +154,7 @@ void TextRender::SetColor(const Color& value)
     if (_color != value)
     {
         _color = value;
-        _isDirty = true;
+        InvalidateDraw();
     }
 }
 
@@ -107,7 +169,7 @@ void TextRender::SetFontSize(float value)
     if (_size != value)
     {
         _size = value;
-        _isDirty = true;
+        InvalidateLayout();
     }
 }
 
@@ -116,43 +178,17 @@ void TextRender::SetLayoutOptions(TextLayoutOptions& value)
     if (_layoutOptions != value)
     {
         _layoutOptions = value;
-        _isDirty = true;
+        InvalidateLayout();
     }
 }
 
-void TextRender::UpdateLayout()
+bool TextRender::ResolveText(String& textData, const String*& textPtr)
 {
-    PROFILE_CPU();
-    PROFILE_MEM(UI);
-
-    // Clear
-    _ib.Clear();
-    _vb.Clear();
-    _localBox = BoundingBox(Vector3::Zero);
-    BoundingBox::Transform(_localBox, _transform, _box);
-    BoundingSphere::FromBox(_box, _sphere);
-#if MODEL_USE_PRECISE_MESH_INTERSECTS
-    _collisionProxy.Clear();
-#endif
-
-    // Skip if no font in use
-    if (Font == nullptr || !Font->IsLoaded())
-        return;
-
-    // Skip if material is not ready
-    if (Material == nullptr || !Material->IsLoaded() || !Material->IsReady())
-        return;
-
-    // Clear flag
-    _isDirty = false;
-
-    // Skip if no need to calculate the layout
-    String textData;
-    String* textPtr = &_text.Value;
+    textPtr = &_text.Value;
     if (textPtr->IsEmpty())
     {
         if (_text.Id.IsEmpty())
-            return;
+            return false;
         textData = Localization::GetString(_text.Id);
         textPtr = &textData;
         if (!_isLocalized)
@@ -160,34 +196,129 @@ void TextRender::UpdateLayout()
             _isLocalized = true;
             Localization::LocalizationChanged.Bind<TextRender, &TextRender::UpdateLayout>(this);
         }
-        if (textPtr->IsEmpty())
-            return;
+        return !textPtr->IsEmpty();
     }
-    else if (_isLocalized)
+
+    if (_isLocalized)
     {
         _isLocalized = false;
         Localization::LocalizationChanged.Unbind<TextRender, &TextRender::UpdateLayout>(this);
+    }
+    return true;
+}
+
+void TextRender::SetLocalBox(const BoundingBox& value)
+{
+    _localBox = value;
+    BoundingBox::Transform(_localBox, _transform, _box);
+    BoundingSphere::FromBox(_box, _sphere);
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Auto | ISceneRenderingListener::AutoDelayDuringRendering);
+}
+
+void TextRender::UpdateBounds()
+{
+    PROFILE_CPU();
+    PROFILE_MEM(UI);
+
+    _boundsDirty = false;
+    SetLocalBox(BoundingBox(Vector3::Zero));
+
+    if (Font == nullptr)
+        return;
+    if (!Font->IsLoaded())
+    {
+        _boundsDirty = true;
+        return;
+    }
+
+    String textData;
+    const String* textPtr;
+    if (!ResolveText(textData, textPtr))
+        return;
+    const String& text = *textPtr;
+
+    auto font = Font->CreateFont(_size);
+    const float scale = _layoutOptions.Scale / FontManager::FontScale;
+    Array<FontLineCache, InlinedAllocation<8>> lines;
+    font->ProcessText(text, lines, _layoutOptions);
+
+    const BoundingBox box = ProcessTextGlyphs(font, text, lines, _layoutOptions, scale, [](const FontCharacterEntry&, const Rectangle&, const Float3*, bool)
+    {
+    });
+    SetLocalBox(box);
+}
+
+void TextRender::UpdateLayout()
+{
+    PROFILE_CPU();
+    PROFILE_MEM(UI);
+
+    // Clear draw data
+    _ib.Clear();
+    _vb.Clear();
+#if MODEL_USE_PRECISE_MESH_INTERSECTS
+    _collisionProxy.Clear();
+#endif
+
+    // Skip if no font in use
+    if (Font == nullptr)
+    {
+        _isDirty = false;
+        _boundsDirty = false;
+        SetLocalBox(BoundingBox(Vector3::Zero));
+        return;
+    }
+    if (!Font->IsLoaded())
+    {
+        _boundsDirty = true;
+        return;
+    }
+
+    // Skip if no need to calculate the layout
+    String textData;
+    const String* textPtr;
+    if (!ResolveText(textData, textPtr))
+    {
+        _isDirty = false;
+        _boundsDirty = false;
+        SetLocalBox(BoundingBox(Vector3::Zero));
+        return;
     }
     const String& text = *textPtr;
 
     // Pick a font (remove DPI text scale as the text is being placed in the world)
     auto font = Font->CreateFont(_size);
-    float scale = _layoutOptions.Scale / FontManager::FontScale;
-
-    // Prepare
-    FontTextureAtlas* fontAtlas = nullptr;
-    Float2 invAtlasSize = Float2::One;
-    FontCharacterEntry previous;
-    int32 kerning;
+    const float scale = _layoutOptions.Scale / FontManager::FontScale;
 
     // Perform layout
     Array<FontLineCache, InlinedAllocation<8>> lines;
     font->ProcessText(text, lines, _layoutOptions);
 
+    // Skip draw data if material is not ready but keep editor bounds up to date
+    if (Material == nullptr || !Material->IsLoaded() || !Material->IsReady())
+    {
+        _isDirty = Material != nullptr;
+        _boundsDirty = false;
+        const BoundingBox box = ProcessTextGlyphs(font, text, lines, _layoutOptions, scale, [](const FontCharacterEntry&, const Rectangle&, const Float3*, bool)
+        {
+        });
+        SetLocalBox(box);
+        return;
+    }
+
+    // Clear flags
+    _isDirty = false;
+    _boundsDirty = false;
+
     // Prepare buffers capacity
     _ib.Data.EnsureCapacity(text.Length() * 6 * sizeof(uint16));
     _vb.Data.EnsureCapacity(text.Length() * 4 * sizeof(TextRenderVertex));
     _buffersDirty = true;
+
+    // Prepare
+    FontTextureAtlas* fontAtlas = nullptr;
+    Float2 invAtlasSize = Float2::One;
 
     // Init draw chunks data
     Array<MaterialInstance*, InlinedAllocation<8>> materials;
@@ -196,140 +327,104 @@ void TextRender::UpdateLayout()
         materials[i] = _drawChunks[i].Material;
     DrawChunk drawChunk;
     drawChunk.Actor = this;
+    drawChunk.FontAtlasIndex = -1;
     drawChunk.StartIndex = 0;
+    drawChunk.IndicesCount = 0;
     _drawChunks.Clear();
 
-    // Render all lines
     uint16 vertexCounter = 0;
     uint16 indexCounter = 0;
-    FontCharacterEntry entry;
-    BoundingBox box = BoundingBox::Empty;
     Color32 color(_color);
-    for (int32 lineIndex = 0; lineIndex < lines.Count(); lineIndex++)
+    const BoundingBox box = ProcessTextGlyphs(font, text, lines, _layoutOptions, scale, [&](const FontCharacterEntry& entry, const Rectangle&, const Float3* positions, bool hasVisibleGlyph)
     {
-        const FontLineCache& line = lines[lineIndex];
-        Float2 pointer = line.Location;
-
-        // Render all characters from the line
-        for (int32 charIndex = line.FirstCharIndex; charIndex <= line.LastCharIndex; charIndex++)
+        // Check if need to select/change font atlas (since characters even in the same font may be located in different atlases)
+        if (fontAtlas == nullptr || entry.TextureIndex != drawChunk.FontAtlasIndex)
         {
-            const Char c = text[charIndex];
-            if (c != '\n')
+            // Check if need to change atlas (enqueue draw chunk)
+            if (fontAtlas)
             {
-                font->GetCharacter(c, entry);
-
-                // Check if need to select/change font atlas (since characters even in the same font may be located in different atlases)
-                if (fontAtlas == nullptr || entry.TextureIndex != drawChunk.FontAtlasIndex)
+                drawChunk.IndicesCount = (_ib.Data.Count() / sizeof(uint16)) - drawChunk.StartIndex;
+                if (drawChunk.IndicesCount > 0)
                 {
-                    // Check if need to change atlas (enqueue draw chunk)
-                    if (fontAtlas)
-                    {
-                        drawChunk.IndicesCount = (_ib.Data.Count() / sizeof(uint16)) - drawChunk.StartIndex;
-                        if (drawChunk.IndicesCount > 0)
-                        {
-                            _drawChunks.Add(drawChunk);
-                        }
-                        drawChunk.StartIndex = indexCounter;
-                    }
-
-                    // Get texture atlas that contains current character
-                    drawChunk.FontAtlasIndex = entry.TextureIndex;
-                    fontAtlas = FontManager::GetAtlas(drawChunk.FontAtlasIndex);
-                    if (fontAtlas)
-                    {
-                        fontAtlas->EnsureTextureCreated();
-                        invAtlasSize = 1.0f / fontAtlas->GetSize();
-                    }
-                    else
-                    {
-                        invAtlasSize = 1.0f;
-                    }
-
-                    // Setup material
-                    if (_drawChunks.Count() < materials.Count())
-                        drawChunk.Material = materials[_drawChunks.Count()];
-                    else
-                        drawChunk.Material = Content::CreateVirtualAsset<MaterialInstance>();
-                    drawChunk.Material->SetBaseMaterial(Material.Get());
-                    drawChunk.Material->ResetParameters();
-
-                    // Set the font parameter
-                    static StringView FontParamName = TEXT("Font");
-                    const auto param = drawChunk.Material->Params.Get(FontParamName);
-                    if (param && param->GetParameterType() == MaterialParameterType::Texture)
-                    {
-                        param->SetValue(Variant(fontAtlas));
-                        param->SetIsOverride(true);
-                    }
+                    _drawChunks.Add(drawChunk);
                 }
+                drawChunk.StartIndex = indexCounter;
+            }
 
-                // Get kerning
-                const bool isWhitespace = StringUtils::IsWhitespace(c);
-                if (!isWhitespace && previous.IsValid)
-                {
-                    kerning = entry.Font->GetKerning(previous.Character, entry.Character);
-                }
-                else
-                {
-                    kerning = 0;
-                }
-                pointer.X += (float)kerning * scale;
-                previous = entry;
+            // Get texture atlas that contains current character
+            drawChunk.FontAtlasIndex = entry.TextureIndex;
+            fontAtlas = FontManager::GetAtlas(drawChunk.FontAtlasIndex);
+            if (fontAtlas)
+            {
+                fontAtlas->EnsureTextureCreated();
+                invAtlasSize = 1.0f / fontAtlas->GetSize();
+            }
+            else
+            {
+                invAtlasSize = 1.0f;
+            }
 
-                // Omit whitespace characters
-                if (!isWhitespace)
-                {
-                    // Calculate character size and atlas coordinates
-                    const float x = pointer.X + (float)entry.OffsetX * scale;
-                    const float y = pointer.Y + (float)(font->GetHeight() + font->GetDescender() - entry.OffsetY) * scale;
+            // Setup material
+            if (_drawChunks.Count() < materials.Count())
+                drawChunk.Material = materials[_drawChunks.Count()];
+            else
+                drawChunk.Material = Content::CreateVirtualAsset<MaterialInstance>();
+            drawChunk.Material->SetBaseMaterial(Material.Get());
+            drawChunk.Material->ResetParameters();
 
-                    Rectangle charRect(x, y, entry.UVSize.X * scale, entry.UVSize.Y * scale);
-                    charRect.Offset(_layoutOptions.Bounds.Location);
-
-                    Float2 upperLeftUV = entry.UV * invAtlasSize;
-                    Float2 rightBottomUV = (entry.UV + entry.UVSize) * invAtlasSize;
-
-                    // Calculate bitangent sign
-                    Float3 normal = Float3::UnitZ;
-                    Float3 tangent = Float3::UnitX;
-                    byte sign = 0;
-
-                    // Write vertices
-                    TextRenderVertex v;
-#define WRITE_VB(pos, uv) \
-					v.Position = Float3(-pos, 0.0f); \
-					box.Merge(v.Position); \
-					v.TexCoord = Half2(uv); \
-					v.Normal = FloatR10G10B10A2(normal * 0.5f + 0.5f, 0); \
-					v.Tangent = FloatR10G10B10A2(tangent * 0.5f + 0.5f, sign); \
-					v.Color = color; \
-					_vb.Write(v)
-                    //
-                    WRITE_VB(charRect.GetBottomRight(), rightBottomUV);
-                    WRITE_VB(charRect.GetBottomLeft(), Float2(upperLeftUV.X, rightBottomUV.Y));
-                    WRITE_VB(charRect.GetUpperLeft(), upperLeftUV);
-                    WRITE_VB(charRect.GetUpperRight(), Float2(rightBottomUV.X, upperLeftUV.Y));
-                    //
-#undef WRITE_VB
-
-                    const uint16 startVertex = vertexCounter;
-                    vertexCounter += 4;
-                    indexCounter += 6;
-
-                    // Write indices
-                    _ib.Write((uint16)(startVertex + (uint16)0));
-                    _ib.Write((uint16)(startVertex + (uint16)1));
-                    _ib.Write((uint16)(startVertex + (uint16)2));
-                    _ib.Write((uint16)(startVertex + (uint16)2));
-                    _ib.Write((uint16)(startVertex + (uint16)3));
-                    _ib.Write((uint16)(startVertex + (uint16)0));
-                }
-
-                // Move
-                pointer.X += (float)entry.AdvanceX * scale;
+            // Set the font parameter
+            static StringView FontParamName = TEXT("Font");
+            const auto param = drawChunk.Material->Params.Get(FontParamName);
+            if (param && param->GetParameterType() == MaterialParameterType::Texture)
+            {
+                param->SetValue(Variant(fontAtlas));
+                param->SetIsOverride(true);
             }
         }
-    }
+
+        // Omit whitespace characters
+        if (!hasVisibleGlyph)
+            return;
+        ASSERT(positions);
+
+        // Calculate atlas coordinates
+        Float2 upperLeftUV = entry.UV * invAtlasSize;
+        Float2 rightBottomUV = (entry.UV + entry.UVSize) * invAtlasSize;
+
+        // Calculate bitangent sign
+        Float3 normal = Float3::UnitZ;
+        Float3 tangent = Float3::UnitX;
+        byte sign = 0;
+
+        // Write vertices
+        TextRenderVertex v;
+#define WRITE_VB(pos, uv) \
+        v.Position = pos; \
+        v.TexCoord = Half2(uv); \
+        v.Normal = FloatR10G10B10A2(normal * 0.5f + 0.5f, 0); \
+        v.Tangent = FloatR10G10B10A2(tangent * 0.5f + 0.5f, sign); \
+        v.Color = color; \
+        _vb.Write(v)
+        //
+        WRITE_VB(positions[0], rightBottomUV);
+        WRITE_VB(positions[1], Float2(upperLeftUV.X, rightBottomUV.Y));
+        WRITE_VB(positions[2], upperLeftUV);
+        WRITE_VB(positions[3], Float2(rightBottomUV.X, upperLeftUV.Y));
+        //
+#undef WRITE_VB
+
+        const uint16 startVertex = vertexCounter;
+        vertexCounter += 4;
+        indexCounter += 6;
+
+        // Write indices
+        _ib.Write((uint16)(startVertex + (uint16)0));
+        _ib.Write((uint16)(startVertex + (uint16)1));
+        _ib.Write((uint16)(startVertex + (uint16)2));
+        _ib.Write((uint16)(startVertex + (uint16)2));
+        _ib.Write((uint16)(startVertex + (uint16)3));
+        _ib.Write((uint16)(startVertex + (uint16)0));
+    });
     drawChunk.IndicesCount = (_ib.Data.Count() / sizeof(uint16)) - drawChunk.StartIndex;
     if (drawChunk.IndicesCount > 0)
     {
@@ -342,17 +437,8 @@ void TextRender::UpdateLayout()
     _collisionProxy.Init(_vb.Data.Count() / sizeof(TextRenderVertex), totalIndicesCount / 3, (const Float3*)_vb.Data.Get(), (const uint16*)_ib.Data.Get(), sizeof(TextRenderVertex));
 #endif
 
-    // Update text bounds (from build vertex positions)
-    if (_ib.Data.IsEmpty())
-    {
-        // Empty
-        box = BoundingBox(_transform.Translation);
-    }
-    _localBox = box;
-    BoundingBox::Transform(_localBox, _transform, _box);
-    BoundingSphere::FromBox(_box, _sphere);
-    if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Auto | ISceneRenderingListener::AutoDelayDuringRendering);
+    // Update text bounds
+    SetLocalBox(box);
 }
 
 bool TextRender::HasContentLoaded() const
@@ -416,8 +502,18 @@ void TextRender::Draw(RenderContext& renderContext)
 
 #include "Engine/Debug/DebugDraw.h"
 
+BoundingBox TextRender::GetEditorBox() const
+{
+    if (_boundsDirty)
+        const_cast<TextRender*>(this)->UpdateBounds();
+    return _box;
+}
+
 void TextRender::OnDebugDrawSelected()
 {
+    if (_boundsDirty)
+        UpdateBounds();
+
     // Draw text bounds and layout bounds
     DEBUG_DRAW_WIRE_BOX(_box, Color::Orange, 0, true);
     OrientedBoundingBox layoutBox(Vector3(-_layoutOptions.Bounds.GetUpperLeft(), 0), Vector3(-_layoutOptions.Bounds.GetBottomRight(), 0));
@@ -438,9 +534,17 @@ void TextRender::OnLayerChanged()
 
 bool TextRender::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
+    if (_boundsDirty)
+        UpdateBounds();
+
 #if MODEL_USE_PRECISE_MESH_INTERSECTS
+    if (_isDirty)
+        UpdateLayout();
+
     if (_box.Intersects(ray))
     {
+        if (!_collisionProxy.HasData())
+            return _box.Intersects(ray, distance, normal);
         return _collisionProxy.Intersects(ray, _transform, distance, normal);
     }
     return false;
@@ -505,7 +609,7 @@ void TextRender::Deserialize(DeserializeStream& stream, ISerializeModifier* modi
         DrawModes |= DrawPass::GlobalSurfaceAtlas;
     }
 
-    _isDirty = true;
+    InvalidateLayout();
 }
 
 void TextRender::OnEnable()

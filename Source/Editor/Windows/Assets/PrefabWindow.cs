@@ -536,7 +536,7 @@ namespace FlaxEditor.Windows.Assets
             }
 
             // Auto fit
-            if (_focusCamera && _viewport.Task.FrameCount > 1)
+            if (_focusCamera && _viewport.Task.FrameCount > 1 && _viewport.HasInstanceReadyForEditorBounds)
             {
                 _focusCamera = false;
                 Editor.GetActorEditorSphere(_viewport.Instance, out BoundingSphere bounds);

@@ -151,6 +151,20 @@ namespace FlaxEditor.Viewport.Previews
                 LinkCanvas(actor.GetChild(i));
         }
 
+        private static bool HasEditorBoundsContentLoaded(Actor actor)
+        {
+            if ((actor is ModelInstanceActor || actor is SpriteRender || actor is TextRender) && !actor.HasContentLoaded)
+                return false;
+
+            for (int i = 0; i < actor.ChildrenCount; i++)
+            {
+                if (!HasEditorBoundsContentLoaded(actor.GetChild(i)))
+                    return false;
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="PrefabPreview"/> class.
         /// </summary>
@@ -172,6 +186,11 @@ namespace FlaxEditor.Viewport.Previews
                 UpdateLinkage();
             }
         }
+
+        /// <summary>
+        /// Gets a value indicating whether the spawned prefab instance has loaded content required to calculate editor bounds for auto-fit.
+        /// </summary>
+        public bool HasInstanceReadyForEditorBounds => _instance != null && HasEditorBoundsContentLoaded(_instance);
 
         /// <inheritdoc />
         public override void OnDestroy()
