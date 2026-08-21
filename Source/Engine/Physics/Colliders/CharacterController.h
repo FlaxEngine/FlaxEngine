@@ -207,6 +207,11 @@ public:
     /// </summary>
     API_PROPERTY() CollisionFlags GetFlags() const;
 
+    /// <summary>
+    /// Returns accumulated gravity if Auto Gravity enabled.
+    /// </summary>
+    API_PROPERTY() Vector3 GetAccumulatedGravity() const;
+
 public:
     /// <summary>
     /// Moves the character with the given speed. Gravity is automatically applied. It will slide along colliders. Result collision flags is the summary of collisions that occurred during the Move.
@@ -228,6 +233,11 @@ public:
     /// <param name="height">The height of the capsule, measured in the object's local space.</param>
     /// <param name="radius">The radius of the capsule, measured in the object's local space.</param>
     API_FUNCTION() void Resize(float height, float radius);
+
+    /// <summary>
+    /// Resets accumulated gravity if Auto Gravity enabled.
+    /// </summary>
+    API_FUNCTION() void ResetAccumulatedGravity();
 
 protected:
     /// <summary>
