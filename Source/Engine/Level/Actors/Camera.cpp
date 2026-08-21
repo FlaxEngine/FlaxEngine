@@ -233,8 +233,13 @@ Ray Camera::ConvertMouseToRay(const Float2& mousePosition, const Viewport& viewp
     ivp.Invert();
 
     // Create near and far points
+#if REVERSE_Z
+    Vector3 nearPoint(mousePosition, _far);
+    Vector3 farPoint(mousePosition, _near);
+#else
     Vector3 nearPoint(mousePosition, _near);
     Vector3 farPoint(mousePosition, _far);
+#endif
     viewport.Unproject(nearPoint, ivp, nearPoint);
     viewport.Unproject(farPoint, ivp, farPoint);
 
