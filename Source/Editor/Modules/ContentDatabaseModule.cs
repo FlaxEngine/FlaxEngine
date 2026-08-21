@@ -1393,17 +1393,21 @@ namespace FlaxEditor.Modules
         /// <inheritdoc />
         public override void OnUpdate()
         {
-            // Update all dirty content tree nodes
-            lock (_dirtyNodes)
+            // Check for updates only when the editor is focused to only check once for all changes done in background.
+            if (FlaxEngine.Engine.HasFocus)
             {
-                foreach (var node in _dirtyNodes)
+                // Update all dirty content tree nodes
+                lock (_dirtyNodes)
                 {
-                    LoadFolder(node, true);
+                    foreach (var node in _dirtyNodes)
+                    {
+                        LoadFolder(node, true);
 
-                    if (_enableEvents)
-                        WorkspaceModified?.Invoke();
+                        if (_enableEvents)
+                            WorkspaceModified?.Invoke();
+                    }
+                    _dirtyNodes.Clear();
                 }
-                _dirtyNodes.Clear();
             }
 
             // Lazy-rebuilds
