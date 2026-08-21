@@ -78,3 +78,16 @@ API_ENUM() enum class BehaviorValueComparison
     // If A is greater than or equal to the B, the comparison passes.
     GreaterEqual,
 };
+
+/// <summary>
+/// Enum for select the right type for compare with Value A in behavior knowledge function.
+/// </summary>
+API_ENUM() enum class BehaviorCompareValueBType
+{
+    // For compare with a float value.
+    Float,
+    // For compare with a boolean value.
+    Boolean,
+    // For compare with a int value.
+    Int
+};
