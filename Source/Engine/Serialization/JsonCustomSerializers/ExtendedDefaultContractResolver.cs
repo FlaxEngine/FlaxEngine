@@ -116,6 +116,8 @@ namespace FlaxEngine.Json.JsonCustomSerializers
                 jsonProperty.Writable = true;
                 jsonProperty.Readable = true;
 
+                jsonProperty.DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate;
+
                 if (_flaxType.IsAssignableFrom(f.FieldType))
                 {
                     jsonProperty.ReferenceLoopHandling = ReferenceLoopHandling.Serialize;
@@ -158,6 +160,8 @@ namespace FlaxEngine.Json.JsonCustomSerializers
                 var jsonProperty = CreateProperty(p, memberSerialization);
                 jsonProperty.Writable = true;
                 jsonProperty.Readable = !isObsolete;
+
+                jsonProperty.DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate;
 
                 if (_flaxType.IsAssignableFrom(p.PropertyType))
                 {
