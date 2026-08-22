@@ -410,6 +410,11 @@ enum class GPUQueryType
     /// </summary>
     Occlusion = 1,
 
+    /// <summary>
+    /// Tests object visibility by checking depth and stencil tests. Works like Occlusion query, except returns simply a binary 0/1 result: 0 indicates that no samples passed depth and stencil testing; 1 indicates that at least one sample passed.
+    /// </summary>
+    BinaryOcclusion = 2,
+
     MAX
 };
 

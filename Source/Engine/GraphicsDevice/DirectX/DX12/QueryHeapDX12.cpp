@@ -28,6 +28,11 @@ bool QueryHeapDX12::Init(GPUDeviceDX12* device, GPUQueryType type, uint32 size)
         QueryType = D3D12_QUERY_TYPE_OCCLUSION;
         heapDesc.Type = D3D12_QUERY_HEAP_TYPE_OCCLUSION;
         break;
+    case GPUQueryType::BinaryOcclusion:
+        _resultSize = sizeof(uint64);
+        QueryType = D3D12_QUERY_TYPE_BINARY_OCCLUSION;
+        heapDesc.Type = D3D12_QUERY_HEAP_TYPE_OCCLUSION;
+        break;
     case GPUQueryType::MAX:
         return true;
     }
@@ -98,11 +103,6 @@ void QueryHeapDX12::EndQueryBatchAndResolveQueryData(GPUContextDX12* context)
     // Begin a new query batch
     _batches.Add(_currentBatch);
     StartQueryBatch();
-}
-
-bool QueryHeapDX12::CanAlloc(int32 count) const
-{
-    return _currentBatch.Open && _currentIndex + count <= GetQueryHeapCount();
 }
 
 void QueryHeapDX12::Alloc(ElementHandle& handle)

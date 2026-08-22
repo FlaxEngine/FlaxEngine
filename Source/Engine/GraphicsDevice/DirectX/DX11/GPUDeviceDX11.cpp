@@ -1060,9 +1060,15 @@ RETRY:
             }
         }
     }
+    else if (q.Type == (uint16)GPUQueryType::Occlusion)
+    {
+        hasData = context->GetData(query.Query, &result, sizeof(UINT64), 0) == S_OK;
+    }
     else
     {
-        hasData = context->GetData(query.Query, &result, sizeof(uint64), 0) == S_OK;
+        BOOL resultBool;
+        hasData = context->GetData(query.Query, &resultBool, sizeof(BOOL), 0) == S_OK;
+        result = resultBool ? 1 : 0;
     }
 
     if (!hasData && wait)

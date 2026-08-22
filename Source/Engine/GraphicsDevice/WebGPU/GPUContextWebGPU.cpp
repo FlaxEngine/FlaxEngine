@@ -229,7 +229,7 @@ void GPUContextWebGPU::SetRenderTarget(GPUTextureView* depthBuffer, GPUTextureVi
 
 void GPUContextWebGPU::SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPUTextureView*>& rts)
 {
-    ASSERT(Math::IsInRange(rts.Length(), 1, GPU_MAX_RT_BINDED));
+    ASSERT(Math::IsInRange(rts.Length(), 0, GPU_MAX_RT_BINDED));
     auto depthBufferGPU = (GPUTextureViewWebGPU*)depthBuffer;
     if (_renderTargetCount != rts.Length() || _depthStencil != depthBufferGPU || Platform::MemoryCompare(_renderTargets, rts.Get(), rts.Length() * sizeof(void*)) != 0)
     {

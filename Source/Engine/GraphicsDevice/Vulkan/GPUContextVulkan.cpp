@@ -1466,6 +1466,9 @@ uint64 GPUContextVulkan::BeginQuery(GPUQueryType type)
     case GPUQueryType::Occlusion:
         vkCmdBeginQuery(cmdBuffer->GetHandle(), pool->GetHandle(), query.QueryIndex, 0);
         break;
+    case GPUQueryType::BinaryOcclusion:
+        vkCmdBeginQuery(cmdBuffer->GetHandle(), pool->GetHandle(), query.QueryIndex, VK_QUERY_CONTROL_PRECISE_BIT);
+        break;
     }
     pool->MarkQueryAsStarted(query.QueryIndex);
 
@@ -1492,6 +1495,7 @@ void GPUContextVulkan::EndQuery(uint64 queryID)
 #endif
         break;
     case GPUQueryType::Occlusion:
+    case GPUQueryType::BinaryOcclusion:
         vkCmdEndQuery(cmdBuffer->GetHandle(), pool->GetHandle(), query.QueryIndex);
         break;
     }

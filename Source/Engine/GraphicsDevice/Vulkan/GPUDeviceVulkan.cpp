@@ -642,7 +642,7 @@ QueryPoolVulkan::QueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, GPUQue
 {
     VkQueryPoolCreateInfo createInfo;
     RenderToolsVulkan::ZeroStruct(createInfo, VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO);
-    createInfo.queryType = type == GPUQueryType::Occlusion ? VK_QUERY_TYPE_OCCLUSION : VK_QUERY_TYPE_TIMESTAMP;
+    createInfo.queryType = type != GPUQueryType::Timer ? VK_QUERY_TYPE_TIMESTAMP : VK_QUERY_TYPE_OCCLUSION;
     createInfo.queryCount = capacity;
     VALIDATE_VULKAN_RESULT(vkCreateQueryPool(device->Device, &createInfo, nullptr, &_handle));
 
@@ -1282,7 +1282,7 @@ int32 GPUDeviceVulkan::GetOrCreateQueryPool(GPUQueryType type)
 
     PROFILE_CPU_NAMED("Create Create Pool");
     PROFILE_MEM(GraphicsCommands);
-    auto pool = New<BufferedQueryPoolVulkan>(this, type == GPUQueryType::Occlusion ? 4096 : 1024, type);
+    auto pool = New<BufferedQueryPoolVulkan>(this, type == GPUQueryType::Timer ? 1024 : 4096, type);
     QueryPools.Add(pool);
     return QueryPools.Count() - 1;
 }
@@ -2217,13 +2217,17 @@ RETRY:
         }
         break;
     case GPUQueryType::Occlusion:
+    case GPUQueryType::BinaryOcclusion:
         hasData = pool->GetResults(query.QueryIndex, result);
+        if (hasData && pool->Type == GPUQueryType::BinaryOcclusion && result > 1)
+            result = 1; // Clamp binary result
         break;
     }
 
     if (!hasData && wait)
     {
         // Wait until data is ready
+        // TODO: use VK_QUERY_RESULT_WAIT_BIT maybe?
         Platform::Yield();
         goto RETRY;
     }

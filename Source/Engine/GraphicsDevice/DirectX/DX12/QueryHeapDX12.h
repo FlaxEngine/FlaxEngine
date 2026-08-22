@@ -153,7 +153,10 @@ public:
     /// </summary>
     /// <param name="count">How many elements to allocate?</param>
     /// <returns>True if can alloc new query within the same batch.</returns>
-    bool CanAlloc(int32 count = 1) const;
+    bool CanAlloc(int32 count = 1) const
+    {
+        return _currentBatch.Open && _currentIndex + count <= _queryHeapCount;
+    }
 
     /// <summary>
     /// Allocates the query heap element.

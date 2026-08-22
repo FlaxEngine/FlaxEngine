@@ -93,7 +93,7 @@ private:
     bool _allowTearing = false;
     GPUBuffer* _dummyVB = nullptr;
     Array<GPUQueryDataDX11> _queries;
-    Array<uint16> _readyQueries[2]; // Timer and Occlusion
+    Array<uint16> _readyQueries[3]; // Timer and Occlusion and BinaryOcclusion
 
     // Static Samplers
     ID3D11SamplerState* _samplerLinearClamp = nullptr;

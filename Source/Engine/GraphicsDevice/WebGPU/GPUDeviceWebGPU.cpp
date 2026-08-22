@@ -860,7 +860,7 @@ GPUQueryWebGPU GPUDeviceWebGPU::AllocateQuery(GPUQueryType type)
 
         // Allocate a new query heap
         PROFILE_MEM(GraphicsCommands);
-        uint32 size = type == GPUQueryType::Occlusion ? 4096 : 1024;
+        uint32 size = type == GPUQueryType::Timer ? 1024 : 4096;
         auto set = New<GPUQuerySetWebGPU>(Device, type, size);
         QuerySets[QuerySetsCount++] = set;
     }

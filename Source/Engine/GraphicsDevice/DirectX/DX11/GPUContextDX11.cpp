@@ -303,7 +303,7 @@ void GPUContextDX11::SetRenderTarget(GPUTextureView* depthBuffer, GPUTextureView
 
 void GPUContextDX11::SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPUTextureView*>& rts)
 {
-    ASSERT(Math::IsInRange(rts.Length(), 1, GPU_MAX_RT_BINDED));
+    ASSERT(Math::IsInRange(rts.Length(), 0, GPU_MAX_RT_BINDED));
 
     auto depthBufferDX11 = static_cast<GPUTextureViewDX11*>(depthBuffer);
     ID3D11DepthStencilView* dsv = depthBufferDX11 ? depthBufferDX11->DSV() : nullptr;
@@ -590,7 +590,18 @@ uint64 GPUContextDX11::BeginQuery(GPUQueryType type)
         auto& query = _device->_queries.AddOne();
         query.Type = type;
         D3D11_QUERY_DESC queryDesc;
-        queryDesc.Query = type == GPUQueryType::Occlusion ? D3D11_QUERY_OCCLUSION : D3D11_QUERY_TIMESTAMP;
+        switch (type)
+        {
+        case GPUQueryType::Timer:
+            queryDesc.Query = D3D11_QUERY_TIMESTAMP;
+            break;
+        case GPUQueryType::Occlusion:
+            queryDesc.Query = D3D11_QUERY_OCCLUSION;
+            break;
+        case GPUQueryType::BinaryOcclusion:
+            queryDesc.Query = D3D11_QUERY_OCCLUSION_PREDICATE;
+            break;
+        }
         queryDesc.MiscFlags = 0;
         HRESULT hr = _device->GetDevice()->CreateQuery(&queryDesc, &query.Query);
         LOG_DIRECTX_RESULT_WITH_RETURN(hr, 0);

@@ -1061,7 +1061,7 @@ GPUQueryDX12 GPUDeviceDX12::AllocQuery(GPUQueryType type)
         // Allocate a new query heap
         PROFILE_MEM(GraphicsCommands);
         auto heap = New<QueryHeapDX12>();
-        int32 size = type == GPUQueryType::Occlusion ? 4096 : 1024;
+        int32 size = type == GPUQueryType::Timer ? 1024 : 4096;
         if (heap->Init(this, type, size))
         {
             Delete(heap);

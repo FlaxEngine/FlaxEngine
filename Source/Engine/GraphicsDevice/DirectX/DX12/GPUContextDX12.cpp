@@ -948,7 +948,7 @@ void GPUContextDX12::SetRenderTarget(GPUTextureView* depthBuffer, GPUTextureView
 
 void GPUContextDX12::SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPUTextureView*>& rts)
 {
-    ASSERT(Math::IsInRange(rts.Length(), 1, GPU_MAX_RT_BINDED));
+    ASSERT(Math::IsInRange(rts.Length(), 0, GPU_MAX_RT_BINDED));
 
     const auto depthBufferDX12 = static_cast<GPUTextureViewDX12*>(depthBuffer);
 
