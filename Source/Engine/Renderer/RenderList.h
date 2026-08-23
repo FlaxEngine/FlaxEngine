@@ -10,7 +10,6 @@
 #include "Engine/Scripting/ScriptingObject.h"
 #include "DrawCall.h"
 #include "RenderListBuffer.h"
-#include "RendererAllocation.h"
 #include "RenderSetup.h"
 
 enum class StaticFlags;

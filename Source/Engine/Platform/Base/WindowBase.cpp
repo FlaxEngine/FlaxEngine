@@ -607,3 +607,22 @@ bool WindowBase::IsForegroundWindow() const
 {
     return _focused;
 }
+
+StringView WindowBase::GetTitle() const
+{
+    return _title;
+}
+
+void WindowBase::SetTitle(const StringView& title)
+{
+    _title = title;
+}
+
+float WindowBase::GetOpacity() const
+{
+    return 1.0f;
+}
+
+void WindowBase::SetOpacity(float opacity)
+{
+}

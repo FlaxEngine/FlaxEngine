@@ -366,35 +366,24 @@ public:
     /// Gets the window title.
     /// </summary>
     /// <returns>The window title.</returns>
-    API_PROPERTY() virtual String GetTitle() const
-    {
-        return _title;
-    }
+    API_PROPERTY() StringView GetTitle() const;
 
     /// <summary>
     /// Sets the window title.
     /// </summary>
     /// <param name="title">The title.</param>
-    API_PROPERTY() virtual void SetTitle(const StringView& title)
-    {
-        _title = title;
-    }
+    API_PROPERTY() virtual void SetTitle(const StringView& title);
 
     /// <summary>
     /// Gets window opacity value (valid only for windows created with SupportsTransparency flag). Opacity values are normalized to range [0;1].
     /// </summary>
-    API_PROPERTY() virtual float GetOpacity() const
-    {
-        return 1.0f;
-    }
+    API_PROPERTY() virtual float GetOpacity() const;
 
     /// <summary>
     /// Sets window opacity value (valid only for windows created with SupportsTransparency flag). Opacity values are normalized to range [0;1].
     /// </summary>
     /// <param name="opacity">The opacity.</param>
-    API_PROPERTY() virtual void SetOpacity(float opacity)
-    {
-    }
+    API_PROPERTY() virtual void SetOpacity(float opacity);
 
     /// <summary>
     /// Determines whether this window is focused.

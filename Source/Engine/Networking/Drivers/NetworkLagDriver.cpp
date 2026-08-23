@@ -23,7 +23,7 @@ void NetworkLagDriver::SetDriver(INetworkDriver* value)
         return;
 
     // Cleanup created proxy driver object
-    if (auto* driver = FromInterface(_driver, INetworkDriver::TypeInitializer))
+    if (auto* driver = FromInterface(_driver))
         Delete(driver);
 
     _driver = value;
