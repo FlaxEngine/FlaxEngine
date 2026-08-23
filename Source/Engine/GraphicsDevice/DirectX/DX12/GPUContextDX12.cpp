@@ -32,7 +32,6 @@
 #include "Engine/Graphics/GPUResourceAccess.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
-#include "Engine/Threading/Threading.h"
 
 #define DX12_ENABLE_RESOURCE_BARRIERS_BATCHING 1
 #define DX12_ENABLE_RESOURCE_BARRIERS_DEBUGGING (0 && LOG_ENABLE)
@@ -87,6 +86,44 @@ FORCE_INLINE D3D12_RESOURCE_STATES GetResourceState(GPUResourceAccess access)
     }
     return D3D12_RESOURCE_STATE_COMMON;
 }
+
+#if DX12_ENABLE_RESOURCE_BARRIERS_DEBUGGING
+
+String ResourceStateToString(D3D12_RESOURCE_STATES state)
+{
+    if (state == D3D12_RESOURCE_STATE_COMMON)
+        return TEXT("Common");
+    String result;
+    while (state)
+    {
+        if (result.HasChars())
+            result += TEXT('|');
+#define CHECK_STATE(type, name) if ((type & state) == type) { state &= ~type; result += TEXT(name); continue; }
+        CHECK_STATE(D3D12_RESOURCE_STATE_GENERIC_READ, "GenericRead");
+        CHECK_STATE(D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, "VertexConstantBuffer");
+        CHECK_STATE(D3D12_RESOURCE_STATE_INDEX_BUFFER, "IndexBuffer");
+        CHECK_STATE(D3D12_RESOURCE_STATE_RENDER_TARGET, "RenderTarget");
+        CHECK_STATE(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, "UAV");
+        CHECK_STATE(D3D12_RESOURCE_STATE_DEPTH_WRITE, "DepthWrite");
+        CHECK_STATE(D3D12_RESOURCE_STATE_DEPTH_READ, "DepthRead");
+        CHECK_STATE(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, "SRV-PS");
+        CHECK_STATE(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, "SRV-VS");
+        CHECK_STATE(D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT, "IndirectArg");
+        CHECK_STATE(D3D12_RESOURCE_STATE_COPY_DEST, "CopyDst");
+        CHECK_STATE(D3D12_RESOURCE_STATE_COPY_SOURCE, "CopySrc");
+        CHECK_STATE(D3D12_RESOURCE_STATE_RESOLVE_DEST, "ResolveDst");
+        CHECK_STATE(D3D12_RESOURCE_STATE_RESOLVE_SOURCE, "ResolveSrc");
+        CHECK_STATE(D3D12_RESOURCE_STATE_SHADING_RATE_SOURCE, "ShadingRate");
+        CHECK_STATE(D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, "RtxAcceleration");
+        CHECK_STATE(D3D12_RESOURCE_STATE_PRESENT, "Present");
+#undef CHECK_STATE
+        result += TEXT("Unknown");
+        break;
+    }
+    return result;
+}
+
+#endif
 
 // Ensure to match the indirect commands arguments layout
 static_assert(sizeof(GPUDispatchIndirectArgs) == sizeof(D3D12_DISPATCH_ARGUMENTS), "Wrong size of GPUDrawIndirectArgs.");
@@ -163,7 +200,7 @@ void GPUContextDX12::AddTransitionBarrier(ResourceOwnerDX12* resource, const D3D
         resourceName = gpuResource->GetName();
     else
         resourceName = StringUtils::ToString((uint32)(uint64)resource->GetResource());
-    const auto info = String::Format(TEXT("[DX12 Resource Barrier]: 0x{0:x} -> 0x{1:x}: {2} (subresource: {3})"), before, after, resourceName, subresourceIndex);
+    const auto info = String::Format(TEXT("[DX12 Resource Barrier]: {0} -> {1}: {2} (subresource: {3})"), ResourceStateToString(before), ResourceStateToString(after), resourceName, subresourceIndex);
     Log::Logger::Write(LogType::Info, info);
 #endif
 
@@ -349,6 +386,7 @@ void GPUContextDX12::OnSwapChainFlush(ResourceOwnerDX12* backBuffer)
     if (_swapChains.Count() > 1)
     {
         // Flush GPU commands
+        flushSwapChains();
         Flush();
     }
 }
@@ -360,6 +398,17 @@ void GPUContextDX12::GetActiveHeapDescriptor(const D3D12_CPU_DESCRIPTOR_HANDLE& 
 
     // Copy descriptor
     _device->GetDevice()->CopyDescriptorsSimple(1, descriptor.CPU, cpuHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+}
+
+void GPUContextDX12::flushSwapChains()
+{
+    // Transition swapchains to the present state
+    for (ResourceOwnerDX12* backBuffer : _swapChains)
+    {
+        SetResourceState(backBuffer, D3D12_RESOURCE_STATE_PRESENT);
+    }
+    _swapChains.Clear();
+    flushRBs();
 }
 
 void GPUContextDX12::flushSRVs()
@@ -753,12 +802,7 @@ void GPUContextDX12::FrameBegin()
 
 void GPUContextDX12::FrameEnd()
 {
-    // Transition swapchains to the present state
-    for (ResourceOwnerDX12* backBuffer : _swapChains)
-    {
-        SetResourceState(backBuffer, D3D12_RESOURCE_STATE_PRESENT);
-    }
-    _swapChains.Clear();
+    flushSwapChains();
 
     // Base
     GPUContext::FrameEnd();

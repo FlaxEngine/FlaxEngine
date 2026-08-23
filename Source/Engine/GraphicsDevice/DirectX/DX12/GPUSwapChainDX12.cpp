@@ -381,6 +381,10 @@ void GPUSwapChainDX12::Present(bool vsync)
     {
         presentFlags |= DXGI_PRESENT_ALLOW_TEARING;
     }
+#if GPU_ENABLE_ASSERTION
+    //ASSERT(_currentFrameIndex == _swapChain->GetCurrentBackBufferIndex());
+    ASSERT(_backBuffers[_currentFrameIndex].State.CheckResourceState(D3D12_RESOURCE_STATE_PRESENT));
+#endif
     const HRESULT res = _swapChain->Present(vsync ? 1 : 0, presentFlags);
     LOG_DIRECTX_RESULT(res);
 

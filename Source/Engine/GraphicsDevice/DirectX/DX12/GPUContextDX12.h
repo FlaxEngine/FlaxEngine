@@ -152,7 +152,7 @@ protected:
     void GetActiveHeapDescriptor(const D3D12_CPU_DESCRIPTOR_HANDLE& cpuHandle, Descriptor& descriptor);
 
 private:
-
+    void flushSwapChains();
     void flushSRVs();
     void flushRTVs();
     void flushUAVs();
