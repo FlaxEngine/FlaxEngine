@@ -133,6 +133,8 @@ namespace FlaxEditor.Windows
         private float _gameStartTime;
         private GUI.Docking.DockState _maximizeRestoreDockState;
         private GUI.Docking.DockPanel _maximizeRestoreDockTo;
+        private GUI.Docking.DockPanel _maximizeRestoreDockToParent;
+        private float _maximizeRestoreSplitterValue;
         private CursorLockMode _cursorLockMode = CursorLockMode.None;
 
         // Viewport scaling variables
@@ -296,7 +298,8 @@ namespace FlaxEditor.Windows
                 if (value)
                 {
                     _maximizeRestoreDockTo = _dockedTo;
-                    _maximizeRestoreDockState = _dockedTo.TryGetDockState(out _);
+                    _maximizeRestoreDockToParent = _dockedTo.ParentDockPanel;
+                    _maximizeRestoreDockState = _dockedTo.TryGetDockState(out _maximizeRestoreSplitterValue);
                     if (_maximizeRestoreDockState != GUI.Docking.DockState.Float)
                     {
                         var monitorBounds = Platform.GetMonitorBounds(PointToScreen(Size * 0.5f));
@@ -312,9 +315,9 @@ namespace FlaxEditor.Windows
                         rootWindow.Restore();
                     var dockTo = _maximizeRestoreDockTo;
                     if (dockTo != null && dockTo.IsDisposing)
-                        dockTo = null;
+                        dockTo = _maximizeRestoreDockToParent;
                     if (_dockedTo != dockTo)
-                        Show(_maximizeRestoreDockState, dockTo);
+                        Show(_maximizeRestoreDockState, dockTo, splitterValue: _maximizeRestoreSplitterValue);
                 }
             }
         }
