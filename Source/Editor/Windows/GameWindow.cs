@@ -300,6 +300,8 @@ namespace FlaxEditor.Windows
                     _maximizeRestoreDockTo = _dockedTo;
                     _maximizeRestoreDockToParent = _dockedTo.ParentDockPanel;
                     _maximizeRestoreDockState = _dockedTo.TryGetDockState(out _maximizeRestoreSplitterValue);
+                    if (_dockedTo.Tabs.Count > 1)
+                        _maximizeRestoreDockState = DockState.DockFill;
                     if (_maximizeRestoreDockState != GUI.Docking.DockState.Float)
                     {
                         var monitorBounds = Platform.GetMonitorBounds(PointToScreen(Size * 0.5f));
