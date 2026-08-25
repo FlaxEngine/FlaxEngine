@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Xml;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Docking;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Modules;
 using FlaxEditor.Options;
@@ -331,6 +332,9 @@ namespace FlaxEditor.Windows
                 {
                     IsFloating = true;
                     var rootWindow = RootWindow;
+                    var floatWin = rootWindow.GetChild<FloatWindowDockPanel>();
+                    if (floatWin != null && floatWin.ShowDecorations)
+                        floatWin.ShowDecorations = false;
                     var monitorBounds = Platform.GetMonitorBounds(rootWindow.RootWindow.Window.ClientPosition);
                     rootWindow.Window.Position = monitorBounds.Location;
                     rootWindow.Window.SetBorderless(true);
@@ -338,6 +342,9 @@ namespace FlaxEditor.Windows
                 }
                 else
                 {
+                    var floatWin = RootWindow.GetChild<FloatWindowDockPanel>();
+                    if (floatWin != null && !floatWin.ShowDecorations && Utilities.Utils.UseCustomWindowDecorations())
+                        floatWin.ShowDecorations = true;
                     IsFloating = false;
                 }
             }
