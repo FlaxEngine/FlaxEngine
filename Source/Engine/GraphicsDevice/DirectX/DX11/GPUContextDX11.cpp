@@ -627,6 +627,7 @@ uint64 GPUContextDX11::BeginQuery(GPUQueryType type)
         ASSERT_LOW_LAYER(query.State == GPUQueryDataDX11::Ready);
         ASSERT_LOW_LAYER(query.Type == type);
         query.State = GPUQueryDataDX11::Begin;
+        query.TTL = 50; // Auto-destroy after some frames when user fails to call GetQueryResult
         auto context = _device->GetIM();
         if (type == GPUQueryType::Timer)
         {

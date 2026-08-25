@@ -1003,7 +1003,7 @@ void GPUDeviceDX12::RenderEnd()
 
     // Resolve the queries
     for (auto heap : QueryHeaps)
-        heap->EndQueryBatchAndResolveQueryData(_mainContext);
+        heap->EndFrame(_mainContext);
 }
 
 void GPUDeviceDX12::OnCrash()

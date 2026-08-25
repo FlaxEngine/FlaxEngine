@@ -998,13 +998,13 @@ void GPUDeviceDX11::DrawEnd()
     }
 #endif
 
-    // Auto-return finished queries back to the pool
+    // Auto-return finished queries back to the pool (or leaked queries)
     auto* queries = _queries.Get();
     int32 queriesCount = _queries.Count();
     for (int32 i = 0; i < queriesCount; i++)
     {
         auto& query = queries[i];
-        if (query.State == GPUQueryDataDX11::Finished)
+        if (query.State == GPUQueryDataDX11::Finished || (query.State == GPUQueryDataDX11::End && --query.TTL == 0))
         {
             query.State = GPUQueryDataDX11::Ready;
             query.Result = 0;
@@ -1027,7 +1027,8 @@ bool GPUDeviceDX11::GetQueryResult(uint64 queryID, uint64& result, bool wait)
         result = query.Result;
         return true;
     }
-    ASSERT_LOW_LAYER(query.State == GPUQueryDataDX11::End);
+    if (query.State != GPUQueryDataDX11::End)
+        return false;
     auto context = GetIM();
 
 RETRY:
@@ -1062,13 +1063,17 @@ RETRY:
     }
     else if (q.Type == (uint16)GPUQueryType::Occlusion)
     {
-        hasData = context->GetData(query.Query, &result, sizeof(UINT64), 0) == S_OK;
+        UINT64 data;
+        hasData = context->GetData(query.Query, &data, sizeof(data), 0) == S_OK;
+        if (hasData)
+            result = data;
     }
     else
     {
-        BOOL resultBool;
-        hasData = context->GetData(query.Query, &resultBool, sizeof(BOOL), 0) == S_OK;
-        result = resultBool ? 1 : 0;
+        BOOL data;
+        hasData = context->GetData(query.Query, &data, sizeof(data), 0) == S_OK;
+        if (hasData)
+            result = data ? 1 : 0;
     }
 
     if (!hasData && wait)

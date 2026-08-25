@@ -312,7 +312,9 @@ private:
     Array<uint64> _readResultsBits;
 
     // Last potentially free index in the pool
-    int32 _lastBeginIndex;
+    int32 _lastBeginIndex = 0;
+    // Last frame when pool was used
+    uint64 _lastUsedFrame = 0;
 
 public:
     BufferedQueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, GPUQueryType type);
@@ -321,6 +323,7 @@ public:
     void MarkQueryAsStarted(uint32 queryIndex);
     bool GetResults(uint32 index, uint64& result);
     bool HasRoom() const;
+    bool TryExpire();
 };
 
 /// <summary>

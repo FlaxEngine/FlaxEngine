@@ -79,13 +79,20 @@ void QueryHeapDX12::Destroy()
     _resultData.SetCapacity(0);
 }
 
-void QueryHeapDX12::EndQueryBatchAndResolveQueryData(GPUContextDX12* context)
+void QueryHeapDX12::EndFrame(GPUContextDX12* context)
 {
-    ASSERT(_currentBatch.Open);
-    if (_currentBatch.Count == 0)
-        return;
+    // Update existing batches to avoid leaks
+    for (int32 i = 0; i < _batches.Count(); i++)
+    {
+        if (--_batches[i].TTL == 0)
+        {
+            _batches.RemoveAt(i--);
+        }
+    }
 
-    // Close the current batch
+    // Close the current batch (if not empty)
+    if (!_currentBatch.Open || _currentBatch.Count == 0)
+        return;
     _currentBatch.Open = false;
 
     // Resolve the batch
@@ -203,6 +210,7 @@ void QueryHeapDX12::StartQueryBatch()
     // Start a new batch
     _currentBatch.Start = _currentIndex;
     _currentBatch.Open = true;
+    _currentBatch.TTL = 50; // Auto-destroy after some frames when user fails to call GetQueryResult
 }
 
 #endif

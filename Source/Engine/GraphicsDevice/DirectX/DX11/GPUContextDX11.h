@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Engine/Core/Math/Vector4.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "GPUDeviceDX11.h"
 #include "GPUPipelineStateDX11.h"

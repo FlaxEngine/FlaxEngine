@@ -677,7 +677,6 @@ void QueryPoolVulkan::Reset(CmdBufferVulkan* cmdBuffer)
 
 BufferedQueryPoolVulkan::BufferedQueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, GPUQueryType type)
     : QueryPoolVulkan(device, capacity, type)
-    , _lastBeginIndex(0)
 {
     _queryOutput.Resize(capacity);
     _usedQueryBits.AddZeroed((capacity + 63) / 64);
@@ -702,10 +701,12 @@ bool BufferedQueryPoolVulkan::AcquireQuery(CmdBufferVulkan* cmdBuffer, uint32& r
             resultIndex += wordIndex * 64;
             const uint64 bit = (uint64)1 << (uint64)(resultIndex % 64);
             _usedQueryBits[wordIndex] = _usedQueryBits[wordIndex] | bit;
+            _startedQueryBits[wordIndex] &= ~bit;
             _readResultsBits[wordIndex] &= ~bit;
             _lastBeginIndex = resultIndex + 1;
             if (ResetBeforeUse)
                 Reset(cmdBuffer);
+            _lastUsedFrame = Engine::FrameCount;
             return true;
         }
     }
@@ -728,6 +729,7 @@ void BufferedQueryPoolVulkan::ReleaseQuery(uint32 queryIndex)
             _lastBeginIndex = (uint32)queryIndex;
         }
     }
+    _lastUsedFrame = Engine::FrameCount;
     if (_usedQueryBits[word] == 0)
     {
         // Check if pool got empty and reset the pointer back to start
@@ -749,23 +751,21 @@ void BufferedQueryPoolVulkan::MarkQueryAsStarted(uint32 queryIndex)
 
 bool BufferedQueryPoolVulkan::GetResults(uint32 index, uint64& result)
 {
-    const uint64 bit = (uint64)(index % 64);
-    const uint64 bitMask = (uint64)1 << bit;
+    const uint64 bit = (uint64)1 << (index % 64);
     const uint32 word = index / 64;
 
-    if ((_startedQueryBits[word] & bitMask) == 0)
+    if ((_startedQueryBits[word] & bit) == 0)
     {
         // Query never started/ended
-        result = 0;
         return true;
     }
 
-    if ((_readResultsBits[word] & bitMask) == 0)
+    if ((_readResultsBits[word] & bit) == 0)
     {
         const VkResult vkResult = vkGetQueryPoolResults(_device->Device, _handle, index, 1, sizeof(uint64), &_queryOutput[index], sizeof(uint64), VK_QUERY_RESULT_64_BIT);
         if (vkResult == VK_SUCCESS)
         {
-            _readResultsBits[word] = _readResultsBits[word] | bitMask;
+            _readResultsBits[word] = _readResultsBits[word] | bit;
 
 #if VULKAN_RESET_QUERY_POOLS
             // Add to reset
@@ -777,7 +777,6 @@ bool BufferedQueryPoolVulkan::GetResults(uint32 index, uint64& result)
         else if (vkResult == VK_NOT_READY)
         {
             // No results yet
-            result = 0;
             return false;
         }
         else
@@ -786,19 +785,64 @@ bool BufferedQueryPoolVulkan::GetResults(uint32 index, uint64& result)
         }
     }
 
+    // Get result
     result = _queryOutput[index];
+    _lastUsedFrame = Engine::FrameCount;
     return true;
 }
 
 bool BufferedQueryPoolVulkan::HasRoom() const
 {
-    const uint64 allUsedMask = MAX_uint64;
+    constexpr uint64 allUsedMask = MAX_uint64;
     if (_lastBeginIndex < _usedQueryBits.Count() * 64)
     {
         ASSERT((_usedQueryBits[_lastBeginIndex / 64] & allUsedMask) != allUsedMask);
         return true;
     }
     return false;
+}
+
+bool BufferedQueryPoolVulkan::TryExpire()
+{
+    // Auto-destroy pools some frames when user fails to call GetQueryResult
+    if (Engine::FrameCount - _lastUsedFrame < 50)
+        return false;
+
+    // Reset back to clean state all unfinished queries
+    for (uint32 index = 0; index < _queryOutput.Count(); index++)
+    {
+        const uint64 bit = (uint64)1 << (index % 64);
+        const uint32 word = index / 64;
+        if ((_usedQueryBits[word] & bit) == 0)
+            continue;
+        if ((_readResultsBits[word] & bit) == 0)
+        {
+            const VkResult vkResult = vkGetQueryPoolResults(_device->Device, _handle, index, 1, sizeof(uint64), &_queryOutput[index], sizeof(uint64), VK_QUERY_RESULT_64_BIT);
+            if (vkResult == VK_SUCCESS)
+            {
+                _readResultsBits[word] = _readResultsBits[word] | bit;
+
+#if VULKAN_RESET_QUERY_POOLS
+                // Add to reset
+                if (!_device->QueriesToReset.Contains(this))
+                    _device->QueriesToReset.Add(this);
+                _resetRanges.Add(Range{ index, 1 });
+#endif
+            }
+        }
+        _usedQueryBits[word] = _usedQueryBits[word] & ~bit;
+    }
+    constexpr uint64 allUsedMask = MAX_uint64;
+    for (int32 wordIndex = 0; wordIndex < _usedQueryBits.Count(); wordIndex++)
+    {
+        if (_usedQueryBits[wordIndex] != allUsedMask)
+        {
+            _lastBeginIndex = wordIndex * 64;
+            break;
+        }
+    }
+
+    return HasRoom();
 }
 
 HelperResourcesVulkan::HelperResourcesVulkan(GPUDeviceVulkan* device)
@@ -1276,7 +1320,7 @@ int32 GPUDeviceVulkan::GetOrCreateQueryPool(GPUQueryType type)
     for (int32 i = 0; i < QueryPools.Count(); i++)
     {
         auto pool = pools[i];
-        if (pool->Type == type && pool->HasRoom())
+        if (pool->Type == type && (pool->HasRoom() || pool->TryExpire()))
             return i;
     }
 

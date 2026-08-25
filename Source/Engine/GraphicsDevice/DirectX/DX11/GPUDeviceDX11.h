@@ -41,7 +41,8 @@ struct GPUQueryDataDX11
     ID3D11Query* TimerBeginQuery = nullptr;
     ID3D11Query* DisjointQuery = nullptr;
     uint64 Result = 0;
-    enum States { Ready, Begin, End, Finished } State = Ready;
+    uint16 TTL = 0;
+    enum States : uint16 { Ready, Begin, End, Finished } State = Ready;
     GPUQueryType Type = GPUQueryType::MAX;
 
     void Release();
