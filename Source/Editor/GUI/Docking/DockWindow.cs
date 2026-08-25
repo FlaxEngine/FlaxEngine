@@ -488,7 +488,7 @@ namespace FlaxEditor.GUI.Docking
             base.Focus();
 
             SelectTab(false);
-            BringToFront();
+            _dockedTo?.RootWindow?.Focus();
         }
 
         /// <inheritdoc />

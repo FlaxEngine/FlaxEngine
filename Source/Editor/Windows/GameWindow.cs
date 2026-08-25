@@ -310,9 +310,11 @@ namespace FlaxEditor.Windows
                     // Restore
                     if (rootWindow != null)
                         rootWindow.Restore();
-                    if (_maximizeRestoreDockTo != null && _maximizeRestoreDockTo.IsDisposing)
-                        _maximizeRestoreDockTo = null;
-                    Show(_maximizeRestoreDockState, _maximizeRestoreDockTo);
+                    var dockTo = _maximizeRestoreDockTo;
+                    if (dockTo != null && dockTo.IsDisposing)
+                        dockTo = null;
+                    if (_dockedTo != dockTo)
+                        Show(_maximizeRestoreDockState, dockTo);
                 }
             }
         }
