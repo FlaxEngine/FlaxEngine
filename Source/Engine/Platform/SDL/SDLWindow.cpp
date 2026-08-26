@@ -858,11 +858,6 @@ void SDLWindow::Focus()
 
 #endif
 
-String SDLWindow::GetTitle() const
-{
-    return String(SDL_GetWindowTitle(_window));
-}
-
 void SDLWindow::SetTitle(const StringView& title)
 {
     SDL_SetWindowTitle(_window, title.ToStringAnsi().Get());

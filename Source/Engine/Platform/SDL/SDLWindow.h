@@ -97,7 +97,6 @@ public:
     float GetOpacity() const override;
     void SetOpacity(float opacity) override;
     void Focus() override;
-    String GetTitle() const override;
     void SetTitle(const StringView& title) override;
     DragDropEffect DoDragDrop(const StringView& data) override;
     DragDropEffect DoDragDrop(const StringView& data, const Float2& offset, Window* dragSourceWindow) override;

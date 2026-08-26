@@ -19,6 +19,7 @@
 #include "Engine/Content/Assets/CubeTexture.h"
 #include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Level/Actors/PostFxVolume.h"
+#include "Engine/Engine/Units.h"
 
 static_assert(sizeof(DrawCall) <= 288, "Too big draw call data size.");
 static_assert(sizeof(DrawCall::Surface) >= sizeof(DrawCall::Terrain), "Wrong draw call data size.");
@@ -136,10 +137,10 @@ void RenderDirectionalLightData::SetShaderData(ShaderLightData& data, bool useSh
 bool RenderLocalLightData::CanRenderShadow(const RenderView& view) const
 {
     // Fade shadow on distance
-    const float fadeDistance = Math::Max(ShadowsFadeDistance, 0.1f);
+    const float fadeDistance = Math::Max(ShadowsFadeDistance, 0.01f);
     const float dstLightToView = Float3::Distance(Position, view.Position);
     const float fade = 1 - Math::Saturate((dstLightToView - Radius - ShadowsDistance + fadeDistance) / fadeDistance);
-    return fade > ZeroTolerance && Radius > 10 && RenderLightData::CanRenderShadow(view);
+    return fade > ZeroTolerance && Radius > METERS_TO_UNITS(0.1f) && RenderLightData::CanRenderShadow(view);
 }
 
 void RenderSpotLightData::SetShaderData(ShaderLightData& data, bool useShadow) const
