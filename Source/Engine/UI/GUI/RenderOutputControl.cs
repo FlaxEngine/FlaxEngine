@@ -220,7 +220,9 @@ namespace FlaxEngine.GUI
                 width = _customResolution.Value.X;
                 height = _customResolution.Value.Y;
             }
-            if (_backBuffer == null || _backBuffer.Width == width && _backBuffer.Height == height)
+            if (_backBuffer == null || (_backBuffer.Width == width && _backBuffer.Height == height))
+                return;
+            if (GPUDevice.Instance.RendererType == RendererType.Null)
                 return;
             if (width < 1 || height < 1)
             {
