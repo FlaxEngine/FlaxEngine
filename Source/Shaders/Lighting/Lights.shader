@@ -1,0 +1,177 @@
+// Copyright (c) Wojciech Figat. All rights reserved.
+
+#define USE_GBUFFER_CUSTOM_DATA
+
+#include "./Flax/Common.hlsl"
+#include "./Flax/MaterialCommon.hlsl"
+#include "./Flax/Lighting/LightingCommon.hlsl"
+#include "./Flax/Lighting/IESProfile.hlsl"
+#include "./Flax/Lighting/Lighting.hlsl"
+#include "./Flax/Math/Noise.hlsl"
+#include "./Flax/GBuffer.hlsl"
+
+// Per light data
+META_CB_BEGIN(0, PerLight)
+LightData Light;
+float4x4 WVP;
+META_CB_END
+
+// Per frame data
+META_CB_BEGIN(1, PerFrame)
+GBufferData GBuffer;
+META_CB_END
+
+DECLARE_GBUFFERDATA_ACCESS(GBuffer)
+
+// Rendered shadow
+Texture2D Shadow : register(t5);
+Texture2D IESTexture : register(t6);
+TextureCube CubeImage : register(t7);
+
+// Vertex Shader for models rendering
+META_VS(true, FEATURE_LEVEL_ES2)
+META_VS_IN_ELEMENT(POSITION, 0, R32G32B32_FLOAT, 0, 0, PER_VERTEX, 0, true)
+Model_VS2PS VS_Model(ModelInput_PosOnly input)
+{
+	Model_VS2PS output;
+	output.Position = PROJECT_POINT(float4(input.Position.xyz, 1), WVP);
+	output.ScreenPos = output.Position;
+	return output;
+}
+
+// Pixel shader for directional light rendering
+META_PS(true, FEATURE_LEVEL_ES2)
+META_PERMUTATION_1(LIGHTING_NO_SPECULAR=0)
+META_PERMUTATION_1(LIGHTING_NO_SPECULAR=1)
+void PS_Directional(Quad_VS2PS input, out float4 output : SV_Target0)
+{
+	output = 0;
+
+	// Sample GBuffer
+	GBufferData gBufferData = GetGBufferData();
+	GBufferSample gBuffer = SampleGBuffer(gBufferData, input.TexCoord);
+
+	// Check if cannot shadow pixel
+	BRANCH
+	if (gBuffer.ShadingModel == SHADING_MODEL_UNLIT)
+	{
+		discard;
+		return;
+	}
+
+	// Sample shadow mask
+	float4 shadowMask = 1;
+	if (Light.ShadowsBufferAddress != 0)
+	{
+		shadowMask = SAMPLE_RT(Shadow, input.TexCoord);
+	}
+
+	// Calculate lighting
+	output = GetLighting(gBufferData.ViewPos, Light, gBuffer, shadowMask, false, false);
+}
+
+// Pixel shader for point/spot light rendering
+META_PS(true, FEATURE_LEVEL_ES2)
+META_PERMUTATION_2(LIGHTING_NO_SPECULAR=0, USE_IES_PROFILE=0)
+META_PERMUTATION_2(LIGHTING_NO_SPECULAR=1, USE_IES_PROFILE=0)
+META_PERMUTATION_2(LIGHTING_NO_SPECULAR=0, USE_IES_PROFILE=1)
+META_PERMUTATION_2(LIGHTING_NO_SPECULAR=1, USE_IES_PROFILE=1)
+void PS_LocalLight(Model_VS2PS input, out float4 output : SV_Target0)
+{
+	output = 0;
+
+	// Sample GBuffer
+	float2 uv = ProjectClipToUV(input.ScreenPos.xy / input.ScreenPos.w);
+	GBufferData gBufferData = GetGBufferData();
+	GBufferSample gBuffer = SampleGBuffer(gBufferData, uv);
+
+	// Check if cannot shadow pixel
+	BRANCH
+	if (gBuffer.ShadingModel == SHADING_MODEL_UNLIT)
+	{
+		discard;
+		return;
+	}
+
+	// Sample shadow mask
+	float4 shadowMask = 1;
+	if (Light.ShadowsBufferAddress != 0)
+	{
+		shadowMask = SAMPLE_RT(Shadow, uv);
+	}
+
+	// Calculate lighting
+	output = GetLighting(gBufferData.ViewPos, Light, gBuffer, shadowMask, true, IsSpotLight(Light));
+
+	// Apply IES texture
+#if USE_IES_PROFILE
+	output *= ComputeLightProfileMultiplier(IESTexture, gBuffer.WorldPos, Light.Position, -Light.Direction);
+#endif
+}
+
+// Pixel shader for sky light rendering
+META_PS(true, FEATURE_LEVEL_ES2)
+float4 PS_Sky(Model_VS2PS input) : SV_Target0
+{
+	float4 output = 0;
+
+	// Sample GBuffer
+	float2 uv = ProjectClipToUV(input.ScreenPos.xy / input.ScreenPos.w);
+	GBufferData gBufferData = GetGBufferData();
+	GBufferSample gBuffer = SampleGBuffer(gBufferData, uv);
+
+	// Check if can light pixel
+	if (gBuffer.ShadingModel != SHADING_MODEL_UNLIT)
+	{
+		output = GetSkyLightLighting(Light, gBuffer, CubeImage);
+
+        // Apply dithering to hide banding artifacts
+        output.rgb += rand2dTo1d(uv) * 0.02f * Luminance(saturate(output.rgb));
+	}
+
+	return output;
+}
+
+// Pixel shader for light overlap rendering
+META_PS(true, FEATURE_LEVEL_ES2)
+META_FLAG(DevelopmentOnly)
+float4 PS_Overlap(Model_VS2PS input) : SV_Target0
+{
+	return Light.Radius.xxxx;
+}
+
+#ifdef _PS_Complexity
+
+#include "./Flax/Utils/Outlines.hlsl"
+
+// Pixel shader for light complexity rendering
+META_PS(true, FEATURE_LEVEL_ES2)
+META_FLAG(DevelopmentOnly)
+float4 PS_Complexity(Quad_VS2PS input) : SV_Target0
+{
+    // Make depth-based outlines
+    float baseDepth = SAMPLE_RT_DEPTH(Depth, input.TexCoord);
+    if (DEPTH_01(baseDepth) > 0.999999f) return float4(0, 0, 0.2, 1); // Skip background
+    float outline = DepthOutline(Depth, input.TexCoord);
+
+    // Sample accumulated complexity
+    float complexity = SAMPLE_RT(GBuffer0, input.TexCoord).r;
+
+    // Custom coloring
+    const uint colorsCount = 9;
+    const float4 colors[colorsCount] =
+    {
+        float4(0.0, 1.0, 0.12, 1.0),
+        float4(0.0, 1.0, 0.0, 1.0),
+        float4(0.04, 0.5, 0.0, 1.0),
+        float4(0.21, 0.21, 0.0, 1.0),
+        float4(0.52, 0.04, 0.0, 1.0),
+        float4(0.7, 0.0, 0.0, 1.0),
+        float4(1.0, 0.0, 0.0, 1.0),
+        float4(1.0, 0.0, 0.5, 1.0),
+        float4(1.0, 0.9, 0.9, 1.0)
+    };
+    return colors[min((uint)(complexity * colorsCount), colorsCount - 1)] * outline;
+}
+
+#endif

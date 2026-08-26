@@ -3,18 +3,18 @@
 @0// Forward Shading: Defines
 #define MAX_LOCAL_LIGHTS 4
 @1// Forward Shading: Includes
-#include "./Flax/LightingCommon.hlsl"
-#include "./Flax/ReflectionsCommon.hlsl"
+#include "./Flax/Lighting/LightingCommon.hlsl"
+#include "./Flax/Reflections/ReflectionsCommon.hlsl"
 #if USE_REFLECTIONS
 #define MATERIAL_REFLECTIONS_SSR 1
 #if MATERIAL_REFLECTIONS == MATERIAL_REFLECTIONS_SSR
-#include "./Flax/SSR.hlsl"
+#include "./Flax/Reflections/SSR.hlsl"
 #endif
 #endif
-#include "./Flax/Lighting.hlsl"
-#include "./Flax/ShadowsSampling.hlsl"
-#include "./Flax/ExponentialHeightFog.hlsl"
-#include "./Flax/VolumetricFog.hlsl"
+#include "./Flax/Lighting/Lighting.hlsl"
+#include "./Flax/Lighting/ExponentialHeightFog.hlsl"
+#include "./Flax/Lighting/VolumetricFog.hlsl"
+#include "./Flax/Shadows/ShadowsSampling.hlsl"
 @2// Forward Shading: Constants
 LightData DirectionalLight;
 LightData SkyLight;

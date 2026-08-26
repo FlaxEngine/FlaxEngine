@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "../RendererPass.h"
+#include "Engine/Renderer/RendererPass.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Graphics/GPUPipelineStatePermutations.h"

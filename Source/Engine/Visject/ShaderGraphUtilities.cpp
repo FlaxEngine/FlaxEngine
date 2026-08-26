@@ -11,7 +11,7 @@
 #include "Engine/Content/Assets/CubeTexture.h"
 #include "Engine/Engine/GameplayGlobals.h"
 #include "Engine/Graphics/Config.h"
-#include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
+#include "Engine/Renderer/Utils/GlobalSignDistanceFieldPass.h"
 
 void ShaderGraphUtilities::GenerateShaderConstantBuffer(TextWriterUnicode& writer, Array<SerializedMaterialParam>& parameters)
 {

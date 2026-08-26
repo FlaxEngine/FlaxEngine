@@ -33,7 +33,7 @@ bool SMAA::setupResources()
         _psNeighbor = GPUDevice::Instance->CreatePipelineState();
 
         // Load shader
-        _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/SMAA"));
+        _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/AntiAliasing/SMAA"));
         if (_shader == nullptr)
             return true;
         BIND_SHADER_RELOADING(_shader, SMAA, OnShaderReloading);

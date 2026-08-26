@@ -5,8 +5,8 @@
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Renderer/RenderList.h"
-#include "Engine/Renderer/ShadowsPass.h"
-#include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
+#include "Engine/Renderer/Lighting/ShadowsPass.h"
+#include "Engine/Renderer/Utils/GlobalSignDistanceFieldPass.h"
 #if USE_EDITOR
 #include "Engine/Renderer/Lightmaps.h"
 #endif
@@ -14,7 +14,7 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Level/Actors/EnvironmentProbe.h"
-#include "Engine/Renderer/ReflectionsPass.h"
+#include "Engine/Renderer/Reflections/ReflectionsPass.h"
 
 void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<byte>& cb, int32& srv)
 {

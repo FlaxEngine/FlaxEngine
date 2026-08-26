@@ -8,7 +8,7 @@
 #include "./Flax/Common.hlsl"
 #include "./Flax/MaterialCommon.hlsl"
 #include "./Flax/GBufferCommon.hlsl"
-#include "./Flax/Matrix.hlsl"
+#include "./Flax/Math/Matrix.hlsl"
 @7
 struct SpriteInput
 {

@@ -6,12 +6,12 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
-#include "Engine/Renderer/RenderList.h"
 #include "Engine/Graphics/RenderContext.h"
+#include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/Graphics.h"
+#include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/GBufferPass.h"
 #include "Engine/Engine/Engine.h"
-#include "Engine/Graphics/Graphics.h"
-#include "Engine/Graphics/RenderTools.h"
 
 GPU_CB_STRUCT(Data {
     Float2 ScreenSizeInv;
@@ -27,7 +27,7 @@ GPU_CB_STRUCT(Data {
 bool TAA::Init()
 {
     _psTAA.CreatePipelineStates();
-    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/TAA"));
+    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/AntiAliasing/TAA"));
     if (_shader == nullptr)
         return true;
     BIND_SHADER_RELOADING(_shader, TAA, OnShaderReloading);

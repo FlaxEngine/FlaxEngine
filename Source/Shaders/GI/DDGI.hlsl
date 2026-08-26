@@ -10,8 +10,8 @@
 // "Dynamic Diffuse Global Illumination with Ray-Traced Irradiance Fields", https://jcgt.org/published/0008/02/01/
 
 #include "./Flax/Common.hlsl"
-#include "./Flax/Math.hlsl"
-#include "./Flax/Octahedral.hlsl"
+#include "./Flax/Math/Math.hlsl"
+#include "./Flax/Math/Octahedral.hlsl"
 
 #define DDGI_PROBE_STATE_INACTIVE 0
 #define DDGI_PROBE_STATE_ACTIVATED 1

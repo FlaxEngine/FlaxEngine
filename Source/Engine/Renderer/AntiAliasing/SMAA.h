@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "../RendererPass.h"
+#include "Engine/Renderer/RendererPass.h"
 #include "Engine/Graphics/GPUPipelineStatePermutations.h"
 
 #define SMAA_AREA_TEX TEXT("Engine/Textures/SMAA_AreaTex")

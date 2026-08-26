@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "../RendererPass.h"
+#include "Engine/Renderer/RendererPass.h"
 #include "Engine/Core/Math/Int4.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 

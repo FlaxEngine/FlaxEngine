@@ -114,7 +114,7 @@ public:
     GPUModelSDFTask(ConditionVariable& signal, MeshAccelerationStructure* scene, Model* inputModel, const ModelData* modelData, int32 lodIndex, const Int3& resolution, ModelBase::SDFData* sdf, GPUTexture* sdfResult, const Float3& xyzToLocalMul, const Float3& xyzToLocalAdd, float backfacesThreshold)
         : GPUTask(Type::Custom, GPU_ALLOW_PROFILE_EVENTS ? 4 : GPU_ASYNC_LATENCY) // Fix timer query result reading with some more latency
         , _signal(&signal)
-        , _shader(Content::LoadAsyncInternal<Shader>(TEXT("Shaders/SDF")))
+        , _shader(Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Utils/SDF")))
         , _scene(scene)
         , _inputModel(inputModel)
         , _modelData(modelData)

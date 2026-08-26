@@ -1,7 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "./Flax/Common.hlsl"
-#include "./Flax/Collisions.hlsl"
+#include "./Flax/Math/Collisions.hlsl"
 
 #if CAN_USE_GATHER
 #define CAN_USE_GLOBAL_SURFACE_ATLAS 1

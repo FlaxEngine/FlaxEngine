@@ -4,8 +4,8 @@
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/GBuffer.hlsl"
-#include "./Flax/BRDF.hlsl"
-#include "./Flax/GammaCorrectionCommon.hlsl"
+#include "./Flax/Lighting/BRDF.hlsl"
+#include "./Flax/PostFX/GammaCorrectionCommon.hlsl"
 
 META_CB_BEGIN(0, Data)
 GBufferData GBuffer;

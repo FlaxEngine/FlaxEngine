@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "RendererPass.h"
+#include "Engine/Renderer/RendererPass.h"
 #if GPU_ENABLE_DEVELOPMENT
 #include "Engine/Core/Collections/Dictionary.h"
 #endif

@@ -3,8 +3,8 @@
 #include "MultiScaler.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/GPUContext.h"
-#include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUPass.h"
+#include "Engine/Content/Content.h"
 
 GPU_CB_STRUCT(Data {
     Float2 TexelSize;
@@ -26,7 +26,7 @@ bool MultiScaler::Init()
     _psUpscale = GPUDevice::Instance->CreatePipelineState();
 
     // Load asset
-    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/MultiScaler"));
+    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Utils/MultiScaler"));
     if (_shader == nullptr)
         return true;
     BIND_SHADER_RELOADING(_shader, MultiScaler, OnShaderReloading);

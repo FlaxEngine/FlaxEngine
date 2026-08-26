@@ -4,10 +4,10 @@
 #define LIGHTING_NO_SPECULAR 1
 
 #include "./Flax/Common.hlsl"
-#include "./Flax/Math.hlsl"
-#include "./Flax/Noise.hlsl"
-#include "./Flax/LightingCommon.hlsl"
-#include "./Flax/GlobalSignDistanceField.hlsl"
+#include "./Flax/Math/Math.hlsl"
+#include "./Flax/Math/Noise.hlsl"
+#include "./Flax/Lighting/LightingCommon.hlsl"
+#include "./Flax/Utils/GlobalSignDistanceField.hlsl"
 #include "./Flax/GI/GlobalSurfaceAtlas.hlsl"
 #include "./Flax/GI/DDGI.hlsl"
 
@@ -101,8 +101,8 @@ float4 PS_ClearLighting(AtlasVertexOutput input) : SV_Target
 #ifdef _PS_Lighting
 
 #include "./Flax/GBuffer.hlsl"
-#include "./Flax/Matrix.hlsl"
-#include "./Flax/Lighting.hlsl"
+#include "./Flax/Math/Matrix.hlsl"
+#include "./Flax/Lighting/Lighting.hlsl"
 
 // GBuffer+Depth at 0-3 slots
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t4);
@@ -224,7 +224,7 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 
 #if defined(_CS_CullObjects)
 
-#include "./Flax/Collisions.hlsl"
+#include "./Flax/Math/Collisions.hlsl"
 
 RWByteAddressBuffer RWGlobalSurfaceAtlasChunks : register(u0);
 RWByteAddressBuffer RWGlobalSurfaceAtlasCulledObjects : register(u1);

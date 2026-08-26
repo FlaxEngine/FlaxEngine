@@ -698,7 +698,7 @@ void DrawEmittersGPU(GPUContext* context, RenderContextBatch& renderContextBatch
     if (sorting && GPUParticlesSorting == nullptr)
     {
         // TODO: preload shader if platform supports GPU particles (eg. inside ParticleEmitter::load if it's GPU sim with any sort module)
-        GPUParticlesSorting = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/GPUParticlesSorting"));
+        GPUParticlesSorting = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Utils/GPUParticlesSorting"));
 #if COMPILE_WITH_DEV_ENV
         if (GPUParticlesSorting)
             GPUParticlesSorting.Get()->Reloading.Bind<OnShaderReloading>();

@@ -14,12 +14,12 @@
 //#define GLOBAL_SDF_SAMPLER SamplerPointClamp
 
 #include "./Flax/Common.hlsl"
-#include "./Flax/Math.hlsl"
-#include "./Flax/Noise.hlsl"
 #include "./Flax/GBufferCommon.hlsl"
-#include "./Flax/Quaternion.hlsl"
-#include "./Flax/MonteCarlo.hlsl"
-#include "./Flax/GlobalSignDistanceField.hlsl"
+#include "./Flax/Math/Math.hlsl"
+#include "./Flax/Math/Noise.hlsl"
+#include "./Flax/Math/Quaternion.hlsl"
+#include "./Flax/Math/MonteCarlo.hlsl"
+#include "./Flax/Utils/GlobalSignDistanceField.hlsl"
 #include "./Flax/GI/GlobalSurfaceAtlas.hlsl"
 #include "./Flax/GI/DDGI.hlsl"
 
@@ -966,8 +966,8 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
 #if defined(_PS_IndirectLighting) || defined(_PS_SpecularLighting)
 
 #include "./Flax/GBuffer.hlsl"
-#include "./Flax/Random.hlsl"
-#include "./Flax/LightingCommon.hlsl"
+#include "./Flax/Math/Random.hlsl"
+#include "./Flax/Lighting/LightingCommon.hlsl"
 
 Texture2D<snorm float4> ProbesData : register(t4);
 Texture2D<float4> ProbesDistance : register(t5);

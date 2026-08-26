@@ -1,7 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "GBufferPass.h"
-#include "RenderList.h"
+#include "Engine/Renderer/RenderList.h"
 #if GPU_ENABLE_DEVELOPMENT
 #include "Engine/Renderer/Editor/VertexColors.h"
 #include "Engine/Renderer/Editor/LightmapUVsDensity.h"
@@ -13,7 +13,6 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
-#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"

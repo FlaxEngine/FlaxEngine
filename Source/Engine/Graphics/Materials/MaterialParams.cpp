@@ -12,7 +12,7 @@
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTask.h"
-#include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
+#include "Engine/Renderer/Utils/GlobalSignDistanceFieldPass.h"
 #include "Engine/Scripting/Enums.h"
 #include "Engine/Streaming/Streaming.h"
 #include "Engine/Profiler/ProfilerMemory.h"

@@ -4,7 +4,7 @@
 #define __GUI_COMMON__
 
 #include "./Flax/Common.hlsl"
-#include "./Flax/GammaCorrectionCommon.hlsl"
+#include "./Flax/PostFX/GammaCorrectionCommon.hlsl"
 
 #define CLIPPING_ENABLE 1
 

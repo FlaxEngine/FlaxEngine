@@ -21,7 +21,7 @@ ExponentialHeightFog::ExponentialHeightFog(const SpawnParams& params)
     _drawCategory = SceneRendering::PreRender;
 
     // Load shader
-    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Fog"));
+    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Lighting/Fog"));
     if (_shader == nullptr)
     {
         LOG(Fatal, "Cannot load fog shader.");

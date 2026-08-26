@@ -461,7 +461,7 @@ bool ShadowsOfMordor::Builder::initResources()
     _task->Resize(HEMISPHERES_RESOLUTION, HEMISPHERES_RESOLUTION);
 
     // Load shader
-    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/BakeLightmap"));
+    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Editor/BakeLightmap"));
     if (_shader == nullptr)
         return true;
     if (_shader->WaitForLoaded())

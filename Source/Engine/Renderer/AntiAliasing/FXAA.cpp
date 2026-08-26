@@ -20,7 +20,7 @@ String FXAA::ToString() const
 bool FXAA::Init()
 {
     _psFXAA.CreatePipelineStates();
-    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/FXAA"));
+    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/AntiAliasing/FXAA"));
     if (_shader == nullptr)
         return true;
     BIND_SHADER_RELOADING(_shader, FXAA, OnShaderReloading);

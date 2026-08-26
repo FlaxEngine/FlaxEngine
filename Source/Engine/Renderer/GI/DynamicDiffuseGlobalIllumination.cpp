@@ -2,8 +2,6 @@
 
 #include "DynamicDiffuseGlobalIllumination.h"
 #include "GlobalSurfaceAtlasPass.h"
-#include "../GlobalSignDistanceFieldPass.h"
-#include "../RenderList.h"
 #include "Engine/Core/Random.h"
 #include "Engine/Core/Types/Variant.h"
 #include "Engine/Core/Math/Int3.h"
@@ -26,8 +24,10 @@
 #include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Level/Actors/BrushMode.h"
+#include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/GBufferPass.h"
 #include "Engine/Renderer/Utils/MultiScaler.h"
+#include "Engine/Renderer/Utils/GlobalSignDistanceFieldPass.h"
 
 // Implementation based on:
 // "Dynamic Diffuse Global Illumination with Ray-Traced Irradiance Probes", Journal of Computer Graphics Tools, April 2019

@@ -5,8 +5,8 @@
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Renderer/RenderList.h"
-#include "Engine/Renderer/AtmospherePreCompute.h"
 #include "Engine/Renderer/GBufferPass.h"
+#include "Engine/Renderer/Lighting/AtmospherePreCompute.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Graphics/RenderContext.h"
@@ -36,7 +36,7 @@ Sky::Sky(const SpawnParams& params)
     _drawCategory = SceneRendering::PreRender;
 
     // Load shader
-    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Sky"));
+    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Lighting/Sky"));
     if (_shader == nullptr)
     {
         LOG(Fatal, "Cannot load sky shader.");

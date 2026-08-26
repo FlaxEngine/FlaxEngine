@@ -8,7 +8,7 @@
 #include "./Flax/Common.hlsl"
 #include "./Flax/MaterialCommon.hlsl"
 #include "./Flax/GBufferCommon.hlsl"
-#include "./Flax/VolumetricFog.hlsl"
+#include "./Flax/Lighting/VolumetricFog.hlsl"
 @7
 
 // Primary constant buffer (with additional material parameters)

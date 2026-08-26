@@ -675,7 +675,7 @@ void DebugDrawService::Update()
     // Lazy-init resources
     if (DebugDrawShader == nullptr)
     {
-        DebugDrawShader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/DebugDraw"));
+        DebugDrawShader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Utils/DebugDraw"));
         if (DebugDrawShader == nullptr)
         {
             LOG(Fatal, "Cannot load DebugDraw shader");

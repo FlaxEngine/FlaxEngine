@@ -6,7 +6,7 @@
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Core/Config/BuildSettings.h"
 #include "Engine/Core/Config/GameSettings.h"
-#include "Engine/Renderer/ReflectionsPass.h"
+#include "Engine/Renderer/Reflections/ReflectionsPass.h"
 #include "Engine/Renderer/AntiAliasing/SMAA.h"
 #include "Engine/Engine/Globals.h"
 #include "Editor/Cooker/PlatformTools.h"
@@ -383,37 +383,38 @@ bool DeployDataStep::Perform(CookingData& data)
     GameCooker::DeployFiles();
 
     // Register engine in-build assets
-    data.AddRootEngineAsset(TEXT("Shaders/AtmospherePreCompute"));
-    data.AddRootEngineAsset(TEXT("Shaders/ColorGrading"));
-    data.AddRootEngineAsset(TEXT("Shaders/DebugDraw"));
-    data.AddRootEngineAsset(TEXT("Shaders/DepthOfField"));
-    data.AddRootEngineAsset(TEXT("Shaders/EyeAdaptation"));
-    data.AddRootEngineAsset(TEXT("Shaders/Fog"));
+    data.AddRootEngineAsset(TEXT("Shaders/AntiAliasing/CAS"));
+    data.AddRootEngineAsset(TEXT("Shaders/AntiAliasing/FXAA"));
+    data.AddRootEngineAsset(TEXT("Shaders/AntiAliasing/SMAA"));
+    data.AddRootEngineAsset(TEXT("Shaders/AntiAliasing/TAA"));
+    data.AddRootEngineAsset(TEXT("Shaders/GI/DDGI"));
+    data.AddRootEngineAsset(TEXT("Shaders/GI/GlobalSurfaceAtlas"));
+    data.AddRootEngineAsset(TEXT("Shaders/Lighting/AtmospherePreCompute"));
+    data.AddRootEngineAsset(TEXT("Shaders/Lighting/Fog"));
+    data.AddRootEngineAsset(TEXT("Shaders/Lighting/Lights"));
+    data.AddRootEngineAsset(TEXT("Shaders/Lighting/Sky"));
+    data.AddRootEngineAsset(TEXT("Shaders/Lighting/SSAO"));
+    data.AddRootEngineAsset(TEXT("Shaders/Lighting/VolumetricFog"));
+    data.AddRootEngineAsset(TEXT("Shaders/PostFX/ColorGrading"));
+    data.AddRootEngineAsset(TEXT("Shaders/PostFX/DepthOfField"));
+    data.AddRootEngineAsset(TEXT("Shaders/PostFX/EyeAdaptation"));
+    data.AddRootEngineAsset(TEXT("Shaders/PostFX/Histogram"));
+    data.AddRootEngineAsset(TEXT("Shaders/PostFX/MotionBlur"));
+    data.AddRootEngineAsset(TEXT("Shaders/PostFX/PostProcessing"));
+    data.AddRootEngineAsset(TEXT("Shaders/Reflections/ProbesFilter"));
+    data.AddRootEngineAsset(TEXT("Shaders/Reflections/Reflections"));
+    data.AddRootEngineAsset(TEXT("Shaders/Reflections/SSR"));
+    data.AddRootEngineAsset(TEXT("Shaders/Shadows/Shadows"));
+    data.AddRootEngineAsset(TEXT("Shaders/Utils/BitonicSort"));
+    //data.AddRootEngineAsset(TEXT("Shaders/Utils/DebugDraw")); // TODO: debug draw in dev-builds
+    data.AddRootEngineAsset(TEXT("Shaders/Utils/GlobalSignDistanceField"));
+    data.AddRootEngineAsset(TEXT("Shaders/Utils/GPUParticlesSorting"));
+    data.AddRootEngineAsset(TEXT("Shaders/Utils/MultiScaler"));
+    data.AddRootEngineAsset(TEXT("Shaders/Utils/SDF"));
     data.AddRootEngineAsset(TEXT("Shaders/Forward"));
-    data.AddRootEngineAsset(TEXT("Shaders/FXAA"));
-    data.AddRootEngineAsset(TEXT("Shaders/TAA"));
-    data.AddRootEngineAsset(TEXT("Shaders/SMAA"));
     data.AddRootEngineAsset(TEXT("Shaders/GBuffer"));
     data.AddRootEngineAsset(TEXT("Shaders/GUI"));
-    data.AddRootEngineAsset(TEXT("Shaders/Histogram"));
-    data.AddRootEngineAsset(TEXT("Shaders/Lights"));
-    data.AddRootEngineAsset(TEXT("Shaders/MultiScaler"));
-    data.AddRootEngineAsset(TEXT("Shaders/ProbesFilter"));
-    data.AddRootEngineAsset(TEXT("Shaders/PostProcessing"));
-    data.AddRootEngineAsset(TEXT("Shaders/MotionBlur"));
-    data.AddRootEngineAsset(TEXT("Shaders/BitonicSort"));
-    data.AddRootEngineAsset(TEXT("Shaders/GPUParticlesSorting"));
-    data.AddRootEngineAsset(TEXT("Shaders/GlobalSignDistanceField"));
-    data.AddRootEngineAsset(TEXT("Shaders/GI/GlobalSurfaceAtlas"));
-    data.AddRootEngineAsset(TEXT("Shaders/GI/DDGI"));
     data.AddRootEngineAsset(TEXT("Shaders/Quad"));
-    data.AddRootEngineAsset(TEXT("Shaders/Reflections"));
-    data.AddRootEngineAsset(TEXT("Shaders/Shadows"));
-    data.AddRootEngineAsset(TEXT("Shaders/Sky"));
-    data.AddRootEngineAsset(TEXT("Shaders/SSAO"));
-    data.AddRootEngineAsset(TEXT("Shaders/SSR"));
-    data.AddRootEngineAsset(TEXT("Shaders/SDF"));
-    data.AddRootEngineAsset(TEXT("Shaders/VolumetricFog"));
     if (data.Configuration != BuildConfiguration::Release)
     {
         data.AddRootEngineAsset(TEXT("Shaders/Editor/LightmapUVsDensity"));

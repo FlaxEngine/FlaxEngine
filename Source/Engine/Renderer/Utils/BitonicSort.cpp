@@ -36,7 +36,7 @@ bool BitonicSort::Init()
         return true;
 
     // Load asset
-    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/BitonicSort"));
+    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Utils/BitonicSort"));
     if (_shader == nullptr)
         return true;
     BIND_SHADER_RELOADING(_shader, BitonicSort, OnShaderReloading);

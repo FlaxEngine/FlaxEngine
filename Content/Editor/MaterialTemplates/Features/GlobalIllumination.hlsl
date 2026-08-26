@@ -4,7 +4,7 @@
 #define USE_GI 1
 @1// Global Illumination: Includes
 #include "./Flax/GI/DDGI.hlsl"
-#include "./Flax/LightingCommon.hlsl"
+#include "./Flax/Lighting/LightingCommon.hlsl"
 @2// Global Illumination: Constants
 DDGIData DDGI;
 @3// Global Illumination: Resources

@@ -207,7 +207,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         auto roughness = tryGetValue(node->GetBox(3), 5, Value::Zero).AsFloat();
         auto intensity = tryGetValue(node->GetBox(4), 6, Value::Zero).AsFloat();
         auto octavesCount = tryGetValue(node->GetBox(5), 7, Value::Zero).AsInt();
-        _includes.Add(TEXT("./Flax/Noise.hlsl"));
+        _includes.Add(TEXT("./Flax/Math/Noise.hlsl"));
         // TODO: build fieldTransformMatrix and invFieldTransformMatrix on CPU and pass in constant buffer - no need to support field transform per particle
         _writer.Write(
             TEXT(
@@ -619,7 +619,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         String wsPos = position.Value;
         if (IsLocalSimulationSpace())
             wsPos = String::Format(TEXT("mul(float4({0}, 1), WorldMatrix).xyz"), wsPos);
-        _includes.Add(TEXT("./Flax/GlobalSignDistanceField.hlsl"));
+        _includes.Add(TEXT("./Flax/Utils/GlobalSignDistanceField.hlsl"));
         _writer.Write(
             TEXT(
                 "	{{\n"
@@ -900,7 +900,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         const Value stickForce = GetValue(node->GetBox(3), 5).AsFloat();
 
         auto param = findOrAddGlobalSDF();
-        _includes.Add(TEXT("./Flax/GlobalSignDistanceField.hlsl"));
+        _includes.Add(TEXT("./Flax/Utils/GlobalSignDistanceField.hlsl"));
         _writer.Write(
             TEXT(
                 "	{{\n"
@@ -924,7 +924,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
     {
         COLLISION_BEGIN();
         auto param = findOrAddGlobalSDF();
-        _includes.Add(TEXT("./Flax/GlobalSignDistanceField.hlsl"));
+        _includes.Add(TEXT("./Flax/Utils/GlobalSignDistanceField.hlsl"));
         const Char* format = IsLocalSimulationSpace()
                                  ? TEXT(
                                      "	{{\n"

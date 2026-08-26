@@ -4,8 +4,8 @@
 @3
 #include "./Flax/Common.hlsl"
 #include "./Flax/GBufferCommon.hlsl"
-#include "./Flax/Matrix.hlsl"
-#include "./Flax/Noise.hlsl"
+#include "./Flax/Math/Matrix.hlsl"
+#include "./Flax/Math/Noise.hlsl"
 @7
 // Primary constant buffer
 META_CB_BEGIN(0, Data)

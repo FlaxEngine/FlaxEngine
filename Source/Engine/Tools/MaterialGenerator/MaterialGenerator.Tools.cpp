@@ -27,7 +27,7 @@ void MaterialGenerator::ProcessGroupTools(Box* box, Node* node, Value& value)
         auto local4 = writeFunction2(node, local3, exponent, TEXT("ClampedPow"), VariantType::Float);
         auto local5 = writeLocal(VariantType::Float, String::Format(TEXT("{0} * (1.0 - {1})"), local4.Value, fraction.Value), node);
         auto local6 = writeOperation2(node, local5, fraction, '+');
-        _includes.Add(TEXT("./Flax/Math.hlsl"));
+        _includes.Add(TEXT("./Flax/Math/Math.hlsl"));
 
         // Gets value
         value = local6;
