@@ -81,7 +81,7 @@ namespace FlaxEngine
             bounds.Transformation.Translation -= renderContext.View.Origin;
             if (renderContext.View.Frustum.Contains(bounds.GetBoundingBox()) == ContainmentType.Disjoint)
                 return;
-            var worldSpace = Canvas.RenderMode == CanvasRenderMode.WorldSpace || Canvas.RenderMode == CanvasRenderMode.WorldSpaceFaceCamera; 
+            var drawInWorld = Canvas.RenderMode == CanvasRenderMode.CameraSpace || Canvas.RenderMode == CanvasRenderMode.WorldSpace || Canvas.RenderMode == CanvasRenderMode.WorldSpaceFaceCamera; 
 
             Profiler.BeginEvent("UI Canvas");
             Profiler.BeginEventGPU("UI Canvas");
@@ -90,7 +90,7 @@ namespace FlaxEngine
             Canvas.GetWorldMatrix(renderContext.View.Origin, out Matrix worldMatrix);
             Matrix.Multiply(ref worldMatrix, ref renderContext.View.View, out Matrix viewMatrix);
             Matrix projectionMatrix = renderContext.View.Projection;
-            if (worldSpace && (Canvas.RenderLocation == PostProcessEffectLocation.Default || Canvas.RenderLocation == PostProcessEffectLocation.AfterAntiAliasingPass))
+            if (drawInWorld && (Canvas.RenderLocation == PostProcessEffectLocation.Default || Canvas.RenderLocation == PostProcessEffectLocation.AfterAntiAliasingPass))
                 renderContext.View.GetOverlayProjection(out projectionMatrix); // Fix TAA jittering when rendering UI in world after TAA resolve
             Matrix.Multiply(ref viewMatrix, ref projectionMatrix, out Matrix viewProjectionMatrix);
 
@@ -99,7 +99,7 @@ namespace FlaxEngine
 
             // Render GUI in 3D
             var features = Render2D.Features;
-            if (worldSpace)
+            if (drawInWorld)
                 Render2D.Features &= ~Render2D.RenderingFeatures.VertexSnapping;
             Render2D.CallDrawing(Canvas.GUI, context, input, depthBuffer, ref viewProjectionMatrix);
             Render2D.Features = features;
