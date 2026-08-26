@@ -70,7 +70,7 @@ namespace FlaxEditor.GUI.Docking
         /// </summary>
         public bool ShowDecorations
         {
-            get;
+            get => field;
             set
             {
                 if (value == field)
@@ -88,7 +88,7 @@ namespace FlaxEditor.GUI.Docking
                         decorations.Dispose();
                 }
             }
-        } = false;
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FloatWindowDockPanel"/> class.
