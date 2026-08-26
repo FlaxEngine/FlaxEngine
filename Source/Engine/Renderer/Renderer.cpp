@@ -765,6 +765,9 @@ void RenderInner(RenderContext& renderContext, RenderContextBatch& renderContext
     {
         // Compose wireframe on top of the scene
         PROFILE_GPU_CPU_NAMED("Wireframe");
+#if COMPILE_WITH_PROFILER
+        auto stats = RenderStatsData::Counter;
+#endif
         renderContext.View.Pass = DrawPass::Wireframe;
         auto depthBuffer = renderContext.Buffers->GetReadOnlyDepthBuffer();
         auto cb = GPUDevice::Instance->QuadShader->GetCB(3);
@@ -788,6 +791,10 @@ void RenderInner(RenderContext& renderContext, RenderContextBatch& renderContext
         renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::GBuffer);
         renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::GBufferNoDecals);
         renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::Forward);
+#if COMPILE_WITH_PROFILER
+        // Cancel-out any draw stats from profiler (hidden draws)
+        RenderStatsData::Counter = stats;
+#endif
     }
 #endif
 
