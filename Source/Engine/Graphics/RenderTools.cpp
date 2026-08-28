@@ -696,6 +696,10 @@ Float2 RenderTools::GetDepthBounds(const RenderView& view, const Float3& nearPoi
     clipNearPoint /= clipNearPoint.W;
     clipFarPoint /= clipFarPoint.W;
 
+    // Clamp within valid depth range
+    clipNearPoint.Z = Math::Saturate(clipNearPoint.Z);
+    clipFarPoint.Z = Math::Saturate(clipFarPoint.Z);
+
     return Float2(clipNearPoint.Z, clipFarPoint.Z);
 #else
     // Point closest the view

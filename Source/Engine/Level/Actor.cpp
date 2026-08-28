@@ -133,7 +133,7 @@ Actor::Actor(const SpawnParams& params)
 
 SceneRendering* Actor::GetSceneRendering() const
 {
-    return &GetScene()->Rendering;
+    return _scene ? &_scene->Rendering : nullptr;
 }
 
 void Actor::SetSceneInHierarchy(Scene* scene)

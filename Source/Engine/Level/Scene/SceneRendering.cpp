@@ -15,13 +15,14 @@
 #if !BUILD_RELEASE
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Engine/Engine.h"
 #endif
 
 #if BUILD_RELEASE
 #define CHECK_SCENE_EDIT_ACCESS()
 #else
 #define CHECK_SCENE_EDIT_ACCESS() \
-    if (_isRendering && IsInMainThread() && GPUDevice::Instance && GPUDevice::Instance->IsRendering()) \
+    if (_isRendering && IsInMainThread() && GPUDevice::Instance && GPUDevice::Instance->IsRendering() && Engine::FatalError != FatalErrorType::None) \
     { \
         LOG(Error, "Adding/removing actors during rendering is not supported ({}, '{}').", a->ToString(), a->GetNamePath()); \
         return; \

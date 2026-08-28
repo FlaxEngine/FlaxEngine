@@ -149,7 +149,7 @@ float4 PS_Wireframe(float4 SvPosition : SV_Position) : SV_Target0
 {
     // Depth-based gradient
     float alpha = saturate(SvPosition.w * UNITS_TO_METERS_SCALE * 0.1f);
-#if VULKAN
+#if VULKAN || defined(WGSL)
     alpha = 1 - alpha;
 #endif
     return lerp(ColorNear, ColorFar, alpha);

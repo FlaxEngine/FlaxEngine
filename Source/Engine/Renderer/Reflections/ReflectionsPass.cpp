@@ -270,8 +270,6 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     int32 probesCount = renderContext.List->EnvironmentProbes.Count();
     bool renderProbes = probesCount > 0 && renderContext.List->Settings.GlobalIllumination.Reflections == ReflectionsMode::EnvironmentProbes;
     bool renderDDGI = renderContext.List->Settings.GlobalIllumination.Reflections == ReflectionsMode::DDGI;
-    auto shader = _shader->GPU;
-    auto cb = shader->GetCB(0);
 
     // Check if no need to render reflection environment
     if (!useReflections || !(renderProbes || useSSR || renderDDGI) || checkIfSkipPass())
@@ -291,6 +289,8 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     auto& ssrSettings = renderContext.List->Settings.ScreenSpaceReflections;
     data.SSRTexelSize = Float2(1.0f / (float)RenderTools::GetResolution(width, ssrSettings.ResolvePassResolution), 1.0f / (float)RenderTools::GetResolution(height, ssrSettings.ResolvePassResolution));
     auto depthBuffer = renderContext.Buffers->GetReadOnlyDepthBuffer();
+    auto shader = _shader->GPU;
+    auto cb = shader->GetCB(0);
 
     auto tempDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), PixelFormat::R11G11B10_Float);
     auto reflectionsBuffer = RenderTargetPool::Get(tempDesc);

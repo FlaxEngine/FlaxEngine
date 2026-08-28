@@ -55,6 +55,8 @@ API_STRUCT(NoDefault) struct FLAXENGINE_API RenderContext
 
 /// <summary>
 /// The high-level renderer context batch that encapsulates multiple rendering requests within a single task (eg. optimize main view scene rendering and shadow projections at once).
+/// Contains a set of context where the main (first) one is drawing the scene, while others are utility context for shadow maps (batched int oa single drawing process).
+/// All views share the same world origin.
 /// </summary>
 API_STRUCT(NoDefault) struct FLAXENGINE_API RenderContextBatch
 {
@@ -89,11 +91,13 @@ API_STRUCT(NoDefault) struct FLAXENGINE_API RenderContextBatch
     RenderContextBatch(SceneRenderTask* task);
     RenderContextBatch(const RenderContext& context);
 
+    // Gets the main (first) render context which draws the scene.
     FORCE_INLINE RenderContext& GetMainContext()
     {
         return Contexts.Get()[0];
     }
 
+    // Gets the main (first) render context which draws the scene.
     FORCE_INLINE const RenderContext& GetMainContext() const
     {
         return Contexts.Get()[0];

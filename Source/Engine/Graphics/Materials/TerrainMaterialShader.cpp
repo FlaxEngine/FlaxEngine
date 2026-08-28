@@ -106,7 +106,6 @@ void TerrainMaterialShader::Bind(BindParameters& params)
         // Invert culling when scale is negative
         cullMode = cullMode == CullMode::Normal ? CullMode::Inverted : CullMode::Normal;
     }
-    auto hass = _shader->HasShader("PS_QuadOverdraw");
     const PipelineStateCache* psCache = _cache.GetPS(view.Pass, useLightmap);
     ASSERT(psCache);
     GPUPipelineState* state = ((PipelineStateCache*)psCache)->GetPS(this, cullMode);
@@ -170,6 +169,9 @@ bool TerrainMaterialShader::Load()
     // GBuffer Pass with lightmap (use pixel shader permutation for USE_LIGHTMAP=1)
     psDesc.PS = _shader->GetPS("PS_GBuffer", 1);
     _cache.DefaultLightmap.Init(psDesc);
+
+    psDesc.StencilEnable = false;
+    psDesc.StencilPassOp = StencilOperation::Keep;
 
 #if GPU_ENABLE_DEVELOPMENT
     if (_shader->HasShader("PS_QuadOverdraw"))
