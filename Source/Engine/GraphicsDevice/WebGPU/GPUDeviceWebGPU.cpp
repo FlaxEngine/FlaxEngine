@@ -30,8 +30,9 @@ GPUVertexLayoutWebGPU::GPUVertexLayoutWebGPU(GPUDeviceWebGPU* device, const Elem
     SetElements(elements, explicitOffsets);
 }
 
-GPUQuerySetWebGPU::GPUQuerySetWebGPU(WGPUDevice device, GPUQueryType type, uint32 count)
-    : _device(device)
+GPUQuerySetWebGPU::GPUQuerySetWebGPU(WGPUInstance instance, WGPUDevice device, GPUQueryType type, uint32 count)
+    : _instance(instance)
+    , _device(device)
     , _count(count)
     , Type(type)
 {
@@ -109,28 +110,59 @@ bool GPUQuerySetWebGPU::Read(uint32 index, uint64& result, bool wait)
     if (_state == Resolved)
     {
         // Start mapping the buffer
-        ASSERT(!wait); // TODO: impl wgpuBufferMapAsync with waiting (see GPUBufferWebGPU::Map)
         WGPUBufferMapCallbackInfo callback = WGPU_BUFFER_MAP_CALLBACK_INFO_INIT;
         callback.mode = WGPUCallbackMode_AllowSpontaneous;
-        callback.userdata1 = this;
+        callback.userdata2 = this;
         callback.callback = [](WGPUMapAsyncStatus status, WGPUStringView message, WGPU_NULLABLE void* userdata1, WGPU_NULLABLE void* userdata2)
         {
             if (status == WGPUMapAsyncStatus_Success)
             {
-                auto set = (GPUQuerySetWebGPU*)userdata1;
+                auto set = (GPUQuerySetWebGPU*)userdata2;
                 set->OnRead();
             }
-#if !BUILD_RELEASE
+#if GPU_ENABLE_DEVELOPMENT
             else
             {
                 LOG(Error, "Query Set map failed with status {}, {}", (uint32)status, WEBGPU_TO_STR(message));
             }
 #endif
         };
-        wgpuBufferMapAsync(_readBuffer, WGPUMapMode_Read, 0, _index * sizeof(uint64), callback);
-        _state = Mapping;
+        if (wait)
+        {
+            // Run in sync with wait
+            struct QueryData : AsyncCallbackDataWebGPU
+            {
+                WGPUBufferMapCallback Callback = nullptr;
+            };
+            AsyncCallbackWebGPU<WGPUBufferMapCallbackInfo, QueryData> mapRequest(WGPU_BUFFER_MAP_CALLBACK_INFO_INIT);
+            mapRequest.Data.Callback = callback.callback;
+            mapRequest.Info.userdata2 = callback.userdata2;
+            mapRequest.Info.callback = [](WGPUMapAsyncStatus status, WGPUStringView message, WGPU_NULLABLE void* userdata1, WGPU_NULLABLE void* userdata2)
+            {
+                QueryData& userData = *reinterpret_cast<QueryData*>(userdata1);
+                userData.Call(status == WGPUMapAsyncStatus_Success, status, message);
+                userData.Callback(status, message, userdata1, userdata2);
+            };
+            _state = Mapping;
+            wgpuBufferMapAsync(_readBuffer, WGPUMapMode_Read, 0, _index * sizeof(uint64), mapRequest.Info);
+            auto mapRequestResult = mapRequest.Wait(_instance);
+            if (mapRequestResult == WGPUWaitStatus_TimedOut)
+            {
+                LOG(Error, "WebGPU query set buffer map request has timed out after {}s", (int32)mapRequest.Data.WaitTime);
+                return false;
+            }
+            if (mapRequestResult == WGPUWaitStatus_Error)
+                return false;
+            _state = Mapped;
+        }
+        else
+        {
+            // Run in async
+            _state = Mapping;
+            wgpuBufferMapAsync(_readBuffer, WGPUMapMode_Read, 0, _index * sizeof(uint64), callback);
+        }
     }
-    else if (_state == Mapped)
+    if (_state == Mapped)
     {
         // Read the results from mapped buffer
         if (Type == GPUQueryType::Timer)
@@ -142,6 +174,8 @@ bool GPUQuerySetWebGPU::Read(uint32 index, uint64& result, bool wait)
         {
             // Occlusion outputs number of fragment samples that pass all the tests (scissor, stencil, depth, etc.)
             result = _mapped[index];
+            if (result > 1 && Type == GPUQueryType::BinaryOcclusion)
+                result = 1; // Clamp binary result
         }
         return true;
     }
@@ -589,7 +623,7 @@ bool GPUDeviceWebGPU::Init()
         {
             Platform::Fatal(String::Format(TEXT("WebGPU device run out of memory! {}"), WEBGPU_TO_STR(message)), nullptr, FatalErrorType::GPUOutOfMemory);
         }
-#if !BUILD_RELEASE
+#if GPU_ENABLE_DEVELOPMENT
         else if (type == WGPUErrorType_Validation)
         {
             LOG(Warning, "WebGPU Validation: {}", WEBGPU_TO_STR(message));
@@ -847,7 +881,7 @@ GPUQueryWebGPU GPUDeviceWebGPU::AllocateQuery(GPUQueryType type)
     {
         if (setIndex == WEBGPU_MAX_QUERY_SETS)
         {
-#if !BUILD_RELEASE
+#if GPU_ENABLE_DEVELOPMENT
             static bool SingleTimeLog = true;
             if (SingleTimeLog)
             {
@@ -861,7 +895,7 @@ GPUQueryWebGPU GPUDeviceWebGPU::AllocateQuery(GPUQueryType type)
         // Allocate a new query heap
         PROFILE_MEM(GraphicsCommands);
         uint32 size = type == GPUQueryType::Timer ? 1024 : 4096;
-        auto set = New<GPUQuerySetWebGPU>(Device, type, size);
+        auto set = New<GPUQuerySetWebGPU>(WebGPUInstance, Device, type, size);
         QuerySets[QuerySetsCount++] = set;
     }
 
@@ -870,6 +904,7 @@ GPUQueryWebGPU GPUDeviceWebGPU::AllocateQuery(GPUQueryType type)
     {
         static_assert(sizeof(GPUQueryWebGPU) == sizeof(uint64), "Invalid WebGPU query size.");
         query.Set = setIndex;
+        query.Padding = 1; // Ensure Raw is never 0, even for the first query
         query.Index = QuerySets[setIndex]->Allocate();
     }
     return query;

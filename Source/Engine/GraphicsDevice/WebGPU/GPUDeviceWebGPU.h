@@ -39,7 +39,8 @@ struct GPUQueryWebGPU
     {
         struct
         {
-            uint32 Set;
+            uint16 Set;
+            uint16 Padding;
             uint32 Index;
         };
         uint64 Raw;
@@ -52,6 +53,7 @@ struct GPUQueryWebGPU
 class GPUQuerySetWebGPU
 {
 private:
+    WGPUInstance _instance;
     WGPUDevice _device;
     uint32 _count;
     uint32 _index = 0;
@@ -74,7 +76,7 @@ public:
     WGPUQuerySet Set;
 
 public:
-    GPUQuerySetWebGPU(WGPUDevice device, GPUQueryType type, uint32 count);
+    GPUQuerySetWebGPU(WGPUInstance instance, WGPUDevice device, GPUQueryType type, uint32 count);
     ~GPUQuerySetWebGPU();
 
     bool CanAllocate() const;

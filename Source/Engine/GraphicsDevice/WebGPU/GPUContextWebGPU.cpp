@@ -445,6 +445,13 @@ uint64 GPUContextWebGPU::BeginQuery(GPUQueryType type)
             // Begin occlusion query on the active set
             wgpuRenderPassEncoderBeginOcclusionQuery(_renderPass, query.Index);
         }
+        else if (_activeOcclusionQuerySet == -1 && !_renderPass)
+        {
+            // Begin new render pass and then begin occlusion query
+            _pendingOcclusionQuerySet = query.Set;
+            FlushRenderPass();
+            wgpuRenderPassEncoderBeginOcclusionQuery(_renderPass, query.Index);
+        }
         else
         {
             // Set the next pending occlusion query set to use for the next pass (or frame)
@@ -956,6 +963,8 @@ WGPUComputePassEncoder GPUContextWebGPU::OnDispatch(GPUShaderProgramCS* shader)
 
 void GPUContextWebGPU::EndRenderPass()
 {
+    _activeOcclusionQuerySet = -1;
+    _pendingOcclusionQuerySet = -1;
     wgpuRenderPassEncoderEnd(_renderPass);
     wgpuRenderPassEncoderRelease(_renderPass);
     _renderPass = nullptr;
