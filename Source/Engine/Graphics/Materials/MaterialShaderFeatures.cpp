@@ -37,23 +37,36 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     params.GPUContext->BindSR(volumetricFogTextureRegisterIndex, cache->Fog.VolumetricFogTexture);
 
     // Set directional light input
+    GPUTexture* shadowMapAtlas = nullptr;
     if (cache->DirectionalLights.HasItems())
     {
         const auto& dirLight = cache->DirectionalLights.First();
-        GPUTexture* shadowMapAtlas;
         GPUBufferView* shadowsBuffer;
         ShadowsPass::GetShadowAtlas(params.RenderContext.Buffers, shadowMapAtlas, shadowsBuffer);
         const bool useShadow = shadowMapAtlas && canUseShadow && dirLight.HasShadow;
         dirLight.SetShaderData(data.DirectionalLight, useShadow);
         params.GPUContext->BindSR(shadowsBufferRegisterIndex, shadowsBuffer);
-        params.GPUContext->BindSR(shadowMapShaderRegisterIndex, shadowMapAtlas);
     }
     else
     {
         Platform::MemoryClear(&data.DirectionalLight, sizeof(data.DirectionalLight));
         params.GPUContext->UnBindSR(shadowsBufferRegisterIndex);
-        params.GPUContext->UnBindSR(shadowMapShaderRegisterIndex);
     }
+#if PLATFORM_WEB
+    // WebGPU expects the TextureSampleType::Depth but it will be default TextureSampleType::Float if shadow map atlas texture is missing so bind a dummy one
+    if (!shadowMapAtlas)
+    {
+        static GPUTexture* DummyShadowMap = nullptr;
+        if (!DummyShadowMap)
+        {
+            DummyShadowMap = GPUDevice::Instance->CreateTexture(TEXT("Dummy Shadow Map"));
+            DummyShadowMap->Init(GPUTextureDescription::New2D(1, 1, PixelFormat::D32_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil));
+            SetWebGPUTextureViewSampler(DummyShadowMap->View(), GPU_WEBGPU_SAMPLER_TYPE_DEPTH);
+        }
+        shadowMapAtlas = DummyShadowMap;
+    }
+#endif
+    params.GPUContext->BindSR(shadowMapShaderRegisterIndex, shadowMapAtlas);
 
     // Set sky light
     if (cache->SkyLights.HasItems())
