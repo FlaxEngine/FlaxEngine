@@ -83,7 +83,7 @@ bool TerrainChunk::PrepareDraw(const RenderContext& renderContext)
     return true;
 }
 
-void TerrainChunk::Draw(const RenderContext& renderContext) const
+void TerrainChunk::Draw(const RenderContext& renderContext, DrawPass drawModes) const
 {
     const int32 lod = _cachedDrawLOD;
     const int32 minLod = Math::Max(lod + 1, 0);
@@ -140,7 +140,7 @@ void TerrainChunk::Draw(const RenderContext& renderContext) const
     //drawCall.TerrainData.HeightmapUVScaleBias.W += halfTexelOffset;
 
     // Submit draw call
-    const DrawPass drawModes = _patch->_terrain->DrawModes & renderContext.View.Pass & drawCall.Material->GetDrawModes();
+    drawModes &= renderContext.View.Pass & drawCall.Material->GetDrawModes();
     if (drawModes != DrawPass::None)
         renderContext.List->AddDrawCall(renderContext, drawModes, flags, drawCall, true);
 }

@@ -457,7 +457,7 @@ public:
 private:
     ImplementPhysicsDebug;
     bool DrawSetup(RenderContext& renderContext);
-    void DrawImpl(RenderContext& renderContext, HashSet<TerrainChunk*, class RendererAllocation>& drawnChunks);
+    void DrawImpl(RenderContext& renderContext, DrawPass drawModes, HashSet<TerrainChunk*, class RendererAllocation>& drawnChunks, bool isMain);
 
 public:
     // [PhysicsColliderActor]

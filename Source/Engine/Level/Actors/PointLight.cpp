@@ -2,6 +2,7 @@
 
 #include "PointLight.h"
 #include "Engine/Content/Deprecated.h"
+#include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/RenderContext.h"
@@ -123,6 +124,12 @@ void PointLight::Draw(RenderContextBatch& renderContextBatch)
         data.StaticFlags = GetStaticFlags();
         data.ID = GetID();
         data.ScreenSize = Math::Min(1.0f, Math::Sqrt(RenderTools::ComputeBoundsScreenRadiusSquared(position, (float)_sphere.Radius, renderContext.View)));
+        uint32 cullingId = 0;
+        if (data.CanRenderShadow(renderContext.View) && !renderContext.Buffers->TestOcclusionCulling(this, cullingId))
+        {
+            // Occlusion cull dynamic shadow
+            data.ShadowsMode = ShadowsCastingMode::None;
+        }
         renderContext.List->PointLights.Add(data);
     }
 }

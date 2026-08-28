@@ -2,6 +2,7 @@
 
 #include "GBufferPass.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Culling/IOcclusionCulling.h"
 #if GPU_ENABLE_DEVELOPMENT
 #include "Engine/Renderer/Editor/VertexColors.h"
 #include "Engine/Renderer/Editor/LightmapUVsDensity.h"
@@ -220,6 +221,10 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTexture* lightBuffer)
             ToSpan(targetActions, ARRAY_COUNT(targetActions)));
         renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::GBuffer);
     }
+
+    // Submit occlusion queries
+    if (renderContext.Buffers->OcclusionCulling)
+        renderContext.Buffers->OcclusionCulling->Submit(renderContext);
 
     // Draw decals
     DrawDecals(renderContext, lightBuffer->View());

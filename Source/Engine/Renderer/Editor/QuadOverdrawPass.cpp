@@ -15,7 +15,7 @@
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Renderer/RenderList.h"
-#include "Engine/Graphics/RenderTools.h"
+#include "Engine/Renderer/Culling/IOcclusionCulling.h"
 
 void CheckDrawListQuadOverdraw(RenderList* list, DrawCallsListType type)
 {
@@ -126,6 +126,10 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
     context->ResetRenderTarget();
     context->ResetUA();
     context->ResetSR();
+
+    // Submit occlusion queries
+    if (renderContext.Buffers->OcclusionCulling)
+        renderContext.Buffers->OcclusionCulling->Submit(renderContext);
 
     // Convert stats into debug colors
     context->BindSR(0, overdrawTexture->View());

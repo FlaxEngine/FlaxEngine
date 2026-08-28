@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Collections/HashSet.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
@@ -29,6 +30,7 @@
 
 class Actor;
 class SceneRendering;
+class IOcclusionCulling;
 
 /// <summary>
 /// The scene rendering buffers container.
@@ -64,14 +66,27 @@ private:
     uint64 LastFrameHalfResDepth = 0;
     uint64 LastFrameHiZ = 0;
 
+    // Scene drawing cache with the per-object state (eg. LOD transitions, motion-vectors movement)
+    struct SceneData
+    {
+        // Per-object drawing state (eg. LOD transition). Indexing matches actor/object key of object registered in SceneRendering.
+        Array<GeometryDrawState> Geo[SceneRendering::DrawCategory::MAX];
+        // Scene culling cache with per-object (pair of actor and subobject) CullingId used by the IOcclusionCulling. Allows for stable visibility testing of custom non-actor objects (eg. terrain chunks or foliage patches).
+        Dictionary<Pair<const Actor*, const void*>, uint32> CullingIds;
+    };
+    Dictionary<SceneRendering*, SceneData> Scenes;
+
 protected:
     int32 _width = 0;
     int32 _height = 0;
     float _aspectRatio = 0.0f;
     bool _useAlpha = false;
     bool _useNull = false;
+    bool _usedCulling = false;
     Viewport _viewport;
     Array<GPUTexture*, FixedAllocation<32>> _resources;
+    CriticalSection _cullingLocker;
+    mutable HashSet<ScriptingTypeHandle> _cullingIdsOwnerTypes;
 
 public:
     union
@@ -119,14 +134,6 @@ public:
 
     // Maps the custom buffer type into the object that holds the state.
     Array<CustomBuffer*, HeapAllocation> CustomBuffers;
-
-    // Scene drawing cache with the per-object state (eg. LOD transitions, motion-vectors movement)
-    struct SceneData
-    {
-        // Per-object drawing state (eg. LOD transition). Indexing matches actor/object key of object registered in SceneRendering.
-        Array<GeometryDrawState> Geo[SceneRendering::DrawCategory::MAX];
-    };
-    Dictionary<SceneRendering*, SceneData> Scenes;
 
 public:
     /// <summary>
@@ -264,6 +271,11 @@ public:
     /// </summary>
     API_FIELD() RenderBuffers* LinkedCustomBuffers = nullptr;
 
+    /// <summary>
+    /// Occlusion culling implementation (optional). Can skip drawing occluded objects. Maintains a state synchronized with scene rendering with container RenderBuffers.
+    /// </summary>
+    API_FIELD(ReadOnly) IOcclusionCulling* OcclusionCulling = nullptr;
+
 public:
     /// <summary>
     /// Allocates the buffers.
@@ -283,6 +295,8 @@ public:
     /// </summary>
     ReadOnlyDepthBuffer GetReadOnlyDepthBuffer() const;
 
+    // Internal event called by Renderer to initiate drawing.
+    void OnRendering(const RenderContext& renderContext);
     // Internal event called by SceneRendering to initiate drawing.
     void OnSceneRendering(SceneRendering* scene);
 
@@ -290,6 +304,25 @@ public:
     /// Gets the geometry drawing state container for a specific actor/object. Returns null for invalid object (-1) or when view is not using LOD transitions (single-shot frame).
     /// </summary>
     GeometryDrawState* GetGeometryDrawState(SceneRendering* scene, int32 key, const Actor* actor) const;
+
+    /// <summary>
+    /// Performs the occlusion culling test for a specific sub-object of the actor (eg. terrain chunk or foliage patch) and returns the assigned CullingId (for draw call).
+    /// </summary>
+    /// <param name="actor">The owning actor.</param>
+    /// <param name="cullingId">Result CullingId to use for drawing this actor.</param>
+    /// <returns>True if actor can be rendered (is visible or visibility will be calculated on GPU), otherwise false.</returns>
+    bool TestOcclusionCulling(const Actor* actor, uint32& cullingId) const;
+
+    /// <summary>
+    /// Performs the occlusion culling test for a specific sub-object of the actor (eg. terrain chunk or foliage patch) and returns the assigned CullingId (for draw call).
+    /// </summary>
+    /// <param name="scene">The scene owning this actor.</param>
+    /// <param name="actor">The owning actor.</param>
+    /// <param name="objectBounds">The world-space bounds of the actor (or sub-object).</param>
+    /// <param name="cullingId">Result CullingId to use for drawing this actor (or sub-object).</param>
+    /// <param name="object">The pointer to the sub-actor object. Null for actor-only culling.</param>
+    /// <returns>True if object can be rendered (is visible or visibility will be calculated on GPU), otherwise false.</returns>
+    bool TestOcclusionCulling(SceneRendering* scene, const Actor* actor, const BoundingBox& objectBounds, uint32& cullingId, const void* object = nullptr) const;
 
 public:
     // [ISceneRenderingListener]

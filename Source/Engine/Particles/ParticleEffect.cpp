@@ -10,7 +10,9 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderContext.h"
+#include "Engine/Renderer/Culling/IOcclusionCulling.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #include "Editor/Managed/ManagedEditor.h"
@@ -613,7 +615,11 @@ void ParticleEffect::Draw(RenderContextBatch& renderContextBatch)
         mainView.Pass == DrawPass::GlobalSurfaceAtlas ||
         EnumHasNoneFlags(mainView.Flags, ViewFlags::Particles))
         return;
-    Particles::DrawParticles(renderContextBatch, this);
+    auto drawState = renderContext.Buffers->GetGeometryDrawState(&GetScene()->Rendering, _sceneRenderingKey, this);
+    DrawPass drawModes = DrawModes;
+    if (drawState && renderContextBatch.Buffers->OcclusionCulling && !renderContextBatch.Buffers->OcclusionCulling->IsVisible(_box, *drawState))
+        drawModes &= DrawPass::Depth;
+    Particles::DrawParticles(renderContextBatch, this, drawModes);
 
     // Cull again against the main context (if using multiple ones) to skip caching draw distance from shadow projections
     const BoundingSphere bounds(_sphere.Center - mainView.Origin, _sphere.Radius);

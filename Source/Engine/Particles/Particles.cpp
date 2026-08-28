@@ -1137,7 +1137,7 @@ void DrawEmitterGPU(RenderContextBatch& renderContextBatch, ParticleBuffer* buff
 
 #endif
 
-void Particles::DrawParticles(RenderContextBatch& renderContextBatch, ParticleEffect* effect)
+void Particles::DrawParticles(RenderContextBatch& renderContextBatch, ParticleEffect* effect, DrawPass drawModes)
 {
     PROFILE_CPU();
     PROFILE_MEM(Particles);
@@ -1153,7 +1153,7 @@ void Particles::DrawParticles(RenderContextBatch& renderContextBatch, ParticleEf
     for (int32 i = 0; i < renderContextBatch.Contexts.Count(); i++)
     {
         const RenderView& view = renderContextBatch.Contexts.Get()[i].View;
-        const bool visible = (view.Pass & effect->DrawModes) != DrawPass::None && (view.IsCullingDisabled || view.CullingFrustum.Intersects(bounds));
+        const bool visible = (view.Pass & drawModes) != DrawPass::None && (view.IsCullingDisabled || view.CullingFrustum.Intersects(bounds));
         if (visible)
         {
             drawAnyView = true;
@@ -1163,7 +1163,7 @@ void Particles::DrawParticles(RenderContextBatch& renderContextBatch, ParticleEf
     }
     if (drawAnyView == false)
         return;
-    viewsDrawModes &= effect->DrawModes;
+    viewsDrawModes &= drawModes;
 
     // Setup
     ScopeReadLock systemScope(SystemLocker);

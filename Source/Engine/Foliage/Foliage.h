@@ -172,6 +172,7 @@ private:
         Float3 LodViewPosition;
         int32 MinLOD, MaxLOD;
         BoundingFrustum CullingFrustum;
+        SceneRendering* Scene;
 
         FORCE_INLINE int32 ClampLODIndex(int32 index) const
         {

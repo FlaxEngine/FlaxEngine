@@ -1194,14 +1194,19 @@ API_ENUM(Attributes="Flags") enum class ViewFlags : uint64
     Particles = 1 << 28,
 
     /// <summary>
+    /// Shows/hides occlusion culling.
+    /// </summary>
+    OcclusionCulling = 1 << 29,
+
+    /// <summary>
     /// Default flags for Game.
     /// </summary>
-    DefaultGame = Reflections | DepthOfField | Fog | Decals | MotionBlur | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | ContactShadows | GlobalSDF | Sky | Particles,
+    DefaultGame = Reflections | DepthOfField | Fog | Decals | MotionBlur | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | ContactShadows | GlobalSDF | Sky | Particles | OcclusionCulling,
 
     /// <summary>
     /// Default flags for Editor.
     /// </summary>
-    DefaultEditor = Reflections | Fog | Decals | DebugDraw | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | EditorSprites | ContactShadows | GlobalSDF | Sky | Particles,
+    DefaultEditor = Reflections | Fog | Decals | DebugDraw | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | EditorSprites | ContactShadows | GlobalSDF | Sky | Particles | OcclusionCulling,
 
     /// <summary>
     /// Default flags for materials/models previews generating.
@@ -1211,7 +1216,7 @@ API_ENUM(Attributes="Flags") enum class ViewFlags : uint64
     /// <summary>
     /// All flags enabled.
     /// </summary>
-    All = None | DebugDraw | EditorSprites | Reflections | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | Decals | DepthOfField | PhysicsDebug | Fog | MotionBlur | ContactShadows | GlobalSDF | Sky | LightsDebug | Particles,
+    All = None | DebugDraw | EditorSprites | Reflections | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | Decals | DepthOfField | PhysicsDebug | Fog | MotionBlur | ContactShadows | GlobalSDF | Sky | LightsDebug | Particles | OcclusionCulling,
 };
 
 DECLARE_ENUM_OPERATORS(ViewFlags);

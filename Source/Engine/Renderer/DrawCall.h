@@ -335,6 +335,11 @@ struct GeometryDrawState
     uint64 PrevFrame = 0;
 
     /// <summary>
+    /// Unique identifier of the object culling state. Assigned and managed by the occlusion culling system (IOcclusionCulling).
+    /// </summary>
+    uint32 CullingId = 0;
+
+    /// <summary>
     /// The previous frame model LOD index used. It's locked during LOD transition to cache the transition start LOD.
     /// </summary>
     char PrevLOD = -1;

@@ -15,6 +15,7 @@
 #include "Engine/Render2D/FontManager.h"
 #include "Engine/Render2D/FontTextureAtlas.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Renderer/Culling/IOcclusionCulling.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/Serialization.h"
@@ -376,6 +377,14 @@ void TextRender::Draw(RenderContextBatch& renderContextBatch)
     Matrix world;
     renderContext.View.GetWorldMatrix(_transform, world);
     auto drawState = renderContext.Buffers->GetGeometryDrawState(&GetScene()->Rendering, _sceneRenderingKey, this);
+    DrawPass drawModes = DrawModes;
+    if (drawState && renderContextBatch.Buffers->OcclusionCulling && !renderContextBatch.Buffers->OcclusionCulling->IsVisible(_box, *drawState))
+    {
+        // Draw shadows-only (or cull)
+        drawModes &= DrawPass::Depth;
+        if (renderContextBatch.Contexts.Count() == 1 || drawModes == DrawPass::None)
+            return;
+    }
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(drawState, world);
 
     // Flush buffers
@@ -400,7 +409,6 @@ void TextRender::Draw(RenderContextBatch& renderContextBatch)
     drawCall.InstanceCount = 1;
 
     // Submit draw calls
-    const DrawPass drawModes = DrawModes & renderContext.View.GetShadowsDrawPassMask(ShadowsMode);
     for (const auto& e : _drawChunks)
     {
         const DrawPass chunkDrawModes = drawModes & e.Material->GetDrawModes();

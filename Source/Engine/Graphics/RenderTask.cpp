@@ -17,6 +17,7 @@
 #include "Engine/Engine/Engine.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Renderer/Culling/IOcclusionCulling.h"
 #include "Engine/Threading/JobSystem.h"
 #include "Engine/Threading/Threading.h"
 #if USE_EDITOR
@@ -345,7 +346,11 @@ void SceneRenderTask::OnPostRender(GPUContext* context, RenderContext& renderCon
     PostRender(context, renderContext);
 
     if (Buffers)
+    {
+        if (Buffers->OcclusionCulling)
+            Buffers->OcclusionCulling->EndFrame(renderContext);
         Buffers->ReleaseUnusedMemory();
+    }
 }
 
 Viewport SceneRenderTask::GetViewport() const

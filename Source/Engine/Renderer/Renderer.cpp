@@ -476,17 +476,17 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
         e->PreRender(context, renderContext);
 
     // Final render view preparations
+    renderContext.View.Pass = DrawPass::GBuffer | DrawPass::Forward | DrawPass::Distortion;
+    if (setup.UseMotionVectors)
+        renderContext.View.Pass |= DrawPass::MotionVectors;
     renderContext.View.Prepare(renderContext);
+    renderContext.Buffers->OnRendering(renderContext);
 }
 
 static void CollectDrawCalls(GPUContext* context, RenderContext& renderContext, RenderContextBatch& renderContextBatch)
 {
     PROFILE_CPU_NAMED("Collect Draw Calls");
     RenderSetup& setup = renderContext.List->Setup;
-
-    renderContext.View.Pass = DrawPass::GBuffer | DrawPass::Forward | DrawPass::Distortion;
-    if (setup.UseMotionVectors)
-        renderContext.View.Pass |= DrawPass::MotionVectors;
     renderContextBatch.GetMainContext() = renderContext; // Sync render context in batch with the current value
     renderContext.List->PreDraw(context, renderContextBatch);
 

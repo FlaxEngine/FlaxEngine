@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Scripting/ScriptingType.h"
+#include "Engine/Graphics/Enums.h"
 
 class TaskGraphSystem;
 struct RenderContextBatch;
@@ -49,7 +50,8 @@ public:
     /// </summary>
     /// <param name="renderContextBatch">The rendering context.</param>
     /// <param name="effect">The owning actor.</param>
-    static void DrawParticles(RenderContextBatch& renderContextBatch, ParticleEffect* effect);
+    /// <param name="drawModes">The drawing modes.</param>
+    static void DrawParticles(RenderContextBatch& renderContextBatch, ParticleEffect* effect, DrawPass drawModes);
 
 #if USE_EDITOR
     /// <summary>

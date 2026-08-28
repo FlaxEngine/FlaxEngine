@@ -17,6 +17,7 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/Utils/GlobalSignDistanceFieldPass.h"
+#include "Engine/Renderer/Culling/IOcclusionCulling.h"
 #include "Engine/Renderer/GI/GlobalSurfaceAtlasPass.h"
 #include "Engine/Utilities/Encryption.h"
 #if USE_EDITOR
@@ -386,11 +387,19 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
     }
     auto drawState = renderContext.Buffers->GetGeometryDrawState(&GetScene()->Rendering, _sceneRenderingKey, this);
     ACTOR_GET_WORLD_MATRIX(this, view, world);
+    Mesh::DrawInfo draw;
+    draw.DrawModes = _drawModes;
+    if (drawState && renderContextBatch.Buffers->OcclusionCulling && !renderContextBatch.Buffers->OcclusionCulling->IsVisible(_box, *drawState))
+    {
+        // Draw shadows-only (or cull)
+        draw.DrawModes &= DrawPass::Depth;
+        if (renderContextBatch.Contexts.Count() == 1 || draw.DrawModes == DrawPass::None)
+            return;
+    }
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(drawState, world);
     if (_vertexColorsDirty)
         FlushVertexColors();
 
-    Mesh::DrawInfo draw;
     draw.Buffer = &Entries;
     draw.World = &world;
     draw.DrawState = drawState;
@@ -398,7 +407,6 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
     draw.Lightmap = _scene && Lightmap.TextureIndex != -1 ? _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex) : nullptr;
     draw.LightmapUVs = &Lightmap.UVsArea;
     draw.Flags = _staticFlags;
-    draw.DrawModes = _drawModes;
     draw.Bounds = _sphere;
     draw.Bounds.Center -= renderContext.View.Origin;
     draw.PerInstanceRandom = GetPerInstanceRandom();

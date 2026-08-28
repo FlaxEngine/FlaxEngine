@@ -128,7 +128,8 @@ public:
     /// Draws the chunk (adds the draw call). Must be called after PrepareDraw.
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
-    void Draw(const RenderContext& renderContext) const;
+    /// <param name="drawModes">The drawing modes.</param>
+    void Draw(const RenderContext& renderContext, DrawPass drawModes =DrawPass::Default) const;
 
     /// <summary>
     /// Draws the terrain chunk.

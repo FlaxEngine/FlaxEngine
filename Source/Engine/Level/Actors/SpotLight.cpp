@@ -1,13 +1,13 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "SpotLight.h"
-
 #include "Engine/Content/Deprecated.h"
-#include "Engine/Graphics/RenderView.h"
-#include "Engine/Renderer/RenderList.h"
 #include "Engine/Content/Assets/IESProfile.h"
+#include "Engine/Graphics/RenderView.h"
+#include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 
@@ -175,6 +175,12 @@ void SpotLight::Draw(RenderContextBatch& renderContextBatch)
         data.StaticFlags = GetStaticFlags();
         data.ID = GetID();
         data.ScreenSize = Math::Min(1.0f, Math::Sqrt(RenderTools::ComputeBoundsScreenRadiusSquared(position, (float)_sphere.Radius, renderContext.View)));
+        uint32 cullingId = 0;
+        if (data.CanRenderShadow(renderContext.View) && !renderContext.Buffers->TestOcclusionCulling(this, cullingId))
+        {
+            // Occlusion cull dynamic shadow
+            data.ShadowsMode = ShadowsCastingMode::None;
+        }
         renderContext.List->SpotLights.Add(data);
     }
 }

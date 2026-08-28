@@ -21,6 +21,7 @@
 #include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Renderer/Culling/IOcclusionCulling.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/SceneObjectsFactory.h"
 #include "Engine/Profiler/Profiler.h"
@@ -1262,6 +1263,15 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
     const Float3 translation = _transform.Translation - renderContext.View.Origin;
     Matrix::Transformation(_transform.Scale, _transform.Orientation, translation, world);
     auto drawState = renderContext.Buffers->GetGeometryDrawState(&GetScene()->Rendering, _sceneRenderingKey, this);
+    SkinnedMesh::DrawInfo draw;
+    draw.DrawModes = DrawModes;
+    if (drawState && renderContextBatch.Buffers->OcclusionCulling && !renderContextBatch.Buffers->OcclusionCulling->IsVisible(_box, *drawState))
+    {
+        // Draw shadows-only (or cull)
+        draw.DrawModes &= DrawPass::Depth;
+        if (renderContextBatch.Contexts.Count() == 1 || draw.DrawModes == DrawPass::None)
+            return;
+    }
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(drawState, world);
 
     _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.WorldPosition));
@@ -1271,7 +1281,6 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
         if (_bones.IsDirty)
             _bones.Flush();
 
-        SkinnedMesh::DrawInfo draw;
         draw.Buffer = &Entries;
         draw.SkinningBones = RenderListExtension.GlobalBuffer;
         draw.SkinningBonesOffset = _bones.GlobalBufferOffset / sizeof(Matrix3x4);
@@ -1289,7 +1298,6 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
         draw.World = &world;
         draw.DrawState = drawState;
         draw.Deformation = _deformation;
-        draw.DrawModes = DrawModes;
         draw.Bounds = _sphere;
         draw.Bounds.Center -= renderContext.View.Origin;
         draw.PerInstanceRandom = GetPerInstanceRandom();

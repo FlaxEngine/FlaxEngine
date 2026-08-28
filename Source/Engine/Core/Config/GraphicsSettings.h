@@ -54,6 +54,7 @@ public:
     API_FIELD(Attributes="EditorOrder(20), EditorDisplay(\"General\", \"Use V-Sync\")")
     bool UseVSync = false;
 
+public:
     /// <summary>
     /// Anti Aliasing quality setting.
     /// </summary>
@@ -96,6 +97,26 @@ public:
     API_FIELD(Attributes="EditorOrder(1320), EditorDisplay(\"Quality\", \"Allow CSM Blending\")")
     bool AllowCSMBlending = false;
 
+public:
+    /// <summary>
+    /// The type of the occlusion culling (implements IOcclusionCulling) that will be used to test visibility of the objects and skip rendering occluded ones. Can be left empty to use frustum-culling only.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(1450), EditorDisplay(\"Culling\"), TypeReference(typeof(IOcclusionCulling)), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.TypeNameEditor\")")
+    StringAnsi OcclusionCulling;
+
+    /// <summary>
+    /// The number of buffered frames for the visibility query results readback from GPU (to avoid stalls). The higher value the more latency but less CPU stalls (to wait for GPU results). Higher values increase object popping artifacts.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(1460), EditorDisplay(\"Culling\"), Limit(1, 4)")
+    int32 OcclusionBufferedFrames = 2;
+
+    /// <summary>
+    /// The object bounds scale for occlusion culling to reduce popping artifacts caused by latency of visibility readback from GPU to CPU. Higher values inflate bounds which improves visual stability but lowers occlusion culling efficiency.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(1461), EditorDisplay(\"Culling\"), Limit(1, 1.5f)")
+    float OcclusionBoundsScale = 1.1f;
+
+public:
     /// <summary>
     /// Default probes cubemap resolution (use for Environment Probes, can be overriden per-actor).
     /// </summary>

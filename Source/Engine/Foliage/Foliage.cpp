@@ -10,6 +10,8 @@
 #include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/RenderContext.h"
+#include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Content/Deprecated.h"
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE
@@ -19,8 +21,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Renderer/RenderList.h"
-#include "Engine/Graphics/RenderContext.h"
-#include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
+#include "Engine/Renderer/Utils/GlobalSignDistanceFieldPass.h"
 #include "Engine/Renderer/GI/GlobalSurfaceAtlasPass.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Serialization/MemoryReadStream.h"
@@ -173,6 +174,12 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCal
     if (Float3::Distance(context.LodViewPosition, cluster->TotalBoundsSphere.Center - context.LodViewOrigin) - (float)cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
         return;
     //DebugDraw::DrawBox(cluster->Bounds, Color::Red);
+
+    // Main-view occlusion culling
+    uint32 cullingId = 0;
+    bool isMain = context.RenderContext.View.Pass != DrawPass::Depth;
+    if (isMain && !context.RenderContext.Buffers->TestOcclusionCulling(context.Scene, this, cluster->TotalBounds, cullingId, cluster))
+        return;
 
     // Draw visible children
     if (cluster->Children[0])
@@ -487,6 +494,7 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Me
         type.Model->HighestResidentLODIndex(),
         type.Model->GetLODsCount() - 1,
         renderContext.View.CullingFrustum,
+        GetSceneRendering(),
     };
     _cachedDrawWorldOrigin = renderContext.View.Origin;
     if (context.RenderContext.View.Pass != DrawPass::Depth)

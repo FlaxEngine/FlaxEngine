@@ -1,16 +1,20 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "RenderBuffers.h"
-#include "Engine/Core/Config/GraphicsSettings.h"
+#include "RenderContext.h"
 #include "RenderTools.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Renderer/Utils/MultiScaler.h"
+#include "Engine/Renderer/Culling/IOcclusionCulling.h"
+#include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Scripting/Scripting.h"
 
 // How many frames keep cached buffers for temporal or optional effects?
 #define LAZY_FRAMES_COUNT 4
+bool UnsupportedOcclusionCulling = false;
 
 RenderBuffers::RenderBuffers(const SpawnParams& params)
     : ScriptingObject(params)
@@ -275,6 +279,10 @@ void RenderBuffers::Release()
     for (int32 i = 0; i < _resources.Count(); i++)
         _resources[i]->ReleaseGPU();
 
+    if (auto* culling = FromInterface(OcclusionCulling))
+        Delete(culling);
+    OcclusionCulling = nullptr;
+
     RenderTargetPool::Release(VolumetricFog);
     VolumetricFog = nullptr;
     RenderTargetPool::Release(VolumetricFogHistory);
@@ -303,6 +311,60 @@ RenderBuffers::ReadOnlyDepthBuffer RenderBuffers::GetReadOnlyDepthBuffer() const
     GPUTextureView* depthBufferRTV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : nullptr;
     GPUTextureView* depthBufferSRV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
     return { depthBufferRTV, depthBufferSRV };
+}
+
+void RenderBuffers::OnRendering(const RenderContext& renderContext)
+{
+    // Initialize occlusion culling
+    if (UnsupportedOcclusionCulling)
+        return;
+    bool enableCulling = EnumHasAllFlags(renderContext.View.Flags, ViewFlags::OcclusionCulling) && !renderContext.View.IsCullingDisabled && !renderContext.View.IsSingleFrame;
+    const StringAnsi& occlusionCullingTypeName = GraphicsSettings::Get()->OcclusionCulling;
+    if (auto* culling = FromInterface(OcclusionCulling))
+    {
+        // Check if type still matches and effect is active
+        if (culling->GetType().Fullname != occlusionCullingTypeName || !enableCulling)
+        {
+            Delete(culling);
+            OcclusionCulling = nullptr;
+        }
+    }
+    if (!OcclusionCulling && occlusionCullingTypeName.HasChars() && enableCulling)
+    {
+        const ScriptingTypeHandle occlusionCullingType = Scripting::FindScriptingType(occlusionCullingTypeName);
+        if (occlusionCullingType && occlusionCullingType.GetType().GetInterface(IOcclusionCulling::TypeInitializer))
+        {
+            OcclusionCulling = ToInterface<IOcclusionCulling>(NewObject(occlusionCullingType));
+            if (!OcclusionCulling->IsSupported())
+            {
+                UnsupportedOcclusionCulling = true;
+                LOG(Error, "Occlusion Culling system '{}' is unsupported", occlusionCullingTypeName.ToString());
+                return;
+            }
+
+            if (_usedCulling)
+            {
+                // Reset existing state to use a fresh CullingIds
+                _cullingLocker.Lock();
+                for (auto& e : Scenes)
+                {
+                    for (auto& q : e.Value.Geo)
+                    {
+                        for (auto& geo : q)
+                        {
+                            geo.CullingId = 0;
+                        }
+                    }
+                    e.Value.CullingIds.Clear();
+                }
+                _cullingLocker.Unlock();
+            }
+            else
+                _usedCulling = true;
+        }
+    }
+    if (OcclusionCulling)
+        OcclusionCulling->BeginFrame(renderContext);
 }
 
 void RenderBuffers::OnSceneRendering(SceneRendering* scene)
@@ -342,6 +404,41 @@ GeometryDrawState* RenderBuffers::GetGeometryDrawState(SceneRendering* scene, in
     return nullptr;
 }
 
+bool RenderBuffers::TestOcclusionCulling(const Actor* actor, uint32& cullingId) const
+{
+    return TestOcclusionCulling(actor->GetSceneRendering(), actor, actor->GetBox(), cullingId);
+}
+
+bool RenderBuffers::TestOcclusionCulling(SceneRendering* scene, const Actor* actor, const BoundingBox& objectBounds, uint32& cullingId, const void* object) const
+{
+    cullingId = 0;
+    if (!OcclusionCulling)
+        return true;
+    bool result = true;
+    if (auto* sceneData = Scenes.TryGet(scene))
+    {
+        // Get stable CullingId
+        const Pair<const Actor*, const void*> key(actor, object);
+        _cullingLocker.Lock();
+        _cullingIdsOwnerTypes.Add(actor->GetTypeHandle());
+        sceneData->CullingIds.TryGet(key, cullingId);
+        _cullingLocker.Unlock();
+
+        // Cull
+        uint32 cullingIdPrev = cullingId;
+        result = OcclusionCulling->IsVisible(objectBounds, cullingId);
+
+        // Update CullingId if got changed
+        if (cullingIdPrev != cullingId)
+        {
+            _cullingLocker.Lock();
+            sceneData->CullingIds[key] = cullingId;
+            _cullingLocker.Unlock();
+        }
+    }
+    return result;
+}
+
 void RenderBuffers::OnSceneRenderingAddActor(SceneRendering* scene, int32 key, Actor* a)
 {
     // Init geo state of that object
@@ -361,6 +458,19 @@ void RenderBuffers::OnSceneRenderingUpdateActor(SceneRendering* scene, int32 key
 
 void RenderBuffers::OnSceneRenderingRemoveActor(SceneRendering* scene, int32 key, Actor* a)
 {
+    // Skip actors that don't have nested sub-objects
+    if (!_cullingIdsOwnerTypes.Contains(a->GetTypeHandle()))
+        return;
+    if (auto* sceneData = Scenes.TryGet(scene))
+    {
+        for (auto it = sceneData->CullingIds.Begin(); it.IsNotEnd(); ++it)
+        {
+            if (it->Key.First == a)
+            {
+                sceneData->CullingIds.Remove(it);
+            }
+        }
+    }
 }
 
 void RenderBuffers::OnSceneRenderingClear(SceneRendering* scene)
