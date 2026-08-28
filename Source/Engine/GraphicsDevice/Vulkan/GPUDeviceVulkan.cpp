@@ -527,7 +527,7 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
     : Device(device)
     , Handle(VK_NULL_HANDLE)
     , Layout(layout)
-    , CanDepthWrite(true)
+    , CanDepthStencilWrite(true)
 {
     const int32 colorAttachmentsCount = layout.RTsCount;
     const bool hasDepthStencilAttachment = layout.DepthFormat != PixelFormat::Unknown;
@@ -615,7 +615,7 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
         depthStencilReference.layout = depthStencilLayout;
         subpassDesc.pDepthStencilAttachment = &depthStencilReference;
         if (!layout.WriteDepth && !layout.WriteStencil)
-            CanDepthWrite = false;
+            CanDepthStencilWrite = false;
     }
 
     VkRenderPassCreateInfo createInfo;
@@ -642,7 +642,7 @@ QueryPoolVulkan::QueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, GPUQue
 {
     VkQueryPoolCreateInfo createInfo;
     RenderToolsVulkan::ZeroStruct(createInfo, VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO);
-    createInfo.queryType = type != GPUQueryType::Timer ? VK_QUERY_TYPE_TIMESTAMP : VK_QUERY_TYPE_OCCLUSION;
+    createInfo.queryType = type == GPUQueryType::Timer ? VK_QUERY_TYPE_TIMESTAMP : VK_QUERY_TYPE_OCCLUSION;
     createInfo.queryCount = capacity;
     VALIDATE_VULKAN_RESULT(vkCreateQueryPool(device->Device, &createInfo, nullptr, &_handle));
 
@@ -663,11 +663,18 @@ QueryPoolVulkan::~QueryPoolVulkan()
 
 #if VULKAN_RESET_QUERY_POOLS
 
-void QueryPoolVulkan::Reset(CmdBufferVulkan* cmdBuffer)
+void QueryPoolVulkan::Reset(GPUContextVulkan* context)
 {
+    if (_resetRanges.IsEmpty())
+        return;
+    const auto cmdBuffer = context->GetCmdBufferManager()->GetCmdBuffer();
+    if (cmdBuffer->IsInsideRenderPass())
+        context->EndRenderPass(); // vkCmdResetQueryPool can be called only outside the render pass
+    // TODO: batch sequential reset operations
+    auto commandBuffer = cmdBuffer->GetHandle();
     for (auto& range : _resetRanges)
     {
-        vkCmdResetQueryPool(cmdBuffer->GetHandle(), _handle, range.Start, range.Count);
+        vkCmdResetQueryPool(commandBuffer, _handle, range.Start, range.Count);
     }
     _resetRanges.Clear();
     ResetBeforeUse = false;
@@ -684,7 +691,7 @@ BufferedQueryPoolVulkan::BufferedQueryPoolVulkan(GPUDeviceVulkan* device, int32 
     _readResultsBits.AddZeroed((capacity + 63) / 64);
 }
 
-bool BufferedQueryPoolVulkan::AcquireQuery(CmdBufferVulkan* cmdBuffer, uint32& resultIndex)
+bool BufferedQueryPoolVulkan::AcquireQuery(GPUContextVulkan* context, uint32& resultIndex)
 {
     const uint64 allUsedMask = MAX_uint64;
     for (int32 wordIndex = _lastBeginIndex / 64; wordIndex < _usedQueryBits.Count(); wordIndex++)
@@ -705,7 +712,7 @@ bool BufferedQueryPoolVulkan::AcquireQuery(CmdBufferVulkan* cmdBuffer, uint32& r
             _readResultsBits[wordIndex] &= ~bit;
             _lastBeginIndex = resultIndex + 1;
             if (ResetBeforeUse)
-                Reset(cmdBuffer);
+                Reset(context);
             _lastUsedFrame = Engine::FrameCount;
             return true;
         }
@@ -757,6 +764,7 @@ bool BufferedQueryPoolVulkan::GetResults(uint32 index, uint64& result)
     if ((_startedQueryBits[word] & bit) == 0)
     {
         // Query never started/ended
+        result = 0;
         return true;
     }
 
@@ -809,27 +817,23 @@ bool BufferedQueryPoolVulkan::TryExpire()
         return false;
 
     // Reset back to clean state all unfinished queries
-    for (uint32 index = 0; index < _queryOutput.Count(); index++)
+    bool canUseNow = true;
+    for (uint32 index = 0; index < (uint32)_queryOutput.Count(); index++)
     {
         const uint64 bit = (uint64)1 << (index % 64);
         const uint32 word = index / 64;
         if ((_usedQueryBits[word] & bit) == 0)
             continue;
+#if VULKAN_RESET_QUERY_POOLS
         if ((_readResultsBits[word] & bit) == 0)
         {
-            const VkResult vkResult = vkGetQueryPoolResults(_device->Device, _handle, index, 1, sizeof(uint64), &_queryOutput[index], sizeof(uint64), VK_QUERY_RESULT_64_BIT);
-            if (vkResult == VK_SUCCESS)
-            {
-                _readResultsBits[word] = _readResultsBits[word] | bit;
-
-#if VULKAN_RESET_QUERY_POOLS
-                // Add to reset
-                if (!_device->QueriesToReset.Contains(this))
-                    _device->QueriesToReset.Add(this);
-                _resetRanges.Add(Range{ index, 1 });
-#endif
-            }
+            // Add to reset
+            if (!_device->QueriesToReset.Contains(this))
+                _device->QueriesToReset.Add(this);
+            _resetRanges.Add(Range{ index, 1 });
+            canUseNow = false;
         }
+#endif
         _usedQueryBits[word] = _usedQueryBits[word] & ~bit;
     }
     constexpr uint64 allUsedMask = MAX_uint64;
@@ -842,7 +846,7 @@ bool BufferedQueryPoolVulkan::TryExpire()
         }
     }
 
-    return HasRoom();
+    return canUseNow && HasRoom();
 }
 
 HelperResourcesVulkan::HelperResourcesVulkan(GPUDeviceVulkan* device)

@@ -315,10 +315,13 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVer
 
     // Create object
     auto depthWrite = _descDepthStencil.depthWriteEnable;
-    _descDepthStencil.depthWriteEnable &= renderPass->CanDepthWrite ? 1 : 0;
+    auto stencilWriteMask = _descDepthStencil.front.writeMask;
+    _descDepthStencil.depthWriteEnable &= renderPass->CanDepthStencilWrite ? 1 : 0;
+    _descDepthStencil.front.writeMask &= renderPass->CanDepthStencilWrite ? MAX_uint32 : 0;
     const VkResult result = vkCreateGraphicsPipelines(_device->Device, _device->PipelineCache, 1, &_desc, nullptr, &pipeline);
     _device->PipelineCacheUsage++;
     _descDepthStencil.depthWriteEnable = depthWrite;
+    _descDepthStencil.front.writeMask = _descDepthStencil.back.writeMask = stencilWriteMask;
     LOG_VULKAN_RESULT(result);
     if (result != VK_SUCCESS)
     {

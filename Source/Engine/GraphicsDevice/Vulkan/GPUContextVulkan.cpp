@@ -437,6 +437,7 @@ void GPUContextVulkan::BeginRenderPass()
 
     // Build render targets layout descriptor and framebuffer key
     FramebufferVulkan::Key framebufferKey;
+    Platform::MemoryClear(&framebufferKey, sizeof(framebufferKey));
     framebufferKey.AttachmentCount = _rtCount;
     RenderTargetLayoutVulkan layout;
     Platform::MemoryClear(&layout, sizeof(layout));
@@ -445,7 +446,7 @@ void GPUContextVulkan::BeginRenderPass()
     layout.DepthFormat = _rtDepth ? _rtDepth->GetFormat() : PixelFormat::Unknown;
     VkClearValue clearValues[GPU_MAX_RT_BINDED + 1];
     PendingClear clear;
-    for (int32 i = 0; i < GPU_MAX_RT_BINDED; i++)
+    for (int32 i = 0; i < _rtCount; i++)
     {
         auto handle = _rtTargets[i];
         if (handle)
@@ -469,11 +470,6 @@ void GPUContextVulkan::BeginRenderPass()
                 else if (((uint32)action & (uint32)GPUDrawPassAction::StoreMask) == 0)
                     layout.StoreDontCare |= mask;
             }
-        }
-        else
-        {
-            layout.RTVsFormats[i] = PixelFormat::Unknown;
-            framebufferKey.Attachments[i] = VK_NULL_HANDLE;
         }
     }
     GPUTextureViewVulkan* handle;
@@ -536,6 +532,7 @@ void GPUContextVulkan::BeginRenderPass()
     FlushBarriers();
 
     cmdBuffer->BeginRenderPass(renderPass, framebuffer, ARRAY_COUNT(clearValues), clearValues);
+    _rtDirtyFlag = false;
 }
 
 void GPUContextVulkan::EndRenderPass()
@@ -802,7 +799,7 @@ void GPUContextVulkan::OnDrawCall()
         }
 
         // Allocate sets if need to
-        //if (needsWrite) // TODO: write on change only?
+        if (needsWrite)
         {
             if (!pipelineState->CurrentTypedDescriptorPoolSet->AllocateDescriptorSets(*pipelineState->DescriptorSetsLayout, pipelineState->DescriptorSetHandles.Get()))
                 return;
@@ -862,7 +859,6 @@ void GPUContextVulkan::OnDrawCall()
         vkCmdBindDescriptorSets(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineState->GetLayout()->Handle, 0, descriptorSets.Count(), descriptorSets.Get(), dynamicOffsets.Count(), dynamicOffsets.Get());
     }
 
-    _rtDirtyFlag = false;
 #if VK_ENABLE_BARRIERS_DEBUG
     LOG(Warning, "Draw");
 #endif
@@ -904,7 +900,7 @@ void GPUContextVulkan::FrameBegin()
     if (_device->QueriesToReset.HasItems())
     {
         for (auto query : _device->QueriesToReset)
-            query->Reset(cmdBuffer);
+            query->Reset(this);
         _device->QueriesToReset.Clear();
     }
 #endif
@@ -1442,7 +1438,7 @@ uint64 GPUContextVulkan::BeginQuery(GPUQueryType type)
     auto pool = _device->QueryPools[poolIndex];
     uint32 index = 0;
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-    if (!pool->AcquireQuery(cmdBuffer, index))
+    if (!pool->AcquireQuery(this, index))
         return 0;
     GPUQueryVulkan query;
     query.PoolIndex = (uint16)poolIndex;
@@ -1455,19 +1451,21 @@ uint64 GPUContextVulkan::BeginQuery(GPUQueryType type)
     {
     case GPUQueryType::Timer:
         // Timer queries need 2 slots (begin + end)
-        pool->AcquireQuery(cmdBuffer, index);
+        pool->AcquireQuery(this, index);
         query.SecondQueryIndex = (uint16)index;
-
         vkCmdWriteTimestamp(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, pool->GetHandle(), query.QueryIndex);
 #if GPU_VULKAN_PAUSE_QUERIES
         _cmdBufferManager->OnTimerQueryBegin(query.Raw);
 #endif
         break;
     case GPUQueryType::Occlusion:
-        vkCmdBeginQuery(cmdBuffer->GetHandle(), pool->GetHandle(), query.QueryIndex, 0);
-        break;
     case GPUQueryType::BinaryOcclusion:
-        vkCmdBeginQuery(cmdBuffer->GetHandle(), pool->GetHandle(), query.QueryIndex, VK_QUERY_CONTROL_PRECISE_BIT);
+        // Flush render pass when starting occlusion query
+        if (_rtDirtyFlag && cmdBuffer->IsInsideRenderPass())
+            EndRenderPass();
+        if (cmdBuffer->IsOutsideRenderPass())
+            BeginRenderPass();
+        vkCmdBeginQuery(cmdBuffer->GetHandle(), pool->GetHandle(), query.QueryIndex, type == GPUQueryType::Occlusion ? VK_QUERY_CONTROL_PRECISE_BIT : 0);
         break;
     }
     pool->MarkQueryAsStarted(query.QueryIndex);

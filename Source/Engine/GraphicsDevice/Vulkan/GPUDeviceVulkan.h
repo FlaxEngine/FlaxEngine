@@ -260,7 +260,7 @@ public:
     GPUDeviceVulkan* Device;
     VkRenderPass Handle;
     RenderTargetLayoutVulkan Layout;
-    bool CanDepthWrite;
+    bool CanDepthStencilWrite;
 #if VULKAN_USE_DEBUG_DATA
     VkRenderPassCreateInfo DebugCreateInfo;
 #endif
@@ -299,7 +299,7 @@ public:
 
 #if VULKAN_RESET_QUERY_POOLS
     bool ResetBeforeUse;
-    void Reset(CmdBufferVulkan* cmdBuffer);
+    void Reset(GPUContextVulkan* context);
 #endif
 };
 
@@ -318,7 +318,7 @@ private:
 
 public:
     BufferedQueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, GPUQueryType type);
-    bool AcquireQuery(CmdBufferVulkan* cmdBuffer, uint32& resultIndex);
+    bool AcquireQuery(GPUContextVulkan* context, uint32& resultIndex);
     void ReleaseQuery(uint32 queryIndex);
     void MarkQueryAsStarted(uint32 queryIndex);
     bool GetResults(uint32 index, uint64& result);
