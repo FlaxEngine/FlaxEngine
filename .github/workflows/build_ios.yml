@@ -23,6 +23,7 @@ jobs:
     - name: Setup .NET Workload
       run: |
         dotnet workload install ios
+        dotnet workload repair
     - name: Print .NET info
       run: |
         dotnet --info
