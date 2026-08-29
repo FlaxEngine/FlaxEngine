@@ -50,7 +50,7 @@ namespace FlaxEditor.GUI.Docking
         /// <summary>
         /// Gets a value indicating whether this window is docked.
         /// </summary>
-        public bool IsDocked => _dockedTo != null;
+        public bool IsDocked => _dockedTo != null && _dockedTo.TabsCount > 1;
 
         /// <summary>
         /// Gets a value indicating whether this window is selected.
@@ -488,7 +488,7 @@ namespace FlaxEditor.GUI.Docking
             base.Focus();
 
             SelectTab(false);
-            BringToFront();
+            _dockedTo?.RootWindow?.Focus();
         }
 
         /// <inheritdoc />
