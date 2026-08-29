@@ -111,6 +111,13 @@ namespace FlaxEditor.GUI.Docking
             ShowDecorations = Utilities.Utils.UseCustomWindowDecorations();
         }
 
+        internal void UnlinkWindow()
+        {
+            _window?.Window.Closing -= OnClosing;
+            _window?.Window.LeftButtonHit -= OnLeftButtonHit;
+            _window = null;
+        }
+
         /// <inheritdoc />
         protected override void PerformLayoutBeforeChildren()
         {
@@ -210,9 +217,7 @@ namespace FlaxEditor.GUI.Docking
             }
 
             // Unlink
-            _window.Window.Closing -= OnClosing;
-            _window.Window.LeftButtonHit = null;
-            _window = null;
+            UnlinkWindow();
 
             // Remove object
             FlaxEngine.Assertions.Assert.IsTrue(TabsCount == 0 && ChildPanelsCount == 0);
@@ -263,6 +268,7 @@ namespace FlaxEditor.GUI.Docking
         {
             _masterPanel?.FloatingPanels.Remove(this);
 
+            UnlinkWindow();
             base.OnDestroy();
         }
     }
