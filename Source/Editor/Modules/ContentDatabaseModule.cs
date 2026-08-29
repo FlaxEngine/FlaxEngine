@@ -748,21 +748,27 @@ namespace FlaxEditor.Modules
                 if (item.Path.Contains(".Build.cs", StringComparison.Ordinal) && item.ItemType == ContentItemType.Script)
                     Editor.Instance.CodeEditing.RemoveModule(item.Path);
 
-                // Check if it's an asset
-                if (item.IsAsset)
-                {
-                    // Delete asset by using content pool
-                    FlaxEngine.Content.DeleteAsset(path);
-                }
-                else if (item is ScriptItem)
-                {
-                    FlaxEngine.Content.DeleteScript(path);
-                }
-                else if (deletedByUser)
-                {
-                    // Delete file
-                    if (File.Exists(path))
-                        File.Delete(path);
+                // Delete asset file only if it was explicitly deleted by the user.
+                // Some applications might modify the file by deleting the original and replacing
+                // it with a new file which sometimes is caught in the middle of these operations.
+                if (deletedByUser)
+                { 
+                    // Check if it's an asset
+                    if (item.IsAsset)
+                    {
+                        // Delete asset by using content pool
+                        FlaxEngine.Content.DeleteAsset(path);
+                    }
+                    else if (item is ScriptItem)
+                    {
+                        FlaxEngine.Content.DeleteScript(path);
+                    }
+                    else
+                    {
+                        // Delete file
+                        if (File.Exists(path))
+                            File.Delete(path);
+                    }
                 }
 
                 // Unlink from the parent
@@ -1387,17 +1393,21 @@ namespace FlaxEditor.Modules
         /// <inheritdoc />
         public override void OnUpdate()
         {
-            // Update all dirty content tree nodes
-            lock (_dirtyNodes)
+            // Check for updates only when the editor is focused to only check once for all changes done in background.
+            if (FlaxEngine.Engine.HasFocus)
             {
-                foreach (var node in _dirtyNodes)
+                // Update all dirty content tree nodes
+                lock (_dirtyNodes)
                 {
-                    LoadFolder(node, true);
+                    foreach (var node in _dirtyNodes)
+                    {
+                        LoadFolder(node, true);
 
-                    if (_enableEvents)
-                        WorkspaceModified?.Invoke();
+                        if (_enableEvents)
+                            WorkspaceModified?.Invoke();
+                    }
+                    _dirtyNodes.Clear();
                 }
-                _dirtyNodes.Clear();
             }
 
             // Lazy-rebuilds
