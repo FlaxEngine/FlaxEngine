@@ -113,9 +113,12 @@ namespace FlaxEditor.GUI.Docking
 
         internal void UnlinkWindow()
         {
-            _window?.Window.Closing -= OnClosing;
-            _window?.Window.LeftButtonHit -= OnLeftButtonHit;
-            _window = null;
+            if (_window != null)
+            {
+                _window.Window.Closing -= OnClosing;
+                _window.Window.LeftButtonHit -= OnLeftButtonHit;
+                _window = null;
+            }
         }
 
         /// <inheritdoc />
