@@ -49,6 +49,7 @@ namespace FlaxEditor.GUI.Docking
 
         private MasterDockPanel _masterPanel;
         private WindowRootControl _window;
+        private bool _showDecorations;
 
         /// <summary>
         /// Gets the master panel.
@@ -70,12 +71,12 @@ namespace FlaxEditor.GUI.Docking
         /// </summary>
         public bool ShowDecorations
         {
-            get => field;
+            get => _showDecorations;
             set
             {
-                if (value == field)
+                if (value == _showDecorations)
                     return;
-                field = value;
+                _showDecorations = value;
                 if (value)
                 {
                     var decorations = Parent.AddChild(new FloatWindowDecorations(this));
