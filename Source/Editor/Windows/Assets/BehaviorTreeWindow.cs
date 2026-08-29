@@ -274,7 +274,7 @@ namespace FlaxEditor.Windows.Assets
             base.OnScriptsReloadBegin();
 
             // TODO: impl hot-reload for BT to nicely refresh state (save asset, clear undo/properties, reload surface)
-            Close();
+            Close(ClosingReason.ScriptsReload);
         }
 
         private void UpdateKnowledge()

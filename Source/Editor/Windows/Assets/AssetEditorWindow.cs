@@ -177,7 +177,7 @@ namespace FlaxEditor.Windows.Assets
                     Save();
                 }
                 Editor.Instance.Windows.AddToRestore(this);
-                Close();
+                Close(ClosingReason.ScriptsReload);
             }
         }
 
