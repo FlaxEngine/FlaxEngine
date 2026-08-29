@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Xml;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Docking;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Modules;
 using FlaxEditor.Options;
@@ -132,6 +133,8 @@ namespace FlaxEditor.Windows
         private float _gameStartTime;
         private GUI.Docking.DockState _maximizeRestoreDockState;
         private GUI.Docking.DockPanel _maximizeRestoreDockTo;
+        private GUI.Docking.DockPanel _maximizeRestoreDockToParent;
+        private float _maximizeRestoreSplitterValue;
         private CursorLockMode _cursorLockMode = CursorLockMode.None;
 
         // Viewport scaling variables
@@ -295,7 +298,10 @@ namespace FlaxEditor.Windows
                 if (value)
                 {
                     _maximizeRestoreDockTo = _dockedTo;
-                    _maximizeRestoreDockState = _dockedTo.TryGetDockState(out _);
+                    _maximizeRestoreDockToParent = _dockedTo.ParentDockPanel;
+                    _maximizeRestoreDockState = _dockedTo.TryGetDockState(out _maximizeRestoreSplitterValue);
+                    if (_dockedTo.Tabs.Count > 1)
+                        _maximizeRestoreDockState = DockState.DockFill;
                     if (_maximizeRestoreDockState != GUI.Docking.DockState.Float)
                     {
                         var monitorBounds = Platform.GetMonitorBounds(PointToScreen(Size * 0.5f));
@@ -309,9 +315,11 @@ namespace FlaxEditor.Windows
                     // Restore
                     if (rootWindow != null)
                         rootWindow.Restore();
-                    if (_maximizeRestoreDockTo != null && _maximizeRestoreDockTo.IsDisposing)
-                        _maximizeRestoreDockTo = null;
-                    Show(_maximizeRestoreDockState, _maximizeRestoreDockTo);
+                    var dockTo = _maximizeRestoreDockTo;
+                    if (dockTo != null && dockTo.IsDisposing)
+                        dockTo = _maximizeRestoreDockToParent;
+                    if (_dockedTo != dockTo)
+                        Show(_maximizeRestoreDockState, dockTo, splitterValue: _maximizeRestoreSplitterValue);
                 }
             }
         }
@@ -331,6 +339,9 @@ namespace FlaxEditor.Windows
                 {
                     IsFloating = true;
                     var rootWindow = RootWindow;
+                    var floatWin = rootWindow.GetChild<FloatWindowDockPanel>();
+                    if (floatWin != null && floatWin.ShowDecorations)
+                        floatWin.ShowDecorations = false;
                     var monitorBounds = Platform.GetMonitorBounds(rootWindow.RootWindow.Window.ClientPosition);
                     rootWindow.Window.Position = monitorBounds.Location;
                     rootWindow.Window.SetBorderless(true);
@@ -338,6 +349,9 @@ namespace FlaxEditor.Windows
                 }
                 else
                 {
+                    var floatWin = RootWindow.GetChild<FloatWindowDockPanel>();
+                    if (floatWin != null && !floatWin.ShowDecorations && Utilities.Utils.UseCustomWindowDecorations())
+                        floatWin.ShowDecorations = true;
                     IsFloating = false;
                 }
             }
@@ -899,7 +913,7 @@ namespace FlaxEditor.Windows
         /// </summary>
         public void FocusGameViewport()
         {
-            if (!IsDocked)
+            if (ParentDockPanel == null)
             {
                 ShowFloating();
             }
@@ -1004,7 +1018,7 @@ namespace FlaxEditor.Windows
                     Screen.CursorVisible = true;
                 Screen.CursorLock = CursorLockMode.None;
 
-                if (Editor.IsPlayMode && IsDocked && IsSelected && RootWindow.FocusedControl == null)
+                if (Editor.IsPlayMode && ParentDockPanel != null && IsSelected && RootWindow.FocusedControl == null)
                 {
                     // Game UI cleared focus so regain it to maintain UI navigation just like game window does
                     FlaxEngine.Scripting.InvokeOnUpdate(Focus);

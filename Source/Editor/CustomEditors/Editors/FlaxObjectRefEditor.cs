@@ -322,7 +322,11 @@ namespace FlaxEditor.CustomEditors.Editors
 
             // Deselect
             if (_value != null && button1Rect.Contains(ref location))
+            {
+                Focus();
                 Value = null;
+                return true;
+            }
 
             // Picker dropdown menu
             if (_supportsPickDropDown && (isSelected ? button2Rect : button1Rect).Contains(ref location))
@@ -371,6 +375,18 @@ namespace FlaxEditor.CustomEditors.Editors
                 // Reset valid drag over if still true at this point
                 if (_hasValidDragOver)
                     _hasValidDragOver = false;
+            }
+            if (button == MouseButton.Middle)
+            {
+                // Clear value
+                Focus();
+                Value = null;
+                return true;
+            }
+            if (button == MouseButton.Right && _supportsPickDropDown)
+            {
+                // Show picker
+                ShowDropDownMenu();
             }
 
             return base.OnMouseUp(location, button);

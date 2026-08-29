@@ -287,6 +287,7 @@ namespace FlaxEditor.Surface
 
             // Reset instigator list
             _connectionInstigators.Clear();
+            EndMouseCapture();
         }
     }
 }
