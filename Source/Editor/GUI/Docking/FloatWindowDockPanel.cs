@@ -66,6 +66,31 @@ namespace FlaxEditor.GUI.Docking
         public bool IsDragging { get; internal set; }
 
         /// <summary>
+        /// Shows client-side window decorations around this panel.
+        /// </summary>
+        public bool ShowDecorations
+        {
+            get => field;
+            set
+            {
+                if (value == field)
+                    return;
+                field = value;
+                if (value)
+                {
+                    var decorations = Parent.AddChild(new FloatWindowDecorations(this));
+                    decorations.SetAnchorPreset(AnchorPresets.HorizontalStretchTop, false);
+                }
+                else
+                {
+                    var decorations = Parent.GetChild<FloatWindowDecorations>();
+                    if (decorations != null)
+                        decorations.Dispose();
+                }
+            }
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="FloatWindowDockPanel"/> class.
         /// </summary>
         /// <param name="masterPanel">The master panel.</param>
@@ -82,11 +107,7 @@ namespace FlaxEditor.GUI.Docking
             _window.Window.Closing += OnClosing;
             _window.Window.LeftButtonHit += OnLeftButtonHit;
 
-            if (Utilities.Utils.UseCustomWindowDecorations())
-            {
-                var decorations = Parent.AddChild(new FloatWindowDecorations(this));
-                decorations.SetAnchorPreset(AnchorPresets.HorizontalStretchTop, false);
-            }
+            ShowDecorations = Utilities.Utils.UseCustomWindowDecorations();
         }
 
         /// <inheritdoc />
@@ -94,13 +115,10 @@ namespace FlaxEditor.GUI.Docking
         {
             base.PerformLayoutBeforeChildren();
 
-            var decorations = Parent.GetChild<FloatWindowDecorations>();
-            if (decorations != null)
-            {
-                // Apply offset for the title bar
-                foreach (var child in Children)
-                    child.Bounds = child.Bounds with { Y = decorations.Height, Height = Parent.Height - decorations.Height };
-            }
+            // Apply offset for the title bar
+            var decorationsHeight = Parent.GetChild<FloatWindowDecorations>()?.Height ?? 0;
+            foreach (var child in Children)
+                child.Bounds = child.Bounds with { Y = decorationsHeight, Height = Parent.Height - decorationsHeight };
         }
 
         /// <summary>
