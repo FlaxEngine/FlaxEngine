@@ -14,4 +14,4 @@ Some useful notes and tips for devs:
 * `MONO_GC_DEBUG=nursery-canaries` - it might catch some buffer overflows in case of problems in code.
 * `MONO_GC_DEBUG=<log-level>:<log-file>` - will print GC debug to the log file (eg. `4:sgen-gc`).
 * Methods `mono_custom_attrs_from_property` and `mono_custom_attrs_get_attr` are internally cached
-* If C++ mono call a method in c# that will throw an error, error will be handled but, not completly. Calling relase domain will return random `Access memory violation`. First search for error in c# code. No workaround yet.
+* If C++ mono call a method in c# that will throw an error, error will be handled but, not completely. Calling release domain will return random `Access memory violation`. First search for error in c# code. No workaround yet.
