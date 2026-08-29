@@ -24,6 +24,9 @@ jobs:
       run: |
         dotnet workload update
         dotnet workload install ios
+        dotnet workload repair
+        dotnet --info
+        dotnet workload --info
     - name: Print .NET info
       run: |
         dotnet --info
