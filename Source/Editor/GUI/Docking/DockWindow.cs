@@ -1,7 +1,9 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
 using System.Xml;
 using System.Globalization;
+using System.Linq;
 using FlaxEngine;
 using FlaxEngine.Assertions;
 using FlaxEngine.GUI;
@@ -50,7 +52,7 @@ namespace FlaxEditor.GUI.Docking
         /// <summary>
         /// Gets a value indicating whether this window is docked.
         /// </summary>
-        public bool IsDocked => _dockedTo != null;
+        public bool IsDocked => _dockedTo != null && _dockedTo.TabsCount > 1;
 
         /// <summary>
         /// Gets a value indicating whether this window is selected.
@@ -233,6 +235,46 @@ namespace FlaxEditor.GUI.Docking
         }
 
         /// <summary>
+        /// Reattaches the window control to existing floating window.
+        /// </summary>
+        /// <param name="windowHandle">The window handle.</param>
+        /// <param name="state">Initial window state.</param>
+        /// <param name="toDock">Panel to dock to it.</param>
+        /// <param name="autoSelect">Only used if <paramref name="toDock"/> is set. If true the window will be selected after docking it.</param>
+        /// <param name="splitterValue">Only used if <paramref name="toDock"/> is set. The splitter value to use. If not specified, a default value will be used.</param>
+        public void Restore(IntPtr windowHandle, DockState state = DockState.Float, DockPanel toDock = null, bool autoSelect = true, float? splitterValue = null)
+        {
+            if (state != DockState.Float)
+            {
+                Show(state, toDock, autoSelect, splitterValue);
+                return;
+            }
+
+            Undock();
+
+            // Find the existing window and remove all controls from it
+            var window = Editor.GetWindows().First(x => x.NativePtr == windowHandle);
+            var windowGUI = window.GUI;
+            while (windowGUI.Children.Count > 0)
+                windowGUI.Children[^1].Dispose();
+            windowGUI.EndTrackingMouse();
+
+            // Create dock panel for the window
+            var dockPanel = new FloatWindowDockPanel(_masterPanel, windowGUI);
+            dockPanel.DockWindowInternal(DockState.DockFill, this);
+
+            // Perform layout
+            Visible = true;
+            windowGUI.UnlockChildrenRecursive();
+            windowGUI.PerformLayout();
+
+            OnShow();
+
+            // Perform layout again
+            windowGUI.PerformLayout();
+        }
+
+        /// <summary>
         /// Shows the window.
         /// </summary>
         /// <param name="state">Initial window state.</param>
@@ -332,6 +374,12 @@ namespace FlaxEditor.GUI.Docking
             }
             else
             {
+                if (reason == ClosingReason.ScriptsReload && _dockedTo is FloatWindowDockPanel floatPanel)
+                {
+                    // Unlink the window to keep it alive during scripts reload
+                    floatPanel.UnlinkWindow();
+                }
+                
                 // Undock
                 Undock();
 
@@ -488,7 +536,7 @@ namespace FlaxEditor.GUI.Docking
             base.Focus();
 
             SelectTab(false);
-            BringToFront();
+            _dockedTo?.RootWindow?.Focus();
         }
 
         /// <inheritdoc />

@@ -159,11 +159,11 @@ namespace FlaxEditor.States
             SceneDuplicated?.Invoke();
             RestoreSelection();
 
+            Time.Synchronize(true);
+
             Editor.OnPlayBegin();
             IsPlayModeStarting = false;
             Profiler.EndEvent();
-
-            Time.Synchronize(true);
         }
 
         private void SetupEditorEnvOptions()

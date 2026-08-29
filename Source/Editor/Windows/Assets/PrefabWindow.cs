@@ -366,7 +366,7 @@ namespace FlaxEditor.Windows.Assets
             _viewport.Prefab = null;
             _undo?.Clear(); // TODO: maybe don't clear undo?
 
-            Close();
+            Close(ClosingReason.ScriptsReload);
         }
 
         private void OnUndoEvent(IUndoAction action)
