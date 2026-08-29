@@ -22,7 +22,7 @@ jobs:
         dotnet-version: 8.0.x
     - name: Setup .NET Workload
       run: |
-        dotnet workload install ios
+        dotnet workload install ios --skip-manifest-update
         dotnet workload repair
     - name: Print .NET info
       run: |
