@@ -771,6 +771,16 @@ API_ENUM() enum class KeyboardKeys
     Oem102 = 0xE2,
 
     /// <summary>
+    /// Command key on Apple keyboards.
+    /// </summary>
+    Command = 0xE3,
+
+    /// <summary>
+    /// Platform primary shortcut modifier (Command on macOS, Control on other platforms).
+    /// </summary>
+    Shortcut = 0xE4,
+
+    /// <summary>
     /// IME PROCESS key
     /// </summary>
     Processkey = 0xE5,

@@ -115,7 +115,7 @@ namespace FlaxEditor.GUI
         /// <returns>This tooltip.</returns>
         public ToolStripButton LinkTooltip(string text, ref Options.InputBinding inputBinding)
         {
-            var input = inputBinding.ToString();
+            var input = inputBinding.ToDisplayString();
             if (input.Length != 0)
                 text = $"{text} ({input})";
             LinkTooltip(text);
