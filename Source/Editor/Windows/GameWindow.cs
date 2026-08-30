@@ -672,9 +672,10 @@ namespace FlaxEditor.Windows
             IsBorderless = false;
             Cursor = CursorType.Default;
             Screen.CursorLock = CursorLockMode.None;
-            if (Screen.MainWindow.IsMouseTracking)
-                Screen.MainWindow.EndTrackingMouse();
-            RootControl.GameRoot.EndMouseCapture();
+            var mainWindow = Screen.MainWindow;
+            if (mainWindow != null && mainWindow.IsMouseTracking)
+                mainWindow.EndTrackingMouse();
+            RootControl.GameRoot?.EndMouseCapture();
         }
 
         /// <inheritdoc />
