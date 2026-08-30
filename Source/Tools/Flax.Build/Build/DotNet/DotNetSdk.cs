@@ -136,7 +136,7 @@ namespace Flax.Build
         /// <summary>
         /// The maximum SDK version.
         /// </summary>
-        public static Version MaximumVersion => new Version(8, 0);
+        public static Version MaximumVersion => new Version(10, 0);
 
         /// <inheritdoc />
         public override TargetPlatform[] Platforms
