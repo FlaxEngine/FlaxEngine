@@ -432,8 +432,8 @@ public class Slider : ContainerControl
                 direction is NavDirection.Right or NavDirection.Left;
             float thumbLocation = isHorizontal ? location.X : location.Y;
             
-            float numLocation = WholeNumbers ? 0.1f : 0.01f;
-            var thumbValue = (thumbLocation < _thumbCenter ? -numLocation : numLocation) * _step;
+            float numLocation = WholeNumbers ? 1f : 0.1f;
+            var thumbValue = (thumbLocation < _thumbCenter ? -numLocation : numLocation);
 
             switch (isHorizontal, Direction)
             {
