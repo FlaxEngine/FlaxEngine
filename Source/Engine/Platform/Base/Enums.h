@@ -28,6 +28,11 @@ API_ENUM() enum class ClosingReason
     /// The close event.
     /// </summary>
     CloseEvent,
+    
+    /// <summary>
+    /// The scripts reload event.
+    /// </summary>
+    ScriptsReload,
 };
 
 /// <summary>

@@ -299,6 +299,7 @@ namespace FlaxEditor.GUI
                 }
                 else if (Button1Rect.Contains(location))
                 {
+                    // Show picker
                     Focus();
                     OnSubmit();
                 }
@@ -317,6 +318,18 @@ namespace FlaxEditor.GUI
                         Validator.SelectedItem = null;
                     }
                 }
+            }
+            if (button == MouseButton.Middle && IconRect.Contains(ref location))
+            {
+                // Clear value
+                Focus();
+                Validator.SelectedItem = null;
+            }
+            if (button == MouseButton.Right && IconRect.Contains(ref location))
+            {
+                // Show picker
+                Focus();
+                OnSubmit();
             }
 
             // Handled

@@ -748,21 +748,27 @@ namespace FlaxEditor.Modules
                 if (item.Path.Contains(".Build.cs", StringComparison.Ordinal) && item.ItemType == ContentItemType.Script)
                     Editor.Instance.CodeEditing.RemoveModule(item.Path);
 
-                // Check if it's an asset
-                if (item.IsAsset)
-                {
-                    // Delete asset by using content pool
-                    FlaxEngine.Content.DeleteAsset(path);
-                }
-                else if (item is ScriptItem)
-                {
-                    FlaxEngine.Content.DeleteScript(path);
-                }
-                else if (deletedByUser)
-                {
-                    // Delete file
-                    if (File.Exists(path))
-                        File.Delete(path);
+                // Delete asset file only if it was explicitly deleted by the user.
+                // Some applications might modify the file by deleting the original and replacing
+                // it with a new file which sometimes is caught in the middle of these operations.
+                if (deletedByUser)
+                { 
+                    // Check if it's an asset
+                    if (item.IsAsset)
+                    {
+                        // Delete asset by using content pool
+                        FlaxEngine.Content.DeleteAsset(path);
+                    }
+                    else if (item is ScriptItem)
+                    {
+                        FlaxEngine.Content.DeleteScript(path);
+                    }
+                    else
+                    {
+                        // Delete file
+                        if (File.Exists(path))
+                            File.Delete(path);
+                    }
                 }
 
                 // Unlink from the parent
@@ -826,23 +832,29 @@ namespace FlaxEditor.Modules
             var startTime = Platform.TimeSeconds;
             _rebuildFlag = false;
             _rebuildInitFlag = false;
-            _enableEvents = false;
 
-            // Load all folders
-            // TODO: we should create async task for gathering content and whole workspace contents if it takes too long
-            // TODO: create progress bar in content window and after end we should enable events and update it
+            _enableEvents = false;
             _isDuringFastSetup = true;
             var startItems = _itemsCreated;
-            foreach (var project in Projects)
+            try
             {
-                if (project.Content != null)
-                    LoadFolder(project.Content, true);
-                if (project.Source != null)
-                    LoadFolder(project.Source, true);
+                // Load all folders
+                // TODO: we should create async task for gathering content and whole workspace contents if it takes too long
+                // TODO: create progress bar in content window and after end we should enable events and update it
+                foreach (var project in Projects)
+                {
+                    if (project.Content != null)
+                        LoadFolder(project.Content, true);
+                    if (project.Source != null)
+                        LoadFolder(project.Source, true);
+                }
             }
-            _isDuringFastSetup = false;
-
-            _enableEvents = enableEvents;
+            finally
+            {
+                _isDuringFastSetup = false;
+                _enableEvents = enableEvents;
+            }
+            
             var endTime = Platform.TimeSeconds;
             Editor.Log(string.Format("Project database created in {0} ms. Items count: {1}", (int)((endTime - startTime) * 1000.0), _itemsCreated - startItems));
             Profiler.EndEvent();
@@ -1340,39 +1352,44 @@ namespace FlaxEditor.Modules
             _enableEvents = false;
             _isDuringFastSetup = true;
             var startItems = _itemsCreated;
-            foreach (var project in Projects)
+            try
             {
-                if (project.Content != null)
+                foreach (var project in Projects)
                 {
-                    //Dispose(project.Content.Folder);
-                    for (int i = 0; i < project.Content.Folder.Children.Count; i++)
+                    if (project.Content != null)
                     {
-                        Dispose(project.Content.Folder.Children[i]);
-                        i--;
+                        //Dispose(project.Content.Folder);
+                        for (int i = 0; i < project.Content.Folder.Children.Count; i++)
+                        {
+                            Dispose(project.Content.Folder.Children[i]);
+                            i--;
+                        }
+                    }
+                    if (project.Source != null)
+                    {
+                        //Dispose(project.Source.Folder);
+                        for (int i = 0; i < project.Source.Folder.Children.Count; i++)
+                        {
+                            Dispose(project.Source.Folder.Children[i]);
+                            i--;
+                        }
                     }
                 }
-                if (project.Source != null)
+
+                List<ContentProxy> removeProxies = new List<ContentProxy>();
+                foreach (var proxy in Editor.Instance.ContentDatabase.Proxy)
                 {
-                    //Dispose(project.Source.Folder);
-                    for (int i = 0; i < project.Source.Folder.Children.Count; i++)
-                    {
-                        Dispose(project.Source.Folder.Children[i]);
-                        i--;
-                    }
+                    if (proxy.GetType().IsCollectible)
+                        removeProxies.Add(proxy);
                 }
+                foreach (var proxy in removeProxies)
+                    RemoveProxy(proxy, false);
             }
-
-            List<ContentProxy> removeProxies = new List<ContentProxy>();
-            foreach (var proxy in Editor.Instance.ContentDatabase.Proxy)
+            finally
             {
-                if (proxy.GetType().IsCollectible)
-                    removeProxies.Add(proxy);
+                _isDuringFastSetup = false;
+                _enableEvents = enabledEvents;
             }
-            foreach (var proxy in removeProxies)
-                RemoveProxy(proxy, false);
-
-            _isDuringFastSetup = false;
-            _enableEvents = enabledEvents;
         }
 
         private void OnScriptsReloadEnd()
@@ -1383,18 +1400,22 @@ namespace FlaxEditor.Modules
         /// <inheritdoc />
         public override void OnUpdate()
         {
-            // Update all dirty content tree nodes
-            lock (_dirtyNodes)
+            // Check for updates only when the editor is focused to only check once for all changes done in background.
+            if (FlaxEngine.Engine.HasFocus)
             {
-                Profiler.BeginEvent("ContentDatabase.Refresh");
-                foreach (var node in _dirtyNodes)
+                // Update all dirty content tree nodes
+                lock (_dirtyNodes)
                 {
-                    LoadFolder(node, true);
+                    Profiler.BeginEvent("ContentDatabase.Refresh");
+                    foreach (var node in _dirtyNodes)
+                    {
+                        LoadFolder(node, true);
+                    }
+                    if (_enableEvents && _dirtyNodes.Count != 0)
+                        WorkspaceModified?.Invoke();
+                    _dirtyNodes.Clear();
+                    Profiler.EndEvent();
                 }
-                if (_enableEvents && _dirtyNodes.Count != 0)
-                    WorkspaceModified?.Invoke();
-                _dirtyNodes.Clear();
-                Profiler.EndEvent();
             }
 
             // Lazy-rebuilds
