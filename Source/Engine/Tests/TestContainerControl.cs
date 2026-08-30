@@ -26,6 +26,29 @@ namespace FlaxEngine.Tests
             }
         }
 
+        private sealed class RemovingControl : MyControl
+        {
+            private readonly Control[] _controlsToRemove;
+
+            public RemovingControl(float x, float y, float width, float height, params Control[] controlsToRemove)
+            : base(x, y, width, height)
+            {
+                _controlsToRemove = controlsToRemove;
+            }
+
+            public override void OnMouseEnter(Float2 location)
+            {
+                for (int i = 0; i < _controlsToRemove.Length; i++)
+                {
+                    var control = _controlsToRemove[i];
+                    if (control.Parent == Parent)
+                        control.Parent = null;
+                }
+
+                base.OnMouseEnter(location);
+            }
+        }
+
         [Test]
         public void TestChildren()
         {
@@ -52,6 +75,25 @@ namespace FlaxEngine.Tests
 
             Assert.AreEqual(cc1.GetChildAt(new Vector2(15, 5)), cc2);
             Assert.AreEqual(cc1.GetChildAtRecursive(new Vector2(35, 25)), c3);
+        }
+
+        [Test]
+        public void TestMouseMoveAllowsChildrenRemoval()
+        {
+            var container = new MyContainerControl(0, 0, 100, 100);
+            var first = new MyControl(0, 0, 100, 100);
+            var second = new MyControl(0, 0, 100, 100);
+            var removing = new RemovingControl(0, 0, 100, 100, first, second);
+            container.AddChild(first);
+            container.AddChild(second);
+            container.AddChild(removing);
+
+            // The top-most child removes multiple siblings during input dispatch.
+            // Traversal must not use the now-stale next index.
+            container.OnMouseMove(new Float2(50, 50));
+
+            Assert.AreEqual(1, container.ChildrenCount);
+            Assert.AreEqual(removing, container.GetChild(0));
         }
     }
 }

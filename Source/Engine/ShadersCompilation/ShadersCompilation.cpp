@@ -26,6 +26,8 @@
 #if USE_EDITOR
 #define COMPILE_WITH_ASSETS_IMPORTER 1 // Hack to use shaders importing in this module
 #include "Engine/ContentImporters/AssetsImportingManager.h"
+#include "Engine/Content/Storage/ContentStorageManager.h"
+#include "Engine/Utilities/Encryption.h"
 #include "Engine/Platform/FileSystemWatcher.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/File.h"
@@ -495,6 +497,37 @@ String ShadersCompilation::CompactShaderPath(StringView path)
 
 #if USE_EDITOR
 
+bool ShadersCompilation::IsShaderSourceAssetUpToDate(const StringView& sourcePath, const StringView& assetPath)
+{
+    PROFILE_CPU();
+    StringAnsi source;
+    if (File::ReadAllText(sourcePath, source))
+        return false;
+    if (!source.HasChars() || source[source.Length() - 1] != '\n')
+        source.Append('\n');
+
+    const auto storage = ContentStorageManager::GetStorage(assetPath);
+    AssetInitData data;
+    if (!storage
+        || storage->GetEntriesCount() != 1
+        || storage->GetEntry(0).TypeName != Shader::TypeName
+        || storage->LoadAssetHeader(0, data)
+        || data.SerializedVersion != Shader::SerializedVersion)
+        return false;
+
+    FlaxChunk* sourceChunk = data.Header.Chunks[SHADER_FILE_CHUNK_SOURCE];
+    if (!sourceChunk || storage->LoadAssetChunk(sourceChunk) || !sourceChunk->Data.IsValid())
+        return false;
+
+    BytesContainer embeddedSource;
+    embeddedSource.Copy(sourceChunk->Data);
+    if (embeddedSource.Length() != source.Length() + 1)
+        return false;
+    Encryption::DecryptBytes(embeddedSource.Get(), embeddedSource.Length());
+    embeddedSource.Get()[embeddedSource.Length() - 1] = 0;
+    return Platform::MemoryCompare(embeddedSource.Get(), source.Get(), source.Length()) == 0;
+}
+
 namespace
 {
     Array<FileSystemWatcher*> ShadersSourcesWatchers;
@@ -509,6 +542,13 @@ namespace
         result.C = name.HasChars() ? name[0] : 0;
         result.D = name.HasChars() ? name[name.Length() - 1] : 0;
         return result;
+    }
+
+    bool ImportShaderIfChanged(const StringView& sourcePath, const StringView& assetPath, Guid& assetId)
+    {
+        if (ShadersCompilation::IsShaderSourceAssetUpToDate(sourcePath, assetPath))
+            return false;
+        return AssetsImportingManager::Import(sourcePath, assetPath, assetId);
     }
 
     void OnWatcherShadersEvent(const String& path, FileSystemAction action)
@@ -533,7 +573,7 @@ namespace
         const String name = StringUtils::GetPathWithoutExtension(localPath);
         const String outputPath = shadersAssetsPath / name + ASSET_FILES_EXTENSION_WITH_DOT;
         Guid id = GetShaderAssetId(name);
-        AssetsImportingManager::ImportIfEdited(path, outputPath, id);
+        ImportShaderIfChanged(path, outputPath, id);
     }
 
     void RegisterShaderWatchers(const ProjectInfo* project, HashSet<const ProjectInfo*>& projects)
@@ -562,7 +602,7 @@ namespace
                 const String name = StringUtils::GetPathWithoutExtension(localPath);
                 const String outputPath = shadersAssetsPath / name + ASSET_FILES_EXTENSION_WITH_DOT;
                 Guid id = GetShaderAssetId(name);
-                AssetsImportingManager::ImportIfEdited(path, outputPath, id);
+                ImportShaderIfChanged(path, outputPath, id);
             }
         }
 

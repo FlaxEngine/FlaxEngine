@@ -1438,10 +1438,6 @@ FileReadStream* FlaxStorage::OpenFile()
 
 bool FlaxStorage::CloseFileHandles()
 {
-    // Guard the whole process so if new thread wants to lock the chunks will need to wait for this to end
-    Platform::InterlockedIncrement(&_isUnloadingData);
-    SCOPE_EXIT{ Platform::InterlockedDecrement(&_isUnloadingData); };
-
     if (Platform::AtomicRead(&_chunksLock) == 0 && Platform::AtomicRead(&_files) == 0)
         return false; // Early out when no files are opened
     PROFILE_CPU();
@@ -1469,7 +1465,13 @@ bool FlaxStorage::CloseFileHandles()
             }
         }
     }
-    waitTime = 100;
+
+    // Guard the whole process so if new thread wants to lock the chunks will need to wait for this to end
+    Platform::InterlockedIncrement(&_isUnloadingData);
+    SCOPE_EXIT{ Platform::InterlockedDecrement(&_isUnloadingData); };
+
+    // Wait for chunks lock again (with larger timeout for longer tasks)
+    waitTime = 1000;
     while (Platform::AtomicRead(&_chunksLock) != 0 && waitTime-- > 0)
         Platform::Sleep(1);
     if (Platform::AtomicRead(&_chunksLock) != 0)

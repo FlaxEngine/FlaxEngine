@@ -47,6 +47,16 @@ public:
     // Compacts the full shader file path into portable format with project name prefix such as './<ProjectName>/ShaderFile.hlsl'.
     static String CompactShaderPath(StringView path);
 
+#if USE_EDITOR
+    /// <summary>
+    /// Checks whether a shader asset embeds the current source file contents.
+    /// </summary>
+    /// <param name="sourcePath">The shader source file path.</param>
+    /// <param name="assetPath">The shader asset file path.</param>
+    /// <returns>True when the embedded source matches, otherwise false.</returns>
+    static bool IsShaderSourceAssetUpToDate(const StringView& sourcePath, const StringView& assetPath);
+#endif
+
 private:
     static ShaderCompiler* RequestCompiler(ShaderProfile profile, PlatformType platform);
     static void FreeCompiler(ShaderCompiler* compiler);
