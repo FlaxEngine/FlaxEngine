@@ -110,6 +110,11 @@ namespace Flax.Build.NativeCpp
                 return libFolder;
 
             // Try to find nearest framework folder
+            if (Framework.StartsWith("netcoreapp"))
+            {
+                var version = System.Version.Parse(Framework.Substring(10));
+                return string.Empty;
+            }
             if (Framework.StartsWith("net"))
             {
                 var baseVersion = int.Parse(Framework.Substring(3, Framework.IndexOf('.') - 3));
@@ -144,7 +149,10 @@ namespace Flax.Build.NativeCpp
             var dlls = Directory.Exists(libFolder) ? Directory.GetFiles(libFolder, "*.dll", SearchOption.TopDirectoryOnly) : [];
             if (dlls.Length == 0)
             {
-                Log.Error($"Missing NuGet package \"{Name}, {Version}, {Framework}\" binaries (folder: {libFolder})");
+                if (!File.Exists(Path.Combine(libFolder, "_._"))) // Skip error for packages without a binary (eg. Microsoft.NET.Test.Sdk)
+                {
+                    Log.Error($"Missing NuGet package \"{Name}, {Version}, {Framework}\" binaries (folder: {libFolder})");
+                }
                 return string.Empty;
             }
             return dlls[0];
