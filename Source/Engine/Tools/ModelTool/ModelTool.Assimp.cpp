@@ -20,26 +20,29 @@
 #include <ThirdParty/assimp/scene.h>
 #include <ThirdParty/assimp/version.h>
 #include <ThirdParty/assimp/postprocess.h>
-#include <ThirdParty/assimp/LogStream.hpp>
 #include <ThirdParty/assimp/DefaultLogger.hpp>
 #include <ThirdParty/assimp/Logger.hpp>
 
-class AssimpLogStream : public Assimp::LogStream
+class AssimpLogger final : public Assimp::Logger
 {
 public:
-    AssimpLogStream()
+    AssimpLogger()
+        : Logger(NORMAL)
     {
-        Assimp::DefaultLogger::create("");
-        Assimp::DefaultLogger::get()->attachStream(this);
     }
 
-    ~AssimpLogStream()
+    bool attachStream(Assimp::LogStream*, unsigned int) override
     {
-        Assimp::DefaultLogger::get()->detachStream(this);
-        Assimp::DefaultLogger::kill();
+        return false;
     }
 
-    void write(const char* message) override
+    bool detachStream(Assimp::LogStream*, unsigned int) override
+    {
+        return false;
+    }
+
+private:
+    static void Write(const Char* type, const char* message)
     {
         String s(message);
         if (s.Length() <= 0)
@@ -52,9 +55,48 @@ public:
             else if (c >= 255)
                 c = '?';
         }
-        LOG(Info, "[Assimp]: {0}", s);
+        LOG(Info, "[Assimp]: {0}: {1}", type, s);
+    }
+
+    void OnDebug(const char* message) override
+    {
+        if (m_Severity >= DEBUGGING)
+            Write(TEXT("Debug"), message);
+    }
+
+    void OnVerboseDebug(const char* message) override
+    {
+        if (m_Severity >= VERBOSE)
+            Write(TEXT("Debug"), message);
+    }
+
+    void OnInfo(const char* message) override
+    {
+        Write(TEXT("Info"), message);
+    }
+
+    void OnWarn(const char* message) override
+    {
+        Write(TEXT("Warn"), message);
+    }
+
+    void OnError(const char* message) override
+    {
+        Write(TEXT("Error"), message);
     }
 };
+
+Assimp::Logger* GetAssimpLogger()
+{
+    static Assimp::Logger* logger = []()
+    {
+        auto result = new AssimpLogger();
+        Assimp::DefaultLogger::set(result);
+        LOG(Info, "Assimp {0}.{1}.{2}", aiGetVersionMajor(), aiGetVersionMinor(), aiGetVersionRevision());
+        return result;
+    }();
+    return logger;
+}
 
 Float2 ToFloat2(const aiVector2D& v)
 {
@@ -148,7 +190,6 @@ struct AssimpBone
 struct AssimpImporterData
 {
     Assimp::Importer AssimpImporter;
-    AssimpLogStream AssimpLogStream;
     const String Path;
     const aiScene* Scene = nullptr;
     const ModelTool::Options& Options;
@@ -699,12 +740,7 @@ void ImportAnimation(int32 index, ModelData& data, AssimpImporterData& importerD
 
 bool ModelTool::ImportDataAssimp(const String& path, ModelData& data, Options& options, String& errorMsg)
 {
-    static bool AssimpInited = false;
-    if (!AssimpInited)
-    {
-        AssimpInited = true;
-        LOG(Info, "Assimp {0}.{1}.{2}", aiGetVersionMajor(), aiGetVersionMinor(), aiGetVersionRevision());
-    }
+    GetAssimpLogger();
     bool importMeshes = EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry);
     bool importAnimations = EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Animations);
     AssimpImporterData context(path, options);
