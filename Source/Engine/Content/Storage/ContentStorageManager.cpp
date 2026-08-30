@@ -122,11 +122,8 @@ FlaxStorageReference ContentStorageManager::EnsureAccess(const StringView& path)
     // Note: because we want to create new storage package it may exists.
     // So let's check if any storage container is referencing that location and try to close it.
     auto storage = TryGetStorage(path);
-    if (storage && storage->IsLoaded())
-    {
-        LOG(Info, "File \'{0}\' is in use. Trying to release handle to it.", path);
-        storage->CloseFileHandles();
-    }
+    if (storage && storage->IsLoaded() && storage->CloseFileHandles())
+        LOG(Warning, "Cannot release content storage handle for '{0}'.", path);
     return storage;
 }
 
