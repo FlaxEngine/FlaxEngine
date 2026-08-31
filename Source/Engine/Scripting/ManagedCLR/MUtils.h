@@ -20,7 +20,7 @@ class BitArray;
 
 namespace MUtils
 {
-    extern FLAXENGINE_API StringView ToString(MString* str);
+    extern FLAXENGINE_API String ToString(MString* str);
     extern FLAXENGINE_API StringAnsi ToStringAnsi(MString* str);
     extern FLAXENGINE_API void ToString(MString* str, String& result);
     extern FLAXENGINE_API void ToString(MString* str, StringView& result);
