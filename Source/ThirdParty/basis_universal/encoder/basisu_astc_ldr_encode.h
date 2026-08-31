@@ -68,15 +68,34 @@ namespace astc_ldr {
 		// If true, try encoding blurred blocks, in addition to unblurred, for superpass 1 and 2. 
 		// Higher quality, but massively slower and not yet tuned/refined.
 		bool m_block_blurring_p1 = false, m_block_blurring_p2 = false;
-
+				
 		// If true, no matter what effort level subset usage will be disabled.
 		bool m_force_disable_subsets = false;
 		
 		// If true, no matter what effort level RGB dual plane usage will be disabled.
 		bool m_force_disable_rgb_dual_plane = false;
+
+		bool m_use_astcenc = false;
+		bool m_use_astcf = false;
+		bool m_merge_basisu_into_output = false;
+				
+		// If true, the encoder's deblocking passes (SCD - stochastic coordinate descent) are enabled.
+		bool m_scd_enabled = false;
+		// When m_scd_enabled is true: whether or not a CPU/GPU postfilter will be applied to the output.
+		bool m_scd_will_postfilter = true; 
+		bool m_scd_preserve_chroma = true; // if true, the SCD passes will add in chroma (CbCr) error into the composite metric
+		uint32_t m_num_scd_passes = 12; // [4,256] (clamped automatically), higher=better quality, but slower.
+				
+		bool m_sharpen_flag = false;
+		float m_sharpen_amount = 4.0f;
+				
+		bool m_try_simplified_latent_configs = false;
+
+		int m_debug_block_x = -1, m_debug_block_y = -1;
 				
 		bool m_debug_images = false;
 		bool m_debug_output = false;
+		bool m_debug_output_image_metrics = true;
 
 		std::string m_debug_file_prefix;
 
@@ -100,6 +119,22 @@ namespace astc_ldr {
 			fmt_debug_printf("m_replacement_min_psnr_alpha: {}\n", m_replacement_min_psnr_alpha);
 			fmt_debug_printf("m_psnr_trial_diff_thresh_alpha: {}\n", m_psnr_trial_diff_thresh_alpha);
 			fmt_debug_printf("m_psnr_trial_diff_thresh_edge_alpha: {}\n", m_psnr_trial_diff_thresh_edge_alpha);
+			
+			fmt_debug_printf("m_use_astcenc: {}\n", m_use_astcenc);
+			fmt_debug_printf("m_use_astcf: {}\n", m_use_astcf);
+			fmt_debug_printf("m_merge_basisu_into_output: {}\n", m_merge_basisu_into_output);
+
+			fmt_debug_printf("m_scd_enabled: {}\n", m_scd_enabled);
+			fmt_debug_printf("m_scd_will_postfilter: {}\n", m_scd_will_postfilter);
+			fmt_debug_printf("m_num_scd_passes: {}\n", m_num_scd_passes);
+			fmt_debug_printf("m_scd_preserve_chroma: {}\n", m_scd_preserve_chroma);
+			
+			fmt_debug_printf("m_sharpen_flag: {}\n", m_sharpen_flag);
+			fmt_debug_printf("m_sharpen_amount: {}\n", m_sharpen_amount);
+									
+			fmt_debug_printf("m_try_simplified_latent_configs: {}\n", m_try_simplified_latent_configs);
+
+			fmt_debug_printf("m_debug_block_x/m_debug_block_y: {}x{}\n", m_debug_block_x, m_debug_block_y);
 
 			fmt_debug_printf("m_debug_images: {}\n", m_debug_images);
 		}
@@ -110,7 +145,12 @@ namespace astc_ldr {
 		const astc_ldr_encode_config& global_cfg,
 		job_pool& job_pool);
 	
-	void deblock_filter(uint32_t filter_block_width, uint32_t filter_block_height, const image& src_img, image& dst_img, bool stronger_filtering = false, int SKIP_THRESH = 24);
+	void downsample_weight_residual_grid(
+		const float* pMatrix_weights,
+		uint32_t bx, uint32_t by,		// source/from dimension (block size)
+		uint32_t wx, uint32_t wy,		// dest/to dimension (grid size)
+		const int* pSrc_weights,	// these are dequantized weights, NOT ISE symbols, [by][bx]
+		float* pDst_weights);			// [wy][wx]
 
 } // namespace astc_ldr
 } // namespace basisu

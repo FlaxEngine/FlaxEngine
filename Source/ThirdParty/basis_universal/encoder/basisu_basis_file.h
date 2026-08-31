@@ -36,6 +36,8 @@ namespace basisu
 
 			m_header_file_ofs = 0;
 			m_slice_descs_file_ofs = 0;
+			m_kv_data_file_ofs = 0;
+			m_kv_data_file_size = 0;
 			m_endpoint_cb_file_ofs = 0;
 			m_selector_cb_file_ofs = 0;
 			m_tables_file_ofs = 0;
@@ -43,7 +45,11 @@ namespace basisu
 			m_total_file_size = 0;
 		}
 
-		bool init(const basisu_backend_output& encoder_output, basist::basis_texture_type tex_type, uint32_t userdata0, uint32_t userdata1, bool y_flipped, uint32_t us_per_frame);
+		bool init(const basisu_backend_output& encoder_output, 
+			basist::basis_texture_type tex_type, 
+			uint32_t userdata0, uint32_t userdata1, 
+			bool y_flipped, uint32_t us_per_frame, 
+			const basist::key_value_vec &key_values);
 
 		const uint8_vec &get_compressed_data() const { return m_comp_data; }
 
@@ -53,18 +59,25 @@ namespace basisu
 
 		uint8_vec m_comp_data;
 
-		uint32_t m_header_file_ofs;
-		uint32_t m_slice_descs_file_ofs;
-		uint32_t m_endpoint_cb_file_ofs;
-		uint32_t m_selector_cb_file_ofs;
-		uint32_t m_tables_file_ofs;
-		uint32_t m_first_image_file_ofs;
-		uint32_t m_total_file_size;
+		uint32_t m_header_file_ofs;			// Header file ofs
+		uint32_t m_slice_descs_file_ofs;	// Slice descs file ofs
+		
+		uint32_t m_kv_data_file_ofs;		// Key-value file ofs
+		uint32_t m_kv_data_file_size;		// Key-value file size
+
+		uint32_t m_endpoint_cb_file_ofs;	// Endpoint CB file ofs
+		uint32_t m_selector_cb_file_ofs;	// Selector CB file ofs
+		uint32_t m_tables_file_ofs;			// Huffman tables file ofs
+
+		uint32_t m_first_image_file_ofs;	// First image data file ofs
+		uint32_t m_total_file_size;			// Total file size file ofs
 
 		void create_header(const basisu_backend_output& encoder_output,  basist::basis_texture_type tex_type, uint32_t userdata0, uint32_t userdata1, bool y_flipped, uint32_t us_per_frame);
 		bool create_image_descs(const basisu_backend_output& encoder_output);
-		void create_comp_data(const basisu_backend_output& encoder_output);
+		void create_comp_data(const basisu_backend_output& encoder_output, const uint8_vec& kv_data);
 		void fixup_crcs();
+		bool check_key(const uint8_vec& k);
+		bool create_key_value_data(uint8_vec& kv_data, const basist::key_value_vec& key_values);
 	};
 
 } // namespace basisu
