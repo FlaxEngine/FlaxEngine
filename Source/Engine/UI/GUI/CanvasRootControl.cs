@@ -121,6 +121,20 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        public override void StartTextInput()
+        {
+            var parent = Parent?.Root;
+            parent?.StartTextInput();
+        }
+
+        /// <inheritdoc />
+        public override void EndTextInput()
+        {
+            var parent = Parent?.Root;
+            parent?.EndTextInput();
+        }
+
+        /// <inheritdoc />
         public override bool GetKey(KeyboardKeys key)
         {
             return Input.GetKey(key);
@@ -292,6 +306,20 @@ namespace FlaxEngine.GUI
             {
                 heldTime = rateTime = 0;
             }
+        }
+        
+        /// <inheritdoc />
+        public override void OnGotFocus()
+        {
+            StartTextInput();
+            base.OnGotFocus();
+        }
+
+        /// <inheritdoc />
+        public override void OnLostFocus()
+        {
+            EndTextInput();
+            base.OnLostFocus();
         }
 
         /// <inheritdoc />

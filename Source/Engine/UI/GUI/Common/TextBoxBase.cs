@@ -1223,6 +1223,8 @@ namespace FlaxEngine.GUI
 
             if (IsReadOnly)
                 return;
+            
+            StartTextInput();
             OnEditBegin();
         }
 
@@ -1233,6 +1235,8 @@ namespace FlaxEngine.GUI
 
             if (IsReadOnly)
                 return;
+            
+            EndTextInput();
             OnEditEnd();
         }
 

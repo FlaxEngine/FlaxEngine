@@ -401,6 +401,13 @@ namespace FlaxEditor.Surface
             base.OnMouseMove(location);
             CustomMouseMove?.Invoke(ref location);
         }
+        
+        /// <inheritdoc />
+        public override void OnGotFocus()
+        {
+            StartTextInput();
+            base.OnGotFocus();
+        }
 
         /// <inheritdoc />
         public override void OnLostFocus()
@@ -423,6 +430,7 @@ namespace FlaxEditor.Surface
             }
             _isMovingSelection = false;
             ConnectingEnd(null);
+            EndTextInput();
 
             base.OnLostFocus();
         }
@@ -834,7 +842,7 @@ namespace FlaxEditor.Surface
 
             return true;
         }
-
+        
         /// <inheritdoc />
         public override bool OnCharInput(char c)
         {
