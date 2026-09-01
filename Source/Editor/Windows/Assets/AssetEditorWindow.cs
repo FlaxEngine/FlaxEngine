@@ -132,10 +132,22 @@ namespace FlaxEditor.Windows.Assets
                         // Cancel closing
                         return true;
                     }
+                    else
+                    {
+                        // Discard and close
+                        DiscardChanges();
+                    }
                 }
             }
 
             return base.OnClosing(reason);
+        }
+
+        /// <summary>
+        /// Discards unsaved asset changes before closing the window.
+        /// </summary>
+        protected virtual void DiscardChanges()
+        {
         }
 
         /// <inheritdoc />

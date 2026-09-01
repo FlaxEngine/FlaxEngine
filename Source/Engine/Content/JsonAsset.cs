@@ -93,5 +93,15 @@ namespace FlaxEngine
             string str = instance != null ? JsonSerializer.Serialize(instance) : null;
             Data = str;
         }
+
+#if FLAX_EDITOR
+        /// <summary>
+        /// Clears the cached managed instance. The next <see cref="Instance"/> access will recreate it from the asset data.
+        /// </summary>
+        public void ClearInstance()
+        {
+            _instance = null;
+        }
+#endif
     }
 }
