@@ -43,6 +43,16 @@ public:
     /// </summary>
     API_EVENT() static Action ActiveDeviceChanged;
 
+    /// <summary>
+    /// Event called when a new audio device is connected to the system.
+    /// </summary>
+    API_EVENT() static Action DeviceAdded;
+
+    /// <summary>
+    /// Event called when an audio device is disconnected from the system.
+    /// </summary>
+    API_EVENT() static Action DeviceRemoved;
+
 public:
     /// <summary>
     /// Gets the active device.
@@ -51,16 +61,38 @@ public:
     API_PROPERTY() static AudioDevice* GetActiveDevice();
 
     /// <summary>
-    /// Gets the index of the active device.
+    /// Gets the index of the active device. Returns -1 if set to system default mode.
     /// </summary>
     /// <returns>The active device index.</returns>
     API_PROPERTY() static int32 GetActiveDeviceIndex();
+
+    /// <summary>
+    /// Gets the resolved index in Devices array of the device currently playing (resolves system default mode to the actual device index).
+    /// </summary>
+    /// <returns>The resolved active device index.</returns>
+    API_PROPERTY() static int32 GetActiveDeviceResolvedIndex();
 
     /// <summary>
     /// Sets the index of the active device.
     /// </summary>
     /// <param name="index">The index.</param>
     API_PROPERTY() static void SetActiveDeviceIndex(int32 index);
+
+    /// <summary>
+    /// Sets the index of the active device without notifying backend.
+    /// </summary>
+    /// <param name="index">The index.</param>
+    static void SetActiveDeviceIndexSilent(int32 index);
+
+    /// <summary>
+    /// Gets the internal device name explicitly selected by the user (empty if using dynamic system default device).
+    /// </summary>
+    static const StringAnsi& GetExplicitDeviceName();
+
+    /// <summary>
+    /// Sets the system default internal device name.
+    /// </summary>
+    static void SetSystemDefaultDeviceName(const StringAnsi& name);
 
 public:
     /// <summary>

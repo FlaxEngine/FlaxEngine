@@ -41,6 +41,8 @@ Array<AudioSource*> Audio::Sources;
 Array<AudioDevice> Audio::Devices;
 Action Audio::DevicesChanged;
 Action Audio::ActiveDeviceChanged;
+Action Audio::DeviceAdded;
+Action Audio::DeviceRemoved;
 AudioBackend* AudioBackend::Instance = nullptr;
 
 namespace
@@ -50,6 +52,8 @@ namespace
     int32 ActiveDeviceIndex = -1;
     bool MuteOnFocusLoss = true;
     bool EnableHRTF = true;
+    StringAnsi ExplicitDeviceName;
+    StringAnsi SystemDefaultDeviceName;
 }
 
 class AudioService : public EngineService
@@ -93,7 +97,22 @@ void AudioSettings::Apply()
 
 AudioDevice* Audio::GetActiveDevice()
 {
-    return &Devices[ActiveDeviceIndex];
+    if (ActiveDeviceIndex >= 0 && ActiveDeviceIndex < Devices.Count())
+        return &Devices[ActiveDeviceIndex];
+
+    if (!SystemDefaultDeviceName.IsEmpty() && Devices.HasItems())
+    {
+        for (int32 i = 0; i < Devices.Count(); i++)
+        {
+            if (Devices[i].InternalName == SystemDefaultDeviceName)
+                return &Devices[i];
+        }
+    }
+
+    if (Devices.HasItems())
+        return &Devices[0];
+
+    return nullptr;
 }
 
 int32 Audio::GetActiveDeviceIndex()
@@ -101,9 +120,28 @@ int32 Audio::GetActiveDeviceIndex()
     return ActiveDeviceIndex;
 }
 
+int32 Audio::GetActiveDeviceResolvedIndex()
+{
+    AudioDevice* active = GetActiveDevice();
+    if (active != nullptr)
+    {
+        for (int32 i = 0; i < Devices.Count(); i++)
+        {
+            if (&Devices[i] == active)
+                return i;
+        }
+    }
+    return -1;
+}
+
 void Audio::SetActiveDeviceIndex(int32 index)
 {
     index = Math::Clamp(index, -1, Devices.Count() - 1);
+    if (index >= 0 && index < Devices.Count())
+        ExplicitDeviceName = Devices[index].InternalName;
+    else
+        ExplicitDeviceName.Clear();
+
     if (ActiveDeviceIndex == index)
         return;
 
@@ -112,6 +150,21 @@ void Audio::SetActiveDeviceIndex(int32 index)
     AudioBackend::OnActiveDeviceChanged();
 
     ActiveDeviceChanged();
+}
+
+void Audio::SetActiveDeviceIndexSilent(int32 index)
+{
+    ActiveDeviceIndex = Math::Clamp(index, -1, Devices.Count() - 1);
+}
+
+const StringAnsi& Audio::GetExplicitDeviceName()
+{
+    return ExplicitDeviceName;
+}
+
+void Audio::SetSystemDefaultDeviceName(const StringAnsi& name)
+{
+    SystemDefaultDeviceName = name;
 }
 
 float Audio::GetMasterVolume()
