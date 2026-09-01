@@ -1,5 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System.Globalization;
+
 namespace FlaxEngine.GUI
 {
     /// <summary>
@@ -44,6 +46,11 @@ namespace FlaxEngine.GUI
             float w = Width - _margin.Width;
             float maxWidth = w;
             bool hasAnyTop = false, hasAnyBottom = false;
+
+            float totalGaps = (_children.Count - 1) * Spacing;
+            float availableHeight = Height - totalGaps - TopMargin - BottomMargin;
+            float itemHeight = availableHeight / _children.Count;
+
             for (int i = 0; i < _children.Count; i++)
             {
                 Control c = _children[i];
@@ -64,6 +71,11 @@ namespace FlaxEngine.GUI
                         hasAnyBottom = true;
                     }
                     maxWidth = Mathf.Max(maxWidth, cw);
+
+                    if (ExpandChildren)
+                    {
+                        c.Height = itemHeight;                       
+                    }
                 }
             }
             if (hasAnyTop)
