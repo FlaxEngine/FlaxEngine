@@ -28,6 +28,10 @@ HardwareOcclusionCulling::HardwareOcclusionCulling(const SpawnParams& params)
 HardwareOcclusionCulling::~HardwareOcclusionCulling()
 {
     SAFE_DELETE_GPU_RESOURCE(_indexBuffer);
+#if COMPILE_WITH_DEV_ENV
+    if (_shader)
+        _shader->Reloading.Unbind<HardwareOcclusionCulling, &HardwareOcclusionCulling::OnShaderReloading>(this);
+#endif
 }
 
 void HardwareOcclusionCulling::BeginFrame(const RenderContext& renderContext)
@@ -100,42 +104,7 @@ void HardwareOcclusionCulling::BeginFrame(const RenderContext& renderContext)
         ZoneValue(itemsUsed);
     }
     
-    // Remove used free items
-    _freeItems.Resize(Math::Max((int32)_freeItemsCount, 0));
-
-#if 0 // TODO: find a different way as there might be some invisible object with CullingId assigned and drawing it later will overlap with reused IDs
-    // Trim history
-    constexpr int32 frameTTL = 20;
-    if (_frameCounter % 10 == 0 && _frameCounter > frameTTL)
-    {
-        const int32 lastFrame = _frameCounter - frameTTL;
-        for (int32 i = 0; i < _items.Count(); i++)
-        {
-            auto& item = _items.Get()[i];
-            if (item.LastUsedFrame && item.LastUsedFrame < lastFrame)
-            {
-                Platform::MemoryClear(&item, sizeof(item));
-                _freeItems.Add(i);
-            }
-        }
-    }
-#endif
-
-    // Allocate new items (as requested during the previous frame)
-    if (_newItemsCount > 0)
-    {
-        int32 itemsStart = _items.Count(), count = (int32)_newItemsCount, freeStart = _freeItems.Count();
-        if (itemsStart == 0)
-            count++; // 0 is invalid for cullingId
-        _items.AddZeroed(count);
-        _freeItems.AddUninitialized(count);
-        for (int32 i = 0; i < count; i++)
-            _freeItems.Get()[freeStart + i] = itemsStart + i;
-        if (itemsStart == 0)
-            _freeItems.RemoveAt(0); // 0 is invalid for cullingId
-        _newItemsCount = 0;
-    }
-    _freeItemsCount = _freeItems.Count();
+    _items.BeginFrame();
 
     // Prepare vertex buffer to build geometry bound meshes in async during drawing
     _vertexBuffer.Data.Resize(_items.Count() * 8 * sizeof(Float3), true);
@@ -203,9 +172,9 @@ void HardwareOcclusionCulling::Submit(const RenderContext& renderContext)
     }
     auto cb = _shader->GPU->GetCB(0);
     {
-        Matrix viewProjectionMatrix;
-        Matrix::Transpose(renderContext.View.ViewProjection(), viewProjectionMatrix);
-        context->UpdateCB(cb, &viewProjectionMatrix);
+        OcclusionCullingData data;
+        Matrix::Transpose(renderContext.View.ViewProjection(), data.ViewProjectionMatrix);
+        context->UpdateCB(cb, &data);
     }
     context->BindCB(0, cb);
     context->BindIB(_indexBuffer);
@@ -266,23 +235,9 @@ bool HardwareOcclusionCulling::IsVisible(BoundingBox bounds, uint32& cullingId, 
     if (bounds.Contains(_viewPos) == ContainmentType::Contains)
         return true;
 
-    // Check if object doesn't have ID assigned yet
-    if (cullingId == 0 || cullingId >= (uint32)_items.Count())
-    {
-        int64 freeIndex = Platform::InterlockedDecrement(&_freeItemsCount);
-        if (freeIndex >= 0)
-        {
-            // Use the ID from the free list
-            ASSERT_LOW_LAYER(freeIndex < _freeItems.Count());
-            cullingId = _freeItems.Get()[freeIndex];
-        }
-        else
-        {
-            // Count space needed to contain all objects (for the next frame)
-            Platform::InterlockedIncrement(&_newItemsCount);
-            return true;
-        }
-    }
+    // Check id
+    if (_items.GetCullingId(cullingId))
+        return true;
 
     // Update item bounds
     auto& item = _items.Get()[cullingId];

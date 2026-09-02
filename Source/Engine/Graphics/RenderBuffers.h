@@ -62,9 +62,9 @@ API_CLASS() class FLAXENGINE_API RenderBuffers : public ScriptingObject, private
 
 private:
     GPUTexture* HalfResDepth = nullptr;
-    GPUTexture* HiZ = nullptr;
+    GPUTexture* HiZ[2] = {};
     uint64 LastFrameHalfResDepth = 0;
-    uint64 LastFrameHiZ = 0;
+    uint64 LastFrameHiZ[2] = {};
 
     // Scene drawing cache with the per-object state (eg. LOD transitions, motion-vectors movement)
     struct SceneData
@@ -155,13 +155,15 @@ public:
     GPUTexture* RequestHalfResDepth(GPUContext* context);
 
     /// <summary>
-    /// Requests the Hierarchical Z-Buffer (closest) to be prepared for the current frame.
+    /// Requests the Hierarchical Z-Buffer (closest or furthest) to be prepared for the current frame.
     /// </summary>
     /// <param name="context">The context.</param>
     /// <param name="fullRes">Generates the full-resolution buffer, otherwise HiZ starts at half-res of the original Depth Buffer.</param>
     /// <param name="mipLevels">Maximum amount of mip levels to generate. Value 0 generates a full mip chain down to 1x1.</param>
+    /// <param name="closest">True if generate the closest depth values, otherwise will use the furthest depths filter.</param>
+    /// <param name="powerOfTwo">True if the buffer dimensions should be powers of two.</param>
     /// <returns>The HiZ depth buffer.</returns>
-    GPUTexture* RequestHiZ(GPUContext* context, bool fullRes = false, int32 mipLevels = 0);
+    GPUTexture* RequestHiZ(GPUContext* context, bool fullRes = false, int32 mipLevels = 0, bool closest = true, bool powerOfTwo = false);
 
 public:
     /// <summary>

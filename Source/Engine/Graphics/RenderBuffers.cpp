@@ -69,7 +69,8 @@ void RenderBuffers::ReleaseUnusedMemory()
     UPDATE_LAZY_KEEP_RT(TemporalSSR);
     UPDATE_LAZY_KEEP_RT(TemporalAA);
     UPDATE_LAZY_KEEP_RT(HalfResDepth);
-    UPDATE_LAZY_KEEP_RT(HiZ);
+    UPDATE_LAZY_KEEP_RT(HiZ[0]);
+    UPDATE_LAZY_KEEP_RT(HiZ[1]);
     UPDATE_LAZY_KEEP_RT(LuminanceMap);
 #undef UPDATE_LAZY_KEEP_RT
     for (int32 i = CustomBuffers.Count() - 1; i >= 0; i--)
@@ -118,45 +119,51 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
     return HalfResDepth;
 }
 
-GPUTexture* RenderBuffers::RequestHiZ(GPUContext* context, bool fullRes, int32 mipLevels)
+GPUTexture* RenderBuffers::RequestHiZ(GPUContext* context, bool fullRes, int32 mipLevels, bool closest, bool powerOfTwo)
 {
     // Skip if already done in the current frame
     const auto currentFrame = Engine::FrameCount;
-    if (LastFrameHiZ == currentFrame)
-        return HiZ;
+    int32 idx = closest ? 0 : 1;
+    if (LastFrameHiZ[idx] == currentFrame)
+        return HiZ[idx];
     if (!MultiScaler::Instance()->IsReady())
         return nullptr;
-    LastFrameHiZ = currentFrame;
+    LastFrameHiZ[idx] = currentFrame;
 
     // Allocate or resize buffer (with full mip-chain)
     auto format = PixelFormat::R32_Float;
     auto width = fullRes ? _width : Math::Max(_width >> 1, 1);
     auto height = fullRes ? _height : Math::Max(_height >> 1, 1);
+    if (powerOfTwo)
+    {
+        width = Math::RoundUpToPowerOf2(width);
+        height = Math::RoundUpToPowerOf2(height);
+    }
     auto desc = GPUTextureDescription::New2D(width, height, mipLevels, format, GPUTextureFlags::ShaderResource);
     bool useCompute = false; // TODO: impl Compute Shader for downscaling depth to HiZ with a single dispatch (eg. FidelityFX Single Pass Downsampler)
     if (useCompute)
         desc.Flags |= GPUTextureFlags::UnorderedAccess;
     else
         desc.Flags |= GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews;
-    if (HiZ && HiZ->GetDescription() != desc)
+    if (HiZ[idx] && HiZ[idx]->GetDescription() != desc)
     {
-        RenderTargetPool::Release(HiZ);
-        HiZ = nullptr;
+        RenderTargetPool::Release(HiZ[idx]);
+        HiZ[idx] = nullptr;
     }
-    if (HiZ == nullptr)
+    if (HiZ[idx] == nullptr)
     {
-        HiZ = RenderTargetPool::Get(desc);
-        RENDER_TARGET_POOL_SET_NAME(HiZ, "HiZ");
+        HiZ[idx] = RenderTargetPool::Get(desc);
+        RENDER_TARGET_POOL_SET_NAME(HiZ[idx], "HiZ");
 #if PLATFORM_WEB
         // Hack to fix WebGPU limitation that requires to specify different sampler type manually to load 32-bit float texture
-        SetWebGPUTextureViewSampler(HiZ->View(), GPU_WEBGPU_SAMPLER_TYPE_UNFILTERABLE_FLOAT);
+        SetWebGPUTextureViewSampler(HiZ[idx]->View(), GPU_WEBGPU_SAMPLER_TYPE_UNFILTERABLE_FLOAT);
 #endif
     }
 
     // Downscale
-    MultiScaler::Instance()->BuildHiZ(context, DepthBuffer, HiZ);
+    MultiScaler::Instance()->BuildHiZ(context, DepthBuffer, HiZ[idx], closest);
 
-    return HiZ;
+    return HiZ[idx];
 }
 
 PixelFormat RenderBuffers::GetOutputFormat() const
@@ -298,7 +305,8 @@ void RenderBuffers::Release()
     UPDATE_LAZY_KEEP_RT(TemporalSSR);
     UPDATE_LAZY_KEEP_RT(TemporalAA);
     UPDATE_LAZY_KEEP_RT(HalfResDepth);
-    UPDATE_LAZY_KEEP_RT(HiZ);
+    UPDATE_LAZY_KEEP_RT(HiZ[0]);
+    UPDATE_LAZY_KEEP_RT(HiZ[1]);
     UPDATE_LAZY_KEEP_RT(LuminanceMap);
 #undef UPDATE_LAZY_KEEP_RT
     CustomBuffers.ClearDelete();

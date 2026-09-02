@@ -467,7 +467,7 @@ public:
     /// <param name="threadGroupCountX">The number of groups dispatched in the x direction.</param>
     /// <param name="threadGroupCountY">The number of groups dispatched in the y direction.</param>
     /// <param name="threadGroupCountZ">The number of groups dispatched in the z direction.</param>
-    API_FUNCTION() virtual void Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ) = 0;
+    API_FUNCTION() virtual void Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCountX, uint32 threadGroupCountY = 1, uint32 threadGroupCountZ = 1) = 0;
 
     /// <summary>
     /// Executes a command list from a thread group. Buffer must contain GPUDispatchIndirectArgs.

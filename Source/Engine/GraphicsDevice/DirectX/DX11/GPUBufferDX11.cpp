@@ -20,6 +20,7 @@ GPUBufferView* GPUBufferDX11::View() const
 
 void* GPUBufferDX11::Map(GPUResourceMapMode mode)
 {
+    CHECK_RETURN(_resource, nullptr);
     const bool isMainThread = IsInMainThread();
     if (!isMainThread)
         _device->Locker.Lock();

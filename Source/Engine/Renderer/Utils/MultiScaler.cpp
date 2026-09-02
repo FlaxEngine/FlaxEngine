@@ -102,6 +102,23 @@ void MultiScaler::Dispose()
     _shader = nullptr;
 }
 
+#if COMPILE_WITH_DEV_ENV
+
+void MultiScaler::OnShaderReloading(Asset* obj)
+{
+    for (const auto& e : _psBilateralUpscale)
+        e.Value->ReleaseGPU();
+    _psBilateralUpscale.ClearDelete();
+    _psUpscale->ReleaseGPU();
+    _psBlur5.Release();
+    _psBlur9.Release();
+    _psBlur13.Release();
+    _psHalfDepth.Release();
+    invalidateResources();
+}
+
+#endif
+
 void MultiScaler::Filter(FilterMode mode, GPUContext* context, int32 width, int32 height, GPUTextureView* src, GPUTextureView* dst, GPUTextureView* tmp)
 {
     PROFILE_GPU_CPU("MultiScaler Filter");
@@ -260,30 +277,34 @@ void MultiScaler::DownscaleDepth(GPUContext* context, int32 dstWidth, int32 dstH
     context->UnBindCB(0);
 }
 
-void MultiScaler::BuildHiZ(GPUContext* context, GPUTexture* srcDepth, GPUTexture* dstHiZ)
+void MultiScaler::BuildHiZ(GPUContext* context, GPUTexture* srcDepth, GPUTexture* dstHiZ, bool closest)
 {
     PROFILE_GPU_CPU("Build HiZ");
 
     int32 dstWidth = dstHiZ->Width();
     int32 dstHeight = dstHiZ->Height();
+    GPUPipelineState* state = _psHalfDepth[closest ? 2 : 0]; // See PS_HalfDepth permutations
 
     // Copy mip0
     if (srcDepth->Size() == dstHiZ->Size() && srcDepth->Format() == dstHiZ->Format())
     {
+        // Size and format match
         context->CopySubresource(dstHiZ, 0, srcDepth, 0);
     }
     else if (srcDepth->Size() == dstHiZ->Size())
     {
+        // Size match
         context->Draw(dstHiZ, srcDepth);
     }
     else
     {
+        // Downscale
         auto rt = dstHiZ->View();
         auto rtAction = GPUDrawPassAction::Store;
         GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
         context->SetViewportAndScissors((float)dstWidth, (float)dstHeight);
         context->BindSR(0, srcDepth);
-        context->SetState(_psHalfDepth[2]);
+        context->SetState(state);
         context->DrawFullscreenTriangle();
     }
 
@@ -299,7 +320,7 @@ void MultiScaler::BuildHiZ(GPUContext* context, GPUTexture* srcDepth, GPUTexture
         GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
         context->SetViewportAndScissors((float)mipWidth, (float)mipHeight);
         context->BindSR(0, dstHiZ->View(0, mip - 1));
-        context->SetState(_psHalfDepth[2]);
+        context->SetState(state);
         context->DrawFullscreenTriangle();
     }
 

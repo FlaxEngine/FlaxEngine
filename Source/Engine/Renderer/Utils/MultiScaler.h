@@ -67,7 +67,7 @@ public:
     void Filter(FilterMode mode, GPUContext* context, int32 width, int32 height, GPUTextureView* srcDst, GPUTextureView* tmp);
 
     /// <summary>
-    /// Downscales the depth buffer (to half resolution). Uses `min` operator (`max` for inverted depth) to output the furthest depths for conservative usage.
+    /// Downscales the depth buffer (to half resolution). Uses `max` operator (`min` for inverted depth) to output the furthest depths for conservative usage.
     /// </summary>
     /// <param name="context">The context.</param>
     /// <param name="dstWidth">The width of the destination texture (in pixels).</param>
@@ -77,12 +77,13 @@ public:
     void DownscaleDepth(GPUContext* context, int32 dstWidth, int32 dstHeight, GPUTexture* src, GPUTextureView* dst);
 
     /// <summary>
-    /// Generates the Hierarchical Z-Buffer (HiZ). Uses `min` operator (`max` for inverted depth) to output the furthest depths for conservative usage.
+    /// Generates the Hierarchical Z-Buffer (HiZ) for a given depth buffer with a mip chain.
     /// </summary>
     /// <param name="context">The context.</param>
     /// <param name="srcDepth">The source depth buffer texture (has to have ShaderResource flag).</param>
     /// <param name="dstHiZ">The destination HiZ texture (has to have DepthStencil or RenderTarget flag).</param>
-    void BuildHiZ(GPUContext* context, GPUTexture* srcDepth, GPUTexture* dstHiZ);
+    /// <param name="closest">True if generate the closest depth values, otherwise will use the furthest depths filter.</param>
+    void BuildHiZ(GPUContext* context, GPUTexture* srcDepth, GPUTexture* dstHiZ, bool closest = true);
 
     /// <summary>
     /// Upscales the texture using Catmull-Rom filtering with 9-taps.
@@ -111,18 +112,7 @@ public:
     bool Init() override;
     void Dispose() override;
 #if COMPILE_WITH_DEV_ENV
-    void OnShaderReloading(Asset* obj)
-    {
-        for (const auto& e : _psBilateralUpscale)
-            e.Value->ReleaseGPU();
-        _psBilateralUpscale.ClearDelete();
-        _psUpscale->ReleaseGPU();
-        _psBlur5.Release();
-        _psBlur9.Release();
-        _psBlur13.Release();
-        _psHalfDepth.Release();
-        invalidateResources();
-    }
+    void OnShaderReloading(Asset* obj);
 #endif
 
 protected:

@@ -2,6 +2,7 @@
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/Gather.hlsl"
+#include "./Flax/Math/Math.hlsl"
 
 META_CB_BEGIN(0, Data)
 float2 TexelSize;
@@ -29,17 +30,16 @@ float PS_HalfDepth(Quad_VS2PS input)
 	float4 depths = TextureGatherDepth(Input, input.TexCoord);
 
 #if REVERSE_Z
-#if HZB_CLOSEST
-	return max(depths.x, max(depths.y, max(depths.z, depths.w)));
+    float closest = Max4(depths);
+    float furthest = Min4(depths);
 #else
-	return min(depths.x, min(depths.y, min(depths.z, depths.w)));
+    float closest = Min4(depths);
+    float furthest = Max4(depths);
 #endif
-#else
 #if HZB_CLOSEST
-	return min(depths.x, min(depths.y, min(depths.z, depths.w)));
+    return closest;
 #else
-	return max(depths.x, max(depths.y, max(depths.z, depths.w)));
-#endif
+    return furthest;
 #endif
 }
 

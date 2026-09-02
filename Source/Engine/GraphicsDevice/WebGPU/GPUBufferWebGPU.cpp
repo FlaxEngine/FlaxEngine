@@ -85,10 +85,10 @@ bool GPUBufferWebGPU::OnInit()
         bufferDesc.usage |= WGPUBufferUsage_MapWrite | WGPUBufferUsage_CopySrc;
         break;
     case GPUResourceUsage::StagingReadback:
-        bufferDesc.usage |= WGPUBufferUsage_MapRead;
+        bufferDesc.usage |= WGPUBufferUsage_MapRead | WGPUBufferUsage_CopyDst;
         break;
     case GPUResourceUsage::Staging:
-        bufferDesc.usage |= WGPUBufferUsage_MapRead | WGPUBufferUsage_MapWrite | WGPUBufferUsage_CopySrc;
+        bufferDesc.usage |= WGPUBufferUsage_MapRead | WGPUBufferUsage_MapWrite | WGPUBufferUsage_CopySrc | WGPUBufferUsage_CopyDst;
         break;
     }
     bufferDesc.size = (_desc.Size + 3) & ~0x3; // Align up to the multiple of 4 bytes

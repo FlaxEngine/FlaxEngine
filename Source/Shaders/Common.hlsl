@@ -173,9 +173,17 @@ float4 LoadTextureWGSL(Texture2D tex, float2 uv)
     tex.GetDimensions(size.x, size.y);
     return tex.Load(uint3(size * uv, 0));
 }
+float4 LoadTextureWGSL(Texture2D tex, float2 uv, float level)
+{
+    uint2 size, levels;
+    tex.GetDimensions(level, size.x, size.y, levels);
+    return tex.Load(uint3(size * uv, level));
+}
 #define SAMPLE_RT_DEPTH(rt, texCoord) LoadTextureWGSL(rt, texCoord).r
+#define SAMPLE_RT_DEPTH_LEVEL(rt, texCoord, level) LoadTextureWGSL(rt, texCoord, level).r
 #else
 #define SAMPLE_RT_DEPTH(rt, texCoord) SAMPLE_RT(rt, texCoord).r
+#define SAMPLE_RT_DEPTH_LEVEL(rt, texCoord, level) rt.SampleLevel(SamplerPointClamp, texCoord, level).r
 #endif
 
 // General purpose constants
