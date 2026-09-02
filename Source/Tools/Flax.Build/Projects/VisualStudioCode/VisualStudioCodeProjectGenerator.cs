@@ -586,11 +586,11 @@ namespace Flax.Build.Projects.VisualStudioCode
                         json.AddField("cppStandard", "c++14");
                         break;
                     case NativeCpp.CppVersion.Cpp17:
-                    case NativeCpp.CppVersion.Latest:
                         json.AddField("cStandard", "c17");
                         json.AddField("cppStandard", "c++17");
                         break;
                     case NativeCpp.CppVersion.Cpp20:
+                    case NativeCpp.CppVersion.Latest:
                         json.AddField("cStandard", "c17");
                         json.AddField("cppStandard", "c++20");
                         break;
