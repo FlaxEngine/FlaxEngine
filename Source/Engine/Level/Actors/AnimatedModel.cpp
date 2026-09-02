@@ -1265,7 +1265,7 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
     auto drawState = renderContext.Buffers->GetGeometryDrawState(&GetScene()->Rendering, _sceneRenderingKey, this);
     SkinnedMesh::DrawInfo draw;
     draw.DrawModes = DrawModes;
-    if (drawState && renderContextBatch.Buffers->OcclusionCulling && !renderContextBatch.Buffers->OcclusionCulling->IsVisible(_box, *drawState))
+    if (drawState && EnumHasAllFlags(renderContext.View.Flags, ViewFlags::OcclusionCulling) && renderContextBatch.Buffers->OcclusionCulling && !renderContextBatch.Buffers->OcclusionCulling->IsVisible(_box, *drawState))
     {
         // Draw shadows-only (or cull)
         draw.DrawModes &= DrawPass::Depth;

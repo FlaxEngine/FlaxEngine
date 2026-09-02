@@ -617,7 +617,7 @@ void ParticleEffect::Draw(RenderContextBatch& renderContextBatch)
         return;
     auto drawState = renderContext.Buffers->GetGeometryDrawState(&GetScene()->Rendering, _sceneRenderingKey, this);
     DrawPass drawModes = DrawModes;
-    if (drawState && renderContextBatch.Buffers->OcclusionCulling && !renderContextBatch.Buffers->OcclusionCulling->IsVisible(_box, *drawState))
+    if (drawState && EnumHasAllFlags(renderContext.View.Flags, ViewFlags::OcclusionCulling) && renderContextBatch.Buffers->OcclusionCulling && !renderContextBatch.Buffers->OcclusionCulling->IsVisible(_box, *drawState))
         drawModes &= DrawPass::Depth;
     Particles::DrawParticles(renderContextBatch, this, drawModes);
 

@@ -389,7 +389,7 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
     ACTOR_GET_WORLD_MATRIX(this, view, world);
     Mesh::DrawInfo draw;
     draw.DrawModes = _drawModes;
-    if (drawState && renderContextBatch.Buffers->OcclusionCulling && !renderContextBatch.Buffers->OcclusionCulling->IsVisible(_box, *drawState))
+    if (drawState && EnumHasAllFlags(renderContext.View.Flags, ViewFlags::OcclusionCulling) && renderContextBatch.Buffers->OcclusionCulling && !renderContextBatch.Buffers->OcclusionCulling->IsVisible(_box, *drawState))
     {
         // Draw shadows-only (or cull)
         draw.DrawModes &= DrawPass::Depth;

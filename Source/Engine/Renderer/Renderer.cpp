@@ -303,6 +303,7 @@ void Renderer::DrawSceneDepth(GPUContext* context, SceneRenderTask* task, GPUTex
     RenderContext renderContext(task);
     renderContext.List = RenderList::GetFromPool();
     renderContext.View.Pass = DrawPass::Depth;
+    renderContext.View.Flags &= ~ViewFlags::OcclusionCulling;
     renderContext.View.Prepare(renderContext);
 
     // Call drawing (will collect draw calls)

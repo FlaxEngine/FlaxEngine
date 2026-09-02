@@ -378,7 +378,7 @@ void TextRender::Draw(RenderContextBatch& renderContextBatch)
     renderContext.View.GetWorldMatrix(_transform, world);
     auto drawState = renderContext.Buffers->GetGeometryDrawState(&GetScene()->Rendering, _sceneRenderingKey, this);
     DrawPass drawModes = DrawModes;
-    if (drawState && renderContextBatch.Buffers->OcclusionCulling && !renderContextBatch.Buffers->OcclusionCulling->IsVisible(_box, *drawState))
+    if (drawState && EnumHasAllFlags(renderContext.View.Flags, ViewFlags::OcclusionCulling) && renderContextBatch.Buffers->OcclusionCulling && !renderContextBatch.Buffers->OcclusionCulling->IsVisible(_box, *drawState))
     {
         // Draw shadows-only (or cull)
         drawModes &= DrawPass::Depth;
