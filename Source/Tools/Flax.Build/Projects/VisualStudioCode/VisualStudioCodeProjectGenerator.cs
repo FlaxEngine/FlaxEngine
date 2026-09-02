@@ -545,7 +545,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                     var architecture = TargetArchitecture.x64;
 
                     var compilerPath = string.Empty;
-                    var cppVersion = NativeCpp.CppVersion.Cpp14;
+                    var cppVersion = NativeCpp.CppVersion.Cpp17;
                     var includePaths = new HashSet<string>();
                     var preprocessorDefinitions = new HashSet<string>();
                     foreach (var e in mainProject.Defines)
