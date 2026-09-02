@@ -2,7 +2,7 @@
 #pragma once
 
 // heavily uses static_assert, may not want this in regular builds
-#define BASISU_FIXED_TESTS
+//#define BASISU_FIXED_TESTS
 
 // The fixed-point helpers were moved to namespace basist (in the transcoder).
 // The self-test at the bottom of this file still exercises them, so pull them
