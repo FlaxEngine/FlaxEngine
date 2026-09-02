@@ -62,7 +62,7 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetArchitecture.x64,
-                        //TargetArchitecture.ARM64,
+                        TargetArchitecture.ARM64,
                     };
                 case TargetPlatform.Mac:
                     return new[]
@@ -167,7 +167,6 @@ namespace Flax.Deps.Dependencies
                         };
                         var config = $"-DALSOFT_REQUIRE_ALSA=ON " +
                                      $"-DALSOFT_REQUIRE_OSS=ON " +
-                                     $"-DALSOFT_REQUIRE_PORTAUDIO=ON " +
                                      $"-DALSOFT_REQUIRE_PULSEAUDIO=ON " +
                                      $"-DALSOFT_REQUIRE_JACK=ON " +
                                      $"-DALSOFT_REQUIRE_PIPEWIRE=ON " +
