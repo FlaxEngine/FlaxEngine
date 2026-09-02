@@ -17,6 +17,7 @@ namespace astc_helpers
 	const uint32_t MAX_CEM_ENDPOINT_VALS = 8; // see Table 94. ASTC LDR/HDR color endpoint modes (max 8 values to encode any CEM, minimum 2)
 
 	// The number of BISE values needed to encode endpoints for each CEM.
+	// TODO: Rename to "_ENDPOINT_VALS"
 	const uint32_t NUM_MODE0_ENDPOINTS = 2, NUM_MODE4_ENDPOINTS = 4;
 	const uint32_t NUM_MODE6_ENDPOINTS = 4, NUM_MODE8_ENDPOINTS = 6, NUM_MODE9_ENDPOINTS = 6; // LDR RGB
 	const uint32_t NUM_MODE10_ENDPOINTS = 6, NUM_MODE12_ENDPOINTS = 8, NUM_MODE13_ENDPOINTS = 8; // LDR RGBA
@@ -77,9 +78,12 @@ namespace astc_helpers
 		BISE_192_LEVELS = 19,
 		BISE_256_LEVELS = 20
 	};
-
+	
 	const uint32_t TOTAL_ISE_RANGES = 21;
 
+	extern const uint16_t g_bise_levels[TOTAL_ISE_RANGES];
+	
+	// Block sizes ordered by total # of samples, NOT the usual/standard graphics API order.
 	enum
 	{
 		cBLOCK_SIZE_4x4 = 0,	// 16 samples
@@ -134,7 +138,7 @@ namespace astc_helpers
 	const uint32_t MAX_PARTITIONS = 4;				// Max # of partitions or subsets for single plane mode
 	const uint32_t MAX_DUAL_PLANE_PARTITIONS = 3;	// Max # of partitions or subsets for dual plane mode
 	const uint32_t NUM_PARTITION_PATTERNS = 1024;	// Total # of partition pattern seeds (10-bits)
-	const uint32_t MAX_ENDPOINTS = 18;				// Maximum # of endpoint values in a block
+	const uint32_t MAX_ENDPOINT_VALS = 18;			// Maximum # of endpoint values in a block
 
 	struct log_astc_block
 	{
@@ -155,6 +159,9 @@ namespace astc_helpers
 		uint8_t m_color_component_selector;	// 0-3, controls which channel uses the 2nd (odd) weights, only used in dual plane mode
 
 		uint8_t m_num_partitions;				// or the # of subsets, 1-4 (1-3 if dual plane mode)
+
+		bool m_uses_suboptimal_cem_encoding;	// true if the block used a multi-partition CEM encoding but all CEM's are equal (must be false if m_num_partitions==1).
+
 		uint16_t m_partition_id;				// 10-bits, must be 0 if m_num_partitions==1
 		
 		uint8_t m_color_endpoint_modes[MAX_PARTITIONS]; // each subset's CEM's
@@ -174,7 +181,7 @@ namespace astc_helpers
 		// 2 subset LA : LL0 LH0 AL0 AH0 LL1 LH1 AL1 AH1
 		// 2 subset RGB : RL0 RH0 GL0 GH0 BL0 BH0 RL1 RH1 GL1 GH1 BL1 BH1
 		// 2 subset RGBA : RL0 RH0 GL0 GH0 BL0 BH0 AL0 AH0 RL1 RH1 GL1 GH1 BL1 BH1 AL1 AH1
-		uint8_t m_endpoints[MAX_ENDPOINTS];
+		uint8_t m_endpoints[MAX_ENDPOINT_VALS];
 				
 		void clear()
 		{
@@ -202,7 +209,8 @@ namespace astc_helpers
 	inline uint32_t get_ise_levels(uint32_t ise_range) 
 	{ 
 		assert(ise_range < TOTAL_ISE_RANGES);
-		return (1 + 2 * g_ise_range_table[ise_range][1] + 4 * g_ise_range_table[ise_range][2]) << g_ise_range_table[ise_range][0];
+		assert(g_bise_levels[ise_range] == ((1 + 2 * g_ise_range_table[ise_range][1] + 4 * g_ise_range_table[ise_range][2]) << g_ise_range_table[ise_range][0]));
+		return g_bise_levels[ise_range];
 	}
 
 	inline int get_ise_sequence_bits(int count, int range)
@@ -218,6 +226,19 @@ namespace astc_helpers
 	{
 		assert(w <= MAX_WEIGHT_INTERPOLANT_VALUE);
 		return (l * (64 - w) + h * w + 32) >> 6;
+	}
+
+	inline void set_ldr_solid_block(log_astc_block& blk, uint32_t r, uint32_t g, uint32_t b, uint32_t a)
+	{
+		assert((r | g | b | a) <= 255);
+
+		blk.clear();
+
+		blk.m_solid_color_flag_ldr = true;
+		blk.m_solid_color[0] = (uint16_t)(r | (r << 8));
+		blk.m_solid_color[1] = (uint16_t)(g | (g << 8));
+		blk.m_solid_color[2] = (uint16_t)(b | (b << 8));
+		blk.m_solid_color[3] = (uint16_t)(a | (a << 8));
 	}
 
 	void encode_bise(uint32_t* pDst, const uint8_t* pSrc_vals, uint32_t bit_pos, int num_vals, int range, uint32_t *pStats = nullptr);
@@ -249,10 +270,10 @@ namespace astc_helpers
 
 	// These helpers are all quite slow, but are useful for table preparation.
 	
-	// Dequantizes ISE encoded endpoint val to [0,255]
+	// Dequantizes ISE encoded endpoint val to [0,255] (slowly)
 	uint32_t dequant_bise_endpoint(uint32_t val, uint32_t ise_range); // ISE ranges 4-11
 		
-	// Dequantizes ISE encoded weight val to [0,64]
+	// Dequantizes ISE encoded weight val to [0,64] (slowly)
 	uint32_t dequant_bise_weight(uint32_t val, uint32_t ise_range); // ISE ranges 0-10
 
 	uint32_t find_nearest_bise_endpoint(int v, uint32_t ise_range);
@@ -310,7 +331,7 @@ namespace astc_helpers
 			return val;
 		}
 
-		uint32_t get_val_to_rank(uint32_t val)
+		uint32_t get_val_to_rank(uint32_t val) const
 		{
 			const uint32_t ise = m_val_to_ise[val];
 			const uint32_t rank = m_ISE_to_rank[ise];
@@ -414,6 +435,8 @@ namespace astc_helpers
 	// Returns the texel partition/subset index given the block coordinate and config - table lookup, but currently ONLY 2-3 SUBSETS to save RAM.
 	int get_precomputed_texel_partition(uint32_t block_width, uint32_t block_height, uint32_t seed, uint32_t x, uint32_t y, uint32_t num_partitions);
 		
+	inline void blue_contract(int& r, int& g, int b) { r = (r + b) >> 1; g = (g + b) >> 1; }
+
 	void blue_contract(
 		int r, int g, int b, int a,
 		int& dr, int& dg, int& db, int& da);
@@ -469,16 +492,66 @@ namespace astc_helpers
 	// XUASTC LDR only - primary assumption is the logical block comes directly from our supercompressor. DO NOT call on general ASTC blocks.
 	bool decode_block_xuastc_ldr(const log_astc_block& log_blk, void* pPixels, uint32_t blk_width, uint32_t blk_height, decode_mode dec_mode, const uint8_t* pUpsampled_weights_to_use = nullptr, uint32_t start_x = 0, uint32_t start_y = 0, uint32_t end_x = 0, uint32_t end_y = 0);
 
+	struct color_rgba
+	{
+		uint8_t m_r;
+		uint8_t m_g;
+		uint8_t m_b;
+		uint8_t m_a;
+	};
+
+	class xuastc_ldr_block_decoder
+	{
+	public:
+		xuastc_ldr_block_decoder() :
+			m_pLog_blk(nullptr), m_blk_width(0), m_blk_height(0), m_dec_mode(decode_mode::cDecodeModeLDR8),
+			m_pUpsample_weights(nullptr), m_pWeight_dequant_tab(nullptr), m_pWeight_dequant(nullptr), m_pPart(nullptr), m_is_upsampling(false)
+		{ 
+		}
+
+		// pUpsample_weights[] at block resolution
+		xuastc_ldr_block_decoder(const log_astc_block& blk, uint32_t blk_width, uint32_t blk_height, decode_mode dec_mode, const weighted_sample* pUpsample_weights) { init(blk, blk_width, blk_height, dec_mode, pUpsample_weights); }
+
+		// log_blk MUST remain valid for the lifetime of this object or until init() is called again
+		// pUpsample_weights[] at block resolution
+		// endpoints are decoded here and cannot be modified
+		bool init(const log_astc_block& log_blk, uint32_t blk_width, uint32_t blk_height, decode_mode dec_mode, const weighted_sample* pUpsample_weights);
+		
+		// Decodes a single texel on the fly at (x,y) in the XUASTC LDR block to RGBA8. 
+		// Decoded endpoints were cached by init(), but the logical block's weights can be modified in between calls to decode_texel() (that's the whole point of this class).
+		void decode_texel(uint32_t x, uint32_t y, color_rgba& dst_c) const;
+		
+		const log_astc_block* m_pLog_blk;
+		uint32_t m_blk_width;
+		uint32_t m_blk_height;
+		decode_mode m_dec_mode;
+		const weighted_sample* m_pUpsample_weights;
+
+		color_rgba m_solid_color;
+
+		const dequant_table* m_pWeight_dequant_tab;
+		const uint8_t* m_pWeight_dequant;
+
+		int m_endpoints[3][4][2]; // [subset][comp][l/h]
+
+		const uint8_t* m_pPart;
+		uint32_t m_part_shift;
+
+		bool m_is_upsampling;
+	};
+
 	void decode_bise(uint32_t ise_range, uint8_t* pVals, uint32_t num_vals, const uint8_t *pBits128, uint32_t bit_ofs);
 
 	// Unpack a physical ASTC encoded GPU texture block to a logical block description.
-	bool unpack_block(const void* pASTC_block, log_astc_block& log_blk, uint32_t blk_width, uint32_t blk_height);
-
-	uint8_t& get_weight(log_astc_block& log_block, uint32_t plane_index, uint32_t idx);
+	// If reject_void_extent_nan_infs is true, this rejects HDR void-extent blocks which have any NaN/Inf color components. If false these checks are skipped.
+	bool unpack_block(const void* pASTC_block, log_astc_block& log_blk, uint32_t blk_width, uint32_t blk_height, bool reject_void_extent_nan_infs = true);
+		
+	uint8_t& get_weight(log_astc_block& log_block, uint32_t plane_index, uint32_t idx); // TODO: terrible API name
 	uint8_t get_weight(const log_astc_block& log_block, uint32_t plane_index, uint32_t idx);
 	void extract_weights(const log_astc_block& log_block, uint8_t* pWeights, uint32_t plane_index);
 	void set_weights(log_astc_block& log_block, const uint8_t* pWeights, uint32_t plane_index);
 	uint32_t get_total_weights(const log_astc_block& log_block);
+	uint32_t get_total_endpoint_vals(const log_astc_block& log_block);
 
 	uint8_t* get_endpoints(log_astc_block& log_block, uint32_t partition_index);
 	const uint8_t* get_endpoints(const log_astc_block& log_block, uint32_t partition_index);
@@ -530,6 +603,22 @@ namespace astc_helpers
 						
 } // namespace astc_helpers
 
+// Alternative ASTC LDR/HDR decoder defined in encoder/3rdparty/android_astc_decomp.cpp
+// If BASISU_DISABLE_ANDROID_ASTC_DECOMP is set to 1, this functionality is completely implemented/emulated here, otherwise it goes into android_astc_decomp.cpp.
+namespace basisu_astc
+{
+	namespace astc
+	{
+		// Unpacks a single ASTC block to pDst
+		// If isSRGB is true, the spec requires the decoder to scale the LDR 8-bit endpoints to 16-bit before interpolation slightly differently,
+		// which will lead to different outputs. So be sure to set it correctly (ideally it should match whatever the encoder did).
+		bool decompress_ldr(uint8_t* pDst, const uint8_t* data, bool isSRGB, int blockWidth, int blockHeight, bool rejectVoidExtentNaNInf = true);
+		bool decompress_hdr(float* pDstRGBA, const uint8_t* data, int blockWidth, int blockHeight, bool rejectVoidExtentNaNInf = true);
+		bool is_hdr(const uint8_t* data, int blockWidth, int blockHeight, bool& is_hdr_flag);
+
+	} // astc
+} // basisu
+
 #endif // BASISU_ASTC_HELPERS_HEADER
 
 //------------------------------------------------------------------
@@ -573,6 +662,16 @@ namespace astc_helpers
 		{ 5, 0, 1 }, // 0..159 18
 		{ 6, 1, 0 }, // 0..191 19
 		{ 8, 0, 0 }, // 0..255 20
+	};
+
+	const uint16_t g_bise_levels[TOTAL_ISE_RANGES] = 
+	{
+		2, 3, 4, 5,
+		6, 8, 10, 12,
+		16, 20, 24, 32,
+		40, 48, 64, 80,
+		96, 128, 160, 192,
+		256
 	};
 		
 	static inline void astc_set_bits_1_to_9(uint32_t* pDst, uint32_t& bit_offset, uint32_t code, uint32_t codesize)
@@ -866,6 +965,8 @@ namespace astc_helpers
 			assert(log_block.m_color_component_selector <= 3);
 		}
 
+		assert(!log_block.m_solid_color_flag_ldr || !log_block.m_solid_color_flag_hdr); // can't both be enabled
+
 		memset(&phys_block, 0, sizeof(phys_block));
 
 		if (pExpected_endpoint_range)
@@ -949,7 +1050,10 @@ namespace astc_helpers
 
 			// See tables 79/80
 			uint32_t encoded_cem = log_block.m_color_endpoint_modes[0] << 2;
-			if (lowest_cem != highest_cem)
+			
+			// m_uses_suboptimal_cem_encoding can force use to use multi-partition CEM encodings here, even if the CEM's are all equal
+			// This can be used purposely to cause the endpoint BISE range to change due to less available block bits.
+			if ((lowest_cem != highest_cem) || (log_block.m_uses_suboptimal_cem_encoding))
 			{
 				encoded_cem = my_min<uint32_t>(3, 1 + (lowest_cem >> 2));
 
@@ -982,6 +1086,8 @@ namespace astc_helpers
 		}
 		else
 		{
+			if (log_block.m_uses_suboptimal_cem_encoding)
+				return false; // can't use suboptimal CEM encoding if we only have 1 partition, as there's no multi-partition CEM encoding to use
 			if (log_block.m_partition_id)
 				return false;
 			if (log_block.m_color_endpoint_modes[0] > 15)
@@ -1014,7 +1120,7 @@ namespace astc_helpers
 		for (uint32_t j = 0; j < log_block.m_num_partitions; j++)
 			total_cem_vals += 2 + 2 * (log_block.m_color_endpoint_modes[j] >> 2);
 
-		if (total_cem_vals > MAX_ENDPOINTS)
+		if (total_cem_vals > MAX_ENDPOINT_VALS)
 			return false;
 				
 		if (validate_flags & cValidateEarlyOutAtEndpointISEChecks)
@@ -1916,7 +2022,7 @@ namespace astc_helpers
 	// Precomputed partition patterns for each 10-bit seed and small/large block sizes for 2-3 subsets.
 	// This costs 144KB of RAM and some init, but considering the sheer complexity of compute_texel_partition() and how hotly it's called in the compressors and transcoders that's worth it.
 	// Byte packing:
-	//  low 4 bits=small blocks (on valid up to 6x5)
+	//  low 4 bits=small blocks (only valid up to 6x5)
 	//  high 4 bits=large blocks (6x6 or larger)
 
 	static uint8_t g_texel_partitions[NUM_PARTITION_PATTERNS][12][12]; // [seed][y][x]
@@ -1986,6 +2092,7 @@ namespace astc_helpers
 		} // seed
 	}
 		
+	// 2 or 3 subsets ONLY.
 	int get_precomputed_texel_partition(uint32_t block_width, uint32_t block_height, uint32_t seed, uint32_t x, uint32_t y, uint32_t subsets)
 	{
 		assert(seed < NUM_PARTITION_PATTERNS);
@@ -2980,7 +3087,7 @@ namespace astc_helpers
 			is_ldr_endpoints[i] = is_cem_ldr(log_blk.m_color_endpoint_modes[i]);
 		}
 
-		if (total_cem_vals > MAX_ENDPOINTS)
+		if (total_cem_vals > MAX_ENDPOINT_VALS)
 		{
 			write_error_block(pPixels, num_blk_pixels, dec_mode);
 			return false;
@@ -2990,7 +3097,7 @@ namespace astc_helpers
 		const uint8_t* pEndpoint_dequant = endpoint_dequant_tab.m_ISE_to_val.data();
 
 		// Dequantized endpoints to [0,255]
-		uint8_t dequantized_endpoints[MAX_ENDPOINTS];
+		uint8_t dequantized_endpoints[MAX_ENDPOINT_VALS];
 		for (uint32_t i = 0; i < total_cem_vals; i++)
 		{
 			if (log_blk.m_endpoints[i] >= total_endpoint_levels)
@@ -3234,6 +3341,10 @@ namespace astc_helpers
 							// See latest spec with recent (2023-2024) fixes: 
 							// https://raw.githubusercontent.com/KhronosGroup/DataFormat/refs/heads/main/astc.txt
 							// "For _LDR endpoint modes_, each color component C is calculated from the corresponding 8 - bit endpoint components C~0~and C~1~as follows" - does this mean alpha too? I guess so. (8/15/2025.)
+
+							// 2/22/2026: See ARM errata 3922301 "ASTC decompression incorrectly rounds linear color endpoints when using unorm8 decode mode". (We currently always assume unorm8 decode mode.)
+							// Our ASTC/XUASTC encoders default to the sRGB decode profile, not linear, so at least our default behavior isn't impacted by this.
+							// https://documentation-service.arm.com/static/67ca1a5ece2747241fced502?utm_source=chatgpt.com
 							if (dec_mode == cDecodeModeSRGB8)
 							{
 								le = (le << 8) | 0x80;
@@ -3261,6 +3372,7 @@ namespace astc_helpers
 		return success;
 	}
 
+	// Note: m_uses_suboptimal_cem_encoding is NOT checked here - because some blocks using suboptimal CEM's are still valid XUASTC LDR.
 	bool is_block_xuastc_ldr(const log_astc_block& log_blk)
 	{
 		if (log_blk.m_error_flag)
@@ -3302,6 +3414,8 @@ namespace astc_helpers
 				return false;
 			}
 		}
+		
+		// TODO: check m_uses_suboptimal_cem_encoding flag and reject if set?
 
 		return true;
 	}
@@ -3380,10 +3494,10 @@ namespace astc_helpers
 		const uint32_t num_cem_vals = get_num_cem_values(log_blk.m_color_endpoint_modes[0]);
 		const uint32_t total_cem_vals = num_cem_vals * log_blk.m_num_partitions;
 
-		assert(total_cem_vals <= MAX_ENDPOINTS);
+		assert(total_cem_vals <= MAX_ENDPOINT_VALS);
 
 		// Dequantized endpoints to [0,255]
-		uint8_t dequantized_endpoints[MAX_ENDPOINTS];
+		uint8_t dequantized_endpoints[MAX_ENDPOINT_VALS];
 
 		for (uint32_t i = 0; i < total_cem_vals; i++)
 		{
@@ -3678,7 +3792,238 @@ namespace astc_helpers
 
 		return true;
 	}
+			
+	bool xuastc_ldr_block_decoder::init(const log_astc_block& log_blk, uint32_t blk_width, uint32_t blk_height, decode_mode dec_mode, const weighted_sample* pUpsample_weights)
+	{
+		assert(g_dequant_tables.m_endpoints[0].m_ISE_to_val.size());
+
+		assert(is_block_xuastc_ldr(log_blk));
+		assert(is_valid_block_size(blk_width, blk_height));
+		assert((dec_mode == cDecodeModeSRGB8) || (dec_mode == cDecodeModeLDR8));
+			
+		if (!log_blk.m_solid_color_flag_ldr)
+		{
+			assert((log_blk.m_grid_width >= 2) & (log_blk.m_grid_height >= 2));
+			assert((log_blk.m_grid_width <= blk_width) && (log_blk.m_grid_height <= blk_height));
+			assert((log_blk.m_grid_width * log_blk.m_grid_height) <= MAX_GRID_WEIGHTS);
+			assert((log_blk.m_num_partitions > 1) || (log_blk.m_partition_id == 0));
+		}
+
+		m_pLog_blk = &log_blk;
+		m_blk_width = blk_width;
+		m_blk_height = blk_height;
+		m_dec_mode = dec_mode;
+		m_pUpsample_weights = pUpsample_weights;
+
+		if (log_blk.m_solid_color_flag_ldr)
+		{
+			m_solid_color.m_r = (uint8_t)(log_blk.m_solid_color[0] >> 8);
+			m_solid_color.m_g = (uint8_t)(log_blk.m_solid_color[1] >> 8);
+			m_solid_color.m_b = (uint8_t)(log_blk.m_solid_color[2] >> 8);
+			m_solid_color.m_a = (uint8_t)(log_blk.m_solid_color[3] >> 8);
+
+			m_pWeight_dequant_tab = nullptr;
+			m_pWeight_dequant = nullptr;
+			m_pPart = nullptr;
+
+			return true;
+		}
+
+		const uint32_t num_blk_pixels = blk_width * blk_height;
+
+		m_pWeight_dequant_tab = &g_dequant_tables.get_weight_tab(log_blk.m_weight_ise_range);
+		m_pWeight_dequant = m_pWeight_dequant_tab->m_ISE_to_val.data();
+
+		const dequant_table& endpoint_dequant_tab = g_dequant_tables.get_endpoint_tab(log_blk.m_endpoint_ise_range);
+		const uint8_t* pEndpoint_dequant = endpoint_dequant_tab.m_ISE_to_val.data();
+
+		// Check CEM's
+		const uint32_t num_cem_vals = get_num_cem_values(log_blk.m_color_endpoint_modes[0]);
+		const uint32_t total_cem_vals = num_cem_vals * log_blk.m_num_partitions;
+
+		assert(total_cem_vals <= MAX_ENDPOINT_VALS);
+
+		// Dequantized endpoints to [0,255]
+		uint8_t dequantized_endpoints[MAX_ENDPOINT_VALS];
+
+		for (uint32_t i = 0; i < total_cem_vals; i++)
+		{
+			assert(log_blk.m_endpoints[i] < endpoint_dequant_tab.m_ISE_to_val.size_u32());
+			dequantized_endpoints[i] = pEndpoint_dequant[log_blk.m_endpoints[i]];
+		}
+
+		// Decode CEM's
+		uint32_t endpoint_val_index = 0;
+		const uint32_t cem_index = log_blk.m_color_endpoint_modes[0];
+
+		assert(log_blk.m_num_partitions <= 3);
+				
+		for (uint32_t subset = 0; subset < log_blk.m_num_partitions; subset++)
+		{
+			// XUASTC LDR assumes all subsets have the same CEM
+			assert(log_blk.m_color_endpoint_modes[subset] == cem_index);
+
+			// Decoded endpoints from dequantized values, then expand to 16-bits to prepare for interpolation.
+			decode_endpoint(cem_index, &m_endpoints[subset][0], &dequantized_endpoints[endpoint_val_index]);
+
+			int le0 = m_endpoints[subset][0][0], he0 = m_endpoints[subset][0][1];
+			int le1 = m_endpoints[subset][1][0], he1 = m_endpoints[subset][1][1];
+			int le2 = m_endpoints[subset][2][0], he2 = m_endpoints[subset][2][1];
+			int le3 = m_endpoints[subset][3][0], he3 = m_endpoints[subset][3][1];
+
+			if (dec_mode == cDecodeModeSRGB8)
+			{
+				le0 = (le0 << 8) | 0x80; he0 = (he0 << 8) | 0x80;
+				le1 = (le1 << 8) | 0x80; he1 = (he1 << 8) | 0x80;
+				le2 = (le2 << 8) | 0x80; he2 = (he2 << 8) | 0x80;
+				le3 = (le3 << 8) | 0x80; he3 = (he3 << 8) | 0x80;
+			}
+			else
+			{
+				le0 = (le0 << 8) | le0; he0 = (he0 << 8) | he0;
+				le1 = (le1 << 8) | le1; he1 = (he1 << 8) | he1;
+				le2 = (le2 << 8) | le2; he2 = (he2 << 8) | he2;
+				le3 = (le3 << 8) | le3; he3 = (he3 << 8) | he3;
+			}
+
+			m_endpoints[subset][0][0] = le0, m_endpoints[subset][0][1] = he0;
+			m_endpoints[subset][1][0] = le1, m_endpoints[subset][1][1] = he1;
+			m_endpoints[subset][2][0] = le2, m_endpoints[subset][2][1] = he2;
+			m_endpoints[subset][3][0] = le3, m_endpoints[subset][3][1] = he3;
+
+			endpoint_val_index += num_cem_vals;
+		}
+			
+		m_pPart = &g_texel_partitions[log_blk.m_partition_id][0][0]; // [seed][y][x], for 1 subset partition_id will be 0 so still valid but just ignored
+
+		const bool large_block = (num_blk_pixels >= 31);
+		m_part_shift = (log_blk.m_num_partitions == 3) ? 2 : 0;
+		m_part_shift += large_block * 4;
+
+		m_is_upsampling = ((log_blk.m_grid_width != m_blk_width) || (log_blk.m_grid_height != m_blk_height));
+
+		return true;
+	}
+
+	void xuastc_ldr_block_decoder::decode_texel(uint32_t x, uint32_t y, color_rgba& dst_c) const
+	{
+		assert(m_pLog_blk && !m_pLog_blk->m_error_flag);
+		assert((x < m_blk_width) && (y < m_blk_height));
+
+		if (m_pLog_blk->m_solid_color_flag_ldr)
+		{
+			dst_c = m_solid_color;
+			return;
+		}
+
+		const uint32_t texel_index = x + y * m_blk_width;
+		const uint32_t grid_width = m_pLog_blk->m_grid_width;
+		const uint8_t* pSrc_weights = m_pLog_blk->m_weights;
+
+		int w0 = 0, w1 = 0;
+
+		if (!m_is_upsampling)
+		{
+			if (m_pLog_blk->m_dual_plane)
+			{
+				w0 = m_pWeight_dequant[pSrc_weights[texel_index * 2 + 0]];
+				w1 = m_pWeight_dequant[pSrc_weights[texel_index * 2 + 1]];
+			}
+			else
+			{
+				w0 = m_pWeight_dequant[pSrc_weights[texel_index]];
+			}
+		}
+		else if (!m_pLog_blk->m_dual_plane)
+		{
+			// upsampling single plane
+			const weighted_sample* pWeighted_sample = &m_pUpsample_weights[x + y * m_blk_width];
+
+			const uint32_t idx0 = pWeighted_sample->m_src_x + pWeighted_sample->m_src_y * grid_width;
+			w0 = 8 + pWeighted_sample->m_weights[0][0] * m_pWeight_dequant[pSrc_weights[idx0]];
+
+			if (pWeighted_sample->m_weights[0][1])
+				w0 += pWeighted_sample->m_weights[0][1] * m_pWeight_dequant[pSrc_weights[idx0 + 1]];
+
+			if (pWeighted_sample->m_weights[1][0])
+				w0 += pWeighted_sample->m_weights[1][0] * m_pWeight_dequant[pSrc_weights[idx0 + grid_width]];
+
+			if (pWeighted_sample->m_weights[1][1])
+				w0 += pWeighted_sample->m_weights[1][1] * m_pWeight_dequant[pSrc_weights[idx0 + 1 + grid_width]];
+
+			w0 >>= 4;
+			w1 >>= 4;
+		}
+		else
+		{
+			// upsampling dual plane
+			const weighted_sample* pWeighted_sample = &m_pUpsample_weights[x + y * m_blk_width];
+
+			const uint32_t idx0 = (pWeighted_sample->m_src_x + pWeighted_sample->m_src_y * grid_width) * 2;
+
+			w0 = 8 + pWeighted_sample->m_weights[0][0] * m_pWeight_dequant[pSrc_weights[idx0 + 0]];
+			w1 = 8 + pWeighted_sample->m_weights[0][0] * m_pWeight_dequant[pSrc_weights[idx0 + 1]];
+
+			if (pWeighted_sample->m_weights[0][1])
+			{
+				const uint32_t idx1 = idx0 + 2;
+				w0 += pWeighted_sample->m_weights[0][1] * m_pWeight_dequant[pSrc_weights[idx1 + 0]];
+				w1 += pWeighted_sample->m_weights[0][1] * m_pWeight_dequant[pSrc_weights[idx1 + 1]];
+			}
+
+			if (pWeighted_sample->m_weights[1][0])
+			{
+				const uint32_t idx2 = idx0 + grid_width * 2;
+				w0 += pWeighted_sample->m_weights[1][0] * m_pWeight_dequant[pSrc_weights[idx2 + 0]];
+				w1 += pWeighted_sample->m_weights[1][0] * m_pWeight_dequant[pSrc_weights[idx2 + 1]];
+			}
+
+			if (pWeighted_sample->m_weights[1][1])
+			{
+				const uint32_t idx3 = idx0 + 2 + grid_width * 2;
+				w0 += pWeighted_sample->m_weights[1][1] * m_pWeight_dequant[pSrc_weights[idx3 + 0]];
+				w1 += pWeighted_sample->m_weights[1][1] * m_pWeight_dequant[pSrc_weights[idx3 + 1]];
+			}
+
+			w0 >>= 4;
+			w1 >>= 4;
+		}
+				
+		assert((w0 >= 0) && (w0 <= 64));
+		assert((w1 >= 0) && (w1 <= 64));
+
+		uint32_t subset = 0;
+		int cw[4] = { w0, w0, w0, w0 };
+
+		if (m_pLog_blk->m_dual_plane)
+		{
+			assert(m_pLog_blk->m_num_partitions == 1);
+			cw[m_pLog_blk->m_color_component_selector] = w1;
+		}
+		else if (m_pLog_blk->m_num_partitions > 1)
+		{
+			const uint32_t v = m_pPart[y * 12 + x];
+			subset = (v >> m_part_shift) & 3;
+		}
+
+		assert(subset <= 2);
+
+		int le0 = m_endpoints[subset][0][0], he0 = m_endpoints[subset][0][1];
+		int le1 = m_endpoints[subset][1][0], he1 = m_endpoints[subset][1][1];
+		int le2 = m_endpoints[subset][2][0], he2 = m_endpoints[subset][2][1];
+		int le3 = m_endpoints[subset][3][0], he3 = m_endpoints[subset][3][1];
 		
+		uint32_t k0 = weight_interpolate(le0, he0, cw[0]);
+		uint32_t k1 = weight_interpolate(le1, he1, cw[1]);
+		uint32_t k2 = weight_interpolate(le2, he2, cw[2]);
+		uint32_t k3 = weight_interpolate(le3, he3, cw[3]);
+
+		dst_c.m_r = (uint8_t)(k0 >> 8);
+		dst_c.m_g = (uint8_t)(k1 >> 8);
+		dst_c.m_b = (uint8_t)(k2 >> 8);
+		dst_c.m_a = (uint8_t)(k3 >> 8);
+	}
+				
 	//------------------------------------------------
 	// Physical to logical block decoding
 
@@ -4072,8 +4417,10 @@ namespace astc_helpers
 		}
 	};
 		
-	static bool decode_void_extent(const uint128& bits, log_astc_block& log_blk)
+	static bool decode_void_extent(const uint128& bits, log_astc_block& log_blk, bool reject_void_extent_nan_infs)
 	{
+		// 18.23.Void - Extent Blocks
+		// "Bits 10 and 11 are reserved and must be 1."
 		if (bits.get_bits(10, 2) != 0b11)
 			return false;
 
@@ -4101,7 +4448,7 @@ namespace astc_helpers
 		log_blk.m_solid_color[2] = (uint16_t)bits.get_bits(96, 16);
 		log_blk.m_solid_color[3] = (uint16_t)bits.get_bits(112, 16);
 
-		if (log_blk.m_solid_color_flag_hdr)
+		if ((reject_void_extent_nan_infs) && (log_blk.m_solid_color_flag_hdr))
 		{
 			for (uint32_t c = 0; c < 4; c++)
 				if (is_half_inf_or_nan(log_blk.m_solid_color[c]))
@@ -4133,7 +4480,7 @@ namespace astc_helpers
 		{  -1,    -1,     5,     2,      9,     2,      6,     6,       4,      2,      3      }, // 6 6
 	};
 
-	static bool decode_config(const uint128& bits, log_astc_block& log_blk)
+	static bool decode_config(const uint128& bits, log_astc_block& log_blk, bool reject_void_extent_nan_infs)
 	{
 		// Reserved
 		if (bits.get_bits(0, 4) == 0)
@@ -4148,7 +4495,7 @@ namespace astc_helpers
 
 		// Void extent
 		if (bits.get_bits(0, 9) == 0b111111100)
-			return decode_void_extent(bits, log_blk);
+			return decode_void_extent(bits, log_blk, reject_void_extent_nan_infs);
 												
 		// Check rows
 		const uint32_t x0_2 = bits.get_bits(0, 2), x2_2 = bits.get_bits(2, 2);
@@ -4375,7 +4722,7 @@ namespace astc_helpers
 		
 	// Decodes a physical ASTC block to a logical ASTC block.
 	// blk_width/blk_height are only used to validate the weight grid's dimensions.
-	bool unpack_block(const void* pASTC_block, log_astc_block& log_blk, uint32_t blk_width, uint32_t blk_height)
+	bool unpack_block(const void* pASTC_block, log_astc_block& log_blk, uint32_t blk_width, uint32_t blk_height, bool reject_void_extent_nan_infs)
 	{
 		assert(is_valid_block_size(blk_width, blk_height));
 				
@@ -4390,7 +4737,7 @@ namespace astc_helpers
 		
 		const uint128 rev_bits(bits.get_reversed_bits());
 				
-		if (!decode_config(bits, log_blk))
+		if (!decode_config(bits, log_blk, reject_void_extent_nan_infs))
 			return false;
 
 		if (log_blk.m_solid_color_flag_hdr || log_blk.m_solid_color_flag_ldr)
@@ -4487,11 +4834,19 @@ namespace astc_helpers
 
 				assert(cem_bit_pos == end_of_weight_bit_ofs);
 
+				bool cems_all_equal = true;
+
 				for (uint32_t i = 0; i < log_blk.m_num_partitions; i++)
 				{
 					log_blk.m_color_endpoint_modes[i] = (uint8_t)(first_cem_index + (c[i] * 4) + m[i]);
 					assert(log_blk.m_color_endpoint_modes[i] <= 15);
+
+					if (log_blk.m_color_endpoint_modes[i] != log_blk.m_color_endpoint_modes[0])
+						cems_all_equal = false;
 				}
+								
+				// If the CEM's were all equal: The block used a suboptimal CEM encoding, which can force a lower endpoint BISE range.
+				log_blk.m_uses_suboptimal_cem_encoding = cems_all_equal;
 			}
 		}
 
@@ -4528,7 +4883,7 @@ namespace astc_helpers
 		for (uint32_t j = 0; j < log_blk.m_num_partitions; j++)
 			total_cem_vals += get_num_cem_values(log_blk.m_color_endpoint_modes[j]);
 
-		if (total_cem_vals > MAX_ENDPOINTS)
+		if (total_cem_vals > MAX_ENDPOINT_VALS)
 			return false;
 
 		// Infer endpoint ISE range based off the # of values we need to encode, and the # of remaining bits in the block
@@ -4609,7 +4964,20 @@ namespace astc_helpers
 
 	uint32_t get_total_weights(const log_astc_block& log_block)
 	{
+		assert(!log_block.m_solid_color_flag_ldr && !log_block.m_solid_color_flag_hdr);
+
 		return (log_block.m_dual_plane ? 2 : 1) * (log_block.m_grid_width * log_block.m_grid_height);
+	}
+
+	uint32_t get_total_endpoint_vals(const log_astc_block& log_block)
+	{
+		assert(!log_block.m_solid_color_flag_ldr && !log_block.m_solid_color_flag_hdr);
+
+		uint32_t total_vals = 0;
+		for (uint32_t i = 0; i < log_block.m_num_partitions; i++)
+			total_vals += astc_helpers::get_num_cem_values(log_block.m_color_endpoint_modes[i]);
+
+		return total_vals;
 	}
 
 	// Returns a pointer to the beginning of a partition's/subset's endpoint values.
@@ -4622,7 +4990,7 @@ namespace astc_helpers
 		for (uint32_t i = 0; i != partition_index; ++i)
 			ofs += get_num_cem_values(log_block.m_color_endpoint_modes[i]);
 
-		assert(ofs < MAX_ENDPOINTS);
+		assert(ofs < MAX_ENDPOINT_VALS);
 		
 		return log_block.m_endpoints + ofs;
 	}
@@ -4636,7 +5004,7 @@ namespace astc_helpers
 		for (uint32_t i = 0; i != partition_index; ++i)
 			ofs += get_num_cem_values(log_block.m_color_endpoint_modes[i]);
 
-		assert(ofs < MAX_ENDPOINTS);
+		assert(ofs < MAX_ENDPOINT_VALS);
 
 		return log_block.m_endpoints + ofs;
 	}
@@ -4845,5 +5213,123 @@ namespace astc_helpers
 	}
 
 } // namespace astc_helpers
+
+// If the Android ASTC decompressor is disabled (in encoder/3rdparty/android_astc_decomp.cpp), emulate its functionality using our internal decoder.
+#if BASISU_DISABLE_ANDROID_ASTC_DECOMP
+namespace basisu_astc 
+{
+	namespace astc 	
+	{
+		static void set_ldr_error_color(uint8_t* pDst, uint32_t blockWidth, uint32_t blockHeight)
+		{
+			const uint32_t total_texels = blockWidth * blockHeight;
+			for (uint32_t i = 0; i < total_texels; i++)
+			{
+				pDst[i * 4 + 0] = 0xFF;
+				pDst[i * 4 + 1] = 0;
+				pDst[i * 4 + 2] = 0xFF;
+				pDst[i * 4 + 3] = 0xFF;
+			}
+		}
+
+		static void set_hdr_error_color(float* pDst, uint32_t blockWidth, uint32_t blockHeight)
+		{
+			const uint32_t total_texels = blockWidth * blockHeight;
+			for (uint32_t i = 0; i < total_texels; i++)
+			{
+				pDst[i * 4 + 0] = 1.0f;
+				pDst[i * 4 + 1] = 0;
+				pDst[i * 4 + 2] = 1.0f;
+				pDst[i * 4 + 3] = 1.0f;
+			}
+		}
+
+		bool decompress_ldr(uint8_t* pDst, const uint8_t* data, bool isSRGB, int blockWidth, int blockHeight, bool rejectVoidExtentNaNInf)
+		{
+			(void)rejectVoidExtentNaNInf;
+
+			astc_helpers::log_astc_block log_blk;
+			if (!astc_helpers::unpack_block(data, log_blk, blockWidth, blockHeight))
+			{
+				set_ldr_error_color(pDst, blockWidth, blockHeight);
+				return false;
+			}
+
+			if (!astc_helpers::decode_block(log_blk, pDst, blockWidth, blockHeight, isSRGB ? astc_helpers::cDecodeModeSRGB8 : astc_helpers::cDecodeModeLDR8))
+			{
+				set_ldr_error_color(pDst, blockWidth, blockHeight);
+				return false;
+			}
+
+			return true;
+		}
+
+		bool decompress_hdr(float* pDstRGBA, const uint8_t* data, int blockWidth, int blockHeight, bool rejectVoidExtentNaNInf)
+		{
+			(void)rejectVoidExtentNaNInf;
+
+			basist::half_float half_block[astc_helpers::MAX_BLOCK_PIXELS][4];
+
+			astc_helpers::log_astc_block log_blk;
+			if (!astc_helpers::unpack_block(data, log_blk, blockWidth, blockHeight))
+			{
+				set_hdr_error_color(pDstRGBA, blockWidth, blockHeight);
+				return false;
+			}
+
+			if (!astc_helpers::decode_block(log_blk, half_block, blockWidth, blockHeight, astc_helpers::cDecodeModeHDR16))
+			{
+				set_hdr_error_color(pDstRGBA, blockWidth, blockHeight);
+				return false;
+			}
+
+			const uint32_t total_texels = blockWidth * blockHeight;
+
+			for (uint32_t p = 0; p < total_texels; p++)
+			{
+				pDstRGBA[0] = basist::half_to_float(half_block[p][0]);
+				pDstRGBA[1] = basist::half_to_float(half_block[p][1]);
+				pDstRGBA[2] = basist::half_to_float(half_block[p][2]);
+				pDstRGBA[3] = basist::half_to_float(half_block[p][3]);
+				pDstRGBA += 4;
+			}
+
+			return true;
+		}
+
+		bool is_hdr(const uint8_t* data, int blockWidth, int blockHeight, bool& is_hdr_flag)
+		{
+			is_hdr_flag = false;
+
+			astc_helpers::log_astc_block log_blk;
+			if (!astc_helpers::unpack_block(data, log_blk, blockWidth, blockHeight))
+				return false;
+
+			if (log_blk.m_solid_color_flag_ldr)
+				return true;
+
+			if (log_blk.m_solid_color_flag_hdr)
+			{
+				is_hdr_flag = true;
+				return true;
+			}
+
+			for (uint32_t i = 0; i < log_blk.m_num_partitions; i++)
+			{
+				if (astc_helpers::is_cem_hdr(log_blk.m_color_endpoint_modes[i]))
+				{
+					is_hdr_flag = true;
+					return true;
+				}
+			}
+
+			return true;
+		}
+	
+	} // astc
+
+} // basisu_astc
+
+#endif // BASISU_DISABLE_ANDROID_ASTC_DECOMP
 
 #endif //BASISU_ASTC_HELPERS_IMPLEMENTATION
