@@ -75,7 +75,7 @@ void CS_HZBCull(uint DispatchThreadId : SV_DispatchThreadID)
     }
 
     // Calculate Hi-Z buffer mip (assumes HZB is power of two)
-#if VULKAN || defined(WGSL) || 1
+#if VULKAN || defined(WGSL) // For some reason, Vulkan needs different mip selection math
     float2 pixelSize = RTSize * (maxUV - minUV) * 2.0f;
     float mip = floor(log2(max(max(pixelSize.x, pixelSize.y), 1.0f)));
 #else
@@ -85,6 +85,7 @@ void CS_HZBCull(uint DispatchThreadId : SV_DispatchThreadID)
     mip = clamp(mip, 0, MaxMipLevel);
     float4 boundsUVs = float4(minUV, maxUV);
 
+#if 0 // TODO: figure out why it causes minor artifacts (eg. in Bistro)
     // Texel footprint for the lower (finer-grained) level
     float mipUp = max(mip - 1, 0);
     float2 scale = exp2(-mipUp);
@@ -95,6 +96,7 @@ void CS_HZBCull(uint DispatchThreadId : SV_DispatchThreadID)
     // Use the lower level if we only touch <= 2 texels in both dimensions
     if (dims.x <= 2 && dims.y <= 2)
         mip = mipUp;
+#endif
 
     // Load depths from Hi-Z buffer
     float4 depths = {
