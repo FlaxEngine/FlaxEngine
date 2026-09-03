@@ -38,6 +38,11 @@ bool HZBOcclusionCulling::IsSupported()
     return limits.HasCompute;
 }
 
+bool HZBOcclusionCulling::IsStateless()
+{
+    return false;
+}
+
 void HZBOcclusionCulling::BeginFrame(const RenderContext& renderContext)
 {
     PROFILE_CPU();
@@ -227,6 +232,11 @@ void HZBOcclusionCulling::Submit(const RenderContext& renderContext)
     // Restore state
     context->ResetSR();
     context->SetViewportAndScissors(renderContext.Buffers->GetViewport());
+}
+
+void HZBOcclusionCulling::FreeObject(uint32 cullingId)
+{
+    _items.FreeObject(cullingId);
 }
 
 bool HZBOcclusionCulling::IsVisible(const BoundingBox& bounds, uint32& cullingId)

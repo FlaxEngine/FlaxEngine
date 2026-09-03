@@ -50,9 +50,11 @@ private:
 public:
     // [IOcclusionCulling]
     bool IsSupported() override;
+    bool IsStateless() override;
     void BeginFrame(const RenderContext& renderContext) override;
     void EndFrame(const RenderContext& renderContext) override;
     void Submit(const RenderContext& renderContext) override;
+    void FreeObject(uint32 cullingId) override;
     bool IsVisible(const BoundingBox& bounds, uint32& cullingId) override;
     bool IsVisible(const BoundingBox& bounds, GeometryDrawState& drawState) override;
 

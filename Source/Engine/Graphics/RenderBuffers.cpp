@@ -289,6 +289,7 @@ void RenderBuffers::Release()
     if (auto* culling = FromInterface(OcclusionCulling))
         Delete(culling);
     OcclusionCulling = nullptr;
+    _statelessCulling = true;
 
     RenderTargetPool::Release(VolumetricFog);
     VolumetricFog = nullptr;
@@ -335,6 +336,7 @@ void RenderBuffers::OnRendering(const RenderContext& renderContext)
         {
             Delete(culling);
             OcclusionCulling = nullptr;
+            _statelessCulling = true;
         }
     }
     if (!OcclusionCulling && occlusionCullingTypeName.HasChars() && enableCulling)
@@ -349,6 +351,7 @@ void RenderBuffers::OnRendering(const RenderContext& renderContext)
                 LOG(Error, "Occlusion Culling system '{}' is unsupported", occlusionCullingTypeName.ToString());
                 return;
             }
+            _statelessCulling = OcclusionCulling->IsStateless();
 
             if (_usedCulling)
             {
@@ -466,16 +469,36 @@ void RenderBuffers::OnSceneRenderingUpdateActor(SceneRendering* scene, int32 key
 
 void RenderBuffers::OnSceneRenderingRemoveActor(SceneRendering* scene, int32 key, Actor* a)
 {
-    // Skip actors that don't have nested sub-objects
-    if (!_cullingIdsOwnerTypes.Contains(a->GetTypeHandle()))
+    bool isCullingIdOwner = _cullingIdsOwnerTypes.Contains(a->GetTypeHandle());
+    if (_statelessCulling && !isCullingIdOwner)
         return;
+    PROFILE_CPU();
+
     if (auto* sceneData = Scenes.TryGet(scene))
     {
-        for (auto it = sceneData->CullingIds.Begin(); it.IsNotEnd(); ++it)
+        // Check actors that have nested sub-objects
+        if (isCullingIdOwner)
         {
-            if (it->Key.First == a)
+            for (auto it = sceneData->CullingIds.Begin(); it.IsNotEnd(); ++it)
             {
-                sceneData->CullingIds.Remove(it);
+                if (it->Key.First == a)
+                {
+                    if (!_statelessCulling && it->Value)
+                        OcclusionCulling->FreeObject(it->Value);
+                    sceneData->CullingIds.Remove(it);
+                }
+            }
+        }
+
+        // Check that actor
+        auto& list = sceneData->Geo[a->_drawCategory];
+        if (list.IsValidIndex(key) && !_statelessCulling)
+        {
+            auto& item = list.Get()[key];
+            if (item.CullingId)
+            {
+                OcclusionCulling->FreeObject(item.CullingId);
+                item.CullingId = 0;
             }
         }
     }
@@ -483,5 +506,32 @@ void RenderBuffers::OnSceneRenderingRemoveActor(SceneRendering* scene, int32 key
 
 void RenderBuffers::OnSceneRenderingClear(SceneRendering* scene)
 {
+    PROFILE_CPU();
+    if (!_statelessCulling)
+    {
+        // Free culling ids
+        if (auto* sceneData = Scenes.TryGet(scene))
+        {
+            for (auto& e : sceneData->CullingIds)
+            {
+                if (e.Value)
+                    OcclusionCulling->FreeObject(e.Value);
+            }
+            for (auto& list : sceneData->Geo)
+            {
+                for (auto& item : list)
+                {
+                    if (item.CullingId)
+                    {
+                        OcclusionCulling->FreeObject(item.CullingId);
+                        item.CullingId = 0;
+                    }
+                }
+            }
+        }
+        else
+            return;
+    }
+
     Scenes.Remove(scene);
 }

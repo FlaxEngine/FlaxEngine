@@ -34,6 +34,11 @@ HardwareOcclusionCulling::~HardwareOcclusionCulling()
 #endif
 }
 
+bool HardwareOcclusionCulling::IsStateless()
+{
+    return false;
+}
+
 void HardwareOcclusionCulling::BeginFrame(const RenderContext& renderContext)
 {
     PROFILE_CPU();
@@ -212,6 +217,11 @@ void HardwareOcclusionCulling::Submit(const RenderContext& renderContext)
     // Cancel-out any draw stats from profiler (hidden draws)
     RenderStatsData::Counter = stats;
 #endif
+}
+
+void HardwareOcclusionCulling::FreeObject(uint32 cullingId)
+{
+    _items.FreeObject(cullingId);
 }
 
 bool HardwareOcclusionCulling::IsVisible(const BoundingBox& bounds, uint32& cullingId)

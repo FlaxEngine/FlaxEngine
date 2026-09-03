@@ -24,6 +24,7 @@ private:
     volatile int64 _freeItemsCount = 0;
     volatile int64 _newItemsCount = 0;
     Array<uint32> _freeItems;
+    Array<uint32> _freedItems;
 
 public:
     void BeginFrame()
@@ -31,23 +32,9 @@ public:
         // Remove used free items
         _freeItems.Resize(Math::Max((int32)_freeItemsCount, 0));
 
-#if 0 // TODO: find a different way as there might be some invisible object with CullingId assigned and drawing it later will overlap with reused IDs
-        // Trim history
-        constexpr int32 frameTTL = 20;
-        if (_frameCounter % 10 == 0 && _frameCounter > frameTTL)
-        {
-            const int32 lastFrame = _frameCounter - frameTTL;
-            for (int32 i = 0; i < this->Count(); i++)
-            {
-                auto& item = this->Get()[i];
-                if (item.LastUsedFrame && item.LastUsedFrame < lastFrame)
-                {
-                    Platform::MemoryClear(&item, sizeof(item));
-                    _freeItems.Add(i);
-                }
-            }
-        }
-#endif
+        // Put back freed items to the free list
+        _freeItems.Add(_freedItems);
+        _freedItems.Clear();
 
         // Allocate new items (as requested during the previous frame)
         if (_newItemsCount > 0)
@@ -87,5 +74,13 @@ public:
         }
 
         return false;
+    }
+
+    void FreeObject(uint32 cullingId)
+    {
+        ASSERT(cullingId > 0 && cullingId < (uint32)this->Count());
+        _freedItems.Add(cullingId);
+        auto& item = this->Get()[cullingId];
+        Platform::MemoryClear(&item, sizeof(item));
     }
 };

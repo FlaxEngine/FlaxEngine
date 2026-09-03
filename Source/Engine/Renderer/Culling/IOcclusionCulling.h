@@ -24,6 +24,11 @@ API_INTERFACE() class FLAXENGINE_API IOcclusionCulling
     virtual bool IsSupported() { return true; }
 
     /// <summary>
+    /// Checks if the culling system doesn't contain any state (eg. visibility resolved on GPU) related to culled objects. Otherwise, the culling system may maintain some state between frames (eg. visibility results from previous frames) to perform the culling operations thus will receive FreeObject.
+    /// </summary>
+    virtual bool IsStateless() { return true; }
+
+    /// <summary>
     /// Frame begin event. Called before the drawing to prepare the culling system for the new frame.
     /// </summary>
     virtual void BeginFrame(const RenderContext& renderContext) {}
@@ -37,6 +42,12 @@ API_INTERFACE() class FLAXENGINE_API IOcclusionCulling
     /// Frame end event. Called after the drawing to prepare the culling system for the new frame.
     /// </summary>
     virtual void EndFrame(const RenderContext& renderContext) {}
+
+    /// <summary>
+    /// Frees specific object from the culling system. Called when the object is removed from the scene or destroyed. Can be used to free any state related to the object (eg. visibility results from previous frames).
+    /// </summary>
+    /// <remarks>Used only when IsStateless returns true (as optimization).</remarks>
+    virtual void FreeObject(uint32 cullingId) {}
 
     /// <summary>
     /// Object bounds visibility check. Returns true if the object is visible (not occluded by other geometry).

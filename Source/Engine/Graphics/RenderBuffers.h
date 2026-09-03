@@ -83,6 +83,7 @@ protected:
     bool _useAlpha = false;
     bool _useNull = false;
     bool _usedCulling = false;
+    bool _statelessCulling = true;
     Viewport _viewport;
     Array<GPUTexture*, FixedAllocation<32>> _resources;
     CriticalSection _cullingLocker;
