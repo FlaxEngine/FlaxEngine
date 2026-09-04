@@ -134,8 +134,8 @@ void NetworkLagDriver::SendMessage(const NetworkChannelType channelType, const N
     msg.Lag = (double)Lag;
     msg.ChannelType = channelType;
     msg.Type = 0;
-    msg.MessageData.Set(message.Buffer, message.Length);
-    msg.MessageLength = message.Length;
+    msg.MessageData.Set(message.Buffer, message.Position);
+    msg.MessageLength = message.Position;
 }
 
 void NetworkLagDriver::SendMessage(NetworkChannelType channelType, const NetworkMessage& message, NetworkConnection target)
@@ -151,8 +151,8 @@ void NetworkLagDriver::SendMessage(NetworkChannelType channelType, const Network
     msg.ChannelType = channelType;
     msg.Type = 1;
     msg.Target = target;
-    msg.MessageData.Set(message.Buffer, message.Length);
-    msg.MessageLength = message.Length;
+    msg.MessageData.Set(message.Buffer, message.Position);
+    msg.MessageLength = message.Position;
 }
 
 void NetworkLagDriver::SendMessage(const NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection, HeapAllocation>& targets)
@@ -168,8 +168,8 @@ void NetworkLagDriver::SendMessage(const NetworkChannelType channelType, const N
     msg.ChannelType = channelType;
     msg.Type = 2;
     msg.Targets = targets;
-    msg.MessageData.Set(message.Buffer, message.Length);
-    msg.MessageLength = message.Length;
+    msg.MessageData.Set(message.Buffer, message.Position);
+    msg.MessageLength = message.Position;
 }
 
 NetworkDriverStats NetworkLagDriver::GetStats()
@@ -203,7 +203,7 @@ void NetworkLagDriver::OnUpdate()
         // Use this helper message as a container to send the stored data and length to the ENet driver
         NetworkMessage message;
         message.Buffer = msg.MessageData.Get();
-        message.Length = msg.MessageLength;
+        message.BufferSize = msg.MessageLength;
 
         switch (msg.Type)
         {

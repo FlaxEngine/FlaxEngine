@@ -34,6 +34,8 @@
 #include "FlaxEngine.Gen.h"
 #endif
 
+#define NETWORK_STREAM_SIZE_LIMIT 65535
+
 #if !BUILD_RELEASE
 bool NetworkReplicator::EnableLog = false;
 #include "Engine/Core/Log.h"
@@ -541,7 +543,7 @@ void SendInParts(NetworkPeer* peer, NetworkChannelType channel, const byte* data
     msgDataPayload.PartSize = msgDataSize;
     msg.WriteStructure(msgDataPayload);
     msg.WriteBytes(data, msgDataSize);
-    uint32 messageSize = msg.Length;
+    uint32 messageSize = msg.Position;
     if (toServer)
         peer->EndSendMessage(channel, msg);
     else
@@ -561,7 +563,7 @@ void SendInParts(NetworkPeer* peer, NetworkChannelType channel, const byte* data
         msg.WriteStructure(msgDataPart);
         msg.WriteNetworkId(objectId);
         msg.WriteBytes(data + msgDataPart.PartStart, msgDataPart.PartSize);
-        messageSize += msg.Length;
+        messageSize += msg.Position;
         dataStart += msgDataPart.PartSize;
         if (toServer)
             peer->EndSendMessage(channel, msg);
@@ -718,13 +720,16 @@ void SendReplication(ScriptingObject* obj, NetworkClientsMask targetClients)
     const bool failed = NetworkReplicator::InvokeSerializer(obj->GetTypeHandle(), obj, stream, true);
     if (failed)
     {
-        //NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Cannot serialize object {} of type {} (missing serialization logic)", item.ToString(), obj->GetType().ToString());
+        if (stream->HasError())
+        {
+            NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to serialize object {} of type {}", item.ToString(), obj->GetType().ToString());
+        }
         return;
     }
     const uint32 size = stream->GetPosition();
-    if (size > MAX_uint16)
+    if (size > NETWORK_STREAM_SIZE_LIMIT)
     {
-        LOG(Error, "Too much data for object {} replication ({} bytes provided while limit is {}).", item.ToString(), size, MAX_uint16);
+        LOG(Error, "Too much data for object {} replication ({} bytes provided while limit is {}).", item.ToString(), size, NETWORK_STREAM_SIZE_LIMIT);
         return;
     }
 
@@ -788,9 +793,9 @@ void SendRpc(RpcSendItem& e)
         return;
     }
     auto& item = it->Item;
-    if (e.ArgsData.Length() > MAX_uint16)
+    if (e.ArgsData.Length() > NETWORK_STREAM_SIZE_LIMIT)
     {
-        LOG(Error, "Too much data for object RPC method '{}.{}' on object '{}' ({} bytes provided while limit is {}).", e.Name.First.ToString(), e.Name.Second.ToString(), obj->GetID(), e.ArgsData.Length(), MAX_uint16);
+        LOG(Error, "Too much data for object RPC method '{}.{}' on object '{}' ({} bytes provided while limit is {}).", e.Name.First.ToString(), e.Name.Second.ToString(), obj->GetID(), e.ArgsData.Length(), NETWORK_STREAM_SIZE_LIMIT);
         return;
     }
     const NetworkManagerMode mode = NetworkManager::Mode;
@@ -1015,7 +1020,11 @@ void InvokeObjectReplication(NetworkReplicatedObject& item, uint32 ownerFrame, b
     const bool failed = NetworkReplicator::InvokeSerializer(obj->GetTypeHandle(), obj, stream, false);
     if (failed)
     {
-        //NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Cannot serialize object {} of type {} (missing serialization logic)", item.ToString(), obj->GetType().ToString());
+        if (stream->HasError())
+        {
+            NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to deserialize object {} of type {}", item.ToString(), obj->GetType().ToString());
+        }
+        return;
     }
 
     if (item.AsNetworkObject)
@@ -1049,6 +1058,10 @@ void InvokeObjectRpc(const NetworkRpcInfo* info, byte* data, uint32 dataSize, ui
 
     // Execute RPC
     info->Execute(obj, stream, info->Tag);
+    if (stream->HasError())
+    {
+        NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to read stream with arguments of RPC for object {}", obj->GetType().ToString());
+    }
 }
 
 void InvokeObjectSpawn(const NetworkMessageObjectSpawn& msgData, const Guid& prefabId, const NetworkMessageObjectSpawnItem* msgDataItems)
@@ -1426,7 +1439,7 @@ bool NetworkReplicator::InvokeSerializer(const ScriptingTypeHandle& typeHandle, 
     // Invoke serializer
     const byte idx = serialize ? 0 : 1;
     serializer.Methods[idx](instance, stream, serializer.Tags[idx]);
-    return false;
+    return stream->HasError();
 }
 
 void NetworkReplicator::AddObject(ScriptingObject* obj, const ScriptingObject* parent)
@@ -1825,6 +1838,11 @@ bool NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHa
     const NetworkRpcInfo* info = NetworkRpcInfo::RPCsTable.TryGet(NetworkRpcName(type, name));
     if (!info || !obj || NetworkManager::IsOffline())
         return false;
+    if (argsStream && argsStream->HasError())
+    {
+        NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to write stream with RPC arguments '{}::{}'", type.ToString(), name.ToString());
+        return true;
+    }
     PROFILE_MEM(Networking);
     ObjectsLock.Lock();
     auto& rpc = RpcQueue.AddOne();
@@ -1832,7 +1850,8 @@ bool NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHa
     rpc.Name.First = type;
     rpc.Name.Second = name;
     rpc.Info = *info;
-    rpc.ArgsData.Copy(Span<byte>(argsStream->GetBuffer(), argsStream->GetPosition()));
+    if (argsStream)
+        rpc.ArgsData.Copy(Span<byte>(argsStream->GetBuffer(), argsStream->GetPosition()));
     rpc.Targets.Copy(targetIds);
     ObjectsLock.Unlock();
 

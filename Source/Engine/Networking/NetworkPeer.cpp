@@ -82,8 +82,9 @@ void NetworkPeer::Shutdown()
 
 void NetworkPeer::CreateMessageBuffers()
 {
+    if (MessageBuffer)
+        return;
     PROFILE_MEM(Networking);
-    ASSERT(MessageBuffer == nullptr);
 
     const uint32 pageSize = Platform::GetCPUInfo().PageSize;
 
@@ -99,10 +100,11 @@ void NetworkPeer::CreateMessageBuffers()
 
 void NetworkPeer::DisposeMessageBuffers()
 {
-    ASSERT(MessageBuffer != nullptr);
-
-    Platform::FreePages(MessageBuffer);
-    MessageBuffer = nullptr;
+    if (MessageBuffer)
+    {
+        Platform::FreePages(MessageBuffer);
+        MessageBuffer = nullptr;
+    }
 }
 
 bool NetworkPeer::Listen()
@@ -137,17 +139,16 @@ bool NetworkPeer::PopEvent(NetworkEvent& eventRef)
 
 NetworkMessage NetworkPeer::CreateMessage()
 {
+    CHECK_RETURN(MessagePool.HasItems(), NetworkMessage());
     const uint32 messageId = MessagePool.Pop();
     uint8* messageBuffer = GetMessageBuffer(messageId);
-    return NetworkMessage(messageBuffer, messageId, Config.MessageSize, 0, 0);
+    return NetworkMessage(messageBuffer, Config.MessageSize, messageId);
 }
 
 void NetworkPeer::RecycleMessage(const NetworkMessage& message)
 {
-    ASSERT(message.IsValid());
-#ifdef BUILD_DEBUG
-    ASSERT(MessagePool.Contains(message.MessageId) == false);
-#endif
+    CHECK(message.IsValid());
+    ASSERT_LOW_LAYER(MessagePool.Contains(message.MessageId) == false);
 
     // Return the message id
     MessagePool.Push(message.MessageId);
@@ -160,13 +161,14 @@ NetworkMessage NetworkPeer::BeginSendMessage()
 
 void NetworkPeer::AbortSendMessage(const NetworkMessage& message)
 {
-    ASSERT(message.IsValid());
+    CHECK(message.IsValid());
     RecycleMessage(message);
 }
 
 bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const NetworkMessage& message)
 {
-    ASSERT(message.IsValid());
+    CHECK_RETURN(message.IsValid(), true);
+    CHECK_RETURN(EnumHasNoneFlags(message.Flags, NetworkMessageFlags::HasError), true);
 
     NetworkDriver->SendMessage(channelType, message);
 
@@ -176,7 +178,8 @@ bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const Net
 
 bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const NetworkMessage& message, const NetworkConnection& target)
 {
-    ASSERT(message.IsValid());
+    CHECK_RETURN(message.IsValid(), true);
+    CHECK_RETURN(EnumHasNoneFlags(message.Flags, NetworkMessageFlags::HasError), true);
 
     NetworkDriver->SendMessage(channelType, message, target);
 
@@ -186,7 +189,8 @@ bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const Net
 
 bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection>& targets)
 {
-    ASSERT(message.IsValid());
+    CHECK_RETURN(message.IsValid(), true);
+    CHECK_RETURN(EnumHasNoneFlags(message.Flags, NetworkMessageFlags::HasError), true);
 
     NetworkDriver->SendMessage(channelType, message, targets);
 

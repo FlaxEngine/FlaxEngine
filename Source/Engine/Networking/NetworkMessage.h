@@ -6,15 +6,29 @@
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Vector4.h"
 #include "Engine/Core/Math/Quaternion.h"
-#include "Engine/Core/Types/String.h"
+#include "Engine/Core/Types/StringView.h"
 #include "Engine/Scripting/ScriptingType.h"
+
+/// <summary>
+/// Message flags.
+/// </summary>
+API_ENUM(Attributes="Flags") enum class NetworkMessageFlags : uint32
+{
+    // No flags.
+    None = 0,
+    // Indicates an error occurred during reading/writing to the message buffer.
+    HasError = 1,
+};
+
+DECLARE_ENUM_OPERATORS(NetworkMessageFlags);
 
 /// <summary>
 /// Network message structure. Provides raw data writing and reading to the message buffer.
 /// </summary>
-API_STRUCT(Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkMessage
+API_STRUCT(Namespace="FlaxEngine.Networking", NoDefault) struct FLAXENGINE_API NetworkMessage
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkMessage);
+
 public:
     /// <summary>
     /// The raw message buffer.
@@ -22,24 +36,24 @@ public:
     API_FIELD() uint8* Buffer = nullptr;
 
     /// <summary>
-    /// The unique, internal message identifier.
-    /// </summary>
-    API_FIELD() uint32 MessageId = 0;
-
-    /// <summary>
     /// The size in bytes of the buffer that this message has.
     /// </summary>
     API_FIELD() uint32 BufferSize = 0;
 
     /// <summary>
-    /// The length in bytes of this message.
-    /// </summary>
-    API_FIELD() uint32 Length = 0;
-
-    /// <summary>
     /// The position in bytes in buffer where the next read/write will occur.
     /// </summary>
     API_FIELD() uint32 Position = 0;
+
+    /// <summary>
+    /// The unique, internal message identifier.
+    /// </summary>
+    API_FIELD() uint32 MessageId = 0;
+
+    /// <summary>
+    /// Set of flags that describe the message state.
+    /// </summary>
+    API_FIELD() NetworkMessageFlags Flags = NetworkMessageFlags::None;
 
 public:
     /// <summary>
@@ -50,12 +64,10 @@ public:
     /// <summary>
     /// Initializes values of the <seealso cref="NetworkMessage"/> structure.
     /// </summary>
-    NetworkMessage(uint8* buffer, uint32 messageId, uint32 bufferSize, uint32 length, uint32 position)
+    NetworkMessage(uint8* buffer, uint32 bufferSize, uint32 messageId = 0)
         : Buffer(buffer)
-        , MessageId(messageId)
         , BufferSize(bufferSize)
-        , Length(length)
-        , Position(position)
+        , MessageId(messageId)
     {
     }
 
@@ -66,58 +78,66 @@ public:
     /// Writes raw bytes into the message.
     /// </summary>
     /// <param name="bytes">The bytes that will be written.</param>
-    /// <param name="numBytes">The amount of bytes to write from the bytes pointer.</param>
-    FORCE_INLINE void WriteBytes(const uint8* bytes, const int32 numBytes)
+    /// <param name="length">The amount of bytes to write from the pointer.</param>
+    void WriteBytes(const void* bytes, const int32 length)
     {
-        ASSERT(Position + numBytes <= BufferSize);
-        Platform::MemoryCopy(Buffer + Position, bytes, numBytes);
-        Position += numBytes;
-        Length = Position;
+        if (Position + length > BufferSize)
+        {
+            Flags |= NetworkMessageFlags::HasError;
+            return;
+        }
+        Platform::MemoryCopy(Buffer + Position, bytes, length);
+        Position += length;
     }
 
     /// <summary>
     /// Reads raw bytes from the message into the given byte array.
     /// </summary>
-    /// <param name="bytes">
-    /// The buffer pointer that will be used to store the bytes.
-    /// Should be of the same length as length or longer.
-    /// </param>
-    /// <param name="numBytes">The minimal amount of bytes that the buffer contains.</param>
-    FORCE_INLINE void ReadBytes(uint8* bytes, const int32 numBytes)
+    /// <param name="bytes">The buffer pointer that will be used to store the bytes. Should be of the same length as length or longer.</param>
+    /// <param name="length">The minimal amount of bytes that the buffer contains.</param>
+    void ReadBytes(void* bytes, const int32 length)
     {
-        ASSERT(Position + numBytes <= BufferSize);
-        Platform::MemoryCopy(bytes, Buffer + Position, numBytes);
-        Position += numBytes;
+        if (Position + length > BufferSize)
+        {
+            Flags |= NetworkMessageFlags::HasError;
+            return;
+        }
+        Platform::MemoryCopy(bytes, Buffer + Position, length);
+        Position += length;
     }
 
     /// <summary>
     /// Skips bytes from the message.
     /// </summary>
-    /// <param name="numBytes">Amount of bytes to skip.</param>
+    /// <param name="length">Amount of bytes to skip.</param>
     /// <returns>Pointer to skipped data beginning.</returns>
-    FORCE_INLINE void* SkipBytes(const int32 numBytes)
+    void* SkipBytes(const int32 length)
     {
-        ASSERT(Position + numBytes <= BufferSize);
+        if (Position + length > BufferSize)
+        {
+            Flags |= NetworkMessageFlags::HasError;
+            return nullptr;
+        }
         byte* result = Buffer + Position;
-        Position += numBytes;
+        Position += length;
         return result;
     }
 
     template<typename T>
     FORCE_INLINE void WriteStructure(const T& data)
     {
-        WriteBytes((const uint8*)&data, sizeof(data));
+        WriteBytes(&data, sizeof(data));
     }
 
     template<typename T>
     FORCE_INLINE void ReadStructure(const T& data)
     {
-        ReadBytes((uint8*)&data, sizeof(data));
+        ReadBytes((T*)&data, sizeof(data));
     }
 
 #define DECL_READWRITE(type, name) \
-    FORCE_INLINE void Write##name(type value) { WriteBytes(reinterpret_cast<const uint8*>(&value), sizeof(type)); } \
-    FORCE_INLINE type Read##name() { type value = 0; ReadBytes(reinterpret_cast<uint8*>(&value), sizeof(type)); return value; }
+    void Write##name(type value) { WriteBytes(&value, sizeof(type)); } \
+    type Read##name() { type value = 0; ReadBytes(&value, sizeof(type)); return value; }
     DECL_READWRITE(int8, Int8)
     DECL_READWRITE(uint8, UInt8)
     DECL_READWRITE(int16, Int16)
@@ -134,7 +154,7 @@ public:
     /// <summary>
     /// Writes data of type Vector2 into the message.
     /// </summary>
-    FORCE_INLINE void WriteVector2(const Vector2& value)
+    void WriteVector2(const Vector2& value)
     {
         WriteSingle((float)value.X);
         WriteSingle((float)value.Y);
@@ -143,7 +163,7 @@ public:
     /// <summary>
     /// Reads and returns data of type Vector2 from the message.
     /// </summary>
-    FORCE_INLINE Vector2 ReadVector2()
+    Vector2 ReadVector2()
     {
         return Vector2(ReadSingle(), ReadSingle());
     }
@@ -151,7 +171,7 @@ public:
     /// <summary>
     /// Writes data of type Vector3 into the message.
     /// </summary>
-    FORCE_INLINE void WriteVector3(const Vector3& value)
+    void WriteVector3(const Vector3& value)
     {
         WriteSingle((float)value.X);
         WriteSingle((float)value.Y);
@@ -161,7 +181,7 @@ public:
     /// <summary>
     /// Reads and returns data of type Vector3 from the message.
     /// </summary>
-    FORCE_INLINE Vector3 ReadVector3()
+    Vector3 ReadVector3()
     {
         return Vector3(ReadSingle(), ReadSingle(), ReadSingle());
     }
@@ -169,7 +189,7 @@ public:
     /// <summary>
     /// Writes data of type Vector4 into the message.
     /// </summary>
-    FORCE_INLINE void WriteVector4(const Vector4& value)
+    void WriteVector4(const Vector4& value)
     {
         WriteSingle((float)value.X);
         WriteSingle((float)value.Y);
@@ -180,7 +200,7 @@ public:
     /// <summary>
     /// Reads and returns data of type Vector4 from the message.
     /// </summary>
-    FORCE_INLINE Vector4 ReadVector4()
+    Vector4 ReadVector4()
     {
         return Vector4(ReadSingle(), ReadSingle(), ReadSingle(), ReadSingle());
     }
@@ -188,62 +208,73 @@ public:
     /// <summary>
     /// Writes data of type Quaternion into the message.
     /// </summary>
-    FORCE_INLINE void WriteQuaternion(const Quaternion& value)
+    void WriteQuaternion(const Quaternion& value)
     {
-        WriteSingle(value.X);
-        WriteSingle(value.Y);
-        WriteSingle(value.Z);
-        WriteSingle(value.W);
+        WriteBytes(&value, sizeof(Quaternion));
     }
 
     /// <summary>
     /// Reads and returns data of type Quaternion from the message.
     /// </summary>
-    FORCE_INLINE Quaternion ReadQuaternion()
+    Quaternion ReadQuaternion()
     {
-        return Quaternion(ReadSingle(), ReadSingle(), ReadSingle(), ReadSingle());
+        Quaternion result = Quaternion::Identity;
+        ReadBytes(&result, sizeof(Quaternion));
+        return result;
     }
 
     /// <summary>
     /// Writes data of type String into the message. UTF-16 encoded.
     /// </summary>
-    FORCE_INLINE void WriteString(const StringView& value)
+    void WriteString(const StringView& value)
     {
         WriteUInt16(value.Length()); // TODO: Use 1-byte length when possible
-        WriteBytes((const uint8*)value.Get(), value.Length() * sizeof(Char));
+        WriteBytes(value.Get(), value.Length() * sizeof(Char));
     }
 
     /// <summary>
     /// Writes data of type String into the message.
     /// </summary>
-    FORCE_INLINE void WriteStringAnsi(const StringAnsiView& value)
+    void WriteStringAnsi(const StringAnsiView& value)
     {
         WriteUInt16(value.Length()); // TODO: Use 1-byte length when possible
-        WriteBytes((const uint8*)value.Get(), value.Length());
+        WriteBytes(value.Get(), value.Length());
     }
 
     /// <summary>
     /// Reads and returns data of type String from the message. UTF-16 encoded. Data valid within message lifetime.
     /// </summary>
-    FORCE_INLINE StringView ReadString()
+    StringView ReadString()
     {
         const uint16 length = ReadUInt16();
-        return StringView(length ? (const Char*)SkipBytes(length * 2) : nullptr, length);
+        if (length)
+        {
+            auto str = SkipBytes(length * 2);
+            if (str)
+                return StringView((const Char*)str, length);
+        }
+        return StringView::Empty;
     }
 
     /// <summary>
     /// Reads and returns data of type String from the message. ANSI encoded. Data valid within message lifetime.
     /// </summary>
-    FORCE_INLINE StringAnsiView ReadStringAnsi()
+    StringAnsiView ReadStringAnsi()
     {
         const uint16 length = ReadUInt16();
-        return StringAnsiView(length ? (const char*)SkipBytes(length) : nullptr, length);
+        if (length)
+        {
+            auto str = SkipBytes(length);
+            if (str)
+                return StringAnsiView((const char*)str, length);
+        }
+        return StringAnsiView::Empty;
     }
 
     /// <summary>
     /// Writes data of type Guid into the message.
     /// </summary>
-    FORCE_INLINE void WriteGuid(const Guid& value)
+    void WriteGuid(const Guid& value)
     {
         WriteBytes((const uint8*)&value, sizeof(Guid));
     }
@@ -251,9 +282,9 @@ public:
     /// <summary>
     /// Reads and returns data of type Guid from the message.
     /// </summary>
-    FORCE_INLINE Guid ReadGuid()
+    Guid ReadGuid()
     {
-        Guid value;
+        Guid value = Guid::Empty;
         ReadBytes((uint8*)&value, sizeof(Guid));
         return value;
     }

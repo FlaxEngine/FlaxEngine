@@ -98,10 +98,8 @@ public:
     /// <param name="channelType">The channel to send the message over.</param>
     /// <param name="message">The message.</param>
     /// <remarks>Can be used only by the client!</remarks>
-    /// <remarks>
-    /// Do not recycle the message after calling this.
-    /// This function automatically recycles the message.
-    /// </remarks>
+    /// <remarks>Do not recycle the message after calling this. This function automatically recycles the message.</remarks>
+    /// <returns>True if failed to send a message, otherwise false.</returns>
     API_FUNCTION() bool EndSendMessage(NetworkChannelType channelType, const NetworkMessage& message);
 
     /// <summary>
@@ -111,10 +109,8 @@ public:
     /// <param name="message">The message.</param>
     /// <param name="target">The client connection to send the message to.</param>
     /// <remarks>Can be used only by the server!</remarks>
-    /// <remarks>
-    /// Do not recycle the message after calling this.
-    /// This function automatically recycles the message.
-    /// </remarks>
+    /// <remarks>Do not recycle the message after calling this. This function automatically recycles the message.</remarks>
+    /// <returns>True if failed to send a message, otherwise false.</returns>
     API_FUNCTION() bool EndSendMessage(NetworkChannelType channelType, const NetworkMessage& message, const NetworkConnection& target);
 
     /// <summary>
@@ -124,10 +120,8 @@ public:
     /// <param name="message">The message.</param>
     /// <param name="targets">The connections list to send the message to.</param>
     /// <remarks>Can be used only by the server!</remarks>
-    /// <remarks>
-    /// Do not recycle the message after calling this.
-    /// This function automatically recycles the message.
-    /// </remarks>
+    /// <remarks>Do not recycle the message after calling this. This function automatically recycles the message.</remarks>
+    /// <returns>True if failed to send a message, otherwise false.</returns>
     API_FUNCTION() bool EndSendMessage(NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection, HeapAllocation>& targets);
 
     /// <summary>

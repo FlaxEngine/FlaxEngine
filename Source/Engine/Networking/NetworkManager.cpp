@@ -819,14 +819,18 @@ void NetworkManagerService::Update()
             if (id < (uint8)NetworkMessageIDs::MAX)
             {
                 MessageHandlers[id](event, client, peer);
+                if (EnumHasAnyFlags(event.Message.Flags, NetworkMessageFlags::HasError))
+                {
+                    LOG(Warning, "Error occurred while processing message id={0} from connection {1}", id, event.Sender.ConnectionId);
+                }
             }
             else
             {
                 LOG(Warning, "Unknown message id={0} from connection {1}", id, event.Sender.ConnectionId);
             }
-        }
             peer->RecycleMessage(event.Message);
             break;
+        }
         default:
             eventIsValid = false;
             break;

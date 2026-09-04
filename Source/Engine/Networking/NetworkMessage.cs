@@ -1,8 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
-using System.Text;
-using FlaxEngine.Assertions;
 
 namespace FlaxEngine.Networking
 {
@@ -12,26 +10,30 @@ namespace FlaxEngine.Networking
         /// Writes raw bytes into the message.
         /// </summary>
         /// <param name="bytes">The bytes that will be written.</param>
-        /// <param name="length">The amount of bytes to write from the bytes pointer.</param>
+        /// <param name="length">The amount of bytes to write from the pointer.</param>
         public void WriteBytes(byte* bytes, int length)
         {
-            Assert.IsTrue(Position + length <= BufferSize, $"Could not write data of length {length} into message with id={MessageId}! Current write position={Position}");
+            if (Position + length > BufferSize)
+            {
+                Flags |= NetworkMessageFlags.HasError;
+                return;
+            }
             Utils.MemoryCopy(new IntPtr(Buffer + Position), new IntPtr(bytes), (ulong)length);
             Position += (uint)length;
-            Length = Position;
         }
 
         /// <summary>
         /// Reads raw bytes from the message into the given byte array.
         /// </summary>
-        /// <param name="buffer">
-        /// The buffer pointer that will be used to store the bytes.
-        /// Should be of the same length as length or longer.
-        /// </param>
+        /// <param name="buffer">The buffer pointer that will be used to store the bytes. Should be of the same length as length or longer.</param>
         /// <param name="length">The minimal amount of bytes that the buffer contains.</param>
         public void ReadBytes(byte* buffer, int length)
         {
-            Assert.IsTrue(Position + length <= Length, $"Could not read data of length {length} from message with id={MessageId} and size of {Length}B! Current read position={Position}");
+            if (Position + length > BufferSize)
+            {
+                Flags |= NetworkMessageFlags.HasError;
+                return;
+            }
             Utils.MemoryCopy(new IntPtr(buffer), new IntPtr(Buffer + Position), (ulong)length);
             Position += (uint)length;
         }
@@ -52,10 +54,7 @@ namespace FlaxEngine.Networking
         /// <summary>
         /// Reads raw bytes from the message into the given byte array.
         /// </summary>
-        /// <param name="buffer">
-        /// The buffer that will be used to store the bytes.
-        /// Should be of the same length as length or longer.
-        /// </param>
+        /// <param name="buffer">The buffer that will be used to store the bytes. Should be of the same length as length or longer.</param>
         /// <param name="length">The minimal amount of bytes that the buffer contains.</param>
         public void ReadBytes(byte[] buffer, int length)
         {
@@ -251,13 +250,9 @@ namespace FlaxEngine.Networking
         public void WriteString(string value)
         {
             // Note: Make sure that this is consistent with the C++ message API!
-            
-            var data = Encoding.Unicode.GetBytes(value);
-            var dataLength = data.Length;
-            var stringLength = value.Length;
-            
-            WriteUInt16((ushort)stringLength); // TODO: Use 1-byte length when possible
-            WriteBytes(data, dataLength);
+            WriteUInt16((ushort)value.Length); // TODO: Use 1-byte length when possible
+            fixed (char* ptr = value)
+                WriteBytes((byte*)ptr, value.Length * 2);
         }
 
         /// <summary>
@@ -266,13 +261,24 @@ namespace FlaxEngine.Networking
         public string ReadString()
         {
             // Note: Make sure that this is consistent with the C++ message API!
-            
-            var stringLength = ReadUInt16(); // In chars
-            var dataLength = stringLength * sizeof(char); // In bytes
-            var bytes = stackalloc char[stringLength];
-            
-            ReadBytes((byte*)bytes, dataLength);
-            return new string(bytes, 0, stringLength);
+            var stringLength = ReadUInt16();
+            if (stringLength < 200)
+            {
+                var bytes = stackalloc char[stringLength];
+                ReadBytes((byte*)bytes, stringLength * sizeof(char));
+                if ((Flags & NetworkMessageFlags.HasError) != 0)
+                    return null;
+                return new string(bytes, 0, stringLength);
+            }
+            else
+            {
+                var bytes = new char[stringLength];
+                fixed (char* bytesPtr = bytes)
+                    ReadBytes((byte*)bytesPtr, stringLength * sizeof(char));
+                if ((Flags & NetworkMessageFlags.HasError) != 0)
+                    return null;
+                return new string(bytes, 0, stringLength);
+            }
         }
 
         /// <summary>
@@ -352,10 +358,7 @@ namespace FlaxEngine.Networking
         /// </summary>
         public void WriteQuaternion(Quaternion value)
         {
-            WriteSingle(value.X);
-            WriteSingle(value.Y);
-            WriteSingle(value.Z);
-            WriteSingle(value.W);
+            WriteBytes((byte*)&value, sizeof(Quaternion));
         }
 
         /// <summary>
@@ -363,7 +366,9 @@ namespace FlaxEngine.Networking
         /// </summary>
         public Quaternion ReadQuaternion()
         {
-            return new Quaternion(ReadSingle(), ReadSingle(), ReadSingle(), ReadSingle());
+            Quaternion result = Quaternion.Identity;
+            ReadBytes((byte*)&result, sizeof(Quaternion));
+            return result;
         }
 
         /// <summary>

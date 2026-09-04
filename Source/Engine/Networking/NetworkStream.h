@@ -83,6 +83,7 @@ public:
 
 public:
     // [Stream]
+    bool HasError() const override;
     void Flush() override;
     void Close() override;
     uint32 GetLength() override;

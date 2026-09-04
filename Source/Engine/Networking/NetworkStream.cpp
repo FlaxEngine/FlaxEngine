@@ -126,8 +126,9 @@ void NetworkStream::Initialize(uint32 minCapacity)
         _allocated = true;
     }
 
-    // Reset pointer to the start
+    // Reset state
     _position = _buffer;
+    ReadStream::_hasError = false;
 }
 
 void NetworkStream::Initialize(byte* buffer, uint32 length)
@@ -137,6 +138,7 @@ void NetworkStream::Initialize(byte* buffer, uint32 length)
     _position = _buffer = buffer;
     _length = length;
     _allocated = false;
+    ReadStream::_hasError = false;
 }
 
 void NetworkStream::Read(INetworkSerializable& obj)
@@ -196,6 +198,11 @@ void NetworkStream::Write(const Transform& data, bool useDouble)
     NetworkQuaternion::Write(this, data.Orientation);
 }
 
+bool NetworkStream::HasError() const
+{
+    return ReadStream::_hasError;
+}
+
 void NetworkStream::Flush()
 {
     // Nothing to do
@@ -208,6 +215,7 @@ void NetworkStream::Close()
     _position = _buffer = nullptr;
     _length = 0;
     _allocated = false;
+    ReadStream::_hasError = false;
 }
 
 uint32 NetworkStream::GetLength()

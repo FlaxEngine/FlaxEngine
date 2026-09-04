@@ -42,7 +42,7 @@ void SendPacketToPeer(ENetPeer* peer, const NetworkChannelType channelType, cons
     // Tho, we cannot use it, because we're releasing the message right after the send - and the packet might not
     // be sent, yet. To avoid data corruption, we're just using the copy method. We might fix that later, but I'll take
     // the smaller risk.
-    ENetPacket* packet = enet_packet_create(message.Buffer, message.Length, flag);
+    ENetPacket* packet = enet_packet_create(message.Buffer, message.Position, flag);
 
     // And send it!
     enet_peer_send(peer, 0, packet);
@@ -195,7 +195,7 @@ bool ENetDriver::PopEvent(NetworkEvent& eventPtr)
         case ENET_EVENT_TYPE_RECEIVE:
             eventPtr.EventType = NetworkEventType::Message;
             eventPtr.Message = _networkHost->CreateMessage();
-            eventPtr.Message.Length = event.packet->dataLength;
+            eventPtr.Message.BufferSize = event.packet->dataLength;
             Platform::MemoryCopy(eventPtr.Message.Buffer, event.packet->data, event.packet->dataLength);
             break;
         default:
