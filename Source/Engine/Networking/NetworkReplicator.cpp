@@ -2205,9 +2205,9 @@ void NetworkInternal::NetworkReplicatorUpdate()
 void NetworkInternal::OnNetworkMessageObjectReplicate(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     PROFILE_CPU();
-    NetworkMessageObjectReplicate msgData;
-    NetworkMessageObjectPartPayload msgDataPayload;
-    Guid objectId, parentId;
+    NetworkMessageObjectReplicate msgData = {};
+    NetworkMessageObjectPartPayload msgDataPayload = {};
+    Guid objectId = Guid::Empty, parentId = Guid::Empty;
     StringAnsiView objectTypeName;
     event.Message.ReadStructure(msgData);
     event.Message.ReadNetworkId(objectId);
@@ -2243,8 +2243,8 @@ void NetworkInternal::OnNetworkMessageObjectReplicate(NetworkEvent& event, Netwo
 void NetworkInternal::OnNetworkMessageObjectReplicatePart(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     PROFILE_CPU();
-    NetworkMessageObjectPart msgData;
-    Guid objectId;
+    NetworkMessageObjectPart msgData = {};
+    Guid objectId = Guid::Empty;
     event.Message.ReadStructure(msgData);
     event.Message.ReadNetworkId(objectId);
     ScopeLock lock(ObjectsLock);
@@ -2258,8 +2258,8 @@ void NetworkInternal::OnNetworkMessageObjectReplicatePart(NetworkEvent& event, N
 void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     PROFILE_CPU();
-    NetworkMessageObjectSpawn msgData;
-    Guid prefabId;
+    NetworkMessageObjectSpawn msgData = {};
+    Guid prefabId = Guid::Empty;
     event.Message.ReadStructure(msgData);
     event.Message.ReadNetworkId(prefabId);
     if (msgData.ItemsCount == 0)
@@ -2284,7 +2284,7 @@ void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkCl
 void NetworkInternal::OnNetworkMessageObjectSpawnPart(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     PROFILE_CPU();
-    NetworkMessageObjectSpawnPart msgData;
+    NetworkMessageObjectSpawnPart msgData = {};
     event.Message.ReadStructure(msgData);
     int32 spawnPartsIndex;
     for (spawnPartsIndex = 0; spawnPartsIndex < SpawnParts.Count(); spawnPartsIndex++)
@@ -2322,8 +2322,8 @@ void NetworkInternal::OnNetworkMessageObjectSpawnPart(NetworkEvent& event, Netwo
 void NetworkInternal::OnNetworkMessageObjectDespawn(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     PROFILE_CPU();
-    NetworkMessageObjectDespawn msgData;
-    Guid objectId;
+    NetworkMessageObjectDespawn msgData = {};
+    Guid objectId = Guid::Empty;
     event.Message.ReadStructure(msgData);
     event.Message.ReadNetworkId(objectId);
     ScopeLock lock(ObjectsLock);
@@ -2360,8 +2360,8 @@ void NetworkInternal::OnNetworkMessageObjectDespawn(NetworkEvent& event, Network
 void NetworkInternal::OnNetworkMessageObjectRole(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     PROFILE_CPU();
-    NetworkMessageObjectRole msgData;
-    Guid objectId;
+    NetworkMessageObjectRole msgData = {};
+    Guid objectId = Guid::Empty;
     event.Message.ReadStructure(msgData);
     event.Message.ReadNetworkId(objectId);
     ScopeLock lock(ObjectsLock);
@@ -2410,9 +2410,9 @@ void NetworkInternal::OnNetworkMessageObjectRole(NetworkEvent& event, NetworkCli
 void NetworkInternal::OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     PROFILE_CPU();
-    NetworkMessageObjectRpc msgData;
-    NetworkMessageObjectPartPayload msgDataPayload;
-    Guid objectId, parentId;
+    NetworkMessageObjectRpc msgData = {};
+    NetworkMessageObjectPartPayload msgDataPayload = {};
+    Guid objectId = Guid::Empty, parentId = Guid::Empty;
     StringAnsiView objectTypeName, rpcTypeName, rpcName;
     event.Message.ReadStructure(msgData);
     event.Message.ReadNetworkId(objectId);
@@ -2477,8 +2477,8 @@ void NetworkInternal::OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClie
 void NetworkInternal::OnNetworkMessageObjectRpcPart(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     PROFILE_CPU();
-    NetworkMessageObjectPart msgData;
-    Guid objectId;
+    NetworkMessageObjectPart msgData = {};
+    Guid objectId = Guid::Empty;
     event.Message.ReadStructure(msgData);
     event.Message.ReadNetworkId(objectId);
     ScopeLock lock(ObjectsLock);

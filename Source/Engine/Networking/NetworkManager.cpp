@@ -273,7 +273,7 @@ void NetworkMessage::ReadNetworkName(StringAnsiView& name)
 void OnNetworkMessageHandshake(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     // Read client connection data
-    NetworkMessageHandshake msgData;
+    NetworkMessageHandshake msgData = {};
     event.Message.ReadStructure(msgData);
     NetworkClientConnectionData connectionData;
     connectionData.Client = client;
@@ -319,7 +319,7 @@ void OnNetworkMessageHandshake(NetworkEvent& event, NetworkClient* client, Netwo
 void OnNetworkMessageHandshakeReply(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     ASSERT_LOW_LAYER(NetworkManager::IsClient());
-    NetworkMessageHandshakeReply msgData;
+    NetworkMessageHandshakeReply msgData = {};
     event.Message.ReadStructure(msgData);
     if (msgData.Result != 0)
     {
@@ -340,7 +340,7 @@ void OnNetworkMessageHandshakeReply(NetworkEvent& event, NetworkClient* client, 
 void OnNetworkMessageKey(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     // Read key data
-    NetworkMessageKey msgData;
+    NetworkMessageKey msgData = {};
     event.Message.ReadStructure(msgData);
     Guid id;
     StringAnsiView name;
