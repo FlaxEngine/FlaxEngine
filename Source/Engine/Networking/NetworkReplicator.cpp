@@ -262,6 +262,23 @@ namespace
     uint32 SpawnId = 0;
     uint32 RpcId = 0;
 
+    NetworkStream* GetWriteStream()
+    {
+        if (CachedWriteStream == nullptr)
+            CachedWriteStream = New<NetworkStream>();
+        CachedWriteStream->Initialize();
+        return CachedWriteStream;
+    }
+
+    NetworkStream* GetReadStream(byte* data, uint32 dataSize, uint32 senderId)
+    {
+        if (CachedReadStream == nullptr)
+            CachedReadStream = New<NetworkStream>();
+        CachedReadStream->Initialize(data, dataSize);
+        CachedReadStream->SenderId = senderId;
+        return CachedReadStream;
+    }
+
 #if USE_EDITOR
     void OnScriptsReloading()
     {
@@ -715,8 +732,8 @@ void SendReplication(ScriptingObject* obj, NetworkClientsMask targetClients)
         item.AsNetworkObject->OnNetworkSerialize();
 
     // Serialize object
-    NetworkStream* stream = CachedWriteStream;
-    stream->Initialize();
+    NetworkStream* stream = GetWriteStream();
+    stream->SenderId = NetworkManager::LocalClientId;
     const bool failed = NetworkReplicator::InvokeSerializer(obj->GetTypeHandle(), obj, stream, true);
     if (failed)
     {
@@ -1009,11 +1026,7 @@ void InvokeObjectReplication(NetworkReplicatedObject& item, uint32 ownerFrame, b
     item.LastOwnerFrame = ownerFrame;
 
     // Setup message reading stream
-    if (CachedReadStream == nullptr)
-        CachedReadStream = New<NetworkStream>();
-    NetworkStream* stream = CachedReadStream;
-    stream->Initialize(data, dataSize);
-    stream->SenderId = senderClientId;
+    NetworkStream* stream = GetReadStream(data, dataSize, senderClientId);
 
     // Deserialize object
     Scripting::ObjectsLookupIdMapping.Set(&IdsRemappingTable);
@@ -1050,11 +1063,7 @@ FORCE_INLINE PartsItem* AddObjectRpcItem(NetworkEvent& event, uint32 ownerFrame,
 void InvokeObjectRpc(const NetworkRpcInfo* info, byte* data, uint32 dataSize, uint32 senderClientId, ScriptingObject* obj)
 {
     // Setup message reading stream
-    if (CachedReadStream == nullptr)
-        CachedReadStream = New<NetworkStream>();
-    NetworkStream* stream = CachedReadStream;
-    stream->SenderId = senderClientId;
-    stream->Initialize(data, dataSize);
+    NetworkStream* stream = GetReadStream(data, dataSize, senderClientId);
 
     // Execute RPC
     info->Execute(obj, stream, info->Tag);
@@ -1822,12 +1831,10 @@ Dictionary<NetworkRpcName, NetworkRpcInfo> NetworkRpcInfo::RPCsTable;
 NetworkStream* NetworkReplicator::BeginInvokeRPC()
 {
     PROFILE_MEM(Networking);
-    if (CachedWriteStream == nullptr)
-        CachedWriteStream = New<NetworkStream>();
-    CachedWriteStream->Initialize();
-    CachedWriteStream->SenderId = NetworkManager::LocalClientId;
+    NetworkStream* stream = GetWriteStream();
+    stream->SenderId = NetworkManager::LocalClientId;
     Scripting::ObjectsLookupIdMapping.Set(&IdsRemappingTable);
-    return CachedWriteStream;
+    return stream;
 }
 
 bool NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream, Span<uint32> targetIds)
@@ -2174,9 +2181,6 @@ void NetworkInternal::NetworkReplicatorUpdate()
     if (CachedReplicationResult->_entries.HasItems())
     {
         PROFILE_CPU_NAMED("Replication");
-        if (CachedWriteStream == nullptr)
-            CachedWriteStream = New<NetworkStream>();
-        CachedWriteStream->SenderId = NetworkManager::LocalClientId;
         // TODO: use Job System when replicated objects count is large
         for (auto& e : CachedReplicationResult->_entries)
         {
