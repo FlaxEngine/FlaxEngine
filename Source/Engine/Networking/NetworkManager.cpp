@@ -280,6 +280,11 @@ void OnNetworkMessageHandshake(NetworkEvent& event, NetworkClient* client, Netwo
     connectionData.Result = 0;
     connectionData.Platform = (PlatformType)msgData.Platform;
     connectionData.Architecture = (ArchitectureType)msgData.Architecture;
+    if (event.Message.Position + msgData.PayloadDataSize > event.Message.BufferSize)
+    {
+        LOG(Warning, "Invalid payload data size from client id={1}", connectionData.Result, event.Sender.ConnectionId);
+        return;
+    }
     connectionData.PayloadData.Resize(msgData.PayloadDataSize);
     event.Message.ReadBytes(connectionData.PayloadData.Get(), msgData.PayloadDataSize);
     if (msgData.EngineProtocolVersion != NETWORK_PROTOCOL_VERSION ||
@@ -300,7 +305,7 @@ void OnNetworkMessageHandshake(NetworkEvent& event, NetworkClient* client, Netwo
     // Update client based on connection result
     if (connectionData.Result != 0)
     {
-        LOG(Info, "Connection blocked with result {0} from client id={1}.", connectionData.Result, event.Sender.ConnectionId);
+        LOG(Info, "Connection blocked with result {0} from client id={1}", connectionData.Result, event.Sender.ConnectionId);
         client->State = NetworkConnectionState::Disconnecting;
         peer->Disconnect(event.Sender);
         client->State = NetworkConnectionState::Disconnected;
@@ -753,7 +758,7 @@ void NetworkManagerService::Update()
                 NetworkManager::ClientConnecting(connectionData); // Allow client to validate connection or inject custom connection data
                 if (connectionData.Result != 0)
                 {
-                    LOG(Info, "Connection blocked with result {0}.", connectionData.Result);
+                    LOG(Info, "Connection blocked with result {0}", connectionData.Result);
                     NetworkManager::Stop();
                     break;
                 }
