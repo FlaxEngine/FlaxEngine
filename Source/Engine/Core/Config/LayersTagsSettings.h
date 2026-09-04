@@ -9,7 +9,7 @@
 /// <summary>
 /// Layers and objects tags settings.
 /// </summary>
-API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API LayersAndTagsSettings : public SettingsBase
+API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API LayersAndTagsSettings : public SettingsBase
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(LayersAndTagsSettings);
 

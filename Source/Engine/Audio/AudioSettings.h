@@ -7,7 +7,7 @@
 /// <summary>
 /// Audio settings container.
 /// </summary>
-API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API AudioSettings : public SettingsBase
+API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API AudioSettings : public SettingsBase
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(AudioSettings);
     API_AUTO_SERIALIZATION();

@@ -7,7 +7,7 @@
 /// <summary>
 /// Time and game simulation settings container.
 /// </summary>
-API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API TimeSettings : public SettingsBase
+API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API TimeSettings : public SettingsBase
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(TimeSettings);
     API_AUTO_SERIALIZATION();

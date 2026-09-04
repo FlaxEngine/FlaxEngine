@@ -12,7 +12,7 @@ class Texture;
 /// <summary>
 /// Linux platform settings.
 /// </summary>
-API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API LinuxPlatformSettings : public SettingsBase
+API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API LinuxPlatformSettings : public SettingsBase
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(LinuxPlatformSettings);
     API_AUTO_SERIALIZATION();

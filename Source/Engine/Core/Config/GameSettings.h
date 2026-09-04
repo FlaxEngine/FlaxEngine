@@ -10,7 +10,7 @@
 /// <summary>
 /// The main game engine configuration service. Loads and applies game configuration.
 /// </summary>
-API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API GameSettings : public SettingsBase
+API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API GameSettings : public SettingsBase
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(GameSettings);
 

@@ -8,7 +8,7 @@
 /// <summary>
 /// Content streaming settings.
 /// </summary>
-API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings", NoConstructor) class FLAXENGINE_API StreamingSettings : public SettingsBase
+API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings", NoConstructor) class FLAXENGINE_API StreamingSettings : public SettingsBase
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(StreamingSettings);
     API_AUTO_SERIALIZATION();

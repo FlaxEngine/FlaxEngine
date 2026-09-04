@@ -11,7 +11,7 @@
 /// <summary>
 /// The game building rendering settings.
 /// </summary>
-API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API BuildSettings : public SettingsBase
+API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API BuildSettings : public SettingsBase
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(BuildSettings);
     API_AUTO_SERIALIZATION();

@@ -9,7 +9,7 @@
 /// <summary>
 /// The navigation system settings container.
 /// </summary>
-API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings", NoConstructor) class FLAXENGINE_API NavigationSettings : public SettingsBase
+API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings", NoConstructor) class FLAXENGINE_API NavigationSettings : public SettingsBase
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(NavigationSettings);
 

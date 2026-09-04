@@ -8,7 +8,7 @@
 /// <summary>
 /// Network settings container.
 /// </summary>
-API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API NetworkSettings : public SettingsBase
+API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API NetworkSettings : public SettingsBase
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkSettings);
     API_AUTO_SERIALIZATION();
