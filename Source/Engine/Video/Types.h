@@ -50,7 +50,7 @@ struct VideoBackendPlayer
     uint32 AudioSource;
     uint32 NextAudioBuffer;
     uint32 AudioBuffers[30];
-    uintptr BackendState[8];
+    uintptr BackendState[16];
 
     VideoBackendPlayer()
     {
