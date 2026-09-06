@@ -748,7 +748,6 @@ public:
     /// <param name="renderContextBatch">The rendering context batch (eg, main view and shadow projections).</param>
     virtual void Draw(RenderContextBatch& renderContextBatch);
 
-#if USE_EDITOR
     /// <summary>
     /// Draws debug shapes for the actor and all child scripts.
     /// </summary>
@@ -758,7 +757,6 @@ public:
     /// Draws debug shapes for the selected actor and all child scripts.
     /// </summary>
     API_FUNCTION() virtual void OnDebugDrawSelected();
-#endif
 
 public:
     /// <summary>
