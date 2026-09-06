@@ -197,6 +197,9 @@ bool ENetDriver::PopEvent(NetworkEvent& eventPtr)
             eventPtr.Message = _networkHost->CreateMessage();
             eventPtr.Message.BufferSize = event.packet->dataLength;
             Platform::MemoryCopy(eventPtr.Message.Buffer, event.packet->data, event.packet->dataLength);
+
+            // Clean up the packet after we're done using it
+            enet_packet_destroy(event.packet);
             break;
         default:
             break;
