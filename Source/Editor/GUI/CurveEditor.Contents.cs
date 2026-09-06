@@ -19,6 +19,16 @@ namespace FlaxEditor.GUI
         /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
         protected class ContentsBase : ContainerControl
         {
+            private const float DragStartDistance = 1.5f;
+            private const float DragStartDistanceSquared = DragStartDistance * DragStartDistance;
+
+            private enum SelectionMode
+            {
+                Replace,
+                Add,
+                Remove,
+            }
+
             private readonly CurveEditor<T> _editor;
             internal bool _leftMouseDown;
             private bool _rightMouseDown;
@@ -46,6 +56,89 @@ namespace FlaxEditor.GUI
                 _editor = editor;
             }
 
+            private KeyframePoint GetKeyframePointAt(Float2 location, bool cycle)
+            {
+                return GetKeyframePointAt(location, cycle, out _);
+            }
+
+            private KeyframePoint GetKeyframePointAt(Float2 location, bool cycle, out bool isStacked)
+            {
+                KeyframePoint firstHit = null;
+                KeyframePoint selectedHit = null;
+                KeyframePoint nextHitAfterSelected = null;
+                int hitsCount = 0;
+                for (int i = 0; i < _editor._points.Count; i++)
+                {
+                    var point = _editor._points[i];
+                    if (!point.Visible || !point.Bounds.Contains(ref location))
+                        continue;
+
+                    if (hitsCount == 0)
+                        firstHit = point;
+                    if (selectedHit != null && nextHitAfterSelected == null)
+                        nextHitAfterSelected = point;
+                    if (selectedHit == null && point.IsSelected)
+                        selectedHit = point;
+                    hitsCount++;
+                }
+                isStacked = hitsCount > 1;
+                if (hitsCount == 0)
+                    return null;
+                if (hitsCount == 1)
+                    return firstHit;
+                if (selectedHit != null)
+                    return cycle ? nextHitAfterSelected ?? firstHit : selectedHit;
+                return firstHit;
+            }
+
+            private static string GetComponentName(int component)
+            {
+                switch (component)
+                {
+                case 0: return "X";
+                case 1: return "Y";
+                case 2: return "Z";
+                case 3: return "W";
+                default: return (component + 1).ToString();
+                }
+            }
+
+            private void SelectKeyframePoint(KeyframePoint keyframe, bool addToSelection)
+            {
+                if (!addToSelection)
+                {
+                    if (_editor.KeyframesEditorContext != null)
+                        _editor.KeyframesEditorContext.OnKeyframesDeselect(_editor);
+                    else
+                        _editor.ClearSelection();
+                }
+                keyframe.IsSelected = true;
+                if (_editor.ShowCollapsed)
+                {
+                    for (int i = 0; i < _editor._points.Count; i++)
+                    {
+                        var point = _editor._points[i];
+                        if (point.Index == keyframe.Index)
+                            point.IsSelected = true;
+                    }
+                }
+                _editor.UpdateTangents();
+            }
+
+            private void SelectKeyframeComponent(int keyframeIndex, int component)
+            {
+                if (_editor.KeyframesEditorContext != null)
+                    _editor.KeyframesEditorContext.OnKeyframesDeselect(_editor);
+                else
+                    _editor.ClearSelection();
+                for (int i = 0; i < _editor._points.Count; i++)
+                {
+                    var point = _editor._points[i];
+                    point.IsSelected = point.Index == keyframeIndex && point.Component == component;
+                }
+                _editor.UpdateTangents();
+            }
+
             private void UpdateSelectionRectangle()
             {
                 var selectionRect = Rectangle.FromPoints(_leftMouseDownPos, _mousePos);
@@ -55,14 +148,41 @@ namespace FlaxEditor.GUI
                     UpdateSelection(ref selectionRect);
             }
 
+            private SelectionMode GetSelectionMode()
+            {
+                if (Root.GetKey(KeyboardKeys.Alt))
+                    return SelectionMode.Remove;
+                if (Root.GetKey(KeyboardKeys.Shift))
+                    return SelectionMode.Add;
+                return SelectionMode.Replace;
+            }
+
             internal void UpdateSelection(ref Rectangle selectionRect)
             {
+                var mode = GetSelectionMode();
+
                 // Find controls to select
                 var children = _children;
                 for (int i = 0; i < children.Count; i++)
                 {
                     if (children[i] is KeyframePoint p)
-                        p.IsSelected = p.Bounds.Intersects(ref selectionRect);
+                    {
+                        var intersects = p.Bounds.Intersects(ref selectionRect);
+                        switch (mode)
+                        {
+                        case SelectionMode.Replace:
+                            p.IsSelected = intersects;
+                            break;
+                        case SelectionMode.Add:
+                            if (intersects)
+                                p.IsSelected = true;
+                            break;
+                        case SelectionMode.Remove:
+                            if (intersects)
+                                p.IsSelected = false;
+                            break;
+                        }
+                    }
                 }
                 _editor.UpdateTangents();
             }
@@ -82,19 +202,15 @@ namespace FlaxEditor.GUI
                 _editor.OnEditingStart();
             }
 
-            internal void OnMove(Float2 location)
+            private bool MoveSelectedKeyframes(Float2 location)
             {
-                // Skip updating keyframes until move actual starts to be meaningful
-                if (Float2.Distance(ref _movingSelectionStartPosLock, ref location) < 1.5f)
-                    return;
-                _movingSelectionStartPosLock = Float2.Minimum;
-
                 var viewRect = _editor._mainPanel.GetClientArea();
                 var locationKeyframes = PointToKeyframes(location, ref viewRect);
                 var accessor = _editor.Accessor;
                 var components = accessor.GetCurveComponents();
                 var snapEnabled = Root.GetKey(KeyboardKeys.Control);
                 var snapGrid = snapEnabled ? _editor.GetGridSnap() : Float2.One;
+                var moved = false;
                 for (var i = 0; i < _editor._points.Count; i++)
                 {
                     var p = _editor._points[i];
@@ -154,7 +270,23 @@ namespace FlaxEditor.GUI
                         }
 
                         _editor.SetKeyframeInternal(p.Index, time, value, p.Component);
+                        moved = true;
                     }
+                }
+
+                return moved;
+            }
+
+            internal void OnMove(Float2 location)
+            {
+                // Skip updating keyframes until move actual starts to be meaningful
+                if (Float2.Distance(ref _movingSelectionStartPosLock, ref location) < 1.5f)
+                    return;
+                _movingSelectionStartPosLock = Float2.Minimum;
+
+                var moved = MoveSelectedKeyframes(location);
+                if (moved)
+                {
                     _editor.UpdateKeyframes();
                     _editor.UpdateTooltips();
                     if (_editor.EnablePanning == UseMode.On)
@@ -168,13 +300,15 @@ namespace FlaxEditor.GUI
 
             internal void OnMoveEnd(Float2 location)
             {
+                _isMovingSelection = false;
                 if (_movedKeyframes)
                 {
                     _editor.OnEdited();
                     _editor.OnEditingEnd();
+                    _editor.UpdateKeyframes();
+                    _editor.UpdateTooltips();
                     _movedKeyframes = false;
                 }
-                _isMovingSelection = false;
             }
 
             /// <inheritdoc />
@@ -199,26 +333,32 @@ namespace FlaxEditor.GUI
                 _mousePos = location;
 
                 // Start moving selection if movement started from the keyframe
-                if (_leftMouseDown && !_isMovingSelection && GetChildAt(_leftMouseDownPos) is KeyframePoint)
+                var leftMouseDownOverKeyframe = _leftMouseDown && GetKeyframePointAt(_leftMouseDownPos, false) != null;
+                if (leftMouseDownOverKeyframe && !_isMovingSelection)
                 {
+                    if (Float2.DistanceSquared(ref _leftMouseDownPos, ref location) < DragStartDistanceSquared)
+                        return;
+
                     if (_editor.KeyframesEditorContext != null)
-                        _editor.KeyframesEditorContext.OnKeyframesMove(_editor, this, location, true, false);
+                        _editor.KeyframesEditorContext.OnKeyframesMove(_editor, this, _leftMouseDownPos, true, false);
                     else
-                        OnMoveStart(location);
+                        OnMoveStart(_leftMouseDownPos);
                 }
 
                 // Moving view
                 if (_rightMouseDown)
                 {
-                    var movingViewPos = Parent.PointToParent(PointToParent(location));
-                    var delta = movingViewPos - _movingViewLastPos;
-                    if (_editor.CustomViewPanning != null)
-                        delta = _editor.CustomViewPanning(delta);
-                    delta *= GetUseModeMask(_editor.EnablePanning);
-                    if (delta.LengthSquared > 0.01f)
+                    var mousePosition = Root.MousePosition;
+                    var mouseDelta = mousePosition - _movingViewLastPos;
+                    if (mouseDelta.LengthSquared > 0.01f)
                     {
-                        _editor._mainPanel.ViewOffset += delta;
-                        _movingViewLastPos = movingViewPos;
+                        var delta = mouseDelta;
+                        if (_editor.CustomViewPanning != null)
+                            delta = _editor.CustomViewPanning(delta);
+                        var viewDelta = delta * GetUseModeMask(_editor.EnablePanning);
+                        if (viewDelta.LengthSquared > 0.0f)
+                            _editor.ViewOffset += viewDelta;
+                        _movingViewLastPos = mousePosition;
                         _movedView = true;
                         if (_editor.CustomViewPanning != null)
                         {
@@ -257,7 +397,7 @@ namespace FlaxEditor.GUI
                     var tangent = PointToKeyframes(location, ref viewRect).Y - value;
                     if (Root.GetKey(KeyboardKeys.Control))
                         tangent = Float2.SnapToGrid(new Float2(0, tangent), _editor.GetGridSnap()).Y; // Snap tangent over Y axis
-                    tangent = tangent * _editor.ViewScale.X * 2;
+                    tangent = tangent * UnitsPerSecond / _movingTangent.TangentOffset;
                     _movingTangent.TangentValue = tangent;
                     _editor.UpdateTangents();
                     Cursor = CursorType.SizeNS;
@@ -265,7 +405,7 @@ namespace FlaxEditor.GUI
                     return;
                 }
                 // Selecting
-                else if (_leftMouseDown)
+                else if (_leftMouseDown && !leftMouseDownOverKeyframe)
                 {
                     UpdateSelectionRectangle();
                     return;
@@ -321,12 +461,13 @@ namespace FlaxEditor.GUI
                     _rightMouseDown = true;
                     _rightMouseDownPos = location;
                     _movedView = false;
-                    _movingViewLastPos = Parent.PointToParent(PointToParent(location));
+                    _movingViewLastPos = Root.MousePosition;
                 }
 
                 // Check if any node is under the mouse
                 var underMouse = GetChildAt(location);
-                if (underMouse is KeyframePoint keyframe)
+                var keyframe = underMouse is KeyframePoint ? GetKeyframePointAt(location, false) : null;
+                if (keyframe != null)
                 {
                     if (_leftMouseDown)
                     {
@@ -355,12 +496,7 @@ namespace FlaxEditor.GUI
                         {
                             // Select node
                             if (!Root.GetKey(KeyboardKeys.Control))
-                            {
-                                if (_editor.KeyframesEditorContext != null)
-                                    _editor.KeyframesEditorContext.OnKeyframesDeselect(_editor);
-                                else
-                                    _editor.ClearSelection();
-                            }
+                                SelectKeyframePoint(keyframe, false);
                             _toggledSelection = true;
                             keyframe.IsSelected = true;
                             _editor.UpdateTangents();
@@ -402,11 +538,14 @@ namespace FlaxEditor.GUI
                     {
                         // Start selecting
                         StartMouseCapture();
-                        if (_editor.KeyframesEditorContext != null)
-                            _editor.KeyframesEditorContext.OnKeyframesDeselect(_editor);
-                        else
-                            _editor.ClearSelection();
-                        _editor.UpdateTangents();
+                        if (GetSelectionMode() == SelectionMode.Replace)
+                        {
+                            if (_editor.KeyframesEditorContext != null)
+                                _editor.KeyframesEditorContext.OnKeyframesDeselect(_editor);
+                            else
+                                _editor.ClearSelection();
+                            _editor.UpdateTangents();
+                        }
                         Focus();
                         return true;
                     }
@@ -453,10 +592,20 @@ namespace FlaxEditor.GUI
                             OnMoveEnd(location);
                     }
                     // Toggle selection
-                    else if (!_toggledSelection && Root.GetKey(KeyboardKeys.Control) && GetChildAt(location) is KeyframePoint keyframe)
+                    else if (!_toggledSelection && Root.GetKey(KeyboardKeys.Control) && GetKeyframePointAt(location, false) is KeyframePoint keyframe)
                     {
                         keyframe.IsSelected = !keyframe.IsSelected;
                         _editor.UpdateTangents();
+                    }
+                    // Select next stacked keyframe component only after a click has completed, not before a possible drag.
+                    else if (!_toggledSelection && !Root.GetKey(KeyboardKeys.Control) && !Root.GetKey(KeyboardKeys.Shift) &&
+                             Float2.DistanceSquared(ref _leftMouseDownPos, ref location) < DragStartDistanceSquared &&
+                             GetKeyframePointAt(_leftMouseDownPos, false, out var mouseDownStacked) != null &&
+                             mouseDownStacked &&
+                             GetKeyframePointAt(location, true, out var mouseUpStacked) is KeyframePoint clickedKeyframe &&
+                             mouseUpStacked)
+                    {
+                        SelectKeyframePoint(clickedKeyframe, false);
                     }
 
                     _isMovingSelection = false;
@@ -473,22 +622,12 @@ namespace FlaxEditor.GUI
                     if (!_movedView)
                     {
                         var selectionCount = _editor.SelectionCount;
-                        var point = GetChildAt(location) as KeyframePoint;
-                        if (selectionCount == 0 && point != null)
+                        var point = GetKeyframePointAt(location, false);
+                        if (point != null && (selectionCount == 0 || !point.IsSelected))
                         {
                             // Select node
                             selectionCount = 1;
-                            point.IsSelected = true;
-                            if (_editor.ShowCollapsed)
-                            {
-                                for (int i = 0; i < _editor._points.Count; i++)
-                                {
-                                    var p = _editor._points[i];
-                                    if (p.Index == point.Index)
-                                        p.IsSelected = point.IsSelected;
-                                }
-                            }
-                            _editor.UpdateTangents();
+                            SelectKeyframePoint(point, false);
                         }
 
                         var viewRect = _editor._mainPanel.GetClientArea();
@@ -499,6 +638,16 @@ namespace FlaxEditor.GUI
                         if (selectionCount > 0)
                         {
                             cm.AddButton(selectionCount == 1 ? "Edit keyframe" : "Edit keyframes", () => _editor.EditKeyframes(this, location));
+                        }
+                        var components = _editor.Accessor.GetCurveComponents();
+                        if (point != null && !_editor.ShowCollapsed && components > 1)
+                        {
+                            var componentMenu = cm.AddChildMenu("Select component");
+                            for (int i = 0; i < components; i++)
+                            {
+                                var component = i;
+                                componentMenu.ContextMenu.AddButton(GetComponentName(component), () => SelectKeyframeComponent(point.Index, component));
+                            }
                         }
                         var totalSelectionCount = _editor.KeyframesEditorContext?.OnKeyframesSelectionCount() ?? selectionCount;
                         if (totalSelectionCount > 0)
@@ -556,7 +705,7 @@ namespace FlaxEditor.GUI
 
                 // Add keyframe on double click
                 var child = GetChildAt(location);
-                if (child is not KeyframePoint &&
+                if (GetKeyframePointAt(location, false) == null &&
                     child is not TangentPoint &&
                     _editor.KeyframesCount < _editor.MaxKeyframes)
                 {
@@ -588,7 +737,10 @@ namespace FlaxEditor.GUI
                     // Scale relative to the curve size
                     var scale = new Float2(delta * 0.1f);
                     _editor._mainPanel.GetDesireClientArea(out var mainPanelArea);
-                    var curveScale = mainPanelArea.Size / _editor._contents.Size;
+                    var contentsSize = _editor._contents.Size;
+                    var curveScale = new Float2(
+                        GetSafeZoomRatio(mainPanelArea.Width, contentsSize.X),
+                        GetSafeZoomRatio(mainPanelArea.Height, contentsSize.Y));
                     scale *= curveScale;
                     if (zoomAlt)
                         scale.X = 0; // Scale Y axis only

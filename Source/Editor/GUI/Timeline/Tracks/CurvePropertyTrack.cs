@@ -180,7 +180,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
         private void OnSplitterMoved(Float2 location)
         {
-            var height = Mathf.Clamp(PointToParent(location).Y, 40.0f, 1000.0f);
+            var height = Mathf.Clamp(_splitter.PointToParent(location).Y + Height - Curve.Height, 40.0f, 1000.0f);
             if (!Mathf.NearEqual(height, _expandedHeight))
             {
                 Height = _expandedHeight = height;

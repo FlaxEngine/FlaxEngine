@@ -36,6 +36,11 @@ namespace FlaxEditor.GUI.Timeline.GUI
             _timeline.OnKeyframesSelection(null, this, selectionRect);
         }
 
+        private bool HasSelectionModifier()
+        {
+            return Root.GetKey(KeyboardKeys.Shift) || Root.GetKey(KeyboardKeys.Alt);
+        }
+
         /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
@@ -48,7 +53,8 @@ namespace FlaxEditor.GUI.Timeline.GUI
                 // Start selecting
                 _isSelecting = true;
                 _selectingStartPos = location;
-                _timeline.OnKeyframesDeselect(null);
+                if (!HasSelectionModifier())
+                    _timeline.OnKeyframesDeselect(null);
                 Focus();
                 StartMouseCapture();
                 return true;
