@@ -184,35 +184,156 @@ KeyboardKeys GetKey(NSEvent* event)
     }
 }
 
-Float2 GetWindowTitleSize(const MacWindow* window)
+float GetScreenBackingScale(NSScreen* screen)
 {
-    Float2 size = Float2::Zero;
-    if (window->GetSettings().HasBorder)
+    if (MacPlatform::ScreenScale <= 1.0f)
+        return 1.0f;
+    if (screen && [screen respondsToSelector:@selector(backingScaleFactor)])
     {
-        NSRect frameStart = [(NSWindow*)window->GetNativePtr() frameRectForContentRect:NSMakeRect(0, 0, 0, 0)];
-        size.Y = frameStart.size.height;
+        const CGFloat backingScale = [screen backingScaleFactor];
+        if (backingScale > 0.0f)
+            return (float)backingScale;
     }
-    return size * MacPlatform::ScreenScale;
+    return MacPlatform::ScreenScale;
+}
+
+float GetBackingScaleForScreenPoint(const Float2& screenPos)
+{
+    const Float2 cocoaPos = AppleUtils::PosToCoca(screenPos) / MacPlatform::ScreenScale;
+    const NSPoint point = NSMakePoint((CGFloat)cocoaPos.X, (CGFloat)cocoaPos.Y);
+    NSArray* screenArray = [NSScreen screens];
+    for (NSScreen* screen in screenArray)
+    {
+        if (NSPointInRect(point, [screen frame]))
+            return GetScreenBackingScale(screen);
+    }
+    return GetScreenBackingScale([NSScreen mainScreen]);
+}
+
+Float2 ScreenSizeToClientSize(const Float2& screenSize, float backingScale)
+{
+    return screenSize * (backingScale / MacPlatform::ScreenScale);
+}
+
+bool IsSameRect(const Rectangle& a, const Rectangle& b)
+{
+    return Float2::NearEqual(a.Location, b.Location, 1.0f) && Float2::NearEqual(a.Size, b.Size, 1.0f);
+}
+
+bool IsSameSize(const Float2& a, const Float2& b)
+{
+    return Float2::NearEqual(a, b, 1.0f);
+}
+
+bool IsCenteredInBounds(const Rectangle& rect, const Rectangle& bounds)
+{
+    const Float2 expectedLocation = bounds.Location + (bounds.Size - rect.Size) * 0.5f;
+    return Float2::NearEqual(rect.Location, expectedLocation, 1.0f);
+}
+
+bool IsDesktopSize(const Float2& size)
+{
+    return IsSameSize(size, Platform::GetDesktopSize());
+}
+
+bool UsesScreenCoordinateInitialSize(const CreateWindowSettings& settings)
+{
+    const Rectangle windowBounds(settings.Position, settings.Size);
+    const Rectangle monitorBounds = Platform::GetMonitorBounds(settings.Position + settings.Size * 0.5f);
+
+    // Platform desktop/monitor bounds use the global macOS screen coordinate scale. Most windows
+    // pass client backing-pixel sizes, so convert only the legacy desktop-relative layouts here.
+    if (settings.Fullscreen || IsDesktopSize(settings.Size) || IsSameRect(windowBounds, monitorBounds))
+        return true;
+
+    if (settings.StartPosition != WindowStartPosition::CenterScreen ||
+        settings.Parent != nullptr ||
+        settings.Type != WindowType::Regular ||
+        !settings.ShowInTaskbar ||
+        !IsCenteredInBounds(windowBounds, monitorBounds))
+        return false;
+
+    const Float2 halfMonitorSize = monitorBounds.Size * 0.5f;
+    const bool fitsMonitor = settings.Size.X <= monitorBounds.Size.X + 1.0f && settings.Size.Y <= monitorBounds.Size.Y + 1.0f;
+    const bool isDesktopRelativeSize = settings.Size.X >= halfMonitorSize.X && settings.Size.Y >= halfMonitorSize.Y;
+    return fitsMonitor && isDesktopRelativeSize;
+}
+
+Float2 GetInitialClientSize(const CreateWindowSettings& settings, float backingScale)
+{
+    if (UsesScreenCoordinateInitialSize(settings))
+        return ScreenSizeToClientSize(settings.Size, backingScale);
+
+    return settings.Size;
+}
+
+Float2 GetClientSizeForBounds(const Rectangle& clientArea, float backingScale)
+{
+    const Rectangle monitorBounds = Platform::GetMonitorBounds(clientArea.Location);
+    if (IsSameRect(clientArea, monitorBounds))
+        return ScreenSizeToClientSize(clientArea.Size, backingScale);
+    return clientArea.Size;
+}
+
+float GetWindowBackingScale(const MacWindow* window)
+{
+    if (MacPlatform::ScreenScale <= 1.0f)
+        return 1.0f;
+    NSWindow* nativeWindow = (NSWindow*)window->GetNativePtr();
+    if (!nativeWindow)
+        return MacPlatform::ScreenScale;
+    const CGFloat backingScale = [nativeWindow backingScaleFactor];
+    return backingScale > 0.0f ? (float)backingScale : GetScreenBackingScale([nativeWindow screen]);
+}
+
+void UpdateLayerScale(NSView* view, float backingScale)
+{
+    CALayer* layer = [view layer];
+    if (!layer)
+        return;
+    layer.contentsScale = backingScale;
+    if ([layer isKindOfClass:[CAMetalLayer class]])
+    {
+        NSRect bounds = [view bounds];
+        ((CAMetalLayer*)layer).drawableSize = CGSizeMake(bounds.size.width * backingScale, bounds.size.height * backingScale);
+    }
+}
+
+void UpdateWindowSizeLimits(NSWindow* window, const CreateWindowSettings& settings, float backingScale)
+{
+    [window setMinSize:NSMakeSize(settings.MinimumSize.X / backingScale, settings.MinimumSize.Y / backingScale)];
+    if (settings.MaximumSize.SumValues() > 0)
+        [window setMaxSize:NSMakeSize(settings.MaximumSize.X / backingScale, settings.MaximumSize.Y / backingScale)];
+}
+
+Float2 ConvertWindowPointToClient(const MacWindow* window, NSPoint point)
+{
+    NSView* view = [(NSWindow*)window->GetNativePtr() contentView];
+    if (!view)
+        return Float2((float)point.x, (float)point.y) * MacPlatform::ScreenScale;
+    const float backingScale = GetWindowBackingScale(window);
+    NSPoint viewPoint = [view convertPoint:point fromView:nil];
+    NSRect bounds = [view bounds];
+    return Float2((float)viewPoint.x, (float)(bounds.size.height - viewPoint.y)) * backingScale;
 }
 
 Float2 GetMousePosition(MacWindow* window, NSEvent* event)
 {
-    NSRect frame = [(NSWindow*)window->GetNativePtr() frame];
-    NSPoint point = [event locationInWindow];
-    return Float2(point.x, frame.size.height - point.y) * MacPlatform::ScreenScale - GetWindowTitleSize(window);
+    return ConvertWindowPointToClient(window, [event locationInWindow]);
 }
 
-NSRect GetFrameRectForClientBounds(MacWindow* macWindow, NSWindow* window, const Rectangle& clientArea)
+NSRect GetFrameRectForClientBounds(NSWindow* window, const Rectangle& clientArea)
 {
     const float screenScale = MacPlatform::ScreenScale;
-    NSRect rect = NSMakeRect(0, 0, clientArea.Size.X / screenScale, clientArea.Size.Y / screenScale);
-    rect = [window frameRectForContentRect:rect];
-
-    Float2 pos = AppleUtils::PosToCoca(clientArea.Location) / screenScale;
-    Float2 titleSize = GetWindowTitleSize(macWindow);
-    rect.origin.x = pos.X + titleSize.X;
-    rect.origin.y = pos.Y - rect.size.height + titleSize.Y;
-    return rect;
+    const float backingScale = GetBackingScaleForScreenPoint(clientArea.Location);
+    const Float2 clientSize = GetClientSizeForBounds(clientArea, backingScale);
+    const Float2 pos = AppleUtils::PosToCoca(clientArea.Location) / screenScale;
+    NSRect contentRect = NSMakeRect(
+        pos.X,
+        pos.Y - clientSize.Y / backingScale,
+        clientSize.X / backingScale,
+        clientSize.Y / backingScale);
+    return [window frameRectForContentRect:contentRect];
 }
 
 class MacDropData : public IGuiData
@@ -238,9 +359,8 @@ public:
 
 void GetDragDropData(const MacWindow* window, id<NSDraggingInfo> sender, Float2& mousePos, MacDropData& dropData)
 {
-    NSRect frame = [(NSWindow*)window->GetNativePtr() frame];
     NSPoint point = [sender draggingLocation];
-    mousePos = Float2(point.x, frame.size.height - point.y) * MacPlatform::ScreenScale - GetWindowTitleSize(window);
+    mousePos = ConvertWindowPointToClient(window, point);
     NSPasteboard* pasteboard = [sender draggingPasteboard];
     if ([[pasteboard types] containsObject:NSPasteboardTypeString])
     {
@@ -329,6 +449,7 @@ NSDragOperation GetDragDropOperation(DragDropEffect dragDropEffect)
 {
     if (IsWindowInvalid(Window)) return;
     Window->SyncWindowState();
+    Window->SyncBackingScale();
 }
 
 - (void)windowWillClose:(NSNotification*)notification
@@ -338,26 +459,16 @@ NSDragOperation GetDragDropOperation(DragDropEffect dragDropEffect)
     Window->Close(ClosingReason::User);
 }
 
-static void ConvertNSRect(NSScreen *screen, NSRect *r)
-{
-    r->origin.y = CGDisplayPixelsHigh(kCGDirectMainDisplay) - r->origin.y - r->size.height;
-}
-
 - (void)windowDidResize:(NSNotification*)notification
 {
-    NSView* view = [self contentView];
-    const float screenScale = MacPlatform::ScreenScale;
-    NSWindow* nswindow = (NSWindow*)Window->GetNativePtr();
-    NSRect rect = [nswindow contentRectForFrameRect:[nswindow frame]];
-    ConvertNSRect([nswindow screen], &rect);
+    if (IsWindowInvalid(Window)) return;
+    Window->SyncBackingScale();
+}
 
-    // Rescale contents
-	CALayer* layer = [view layer];
-	if (layer)
-		layer.contentsScale = screenScale;
-
-    // Resize window
-    Window->CheckForResize((float)rect.size.width * screenScale, (float)rect.size.height * screenScale);
+- (void)windowDidChangeBackingProperties:(NSNotification*)notification
+{
+    if (IsWindowInvalid(Window)) return;
+    Window->SyncBackingScale();
 }
 
 - (void)setWindow:(MacWindow*)window
@@ -798,9 +909,12 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     : WindowBase(settings)
 {
     // Setup size and styles
-    _clientSize = Float2(settings.Size.X, settings.Size.Y);
-    Float2 pos = AppleUtils::PosToCoca(settings.Position);
-    NSRect frame = NSMakeRect(pos.X, pos.Y - settings.Size.Y, settings.Size.X, settings.Size.Y);
+    const float screenScale = MacPlatform::ScreenScale;
+    const float backingScale = GetBackingScaleForScreenPoint(settings.Position);
+    const Float2 clientSize = GetInitialClientSize(settings, backingScale);
+    _clientSize = clientSize;
+    Float2 pos = AppleUtils::PosToCoca(settings.Position) / screenScale;
+    NSRect frame = NSMakeRect(pos.X, pos.Y - clientSize.Y / backingScale, clientSize.X / backingScale, clientSize.Y / backingScale);
     NSUInteger styleMask = NSWindowStyleMaskClosable;
     if (settings.Type == WindowType::Regular)
     {
@@ -827,12 +941,6 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
         styleMask &= ~NSWindowStyleMaskTitled;
     }
 
-    const float screenScale = MacPlatform::ScreenScale;
-    frame.origin.x /= screenScale;
-    frame.origin.y /= screenScale;
-    frame.size.width /= screenScale;
-    frame.size.height /= screenScale;
-
     // Create window
     MacWindowImpl* window = [[MacWindowImpl alloc] initWithContentRect:frame
         styleMask:(styleMask)
@@ -845,9 +953,7 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     window.releasedWhenClosed = NO;
     [window setWindow:this];
     [window setReleasedWhenClosed:NO];
-    [window setMinSize:NSMakeSize(settings.MinimumSize.X, settings.MinimumSize.Y)];
-    if (settings.MaximumSize.SumValues() > 0)
-        [window setMaxSize:NSMakeSize(settings.MaximumSize.X, settings.MaximumSize.Y)];
+    UpdateWindowSizeLimits(window, settings, backingScale);
     [window setOpaque:!settings.SupportsTransparency];
     [window setContentView:view];
     if (settings.AllowInput)
@@ -870,10 +976,7 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     [superview setNextResponder:responder];
 #endif
 
-    // Rescale contents
-	CALayer* layer = [view layer];
-	if (layer)
-		layer.contentsScale = screenScale;
+    SyncBackingScale();
 }
 
 MacWindow::~MacWindow()
@@ -895,6 +998,23 @@ void MacWindow::SyncWindowState()
         _minimized = window.miniaturized;
         _maximized = window.zoomed;
     }
+}
+
+void MacWindow::SyncBackingScale()
+{
+    NSWindow* window = (NSWindow*)_window;
+    NSView* view = (NSView*)_view;
+    if (!window || !view)
+        return;
+
+    const float backingScale = GetWindowBackingScale(this);
+    _dpi = (int)(backingScale * 96.0f + 0.5f);
+    _dpiScale = backingScale / MacPlatform::ScreenScale;
+    UpdateWindowSizeLimits(window, _settings, backingScale);
+    UpdateLayerScale(view, backingScale);
+
+    NSRect rect = [view bounds];
+    CheckForResize((float)rect.size.width * backingScale, (float)rect.size.height * backingScale);
 }
 
 void MacWindow::CheckForResize(float width, float height)
@@ -939,6 +1059,36 @@ void MacWindow::OnUpdate(float dt)
     {
         // Keep sending mouse movement events no matter if window has focus
         Float2 mousePos = Platform::GetMousePosition();
+        if (_isUsingMouseOffset)
+        {
+            Float2 desktopLocation = _mouseOffsetScreenSize.Location;
+            Float2 desktopSize = _mouseOffsetScreenSize.GetBottomRight();
+            Float2 newMousePosition = mousePos;
+            _isHorizontalFlippingMouse = mousePos.X <= desktopLocation.X + 2;
+            if (_isHorizontalFlippingMouse)
+                newMousePosition.X = desktopSize.X - 3;
+            else
+            {
+                _isHorizontalFlippingMouse = mousePos.X >= desktopSize.X - 1;
+                if (_isHorizontalFlippingMouse)
+                    newMousePosition.X = desktopLocation.X + 3;
+            }
+            _isVerticalFlippingMouse = mousePos.Y <= desktopLocation.Y + 2;
+            if (_isVerticalFlippingMouse)
+                newMousePosition.Y = desktopSize.Y - 3;
+            else
+            {
+                _isVerticalFlippingMouse = mousePos.Y >= desktopSize.Y - 1;
+                if (_isVerticalFlippingMouse)
+                    newMousePosition.Y = desktopLocation.Y + 3;
+            }
+            if (!Float2::NearEqual(mousePos, newMousePosition))
+            {
+                _trackingMouseOffset -= newMousePosition - mousePos;
+                Platform::SetMousePosition(newMousePosition);
+                mousePos = newMousePosition;
+            }
+        }
         if (_mouseTrackPos != mousePos)
         {
             _mouseTrackPos = mousePos;
@@ -1072,7 +1222,7 @@ void MacWindow::Restore()
     {
         const Rectangle restoreClientBounds = _restoreClientBounds;
         _hasRestoreClientBounds = false;
-        NSRect restoreFrame = GetFrameRectForClientBounds(this, window, restoreClientBounds);
+        NSRect restoreFrame = GetFrameRectForClientBounds(window, restoreClientBounds);
         [window setFrame:restoreFrame display:YES animate:YES];
         _maximized = false;
     }
@@ -1104,7 +1254,7 @@ void MacWindow::SetClientBounds(const Rectangle& clientArea)
     NSWindow* window = (NSWindow*)_window;
     if (!window)
         return;
-    NSRect newRect = GetFrameRectForClientBounds(this, window, clientArea);
+    NSRect newRect = GetFrameRectForClientBounds(window, clientArea);
     [window setFrame:newRect display:YES];
 }
 
@@ -1146,8 +1296,16 @@ Float2 MacWindow::ScreenToClient(const Float2& screenPos) const
     NSWindow* window = (NSWindow*)_window;
     if (!window)
         return screenPos;
-    Float2 titleSize = GetWindowTitleSize(this);
-    return screenPos - GetPosition() - titleSize;
+    NSView* view = (NSView*)_view;
+    if (!view)
+        return screenPos;
+    const float screenScale = MacPlatform::ScreenScale;
+    const float backingScale = GetWindowBackingScale(this);
+    const Float2 cocoaPos = AppleUtils::PosToCoca(screenPos) / screenScale;
+    NSPoint windowPoint = [window convertPointFromScreen:NSMakePoint((CGFloat)cocoaPos.X, (CGFloat)cocoaPos.Y)];
+    NSPoint viewPoint = [view convertPoint:windowPoint fromView:nil];
+    NSRect bounds = [view bounds];
+    return Float2((float)viewPoint.x, (float)(bounds.size.height - viewPoint.y)) * backingScale;
 }
 
 Float2 MacWindow::ClientToScreen(const Float2& clientPos) const
@@ -1155,8 +1313,16 @@ Float2 MacWindow::ClientToScreen(const Float2& clientPos) const
     NSWindow* window = (NSWindow*)_window;
     if (!window)
         return clientPos;
-    Float2 titleSize = GetWindowTitleSize(this);
-    return GetPosition() + titleSize + clientPos;
+    NSView* view = (NSView*)_view;
+    if (!view)
+        return clientPos;
+    const float screenScale = MacPlatform::ScreenScale;
+    const float backingScale = GetWindowBackingScale(this);
+    NSRect bounds = [view bounds];
+    NSPoint viewPoint = NSMakePoint((CGFloat)(clientPos.X / backingScale), (CGFloat)(bounds.size.height - clientPos.Y / backingScale));
+    NSPoint windowPoint = [view convertPoint:viewPoint toView:nil];
+    NSPoint screenPoint = [window convertPointToScreen:windowPoint];
+    return AppleUtils::CocaToPos(Float2((float)screenPoint.x, (float)screenPoint.y) * screenScale);
 }
 
 void MacWindow::FlashWindow()
@@ -1243,6 +1409,9 @@ void MacWindow::StartTrackingMouse(bool useMouseScreenOffset)
     _isTrackingMouse = true;
     _trackingMouseOffset = Float2::Zero;
     _isUsingMouseOffset = useMouseScreenOffset;
+    _isHorizontalFlippingMouse = false;
+    _isVerticalFlippingMouse = false;
+    _mouseOffsetScreenSize = Platform::GetVirtualDesktopBounds();
     _mouseTrackPos = Float2::Minimum;
 }
 

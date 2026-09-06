@@ -181,6 +181,52 @@ Float2 AppleUtils::GetScreensOrigin()
     return result;
 }
 
+CGPoint CocoaPointToCGDisplayPoint(NSPoint point)
+{
+    NSScreen* targetScreen = nil;
+    CGFloat closestDistance = MAXFLOAT;
+    NSArray* screenArray = [NSScreen screens];
+    for (NSScreen* screen in screenArray)
+    {
+        NSRect frame = [screen frame];
+        if (NSPointInRect(point, frame))
+        {
+            targetScreen = screen;
+            break;
+        }
+
+        const CGFloat dx = point.x < NSMinX(frame) ? NSMinX(frame) - point.x : (point.x > NSMaxX(frame) ? point.x - NSMaxX(frame) : 0.0f);
+        const CGFloat dy = point.y < NSMinY(frame) ? NSMinY(frame) - point.y : (point.y > NSMaxY(frame) ? point.y - NSMaxY(frame) : 0.0f);
+        const CGFloat distance = dx * dx + dy * dy;
+        if (distance < closestDistance)
+        {
+            closestDistance = distance;
+            targetScreen = screen;
+        }
+    }
+
+    if (!targetScreen)
+        targetScreen = [NSScreen mainScreen];
+    if (!targetScreen)
+        return CGPointMake(point.x, point.y);
+
+    NSNumber* screenNumber = [[targetScreen deviceDescription] objectForKey:@"NSScreenNumber"];
+    const CGDirectDisplayID display = (CGDirectDisplayID)[screenNumber unsignedIntValue];
+    const CGRect displayBounds = CGDisplayBounds(display);
+    const NSRect screenFrame = [targetScreen frame];
+    return CGPointMake(
+        displayBounds.origin.x + point.x - screenFrame.origin.x,
+        displayBounds.origin.y + NSMaxY(screenFrame) - point.y);
+}
+
+Rectangle GetScreenBounds(NSScreen* screen)
+{
+    const float screenScale = ApplePlatform::ScreenScale;
+    const NSRect frame = [screen frame];
+    const Float2 topLeft = AppleUtils::CocaToPos(Float2((float)frame.origin.x, (float)NSMaxY(frame)) * screenScale);
+    return Rectangle(topLeft.X, topLeft.Y, (float)frame.size.width * screenScale, (float)frame.size.height * screenScale);
+}
+
 void MacClipboard::Clear()
 {
     NSPasteboard* pasteboard = [NSPasteboard generalPasteboard];
@@ -363,57 +409,50 @@ String MacPlatform::GetComputerName()
 
 Float2 MacPlatform::GetMousePosition()
 {
-    CGEventRef event = CGEventCreate(nullptr);
-    CGPoint cursor = CGEventGetLocation(event);
-    CFRelease(event);
-    return Float2((float)cursor.x, (float)cursor.y) * MacPlatform::ScreenScale;
+    NSPoint cursor = [NSEvent mouseLocation];
+    return AppleUtils::CocaToPos(Float2((float)cursor.x, (float)cursor.y) * MacPlatform::ScreenScale);
 }
 
 void MacPlatform::SetMousePosition(const Float2& pos)
 {
-    CGPoint cursor;
-    cursor.x = (CGFloat)(pos.X / MacPlatform::ScreenScale);
-    cursor.y = (CGFloat)(pos.Y / MacPlatform::ScreenScale);
+    const Float2 cocoaPos = AppleUtils::PosToCoca(pos) / MacPlatform::ScreenScale;
+    const CGPoint cursor = CocoaPointToCGDisplayPoint(NSMakePoint((CGFloat)cocoaPos.X, (CGFloat)cocoaPos.Y));
     CGWarpMouseCursorPosition(cursor);
     CGAssociateMouseAndMouseCursorPosition(true);
 }
 
 Float2 MacPlatform::GetDesktopSize()
 {
-    CGDirectDisplayID mainDisplay = CGMainDisplayID();
-    return Float2((float)CGDisplayPixelsWide(mainDisplay) * ScreenScale, (float)CGDisplayPixelsHigh(mainDisplay) * ScreenScale);
-}
-
-Rectangle GetDisplayBounds(CGDirectDisplayID display)
-{
-    CGRect rect = CGDisplayBounds(display);
-    float screnScale = ApplePlatform::ScreenScale;
-    return Rectangle(rect.origin.x * screnScale, rect.origin.y * screnScale, rect.size.width * screnScale, rect.size.height * screnScale);
+    NSScreen* screen = [NSScreen mainScreen];
+    if (!screen)
+        screen = [[NSScreen screens] firstObject];
+    if (!screen)
+        return Float2::Zero;
+    const NSRect frame = [screen frame];
+    return Float2((float)frame.size.width * ScreenScale, (float)frame.size.height * ScreenScale);
 }
 
 Rectangle MacPlatform::GetMonitorBounds(const Float2& screenPos)
 {
-    CGPoint point;
-    point.x = screenPos.X;
-    point.y = screenPos.Y;
-    CGDirectDisplayID display;
-    uint32_t count = 0;
-    CGGetDisplaysWithPoint(point, 1, &display, &count);
-    if (count == 1)
-        return GetDisplayBounds(display);
+    const Float2 cocoaPos = AppleUtils::PosToCoca(screenPos) / ScreenScale;
+    const NSPoint point = NSMakePoint((CGFloat)cocoaPos.X, (CGFloat)cocoaPos.Y);
+    NSArray* screenArray = [NSScreen screens];
+    for (NSScreen* screen in screenArray)
+    {
+        if (NSPointInRect(point, [screen frame]))
+            return GetScreenBounds(screen);
+    }
 	return Rectangle(Float2::Zero, GetDesktopSize());
 }
 
 Rectangle MacPlatform::GetVirtualDesktopBounds()
 {
-    CGDirectDisplayID displays[16];
-    uint32_t count = 0;
-    CGGetOnlineDisplayList(ARRAY_COUNT(displays), displays, &count);
-    if (count == 0)
+    NSArray* screenArray = [NSScreen screens];
+    if ([screenArray count] == 0)
 	    return Rectangle(Float2::Zero, GetDesktopSize());
-    Rectangle result = GetDisplayBounds(displays[0]);
-    for (uint32_t i = 1; i < count; i++)
-        result = Rectangle::Union(result, GetDisplayBounds(displays[i]));
+    Rectangle result = GetScreenBounds([screenArray objectAtIndex:0]);
+    for (NSUInteger i = 1; i < [screenArray count]; i++)
+        result = Rectangle::Union(result, GetScreenBounds([screenArray objectAtIndex:i]));
     return result;
 }
 
