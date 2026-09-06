@@ -278,7 +278,7 @@ namespace FlaxEditor.GUI.ContextMenu
         /// <returns>Created context menu item control.</returns>
         public ContextMenuButton AddButton(string text, InputBinding binding, Action clicked)
         {
-            var item = new ContextMenuButton(this, text, binding.ToString())
+            var item = new ContextMenuButton(this, text, binding.ToDisplayString())
             {
                 Parent = _panel
             };

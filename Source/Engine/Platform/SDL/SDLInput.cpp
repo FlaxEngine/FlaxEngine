@@ -18,6 +18,7 @@
 #endif
 
 #include <SDL3/SDL_events.h>
+#include <SDL3/SDL_keyboard.h>
 
 class SDLMouse;
 class SDLKeyboard;
@@ -264,11 +265,19 @@ static const KeyboardKeys SDL_TO_FLAX_KEYS_MAP[] =
     KeyboardKeys::Control, // SDL_SCANCODE_LCTRL = 224,
     KeyboardKeys::Shift, // SDL_SCANCODE_LSHIFT = 225,
     KeyboardKeys::Alt, // SDL_SCANCODE_LALT = 226,
+#if PLATFORM_MAC
+    KeyboardKeys::Command, // SDL_SCANCODE_LGUI = 227 (Command)
+#else
     KeyboardKeys::LeftMenu, // SDL_SCANCODE_LGUI = 227,
+#endif
     KeyboardKeys::Control, // SDL_SCANCODE_RCTRL = 228,
     KeyboardKeys::Shift, // SDL_SCANCODE_RSHIFT = 229,
     KeyboardKeys::Alt, // SDL_SCANCODE_RALT = 230,
+#if PLATFORM_MAC
+    KeyboardKeys::Command, // SDL_SCANCODE_RGUI = 231 (Command)
+#else
     KeyboardKeys::RightMenu, // SDL_SCANCODE_RGUI = 231,
+#endif
     KeyboardKeys::None,
     KeyboardKeys::None,
     KeyboardKeys::None,
@@ -616,6 +625,10 @@ bool SDLInput::HandleEvent(SDLWindow* window, SDL_Event& event)
     }
     case SDL_EVENT_TEXT_INPUT:
     {
+#if PLATFORM_MAC
+        if ((SDL_GetModState() & SDL_KMOD_GUI) != 0)
+            return true;
+#endif
         String text(event.text.text);
         for (int i = 0; i < text.Length(); i++)
         {

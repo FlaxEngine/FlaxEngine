@@ -1015,6 +1015,15 @@ namespace FlaxEngine.GUI
             return newLineLoc;
         }
 
+        private int FindCurrentLineBegin()
+        {
+            int caretPos = CaretPosition;
+            if (caretPos <= 0)
+                return 0;
+            int newLineLoc = _text.LastIndexOf('\n', caretPos - 1);
+            return newLineLoc == -1 ? 0 : newLineLoc + 1;
+        }
+
         private int FindNextLineBegin()
         {
             int caretPos = CaretPosition;
@@ -1409,37 +1418,40 @@ namespace FlaxEngine.GUI
             var window = Root;
             bool shiftDown = window.GetKey(KeyboardKeys.Shift);
             bool ctrDown = window.GetKey(KeyboardKeys.Control);
+#if !FLAX_EDITOR
+            bool shortcutDown = window.GetKey(KeyboardKeys.Shortcut);
+#endif
             KeyDown?.Invoke(key);
 
             // Handle controls that have bindings
 #if FLAX_EDITOR
             InputOptions options = FlaxEditor.Editor.Instance.Options.Options.Input;
-            if (options.Copy.Process(this))
+            if (options.Copy.Process(this, key))
             {
                 Copy();
                 return true;
             }
-            else if (options.Paste.Process(this))
+            else if (options.Paste.Process(this, key))
             {
                 Paste();
                 return true;
             }
-            else if (options.Duplicate.Process(this))
+            else if (options.Duplicate.Process(this, key))
             {
                 Duplicate();
                 return true;
             }
-            else if (options.Cut.Process(this))
+            else if (options.Cut.Process(this, key))
             {
                 Cut();
                 return true;
             }
-            else if (options.SelectAll.Process(this))
+            else if (options.SelectAll.Process(this, key))
             {
                 SelectAll();
                 return true;
             }
-            else if (options.DeselectAll.Process(this))
+            else if (options.DeselectAll.Process(this, key))
             {
                 Deselect();
                 return true;
@@ -1461,45 +1473,58 @@ namespace FlaxEngine.GUI
             case KeyboardKeys.ArrowDown:
                 MoveDown(shiftDown, ctrDown);
                 return true;
+#if !FLAX_EDITOR
             case KeyboardKeys.C:
-                if (ctrDown)
+                if (shortcutDown)
                 {
                     Copy();
                     return true;
                 }
                 break;
             case KeyboardKeys.V:
-                if (ctrDown)
+                if (shortcutDown)
                 {
                     Paste();
                     return true;
                 }
                 break;
             case KeyboardKeys.D:
-                if (ctrDown)
+                if (shortcutDown)
                 {
                     Duplicate();
                     return true;
                 }
                 break;
             case KeyboardKeys.X:
-                if (ctrDown)
+                if (shortcutDown)
                 {
                     Cut();
                     return true;
                 }
                 break;
             case KeyboardKeys.A:
-                if (ctrDown)
+                if (shortcutDown)
                 {
                     SelectAll();
                     return true;
                 }
                 break;
+#endif
             case KeyboardKeys.Backspace:
             {
                 if (IsReadOnly)
                     return true;
+
+#if PLATFORM_MAC
+                if (window.GetKey(KeyboardKeys.Command))
+                {
+                    int lineBegin = FindCurrentLineBegin();
+                    _text = _text.Remove(lineBegin, CaretPosition - lineBegin);
+                    SetSelection(lineBegin);
+                    OnTextChanged();
+                    return true;
+                }
+#endif
 
                 if (ctrDown)
                 {

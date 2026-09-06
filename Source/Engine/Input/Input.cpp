@@ -437,19 +437,30 @@ StringView Input::GetInputText()
     return Keyboard ? Keyboard->GetInputText() : StringView::Empty;
 }
 
+static KeyboardKeys ResolveShortcutKey(const KeyboardKeys key)
+{
+    if (key != KeyboardKeys::Shortcut)
+        return key;
+#if PLATFORM_MAC
+    return KeyboardKeys::Command;
+#else
+    return KeyboardKeys::Control;
+#endif
+}
+
 bool Input::GetKey(const KeyboardKeys key)
 {
-    return Keyboard ? Keyboard->GetKey(key) : false;
+    return Keyboard ? Keyboard->GetKey(ResolveShortcutKey(key)) : false;
 }
 
 bool Input::GetKeyDown(const KeyboardKeys key)
 {
-    return Keyboard ? Keyboard->GetKeyDown(key) : false;
+    return Keyboard ? Keyboard->GetKeyDown(ResolveShortcutKey(key)) : false;
 }
 
 bool Input::GetKeyUp(const KeyboardKeys key)
 {
-    return Keyboard ? Keyboard->GetKeyUp(key) : false;
+    return Keyboard ? Keyboard->GetKeyUp(ResolveShortcutKey(key)) : false;
 }
 
 Float2 Input::GetMousePosition()

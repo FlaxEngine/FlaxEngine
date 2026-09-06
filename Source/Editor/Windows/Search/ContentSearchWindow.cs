@@ -150,7 +150,7 @@ namespace FlaxEngine.Windows.Search
                         Navigate.Invoke(this);
                         return true;
                     }
-                    if (options.Copy.Process(this))
+                    if (options.Copy.Process(this, key))
                     {
                         Clipboard.Text = Text;
                         return true;
