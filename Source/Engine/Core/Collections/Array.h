@@ -77,6 +77,15 @@ public:
     }
 
     /// <summary>
+    /// Initializes <see cref="Array"/> by copying span of elements.
+    /// </summary>
+    /// <param name="span">The initial values defined in the array.</param>
+    FORCE_INLINE Array(class Span<T> span)
+        : Array(span.Get(), span.Length())
+    {
+    }
+
+    /// <summary>
     /// Initializes <see cref="Array"/> by copying listed elements.
     /// </summary>
     /// <param name="initList">The initial values defined in the array.</param>
