@@ -141,7 +141,7 @@ NetworkMessage NetworkPeer::CreateMessage()
 {
     CHECK_RETURN(MessagePool.HasItems(), NetworkMessage());
     const uint32 messageId = MessagePool.Pop();
-    uint8* messageBuffer = GetMessageBuffer(messageId);
+    uint8* messageBuffer = (uint8*)MessageBuffer + Config.MessageSize * messageId;
     return NetworkMessage(messageBuffer, Config.MessageSize, messageId);
 }
 

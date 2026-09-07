@@ -144,12 +144,6 @@ public:
         return NetworkDriver != nullptr && HostId >= 0;
     }
 
-    uint8* GetMessageBuffer(const uint32 messageId) const
-    {
-        // Calculate and return the buffer slice using previously calculated slice.
-        return MessageBuffer + Config.MessageSize * messageId;
-    }
-
 public:
     FORCE_INLINE bool operator==(const NetworkPeer& other) const
     {
