@@ -217,6 +217,7 @@ struct SpawnItem
 struct SpawnItemParts
 {
     NetworkMessageObjectSpawn MsgData;
+    uint32 OwnerClientId; // Duplicate of MsgData.OwnerClientId to reuse template code for other structs
     Guid PrefabId;
     Array<NetworkMessageObjectSpawnItem> Items;
 };
@@ -509,6 +510,38 @@ FORCE_INLINE void BuildCachedTargets(const NetworkReplicatedObject& item, const 
 {
     // By default send object to all connected clients excluding the owner but with optional TargetClientIds list
     BuildCachedTargets(NetworkManager::Clients, item.TargetClientIds, item.OwnerClientId, clientsMask);
+}
+
+template<typename T>
+void RemoveClientFromTargets(Array<T>& items, uint32 clientId)
+{
+    for (int32 i = items.Count() - 1; i >= 0; i--)
+    {
+        auto& rpc = items[i];
+        if (SpanContains(rpc.Targets, clientId))
+        {
+            if (rpc.Targets.Length() == 1)
+            {
+                items.RemoveAt(i);
+            }
+            else
+            {
+                Array<uint32> targets = rpc.Targets;
+                targets.Remove(clientId);
+                rpc.Targets = MoveTemp(targets);
+            }
+        }
+    }
+}
+
+template<typename T>
+void RemoveOwnerFromItems(Array<T>& items, uint32 clientId)
+{
+    for (int32 i = items.Count() - 1; i >= 0; i--)
+    {
+        if (items[i].OwnerClientId == clientId)
+            items.RemoveAt(i);
+    }
 }
 
 void SetupObjectSpawnMessageItem(SpawnItem* e, NetworkMessage& msg)
@@ -1885,6 +1918,7 @@ bool NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHa
 
 void NetworkInternal::NetworkReplicatorClientConnected(NetworkClient* client)
 {
+    PROFILE_CPU();
     ScopeLock lock(ObjectsLock);
     NewClients.Add(client);
 
@@ -1917,6 +1951,7 @@ void NetworkInternal::NetworkReplicatorClientConnected(NetworkClient* client)
 
 void NetworkInternal::NetworkReplicatorClientDisconnected(NetworkClient* client)
 {
+    PROFILE_CPU();
     ScopeLock lock(ObjectsLock);
     NewClients.Remove(client);
 
@@ -1943,10 +1978,19 @@ void NetworkInternal::NetworkReplicatorClientDisconnected(NetworkClient* client)
             Objects.Remove(it);
         }
     }
+
+    // Remove any pending RPCs, replication or spawn actions for that client
+    RemoveClientFromTargets(RpcQueue, clientId);
+    RemoveClientFromTargets(SpawnQueue, clientId);
+    RemoveClientFromTargets(DespawnQueue, clientId);
+    RemoveOwnerFromItems(SpawnQueue, clientId);
+    RemoveOwnerFromItems(SpawnParts, clientId);
+    RemoveOwnerFromItems(ReplicationParts, clientId);
 }
 
 void NetworkInternal::NetworkReplicatorClear()
 {
+    PROFILE_CPU();
     ScopeLock lock(ObjectsLock);
 
     // Cleanup
@@ -2293,6 +2337,7 @@ void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkCl
         // Allocate spawn message parts collecting
         auto& parts = SpawnParts.AddOne();
         parts.MsgData = msgData;
+        parts.OwnerClientId = msgData.OwnerClientId;
         parts.PrefabId = prefabId;
         parts.Items.Resize(msgData.ItemsCount);
         for (auto& item : parts.Items)
