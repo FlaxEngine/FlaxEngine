@@ -32,6 +32,7 @@ public:
     API_FIELD(Attributes="EditorOrder(100), Limit(0, 1000), EditorDisplay(\"General\", \"Network FPS\")")
     float NetworkFPS = 60.0f;
 
+public:
     /// <summary>
     /// Address of the server (server/host always runs on localhost). Only IPv4 is supported.
     /// </summary>

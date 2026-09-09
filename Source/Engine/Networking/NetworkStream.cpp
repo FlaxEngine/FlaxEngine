@@ -128,7 +128,7 @@ void NetworkStream::Initialize(uint32 minCapacity)
 
     // Reset state
     _position = _buffer;
-    ReadStream::_hasError = false;
+    Flags = NetworkMessageFlags::None;
 }
 
 void NetworkStream::Initialize(byte* buffer, uint32 length)
@@ -138,7 +138,7 @@ void NetworkStream::Initialize(byte* buffer, uint32 length)
     _position = _buffer = buffer;
     _length = length;
     _allocated = false;
-    ReadStream::_hasError = false;
+    Flags = NetworkMessageFlags::None;
 }
 
 void NetworkStream::Read(INetworkSerializable& obj)
@@ -200,7 +200,7 @@ void NetworkStream::Write(const Transform& data, bool useDouble)
 
 bool NetworkStream::HasError() const
 {
-    return ReadStream::_hasError;
+    return EnumHasAllFlags(Flags, NetworkMessageFlags::HasError);
 }
 
 void NetworkStream::Flush()
@@ -215,7 +215,7 @@ void NetworkStream::Close()
     _position = _buffer = nullptr;
     _length = 0;
     _allocated = false;
-    ReadStream::_hasError = false;
+    Flags = NetworkMessageFlags::None;
 }
 
 uint32 NetworkStream::GetLength()
@@ -236,12 +236,15 @@ void NetworkStream::SetPosition(uint32 seek)
 
 void NetworkStream::ReadBytes(void* data, uint32 bytes)
 {
-    if (bytes > 0)
+    if (bytes == 0)
+        return;
+    if (!data || GetLength() - GetPosition() < bytes)
     {
-        ASSERT(data && GetLength() - GetPosition() >= bytes);
-        Platform::MemoryCopy(data, _position, bytes);
-        _position += bytes;
+        Flags |= NetworkMessageFlags::HasError;
+        return;
     }
+    Platform::MemoryCopy(data, _position, bytes);
+    _position += bytes;
 }
 
 void NetworkStream::WriteBytes(const void* data, uint32 bytes)

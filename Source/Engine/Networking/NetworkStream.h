@@ -5,6 +5,7 @@
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Serialization/ReadStream.h"
 #include "Engine/Serialization/WriteStream.h"
+#include "NetworkMessage.h"
 
 class INetworkSerializable;
 
@@ -27,6 +28,11 @@ public:
     /// The ClientId of the network client that is a data sender. Can be used to detect who send the incoming RPC or replication data. Set to the current client when writing data.
     /// </summary>
     API_FIELD(ReadOnly) uint32 SenderId = 0;
+
+    /// <summary>
+    /// Set of flags that describe the stream state.
+    /// </summary>
+    API_FIELD() NetworkMessageFlags Flags = NetworkMessageFlags::None;
 
     /// <summary>
     /// Gets the pointer to the native stream memory buffer.

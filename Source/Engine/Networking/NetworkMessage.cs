@@ -262,6 +262,8 @@ namespace FlaxEngine.Networking
         {
             // Note: Make sure that this is consistent with the C++ message API!
             var stringLength = ReadUInt16();
+            if (stringLength == 0)
+                return string.Empty;
             if (stringLength < 200)
             {
                 var bytes = stackalloc char[stringLength];

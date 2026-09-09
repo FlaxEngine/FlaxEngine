@@ -274,6 +274,8 @@ void NetworkMessage::ReadNetworkName(StringAnsiView& name)
 
 void OnNetworkMessageHandshake(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
+    CHECK(client && client->State == NetworkConnectionState::Connecting);
+
     // Read client connection data
     NetworkMessageHandshake msgData = {};
     event.Message.ReadStructure(msgData);
@@ -325,7 +327,7 @@ void OnNetworkMessageHandshake(NetworkEvent& event, NetworkClient* client, Netwo
 
 void OnNetworkMessageHandshakeReply(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
-    ASSERT_LOW_LAYER(NetworkManager::IsClient());
+    CHECK(NetworkManager::IsClient());
     NetworkMessageHandshakeReply msgData = {};
     event.Message.ReadStructure(msgData);
     if (msgData.Result != 0)
@@ -788,8 +790,16 @@ void NetworkManagerService::Update()
             }
             else
             {
+                // Validate client doesn't exist yet
+                NetworkClient* client = NetworkManager::GetClient(event.Sender);
+                if (client)
+                {
+                    LOG(Info, "Client id={0} already connected", event.Sender.ConnectionId);
+                    break;
+                }
+
                 // Create incoming client
-                auto client = New<NetworkClient>(NextClientId++, event.Sender);
+                client = New<NetworkClient>(NextClientId++, event.Sender);
                 NetworkManager::Clients.Add(client);
             }
             break;

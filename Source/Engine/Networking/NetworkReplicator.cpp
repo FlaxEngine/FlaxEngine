@@ -1745,11 +1745,7 @@ uint32 NetworkReplicator::GetObjectOwnerClientId(const ScriptingObject* obj)
                 {
                     if (item.HasOwnership)
                         id = item.OwnerClientId;
-#if USE_NETWORK_REPLICATOR_LOG
                     return id;
-#else
-                    break;
-#endif
                 }
             }
 #if USE_NETWORK_REPLICATOR_LOG
@@ -1777,12 +1773,8 @@ NetworkObjectRole NetworkReplicator::GetObjectRole(const ScriptingObject* obj)
                 if (item.Object == obj)
                 {
                     if (item.HasOwnership)
-                        role = item.Role;
-#if USE_NETWORK_REPLICATOR_LOG
+                        return item.Role;
                     return role;
-#else
-                    break;
-#endif
                 }
             }
 #if USE_NETWORK_REPLICATOR_LOG
@@ -2378,6 +2370,8 @@ void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkCl
         NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Invalid spawn message parts count: {}", msgData.ItemsCount);
         return;
     }
+    // TODO: add authority check (eg. only server can spawn objects) and ownership check (eg. only owner can spawn object)
+    // TODO: add prefabId check (eg. only registered prefabs can be spawned) and option to block spawning non-prefab objects (eg. dynamically created scripts/actors)
     if (msgData.UseParts)
     {
         // Allocate spawn message parts collecting

@@ -255,10 +255,23 @@ namespace FlaxEngine.Networking
             var stringLength = ReadInt32();
             if (stringLength == 0)
                 return string.Empty;
-            var dataLength = stringLength * sizeof(char);
-            var bytes = stackalloc char[stringLength];
-            ReadBytes((byte*)bytes, dataLength);
-            return new string(bytes, 0, stringLength);
+            if (stringLength < 200)
+            {
+                var bytes = stackalloc char[stringLength];
+                ReadBytes((byte*)bytes, stringLength * sizeof(char));
+                if ((Flags & NetworkMessageFlags.HasError) != 0)
+                    return null;
+                return new string(bytes, 0, stringLength);
+            }
+            else
+            {
+                var bytes = new char[stringLength];
+                fixed (char* bytesPtr = bytes)
+                    ReadBytes((byte*)bytesPtr, stringLength * sizeof(char));
+                if ((Flags & NetworkMessageFlags.HasError) != 0)
+                    return null;
+                return new string(bytes, 0, stringLength);
+            }
         }
 
         /// <summary>
