@@ -7,7 +7,9 @@
 #include "NetworkChannelType.h"
 #include "NetworkSettings.h"
 #include "NetworkInternal.h"
+#include "NetworkStats.h"
 #include "FlaxEngine.Gen.h"
+#include "INetworkDriver.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
@@ -736,11 +738,19 @@ void NetworkManagerService::Update()
     LastUpdateTime = currentTime;
     NetworkManager::Frame++;
     NetworkInternal::NetworkReplicatorPreUpdate();
+    const auto& settings = *NetworkSettings::Get();
     // TODO: convert into TaskGraphSystems and use async jobs
+
+    // Reset client budget (for DDoS protection)
+    for (NetworkClient* client : NetworkManager::Clients)
+    {
+        client->_messageCounter = 0;
+    }
 
     // Process network messages
     NetworkEvent event;
     bool eventIsValid = true;
+    int32 messagesCount = 0;
     while (peer->PopEvent(event) && eventIsValid)
     {
         switch (event.EventType)
@@ -813,13 +823,29 @@ void NetworkManagerService::Update()
             break;
         case NetworkEventType::Message:
         {
-            // Process network message
+            // Get client
             NetworkClient* client = NetworkManager::GetClient(event.Sender);
             if (!client && NetworkManager::Mode != NetworkManagerMode::Client)
             {
                 LOG(Error, "Unknown client");
                 break;
             }
+            if (client)
+            {
+                // Avoid network flooding by specific client
+                client->_messageCounter++;
+                if (client->_messageCounter > settings.MaxMessagesPerUpdatePerClient && settings.MaxMessagesPerUpdatePerClient > 0)
+                {
+                    peer->RecycleMessage(event.Message);
+                    NetworkDriverStats stats = peer->NetworkDriver->GetStats(event.Sender);
+                    LOG(Warning, "Client id={} has sent too many messages! ({})", event.Sender.ConnectionId, client->_messageCounter);
+                    LOG(Warning, "  Peer stats: TotalDataSent={}, TotalDataReceived={}, RTT={}", stats.TotalDataSent, stats.TotalDataReceived, stats.RTT);
+                    // TODO: disconnect client if it keeps flooding (eg. track rolling bytes/second)
+                    break;
+                }
+            }
+
+            // Process network message
             uint8 id = *event.Message.Buffer;
             if (id < (uint8)NetworkMessageIDs::MAX)
             {
@@ -838,6 +864,13 @@ void NetworkManagerService::Update()
         }
         default:
             eventIsValid = false;
+            break;
+        }
+
+        // Avoid network flooding
+        if (messagesCount >= settings.MaxMessagesPerUpdate && settings.MaxMessagesPerUpdate > 0)
+        {
+            LOG(Warning, "Reached network message limit! {}", messagesCount);
             break;
         }
     }

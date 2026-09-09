@@ -52,6 +52,31 @@ public:
 
 public:
     /// <summary>
+    /// Limit for network manager messages amount to process within a single update. Prevents flooding the network system with too many messages and causing performance issues. Use 0 to process all messages.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2000), EditorDisplay(\"Security Limits\"), Limit(0)")
+    int32 MaxMessagesPerUpdate = 512;
+
+    /// <summary>
+    /// Limit for network manager messages amount to process within a single update by a single client. Prevents flooding the network system with too many messages and causing performance issues. Use 0 to process all messages.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2005), EditorDisplay(\"Security Limits\"), Limit(0)")
+    int32 MaxMessagesPerUpdatePerClient = 64;
+
+    /// <summary>
+    /// Limit for network replication partial messages in-flight. Used to reduce object RPC/Replication/Spawn partial chunks that need multiple messages in order to process (due to large data size). Use 0 to disable this feature.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2005), EditorDisplay(\"Security Limits\"), Limit(0, 30)")
+    int32 MaxSyncParts = 4096;
+
+    /// <summary>
+    /// Limit for network replication partial messages, within which all parts should arrive (in seconds). Used to limiting amount of in-flight parts or reject lost parts of object RPC/Replication/Spawn partial chunks. Use 0 to disable this feature.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2005), EditorDisplay(\"Security Limits\"), Limit(0, 30)")
+    float MaxSyncPartTTL = 2;
+
+public:
+    /// <summary>
     /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
     /// </summary>
     static NetworkSettings* Get();
