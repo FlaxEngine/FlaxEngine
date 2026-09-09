@@ -275,7 +275,28 @@ void ENetDriver::SendMessage(const NetworkChannelType channelType, const Network
 
 NetworkDriverStats ENetDriver::GetStats()
 {
-    return GetStats({ 0 });
+    NetworkDriverStats stats;
+    if (_host)
+    {
+        // Get host stats
+        stats.TotalDataSent = _host->totalSentData;
+        stats.TotalDataReceived = _host->totalReceivedData;
+        int32 peers = 0;
+        for (ENetPeer* peer = _host->peers; peer < &_host->peers[_host->peerCount]; peer++)
+        {
+            if (peer->state != ENET_PEER_STATE_CONNECTED)
+                continue;
+            stats.RTT += (float)peer->roundTripTime;
+            peers++;
+        }
+        if (peers > 0)
+        {
+            stats.RTT /= (float)peers;
+        }
+    }
+    else
+        stats = GetStats({});
+    return stats;
 }
 
 NetworkDriverStats ENetDriver::GetStats(NetworkConnection target)
@@ -285,9 +306,10 @@ NetworkDriverStats ENetDriver::GetStats(NetworkConnection target)
     if (!peer)
         _peerMap.TryGet(target.ConnectionId, peer);
     if (!peer && _host && _host->peerCount > 0)
-        peer = _host->peers;
+        peer = _host->peers; // Get the first peer
     if (peer)
     {
+        // Get peer stats
         stats.RTT = (float)peer->roundTripTime;
         stats.TotalDataSent = peer->totalDataSent;
         stats.TotalDataReceived = peer->totalDataReceived;
