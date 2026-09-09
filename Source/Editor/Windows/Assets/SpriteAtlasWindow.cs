@@ -326,7 +326,9 @@ namespace FlaxEditor.Windows.Assets
                 _propertiesEditor.BuildLayout();
             }).LinkTooltip("Add a new sprite");
             _toolstrip.AddSeparator();
-            _toolstrip.AddButton(editor.Icons.CenterView64, _preview.CenterView).LinkTooltip("Center view");
+            _toolstrip.AddButton(editor.Icons.CenterView64, _preview.CenterView).LinkTooltip("Center view", ref editor.Options.Options.Input.ShowEditorContents);
+
+            InputActions.Add(options => options.ShowEditorContents, _preview.CenterView);
         }
 
         /// <inheritdoc />
