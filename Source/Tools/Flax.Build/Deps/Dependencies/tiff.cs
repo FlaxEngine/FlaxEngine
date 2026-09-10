@@ -11,7 +11,7 @@ namespace Flax.Deps.Dependencies
     /// The LibTIFF software provides support for the Tag Image File Format (TIFF), a widely used format for storing image data. https://libtiff.gitlab.io/libtiff/
     /// </summary>
     /// <seealso cref="Flax.Deps.Dependency" />
-    class libtiff : Dependency
+    class tiff : Dependency
     {
         /// <inheritdoc />
         public override TargetPlatform[] Platforms
@@ -39,7 +39,7 @@ namespace Flax.Deps.Dependencies
         public override void Build(BuildOptions options)
         {
             var root = options.IntermediateFolder;
-            var moduleFilename = "libtiff.Build.cs";
+            var moduleFilename = "tiff.Build.cs";
             string configHeaderFilePath = null;
             var configs = new string[]
             {
@@ -117,7 +117,7 @@ namespace Flax.Deps.Dependencies
 
             // Deploy header files and license (preserve module build rules file)
             var srcIncludePath = Path.Combine(root, "libtiff");
-            var dstIncludePath = Path.Combine(options.ThirdPartyFolder, "libtiff");
+            var dstIncludePath = Path.Combine(options.ThirdPartyFolder, "tiff");
             var moduleFile = Path.Combine(dstIncludePath, moduleFilename);
             var moduleFileBackup = Path.Combine(root, moduleFilename);
             Utilities.FileCopy(moduleFile, moduleFileBackup);

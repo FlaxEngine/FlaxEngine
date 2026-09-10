@@ -7,7 +7,7 @@ using Flax.Build.NativeCpp;
 /// <summary>
 /// https://gitlab.com/libtiff/libtiff
 /// </summary>
-public class libtiff : ThirdPartyModule
+public class tiff : ThirdPartyModule
 {
     /// <inheritdoc />
     public override void Init()
