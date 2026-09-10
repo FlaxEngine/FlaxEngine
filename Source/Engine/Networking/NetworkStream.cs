@@ -319,10 +319,10 @@ namespace FlaxEngine.Networking
         public void WriteVector3(Vector3 value)
         {
 #if USE_LARGE_WORLDS
-            var tmp = new Vector3(value);
-            WriteBytes((byte*)&tmp, sizeof(Vector3));
+            var tmp = new Float3(value);
+            WriteBytes((byte*)&tmp, sizeof(Float3));
 #else
-            WriteBytes((byte*)&value, sizeof(Vector3));
+            WriteBytes((byte*)&value, sizeof(Float3));
 #endif
         }
 
@@ -340,10 +340,10 @@ namespace FlaxEngine.Networking
         public void WriteVector4(Vector4 value)
         {
 #if USE_LARGE_WORLDS
-            var tmp = new Vector4(value);
-            WriteBytes((byte*)&tmp, sizeof(Vector4));
+            var tmp = new Float4(value);
+            WriteBytes((byte*)&tmp, sizeof(Float4));
 #else
-            WriteBytes((byte*)&value, sizeof(Vector4));
+            WriteBytes((byte*)&value, sizeof(Float4));
 #endif
         }
 
