@@ -72,6 +72,22 @@ namespace FlaxEditor.Options
             Modifier2 = modifier2;
         }
 
+        private bool MatchesKey(KeyboardKeys key)
+        {
+            if (key == Key)
+                return true;
+
+#if PLATFORM_MAC
+            // macOS reports the main keyboard Delete key as Backspace.
+            // Treat it as Delete for editor shortcuts while preserving Backspace
+            // key events for text controls.
+            if (Key == KeyboardKeys.Delete && key == KeyboardKeys.Backspace)
+                return true;
+#endif
+
+            return false;
+        }
+
         /// <summary>
         /// Parses the specified key text value.
         /// </summary>
@@ -214,7 +230,7 @@ namespace FlaxEditor.Options
         /// <returns>True if input has been processed, otherwise false.</returns>
         public bool Process(Control control, KeyboardKeys key)
         {
-            if (key != Key)
+            if (!MatchesKey(key))
                 return false;
 
             return ProcessModifiers(control);

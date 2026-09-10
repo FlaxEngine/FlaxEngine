@@ -1018,9 +1018,17 @@ void InputService::Update()
             break;
         case InputDevice::EventType::KeyDown:
             Input::KeyDown(e.KeyData.Key);
+#if PLATFORM_MAC
+            if (e.KeyData.Key == KeyboardKeys::Backspace)
+                Input::KeyDown(KeyboardKeys::Delete);
+#endif
             break;
         case InputDevice::EventType::KeyUp:
             Input::KeyUp(e.KeyData.Key);
+#if PLATFORM_MAC
+            if (e.KeyData.Key == KeyboardKeys::Backspace)
+                Input::KeyUp(KeyboardKeys::Delete);
+#endif
             break;
         // Mouse events
         case InputDevice::EventType::MouseDown:
