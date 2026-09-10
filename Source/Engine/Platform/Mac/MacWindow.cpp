@@ -39,6 +39,62 @@ inline bool IsWindowInvalid(Window* win)
     return !hasWindow || !win;
 }
 
+inline Window* GetEngineWindow(NSWindow* nativeWindow)
+{
+    WindowsManager::WindowsLocker.Lock();
+    for (auto* window : WindowsManager::Windows)
+    {
+        if (window && window->GetNativePtr() == nativeWindow)
+        {
+            WindowsManager::WindowsLocker.Unlock();
+            return window;
+        }
+    }
+    WindowsManager::WindowsLocker.Unlock();
+    return nullptr;
+}
+
+inline bool ShouldAttachToParent(const CreateWindowSettings& settings)
+{
+    // Cocoa child windows inherit parent z-order and minimize behavior.
+    // Minimizable regular windows need independent top-level window semantics.
+    return settings.Parent && (settings.Type != WindowType::Regular || !settings.AllowMinimize);
+}
+
+inline bool CanMakeKeyWindow(NSWindow* window)
+{
+    return window && [window isVisible] && ![window isMiniaturized] && [window canBecomeKeyWindow];
+}
+
+inline bool IsRegularWindowWithParent(Window* window, Window* parent)
+{
+    return window &&
+           !window->IsClosed() &&
+           window->GetSettings().Type == WindowType::Regular &&
+           window->GetSettings().Parent == parent;
+}
+
+inline void MakeNextParentedWindowKey(NSWindow* hiddenWindow, Window* fallbackParent)
+{
+    if (!fallbackParent || IsWindowInvalid(fallbackParent))
+        return;
+
+    for (NSWindow* candidate in [NSApp orderedWindows])
+    {
+        if (candidate == hiddenWindow || !CanMakeKeyWindow(candidate))
+            continue;
+        Window* candidateWindow = GetEngineWindow(candidate);
+        if (!IsRegularWindowWithParent(candidateWindow, fallbackParent))
+            continue;
+        [candidate makeKeyAndOrderFront:nil];
+        return;
+    }
+
+    NSWindow* parent = (NSWindow*)fallbackParent->GetNativePtr();
+    if (parent != hiddenWindow && CanMakeKeyWindow(parent))
+        [parent makeKeyAndOrderFront:nil];
+}
+
 KeyboardKeys GetKey(NSEvent* event)
 {
     switch ([event keyCode])
@@ -963,7 +1019,7 @@ void MacWindow::Show()
 
         // Show
         NSWindow* window = (NSWindow*)_window;
-        if (_settings.Parent)
+        if (ShouldAttachToParent(_settings))
         {
             NSWindow* parent = (NSWindow*)_settings.Parent->GetNativePtr();
             [parent addChildWindow:window ordered:NSWindowAbove];
@@ -989,18 +1045,17 @@ void MacWindow::Hide()
 
         // Hide (order out doesn't work for miniaturized windows)
         NSWindow* window = (NSWindow*)_window;
-        const BOOL wasKey = [window isKeyWindow];
+        const BOOL wasKey = [window isKeyWindow] || [NSApp keyWindow] == window;
         if ([window isMiniaturized])
             [window close];
         else
             [window orderOut:nil];
-
-        // Transfer focus back to the parent when hiding popup
-        if (_settings.Parent && wasKey && _settings.Type != WindowType::Popup && _settings.Type != WindowType::Tooltip)
-        {
-            NSWindow* parent = (NSWindow*)_settings.Parent->GetNativePtr();
-            [parent makeKeyAndOrderFront:nil];
-        }
+        const bool shouldRestoreFocus = _settings.Parent &&
+                                        _settings.Type == WindowType::Regular &&
+                                        [NSApp isActive] &&
+                                        (wasKey || [NSApp keyWindow] == nil);
+        if (!IsClosed() && shouldRestoreFocus)
+            MakeNextParentedWindowKey(window, _settings.Parent);
 
         // Base
         WindowBase::Hide();
@@ -1009,23 +1064,27 @@ void MacWindow::Hide()
 
 void MacWindow::Close(ClosingReason reason)
 {
-    const BOOL wasKey = _window && [(NSWindow*)_window isKeyWindow];
+    NSWindow* window = (NSWindow*)_window;
+    const BOOL shouldRestoreFocus = window &&
+                                    _settings.Parent &&
+                                    _settings.Type == WindowType::Regular &&
+                                    [NSApp isActive] &&
+                                    ([window isKeyWindow] || [NSApp keyWindow] == window);
+
     WindowBase::Close(reason);
 
     // Closing can be cancelled by managed Window.Closing handlers.
     if (!IsClosed())
         return;
     
-    if (NSWindow* window = (NSWindow*)_window)
-    {
+    if (window)
         [window close];
-    }
-    
-    if (_settings.Parent && wasKey && _settings.Type != WindowType::Popup && _settings.Type != WindowType::Tooltip)
-    {
-        NSWindow* parent = (NSWindow*)_settings.Parent->GetNativePtr();
-        [parent makeKeyAndOrderFront:nil];
-    }
+    const bool hasNoKeyWindow = _settings.Parent &&
+                                _settings.Type == WindowType::Regular &&
+                                [NSApp isActive] &&
+                                [NSApp keyWindow] == nil;
+    if (shouldRestoreFocus || hasNoKeyWindow)
+        MakeNextParentedWindowKey(window, _settings.Parent);
 }
 
 void MacWindow::Minimize()
