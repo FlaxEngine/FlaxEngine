@@ -226,6 +226,8 @@ bool TextureTool::ImportTexture(const StringView& path, TextureData& textureData
 
     // Import
     bool hasAlpha = false;
+    if (type == ImageType::KTX)
+        return ImportTextureKtx(path, textureData, hasAlpha);
 #if COMPILE_WITH_DIRECTXTEX
     const auto failed = ImportTextureDirectXTex(type, path, textureData, hasAlpha);
 #elif COMPILE_WITH_STB
@@ -267,6 +269,12 @@ bool TextureTool::ImportTexture(const StringView& path, TextureData& textureData
     {
         if (GetImageType(path, type))
             return true;
+    }
+
+    if (type == ImageType::KTX)
+    {
+        bool hasAlpha = false;
+        return ImportTextureKtx(path, textureData, options, errorMsg, hasAlpha);
     }
 
     // Clamp values
@@ -701,6 +709,10 @@ bool TextureTool::GetImageType(const StringView& path, ImageType& type)
     else if (extension == TEXT("exr"))
     {
         type = ImageType::EXR;
+    }
+    else if (extension == TEXT("ktx"))
+    {
+        type = ImageType::KTX;
     }
     else
     {

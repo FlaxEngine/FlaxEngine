@@ -138,6 +138,12 @@ namespace FlaxEditor.Content.Import
                 // HDR sky texture
                 _settings.Settings.Type = TextureFormatType.HdrRGB;
             }
+            else if (extension == ".ktx")
+            {
+                // Preserve embedded mip chain from KTX source.
+                _settings.Settings.GenerateMipMaps = false;
+                _settings.Settings.sRGB = true;
+            }
             else if (_settings.Settings.Type != TextureFormatType.ColorRGB)
             {
                 // Skip checking
