@@ -21,7 +21,6 @@ public class TextureTool : EngineModule
 
         bool useDirectXTex = false;
         bool useStb = false;
-        bool useExr = options.Target.IsEditor;
 
         switch (options.Platform.Target)
         {
@@ -55,13 +54,13 @@ public class TextureTool : EngineModule
             options.SourceFiles.Add(Path.Combine(FolderPath, "TextureTool.stb.cpp"));
             if (options.Target.IsEditor)
             {
-                // Use helper lib for decompression
+                options.PrivateDependencies.Add("tiff");
                 options.PrivateDependencies.Add("ddspp");
                 options.PrivateDependencies.Add("detex");
                 options.PrivateDependencies.Add("bc7enc16");
             }
         }
-        if (useExr)
+        if (options.Target.IsEditor)
         {
             options.PrivateDependencies.Add("tinyexr");
         }
