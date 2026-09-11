@@ -386,7 +386,9 @@ namespace Flax.Build.Projects.VisualStudio
 
                 // Override MSBuild .targets file with one that runs NMake commands (workaround for Rider not finding "Microsoft.Cpp.Default.props" file)
                 var cppTargetsFileContent = new StringBuilder();
+                cppTargetsFileContent.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
                 cppTargetsFileContent.AppendLine("<Project xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\" TreatAsLocalProperty=\"Platform\">");
+                cppTargetsFileContent.AppendLine("  <Import Project=\"Rider.Workarounds.Cpp.props\"/>");
                 cppTargetsFileContent.AppendLine("  <Target Name=\"Build\">");
                 cppTargetsFileContent.AppendLine("    <Exec Command='$(NMakeBuildCommandLine)'/>");
                 cppTargetsFileContent.AppendLine("  </Target>");
@@ -408,10 +410,48 @@ namespace Flax.Build.Projects.VisualStudio
                 cppTargetsFileContent.AppendLine(string.Format("    <LocalDebuggerWorkingDirectory>{0}</LocalDebuggerWorkingDirectory>", debuggerWorkingDirectory));
                 cppTargetsFileContent.AppendLine("  </PropertyGroup>");
                 cppTargetsFileContent.AppendLine("</Project>");
+                
+                // Workarounds for Rider language server to not show errors over well known symbols 
+                Dictionary<string, string> preprocessor = new Dictionary<string, string>()
+                {
+                    {"__attribute__(x)", ""},
+                    {"__null", "0"},
+                    {"__extension__", ""},
+                    {"__asm__", "__asm"},
+                    {"_SIZE_T", "1"},
+                };
+                // Undefine hardcoded MSVC definitions
+                HashSet<string> undefine = new HashSet<string>()
+                {
+                    "_MSC_VER",
+                    "_MSC_EXTENSIONS",
+                    "_M_IX86",
+                    "_WIN32",
+                };
+
+                // Expose all known preprocessor definitions known by the compiler to language server 
+                var clangDefinitions = Utilities.ReadProcessOutput("clang++", "-dM -E -x c++ /dev/null");
+                foreach (var (def, val) in clangDefinitions.Split('\n').Select(x => (x.Split(' ')[1], x.Split(' ')[2])))
+                    preprocessor.Add(def, val);
+
+                var workaroundsFileContent = new StringBuilder();
+                workaroundsFileContent.AppendLine($"<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+                workaroundsFileContent.AppendLine($"<Project xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\" TreatAsLocalProperty=\"Platform\">");
+                workaroundsFileContent.AppendLine($"  <ItemDefinitionGroup>");
+                workaroundsFileContent.AppendLine($"    <ClCompile>");
+                workaroundsFileContent.AppendLine($"      <AdditionalOptions>{string.Join(' ', undefine.Select(x => $"/U {x}"))} %(AdditionalOptions)</AdditionalOptions>");
+                workaroundsFileContent.AppendLine($"    </ClCompile>");
+                workaroundsFileContent.AppendLine($"  </ItemDefinitionGroup>");
+                workaroundsFileContent.AppendLine($"  <PropertyGroup>");
+                workaroundsFileContent.AppendLine($"    <NMakeIncludeSearchPath>/usr/include/c++/16/aarch64-redhat-linux/;$(NMakeIncludeSearchPath)</NMakeIncludeSearchPath>");
+                workaroundsFileContent.AppendLine($"    <NMakePreprocessorDefinitions>{string.Join(';', preprocessor.Select(x => $"{x.Key}={x.Value}"))};$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>");
+                workaroundsFileContent.AppendLine($"  </PropertyGroup>");
+                workaroundsFileContent.AppendLine($"</Project>");
 
                 Utilities.WriteFileIfChanged(Path.Combine(projectDirectory, "Microsoft.Cpp.targets"), cppTargetsFileContent.ToString());
                 Utilities.WriteFileIfChanged(Path.Combine(projectDirectory, "Microsoft.Cpp.Default.props"), vcUserFileContent.ToString());
                 Utilities.WriteFileIfChanged(Path.Combine(projectDirectory, "Microsoft.Cpp.props"), vcUserFileContent.ToString());
+                Utilities.WriteFileIfChanged(Path.Combine(projectDirectory, "Rider.Workarounds.Cpp.props"), workaroundsFileContent.ToString());
             }
 
             // Save the files
