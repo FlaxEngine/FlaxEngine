@@ -14,7 +14,11 @@ struct VariantType;
 template<typename T>
 class ScriptingObjectReference;
 template<typename T>
+class ScriptingObjectInterfaceReference;
+template<typename T>
 class SoftObjectReference;
+template<typename T>
+class SoftObjectInterfaceReference;
 template<typename T>
 class AssetReference;
 template<typename T>
@@ -458,7 +462,6 @@ namespace Serialization
     }
 
     FLAXENGINE_API bool ShouldSerializeRef(const SceneObject* v, const SceneObject* other);
-
     template<typename T>
     inline typename TEnableIf<TAnd<TIsBaseOf<ScriptingObject, T>, TNot<TIsBaseOf<SceneObject, T>>>::Value, bool>::Type ShouldSerialize(const T* v, const void* otherObj)
     {
@@ -474,7 +477,7 @@ namespace Serialization
     {
         Guid id;
         Deserialize(stream, id, modifier);
-		modifier->IdsMapping.TryGet(id, id);
+        modifier->IdsMapping.TryGet(id, id);
         v = (T*)::FindObject(id, T::GetStaticClass());
     }
 
@@ -501,7 +504,28 @@ namespace Serialization
     {
         Guid id;
         Deserialize(stream, id, modifier);
-		modifier->IdsMapping.TryGet(id, id);
+        modifier->IdsMapping.TryGet(id, id);
+        v = id;
+    }
+
+    // Scripting Interface Reference
+
+    template<typename T>
+    inline bool ShouldSerialize(const ScriptingObjectInterfaceReference<T>& v, const void* otherObj)
+    {
+        return !otherObj || ShouldSerializeRef(v.GetObject(), ((ScriptingObjectInterfaceReference<T>*)otherObj)->GetObject());
+    }
+    template<typename T>
+    inline void Serialize(ISerializable::SerializeStream& stream, const ScriptingObjectInterfaceReference<T>& v, const void* otherObj)
+    {
+        stream.Guid(v.GetID());
+    }
+    template<typename T>
+    inline void Deserialize(ISerializable::DeserializeStream& stream, ScriptingObjectInterfaceReference<T>& v, ISerializeModifier* modifier)
+    {
+        Guid id;
+        Deserialize(stream, id, modifier);
+        modifier->IdsMapping.TryGet(id, id);
         v = id;
     }
 
@@ -522,7 +546,28 @@ namespace Serialization
     {
         Guid id;
         Deserialize(stream, id, modifier);
-		modifier->IdsMapping.TryGet(id, id);
+        modifier->IdsMapping.TryGet(id, id);
+        v = id;
+    }
+
+    // Soft Object Interface Reference
+
+    template<typename T>
+    inline bool ShouldSerialize(const SoftObjectInterfaceReference<T>& v, const void* otherObj)
+    {
+        return !otherObj || ShouldSerializeRef(v.GetObject(), ((SoftObjectInterfaceReference<T>*)otherObj)->GetObject());
+    }
+    template<typename T>
+    inline void Serialize(ISerializable::SerializeStream& stream, const SoftObjectInterfaceReference<T>& v, const void* otherObj)
+    {
+        stream.Guid(v.GetID());
+    }
+    template<typename T>
+    inline void Deserialize(ISerializable::DeserializeStream& stream, SoftObjectInterfaceReference<T>& v, ISerializeModifier* modifier)
+    {
+        Guid id;
+        Deserialize(stream, id, modifier);
+        modifier->IdsMapping.TryGet(id, id);
         v = id;
     }
 
