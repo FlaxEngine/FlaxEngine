@@ -3,6 +3,7 @@
 #include "MeshCollider.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Math/Ray.h"
+#include "Engine/Core/ScopeExit.h"
 #include "Engine/Physics/Physics.h"
 #include "Engine/Physics/PhysicsScene.h"
 #if USE_EDITOR || !BUILD_RELEASE
@@ -22,19 +23,29 @@ void MeshCollider::OnCollisionDataChanged()
 
     if (CollisionData)
     {
+        _isChangingCollisionData = true;
+        SCOPE_EXIT { _isChangingCollisionData = false; };
+
         // Ensure that collision asset is loaded (otherwise objects might fall though collider that is not yet loaded on play begin)
-        CollisionData->WaitForLoaded();
+        // OnSet sends Loaded after Changed returns, so let that notification update the collider once.
+        if (!CollisionData->WaitForLoaded())
+            return;
     }
 
+    // Clearing the reference or failing to load won't send Loaded, so clear the old geometry here.
     UpdateGeometry();
     UpdateBounds();
 }
 
 void MeshCollider::OnCollisionDataLoaded()
 {
-    // Not needed as OnCollisionDataChanged waits for it to be loaded
-    //UpdateGeometry();
-    //UpdateBounds();
+    // WaitForLoaded can dispatch Loaded while Changed is still waiting. OnSet will send it again afterwards.
+    if (_isChangingCollisionData)
+        return;
+
+    // Virtual collision data can be recooked without changing the asset reference.
+    UpdateGeometry();
+    UpdateBounds();
 }
 
 bool MeshCollider::CanAttach(RigidBody* rigidBody) const
