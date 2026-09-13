@@ -1429,9 +1429,14 @@ void Actor::OnLayerChanged()
 
 BoundingBox Actor::GetBoxWithChildren() const
 {
-    BoundingBox result = GetBox();
+    return GetBoundingBoxWithChildren();
+}
+
+BoundingBox Actor::GetBoundingBoxWithChildren() const
+{
+    BoundingBox result = GetBoundingBox();
     for (int32 i = 0; i < Children.Count(); i++)
-        BoundingBox::Merge(result, Children.Get()[i]->GetBoxWithChildren(), result);
+        BoundingBox::Merge(result, Children.Get()[i]->GetBoundingBoxWithChildren(), result);
     return result;
 }
 
@@ -1439,14 +1444,24 @@ BoundingBox Actor::GetBoxWithChildren() const
 
 BoundingBox Actor::GetEditorBox() const
 {
-    return GetBox();
+    return GetEditorBoundingBox();
+}
+
+BoundingBox Actor::GetEditorBoundingBox() const
+{
+    return GetBoundingBox();
 }
 
 BoundingBox Actor::GetEditorBoxChildren() const
 {
-    BoundingBox result = GetEditorBox();
+    return GetEditorBoundingBoxWithChildren();
+}
+
+BoundingBox Actor::GetEditorBoundingBoxWithChildren() const
+{
+    BoundingBox result = GetEditorBoundingBox();
     for (int32 i = 0; i < Children.Count(); i++)
-        BoundingBox::Merge(result, Children.Get()[i]->GetEditorBoxChildren(), result);
+        BoundingBox::Merge(result, Children.Get()[i]->GetEditorBoundingBoxWithChildren(), result);
     return result;
 }
 
