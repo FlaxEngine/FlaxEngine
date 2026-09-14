@@ -689,7 +689,7 @@ public:
 public:
     /// <summary>
     /// Gets actor bounding sphere that defines 3D space intersecting with the actor (for determination of the visibility for actor).
-    /// [DEPRECATED IN 1.13]
+    /// [Deprecated in 1.13]
     /// </summary>
     API_PROPERTY() DEPRECATED("Use GetBoundingSphere instead.") FORCE_INLINE const BoundingSphere& GetSphere() const
     {
@@ -706,7 +706,7 @@ public:
 
     /// <summary>
     /// Gets actor bounding box that defines 3D space intersecting with the actor (for determination of the visibility for actor).
-    /// [DEPRECATED IN 1.13]
+    /// [Deprecated in 1.13]
     /// </summary>
     API_PROPERTY() DEPRECATED("Use GetBoundingBox instead.") FORCE_INLINE const BoundingBox& GetBox() const
     {
@@ -723,7 +723,7 @@ public:
 
     /// <summary>
     /// Gets actor bounding box of the actor including all child actors (children included in recursive way)
-    /// [DEPRECATED IN 1.13]
+    /// [Deprecated in 1.13]
     /// </summary>
     API_PROPERTY() DEPRECATED("Use GetBoundingBoxWithChildren instead.") BoundingBox GetBoxWithChildren() const;
     
@@ -735,7 +735,7 @@ public:
 #if USE_EDITOR
     /// <summary>
     /// Gets actor bounding box (single actor, no children included) for editor tools.
-    /// [DEPRECATED IN 1.13]
+    /// [Deprecated in 1.13]
     /// </summary>
     API_PROPERTY() DEPRECATED("Use GetEditorBoundingBox instead.") virtual BoundingBox GetEditorBox() const;
     
@@ -746,7 +746,7 @@ public:
 
     /// <summary>
     /// Gets actor bounding box of the actor including all child actors for editor tools.
-    /// [DEPRECATED IN 1.13]
+    /// [Deprecated in 1.13]
     /// </summary>
     API_PROPERTY() DEPRECATED("Use GetEditorBoundingBoxWithChildren instead.") BoundingBox GetEditorBoxChildren() const;
     

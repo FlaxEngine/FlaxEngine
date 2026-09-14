@@ -302,7 +302,7 @@ namespace FlaxEditor.Viewport.Previews
             // Draw bounds
             if (_showBounds)
             {
-                DebugDrawBounds(_previewModel.Box);
+                DebugDrawBounds(_previewModel.BoundingBox);
             }
 
             // Draw normals
@@ -395,7 +395,7 @@ namespace FlaxEditor.Viewport.Previews
             // Based on RenderTools::ComputeModelLOD
             CreateProjectionMatrix(out var projectionMatrix);
             float screenMultiple = 0.5f * Mathf.Max(projectionMatrix.M11, projectionMatrix.M22);
-            var sphere = PreviewActor.Sphere;
+            var sphere = PreviewActor.BoundingSphere;
             var viewOrigin = ViewPosition;
             var distSqr = Vector3.DistanceSquared(ref sphere.Center, ref viewOrigin);
             var screenRadiusSquared = Mathf.Square(screenMultiple * sphere.Radius) / Mathf.Max(1.0f, distSqr);
@@ -461,11 +461,11 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <summary>
-        /// Resets the camera to focus on a object.
+        /// Resets the camera to focus on an object.
         /// </summary>
         public void ResetCamera()
         {
-            ViewportCamera.SetArcBallView(_previewModel.Box);
+            ViewportCamera.SetArcBallView(_previewModel.BoundingBox);
         }
 
         /// <inheritdoc />
