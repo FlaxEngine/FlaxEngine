@@ -63,7 +63,7 @@ UICanvas::UICanvas(const SpawnParams& params)
 
 #if USE_EDITOR
 
-BoundingBox UICanvas::GetEditorBox() const
+BoundingBox UICanvas::GetEditorBoundingBox() const
 {
     const Vector3 size(50);
     return BoundingBox(_transform.Translation - size, _transform.Translation + size);

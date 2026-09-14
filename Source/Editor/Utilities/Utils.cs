@@ -387,7 +387,7 @@ namespace FlaxEditor.Utilities
                 transforms[i] = nodes[i].Transform;
                 if (nodes[i] is ActorNode actorNode)
                 {
-                    bounds = BoundingBox.Merge(bounds, actorNode.Actor.BoxWithChildren);
+                    bounds = BoundingBox.Merge(bounds, actorNode.Actor.BoundingBoxWithChildren);
                 }
             }
             return transforms;

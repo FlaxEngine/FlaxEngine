@@ -257,7 +257,7 @@ private:
 public:
     // [Actor]
 #if USE_EDITOR
-    BoundingBox GetEditorBox() const override;
+    BoundingBox GetEditorBoundingBox() const override;
     bool HasContentLoaded() const override;
     void Draw(RenderContext& renderContext) override;
     void OnDebugDrawSelected() override;

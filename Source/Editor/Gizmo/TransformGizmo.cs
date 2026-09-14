@@ -128,7 +128,7 @@ namespace FlaxEditor.Gizmo
                     {
                         if (_selectionParents[i] is ActorNode actorNode)
                         {
-                            var b = actorNode.Actor.EditorBoxChildren;
+                            var b = actorNode.Actor.EditorBoundingBoxWithChildren;
                             BoundingBox.Merge(ref editorBounds, ref b, out editorBounds);
                             bottomToCenter = Mathf.Min(bottomToCenter, actorNode.Actor.Position.Y - editorBounds.Minimum.Y);
                         }
@@ -299,7 +299,7 @@ namespace FlaxEditor.Gizmo
             {
                 if (_selectionParents[i] is ActorNode actorNode)
                 {
-                    bounds = BoundingBox.Merge(bounds, actorNode.Actor.BoxWithChildren);
+                    bounds = BoundingBox.Merge(bounds, actorNode.Actor.BoundingBoxWithChildren);
                     navigationDirty |= actorNode.AffectsNavigationWithChildren;
                 }
             }

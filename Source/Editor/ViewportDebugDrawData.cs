@@ -125,7 +125,7 @@ namespace FlaxEditor
                     if (model == null)
                         continue;
                     staticModel.Transform.GetWorld(out world);
-                    var bounds = BoundingSphere.FromBox(staticModel.Box);
+                    var bounds = BoundingSphere.FromBox(staticModel.BoundingBox);
 
                     // Pick a proper LOD
                     Float3 center = bounds.Center - renderContext.View.Origin;
