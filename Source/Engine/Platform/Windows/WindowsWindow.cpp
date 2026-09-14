@@ -147,7 +147,7 @@ WindowsWindow::WindowsWindow(const CreateWindowSettings& settings)
     const HMODULE user32Dll = LoadLibraryW(L"user32.dll");
     if (user32Dll)
     {
-        typedef UINT (STDAPICALLTYPE*GetDpiForWindowProc)(HWND hwnd);
+        typedef UINT(STDAPICALLTYPE* GetDpiForWindowProc)(HWND hwnd);
         const GetDpiForWindowProc getDpiForWindowProc = (GetDpiForWindowProc)GetProcAddress(user32Dll, "GetDpiForWindow");
         if (getDpiForWindowProc)
         {
@@ -386,13 +386,6 @@ void WindowsWindow::BringToFront(bool force)
 {
     ASSERT(HasHWND());
 
-    HWND hWndInsertAfter = HWND_TOP;
-    uint32 flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER;
-    if (_settings.IsTopmost)
-    {
-        hWndInsertAfter = HWND_TOPMOST;
-    }
-
     if (_settings.Type == WindowType::Regular)
     {
         if (IsIconic(_handle))
@@ -403,13 +396,20 @@ void WindowsWindow::BringToFront(bool force)
         {
             SetActiveWindow(_handle);
         }
-        SetWindowPos(_handle, hWndInsertAfter, 0, 0, 0, 0, flags);
     }
     else
     {
+        HWND hWndInsertAfter = HWND_TOP;
+        uint32 flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER;
+
         if (!force)
         {
             flags |= SWP_NOACTIVATE;
+        }
+
+        if (_settings.IsTopmost)
+        {
+            hWndInsertAfter = HWND_TOPMOST;
         }
 
         SetWindowPos(_handle, hWndInsertAfter, 0, 0, 0, 0, flags);
@@ -649,7 +649,6 @@ void WindowsWindow::SetOpacity(const float opacity)
 void WindowsWindow::Focus()
 {
     ASSERT(HasHWND());
-    BringToFront();
     if (GetFocus() != _handle)
     {
         SetFocus(_handle);
@@ -782,7 +781,7 @@ void WindowsWindow::UpdateCursor()
         if (!_lastCursorHidden)
         {
             _lastCursorHidden = true;
-            while(::ShowCursor(FALSE) >= 0)
+            while (::ShowCursor(FALSE) >= 0)
             {
                 if (_cursorHiddenSafetyCount >= 100)
                 {
@@ -799,7 +798,7 @@ void WindowsWindow::UpdateCursor()
     else if (_lastCursorHidden)
     {
         _lastCursorHidden = false;
-        while(::ShowCursor(TRUE) < 0)
+        while (::ShowCursor(TRUE) < 0)
         {
             if (_cursorHiddenSafetyCount >= 100)
             {
@@ -1173,10 +1172,6 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
                 return 0;
             }
         }
-        break;
-    case WM_MOUSEACTIVATE:
-        if (_settings.Type == WindowType::Regular)
-            BringToFront();
         break;
     case WM_CREATE:
         return 0;
