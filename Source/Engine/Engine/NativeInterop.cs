@@ -263,9 +263,33 @@ namespace FlaxEngine.Interop
         /// <returns>The output array.</returns>
         public static TDst[] ConvertArray<TSrc, TDst>(this TSrc[] src, Func<TSrc, TDst> convertFunc)
         {
-            TDst[] dst = new TDst[src.Length];
+            if (src == null)
+                return null;
+            var dst = new TDst[src.Length];
             for (int i = 0; i < src.Length; i++)
                 dst[i] = convertFunc(src[i]);
+            return dst;
+        }
+
+        /// <summary>
+        /// Converts dictionary with a custom converter function for each pair of keys and values.
+        /// </summary>
+        /// <typeparam name="TSrcKey">Input dictionary key type.</typeparam>
+        /// <typeparam name="TSrcValue">Input dictionary value type.</typeparam>
+        /// <typeparam name="TDstKey">Output dictionary key type.</typeparam>
+        /// <typeparam name="TDstValue">Output dictionary value type.</typeparam>
+        /// <param name="src">The input dictionary.</param>
+        /// <param name="convertFuncKey">Converter callback for keys.</param>
+        /// <param name="convertFuncValue">Converter callback for values.</param>
+        /// <returns>The output dictionary.</returns>
+        public static Dictionary<TDstKey, TDstValue> ConvertDictionary<TSrcKey, TSrcValue, TDstKey, TDstValue>(this Dictionary<TSrcKey, TSrcValue> src, Func<TSrcKey, TDstKey> convertFuncKey, Func<TSrcValue, TDstValue> convertFuncValue)
+        {
+            if (src == null)
+                return null;
+            var dst = new Dictionary<TDstKey, TDstValue>();
+            dst.EnsureCapacity(src.Count);
+            foreach (var e in src)
+                dst.Add(convertFuncKey(e.Key), convertFuncValue(e.Value));
             return dst;
         }
 

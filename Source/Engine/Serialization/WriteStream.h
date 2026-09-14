@@ -156,11 +156,19 @@ public:
     {
         Write(v.Get());
     }
+
+    template<typename T>
+    FORCE_INLINE void Write(const ScriptingObjectInterfaceReference<T>& v)
+    {
+        Write(v.GetObject());
+    }
+
     template<typename T>
     FORCE_INLINE void Write(const SoftObjectReference<T>& v)
     {
         Write(v.Get());
     }
+
     template<typename T>
     FORCE_INLINE void Write(const AssetReference<T>& v)
     {

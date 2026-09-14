@@ -1216,7 +1216,7 @@ void AnimatedModel::OnDebugDraw()
     ModelInstanceActor::OnDebugDraw();
 }
 
-BoundingBox AnimatedModel::GetEditorBox() const
+BoundingBox AnimatedModel::GetEditorBoundingBox() const
 {
     if (SkinnedModel)
         SkinnedModel->WaitForLoaded(100);
