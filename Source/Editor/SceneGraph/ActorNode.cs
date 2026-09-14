@@ -233,7 +233,7 @@ namespace FlaxEditor.SceneGraph
         /// <returns>The points to use if the actor can be selected.</returns>
         public virtual Vector3[] GetActorSelectionPoints()
         {
-            return Actor.EditorBox.GetCorners();
+            return Actor.EditorBoundingBox.GetCorners();
         }
 
         /// <summary>

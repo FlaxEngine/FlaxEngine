@@ -1,8 +1,8 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System;
 using FlaxEngine.GUI;
 using Newtonsoft.Json;
+using System;
 
 namespace FlaxEngine.Json
 {
@@ -135,6 +135,52 @@ namespace FlaxEngine.Json
         public override bool CanConvert(Type objectType)
         {
             return objectType == typeof(SoftTypeReference);
+        }
+    }
+
+    /// <summary>
+    /// Serialize <see cref="ScriptingObjectInterfaceReference{T}"/> as path string in internal format.
+    /// </summary>
+    /// <seealso cref="Newtonsoft.Json.JsonConverter" />
+    internal class ScriptingObjectInterfaceReferenceConverter : JsonConverter
+    {
+        /// <inheritdoc />
+        public override unsafe void WriteJson(JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            if (value == null)
+                writer.WriteNull();
+            else
+            {
+                var objectField = value.GetType().GetField("_object", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                var obj = objectField.GetValue(value) as Object;
+                if (obj == null)
+                {
+                    writer.WriteNull();
+                    return;
+                }
+                var id = obj.ID;
+                writer.WriteValue(JsonSerializer.GetStringID(&id));
+            }
+        }
+
+        /// <inheritdoc />
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            var result = existingValue ?? Activator.CreateInstance(objectType);
+            if (reader.TokenType == JsonToken.String)
+            {
+                JsonSerializer.ParseID((string)reader.Value, out var id);
+                var obj = Object.Find(ref id, objectType.GetGenericArguments()[0]);
+                var objectField = objectType.GetField("_object", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                objectField.SetValue(result, obj);
+            }
+            return result;
+        }
+
+        /// <inheritdoc />
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType.IsGenericType && objectType.GetGenericTypeDefinition() == typeof(ScriptingObjectInterfaceReference<>);
         }
     }
 

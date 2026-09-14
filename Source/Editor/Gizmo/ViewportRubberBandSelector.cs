@@ -182,7 +182,7 @@ public sealed class ViewportRubberBandSelector
             var a = node.Actor;
 
             // Skip actor if outside of view frustum
-            var actorBox = a.EditorBox;
+            var actorBox = a.EditorBoundingBox;
             if (projection.FrustumCull(ref actorBox) == ContainmentType.Disjoint)
                 continue;
 

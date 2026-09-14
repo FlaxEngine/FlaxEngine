@@ -361,7 +361,7 @@ namespace FlaxEditor.Viewport.Previews
                     if (_showNodes)
                     {
                         // Draw bounding box at the node locations
-                        var boxSize = Mathf.Min(1.0f, _previewModel.Sphere.Radius / 100.0f);
+                        var boxSize = Mathf.Min(1.0f, _previewModel.BoundingSphere.Radius / 100.0f);
                         var localBox = new OrientedBoundingBox(new Vector3(-boxSize), new Vector3(boxSize));
                         for (int nodeIndex = 0; nodeIndex < pose.Length; nodeIndex++)
                         {
@@ -405,7 +405,7 @@ namespace FlaxEditor.Viewport.Previews
             // Draw bounds
             if (_showBounds)
             {
-                DebugDrawBounds(_previewModel.Box);
+                DebugDrawBounds(_previewModel.BoundingBox);
             }
         }
 
@@ -433,7 +433,7 @@ namespace FlaxEditor.Viewport.Previews
         /// </summary>
         public void ResetCamera()
         {
-            ViewportCamera.SetArcBallView(_previewModel.Box);
+            ViewportCamera.SetArcBallView(_previewModel.BoundingBox);
         }
 
         /// <inheritdoc />

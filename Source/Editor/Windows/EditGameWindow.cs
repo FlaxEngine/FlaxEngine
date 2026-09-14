@@ -189,7 +189,7 @@ namespace FlaxEditor.Windows
 
             _pilotActor = actor;
             _pilotStart = actor.Transform;
-            _pilotBounds = actor.BoxWithChildren;
+            _pilotBounds = actor.BoundingBoxWithChildren;
             Viewport.ViewTransform = _pilotStart;
             if (_pilotWidget == null)
             {

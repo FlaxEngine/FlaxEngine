@@ -278,57 +278,25 @@ struct MConverter<T, typename TEnableIf<TIsBaseOf<class ScriptingObject, T>::Val
 // Converter for ScriptingObject References.
 template<typename T>
 class ScriptingObjectReference;
-
 template<typename T>
-struct MConverter<ScriptingObjectReference<T>>
-{
-    MObject* Box(const ScriptingObjectReference<T>& data, const MClass* klass)
-    {
-        return data.GetManagedInstance();
-    }
-
-    void Unbox(ScriptingObjectReference<T>& result, MObject* data)
-    {
-        result = (T*)ScriptingObject::ToNative(data);
-    }
-
-    void ToManagedArray(MArray* result, const Span<ScriptingObjectReference<T>>& data)
-    {
-        if (data.Length() == 0)
-            return;
-        MObject** objects = (MObject**)Allocator::Allocate(data.Length() * sizeof(MObject*));
-        for (int32 i = 0; i < data.Length(); i++)
-            objects[i] = data[i].GetManagedInstance();
-        MCore::GC::WriteArrayRef(result, Span<MObject*>(objects, data.Length()));
-        Allocator::Free(objects);
-    }
-
-    void ToNativeArray(Span<ScriptingObjectReference<T>>& result, const MArray* data)
-    {
-        MObject** dataPtr = MCore::Array::GetAddress<MObject*>(data);
-        for (int32 i = 0; i < result.Length(); i++)
-            result.Get()[i] = (T*)ScriptingObject::ToNative(dataPtr[i]);
-    }
-};
-
-// Converter for Asset References.
+class ScriptingObjectInterfaceReference;
 template<typename T>
 class AssetReference;
 
-template<typename T>
-struct MConverter<AssetReference<T>>
+template<typename Reference, typename Object>
+struct MObjectReferenceConverter
 {
-    MObject* Box(const AssetReference<T>& data, const MClass* klass)
+    MObject* Box(const Reference& data, const MClass* klass)
     {
         return data.GetManagedInstance();
     }
 
-    void Unbox(AssetReference<T>& result, MObject* data)
+    void Unbox(Reference& result, MObject* data)
     {
-        result = (T*)ScriptingObject::ToNative(data);
+        result = (Object*)ScriptingObject::ToNative(data);
     }
 
-    void ToManagedArray(MArray* result, const Span<AssetReference<T>>& data)
+    void ToManagedArray(MArray* result, const Span<Reference>& data)
     {
         if (data.Length() == 0)
             return;
@@ -339,12 +307,27 @@ struct MConverter<AssetReference<T>>
         Allocator::Free(objects);
     }
 
-    void ToNativeArray(Span<AssetReference<T>>& result, const MArray* data)
+    void ToNativeArray(Span<Reference>& result, const MArray* data)
     {
         MObject** dataPtr = MCore::Array::GetAddress<MObject*>(data);
         for (int32 i = 0; i < result.Length(); i++)
-            result.Get()[i] = (T*)ScriptingObject::ToNative(dataPtr[i]);
+            result.Get()[i] = (Object*)ScriptingObject::ToNative(dataPtr[i]);
     }
+};
+
+template<typename T>
+struct MConverter<ScriptingObjectReference<T>> : MObjectReferenceConverter<ScriptingObjectReference<T>, T>
+{
+};
+
+template<typename T>
+struct MConverter<ScriptingObjectInterfaceReference<T>> : MObjectReferenceConverter<ScriptingObjectInterfaceReference<T>, ScriptingObject>
+{
+};
+
+template<typename T>
+struct MConverter<AssetReference<T>> : MObjectReferenceConverter<AssetReference<T>, T>
+{
 };
 
 // TODO: use MarshalAs=Guid on SoftAssetReference to pass guid over bindings and not load asset in glue code

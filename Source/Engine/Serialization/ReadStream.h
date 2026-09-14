@@ -134,6 +134,14 @@ public:
     }
 
     template<typename T>
+    FORCE_INLINE void Read(ScriptingObjectInterfaceReference<T>& v)
+    {
+        uint32 id[4];
+        ReadBytes(id, sizeof(id));
+        v = *(Guid*)id;
+    }
+
+    template<typename T>
     FORCE_INLINE void Read(SoftObjectReference<T>& v)
     {
         uint32 id[4];

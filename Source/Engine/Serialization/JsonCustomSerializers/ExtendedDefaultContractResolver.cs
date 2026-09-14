@@ -34,6 +34,15 @@ namespace FlaxEngine.Json.JsonCustomSerializers
             _attributesIgnoreList = isManagedOnly ? AttributesIgnoreListManaged : AttributesIgnoreList;
         }
 
+        private void SetupProperty(JsonProperty jsonProperty, Type type, IEnumerable<Attribute> attributes)
+        {
+            if (_flaxType.IsAssignableFrom(type))
+            {
+                jsonProperty.ReferenceLoopHandling = ReferenceLoopHandling.Serialize;
+                jsonProperty.Converter = JsonSerializer.ObjectConverter;
+            }
+        }
+
         /// <inheritdoc />
         protected override JsonContract CreateContract(Type objectType)
         {
@@ -116,11 +125,7 @@ namespace FlaxEngine.Json.JsonCustomSerializers
                 jsonProperty.Writable = true;
                 jsonProperty.Readable = true;
 
-                if (_flaxType.IsAssignableFrom(f.FieldType))
-                {
-                    jsonProperty.ReferenceLoopHandling = ReferenceLoopHandling.Serialize;
-                    jsonProperty.Converter = JsonSerializer.ObjectConverter;
-                }
+                SetupProperty(jsonProperty, f.FieldType, attributes);
 
                 result.Add(jsonProperty);
             }
@@ -159,11 +164,7 @@ namespace FlaxEngine.Json.JsonCustomSerializers
                 jsonProperty.Writable = true;
                 jsonProperty.Readable = !isObsolete;
 
-                if (_flaxType.IsAssignableFrom(p.PropertyType))
-                {
-                    jsonProperty.ReferenceLoopHandling = ReferenceLoopHandling.Serialize;
-                    jsonProperty.Converter = JsonSerializer.ObjectConverter;
-                }
+                SetupProperty(jsonProperty, p.PropertyType, attributes);
 
                 result.Add(jsonProperty);
             }

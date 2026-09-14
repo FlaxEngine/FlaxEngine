@@ -14,6 +14,8 @@ namespace FlaxEditor.CustomEditors
     [HideInEditor]
     public class DictionaryValueContainer : ValueContainer
     {
+        private readonly object[] _attributes;
+
         /// <summary>
         /// The key in the collection.
         /// </summary>
@@ -24,9 +26,11 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         /// <param name="elementType">Type of the collection elements.</param>
         /// <param name="key">The key.</param>
-        public DictionaryValueContainer(ScriptType elementType, object key)
+        /// <param name="attributes">The dictionary property attributes to inherit.</param>
+        public DictionaryValueContainer(ScriptType elementType, object key, object[] attributes = null)
         : base(ScriptMemberInfo.Null, elementType)
         {
+            _attributes = attributes;
             Key = key;
         }
 
@@ -36,8 +40,9 @@ namespace FlaxEditor.CustomEditors
         /// <param name="elementType">Type of the collection elements.</param>
         /// <param name="key">The key.</param>
         /// <param name="values">The collection values.</param>
-        public DictionaryValueContainer(ScriptType elementType, object key, ValueContainer values)
-        : this(elementType, key)
+        /// <param name="attributes">The dictionary property attributes to inherit.</param>
+        public DictionaryValueContainer(ScriptType elementType, object key, ValueContainer values, object[] attributes = null)
+        : this(elementType, key, attributes)
         {
             Capacity = values.Count;
             for (int i = 0; i < values.Count; i++)
@@ -122,6 +127,12 @@ namespace FlaxEditor.CustomEditors
                 _referenceValue = v[Key];
                 _hasReferenceValue = true;
             }
+        }
+
+        /// <inheritdoc />
+        public override object[] GetAttributes()
+        {
+            return _attributes ?? base.GetAttributes();
         }
     }
 }

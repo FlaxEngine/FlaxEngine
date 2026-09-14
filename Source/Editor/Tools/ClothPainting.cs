@@ -231,7 +231,7 @@ namespace FlaxEngine.Tools
 
         public override bool IsControllingMouse => IsPainting;
 
-        public override BoundingSphere FocusBounds => _cloth?.Sphere ?? base.FocusBounds;
+        public override BoundingSphere FocusBounds => _cloth?.BoundingSphere ?? base.FocusBounds;
 
         public override void Update(float dt)
         {

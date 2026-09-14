@@ -198,6 +198,7 @@ namespace FlaxEngine.Json
             settings.Converters.Add(new SceneReferenceConverter());
             settings.Converters.Add(new SoftObjectReferenceConverter());
             settings.Converters.Add(new SoftTypeReferenceConverter());
+            settings.Converters.Add(new ScriptingObjectInterfaceReferenceConverter());
             settings.Converters.Add(new BehaviorKnowledgeSelectorAnyConverter());
             settings.Converters.Add(new ControlReferenceConverter());
             settings.Converters.Add(new MarginConverter());
@@ -619,83 +620,33 @@ namespace FlaxEngine.Json
         }
 
         /// <summary>
-        /// Parses the given object identifier represented in the internal serialization format.
+        /// Tries to parse the given object identifier represented in the internal serialization format.
         /// </summary>
         /// <param name="str">The ID string.</param>
         /// <param name="id">The identifier.</param>
-        public static unsafe void ParseID(string str, out Guid id)
+        /// <returns>True if cannot parse text, otherwise false</returns>
+        public static unsafe bool ParseID(string str, out Guid id)
         {
+            bool result = true;
             GuidInterop g;
-
-            // Broken after VS 15.5
-            /*fixed (char* a = str)
+            if (str != null && str.Length == 32)
             {
-                char* b = a + 8;
-                char* c = b + 8;
-                char* d = c + 8;
-
-                ParseHex(a, 8, out g.A);
-                ParseHex(b, 8, out g.B);
-                ParseHex(c, 8, out g.C);
-                ParseHex(d, 8, out g.D);
-            }*/
-
-            // Temporary fix (not using raw char* pointer)
-            ParseHex(str, 0, 8, out g.A);
-            ParseHex(str, 8, 8, out g.B);
-            ParseHex(str, 16, 8, out g.C);
-            ParseHex(str, 24, 8, out g.D);
-
-            id = *(Guid*)&g;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void ParseHex(char* str, int length, out uint result)
-        {
-            uint sum = 0;
-            char* p = str;
-            char* end = str + length;
-
-            if (*p == '0' && *(p + 1) == 'x')
-                p += 2;
-
-            while (p < end && *p != 0)
-            {
-                int c = *p - '0';
-
-                if (c < 0 || c > 9)
-                {
-                    c = char.ToLower(*p) - 'a' + 10;
-                    if (c < 10 || c > 15)
-                    {
-                        result = 0;
-                        return;
-                    }
-                }
-
-                sum = 16 * sum + (uint)c;
-
-                p++;
+                // Matches Flax Guid parsing of FormatType::N
+                result = ParseHex(str, 0, 8, out g.A) ||
+                         ParseHex(str, 8, 8, out g.B) ||
+                         ParseHex(str, 16, 8, out g.C) ||
+                         ParseHex(str, 24, 8, out g.D);
             }
-
-            result = sum;
+            id = *(Guid*)&g;
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void ParseHex(string str, int start, int length, out uint result)
+        internal static bool ParseHex(string str, int start, int length, out uint result)
         {
             uint sum = 0;
             int p = start;
             int end = start + length;
-
-            if (str.Length < end)
-            {
-                result = 0;
-                return;
-            }
-
-            if (str[p] == '0' && str[p + 1] == 'x')
-                p += 2;
 
             while (p < end && str[p] != 0)
             {
@@ -707,16 +658,16 @@ namespace FlaxEngine.Json
                     if (c < 10 || c > 15)
                     {
                         result = 0;
-                        return;
+                        return true;
                     }
                 }
 
                 sum = 16 * sum + (uint)c;
-
                 p++;
             }
 
             result = sum;
+            return p != end;
         }
     }
 }

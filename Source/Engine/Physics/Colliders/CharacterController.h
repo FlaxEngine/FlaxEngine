@@ -209,9 +209,9 @@ public:
 
 public:
     /// <summary>
-    /// Moves the character with the given speed. Gravity is automatically applied. It will slide along colliders. Result collision flags is the summary of collisions that occurred during the Move.
+    /// Moves the character with the given speed. Gravity is automatically applied. The speed is multipled by Time.DeltaTime internally. It will slide along colliders. Result collision flags is the summary of collisions that occurred during the Move.
     /// </summary>
-    /// <param name="speed">The movement speed (in units/s).</param>
+    /// <param name="speed">The movement speed (in units/s). The speed is multipled by Time.DeltaTime internally.</param>
     /// <returns>The collision flags. It can be used to trigger various character animations.</returns>
     API_FUNCTION() CollisionFlags SimpleMove(const Vector3& speed);
 

@@ -44,9 +44,9 @@ BoundingBox SceneNavigation::GetNavigationBounds()
     if (Volumes.IsEmpty())
         return BoundingBox::Empty;
     PROFILE_CPU_NAMED("GetNavigationBounds");
-    auto box = Volumes[0]->GetBox();
+    auto box = Volumes[0]->GetBoundingBox();
     for (int32 i = 1; i < Volumes.Count(); i++)
-        BoundingBox::Merge(box, Volumes[i]->GetBox(), box);
+        BoundingBox::Merge(box, Volumes[i]->GetBoundingBox(), box);
     return box;
 }
 
@@ -55,7 +55,7 @@ NavMeshBoundsVolume* SceneNavigation::FindNavigationBoundsOverlap(const Bounding
     NavMeshBoundsVolume* result = nullptr;
     for (int32 i = 0; i < Volumes.Count(); i++)
     {
-        if (Volumes[i]->GetBox().Intersects(bounds))
+        if (Volumes[i]->GetBoundingBox().Intersects(bounds))
         {
             result = Volumes[i];
             break;

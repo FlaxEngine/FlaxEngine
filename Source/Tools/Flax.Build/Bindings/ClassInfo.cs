@@ -18,6 +18,7 @@ namespace Flax.Build.Bindings
             "ManagedScriptingObject",
             "PersistentScriptingObject",
             "ScriptingObjectReference",
+            "ScriptingObjectInterfaceReference",
             "AssetReference",
             "BinaryAsset",
             "SceneObject",

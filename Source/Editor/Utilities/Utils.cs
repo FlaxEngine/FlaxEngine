@@ -387,7 +387,7 @@ namespace FlaxEditor.Utilities
                 transforms[i] = nodes[i].Transform;
                 if (nodes[i] is ActorNode actorNode)
                 {
-                    bounds = BoundingBox.Merge(bounds, actorNode.Actor.BoxWithChildren);
+                    bounds = BoundingBox.Merge(bounds, actorNode.Actor.BoundingBoxWithChildren);
                 }
             }
             return transforms;
@@ -831,6 +831,24 @@ namespace FlaxEditor.Utilities
                     property.SetValue(obj, value);
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets the type name for UI. Removes unnecessary characters and filters text. Makes it more user-friendly.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <returns>The result.</returns>
+        public static string GetTypeNameUI(Scripting.ScriptType type)
+        {
+            var name = type.ToString();
+
+            // Don't format interfaces to maintain code-name (eg. prefix 'I')
+            if (type.IsInterface)
+                return name;
+            if (type.IsGenericType && name.StartsWith("ScriptingObjectInterfaceReference", StringComparison.Ordinal))
+                return type.GetGenericArguments()[0].GetTypeDisplayName();
+
+            return GetPropertyNameUI(name);
         }
 
         /// <summary>
