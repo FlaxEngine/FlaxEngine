@@ -216,8 +216,8 @@ struct ClothSettings
             clothTrans.LocalToWorld(c, c);
 
         // Setup bounds
-        BoundingBox::FromPoints(boundsCorners, 8, const_cast<BoundingBox&>(Actor->GetBox()));
-        BoundingSphere::FromBox(Actor->GetBox(), const_cast<BoundingSphere&>(Actor->GetSphere()));
+        BoundingBox::FromPoints(boundsCorners, 8, const_cast<BoundingBox&>(Actor->GetBoundingBox()));
+        BoundingSphere::FromBox(Actor->GetBoundingBox(), const_cast<BoundingSphere&>(Actor->GetBoundingSphere()));
         return false;
     }
 };

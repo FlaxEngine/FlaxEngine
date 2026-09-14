@@ -555,7 +555,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 var options = Editor.Instance.Options.Options.General;
                 if (options.AutoRebuildNavMesh)
                 {
-                    Navigation.BuildNavMesh(collider.Box, options.AutoRebuildNavMeshTimeoutMs);
+                    Navigation.BuildNavMesh(collider.BoundingBox, options.AutoRebuildNavMeshTimeoutMs);
                 }
             }
         }
@@ -572,7 +572,7 @@ namespace FlaxEditor.SceneGraph.Actors
             var viewBounds = sceneContext.Viewport.ViewFrustum;
             foreach (var s in splines)
             {
-                var contains = viewBounds.Contains(s.EditorBox);
+                var contains = viewBounds.Contains(s.EditorBoundingBox);
                 if (contains == ContainmentType.Contains || contains == ContainmentType.Intersects)
                     result.Add(s);
             }

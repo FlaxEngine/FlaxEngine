@@ -23,6 +23,8 @@ public:
     AssetReference<CollisionData> CollisionData;
 
 private:
+    bool _isChangingCollisionData = false;
+
     void OnCollisionDataChanged();
     void OnCollisionDataLoaded();
 

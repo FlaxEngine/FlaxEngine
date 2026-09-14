@@ -29,7 +29,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 if (value is NavMeshBoundsVolume volume)
                 {
-                    Navigation.BuildNavMesh(volume.Box, volume.Scene);
+                    Navigation.BuildNavMesh(volume.BoundingBox, volume.Scene);
                     Editor.Instance.Scene.MarkSceneEdited(volume.Scene);
                 }
             }

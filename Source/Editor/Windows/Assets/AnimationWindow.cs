@@ -137,7 +137,7 @@ namespace FlaxEditor.Windows.Assets
                     {
                         // Focus model
                         value.WaitForLoaded(500);
-                        Window._preview.ViewportCamera.SetArcBallView(Window._preview.PreviewActor.Sphere);
+                        Window._preview.ViewportCamera.SetArcBallView(Window._preview.PreviewActor.BoundingSphere);
                     }
 
                     if (EnablePreviewModelCache)

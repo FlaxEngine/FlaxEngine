@@ -333,7 +333,7 @@ void Camera::BeginPlay(SceneBeginData* data)
     Actor::BeginPlay(data);
 }
 
-BoundingBox Camera::GetEditorBox() const
+BoundingBox Camera::GetEditorBoundingBox() const
 {
     const Vector3 size(100);
     const Vector3 pos = _transform.Translation + _transform.Orientation * Vector3::Forward * 30.0f;
