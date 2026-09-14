@@ -69,7 +69,7 @@ void FontAsset::unload(bool isReloading)
     _fontFile.Release();
     _virtualBold = nullptr;
     _virtualItalic = nullptr;
-    _virtualMSDF = nullptr;
+    _virtualRasterMode = nullptr;
 }
 
 AssetChunksFlag FontAsset::getChunksToPreload() const
@@ -101,6 +101,26 @@ FontFlags FontAsset::GetStyle() const
 void FontAsset::SetOptions(const FontOptions& value)
 {
     _options = value;
+    Invalidate();
+
+    if (_virtualBold)
+    {
+        auto options = _options;
+        options.Flags |= FontFlags::Bold;
+        _virtualBold->SetOptions(options);
+    }
+    if (_virtualItalic)
+    {
+        auto options = _options;
+        options.Flags |= FontFlags::Italic;
+        _virtualItalic->SetOptions(options);
+    }
+    if (_virtualRasterMode)
+    {
+        auto options = _options;
+        options.RasterMode = _options.RasterMode == FontRasterMode::MSDF ? FontRasterMode::Bitmap : FontRasterMode::MSDF;
+        _virtualRasterMode->SetOptions(options);
+    }
 }
 
 Font* FontAsset::CreateFont(float size)
@@ -156,20 +176,20 @@ FontAsset* FontAsset::GetItalic()
     return _virtualItalic;
 }
 
-FontAsset* FontAsset::GetMSDF()
+FontAsset* FontAsset::GetRasterMode(FontRasterMode rasterMode)
 {
     ScopeLock lock(Locker);
-    if (_options.RasterMode == FontRasterMode::MSDF)
+    if (_options.RasterMode == rasterMode)
         return this;
-    if (!_virtualMSDF)
+    if (!_virtualRasterMode)
     {
-        _virtualMSDF = Content::CreateVirtualAsset<FontAsset>();
-        _virtualMSDF->Init(_fontFile);
+        _virtualRasterMode = Content::CreateVirtualAsset<FontAsset>();
+        _virtualRasterMode->Init(_fontFile);
         auto options = _options;
-        options.RasterMode = FontRasterMode::MSDF;
-        _virtualMSDF->SetOptions(options);
+        options.RasterMode = rasterMode;
+        _virtualRasterMode->SetOptions(options);
     }
-    return _virtualMSDF;
+    return _virtualRasterMode;
 }
 
 bool FontAsset::Init(const BytesContainer& fontFile)
@@ -214,6 +234,12 @@ bool FontAsset::ContainsChar(Char c) const
 void FontAsset::Invalidate()
 {
     ScopeLock lock(Locker);
+    for (auto& entry : _characterCache)
+        FontManager::Invalidate(entry.Value);
+
+    _characterCache.Clear();
+
+    // Refresh cached metrics of all fonts created from this asset
     for (auto font : _fonts)
         font->Invalidate();
 }
