@@ -118,7 +118,7 @@ namespace Flax.Deps.Dependencies
             var globalConfig = string.Join(" ", configs);
 
             // Get the source
-            CloneGitRepoSingleBranch(root, "https://github.com/assimp/assimp.git", "master", "10df90ec144179f97803a382e4f07c0570665864");
+            CloneGitRepoSingleBranch(root, "https://github.com/assimp/assimp.git", "master", "392a658f9c271be965271f45e7521a1b80ea4392"); // 6.0.5
 
             foreach (var platform in options.Platforms)
             {
