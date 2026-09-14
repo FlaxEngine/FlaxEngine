@@ -14,7 +14,7 @@ class FLAXENGINE_API EmptyActor : public Actor
 public:
     // [Actor]
 #if USE_EDITOR
-    BoundingBox GetEditorBox() const override;
+    BoundingBox GetEditorBoundingBox() const override;
 #endif
 
 protected:

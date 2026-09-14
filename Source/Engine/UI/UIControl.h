@@ -18,7 +18,7 @@ private:
 public:
     // [Actor]
 #if USE_EDITOR
-    BoundingBox GetEditorBox() const override;
+    BoundingBox GetEditorBoundingBox() const override;
 #endif
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

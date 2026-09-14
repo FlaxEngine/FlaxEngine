@@ -37,7 +37,7 @@ struct FLAXENGINE_API VTableFunctionInjector
 
 #if USE_NETCORE
 #define ADD_INTERNAL_CALL(fullName, method)
-#define DEFINE_INTERNAL_CALL(returnType) extern "C" DLLEXPORT returnType
+#define DEFINE_INTERNAL_CALL(returnType) extern "C" DLLEXPORT USED returnType
 #else
 extern "C" FLAXENGINE_API void mono_add_internal_call(const char* name, const void* method);
 #define ADD_INTERNAL_CALL(fullName, method) mono_add_internal_call(fullName, (const void*)method)

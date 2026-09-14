@@ -487,7 +487,7 @@ namespace FlaxEditor.Tools
         public override bool IsControllingMouse => IsPainting;
 
         /// <inheritdoc />
-        public override BoundingSphere FocusBounds => _selectedModel != null ? _selectedModel.Sphere : base.FocusBounds;
+        public override BoundingSphere FocusBounds => _selectedModel != null ? _selectedModel.BoundingSphere : base.FocusBounds;
 
         /// <inheritdoc />
         public override void Update(float dt)
@@ -598,7 +598,7 @@ namespace FlaxEditor.Tools
                     var vertexScale = Mathf.Lerp(0.005f, 0.01f, Mathf.Saturate(distanceScale));
                     var modelScaleMatrix = Matrix.Scaling(_gizmoMode.PreviewVertexSize * vertexScale);
                     var brushSphere = new BoundingSphere(_hitLocation, _gizmoMode.BrushSize * 0.5f);
-                    var lodIndex = _gizmoMode.ModelLOD == -1 ? RenderTools.ComputeModelLOD(_selectedModel.Model, ref renderContext.View.Position, (float)_selectedModel.Sphere.Radius, ref renderContext) : _gizmoMode.ModelLOD;
+                    var lodIndex = _gizmoMode.ModelLOD == -1 ? RenderTools.ComputeModelLOD(_selectedModel.Model, ref renderContext.View.Position, (float)_selectedModel.BoundingSphere.Radius, ref renderContext) : _gizmoMode.ModelLOD;
                     lodIndex = Mathf.Clamp(lodIndex, 0, meshDatas.Length - 1);
                     var lodData = meshDatas[lodIndex];
                     if (lodData != null)

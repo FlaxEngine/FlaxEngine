@@ -479,7 +479,7 @@ public:
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
     void OnDebugDraw() override;
-    BoundingBox GetEditorBox() const override;
+    BoundingBox GetEditorBoundingBox() const override;
 #endif
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;

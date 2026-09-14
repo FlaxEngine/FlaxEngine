@@ -251,7 +251,7 @@ struct NavSceneRasterizer
                 return;
             PROFILE_CPU_NAMED("SphereCollider");
 
-            const BoundingSphere sphere = sphereCollider->GetSphere();
+            const BoundingSphere sphere = sphereCollider->GetBoundingSphere();
             TriangulateSphere(VertexBuffer, IndexBuffer, sphere);
             RasterizeTriangles();
         }
@@ -261,7 +261,7 @@ struct NavSceneRasterizer
                 return;
             PROFILE_CPU_NAMED("CapsuleCollider");
 
-            const BoundingBox box = capsuleCollider->GetBox();
+            const BoundingBox box = capsuleCollider->GetBoundingBox();
             TriangulateBox(VertexBuffer, IndexBuffer, box);
             RasterizeTriangles();
         }
@@ -411,7 +411,7 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
                 for (Actor* actor : scene->Navigation.Actors)
                 {
                     BoundingBox actorBoxNavMesh;
-                    BoundingBox::Transform(actor->GetBox(), rasterizer.WorldToNavMesh, actorBoxNavMesh);
+                    BoundingBox::Transform(actor->GetBoundingBox(), rasterizer.WorldToNavMesh, actorBoxNavMesh);
                     if (actorBoxNavMesh.Intersects(rasterizer.TileBoundsNavMesh) &&
                         actor->IsActiveInHierarchy() &&
                         EnumHasAllFlags(actor->GetStaticFlags(), StaticFlags::Navigation))
@@ -963,10 +963,10 @@ void BuildDirtyBounds(Scene* scene, NavMesh* navMesh, const BoundingBox& dirtyBo
         for (const NavMeshBoundsVolume* volume : scene->Navigation.Volumes)
         {
             if (!volume->AgentsMask.IsNavMeshSupported(navMesh->Properties) ||
-                !volume->GetBox().Intersects(dirtyBoundsNavMesh))
+                !volume->GetBoundingBox().Intersects(dirtyBoundsNavMesh))
                 continue;
             auto& bounds = volumes.AddOne();
-            BoundingBox::Transform(volume->GetBox(), worldToNavMesh, bounds);
+            BoundingBox::Transform(volume->GetBoundingBox(), worldToNavMesh, bounds);
         }
 
         Array<TileId> unusedTiles;

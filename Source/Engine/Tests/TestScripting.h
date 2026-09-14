@@ -5,7 +5,9 @@
 #include "Engine/Core/ISerializable.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Scripting/ScriptingObject.h"
+#include "Engine/Scripting/ScriptingObjectInterfaceReference.h"
 #include "Engine/Scripting/SerializableScriptingObject.h"
 #include "Engine/Scripting/SoftTypeReference.h"
 #include "Engine/Content/SceneReference.h"
@@ -178,6 +180,9 @@ public:
     // Test struct
     API_FIELD() TestStruct SimpleStruct;
 
+    // Test interface reference
+    API_FIELD() ScriptingObjectInterfaceReference<ITestInterface> InterfaceRef;
+
     // Test event
     API_EVENT() Delegate<int32, Float3, const String&, String&, TestStruct&, const Array<TestStruct>&, Array<TestStruct>&> SimpleEvent;
 
@@ -199,6 +204,24 @@ public:
 
     // Test nameless arguments
     API_FUNCTION() void TestNamelessArguments(int32, float, bool){}
+
+    // Test pass interface ref in function
+    API_FUNCTION() ScriptingObjectInterfaceReference<ITestInterface> TestPassInterface(ScriptingObjectInterfaceReference<ITestInterface> param1) const
+    {
+        return param1;
+    }
+
+    // Test pass interface ref array in function
+    API_FUNCTION() Array<ScriptingObjectInterfaceReference<ITestInterface>> TestPassInterfaceArray(Array<ScriptingObjectInterfaceReference<ITestInterface>> param1) const
+    {
+        return param1;
+    }
+
+    // Test pass interface ref dictionary in function
+    API_FUNCTION() Dictionary<String, ScriptingObjectInterfaceReference<ITestInterface>> TestPassInterfaceDictionary(Dictionary<String, ScriptingObjectInterfaceReference<ITestInterface>> param1) const
+    {
+        return param1;
+    }
 
     int32 TestInterfaceMethod(const String& str) override
     {
