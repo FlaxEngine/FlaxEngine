@@ -170,14 +170,6 @@ public:
     }
 
     template<typename T>
-    FORCE_INLINE void Write(const SoftObjectInterfaceReference<T>& v)
-    {
-        uint32 id[4];
-        v.CopyID(id);
-        WriteBytes(id, sizeof(id));
-    }
-
-    template<typename T>
     FORCE_INLINE void Write(const AssetReference<T>& v)
     {
         Write(v.Get());

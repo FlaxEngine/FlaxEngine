@@ -19,7 +19,6 @@ namespace Flax.Build.Bindings
             "PersistentScriptingObject",
             "ScriptingObjectReference",
             "ScriptingObjectInterfaceReference",
-            "SoftObjectInterfaceReference",
             "AssetReference",
             "BinaryAsset",
             "SceneObject",

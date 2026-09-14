@@ -18,8 +18,6 @@ class ScriptingObjectInterfaceReference;
 template<typename T>
 class SoftObjectReference;
 template<typename T>
-class SoftObjectInterfaceReference;
-template<typename T>
 class AssetReference;
 template<typename T>
 class WeakAssetReference;
@@ -543,27 +541,6 @@ namespace Serialization
     }
     template<typename T>
     inline void Deserialize(ISerializable::DeserializeStream& stream, SoftObjectReference<T>& v, ISerializeModifier* modifier)
-    {
-        Guid id;
-        Deserialize(stream, id, modifier);
-        modifier->IdsMapping.TryGet(id, id);
-        v = id;
-    }
-
-    // Soft Object Interface Reference
-
-    template<typename T>
-    inline bool ShouldSerialize(const SoftObjectInterfaceReference<T>& v, const void* otherObj)
-    {
-        return !otherObj || ShouldSerializeRef(v.GetObject(), ((SoftObjectInterfaceReference<T>*)otherObj)->GetObject());
-    }
-    template<typename T>
-    inline void Serialize(ISerializable::SerializeStream& stream, const SoftObjectInterfaceReference<T>& v, const void* otherObj)
-    {
-        stream.Guid(v.GetID());
-    }
-    template<typename T>
-    inline void Deserialize(ISerializable::DeserializeStream& stream, SoftObjectInterfaceReference<T>& v, ISerializeModifier* modifier)
     {
         Guid id;
         Deserialize(stream, id, modifier);

@@ -150,14 +150,6 @@ public:
     }
 
     template<typename T>
-    FORCE_INLINE void Read(SoftObjectInterfaceReference<T>& v)
-    {
-        uint32 id[4];
-        ReadBytes(id, sizeof(id));
-        v.Set(*(Guid*)id);
-    }
-
-    template<typename T>
     FORCE_INLINE void Read(AssetReference<T>& v)
     {
         uint32 id[4];
