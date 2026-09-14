@@ -17,6 +17,17 @@
 #include "../transcoder/basisu_astc_helpers.h"
 #include "basisu_etc.h"
 
+// Forward declarations for transcode_ktx2_to_dds() below. The full transcoder
+// header is only included by basisu_gpu_texture.cpp, keeping this header light.
+// (transcoder_texture_format is a plain int-backed enum class, so an opaque
+// forward declaration is valid here.)
+namespace basist
+{
+	class ktx2_transcoder;
+	enum class transcoder_texture_format;
+	enum class dds_format;
+}
+
 namespace basisu
 {
 	// GPU texture "image"
@@ -125,16 +136,81 @@ namespace basisu
 
 	typedef basisu::vector<gpu_image> gpu_image_vec;
 
+	// A mip chain (or single image) of uncompressed RGBA images. Used by
+	// write_uncompressed_rgba32_dds() as one array slice / cubemap face.
+	typedef basisu::vector<image> image_vec;
+
 	// KTX1 file writing - compatible with ARM's astcenc tool, and some other tools.
 	// Note astc_linear_flag used to be always effectively true in older code. It's ignored for ASTC HDR formats.
 	bool create_ktx_texture_file(uint8_vec &ktx_data, const basisu::vector<gpu_image_vec>& gpu_images, bool cubemap_flag, bool astc_srgb_flag);
 	
 	bool does_dds_support_format(texture_format fmt);
+
+	// Returns true if create_ktx_texture_file() can write this (compressed) texture
+	// format. Mirrors that writer's supported set, minus the formats we don't expose
+	// for KTX export right now (ATC, FXT1, and all uncompressed formats).
+	bool does_ktx_support_format(texture_format fmt);
 	bool write_dds_file(uint8_vec& dds_data, const basisu::vector<gpu_image_vec>& gpu_images, bool cubemap_flag, bool use_srgb_format);
 	bool write_dds_file(const char* pFilename, const basisu::vector<gpu_image_vec>& gpu_images, bool cubemap_flag, bool use_srgb_format);
 
+	// Writes uncompressed 32-bit RGBA image data to an in-memory .DDS blob.
+	// images is indexed [array-slice][mip level]. For cubemaps and cubemap arrays
+	// the outer slice count must be a multiple of 6, ordered layer-major then the
+	// six faces, and cubemap_flag must be true; for 2D textures and 2D arrays
+	// cubemap_flag is false and the outer count is the array size (1 for a plain
+	// 2D texture). Every slice must have the same mip count and the same level-0
+	// dimensions, and each mip level must be floor(prev/2) (min 1). Supports 2D,
+	// 2D arrays, cubemaps, and cubemap arrays, with or without a mip chain.
+	// Validates all of the above; returns false (and clears dds_data) on any
+	// inconsistency or write failure. Reusable on its own (a sibling to
+	// write_dds_file for the uncompressed RGBA case).
+	bool write_uncompressed_rgba32_dds(uint8_vec& dds_data, const basisu::vector<image_vec>& images, bool cubemap_flag, bool use_srgb_format);
+
+	// Transcodes the entire contents of an init()'d ktx2_transcoder (every mip
+	// level, array layer, and cubemap face) to fmt and serializes a Microsoft
+	// .DDS (DirectDraw Surface) blob into dds_data. fmt MUST be one of the DirectX
+	// BC formats writable to DDS (cTFBC1_RGB, cTFBC3_RGBA, cTFBC4_R, cTFBC5_RG,
+	// cTFBC6H, cTFBC7_RGBA) or uncompressed cTFRGBA32; any other format fails.
+	// Supports 2D, 2D arrays, cubemaps, and cubemap arrays (with or without mips).
+	// The transcoder need only have been init()'d -- this calls start_transcoding()
+	// itself. Returns false (and clears dds_data) on any error.
+	// srgb_mode selects whether the sRGB DDS format variants are used: -1 = auto
+	// (follow the KTX2's transfer function via transcoder.is_srgb()), 0 = force
+	// linear/UNORM, 1 = force sRGB. Ignored for formats that have no sRGB variant
+	// (BC4/BC5/BC6H/etc.). decode_flags is passed straight to
+	// ktx2_transcoder::transcode_image_level() (a cDecodeFlags* bitmask), letting the
+	// caller control the transcode -- e.g. force/disable deblocking, high quality, etc.
+	bool transcode_ktx2_to_dds(basist::ktx2_transcoder& transcoder, basist::transcoder_texture_format fmt, uint8_vec& dds_data, int srgb_mode = -1, uint32_t decode_flags = 0);
+
+	// Like transcode_ktx2_to_dds(), but serializes a KTX1 (.ktx) file instead, via
+	// create_ktx_texture_file(). COMPRESSED formats only -- BC1-7, ETC1/ETC2,
+	// ETC2 EAC R11/RG11, PVRTC1, PVRTC2 (RGBA), ASTC LDR/HDR, UASTC; uncompressed
+	// (RGBA32/half/float) is not supported here yet. fmt must pass
+	// does_ktx_support_format(). Supports 2D, 2D arrays, cubemaps, and cubemap
+	// arrays (with or without mips). srgb_mode is as above; it selects the sRGB GL
+	// enum variants for the formats that have them (BC1/BC3/BC7, ETC2, PVRTC1, ASTC LDR)
+	// and is ignored for formats with no sRGB variant (BC4/BC5/BC6H/ETC1/PVRTC2). decode_flags is
+	// passed straight to transcode_image_level() (a cDecodeFlags* bitmask). The
+	// transcoder need only have been init()'d. Returns false (and clears ktx_data)
+	// on any error.
+	bool transcode_ktx2_to_ktx(basist::ktx2_transcoder& transcoder, basist::transcoder_texture_format fmt, uint8_vec& ktx_data, int srgb_mode = -1, uint32_t decode_flags = 0);
+
 	// Currently reads 2D 32bpp RGBA, 16-bit HALF RGBA, or 32-bit FLOAT RGBA, with or without mipmaps. No tex arrays or cubemaps, yet.
 	bool read_uncompressed_dds_file(const char* pFilename, basisu::vector<image>& ldr_mips, basisu::vector<imagef>& hdr_mips);
+
+	// Cracks open a .DDS file with tinydds (header only -- no pixel decode) and
+	// prints its high-level info to stdout: texture type (2D / 2D array / cubemap /
+	// cubemap array / 3D), dimensions, mip level count, array slice count, and the
+	// format (a friendly name for BC1-7 and the common LDR/HDR uncompressed formats,
+	// otherwise the raw hex value). Intended as a quick development sanity check.
+	bool print_dds_info(const char* pFilename);
+
+	// Reads a KTX1 (.ktx) file's 64-byte header (endian-swapping the fields if the
+	// file's endianness marker says so) and prints them to stdout: GL type/format/
+	// internalFormat (+ a friendly name for the common compressed formats),
+	// dimensions, array elements, faces, mip levels, and key-value-data size. Header
+	// only -- it does not parse the key/value data or image data. Development aid.
+	bool print_ktx_info(const char* pFilename);
 
 	// Supports DDS and KTX
 	bool write_compressed_texture_file(const char *pFilename, const basisu::vector<gpu_image_vec>& g, bool cubemap_flag, bool use_srgb_format);
@@ -143,21 +219,15 @@ namespace basisu
 	
 	bool write_3dfx_out_file(const char* pFilename, const gpu_image& gi);
 
+	// Returns the ASCII name of a texture_format enum value, e.g. "BC7", "ASTC_LDR_4x4", "ETC1".
+	const char* get_texture_format_name(texture_format fmt);
+
+	// Human-readable name for the exact physical format stored in a .DDS file (basist::dds_transcoder::get_dds_format()).
+	const char* get_dds_format_string(basist::dds_format fmt);
+
 	// GPU texture block unpacking
 	// For ETC1, use in basisu_etc.h: bool unpack_etc1(const etc_block& block, color_rgba *pDst, bool preserve_alpha)
 	void unpack_etc2_eac(const void *pBlock_bits, color_rgba *pPixels);
-	bool unpack_bc1(const void *pBlock_bits, color_rgba *pPixels, bool set_alpha);
-	void unpack_bc4(const void *pBlock_bits, uint8_t *pPixels, uint32_t stride);
-	bool unpack_bc3(const void *pBlock_bits, color_rgba *pPixels);
-	void unpack_bc5(const void *pBlock_bits, color_rgba *pPixels);
-
-#if 0
-	bool unpack_bc7_mode6(const void *pBlock_bits, color_rgba *pPixels);
-	int determine_bc7_mode(const void* pBlock);
-	int determine_bc7_mode_4_index_mode(const void* pBlock);
-	int determine_bc7_mode_4_or_5_rotation(const void* pBlock);
-	bool unpack_bc7(const void* pBlock_bits, color_rgba* pPixels); // full format
-#endif
 
 	bool unpack_bc6h(const void* pSrc_block, void* pDst_block, bool is_signed, uint32_t dest_pitch_in_halfs = 4 * 3); // full format, outputs HALF values, RGB texels only (not RGBA)
 	void unpack_atc(const void* pBlock_bits, color_rgba* pPixels);

@@ -52,14 +52,10 @@ namespace basisu
 	void basisu_encoder_deinit();
 
 	// basisu_kernels_sse.cpp - will be a no-op and g_cpu_supports_sse41 will always be false unless compiled with BASISU_SUPPORT_SSE=1
-	extern void detect_sse41();
-
-#if BASISU_SUPPORT_SSE
 	extern bool g_cpu_supports_sse41;
-#else
-	const bool g_cpu_supports_sse41 = false;
-#endif
 
+	extern void detect_sse41();
+		
 	void error_vprintf(const char* pFmt, va_list args);
 	void error_printf(const char *pFmt, ...);
 	
@@ -75,7 +71,6 @@ namespace basisu
 	void platform_sleep(uint32_t ms);
 	
 	// Helpers
-
 	inline uint8_t clamp255(int32_t i)
 	{
 		return (uint8_t)((i & 0xFFFFFF00U) ? (~(i >> 31)) : i);
@@ -114,6 +109,7 @@ namespace basisu
 		return (int)(x + 0.5f);
 	}
 
+	// basic float to int (float_to_int) with rounding without std::roundf overhead
 	inline int fast_roundf_int(float x)
 	{
 		return (x >= 0.0f) ? (int)(x + 0.5f) : (int)(x - 0.5f);
@@ -123,6 +119,12 @@ namespace basisu
 	{
 		int xi = (int)x;  // Truncate towards zero
 		return ((x < 0.0f) && (x != (float)xi)) ? (xi - 1) : xi;
+	}
+
+	inline uint32_t extract_bits(uint32_t val, uint32_t ofs, uint32_t len)
+	{
+		assert((len) && (len < 32) && ((ofs + len) <= 32));
+		return (val >> ofs) & ((1u << len) - 1u);
 	}
 
 	inline uint64_t read_bits(const uint8_t* pBuf, uint32_t& bit_offset, uint32_t codesize)
@@ -179,18 +181,28 @@ namespace basisu
 	inline int bounds_check_incl(int v, int l, int h) { (void)v; (void)l; (void)h; assert(v >= l && v <= h); return v; }
 	inline uint32_t bounds_check_incl(uint32_t v, uint32_t l, uint32_t h) { (void)v; (void)l; (void)h; assert(v >= l && v <= h); return v; }
 
+	inline bool equal_abs_tol(float a, float b, float rel_tol)
+	{
+		return fabsf(a - b) <= rel_tol;
+	}
+
+	inline bool equal_abs_tol(double a, double b, double rel_tol)
+	{
+		return fabs(a - b) <= rel_tol;
+	}
+
 	inline bool equal_rel_tol(float a, float b, float rel_tol)
 	{
-		float diff = std::fabs(a - b);
-		float max_abs = std::max(std::fabs(a), std::fabs(b));
-		return diff <= (max_abs * rel_tol);
+		const float diff = fabsf(a - b);
+		const float max_abs = basisu::maximum<float>(fabsf(a), fabsf(b));
+		return diff <= (rel_tol * basisu::maximum(1.0f, max_abs)); // near 0 use abs tol
 	}
 
 	inline bool equal_rel_tol(double a, double b, double rel_tol)
 	{
-		double diff = std::fabs(a - b);
-		double max_abs = std::max(std::fabs(a), std::fabs(b));
-		return diff <= (max_abs * rel_tol);
+		const double diff = fabs(a - b);
+		const double max_abs = basisu::maximum<double>(fabs(a), fabs(b));
+		return diff <= (rel_tol * basisu::maximum<double>(1.0f, max_abs)); // near 0 use abs tol
 	}
 
 	inline uint32_t clz(uint32_t x)
@@ -505,6 +517,14 @@ namespace basisu
 			vec res;
 			for (uint32_t i = 0; i < N; i++)
 				res[i] = maximum(a[i], b[i]);
+			return res;
+		}
+
+		static vec component_sqrt(const vec& a)
+		{
+			vec res;
+			for (uint32_t i = 0; i < N; i++)
+				res[i] = sqrt(a[i]);
 			return res;
 		}
 
@@ -1035,6 +1055,22 @@ namespace basisu
 		inline uint32_t get_bgra_uint32() const { return b | (g << 8) | (r << 16) | (a << 24); }
 		inline uint32_t get_rgba_uint32() const { return r | (g << 8) | (b << 16) | (a << 24); }
 
+		inline vec3F get_vec3F() const { return vec3F((float)r, (float)g, (float)b); }
+		inline vec4F get_vec4F() const { return vec4F((float)r, (float)g, (float)b, (float)a); }
+
+		inline uint32_t get_dist2(const color_rgba& p) const
+		{
+			return squarei(m_comps[0] - p[0]) + squarei(m_comps[1] - p[1]) + squarei(m_comps[2] - p[2]) + squarei(m_comps[3] - p[3]);
+		}
+
+		inline uint32_t get_weighted_dist2(const color_rgba& p, const uint32_t weights[4]) const
+		{
+			return squarei(m_comps[0] - p[0]) * (int)weights[0] + 
+				squarei(m_comps[1] - p[1]) * (int)weights[1] +
+				squarei(m_comps[2] - p[2]) * (int)weights[2] +
+				squarei(m_comps[3] - p[3]) * (int)weights[3];
+		}
+
 		inline basist::color32 get_color32() const
 		{
 			return basist::color32(r, g, b, a);
@@ -1371,26 +1407,49 @@ namespace basisu
 	class rand
 	{
 		std::mt19937 m_mt;
+		std::normal_distribution<float> m_norm;
 
 	public:
 		rand() {	}
 
-		rand(uint32_t s) { seed(s); }
-		void seed(uint32_t s) { m_mt.seed(s); }
+		inline explicit rand(uint32_t s) { seed(s); }
+
+		inline void seed(uint32_t s) { m_mt.seed(s); m_norm.reset(); }
 
 		// between [l,h]
-		int irand(int l, int h) { std::uniform_int_distribution<int> d(l, h); return d(m_mt); }
+		inline int irand(int l, int h) { std::uniform_int_distribution<int> d(l, h); return d(m_mt); }
 
-		uint32_t urand32() { return static_cast<uint32_t>(irand(INT32_MIN, INT32_MAX)); }
+		// p=[0,100]
+		inline bool iprob(int p) { assert((p >= 0) && (p <= 100)); return irand(0, 99) < p; }
+				
+		inline uint32_t urand32() { return std::uniform_int_distribution<uint32_t>(0, std::numeric_limits<uint32_t>::max())(m_mt);	}
 
-		bool bit() { return irand(0, 1) == 1; }
+		inline bool bit() { return irand(0, 1) == 1; }
 
-		uint8_t byte() { return static_cast<uint8_t>(urand32()); }
+		inline uint8_t byte() { return static_cast<uint8_t>(urand32()); }
 
 		// between [l,h)
-		float frand(float l, float h) { std::uniform_real_distribution<float> d(l, h); return d(m_mt); }
+		float frand(float l, float h) 
+		{ 
+			assert(l <= h);
 
-		float gaussian(float mean, float stddev) { std::normal_distribution<float> d(mean, stddev); return d(m_mt); }
+			if (l >= h)
+				return l;
+
+			std::uniform_real_distribution<float> d(l, h); 
+			float x = d(m_mt); 
+			
+			// paranoia for buggy implementations
+			if (x < l)
+				x = l;
+			else if (x >= h)
+				x = std::nextafter(h, l);
+
+			return x;
+		}
+				
+		// use standard N(0,1), scale manually
+		inline float gaussian(float mean, float stddev) { assert(stddev >= 0.0f); return mean + stddev * m_norm(m_mt); }
 	};
 
 	class priority_queue
@@ -3053,31 +3112,59 @@ namespace basisu
 		}
 
 		// Very straightforward blit with full clipping. Not fast, but it works.
-		image &blit(const image &src, int src_x, int src_y, int src_w, int src_h, int dst_x, int dst_y)
+		image &blit(const image &src, int src_x, int src_y, int src_w, int src_h, int dst_x, int dst_y, bool set_clipped_to_black = false)
 		{
-			for (int y = 0; y < src_h; y++)
+			if (set_clipped_to_black)
 			{
-				const int sy = src_y + y;
-				if (sy < 0)
-					continue;
-				else if (sy >= (int)src.get_height())
-					break;
-
-				for (int x = 0; x < src_w; x++)
+				for (int y = 0; y < src_h; y++)
 				{
-					const int sx = src_x + x;
-					if (sx < 0)
+					const int sy = src_y + y;
+					
+					for (int x = 0; x < src_w; x++)
+					{
+						const int sx = src_x + x;
+						
+						const bool clipped_flag = (sx < 0) || (sx >= (int)src.get_width()) || (sy < 0) || (sy >= (int)src.get_height());
+
+						set_clipped(dst_x + x, dst_y + y, clipped_flag ? g_black_color : src(sx, sy));
+					}
+				}
+			}
+			else
+			{
+				for (int y = 0; y < src_h; y++)
+				{
+					const int sy = src_y + y;
+					if (sy < 0)
 						continue;
-					else if (sx >= (int)src.get_width())
+					else if (sy >= (int)src.get_height())
 						break;
 
-					set_clipped(dst_x + x, dst_y + y, src(sx, sy));
+					for (int x = 0; x < src_w; x++)
+					{
+						const int sx = src_x + x;
+						if (sx < 0)
+							continue;
+						else if (sx >= (int)src.get_width())
+							break;
+
+						set_clipped(dst_x + x, dst_y + y, src(sx, sy));
+					}
 				}
 			}
 
 			return *this;
 		}
 
+		image& blit_clamped(const image& src, int src_x, int src_y, int src_w, int src_h, int dst_x, int dst_y)
+		{
+			for (int y = 0; y < src_h; y++)
+				for (int x = 0; x < src_w; x++)
+					set_clipped(dst_x + x, dst_y + y, src.get_clamped(src_x + x, src_y + y));
+
+			return *this;
+		}
+				
 		const image &extract_block_clamped(color_rgba *pDst, uint32_t src_x, uint32_t src_y, uint32_t w, uint32_t h) const
 		{
 			if (((src_x + w) > m_width) || ((src_y + h) > m_height))
@@ -3755,13 +3842,12 @@ namespace basisu
 	};
 
 	extern fast_linear_to_srgb g_fast_linear_to_srgb;
-		
+
 	// Image metrics
-		
+	
 	class image_metrics
 	{
 	public:
-		// TODO: Add ssim
 		uint32_t m_width, m_height;
 		double m_max, m_mean, m_mean_squared, m_rms, m_psnr, m_ssim;
 		bool m_has_neg, m_hf_mag_overflow, m_any_abnormal;
@@ -3810,6 +3896,70 @@ namespace basisu
 	};
 
 	void print_image_metrics(const image& a, const image& b);
+		
+	const float PSNR_HVS_LOSSLESS_DB = 100000.0f;
+
+	inline double psnr_hvs_calc_psnr(double mseh, double peak)
+	{
+		if (mseh <= 0.0f)
+			return PSNR_HVS_LOSSLESS_DB;
+
+		return 10.0f * std::log10((peak * peak) / mseh);
+	}
+
+	// To match the PSNR-HVS calcs in the Python code, for testing
+	// computes Y of BT.601 "studio swing" / "narrow range" YCbCr
+	inline uint8_t get_psnr_hvs_601_y(const color_rgba& c)
+	{
+		int r = c[0], g = c[1], b = c[2];
+		return (uint8_t)std::round(16.0f + 65.481f * (float)r * (1.0f / 255.0f) + 128.553f * (float)g * (1.0f / 255.0f) + 24.966f * (float)b * (1.0f / 255.0f));
+	}
+
+	inline float get_psnr_hvs_601_yf(const color_rgba& c)
+	{
+		float r = (float)c[0], g = (float)c[1], b = (float)c[2];
+		return (16.0f + (65.481f / 255.0f) * r + (128.553f / 255.0f) * g + (24.966f / 255.0f) * b) * (1.0f / 255.0f);
+	}
+
+	struct psnr_hvs_chan_metrics
+	{
+		double m_mseh_hvs;
+		double m_mseh_hvsm;
+		double m_psnr_hvs;
+		double m_psnr_hvsm;
+	};
+		
+	// if chan<0, computes in narrow range BT.601 Y
+	enum class psnr_hvs_channel_use : int
+	{
+		cUse601Y8Bit = -1,
+		cUse601YFloat = -2
+	};
+	bool psnr_hvs_compute_chan(const image& a, const image& b, int chan, psnr_hvs_chan_metrics& res);
+
+	struct psnr_hvs_metrics
+	{
+		psnr_hvs_chan_metrics m_y_601_8bit;
+		psnr_hvs_chan_metrics m_y_601_float;
+
+		psnr_hvs_chan_metrics m_chan[4];
+
+		psnr_hvs_chan_metrics m_rgb;
+		psnr_hvs_chan_metrics m_rgba;
+
+		bool m_valid;
+
+		psnr_hvs_metrics() { clear(); }
+
+		void clear()
+		{
+			clear_obj(*this);
+		}
+	};
+
+	bool psnr_hvs_compute_metrics(const image& a, const image& b, psnr_hvs_metrics &metrics);
+	void psnr_hvs_print_metrics(const psnr_hvs_metrics& metrics);
+	void print_psnr_hvs_image_metrics(const image& a, const image& b);
 
 	// Image saving/loading/resampling
 
@@ -3820,6 +3970,7 @@ namespace basisu
 	bool load_tga(const char* pFilename, image& img);
 	inline bool load_tga(const std::string &filename, image &img) { return load_tga(filename.c_str(), img); }
 
+	bool load_qoi(const uint8_t *pBuf, size_t buf_size, image &img);
 	bool load_qoi(const char* pFilename, image& img);
 
 	bool load_jpg(const char *pFilename, image& img);
@@ -3831,6 +3982,8 @@ namespace basisu
 	inline bool load_image(const std::string &filename, image &img) { return load_image(filename.c_str(), img); }
 
 	bool is_image_filename_hdr(const char* pFilename);
+
+	void convert_ldr_to_hdr_image(imagef& img, const image& ldr_img, bool ldr_srgb_to_linear, float linear_nit_multiplier = 1.0f, float ldr_black_bias = 0.0f);
 
 	// Supports .HDR and most (but not all) .EXR's (see TinyEXR).
 	bool load_image_hdr(const char* pFilename, imagef& img, bool ldr_srgb_to_linear = true, float linear_nit_multiplier = 1.0f, float ldr_black_bias = 0.0f);
@@ -3847,7 +4000,9 @@ namespace basisu
 		cHITPNGImage = 2,
 		cHITEXRImage = 3,
 		cHITHDRImage = 4,
-		cHITJPGImage = 5
+		cHITJPGImage = 5,
+		cHITQOIImage = 6,
+		cHITRGBA8Image = 7 // plain LDR/SDR image to be upconverted
 	};
 
 	bool load_image_hdr(const void* pMem, size_t mem_size, imagef& img, uint32_t width, uint32_t height, hdr_image_type img_type, bool ldr_srgb_to_linear, float linear_nit_multiplier = 1.0f, float ldr_black_bias = 0.0f);
@@ -3968,6 +4123,31 @@ namespace basisu
 	}
 
 	void fill_buffer_with_random_bytes(void *pBuf, size_t size, uint32_t seed = 1);
+
+	// Monte Carlo helper: returns num_samples random floats, every one inside the hard bound
+	// [-half_span, half_span], whose distribution targets a standard deviation of sigma.
+	//
+	// The distribution is a mixture of a scaled uniform "bulk" (k*Uniform[-H,H]) and a pair of
+	// symmetric "tails" placed at +/-(A*H). For small sigma the bulk alone carries the variance;
+	// for large sigma (above the uniform's own variance H^2/3) the tails are added so the target
+	// standard deviation can still be reached without ever exceeding the bound.
+	//
+	//   seed           0 => nondeterministic seed (std::random_device), otherwise deterministic.
+	//   min_tail_prob  minimum probability mass placed in the +/-edge tails (in [0,1]).
+	//   tail_amp_cap   max tail amplitude as a fraction of half_span (in [0,1]).
+	//   fix_tail_count if true, place exactly round(p*num_samples) tail samples instead of
+	//                  drawing each sample's tail/bulk choice randomly (lower-variance count).
+	//   recenter       if true, subtract the realized sample mean afterwards, then re-clamp to
+	//                  [-half_span, half_span].
+	std::vector<float> bounded_samples(
+		size_t num_samples,
+		float half_span,                 // H: hard bound, all returned samples lie in [-H, H]
+		float sigma,                     // target standard deviation (clamped to [0, H])
+		uint32_t seed = 0,
+		float min_tail_prob = 0.0f,
+		float tail_amp_cap = 1.0f,
+		bool fix_tail_count = false,
+		bool recenter = false);
 
 	const uint32_t cPixelBlockWidth = 4;
 	const uint32_t cPixelBlockHeight = 4;
@@ -4390,9 +4570,198 @@ namespace basisu
 	// simple non-perspective correct triangle rasterizer with texture mapping, useful for generating randomized test data
 	void draw_tri2(image& dst, const image* pTex, const tri2& tri, bool alpha_blend);
 
+	struct DirectionalKernel
+	{
+		basisu::vector<float> m_data; // row-major, size*size elements
+		int	m_size; // always odd, e.g. 7 means a 7x7 kernel
+	};
+	
+	DirectionalKernel make_directional_kernel(float angle_deg, float sigma_par, float sigma_perp = 0.5f);
+
+	void directional_gaussian_blur(const image& src_img, image& dst_img, float angle_deg, float sigma_par, float sigma_perp = 0.5f);
+
 	void set_num_wasi_threads(uint32_t num_threads);
 	int get_num_hardware_threads();
-								
+
+	bool display_astc_statistics(
+		const vector2D<astc_helpers::astc_block>& blocks,
+		uint32_t block_width, uint32_t block_height, uint32_t image_width, uint32_t image_height, bool verbose);
+
+	bool display_astc_statistics(
+		const vector2D<astc_helpers::log_astc_block>& blocks,
+		uint32_t block_width, uint32_t block_height, uint32_t image_width, uint32_t image_height, bool verbose);
+
+	enum convar_type
+	{
+		cConvarFloat,
+		cConvarInt
+	};
+
+	static inline const char* get_convar_type_string(convar_type t)
+	{
+		switch (t)
+		{
+		case cConvarFloat: return "float";
+		case cConvarInt: return "int";
+		default: assert(0); return "invalid";
+		}
+	}
+
+	// intended for development only
+	class convar;
+	
+	extern basisu::vector<convar*>& get_convars();
+
+	// instances MUST be at global scope, and last forever
+	class convar
+	{
+		std::string m_name;
+		convar_type m_type;
+
+		struct int_t
+		{
+			int m_cur, m_def, m_min, m_max;
+		};
+
+		struct float_t
+		{
+			float m_cur, m_def, m_min, m_max;
+		};
+
+		union
+		{
+			int_t m_int;
+			float_t m_float;
+		};
+
+	public:
+		convar(const char* pName, int def, int min_val, int max_val) : 
+			m_name(pName),
+			m_type(cConvarInt)
+		{
+			m_int.m_cur = def;
+			m_int.m_def = def;
+			m_int.m_min = min_val;
+			m_int.m_max = max_val;
+
+			size_t cur_idx;
+			if (!get_convars().find(this, cur_idx))
+				get_convars().push_back(this);
+		}
+
+		convar(const char* pName, float def, float min_val, float max_val) :
+			m_name(pName),
+			m_type(cConvarFloat)
+		{
+			m_float.m_cur = def;
+			m_float.m_def = def;
+			m_float.m_min = min_val;
+			m_float.m_max = max_val;
+
+			size_t cur_idx;
+			if (!get_convars().find(this, cur_idx))
+				get_convars().push_back(this);
+		}
+
+		~convar()
+		{
+			// do nothing, we assume global convars
+		}
+
+		const std::string& get_name() const { return m_name; }
+
+		std::string get_val_as_string() const 
+		{ 
+			std::string res;
+
+			if (m_type == cConvarFloat)
+			{
+				res = fmt_string("{}", m_float.m_cur);
+			}
+			else if (m_type == cConvarInt)
+			{
+				res = fmt_string("{}", m_int.m_cur);
+			}
+			else
+			{
+				assert(0);
+			}
+
+			return res;
+		}
+
+		convar_type get_type() const { return m_type; }
+
+		void set(float val)
+		{
+			if (m_type != cConvarFloat)
+			{
+				assert(0);
+				return;
+			}
+			m_float.m_cur = clamp<float>(val, m_float.m_min, m_float.m_max);
+		}
+
+		void set(int val)
+		{
+			if (m_type != cConvarInt)
+			{
+				assert(0);
+				return;
+			}
+			m_int.m_cur = clamp<int>(val, m_int.m_min, m_int.m_max);
+		}
+
+		float get_float() const
+		{
+			if (m_type != cConvarFloat)
+			{
+				assert(0);
+				return 0.0f;
+			}
+			return m_float.m_cur;
+		}
+
+		int get_int() const
+		{
+			if (m_type != cConvarInt)
+			{
+				assert(0);
+				return 0;
+			}
+			return m_int.m_cur;
+		}
+
+		void reset()
+		{
+			if (m_type == cConvarInt)
+				m_int.m_cur = m_int.m_def;
+			else
+			{
+				assert(m_type == cConvarFloat);
+				m_float.m_cur = m_float.m_def;
+			}
+		}
+
+		bool get_bool() const
+		{
+			if (m_type == cConvarInt)
+			{
+				return m_int.m_cur != 0;
+			}
+			else
+			{
+				assert(m_type == cConvarFloat);
+				return m_float.m_cur != 0.0f;
+			}
+		}
+	};
+
+	void list_convars();
+	void print_convar(const std::string& name);
+	void reset_convar(const std::string& name);
+	void set_convar(const std::string& name, const std::string &val);
+									
 } // namespace basisu
 
 #include "basisu_math.h"

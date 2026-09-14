@@ -1,6 +1,16 @@
 // File: basisu_math.h
 #pragma once
 
+// heavily uses static_assert, may not want this in regular builds
+//#define BASISU_FIXED_TESTS
+
+// The fixed-point helpers were moved to namespace basist (in the transcoder).
+// The self-test at the bottom of this file still exercises them, so pull them
+// in -- but only when the test is actually compiled.
+#ifdef BASISU_FIXED_TESTS
+#include "../transcoder/basisu_transcoder_internal.h"
+#endif
+
 // TODO: Would prefer this in the basisu namespace, but to avoid collisions with the existing vec/matrix classes I'm placing this in "bu_math".
 namespace bu_math
 {
@@ -2470,6 +2480,1057 @@ namespace bu_math
 		return result;
 	}
 
+	// Dynamic (heap-allocated) vector and matrix classes, templated on scalar type only.
+	// Row-major matrix storage, compatible with the static bu_math::vec/matrix classes.
+	// -----------------------------------------------------------------------
+	// dynamic_vec<T> - dynamically-sized vector using basisu::vector<T>
+	// -----------------------------------------------------------------------
+	template <typename T>
+	class dynamic_vec
+	{
+		// static_assert(std::is_floating_point<T>::value, "dynamic_vec only supports float and double");
+
+	public:
+		typedef T scalar_type;
+
+		inline dynamic_vec()
+		{
+		}
+
+		inline explicit dynamic_vec(uint32_t n) : m_v(n)
+		{
+			clear();
+		}
+
+		inline dynamic_vec(uint32_t n, const T* pValues) : m_v(n)
+		{
+			for (uint32_t i = 0; i < n; i++)
+				m_v[i] = pValues[i];
+		}
+
+		static inline dynamic_vec make_filled(uint32_t n, T fill_val)
+		{
+			dynamic_vec result(n);
+			result.set_all(fill_val);
+			return result;
+		}
+
+		// Conversion from static vec<N,U>
+		template <uint32_t N, typename U>
+		inline explicit dynamic_vec(const vec<N, U>& other) : m_v(N)
+		{
+			for (uint32_t i = 0; i < N; i++)
+				m_v[i] = static_cast<T>(other[i]);
+		}
+
+		// Assign from static vec<N,U>
+		template <uint32_t N, typename U>
+		inline dynamic_vec& operator=(const vec<N, U>& other)
+		{
+			m_v.resize(N);
+			for (uint32_t i = 0; i < N; i++)
+				m_v[i] = static_cast<T>(other[i]);
+			return *this;
+		}
+
+		// Convert to static vec<N,U> (truncates or zero-pads as needed)
+		template <uint32_t N, typename U>
+		inline vec<N, U> to_vec() const
+		{
+			vec<N, U> result(basisu::cClear);
+			const uint32_t m = basisu::minimum(size(), N);
+			for (uint32_t i = 0; i < m; i++)
+				result[i] = static_cast<U>(m_v[i]);
+			return result;
+		}
+
+		inline void resize(uint32_t n)
+		{
+			m_v.resize(n);
+		}
+
+		inline uint32_t size() const { return (uint32_t)m_v.size(); }
+		inline bool is_empty() const { return m_v.empty(); }
+
+		inline dynamic_vec& clear()
+		{
+			for (uint32_t i = 0; i < size(); i++)
+				m_v[i] = static_cast<T>(0);
+			return *this;
+		}
+
+		inline dynamic_vec& set_all(T val)
+		{
+			for (uint32_t i = 0; i < size(); i++)
+				m_v[i] = val;
+			return *this;
+		}
+
+		inline T operator[](uint32_t i) const
+		{
+			assert(i < size());
+			return m_v[i];
+		}
+
+		inline T& operator[](uint32_t i)
+		{
+			assert(i < size());
+			return m_v[i];
+		}
+
+		inline const T* get_ptr() const { return m_v.empty() ? nullptr : &m_v[0]; }
+		inline T* get_ptr() { return m_v.empty() ? nullptr : &m_v[0]; }
+
+		inline bool operator==(const dynamic_vec& rhs) const
+		{
+			if (size() != rhs.size())
+				return false;
+			for (uint32_t i = 0; i < size(); i++)
+				if (!(m_v[i] == rhs.m_v[i]))
+					return false;
+			return true;
+		}
+
+		inline bool operator!=(const dynamic_vec& rhs) const
+		{
+			return !(*this == rhs);
+		}
+
+		// Unary
+		inline dynamic_vec operator-() const
+		{
+			const uint32_t n = size();
+			dynamic_vec result(n);
+			for (uint32_t i = 0; i < n; i++)
+				result.m_v[i] = -m_v[i];
+			return result;
+		}
+
+		inline dynamic_vec operator+() const
+		{
+			return *this;
+		}
+
+		// Compound assignment: vec op vec
+		inline dynamic_vec& operator+=(const dynamic_vec& rhs)
+		{
+			assert(size() == rhs.size());
+			for (uint32_t i = 0; i < size(); i++)
+				m_v[i] += rhs.m_v[i];
+			return *this;
+		}
+
+		inline dynamic_vec& operator-=(const dynamic_vec& rhs)
+		{
+			assert(size() == rhs.size());
+			for (uint32_t i = 0; i < size(); i++)
+				m_v[i] -= rhs.m_v[i];
+			return *this;
+		}
+
+		inline dynamic_vec& operator*=(const dynamic_vec& rhs)
+		{
+			assert(size() == rhs.size());
+			for (uint32_t i = 0; i < size(); i++)
+				m_v[i] *= rhs.m_v[i];
+			return *this;
+		}
+
+		inline dynamic_vec& operator/=(const dynamic_vec& rhs)
+		{
+			assert(size() == rhs.size());
+			for (uint32_t i = 0; i < size(); i++)
+				m_v[i] /= rhs.m_v[i];
+			return *this;
+		}
+
+		// Compound assignment: vec op scalar
+		inline dynamic_vec& operator*=(T s)
+		{
+			for (uint32_t i = 0; i < size(); i++)
+				m_v[i] *= s;
+			return *this;
+		}
+
+		inline dynamic_vec& operator/=(T s)
+		{
+			for (uint32_t i = 0; i < size(); i++)
+				m_v[i] /= s;
+			return *this;
+		}
+
+		// Binary: vec op vec
+		friend inline dynamic_vec operator+(const dynamic_vec& a, const dynamic_vec& b)
+		{
+			assert(a.size() == b.size());
+			const uint32_t n = a.size();
+			dynamic_vec result(n);
+			for (uint32_t i = 0; i < n; i++)
+				result.m_v[i] = a.m_v[i] + b.m_v[i];
+			return result;
+		}
+
+		friend inline dynamic_vec operator-(const dynamic_vec& a, const dynamic_vec& b)
+		{
+			assert(a.size() == b.size());
+			const uint32_t n = a.size();
+			dynamic_vec result(n);
+			for (uint32_t i = 0; i < n; i++)
+				result.m_v[i] = a.m_v[i] - b.m_v[i];
+			return result;
+		}
+
+		// Binary: vec op scalar, scalar op vec
+		friend inline dynamic_vec operator*(const dynamic_vec& a, T s)
+		{
+			const uint32_t n = a.size();
+			dynamic_vec result(n);
+			for (uint32_t i = 0; i < n; i++)
+				result.m_v[i] = a.m_v[i] * s;
+			return result;
+		}
+
+		friend inline dynamic_vec operator*(T s, const dynamic_vec& a)
+		{
+			return a * s;
+		}
+
+		friend inline dynamic_vec operator/(const dynamic_vec& a, T s)
+		{
+			const uint32_t n = a.size();
+			dynamic_vec result(n);
+			for (uint32_t i = 0; i < n; i++)
+				result.m_v[i] = a.m_v[i] / s;
+			return result;
+		}
+
+		// Dot product
+		static inline T dot(const dynamic_vec& a, const dynamic_vec& b)
+		{
+			assert(a.size() == b.size());
+			T result = 0;
+			for (uint32_t i = 0; i < a.size(); i++)
+				result += a.m_v[i] * b.m_v[i];
+			return result;
+		}
+
+		inline T dot(const dynamic_vec& rhs) const
+		{
+			return dot(*this, rhs);
+		}
+
+		// Squared length (norm)
+		inline T norm() const
+		{
+			T sum = 0;
+			for (uint32_t i = 0; i < size(); i++)
+				sum += m_v[i] * m_v[i];
+			return sum;
+		}
+
+		inline T length() const
+		{
+			return sqrt(norm());
+		}
+
+		// Returns squared length. If zero length, optionally sets to default.
+		inline double normalize(const dynamic_vec* pDefault = nullptr)
+		{
+			double n = 0;
+			for (uint32_t i = 0; i < size(); i++)
+				n += (double)m_v[i] * (double)m_v[i];
+
+			if (n != 0.0)
+				*this *= static_cast<T>(1.0 / sqrt(n));
+			else if (pDefault)
+				*this = *pDefault;
+			return n;
+		}
+
+		inline dynamic_vec& normalize_in_place(const dynamic_vec* pDefault = nullptr)
+		{
+			normalize(pDefault);
+			return *this;
+		}
+
+		inline dynamic_vec get_normalized(const dynamic_vec* pDefault = nullptr) const
+		{
+			dynamic_vec result(*this);
+			result.normalize(pDefault);
+			return result;
+		}
+
+		inline T squared_distance(const dynamic_vec& rhs) const
+		{
+			assert(size() == rhs.size());
+			T dist2 = 0;
+			for (uint32_t i = 0; i < size(); i++)
+			{
+				T d = m_v[i] - rhs.m_v[i];
+				dist2 += d * d;
+			}
+			return dist2;
+		}
+
+		inline T distance(const dynamic_vec& rhs) const
+		{
+			return sqrt(squared_distance(rhs));
+		}
+
+		inline dynamic_vec& clamp(T lo, T hi)
+		{
+			for (uint32_t i = 0; i < size(); i++)
+				m_v[i] = basisu::clamp(m_v[i], lo, hi);
+			return *this;
+		}
+
+		inline dynamic_vec& saturate()
+		{
+			return clamp(static_cast<T>(0), static_cast<T>(1));
+		}
+
+		static inline dynamic_vec component_min(const dynamic_vec& a, const dynamic_vec& b)
+		{
+			assert(a.size() == b.size());
+			const uint32_t n = a.size();
+			dynamic_vec result(n);
+			for (uint32_t i = 0; i < n; i++)
+				result.m_v[i] = basisu::minimum(a.m_v[i], b.m_v[i]);
+			return result;
+		}
+
+		static inline dynamic_vec component_max(const dynamic_vec& a, const dynamic_vec& b)
+		{
+			assert(a.size() == b.size());
+			const uint32_t n = a.size();
+			dynamic_vec result(n);
+			for (uint32_t i = 0; i < n; i++)
+				result.m_v[i] = basisu::maximum(a.m_v[i], b.m_v[i]);
+			return result;
+		}
+
+		static inline dynamic_vec lerp(const dynamic_vec& a, const dynamic_vec& b, T t)
+		{
+			assert(a.size() == b.size());
+			const uint32_t n = a.size();
+			dynamic_vec result(n);
+			for (uint32_t i = 0; i < n; i++)
+				result.m_v[i] = a.m_v[i] + (b.m_v[i] - a.m_v[i]) * t;
+			return result;
+		}
+
+		inline bool equal_tol(const dynamic_vec& b, T t) const
+		{
+			if (size() != b.size())
+				return false;
+			for (uint32_t i = 0; i < size(); i++)
+				if (!basisu::equal_tol(m_v[i], b.m_v[i], t))
+					return false;
+			return true;
+		}
+
+		void print() const
+		{
+			printf("[ ");
+			for (uint32_t i = 0; i < size(); i++)
+				printf("%3.3f ", (double)m_v[i]);
+			printf("]\n");
+		}
+
+		inline void swap(dynamic_vec& other)
+		{
+			m_v.swap(other.m_v);
+		}
+
+	private:
+		basisu::vector<T> m_v;
+	};
+
+	// ADL swap for dynamic_vec
+	template <typename T>
+	inline void swap(dynamic_vec<T>& a, dynamic_vec<T>& b)
+	{
+		a.swap(b);
+	}
+
+	typedef dynamic_vec<float> dynamic_vecF;
+	typedef dynamic_vec<double> dynamic_vecD;
+
+	// -----------------------------------------------------------------------
+	// dynamic_matrix<T> - dynamically-sized row-major matrix using basisu::vector<T>
+	// -----------------------------------------------------------------------
+	template <typename T>
+	class dynamic_matrix
+	{
+		// static_assert(std::is_floating_point<T>::value, "dynamic_matrix only supports float and double");
+
+	public:
+		typedef T scalar_type;
+
+		inline dynamic_matrix() : m_rows(0), m_cols(0)
+		{
+		}
+
+		inline dynamic_matrix(uint32_t rows, uint32_t cols) : m_rows(rows), m_cols(cols), m_v(rows * cols)
+		{
+			clear();
+		}
+
+		inline dynamic_matrix(uint32_t rows, uint32_t cols, T fill_val) : m_rows(rows), m_cols(cols), m_v(rows * cols)
+		{
+			set_all(fill_val);
+		}
+
+		inline dynamic_matrix(uint32_t rows, uint32_t cols, const T *pInit) : m_rows(0), m_cols(0)
+		{
+			resize(rows, cols, pInit);
+		}
+
+		// Conversion from static matrix<R,C,U>
+		template <uint32_t R, uint32_t C, typename U>
+		inline explicit dynamic_matrix(const matrix<R, C, U>& other) : m_rows(R), m_cols(C), m_v(R * C)
+		{
+			for (uint32_t r = 0; r < R; r++)
+				for (uint32_t c = 0; c < C; c++)
+					(*this)(r, c) = static_cast<T>(other(r, c));
+		}
+
+		// Assign from static matrix<R,C,U>
+		template <uint32_t R, uint32_t C, typename U>
+		inline dynamic_matrix& operator=(const matrix<R, C, U>& other)
+		{
+			resize(R, C);
+			for (uint32_t r = 0; r < R; r++)
+				for (uint32_t c = 0; c < C; c++)
+					(*this)(r, c) = static_cast<T>(other(r, c));
+			return *this;
+		}
+
+		// Convert to static matrix<R,C,U> (truncates or zero-pads)
+		template <uint32_t R, uint32_t C, typename U>
+		inline matrix<R, C, U> to_matrix() const
+		{
+			matrix<R, C, U> result(basisu::cClear);
+			const uint32_t mr = basisu::minimum(m_rows, R);
+			const uint32_t mc = basisu::minimum(m_cols, C);
+			for (uint32_t r = 0; r < mr; r++)
+				for (uint32_t c = 0; c < mc; c++)
+					result(r, c) = static_cast<U>((*this)(r, c));
+			return result;
+		}
+
+		inline void resize(uint32_t rows, uint32_t cols)
+		{
+			if ((rows == m_rows) && (cols == m_cols))
+				return;
+
+			if (cols == m_cols)
+			{
+				// Same column count - flat data stays aligned, just grow/shrink rows
+				m_v.resize(rows * cols);
+				m_rows = rows;
+			}
+			else
+			{
+				// Column count changed - need to re-layout row by row
+				basisu::vector<T> new_v(rows * cols);
+
+				const uint32_t copy_rows = basisu::minimum(m_rows, rows);
+				const uint32_t copy_cols = basisu::minimum(m_cols, cols);
+				for (uint32_t r = 0; r < copy_rows; r++)
+					for (uint32_t c = 0; c < copy_cols; c++)
+						new_v[r * cols + c] = m_v[r * m_cols + c];
+
+				m_v = new_v;
+				m_rows = rows;
+				m_cols = cols;
+			}
+		}
+
+		inline void resize(uint32_t rows, uint32_t cols, const T* pInit)
+		{
+			const uint32_t n = rows * cols;
+			assert(pInit && n);
+			
+			if (n != m_v.size())
+				m_v.resize(n);
+
+			m_rows = rows;
+			m_cols = cols;
+
+			if ((pInit) && (n))
+			{
+				memcpy(m_v.data(), pInit, sizeof(T) * n);
+			}
+		}
+
+		inline uint32_t get_num_rows() const { return m_rows; }
+		inline uint32_t get_num_cols() const { return m_cols; }
+		inline uint32_t get_total_elements() const { return m_rows * m_cols; }
+		inline bool is_empty() const { return (m_rows == 0) || (m_cols == 0); }
+		inline bool is_square() const { return m_rows == m_cols; }
+
+		inline dynamic_matrix& clear()
+		{
+			//const uint32_t total = m_rows * m_cols;
+			//for (uint32_t i = 0; i < total; i++)
+			//	m_v[i] = static_cast<T>(0);
+			memset(m_v.data(), 0, m_v.size_in_bytes());
+
+			return *this;
+		}
+
+		inline dynamic_matrix& set_all(T val)
+		{
+			const uint32_t total = m_rows * m_cols;
+			for (uint32_t i = 0; i < total; i++)
+				m_v[i] = val;
+			return *this;
+		}
+
+		// Element access - row-major: element(r, c) = m_v[r * m_cols + c]
+		inline T operator()(uint32_t r, uint32_t c) const
+		{
+			assert((r < m_rows) && (c < m_cols));
+			return m_v[r * m_cols + c];
+		}
+
+		inline T& operator()(uint32_t r, uint32_t c)
+		{
+			assert((r < m_rows) && (c < m_cols));
+			return m_v[r * m_cols + c];
+		}
+
+		// Row access - returns pointer to start of row
+		inline const T* get_row_ptr(uint32_t r) const
+		{
+			assert(r < m_rows);
+			return &m_v[r * m_cols];
+		}
+
+		inline T* get_row_ptr(uint32_t r)
+		{
+			assert(r < m_rows);
+			return &m_v[r * m_cols];
+		}
+
+		inline const T* get_ptr() const { return m_v.empty() ? nullptr : &m_v[0]; }
+		inline T* get_ptr() { return m_v.empty() ? nullptr : &m_v[0]; }
+
+		// Copy a row into a dynamic_vec
+		inline dynamic_vec<T> get_row(uint32_t r) const
+		{
+			assert(r < m_rows);
+			return dynamic_vec<T>(m_cols, get_row_ptr(r));
+		}
+
+		// Copy a column into a dynamic_vec
+		inline dynamic_vec<T> get_col(uint32_t c) const
+		{
+			assert(c < m_cols);
+			dynamic_vec<T> result(m_rows);
+			for (uint32_t r = 0; r < m_rows; r++)
+				result[r] = (*this)(r, c);
+			return result;
+		}
+
+		inline dynamic_matrix& set_row(uint32_t r, const dynamic_vec<T>& v)
+		{
+			assert(r < m_rows);
+			assert(v.size() == m_cols);
+			T* pDst = get_row_ptr(r);
+			for (uint32_t c = 0; c < m_cols; c++)
+				pDst[c] = v[c];
+			return *this;
+		}
+
+		inline dynamic_matrix& set_col(uint32_t c, const dynamic_vec<T>& v)
+		{
+			assert(c < m_cols);
+			assert(v.size() == m_rows);
+			for (uint32_t r = 0; r < m_rows; r++)
+				(*this)(r, c) = v[r];
+			return *this;
+		}
+
+		// ---- Identity / Scale ----
+
+		inline dynamic_matrix& set_identity()
+		{
+			clear();
+			const uint32_t m = basisu::minimum(m_rows, m_cols);
+			for (uint32_t i = 0; i < m; i++)
+				(*this)(i, i) = static_cast<T>(1);
+			return *this;
+		}
+
+		static inline dynamic_matrix make_identity(uint32_t n)
+		{
+			dynamic_matrix result(n, n);
+			result.set_identity();
+			return result;
+		}
+
+		inline dynamic_matrix& set_scale(T s)
+		{
+			clear();
+			assert(m_rows == m_cols);
+			assert(m_rows >= 1);
+			for (uint32_t i = 0; i + 1 < m_rows; i++)
+				(*this)(i, i) = s;
+			(*this)(m_rows - 1, m_cols - 1) = static_cast<T>(1);
+			return *this;
+		}
+
+		inline dynamic_matrix& set_scale(const dynamic_vec<T>& s)
+		{
+			clear();
+			const uint32_t m = basisu::minimum(m_rows, basisu::minimum(m_cols, s.size()));
+			for (uint32_t i = 0; i < m; i++)
+				(*this)(i, i) = s[i];
+			return *this;
+		}
+
+		static inline dynamic_matrix make_scale(uint32_t n, T s)
+		{
+			dynamic_matrix result(n, n);
+			result.set_scale(s);
+			return result;
+		}
+
+		// ---- Arithmetic ----
+
+		inline dynamic_matrix& operator+=(const dynamic_matrix& rhs)
+		{
+			assert((m_rows == rhs.m_rows) && (m_cols == rhs.m_cols));
+			for (uint32_t i = 0; i < m_rows * m_cols; i++)
+				m_v[i] += rhs.m_v[i];
+			return *this;
+		}
+
+		inline dynamic_matrix& operator-=(const dynamic_matrix& rhs)
+		{
+			assert((m_rows == rhs.m_rows) && (m_cols == rhs.m_cols));
+			for (uint32_t i = 0; i < m_rows * m_cols; i++)
+				m_v[i] -= rhs.m_v[i];
+			return *this;
+		}
+
+		inline dynamic_matrix& operator*=(T s)
+		{
+			for (uint32_t i = 0; i < m_rows * m_cols; i++)
+				m_v[i] *= s;
+			return *this;
+		}
+
+		inline dynamic_matrix& operator/=(T s)
+		{
+			for (uint32_t i = 0; i < m_rows * m_cols; i++)
+				m_v[i] /= s;
+			return *this;
+		}
+
+		inline dynamic_matrix operator+() const
+		{
+			return *this;
+		}
+
+		inline dynamic_matrix operator-() const
+		{
+			dynamic_matrix result(m_rows, m_cols);
+			for (uint32_t i = 0; i < m_rows * m_cols; i++)
+				result.m_v[i] = -m_v[i];
+			return result;
+		}
+
+		friend inline dynamic_matrix operator+(const dynamic_matrix& a, const dynamic_matrix& b)
+		{
+			assert((a.m_rows == b.m_rows) && (a.m_cols == b.m_cols));
+			dynamic_matrix result(a.m_rows, a.m_cols);
+			for (uint32_t i = 0; i < a.m_rows * a.m_cols; i++)
+				result.m_v[i] = a.m_v[i] + b.m_v[i];
+			return result;
+		}
+
+		friend inline dynamic_matrix operator-(const dynamic_matrix& a, const dynamic_matrix& b)
+		{
+			assert((a.m_rows == b.m_rows) && (a.m_cols == b.m_cols));
+			dynamic_matrix result(a.m_rows, a.m_cols);
+			for (uint32_t i = 0; i < a.m_rows * a.m_cols; i++)
+				result.m_v[i] = a.m_v[i] - b.m_v[i];
+			return result;
+		}
+
+		friend inline dynamic_matrix operator*(const dynamic_matrix& a, T s)
+		{
+			dynamic_matrix result(a.m_rows, a.m_cols);
+			for (uint32_t i = 0; i < a.m_rows * a.m_cols; i++)
+				result.m_v[i] = a.m_v[i] * s;
+			return result;
+		}
+
+		friend inline dynamic_matrix operator*(T s, const dynamic_matrix& a)
+		{
+			return a * s;
+		}
+
+		friend inline dynamic_matrix operator/(const dynamic_matrix& a, T s)
+		{
+			dynamic_matrix result(a.m_rows, a.m_cols);
+			for (uint32_t i = 0; i < a.m_rows * a.m_cols; i++)
+				result.m_v[i] = a.m_v[i] / s;
+			return result;
+		}
+
+		// ---- Matrix * Matrix ----
+		// result = lhs[R0 x C0] * rhs[R1 x C1], requires C0 == R1, result is [R0 x C1]
+		static inline dynamic_matrix multiply(const dynamic_matrix& lhs, const dynamic_matrix& rhs)
+		{
+			assert(lhs.m_cols == rhs.m_rows);
+			assert(lhs.m_cols > 0);
+
+			const uint32_t result_rows = lhs.m_rows;
+			const uint32_t result_cols = rhs.m_cols;
+			const uint32_t inner = lhs.m_cols;
+
+			dynamic_matrix result(result_rows, result_cols);
+
+			for (uint32_t r = 0; r < result_rows; r++)
+			{
+				const T* pLhsRow = lhs.get_row_ptr(r);
+				T* pDstRow = result.get_row_ptr(r);
+
+				for (uint32_t c = 0; c < result_cols; c++)
+				{
+					T s = pLhsRow[0] * rhs(0, c);
+					for (uint32_t i = 1; i < inner; i++)
+						s += pLhsRow[i] * rhs(i, c);
+					pDstRow[c] = s;
+				}
+			}
+
+			return result;
+		}
+
+		friend inline dynamic_matrix operator*(const dynamic_matrix& lhs, const dynamic_matrix& rhs)
+		{
+			return multiply(lhs, rhs);
+		}
+
+		inline dynamic_matrix& operator*=(const dynamic_matrix& rhs)
+		{
+			*this = multiply(*this, rhs);
+			return *this;
+		}
+
+		// ---- Vector * Matrix (D3D-style: row vector on left) ----
+		// v[1 x R] * M[R x C] = result[1 x C]
+		// vec size must equal num_rows
+		static inline dynamic_vec<T> transform(const dynamic_vec<T>& v, const dynamic_matrix& m)
+		{
+			assert(v.size() == m.m_rows);
+
+			dynamic_vec<T> result(m.m_cols);
+
+			for (uint32_t r = 0; r < m.m_rows; r++)
+			{
+				const T s = v[r];
+				const T* pRow = m.get_row_ptr(r);
+				for (uint32_t c = 0; c < m.m_cols; c++)
+					result[c] += pRow[c] * s;
+			}
+
+			return result;
+		}
+
+		// vec * matrix convenience operator
+		friend inline dynamic_vec<T> operator*(const dynamic_vec<T>& v, const dynamic_matrix& m)
+		{
+			return transform(v, m);
+		}
+
+		// ---- Matrix * Vector (OGL-style: column vector on right) ----
+		// M[R x C] * v[C x 1] = result[R x 1]
+		// vec size must equal num_cols
+		static inline dynamic_vec<T> transform(const dynamic_matrix& m, const dynamic_vec<T>& v)
+		{
+			assert(v.size() == m.m_cols);
+			assert(m.m_cols > 0);
+
+			dynamic_vec<T> result(m.m_rows);
+
+			for (uint32_t r = 0; r < m.m_rows; r++)
+			{
+				const T* pRow = m.get_row_ptr(r);
+				T s = pRow[0] * v[0];
+				for (uint32_t c = 1; c < m.m_cols; c++)
+					s += pRow[c] * v[c];
+				result[r] = s;
+			}
+
+			return result;
+		}
+
+		// matrix * vec convenience operator
+		friend inline dynamic_vec<T> operator*(const dynamic_matrix& m, const dynamic_vec<T>& v)
+		{
+			return transform(m, v);
+		}
+
+		// ---- D3D-style point/vector transforms ----
+		// Last component of vec is assumed to be 1 (point) or 0 (vector).
+		// Input vec size is num_rows - 1, output vec size is num_cols - 1.
+		static inline dynamic_vec<T> transform_point(const dynamic_vec<T>& v, const dynamic_matrix& m)
+		{
+			assert(m.m_rows >= 1);
+			assert(v.size() == m.m_rows - 1);
+
+			const uint32_t sub_rows = m.m_rows - 1;
+			const uint32_t sub_cols = m.m_cols > 0 ? m.m_cols - 1 : 0;
+
+			dynamic_vec<T> result(sub_cols);
+
+			for (uint32_t r = 0; r < sub_rows; r++)
+			{
+				const T s = v[r];
+				const T* pRow = m.get_row_ptr(r);
+				for (uint32_t c = 0; c < sub_cols; c++)
+					result[c] += pRow[c] * s;
+			}
+
+			// Add last row (w=1)
+			const T* pLastRow = m.get_row_ptr(m.m_rows - 1);
+			for (uint32_t c = 0; c < sub_cols; c++)
+				result[c] += pLastRow[c];
+
+			return result;
+		}
+
+		static inline dynamic_vec<T> transform_vector(const dynamic_vec<T>& v, const dynamic_matrix& m)
+		{
+			assert(m.m_rows >= 1);
+			assert(v.size() == m.m_rows - 1);
+
+			const uint32_t sub_rows = m.m_rows - 1;
+			const uint32_t sub_cols = m.m_cols > 0 ? m.m_cols - 1 : 0;
+
+			dynamic_vec<T> result(sub_cols);
+
+			for (uint32_t r = 0; r < sub_rows; r++)
+			{
+				const T s = v[r];
+				const T* pRow = m.get_row_ptr(r);
+				for (uint32_t c = 0; c < sub_cols; c++)
+					result[c] += pRow[c] * s;
+			}
+
+			return result;
+		}
+
+		// ---- Outer Product ----
+		// result[i][j] = a[i] * b[j], result is a.size() x b.size()
+		// If result is already sized correctly it won't be reallocated.
+		static inline dynamic_matrix& outer_product(dynamic_matrix& result, const dynamic_vec<T>& a, const dynamic_vec<T>& b)
+		{
+			const uint32_t rows = a.size();
+			const uint32_t cols = b.size();
+
+			if ((result.m_rows != rows) || (result.m_cols != cols))
+				result.resize(rows, cols);
+
+			for (uint32_t r = 0; r < rows; r++)
+			{
+				const T s = a[r];
+				T* pRow = result.get_row_ptr(r);
+				for (uint32_t c = 0; c < cols; c++)
+					pRow[c] = s * b[c];
+			}
+
+			return result;
+		}
+
+		// ---- Transpose ----
+
+		inline dynamic_matrix get_transposed() const
+		{
+			dynamic_matrix result(m_cols, m_rows);
+			for (uint32_t r = 0; r < m_rows; r++)
+			{
+				const T* pRow = get_row_ptr(r);
+				for (uint32_t c = 0; c < m_cols; c++)
+					result(c, r) = pRow[c];
+			}
+			return result;
+		}
+
+		inline dynamic_matrix& transpose_in_place()
+		{
+			*this = get_transposed();
+			return *this;
+		}
+
+		// ---- Frobenius Norm ----
+
+		inline T get_norm() const
+		{
+			T result = 0;
+			for (uint32_t i = 0; i < m_rows * m_cols; i++)
+				result += m_v[i] * m_v[i];
+			return static_cast<T>(sqrt(result));
+		}
+
+		// ---- Trace ----
+
+		inline T get_trace() const
+		{
+			assert(m_rows == m_cols);
+			T total = 0;
+			for (uint32_t i = 0; i < m_rows; i++)
+				total += (*this)(i, i);
+			return total;
+		}
+
+		// ---- Comparison ----
+
+		inline bool operator==(const dynamic_matrix& rhs) const
+		{
+			if ((m_rows != rhs.m_rows) || (m_cols != rhs.m_cols))
+				return false;
+			for (uint32_t i = 0; i < m_rows * m_cols; i++)
+				if (!(m_v[i] == rhs.m_v[i]))
+					return false;
+			return true;
+		}
+
+		inline bool operator!=(const dynamic_matrix& rhs) const
+		{
+			return !(*this == rhs);
+		}
+
+		inline bool equal_tol(const dynamic_matrix& b, T tol) const
+		{
+			if ((m_rows != b.m_rows) || (m_cols != b.m_cols))
+				return false;
+			for (uint32_t i = 0; i < m_rows * m_cols; i++)
+				if (!basisu::equal_tol(m_v[i], b.m_v[i], tol))
+					return false;
+			return true;
+		}
+
+		// ---- Inversion (Gauss-Jordan, square matrices only) ----
+
+		bool invert(dynamic_matrix& result) const
+		{
+			assert(m_rows == m_cols);
+			const uint32_t n = m_rows;
+
+			dynamic_matrix mat(*this);
+			result = make_identity(n);
+
+			for (uint32_t c = 0; c < n; c++)
+			{
+				// Partial pivot
+				uint32_t max_r = c;
+				for (uint32_t r = c + 1; r < n; r++)
+					if (fabs(mat(r, c)) > fabs(mat(max_r, c)))
+						max_r = r;
+
+				if (mat(max_r, c) == 0.0f)
+				{
+					result = make_identity(n);
+					return false;
+				}
+
+				if (max_r != c)
+				{
+					// Swap rows
+					for (uint32_t j = 0; j < n; j++)
+					{
+						T tmp;
+						tmp = mat(c, j); mat(c, j) = mat(max_r, j); mat(max_r, j) = tmp;
+						tmp = result(c, j); result(c, j) = result(max_r, j); result(max_r, j) = tmp;
+					}
+				}
+
+				const T pivot = mat(c, c);
+
+				// Scale pivot row
+				for (uint32_t j = 0; j < n; j++)
+				{
+					result(c, j) /= pivot;
+					mat(c, j) /= pivot;
+				}
+
+				// Eliminate column
+				for (uint32_t row = 0; row < n; row++)
+				{
+					if (row != c)
+					{
+						const T factor = mat(row, c);
+						for (uint32_t j = 0; j < n; j++)
+						{
+							mat(row, j) -= mat(c, j) * factor;
+							result(row, j) -= result(c, j) * factor;
+						}
+					}
+				}
+			}
+
+			return true;
+		}
+
+		inline dynamic_matrix get_inverse() const
+		{
+			dynamic_matrix result;
+			invert(result);
+			return result;
+		}
+
+		inline dynamic_matrix& invert_in_place()
+		{
+			dynamic_matrix result;
+			invert(result);
+			*this = result;
+			return *this;
+		}
+
+		// ---- Debug print ----
+
+		void print() const
+		{
+			for (uint32_t r = 0; r < m_rows; r++)
+			{
+				for (uint32_t c = 0; c < m_cols; c++)
+					printf("%3.7f ", (double)(*this)(r, c));
+				printf("\n");
+			}
+		}
+
+		inline void swap(dynamic_matrix& other)
+		{
+			m_v.swap(other.m_v);
+
+			uint32_t tmp;
+			tmp = m_rows; m_rows = other.m_rows; other.m_rows = tmp;
+			tmp = m_cols; m_cols = other.m_cols; other.m_cols = tmp;
+		}
+
+	private:
+		uint32_t m_rows;
+		uint32_t m_cols;
+		basisu::vector<T> m_v;
+	};
+
+	// ADL swap for dynamic_matrix
+	template <typename T>
+	inline void swap(dynamic_matrix<T>& a, dynamic_matrix<T>& b)
+	{
+		a.swap(b);
+	}
+
+	typedef dynamic_matrix<float> dynamic_matrixF;
+	typedef dynamic_matrix<double> dynamic_matrixD;
+
 } // namespace bu_math
 
 namespace basisu
@@ -2556,7 +3617,7 @@ namespace basisu
 		FloatType m_total, m_total_sq;		// total, total of squares values
 		FloatType m_avg, m_avg_sq;			// mean, mean of the squared values
 		FloatType m_rms;					// sqrt(m_avg_sq)
-		FloatType m_std_dev, m_var;			// population standard deviation and variance
+		FloatType m_std_dev, m_var;			// population standard deviation and variance (normalized)
 		FloatType m_mad;					// mean absolute deviation
 		FloatType m_min, m_max, m_range;	// min and max values, and max-min
 		FloatType m_len;					// length of values as a vector (Euclidean norm or L2 norm)
@@ -3247,7 +4308,550 @@ namespace basisu
 
 		return res;
 	}
-	
-	
+		
+} // namespace bu_math
+
+// std::swap specializations
+namespace std
+{
+	template <typename T>
+	inline void swap(bu_math::dynamic_vec<T>& a, bu_math::dynamic_vec<T>& b)
+	{
+		a.swap(b);
+	}
+
+	template <typename T>
+	inline void swap(bu_math::dynamic_matrix<T>& a, bu_math::dynamic_matrix<T>& b)
+	{
+		a.swap(b);
+	}
+}
+
+namespace basisu
+{
+	const float SMALL_EPS = .001f, TINY_EPS = .00001f;
+
+	static inline void vec3_zero(float pDst[3]) { pDst[0] = 0; pDst[1] = 0; pDst[2] = 0; }
+	static inline void vec4_zero(float pDst[4]) { pDst[0] = 0; pDst[1] = 0; pDst[2] = 0; pDst[3] = 0; }
+
+	static inline void vec_zero(float* pDst, uint32_t num_comps) { assert(num_comps);  memset(pDst, 0, num_comps * sizeof(float)); }
+
+	static inline void vec3_set(float pDst[3], float s) { pDst[0] = s; pDst[1] = s; pDst[2] = s; }
+	static inline void vec4_set(float pDst[4], float s) { pDst[0] = s; pDst[1] = s; pDst[2] = s; pDst[3] = s; }
+
+	static inline void vec3_set(float pDst[3], float x, float y, float z) { pDst[0] = x; pDst[1] = y; pDst[2] = z; }
+	static inline void vec4_set(float pDst[4], float x, float y, float z, float w) { pDst[0] = x; pDst[1] = y; pDst[2] = z; pDst[3] = w; }
+
+	static inline void vec3_add(float pDst[3], const float pB[3]) { pDst[0] += pB[0]; pDst[1] += pB[1]; pDst[2] += pB[2]; }
+	static inline void vec4_add(float pDst[4], const float pB[4]) { pDst[0] += pB[0]; pDst[1] += pB[1]; pDst[2] += pB[2]; pDst[3] += pB[3]; }
+
+	static inline void vec3_add(float pDst[3], const float pA[3], const float pB[3]) { pDst[0] = pA[0] + pB[0]; pDst[1] = pA[1] + pB[1]; pDst[2] = pA[2] + pB[2]; }
+	static inline void vec4_add(float pDst[4], const float pA[4], const float pB[4]) { pDst[0] = pA[0] + pB[0]; pDst[1] = pA[1] + pB[1]; pDst[2] = pA[2] + pB[2]; pDst[3] = pA[3] + pB[3]; }
+
+	static inline void vec3_sub(float pDst[3], const float pB[3]) { pDst[0] -= pB[0]; pDst[1] -= pB[1]; pDst[2] -= pB[2]; }
+	static inline void vec4_sub(float pDst[4], const float pB[4]) { pDst[0] -= pB[0]; pDst[1] -= pB[1]; pDst[2] -= pB[2]; pDst[3] -= pB[3]; }
+
+	static inline void vec3_sub(float pDst[3], const float pA[3], const float pB[3]) { pDst[0] = pA[0] - pB[0]; pDst[1] = pA[1] - pB[1]; pDst[2] = pA[2] - pB[2]; }
+	static inline void vec4_sub(float pDst[4], const float pA[4], const float pB[4]) { pDst[0] = pA[0] - pB[0]; pDst[1] = pA[1] - pB[1]; pDst[2] = pA[2] - pB[2]; pDst[3] = pA[3] - pB[3]; }
+
+	static inline void vec3_mul(float pDst[3], const float pA[3], const float pB[3]) { pDst[0] = pA[0] * pB[0]; pDst[1] = pA[1] * pB[1]; pDst[2] = pA[2] * pB[2]; }
+	static inline void vec4_mul(float pDst[4], const float pA[4], const float pB[4]) { pDst[0] = pA[0] * pB[0]; pDst[1] = pA[1] * pB[1]; pDst[2] = pA[2] * pB[2]; pDst[3] = pA[3] * pB[3]; }
+
+	static inline void vec3_madd(float pDst[3], const float pA[3], const float pM[3], const float pB[3]) { pDst[0] = pA[0] * pM[0] + pB[0]; pDst[1] = pA[1] * pM[1] + pB[1]; pDst[2] = pA[2] * pM[2] + pB[2]; }
+	static inline void vec4_madd(float pDst[4], const float pA[4], const float pM[4], const float pB[4]) { pDst[0] = pA[0] * pM[0] + pB[0]; pDst[1] = pA[1] * pM[1] + pB[1]; pDst[2] = pA[2] * pM[2] + pB[2]; pDst[3] = pA[3] * pM[3] + pB[3]; }
+
+	static inline void vec3_scale_add(float pDst[3], const float pA[3], float s, const float pB[3]) { pDst[0] = pA[0] * s + pB[0]; pDst[1] = pA[1] * s + pB[1]; pDst[2] = pA[2] * s + pB[2]; }
+	static inline void vec4_scale_add(float pDst[4], const float pA[4], float s, const float pB[4]) { pDst[0] = pA[0] * s + pB[0]; pDst[1] = pA[1] * s + pB[1]; pDst[2] = pA[2] * s + pB[2]; pDst[3] = pA[3] * s + pB[3]; }
+
+	static inline void vec3_scale(float pDst[3], float s) { pDst[0] *= s; pDst[1] *= s; pDst[2] *= s; }
+	static inline void vec4_scale(float pDst[4], float s) { pDst[0] *= s; pDst[1] *= s; pDst[2] *= s; pDst[3] *= s; }
+
+	static inline void vec3_clamp(float pDst[3], float l, float h) { pDst[0] = clamp(pDst[0], l, h); pDst[1] = clamp(pDst[1], l, h); pDst[2] = clamp(pDst[2], l, h); }
+	static inline void vec4_clamp(float pDst[4], float l, float h) { pDst[0] = clamp(pDst[0], l, h); pDst[1] = clamp(pDst[1], l, h); pDst[2] = clamp(pDst[2], l, h); pDst[3] = clamp(pDst[3], l, h); }
+
+	static inline void vec3_scale(float pDst[3], const float pVec[3], float s) { pDst[0] = pVec[0] * s; pDst[1] = pVec[1] * s; pDst[2] = pVec[2] * s; }
+	static inline void vec4_scale(float pDst[4], const float pVec[4], float s) { pDst[0] = pVec[0] * s; pDst[1] = pVec[1] * s; pDst[2] = pVec[2] * s; pDst[3] = pVec[3] * s; }
+
+	static inline void vec3_div(float pDst[3], float s) { assert(s != 0.0f); pDst[0] /= s; pDst[1] /= s; pDst[2] /= s; }
+	static inline void vec4_div(float pDst[4], float s) { assert(s != 0.0f); pDst[0] /= s; pDst[1] /= s; pDst[2] /= s; pDst[3] /= s; }
+
+	static inline void vec3_div(float pDst[3], const float pVec[3], float s) { assert(s != 0.0f); pDst[0] = pVec[0] / s; pDst[1] = pVec[1] / s; pDst[2] = pVec[2] / s; }
+	static inline void vec4_div(float pDst[4], const float pVec[4], float s) { assert(s != 0.0f); pDst[0] = pVec[0] / s; pDst[1] = pVec[1] / s; pDst[2] = pVec[2] / s; pDst[3] = pVec[3] / s; }
+
+	static inline void vec_scale(float* pDst, float scale, uint32_t num_comps) { assert(num_comps); for (uint32_t i = 0; i < num_comps; i++) pDst[i] *= scale; }
+	static inline void vec_scale(float* pDst, const float* pVec, float scale, uint32_t num_comps) { assert(num_comps); for (uint32_t i = 0; i < num_comps; i++) pDst[i] = pVec[i] * scale; }
+
+	static inline float* vec_copy(float* pDst, const float* pSrc, uint32_t num_comps) { assert(num_comps); memcpy(pDst, pSrc, sizeof(float) * num_comps); return pDst; }
+	static inline float* vec3_copy(float* pDst, const float* pSrc) { memcpy(pDst, pSrc, sizeof(float) * 3); return pDst; }
+	static inline float* vec4_copy(float* pDst, const float* pSrc) { memcpy(pDst, pSrc, sizeof(float) * 4); return pDst; }
+
+	static inline float vec3_dot(const float pA[3], const float pB[3]) { return (pA[0] * pB[0]) + (pA[1] * pB[1]) + (pA[2] * pB[2]); }
+	static inline float vec4_dot(const float pA[4], const float pB[4]) { return (pA[0] * pB[0]) + (pA[1] * pB[1]) + (pA[2] * pB[2]) + (pA[3] * pB[3]); }
+	static inline float vec_dot(const float* pA, const float* pB, uint32_t num_comps) { assert(num_comps); float d = 0.0f; for (uint32_t i = 0; i < num_comps; i++) d += pA[i] * pB[i]; return d; }
+
+	static inline float vec_get_squared_len(const float* pVec, uint32_t num_comps) { assert(num_comps); float l = 0.0f; for (uint32_t i = 0; i < num_comps; i++) l += pVec[i] * pVec[i]; return l; }
+
+	static inline bool vec3_compare(const float pA[3], const float pB[3]) { return memcmp(pA, pB, sizeof(float) * 3) == 0; }
+	static inline bool vec4_compare(const float pA[4], const float pB[4]) { return memcmp(pA, pB, sizeof(float) * 4) == 0; }
+
+	static inline void vec3_load_u8(float pDst[3], const uint8_t* pSrc) { pDst[0] = (float)pSrc[0]; pDst[1] = (float)pSrc[1]; pDst[2] = (float)pSrc[2]; }
+	static inline void vec4_load_u8(float pDst[4], const uint8_t* pSrc) { pDst[0] = (float)pSrc[0]; pDst[1] = (float)pSrc[1]; pDst[2] = (float)pSrc[2]; pDst[3] = (float)pSrc[3]; }
+
+	static inline float vec_normalize(float* pVec, uint32_t num_comps)
+	{
+		assert(num_comps);
+		float len2 = 0.0f;
+		for (uint32_t i = 0; i < num_comps; i++)
+			len2 += pVec[i] * pVec[i];
+		const float scale = (len2 > TINY_EPS) ? (1.0f / sqrtf(len2)) : 0.0f;
+		for (uint32_t i = 0; i < num_comps; i++)
+			pVec[i] *= scale;
+		return len2;
+	}
+
+	static inline float vec_normalize(float* pDst, const float* pVec, uint32_t num_comps)
+	{
+		assert(num_comps);
+		float len2 = 0.0f;
+		for (uint32_t i = 0; i < num_comps; i++)
+			len2 += pVec[i] * pVec[i];
+		const float scale = (len2 > TINY_EPS) ? (1.0f / sqrtf(len2)) : 0.0f;
+		for (uint32_t i = 0; i < num_comps; i++)
+			pDst[i] = pVec[i] * scale;
+		return len2;
+	}
+
+	static inline float vec3_squared_dist(const float pA[4], const float pB[4])
+	{
+		return square(pA[0] - pB[0]) + square(pA[1] - pB[1]) + square(pA[2] - pB[2]);
+	}
+
+	static inline float vec4_squared_dist(const float pA[4], const float pB[4])
+	{
+		return square(pA[0] - pB[0]) + square(pA[1] - pB[1]) + square(pA[2] - pB[2]) + square(pA[3] - pB[3]);
+	}
+
+	static inline void vec3_set_comp(float pDst[3], uint32_t comp_index, float val)
+	{
+		assert(comp_index < 3);
+		pDst[comp_index] = val;
+	}
+
+	static inline void vec4_set_comp(float pDst[4], uint32_t comp_index, float val)
+	{
+		assert(comp_index < 4);
+		pDst[comp_index] = val;
+	}
+
+	static inline float clamp_flag(float v, float l, float h, bool& did_clamp)
+	{
+		if (v < l)
+		{
+			did_clamp = true;
+			return l;
+		}
+		else if (v > h)
+		{
+			did_clamp = true;
+			return h;
+		}
+		return v;
+	}
+
+	static inline void vec3_clamp_flag(float pDst[3], float l, float h, bool& did_clamp) { for (uint32_t i = 0; i < 3; i++) pDst[i] = clamp_flag(pDst[i], l, h, did_clamp); }
+	static inline void vec4_clamp_flag(float pDst[4], float l, float h, bool& did_clamp) { for (uint32_t i = 0; i < 4; i++) pDst[i] = clamp_flag(pDst[i], l, h, did_clamp); }
+	 
 } // namespace basisu
 
+namespace bu_math
+{
+
+#ifdef BASISU_FIXED_TESTS
+	namespace fixed_test
+	{
+		// The fixed-point helpers (fixed<>, fixed_detail::) now live in basist.
+		using namespace basist;
+
+		// ---------------------------------------------------------------------------
+		// tiny test framework
+		// NOTE: header-safe form. Everything is `inline` (functions) or C++17
+		// `inline` variables (state), so this can live in bu_math.h included
+		// from many translation units without duplicate-symbol link errors,
+		// and all TUs share ONE copy of the counters (required for ODR
+		// correctness: an inline function must reference the same entities
+		// in every TU, which `static` file-scope variables violate).
+		// ---------------------------------------------------------------------------
+		inline long g_fails = 0;
+		inline long g_checks = 0;
+		inline long g_printed = 0;
+
+#define BASISU_FIXED_CHECK(cond, ...)									 \
+do {                                                                     \
+	g_checks++;                                                          \
+	if (!(cond)) {                                                       \
+		g_fails++;                                                       \
+		if (g_printed++ < 25) {                                          \
+			std::printf("FAIL %s:%d: ", __FILE__, __LINE__);             \
+			std::printf(__VA_ARGS__);                                    \
+			std::printf("\n");                                           \
+		}                                                                \
+	}                                                                    \
+} while (0)
+
+		inline void section(const char* name)
+		{
+			static long last = 0;              // function-local statics in an
+			static const char* prev = nullptr; // inline function are shared - OK
+			if (prev) std::printf("  %-44s %s\n", prev, g_fails == last ? "OK" : "** FAILED **");
+			prev = name; last = g_fails;
+			if (name) std::fflush(stdout);
+		}
+
+		// ---------------------------------------------------------------------------
+		// independent references (int64 quotient/remainder -- no __int128, no shifts)
+		// ---------------------------------------------------------------------------
+		// round half away from zero of num/den; |num|, |den| must fit int64 safely
+		inline int64_t ref_round_div(int64_t num, int64_t den)
+		{
+			const bool neg = (num < 0) != (den < 0);
+			const uint64_t n = num < 0 ? uint64_t(0) - uint64_t(num) : uint64_t(num);
+			const uint64_t d = den < 0 ? uint64_t(0) - uint64_t(den) : uint64_t(den);
+			uint64_t q = n / d, r = n % d;
+			if (2 * r >= d) q++;                       // tie -> away from zero
+			return neg ? -int64_t(q) : int64_t(q);
+		}
+
+		inline int clz64_ref(uint64_t x)               // naive, obviously-correct
+		{
+			int n = 0;
+			for (uint64_t b = uint64_t(1) << 63; b && !(x & b); b >>= 1) n++;
+			return n;
+		}
+
+		// ---------------------------------------------------------------------------
+		// compile-time battery: failures here do not even build
+		// ---------------------------------------------------------------------------
+		namespace ct {
+			using fx = fixed<16>;
+			// static_assert(fx::ONE == 65536, "");
+			// static_assert(fx::from_int(3).v == 3 * 65536, "");
+			// static_assert(fx::from_int(-3).v == -3 * 65536, "");
+			// static_assert(fx::from_float(0.5f).v == 32768, "");
+			// static_assert(fx::from_double(-2.75).v == -(2 * 65536 + 49152), "");
+			// static_assert(fx::from_float(3.14159265f).v == 205887, "");
+			// static_assert((fx::from_int(1) + fx::from_int(2)) == fx::from_int(3), "");
+			// static_assert((fx::from_int(1) - fx::from_int(2)) == fx::from_int(-1), "");
+			// static_assert((fx::from_int(2)* fx::from_double(0.5)) == fx::from_int(1), "");
+			// static_assert((fx::from_int(1) / fx::from_int(2)) == fx::from_double(0.5), "");
+			// static_assert((fx::from_int(7) / 2) == fx::from_double(3.5), "");
+			// static_assert((3 * fx::from_int(2)) == fx::from_int(6), "");
+			// static_assert(fx::from_float(2.5f).round_to_int() == 3, "");
+			// static_assert(fx::from_float(-2.5f).round_to_int() == -3, "");
+			// static_assert(fx::from_double(-2.75).floor() == fx::from_int(-3), "");
+			// static_assert(fx::from_double(-2.75).ceil() == fx::from_int(-2), "");
+			// static_assert(fx::from_double(-2.75).abs() == fx::from_double(2.75), "");
+			// static_assert(fx::from_double(-2.75).frac() == fx::from_double(0.25), "");
+			// static_assert(fx::from_int(4).sqrt() == fx::from_int(2), "");
+			// static_assert(fx::from_double(0.25).sqrt() == fx::from_double(0.5), "");
+			// static_assert(fx().sqrt() == fx(), "");
+			// static_assert(fx().sqrt_fast() == fx(), "");
+			// static_assert(fx::from_int(3).mul_fast(fx::from_double(0.5)) == fx::from_double(1.5), "");
+			// static_assert(fx::from_int(-7).div_fast(fx::from_int(2)) == fx::from_double(-3.5), "");
+			// static_assert((fx::from_int(-3) << 2) == fx::from_int(-12), "");
+			// static_assert(fx::from_int(2) < fx::from_int(3) && fx::from_int(3) >= fx::from_int(3), "");
+			// static_assert(fixed_detail::clz64(1) == 63, "");
+			// static_assert(fixed_detail::clz64(~uint64_t(0)) == 0, "");
+			// sqrt_fast(4) within tolerance of 2.0 (approximate by design)
+			constexpr int32_t sf4 = fx::from_int(4).sqrt_fast().v;
+			// static_assert(sf4 > 2 * 65536 - 32 && sf4 < 2 * 65536 + 32, "");
+		}
+
+		// ---------------------------------------------------------------------------
+		template<int F>
+		inline void test_basics()
+		{
+			using fx = fixed<F>;
+			// int round trips over the full representable integer range
+			const int32_t imax = INT32_MAX / fx::ONE;
+			for (int32_t i = -imax; i <= imax; i += (imax / 500) + 1) {
+				BASISU_FIXED_CHECK(fx::from_int(i).round_to_int() == i, "F=%d from_int/round %d", F, (int)i);
+				BASISU_FIXED_CHECK(fx::from_int(i).to_int() == i, "F=%d from_int/to_int %d", F, (int)i);
+			}
+			// float/double round trips: raw -> double -> raw must be exact
+			std::mt19937 rng(101);
+			std::uniform_int_distribution<int32_t> d(INT32_MIN, INT32_MAX);
+			for (int k = 0; k < 100000; k++) {
+				int32_t raw = d(rng);
+				BASISU_FIXED_CHECK(fx::from_double(fx::from_raw(raw).to_double()).v == raw,
+					"F=%d double round trip raw=%d", F, (int)raw);
+			}
+		}
+
+		// ---------------------------------------------------------------------------
+		inline void test_rounded_ops_random()
+		{
+			using fx = fixed<16>;
+			std::mt19937 rng(202);
+			// range keeps products and quotients inside int32 (no asserts, no skips)
+			std::uniform_int_distribution<int32_t> d(-181 * fx::ONE, 181 * fx::ONE);
+			for (int k = 0; k < 1000000; k++) {
+				const int32_t a = d(rng), b = d(rng);
+				BASISU_FIXED_CHECK((fx::from_raw(a) + fx::from_raw(b)).v == a + b, "add %d %d", (int)a, (int)b);
+				BASISU_FIXED_CHECK((fx::from_raw(a) - fx::from_raw(b)).v == a - b, "sub %d %d", (int)a, (int)b);
+				const int64_t wm = ref_round_div(int64_t(a) * b, fx::ONE);
+				BASISU_FIXED_CHECK((fx::from_raw(a) * fx::from_raw(b)).v == int32_t(wm),
+					"mul %d %d", (int)a, (int)b);
+				if (b != 0) {
+					const int64_t wd = ref_round_div(int64_t(a) * fx::ONE, b);
+					if (wd >= INT32_MIN && wd <= INT32_MAX)
+						BASISU_FIXED_CHECK((fx::from_raw(a) / fx::from_raw(b)).v == int32_t(wd),
+							"div %d %d", (int)a, (int)b);
+				}
+				const int32_t s = int32_t(rng() % 2001) - 1000;
+				if (s != 0)
+					BASISU_FIXED_CHECK((fx::from_raw(a) / s).v == int32_t(ref_round_div(a, s)),
+						"idiv %d %d", (int)a, (int)s);
+				BASISU_FIXED_CHECK(fx::from_raw(a).round_to_int() == int32_t(ref_round_div(a, fx::ONE)),
+					"round %d", (int)a);
+			}
+		}
+
+		// ---------------------------------------------------------------------------
+		// exhaustive small-format sweep: rounding behaviour is periodic in ONE, so
+		// fixed<4> over a modest grid hits every remainder/tie pattern, all signs
+		inline void test_exhaustive_fixed4()
+		{
+			using f4 = fixed<4>;
+			for (int32_t a = -640; a <= 640; a++)
+				for (int32_t b = -640; b <= 640; b++) {
+					BASISU_FIXED_CHECK((f4::from_raw(a) * f4::from_raw(b)).v
+						== int32_t(ref_round_div(int64_t(a) * b, f4::ONE)),
+						"f4 mul %d %d", (int)a, (int)b);
+					if (b != 0)
+						BASISU_FIXED_CHECK((f4::from_raw(a) / f4::from_raw(b)).v
+							== int32_t(ref_round_div(int64_t(a) * f4::ONE, b)),
+							"f4 div %d %d", (int)a, (int)b);
+				}
+		}
+
+		// ---------------------------------------------------------------------------
+		inline void test_fast_variants()
+		{
+			using fx = fixed<16>;
+			std::mt19937 rng(303);
+			std::uniform_int_distribution<int32_t> d(-181 * fx::ONE, 181 * fx::ONE);
+			for (int k = 0; k < 1000000; k++) {
+				const int32_t a = d(rng), b = d(rng);
+				// mul_fast truncates toward -inf: floor((a*b)/ONE)
+				const int64_t p = int64_t(a) * b;
+				const int64_t wm = (p - (p < 0 ? fx::ONE - 1 : 0)) / fx::ONE;   // floor div
+				BASISU_FIXED_CHECK(fx::from_raw(a).mul_fast(fx::from_raw(b)).v == int32_t(wm),
+					"mul_fast %d %d", (int)a, (int)b);
+				BASISU_FIXED_CHECK(std::llabs((fx::from_raw(a) * fx::from_raw(b)).v - wm) <= 1,
+					"mul_fast >1ulp from rounded %d %d", (int)a, (int)b);
+				if (b != 0) {
+					// div_fast truncates toward zero (C++ division)
+					const int64_t wd = (int64_t(a) * fx::ONE) / b;
+					if (wd >= INT32_MIN && wd <= INT32_MAX) {
+						BASISU_FIXED_CHECK(fx::from_raw(a).div_fast(fx::from_raw(b)).v == int32_t(wd),
+							"div_fast %d %d", (int)a, (int)b);
+						BASISU_FIXED_CHECK(std::llabs((fx::from_raw(a) / fx::from_raw(b)).v - wd) <= 1,
+							"div_fast >1ulp from rounded %d %d", (int)a, (int)b);
+					}
+				}
+				const int32_t s = int32_t(rng() % 2001) - 1000;
+				if (s != 0)
+					BASISU_FIXED_CHECK(fx::from_raw(a).div_fast(s).v == a / s, "div_fast int %d %d", (int)a, (int)s);
+			}
+		}
+
+		// ---------------------------------------------------------------------------
+		inline void test_clz()
+		{
+			std::mt19937_64 rng(404);
+			for (int bit = 0; bit < 64; bit++) {
+				const uint64_t p = uint64_t(1) << bit;
+				BASISU_FIXED_CHECK(fixed_detail::clz64(p) == clz64_ref(p), "clz 2^%d", bit);
+				const uint64_t f = (bit == 63) ? ~uint64_t(0) : (p | (p - 1));
+				BASISU_FIXED_CHECK(fixed_detail::clz64(f) == clz64_ref(f), "clz fill %d", bit);
+				for (int k = 0; k < 2000; k++) {
+					const uint64_t x = p | (rng() & (p - 1));
+					BASISU_FIXED_CHECK(fixed_detail::clz64(x) == clz64_ref(x), "clz rand bit %d", bit);
+				}
+			}
+		}
+
+		// ---------------------------------------------------------------------------
+		// exact sqrt: pure-integer round-to-nearest certificate, no floating point.
+		// r = round(sqrt(x)) iff (2r-1)^2 <= 4x <= (2r+1)^2  (ties impossible)
+		template<int F>
+		inline void check_sqrt_exact(int32_t raw)
+		{
+			using fx = fixed<F>;
+			const uint64_t x = uint64_t(uint32_t(raw)) << F;
+			const uint64_t r = uint64_t(uint32_t(fx::from_raw(raw).sqrt().v));
+			if (x == 0) { BASISU_FIXED_CHECK(r == 0, "sqrt(0) F=%d", F); return; }
+			BASISU_FIXED_CHECK(r > 0, "sqrt=0 for x>0, F=%d raw=%d", F, (int)raw);
+			const uint64_t lo = (2 * r - 1) * (2 * r - 1);
+			const uint64_t hi = (2 * r + 1) * (2 * r + 1);
+			BASISU_FIXED_CHECK(lo <= 4 * x && 4 * x <= hi, "sqrt not nearest F=%d raw=%d r=%llu",
+				F, (int)raw, (unsigned long long)r);
+		}
+
+		inline void test_sqrt()
+		{
+			using fx = fixed<16>;
+			for (int32_t raw = 0; raw <= 300000; raw++) check_sqrt_exact<16>(raw);   // exhaustive small
+			std::mt19937 rng(505);
+			std::uniform_int_distribution<int32_t> d(0, INT32_MAX);
+			for (int k = 0; k < 500000; k++) check_sqrt_exact<16>(d(rng));           // random full range
+			for (int k = 0; k < 50000; k++) {                                        // other formats
+				check_sqrt_exact<8>(d(rng));
+				check_sqrt_exact<24>(d(rng));
+				check_sqrt_exact<30>(d(rng));
+			}
+			// monotonic on a coarse sweep (regression guard for table/normalize bugs)
+			int32_t prev = -1;
+			for (int64_t raw = 0; raw <= INT32_MAX; raw += 4093) {
+				const int32_t r = fx::from_raw(int32_t(raw)).sqrt().v;
+				BASISU_FIXED_CHECK(r >= prev, "sqrt not monotonic at raw=%lld", (long long)raw);
+				prev = r;
+			}
+		}
+
+		// bound: within max(2 ulp, 6e-5 relative) of the EXACT integer sqrt.
+		// (measured: <= ~3.1e-5 relative for v >= 1; tiny inputs are
+		// quantization-dominated, covered by the 2-ulp floor)
+		// Plain function rather than a local lambda: MSVC had trouble
+		// compiling the lambda form, and this is equivalent.
+		inline void check_sqrt_fast_one(int32_t raw)
+		{
+			using fx = fixed<16>;
+			const int64_t e = fx::from_raw(raw).sqrt().v;
+			const int64_t f = fx::from_raw(raw).sqrt_fast().v;
+			const double tol = basisu::maximum(2.0, double(e) * 6e-5);
+			BASISU_FIXED_CHECK(std::llabs(f - e) <= (int64_t)tol,
+				"sqrt_fast raw=%d exact=%lld fast=%lld", (int)raw, (long long)e, (long long)f);
+		}
+
+		inline void test_sqrt_fast()
+		{
+			for (int32_t raw = 0; raw <= 200000; raw++)
+				check_sqrt_fast_one(raw);
+			std::mt19937 rng(606);
+			std::uniform_int_distribution<int32_t> d(0, INT32_MAX);
+			for (int k = 0; k < 500000; k++)
+				check_sqrt_fast_one(d(rng));
+			// every LUT index gets exercised at both interval edges
+			for (uint64_t i = 32; i < 128; i++) {
+				for (int t = 16; t <= 44; t += 2) {     // various magnitudes, F=16
+					const uint64_t X = i << 57;
+					const uint64_t x = X >> t;
+					if (x >> 16 <= uint64_t(INT32_MAX) && (x >> 16) << 16 == ((X >> t) >> 16) << 16) {
+						const int32_t raw = int32_t(x >> 16);
+						if (raw > 0)
+							check_sqrt_fast_one(raw);
+					}
+				}
+			}
+		}
+
+		// ---------------------------------------------------------------------------
+		inline void test_helpers_and_compound()
+		{
+			using fx = fixed<16>;
+			std::mt19937 rng(707);
+			std::uniform_int_distribution<int32_t> d(-30000 * fx::ONE / 2, 30000 * fx::ONE / 2);
+			for (int k = 0; k < 200000; k++) {
+				const int32_t a = d(rng), b = d(rng);
+				const fx A = fx::from_raw(a), B = fx::from_raw(b);
+				// floor/ceil/frac identities (pure integer)
+				BASISU_FIXED_CHECK(A.floor().v % fx::ONE == 0 && A.floor().v <= a && a - A.floor().v < fx::ONE,
+					"floor %d", (int)a);
+				BASISU_FIXED_CHECK(A.ceil().v % fx::ONE == 0 && A.ceil().v >= a && A.ceil().v - a < fx::ONE,
+					"ceil %d", (int)a);
+				BASISU_FIXED_CHECK(A.floor().v + A.frac().v == a, "floor+frac %d", (int)a);
+				BASISU_FIXED_CHECK(A.abs().v == (a < 0 ? -a : a), "abs %d", (int)a);
+				BASISU_FIXED_CHECK((-A).v == -a, "neg %d", (int)a);
+				// comparisons agree with raw
+				BASISU_FIXED_CHECK((A < B) == (a < b) && (A == B) == (a == b) && (A >= B) == (a >= b),
+					"cmp %d %d", (int)a, (int)b);
+				// compound forms equal their binary counterparts
+				fx c = A; c += B; BASISU_FIXED_CHECK(c == A + B, "+= %d %d", (int)a, (int)b);
+				c = A; c -= B;    BASISU_FIXED_CHECK(c == A - B, "-= %d %d", (int)a, (int)b);
+				c = A; c *= fx::from_double(0.25); BASISU_FIXED_CHECK(c == A * fx::from_double(0.25), "*=");
+				if (b != 0) {
+					// stay inside the legal domain: skip quotients that won't fit int32
+					const int64_t w = (int64_t(a) * fx::ONE) / b;
+					if (w > INT32_MIN / 2 && w < INT32_MAX / 2) {
+						c = A; c /= B; BASISU_FIXED_CHECK(c == A / B, "/=");
+					}
+				}
+				// shift identities on safe range
+				const fx S = fx::from_raw(a / 16);
+				BASISU_FIXED_CHECK((S << 2) == S * 4, "<< %d", (int)a);
+				BASISU_FIXED_CHECK(((S << 3) >> 3) == S, "<<>> %d", (int)a);
+			}
+			// wide-accumulate pattern + lerp
+			std::uniform_int_distribution<int32_t> dw(-60 * fx::ONE, 60 * fx::ONE);   // 60*60*8 fits
+			for (int k = 0; k < 100000; k++) {
+				int64_t acc = 0, ref = 0;
+				for (int i = 0; i < 8; i++) {
+					const fx va = fx::from_raw(dw(rng)), vb = fx::from_raw(dw(rng));
+					acc += va.mul_wide(vb);
+					ref += int64_t(va.v) * vb.v;
+				}
+				BASISU_FIXED_CHECK(fx::from_sum(acc).v == int32_t(ref_round_div(ref, fx::ONE)), "dot %d", k);
+				const int32_t la = dw(rng), lb = dw(rng), lt = int32_t(uint32_t(rng()) % (fx::ONE + 1));
+				const int64_t want = la + ref_round_div((int64_t(lb) - la) * lt, fx::ONE);
+				BASISU_FIXED_CHECK(fx::lerp(fx::from_raw(la), fx::from_raw(lb), fx::from_raw(lt)).v == int32_t(want),
+					"lerp %d %d %d", (int)la, (int)lb, (int)lt);
+				BASISU_FIXED_CHECK(fx::lerp(fx::from_raw(la), fx::from_raw(lb), fx()).v == la, "lerp t=0");
+				BASISU_FIXED_CHECK(fx::lerp(fx::from_raw(la), fx::from_raw(lb), fx::from_int(1)).v == lb, "lerp t=1");
+			}
+			// boundary values that are legal and must not misbehave
+			BASISU_FIXED_CHECK(fx::from_raw(INT32_MIN).round_to_int() == -32768, "round INT32_MIN");
+			BASISU_FIXED_CHECK(fx::from_raw(INT32_MAX).round_to_int() == 32768, "round INT32_MAX");
+			BASISU_FIXED_CHECK(fx::from_raw(INT32_MAX).sqrt().v > 0, "sqrt max");
+			BASISU_FIXED_CHECK(fx::from_raw(0).sqrt_fast().v == 0, "sqrt_fast 0");
+			BASISU_FIXED_CHECK(fx::from_raw(1).sqrt().v == 256, "sqrt 1 ulp");       // sqrt(2^-16)=2^-8
+		}
+
+		// ---------------------------------------------------------------------------
+		// Call this from your test runner / main(). Returns true on success,
+		// false on any failure.
+		inline bool run_tests()
+		{
+			g_fails = 0; g_checks = 0; g_printed = 0;   // re-runnable
+
+			std::printf("fixed.hpp validation harness (C++17, %s build)\n",
+#ifdef NDEBUG
+				"NDEBUG"
+#else
+				"assert-enabled"
+#endif
+			);
+
+			section("basics/round-trips fixed<16>");   test_basics<16>();
+			section("basics/round-trips fixed<8>");    test_basics<8>();
+			section("basics/round-trips fixed<24>");   test_basics<24>();
+			section("rounded ops, 1M random vs reference"); test_rounded_ops_random();
+			section("exhaustive fixed<4> mul/div (all tie patterns)"); test_exhaustive_fixed4();
+			section("fast variants semantics, 1M random");  test_fast_variants();
+			section("clz64 vs naive reference, all bit positions"); test_clz();
+			section("sqrt exact: integer nearest-certificate"); test_sqrt();
+			section("sqrt_fast: error bounds + LUT coverage");  test_sqrt_fast();
+			section("helpers, compounds, boundaries"); test_helpers_and_compound();
+			section(nullptr);   // flush last section
+
+			std::printf("\n%ld checks, %ld failures -> %s\n",
+				g_checks, g_fails, g_fails ? "FAILED" : "ALL PASSED");
+			return g_fails == 0;
+		}
+	} // namespace fixed_test
+
+#undef BASISU_FIXED_CHECK
+
+#endif // BASISU_FIXED_TESTS
+
+} // namespace bu_math
