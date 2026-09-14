@@ -2,17 +2,15 @@
 
 #pragma once
 
-#include "Engine/Scripting/ScriptingObjectInterfaceReferenceUtils.h"
+#include "ScriptingObjectReference.h"
 
 /// <summary>
-/// The scene object interface reference.
+/// The scripting object reference with interface.
 /// </summary>
 /// <typeparam name="T">The type of the scripting interface.</typeparam>
 template<typename T>
-API_CLASS(InBuild) class ScriptingObjectInterfaceReference : public ScriptingObjectReferenceBase
+API_CLASS(Template, MarshalAs=ScriptingObject*) class ScriptingObjectInterfaceReference : public ScriptingObjectReferenceBase
 {
-    typedef ScriptingObjectInterfaceReferenceHelper<T> Helper;
-
 public:
     typedef ScriptingObjectInterfaceReference<T> Type;
 
@@ -28,8 +26,8 @@ public:
     /// Initializes a new instance of the <see cref="ScriptingObjectInterfaceReference"/> class.
     /// </summary>
     /// <param name="obj">The object to link.</param>
-    ScriptingObjectInterfaceReference(SceneObject* obj)
-        : ScriptingObjectReferenceBase(Helper::IsValidObject(obj) ? obj : nullptr)
+    ScriptingObjectInterfaceReference(ScriptingObject* obj)
+        : ScriptingObjectReferenceBase(IsValid(obj) ? obj : nullptr)
     {
     }
 
@@ -38,7 +36,7 @@ public:
     /// </summary>
     /// <param name="interfaceObj">The interface object to link.</param>
     ScriptingObjectInterfaceReference(T* interfaceObj)
-        : ScriptingObjectReferenceBase(Helper::GetSceneObject(interfaceObj))
+        : ScriptingObjectReferenceBase(ScriptingObject::FromInterface<T>(interfaceObj))
     {
     }
 
@@ -64,12 +62,12 @@ public:
     }
 
 public:
-    FORCE_INLINE bool operator==(SceneObject* other) const
+    FORCE_INLINE bool operator==(ScriptingObject* other) const
     {
         return _object == other;
     }
 
-    FORCE_INLINE bool operator!=(SceneObject* other) const
+    FORCE_INLINE bool operator!=(ScriptingObject* other) const
     {
         return _object != other;
     }
@@ -94,33 +92,34 @@ public:
         return _object != other._object;
     }
 
-    FORCE_INLINE ScriptingObjectInterfaceReference& operator=(SceneObject* other)
+    FORCE_INLINE ScriptingObjectInterfaceReference& operator=(ScriptingObject* other)
     {
-        OnSet(Helper::IsValidObject(other) ? other : nullptr);
+        OnSet(IsValid(other) ? other : nullptr);
         return *this;
     }
 
     FORCE_INLINE ScriptingObjectInterfaceReference& operator=(T* other)
     {
-        OnSet(Helper::GetSceneObject(other));
+        OnSet(ScriptingObject::FromInterface<T>(other));
         return *this;
     }
 
-    ScriptingObjectInterfaceReference& operator=(const ScriptingObjectInterfaceReference& other)
+    FORCE_INLINE ScriptingObjectInterfaceReference& operator=(const ScriptingObjectInterfaceReference& other)
     {
         OnSet(other._object);
         return *this;
     }
 
-    ScriptingObjectInterfaceReference& operator=(ScriptingObjectInterfaceReference&& other) noexcept
+    FORCE_INLINE ScriptingObjectInterfaceReference& operator=(ScriptingObjectInterfaceReference&& other) noexcept
     {
         ScriptingObjectReferenceBase::operator=(MoveTemp(other));
         return *this;
     }
 
-    FORCE_INLINE ScriptingObjectInterfaceReference& operator=(const Guid& id)
+    ScriptingObjectInterfaceReference& operator=(const Guid& id)
     {
-        OnSet(Helper::FindSceneObject(id));
+        ScriptingObject* obj = FindObject(id, ScriptingObject::GetStaticClass());
+        OnSet(IsValid(obj) ? obj : nullptr);
         return *this;
     }
 
@@ -130,6 +129,14 @@ public:
     FORCE_INLINE operator T*() const
     {
         return Get();
+    }
+
+    /// <summary>
+    /// Implicit conversion to the object.
+    /// </summary>
+    FORCE_INLINE operator ScriptingObject*() const
+    {
+        return _object;
     }
 
     /// <summary>
@@ -159,33 +166,24 @@ public:
     /// <summary>
     /// Gets the referenced object.
     /// </summary>
-    FORCE_INLINE SceneObject* GetObject() const
+    FORCE_INLINE ScriptingObject* GetObject() const
     {
-        return static_cast<SceneObject*>(_object);
+        return _object;
     }
 
     /// <summary>
-    /// Copies the object ID into the raw storage.
+    /// Gets managed instance object.
     /// </summary>
-    FORCE_INLINE void CopyID(uint32 id[4]) const
+    FORCE_INLINE MObject* GetManagedInstance() const
     {
-        memset(id, 0, sizeof(uint32) * 4);
-        if (_object)
-        {
-            const Guid value = GetID();
-            memcpy(id, &value, sizeof(uint32) * 4);
-        }
+        return _object ? _object->GetOrCreateManagedInstance() : nullptr;
     }
 
-    /// <summary>
-    /// Gets the object as a given type (static cast).
-    /// </summary>
-    template<typename U>
-    FORCE_INLINE U* As() const
+private:
+    FORCE_INLINE static bool IsValid(const ScriptingObject* obj)
     {
-        return static_cast<U*>(_object);
+        return !obj || obj->GetType().GetInterface(T::TypeInitializer);
     }
-
 };
 
 template<typename T>

@@ -38,18 +38,10 @@ namespace Flax.Build.Bindings
         /// Gets a value indicating whether this type is a reference to another object.
         /// </summary>
         public bool IsObjectRef => (Type == "ScriptingObjectReference" ||
-                                    Type == "ScriptingObjectInterfaceReference" ||
                                     Type == "AssetReference" ||
                                     Type == "WeakAssetReference" ||
                                     Type == "SoftAssetReference" ||
-                                    Type == "SoftObjectReference" ||
-                                    Type == "SoftObjectInterfaceReference") && GenericArgs != null;
-
-        /// <summary>
-        /// Gets a value indicating whether this type is a reference to another object filtered by interface.
-        /// </summary>
-        public bool IsInterfaceRef => (Type == "ScriptingObjectInterfaceReference" ||
-                                       Type == "SoftObjectInterfaceReference") && GenericArgs != null;
+                                    Type == "SoftObjectReference") && GenericArgs != null;
 
         public TypeInfo()
         {

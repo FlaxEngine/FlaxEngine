@@ -58,13 +58,11 @@ namespace FlaxEditor.CustomEditors
             if (targetType.Type == typeof(object) && values.Count > 0 && values[0] != null && !values.HasDifferentTypes)
                 return CreateEditor(TypeUtils.GetObjectType(values[0]), canUseRefPicker);
 
-            // Use editor for the property type
-            if (canUseRefPicker &&
-                targetType.IsInterface &&
-                values.GetAttributes().Any(x => x is ScriptingObjectInterfaceReferenceAttribute || x is SoftObjectInterfaceReferenceAttribute))
-            {
+            // Special case if property is interface but the value is implemented as Scripting Object that should use reference picker (or all interface impl are by Scripting Objects)
+            if (canUseRefPicker && targetType.IsInterface && values.Count > 0 && values[0] is FlaxEngine.Object)
                 return new FlaxObjectRefEditor();
-            }
+
+            // Use editor for the property type
             return CreateEditor(targetType, canUseRefPicker);
         }
 

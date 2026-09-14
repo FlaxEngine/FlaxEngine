@@ -2,6 +2,7 @@
 
 using System;
 using System.Linq;
+using System.Reflection;
 using FlaxEditor.Content;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
@@ -156,42 +157,30 @@ namespace FlaxEditor.CustomEditors.Editors
         private void ShowDropDownMenu()
         {
             Focus();
+            var pos = new Float2(0, Height);
             if (_type.IsInterface)
             {
-                SceneObjectSearchPopup.Show(this, new Float2(0, Height), IsValid, obj =>
-                {
-                    Value = obj;
-                    RootWindow.Focus();
-                    Focus();
-                }, PresenterContext);
+                SceneObjectSearchPopup.Show(this, pos, IsValid, SetDropDownResult, PresenterContext);
             }
             else if (new ScriptType(typeof(Actor)).IsAssignableFrom(_type))
             {
-                ActorSearchPopup.Show(this, new Float2(0, Height), IsValid, actor =>
-                {
-                    Value = actor;
-                    RootWindow.Focus();
-                    Focus();
-                }, PresenterContext);
+                ActorSearchPopup.Show(this, pos, IsValid, SetDropDownResult, PresenterContext);
             }
             else if (new ScriptType(typeof(Control)).IsAssignableFrom(_type))
             {
-                ActorSearchPopup.Show(this, new Float2(0, Height), IsValid, actor =>
-                {
-                    Value = actor as UIControl;
-                    RootWindow.Focus();
-                    Focus();
-                }, PresenterContext);
+                ActorSearchPopup.Show(this, pos, IsValid, actor => { SetDropDownResult(actor as UIControl); }, PresenterContext);
             }
             else
             {
-                ScriptSearchPopup.Show(this, new Float2(0, Height), IsValid, script =>
-                {
-                    Value = script;
-                    RootWindow.Focus();
-                    Focus();
-                }, PresenterContext);
+                ScriptSearchPopup.Show(this, pos, IsValid, SetDropDownResult, PresenterContext);
             }
+        }
+
+        private void SetDropDownResult(Object value)
+        {
+            Value = value;
+            RootWindow.Focus();
+            Focus();
         }
 
         /// <summary>
@@ -228,7 +217,7 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 // Draw info
                 Render2D.PushClip(nameRect);
-                Render2D.DrawText(style.FontMedium, Type != null ? $"Multiple Values ({Utilities.Utils.GetPropertyNameUI(Type.ToString())})" : "-", nameRect, isEnabled ? style.ForegroundGrey : style.ForegroundGrey.AlphaMultiplied(0.75f), TextAlignment.Near, TextAlignment.Center);
+                Render2D.DrawText(style.FontMedium, Type != null ? $"Multiple Values ({Utilities.Utils.GetTypeNameUI(_type)})" : "-", nameRect, isEnabled ? style.ForegroundGrey : style.ForegroundGrey.AlphaMultiplied(0.75f), TextAlignment.Near, TextAlignment.Center);
                 Render2D.PopClip();
             }
             else if (isSelected)
@@ -245,7 +234,7 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 // Draw info
                 Render2D.PushClip(nameRect);
-                Render2D.DrawText(style.FontMedium, Type != null ? $"None ({Utilities.Utils.GetPropertyNameUI(Type.ToString())})" : "-", nameRect, isEnabled ? style.ForegroundGrey : style.ForegroundGrey.AlphaMultiplied(0.75f), TextAlignment.Near, TextAlignment.Center);
+                Render2D.DrawText(style.FontMedium, Type != null ? $"None ({Utilities.Utils.GetTypeNameUI(_type)})" : "-", nameRect, isEnabled ? style.ForegroundGrey : style.ForegroundGrey.AlphaMultiplied(0.75f), TextAlignment.Near, TextAlignment.Center);
                 Render2D.PopClip();
             }
 
@@ -667,6 +656,60 @@ namespace FlaxEditor.CustomEditors.Editors
             if (!differentValues)
             {
                 _element.CustomControl.Value = Values[0] as Object;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Default implementation of the inspector used to edit reference to the <see cref="ScriptingObjectInterfaceReference{T}"/>.
+    /// </summary>
+    internal sealed class ScriptingObjectInterfaceReferenceEditor : CustomEditor
+    {
+        private CustomElement<FlaxObjectRefPickerControl> _element;
+
+        /// <inheritdoc />
+        public override DisplayStyle Style => DisplayStyle.Inline;
+
+        /// <inheritdoc />
+        public override void Initialize(LayoutElementsContainer layout)
+        {
+            if (!HasDifferentTypes)
+            {
+                _element = layout.Custom<FlaxObjectRefPickerControl>();
+                _element.CustomControl.PresenterContext = Presenter.Owner;
+                _element.CustomControl.Type = new ScriptType(Values.Type.GetGenericArguments()[0]);
+                _element.CustomControl.ValueChanged += OnValueChanged;
+            }
+        }
+
+        private void OnValueChanged()
+        {
+            // Set value
+            var obj = _element.CustomControl.Value;
+            var v = Values.Type.CreateInstance();
+            var objectField = v.GetType().GetField("_object", BindingFlags.Instance | BindingFlags.NonPublic);
+            objectField.SetValue(v, obj);
+            SetValue(v);
+        }
+
+        /// <inheritdoc />
+        public override void Refresh()
+        {
+            base.Refresh();
+
+            var differentValues = HasDifferentValues;
+            _element.CustomControl.DifferentValues = differentValues;
+            if (!differentValues)
+            {
+                // Get value
+                var v = Values[0];
+                var obj = v as Object;
+                if (v != null && obj == null)
+                {
+                    var objectField = v.GetType().GetField("_object", BindingFlags.Instance | BindingFlags.NonPublic);
+                    obj = objectField.GetValue(v) as Object;
+                }
+                _element.CustomControl.Value = obj;
             }
         }
     }

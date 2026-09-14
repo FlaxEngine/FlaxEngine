@@ -160,9 +160,7 @@ public:
     template<typename T>
     FORCE_INLINE void Write(const ScriptingObjectInterfaceReference<T>& v)
     {
-        uint32 id[4];
-        v.CopyID(id);
-        WriteBytes(id, sizeof(id));
+        Write(v.GetObject());
     }
 
     template<typename T>
