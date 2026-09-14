@@ -297,6 +297,11 @@ namespace FlaxEditor.CustomEditors
                         else if (Type.Type == typeof(long))
                             _defaultValue = Convert.ToInt64(_defaultValue);
                     }
+                    else if (_defaultValue == null && Type.IsValueType)
+                    {
+                        // Use zero value for value-types that have null as default value for some reason
+                        _defaultValue = Type.CreateInstance();
+                    }
                 }
             }
             if (instanceValues._hasReferenceValue)
