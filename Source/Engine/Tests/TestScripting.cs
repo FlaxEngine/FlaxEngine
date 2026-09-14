@@ -2,6 +2,7 @@
 
 #if FLAX_TESTS
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -41,6 +42,33 @@ namespace FlaxEngine.Tests
             }
             NativeLibrary.Free(library);
             return result;
+        }
+
+        /// <summary>
+        /// Tests <see cref="ScriptingObjectInterfaceReference{T}"/> usage with marshalling.
+        /// </summary>
+        public static int TestInterfaceReference()
+        {
+            var native = new TestClassNative();
+            native.InterfaceRef = native;
+            var returned = native.InterfaceRef;
+            if (returned != native)
+                return 1;
+            returned = native.TestPassInterface(native);
+            if (returned != native)
+                return 2;
+            returned = native.TestPassInterfaceArray(new ScriptingObjectInterfaceReference<ITestInterface>[1] { native })[0];
+            if (returned != native)
+                return 3;
+            var dic = new Dictionary<string, ScriptingObjectInterfaceReference<ITestInterface>>();
+            dic.Add("key", native);
+            returned = native.TestPassInterfaceDictionary(dic)["key"];
+            if (returned != native)
+                return 4;
+            var res = returned.Interface.TestInterfaceMethod("123");
+            if (res != 3)
+                return 5;
+            return 0;
         }
     }
 }

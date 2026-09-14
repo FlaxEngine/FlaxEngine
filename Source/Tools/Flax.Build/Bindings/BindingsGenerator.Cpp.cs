@@ -171,6 +171,8 @@ namespace Flax.Build.Bindings
                 return $"Variant({value}.Get())";
             if (typeInfo.Type == "SoftTypeReference")
                 return $"Variant::Typename(StringAnsiView({value}))";
+            if (typeInfo.Type == "ScriptingObjectInterfaceReference")
+                return $"Variant({value}.GetObject())";
             if (typeInfo.IsArray)
             {
                 var wrapperName = GenerateCppWrapperNativeToVariantMethodName(typeInfo);
@@ -305,12 +307,12 @@ namespace Flax.Build.Bindings
                 return $"(StringAnsiView){value}";
             if (typeInfo.IsPtr && typeInfo.IsConst && typeInfo.Type == "Char")
                 return $"((StringView){value}).GetText()"; // (StringView)Variant, if not empty, is guaranteed to point to a null-terminated buffer.
-            if (typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "SoftObjectReference")
-                return $"ScriptingObject::Cast<{typeInfo.GenericArgs[0].Type}>((ScriptingObject*){value})";
             if (typeInfo.IsObjectRef)
-                return $"ScriptingObject::Cast<{typeInfo.GenericArgs[0].Type}>((Asset*){value})";
+                return $"ScriptingObject::Cast<{typeInfo.GenericArgs[0].Type}>((ScriptingObject*){value})";
             if (typeInfo.Type == "SoftTypeReference")
                 return $"(StringAnsiView){value}";
+            if (typeInfo.Type == "ScriptingObjectInterfaceReference")
+                return $"ScriptingObjectInterfaceReference<{typeInfo.GenericArgs[0].Type}>((ScriptingObject*){value})";
             if (typeInfo.IsArray)
                 throw new Exception($"Not supported type to convert from the Variant to fixed-size array '{typeInfo}[{typeInfo.ArraySize}]'.");
             if (typeInfo.Type == "Array" && typeInfo.GenericArgs != null)
