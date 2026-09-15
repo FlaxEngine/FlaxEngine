@@ -442,6 +442,20 @@ namespace FlaxEditor.GUI.ContextMenu
         }
 
         /// <inheritdoc />
+        protected override void OnShow()
+        {
+            StartTextInput();
+            base.OnShow();
+        }
+
+        /// <inheritdoc />
+        protected override void OnHide()
+        {
+            EndTextInput();
+            base.OnHide();
+        }
+
+        /// <inheritdoc />
         public override bool OnCharInput(char c)
         {
             if (base.OnCharInput(c))

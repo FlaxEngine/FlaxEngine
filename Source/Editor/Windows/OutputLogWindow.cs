@@ -144,7 +144,19 @@ namespace FlaxEditor.Windows
                 {
                     rect = new Rectangle(2, 0, Width - 4, Height);
                 }
+                
+                public override void OnGotFocus()
+                {
+                    StartTextInput();
+                    base.OnGotFocus();
+                }
 
+                public override void OnLostFocus()
+                {
+                    EndTextInput();
+                    base.OnLostFocus();
+                }
+                
                 public override bool OnCharInput(char c)
                 {
                     if (Owner != null && (!Owner._searchPopup?.Visible ?? true))
