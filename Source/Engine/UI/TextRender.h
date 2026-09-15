@@ -33,6 +33,7 @@ private:
     };
 
     bool _isDirty = false;
+    bool _boundsDirty = false;
     bool _buffersDirty = false;
     bool _isLocalized = false;
     LocalizedString _text;
@@ -133,6 +134,8 @@ public:
     /// </summary>
     API_PROPERTY() FORCE_INLINE BoundingBox GetLocalBox() const
     {
+        if (_boundsDirty)
+            const_cast<TextRender*>(this)->UpdateBounds();
         return _localBox;
     }
 
@@ -152,17 +155,27 @@ public:
 #endif
 
 private:
-    void Invalidate()
+    void InvalidateLayout()
     {
-        // Invalidate data
+        _isDirty = true;
+        _boundsDirty = true;
+    }
+
+    void InvalidateDraw()
+    {
         _isDirty = true;
     }
+
+    bool ResolveText(String& textData, const String*& textPtr);
+    void SetLocalBox(const BoundingBox& value);
+    void UpdateBounds();
 
 public:
     // [Actor]
     bool HasContentLoaded() const override;
     void Draw(RenderContext& renderContext) override;
 #if USE_EDITOR
+    BoundingBox GetEditorBox() const override;
     void OnDebugDrawSelected() override;
 #endif
     void OnLayerChanged() override;
