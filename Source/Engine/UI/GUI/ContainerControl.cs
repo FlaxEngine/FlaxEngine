@@ -171,6 +171,12 @@ namespace FlaxEngine.GUI
         /// </summary>
         public virtual void DisposeChildren()
         {
+            // Steal focus from children to maintain it in a hierarchy
+            if (ContainsFocus)
+            {
+                Focus();
+            }
+
             bool wasLayoutLocked = _isLayoutLocked;
             _isLayoutLocked = true;
 
