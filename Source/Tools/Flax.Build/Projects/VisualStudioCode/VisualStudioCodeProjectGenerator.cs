@@ -344,7 +344,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                                         {
                                             if (configuration.Platform == TargetPlatform.Linux || configuration.Platform == TargetPlatform.Mac)
                                                 json.AddUnnamedField("-std");
-                                            json.AddUnnamedField($"-project=\"{buildToolWorkspace}\"");
+                                            json.AddUnnamedField($"-project={buildToolWorkspace}");
                                             json.AddUnnamedField("-skipCompile");
                                             if (hasMonoProjects)
                                             {
@@ -398,7 +398,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                                         {
                                             if (configuration.Platform == TargetPlatform.Linux || configuration.Platform == TargetPlatform.Mac)
                                                 json.AddUnnamedField("-std");
-                                            json.AddUnnamedField($"-project=\"{buildToolWorkspace}\"");
+                                            json.AddUnnamedField($"-project={buildToolWorkspace}");
                                             json.AddUnnamedField("-skipCompile");
                                         }
                                         json.EndArray();
@@ -412,7 +412,6 @@ namespace Flax.Build.Projects.VisualStudioCode
                                     {
                                     case TargetPlatform.Windows:
                                         json.AddField("stopAtEntry", false);
-                                        json.AddField("externalConsole", true);
                                         break;
                                     case TargetPlatform.Linux: break;
                                     }
@@ -525,7 +524,6 @@ namespace Flax.Build.Projects.VisualStudioCode
                 {
                 case TargetPlatform.Windows:
                     json.AddField("stopAtEntry", false);
-                    json.AddField("externalConsole", true);
                     break;
                 }
             }
