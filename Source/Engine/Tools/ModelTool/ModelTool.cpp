@@ -1631,6 +1631,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             }
         }
     }
+#if 0
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && options.Type == ModelType::Prefab)
     {
         // Apply just the scale and rotations.
@@ -1663,6 +1664,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             }
         }
     }
+#endif
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Animations))
     {
         for (auto& animation : data.Animations)
