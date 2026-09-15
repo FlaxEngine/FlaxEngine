@@ -242,8 +242,9 @@ namespace FlaxEngine.GUI
                 if (_window)
                     _window.Position = mousePos + TooltipOffset;
             }
-            
-            if (Input.Mouse.IsAnyButtonDown || Math.Abs(Input.Mouse.ScrollDelta) > Mathf.Epsilon)
+
+            var mouse = Input.Mouse;
+            if (mouse.IsAnyButtonDown || Math.Abs(mouse.ScrollDelta) > Mathf.Epsilon)
             {
                 // Hide popup when buttons are pressed
                 Hide();
