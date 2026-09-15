@@ -52,7 +52,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override bool CanDrawThumbnail(ThumbnailRequest request)
         {
-            return _preview.HasLoadedAssets && ThumbnailsModule.HasMinimumQuality((CubeTexture)request.Asset);
+            return _preview.HasContentLoaded && ThumbnailsModule.HasMinimumQuality((CubeTexture)request.Asset);
         }
 
         /// <inheritdoc />

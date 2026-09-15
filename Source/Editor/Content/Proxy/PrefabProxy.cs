@@ -118,7 +118,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override bool CanDrawThumbnail(ThumbnailRequest request)
         {
-            if (!_preview.HasLoadedAssets)
+            if (!_preview.HasContentLoaded)
                 return false;
 
             // Check if asset is streamed enough
