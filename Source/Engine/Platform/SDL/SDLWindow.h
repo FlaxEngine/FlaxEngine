@@ -102,6 +102,8 @@ public:
     DragDropEffect DoDragDrop(const StringView& data, const Float2& offset, Window* dragSourceWindow) override;
     void StartTrackingMouse(bool useMouseScreenOffset) override;
     void EndTrackingMouse() override;
+    void StartTextInput() override;
+    void EndTextInput() override;
     void StartClippingCursor(const Rectangle& bounds) override;
     void EndClippingCursor() override;
     void SetMousePosition(const Float2& position) const override;

@@ -43,6 +43,7 @@ protected:
     Rectangle _mouseOffsetScreenSize;
     bool _isUsingMouseOffset = false;
     bool _isTrackingMouse = false;
+    bool _isTextInputEnabled = false;
     bool _isHorizontalFlippingMouse = false;
     bool _isVerticalFlippingMouse = false;
     bool _isClippingCursor = false;
@@ -482,6 +483,20 @@ public:
     /// Ends the mouse tracking.
     /// </summary>
     API_FUNCTION() virtual void EndTrackingMouse()
+    {
+    }
+    
+    /// <summary>
+    /// Enables character input events.
+    /// </summary>
+    API_FUNCTION() virtual void StartTextInput()
+    {
+    }
+    
+    /// <summary>
+    /// Disables character input events.
+    /// </summary>
+    API_FUNCTION() virtual void EndTextInput()
     {
     }
 
