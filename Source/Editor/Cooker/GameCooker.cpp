@@ -802,7 +802,9 @@ int32 GameCookerImpl::ThreadFunction()
             Build();
         }
 
+        mutex.Lock();
         ThreadCond.Wait(mutex);
+        mutex.Unlock();
     }
 
     IsThreadRunning = false;

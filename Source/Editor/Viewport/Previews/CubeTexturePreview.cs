@@ -237,7 +237,7 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <inheritdoc />
-        public override bool HasLoadedAssets => base.HasLoadedAssets && _previewMaterial.IsLoaded && _previewMaterial.BaseMaterial.IsLoaded;
+        public override bool HasContentLoaded => base.HasContentLoaded && _previewMaterial.IsLoaded && _previewMaterial.BaseMaterial.IsLoaded;
 
         /// <inheritdoc />
         public override void OnDestroy()

@@ -396,6 +396,22 @@ namespace FlaxEditor.Viewport
             ViewportCamera.ShowActors(TransformGizmo.SelectedParents, ref orient);
         }
 
+        private static bool ActorHasContentLoaded(Actor a)
+        {
+            if (!a.HasContentLoaded)
+                return false;
+            var children = a.ChildrenCount;
+            for (int i = 0; i < children; i++)
+            {
+                if (!ActorHasContentLoaded(a.GetChild(i)))
+                    return false;
+            }
+            return true;
+        }
+
+        /// <inheritdoc />
+        public override bool HasContentLoaded => base.HasContentLoaded && (Instance == null || ActorHasContentLoaded(Instance));
+
         /// <inheritdoc />
         public EditorViewport Viewport => this;
 

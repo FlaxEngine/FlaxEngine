@@ -175,11 +175,11 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <inheritdoc />
-        public override bool HasLoadedAssets
+        public override bool HasContentLoaded
         {
             get
             {
-                if (!base.HasLoadedAssets)
+                if (!base.HasContentLoaded)
                     return false;
                 UpdateMaterial();
                 return true;
