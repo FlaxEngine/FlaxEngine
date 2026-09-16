@@ -245,7 +245,7 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <inheritdoc />
-        public override bool HasLoadedAssets => base.HasLoadedAssets && Sky.HasContentLoaded && EnvProbe.HasContentLoaded && PostFxVolume.HasContentLoaded;
+        public override bool HasContentLoaded => base.HasContentLoaded && Sky.HasContentLoaded && EnvProbe.HasContentLoaded && PostFxVolume.HasContentLoaded;
 
         /// <inheritdoc />
         public override void OnDestroy()

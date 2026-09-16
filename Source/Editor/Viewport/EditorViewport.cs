@@ -423,7 +423,7 @@ namespace FlaxEditor.Viewport
         /// <summary>
         /// Gets a value indicating whether this viewport has loaded dependant assets.
         /// </summary>
-        public virtual bool HasLoadedAssets => true;
+        public virtual bool HasContentLoaded => true;
 
         /// <summary>
         /// The 'View' widget button context menu.
