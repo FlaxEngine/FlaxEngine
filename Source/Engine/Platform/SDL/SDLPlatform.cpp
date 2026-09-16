@@ -157,8 +157,6 @@ bool SDLPlatform::Init()
 
     SDLImpl::SystemDpi = (int)(SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay()) * DefaultDPI);
 
-    //SDL_StartTextInput(); // TODO: Call this only when text input is expected (shows virtual keyboard in some cases)
-
     return SDLPlatformBase::Init();
 }
 
