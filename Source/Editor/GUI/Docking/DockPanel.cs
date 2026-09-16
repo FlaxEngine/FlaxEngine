@@ -501,8 +501,10 @@ namespace FlaxEditor.GUI.Docking
                         {
                             scrPanel.GetChild(i).Parent = splitterParent;
                         }
-                        Assert.IsTrue(scrPanel.ChildrenCount == 0);
-                        Assert.IsTrue(splitterParent.ChildrenCount == srcPanelChildrenCount);
+                        if (scrPanel.ChildrenCount != 0 || splitterParent.ChildrenCount == srcPanelChildrenCount)
+                        {
+                            Editor.LogError("Broken dock panel layout!");
+                        }
 
                         // Delete
                         splitter.Dispose();

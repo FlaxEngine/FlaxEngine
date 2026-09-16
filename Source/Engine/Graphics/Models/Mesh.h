@@ -93,7 +93,7 @@ public:
     /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
     /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 32-bit stride buffer. Cannot be null.</param>
     /// <param name="normals">The normal vectors (per vertex).</param>
-    /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
+    /// <param name="tangents">The tangent vectors (per vertex).</param>
     /// <param name="uvs">The texture coordinates (per vertex).</param>
     /// <param name="colors">The vertex colors (per vertex).</param>
     /// <returns>True if failed, otherwise false.</returns>
@@ -109,7 +109,7 @@ public:
     /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
     /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 32-bit stride buffer. Cannot be null.</param>
     /// <param name="normals">The normal vectors (per vertex).</param>
-    /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
+    /// <param name="tangents">The tangent vectors (per vertex).</param>
     /// <param name="uvs">The texture coordinates (per vertex).</param>
     /// <param name="colors">The vertex colors (per vertex).</param>
     /// <returns>True if failed, otherwise false.</returns>

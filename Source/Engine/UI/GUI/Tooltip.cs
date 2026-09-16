@@ -243,6 +243,13 @@ namespace FlaxEngine.GUI
                     _window.Position = mousePos + TooltipOffset;
             }
 
+            var mouse = Input.Mouse;
+            if (mouse.IsAnyButtonDown || Math.Abs(mouse.ScrollDelta) > Mathf.Epsilon)
+            {
+                // Hide popup when buttons are pressed
+                Hide();
+            }
+
             base.Update(deltaTime);
         }
 

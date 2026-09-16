@@ -226,7 +226,7 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <inheritdoc />
-        public override bool HasLoadedAssets => _previewEffect.HasContentLoaded && base.HasLoadedAssets;
+        public override bool HasContentLoaded => _previewEffect.HasContentLoaded && base.HasContentLoaded;
 
         /// <inheritdoc />
         public override void Update(float deltaTime)

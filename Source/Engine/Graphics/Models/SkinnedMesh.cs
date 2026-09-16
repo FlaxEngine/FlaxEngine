@@ -102,7 +102,7 @@ namespace FlaxEngine
         /// <param name="blendIndices">The skinned mesh blend indices buffer. Contains indices of the skeleton bones (up to 4 bones per vertex) to use for vertex position blending. Cannot be null.</param>
         /// <param name="blendWeights">The skinned mesh blend weights buffer (normalized). Contains weights per blend bone (up to 4 bones per vertex) of the skeleton bones to mix for vertex position blending. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
-        /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
+        /// <param name="tangents">The tangent vectors (per vertex).</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         /// <param name="colors">The vertex colors (per vertex).</param>
         public void UpdateMesh(Float3[] vertices, int[] triangles, Int4[] blendIndices, Float4[] blendWeights, Float3[] normals = null, Float3[] tangents = null, Float2[] uv = null, Color32[] colors = null)
@@ -140,7 +140,7 @@ namespace FlaxEngine
         /// <param name="blendIndices">The skinned mesh blend indices buffer. Contains indices of the skeleton bones (up to 4 bones per vertex) to use for vertex position blending. Cannot be null.</param>
         /// <param name="blendWeights">The skinned mesh blend weights buffer (normalized). Contains weights per blend bone (up to 4 bones per vertex) of the skeleton bones to mix for vertex position blending. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
-        /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
+        /// <param name="tangents">The tangent vectors (per vertex).</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         /// <param name="colors">The vertex colors (per vertex).</param>
         public void UpdateMesh(Float3[] vertices, uint[] triangles, Int4[] blendIndices, Float4[] blendWeights, Float3[] normals = null, Float3[] tangents = null, Float2[] uv = null, Color32[] colors = null)
@@ -178,7 +178,7 @@ namespace FlaxEngine
         /// <param name="blendIndices">The skinned mesh blend indices buffer. Contains indices of the skeleton bones (up to 4 bones per vertex) to use for vertex position blending. Cannot be null.</param>
         /// <param name="blendWeights">The skinned mesh blend weights buffer (normalized). Contains weights per blend bone (up to 4 bones per vertex) of the skeleton bones to mix for vertex position blending. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
-        /// <param name="tangents">The tangent vectors (per vertex). Use null to compute them from normal vectors.</param>
+        /// <param name="tangents">The tangent vectors (per vertex).</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         /// <param name="colors">The vertex colors (per vertex).</param>
         public void UpdateMesh(Float3[] vertices, ushort[] triangles, Int4[] blendIndices, Float4[] blendWeights, Float3[] normals = null, Float3[] tangents = null, Float2[] uv = null, Color32[] colors = null)
@@ -217,7 +217,7 @@ namespace FlaxEngine
         /// <param name="blendIndices">The skinned mesh blend indices buffer. Contains indices of the skeleton bones (up to 4 bones per vertex) to use for vertex position blending. Cannot be null.</param>
         /// <param name="blendWeights">The skinned mesh blend weights buffer (normalized). Contains weights per blend bone (up to 4 bones per vertex) of the skeleton bones to mix for vertex position blending. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
-        /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
+        /// <param name="tangents">The tangent vectors (per vertex).</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         [Obsolete("Use UpdateMesh with Float3 and Float2 parameters instead")]
         public void UpdateMesh(Vector3[] vertices, int[] triangles, Int4[] blendIndices, Vector4[] blendWeights, Vector3[] normals = null, Vector3[] tangents = null, Vector2[] uv = null)
@@ -236,7 +236,7 @@ namespace FlaxEngine
         /// <param name="blendIndices">The skinned mesh blend indices buffer. Contains indices of the skeleton bones (up to 4 bones per vertex) to use for vertex position blending. Cannot be null.</param>
         /// <param name="blendWeights">The skinned mesh blend weights buffer (normalized). Contains weights per blend bone (up to 4 bones per vertex) of the skeleton bones to mix for vertex position blending. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
-        /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
+        /// <param name="tangents">The tangent vectors (per vertex).</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         [Obsolete("Use UpdateMesh with Float3 and Float2 parameters instead")]
         public void UpdateMesh(Vector3[] vertices, uint[] triangles, Int4[] blendIndices, Vector4[] blendWeights, Vector3[] normals = null, Vector3[] tangents = null, Vector2[] uv = null)
@@ -255,7 +255,7 @@ namespace FlaxEngine
         /// <param name="blendIndices">The skinned mesh blend indices buffer. Contains indices of the skeleton bones (up to 4 bones per vertex) to use for vertex position blending. Cannot be null.</param>
         /// <param name="blendWeights">The skinned mesh blend weights buffer (normalized). Contains weights per blend bone (up to 4 bones per vertex) of the skeleton bones to mix for vertex position blending. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
-        /// <param name="tangents">The tangent vectors (per vertex). Use null to compute them from normal vectors.</param>
+        /// <param name="tangents">The tangent vectors (per vertex).</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         [Obsolete("Use UpdateMesh with Float3 and Float2 parameters instead")]
         public void UpdateMesh(Vector3[] vertices, ushort[] triangles, Int4[] blendIndices, Vector4[] blendWeights, Vector3[] normals = null, Vector3[] tangents = null, Vector2[] uv = null)
