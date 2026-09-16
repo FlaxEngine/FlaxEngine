@@ -333,7 +333,7 @@ DEFINE_INTERNAL_CALL(void) EditorInternal_GetCollisionWires(CollisionData* colli
 DEFINE_INTERNAL_CALL(void) EditorInternal_GetEditorBoxWithChildren(Actor* obj, BoundingBox* result)
 {
     INTERNAL_CALL_CHECK(obj);
-    *result = obj->GetEditorBoxChildren();
+    *result = obj->GetEditorBoundingBoxWithChildren();
 }
 
 DEFINE_INTERNAL_CALL(void) EditorInternal_SetOptions(ManagedEditor::InternalOptions* options)

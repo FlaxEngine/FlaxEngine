@@ -319,7 +319,7 @@ namespace FlaxEditor.SceneGraph.Actors
 
         private void CreateSphere(StaticModel actor, Spawner spawner, bool singleNode)
         {
-            var bounds = actor.Sphere;
+            var bounds = actor.BoundingSphere;
             var collider = new SphereCollider
             {
                 Transform = actor.Transform,
@@ -336,10 +336,10 @@ namespace FlaxEditor.SceneGraph.Actors
             var collider = new CapsuleCollider
             {
                 Transform = actor.Transform,
-                Position = actor.Box.Center,
+                Position = actor.BoundingBox.Center,
 
                 // Size the capsule to best fit the actor
-                Radius = (float)actor.Sphere.Radius / Mathf.Max((float)actor.Scale.MaxValue, 0.0001f) * 0.707f,
+                Radius = (float)actor.BoundingSphere.Radius / Mathf.Max((float)actor.Scale.MaxValue, 0.0001f) * 0.707f,
                 Height = 100f,
             };
             spawner(collider);

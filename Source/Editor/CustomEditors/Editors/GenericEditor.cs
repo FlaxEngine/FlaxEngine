@@ -716,19 +716,18 @@ namespace FlaxEditor.CustomEditors.Editors
                 if (value == null)
                 {
                     // Check if it's an object type that can be created in editor
-                    if (type != ScriptMemberInfo.Null)
+                    if (type != ScriptMemberInfo.Null && CanEditValue)
                     {
                         ScriptType[] types = null;
                         if (type.IsAbstract || type.IsInterface)
                         {
                             // Show picker with all types that implement specific class/interface but are not abstract
-                            types = Editor.Instance.CodeEditing.All.Get().Where(x => !x.IsAbstract && x.CanCreateInstance && type.IsAssignableFrom(x)).ToArray();
+                            types = Editor.Instance.CodeEditing.All.Get().Where(x => !x.IsAbstract && !x.IsScriptingObject && x.CanCreateInstance && type.IsAssignableFrom(x)).ToArray();
                         }
                         else if (type.CanCreateInstance)
                         {
                             types = [type];
                         }
-
                         if (types != null && types.Length != 0)
                         {
                             layout = layout.Space(20);
@@ -759,7 +758,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     layout.Label("<null>");
                     return;
                 }
-                if (!type.IsArray && !type.IsStructure && !type.IsScriptingObject && (type.IsAbstract || type.IsInterface) && value.GetType() != type.Type && layout is GroupElement group)
+                if (!type.IsArray && !type.IsStructure && !type.IsScriptingObject && (type.IsAbstract || type.IsInterface) && value.GetType() != type.Type && layout is GroupElement group && CanEditValue)
                 {
                     // Add button to unset the value to null (eg. to edit it to different type)
                     var button = group.AddHeaderButton("Reset value to null", 0, FlaxEngine.GUI.Style.Current.Cross);

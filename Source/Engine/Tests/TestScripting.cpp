@@ -37,9 +37,7 @@ TEST_CASE("Scripting")
         MMethod* method = klass->GetMethod("TestLibraryImports");
         CHECK(method);
         MObject* result = method->Invoke(nullptr, nullptr, nullptr);
-        CHECK(result);
-        int32 resultValue = MUtils::Unbox<int32>(result);
-        CHECK(resultValue == 0);
+        CHECK(MUtils::Unbox<int32>(result) == 0);
     }
 
     SECTION("Test Class")
@@ -166,5 +164,16 @@ TEST_CASE("Scripting")
         interfaceObject = ScriptingObject::FromInterface<ITestInterface>(interface);
         CHECK(interfaceObject);
         CHECK(interfaceObject == object);
+    }
+
+    SECTION("Test Interface Reference")
+    {
+        // Test native interface implementation
+        MClass* klass = Scripting::FindClass("FlaxEngine.Tests.TestScripting");
+        CHECK(klass);
+        MMethod* method = klass->GetMethod("TestInterfaceReference");
+        CHECK(method);
+        MObject* result = method->Invoke(nullptr, nullptr, nullptr);
+        CHECK(MUtils::Unbox<int32>(result) == 0);
     }
 }

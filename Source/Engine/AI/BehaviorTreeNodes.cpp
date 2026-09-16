@@ -394,8 +394,8 @@ void BehaviorTreeMoveToNode::GetAgentSize(Actor* agent, float& outRadius, float&
     }
 
     // Estimate actor bounds to extract capsule information
-    const BoundingBox box = agent->GetBox();
-    const BoundingSphere sphere = agent->GetSphere();
+    const BoundingBox box = agent->GetBoundingBox();
+    const BoundingSphere sphere = agent->GetBoundingSphere();
     outRadius = (float)sphere.Radius;
     outHeight = (float)box.GetSize().Y;
 }

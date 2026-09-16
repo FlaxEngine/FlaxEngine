@@ -72,7 +72,7 @@ public:
     }
 
     /// <summary>
-    /// Gets managed instance object (or null if no object linked).
+    /// Gets managed instance object.
     /// </summary>
     FORCE_INLINE MObject* GetManagedInstance() const
     {

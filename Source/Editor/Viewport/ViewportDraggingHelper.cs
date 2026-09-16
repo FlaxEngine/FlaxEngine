@@ -192,7 +192,7 @@ namespace FlaxEditor.Viewport
 
             // Place the object
             //var location = hitLocation - (box.Size.Length * 0.5f) * ViewDirection;
-            var editorBounds = actor.EditorBoxChildren;
+            var editorBounds = actor.EditorBoundingBoxWithChildren;
             var bottomToCenter = actor.Position.Y - editorBounds.Minimum.Y;
             var location = hitLocation + new Vector3(0, bottomToCenter, 0);
 

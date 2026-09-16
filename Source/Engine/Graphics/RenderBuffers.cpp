@@ -417,7 +417,7 @@ GeometryDrawState* RenderBuffers::GetGeometryDrawState(SceneRendering* scene, in
 
 bool RenderBuffers::TestOcclusionCulling(const Actor* actor, uint32& cullingId) const
 {
-    return TestOcclusionCulling(actor->GetSceneRendering(), actor, actor->GetBox(), cullingId);
+    return TestOcclusionCulling(actor->GetSceneRendering(), actor, actor->GetBoundingBox(), cullingId);
 }
 
 bool RenderBuffers::TestOcclusionCulling(SceneRendering* scene, const Actor* actor, const BoundingBox& objectBounds, uint32& cullingId, const void* object) const

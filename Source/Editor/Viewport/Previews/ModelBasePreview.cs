@@ -62,7 +62,7 @@ namespace FlaxEditor.Viewport.Previews
         /// </summary>
         public void ResetCamera()
         {
-            ViewportCamera.SetArcBallView(StaticModel.Model != null ? StaticModel.Box : AnimatedModel.Box);
+            ViewportCamera.SetArcBallView(StaticModel.Model != null ? StaticModel.BoundingBox : AnimatedModel.BoundingBox);
         }
 
         private void OnBegin(RenderTask task, GPUContext context)

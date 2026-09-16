@@ -130,6 +130,21 @@ namespace Flax.Build.NativeCpp
                 }
             }
 
+            // Fallback to netcore or netstandard if original directory
+            var fallbacks = new[]
+            {
+                "netcoreapp3.1",
+                "netcoreapp3.0",
+                "netstandard2.1",
+                "netstandard2.0",
+            };
+            foreach (var fallback in fallbacks)
+            {
+                libFolder = Path.Combine(nugetPath, Name, Version, "lib", fallback);
+                if (Directory.Exists(libFolder))
+                    return libFolder;
+            }
+
             Log.Error($"Missing NuGet package \"{Name}, {Version}, {Framework}\" (nuget: {nugetPath})");
             return string.Empty;
         }
@@ -156,6 +171,11 @@ namespace Flax.Build.NativeCpp
                 return string.Empty;
             }
             return dlls[0];
+        }
+
+        public override string ToString()
+        {
+            return $"{Name}, {Version}, {Framework}";
         }
     }
 

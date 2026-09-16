@@ -117,9 +117,12 @@ namespace FlaxEditor.Windows.Assets
 
             public override void OnClean()
             {
-                Window._isolateIndex = -1;
-                Window._highlightIndex = -1;
-                Window._meshProxy = null;
+                if (Window != null)
+                {
+                    Window._isolateIndex = -1;
+                    Window._highlightIndex = -1;
+                    Window._meshProxy = null;
+                }
 
                 base.OnClean();
             }

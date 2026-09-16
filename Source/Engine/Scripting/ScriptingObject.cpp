@@ -712,6 +712,12 @@ DEFINE_INTERNAL_CALL(MString*) ObjectInternal_GetTypeName(ScriptingObject* obj)
     return MUtils::ToString(obj->GetType().Fullname);
 }
 
+FORCE_INLINE bool ObjectInternal_MatchesType(ScriptingObject* obj, MClass* klass)
+{
+    return !klass ||
+           (klass->IsInterface() ? obj->GetClass()->HasInterface(klass) : obj->Is(klass));
+}
+
 DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_FindObject(Guid* id, MType* type, bool skipLog = false)
 {
     if (!id->IsValid())
@@ -727,7 +733,7 @@ DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_FindObject(Guid* id, MType* type, 
     }
     if (obj)
     {
-        if (klass && !obj->Is(klass))
+        if (!ObjectInternal_MatchesType(obj, klass))
         {
             if (!skipLog)
             {
@@ -757,7 +763,7 @@ DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_FindObject(Guid* id, MType* type, 
 DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_TryFindObject(Guid* id, MType* type)
 {
     ScriptingObject* obj = Scripting::TryFindObject(*id);
-    if (obj && !obj->Is(MUtils::GetClass(type)))
+    if (obj && !ObjectInternal_MatchesType(obj, MUtils::GetClass(type)))
         obj = nullptr;
     return obj ? obj->GetOrCreateManagedInstance() : nullptr;
 }

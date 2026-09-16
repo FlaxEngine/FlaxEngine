@@ -191,7 +191,7 @@ void SceneRendering::AddActor(Actor* a, int32& key)
     auto& e = list[key];
     e.Actor = a;
     e.LayerMask = a->GetLayerMask();
-    e.Bounds = a->GetSphere();
+    e.Bounds = a->GetBoundingSphere();
     e.NoCulling = a->_drawNoCulling;
     for (auto* listener : _listeners)
         listener->OnSceneRenderingAddActor(this, key, a);
@@ -214,7 +214,7 @@ void SceneRendering::UpdateActor(Actor* a, int32& key, ISceneRenderingListener::
             if (flags & ISceneRenderingListener::Layer)
                 e.LayerMask = a->GetLayerMask();
             if (flags & ISceneRenderingListener::Bounds)
-                e.Bounds = a->GetSphere();
+                e.Bounds = a->GetBoundingSphere();
         }
     }
     if (lock)

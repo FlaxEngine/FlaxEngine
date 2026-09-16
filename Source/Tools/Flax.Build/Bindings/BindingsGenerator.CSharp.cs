@@ -104,8 +104,6 @@ namespace Flax.Build.Bindings
             {
                 if (attribute && valueType != null && !valueType.IsArray)
                 {
-                    //if (valueType.Type == "")
-                    //ScriptingObjectReference
                     apiType = FindApiTypeInfo(buildData, valueType, caller);
 
                     // Object reference
@@ -364,7 +362,7 @@ namespace Flax.Build.Bindings
                     if (arrayApiType != null && arrayApiType.MarshalAs != null)
                         arrayTypeInfo = arrayApiType.MarshalAs;
                 }
-                return GenerateCSharpNativeToManaged(buildData, arrayTypeInfo, caller) + "[]";
+                return GenerateCSharpNativeToManaged(buildData, arrayTypeInfo, caller, marshalling) + "[]";
             }
 
             // Dictionary
@@ -531,6 +529,21 @@ namespace Flax.Build.Bindings
                     var arrayApiType = FindApiTypeInfo(buildData, arrayTypeInfo, caller);
                     if (arrayApiType != null && arrayApiType.MarshalAs != null)
                         return $"{{0}}.ConvertArray(x => ({GenerateCSharpNativeToManaged(buildData, arrayApiType.MarshalAs, caller)})x)";
+                }
+                return string.Empty;
+            case "Dictionary":
+                if (typeInfo.GenericArgs != null && typeInfo.GenericArgs.Count == 2)
+                {
+                    // Convert dictionary that uses different type for marshalling
+                    var keyApiType = FindApiTypeInfo(buildData, typeInfo.GenericArgs[0], caller);
+                    var valueApiType = FindApiTypeInfo(buildData, typeInfo.GenericArgs[1], caller);
+                    if ((keyApiType != null && keyApiType.MarshalAs != null) || (valueApiType != null && valueApiType.MarshalAs != null))
+                    {
+                        var keyConverter = keyApiType != null && keyApiType.MarshalAs != null ? $"({GenerateCSharpNativeToManaged(buildData, keyApiType.MarshalAs, caller)})" : "";
+                        var valueConverter = valueApiType != null && valueApiType.MarshalAs != null ? $"({GenerateCSharpNativeToManaged(buildData, valueApiType.MarshalAs, caller)})" : "";
+                        //return $"{{0}} != null ? System.Linq.Enumerable.ToDictionary({{0}}, x => {keyConverter}, x => {valueConverter}) : null";
+                        return $"{{0}}.ConvertDictionary(key => {keyConverter}key, value => {valueConverter}value)";
+                    }
                 }
                 return string.Empty;
             default:
@@ -744,10 +757,12 @@ namespace Flax.Build.Bindings
                         contents.Append($"var __{parameterInfo.Name}Count = {(isSetter ? "value" : parameterInfo.Name)}?.Length ?? 0; ");
                 }
             }
+            var returnType = functionInfo.ReturnType;
+
             if (functionInfo.Glue.UseReferenceForResult)
             {
             }
-            else if (!functionInfo.ReturnType.IsVoid)
+            else if (!returnType.IsVoid)
             {
                 contents.Append("return ");
             }
@@ -817,14 +832,27 @@ namespace Flax.Build.Bindings
             }
 
             contents.Append(')');
-            if ((functionInfo.ReturnType.Type == "Array" || functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "DataContainer") && functionInfo.ReturnType.GenericArgs != null)
+            if ((returnType.Type == "Array" || returnType.Type == "Span" || returnType.Type == "DataContainer") && returnType.GenericArgs != null)
             {
                 // Convert array that uses different type for marshalling
-                var arrayTypeInfo = functionInfo.ReturnType.GenericArgs[0];
+                var arrayTypeInfo = returnType.GenericArgs[0];
                 var arrayApiType = FindApiTypeInfo(buildData, arrayTypeInfo, caller);
                 if (arrayApiType != null && arrayApiType.MarshalAs != null)
                     contents.Append($".ConvertArray(x => ({GenerateCSharpNativeToManaged(buildData, arrayTypeInfo, caller)})x)");
             }
+            else if (returnType.Type == "Dictionary" && returnType.GenericArgs != null && returnType.GenericArgs.Count == 2)
+            {
+                // Convert dictionary that uses different type for marshalling
+                var keyApiType = FindApiTypeInfo(buildData, returnType.GenericArgs[0], caller);
+                var valueApiType = FindApiTypeInfo(buildData, returnType.GenericArgs[1], caller);
+                if ((keyApiType != null && keyApiType.MarshalAs != null) || (valueApiType != null && valueApiType.MarshalAs != null))
+                {
+                    var keyConverter = keyApiType != null && keyApiType.MarshalAs != null ? $"({GenerateCSharpNativeToManaged(buildData, returnType.GenericArgs[0], caller)})" : "";
+                    var valueConverter = valueApiType != null && valueApiType.MarshalAs != null ? $"({GenerateCSharpNativeToManaged(buildData, returnType.GenericArgs[1], caller)})" : "";
+                    contents.Append($".ConvertDictionary(key => {keyConverter}key, value => {valueConverter}value)");
+                }
+            }
+
             contents.Append(';');
 
             // Return result

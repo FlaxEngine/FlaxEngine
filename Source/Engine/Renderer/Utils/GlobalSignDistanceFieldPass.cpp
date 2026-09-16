@@ -464,7 +464,7 @@ public:
         if (!ObjectTypes.Contains(a->GetTypeHandle()))
             return;
 
-        BoundingBox bounds = a->GetBox();
+        BoundingBox bounds = a->GetBoundingBox();
         bool isStatic = GLOBAL_SDF_ACTOR_IS_STATIC(a);
         // TODO: early out if the bounds are outside cascade 0 for dynamic objects
         if (prevBounds && flags != DrawModes && flags != Layer && flags != StaticFlags)

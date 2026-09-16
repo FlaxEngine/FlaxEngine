@@ -412,7 +412,7 @@ public:
     void OnSceneRenderingAddActor(SceneRendering* scene, int32 key, Actor* a) override
     {
         if (a->HasStaticFlag(StaticFlags::Shadow))
-            DirtyStaticBounds(a->GetSphere());
+            DirtyStaticBounds(a->GetBoundingSphere());
     }
 
     void OnSceneRenderingUpdateActor(SceneRendering* scene, int32 key, Actor* a, const BoundingSphere& prevBounds, UpdateFlags flags) override
@@ -421,7 +421,7 @@ public:
         if (a->HasStaticFlag(StaticFlags::Shadow))
         {
             // TODO: skip actors that don't cast shadows (eg. particles)
-            BoundingSphere bounds = a->GetSphere();
+            BoundingSphere bounds = a->GetBoundingSphere();
             if (bounds != prevBounds)
             {
                 // Avoid dirtying twice when bounds are close to each other
@@ -434,14 +434,14 @@ public:
         }
         else if (flags & StaticFlags)
         {
-            DirtyStaticBounds(a->GetSphere());
+            DirtyStaticBounds(a->GetBoundingSphere());
         }
     }
 
     void OnSceneRenderingRemoveActor(SceneRendering* scene, int32 key, Actor* a) override
     {
         if (a->HasStaticFlag(StaticFlags::Shadow))
-            DirtyStaticBounds(a->GetSphere());
+            DirtyStaticBounds(a->GetBoundingSphere());
     }
 
     void OnSceneRenderingClear(SceneRendering* scene) override

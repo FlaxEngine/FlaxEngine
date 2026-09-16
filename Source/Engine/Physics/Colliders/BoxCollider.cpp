@@ -34,13 +34,13 @@ void BoxCollider::AutoResize(bool globalOrientation = true)
     // Hacky way to get unrotated bounded box of parent
     const Quaternion parentOrientation = parent->GetOrientation();
     parent->SetOrientation(Quaternion::Identity);
-    BoundingBox parentBox = parent->GetBox();
+    BoundingBox parentBox = parent->GetBoundingBox();
     parent->SetOrientation(parentOrientation);
 
     for (const Actor* sibling : parent->Children)
     {
         if (sibling != this)
-            BoundingBox::Merge(parentBox, sibling->GetBoxWithChildren(), parentBox);
+            BoundingBox::Merge(parentBox, sibling->GetBoundingBoxWithChildren(), parentBox);
     }
     const Vector3 parentSize = parentBox.GetSize();
     const Vector3 parentCenter = parentBox.GetCenter() - parent->GetPosition();

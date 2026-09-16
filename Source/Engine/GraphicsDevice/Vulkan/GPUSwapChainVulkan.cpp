@@ -137,6 +137,7 @@ GPUTextureView* GPUSwapChainVulkan::GetBackBufferView()
         PROFILE_CPU();
         auto context = _device->MainContext;
         auto cmdBufferManager = context->GetCmdBufferManager();
+
         // Keep commands recorded before acquire independent from the image-acquired semaphore wait below.
         if (cmdBufferManager->HasPendingActiveCmdBuffer())
             context->Flush();
@@ -154,7 +155,6 @@ GPUTextureView* GPUSwapChainVulkan::GetBackBufferView()
         acquiredBackBuffer.WaitForSubmit();
 
         const auto backBuffer = &_backBuffers[_acquiredImageIndex].Handle;
-
         auto cmdBuffer = cmdBufferManager->GetCmdBuffer();
 
         // Transition to render target (typical usage in most cases when calling backbuffer getter)
@@ -173,6 +173,17 @@ GPUTextureView* GPUSwapChainVulkan::GetBackBufferView()
 void GPUSwapChainVulkan::Begin(RenderTask* task)
 {
     GPUSwapChain::Begin(task);
+
+    // Wait for the backbuffer to be available
+    if (_currentImageIndex != -1)
+    {
+        auto& backBuffer = _backBuffers[_currentImageIndex];
+        if (backBuffer.SubmitCmdBuffer)
+        {
+            backBuffer.SubmitCmdBuffer->Wait();
+            backBuffer.SubmitCmdBuffer = nullptr;
+        }
+    }
 
     // Rebuild swapchain if need to
     if (_vsyncPending != _vsyncCurrent)

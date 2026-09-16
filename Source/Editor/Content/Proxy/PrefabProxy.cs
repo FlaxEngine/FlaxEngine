@@ -118,7 +118,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override bool CanDrawThumbnail(ThumbnailRequest request)
         {
-            if (!_preview.HasLoadedAssets)
+            if (!_preview.HasContentLoaded)
                 return false;
 
             // Check if asset is streamed enough
@@ -140,7 +140,7 @@ namespace FlaxEditor.Content
                 actor is SpriteRender ||
                 actor is TextRender)
             {
-                actorBounds = actor.EditorBox;
+                actorBounds = actor.EditorBoundingBox;
             }
             if (actorBounds != BoundingBox.Empty)
             {
@@ -182,7 +182,7 @@ namespace FlaxEditor.Content
                 // Update some actors data (some actor types update bounds/data later but its required to be done before rendering)
                 var bounds = BoundingBox.Empty;
                 Prepare(_preview.Instance, ref bounds);
-                //bounds = _preview.Instance.EditorBoxChildren;
+                //bounds = _preview.Instance.EditorBoundingBoxWithChildren;
 
                 // Auto fit actor to camera
                 if (bounds != BoundingBox.Empty)

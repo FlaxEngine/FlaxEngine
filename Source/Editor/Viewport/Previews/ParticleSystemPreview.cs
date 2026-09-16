@@ -207,7 +207,7 @@ namespace FlaxEditor.Viewport.Previews
 
         private void UpdateBoundsModel()
         {
-            var bounds = _previewEffect.Box;
+            var bounds = _previewEffect.BoundingBox;
             Transform t = Transform.Identity;
             t.Translation = bounds.Center;
             t.Scale = bounds.Size;
@@ -221,12 +221,12 @@ namespace FlaxEditor.Viewport.Previews
         public void FitIntoView(float targetSize = 300.0f)
         {
             _previewEffect.Scale = Float3.One;
-            float maxSize = Mathf.Max(0.001f, (float)_previewEffect.Box.Size.MaxValue);
+            float maxSize = Mathf.Max(0.001f, (float)_previewEffect.BoundingBox.Size.MaxValue);
             _previewEffect.Scale = new Float3(targetSize / maxSize);
         }
 
         /// <inheritdoc />
-        public override bool HasLoadedAssets => _previewEffect.HasContentLoaded && base.HasLoadedAssets;
+        public override bool HasContentLoaded => _previewEffect.HasContentLoaded && base.HasContentLoaded;
 
         /// <inheritdoc />
         public override void Update(float deltaTime)
@@ -278,7 +278,7 @@ namespace FlaxEditor.Viewport.Previews
             switch (key)
             {
             case KeyboardKeys.F:
-                ViewportCamera.SetArcBallView(_previewEffect.Box);
+                ViewportCamera.SetArcBallView(_previewEffect.BoundingBox);
                 return true;
             case KeyboardKeys.Spacebar:
                 PlaySimulation = !PlaySimulation;
