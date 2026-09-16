@@ -520,7 +520,7 @@ namespace Flax.Build
             {
                 var doc = System.Xml.Linq.XDocument.Load(nuspecFile);
                 var root = (System.Xml.Linq.XElement)doc.FirstNode;
-                var metadataNode = root.Descendants().First(x => x.Name.LocalName== "metadata");
+                var metadataNode = root.Descendants().First(x => x.Name.LocalName == "metadata");
                 var dependenciesNode = metadataNode.Descendants().First(x => x.Name.LocalName == "dependencies");
                 var groupNode = dependenciesNode.Descendants().FirstOrDefault(x => x.Attribute("targetFramework")?.Value == package.Framework);
                 if (groupNode == null)
@@ -538,6 +538,10 @@ namespace Flax.Build
                     var dependencyVersion = dependency.Attribute("version").Value;
                     DeployNuGetPackage(nugetPath, targetBuildOptions, nugetFiles, new NugetPackage { Name = dependencyId, Version = dependencyVersion, Framework = package.Framework } );
                 }
+            }
+            else
+            {
+                Log.Verbose($"Missing nuspec file '{nuspecFile}' for NuGet package '{package}'");
             }
         }
     }

@@ -133,7 +133,7 @@ namespace FlaxEditor.Content
                 return false;
 
             // Ensure assets are ready to be used
-            if (!_preview.HasLoadedAssets)
+            if (!_preview.HasContentLoaded)
                 return false;
             var asset = (ParticleEmitter)request.Asset;
             if (!asset.IsLoaded)

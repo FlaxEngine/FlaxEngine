@@ -117,7 +117,7 @@ namespace FlaxEngine
         /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
         /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 32-bit stride buffer. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
-        /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
+        /// <param name="tangents">The tangent vectors (per vertex).</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         /// <param name="colors">The vertex colors (per vertex).</param>
         public void UpdateMesh(Float3[] vertices, int[] triangles, Float3[] normals = null, Float3[] tangents = null, Float2[] uv = null, Color32[] colors = null)
@@ -153,7 +153,7 @@ namespace FlaxEngine
         /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
         /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 32-bit stride buffer. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
-        /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
+        /// <param name="tangents">The tangent vectors (per vertex).</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         /// <param name="colors">The vertex colors (per vertex).</param>
         public void UpdateMesh(List<Float3> vertices, List<int> triangles, List<Float3> normals = null, List<Float3> tangents = null, List<Float2> uv = null, List<Color32> colors = null)
@@ -189,7 +189,7 @@ namespace FlaxEngine
         /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
         /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 32-bit stride buffer. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
-        /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
+        /// <param name="tangents">The tangent vectors (per vertex).</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         /// <param name="colors">The vertex colors (per vertex).</param>
         public void UpdateMesh(Float3[] vertices, uint[] triangles, Float3[] normals = null, Float3[] tangents = null, Float2[] uv = null, Color32[] colors = null)
@@ -225,7 +225,7 @@ namespace FlaxEngine
         /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
         /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 32-bit stride buffer. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
-        /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
+        /// <param name="tangents">The tangent vectors (per vertex).</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         /// <param name="colors">The vertex colors (per vertex).</param>
         public void UpdateMesh(List<Float3> vertices, List<uint> triangles, List<Float3> normals = null, List<Float3> tangents = null, List<Float2> uv = null, List<Color32> colors = null)
@@ -261,7 +261,7 @@ namespace FlaxEngine
         /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
         /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 16-bit stride buffer. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
-        /// <param name="tangents">The tangent vectors (per vertex). Use null to compute them from normal vectors.</param>
+        /// <param name="tangents">The tangent vectors (per vertex).</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         /// <param name="colors">The vertex colors (per vertex).</param>
         public void UpdateMesh(Float3[] vertices, ushort[] triangles, Float3[] normals = null, Float3[] tangents = null, Float2[] uv = null, Color32[] colors = null)
@@ -297,7 +297,7 @@ namespace FlaxEngine
         /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
         /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 16-bit stride buffer. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
-        /// <param name="tangents">The tangent vectors (per vertex). Use null to compute them from normal vectors.</param>
+        /// <param name="tangents">The tangent vectors (per vertex).</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         /// <param name="colors">The vertex colors (per vertex).</param>
         public void UpdateMesh(List<Float3> vertices, List<ushort> triangles, List<Float3> normals = null, List<Float3> tangents = null, List<Float2> uv = null, List<Color32> colors = null)
@@ -334,7 +334,7 @@ namespace FlaxEngine
         /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
         /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 32-bit stride buffer. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
-        /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
+        /// <param name="tangents">The tangent vectors (per vertex).</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         /// <param name="colors">The vertex colors (per vertex).</param>
         [Obsolete("Use UpdateMesh with Float3 and Float2 parameters instead")]
@@ -352,7 +352,7 @@ namespace FlaxEngine
         /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
         /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 32-bit stride buffer. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
-        /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
+        /// <param name="tangents">The tangent vectors (per vertex).</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         /// <param name="colors">The vertex colors (per vertex).</param>
         [Obsolete("Use UpdateMesh with Float3 and Float2 parameters instead")]
@@ -388,7 +388,7 @@ namespace FlaxEngine
         /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
         /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 32-bit stride buffer. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
-        /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
+        /// <param name="tangents">The tangent vectors (per vertex).</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         /// <param name="colors">The vertex colors (per vertex).</param>
         [Obsolete("Use UpdateMesh with Float3 and Float2 parameters instead")]
@@ -406,7 +406,7 @@ namespace FlaxEngine
         /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
         /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 16-bit stride buffer. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
-        /// <param name="tangents">The tangent vectors (per vertex). Use null to compute them from normal vectors.</param>
+        /// <param name="tangents">The tangent vectors (per vertex).</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         /// <param name="colors">The vertex colors (per vertex).</param>
         [Obsolete("Use UpdateMesh with Float3 and Float2 parameters instead")]
@@ -424,7 +424,7 @@ namespace FlaxEngine
         /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
         /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 16-bit stride buffer. Cannot be null.</param>
         /// <param name="normals">The normal vectors (per vertex).</param>
-        /// <param name="tangents">The tangent vectors (per vertex). Use null to compute them from normal vectors.</param>
+        /// <param name="tangents">The tangent vectors (per vertex).</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         /// <param name="colors">The vertex colors (per vertex).</param>
         [Obsolete("Use UpdateMesh with Float3 and Float2 parameters instead")]

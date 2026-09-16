@@ -99,7 +99,7 @@ public:
     /// <param name="blendIndices">The skeletal bones indices to use for skinning.</param>
     /// <param name="blendWeights">The skeletal bones weights to use for skinning (matches blendIndices).</param>
     /// <param name="normals">The normal vectors (per vertex).</param>
-    /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
+    /// <param name="tangents">The tangent vectors (per vertex).</param>
     /// <param name="uvs">The texture coordinates (per vertex).</param>
     /// <param name="colors">The vertex colors (per vertex).</param>
     /// <returns>True if failed, otherwise false.</returns>
@@ -117,7 +117,7 @@ public:
     /// <param name="blendIndices">The skeletal bones indices to use for skinning.</param>
     /// <param name="blendWeights">The skeletal bones weights to use for skinning (matches blendIndices).</param>
     /// <param name="normals">The normal vectors (per vertex).</param>
-    /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
+    /// <param name="tangents">The tangent vectors (per vertex).</param>
     /// <param name="uvs">The texture coordinates (per vertex).</param>
     /// <param name="colors">The vertex colors (per vertex).</param>
     /// <returns>True if failed, otherwise false.</returns>
