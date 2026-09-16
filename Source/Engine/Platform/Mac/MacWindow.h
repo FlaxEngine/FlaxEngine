@@ -27,6 +27,7 @@ public:
 	~MacWindow() override;
 
     void SyncWindowState();
+    void SyncBackingScale();
     void CheckForResize(float width, float height);
     void SetIsMouseOver(bool value);
     const String& GetDragText() const
