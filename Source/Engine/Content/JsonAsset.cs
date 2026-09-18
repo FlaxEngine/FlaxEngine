@@ -98,7 +98,7 @@ namespace FlaxEngine
         /// <summary>
         /// Clears the cached managed instance. The next <see cref="Instance"/> access will recreate it from the asset data.
         /// </summary>
-        public void ClearInstance()
+        internal void ClearInstance()
         {
             _instance = null;
         }

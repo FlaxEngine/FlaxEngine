@@ -268,6 +268,7 @@ namespace FlaxEditor.Windows.Assets
         {
             Asset?.ClearInstance();
             _object = null;
+
             base.DiscardChanges();
         }
 

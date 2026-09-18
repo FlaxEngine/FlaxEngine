@@ -841,6 +841,7 @@ namespace FlaxEditor.Windows.Assets
         protected override void DiscardChanges()
         {
             _asset?.Reload();
+
             base.DiscardChanges();
         }
 
