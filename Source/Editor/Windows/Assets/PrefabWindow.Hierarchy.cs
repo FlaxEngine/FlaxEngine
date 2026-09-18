@@ -320,10 +320,13 @@ namespace FlaxEditor.Windows.Assets
 
             contextMenu.AddSeparator();
 
+            // Skip if we cannot create assets in the given location
+            // Or DefaultPrefabFolder setting is invalid
             b = contextMenu.AddButton("Create Prefab", () => Editor.Prefabs.CreatePrefab(Selection, this));
             b.Enabled = isSingleActorSelected &&
                         (Selection[0] as ActorNode).CanCreatePrefab &&
-                        Editor.Windows.ContentWin.CurrentViewFolder.CanHaveAssets;
+                        (Editor.Windows.ContentWin.CurrentViewFolder.CanHaveAssets 
+                            || Editor.Prefabs.GetDefaultPrefabFolder() != null);
 
             b = contextMenu.AddButton("Select Prefab", Editor.Prefabs.SelectPrefab);
             b.Enabled = hasPrefabLink;

@@ -67,6 +67,9 @@ namespace FlaxEditor.Modules
                 selection = Editor.SceneEditing.Selection;
             if (selection.Count == 1 && selection[0] is ActorNode actorNode && actorNode.CanCreatePrefab)
             {
+                var folder = GetDefaultPrefabFolder();
+                if (folder != null)
+                    Editor.Windows.ContentWin.Navigate(folder.Node);
                 CreatePrefab(actorNode.Actor, true, prefabWindow);
             }
         }
@@ -103,6 +106,19 @@ namespace FlaxEditor.Modules
 
             var proxy = Editor.ContentDatabase.GetProxy<Prefab>();
             Editor.Windows.ContentWin.NewItem(proxy, actor, contentItem => OnPrefabCreated(contentItem, actor, prefabWindow), actor.Name, rename);
+        }
+
+        internal ContentFolder GetDefaultPrefabFolder()
+        {
+            var relativePath = Editor.Options.Options.Interface.DefaultPrefabFolder;
+            if (string.IsNullOrWhiteSpace(relativePath))
+                return null;
+
+            var absolutePath = StringUtils.ConvertRelativePathToAbsolute(Globals.ProjectContentFolder,
+                                                                         StringUtils.NormalizePath(relativePath));
+            return Editor.ContentDatabase.Find(absolutePath) is ContentFolder folder && folder.CanHaveAssets
+                   ? folder
+                   : null;
         }
 
         /// <summary>
