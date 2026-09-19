@@ -44,6 +44,11 @@ private:
     /// </summary>
     GPUTasksContext* _context;
 
+    /// <summary>
+    /// True if the task was cancelled because a tracked GPU resource was released (benign - suppress the sync-cancel warning).
+    /// </summary>
+    bool _cancelByRelease;
+
 protected:
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUTask"/> class.
@@ -55,6 +60,7 @@ protected:
         , _syncLatency(syncLatency)
         , _syncPoint(0)
         , _context(nullptr)
+        , _cancelByRelease(false)
     {
     }
 
@@ -90,6 +96,14 @@ public:
     FORCE_INLINE bool IsSyncing() const
     {
         return IsRunning() && _syncPoint != 0;
+    }
+
+    /// <summary>
+    /// True if the task was cancelled because a tracked GPU resource was released.
+    /// </summary>
+    FORCE_INLINE bool IsCancelByRelease() const
+    {
+        return _cancelByRelease;
     }
 
 public:
@@ -133,6 +147,16 @@ protected:
 
     virtual void OnSync()
     {
+    }
+
+    /// <summary>
+    /// Cancels the task because a tracked GPU resource was released. This is a benign cancellation that
+    /// suppresses the "canceled before a sync" warning.
+    /// </summary>
+    void CancelByRelease()
+    {
+        _cancelByRelease = true;
+        Cancel();
     }
 
 public:
