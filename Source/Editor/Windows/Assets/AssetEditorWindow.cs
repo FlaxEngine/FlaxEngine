@@ -53,7 +53,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 Parent = this
             };
-            _toolstrip.AddButton(editor.Icons.Search64, () => Editor.Windows.ContentWin.Select(_item)).LinkTooltip("Show and select in Content Window.");
+            _toolstrip.AddButton(editor.Icons.Search64, ShowInContent).LinkTooltip("Show and select in Content Window.");
 
             InputActions.Add(options => options.Save, Save);
 
@@ -150,6 +150,11 @@ namespace FlaxEditor.Windows.Assets
         {
         }
 
+        private void ShowInContent()
+        {
+            Editor.Windows.ContentWin.Select(_item);
+        }
+
         /// <inheritdoc />
         protected override void OnClose()
         {
@@ -178,7 +183,9 @@ namespace FlaxEditor.Windows.Assets
             base.OnDestroy();
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Called when scripts reloading begins.
+        /// </summary>
         protected virtual void OnScriptsReloadBegin()
         {
             if (!IsHidden)
@@ -269,7 +276,8 @@ namespace FlaxEditor.Windows.Assets
             base.OnShowContextMenu(menu);
 
             menu.AddButton("Save", Save).Enabled = IsEdited;
-            menu.AddButton("Copy name", () => Clipboard.Text = Item.NamePath);
+            menu.AddButton("Copy Name", () => Clipboard.Text = Item.NamePath);
+            menu.AddButton("Show In Content", ShowInContent);
 
             menu.AddSeparator();
         }
