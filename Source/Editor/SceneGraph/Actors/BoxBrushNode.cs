@@ -7,6 +7,7 @@ using Real = System.Single;
 #endif
 
 using System;
+using System.ComponentModel;
 using FlaxEngine;
 
 namespace FlaxEditor.SceneGraph.Actors
@@ -45,6 +46,7 @@ namespace FlaxEditor.SceneGraph.Actors
                     }
                 }
 
+                [DefaultValue(typeof(Float2), "1,1")]
                 [EditorOrder(30), EditorDisplay("Brush", "UV Scale"), Limit(-1000, 1000, 0.01f)]
                 [Tooltip("The surface texture coordinates scale.")]
                 public Float2 TexCoordScale
@@ -58,6 +60,7 @@ namespace FlaxEditor.SceneGraph.Actors
                     }
                 }
 
+                [DefaultValue(typeof(Float2), "0,0")]
                 [EditorOrder(40), EditorDisplay("Brush", "UV Offset"), Limit(-1000, 1000, 0.01f)]
                 [Tooltip("The surface texture coordinates offset.")]
                 public Float2 TexCoordOffset
@@ -71,6 +74,7 @@ namespace FlaxEditor.SceneGraph.Actors
                     }
                 }
 
+                [DefaultValue(0.0f)]
                 [EditorOrder(50), EditorDisplay("Brush", "UV Rotation")]
                 [Tooltip("The surface texture coordinates rotation angle (in degrees).")]
                 public float TexCoordRotation
@@ -84,6 +88,7 @@ namespace FlaxEditor.SceneGraph.Actors
                     }
                 }
 
+                [DefaultValue(1.0f)]
                 [EditorOrder(20), EditorDisplay("Brush", "Scale In Lightmap"), Limit(0, 10000, 0.1f)]
                 [Tooltip("The scale in lightmap (per surface).")]
                 public float ScaleInLightmap
