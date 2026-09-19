@@ -4,10 +4,118 @@
 
 #include "Engine/Content/BinaryAsset.h"
 #include "Engine/Content/AssetReference.h"
+#include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Core/Math/Vector2.h"
 
 class Font;
 class FontManager;
+struct FontTextureAtlasSlot;
 typedef struct FT_FaceRec_* FT_Face;
+
+// Font glyph metrics:
+//
+//                       xmin                     xmax
+//                        |                         |
+//                        |<-------- width -------->|
+//                        |                         |
+//              |         +-------------------------+----------------- ymax
+//              |         |    ggggggggg   ggggg    |     ^        ^
+//              |         |   g:::::::::ggg::::g    |     |        |
+//              |         |  g:::::::::::::::::g    |     |        |
+//              |         | g::::::ggggg::::::gg    |     |        |
+//              |         | g:::::g     g:::::g     |     |        |
+//    offsetX  -|-------->| g:::::g     g:::::g     |  offsetY     |
+//              |         | g:::::g     g:::::g     |     |        |
+//              |         | g::::::g    g:::::g     |     |        |
+//              |         | g:::::::ggggg:::::g     |     |        |
+//              |         |  g::::::::::::::::g     |     |      height
+//              |         |   gg::::::::::::::g     |     |        |
+//  baseline ---*---------|---- gggggggg::::::g-----*--------      |
+//            / |         |             g:::::g     |              |
+//     origin   |         | gggggg      g:::::g     |              |
+//              |         | g:::::gg   gg:::::g     |              |
+//              |         |  g::::::ggg:::::::g     |              |
+//              |         |   gg:::::::::::::g      |              |
+//              |         |     ggg::::::ggg        |              |
+//              |         |         gggggg          |              v
+//              |         +-------------------------+----------------- ymin
+//              |                                   |
+//              |------------- advanceX ----------->|
+
+/// <summary>
+/// The cached font character entry (read for rendering and further processing).
+/// </summary>
+API_STRUCT(NoDefault) struct FLAXENGINE_API FontCharacterEntry
+{
+    DECLARE_SCRIPTING_TYPE_MINIMAL(FontCharacterEntry);
+
+    /// <summary>
+    /// The character represented by this entry.
+    /// </summary>
+    API_FIELD() Char Character;
+
+    /// <summary>
+    /// True if entry is valid, otherwise false.
+    /// </summary>
+    API_FIELD() bool IsValid = false;
+
+    /// <summary>
+    /// The index to a specific texture in the font cache.
+    /// </summary>
+    API_FIELD() byte TextureIndex;
+
+    /// <summary>
+    /// The left bearing expressed in integer pixels.
+    /// </summary>
+    API_FIELD() int16 OffsetX;
+
+    /// <summary>
+    /// The top bearing expressed in integer pixels.
+    /// </summary>
+    API_FIELD() int16 OffsetY;
+
+    /// <summary>
+    /// The amount to advance in X before drawing the next character in a string.
+    /// </summary>
+    API_FIELD() int16 AdvanceX;
+
+    /// <summary>
+    /// The distance from baseline to glyph top most point.
+    /// </summary>
+    API_FIELD() int16 BearingY;
+
+    /// <summary>
+    /// The height in pixels of the glyph.
+    /// </summary>
+    API_FIELD() int16 Height;
+
+    /// <summary>
+    /// The start location of the character in the texture (in texture coordinates space).
+    /// </summary>
+    API_FIELD() Float2 UV;
+
+    /// <summary>
+    /// The size the character in the texture (in texture coordinates space).
+    /// </summary>
+    API_FIELD() Float2 UVSize;
+
+    /// <summary>
+    /// The slot in texture atlas, containing the pixel data of the glyph.
+    /// </summary>
+    API_FIELD() const FontTextureAtlasSlot* Slot;
+
+    /// <summary>
+    /// The owner font.
+    /// </summary>
+    API_FIELD() const class Font* Font;
+};
+
+template<>
+struct TIsPODType<FontCharacterEntry>
+{
+    enum { Value = true };
+};
 
 /// <summary>
 /// The font hinting used when rendering characters.
@@ -105,6 +213,11 @@ API_STRUCT() struct FontOptions
     /// The font rasterization mode.
     /// </summary>
     API_FIELD() FontRasterMode RasterMode;
+
+    /// <summary>
+    /// The font size used when generating MSDF font atlases.
+    /// </summary>
+    API_FIELD() float MSDFSize;
 };
 
 /// <summary>
@@ -112,7 +225,7 @@ API_STRUCT() struct FontOptions
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API FontAsset : public BinaryAsset
 {
-    DECLARE_BINARY_ASSET_HEADER(FontAsset, 4);
+    DECLARE_BINARY_ASSET_HEADER(FontAsset, 5);
     friend Font;
 
 private:
@@ -120,9 +233,10 @@ private:
     FontOptions _options;
     BytesContainer _fontFile;
     Array<Font*, InlinedAllocation<32>> _fonts;
+    Dictionary<Pair<float, Char>, FontCharacterEntry> _characterCache;
     AssetReference<FontAsset> _virtualBold;
     AssetReference<FontAsset> _virtualItalic;
-    AssetReference<FontAsset> _virtualMSDF;
+    AssetReference<FontAsset> _virtualRasterMode;
 
 public:
     /// <summary>
@@ -182,10 +296,10 @@ public:
     API_FUNCTION() FontAsset* GetItalic();
 
     /// <summary>
-    /// Gets the MSDF version of the font. Returns itself or creates a new virtual font asset using this font but rasterized with Multi-channel Signed Distance Field (MSDF).
+    /// Gets the different rasterization mode of the font. Returns itself or creates a new virtual font asset using this font but rasterized with the specified mode.
     /// </summary>
     /// <returns>The virtual font or this.</returns>
-    API_FUNCTION() FontAsset* GetMSDF();
+    API_FUNCTION() FontAsset* GetRasterMode(FontRasterMode rasterMode);
 
     /// <summary>
     /// Initializes the font with a custom font file data.
