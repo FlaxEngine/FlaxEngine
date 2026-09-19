@@ -584,7 +584,7 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
         }
     }
 
-    // Use two data containers for texture importing for more optimzied performance
+    // Use two data containers for texture importing for more optimized performance
     TextureData textureDataTmp;
     TextureData* textureDataSrc = &textureData;
     TextureData* textureDataDst = &textureDataTmp;
