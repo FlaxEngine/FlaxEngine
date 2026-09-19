@@ -13,7 +13,6 @@ using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.Assertions;
 using FlaxEngine.GUI;
-using FlaxEngine.Utilities;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Windows
@@ -70,67 +69,6 @@ namespace FlaxEditor.Windows
 
         private class LogEntry : Control
         {
-            /// <summary>
-            /// Text block with only color available, no other styling.
-            /// </summary>
-            private struct TextColorBlock
-            {
-                /// <summary>
-                /// Color of this block.
-                /// </summary>
-                public Color TextColor;
-
-                /// <summary>
-                /// Range of the text.
-                /// </summary>
-                public TextRange Range;
-
-                /// <summary>
-                /// The text location and size.
-                /// </summary>
-                public Rectangle Bounds;
-            }
-
-            /// <summary>
-            /// Rich text parsing context.
-            /// </summary>
-            private struct ColorParseContext
-            {
-                /// <summary>
-                /// LogEntry control.
-                /// </summary>
-                public LogEntry Control;
-
-                /// <summary>
-                /// Caret location for the next text block.
-                /// </summary>
-                public Float2 Caret;
-
-                /// <summary>
-                /// Current parsed color.
-                /// </summary>
-                public Color CurrentColor;
-
-                /// <summary>
-                /// Default color, for reverting color on closing tags.
-                /// </summary>
-                public Color DefaultColor;
-
-                /// <summary>
-                /// Current text font for text processing.
-                /// </summary>
-                public Font TextFont;
-
-                /// <summary>
-                /// Add text block to the control.
-                /// </summary>
-                /// <param name="block">The text block to add.</param>
-                public void AddBlock(ref TextColorBlock block)
-                {
-                    Control._textBlocks.Add(block);
-                }
-            }
-
             private bool _isRightMouseDown;
 
             /// <summary>
@@ -139,12 +77,13 @@ namespace FlaxEditor.Windows
             public const float DefaultHeight = 32.0f;
 
             private DebugLogWindow _window;
+            private RichTextBox _richTextBox;
             public LogGroup Group;
             public LogEntryDescription Desc;
             public SpriteHandle Icon;
             public int LogCount = 1;
 
-            private readonly List<TextColorBlock> _textBlocks = new List<TextColorBlock>();
+            private Color Color => Group == LogGroup.Error ? _window._colorError : (Group == LogGroup.Warning ? _window._colorWarning : _window._colorInfo);
 
             public LogEntry(DebugLogWindow window, ref LogEntryDescription desc)
             : base(0, 0, 120, DefaultHeight)
@@ -171,123 +110,21 @@ namespace FlaxEditor.Windows
                     break;
                 }
 
-                // Color parsing
-                var style = Style.Current;
-                var color = Group == LogGroup.Error ? _window._colorError : (Group == LogGroup.Warning ? _window._colorWarning : _window._colorInfo);
-
-                HtmlParser parser = new();
-
-                parser.Reset(Desc.Title);
-
-                var context = new ColorParseContext
+                // Use Rich Text Box to display title if it contains any HTML tags
+                if (desc.Title.Contains('<') && desc.Title.Contains('>'))
                 {
-                    Control = this,
-                    Caret = Float2.Zero,
-                    CurrentColor = color,
-                    DefaultColor = color,
-                    TextFont = style.FontMedium,
-                };
-
-                int pointerPos = 0;
-
-                while (parser.ParseNext(out var tag))
-                {
-                    if (tag.Name.ToLower() == "color")
+                    _richTextBox = new RichTextBox
                     {
-                        ProcessTextBlock(ref context, pointerPos, tag.StartPosition);
-
-                        pointerPos = tag.EndPosition;
-
-                        ProcessColorTag(ref context, ref tag);
-                    }
-                }
-
-                // Processing leftover text
-                ProcessTextBlock(ref context, pointerPos, Desc.Title.Length);
-            }
-
-            /// <summary>
-            /// Processing the text block within given range and adding it to the list.
-            /// </summary>
-            /// <param name="context">The parsing context.</param>
-            /// <param name="startPos">Start of the range.(Character index)</param>
-            /// <param name="endPos">End of the range.(Character index)</param>
-            private void ProcessTextBlock(ref ColorParseContext context, int startPos, int endPos)
-            {
-                // Text block preset
-                var textBlock = new TextColorBlock()
-                {
-                    TextColor = context.CurrentColor,
-                    Range = new TextRange(startPos, endPos),
-                    Bounds = new Rectangle(context.Caret, Float2.Zero)
-                };
-
-                // Processing the text with selected font. (Handle newlines, text offsets)
-                var lines = context.TextFont.ProcessText(Desc.Title, ref textBlock.Range);
-
-                if (lines == null || lines.Length == 0)
-                {
-                    return;
-                }
-                for (int i = 0; i < lines.Length; i++)
-                {
-                    ref var line = ref lines[i];
-                    textBlock.Range = new TextRange
-                    {
-                        StartIndex = startPos + line.FirstCharIndex,
-                        EndIndex = startPos + line.LastCharIndex + 1
+                        ClipText = false,
+                        HasBorder = false,
+                        BackgroundColor = Color.Transparent,
+                        Text = desc.Title,
                     };
-
-                    // Move to the next line
-                    if (i != 0)
+                    if (_window._colorDebugLogText)
                     {
-                        context.Caret.Y += line.Size.Y;
-                        textBlock.Bounds.X = 0;
-                        textBlock.Bounds.Y += line.Size.Y;
-                    }
-
-                    textBlock.Bounds.X += line.Location.X;
-                    textBlock.Bounds.Size = line.Size;
-                    context.AddBlock(ref textBlock);
-                }
-
-                // Caret location for the next text block
-                var lastLine = lines[lines.Length - 1];
-                if (lines.Length == 1)
-                {
-                    context.Caret.X += lastLine.Size.X;
-                }
-                else
-                {
-                    context.Caret.X = lastLine.Size.X;
-                }
-            }
-
-            /// <summary>
-            /// Parse color info from the tag and handle closing tags.
-            /// </summary>
-            /// <param name="context">The parsing context.</param>
-            /// <param name="tag">Tag to process.</param>
-            private static void ProcessColorTag(ref ColorParseContext context, ref HtmlTag tag)
-            {
-                // Closing tag
-                if (tag.IsSlash)
-                {
-                    context.CurrentColor = context.DefaultColor;
-                }
-                else
-                {
-                    // Parse color
-                    if (tag.Attributes.TryGetValue(string.Empty, out string colorText))
-                    {
-                        if (Color.TryParse(colorText, out Color colorVal))
-                        {
-                            context.CurrentColor = colorVal;
-                        }
-                    }
-                    else
-                    {
-                        context.CurrentColor = context.DefaultColor;
+                        var style = _richTextBox.TextStyle;
+                        style.Color = Color;
+                        _richTextBox.TextStyle = style;
                     }
                 }
             }
@@ -300,12 +137,10 @@ namespace FlaxEditor.Windows
             /// <inheritdoc />
             public override void Draw()
             {
-                base.Draw();
-
-                // Cache data
                 var style = Style.Current;
                 var index = IndexInParent;
                 var clientRect = new Rectangle(Float2.Zero, Size);
+                var color = Color;
 
                 // Background
                 if (_window._selected == this)
@@ -320,37 +155,44 @@ namespace FlaxEditor.Windows
                 else if (index % 2 == 0)
                     Render2D.FillRectangle(clientRect, style.Background * 0.9f);
 
-                var color = Group == LogGroup.Error ? _window._colorError : (Group == LogGroup.Warning ? _window._colorWarning : _window._colorInfo);
-
                 // Icon
                 Render2D.DrawSprite(Icon, new Rectangle(8, 0, 32, 32), color);
 
                 // Title
-                var textLocation = new Float2(43, 2);
+                var textRect = new Rectangle(43, 2, clientRect.Width - 40, clientRect.Height - 10);
                 Render2D.PushClip(ref clientRect);
                 bool coloredText = _window._colorDebugLogText;
-
-                // Render text blocks with their colors
-                for (int i = 0; i < _textBlocks.Count; i++)
+                if (_richTextBox != null)
                 {
-                    TextColorBlock block = _textBlocks[i];
-                    Render2D.DrawText(style.FontMedium, Desc.Title, ref block.Range,
-                        coloredText ? block.TextColor : style.Foreground, textLocation + block.Bounds.Location);
+                    Render2D.PushTransform(Matrix3x3.Translation2D(textRect.Location));
+                    _richTextBox.DrawSelf();
+                    Render2D.PopTransform();
+                }
+                else
+                {
+                    Render2D.DrawText(style.FontMedium, Desc.Title, textRect, coloredText ? color : style.Foreground);
                 }
 
                 // Adding log counter for collapsed logs
                 if (LogCount > 1)
                 {
-                    Float2 numberLocation = textLocation;
-                    if (_textBlocks.Count > 0)
+                    Float2 logCountPos = Float2.Zero;
+                    if (_richTextBox != null)
                     {
-                        TextColorBlock block = _textBlocks[_textBlocks.Count - 1];
-                        numberLocation += block.Bounds.Location;
-                        numberLocation.X += block.Bounds.Size.X;
+                        var blocks = _richTextBox.TextBlocks;
+                        if (blocks.Count != 0)
+                        {
+                            var block = blocks[^1];
+                            logCountPos = new Float2(block.Bounds.Right, block.Bounds.Top);
+                        }
                     }
-
-                    Render2D.DrawText(style.FontMedium, $" ({LogCount})", color, numberLocation);
+                    else
+                    {
+                        logCountPos.X = style.FontMedium.MeasureText(Desc.Title).X;
+                    }
+                    Render2D.DrawText(style.FontMedium, $" ({LogCount})", color, textRect.Location + logCountPos);
                 }
+
                 Render2D.PopClip();
             }
 
@@ -488,6 +330,18 @@ namespace FlaxEditor.Windows
                 _isRightMouseDown = false;
 
                 base.OnMouseLeave();
+            }
+
+            /// <inheritdoc />
+            public override void OnDestroy()
+            {
+                if (_richTextBox != null)
+                {
+                    _richTextBox.OnDestroy();
+                    _richTextBox = null;
+                }
+
+                base.OnDestroy();
             }
         }
 
