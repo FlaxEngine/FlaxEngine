@@ -10,7 +10,6 @@
 #include "TextLayoutOptions.h"
 
 class FontAsset;
-struct FontTextureAtlasSlot;
 struct FontCharacterEntry;
 
 // The default DPI that engine is using
