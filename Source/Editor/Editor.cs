@@ -1145,6 +1145,36 @@ namespace FlaxEditor
         }
 
         /// <summary>
+        /// Creates (or overwrites) a PBR material asset with the given textures wired into the
+        /// default surface graph. This is the engine's canonical way to create a material with
+        /// textures: the <c>CreateMaterial</c> importer adds texture nodes connected to the
+        /// surface's root boxes (a bare default material has no exposed parameters to set).
+        /// </summary>
+        /// <param name="path">Output asset path.</param>
+        /// <param name="diffuse">Base color / albedo texture.</param>
+        /// <param name="normal">Normal map texture.</param>
+        /// <param name="roughness">Roughness texture (uses the texture's color value).</param>
+        /// <param name="metallic">Metallic texture.</param>
+        /// <param name="emissive">Emissive / self-illumination texture.</param>
+        /// <param name="opacity">Opacity / alpha texture.</param>
+        /// <param name="ambientOcclusion">Ambient occlusion texture.</param>
+        /// <param name="height">Height / displacement texture.</param>
+        /// <param name="roughnessChannel">Roughness texture channel (0 = R, 1 = G, 2 = B, 3 = A); leave as <c>byte.MaxValue</c> to use the importer default. Needed when a combined ARM map feeds this input.</param>
+        /// <param name="metallicChannel">Metallic texture channel (0 = R, 1 = G, 2 = B, 3 = A); leave as <c>byte.MaxValue</c> to use the importer default. Needed when a combined ARM map feeds this input.</param>
+        /// <param name="ambientOcclusionChannel">Ambient occlusion texture channel (0 = R, 1 = G, 2 = B, 3 = A); leave as <c>byte.MaxValue</c> to use the importer default. Needed when a combined ARM map feeds this input.</param>
+        /// <param name="heightChannel">Height texture channel (0 = R, 1 = G, 2 = B, 3 = A); leave as <c>byte.MaxValue</c> to use the importer default.</param>
+        /// <param name="diffuseColorAsParameter">When true and a diffuse texture is provided, the diffuse color multiplier is created as a public material parameter ("Color") instead of a hardcoded constant node.</param>
+        /// <param name="emissiveColorAsParameter">When true, the emissive color multiplier is created as a public material parameter ("EmissiveColor", default black = no emission) instead of a hardcoded constant node. With an emissive texture it modulates it; without one it drives the Emissive input directly.</param>
+        /// <param name="normalStrengthAsParameter">When true and a normal texture is provided, the normal scale is created as a public material parameter ("NormalStrength", default 1.0) wired into the Normal input via a scale subgraph.</param>
+        /// <param name="assetId">Receives the created (or reused) asset id.</param>
+        /// <returns>True if the operation failed, false on success (mirrors <see cref="CreateAsset(string, string)"/>).</returns>
+        public static bool CreateMaterial(string path, out Guid assetId, Guid diffuse = default, Guid normal = default, Guid roughness = default, Guid metallic = default, Guid emissive = default, Guid opacity = default, Guid ambientOcclusion = default, Guid height = default, byte roughnessChannel = byte.MaxValue, byte metallicChannel = byte.MaxValue, byte ambientOcclusionChannel = byte.MaxValue, byte heightChannel = byte.MaxValue, bool diffuseColorAsParameter = false, bool emissiveColorAsParameter = false, bool normalStrengthAsParameter = false)
+        {
+            assetId = default;
+            return Internal_CreateMaterial(path, ref diffuse, ref normal, ref roughness, ref metallic, ref emissive, ref opacity, ref ambientOcclusion, ref height, roughnessChannel, metallicChannel, ambientOcclusionChannel, heightChannel, (byte)(diffuseColorAsParameter ? 1 : 0), (byte)(emissiveColorAsParameter ? 1 : 0), (byte)(normalStrengthAsParameter ? 1 : 0), ref assetId);
+        }
+
+        /// <summary>
         /// Checks if can import asset with the given extension.
         /// </summary>
         /// <param name="extension">The file extension.</param>
@@ -1661,6 +1691,10 @@ namespace FlaxEditor
         [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CloneAssetFile", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_CloneAssetFile(string dstPath, string srcPath, ref Guid dstId);
+
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CreateMaterial", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static partial bool Internal_CreateMaterial(string path, ref Guid diffuse, ref Guid normal, ref Guid roughness, ref Guid metallic, ref Guid emissive, ref Guid opacity, ref Guid ambientOcclusion, ref Guid height, byte roughnessChannel, byte metallicChannel, byte ambientOcclusionChannel, byte heightChannel, byte diffuseColorAsParameter, byte emissiveColorAsParameter, byte normalStrengthAsParameter, ref Guid outAssetId);
 
         [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetAudioClipMetadata", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         internal static partial void Internal_GetAudioClipMetadata(IntPtr obj, out int originalSize, out int importedSize);
