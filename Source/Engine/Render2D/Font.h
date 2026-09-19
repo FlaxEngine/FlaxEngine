@@ -211,7 +211,7 @@ public:
     /// </summary>
     /// <param name="c">The character.</param>
     /// <param name="result">The output character entry.</param>
-    /// <param name="enableFallback">True if fallback to secondary font when the primary font doesn't contains this character.</param>
+    /// <param name="enableFallback">True if fallback to secondary font when the primary font doesn't contain this character.</param>
     void GetCharacter(Char c, FontCharacterEntry& result, bool enableFallback = true);
 
     /// <summary>
@@ -229,7 +229,7 @@ public:
     API_FUNCTION() void CacheText(const StringView& text);
 
     /// <summary>
-    /// Refresh cached metrics. Can be used after changing font asset options.
+    /// Refresh cached metrics and invalidates all cached characters (in atlases). Can be used after changing font asset options.
     /// </summary>
     API_FUNCTION() void Invalidate();
 

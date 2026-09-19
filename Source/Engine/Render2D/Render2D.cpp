@@ -1203,7 +1203,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     Float2 invAtlasSize = Float2::One;
     FontCharacterEntry previous;
     int32 kerning;
-    FontOptions options = font->GetAsset()->GetOptions();
+    const FontOptions& options = font->GetAsset()->GetOptions();
     const float scale = font->GetScale(1.0f);
     const bool enableFallbackFonts = EnumHasAllFlags(Features, RenderingFeatures::FallbackFonts);
 
@@ -1231,6 +1231,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
         {
             // Get character entry
             font->GetCharacter(currentChar, entry, enableFallbackFonts);
+
             // Fallback fonts may have different MSDFSize, so we need to calculate scale per character
             const float entryScale = entry.Font->GetScale(1.0f);
 
@@ -1274,9 +1275,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
                 // Calculate character size and atlas coordinates
                 const float x = pointer.X + entry.OffsetX * entryScale;
                 const float y = pointer.Y - entry.OffsetY * entryScale + (font->GetHeight() + font->GetDescender()) * scale;
-
                 Rectangle charRect(x, y, entry.UVSize.X * entryScale, entry.UVSize.Y * entryScale);
-
                 Float2 upperLeftUV = entry.UV * invAtlasSize;
                 Float2 rightBottomUV = (entry.UV + entry.UVSize) * invAtlasSize;
 
@@ -1321,7 +1320,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     Float2 invAtlasSize = Float2::One;
     FontCharacterEntry previous;
     int32 kerning;
-    FontOptions options = font->GetAsset()->GetOptions();
+    const FontOptions& options = font->GetAsset()->GetOptions();
     const float scale = font->GetScale(layout.Scale);
     const bool enableFallbackFonts = EnumHasAllFlags(Features, RenderingFeatures::FallbackFonts);
 
@@ -1358,6 +1357,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
             {
                 // Get character entry
                 font->GetCharacter(currentChar, entry, enableFallbackFonts);
+
                 // Fallback fonts may have different MSDFSize, so we need to calculate scale per character
                 const float entryScale = entry.Font->GetScale(layout.Scale);
 
@@ -1399,10 +1399,8 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
                     // Calculate character size and atlas coordinates
                     const float x = pointer.X + entry.OffsetX * entryScale;
                     const float y = pointer.Y - entry.OffsetY * entryScale + Math::Ceil((font->GetHeight() + font->GetDescender()) * scale);
-
                     Rectangle charRect(x, y, entry.UVSize.X * entryScale, entry.UVSize.Y * entryScale);
                     charRect.Offset(layout.Bounds.Location);
-
                     Float2 upperLeftUV = entry.UV * invAtlasSize;
                     Float2 rightBottomUV = (entry.UV + entry.UVSize) * invAtlasSize;
 

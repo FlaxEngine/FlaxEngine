@@ -1,6 +1,5 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System;
 using System.ComponentModel;
 using FlaxEditor.Content;
 using FlaxEditor.CustomEditors;
@@ -26,7 +25,7 @@ namespace FlaxEditor.Windows.Assets
             [EditorOrder(5), EditorDisplay("Properties"), Tooltip("The rasterization mode used when generating font atlases.")]
             public FontRasterMode RasterMode;
 
-            [DefaultValue(32.0f)]
+            [DefaultValue(32.0f), VisibleIf(nameof(IsMSDF))]
             [EditorOrder(6), Limit(4, 512), EditorDisplay("Properties"), Tooltip("The font size used when generating MSDF font atlases.")]
             public float MSDFSize;
 
@@ -45,6 +44,8 @@ namespace FlaxEditor.Windows.Assets
             [DefaultValue(false)]
             [EditorOrder(40), EditorDisplay("Properties"), Tooltip("Enables slant effect, emulating italic style.")]
             public bool Italic;
+
+            private bool IsMSDF => RasterMode == FontRasterMode.MSDF;
 
             public void Get(out FontOptions options)
             {

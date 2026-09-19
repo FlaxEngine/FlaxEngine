@@ -36,7 +36,8 @@ Font::~Font()
 void Font::GetCharacter(Char c, FontCharacterEntry& result, bool enableFallback)
 {
     // Try to get the character or cache it if cannot be found
-    const auto key = Pair<float, Char>(_asset->GetOptions().RasterMode == FontRasterMode::MSDF ? _asset->GetOptions().MSDFSize : GetSize(), c);
+    const FontOptions& options = _asset->GetOptions();
+    const auto key = Pair<float, Char>(options.RasterMode == FontRasterMode::MSDF ? options.MSDFSize : GetSize(), c);
     if (_asset->_characterCache.TryGet(key, result))
     {
         // With MSDF font introduced, cached entry may be created by a different font (with same MSDFSize)
@@ -63,7 +64,7 @@ void Font::GetCharacter(Char c, FontCharacterEntry& result, bool enableFallback)
                 FontAsset* fallbackFont = FallbackFonts.Get()[fallbackIndex].Get();
                 if (fallbackFont && fallbackFont->ContainsChar(c))
                 {
-                    fallbackFont->GetRasterMode(_asset->GetOptions().RasterMode)->CreateFont(GetSize())->GetCharacter(c, result, enableFallback);
+                    fallbackFont->GetRasterMode(options.RasterMode)->CreateFont(GetSize())->GetCharacter(c, result, enableFallback);
                     return;
                 }
             }
@@ -121,6 +122,17 @@ void Font::Invalidate()
 {
     ScopeLock lock(_asset->Locker);
 
+    // Invalidate cached characters (from atlas)
+    for (auto i = _asset->_characterCache.Begin(); i.IsNotEnd(); ++i)
+    {
+        if (i->Value.Font == this)
+        {
+            FontManager::Invalidate(i->Value);
+            _asset->_characterCache.Remove(i);
+        }
+    }
+
+    // Rebuild font metrics
     FlushFaceSize();
     const FT_Face face = _asset->GetFTFace();
     ASSERT(face != nullptr);
@@ -134,7 +146,8 @@ void Font::Invalidate()
 
 float Font::GetScale(float layoutScale) const
 {
-    return layoutScale / FontManager::FontScale * (_asset->GetOptions().RasterMode == FontRasterMode::MSDF ? _size / _asset->GetOptions().MSDFSize : 1.0f);
+    const FontOptions& options = _asset->GetOptions();
+    return layoutScale / FontManager::FontScale * (options.RasterMode == FontRasterMode::MSDF ? _size / options.MSDFSize : 1.0f);
 }
 
 void Font::ProcessText(const StringView& text, Array<FontLineCache, InlinedAllocation<8>>& outputLines, const TextLayoutOptions& layout)
@@ -491,7 +504,8 @@ void Font::FlushFaceSize() const
 {
     // Set the character size
     const FT_Face face = _asset->GetFTFace();
-    float size = _asset->GetOptions().RasterMode == FontRasterMode::MSDF ? _asset->GetOptions().MSDFSize : _size;
+    const FontOptions& options = _asset->GetOptions();
+    float size = options.RasterMode == FontRasterMode::MSDF ? options.MSDFSize : _size;
     const FT_Error error = FT_Set_Char_Size(face, 0, ConvertPixelTo26Dot6<FT_F26Dot6>(size * FontManager::FontScale), DefaultDPI, DefaultDPI);
     if (error)
     {

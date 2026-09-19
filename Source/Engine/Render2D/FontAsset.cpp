@@ -234,9 +234,10 @@ bool FontAsset::ContainsChar(Char c) const
 void FontAsset::Invalidate()
 {
     ScopeLock lock(Locker);
+
+    // Invalidate cached characters (from atlas)
     for (auto& entry : _characterCache)
         FontManager::Invalidate(entry.Value);
-
     _characterCache.Clear();
 
     // Refresh cached metrics of all fonts created from this asset
