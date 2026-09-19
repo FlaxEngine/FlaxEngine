@@ -25,6 +25,67 @@ namespace FlaxEditor.SceneGraph.Actors
         /// <seealso cref="FlaxEditor.SceneGraph.ActorChildNode{T}" />
         public sealed class SideLinkNode : ActorChildNode<BoxBrushNode>
         {
+            private const float MinimumComponentExtent = 0.001f;
+
+            internal static Vector3 GetCornerSigns(int cornerIndex)
+            {
+                switch (cornerIndex)
+                {
+                    case 0: return new Vector3(1, 1, 1);
+                    case 1: return new Vector3(1, 1, -1);
+                    case 2: return new Vector3(-1, 1, -1);
+                    case 3: return new Vector3(-1, 1, 1);
+                    case 4: return new Vector3(1, -1, 1);
+                    case 5: return new Vector3(1, -1, -1);
+                    case 6: return new Vector3(-1, -1, -1);
+                    default: return new Vector3(-1, -1, 1);
+                }
+            }
+
+            internal static Vector3 GetComponentPoint(BoxBrush brush, Vector3 signs)
+            {
+                return brush.Transform.LocalToWorld(brush.Center + signs * brush.Size * 0.5f);
+            }
+
+            internal static void SetComponentPoint(BoxBrush brush, Vector3 signs, Vector3 worldPoint)
+            {
+                var point = brush.Transform.WorldToLocal(worldPoint);
+                var center = brush.Center;
+                var size = brush.Size;
+                for (int axis = 0; axis < 3; axis++)
+                {
+                    float sign = GetComponent(signs, axis);
+                    if (Mathf.Abs(sign) < 0.5f)
+                        continue;
+                    float halfSize = GetComponent(size, axis) * 0.5f;
+                    float opposite = GetComponent(center, axis) - sign * halfSize;
+                    float target = GetComponent(point, axis);
+                    if (sign > 0.0f)
+                        target = Mathf.Max(target, opposite + MinimumComponentExtent);
+                    else
+                        target = Mathf.Min(target, opposite - MinimumComponentExtent);
+                    SetComponent(ref center, axis, (target + opposite) * 0.5f);
+                    SetComponent(ref size, axis, Mathf.Abs(target - opposite));
+                }
+                brush.Center = center;
+                brush.Size = size;
+            }
+
+            private static float GetComponent(Vector3 value, int axis)
+            {
+                return axis == 0 ? (float)value.X : axis == 1 ? (float)value.Y : (float)value.Z;
+            }
+
+            private static void SetComponent(ref Vector3 value, int axis, float component)
+            {
+                if (axis == 0)
+                    value.X = component;
+                else if (axis == 1)
+                    value.Y = component;
+                else
+                    value.Z = component;
+            }
+
             private sealed class BrushSurfaceProxy
             {
                 [HideInEditor]
@@ -169,6 +230,9 @@ namespace FlaxEditor.SceneGraph.Actors
                 set
                 {
                     var actor = Brush;
+#if true
+                    SetComponentPoint(actor, _offset * 2.0f, value.Translation);
+#else
                     Transform localTrans = actor.Transform.WorldToLocal(value);
                     var prevLocalOffset = _offset * actor.Size + actor.Center;
                     var localOffset = Vector3.Abs(_offset) * 2.0f * localTrans.Translation;
@@ -176,6 +240,7 @@ namespace FlaxEditor.SceneGraph.Actors
                     float centerScale = Index % 2 == 0 ? 0.5f : -0.5f;
                     actor.Size += localOffsetDelta;
                     actor.Center += localOffsetDelta * centerScale;
+#endif
                 }
             }
 
