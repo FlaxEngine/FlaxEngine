@@ -4,6 +4,10 @@
 
 #include "Engine/Content/BinaryAsset.h"
 #include "Engine/Content/AssetReference.h"
+#include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Core/Math/Vector2.h"
+#include "Engine/Render2D/FontCharacterEntry.h"
 
 class Font;
 class FontManager;
@@ -105,6 +109,11 @@ API_STRUCT() struct FontOptions
     /// The font rasterization mode.
     /// </summary>
     API_FIELD() FontRasterMode RasterMode;
+
+    /// <summary>
+    /// The font size used when generating MSDF font atlases.
+    /// </summary>
+    API_FIELD() float MSDFSize;
 };
 
 /// <summary>
@@ -112,7 +121,7 @@ API_STRUCT() struct FontOptions
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API FontAsset : public BinaryAsset
 {
-    DECLARE_BINARY_ASSET_HEADER(FontAsset, 4);
+    DECLARE_BINARY_ASSET_HEADER(FontAsset, 5);
     friend Font;
 
 private:
@@ -120,9 +129,10 @@ private:
     FontOptions _options;
     BytesContainer _fontFile;
     Array<Font*, InlinedAllocation<32>> _fonts;
+    Dictionary<Pair<float, Char>, FontCharacterEntry> _characterCache;
     AssetReference<FontAsset> _virtualBold;
     AssetReference<FontAsset> _virtualItalic;
-    AssetReference<FontAsset> _virtualMSDF;
+    AssetReference<FontAsset> _virtualRasterMode;
 
 public:
     /// <summary>
@@ -182,10 +192,10 @@ public:
     API_FUNCTION() FontAsset* GetItalic();
 
     /// <summary>
-    /// Gets the MSDF version of the font. Returns itself or creates a new virtual font asset using this font but rasterized with Multi-channel Signed Distance Field (MSDF).
+    /// Gets the different rasterization mode of the font. Returns itself or creates a new virtual font asset using this font but rasterized with the specified mode.
     /// </summary>
     /// <returns>The virtual font or this.</returns>
-    API_FUNCTION() FontAsset* GetMSDF();
+    API_FUNCTION() FontAsset* GetRasterMode(FontRasterMode rasterMode);
 
     /// <summary>
     /// Initializes the font with a custom font file data.

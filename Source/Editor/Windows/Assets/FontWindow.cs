@@ -25,6 +25,10 @@ namespace FlaxEditor.Windows.Assets
             [EditorOrder(5), EditorDisplay("Properties"), Tooltip("The rasterization mode used when generating font atlases.")]
             public FontRasterMode RasterMode;
 
+            [DefaultValue(32.0f), VisibleIf(nameof(IsMSDF))]
+            [EditorOrder(6), Limit(4, 512), EditorDisplay("Properties"), Tooltip("The font size used when generating MSDF font atlases.")]
+            public float MSDFSize;
+
             [DefaultValue(FontHinting.Default)]
             [EditorOrder(10), EditorDisplay("Properties"), Tooltip("The font hinting used when rendering characters.")]
             public FontHinting Hinting;
@@ -41,12 +45,15 @@ namespace FlaxEditor.Windows.Assets
             [EditorOrder(40), EditorDisplay("Properties"), Tooltip("Enables slant effect, emulating italic style.")]
             public bool Italic;
 
+            private bool IsMSDF => RasterMode == FontRasterMode.MSDF;
+
             public void Get(out FontOptions options)
             {
                 options = new FontOptions
                 {
                     Hinting = Hinting,
                     RasterMode = RasterMode,
+                    MSDFSize = MSDFSize,
                 };
                 if (AntiAliasing)
                     options.Flags |= FontFlags.AntiAliasing;
@@ -63,6 +70,7 @@ namespace FlaxEditor.Windows.Assets
                 Bold = (options.Flags & FontFlags.Bold) == FontFlags.Bold;
                 Italic = (options.Flags & FontFlags.Italic) == FontFlags.Italic;
                 RasterMode = options.RasterMode;
+                MSDFSize = options.MSDFSize;
             }
         }
 
@@ -134,7 +142,6 @@ namespace FlaxEditor.Windows.Assets
             if (assetOptions != options)
             {
                 Asset.Options = options;
-                Asset.Invalidate();
             }
         }
 

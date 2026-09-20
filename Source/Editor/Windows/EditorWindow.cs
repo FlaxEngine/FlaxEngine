@@ -53,72 +53,72 @@ namespace FlaxEditor.Windows
             // Set up editor window shortcuts
             InputActions.Add(options => options.ContentWindow, () => 
             { 
-                if (InputOptions.WindowShortcutsAvaliable)
+                if (InputOptions.WindowShortcutsAvailable)
                     Editor.Windows.ContentWin.FocusOrShow();
             });
             InputActions.Add(options => options.SceneWindow, () => 
             { 
-                if (InputOptions.WindowShortcutsAvaliable)
+                if (InputOptions.WindowShortcutsAvailable)
                     Editor.Windows.SceneWin.FocusOrShow();
             });
             InputActions.Add(options => options.ToolboxWindow, () => 
             { 
-                if (InputOptions.WindowShortcutsAvaliable)
+                if (InputOptions.WindowShortcutsAvailable)
                     Editor.Windows.ToolboxWin.FocusOrShow();
             });
             InputActions.Add(options => options.PropertiesWindow, () => 
             { 
-                if (InputOptions.WindowShortcutsAvaliable)
+                if (InputOptions.WindowShortcutsAvailable)
                     Editor.Windows.PropertiesWin.FocusOrShow();
             });
             InputActions.Add(options => options.GameWindow, () => 
             { 
-                if (InputOptions.WindowShortcutsAvaliable)
+                if (InputOptions.WindowShortcutsAvailable)
                     Editor.Windows.GameWin.FocusOrShow();
             });
             InputActions.Add(options => options.EditorWindow, () => 
             { 
-                if (InputOptions.WindowShortcutsAvaliable)
+                if (InputOptions.WindowShortcutsAvailable)
                     Editor.Windows.EditWin.FocusOrShow();
             });
             InputActions.Add(options => options.DebugLogWindow, () => 
             { 
-                if (InputOptions.WindowShortcutsAvaliable)
+                if (InputOptions.WindowShortcutsAvailable)
                     Editor.Windows.DebugLogWin.FocusOrShow();
             });
             InputActions.Add(options => options.OutputLogWindow, () => 
             { 
-                if (InputOptions.WindowShortcutsAvaliable)
+                if (InputOptions.WindowShortcutsAvailable)
                     Editor.Windows.OutputLogWin.FocusOrShow();
             });
             InputActions.Add(options => options.GraphicsQualityWindow, () => 
             { 
-                if (InputOptions.WindowShortcutsAvaliable)
+                if (InputOptions.WindowShortcutsAvailable)
                     Editor.Windows.GraphicsQualityWin.FocusOrShow();
             });
             InputActions.Add(options => options.GameCookerWindow, () => 
             { 
-                if (InputOptions.WindowShortcutsAvaliable)
+                if (InputOptions.WindowShortcutsAvailable)
                     Editor.Windows.GameCookerWin.FocusOrShow();
             });
             InputActions.Add(options => options.ProfilerWindow, () =>
             {
-                if (InputOptions.ProfilerShortcutAvaliable)
+                if (InputOptions.ProfilerShortcutAvailable)
                     Editor.Windows.ProfilerWin.FocusOrShow();
             });
             InputActions.Add(options => options.ContentFinder, () =>
             {
-                if (InputOptions.WindowShortcutsAvaliable)
+                if (InputOptions.WindowShortcutsAvailable)
                     Editor.ContentFinding.ShowSearch();
             });
             InputActions.Add(options => options.VisualScriptDebuggerWindow, () => 
             { 
-                if (InputOptions.WindowShortcutsAvaliable)
+                if (InputOptions.WindowShortcutsAvailable)
                     Editor.Windows.VisualScriptDebuggerWin.FocusOrShow();
             });
             InputActions.Add(options => options.EditorOptionsWindow, () =>
             {
-                if (InputOptions.WindowShortcutsAvaliable)
+                if (InputOptions.WindowShortcutsAvailable)
                     Editor.Windows.EditorOptionsWin.FocusOrShow();
             });
 
