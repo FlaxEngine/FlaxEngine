@@ -30,6 +30,11 @@ namespace FlaxEngine.GUI
         public ParseTextBlocksDelegate ParseTextBlocks;
 
         /// <summary>
+        /// Gets the list of parsed text blocks.
+        /// </summary>
+        public List<TextBlock> TextBlocks => _textBlocks;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="RichTextBoxBase"/> class.
         /// </summary>
         protected RichTextBoxBase()

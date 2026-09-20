@@ -77,10 +77,13 @@ namespace FlaxEditor.Windows
             public const float DefaultHeight = 32.0f;
 
             private DebugLogWindow _window;
+            private RichTextBox _richTextBox;
             public LogGroup Group;
             public LogEntryDescription Desc;
             public SpriteHandle Icon;
             public int LogCount = 1;
+
+            private Color Color => Group == LogGroup.Error ? _window._colorError : (Group == LogGroup.Warning ? _window._colorWarning : _window._colorInfo);
 
             public LogEntry(DebugLogWindow window, ref LogEntryDescription desc)
             : base(0, 0, 120, DefaultHeight)
@@ -106,6 +109,24 @@ namespace FlaxEditor.Windows
                     Icon = _window._iconError;
                     break;
                 }
+
+                // Use Rich Text Box to display title if it contains any HTML tags
+                if (desc.Title.Contains('<') && desc.Title.Contains('>'))
+                {
+                    _richTextBox = new RichTextBox
+                    {
+                        ClipText = false,
+                        HasBorder = false,
+                        BackgroundColor = Color.Transparent,
+                        Text = desc.Title,
+                    };
+                    if (_window._colorDebugLogText)
+                    {
+                        var style = _richTextBox.TextStyle;
+                        style.Color = Color;
+                        _richTextBox.TextStyle = style;
+                    }
+                }
             }
 
             /// <summary>
@@ -116,12 +137,10 @@ namespace FlaxEditor.Windows
             /// <inheritdoc />
             public override void Draw()
             {
-                base.Draw();
-
-                // Cache data
                 var style = Style.Current;
                 var index = IndexInParent;
                 var clientRect = new Rectangle(Float2.Zero, Size);
+                var color = Color;
 
                 // Background
                 if (_window._selected == this)
@@ -136,8 +155,6 @@ namespace FlaxEditor.Windows
                 else if (index % 2 == 0)
                     Render2D.FillRectangle(clientRect, style.Background * 0.9f);
 
-                var color = Group == LogGroup.Error ? _window._colorError : (Group == LogGroup.Warning ? _window._colorWarning : _window._colorInfo);
-
                 // Icon
                 Render2D.DrawSprite(Icon, new Rectangle(8, 0, 32, 32), color);
 
@@ -145,14 +162,37 @@ namespace FlaxEditor.Windows
                 var textRect = new Rectangle(43, 2, clientRect.Width - 40, clientRect.Height - 10);
                 Render2D.PushClip(ref clientRect);
                 bool coloredText = _window._colorDebugLogText;
-                if (LogCount == 1)
+                if (_richTextBox != null)
+                {
+                    Render2D.PushTransform(Matrix3x3.Translation2D(textRect.Location));
+                    _richTextBox.DrawSelf();
+                    Render2D.PopTransform();
+                }
+                else
                 {
                     Render2D.DrawText(style.FontMedium, Desc.Title, textRect, coloredText ? color : style.Foreground);
                 }
-                else if (LogCount > 1)
+
+                // Adding log counter for collapsed logs
+                if (LogCount > 1)
                 {
-                    Render2D.DrawText(style.FontMedium, $"{Desc.Title} ({LogCount})", textRect, coloredText ? color : style.Foreground);
+                    Float2 logCountPos = Float2.Zero;
+                    if (_richTextBox != null)
+                    {
+                        var blocks = _richTextBox.TextBlocks;
+                        if (blocks.Count != 0)
+                        {
+                            var block = blocks[^1];
+                            logCountPos = new Float2(block.Bounds.Right, block.Bounds.Top);
+                        }
+                    }
+                    else
+                    {
+                        logCountPos.X = style.FontMedium.MeasureText(Desc.Title).X;
+                    }
+                    Render2D.DrawText(style.FontMedium, $" ({LogCount})", color, textRect.Location + logCountPos);
                 }
+
                 Render2D.PopClip();
             }
 
@@ -290,6 +330,18 @@ namespace FlaxEditor.Windows
                 _isRightMouseDown = false;
 
                 base.OnMouseLeave();
+            }
+
+            /// <inheritdoc />
+            public override void OnDestroy()
+            {
+                if (_richTextBox != null)
+                {
+                    _richTextBox.OnDestroy();
+                    _richTextBox = null;
+                }
+
+                base.OnDestroy();
             }
         }
 

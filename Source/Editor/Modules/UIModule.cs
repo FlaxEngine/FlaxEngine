@@ -835,6 +835,7 @@ namespace FlaxEditor.Modules
                 tooltip.Append($" ({engineNickname})");
 
             // Build info
+            tooltip.AppendLine(System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription);
 #if USE_LARGE_WORLDS
             tooltip.AppendLine("Large Worlds Enabled");
 #endif
