@@ -332,7 +332,18 @@ bool MaterialInstance::Save(const StringView& path)
         // Save parameters
         Params.Save(&stream);
     }
-    SetChunk(0, ToSpan(stream));
+    // Virtual assets don't own a storage container, so SetChunk/GetOrCreateChunk are a no-op for them.
+    // Wire a temporary chunk into the header for the duration of the save (mirrors ModelBase::Save).
+    FlaxChunk tmpChunk;
+    if (IsVirtual())
+    {
+        tmpChunk.Data.Copy(ToSpan(stream));
+        _header.Chunks[0] = &tmpChunk;
+    }
+    else
+    {
+        SetChunk(0, ToSpan(stream));
+    }
 
     // Setup asset data
     AssetInitData data;
@@ -340,6 +351,11 @@ bool MaterialInstance::Save(const StringView& path)
 
     // Save data
     const bool saveResult = path.HasChars() ? SaveAsset(path, data) : SaveAsset(data, true);
+    if (IsVirtual())
+    {
+        // Release the temporary chunk reference (points to stack memory)
+        _header.Chunks[0] = nullptr;
+    }
     if (saveResult)
     {
         LOG(Error, "Cannot save \'{0}\'", ToString());
