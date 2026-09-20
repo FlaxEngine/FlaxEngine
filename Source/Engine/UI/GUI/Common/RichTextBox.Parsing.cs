@@ -419,7 +419,7 @@ namespace FlaxEngine.GUI
             // Move to the next line
             context.LineStartCharacterIndex = lineEnd + 1;
             context.LineStartTextBlockIndex = _textBlocks.Count;
-            context.Caret.Y += lineSize.Y * BaseLinesGapScale;
+            context.Caret.Y += lineSize.Y * _baseLinesGapScale;
         }
     }
 }
