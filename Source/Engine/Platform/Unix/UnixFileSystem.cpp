@@ -25,6 +25,12 @@ typedef StringAsANSI<> UnixString;
 typedef StringAsUTF8<> UnixString;
 #endif
 
+#if PLATFORM_CONSOLE || PLATFORM_WEB
+#define MAX_PATH 256 // Shorter path limit on fixed environments
+#else
+#define MAX_PATH 4096
+#endif
+
 const DateTime UnixEpoch(1970, 1, 1);
 
 bool UnixFileSystem::CreateDirectory(const StringView& path)
@@ -89,7 +95,7 @@ bool DeleteUnixPathTree(const char* path)
             continue;
 
         // Determinate a full path of an entry
-        char full_path[4096];
+        char full_path[MAX_PATH];
         if (pathLength + strlen(entry->d_name) + 2 > ARRAY_COUNT(full_path))
             continue;
         strcpy(full_path, path);
@@ -200,7 +206,7 @@ bool UnixFileSystem::GetChildDirectories(Array<String>& results, const String& p
             continue;
 
         // Determinate a full path of an entry
-        char fullPath[4096];
+        char fullPath[MAX_PATH];
         if (pathLength + strlen(entry->d_name) + 2 > ARRAY_COUNT(fullPath))
             continue;
         strcpy(fullPath, pathStr);
@@ -355,7 +361,7 @@ bool UnixFileSystem::getFilesFromDirectoryTop(Array<String>& results, const char
             continue;
 
         // Determinate a full path of an entry
-        char fullPath[4096];
+        char fullPath[MAX_PATH];
         if (pathLength + strlen(entry->d_name) + 2 > ARRAY_COUNT(fullPath))
             continue;
         strcpy(fullPath, path);
@@ -421,7 +427,7 @@ bool UnixFileSystem::getFilesFromDirectoryAll(Array<String>& results, const char
             continue;
 
         // Determinate a full path of an entry
-        char full_path[4096];
+        char full_path[MAX_PATH];
         if (pathLength + strlen(entry->d_name) + 2 > ARRAY_COUNT(full_path))
             continue;
         strcpy(full_path, path);
