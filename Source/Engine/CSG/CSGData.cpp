@@ -72,6 +72,8 @@ void RawData::AddSurface(Brush* brush, int32 brushSurfaceIndex, const Guid& surf
     slot->AddSurface(scaleInLightmap, lightmapUVsBox, firstVertex, vertexCount);
 
     // Add surface to brush
+    if (!brush)
+        return;
     auto& brushData = Brushes[brush->GetBrushID()];
     if (brushData.Surfaces.Count() != brush->GetSurfacesCount())
         brushData.Surfaces.Resize(brush->GetSurfacesCount());
