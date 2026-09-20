@@ -30,6 +30,11 @@ namespace FlaxEngine.GUI
         public ParseTextBlocksDelegate ParseTextBlocks;
 
         /// <summary>
+        /// Gets the list of parsed text blocks.
+        /// </summary>
+        public List<TextBlock> TextBlocks => _textBlocks;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="RichTextBoxBase"/> class.
         /// </summary>
         protected RichTextBoxBase()
@@ -95,15 +100,19 @@ namespace FlaxEngine.GUI
             }
 
             // Handle case when index is outside all text ranges
-            if (index >= 0 && blockCount > 0 && index <= textBlocksSpan[0].Range.StartIndex)
+            if (index >= 0 && blockCount > 0)
             {
-                result = textBlocksSpan[0];
-                return true;
-            }
-            if (index >= 0 && blockCount > 0 && index >= textBlocksSpan[blockCount - 1].Range.StartIndex)
-            {
-                result = textBlocksSpan[blockCount - 1];
-                return true;
+                if (index <= textBlocksSpan[0].Range.StartIndex)
+                {
+                    result = textBlocksSpan[0];
+                    return true;
+                }
+
+                if (index >= textBlocksSpan[blockCount - 1].Range.StartIndex)
+                {
+                    result = textBlocksSpan[blockCount - 1];
+                    return true;
+                }
             }
 
             // If no text block is found

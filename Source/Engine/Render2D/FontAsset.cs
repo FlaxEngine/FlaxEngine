@@ -13,7 +13,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if this object has the same value as <paramref name="other" />; otherwise, <c>false</c> </returns>
         public bool Equals(FontOptions other)
         {
-            return Hinting == other.Hinting && Flags == other.Flags && RasterMode == other.RasterMode;
+            return Hinting == other.Hinting && Flags == other.Flags && RasterMode == other.RasterMode && MSDFSize == other.MSDFSize;
         }
 
         /// <inheritdoc />
@@ -25,7 +25,7 @@ namespace FlaxEngine
         /// <inheritdoc />
         public override int GetHashCode()
         {
-            return HashCode.Combine((int)Hinting, (int)Flags, (int)RasterMode);
+            return HashCode.Combine((int)Hinting, (int)Flags, (int)RasterMode, MSDFSize);
         }
 
         /// <summary>
@@ -36,7 +36,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
         public static bool operator ==(FontOptions left, FontOptions right)
         {
-            return left.Hinting == right.Hinting && left.Flags == right.Flags && left.RasterMode == right.RasterMode;
+            return left.Hinting == right.Hinting && left.Flags == right.Flags && left.RasterMode == right.RasterMode && left.MSDFSize == right.MSDFSize;
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise,<c>false</c>.</returns>
         public static bool operator !=(FontOptions left, FontOptions right)
         {
-            return left.Hinting != right.Hinting || left.Flags != right.Flags || left.RasterMode != right.RasterMode;
+            return left.Hinting != right.Hinting || left.Flags != right.Flags || left.RasterMode != right.RasterMode || left.MSDFSize != right.MSDFSize;
         }
     }
 }

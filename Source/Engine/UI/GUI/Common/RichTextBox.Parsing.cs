@@ -225,37 +225,123 @@ namespace FlaxEngine.GUI
             var lines = font.ProcessText(_text, ref textBlock.Range);
             if (lines == null || lines.Length == 0)
                 return;
+            var wrapWidth = _wrapping != TextWrapping.NoWrap ? Width : -1.0f;
+
             for (int i = 0; i < lines.Length; i++)
             {
                 ref var line = ref lines[i];
-                textBlock.Range = new TextRange
+                var lineRange = new TextRange
                 {
                     StartIndex = start + line.FirstCharIndex,
                     EndIndex = start + line.LastCharIndex + 1,
                 };
+
                 if (i != 0)
                 {
                     context.Caret.X = 0;
-                    OnLineAdded(ref context, textBlock.Range.StartIndex - 1);
+                    OnLineAdded(ref context, lineRange.StartIndex - 1);
                 }
-                textBlock.Bounds = new Rectangle(context.Caret, line.Size);
-                textBlock.Bounds.X += line.Location.X;
 
-                context.AddTextBlock(ref textBlock);
-            }
-
-            // Update the caret location
-            ref var lastLine = ref lines[lines.Length - 1];
-            if (lines.Length == 1)
-            {
-                context.Caret.X += lastLine.Size.X;
-            }
-            else
-            {
-                context.Caret.X = lastLine.Size.X;
+                if (wrapWidth > 0 && context.Caret.X + line.Size.X > wrapWidth)
+                {
+                    // Line overflows the available width - split it into multiple wrapped lines
+                    AddWrappedTextBlocks(ref context, ref textBlock, font, lineRange, wrapWidth, _wrapping);
+                }
+                else
+                {
+                    // Add block
+                    textBlock.Range = lineRange;
+                    textBlock.Bounds = new Rectangle(context.Caret, line.Size);
+                    textBlock.Bounds.X += line.Location.X;
+                    context.AddTextBlock(ref textBlock);
+                    context.Caret.X += line.Size.X;
+                }
             }
         }
 
+        /// <summary>
+        /// Splits the given text range into multiple text blocks (lines) so it fits within the available wrapping width, correctly continuing from the current caret position (eg. when a differently-styled text run follows on the same line).
+        /// </summary>
+        /// <param name="context">The parsing context.</param>
+        /// <param name="textBlock">The template text block (style is reused, range and bounds get overriden per produced block).</param>
+        /// <param name="font">The font used to measure and render the text.</param>
+        /// <param name="range">The text range to wrap (single logical line - no explicit newlines inside).</param>
+        /// <param name="wrapWidth">The maximum available width (in control-space) that a single visual line can use.</param>
+        /// <param name="wrapping">The wrapping mode - either whole-word (breaks only at whitespace) or per-character (can break in the middle of a word).</param>
+        private void AddWrappedTextBlocks(ref ParsingContext context, ref TextBlock textBlock, Font font, TextRange range, float wrapWidth, TextWrapping wrapping)
+        {
+            int segmentStart = range.StartIndex;
+            float segmentWidth = 0.0f;
+            int pos = range.StartIndex;
+            while (pos < range.EndIndex)
+            {
+                // Consume the next "chunk" - a single character for WrapChars, or a whole word (plus trailing whitespace) for WrapWords
+                int chunkStart = pos;
+                if (wrapping == TextWrapping.WrapChars)
+                {
+                    pos++;
+                }
+                else
+                {
+                    while (pos < range.EndIndex && !char.IsWhiteSpace(_text[pos]))
+                        pos++;
+                    while (pos < range.EndIndex && char.IsWhiteSpace(_text[pos]))
+                        pos++;
+                }
+
+                var chunkRange = new TextRange { StartIndex = chunkStart, EndIndex = pos };
+                var chunkWidth = font.MeasureText(_text, ref chunkRange).X;
+
+                if ((segmentWidth > 0.0f || context.Caret.X > 0.0f) && context.Caret.X + segmentWidth + chunkWidth > wrapWidth)
+                {
+                    // The next chunk no longer fits - emit the accumulated segment (if any) and start a new line
+                    if (segmentStart < chunkStart)
+                        AddWrappedTextBlock(ref context, ref textBlock, font, segmentStart, chunkStart);
+                    context.Caret.X = 0;
+                    OnLineAdded(ref context, chunkStart - 1);
+                    segmentStart = chunkStart;
+                    segmentWidth = 0.0f;
+                }
+                segmentWidth += chunkWidth;
+
+                // For Wrap Words mode: A single word wider than the whole available width can't be split further, so force it onto its own line
+                if (wrapping == TextWrapping.WrapWords && context.Caret.X <= 0.0f && segmentStart == chunkStart && segmentWidth > wrapWidth && pos < range.EndIndex)
+                {
+                    AddWrappedTextBlock(ref context, ref textBlock, font, segmentStart, pos);
+                    context.Caret.X = 0;
+                    OnLineAdded(ref context, pos - 1);
+                    segmentStart = pos;
+                    segmentWidth = 0.0f;
+                }
+            }
+            if (segmentStart < range.EndIndex)
+                AddWrappedTextBlock(ref context, ref textBlock, font, segmentStart, range.EndIndex);
+        }
+
+        /// <summary>
+        /// Adds a single text block to the control, using the current caret position as the origin and moving the caret forward by the width of the text block.
+        /// </summary>
+        /// <param name="context">The parsing context.</param>
+        /// <param name="textBlock">The text block to add.</param>
+        /// <param name="font">The font to use for measurement.</param>
+        /// <param name="start">The start index of the text range.</param>
+        /// <param name="end">The end index of the text range.</param>
+        private void AddWrappedTextBlock(ref ParsingContext context, ref TextBlock textBlock, Font font, int start, int end)
+        {
+            var range = new TextRange { StartIndex = start, EndIndex = end };
+            var size = font.MeasureText(_text, ref range);
+            textBlock.Range = range;
+            textBlock.Bounds = new Rectangle(context.Caret, size);
+            context.AddTextBlock(ref textBlock);
+            context.Caret.X += size.X;
+        }
+
+        /// <summary>
+        /// Called when a new line is added (eg. after a newline character or when the text overflows the available width).
+        /// It organizes the text blocks within the line and moves the caret to the next line.
+        /// </summary>
+        /// <param name="context">The parsing context.</param>
+        /// <param name="lineEnd">The index of the last character in the line.</param>
         private void OnLineAdded(ref ParsingContext context, int lineEnd)
         {
             // Calculate size of the line
@@ -333,7 +419,7 @@ namespace FlaxEngine.GUI
             // Move to the next line
             context.LineStartCharacterIndex = lineEnd + 1;
             context.LineStartTextBlockIndex = _textBlocks.Count;
-            context.Caret.Y += lineSize.Y;
+            context.Caret.Y += lineSize.Y * _baseLinesGapScale;
         }
     }
 }

@@ -7,6 +7,7 @@ using Real = System.Single;
 #endif
 
 using System;
+using System.ComponentModel;
 using FlaxEngine;
 
 namespace FlaxEditor.SceneGraph.Actors
@@ -24,6 +25,67 @@ namespace FlaxEditor.SceneGraph.Actors
         /// <seealso cref="FlaxEditor.SceneGraph.ActorChildNode{T}" />
         public sealed class SideLinkNode : ActorChildNode<BoxBrushNode>
         {
+            private const float MinimumComponentExtent = 0.001f;
+
+            internal static Vector3 GetCornerSigns(int cornerIndex)
+            {
+                switch (cornerIndex)
+                {
+                    case 0: return new Vector3(1, 1, 1);
+                    case 1: return new Vector3(1, 1, -1);
+                    case 2: return new Vector3(-1, 1, -1);
+                    case 3: return new Vector3(-1, 1, 1);
+                    case 4: return new Vector3(1, -1, 1);
+                    case 5: return new Vector3(1, -1, -1);
+                    case 6: return new Vector3(-1, -1, -1);
+                    default: return new Vector3(-1, -1, 1);
+                }
+            }
+
+            internal static Vector3 GetComponentPoint(BoxBrush brush, Vector3 signs)
+            {
+                return brush.Transform.LocalToWorld(brush.Center + signs * brush.Size * 0.5f);
+            }
+
+            internal static void SetComponentPoint(BoxBrush brush, Vector3 signs, Vector3 worldPoint)
+            {
+                var point = brush.Transform.WorldToLocal(worldPoint);
+                var center = brush.Center;
+                var size = brush.Size;
+                for (int axis = 0; axis < 3; axis++)
+                {
+                    float sign = GetComponent(signs, axis);
+                    if (Mathf.Abs(sign) < 0.5f)
+                        continue;
+                    float halfSize = GetComponent(size, axis) * 0.5f;
+                    float opposite = GetComponent(center, axis) - sign * halfSize;
+                    float target = GetComponent(point, axis);
+                    if (sign > 0.0f)
+                        target = Mathf.Max(target, opposite + MinimumComponentExtent);
+                    else
+                        target = Mathf.Min(target, opposite - MinimumComponentExtent);
+                    SetComponent(ref center, axis, (target + opposite) * 0.5f);
+                    SetComponent(ref size, axis, Mathf.Abs(target - opposite));
+                }
+                brush.Center = center;
+                brush.Size = size;
+            }
+
+            private static float GetComponent(Vector3 value, int axis)
+            {
+                return axis == 0 ? (float)value.X : axis == 1 ? (float)value.Y : (float)value.Z;
+            }
+
+            private static void SetComponent(ref Vector3 value, int axis, float component)
+            {
+                if (axis == 0)
+                    value.X = component;
+                else if (axis == 1)
+                    value.Y = component;
+                else
+                    value.Z = component;
+            }
+
             private sealed class BrushSurfaceProxy
             {
                 [HideInEditor]
@@ -45,6 +107,7 @@ namespace FlaxEditor.SceneGraph.Actors
                     }
                 }
 
+                [DefaultValue(typeof(Float2), "1,1")]
                 [EditorOrder(30), EditorDisplay("Brush", "UV Scale"), Limit(-1000, 1000, 0.01f)]
                 [Tooltip("The surface texture coordinates scale.")]
                 public Float2 TexCoordScale
@@ -58,6 +121,7 @@ namespace FlaxEditor.SceneGraph.Actors
                     }
                 }
 
+                [DefaultValue(typeof(Float2), "0,0")]
                 [EditorOrder(40), EditorDisplay("Brush", "UV Offset"), Limit(-1000, 1000, 0.01f)]
                 [Tooltip("The surface texture coordinates offset.")]
                 public Float2 TexCoordOffset
@@ -71,6 +135,7 @@ namespace FlaxEditor.SceneGraph.Actors
                     }
                 }
 
+                [DefaultValue(0.0f)]
                 [EditorOrder(50), EditorDisplay("Brush", "UV Rotation")]
                 [Tooltip("The surface texture coordinates rotation angle (in degrees).")]
                 public float TexCoordRotation
@@ -84,6 +149,7 @@ namespace FlaxEditor.SceneGraph.Actors
                     }
                 }
 
+                [DefaultValue(1.0f)]
                 [EditorOrder(20), EditorDisplay("Brush", "Scale In Lightmap"), Limit(0, 10000, 0.1f)]
                 [Tooltip("The scale in lightmap (per surface).")]
                 public float ScaleInLightmap
@@ -164,6 +230,9 @@ namespace FlaxEditor.SceneGraph.Actors
                 set
                 {
                     var actor = Brush;
+#if true
+                    SetComponentPoint(actor, _offset * 2.0f, value.Translation);
+#else
                     Transform localTrans = actor.Transform.WorldToLocal(value);
                     var prevLocalOffset = _offset * actor.Size + actor.Center;
                     var localOffset = Vector3.Abs(_offset) * 2.0f * localTrans.Translation;
@@ -171,6 +240,7 @@ namespace FlaxEditor.SceneGraph.Actors
                     float centerScale = Index % 2 == 0 ? 0.5f : -0.5f;
                     actor.Size += localOffsetDelta;
                     actor.Center += localOffsetDelta * centerScale;
+#endif
                 }
             }
 

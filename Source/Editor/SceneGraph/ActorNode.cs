@@ -312,7 +312,7 @@ namespace FlaxEditor.SceneGraph
             // Skip actors that should not be selected
             if (hit != null && _actor != null && (_actor.HideFlags & HideFlags.DontSelect) == HideFlags.DontSelect)
             {
-                hit = parentNode;
+                hit = null;
             }
 
             return hit;
