@@ -179,6 +179,28 @@ namespace FlaxEditor.GUI
             UpdateKeyframes();
         }
 
+        internal static string GetComponentLabel(int component, Type valueType)
+        {
+            if (valueType == typeof(Color) || valueType == typeof(Color32))
+            {
+                switch (component)
+                {
+                case 0: return "r";
+                case 1: return "g";
+                case 2: return "b";
+                case 3: return "a";
+                }
+            }
+            switch (component)
+            {
+            case 0: return "x";
+            case 1: return "y";
+            case 2: return "z";
+            case 3: return "w";
+            default: return (component + 1).ToString();
+            }
+        }
+
         /// <summary>
         /// Evaluates the animation curve value at the specified time.
         /// </summary>

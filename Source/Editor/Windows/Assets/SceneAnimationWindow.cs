@@ -755,6 +755,7 @@ namespace FlaxEditor.Windows.Assets
             }
             _previewPlayerPicker.Parent.Visible = !_previewButton.Checked;
             _timeline.CanPlayPause = _previewButton.Checked || Editor.IsPlayMode;
+            _timeline.CanPlayStop = _previewButton.Checked || Editor.IsPlayMode;
         }
 
         private void OnRenderButtonClicked()
@@ -927,7 +928,7 @@ namespace FlaxEditor.Windows.Assets
 
             UpdateToolstrip();
             _timeline.CanPlayPause = _previewButton.Checked;
-            _timeline.CanPlayStop = false;
+            _timeline.CanPlayStop = _previewButton.Checked;
         }
 
         /// <inheritdoc />
@@ -982,7 +983,7 @@ namespace FlaxEditor.Windows.Assets
                     // Preview is playing
                     _previewPlayer.Tick(Time.UnscaledDeltaTime);
                 }
-                else if (Mathf.NearEqual(_previewPlayer.Time, _timeline.CurrentFrame))
+                else if (Mathf.NearEqual(_previewPlayer.Time, _timeline.CurrentTime))
                 {
                     // Preview is paused
                     _previewPlayer.Time = _timeline.CurrentTime;

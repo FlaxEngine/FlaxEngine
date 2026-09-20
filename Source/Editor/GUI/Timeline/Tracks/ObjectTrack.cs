@@ -100,6 +100,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <param name="obj">The object.</param>
         protected virtual void OnObjectExistenceChanged(object obj)
         {
+            TooltipText = obj != null ? Editor.Instance.CodeDocs.GetTooltip(obj.GetType()) : "null";
         }
 
         /// <summary>
