@@ -1279,21 +1279,9 @@ namespace FlaxEditor.GUI
                     continue;
 
                 var center = GetControlCenterInEditor(point);
-                var label = GetComponentLabel(point.Component);
+                var label = GetComponentLabel(point.Component, ValueType);
                 var labelRect = new Rectangle(center.X + 12.0f, center.Y - 22.0f, 34.0f, 28.0f);
                 Render2D.DrawText(style.FontMedium, label, labelRect, Colors[point.Component], TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, 1.25f);
-            }
-        }
-
-        private static string GetComponentLabel(int component)
-        {
-            switch (component)
-            {
-            case 0: return "x";
-            case 1: return "y";
-            case 2: return "z";
-            case 3: return "w";
-            default: return (component + 1).ToString();
             }
         }
 

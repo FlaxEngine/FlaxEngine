@@ -91,18 +91,6 @@ namespace FlaxEditor.GUI
                 return firstHit;
             }
 
-            private static string GetComponentName(int component)
-            {
-                switch (component)
-                {
-                case 0: return "X";
-                case 1: return "Y";
-                case 2: return "Z";
-                case 3: return "W";
-                default: return (component + 1).ToString();
-                }
-            }
-
             private void SelectKeyframePoint(KeyframePoint keyframe, bool addToSelection)
             {
                 if (!addToSelection)
@@ -646,7 +634,7 @@ namespace FlaxEditor.GUI
                             for (int i = 0; i < components; i++)
                             {
                                 var component = i;
-                                componentMenu.ContextMenu.AddButton(GetComponentName(component), () => SelectKeyframeComponent(point.Index, component));
+                                componentMenu.ContextMenu.AddButton(GetComponentLabel(component, typeof(T)), () => SelectKeyframeComponent(point.Index, component));
                             }
                         }
                         var totalSelectionCount = _editor.KeyframesEditorContext?.OnKeyframesSelectionCount() ?? selectionCount;
