@@ -188,13 +188,7 @@ public:
     API_FUNCTION() void GetVertices(int32 surfaceIndex, API_PARAM(Out) Array<Vector3>& outputData) const;
 
 private:
-    FORCE_INLINE void UpdateBounds()
-    {
-        OrientedBoundingBox::CreateCentered(_center, _size, _bounds);
-        _bounds.Transform(_transform);
-        _bounds.GetBoundingBox(_box);
-        BoundingSphere::FromBox(_box, _sphere);
-    }
+    void UpdateBounds();
 
 public:
     // [Actor]

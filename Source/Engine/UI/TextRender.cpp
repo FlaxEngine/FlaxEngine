@@ -172,7 +172,7 @@ void TextRender::UpdateLayout()
 
     // Pick a font (remove DPI text scale as the text is being placed in the world)
     auto font = Font->CreateFont(_size);
-    float scale = _layoutOptions.Scale / FontManager::FontScale;
+    const float scale = font->GetScale(_layoutOptions.Scale);
 
     // Prepare
     FontTextureAtlas* fontAtlas = nullptr;
@@ -217,6 +217,7 @@ void TextRender::UpdateLayout()
             if (c != '\n')
             {
                 font->GetCharacter(c, entry);
+                const float entryScale = entry.Font->GetScale(_layoutOptions.Scale);
 
                 // Check if need to select/change font atlas (since characters even in the same font may be located in different atlases)
                 if (fontAtlas == nullptr || entry.TextureIndex != drawChunk.FontAtlasIndex)
@@ -273,17 +274,17 @@ void TextRender::UpdateLayout()
                 {
                     kerning = 0;
                 }
-                pointer.X += (float)kerning * scale;
+                pointer.X += (float)kerning * entryScale;
                 previous = entry;
 
                 // Omit whitespace characters
                 if (!isWhitespace)
                 {
                     // Calculate character size and atlas coordinates
-                    const float x = pointer.X + (float)entry.OffsetX * scale;
-                    const float y = pointer.Y + (float)(font->GetHeight() + font->GetDescender() - entry.OffsetY) * scale;
+                    const float x = pointer.X + (float)entry.OffsetX * entryScale;
+                    const float y = pointer.Y - (float)entry.OffsetY * entryScale + (float)(font->GetHeight() + font->GetDescender()) * scale;
 
-                    Rectangle charRect(x, y, entry.UVSize.X * scale, entry.UVSize.Y * scale);
+                    Rectangle charRect(x, y, entry.UVSize.X * entryScale, entry.UVSize.Y * entryScale);
                     charRect.Offset(_layoutOptions.Bounds.Location);
 
                     Float2 upperLeftUV = entry.UV * invAtlasSize;
@@ -326,7 +327,7 @@ void TextRender::UpdateLayout()
                 }
 
                 // Move
-                pointer.X += (float)entry.AdvanceX * scale;
+                pointer.X += (float)entry.AdvanceX * entryScale;
             }
         }
     }

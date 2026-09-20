@@ -838,6 +838,14 @@ namespace FlaxEditor.Windows.Assets
         }
 
         /// <inheritdoc />
+        protected override void DiscardChanges()
+        {
+            _asset?.Reload();
+
+            base.DiscardChanges();
+        }
+
+        /// <inheritdoc />
         public override void OnItemReimported(ContentItem item)
         {
             // Discard any old mesh data cache
