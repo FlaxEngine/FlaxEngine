@@ -788,12 +788,12 @@ public:
     /// <summary>
     /// Draws debug shapes for the actor and all child scripts.
     /// </summary>
-    API_FUNCTION() virtual void OnDebugDraw();
+    API_FUNCTION(Attributes="NoAnimate") virtual void OnDebugDraw();
 
     /// <summary>
     /// Draws debug shapes for the selected actor and all child scripts.
     /// </summary>
-    API_FUNCTION() virtual void OnDebugDrawSelected();
+    API_FUNCTION(Attributes="NoAnimate") virtual void OnDebugDrawSelected();
 #endif
 
 public:
@@ -1056,64 +1056,64 @@ public:
     /// Serializes the actor object to the Json string. Serialized are only this actor properties but no child actors nor scripts. Serializes references to the other objects in a proper way using IDs.
     /// </summary>
     /// <returns>The Json container with serialized actor data.</returns>
-    API_FUNCTION() String ToJson();
+    API_FUNCTION(Attributes="NoAnimate") String ToJson();
 
     /// <summary>
     /// Deserializes the actor object to the Json string. Deserialized are only this actor properties but no child actors nor scripts. 
     /// </summary>
     /// <param name="json">The serialized actor data (state).</param>
-    API_FUNCTION() void FromJson(const StringAnsiView& json);
+    API_FUNCTION(Attributes="NoAnimate") void FromJson(const StringAnsiView& json);
 
     /// <summary>
     /// Clones actor including all scripts and any child actors (whole scene tree). Objects are duplicated via serialization (any transient/non-saved state is ignored).
     /// </summary>
-    API_FUNCTION() Actor* Clone();
+    API_FUNCTION(Attributes="NoAnimate") Actor* Clone();
 
 public:
     /// <summary>
     /// Called when actor gets added to game systems. Occurs on BeginPlay event or when actor gets activated in hierarchy. Use this event to register object to other game system (eg. audio).
     /// </summary>
-    API_FUNCTION() virtual void OnEnable();
+    API_FUNCTION(Attributes="NoAnimate") virtual void OnEnable();
 
     /// <summary>
     /// Called when actor gets removed from game systems. Occurs on EndPlay event or when actor gets inactivated in hierarchy. Use this event to unregister object from other game system (eg. audio).
     /// </summary>
-    API_FUNCTION() virtual void OnDisable();
+    API_FUNCTION(Attributes="NoAnimate") virtual void OnDisable();
 
     /// <summary>
     /// Called when actor parent gets changed.
     /// </summary>
-    API_FUNCTION() virtual void OnParentChanged();
+    API_FUNCTION(Attributes="NoAnimate") virtual void OnParentChanged();
 
     /// <summary>
     /// Called when actor transform gets changed.
     /// </summary>
-    API_FUNCTION() virtual void OnTransformChanged();
+    API_FUNCTION(Attributes="NoAnimate") virtual void OnTransformChanged();
 
     /// <summary>
     /// Called when actor active state gets changed.
     /// </summary>
-    API_FUNCTION() virtual void OnActiveChanged();
+    API_FUNCTION(Attributes="NoAnimate") virtual void OnActiveChanged();
 
     /// <summary>
     /// Called when actor active in tree state gets changed.
     /// </summary>
-    API_FUNCTION() virtual void OnActiveInTreeChanged();
+    API_FUNCTION(Attributes="NoAnimate") virtual void OnActiveInTreeChanged();
 
     /// <summary>
     /// Called when order in parent children array gets changed.
     /// </summary>
-    API_FUNCTION() virtual void OnOrderInParentChanged();
+    API_FUNCTION(Attributes="NoAnimate") virtual void OnOrderInParentChanged();
 
     /// <summary>
     /// Called when actor static flag gets changed.
     /// </summary>
-    API_FUNCTION() virtual void OnStaticFlagsChanged();
+    API_FUNCTION(Attributes="NoAnimate") virtual void OnStaticFlagsChanged();
 
     /// <summary>
     /// Called when layer gets changed.
     /// </summary>
-    API_FUNCTION() virtual void OnLayerChanged();
+    API_FUNCTION(Attributes="NoAnimate") virtual void OnLayerChanged();
 
     /// <summary>
     /// Called when adding object to the game.
