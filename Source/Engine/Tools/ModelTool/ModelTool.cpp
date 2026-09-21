@@ -27,6 +27,7 @@
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Engine/Units.h"
+#include <cmath>
 #if USE_EDITOR
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/DateTime.h"
@@ -993,6 +994,32 @@ String GetAdditionalImportPath(const String& autoImportOutput, Array<String>& im
     return autoImportOutput / filename + ASSET_FILES_EXTENSION_WITH_DOT;
 }
 
+// Importers can produce non-finite material parameters. Notably OpenFBX leaves
+// material members (e.g. EmissiveFactor) uninitialized when the FBX omits them,
+// and ModelTool.OpenFBX computes Emissive = EmissiveColor * EmissiveFactor, so a
+// missing property yields Inf/NaN. Non-finite values would be baked into the
+// generated shader source and fail compilation ('inf' : unknown variable), so
+// replace them with the entry defaults here, for every importer.
+static void SanitizeMaterialSlotEntry(MaterialSlotEntry& material)
+{
+    auto sanitizeColor = [](Color& color, const Color& defaultValue)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            if (!std::isfinite(color.Raw[i]))
+                color.Raw[i] = defaultValue.Raw[i];
+        }
+    };
+    sanitizeColor(material.Diffuse.Color, Color::White);
+    sanitizeColor(material.Emissive.Color, Color::Transparent);
+    if (!std::isfinite(material.Opacity.Value))
+        material.Opacity.Value = 1.0f;
+    if (!std::isfinite(material.Roughness.Value))
+        material.Roughness.Value = 0.5f;
+    if (!std::isfinite(material.Metalness.Value))
+        material.Metalness.Value = 0.0f;
+}
+
 bool ModelTool::ImportModel(const String& path, ModelData& data, Options& options, String& errorMsg, const String& autoImportOutput)
 {
     PROFILE_CPU();
@@ -1360,6 +1387,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
     for (int32 i = 0; i < data.Materials.Count(); i++)
     {
         auto& material = data.Materials[i];
+        SanitizeMaterialSlotEntry(material);
 
         if (material.Name.IsEmpty())
             material.Name = TEXT("Material ") + StringUtils::ToString(i);
