@@ -29,6 +29,8 @@ namespace FlaxEditor.Surface.Elements
     [HideInEditor]
     public interface IDefaultValueEditor
     {
+        internal const float FloatBoxSlideSpeed = 0.01f;
+
         /// <summary>
         /// Checks if the handles supports the given type.
         /// </summary>
@@ -311,13 +313,13 @@ namespace FlaxEditor.Surface.Elements
                 Parent = box.Parent,
                 Tag = box,
             };
-            var floatX = new RealValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatX = new RealValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatX.BoxValueChanged += OnValueChanged;
-            var floatY = new RealValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatY = new RealValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
@@ -385,19 +387,19 @@ namespace FlaxEditor.Surface.Elements
                 Parent = box.Parent,
                 Tag = box,
             };
-            var floatX = new RealValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatX = new RealValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatX.BoxValueChanged += OnValueChanged;
-            var floatY = new RealValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatY = new RealValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatY.BoxValueChanged += OnValueChanged;
-            var floatZ = new RealValueBox(value.Z, width * 2 + 4, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatZ = new RealValueBox(value.Z, width * 2 + 4, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
@@ -468,25 +470,25 @@ namespace FlaxEditor.Surface.Elements
                 Parent = box.Parent,
                 Tag = box,
             };
-            var floatX = new RealValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatX = new RealValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatX.BoxValueChanged += OnValueChanged;
-            var floatY = new RealValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatY = new RealValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatY.BoxValueChanged += OnValueChanged;
-            var floatZ = new RealValueBox(value.Z, width * 2 + 4, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatZ = new RealValueBox(value.Z, width * 2 + 4, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatZ.BoxValueChanged += OnValueChanged;
-            var floatW = new RealValueBox(value.W, width * 3 + 6, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatW = new RealValueBox(value.W, width * 3 + 6, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
@@ -561,13 +563,13 @@ namespace FlaxEditor.Surface.Elements
                 Parent = box.Parent,
                 Tag = box,
             };
-            var floatX = new FloatValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatX = new FloatValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatX.BoxValueChanged += OnValueChanged;
-            var floatY = new FloatValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatY = new FloatValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
@@ -635,19 +637,19 @@ namespace FlaxEditor.Surface.Elements
                 Parent = box.Parent,
                 Tag = box,
             };
-            var floatX = new FloatValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatX = new FloatValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatX.BoxValueChanged += OnValueChanged;
-            var floatY = new FloatValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatY = new FloatValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatY.BoxValueChanged += OnValueChanged;
-            var floatZ = new FloatValueBox(value.Z, width * 2 + 4, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatZ = new FloatValueBox(value.Z, width * 2 + 4, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
@@ -718,25 +720,25 @@ namespace FlaxEditor.Surface.Elements
                 Parent = box.Parent,
                 Tag = box,
             };
-            var floatX = new FloatValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatX = new FloatValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatX.BoxValueChanged += OnValueChanged;
-            var floatY = new FloatValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatY = new FloatValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatY.BoxValueChanged += OnValueChanged;
-            var floatZ = new FloatValueBox(value.Z, width * 2 + 4, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatZ = new FloatValueBox(value.Z, width * 2 + 4, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatZ.BoxValueChanged += OnValueChanged;
-            var floatW = new FloatValueBox(value.W, width * 3 + 6, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatW = new FloatValueBox(value.W, width * 3 + 6, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
@@ -811,13 +813,13 @@ namespace FlaxEditor.Surface.Elements
                 Parent = box.Parent,
                 Tag = box,
             };
-            var floatX = new DoubleValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatX = new DoubleValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatX.BoxValueChanged += OnValueChanged;
-            var floatY = new DoubleValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatY = new DoubleValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
@@ -885,19 +887,19 @@ namespace FlaxEditor.Surface.Elements
                 Parent = box.Parent,
                 Tag = box,
             };
-            var floatX = new DoubleValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatX = new DoubleValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatX.BoxValueChanged += OnValueChanged;
-            var floatY = new DoubleValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatY = new DoubleValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatY.BoxValueChanged += OnValueChanged;
-            var floatZ = new DoubleValueBox(value.Z, width * 2 + 4, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatZ = new DoubleValueBox(value.Z, width * 2 + 4, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
@@ -968,25 +970,25 @@ namespace FlaxEditor.Surface.Elements
                 Parent = box.Parent,
                 Tag = box,
             };
-            var floatX = new DoubleValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatX = new DoubleValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatX.BoxValueChanged += OnValueChanged;
-            var floatY = new DoubleValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatY = new DoubleValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatY.BoxValueChanged += OnValueChanged;
-            var floatZ = new DoubleValueBox(value.Z, width * 2 + 4, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatZ = new DoubleValueBox(value.Z, width * 2 + 4, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatZ.BoxValueChanged += OnValueChanged;
-            var floatW = new DoubleValueBox(value.W, width * 3 + 6, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatW = new DoubleValueBox(value.W, width * 3 + 6, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
@@ -1061,19 +1063,19 @@ namespace FlaxEditor.Surface.Elements
                 Parent = box.Parent,
                 Tag = box,
             };
-            var floatX = new FloatValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatX = new FloatValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatX.BoxValueChanged += OnValueChanged;
-            var floatY = new FloatValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatY = new FloatValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatY.BoxValueChanged += OnValueChanged;
-            var floatZ = new FloatValueBox(value.Z, width * 2 + 4, 0, width, float.MinValue, float.MaxValue, 0.0f)
+            var floatZ = new FloatValueBox(value.Z, width * 2 + 4, 0, width, float.MinValue, float.MaxValue, IDefaultValueEditor.FloatBoxSlideSpeed)
             {
                 Height = bounds.Height,
                 Parent = control,
