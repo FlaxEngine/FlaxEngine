@@ -5,6 +5,7 @@
 #if PLATFORM_LINUX
 
 #include "Engine/Platform/Unix/UnixFileSystem.h"
+#include <stddef.h>
 
 /// <summary>
 /// Linux platform implementation of filesystem service.
@@ -19,6 +20,9 @@ public:
     static bool CopyFile(const StringView& dst, const StringView& src);
     static bool MoveFileToRecycleBin(const StringView& path);
     static void GetSpecialFolderPath(const SpecialFolder type, String& result);
+
+    // [LinuxFileSystem]
+    static bool FindProgramInPath(const char* program, char* outPath, size_t outSize);
 
 private:
     static bool UrnEncodePath(const char *path, char *result, int maxLength);

@@ -53,7 +53,7 @@ void VisualStudioCodeEditor::FindEditors(Array<CodeEditor*>* output)
     }
 #elif PLATFORM_LINUX
     char buffer[128];
-    FILE* pipe = popen("/bin/bash -c \"type -p code\"", "r");
+    FILE* pipe = popen("/usr/bin/env bash -c \"type -p code\"", "r");
     if (pipe)
     {
         StringAnsi pathAnsi;
@@ -79,7 +79,7 @@ void VisualStudioCodeEditor::FindEditors(Array<CodeEditor*>* output)
     // Detect Flatpak installations
     {
         CreateProcessSettings procSettings;
-        procSettings.FileName = TEXT("/bin/bash -c \"flatpak list --app --columns=application | grep com.visualstudio.code -c\"");
+        procSettings.FileName = TEXT("/usr/bin/env bash -c \"flatpak list --app --columns=application | grep com.visualstudio.code -c\"");
         procSettings.HiddenWindow = true;
         if (Platform::CreateProcess(procSettings) == 0)
         {
