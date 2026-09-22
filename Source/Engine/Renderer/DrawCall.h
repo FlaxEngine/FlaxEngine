@@ -80,8 +80,9 @@ public:
     /// <summary>
     /// Gets the volumetric fog options.
     /// </summary>
+    /// <param name="view">The rendering view.</param>
     /// <param name="result">The result.</param>
-    virtual void GetVolumetricFogOptions(VolumetricFogOptions& result) const = 0;
+    virtual void GetVolumetricFogOptions(const RenderView& view, VolumetricFogOptions& result) const = 0;
 
     /// <summary>
     /// Gets the exponential height fog data.

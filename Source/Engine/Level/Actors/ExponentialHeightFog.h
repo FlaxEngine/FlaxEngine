@@ -154,7 +154,7 @@ public:
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
 
     // [IFogRenderer]
-    void GetVolumetricFogOptions(VolumetricFogOptions& result) const override;
+    void GetVolumetricFogOptions(const RenderView& view, VolumetricFogOptions& result) const override;
     void GetExponentialHeightFogData(const RenderView& view, ShaderExponentialHeightFogData& result) const override;
     void DrawFog(GPUContext* context, RenderContext& renderContext, GPUTextureView* output) override;
 

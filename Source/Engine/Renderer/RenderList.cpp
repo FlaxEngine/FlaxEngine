@@ -228,7 +228,7 @@ void RenderFogData::Init(const RenderView& view, IFogRenderer* renderer)
 {
     Renderer = renderer;
     renderer->GetExponentialHeightFogData(view, ExponentialHeightFogData);
-    renderer->GetVolumetricFogOptions(VolumetricFog);
+    renderer->GetVolumetricFogOptions(view, VolumetricFog);
     if (!VolumetricFog.UseVolumetricFog())
     {
         ExponentialHeightFogData.VolumetricFogMaxDistance = -1;
