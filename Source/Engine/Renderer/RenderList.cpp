@@ -702,6 +702,7 @@ void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawMo
 
     // Append draw call data
     const int32 index = DrawCalls.Add(drawCall);
+    _objectsBufferDirty = true;
 
     // Add draw call to proper draw lists
     if ((drawModes & DrawPass::Depth) != DrawPass::None)
@@ -746,6 +747,7 @@ void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawP
 
     // Append draw call data
     const int32 index = DrawCalls.Add(drawCall);
+    _objectsBufferDirty = true;
 
     // Add draw call to proper draw lists
     DrawPass modes = drawModes & mainRenderContext.View.GetShadowsDrawPassMask(shadowsMode);
@@ -800,6 +802,7 @@ void RenderList::BuildObjectsBuffer()
     for (const auto& e : BatchedDrawCalls)
         count += e.Instances.Count();
     ObjectBuffer.Clear();
+    _objectsBufferDirty = false;
     if (count == 0)
         return;
     PROFILE_CPU();
@@ -980,7 +983,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
     TaaJitterRemoveContext taaJitterRemove(renderContext.View);
 
     // Lazy-init objects buffer (if caller didn't do it)
-    if (drawCallsList->ObjectBuffer.Data.IsEmpty())
+    if (drawCallsList->ObjectBuffer.Data.IsEmpty() || drawCallsList->_objectsBufferDirty)
     {
         drawCallsList->BuildObjectsBuffer();
         drawCallsList->ObjectBuffer.Flush(context);

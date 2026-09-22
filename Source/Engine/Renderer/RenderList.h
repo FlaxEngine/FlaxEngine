@@ -521,6 +521,7 @@ public:
     void PostDraw(GPUContext* context, RenderContextBatch& renderContextBatch);
 
 private:
+    bool _objectsBufferDirty = true;
     DynamicVertexBuffer _instanceBuffer;
     RenderListBuffer<DelayedDraw> _delayedDraws;
 
