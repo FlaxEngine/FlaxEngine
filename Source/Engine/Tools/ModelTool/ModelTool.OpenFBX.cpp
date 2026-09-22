@@ -246,7 +246,7 @@ struct OpenFbxImporterData
 
             if (mat && EnumHasAnyFlags(Options.ImportTypes, ImportDataTypes::Materials))
             {
-                material.Diffuse.Color = ToColor(mat->getDiffuseColor());
+                material.Diffuse.Color = ToColor(mat->getDiffuseColor()) * (float)mat->getDiffuseFactor();
                 material.Emissive.Color = ToColor(mat->getEmissiveColor()) * (float)mat->getEmissiveFactor();
                 material.Roughness.Value = MaterialSlotEntry::ShininessToRoughness((float)mat->getShininess());
 
