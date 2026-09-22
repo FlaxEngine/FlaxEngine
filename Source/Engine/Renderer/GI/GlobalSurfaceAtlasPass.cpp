@@ -125,7 +125,7 @@ struct GlobalSurfaceAtlasObject
     uint64 LightingUpdateFrame; // Index of the frame to update lighting for this object (calculated when object gets dirty or overriden by dynamic lights)
     Actor* Actor;
     GlobalSurfaceAtlasTile* Tiles[6];
-    Float3 Position;
+    Vector3 Position;
     float Radius;
     mutable bool Dirty;
     mutable bool ObjectDataDirty;
@@ -186,7 +186,9 @@ public:
     DynamicTypedBuffer ObjectsBuffer;
     DynamicTypedBuffer ObjectsListBuffer;
     bool ObjectsBufferDirty = true;
+    bool ObjectsOriginDirty = false;
     int32 CulledObjectsCounterIndex = -1;
+    Vector3 ObjectsOrigin = Vector3::Zero;
     GlobalSurfaceAtlasPass::BindingData Result;
     RectPackAtlas<GlobalSurfaceAtlasTile> Atlas;
     Dictionary<void*, GlobalSurfaceAtlasObject> Objects;
@@ -202,8 +204,8 @@ public:
     Array<void*> DirtyObjectsBuffer;
     Array<GlobalSurfaceAtlasPendingDirtyObject> PendingDirtyObjectsBuffer;
     Vector4 CullingPosDistance;
+    Vector3 ViewWorldPosition;
     uint64 CurrentFrame;
-    Float3 ViewPosition;
     float TileTexelsPerWorldUnit;
     float DistanceScalingStart;
     float DistanceScalingEnd;
@@ -365,7 +367,7 @@ public:
 
         // Setup data for rendering
         CurrentFrame = currentFrame;
-        ViewPosition = renderContext.View.Position;
+        ViewWorldPosition = renderContext.View.WorldPosition;
         TileTexelsPerWorldUnit = 1.0f / METERS_TO_UNITS(0.1f); // Scales the tiles resolution
         DistanceScalingStart = METERS_TO_UNITS(20.0f); // Distance from camera at which the tiles resolution starts to be scaled down
         DistanceScalingEnd = METERS_TO_UNITS(50.0f); // Distance from camera at which the tiles resolution end to be scaled down
@@ -375,6 +377,12 @@ public:
         CullingPosDistance = Vector4(renderContext.View.Position, distance);
         AsyncRenderContextBatch = RenderContext(renderContext);
         AsyncRenderContextBatch.GetMainContext().View.Pass = DrawPass::GlobalSurfaceAtlas;
+        if (ObjectsOrigin != renderContext.View.Origin)
+        {
+            // Force write all objects on origin changes
+            ObjectsOriginDirty = true;
+            ObjectsOrigin = renderContext.View.Origin;
+        }
 
         // Each scene uses own atomic counter to draw all actors
         AsyncScenesDrawCounters[0].Resize(renderContext.List->Scenes.Count());
@@ -438,7 +446,7 @@ public:
             auto& object = Objects[newObject.ActorObject];
             object.Actor = newObject.Actor;
             object.LastFrameUsed = CurrentFrame;
-            object.Position = (Float3)newObject.ActorObjectBounds.Center; // TODO: large worlds
+            object.Position = newObject.ActorObjectBounds.Center;
             object.Radius = (float)newObject.ActorObjectBounds.Radius;
             object.Dirty = true;
             object.ObjectDataDirty = true;
@@ -535,6 +543,7 @@ public:
         auto objectsListData = (uint32*)ObjectsListBuffer.Data.Get();
         int32 dirtyTiles = 0, objectIndex = 0;
         int32 dirtyObjectsLimitLeft = 100; // TODO: expose as scalability parameter
+        Float3 origin = ObjectsOrigin;
         for (auto& e : Objects)
         {
             auto& object = e.Value;
@@ -564,7 +573,7 @@ public:
                 }
             }
 
-            if (!object.ObjectDataDirty && object.ObjectDataAddress.TilesCount != 0)
+            if (!object.ObjectDataDirty && object.ObjectDataAddress.TilesCount != 0 && !ObjectsOriginDirty)
             {
                 // Skip updating data if it's valid
                 uint32& addr = objectsListData[objectIndex++];
@@ -605,10 +614,12 @@ public:
                 }
             }
 
+            Transform objectTransform = object.Bounds.Transformation;
+            objectTransform.Translation -= origin;
             Matrix3x3 worldToLocalRotation;
-            Matrix3x3::RotationQuaternion(object.Bounds.Transformation.Orientation.Conjugated(), worldToLocalRotation);
-            Float3 worldPosition = object.Bounds.Transformation.Translation;
-            Float3 worldExtents = object.Bounds.Extents * object.Bounds.Transformation.Scale;
+            Matrix3x3::RotationQuaternion(objectTransform.Orientation.Conjugated(), worldToLocalRotation);
+            Float3 worldPosition = (Float3)objectTransform.Translation;
+            Float3 worldExtents = object.Bounds.Extents * objectTransform.Scale;
 
             // Fix axes for objects with negative scale
             Float3 axisScales[3] = { Float3::One, Float3::One, Float3::One };
@@ -622,7 +633,7 @@ public:
             // Write to objects buffer (this must match unpacking logic in HLSL)
             objectsListData[objectIndex++] = object.ObjectDataAddress.Address;
             auto* objectData = (Float4*)(ObjectsBuffer.Data.Get() + object.ObjectDataAddress.Address * sizeof(Float4));
-            objectData[0] = Float4(object.Position, object.Radius);
+            objectData[0] = Float4((Float3)(object.Position - origin), object.Radius);
             objectData[1] = Float4::Zero; // tileOffsets + objectDataSize
             objectData[2] = Float4(worldToLocalRotation.M11, worldToLocalRotation.M12, worldToLocalRotation.M13, worldPosition.X);
             objectData[3] = Float4(worldToLocalRotation.M21, worldToLocalRotation.M22, worldToLocalRotation.M23, worldPosition.Y);
@@ -651,13 +662,13 @@ public:
                 yAxis *= axisScales[1];
                 zAxis *= axisScales[2];
                 Float3 localSpaceOffset = -zAxis * object.Bounds.Extents;
-                xAxis = object.Bounds.Transformation.LocalToWorldVector(xAxis);
-                yAxis = object.Bounds.Transformation.LocalToWorldVector(yAxis);
-                zAxis = object.Bounds.Transformation.LocalToWorldVector(zAxis);
+                xAxis = objectTransform.LocalToWorldVector(xAxis);
+                yAxis = objectTransform.LocalToWorldVector(yAxis);
+                zAxis = objectTransform.LocalToWorldVector(zAxis);
                 xAxis.NormalizeFast();
                 yAxis.NormalizeFast();
                 zAxis.NormalizeFast();
-                object.Bounds.Transformation.LocalToWorld(localSpaceOffset, tile->ViewPosition);
+                objectTransform.LocalToWorld(localSpaceOffset, tile->ViewPosition);
                 tile->ViewDirection = zAxis;
 
                 // Create view matrix
@@ -685,6 +696,7 @@ public:
             }
         }
         ZoneValue(dirtyTiles);
+        ObjectsOriginDirty = false;
 
         // Move pending dirty objects to be actually in a dirty buffer to redraw
         DirtyObjectsBuffer.Clear();
@@ -1853,7 +1865,7 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
 {
     GlobalSurfaceAtlasCustomBuffer& surfaceAtlasData = *_surfaceAtlasData;
     Float3 boundsSize = localBounds.GetSize() * actor->GetScale();
-    const float distanceScale = Math::Lerp(1.0f, surfaceAtlasData.DistanceScaling, Math::InverseLerp(surfaceAtlasData.DistanceScalingStart, surfaceAtlasData.DistanceScalingEnd, (float)CollisionsHelper::DistanceSpherePoint(actorObjectBounds, surfaceAtlasData.ViewPosition)));
+    const float distanceScale = Math::Lerp(1.0f, surfaceAtlasData.DistanceScaling, Math::InverseLerp(surfaceAtlasData.DistanceScalingStart, surfaceAtlasData.DistanceScalingEnd, (float)CollisionsHelper::DistanceSpherePoint(actorObjectBounds, surfaceAtlasData.ViewWorldPosition)));
     const float tilesScale = surfaceAtlasData.TileTexelsPerWorldUnit * distanceScale * qualityScale;
     GlobalSurfaceAtlasObject* object = surfaceAtlasData.Objects.TryGet(actorObject);
     if (!object && surfaceAtlasData.AsyncNewObjects.Count() >= GLOBAL_SURFACE_ATLAS_MAX_NEW_OBJECTS_PER_FRAME)
@@ -1924,7 +1936,7 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
         object->Actor = actor;
         object->LastFrameUsed = surfaceAtlasData.CurrentFrame;
         object->Bounds = bounds;
-        object->Position = (Float3)actorObjectBounds.Center; // TODO: large worlds
+        object->Position = actorObjectBounds.Center;
         object->Radius = (float)actorObjectBounds.Radius;
         object->Dirty |= dirty;
         object->UseVisibility = useVisibility;
