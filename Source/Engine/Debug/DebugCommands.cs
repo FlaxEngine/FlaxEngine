@@ -50,7 +50,7 @@ namespace FlaxEngine
             }
         }
 
-        internal static string GetXmlInternal(Type type, string memberName)
+        internal static string GetDebugHelpInternal(Type type, string memberName)
         {
             // Redirect into type when no member specified
             if (string.IsNullOrEmpty(memberName))
@@ -61,10 +61,60 @@ namespace FlaxEngine
                 memberName = memberName.Substring(4);
 
             // Find member of that name
-            var members = type.GetMember(memberName, BindingFlags.Static | BindingFlags.Public);
+            var members = type.GetMember(memberName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
             if (members.Length == 0)
                 return null;
-            return GetXml(members[0]);
+            var xml = GetXml(members[0]);
+            if (members[0] is FieldInfo fieldInfo)
+            {
+                xml += $" Value type: {GetDebugHelpForType(fieldInfo.FieldType)}";
+            }
+            else if (members[0] is PropertyInfo propertyInfo)
+            {
+                xml += $" Value type: {GetDebugHelpForType(propertyInfo.PropertyType)}";
+            }
+            else if (members[0] is MethodInfo methodInfo)
+            {
+                if (methodInfo.ReturnType != typeof(void))
+                    xml += $" Value type: {GetDebugHelpForType(methodInfo.ReturnType)}";
+                var parameters = methodInfo.GetParameters();
+                if (parameters.Length > 0)
+                {
+                    xml += "\nParameters:";
+                    foreach (var param in parameters)
+                        xml += $"\n  {param.Name}: {GetDebugHelpForType(param.ParameterType)}";
+                }
+            }
+            return xml;
+        }
+
+        private static string GetDebugHelpForType(Type type)
+        {
+            var str = type.Name;
+            if (type == typeof(float))
+                str = "Float";
+            else if (type.IsEnum)
+            {
+                str = "enum " + str;
+                FieldInfo[] fields = type.GetFields();
+                if (fields.Length > 0 && fields.Length < 16)
+                {
+                    // Provide list of possible values for easy enums usage
+                    str += " (";
+                    for (int i = 0, count = 0; i < fields.Length; i++)
+                    {
+                        var field = fields[i];
+                        var name = field.Name;
+                        if (name.Equals("value__", StringComparison.Ordinal))
+                            continue;
+                        if (count++ > 0)
+                            str += ", ";
+                        str += name;
+                    }
+                    str += ")";
+                }
+            }
+            return str;
         }
 
         /// <summary>

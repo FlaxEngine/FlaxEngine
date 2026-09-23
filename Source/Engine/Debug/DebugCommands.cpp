@@ -54,9 +54,9 @@ struct CommandData
                 }
 
                 // Use Xml docs reader used by Editor to get tooltips
-                auto getXmlInternal = DebugCommands::TypeInitializer.GetClass()->GetMethod("GetXmlInternal", 2);
+                auto internal = DebugCommands::TypeInitializer.GetClass()->GetMethod("GetDebugHelpInternal", 2);
                 void* params[2] = { mclass->GetType(), MUtils::ToString(name) };
-                Help = MUtils::ToString((MString*)getXmlInternal->Invoke(nullptr, params, nullptr));
+                Help = MUtils::ToString((MString*)internal->Invoke(nullptr, params, nullptr));
             }
         }
         return Help;
