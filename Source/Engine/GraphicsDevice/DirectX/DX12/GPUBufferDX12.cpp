@@ -133,7 +133,16 @@ bool GPUBufferDX12::OnInit()
     ID3D12Resource* resource;
     D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
     HRESULT result = _device->Allocator->CreateResource(&allocationDesc, &resourceDesc, initialState, nullptr, &_allocation, IID_PPV_ARGS(&resource));
-    LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
+    if (FAILED(result))
+    {
+        LOG(Error, "CreatePlacedResource failed");
+        LOG_STR(Error, _desc.ToString());
+#if GPU_ENABLE_RESOURCE_NAMING
+        LOG_STR(Error, GetName());
+#endif
+        RenderToolsDX::LogD3DResult(result, __FILE__, __LINE__);
+        return true;
+    }
 
     // Set state
     initResource(resource, initialState, 1);

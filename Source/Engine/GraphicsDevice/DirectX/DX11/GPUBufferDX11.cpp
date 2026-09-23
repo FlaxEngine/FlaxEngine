@@ -107,9 +107,17 @@ bool GPUBufferDX11::OnInit()
         data.SysMemPitch = bufferDesc.ByteWidth;
         data.SysMemSlicePitch = 0;
     }
-    VALIDATE_DIRECTX_CALL(_device->GetDevice()->CreateBuffer(&bufferDesc, _desc.InitData ? &data : nullptr, &_resource));
-    if (!_resource)
+    HRESULT result = _device->GetDevice()->CreateBuffer(&bufferDesc, _desc.InitData ? &data : nullptr, &_resource);
+    if (FAILED(result))
+    {
+        LOG(Error, "ID3D11Device::CreateBuffer failed");
+        LOG_STR(Error, _desc.ToString());
+#if GPU_ENABLE_RESOURCE_NAMING
+        LOG_STR(Error, GetName());
+#endif
+        RenderToolsDX::LogD3DResult(result, __FILE__, __LINE__, true);
         return true;
+    }
 
     // Set state
     DX_SET_DEBUG_NAME(_resource, GetName());

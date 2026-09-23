@@ -82,7 +82,16 @@ bool GPUTextureDX12::OnInit()
         resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
         allocationDesc.HeapType = D3D12_HEAP_TYPE_READBACK;
         HRESULT result = _device->Allocator->CreateResource(&allocationDesc, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, &_allocation, IID_PPV_ARGS(&resource));
-        LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
+        if (FAILED(result))
+        {
+            LOG(Error, "CreatePlacedResource failed");
+            LOG_STR(Error, _desc.ToString());
+#if GPU_ENABLE_RESOURCE_NAMING
+            LOG_STR(Error, GetName());
+#endif
+            RenderToolsDX::LogD3DResult(result, __FILE__, __LINE__);
+            return true;
+        }
         initResource(resource, D3D12_RESOURCE_STATE_COPY_DEST, 1);
         DX_SET_DEBUG_NAME(_resource, GetName());
         _memoryUsage = totalSize;
@@ -146,7 +155,16 @@ bool GPUTextureDX12::OnInit()
     // Create texture
     allocationDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
     HRESULT result = _device->Allocator->CreateResource(&allocationDesc, &resourceDesc, initialState, clearValuePtr, &_allocation, IID_PPV_ARGS(&resource));
-    LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
+    if (FAILED(result))
+    {
+        LOG(Error, "CreatePlacedResource failed");
+        LOG_STR(Error, _desc.ToString());
+#if GPU_ENABLE_RESOURCE_NAMING
+        LOG_STR(Error, GetName());
+#endif
+        RenderToolsDX::LogD3DResult(result, __FILE__, __LINE__);
+        return true;
+    }
 
     // Set state
     bool isRead = useSRV || useUAV;

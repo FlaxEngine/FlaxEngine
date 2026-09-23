@@ -318,7 +318,16 @@ bool GPUTextureVulkan::OnInit()
     VmaAllocationCreateInfo allocInfo = {};
     allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
     const VkResult result = vmaCreateImage(_device->Allocator, &imageInfo, &allocInfo, &_image, &_allocation, nullptr);
-    LOG_VULKAN_RESULT_WITH_RETURN(result);
+    if (result != VK_SUCCESS)
+    {
+        LOG(Error, "vmaCreateImage failed");
+        LOG_STR(Error, _desc.ToString());
+#if GPU_ENABLE_RESOURCE_NAMING
+        LOG_STR(Error, GetName());
+#endif
+        RenderToolsVulkan::LogVkResult(result, __FILE__, __LINE__);
+        return true;
+    }
 #if GPU_ENABLE_RESOURCE_NAMING
     VK_SET_DEBUG_NAME(_device, _image, VK_OBJECT_TYPE_IMAGE, GetName());
 #endif

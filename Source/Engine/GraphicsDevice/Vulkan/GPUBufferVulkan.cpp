@@ -139,7 +139,16 @@ bool GPUBufferVulkan::OnInit()
         allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
     }
     const VkResult result = vmaCreateBuffer(_device->Allocator, &bufferInfo, &allocInfo, &_buffer, &_allocation, nullptr);
-    LOG_VULKAN_RESULT_WITH_RETURN(result);
+    if (result != VK_SUCCESS)
+    {
+        LOG(Error, "vmaCreateBuffer failed");
+        LOG_STR(Error, _desc.ToString());
+#if GPU_ENABLE_RESOURCE_NAMING
+        LOG_STR(Error, GetName());
+#endif
+        RenderToolsVulkan::LogVkResult(result, __FILE__, __LINE__);
+        return true;
+    }
 #if GPU_ENABLE_RESOURCE_NAMING
     VK_SET_DEBUG_NAME(_device, _buffer, VK_OBJECT_TYPE_BUFFER, GetName());
 #endif

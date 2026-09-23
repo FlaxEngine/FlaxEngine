@@ -87,8 +87,16 @@ bool GPUTextureDX11::OnInit()
         result = device->CreateTexture2D(&textureDesc, nullptr, &texture);
         _resource = texture;
     }
-    LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
-    ASSERT(_resource != nullptr);
+    if (FAILED(result))
+    {
+        LOG(Error, "ID3D11Device::CreateTexture2D failed");
+        LOG_STR(Error, _desc.ToString());
+#if GPU_ENABLE_RESOURCE_NAMING
+        LOG_STR(Error, GetName());
+#endif
+        RenderToolsDX::LogD3DResult(result, __FILE__, __LINE__);
+        return true;
+    }
     DX_SET_DEBUG_NAME(_resource, GetName());
 
     // Update memory usage

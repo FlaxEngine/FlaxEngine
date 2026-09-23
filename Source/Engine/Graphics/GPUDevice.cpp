@@ -788,6 +788,8 @@ void GPUDevice::RenderEnd()
 void GPUDevice::OnCrash()
 {
     DumpResourcesToLog();
+
+    LOG(Info, "IsRendering: {}, VSync: {}, Resources: {}", IsRendering(), WasVSyncUsed(), _resources.Count());
 }
 
 GPUTasksContext* GPUDevice::CreateTasksContext()
