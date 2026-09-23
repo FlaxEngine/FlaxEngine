@@ -16,6 +16,7 @@ using FlaxEditor.Windows.Profiler;
 using FlaxEngine;
 using FlaxEngine.Assertions;
 using FlaxEngine.GUI;
+using FlaxEngine.Json;
 using DockPanel = FlaxEditor.GUI.Docking.DockPanel;
 using DockState = FlaxEditor.GUI.Docking.DockState;
 using FloatWindowDockPanel = FlaxEditor.GUI.Docking.FloatWindowDockPanel;
@@ -32,6 +33,7 @@ namespace FlaxEditor.Modules
         private DateTime _lastLayoutSaveTime;
         private float _projectIconScreenshotTimeout = -1;
         private string _windowsLayoutPath;
+        private StringBuilder _layoutStringBuilder = new StringBuilder();
 
         private struct WindowRestoreData
         {
@@ -647,44 +649,91 @@ namespace FlaxEditor.Modules
             if (masterPanel == null)
                 return;
 
-            using (XmlWriter writer = XmlWriter.Create(path, settings))
+            using (var stringWriter = new StringWriterWithEncoding(_layoutStringBuilder, CultureInfo.InvariantCulture, Encoding.UTF8))
             {
-                writer.WriteStartDocument();
-                writer.WriteStartElement("DockPanelLayout");
-
-                // Metadata
-                writer.WriteAttributeString("Version", "4");
-
-                // Main window info
-                if (MainWindow)
+                using (XmlWriter writer = XmlWriter.Create(stringWriter, settings))
                 {
-                    writer.WriteStartElement("MainWindow");
-                    SaveBounds(writer, MainWindow);
+                    writer.WriteStartDocument();
+                    writer.WriteStartElement("DockPanelLayout");
+
+                    // Metadata
+                    writer.WriteAttributeString("Version", "4");
+
+                    // Main window info
+                    if (MainWindow)
+                    {
+                        writer.WriteStartElement("MainWindow");
+                        SaveBounds(writer, MainWindow);
+                        writer.WriteEndElement();
+                    }
+
+                    // Master panel structure
+                    writer.WriteStartElement("MasterPanel");
+                    SavePanel(writer, masterPanel);
                     writer.WriteEndElement();
-                }
 
-                // Master panel structure
-                writer.WriteStartElement("MasterPanel");
-                SavePanel(writer, masterPanel);
-                writer.WriteEndElement();
+                    // Save all floating windows structure
+                    for (int i = 0; i < masterPanel.FloatingPanels.Count; i++)
+                    {
+                        var panel = masterPanel.FloatingPanels[i];
+                        var window = panel.Window;
+                        if (window == null)
+                            continue;
 
-                // Save all floating windows structure
-                for (int i = 0; i < masterPanel.FloatingPanels.Count; i++)
-                {
-                    var panel = masterPanel.FloatingPanels[i];
-                    var window = panel.Window;
-                    if (window == null)
-                        continue;
+                        writer.WriteStartElement("Float");
+                        SavePanel(writer, panel);
+                        SaveBounds(writer, window.Window);
+                        writer.WriteEndElement();
+                    }
 
-                    writer.WriteStartElement("Float");
-                    SavePanel(writer, panel);
-                    SaveBounds(writer, window.Window);
                     writer.WriteEndElement();
+                    writer.WriteEndDocument();
                 }
-
-                writer.WriteEndElement();
-                writer.WriteEndDocument();
+                WriteFileIfChanged(path, stringWriter.ToString());
+                _layoutStringBuilder.Clear();
             }
+        }
+
+        /// <summary>
+        /// Writes the file contents. Before writing reads the existing file and discards operation if contents are the same.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <param name="contents">The file contents.</param>
+        /// <returns>True if file has been modified, otherwise false.</returns>
+        private static bool WriteFileIfChanged(string path, string contents)
+        {
+            if (File.Exists(path))
+            {
+                string oldContents = null;
+                try
+                {
+                    oldContents = File.ReadAllText(path);
+                }
+                catch (Exception)
+                {
+                    Editor.LogWarning(string.Format("Failed to read file contents while trying to save it.", path));
+                }
+
+                if (string.Equals(contents, oldContents, StringComparison.OrdinalIgnoreCase))
+                {
+                    //Editor.Log(string.Format("Skipped saving file to {0}", path));
+                    return false;
+                }
+            }
+
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                File.WriteAllText(path, contents, new UTF8Encoding());
+                //Editor.Log(string.Format("Saved file to {0}", path));
+            }
+            catch
+            {
+                Editor.LogError(string.Format("Failed to save file {0}", path));
+                throw;
+            }
+
+            return true;
         }
 
         /// <summary>
