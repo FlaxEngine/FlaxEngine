@@ -550,10 +550,9 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 if (Surface == null)
                     return;
-                var width = 0.0f;
+                var width = 90.0f;
                 var height = 0.0f;
                 var titleLabelFont = Style.Current.FontLarge;
-                width = Mathf.Max(width, 100.0f);
                 width = Mathf.Max(width, titleLabelFont.MeasureText(Title).X + 30);
                 if (_debugInfoSize.X > 0)
                 {
@@ -569,7 +568,7 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     decorator.ResizeAuto();
                     height += decorator.Height + DecoratorsMarginY;
-                    width = Mathf.Max(width, decorator.Width - FlaxEditor.Surface.Constants.NodeCloseButtonSize - 2 * DecoratorsMarginX);
+                    width = Mathf.Max(width, decorator.Width - FlaxEditor.Surface.Constants.NodeCloseButtonSize);
                 }
                 Size = new Float2(width + FlaxEditor.Surface.Constants.NodeMarginX * 2 + FlaxEditor.Surface.Constants.NodeCloseButtonSize, height + FlaxEditor.Surface.Constants.NodeHeaderHeight);
                 UpdateRectangles();
@@ -734,7 +733,7 @@ namespace FlaxEditor.Surface.Archetypes
                     width = Mathf.Max(width, _debugInfoSize.X + 8.0f);
                     height += _debugInfoSize.Y + 8.0f;
                 }
-                return new Float2(width + FlaxEditor.Surface.Constants.NodeCloseButtonSize * 2 + DecoratorsMarginX * 2, height + FlaxEditor.Surface.Constants.NodeHeaderHeight);
+                return new Float2(width + FlaxEditor.Surface.Constants.NodeCloseButtonSize * 2, height + FlaxEditor.Surface.Constants.NodeHeaderHeight);
             }
 
             protected override void UpdateRectangles()
