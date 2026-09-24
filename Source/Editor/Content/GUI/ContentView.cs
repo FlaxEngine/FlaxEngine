@@ -747,6 +747,16 @@ namespace FlaxEditor.Content.GUI
         /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)
         {
+            // Perform deletion before Backspace navigation (Mac reports the Delete key as Backspace).
+            if (Editor.Instance.Options.Options.Input.Delete.Process(this, key))
+            {
+                if (HasSelection)
+                {
+                    OnDelete?.Invoke(_selection);
+                    return true;
+                }
+            }
+
             // Navigate backward
             if (key == KeyboardKeys.Backspace)
             {
