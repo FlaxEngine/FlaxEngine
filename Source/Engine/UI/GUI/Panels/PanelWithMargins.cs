@@ -161,6 +161,12 @@ namespace FlaxEngine.GUI
         public bool ControlChildSize { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets the value indicating whenever the panel can resize children controls (eg. auto-fit width/height).
+        /// </summary>
+        [EditorOrder(36), DefaultValue(false), Tooltip("If checked, the panel will expand all children in the relevant direction with even spacing and size. (Horizontally for Horizontal Panel, Vertically for Vertical Panel).")]
+        public bool ExpandChildren { get; set; } = false;
+
+        /// <summary>
         /// Gets or sets the panel area margin.
         /// </summary>
         [EditorOrder(40), Tooltip("The panel area margin.")]
