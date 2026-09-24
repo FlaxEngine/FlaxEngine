@@ -914,7 +914,7 @@ namespace FlaxEditor.Scripting
             get
             {
                 if (_managed != null)
-                    return _managed.IsValueType || _managed.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null) != null;
+                    return (_managed.IsValueType || _managed.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null) != null) && !_managed.IsByRefLike;
                 return _custom?.CanCreateInstance ?? false;
             }
         }
