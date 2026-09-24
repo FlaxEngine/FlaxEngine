@@ -706,6 +706,10 @@ DragDropEffect Window::DoDragDropWayland(const StringView& data, Window* dragSou
 
     while (Platform::AtomicRead(&WaylandImpl::DragOverFlag) == 0)
     {
+        // TODO: Refactor the same way as in Windows EventFilterCallback
+        //if (!Engine::ShouldExit())
+        //    Engine::OnLoop();
+
         SDLPlatform::Tick();
         Engine::OnUpdate(); // For docking updates
         Engine::OnDraw();
