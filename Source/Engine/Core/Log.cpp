@@ -133,7 +133,11 @@ void Log::Logger::Write(const StringView& msg, LogType type)
     IsDuringLog = true;
 
     // Send message to standard process output
+#if BUILD_RELEASE
     if (CommandLine::Options.Std.IsTrue())
+#else
+    if (!CommandLine::Options.Std.IsFalse())
+#endif
     {
 #if PLATFORM_TEXT_IS_CHAR16
         StringAnsi ansi(msg);
