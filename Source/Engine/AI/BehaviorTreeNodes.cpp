@@ -380,6 +380,19 @@ BehaviorUpdateResult BehaviorTreeSubTreeNode::Update(const BehaviorUpdateContext
     return tree->Graph.Root->InvokeUpdate(subContext);
 }
 
+#if USE_EDITOR
+
+String BehaviorTreeSubTreeNode::GetDebugInfo(const BehaviorUpdateContext& context) const
+{
+    if (Tree)
+    {
+        return StringUtils::GetFileNameWithoutExtension(Tree->GetPath());
+    }
+    return String::Empty;
+}
+
+#endif
+
 BehaviorUpdateResult BehaviorTreeForceFinishNode::Update(const BehaviorUpdateContext& context)
 {
     context.Behavior->StopLogic(Result);
@@ -401,7 +414,7 @@ void BehaviorTreeMoveToNode::GetAgentSize(Actor* agent, float& outRadius, float&
 {
     if (const auto* characterController = Cast<CharacterController>(agent))
     {
-        // Character Controller is an capsule
+        // Character Controller is a capsule
         outRadius = characterController->GetRadius();
         outHeight = characterController->GetHeight() + 2 * outRadius;
         return;
@@ -552,7 +565,7 @@ String BehaviorTreeMoveToNode::GetDebugInfo(const BehaviorUpdateContext& context
             Real distanceLeft = state->Path.Count() > state->TargetPathIndex ? Vector3::Distance(state->Path[state->TargetPathIndex], agentLocationOnPath) : 0;
             for (int32 i = state->TargetPathIndex; i < state->Path.Count(); i++)
                 distanceLeft += Vector3::Distance(state->Path[i - 1], state->Path[i]);
-            return String::Format(TEXT("Agent: '{}'\nGoal: '{}'\nDistance: {}"), agent, goal, (int32)distanceLeft);
+            return String::Format(TEXT("Agent: '{}'\nGoal: '{}'\nDistance: {}"), agent, goal, distanceLeft);
         }
     }
     return String::Empty;
@@ -770,7 +783,7 @@ String BehaviorTreeKnowledgeBooleanDecorator::GetDebugInfo(const BehaviorUpdateC
     {
         result = Value.ToString();
         if (Invert)
-            result = TEXT("!") + result;
+            result = TEXT("Not ") + result;
     }
     return result;
 }

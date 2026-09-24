@@ -156,6 +156,9 @@ public:
     void InitState(const BehaviorUpdateContext& context) override;
     void ReleaseState(const BehaviorUpdateContext& context) override;
     BehaviorUpdateResult Update(const BehaviorUpdateContext& context) override;
+#if USE_EDITOR
+    String GetDebugInfo(const BehaviorUpdateContext& context) const override;
+#endif
 
 private:
     struct State

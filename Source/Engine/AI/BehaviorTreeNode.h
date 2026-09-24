@@ -31,7 +31,7 @@ private:
 
 public:
     /// <summary>
-    /// Node user name (eg. Follow Enemy, or Pick up Weapon).
+    /// Custom node name (eg. Follow Enemy, or Pick up Weapon).
     /// </summary>
     API_FIELD() String Name;
 

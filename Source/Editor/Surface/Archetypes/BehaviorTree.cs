@@ -219,7 +219,7 @@ namespace FlaxEditor.Surface.Archetypes
                 var headerColor = style.BackgroundHighlighted;
                 if (_headerRect.Contains(ref _mousePosition) && !Surface.IsConnecting && !Surface.IsSelecting)
                     headerColor *= 1.07f;
-                Render2D.FillRectangle(_headerRect, style.BackgroundHighlighted);
+                Render2D.FillRectangle(_headerRect, headerColor);
                 Render2D.DrawText(style.FontLarge, Title, _headerTextRect, style.Foreground, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1f, FlaxEditor.Surface.Constants.NodeHeaderTextScale);
 
                 // Close button
@@ -231,14 +231,6 @@ namespace FlaxEditor.Surface.Archetypes
 
                 DrawChildren();
 
-                // Selection outline
-                if (_isSelected)
-                {
-                    var colorTop = Color.Orange;
-                    var colorBottom = Color.OrangeRed;
-                    Render2D.DrawRectangle(backgroundRect, colorTop, colorTop, colorBottom, colorBottom, 2.5f);
-                }
-
                 // Breakpoint dot
                 if (Breakpoint.Set)
                 {
@@ -246,17 +238,31 @@ namespace FlaxEditor.Surface.Archetypes
                     Render2D.DrawSprite(icon, new Rectangle(-7, -7, 16, 16), new Color(0.9f, 0.9f, 0.9f));
                     Render2D.DrawSprite(icon, new Rectangle(-6, -6, 14, 14), new Color(0.894117647f, 0.0784313725f, 0.0f));
                 }
+            }
 
+            protected virtual void DrawOverlays()
+            {
+                var style = Style.Current;
                 if (highlightBox != null)
                     Render2D.DrawRectangle(highlightBox.Bounds, style.BorderHighlighted, 2f);
+
+                // Selection outline
+                if (_isSelected)
+                {
+                    var colorTop = Color.Orange;
+                    var colorBottom = Color.OrangeRed;
+                    var rect = new Rectangle(Float2.Zero, Size);
+                    Render2D.DrawRectangle(rect, colorTop, colorTop, colorBottom, colorBottom, 2.5f);
+                }
 
                 // Debug relevancy outline
                 if (_debugRelevant)
                 {
                     var colorTop = Color.LightYellow;
                     var colorBottom = Color.Yellow;
-                    backgroundRect = new Rectangle(Float2.One, Size - new Float2(2.0f));
-                    Render2D.DrawRectangle(backgroundRect, colorTop, colorTop, colorBottom, colorBottom);
+                    var rect = new Rectangle(Float2.One, Size - new Float2(2.0f));
+                    //Render2D.DrawRectangle(backgroundRect, colorTop, colorTop, colorBottom, colorBottom);
+                    Render2D.DrawRectangle(rect, style.ProgressNormal);
                 }
             }
 
@@ -555,6 +561,8 @@ namespace FlaxEditor.Surface.Archetypes
                     Render2D.FillRectangle(new Rectangle(0, _headerRect.Bottom + 4, Width, Height - _headerRect.Bottom - 4), style.BackgroundHighlighted);
                     Render2D.DrawText(style.FontSmall, _debugInfo, new Rectangle(4, _headerRect.Bottom + 7, _debugInfoSize), style.Foreground, scale: 0.8f);
                 }
+
+                DrawOverlays();
             }
 
             public override void ResizeAuto()
@@ -819,6 +827,8 @@ namespace FlaxEditor.Surface.Archetypes
                         color = style.ProgressNormal;
                     Render2D.DrawText(style.FontSmall, _debugInfo, new Rectangle(4, _headerRect.Bottom, _debugInfoSize), color, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1, 0.8f);
                 }
+
+                DrawOverlays();
 
                 // Outline
                 if (!_isSelected)
