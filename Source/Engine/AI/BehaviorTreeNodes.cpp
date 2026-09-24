@@ -48,6 +48,31 @@ bool IsAssignableFrom(const StringAnsiView& to, const StringAnsiView& from)
     return false;
 }
 
+#if USE_EDITOR
+
+const Char* ComparisonChars(BehaviorValueComparison comp)
+{
+    switch (comp)
+    {
+    case BehaviorValueComparison::Equal:
+        return TEXT("==");
+    case BehaviorValueComparison::NotEqual:
+        return TEXT("!=");
+    case BehaviorValueComparison::Less:
+        return TEXT("<");
+    case BehaviorValueComparison::LessEqual:
+        return TEXT("<=");
+    case BehaviorValueComparison::Greater:
+        return TEXT(">");
+    case BehaviorValueComparison::GreaterEqual:
+        return TEXT(">=");
+    default:
+        return TEXT("?");
+    }
+}
+
+#endif
+
 BehaviorUpdateResult BehaviorTreeNode::InvokeUpdate(const BehaviorUpdateContext& context)
 {
     ASSERT_LOW_LAYER(_executionIndex != -1);
@@ -699,10 +724,32 @@ bool BehaviorTreeKnowledgeConditionalDecorator::CanUpdate(const BehaviorUpdateCo
     return BehaviorKnowledge::CompareValues((float)ValueA.Get(context.Knowledge), ValueB, Comparison);
 }
 
+#if USE_EDITOR
+
+String BehaviorTreeKnowledgeConditionalDecorator::GetDebugInfo(const BehaviorUpdateContext& context) const
+{
+    if (ValueA)
+        return String::Format(TEXT("'{}' {} {}"), ValueA.ToString(), ComparisonChars(Comparison), ValueB);
+    return String::Empty;
+}
+
+#endif
+
 bool BehaviorTreeKnowledgeValuesConditionalDecorator::CanUpdate(const BehaviorUpdateContext& context)
 {
     return BehaviorKnowledge::CompareValues((float)ValueA.Get(context.Knowledge), (float)ValueB.Get(context.Knowledge), Comparison);
 }
+
+#if USE_EDITOR
+
+String BehaviorTreeKnowledgeValuesConditionalDecorator::GetDebugInfo(const BehaviorUpdateContext& context) const
+{
+    if (ValueA && ValueB)
+        return String::Format(TEXT("'{}' {} '{}'"), ValueA.ToString(), ComparisonChars(Comparison), ValueB.ToString());
+    return String::Empty;
+}
+
+#endif
 
 bool BehaviorTreeKnowledgeBooleanDecorator::CanUpdate(const BehaviorUpdateContext& context)
 {
@@ -711,6 +758,22 @@ bool BehaviorTreeKnowledgeBooleanDecorator::CanUpdate(const BehaviorUpdateContex
     result ^= Invert;
     return result;
 }
+
+#if USE_EDITOR
+
+String BehaviorTreeKnowledgeBooleanDecorator::GetDebugInfo(const BehaviorUpdateContext& context) const
+{
+    String result;
+    if (Value)
+    {
+        result = Value.ToString();
+        if (Invert)
+            result = TEXT("!") + result;
+    }
+    return result;
+}
+
+#endif
 
 bool BehaviorTreeHasTagDecorator::CanUpdate(const BehaviorUpdateContext& context)
 {
@@ -722,8 +785,30 @@ bool BehaviorTreeHasTagDecorator::CanUpdate(const BehaviorUpdateContext& context
     return result;
 }
 
+#if USE_EDITOR
+
+String BehaviorTreeHasTagDecorator::GetDebugInfo(const BehaviorUpdateContext& context) const
+{
+    if (Actor && Tag)
+        return String::Format(TEXT("'{}' Has Tag '{}'"), Actor.ToString(), Tag.ToString());
+    return String::Empty;
+}
+
+#endif
+
 bool BehaviorTreeHasGoalDecorator::CanUpdate(const BehaviorUpdateContext& context)
 {
     Variant value; // TODO: use HasGoal in Knowledge to optimize this (goal struct is copied by selector accessor)
     return Goal.TryGet(context.Knowledge, value);
 }
+
+#if USE_EDITOR
+
+String BehaviorTreeHasGoalDecorator::GetDebugInfo(const BehaviorUpdateContext& context) const
+{
+    if (Goal)
+        return String::Format(TEXT("Has Goal '{}'"), Goal.ToString());
+    return String::Empty;
+}
+
+#endif

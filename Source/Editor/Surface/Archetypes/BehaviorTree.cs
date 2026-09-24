@@ -246,14 +246,6 @@ namespace FlaxEditor.Surface.Archetypes
                 if (highlightBox != null)
                     Render2D.DrawRectangle(highlightBox.Bounds, style.BorderHighlighted, 2f);
 
-                // Debug Info
-                if (!string.IsNullOrEmpty(_debugInfo))
-                {
-                    // Draw an extra background to cover the archetype color colored node background and make text more legible
-                    Render2D.FillRectangle(new Rectangle(0, _headerRect.Bottom + 4, Width, Height - _headerRect.Bottom - 4), style.BackgroundHighlighted);
-                    Render2D.DrawText(style.FontSmall, _debugInfo, new Rectangle(4, _headerRect.Bottom + 7, _debugInfoSize), style.Foreground, scale: 0.8f);
-                }
-
                 // Debug relevancy outline
                 if (_debugRelevant)
                 {
@@ -546,6 +538,21 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             }
 
+            public override void Draw()
+            {
+                base.Draw();
+
+                var style = Style.Current;
+
+                // Debug Info
+                if (!string.IsNullOrEmpty(_debugInfo))
+                {
+                    // Draw an extra background to cover the archetype color colored node background and make text more legible
+                    Render2D.FillRectangle(new Rectangle(0, _headerRect.Bottom + 4, Width, Height - _headerRect.Bottom - 4), style.BackgroundHighlighted);
+                    Render2D.DrawText(style.FontSmall, _debugInfo, new Rectangle(4, _headerRect.Bottom + 7, _debugInfoSize), style.Foreground, scale: 0.8f);
+                }
+            }
+
             public override void ResizeAuto()
             {
                 if (Surface == null)
@@ -731,7 +738,7 @@ namespace FlaxEditor.Surface.Archetypes
                 if (_debugInfoSize.X > 0)
                 {
                     width = Mathf.Max(width, _debugInfoSize.X + 8.0f);
-                    height += _debugInfoSize.Y + 8.0f;
+                    height += _debugInfoSize.Y + 1.0f;
                 }
                 return new Float2(width + FlaxEditor.Surface.Constants.NodeCloseButtonSize * 2, height + FlaxEditor.Surface.Constants.NodeHeaderHeight);
             }
@@ -797,6 +804,12 @@ namespace FlaxEditor.Surface.Archetypes
                 base.Draw();
 
                 var style = Style.Current;
+
+                // Debug Info
+                if (!string.IsNullOrEmpty(_debugInfo))
+                {
+                    Render2D.DrawText(style.FontSmall, _debugInfo, new Rectangle(4, _headerRect.Bottom, _debugInfoSize), style.Foreground, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1, 0.8f);
+                }
 
                 // Outline
                 if (!_isSelected)
