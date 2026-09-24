@@ -361,7 +361,7 @@ BehaviorUpdateResult BehaviorTreeSubTreeNode::Update(const BehaviorUpdateContext
     {
         // Validate if nested tree blackboard data matches (the same type or base type)
         const VariantType& blackboardType = context.Knowledge->Blackboard.Type;
-        if (IsAssignableFrom(treeBlackboardType, StringAnsiView(blackboardType.GetTypeName())))
+        if (!IsAssignableFrom(treeBlackboardType, StringAnsiView(blackboardType.GetTypeName())))
         {
             LOG(Error, "Cannot use nested '{}' with Blackboard of type '{}' inside '{}' with Blackboard of type '{}'",
                 tree->ToString(), String(treeBlackboardType),
