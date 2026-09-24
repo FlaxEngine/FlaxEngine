@@ -30,6 +30,7 @@ namespace FlaxEditor.Surface.Archetypes
             protected const float DecoratorsMarginY = 2.0f;
 
             protected bool _debugRelevant;
+            protected int _debugDecoratorResult = -1;
             protected string _debugInfo;
             protected Float2 _debugInfoSize;
             protected ScriptType _type;
@@ -90,6 +91,7 @@ namespace FlaxEditor.Surface.Archetypes
             protected virtual void UpdateDebugInfo(BehaviorTreeNode instance = null, Behavior behavior = null)
             {
                 _debugRelevant = false;
+                _debugDecoratorResult = -1;
                 _debugInfo = null;
                 _debugInfoSize = Float2.Zero;
                 if (!instance)
@@ -98,6 +100,8 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     // Get debug description for the node based on the current settings
                     _debugRelevant = Behavior.GetNodeDebugRelevancy(instance, behavior);
+                    if (instance is BehaviorTreeDecorator decorator && behavior && behavior.IsDuringPlay && behavior.Result == BehaviorUpdateResult.Running)
+                        _debugDecoratorResult = Behavior.GetDecoratorDebugResult(decorator, behavior);
                     _debugInfo = Behavior.GetNodeDebugInfo(instance, behavior);
                     if (!string.IsNullOrEmpty(_debugInfo))
                         _debugInfoSize = Style.Current.FontSmall.MeasureText(_debugInfo);
@@ -808,7 +812,12 @@ namespace FlaxEditor.Surface.Archetypes
                 // Debug Info
                 if (!string.IsNullOrEmpty(_debugInfo))
                 {
-                    Render2D.DrawText(style.FontSmall, _debugInfo, new Rectangle(4, _headerRect.Bottom, _debugInfoSize), style.Foreground, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1, 0.8f);
+                    var color = style.Foreground;
+                    if (_debugDecoratorResult == 0)
+                        color = style.ProgressError;
+                    else if (_debugDecoratorResult == 1)
+                        color = style.ProgressNormal;
+                    Render2D.DrawText(style.FontSmall, _debugInfo, new Rectangle(4, _headerRect.Bottom, _debugInfoSize), color, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1, 0.8f);
                 }
 
                 // Outline

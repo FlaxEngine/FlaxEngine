@@ -209,7 +209,25 @@ String Behavior::GetNodeDebugInfo(const BehaviorTreeNode* node, Behavior* behavi
     if (!node)
         return String::Empty;
     BehaviorUpdateContext context;
+    InitNodeDebugContext(node, behavior, context);
+    return node->GetDebugInfo(context);
+}
+
+int32 Behavior::GetDecoratorDebugResult(BehaviorTreeDecorator* node, Behavior* behavior)
+{
+    if (!node)
+        return -1;
+    BehaviorUpdateContext context;
+    InitNodeDebugContext(node, behavior, context);
+    return node->CanUpdate(context) ? 1 : 0;
+}
+
+void Behavior::InitNodeDebugContext(const BehaviorTreeNode* node, Behavior* behavior, BehaviorUpdateContext& context)
+{
+    // Zero out context
     Platform::MemoryClear(&context, sizeof(context));
+
+    // Check if the node is relevant (active in tree with state created)
     if (GetNodeDebugRelevancy(node, behavior))
     {
         // Pass behavior and knowledge data only for relevant nodes to properly access it
@@ -219,7 +237,6 @@ String Behavior::GetNodeDebugInfo(const BehaviorTreeNode* node, Behavior* behavi
         context.RelevantNodes = &behavior->_knowledge.RelevantNodes;
         context.Time = behavior->_totalTime;
     }
-    return node->GetDebugInfo(context);
 }
 
 #endif

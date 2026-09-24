@@ -299,6 +299,7 @@ namespace FlaxEditor.Options
                 TextBoxBackgroundSelected = Color.FromBgra(0xFF3F3F46),
                 CollectionBackgroundColor = Color.FromBgra(0x14CCCCCC),
                 ProgressNormal = Color.FromBgra(0xFF0ad328),
+                ProgressError = new Color(0.79f, 0.146f, 0.0f, 1.0f),
                 Selection = Color.Orange * 0.4f,
                 SelectionBorder = Color.Orange,
 
@@ -362,6 +363,7 @@ namespace FlaxEditor.Options
                 TextBoxBackgroundSelected = new Color(0.73f, 0.73f, 0.80f, 1f),
                 CollectionBackgroundColor = new Color(0.85f, 0.85f, 0.88f, 1f),
                 ProgressNormal = new Color(0.03f, 0.65f, 0.12f, 1f),
+                ProgressError = new Color(0.79f, 0.146f, 0.0f, 1.0f),
                 Selection = Color.Orange * 0.4f,
                 SelectionBorder = Color.Orange,
 
