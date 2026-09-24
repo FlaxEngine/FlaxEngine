@@ -112,6 +112,8 @@ BehaviorUpdateResult BehaviorTreeNode::InvokeUpdate(const BehaviorUpdateContext&
         result = Update(context);
     if ((int32)result < 0 ||  (int32)result > (int32)BehaviorUpdateResult::Failed)
         result = BehaviorUpdateResult::Failed; // Invalid value is a failure
+    if (context.Behavior->GetResult() != BehaviorUpdateResult::Running)
+        return result; // Behavior is already finished, no need to continue
 
     // Post-process result from decorators
     for (BehaviorTreeDecorator* decorator : _decorators)

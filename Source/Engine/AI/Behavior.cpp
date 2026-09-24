@@ -107,16 +107,25 @@ void Behavior::UpdateAsync()
     context.DeltaTime = updateDeltaTime;
     context.Time = _totalTime;
     const BehaviorUpdateResult result = tree->Graph.Root->InvokeUpdate(context);
-    if (result != BehaviorUpdateResult::Running)
+    if (_result == BehaviorUpdateResult::Running && result != BehaviorUpdateResult::Running)
+    {
+        // Update result
         _result = result;
-    if (_result != BehaviorUpdateResult::Running && tree->Graph.Root->Loop)
-    {
-        // Reset State
-        _result = BehaviorUpdateResult::Running;
+        if (_result != BehaviorUpdateResult::Running && tree->Graph.Root->Loop)
+        {
+            // Reset State
+            _result = BehaviorUpdateResult::Running;
+        }
+        else if (_result != BehaviorUpdateResult::Running)
+        {
+            // End
+            Finished();
+        }
     }
-    else if (_result != BehaviorUpdateResult::Running)
+    else if (_result != BehaviorUpdateResult::Running && tree->Graph.Root->Loop)
     {
-        Finished();
+        // Restart on end (eg. after Force Success node during Update)
+        StartLogic();
     }
 }
 
