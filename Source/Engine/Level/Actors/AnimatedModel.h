@@ -395,6 +395,7 @@ public:
     /// <summary>
     /// Plays the animation on the slot in Anim Graph.
     /// </summary>
+    /// <remarks>If animation is paused, it will be resumed. If animation is not playing, it will be started. If animation is playing, it will be blended out (call StopSlotAnimation before to do an immediate transition).</remarks>
     /// <param name="slotName">The name of the slot.</param>
     /// <param name="anim">The animation to play.</param>
     /// <param name="speed">The playback speed.</param>
@@ -412,7 +413,7 @@ public:
     /// Stops the animation playback on the slot in Anim Graph.
     /// </summary>
     /// <param name="slotName">The name of the slot.</param>
-    /// <param name="anim">The animation to check. Null to use slot name only.</param>
+    /// <param name="anim">The animation to check. Null to use slot name only. Can be used to explicitly stop a specific animation (if it's playing right now, otherwise doesn't stop other one).</param>
     API_FUNCTION() void StopSlotAnimation(const StringView& slotName, Animation* anim = nullptr);
 
     /// <summary>

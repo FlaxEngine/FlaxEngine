@@ -2356,7 +2356,8 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 {
                     // Start playing animation
                     bucket.Index = i;
-                    // Keep bucket time position and blend in time for if blending between two anims in the same slot.
+
+                    // Keep bucket time position and blend in time for if blending between two anims in the same slot
                     bucket.TimePosition = bucket.TimePosition;
                     bucket.BlendInPosition = bucket.BlendInPosition;
                     bucket.BlendOutPosition = 0.0f;
@@ -2368,7 +2369,8 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             if (bucket.Index == -1 || !slots[bucket.Index].Animation->IsLoaded())
             {
                 value = tryGetValue(node->GetBox(1), Value::Null);
-                // Reset times if time is left over from playing between different anims in the same slot.
+
+                // Reset times if time is left over from playing between different anims in the same slot
                 if (bucket.BlendInPosition > 0)
                 {
                     bucket.TimePosition = 0;
@@ -2411,30 +2413,39 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         bucket.TimePosition = newTimePos;
 
         // On animation slot stop
-        if (slot.Reset)
+        if (slot.Stop)
         {
-            // Blend between last anim and new anim if found, otherwise blend back to input.
-            Animation* sAnim = nullptr;
+            // Blend between last anim and new anim if found, otherwise blend back to input
+            Animation* otherAnim = nullptr;
             for (int32 i = 0; i < slots.Count(); i++)
             {
                 if (bucket.Index == i)
                     continue;
-
-                auto& s = slots[i];
-                if (s.Animation && s.Name == slotName)
+                auto& other = slots[i];
+                if (other.Animation && other.Name == slotName)
                 {
-                    sAnim = s.Animation;
+                    otherAnim = other.Animation;
+                    other.ActiveBlend = true;
+                    if (other.Rewind)
+                    {
+                        other.Rewind = false;
+                        bucket.BlendOutPosition = 0;
+                    }
+                }
+                else if (other.Name == slotName)
+                {
+                    other.ActiveBlend = false;
                 }
             }
             float oldTimePos = bucket.BlendOutPosition;
             bucket.BlendOutPosition += deltaTime;
             bucket.BlendInPosition = bucket.BlendOutPosition;
-            const float alpha = bucket.BlendOutPosition / slot.BlendOutTime;
-            if (sAnim != nullptr)
+            const float alpha = slot.BlendOutTime > ANIM_GRAPH_BLEND_THRESHOLD ? bucket.BlendOutPosition / slot.BlendOutTime : 1.0f;
+            if (otherAnim != nullptr)
             {
-                auto sValue = SampleAnimation(node, false, sAnim->GetLength(), 0.0f, oldTimePos, bucket.BlendInPosition, sAnim, 1);
+                auto otherValue = SampleAnimation(node, false, otherAnim->GetLength(), 0.0f, oldTimePos, bucket.BlendInPosition, otherAnim, 1);
                 //value = SampleAnimationsWithBlend(node, false, length, 0.0f, bucket.TimePosition, newTimePos, anim, sAnim, 1, 1, alpha);
-                value = Blend(node, value, sValue, alpha, AlphaBlendMode::HermiteCubic);
+                value = Blend(node, value, otherValue, alpha, AlphaBlendMode::HermiteCubic);
             }
             else
             {
@@ -2444,10 +2455,11 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
 
             if (bucket.BlendOutPosition >= slot.BlendOutTime)
             {
-                // Start from the beginning or the blend in position if next anim found.
+                // Start from the beginning or the blend in position if next anim found
                 slot.Animation = nullptr;
-                slot.Reset = false;
-                if (!sAnim)
+                slot.Stop = false;
+                slot.ActiveBlend = false;
+                if (!otherAnim)
                 {
                     bucket.TimePosition = 0;
                     bucket.BlendInPosition = 0;
@@ -2460,7 +2472,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             break;
         }
 
-        if (bucket.LoopsLeft == 0 && slot.BlendOutTime > 0.0f && length - slot.BlendOutTime < bucket.TimePosition)
+        if (bucket.LoopsLeft == 0 && slot.BlendOutTime > ANIM_GRAPH_BLEND_THRESHOLD && length - slot.BlendOutTime < bucket.TimePosition)
         {
             // Blend out
             auto input = tryGetValue(node->GetBox(1), Value::Null);
@@ -2468,7 +2480,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             const float alpha = bucket.BlendOutPosition / slot.BlendOutTime;
             value = Blend(node, value, input, alpha, AlphaBlendMode::HermiteCubic);
         }
-        else if (bucket.LoopsDone == 0 && slot.BlendInTime > 0.0f && bucket.BlendInPosition < slot.BlendInTime)
+        else if (bucket.LoopsDone == 0 && slot.BlendInTime > ANIM_GRAPH_BLEND_THRESHOLD && bucket.BlendInPosition < slot.BlendInTime)
         {
             // Blend in
             auto input = tryGetValue(node->GetBox(1), Value::Null);
