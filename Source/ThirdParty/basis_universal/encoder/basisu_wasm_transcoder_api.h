@@ -1,4 +1,5 @@
 // File: basisu_wasm_transcoder_api.h - Transcoding API support for WASM WASI modules and Python native support.
+// TODO: Add .DDS transcoding support (it's supported in C++ native and in the JS emscripten C++ wrappers, but not in the pure C wrappers yet, or Python).
 #pragma once
 #include "basisu_wasm_api_common.h"
 
@@ -26,6 +27,9 @@ wasm_bool_t bt_basis_tex_format_is_xuastc_ldr(uint32_t basis_tex_fmt_u32);
 
 BU_WASM_EXPORT("bt_basis_tex_format_is_astc_ldr")
 wasm_bool_t bt_basis_tex_format_is_astc_ldr(uint32_t basis_tex_fmt_u32);
+
+BU_WASM_EXPORT("bt_basis_tex_format_is_xubc7")
+wasm_bool_t bt_basis_tex_format_is_xubc7(uint32_t basis_tex_fmt_u32);
 
 BU_WASM_EXPORT("bt_basis_tex_format_get_block_width")
 uint32_t bt_basis_tex_format_get_block_width(uint32_t basis_tex_fmt_u32);
@@ -126,11 +130,17 @@ wasm_bool_t bt_ktx2_is_astc_ldr(uint64_t handle);
 BU_WASM_EXPORT("bt_ktx2_is_xuastc_ldr")
 wasm_bool_t bt_ktx2_is_xuastc_ldr(uint64_t handle);
 
+BU_WASM_EXPORT("bt_ktx2_is_xubc7")
+wasm_bool_t bt_ktx2_is_xubc7(uint64_t handle);
+
 BU_WASM_EXPORT("bt_ktx2_get_block_width")
 uint32_t bt_ktx2_get_block_width(uint64_t handle);
 
 BU_WASM_EXPORT("bt_ktx2_get_block_height")
 uint32_t bt_ktx2_get_block_height(uint64_t handle);
+
+BU_WASM_EXPORT("bt_ktx2_get_deblocking_filter_index")
+uint32_t bt_ktx2_get_deblocking_filter_index(uint64_t handle);
 
 BU_WASM_EXPORT("bt_ktx2_has_alpha")
 wasm_bool_t bt_ktx2_has_alpha(uint64_t handle);

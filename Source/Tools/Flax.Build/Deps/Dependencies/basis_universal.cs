@@ -91,7 +91,7 @@ namespace Flax.Deps.Dependencies
             };
 
             // Get the source
-            var commit = "2c4f52f705f697660cc7a9d481d9d496f85b9959"; // 'final snapshot of v2.0 before v2.1'
+            var commit = "9bebe16726b3a61c8c213eeee3b7cffb462ef34e"; // v2.50
             CloneGitRepo(root, "https://github.com/BinomialLLC/basis_universal.git", commit);
 
             // Disable KTX2 support
@@ -152,9 +152,17 @@ namespace Flax.Deps.Dependencies
                     case TargetPlatform.Linux:
                     case TargetPlatform.Mac:
                     {
+                        var envVars = new Dictionary<string, string>
+                        {
+                            { "CC", "clang-" + LinuxConfiguration.ClangMinVer },
+                            { "CC_FOR_BUILD", "clang-" + LinuxConfiguration.ClangMinVer },
+                            { "CXX", "clang++-" + LinuxConfiguration.ClangMinVer },
+                            { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
+                        };
+
                         cmakeArgs = ".. " + cmakeArgs;
-                        RunCmake(buildDir, platform, architecture, cmakeArgs);
-                        BuildCmake(buildDir, configuration, options:Utilities.RunOptions.ConsoleLogOutput);
+                        RunCmake(buildDir, platform, architecture, cmakeArgs, envVars);
+                        BuildCmake(buildDir, configuration, options:Utilities.RunOptions.ConsoleLogOutput, envVars: envVars);
                         CopyLib(platform, buildDir, depsFolder, "basisu_encoder");
                         break;
                     }

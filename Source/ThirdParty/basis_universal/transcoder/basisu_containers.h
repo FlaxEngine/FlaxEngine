@@ -1510,7 +1510,7 @@ namespace basisu
 #endif
 				if ((m_p) && (other.m_p))
 				{
-					memcpy(m_p, other.m_p, m_size * sizeof(T));
+					memcpy((void *)m_p, other.m_p, m_size * sizeof(T));
 				}
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
@@ -2121,7 +2121,7 @@ namespace basisu
 			if (BASISU_IS_BITWISE_COPYABLE(T))
 			{
 				// This overwrites the destination object bits, but bitwise copyable means we don't need to worry about destruction.
-				memmove(m_p + index + n, m_p + index, sizeof(T) * num_to_move);
+				memmove((void *)(m_p + index + n), m_p + index, sizeof(T) * num_to_move);
 			}
 			else
 			{
@@ -2143,7 +2143,7 @@ namespace basisu
 			if (BASISU_IS_BITWISE_COPYABLE(T))
 			{
 				// This copies in the new bits, overwriting the existing objects, which is OK for copyable types that don't need destruction.
-				memcpy(pDst, p, sizeof(T) * n);
+				memcpy((void *)pDst, p, sizeof(T) * n);
 			}
 			else
 			{
@@ -4112,6 +4112,9 @@ namespace basisu
 		inline const T& at(int x, int y) const { return (*this)((uint32_t)x, (uint32_t)y); }
 		inline T& at(int x, int y) { return (*this)((uint32_t)x, (uint32_t)y); }
 
+		inline const T& get_clamped(int x, int y) const { return (*this)(clamp<int>(x, 0, m_width - 1), clamp<int>(y, 0, m_height - 1)); }
+		inline T& get_clamped(int x, int y) { return (*this)(clamp<int>(x, 0, m_width - 1), clamp<int>(y, 0, m_height - 1)); }
+
 		inline const T& at_clamped(int x, int y) const { return (*this)(clamp<int>(x, 0, m_width - 1), clamp<int>(y, 0, m_height - 1)); }
 		inline T& at_clamped(int x, int y) { return (*this)(clamp<int>(x, 0, m_width - 1), clamp<int>(y, 0, m_height - 1)); }
 
@@ -4267,6 +4270,14 @@ namespace basisu
 				}
 			}
 
+			return *this;
+		}
+
+		vector2D& swap(vector2D& other)
+		{
+			std::swap(m_width, other.m_width);
+			std::swap(m_height, other.m_height);
+			m_values.swap(other.m_values);
 			return *this;
 		}
 	};

@@ -679,28 +679,28 @@ CPPSPMD_FORCE_INLINE vint cmple_epi16(const vint &a, const vint &b)
 	return cmpge_epi16(b, a);
 }
 
-void spmd_kernel::print_vint(vint v)
+inline void spmd_kernel::print_vint(vint v)
 {
 	for (uint32_t i = 0; i < PROGRAM_COUNT; i++)
 		printf("%i ", extract(v, i));
 	printf("\n");
 }
 
-void spmd_kernel::print_vbool(vbool v)
+inline void spmd_kernel::print_vbool(vbool v)
 {
 	for (uint32_t i = 0; i < PROGRAM_COUNT; i++)
 		printf("%i ", extract(v, i) ? 1 : 0);
 	printf("\n");
 }
 
-void spmd_kernel::print_vint_hex(vint v)
+inline void spmd_kernel::print_vint_hex(vint v)
 {
 	for (uint32_t i = 0; i < PROGRAM_COUNT; i++)
 		printf("0x%X ", extract(v, i));
 	printf("\n");
 }
 
-void spmd_kernel::print_active_lanes(const char *pPrefix)
+inline void spmd_kernel::print_active_lanes(const char *pPrefix)
 {
 	CPPSPMD_DECL(int, flags[PROGRAM_COUNT]);
 	memset(flags, 0, sizeof(flags));
@@ -717,7 +717,7 @@ void spmd_kernel::print_active_lanes(const char *pPrefix)
 	printf("\n");
 }
 
-void spmd_kernel::print_vfloat(vfloat v)
+inline void spmd_kernel::print_vfloat(vfloat v)
 {
 	for (uint32_t i = 0; i < PROGRAM_COUNT; i++)
 		printf("%f ", extract(v, i));

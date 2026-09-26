@@ -98,6 +98,7 @@ namespace basist
 		cUASTC_HDR_6x6_INTERMEDIATE = 4, // TODO: rename to UASTC_HDR_6x6
 
 		// XUASTC (supercompressed) LDR variants (the standard ASTC block sizes)
+		// Note the order is sequenced by the total # of samples, which may differ from the order in many graphics API's.
 		cXUASTC_LDR_4x4 = 5,
 		cXUASTC_LDR_5x4 = 6,
 		cXUASTC_LDR_5x5 = 7,
@@ -116,7 +117,8 @@ namespace basist
 		cXUASTC_LDR_12x10 = 17,
 		cXUASTC_LDR_12x12 = 18,
 		
-		// Standard (non-supercompressed) ASTC LDR variants (the standard ASTC block sizes)
+		// Standard (non-supercompressed) ASTC LDR variants (the standard ASTC block sizes). 
+		// Note the order is sequenced by the total # of samples, which may differ from the order in many graphics API's.
 		cASTC_LDR_4x4 = 19,
 		cASTC_LDR_5x4 = 20,
 		cASTC_LDR_5x5 = 21,
@@ -135,9 +137,11 @@ namespace basist
 		cASTC_LDR_12x10 = 31,
 		cASTC_LDR_12x12 = 32,
 
+		cXUBC7 = 33,
+
 		cTotalFormats
 	};
-
+		
 	// True if the basis_tex_format is XUASTC LDR 4x4-12x12.
 	inline bool basis_tex_format_is_xuastc_ldr(basis_tex_format tex_fmt)
 	{
@@ -148,6 +152,11 @@ namespace basist
 	inline bool basis_tex_format_is_astc_ldr(basis_tex_format tex_fmt)
 	{
 		return ((uint32_t)tex_fmt >= (uint32_t)basis_tex_format::cASTC_LDR_4x4) && ((uint32_t)tex_fmt <= (uint32_t)basis_tex_format::cASTC_LDR_12x12);
+	}
+
+	inline bool basis_tex_format_is_xubc7(basis_tex_format tex_fmt)
+	{
+		return (uint32_t)tex_fmt == (uint32_t)basis_tex_format::cXUBC7;
 	}
 		
 	inline void get_basis_tex_format_block_size(basis_tex_format tex_fmt, uint32_t &width, uint32_t &height)
@@ -187,6 +196,7 @@ namespace basist
 		case basis_tex_format::cASTC_LDR_10x10: width = 10; height = 10; break;
 		case basis_tex_format::cASTC_LDR_12x10: width = 12; height = 10; break;
 		case basis_tex_format::cASTC_LDR_12x12: width = 12; height = 12; break;
+		case basis_tex_format::cXUBC7: width = 4; height = 4; break;
 		default:
 			assert(0);
 			width = 0;
@@ -239,6 +249,15 @@ namespace basist
 		
 		basisu::packed_uint<4>      m_extended_file_ofs;		// The file offset of the "extended" header and compressed data, for future use
 		basisu::packed_uint<4>      m_extended_file_size;		// The file size in bytes of the "extended" header and compressed data, for future use
+	};
+
+	const uint32_t cBASISKVDataSig = 0x564B;
+
+	struct basis_key_value_data_header
+	{
+		basisu::packed_uint<2>		m_sig;
+		basisu::packed_uint<4>		m_num;
+		basisu::packed_uint<2>		m_crc16;
 	};
 #pragma pack (pop)
 
