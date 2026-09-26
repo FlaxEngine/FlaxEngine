@@ -385,8 +385,8 @@ namespace FlaxEditor.GUI.Docking
         protected virtual void Undock()
         {
             // Defocus itself
-            if (ContainsFocus)
-                Focus();
+            //if (ContainsFocus)
+            //    Focus();
             Defocus();
 
             // Call undock
