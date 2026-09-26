@@ -373,7 +373,8 @@ namespace FlaxEditor.Modules
 
                                 // Show
                                 window.Show();
-                                window.Focus();
+                                if (!duringScriptsReload)
+                                    window.Focus();
 
                                 // Perform layout again
                                 windowGUI.PerformLayout();
@@ -474,7 +475,7 @@ namespace FlaxEditor.Modules
                             window.OnLayoutDeserialize();
                         }
 
-                        window.Show(DockState.DockFill, panel);
+                        window.Show(DockState.DockFill, panel, false);
                     }
                 }
             }
@@ -509,7 +510,7 @@ namespace FlaxEditor.Modules
                 }
             }
 
-            panel.SelectTab(selectedTab);
+            panel.SelectTab(selectedTab, false);
             panel.CollapseEmptyTabsProxy();
         }
 
@@ -821,6 +822,11 @@ namespace FlaxEditor.Modules
                 var el = Editor.ContentDatabase.Find(id);
                 if (el != null)
                 {
+                    // Check if any window is already editing this item
+                    var window = Editor.Windows.FindEditor(el);
+                    if (window != null)
+                        return window;
+
                     // Open asset
                     return Editor.ContentEditing.Open(el, true);
                 }
