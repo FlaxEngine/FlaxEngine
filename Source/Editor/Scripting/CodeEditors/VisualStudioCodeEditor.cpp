@@ -9,7 +9,7 @@
 #include "Editor/Scripting/ScriptsBuilder.h"
 #include "Engine/Engine/Globals.h"
 #if PLATFORM_LINUX
-#include <stdio.h>
+#include <cstdio>
 #elif PLATFORM_WINDOWS
 #include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
 #elif PLATFORM_MAC
