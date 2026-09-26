@@ -179,7 +179,7 @@ namespace FlaxEditor.Viewport
 
         private Vector3 PostProcessSpawnedActorLocation(Actor actor, ref Vector3 hitLocation)
         {
-            // Refresh actor position to ensure that cached bounds are valid
+            // Refresh actor position to ensure that cached bounds are valid (in Actor::OnTransformChanged)
             actor.Position = Vector3.One;
             actor.Position = Vector3.Zero;
 

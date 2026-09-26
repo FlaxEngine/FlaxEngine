@@ -1250,7 +1250,19 @@ BoundingBox AnimatedModel::GetEditorBoundingBox() const
 {
     if (SkinnedModel)
         SkinnedModel->WaitForLoaded(100);
-    return BoundingBox::MakeScaled(_box, 1.0f / BoundsScale);
+    BoundingBox box = _box;
+    if (CustomBounds.GetSize().LengthSquared() <= 0.01f)
+    {
+        if (!IsDuringPlay())
+        {
+            Matrix world;
+            GetLocalToWorldMatrix(world);
+            box = SkinnedModel->GetBox(world);
+        }
+        else
+            box = BoundingBox::MakeScaled(box, 1.0f / BoundsScale);
+    }
+    return box;
 }
 
 #endif
