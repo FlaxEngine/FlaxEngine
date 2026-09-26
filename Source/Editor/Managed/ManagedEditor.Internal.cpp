@@ -25,6 +25,7 @@
 #include "Engine/ContentImporters/ImportAudio.h"
 #include "Engine/ContentImporters/CreateCollisionData.h"
 #include "Engine/ContentImporters/CreateJson.h"
+#include "Engine/ContentImporters/CreateMaterial.h"
 #include "Engine/Level/Level.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Level/Prefabs/Prefab.h"
@@ -178,6 +179,51 @@ DEFINE_INTERNAL_CALL(bool) EditorInternal_CreateVisualScript(MString* outputPath
     String baseTypename;
     MUtils::ToString(baseTypenameObj, baseTypename);
     return AssetsImportingManager::Create(AssetsImportingManager::CreateVisualScriptTag, outputPath, &baseTypename);
+}
+
+DEFINE_INTERNAL_CALL(bool) EditorInternal_CreateMaterial(MString* pathObj, Guid* diffuse, Guid* normal, Guid* roughness, Guid* metallic, Guid* emissive, Guid* opacity, Guid* ambientOcclusion, Guid* height, uint8 roughnessChannel, uint8 metallicChannel, uint8 ambientOcclusionChannel, uint8 heightChannel, uint8 diffuseColorAsParameter, uint8 emissiveColorAsParameter, uint8 normalStrengthAsParameter, Guid* outAssetId)
+{
+    String path;
+    MUtils::ToString(pathObj, path);
+    FileSystem::NormalizePath(path);
+
+    // Build the importer options; each pointer that is set carries a resolved texture asset id,
+    // Guid::Empty means "leave that PBR input unconnected". A channel of MAX_uint8 means "use
+    // the importer default" (red channel) so callers can leave scalar inputs untouched.
+    CreateMaterial::Options options;
+    if (diffuse)
+    {
+        options.Diffuse.Texture = *diffuse;
+        options.Diffuse.ColorAsParameter = diffuseColorAsParameter != 0;
+    }
+    if (normal)
+    {
+        options.Normals.Texture = *normal;
+        options.Normals.StrengthAsParameter = normalStrengthAsParameter != 0;
+    }
+    if (roughness) options.Roughness.Texture = *roughness;
+    if (roughnessChannel != MAX_uint8) options.Roughness.Channel = roughnessChannel;
+    if (metallic) options.Metalness.Texture = *metallic;
+    if (metallicChannel != MAX_uint8) options.Metalness.Channel = metallicChannel;
+    if (emissive)
+        options.Emissive.Texture = *emissive;
+    if (emissiveColorAsParameter)
+    {
+        options.Emissive.ColorAsParameter = true;
+        options.Emissive.Color = Color::Black;
+    }
+    if (opacity) options.Opacity.Texture = *opacity;
+    if (ambientOcclusion) options.AmbientOcclusion.Texture = *ambientOcclusion;
+    if (ambientOcclusionChannel != MAX_uint8) options.AmbientOcclusion.Channel = ambientOcclusionChannel;
+    if (height) options.Height.Texture = *height;
+    if (heightChannel != MAX_uint8) options.Height.Channel = heightChannel;
+
+    Guid assetId;
+    // AssetsImportingManager::Create returns true when the operation failed; it overwrites an
+    // existing asset in place, reusing its id.
+    const bool failed = AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialTag, path, assetId, &options);
+    if (outAssetId) *outAssetId = assetId;
+    return failed;
 }
 
 DEFINE_INTERNAL_CALL(MString*) EditorInternal_CanImport(MString* extensionObj)
