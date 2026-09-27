@@ -118,6 +118,33 @@ extern "C" {
 #define SDL_HINT_ANDROID_LOW_LATENCY_AUDIO "SDL_ANDROID_LOW_LATENCY_AUDIO"
 
 /**
+ * A variable to control Android's AAudio input preset.
+ *
+ * This hint only applies to SDL's "aaudio" backend on Android 9+ devices.
+ *
+ * Some devices choose the wrong microphone by default (between the one meant
+ * to be spoken in when the phone is held to the user's ear for a phone call,
+ * or an external microphone that's meant to be used when recording video),
+ * or have DSP effects applied to the recorded audio, and changing the input
+ * preset can help control this.
+ *
+ * This can be any number that maps to an `AAUDIO_INPUT_PRESET_*` enum from
+ * the Android NDK headers. The most reasonable choices are 5 ("camcorder",
+ * for external microphones) and 7 ("voice communication", for speaking
+ * directly into the device like a mobile phone). 6 ("voice recognition")
+ * might also be a useful choice.
+ *
+ * If unset (the default), SDL will not specify an input preset at all, which
+ * lets the system choose. This is usually the correct thing to do unless
+ * your app is having problems.
+ *
+ * This hint should be set before a recording audio device is opened.
+ *
+ * \since This hint is available since SDL 3.4.16.
+ */
+#define SDL_HINT_ANDROID_AAUDIO_INPUT_PRESET "SDL_ANDROID_AAUDIO_INPUT_PRESET"
+
+/**
  * A variable to control whether we trap the Android back button to handle it
  * manually.
  *
@@ -808,6 +835,25 @@ extern "C" {
  * \since This hint is available since SDL 3.2.0.
  */
 #define SDL_HINT_ENABLE_SCREEN_KEYBOARD "SDL_ENABLE_SCREEN_KEYBOARD"
+
+/**
+ * A variable that controls whether the Steam on-screen keyboard should be
+ * shown when text input is active.
+ *
+ * Steam will set this hint via environment variable for games launched in Big
+ * Picture mode. To override this you should call SDL_SetHintWithPriority()
+ * with priority `SDL_HINT_OVERRIDE`.
+ *
+ * The variable can be set to the following values:
+ *
+ * - "0": Do not show the Steam on-screen keyboard.
+ * - "1": Show the Steam on-screen keyboard.
+ *
+ * This hint should be set before SDL is initialized.
+ *
+ * \since This hint is available since SDL 3.4.12.
+ */
+#define SDL_HINT_ENABLE_STEAM_SCREEN_KEYBOARD "SDL_ENABLE_STEAM_SCREEN_KEYBOARD"
 
 /**
  * A variable containing a list of evdev devices to use if udev is not
@@ -2150,7 +2196,8 @@ extern "C" {
  * - "0": Assume this is a generic controller.
  * - "1": Reset the controller to get metadata.
  *
- * By default the controller is not reset.
+ * By default the controller is reset. This is so we can properly detect
+ * the controller type.
  *
  * This hint should be set before initializing joysticks and gamepads.
  *
@@ -2772,7 +2819,7 @@ extern "C" {
  *   (default)
  * - "1": Cursors will automatically match the display content scale (e.g. a
  *   2x sized cursor will be used when the window is on a monitor with 200%
- *   scale). This is currently implemented on Windows and Wayland.
+ *   scale). This is currently implemented on Windows.
  *
  * This hint needs to be set before creating cursors.
  *
@@ -4043,6 +4090,31 @@ extern "C" {
  * \since This hint is available since SDL 3.2.0.
  */
 #define SDL_HINT_VIDEO_WIN_D3DCOMPILER "SDL_VIDEO_WIN_D3DCOMPILER"
+
+/**
+ * A variable controlling whether the X Synchronization Extension is enabled.
+ *
+ * If set, this can result in smoother window resizing when rendering using
+ * OpenGL, however, there are some conditions:
+ *
+ *  - It is only activated on windows created with the `SDL_WINDOW_OPENGL` flag
+ *    (windows using an SDL OpenGL renderer have this automatically set).
+ *  - When activated, presentation must be done with `SDL_GL_SwapWindow()`
+ *    (`SDL_RenderPresent()` calls this internally for OpenGL renderers as well).
+ *
+ * Enabling this and presenting via an external mechanism will result in sync
+ * requests not being acked, and hangs and other odd window behavior may result.
+ *
+ * The variable can be set to the following values:
+ *
+ * - "0": The X Synchronization Extension is disabled. (default)
+ * - "1": The X Synchronization Extension is enabled.
+ *
+ * This hint should be set before creating a window.
+ *
+ * \since This hint is available since SDL 3.4.10.
+ */
+#define SDL_HINT_VIDEO_X11_ENABLE_XSYNC_EXT "SDL_VIDEO_X11_ENABLE_XSYNC_EXT"
 
 /**
  * A variable controlling whether SDL should call XSelectInput() to enable
