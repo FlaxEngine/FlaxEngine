@@ -108,6 +108,16 @@ public:
         /// </summary>
         Nullable<bool> LowDPI;
 
+        /// <summary>
+        /// -xr (enables XR support, overrides XR settings)
+        /// </summary>
+        Nullable<bool> XR;
+
+        /// <summary>
+        /// -noxr (disables XR support, overrides XR settings)
+        /// </summary>
+        Nullable<bool> NoXR;
+
 #if PLATFORM_LINUX && PLATFORM_SDL
 
         /// <summary>
