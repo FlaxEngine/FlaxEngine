@@ -283,6 +283,7 @@ void RenderBuffers::Release()
     LastEyeAdaptationTime = 0;
     LinkedCustomBuffers = nullptr;
     LinkedEyeAdaptation = nullptr;
+    LinkedShadows = nullptr;
 
     for (int32 i = 0; i < _resources.Count(); i++)
         _resources[i]->ReleaseGPU();

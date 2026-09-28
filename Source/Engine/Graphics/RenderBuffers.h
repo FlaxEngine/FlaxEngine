@@ -284,6 +284,11 @@ public:
     /// </summary>
     API_FIELD() RenderBuffers* LinkedEyeAdaptation = nullptr;
 
+    /// <summary>
+    /// External Render Buffers used to share the shadow maps. Can be linked to other rendering task that is rendered before within the same frame to use its shadow maps instead of rendering them (eg. right eye view using the left eye view in XR). The linked task should draw all the lights of this view with the same shadow projections (eg. by culling with a frustum that contains both views and using the same SceneRenderTask::ProxyView).
+    /// </summary>
+    API_FIELD() RenderBuffers* LinkedShadows = nullptr;
+
 public:
     /// <summary>
     /// Allocates the buffers.
