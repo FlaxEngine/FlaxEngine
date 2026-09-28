@@ -9,16 +9,17 @@
 #include "OpenXRConvert.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Debug/DebugDraw.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Level/LargeWorlds.h"
 #include "Engine/Level/Actors/Camera.h"
 #include "Engine/Platform/Platform.h"
 #include "Engine/Profiler/ProfilerCPU.h"
-#include "Engine/Renderer/RenderList.h"
 #include "Engine/XR/XR.h"
 #include "Engine/XR/XRSettings.h"
 #include <ThirdParty/OpenXR/openxr/openxr_reflection.h>
@@ -150,17 +151,14 @@ namespace
         context->ResetRenderTarget();
     }
 
-    void SetupViewRender(RenderContext& renderContext)
+#if COMPILE_WITH_DEBUG_DRAW
+    void DrawViewDebug(GPUContext* context, RenderContext& renderContext)
     {
-        // Use FXAA instead of TAA
-        // TODO: support temporal anti-aliasing for each eye
-        auto& antiAliasing = renderContext.List->Settings.AntiAliasing;
-        if (antiAliasing.Mode == AntialiasingMode::TemporalAntialiasing)
-        {
-            antiAliasing.Mode = AntialiasingMode::FastApproximateAntialiasing;
-            renderContext.List->Setup.UseTemporalAAJitter = false;
-        }
+        // Draw debug shapes if enabled for the view (eg. via camera render flags)
+        if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::DebugDraw))
+            DebugDraw::Draw(renderContext, renderContext.Task->GetOutputView());
     }
+#endif
 
     void SetMirror(bool enable)
     {
@@ -379,10 +377,18 @@ namespace
             // Create task for rendering the view
             swapchain.Task = New<SceneRenderTask>();
             swapchain.Task->Enabled = false;
-            swapchain.Task->Order = -100; // Render before the main view that is used to mirror the headset image
-            swapchain.Task->SetupRender.Bind(SetupViewRender);
+            swapchain.Task->Order = -100 + (int32)i; // Render before the main view that is used to mirror the headset image (first view goes first)
             if (depthFormat != 0)
                 swapchain.Task->Render.Bind(CopyViewDepth);
+#if COMPILE_WITH_DEBUG_DRAW
+            swapchain.Task->PostRender.Bind(DrawViewDebug);
+#endif
+            if (i > 0)
+            {
+                // Share the effects state (eg. shadow maps, global illumination) and the exposure of the first view so both eyes look the same
+                swapchain.Task->Buffers->LinkedCustomBuffers = Swapchains[0].Task->Buffers;
+                swapchain.Task->Buffers->LinkedEyeAdaptation = Swapchains[0].Task->Buffers;
+            }
             Views[i] = { XR_TYPE_VIEW };
             ProjectionViews[i] = { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW };
             DepthInfos[i] = { XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR };
@@ -638,7 +644,10 @@ void OpenXRSession::Draw()
             view.Mode = camera->RenderMode;
         }
         const Transform pose = origin.LocalToWorld(OpenXRConvert::ToTransform(Views[i].pose));
-        LargeWorlds::UpdateOrigin(view.Origin, pose.Translation);
+        if (i == 0)
+            LargeWorlds::UpdateOrigin(view.Origin, pose.Translation);
+        else
+            view.Origin = Swapchains[0].Task->View.Origin; // Use the same origin in all views to share the shadow maps
         view.Position = pose.Translation - view.Origin;
         view.Direction = pose.GetForward();
         Matrix viewMatrix, projectionMatrix;
@@ -646,12 +655,16 @@ void OpenXRSession::Draw()
         OpenXRConvert::ToProjection(Views[i].fov, view.Near, view.Far, projectionMatrix);
         view.SetUp(viewMatrix, projectionMatrix);
 
-        // Disable motion blur (head movement would blur the whole view)
-        view.Flags &= ~ViewFlags::MotionBlur;
+        // Disable effects that don't work in the head-mounted display (head movement would blur the whole view, focus doesn't follow the eyes, flares differ between the eyes)
+        view.Flags &= ~(ViewFlags::MotionBlur | ViewFlags::DepthOfField | ViewFlags::LensFlares);
 
         // Render to the swapchain image
         task->Output = swapchain.Images[imageIndex];
         task->Enabled = true;
+
+        // Drop the history of the temporal effects if the view was not rendered in the previous frame (eg. headset was taken off)
+        if (task->LastUsedFrame + 1 < Engine::FrameCount)
+            task->IsCameraCut = true;
 
         auto& projectionView = ProjectionViews[i];
         projectionView.pose = Views[i].pose;
