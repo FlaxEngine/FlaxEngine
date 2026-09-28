@@ -48,6 +48,11 @@ public:
     /// </summary>
     static bool SupportsDisplayRefreshRate;
 
+    /// <summary>
+    /// True if the runtime supports the interaction profile of the Steam Frame controllers (XR_VALVE_frame_controller_interaction).
+    /// </summary>
+    static bool SupportsFrameController;
+
 public:
     /// <summary>
     /// Creates the OpenXR instance and gets the head-mounted display system.

@@ -2,12 +2,15 @@
 
 #include "XR.h"
 #include "XRSettings.h"
+#include "XRController.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Level/Actors/Camera.h"
 #if XR_API_OPENXR
 #include "OpenXR/OpenXRInstance.h"
+#include "OpenXR/OpenXRInput.h"
 #include "OpenXR/OpenXRSession.h"
 #endif
 
@@ -82,6 +85,47 @@ float XR::GetDisplayRefreshRate()
 #endif
 }
 
+Transform XR::GetTrackingOrigin()
+{
+    const Camera* camera = Camera::GetMainCamera();
+    return camera ? Transform(camera->GetPosition(), camera->GetOrientation()) : Transform::Identity;
+}
+
+bool XR::GetHeadPose(Transform& pose)
+{
+#if XR_API_OPENXR
+    if (OpenXRSession::IsRunning())
+        return OpenXRInput::GetHeadPose(pose);
+#endif
+    return false;
+}
+
+bool XR::GetHandPose(XRHand hand, XRPoseType type, Transform& pose)
+{
+#if XR_API_OPENXR
+    if (OpenXRSession::IsRunning())
+        return OpenXRInput::GetHandPose(hand, type, pose);
+#endif
+    return false;
+}
+
+void XR::Vibrate(XRHand hand, float amplitude, float duration, float frequency)
+{
+#if XR_API_OPENXR
+    if (OpenXRSession::IsRunning())
+        OpenXRInput::Vibrate(hand, amplitude, duration, frequency);
+#endif
+}
+
+Gamepad* XR::GetGamepad()
+{
+#if XR_API_OPENXR
+    return OpenXRInput::GetGamepad();
+#else
+    return nullptr;
+#endif
+}
+
 bool XRService::Init()
 {
     // Check if use XR
@@ -108,6 +152,7 @@ void XRService::Update()
 #if XR_API_OPENXR
     OpenXRSession::Update();
 #endif
+    XRController::UpdateAll();
 }
 
 void XRService::Draw()
@@ -115,6 +160,9 @@ void XRService::Draw()
 #if XR_API_OPENXR
     OpenXRSession::Draw();
 #endif
+
+    // Use the latest poses for rendering
+    XRController::UpdateAll();
 }
 
 void XRService::BeforeExit()

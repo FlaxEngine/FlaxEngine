@@ -3,6 +3,7 @@
 #if XR_API_OPENXR
 
 #include "OpenXRInstance.h"
+#include "OpenXRInput.h"
 #include "OpenXRGraphicsD3D11.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
@@ -18,6 +19,10 @@ String OpenXRInstance::RuntimeVersion;
 String OpenXRInstance::SystemName;
 bool OpenXRInstance::SupportsDepthLayer = false;
 bool OpenXRInstance::SupportsDisplayRefreshRate = false;
+bool OpenXRInstance::SupportsFrameController = false;
+
+// Not included in the OpenXR SDK headers yet
+#define OPENXR_VALVE_FRAME_CONTROLLER_INTERACTION_EXTENSION_NAME "XR_VALVE_frame_controller_interaction"
 
 namespace
 {
@@ -64,6 +69,9 @@ bool OpenXRInstance::Init()
     SupportsDisplayRefreshRate = HasExtension(extensions, XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME);
     if (SupportsDisplayRefreshRate)
         enabledExtensions.Add(XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME);
+    SupportsFrameController = HasExtension(extensions, OPENXR_VALVE_FRAME_CONTROLLER_INTERACTION_EXTENSION_NAME);
+    if (SupportsFrameController)
+        enabledExtensions.Add(OPENXR_VALVE_FRAME_CONTROLLER_INTERACTION_EXTENSION_NAME);
 
     // Engine registration
     XrInstanceCreateInfo createInfo = { XR_TYPE_INSTANCE_CREATE_INFO };
@@ -140,6 +148,7 @@ bool OpenXRInstance::InitSystem()
 
 void OpenXRInstance::Dispose()
 {
+    OpenXRInput::Dispose();
     if (Instance != XR_NULL_HANDLE)
     {
         xrDestroyInstance(Instance);
@@ -151,6 +160,7 @@ void OpenXRInstance::Dispose()
     SystemName.Clear();
     SupportsDepthLayer = false;
     SupportsDisplayRefreshRate = false;
+    SupportsFrameController = false;
 }
 
 bool OpenXRInstance::IsReady()

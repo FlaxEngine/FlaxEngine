@@ -4,6 +4,7 @@
 
 #include "OpenXRSession.h"
 #include "OpenXRInstance.h"
+#include "OpenXRInput.h"
 #include "OpenXRGraphicsD3D11.h"
 #include "OpenXRConvert.h"
 #include "Engine/Core/Log.h"
@@ -18,6 +19,7 @@
 #include "Engine/Platform/Platform.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/XR/XR.h"
 #include "Engine/XR/XRSettings.h"
 #include <ThirdParty/OpenXR/openxr/openxr_reflection.h>
 
@@ -200,6 +202,7 @@ namespace
         ProjectionViews.Clear();
         DepthInfos.Clear();
         GetDisplayRefreshRateFB = nullptr;
+        OpenXRInput::DisposeSession();
         if (Space != XR_NULL_HANDLE)
         {
             xrDestroySpace(Space);
@@ -266,6 +269,11 @@ namespace
             DestroySession();
             return true;
         }
+
+        // Setup controllers input (session can be used without it)
+        if (!OpenXRInput::IsInitialized())
+            OpenXRInput::Init(instance);
+        OpenXRInput::InitSession(Session, Space);
 
         // Get environment blend mode
         uint32 blendModesCount = 0;
@@ -564,6 +572,9 @@ void OpenXRSession::Update()
             LOG(Info, "OpenXR display refresh rate changed to {0} Hz", refreshRateChanged.toDisplayRefreshRate);
             break;
         }
+        case XR_TYPE_EVENT_DATA_INTERACTION_PROFILE_CHANGED:
+            OpenXRInput::LogInteractionProfiles();
+            break;
         default:
             break;
         }
@@ -599,10 +610,11 @@ void OpenXRSession::Draw()
     if (XR_FAILED(result) || (viewState.viewStateFlags & XR_VIEW_STATE_ORIENTATION_VALID_BIT) == 0)
         return;
 
-    // Use the main camera as the tracking space origin
-    // TODO: add XR rig actor to control the tracking space origin
+    // Locate controllers again for rendering
+    OpenXRInput::LocatePoses(FrameState.predictedDisplayTime);
+
     const Camera* camera = Camera::GetMainCamera();
-    const Transform origin = camera ? Transform(camera->GetPosition(), camera->GetOrientation()) : Transform::Identity;
+    const Transform origin = XR::GetTrackingOrigin();
 
     // Render each view
     for (int32 i = 0; i < Swapchains.Count(); i++)
@@ -691,6 +703,10 @@ void OpenXRSession::WaitFrame()
     XrFrameWaitInfo waitInfo = { XR_TYPE_FRAME_WAIT_INFO };
     const XrResult result = xrWaitFrame(Session, &waitInfo, &FrameState);
     IsFrameWaited = XR_SUCCEEDED(result);
+
+    // Get controllers input for the frame
+    if (IsFrameWaited)
+        OpenXRInput::Update(FrameState.predictedDisplayTime);
 }
 
 void OpenXRSession::Dispose()
