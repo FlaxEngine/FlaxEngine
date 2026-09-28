@@ -6,12 +6,18 @@
 #include "OpenXRInstance.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Graphics/Config.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUResourceAccess.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
 #if GRAPHICS_API_DIRECTX11
 #include "OpenXRGraphicsD3D11.h"
 #endif
 #if GRAPHICS_API_DIRECTX12
 #include "OpenXRGraphicsD3D12.h"
+#endif
+#if GRAPHICS_API_VULKAN
+#include "OpenXRGraphicsVulkan.h"
 #endif
 
 namespace
@@ -41,6 +47,9 @@ bool OpenXRGraphics::Init(const Array<XrExtensionProperties>& extensions, Array<
 #endif
 #if GRAPHICS_API_DIRECTX12
     AddBackend(New<OpenXRGraphicsD3D12>(), extensions, enabledExtensions);
+#endif
+#if GRAPHICS_API_VULKAN
+    AddBackend(New<OpenXRGraphicsVulkan>(), extensions, enabledExtensions);
 #endif
     return Backends.IsEmpty();
 }
@@ -111,6 +120,11 @@ PixelFormat OpenXRGraphics::SelectDepthSwapchainFormat(const Array<int64>& forma
 {
     const PixelFormat format = GPU_DEPTH_BUFFER_PIXEL_FORMAT;
     return formats.Contains(ToNativeFormat(format)) ? format : PixelFormat::Unknown;
+}
+
+void OpenXRGraphics::TransitionImage(GPUContext* context, GPUTexture* image) const
+{
+    context->Transition(image, image->IsDepthStencil() ? GPUResourceAccess::DepthWrite : GPUResourceAccess::RenderTarget);
 }
 
 #endif

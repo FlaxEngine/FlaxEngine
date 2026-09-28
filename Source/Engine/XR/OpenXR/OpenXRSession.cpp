@@ -12,7 +12,7 @@
 #include "Engine/Debug/DebugDraw.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/GPUContext.h"
-#include "Engine/Graphics/GPUResourceAccess.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -139,10 +139,11 @@ namespace
                 continue;
 
             // Return the swapchain images to the runtime in the render target (or depth write) state
+            const OpenXRGraphics* graphics = OpenXRGraphics::Get();
             if (swapchain.Task->Output)
-                context->Transition(swapchain.Task->Output, GPUResourceAccess::RenderTarget);
+                graphics->TransitionImage(context, swapchain.Task->Output);
             if (swapchain.DepthOutput)
-                context->Transition(swapchain.DepthOutput, GPUResourceAccess::DepthWrite);
+                graphics->TransitionImage(context, swapchain.DepthOutput);
             break;
         }
     }
@@ -168,7 +169,7 @@ namespace
         context->Draw(image);
         context->ResetSR(); // The eye image is used as render target in the next frames
         context->ResetRenderTarget();
-        context->Transition(image, GPUResourceAccess::RenderTarget);
+        OpenXRGraphics::Get()->TransitionImage(context, image);
     }
 
     void SetupProxyView()
@@ -410,6 +411,8 @@ namespace
             auto& swapchain = Swapchains[i];
             XrSwapchainCreateInfo swapchainInfo = { XR_TYPE_SWAPCHAIN_CREATE_INFO };
             swapchainInfo.usageFlags = XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT | XR_SWAPCHAIN_USAGE_SAMPLED_BIT;
+            if (PixelFormatExtensions::IsSRGB(format))
+                swapchainInfo.usageFlags |= XR_SWAPCHAIN_USAGE_MUTABLE_FORMAT_BIT; // Rendered through the non-sRGB view
             swapchainInfo.format = graphics->ToNativeFormat(format);
             swapchainInfo.sampleCount = 1;
             swapchainInfo.width = (uint32)Math::Clamp(Math::RoundToInt((float)configViews[i].recommendedImageRectWidth * renderScale), 1, (int32)configViews[i].maxImageRectWidth);
@@ -600,7 +603,9 @@ namespace
         IsFrameBegun = false;
         SetMirror(false);
 
-        // Release swapchain images
+        // Release swapchain images (rendering commands have to be submitted before)
+        if (HasProjectionLayer)
+            OpenXRGraphics::Get()->Submit();
         for (int32 i = 0; i < Swapchains.Count(); i++)
         {
             auto& swapchain = Swapchains[i];

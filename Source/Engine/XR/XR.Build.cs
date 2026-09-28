@@ -31,6 +31,11 @@ public class XR : EngineModule
                 var windowsToolchain = options.Toolchain as Flax.Build.Platforms.WindowsToolchain;
                 if (windowsToolchain != null && windowsToolchain.SDK != Flax.Build.Platforms.WindowsPlatformSDK.v8_1)
                     options.PrivateDependencies.Add("GraphicsDeviceDX12");
+                if (VulkanSdk.Instance.IsValid)
+                {
+                    options.PrivateDependencies.Add("GraphicsDeviceVulkan");
+                    options.PrivateDependencies.Add("volk");
+                }
             }
             break;
         default:

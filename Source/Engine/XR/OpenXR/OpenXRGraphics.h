@@ -10,6 +10,7 @@
 #include "Engine/Graphics/Textures/GPUTextureDescription.h"
 #include <ThirdParty/OpenXR/openxr/openxr.h>
 
+class GPUContext;
 class GPUTexture;
 
 /// <summary>
@@ -105,6 +106,27 @@ public:
     /// <returns>True if failed, otherwise false.</returns>
     virtual bool InitSwapchainImages(XrSwapchain swapchain, PixelFormat format, int32 width, int32 height, GPUTextureFlags flags, Array<GPUTexture*>& images) = 0;
 
+    /// <summary>
+    /// Selects the depth swapchain format from the formats supported by the runtime. The format matches the engine depth buffer so it can be copied.
+    /// </summary>
+    /// <param name="formats">The native formats supported by the runtime.</param>
+    /// <returns>The selected format, or unknown if the runtime doesn't support it.</returns>
+    virtual PixelFormat SelectDepthSwapchainFormat(const Array<int64>& formats) const;
+
+    /// <summary>
+    /// Transitions the swapchain image into the state required by the runtime when the image is released (render target or depth write).
+    /// </summary>
+    /// <param name="context">The GPU context.</param>
+    /// <param name="image">The swapchain image.</param>
+    virtual void TransitionImage(GPUContext* context, GPUTexture* image) const;
+
+    /// <summary>
+    /// Submits the recorded rendering commands to the graphics queue used by the runtime (called before the swapchain images are released).
+    /// </summary>
+    virtual void Submit() const
+    {
+    }
+
 public:
     /// <summary>
     /// Selects the swapchain format from the formats supported by the runtime.
@@ -112,13 +134,6 @@ public:
     /// <param name="formats">The native formats supported by the runtime.</param>
     /// <returns>The selected format, or unknown if the runtime doesn't support any of the formats used by the engine.</returns>
     PixelFormat SelectSwapchainFormat(const Array<int64>& formats) const;
-
-    /// <summary>
-    /// Selects the depth swapchain format from the formats supported by the runtime. The format matches the engine depth buffer so it can be copied.
-    /// </summary>
-    /// <param name="formats">The native formats supported by the runtime.</param>
-    /// <returns>The selected format, or unknown if the runtime doesn't support it.</returns>
-    PixelFormat SelectDepthSwapchainFormat(const Array<int64>& formats) const;
 };
 
 #endif
