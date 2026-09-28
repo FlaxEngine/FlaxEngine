@@ -15,7 +15,7 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
 
 public:
     /// <summary>
-    /// If checked, the game connects to the XR runtime (eg. SteamVR) on startup to use the head-mounted display. Can be overridden with the -xr and -noxr command line options.
+    /// If checked, the game connects to the XR runtime (eg. SteamVR) on startup to use the head-mounted display. Can be overridden with the -xr and -noxr command line options. In the editor the head-mounted display is used only in play mode and changing this option requires restarting the editor.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"General\")")
     bool Enabled = false;

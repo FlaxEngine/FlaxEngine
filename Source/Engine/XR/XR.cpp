@@ -31,6 +31,11 @@ public:
 
 XRService XRServiceInstance;
 
+namespace
+{
+    bool SessionEnabled = !USE_EDITOR;
+}
+
 bool XR::IsAvailable()
 {
 #if XR_API_OPENXR
@@ -47,6 +52,16 @@ bool XR::IsActive()
 #else
     return false;
 #endif
+}
+
+bool XR::GetSessionEnabled()
+{
+    return SessionEnabled;
+}
+
+void XR::SetSessionEnabled(bool value)
+{
+    SessionEnabled = value;
 }
 
 StringView XR::GetRuntimeName()

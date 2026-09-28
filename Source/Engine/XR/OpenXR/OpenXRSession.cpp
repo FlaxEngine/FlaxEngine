@@ -59,6 +59,8 @@ namespace
     XrFrameState FrameState = { XR_TYPE_FRAME_STATE };
     bool IsSessionRunning = false;
     bool IsSessionExiting = false;
+    bool IsExitRequested = false;
+    bool WasSessionEnabled = false;
     bool IsFrameWaited = false;
     bool IsFrameBegun = false;
     bool HasProjectionLayer = false;
@@ -289,9 +291,19 @@ namespace
         {
             xrDestroySession(Session);
             Session = XR_NULL_HANDLE;
+            LOG(Info, "OpenXR session destroyed");
         }
         IsFrameBegun = false;
         HasProjectionLayer = false;
+        IsExitRequested = false;
+    }
+
+    void RequestExit()
+    {
+        // End the session (the frame loop runs until the runtime stops the session)
+        IsExitRequested = true;
+        if (!IsSessionRunning || XR_FAILED(xrRequestExitSession(Session)))
+            DestroySession();
     }
 
     bool CreateSession()
@@ -579,9 +591,10 @@ namespace
             NextCreateTime = Platform::GetTimeSeconds() + OPENXR_SESSION_RETRY_INTERVAL;
             break;
         case XR_SESSION_STATE_EXITING:
-            // Runtime requested to exit (eg. user closed the app from the runtime dashboard)
+            // Runtime requested to exit (eg. user closed the app from the runtime dashboard) unless the session was ended by the app
+            if (!IsExitRequested)
+                IsSessionExiting = true;
             DestroySession();
-            IsSessionExiting = true;
             break;
         default:
             break;
@@ -678,12 +691,26 @@ void OpenXRSession::Update()
         event = { XR_TYPE_EVENT_DATA_BUFFER };
     }
 
+    // Start or end the session when it gets enabled or disabled (eg. by the editor play mode)
+    const bool isSessionEnabled = XR::GetSessionEnabled();
+    if (isSessionEnabled != WasSessionEnabled)
+    {
+        WasSessionEnabled = isSessionEnabled;
+        IsSessionExiting = false;
+        NextCreateTime = 0.0;
+    }
+    if (!isSessionEnabled && Session != XR_NULL_HANDLE && !IsExitRequested)
+        RequestExit();
+
     // Create session once the head-mounted display is available
     const double time = Platform::GetTimeSeconds();
     if (Session == XR_NULL_HANDLE && !IsSessionExiting && time >= NextCreateTime)
     {
         NextCreateTime = time + OPENXR_SESSION_RETRY_INTERVAL;
-        CreateSession();
+        if (isSessionEnabled)
+            CreateSession();
+        else if (OpenXRInstance::SystemId == XR_NULL_SYSTEM_ID)
+            OpenXRInstance::InitSystem(); // Check if the headset got connected
     }
 }
 
@@ -693,7 +720,7 @@ void OpenXRSession::Draw()
         return;
     PROFILE_CPU();
     IsFrameWaited = false;
-    if (!BeginFrame() || !FrameState.shouldRender)
+    if (!BeginFrame() || !FrameState.shouldRender || IsExitRequested)
         return;
 
     // Locate views at the predicted display time
@@ -819,6 +846,7 @@ void OpenXRSession::Dispose()
 {
     DestroySession();
     IsSessionExiting = false;
+    WasSessionEnabled = false;
     CreateFailedLogged = false;
     NextCreateTime = 0.0;
 }

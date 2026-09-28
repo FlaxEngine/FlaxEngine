@@ -61,6 +61,18 @@ public:
     API_PROPERTY() static bool IsActive();
 
     /// <summary>
+    /// Gets a value indicating whether the XR session can be started to render to the head-mounted display. Enabled by default in the game. In the editor it's enabled only in play mode (if Play in VR is checked).
+    /// </summary>
+    /// <returns>True if the XR session can be started, otherwise false.</returns>
+    API_PROPERTY() static bool GetSessionEnabled();
+
+    /// <summary>
+    /// Sets a value indicating whether the XR session can be started to render to the head-mounted display. Disabling it ends the running session but the XR runtime stays connected, so the session can be started again later.
+    /// </summary>
+    /// <param name="value">True if the XR session can be started, otherwise false.</param>
+    API_PROPERTY() static void SetSessionEnabled(bool value);
+
+    /// <summary>
     /// Gets the name of the XR runtime (eg. SteamVR/OpenXR). Empty if no runtime was found.
     /// </summary>
     /// <returns>The runtime name.</returns>
