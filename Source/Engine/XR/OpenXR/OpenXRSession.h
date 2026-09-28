@@ -40,6 +40,12 @@ public:
     /// </summary>
     /// <returns>True if running, otherwise false.</returns>
     static bool IsRunning();
+
+    /// <summary>
+    /// Gets the refresh rate of the head-mounted display.
+    /// </summary>
+    /// <returns>The display refresh rate (in Hz). Zero if the session is not running.</returns>
+    static float GetDisplayRefreshRate();
 };
 
 #endif

@@ -26,6 +26,18 @@ public:
     API_FIELD(Attributes="EditorOrder(100), Limit(0.1f, 2.0f, 0.01f), EditorDisplay(\"Rendering\")")
     float RenderScale = 1.0f;
 
+    /// <summary>
+    /// If checked, the depth buffer is submitted to the XR runtime together with the headset image. It improves the reprojection of the image when the head moves or the frame rate drops. Requires the runtime support for XR_KHR_composition_layer_depth.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(110), EditorDisplay(\"Rendering\")")
+    bool SubmitDepth = true;
+
+    /// <summary>
+    /// The display refresh rate (in Hz) requested from the head-mounted display. The closest rate supported by the headset is used. Use 0 to keep the rate set in the XR runtime. Requires the runtime support for XR_FB_display_refresh_rate. Some runtimes (eg. SteamVR) support only the rate selected in the runtime settings.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(120), Limit(0, 1000), EditorDisplay(\"Rendering\")")
+    float DisplayRefreshRate = 0.0f;
+
 public:
     /// <summary>
     /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.

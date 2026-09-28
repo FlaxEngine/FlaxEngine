@@ -42,4 +42,10 @@ public:
     /// </summary>
     /// <returns>The system name.</returns>
     API_PROPERTY() static StringView GetSystemName();
+
+    /// <summary>
+    /// Gets the refresh rate (in Hz) of the head-mounted display. Zero if XR is not active.
+    /// </summary>
+    /// <returns>The display refresh rate.</returns>
+    API_PROPERTY() static float GetDisplayRefreshRate();
 };

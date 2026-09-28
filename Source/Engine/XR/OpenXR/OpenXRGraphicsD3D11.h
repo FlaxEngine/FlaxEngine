@@ -5,6 +5,7 @@
 #if XR_API_OPENXR
 
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Graphics/Textures/GPUTextureDescription.h"
 #include <ThirdParty/OpenXR/openxr/openxr.h>
 
 class GPUTexture;
@@ -43,15 +44,23 @@ public:
     static int64 SelectSwapchainFormat(const Array<int64>& formats);
 
     /// <summary>
+    /// Selects the depth swapchain format from the formats supported by the runtime. The format matches the engine depth buffer so it can be copied.
+    /// </summary>
+    /// <param name="formats">The formats supported by the runtime.</param>
+    /// <returns>The selected format, or 0 if the runtime doesn't support it.</returns>
+    static int64 SelectDepthSwapchainFormat(const Array<int64>& formats);
+
+    /// <summary>
     /// Gets the swapchain images and creates the textures for them.
     /// </summary>
     /// <param name="swapchain">The swapchain.</param>
     /// <param name="format">The swapchain format.</param>
     /// <param name="width">The swapchain width.</param>
     /// <param name="height">The swapchain height.</param>
+    /// <param name="flags">The texture flags.</param>
     /// <param name="images">The output textures.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    static bool InitSwapchainImages(XrSwapchain swapchain, int64 format, int32 width, int32 height, Array<GPUTexture*>& images);
+    static bool InitSwapchainImages(XrSwapchain swapchain, int64 format, int32 width, int32 height, GPUTextureFlags flags, Array<GPUTexture*>& images);
 };
 
 #endif

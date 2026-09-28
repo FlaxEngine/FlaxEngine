@@ -16,10 +16,22 @@ XrSystemId OpenXRInstance::SystemId = XR_NULL_SYSTEM_ID;
 String OpenXRInstance::RuntimeName;
 String OpenXRInstance::RuntimeVersion;
 String OpenXRInstance::SystemName;
+bool OpenXRInstance::SupportsDepthLayer = false;
+bool OpenXRInstance::SupportsDisplayRefreshRate = false;
 
 namespace
 {
     bool SystemNotFoundLogged = false;
+
+    bool HasExtension(const Array<XrExtensionProperties>& extensions, const char* name)
+    {
+        for (const auto& extension : extensions)
+        {
+            if (StringUtils::Compare(extension.extensionName, name) == 0)
+                return true;
+        }
+        return false;
+    }
 }
 
 bool OpenXRInstance::Init()
@@ -37,31 +49,31 @@ bool OpenXRInstance::Init()
     for (auto& extension : extensions)
         extension = { XR_TYPE_EXTENSION_PROPERTIES };
     xrEnumerateInstanceExtensionProperties(nullptr, extensionsCount, &extensionsCount, extensions.Get());
-    bool hasGraphicsExtension = false;
-    for (const auto& extension : extensions)
-    {
-        if (StringUtils::Compare(extension.extensionName, OpenXRGraphicsD3D11::ExtensionName) == 0)
-        {
-            hasGraphicsExtension = true;
-            break;
-        }
-    }
-    if (!hasGraphicsExtension)
+    if (!HasExtension(extensions, OpenXRGraphicsD3D11::ExtensionName))
     {
         LOG(Info, "XR unavailable (missing {0} extension)", String(OpenXRGraphicsD3D11::ExtensionName));
         return true;
     }
 
+    // Use optional extensions if supported by the runtime
+    Array<const char*, InlinedAllocation<4>> enabledExtensions;
+    enabledExtensions.Add(OpenXRGraphicsD3D11::ExtensionName);
+    SupportsDepthLayer = HasExtension(extensions, XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME);
+    if (SupportsDepthLayer)
+        enabledExtensions.Add(XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME);
+    SupportsDisplayRefreshRate = HasExtension(extensions, XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME);
+    if (SupportsDisplayRefreshRate)
+        enabledExtensions.Add(XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME);
+
     // Engine registration
-    const char* enabledExtensions[] = { OpenXRGraphicsD3D11::ExtensionName };
     XrInstanceCreateInfo createInfo = { XR_TYPE_INSTANCE_CREATE_INFO };
     StringUtils::Copy(createInfo.applicationInfo.applicationName, *Globals::ProductName, XR_MAX_APPLICATION_NAME_SIZE - 1);
     createInfo.applicationInfo.applicationVersion = 1;
     StringUtils::Copy(createInfo.applicationInfo.engineName, TEXT("Flax"), XR_MAX_ENGINE_NAME_SIZE - 1);
     createInfo.applicationInfo.engineVersion = FLAXENGINE_VERSION_BUILD;
     createInfo.applicationInfo.apiVersion = XR_API_VERSION_1_0;
-    createInfo.enabledExtensionCount = ARRAY_COUNT(enabledExtensions);
-    createInfo.enabledExtensionNames = enabledExtensions;
+    createInfo.enabledExtensionCount = (uint32)enabledExtensions.Count();
+    createInfo.enabledExtensionNames = enabledExtensions.Get();
 
     // Create OpenXR instance (fails if there is no active runtime)
     result = xrCreateInstance(&createInfo, &Instance);
@@ -137,6 +149,8 @@ void OpenXRInstance::Dispose()
     RuntimeName.Clear();
     RuntimeVersion.Clear();
     SystemName.Clear();
+    SupportsDepthLayer = false;
+    SupportsDisplayRefreshRate = false;
 }
 
 bool OpenXRInstance::IsReady()

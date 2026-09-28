@@ -38,6 +38,16 @@ public:
     /// </summary>
     static String SystemName;
 
+    /// <summary>
+    /// True if the runtime supports submitting the depth buffer with the projection layer (XR_KHR_composition_layer_depth).
+    /// </summary>
+    static bool SupportsDepthLayer;
+
+    /// <summary>
+    /// True if the runtime supports getting and changing the display refresh rate (XR_FB_display_refresh_rate).
+    /// </summary>
+    static bool SupportsDisplayRefreshRate;
+
 public:
     /// <summary>
     /// Creates the OpenXR instance and gets the head-mounted display system.

@@ -73,6 +73,15 @@ StringView XR::GetSystemName()
 #endif
 }
 
+float XR::GetDisplayRefreshRate()
+{
+#if XR_API_OPENXR
+    return OpenXRSession::GetDisplayRefreshRate();
+#else
+    return 0.0f;
+#endif
+}
+
 bool XRService::Init()
 {
     // Check if use XR

@@ -10,6 +10,7 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Level/LargeWorlds.h"
@@ -28,10 +29,15 @@ namespace
     struct Swapchain
     {
         XrSwapchain Handle = XR_NULL_HANDLE;
+        XrSwapchain DepthHandle = XR_NULL_HANDLE;
         int32 Width = 0;
         int32 Height = 0;
         bool IsAcquired = false;
+        bool IsDepthAcquired = false;
+        bool HasDepth = false;
         Array<GPUTexture*> Images;
+        Array<GPUTexture*> DepthImages;
+        GPUTexture* DepthOutput = nullptr;
         SceneRenderTask* Task = nullptr;
     };
 
@@ -42,6 +48,8 @@ namespace
     Array<Swapchain> Swapchains;
     Array<XrView> Views;
     Array<XrCompositionLayerProjectionView> ProjectionViews;
+    Array<XrCompositionLayerDepthInfoKHR> DepthInfos;
+    PFN_xrGetDisplayRefreshRateFB GetDisplayRefreshRateFB = nullptr;
     XrFrameState FrameState = { XR_TYPE_FRAME_STATE };
     bool IsSessionRunning = false;
     bool IsSessionExiting = false;
@@ -72,6 +80,49 @@ namespace
         IsSessionRunning = false;
         IsFrameWaited = false;
         Engine::FramePacer.Unbind();
+    }
+
+    bool AcquireImage(XrSwapchain swapchain, bool& isAcquired, uint32& imageIndex)
+    {
+        XrSwapchainImageAcquireInfo acquireInfo = { XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO };
+        XrResult result = xrAcquireSwapchainImage(swapchain, &acquireInfo, &imageIndex);
+        if (XR_FAILED(result))
+            return true;
+        isAcquired = true;
+        PROFILE_CPU_NAMED("xrWaitSwapchainImage");
+        XrSwapchainImageWaitInfo waitInfo = { XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO };
+        waitInfo.timeout = XR_INFINITE_DURATION;
+        result = xrWaitSwapchainImage(swapchain, &waitInfo);
+        return XR_FAILED(result);
+    }
+
+    void ReleaseImage(XrSwapchain swapchain, bool& isAcquired)
+    {
+        if (!isAcquired)
+            return;
+        isAcquired = false;
+        XrSwapchainImageReleaseInfo releaseInfo = { XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO };
+        xrReleaseSwapchainImage(swapchain, &releaseInfo);
+    }
+
+    void CopyViewDepth(RenderTask* task, GPUContext* context)
+    {
+        for (auto& swapchain : Swapchains)
+        {
+            if (swapchain.Task != task)
+                continue;
+
+            // Copy the scene depth to the depth swapchain image
+            GPUTexture* depthBuffer = swapchain.Task->Buffers->DepthBuffer;
+            GPUTexture* depthOutput = swapchain.DepthOutput;
+            if (depthOutput && depthBuffer->Size() == depthOutput->Size() && depthBuffer->Format() == depthOutput->Format())
+            {
+                PROFILE_CPU_NAMED("XR.CopyDepth");
+                context->CopyResource(depthOutput, depthBuffer);
+                swapchain.HasDepth = true;
+            }
+            break;
+        }
     }
 
     void DrawMirror(RenderTask* task, GPUContext* context)
@@ -138,12 +189,17 @@ namespace
         {
             SAFE_DELETE(swapchain.Task);
             SAFE_DELETE_GPU_RESOURCES(swapchain.Images);
+            SAFE_DELETE_GPU_RESOURCES(swapchain.DepthImages);
             if (swapchain.Handle != XR_NULL_HANDLE)
                 xrDestroySwapchain(swapchain.Handle);
+            if (swapchain.DepthHandle != XR_NULL_HANDLE)
+                xrDestroySwapchain(swapchain.DepthHandle);
         }
         Swapchains.Clear();
         Views.Clear();
         ProjectionViews.Clear();
+        DepthInfos.Clear();
+        GetDisplayRefreshRateFB = nullptr;
         if (Space != XR_NULL_HANDLE)
         {
             xrDestroySpace(Space);
@@ -256,12 +312,14 @@ namespace
             return true;
         }
         const int64 format = OpenXRGraphicsD3D11::SelectSwapchainFormat(formats);
+        const int64 depthFormat = XRSettings::Get()->SubmitDepth && OpenXRInstance::SupportsDepthLayer ? OpenXRGraphicsD3D11::SelectDepthSwapchainFormat(formats) : 0;
 
         // Create swapchain for each view
         const float renderScale = XRSettings::Get()->RenderScale;
         Swapchains.Resize(viewsCount);
         Views.Resize(viewsCount);
         ProjectionViews.Resize(viewsCount);
+        DepthInfos.Resize(viewsCount);
         for (uint32 i = 0; i < viewsCount; i++)
         {
             auto& swapchain = Swapchains[i];
@@ -284,10 +342,30 @@ namespace
             }
             swapchain.Width = (int32)swapchainInfo.width;
             swapchain.Height = (int32)swapchainInfo.height;
-            if (OpenXRGraphicsD3D11::InitSwapchainImages(swapchain.Handle, format, swapchain.Width, swapchain.Height, swapchain.Images))
+            if (OpenXRGraphicsD3D11::InitSwapchainImages(swapchain.Handle, format, swapchain.Width, swapchain.Height, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget, swapchain.Images))
             {
                 DestroySession();
                 return true;
+            }
+
+            // Create depth swapchain for the view (used by the runtime to improve the reprojection)
+            if (depthFormat != 0)
+            {
+                swapchainInfo.usageFlags = XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+                swapchainInfo.format = depthFormat;
+                result = xrCreateSwapchain(Session, &swapchainInfo, &swapchain.DepthHandle);
+                if (XR_FAILED(result))
+                {
+                    LOG(Warning, "Failed to create OpenXR depth swapchain ({0})", OpenXRInstance::GetResultString(result));
+                    swapchain.DepthHandle = XR_NULL_HANDLE;
+                    DestroySession();
+                    return true;
+                }
+                if (OpenXRGraphicsD3D11::InitSwapchainImages(swapchain.DepthHandle, depthFormat, swapchain.Width, swapchain.Height, GPUTextureFlags::DepthStencil, swapchain.DepthImages))
+                {
+                    DestroySession();
+                    return true;
+                }
             }
 
             // Create task for rendering the view
@@ -295,12 +373,73 @@ namespace
             swapchain.Task->Enabled = false;
             swapchain.Task->Order = -100; // Render before the main view that is used to mirror the headset image
             swapchain.Task->SetupRender.Bind(SetupViewRender);
+            if (depthFormat != 0)
+                swapchain.Task->Render.Bind(CopyViewDepth);
             Views[i] = { XR_TYPE_VIEW };
             ProjectionViews[i] = { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW };
+            DepthInfos[i] = { XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR };
         }
 
-        LOG(Info, "OpenXR session created. Views: {0}, Size: {1}x{2}, Format: {3}, Reference Space: {4}", viewsCount, Swapchains[0].Width, Swapchains[0].Height, format, spaceInfo.referenceSpaceType == XR_REFERENCE_SPACE_TYPE_STAGE ? TEXT("Stage") : TEXT("Local"));
+        LOG(Info, "OpenXR session created. Views: {0}, Size: {1}x{2}, Format: {3}, Depth Format: {4}, Reference Space: {5}", viewsCount, Swapchains[0].Width, Swapchains[0].Height, format, depthFormat, spaceInfo.referenceSpaceType == XR_REFERENCE_SPACE_TYPE_STAGE ? TEXT("Stage") : TEXT("Local"));
         return false;
+    }
+
+    void InitDisplayRefreshRate()
+    {
+        // Get extension functions
+        const XrInstance instance = OpenXRInstance::Instance;
+        PFN_xrEnumerateDisplayRefreshRatesFB enumerateDisplayRefreshRates = nullptr;
+        PFN_xrRequestDisplayRefreshRateFB requestDisplayRefreshRate = nullptr;
+        xrGetInstanceProcAddr(instance, "xrGetDisplayRefreshRateFB", (PFN_xrVoidFunction*)&GetDisplayRefreshRateFB);
+        xrGetInstanceProcAddr(instance, "xrEnumerateDisplayRefreshRatesFB", (PFN_xrVoidFunction*)&enumerateDisplayRefreshRates);
+        xrGetInstanceProcAddr(instance, "xrRequestDisplayRefreshRateFB", (PFN_xrVoidFunction*)&requestDisplayRefreshRate);
+        if (GetDisplayRefreshRateFB == nullptr || enumerateDisplayRefreshRates == nullptr || requestDisplayRefreshRate == nullptr)
+        {
+            GetDisplayRefreshRateFB = nullptr;
+            return;
+        }
+
+        // Get refresh rates supported by the headset
+        uint32 ratesCount = 0;
+        Array<float> rates;
+        XrResult result = enumerateDisplayRefreshRates(Session, 0, &ratesCount, nullptr);
+        if (XR_SUCCEEDED(result))
+        {
+            rates.Resize(ratesCount);
+            result = enumerateDisplayRefreshRates(Session, ratesCount, &ratesCount, rates.Get());
+        }
+        float rate = 0.0f;
+        if (XR_SUCCEEDED(result))
+            result = GetDisplayRefreshRateFB(Session, &rate);
+        if (XR_FAILED(result) || rates.IsEmpty())
+        {
+            LOG(Warning, "Failed to get OpenXR display refresh rates ({0})", OpenXRInstance::GetResultString(result));
+            return;
+        }
+        String ratesText;
+        for (const float e : rates)
+        {
+            if (ratesText.HasChars())
+                ratesText += TEXT(", ");
+            ratesText += String::Format(TEXT("{0}"), e);
+        }
+        LOG(Info, "OpenXR display refresh rate: {0} Hz, Supported: {1}", rate, ratesText);
+
+        // Request the refresh rate from the settings (use the closest one supported by the headset)
+        const float requestedRate = XRSettings::Get()->DisplayRefreshRate;
+        if (requestedRate <= 0.0f)
+            return;
+        float closestRate = rates[0];
+        for (const float e : rates)
+        {
+            if (Math::Abs(e - requestedRate) < Math::Abs(closestRate - requestedRate))
+                closestRate = e;
+        }
+        if (Math::NearEqual(closestRate, rate))
+            return;
+        result = requestDisplayRefreshRate(Session, closestRate);
+        if (XR_FAILED(result))
+            LOG(Warning, "Failed to request OpenXR display refresh rate {0} Hz ({1})", closestRate, OpenXRInstance::GetResultString(result));
     }
 
     void OnSessionStateChanged(XrSessionState state)
@@ -321,6 +460,8 @@ namespace
             }
             IsSessionRunning = true;
             Engine::FramePacer.Bind<&OpenXRSession::WaitFrame>();
+            if (OpenXRInstance::SupportsDisplayRefreshRate)
+                InitDisplayRefreshRate();
             break;
         }
         case XR_SESSION_STATE_STOPPING:
@@ -346,6 +487,7 @@ namespace
 
     bool BeginFrame()
     {
+        PROFILE_CPU_NAMED("xrBeginFrame");
         XrFrameBeginInfo beginInfo = { XR_TYPE_FRAME_BEGIN_INFO };
         const XrResult result = xrBeginFrame(Session, &beginInfo);
         IsFrameBegun = XR_SUCCEEDED(result);
@@ -359,16 +501,18 @@ namespace
         SetMirror(false);
 
         // Release swapchain images
-        for (auto& swapchain : Swapchains)
+        for (int32 i = 0; i < Swapchains.Count(); i++)
         {
+            auto& swapchain = Swapchains[i];
             swapchain.Task->Enabled = false;
             swapchain.Task->Output = nullptr;
-            if (swapchain.IsAcquired)
-            {
-                swapchain.IsAcquired = false;
-                XrSwapchainImageReleaseInfo releaseInfo = { XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO };
-                xrReleaseSwapchainImage(swapchain.Handle, &releaseInfo);
-            }
+            swapchain.DepthOutput = nullptr;
+            ReleaseImage(swapchain.Handle, swapchain.IsAcquired);
+            ReleaseImage(swapchain.DepthHandle, swapchain.IsDepthAcquired);
+
+            // Submit depth only if it was rendered
+            ProjectionViews[i].next = swapchain.HasDepth ? &DepthInfos[i] : nullptr;
+            swapchain.HasDepth = false;
         }
 
         // Submit projection layer (skipped if frame was not rendered)
@@ -382,6 +526,7 @@ namespace
         endInfo.environmentBlendMode = BlendMode;
         endInfo.layerCount = HasProjectionLayer ? 1 : 0;
         endInfo.layers = layers;
+        PROFILE_CPU_NAMED("xrEndFrame");
         xrEndFrame(Session, &endInfo);
         HasProjectionLayer = false;
     }
@@ -411,6 +556,12 @@ void OpenXRSession::Update()
             const auto& stateChanged = *(XrEventDataSessionStateChanged*)&event;
             if (stateChanged.session == Session)
                 OnSessionStateChanged(stateChanged.state);
+            break;
+        }
+        case XR_TYPE_EVENT_DATA_DISPLAY_REFRESH_RATE_CHANGED_FB:
+        {
+            const auto& refreshRateChanged = *(XrEventDataDisplayRefreshRateChangedFB*)&event;
+            LOG(Info, "OpenXR display refresh rate changed to {0} Hz", refreshRateChanged.toDisplayRefreshRate);
             break;
         }
         default:
@@ -457,17 +608,11 @@ void OpenXRSession::Draw()
     for (int32 i = 0; i < Swapchains.Count(); i++)
     {
         auto& swapchain = Swapchains[i];
-        uint32 imageIndex = 0;
-        XrSwapchainImageAcquireInfo acquireInfo = { XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO };
-        result = xrAcquireSwapchainImage(swapchain.Handle, &acquireInfo, &imageIndex);
-        if (XR_FAILED(result))
+        uint32 imageIndex = 0, depthImageIndex = 0;
+        if (AcquireImage(swapchain.Handle, swapchain.IsAcquired, imageIndex))
             return;
-        XrSwapchainImageWaitInfo waitInfo = { XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO };
-        waitInfo.timeout = XR_INFINITE_DURATION;
-        result = xrWaitSwapchainImage(swapchain.Handle, &waitInfo);
-        if (XR_FAILED(result))
+        if (swapchain.DepthHandle != XR_NULL_HANDLE && AcquireImage(swapchain.DepthHandle, swapchain.IsDepthAcquired, depthImageIndex))
             return;
-        swapchain.IsAcquired = true;
 
         // Setup the view
         auto task = swapchain.Task;
@@ -502,6 +647,19 @@ void OpenXRSession::Draw()
         projectionView.subImage.swapchain = swapchain.Handle;
         projectionView.subImage.imageRect.offset = { 0, 0 };
         projectionView.subImage.imageRect.extent = { swapchain.Width, swapchain.Height };
+
+        // Setup depth (copied from the scene depth buffer after rendering)
+        if (swapchain.DepthHandle != XR_NULL_HANDLE)
+        {
+            swapchain.DepthOutput = swapchain.DepthImages[depthImageIndex];
+            auto& depthInfo = DepthInfos[i];
+            depthInfo.subImage.swapchain = swapchain.DepthHandle;
+            depthInfo.subImage.imageRect = projectionView.subImage.imageRect;
+            depthInfo.minDepth = 0.0f;
+            depthInfo.maxDepth = 1.0f;
+            depthInfo.nearZ = view.Near * UNITS_TO_METERS_SCALE;
+            depthInfo.farZ = view.Far * UNITS_TO_METERS_SCALE;
+        }
     }
     HasProjectionLayer = true;
     SetMirror(true);
@@ -528,7 +686,7 @@ void OpenXRSession::WaitFrame()
             EndFrame();
     }
 
-    PROFILE_CPU();
+    PROFILE_CPU_NAMED("xrWaitFrame");
     FrameState = { XR_TYPE_FRAME_STATE };
     XrFrameWaitInfo waitInfo = { XR_TYPE_FRAME_WAIT_INFO };
     const XrResult result = xrWaitFrame(Session, &waitInfo, &FrameState);
@@ -546,6 +704,18 @@ void OpenXRSession::Dispose()
 bool OpenXRSession::IsRunning()
 {
     return IsSessionRunning;
+}
+
+float OpenXRSession::GetDisplayRefreshRate()
+{
+    if (!IsSessionRunning)
+        return 0.0f;
+    float rate = 0.0f;
+    if (GetDisplayRefreshRateFB && XR_SUCCEEDED(GetDisplayRefreshRateFB(Session, &rate)))
+        return rate;
+
+    // Use the predicted time between frames
+    return FrameState.predictedDisplayPeriod > 0 ? (float)(1000000000.0 / (double)FrameState.predictedDisplayPeriod) : 0.0f;
 }
 
 #endif

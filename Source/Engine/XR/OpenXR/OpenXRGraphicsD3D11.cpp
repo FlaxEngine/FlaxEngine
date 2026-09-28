@@ -5,6 +5,7 @@
 #include "OpenXRGraphicsD3D11.h"
 #include "OpenXRInstance.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Graphics/Config.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
@@ -100,7 +101,13 @@ int64 OpenXRGraphicsD3D11::SelectSwapchainFormat(const Array<int64>& formats)
     return formats.HasItems() ? formats[0] : (int64)DXGI_FORMAT_UNKNOWN;
 }
 
-bool OpenXRGraphicsD3D11::InitSwapchainImages(XrSwapchain swapchain, int64 format, int32 width, int32 height, Array<GPUTexture*>& images)
+int64 OpenXRGraphicsD3D11::SelectDepthSwapchainFormat(const Array<int64>& formats)
+{
+    const DXGI_FORMAT format = RenderToolsDX::ToDxgiFormat(GPU_DEPTH_BUFFER_PIXEL_FORMAT);
+    return formats.Contains((int64)format) ? (int64)format : (int64)DXGI_FORMAT_UNKNOWN;
+}
+
+bool OpenXRGraphicsD3D11::InitSwapchainImages(XrSwapchain swapchain, int64 format, int32 width, int32 height, GPUTextureFlags flags, Array<GPUTexture*>& images)
 {
     // Get swapchain textures
     uint32 imagesCount = 0;
@@ -132,7 +139,7 @@ bool OpenXRGraphicsD3D11::InitSwapchainImages(XrSwapchain swapchain, int64 forma
     }
 
     // Create textures
-    const auto desc = GPUTextureDescription::New2D(width, height, pixelFormat, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
+    const auto desc = GPUTextureDescription::New2D(width, height, pixelFormat, flags);
     for (const auto& swapchainImage : swapchainImages)
     {
         auto texture = GPUDevice::Instance->CreateTexture(TEXT("OpenXR.Swapchain"));
