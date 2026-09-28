@@ -5,13 +5,14 @@
 #include "OpenXRSession.h"
 #include "OpenXRInstance.h"
 #include "OpenXRInput.h"
-#include "OpenXRGraphicsD3D11.h"
+#include "OpenXRGraphics.h"
 #include "OpenXRConvert.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Debug/DebugDraw.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/GPUResourceAccess.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -20,6 +21,7 @@
 #include "Engine/Level/Actors/Camera.h"
 #include "Engine/Platform/Platform.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Scripting/Enums.h"
 #include "Engine/XR/XR.h"
 #include "Engine/XR/XRSettings.h"
 #include <ThirdParty/OpenXR/openxr/openxr_reflection.h>
@@ -129,6 +131,22 @@ namespace
         }
     }
 
+    void EndView(RenderTask* task, GPUContext* context)
+    {
+        for (auto& swapchain : Swapchains)
+        {
+            if (swapchain.Task != task)
+                continue;
+
+            // Return the swapchain images to the runtime in the render target (or depth write) state
+            if (swapchain.Task->Output)
+                context->Transition(swapchain.Task->Output, GPUResourceAccess::RenderTarget);
+            if (swapchain.DepthOutput)
+                context->Transition(swapchain.DepthOutput, GPUResourceAccess::DepthWrite);
+            break;
+        }
+    }
+
     void DrawMirror(RenderTask* task, GPUContext* context)
     {
         const auto mainTask = (SceneRenderTask*)task;
@@ -150,6 +168,7 @@ namespace
         context->Draw(image);
         context->ResetSR(); // The eye image is used as render target in the next frames
         context->ResetRenderTarget();
+        context->Transition(image, GPUResourceAccess::RenderTarget);
     }
 
     void SetupProxyView()
@@ -283,15 +302,16 @@ namespace
         const XrSystemId systemId = OpenXRInstance::SystemId;
 
         // Check if graphics device can be used by the runtime
-        if (OpenXRGraphicsD3D11::SetupDevice(instance, systemId))
+        if (OpenXRGraphics::Setup(instance, systemId))
         {
             OpenXRInstance::Dispose();
             return true;
         }
+        OpenXRGraphics* graphics = OpenXRGraphics::Get();
 
         // Create session
         XrSessionCreateInfo createInfo = { XR_TYPE_SESSION_CREATE_INFO };
-        createInfo.next = OpenXRGraphicsD3D11::GetGraphicsBinding();
+        createInfo.next = graphics->GetGraphicsBinding();
         createInfo.systemId = systemId;
         XrResult result = xrCreateSession(instance, &createInfo, &Session);
         if (XR_FAILED(result))
@@ -370,14 +390,14 @@ namespace
             formats.Resize(formatsCount);
             result = xrEnumerateSwapchainFormats(Session, formatsCount, &formatsCount, formats.Get());
         }
-        if (XR_FAILED(result))
+        const PixelFormat format = XR_SUCCEEDED(result) ? graphics->SelectSwapchainFormat(formats) : PixelFormat::Unknown;
+        if (format == PixelFormat::Unknown)
         {
-            LOG(Warning, "Failed to get OpenXR swapchain formats ({0})", OpenXRInstance::GetResultString(result));
+            LOG(Warning, "Failed to get OpenXR swapchain format ({0})", OpenXRInstance::GetResultString(result));
             DestroySession();
             return true;
         }
-        const int64 format = OpenXRGraphicsD3D11::SelectSwapchainFormat(formats);
-        const int64 depthFormat = XRSettings::Get()->SubmitDepth && OpenXRInstance::SupportsDepthLayer ? OpenXRGraphicsD3D11::SelectDepthSwapchainFormat(formats) : 0;
+        const PixelFormat depthFormat = XRSettings::Get()->SubmitDepth && OpenXRInstance::SupportsDepthLayer ? graphics->SelectDepthSwapchainFormat(formats) : PixelFormat::Unknown;
 
         // Create swapchain for each view
         const float renderScale = XRSettings::Get()->RenderScale;
@@ -390,7 +410,7 @@ namespace
             auto& swapchain = Swapchains[i];
             XrSwapchainCreateInfo swapchainInfo = { XR_TYPE_SWAPCHAIN_CREATE_INFO };
             swapchainInfo.usageFlags = XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT | XR_SWAPCHAIN_USAGE_SAMPLED_BIT;
-            swapchainInfo.format = format;
+            swapchainInfo.format = graphics->ToNativeFormat(format);
             swapchainInfo.sampleCount = 1;
             swapchainInfo.width = (uint32)Math::Clamp(Math::RoundToInt((float)configViews[i].recommendedImageRectWidth * renderScale), 1, (int32)configViews[i].maxImageRectWidth);
             swapchainInfo.height = (uint32)Math::Clamp(Math::RoundToInt((float)configViews[i].recommendedImageRectHeight * renderScale), 1, (int32)configViews[i].maxImageRectHeight);
@@ -407,17 +427,17 @@ namespace
             }
             swapchain.Width = (int32)swapchainInfo.width;
             swapchain.Height = (int32)swapchainInfo.height;
-            if (OpenXRGraphicsD3D11::InitSwapchainImages(swapchain.Handle, format, swapchain.Width, swapchain.Height, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget, swapchain.Images))
+            if (graphics->InitSwapchainImages(swapchain.Handle, format, swapchain.Width, swapchain.Height, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget, swapchain.Images))
             {
                 DestroySession();
                 return true;
             }
 
             // Create depth swapchain for the view (used by the runtime to improve the reprojection)
-            if (depthFormat != 0)
+            if (depthFormat != PixelFormat::Unknown)
             {
                 swapchainInfo.usageFlags = XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-                swapchainInfo.format = depthFormat;
+                swapchainInfo.format = graphics->ToNativeFormat(depthFormat);
                 result = xrCreateSwapchain(Session, &swapchainInfo, &swapchain.DepthHandle);
                 if (XR_FAILED(result))
                 {
@@ -426,7 +446,7 @@ namespace
                     DestroySession();
                     return true;
                 }
-                if (OpenXRGraphicsD3D11::InitSwapchainImages(swapchain.DepthHandle, depthFormat, swapchain.Width, swapchain.Height, GPUTextureFlags::DepthStencil, swapchain.DepthImages))
+                if (graphics->InitSwapchainImages(swapchain.DepthHandle, depthFormat, swapchain.Width, swapchain.Height, GPUTextureFlags::DepthStencil, swapchain.DepthImages))
                 {
                     DestroySession();
                     return true;
@@ -437,8 +457,9 @@ namespace
             swapchain.Task = New<SceneRenderTask>();
             swapchain.Task->Enabled = false;
             swapchain.Task->Order = -100 + (int32)i; // Render before the main view that is used to mirror the headset image (first view goes first)
-            if (depthFormat != 0)
+            if (depthFormat != PixelFormat::Unknown)
                 swapchain.Task->Render.Bind(CopyViewDepth);
+            swapchain.Task->End.Bind(EndView);
 #if COMPILE_WITH_DEBUG_DRAW
             swapchain.Task->PostRender.Bind(DrawViewDebug);
 #endif
@@ -459,7 +480,7 @@ namespace
             DepthInfos[i] = { XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR };
         }
 
-        LOG(Info, "OpenXR session created. Views: {0}, Size: {1}x{2}, Format: {3}, Depth Format: {4}, Reference Space: {5}", viewsCount, Swapchains[0].Width, Swapchains[0].Height, format, depthFormat, spaceInfo.referenceSpaceType == XR_REFERENCE_SPACE_TYPE_STAGE ? TEXT("Stage") : TEXT("Local"));
+        LOG(Info, "OpenXR session created. Views: {0}, Size: {1}x{2}, Format: {3}, Depth Format: {4}, Reference Space: {5}", viewsCount, Swapchains[0].Width, Swapchains[0].Height, ScriptingEnum::ToString(format), ScriptingEnum::ToString(depthFormat), spaceInfo.referenceSpaceType == XR_REFERENCE_SPACE_TYPE_STAGE ? TEXT("Stage") : TEXT("Local"));
         return false;
     }
 

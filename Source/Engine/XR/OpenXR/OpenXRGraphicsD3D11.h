@@ -2,65 +2,24 @@
 
 #pragma once
 
-#if XR_API_OPENXR
+#if XR_API_OPENXR && GRAPHICS_API_DIRECTX11
 
-#include "Engine/Core/Collections/Array.h"
-#include "Engine/Graphics/Textures/GPUTextureDescription.h"
-#include <ThirdParty/OpenXR/openxr/openxr.h>
-
-class GPUTexture;
+#include "OpenXRGraphics.h"
 
 /// <summary>
 /// The OpenXR graphics backend for DirectX 11 (XR_KHR_D3D11_enable).
 /// </summary>
-class OpenXRGraphicsD3D11
+class OpenXRGraphicsD3D11 : public OpenXRGraphics
 {
 public:
-    /// <summary>
-    /// The name of the OpenXR extension required by this backend.
-    /// </summary>
-    static const char* ExtensionName;
-
-public:
-    /// <summary>
-    /// Gets the graphics requirements of the runtime. Sets the graphics device creation hints if the device is not created yet, otherwise checks if the device can be used by the runtime.
-    /// </summary>
-    /// <param name="instance">The OpenXR instance.</param>
-    /// <param name="systemId">The head-mounted display system.</param>
-    /// <returns>True if failed, otherwise false.</returns>
-    static bool SetupDevice(XrInstance instance, XrSystemId systemId);
-
-    /// <summary>
-    /// Gets the graphics binding structure for the session creation.
-    /// </summary>
-    /// <returns>The graphics binding.</returns>
-    static const void* GetGraphicsBinding();
-
-    /// <summary>
-    /// Selects the swapchain format from the formats supported by the runtime.
-    /// </summary>
-    /// <param name="formats">The formats supported by the runtime.</param>
-    /// <returns>The selected format.</returns>
-    static int64 SelectSwapchainFormat(const Array<int64>& formats);
-
-    /// <summary>
-    /// Selects the depth swapchain format from the formats supported by the runtime. The format matches the engine depth buffer so it can be copied.
-    /// </summary>
-    /// <param name="formats">The formats supported by the runtime.</param>
-    /// <returns>The selected format, or 0 if the runtime doesn't support it.</returns>
-    static int64 SelectDepthSwapchainFormat(const Array<int64>& formats);
-
-    /// <summary>
-    /// Gets the swapchain images and creates the textures for them.
-    /// </summary>
-    /// <param name="swapchain">The swapchain.</param>
-    /// <param name="format">The swapchain format.</param>
-    /// <param name="width">The swapchain width.</param>
-    /// <param name="height">The swapchain height.</param>
-    /// <param name="flags">The texture flags.</param>
-    /// <param name="images">The output textures.</param>
-    /// <returns>True if failed, otherwise false.</returns>
-    static bool InitSwapchainImages(XrSwapchain swapchain, int64 format, int32 width, int32 height, GPUTextureFlags flags, Array<GPUTexture*>& images);
+    // [OpenXRGraphics]
+    const char* GetExtensionName() const override;
+    bool IsSupported(RendererType rendererType) const override;
+    bool SetupDeviceHints(XrInstance instance, XrSystemId systemId) override;
+    bool SetupDevice(XrInstance instance, XrSystemId systemId) override;
+    const void* GetGraphicsBinding() const override;
+    int64 ToNativeFormat(PixelFormat format) const override;
+    bool InitSwapchainImages(XrSwapchain swapchain, PixelFormat format, int32 width, int32 height, GPUTextureFlags flags, Array<GPUTexture*>& images) override;
 };
 
 #endif

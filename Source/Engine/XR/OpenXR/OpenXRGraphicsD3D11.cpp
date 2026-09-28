@@ -1,19 +1,16 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-#if XR_API_OPENXR
+#if XR_API_OPENXR && GRAPHICS_API_DIRECTX11
 
 #include "OpenXRGraphicsD3D11.h"
 #include "OpenXRInstance.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Graphics/Config.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #define XR_USE_GRAPHICS_API_D3D11
 #include <ThirdParty/OpenXR/openxr/openxr_platform.h>
-
-const char* OpenXRGraphicsD3D11::ExtensionName = XR_KHR_D3D11_ENABLE_EXTENSION_NAME;
 
 namespace
 {
@@ -23,38 +20,53 @@ namespace
     {
         return ((uint64)(uint32)luid.HighPart << 32) | (uint64)luid.LowPart;
     }
+
+    bool GetGraphicsRequirements(XrInstance instance, XrSystemId systemId, XrGraphicsRequirementsD3D11KHR& requirements)
+    {
+        // Get the adapter and the feature level required by the runtime
+        PFN_xrGetD3D11GraphicsRequirementsKHR getGraphicsRequirements = nullptr;
+        XrResult result = xrGetInstanceProcAddr(instance, "xrGetD3D11GraphicsRequirementsKHR", (PFN_xrVoidFunction*)&getGraphicsRequirements);
+        requirements = { XR_TYPE_GRAPHICS_REQUIREMENTS_D3D11_KHR };
+        if (XR_SUCCEEDED(result))
+            result = getGraphicsRequirements(instance, systemId, &requirements);
+        if (XR_FAILED(result))
+        {
+            LOG(Warning, "Failed to get OpenXR graphics requirements ({0})", OpenXRInstance::GetResultString(result));
+            return true;
+        }
+        return false;
+    }
+}
+
+const char* OpenXRGraphicsD3D11::GetExtensionName() const
+{
+    return XR_KHR_D3D11_ENABLE_EXTENSION_NAME;
+}
+
+bool OpenXRGraphicsD3D11::IsSupported(RendererType rendererType) const
+{
+    return rendererType == RendererType::DirectX11;
+}
+
+bool OpenXRGraphicsD3D11::SetupDeviceHints(XrInstance instance, XrSystemId systemId)
+{
+    // Use the adapter connected to the headset when creating the graphics device
+    XrGraphicsRequirementsD3D11KHR requirements;
+    if (GetGraphicsRequirements(instance, systemId, requirements))
+        return true;
+    GPUDevice::CreationHints.RequiredAdapterLuid = GetLuid(requirements.adapterLuid);
+    return false;
 }
 
 bool OpenXRGraphicsD3D11::SetupDevice(XrInstance instance, XrSystemId systemId)
 {
-    // Get the adapter and the feature level required by the runtime
-    PFN_xrGetD3D11GraphicsRequirementsKHR getGraphicsRequirements = nullptr;
-    XrResult result = xrGetInstanceProcAddr(instance, "xrGetD3D11GraphicsRequirementsKHR", (PFN_xrVoidFunction*)&getGraphicsRequirements);
-    XrGraphicsRequirementsD3D11KHR requirements = { XR_TYPE_GRAPHICS_REQUIREMENTS_D3D11_KHR };
-    if (XR_SUCCEEDED(result))
-        result = getGraphicsRequirements(instance, systemId, &requirements);
-    if (XR_FAILED(result))
-    {
-        LOG(Warning, "Failed to get OpenXR graphics requirements ({0})", OpenXRInstance::GetResultString(result));
+    XrGraphicsRequirementsD3D11KHR requirements;
+    if (GetGraphicsRequirements(instance, systemId, requirements))
         return true;
-    }
     const uint64 adapterLuid = GetLuid(requirements.adapterLuid);
 
-    // Use the adapter connected to the headset when creating the graphics device
-    const auto device = GPUDevice::Instance;
-    if (device == nullptr)
-    {
-        GPUDevice::CreationHints.RequiredAdapterLuid = adapterLuid;
-        return false;
-    }
-
     // Check if the graphics device can be used by the runtime
-    if (device->GetRendererType() != RendererType::DirectX11)
-    {
-        LOG(Info, "XR unavailable (renderer {0} is not supported)", ::ToString(device->GetRendererType()));
-        return true;
-    }
-    auto d3dDevice = (ID3D11Device*)device->GetNativePtr();
+    auto d3dDevice = (ID3D11Device*)GPUDevice::Instance->GetNativePtr();
     ComPtr<IDXGIDevice> dxgiDevice;
     ComPtr<IDXGIAdapter> dxgiAdapter;
     DXGI_ADAPTER_DESC adapterDesc;
@@ -78,36 +90,17 @@ bool OpenXRGraphicsD3D11::SetupDevice(XrInstance instance, XrSystemId systemId)
     return false;
 }
 
-const void* OpenXRGraphicsD3D11::GetGraphicsBinding()
+const void* OpenXRGraphicsD3D11::GetGraphicsBinding() const
 {
     return &GraphicsBinding;
 }
 
-int64 OpenXRGraphicsD3D11::SelectSwapchainFormat(const Array<int64>& formats)
+int64 OpenXRGraphicsD3D11::ToNativeFormat(PixelFormat format) const
 {
-    // Prefer 8-bit sRGB formats
-    const DXGI_FORMAT preferredFormats[] =
-    {
-        DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
-        DXGI_FORMAT_B8G8R8A8_UNORM_SRGB,
-        DXGI_FORMAT_R8G8B8A8_UNORM,
-        DXGI_FORMAT_B8G8R8A8_UNORM,
-    };
-    for (const DXGI_FORMAT format : preferredFormats)
-    {
-        if (formats.Contains((int64)format))
-            return (int64)format;
-    }
-    return formats.HasItems() ? formats[0] : (int64)DXGI_FORMAT_UNKNOWN;
+    return (int64)RenderToolsDX::ToDxgiFormat(format);
 }
 
-int64 OpenXRGraphicsD3D11::SelectDepthSwapchainFormat(const Array<int64>& formats)
-{
-    const DXGI_FORMAT format = RenderToolsDX::ToDxgiFormat(GPU_DEPTH_BUFFER_PIXEL_FORMAT);
-    return formats.Contains((int64)format) ? (int64)format : (int64)DXGI_FORMAT_UNKNOWN;
-}
-
-bool OpenXRGraphicsD3D11::InitSwapchainImages(XrSwapchain swapchain, int64 format, int32 width, int32 height, GPUTextureFlags flags, Array<GPUTexture*>& images)
+bool OpenXRGraphicsD3D11::InitSwapchainImages(XrSwapchain swapchain, PixelFormat format, int32 width, int32 height, GPUTextureFlags flags, Array<GPUTexture*>& images)
 {
     // Get swapchain textures
     uint32 imagesCount = 0;
@@ -127,19 +120,18 @@ bool OpenXRGraphicsD3D11::InitSwapchainImages(XrSwapchain swapchain, int64 forma
     }
 
     // Render to the sRGB swapchain through the non-sRGB view if the texture is typeless (the engine output is already gamma-encoded)
-    PixelFormat pixelFormat = (PixelFormat)format;
     D3D11_TEXTURE2D_DESC textureDesc;
     swapchainImages[0].texture->GetDesc(&textureDesc);
-    if (PixelFormatExtensions::IsSRGB(pixelFormat))
+    if (PixelFormatExtensions::IsSRGB(format))
     {
-        if (textureDesc.Format == RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::MakeTypeless(pixelFormat)))
-            pixelFormat = PixelFormatExtensions::ToNonsRGB(pixelFormat);
+        if (textureDesc.Format == RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::MakeTypeless(format)))
+            format = PixelFormatExtensions::ToNonsRGB(format);
         else
             LOG(Warning, "OpenXR swapchain texture is not typeless, the headset image will be too bright");
     }
 
     // Create textures
-    const auto desc = GPUTextureDescription::New2D(width, height, pixelFormat, flags);
+    const auto desc = GPUTextureDescription::New2D(width, height, format, flags);
     for (const auto& swapchainImage : swapchainImages)
     {
         auto texture = GPUDevice::Instance->CreateTexture(TEXT("OpenXR.Swapchain"));

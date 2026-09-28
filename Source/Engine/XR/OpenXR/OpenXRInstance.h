@@ -5,6 +5,7 @@
 #if XR_API_OPENXR
 
 #include "Engine/Core/Types/String.h"
+#include "Engine/Core/Collections/Array.h"
 #include <ThirdParty/OpenXR/openxr/openxr.h>
 
 /// <summary>
@@ -70,6 +71,14 @@ public:
     /// Destroys the OpenXR instance.
     /// </summary>
     static void Dispose();
+
+    /// <summary>
+    /// Checks if the extension is in the list of the extensions supported by the runtime.
+    /// </summary>
+    /// <param name="extensions">The extensions supported by the runtime.</param>
+    /// <param name="name">The extension name.</param>
+    /// <returns>True if supported, otherwise false.</returns>
+    static bool HasExtension(const Array<XrExtensionProperties>& extensions, const char* name);
 
     /// <summary>
     /// Checks if the OpenXR instance has been created and the head-mounted display system has been found.

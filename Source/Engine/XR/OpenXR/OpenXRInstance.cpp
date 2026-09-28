@@ -4,7 +4,7 @@
 
 #include "OpenXRInstance.h"
 #include "OpenXRInput.h"
-#include "OpenXRGraphicsD3D11.h"
+#include "OpenXRGraphics.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Engine/Globals.h"
@@ -27,16 +27,6 @@ bool OpenXRInstance::SupportsFrameController = false;
 namespace
 {
     bool SystemNotFoundLogged = false;
-
-    bool HasExtension(const Array<XrExtensionProperties>& extensions, const char* name)
-    {
-        for (const auto& extension : extensions)
-        {
-            if (StringUtils::Compare(extension.extensionName, name) == 0)
-                return true;
-        }
-        return false;
-    }
 }
 
 bool OpenXRInstance::Init()
@@ -54,15 +44,15 @@ bool OpenXRInstance::Init()
     for (auto& extension : extensions)
         extension = { XR_TYPE_EXTENSION_PROPERTIES };
     xrEnumerateInstanceExtensionProperties(nullptr, extensionsCount, &extensionsCount, extensions.Get());
-    if (!HasExtension(extensions, OpenXRGraphicsD3D11::ExtensionName))
+    Array<const char*> enabledExtensions;
+    if (OpenXRGraphics::Init(extensions, enabledExtensions))
     {
-        LOG(Info, "XR unavailable (missing {0} extension)", String(OpenXRGraphicsD3D11::ExtensionName));
+        LOG(Info, "XR unavailable (runtime does not support any of the graphics APIs)");
+        OpenXRGraphics::Dispose();
         return true;
     }
 
     // Use optional extensions if supported by the runtime
-    Array<const char*, InlinedAllocation<4>> enabledExtensions;
-    enabledExtensions.Add(OpenXRGraphicsD3D11::ExtensionName);
     SupportsDepthLayer = HasExtension(extensions, XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME);
     if (SupportsDepthLayer)
         enabledExtensions.Add(XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME);
@@ -137,7 +127,7 @@ bool OpenXRInstance::InitSystem()
     LOG(Info, "	Max Swapchain Size: {0}x{1}, Max Layers: {2}, Orientation Tracking: {3}, Position Tracking: {4}", systemProperties.graphicsProperties.maxSwapchainImageWidth, systemProperties.graphicsProperties.maxSwapchainImageHeight, systemProperties.graphicsProperties.maxLayerCount, !!systemProperties.trackingProperties.orientationTracking, !!systemProperties.trackingProperties.positionTracking);
 
     // Setup graphics device for the headset
-    if (OpenXRGraphicsD3D11::SetupDevice(Instance, SystemId))
+    if (OpenXRGraphics::Setup(Instance, SystemId))
     {
         Dispose();
         return true;
@@ -149,6 +139,7 @@ bool OpenXRInstance::InitSystem()
 void OpenXRInstance::Dispose()
 {
     OpenXRInput::Dispose();
+    OpenXRGraphics::Dispose();
     if (Instance != XR_NULL_HANDLE)
     {
         xrDestroyInstance(Instance);
@@ -161,6 +152,16 @@ void OpenXRInstance::Dispose()
     SupportsDepthLayer = false;
     SupportsDisplayRefreshRate = false;
     SupportsFrameController = false;
+}
+
+bool OpenXRInstance::HasExtension(const Array<XrExtensionProperties>& extensions, const char* name)
+{
+    for (const auto& extension : extensions)
+    {
+        if (StringUtils::Compare(extension.extensionName, name) == 0)
+            return true;
+    }
+    return false;
 }
 
 bool OpenXRInstance::IsReady()

@@ -28,6 +28,9 @@ public class XR : EngineModule
                 options.CompileEnv.PreprocessorDefinitions.Add("XR_API_OPENXR");
                 options.PrivateDependencies.Add("OpenXR");
                 options.PrivateDependencies.Add("GraphicsDeviceDX11");
+                var windowsToolchain = options.Toolchain as Flax.Build.Platforms.WindowsToolchain;
+                if (windowsToolchain != null && windowsToolchain.SDK != Flax.Build.Platforms.WindowsPlatformSDK.v8_1)
+                    options.PrivateDependencies.Add("GraphicsDeviceDX12");
             }
             break;
         default:
