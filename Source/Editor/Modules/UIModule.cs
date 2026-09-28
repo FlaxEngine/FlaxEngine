@@ -72,6 +72,9 @@ namespace FlaxEditor.Modules
         private Label _progressLabel;
         private ProgressBar _progressBar;
         private Button _outputLogButton;
+        private Label _xrStatusLabel;
+        private int _xrStatus = -1;
+        private bool _hasXRRuntime;
         private List<Status> _statusMessages;
         private int _statusID = 1;
         private ContentStats _contentStats;
@@ -180,6 +183,7 @@ namespace FlaxEditor.Modules
         private ToolStripButton _toolStripPlay;
         private ToolStripButton _toolStripPause;
         private ToolStripButton _toolStripStep;
+        private ToolStripButton _toolStripPlayVR;
 
         /// <summary>
         /// The main menu control.
@@ -305,6 +309,8 @@ namespace FlaxEditor.Modules
             _toolStripBuildScenes.Enabled = (canEditScene && !isPlayMode) || Editor.StateMachine.BuildingScenesState.IsActive;
             _toolStripBuildScenes.Visible = Editor.Options.Options.General.BuildActions?.Length != 0;
             _toolStripCook.Enabled = Editor.Windows.GameCookerWin.CanBuild(Platform.PlatformType) && Editor.Windows.GameCookerWin.CanCook();
+            _toolStripPlayVR.Visible = XR.RuntimeName.Length != 0;
+            _toolStripPlayVR.Checked = Editor.Options.Options.Interface.PlayInVR;
             //
             var play = _toolStripPlay;
             var pause = _toolStripPause;
@@ -572,6 +578,22 @@ namespace FlaxEditor.Modules
             else if (ProgressVisible)
             {
                 UpdateStatusBar();
+            }
+
+            // Show XR runtime state
+            if (_xrStatusLabel != null)
+            {
+                var xrStatus = XR.IsActive ? 2 : XR.IsAvailable ? 1 : 0;
+                if (xrStatus != _xrStatus)
+                {
+                    _xrStatus = xrStatus;
+                    var runtimeName = XR.RuntimeName;
+                    _hasXRRuntime = runtimeName.Length != 0;
+                    _xrStatusLabel.Text = string.Format("{0} {1}: {2}", runtimeName, XR.RuntimeVersion, xrStatus == 2 ? "Active" : xrStatus == 1 ? "Ready" : "Head-mounted display not found");
+                    _xrStatusLabel.TooltipText = xrStatus != 0 ? "Head-mounted display: " + XR.SystemName : null;
+                    UpdateToolstrip();
+                }
+                _xrStatusLabel.Visible = _hasXRRuntime && !ProgressVisible;
             }
         }
 
@@ -936,6 +958,9 @@ namespace FlaxEditor.Modules
 
             _toolStripPause = ToolStrip.AddButton(Editor.Icons.Pause64, Editor.Simulation.RequestResumeOrPause).LinkTooltip("Pause/Resume game", ref inputOptions.Pause);
             _toolStripStep = ToolStrip.AddButton(Editor.Icons.Skip64, Editor.Simulation.RequestPlayOneFrame).LinkTooltip("Step one frame in game", ref inputOptions.StepFrame);
+            _toolStripPlayVR = ToolStrip.AddButton("VR", TogglePlayInVR);
+            _toolStripPlayVR.LinkTooltip("Play In VR - renders the game to the head-mounted display in play mode");
+            Editor.Options.OptionsChanged += options => { _toolStripPlayVR.Checked = options.Interface.PlayInVR; };
 
             ToolStrip.AddSeparator();
 
@@ -983,6 +1008,19 @@ namespace FlaxEditor.Modules
             _outputLogButton.HoverBegin += () => StatusBar.TextColor = Style.Current.BackgroundSelected;
             _outputLogButton.HoverEnd += () => StatusBar.TextColor = defaultTextColor;
             _outputLogButton.Clicked += () => { Editor.Windows.OutputLogWin.FocusOrShow(); };
+
+            // XR runtime state
+            const float xrStatusWidth = 400.0f;
+            const float xrStatusRightMargin = 16.0f;
+            _xrStatusLabel = new Label
+            {
+                Visible = false,
+                Text = string.Empty,
+                HorizontalAlignment = TextAlignment.Far,
+                AnchorPreset = AnchorPresets.MiddleRight,
+                Parent = StatusBar,
+                Offsets = new Margin(-xrStatusWidth - xrStatusRightMargin, xrStatusWidth, StatusBar.DefaultHeight * -0.5f, StatusBar.DefaultHeight),
+            };
 
             // Progress bar with label
             const float progressBarWidth = 120.0f;
@@ -1268,6 +1306,13 @@ namespace FlaxEditor.Modules
             Editor.Options.Apply(options);
         }
 
+        private void TogglePlayInVR()
+        {
+            var options = Editor.Options.Options;
+            options.Interface.PlayInVR = !options.Interface.PlayInVR;
+            Editor.Options.Apply(options);
+        }
+
         private void SetGameWindowMode(InterfaceOptions.GameWindowMode newGameWindowMode)
         {
             var options = Editor.Options.Options;
@@ -1285,6 +1330,7 @@ namespace FlaxEditor.Modules
             StatusBar = null;
             _progressLabel = null;
             _progressBar = null;
+            _xrStatusLabel = null;
             _statusMessages = null;
 
             MenuFile = null;
