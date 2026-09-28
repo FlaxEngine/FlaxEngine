@@ -55,6 +55,22 @@ void EyeAdaptationPass::Render(RenderContext& renderContext, GPUTexture* colorBu
     data.MaxBrightness = Math::Max(settings.MinBrightness, settings.MaxBrightness);
     data.PreExposure = Math::Exp2(settings.PreExposure);
     auto mode = settings.Mode == EyeAdaptationMode::AutomaticHistogram && !_canUseHistogram ? EyeAdaptationMode::AutomaticAverageLuminance : settings.Mode;
+    const RenderBuffers* linkedBuffers = renderContext.Buffers->LinkedEyeAdaptation;
+    if (mode != EyeAdaptationMode::Manual && linkedBuffers && linkedBuffers->LuminanceMap && linkedBuffers->LastFrameLuminanceMap == Engine::FrameCount)
+    {
+        // Apply the luminance calculated by the linked buffers within this frame
+        const auto shader = _shader->GetShader();
+        const auto cb0 = shader->GetCB(0);
+        context->UpdateCB(cb0, &data);
+        context->BindCB(0, cb0);
+        context->BindSR(0, linkedBuffers->LuminanceMap);
+        context->SetRenderTarget(*colorBuffer);
+        context->SetViewportAndScissors((float)colorBuffer->Width(), (float)colorBuffer->Height());
+        context->SetState(_psApplyLuminance);
+        context->DrawFullscreenTriangle();
+        context->UnBindSR(0);
+        return;
+    }
     switch (mode)
     {
     case EyeAdaptationMode::Manual:
