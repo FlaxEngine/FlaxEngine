@@ -461,10 +461,10 @@ public:
     API_FUNCTION() bool Init(API_PARAM(Ref) const GPUTextureDescription& desc);
 
     /// <summary>
-    /// Initializes a texture resource from the native resource created by the external code (eg. XR runtime swapchain image). The texture doesn't own the native resource memory.
+    /// Initializes a texture resource from the native resource created by the external code (eg. XR runtime swapchain image). The texture doesn't own the native resource memory. The native resource has to be in the render target state (or the depth write state for depth-stencil textures).
     /// </summary>
     /// <param name="desc">The texture description (must match the native resource, the format can be used to create views of the typeless resource).</param>
-    /// <param name="nativeResource">The native resource (eg. ID3D11Texture2D on DirectX 11).</param>
+    /// <param name="nativeResource">The native resource (eg. ID3D11Texture2D on DirectX 11 or ID3D12Resource on DirectX 12).</param>
     /// <returns>True if cannot create texture, otherwise false.</returns>
     bool InitFromNative(const GPUTextureDescription& desc, void* nativeResource);
 
