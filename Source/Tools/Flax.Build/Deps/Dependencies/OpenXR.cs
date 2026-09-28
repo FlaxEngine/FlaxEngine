@@ -1,5 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
 using System.IO;
 using Flax.Build;
 
@@ -23,6 +24,11 @@ namespace Flax.Deps.Dependencies
                     {
                         TargetPlatform.Windows,
                     };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetPlatform.Linux,
+                    };
                 default: return new TargetPlatform[0];
                 }
             }
@@ -36,6 +42,11 @@ namespace Flax.Deps.Dependencies
                 switch (BuildPlatform)
                 {
                 case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                    };
+                case TargetPlatform.Linux:
                     return new[]
                     {
                         TargetArchitecture.x64,
@@ -62,6 +73,7 @@ namespace Flax.Deps.Dependencies
                 "-DBUILD_CONFORMANCE_TESTS=OFF",
                 "-DBUILD_WITH_SYSTEM_JSONCPP=OFF",
                 "-DINSTALL_SYMBOLS=OFF",
+                "-DCMAKE_INSTALL_LIBDIR=lib",
             };
 
             // Get the source
@@ -80,9 +92,20 @@ namespace Flax.Deps.Dependencies
                     SetupDirectory(buildDir, true);
                     File.Delete(Path.Combine(root, "CMakeCache.txt"));
 
+                    var envVars = new Dictionary<string, string>();
                     var libName = "openxr_loader.lib";
                     var cmakeArgs = string.Join(" ", args);
-                    RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -Wno-dev " + cmakeArgs);
+                    switch (platform)
+                    {
+                    case TargetPlatform.Linux:
+                        envVars["CC"] = "clang-" + LinuxConfiguration.ClangMinVer;
+                        envVars["CC_FOR_BUILD"] = "clang-" + LinuxConfiguration.ClangMinVer;
+                        envVars["CXX"] = "clang++-" + LinuxConfiguration.ClangMinVer;
+                        cmakeArgs += " -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=" + configuration;
+                        libName = "libopenxr_loader.a";
+                        break;
+                    }
+                    RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -Wno-dev " + cmakeArgs, envVars);
                     BuildCmake(buildDir, configuration);
                     Utilities.Run("cmake", $"--install {buildDir} --prefix {installDir} --config {configuration}", null, root, Utilities.RunOptions.DefaultTool);
                     Utilities.FileCopy(Path.Combine(installDir, "lib", libName), Path.Combine(depsFolder, libName));

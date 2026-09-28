@@ -38,6 +38,17 @@ public class XR : EngineModule
                 }
             }
             break;
+        case TargetPlatform.Linux:
+            if (VulkanSdk.Instance.IsValid)
+            {
+                // OpenXR
+                options.SourcePaths.Add(Path.Combine(FolderPath, "OpenXR"));
+                options.CompileEnv.PreprocessorDefinitions.Add("XR_API_OPENXR");
+                options.PrivateDependencies.Add("OpenXR");
+                options.PrivateDependencies.Add("GraphicsDeviceVulkan");
+                options.PrivateDependencies.Add("volk");
+            }
+            break;
         default:
             // Not implemented
             break;

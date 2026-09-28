@@ -30,6 +30,9 @@ public class OpenXR : EngineDepsModule
             options.OutputFiles.Add(Path.Combine(depsRoot, "openxr_loader.lib"));
             options.OutputFiles.Add("advapi32.lib");
             break;
+        case TargetPlatform.Linux:
+            options.OutputFiles.Add(Path.Combine(depsRoot, "libopenxr_loader.a"));
+            break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
     }
