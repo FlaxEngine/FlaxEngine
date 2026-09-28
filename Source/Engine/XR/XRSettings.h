@@ -20,6 +20,12 @@ public:
     API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"General\")")
     bool Enabled = false;
 
+    /// <summary>
+    /// The scale of the rendering resolution relative to the resolution recommended by the XR runtime for the head-mounted display. Use lower values to improve performance or higher values to improve quality.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(100), Limit(0.1f, 2.0f, 0.01f), EditorDisplay(\"Rendering\")")
+    float RenderScale = 1.0f;
+
 public:
     /// <summary>
     /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.

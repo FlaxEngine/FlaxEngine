@@ -5,8 +5,9 @@
 #if XR_API_OPENXR
 
 #include "Engine/Core/Collections/Array.h"
-#include "Engine/Core/Math/Color.h"
 #include <ThirdParty/OpenXR/openxr/openxr.h>
+
+class GPUTexture;
 
 /// <summary>
 /// The OpenXR graphics backend for DirectX 11 (XR_KHR_D3D11_enable).
@@ -42,26 +43,15 @@ public:
     static int64 SelectSwapchainFormat(const Array<int64>& formats);
 
     /// <summary>
-    /// Gets the swapchain images and creates the render target views for them.
+    /// Gets the swapchain images and creates the textures for them.
     /// </summary>
     /// <param name="swapchain">The swapchain.</param>
     /// <param name="format">The swapchain format.</param>
-    /// <param name="images">The output render target views.</param>
+    /// <param name="width">The swapchain width.</param>
+    /// <param name="height">The swapchain height.</param>
+    /// <param name="images">The output textures.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    static bool InitSwapchainImages(XrSwapchain swapchain, int64 format, Array<void*>& images);
-
-    /// <summary>
-    /// Releases the render target views of the swapchain images.
-    /// </summary>
-    /// <param name="images">The render target views.</param>
-    static void ReleaseSwapchainImages(Array<void*>& images);
-
-    /// <summary>
-    /// Clears the swapchain image with a color.
-    /// </summary>
-    /// <param name="image">The render target view.</param>
-    /// <param name="color">The clear color.</param>
-    static void ClearSwapchainImage(void* image, const Color& color);
+    static bool InitSwapchainImages(XrSwapchain swapchain, int64 format, int32 width, int32 height, Array<GPUTexture*>& images);
 };
 
 #endif

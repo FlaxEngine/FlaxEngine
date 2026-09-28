@@ -6,7 +6,9 @@
 #include "OpenXRInstance.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Graphics/GPUDevice.h"
-#include "Engine/GraphicsDevice/DirectX/IncludeDirectXHeaders.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
+#include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #define XR_USE_GRAPHICS_API_D3D11
 #include <ThirdParty/OpenXR/openxr/openxr_platform.h>
 
@@ -98,7 +100,7 @@ int64 OpenXRGraphicsD3D11::SelectSwapchainFormat(const Array<int64>& formats)
     return formats.HasItems() ? formats[0] : (int64)DXGI_FORMAT_UNKNOWN;
 }
 
-bool OpenXRGraphicsD3D11::InitSwapchainImages(XrSwapchain swapchain, int64 format, Array<void*>& images)
+bool OpenXRGraphicsD3D11::InitSwapchainImages(XrSwapchain swapchain, int64 format, int32 width, int32 height, Array<GPUTexture*>& images)
 {
     // Get swapchain textures
     uint32 imagesCount = 0;
@@ -111,44 +113,35 @@ bool OpenXRGraphicsD3D11::InitSwapchainImages(XrSwapchain swapchain, int64 forma
             swapchainImage = { XR_TYPE_SWAPCHAIN_IMAGE_D3D11_KHR };
         result = xrEnumerateSwapchainImages(swapchain, imagesCount, &imagesCount, (XrSwapchainImageBaseHeader*)swapchainImages.Get());
     }
-    if (XR_FAILED(result))
+    if (XR_FAILED(result) || imagesCount == 0)
     {
         LOG(Warning, "Failed to get OpenXR swapchain images ({0})", OpenXRInstance::GetResultString(result));
         return true;
     }
 
-    // Create render target views
-    D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
-    rtvDesc.Format = (DXGI_FORMAT)format;
-    rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+    // Render to the sRGB swapchain through the non-sRGB view if the texture is typeless (the engine output is already gamma-encoded)
+    PixelFormat pixelFormat = (PixelFormat)format;
+    D3D11_TEXTURE2D_DESC textureDesc;
+    swapchainImages[0].texture->GetDesc(&textureDesc);
+    if (PixelFormatExtensions::IsSRGB(pixelFormat))
+    {
+        if (textureDesc.Format == RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::MakeTypeless(pixelFormat)))
+            pixelFormat = PixelFormatExtensions::ToNonsRGB(pixelFormat);
+        else
+            LOG(Warning, "OpenXR swapchain texture is not typeless, the headset image will be too bright");
+    }
+
+    // Create textures
+    const auto desc = GPUTextureDescription::New2D(width, height, pixelFormat, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
     for (const auto& swapchainImage : swapchainImages)
     {
-        ID3D11RenderTargetView* rtv = nullptr;
-        if (FAILED(GraphicsBinding.device->CreateRenderTargetView(swapchainImage.texture, &rtvDesc, &rtv)))
-        {
-            LOG(Warning, "Failed to create render target view for OpenXR swapchain image");
-            ReleaseSwapchainImages(images);
+        auto texture = GPUDevice::Instance->CreateTexture(TEXT("OpenXR.Swapchain"));
+        images.Add(texture);
+        if (texture->InitFromNative(desc, swapchainImage.texture))
             return true;
-        }
-        images.Add(rtv);
     }
 
     return false;
-}
-
-void OpenXRGraphicsD3D11::ReleaseSwapchainImages(Array<void*>& images)
-{
-    for (void* image : images)
-        ((ID3D11RenderTargetView*)image)->Release();
-    images.Clear();
-}
-
-void OpenXRGraphicsD3D11::ClearSwapchainImage(void* image, const Color& color)
-{
-    ID3D11DeviceContext* context = nullptr;
-    GraphicsBinding.device->GetImmediateContext(&context);
-    context->ClearRenderTargetView((ID3D11RenderTargetView*)image, color.Raw);
-    context->Release();
 }
 
 #endif

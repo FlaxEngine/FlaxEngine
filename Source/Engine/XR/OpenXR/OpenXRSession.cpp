@@ -5,12 +5,19 @@
 #include "OpenXRSession.h"
 #include "OpenXRInstance.h"
 #include "OpenXRGraphicsD3D11.h"
+#include "OpenXRConvert.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
-#include "Engine/Core/Math/Color.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
+#include "Engine/Level/LargeWorlds.h"
+#include "Engine/Level/Actors/Camera.h"
 #include "Engine/Platform/Platform.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Renderer/RenderList.h"
+#include "Engine/XR/XRSettings.h"
 #include <ThirdParty/OpenXR/openxr/openxr_reflection.h>
 
 // Time (in seconds) between attempts to create the session when the head-mounted display is not available
@@ -24,11 +31,11 @@ namespace
         int32 Width = 0;
         int32 Height = 0;
         bool IsAcquired = false;
-        Array<void*> Images;
+        Array<GPUTexture*> Images;
+        SceneRenderTask* Task = nullptr;
     };
 
     const XrViewConfigurationType ViewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
-    const Color ClearColor(0.1f, 0.3f, 0.6f);
     XrSession Session = XR_NULL_HANDLE;
     XrSpace Space = XR_NULL_HANDLE;
     XrEnvironmentBlendMode BlendMode = XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
@@ -42,6 +49,8 @@ namespace
     bool IsFrameBegun = false;
     bool HasProjectionLayer = false;
     bool CreateFailedLogged = false;
+    bool IsMirrorEnabled = false;
+    bool WasCustomRendering = false;
     double NextCreateTime = 0.0;
 
 #define XRSTATE(x, value) case x: return TEXT(#x);
@@ -65,13 +74,70 @@ namespace
         Engine::FramePacer.Unbind();
     }
 
+    void DrawMirror(RenderTask* task, GPUContext* context)
+    {
+        const auto mainTask = (SceneRenderTask*)task;
+        GPUTextureView* output = mainTask->GetOutputView();
+        GPUTexture* image = Swapchains.HasItems() ? Swapchains[0].Task->Output : nullptr;
+        if (output == nullptr || image == nullptr)
+            return;
+        PROFILE_CPU_NAMED("XR.Mirror");
+
+        // Draw the left eye image to fill the main view output (keep the aspect ratio and crop the edges)
+        const Viewport outputViewport = mainTask->GetOutputViewport();
+        const float scale = Math::Max(outputViewport.Width / (float)image->Width(), outputViewport.Height / (float)image->Height());
+        const float width = (float)image->Width() * scale;
+        const float height = (float)image->Height() * scale;
+        context->SetRenderTarget(output);
+        context->FlushState(); // Unbind the eye image from the output before binding it as shader resource
+        context->SetViewport(Viewport((outputViewport.Width - width) * 0.5f, (outputViewport.Height - height) * 0.5f, width, height));
+        context->SetScissor(Rectangle(0, 0, outputViewport.Width, outputViewport.Height));
+        context->Draw(image);
+        context->ResetSR(); // The eye image is used as render target in the next frames
+        context->ResetRenderTarget();
+    }
+
+    void SetupViewRender(RenderContext& renderContext)
+    {
+        // Use FXAA instead of TAA
+        // TODO: support temporal anti-aliasing for each eye
+        auto& antiAliasing = renderContext.List->Settings.AntiAliasing;
+        if (antiAliasing.Mode == AntialiasingMode::TemporalAntialiasing)
+        {
+            antiAliasing.Mode = AntialiasingMode::FastApproximateAntialiasing;
+            renderContext.List->Setup.UseTemporalAAJitter = false;
+        }
+    }
+
+    void SetMirror(bool enable)
+    {
+        // Use the main view to mirror the headset image instead of rendering the scene again
+        const auto mainTask = MainRenderTask::Instance;
+        if (IsMirrorEnabled == enable || mainTask == nullptr)
+            return;
+        IsMirrorEnabled = enable;
+        if (enable)
+        {
+            WasCustomRendering = mainTask->IsCustomRendering;
+            mainTask->IsCustomRendering = true;
+            mainTask->Render.Bind(DrawMirror);
+        }
+        else
+        {
+            mainTask->IsCustomRendering = WasCustomRendering;
+            mainTask->Render.Unbind(DrawMirror);
+        }
+    }
+
     void DestroySession()
     {
         if (IsSessionRunning)
             StopFrameLoop();
+        SetMirror(false);
         for (auto& swapchain : Swapchains)
         {
-            OpenXRGraphicsD3D11::ReleaseSwapchainImages(swapchain.Images);
+            SAFE_DELETE(swapchain.Task);
+            SAFE_DELETE_GPU_RESOURCES(swapchain.Images);
             if (swapchain.Handle != XR_NULL_HANDLE)
                 xrDestroySwapchain(swapchain.Handle);
         }
@@ -192,6 +258,7 @@ namespace
         const int64 format = OpenXRGraphicsD3D11::SelectSwapchainFormat(formats);
 
         // Create swapchain for each view
+        const float renderScale = XRSettings::Get()->RenderScale;
         Swapchains.Resize(viewsCount);
         Views.Resize(viewsCount);
         ProjectionViews.Resize(viewsCount);
@@ -202,8 +269,8 @@ namespace
             swapchainInfo.usageFlags = XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT | XR_SWAPCHAIN_USAGE_SAMPLED_BIT;
             swapchainInfo.format = format;
             swapchainInfo.sampleCount = 1;
-            swapchainInfo.width = configViews[i].recommendedImageRectWidth;
-            swapchainInfo.height = configViews[i].recommendedImageRectHeight;
+            swapchainInfo.width = (uint32)Math::Clamp(Math::RoundToInt((float)configViews[i].recommendedImageRectWidth * renderScale), 1, (int32)configViews[i].maxImageRectWidth);
+            swapchainInfo.height = (uint32)Math::Clamp(Math::RoundToInt((float)configViews[i].recommendedImageRectHeight * renderScale), 1, (int32)configViews[i].maxImageRectHeight);
             swapchainInfo.faceCount = 1;
             swapchainInfo.arraySize = 1;
             swapchainInfo.mipCount = 1;
@@ -215,13 +282,19 @@ namespace
                 DestroySession();
                 return true;
             }
-            if (OpenXRGraphicsD3D11::InitSwapchainImages(swapchain.Handle, format, swapchain.Images))
+            swapchain.Width = (int32)swapchainInfo.width;
+            swapchain.Height = (int32)swapchainInfo.height;
+            if (OpenXRGraphicsD3D11::InitSwapchainImages(swapchain.Handle, format, swapchain.Width, swapchain.Height, swapchain.Images))
             {
                 DestroySession();
                 return true;
             }
-            swapchain.Width = (int32)swapchainInfo.width;
-            swapchain.Height = (int32)swapchainInfo.height;
+
+            // Create task for rendering the view
+            swapchain.Task = New<SceneRenderTask>();
+            swapchain.Task->Enabled = false;
+            swapchain.Task->Order = -100; // Render before the main view that is used to mirror the headset image
+            swapchain.Task->SetupRender.Bind(SetupViewRender);
             Views[i] = { XR_TYPE_VIEW };
             ProjectionViews[i] = { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW };
         }
@@ -283,10 +356,13 @@ namespace
     void EndFrame()
     {
         IsFrameBegun = false;
+        SetMirror(false);
 
         // Release swapchain images
         for (auto& swapchain : Swapchains)
         {
+            swapchain.Task->Enabled = false;
+            swapchain.Task->Output = nullptr;
             if (swapchain.IsAcquired)
             {
                 swapchain.IsAcquired = false;
@@ -372,6 +448,11 @@ void OpenXRSession::Draw()
     if (XR_FAILED(result) || (viewState.viewStateFlags & XR_VIEW_STATE_ORIENTATION_VALID_BIT) == 0)
         return;
 
+    // Use the main camera as the tracking space origin
+    // TODO: add XR rig actor to control the tracking space origin
+    const Camera* camera = Camera::GetMainCamera();
+    const Transform origin = camera ? Transform(camera->GetPosition(), camera->GetOrientation()) : Transform::Identity;
+
     // Render each view
     for (int32 i = 0; i < Swapchains.Count(); i++)
     {
@@ -388,8 +469,32 @@ void OpenXRSession::Draw()
             return;
         swapchain.IsAcquired = true;
 
-        // TODO: render the scene from the view
-        OpenXRGraphicsD3D11::ClearSwapchainImage(swapchain.Images[imageIndex], ClearColor);
+        // Setup the view
+        auto task = swapchain.Task;
+        auto& view = task->View;
+        if (camera)
+        {
+            view.Near = camera->GetNearPlane();
+            view.Far = camera->GetFarPlane();
+            view.RenderLayersMask = camera->RenderLayersMask;
+            view.Flags = camera->RenderFlags;
+            view.Mode = camera->RenderMode;
+        }
+        const Transform pose = origin.LocalToWorld(OpenXRConvert::ToTransform(Views[i].pose));
+        LargeWorlds::UpdateOrigin(view.Origin, pose.Translation);
+        view.Position = pose.Translation - view.Origin;
+        view.Direction = pose.GetForward();
+        Matrix viewMatrix, projectionMatrix;
+        Matrix::LookAt(view.Position, view.Position + view.Direction, pose.GetUp(), viewMatrix);
+        OpenXRConvert::ToProjection(Views[i].fov, view.Near, view.Far, projectionMatrix);
+        view.SetUp(viewMatrix, projectionMatrix);
+
+        // Disable motion blur (head movement would blur the whole view)
+        view.Flags &= ~ViewFlags::MotionBlur;
+
+        // Render to the swapchain image
+        task->Output = swapchain.Images[imageIndex];
+        task->Enabled = true;
 
         auto& projectionView = ProjectionViews[i];
         projectionView.pose = Views[i].pose;
@@ -399,6 +504,7 @@ void OpenXRSession::Draw()
         projectionView.subImage.imageRect.extent = { swapchain.Width, swapchain.Height };
     }
     HasProjectionLayer = true;
+    SetMirror(true);
 }
 
 void OpenXRSession::PostDraw()
