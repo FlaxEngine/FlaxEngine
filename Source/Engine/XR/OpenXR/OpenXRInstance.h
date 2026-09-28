@@ -5,6 +5,7 @@
 #if XR_API_OPENXR
 
 #include "Engine/Core/Types/String.h"
+#include <ThirdParty/OpenXR/openxr/openxr.h>
 
 /// <summary>
 /// The OpenXR instance and the head-mounted display system used by the XR service.
@@ -12,6 +13,16 @@
 class OpenXRInstance
 {
 public:
+    /// <summary>
+    /// The OpenXR instance. Null if the runtime is not available.
+    /// </summary>
+    static XrInstance Instance;
+
+    /// <summary>
+    /// The head-mounted display system. Null if the headset is not connected.
+    /// </summary>
+    static XrSystemId SystemId;
+
     /// <summary>
     /// The name of the OpenXR runtime.
     /// </summary>
@@ -35,6 +46,12 @@ public:
     static bool Init();
 
     /// <summary>
+    /// Gets the head-mounted display system. Can be called again later if the headset was not connected.
+    /// </summary>
+    /// <returns>True if failed, otherwise false.</returns>
+    static bool InitSystem();
+
+    /// <summary>
     /// Destroys the OpenXR instance.
     /// </summary>
     static void Dispose();
@@ -44,6 +61,13 @@ public:
     /// </summary>
     /// <returns>True if ready to use, otherwise false.</returns>
     static bool IsReady();
+
+    /// <summary>
+    /// Gets the name of the OpenXR result code.
+    /// </summary>
+    /// <param name="result">The result code.</param>
+    /// <returns>The result code name.</returns>
+    static const Char* GetResultString(XrResult result);
 };
 
 #endif

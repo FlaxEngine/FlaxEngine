@@ -4,9 +4,11 @@
 #include "XRSettings.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Engine/CommandLine.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Engine/EngineService.h"
 #if XR_API_OPENXR
 #include "OpenXR/OpenXRInstance.h"
+#include "OpenXR/OpenXRSession.h"
 #endif
 
 class XRService : public EngineService
@@ -18,6 +20,9 @@ public:
     }
 
     bool Init() override;
+    void Update() override;
+    void Draw() override;
+    void BeforeExit() override;
     void Dispose() override;
 };
 
@@ -27,6 +32,15 @@ bool XR::IsAvailable()
 {
 #if XR_API_OPENXR
     return OpenXRInstance::IsReady();
+#else
+    return false;
+#endif
+}
+
+bool XR::IsActive()
+{
+#if XR_API_OPENXR
+    return OpenXRSession::IsRunning();
 #else
     return false;
 #endif
@@ -73,10 +87,34 @@ bool XRService::Init()
 #if XR_API_OPENXR
     // Missing runtime or head-mounted display is not an error (XR stays unavailable)
     OpenXRInstance::Init();
+    Engine::PostDraw.Bind<&OpenXRSession::PostDraw>();
 #else
     LOG(Info, "XR unavailable (not supported on this platform)");
 #endif
     return false;
+}
+
+void XRService::Update()
+{
+#if XR_API_OPENXR
+    OpenXRSession::Update();
+#endif
+}
+
+void XRService::Draw()
+{
+#if XR_API_OPENXR
+    OpenXRSession::Draw();
+#endif
+}
+
+void XRService::BeforeExit()
+{
+#if XR_API_OPENXR
+    // Destroy session before the graphics device
+    Engine::PostDraw.Unbind<&OpenXRSession::PostDraw>();
+    OpenXRSession::Dispose();
+#endif
 }
 
 void XRService::Dispose()

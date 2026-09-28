@@ -20,6 +20,12 @@ public:
     API_PROPERTY() static bool IsAvailable();
 
     /// <summary>
+    /// Gets a value indicating whether an XR session is running and frames are being submitted to the head-mounted display.
+    /// </summary>
+    /// <returns>True if XR is active, otherwise false.</returns>
+    API_PROPERTY() static bool IsActive();
+
+    /// <summary>
     /// Gets the name of the XR runtime (eg. SteamVR/OpenXR). Empty if no runtime was found.
     /// </summary>
     /// <returns>The runtime name.</returns>

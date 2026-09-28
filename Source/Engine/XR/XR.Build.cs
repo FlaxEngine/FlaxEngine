@@ -27,6 +27,7 @@ public class XR : EngineModule
                 options.SourcePaths.Add(Path.Combine(FolderPath, "OpenXR"));
                 options.CompileEnv.PreprocessorDefinitions.Add("XR_API_OPENXR");
                 options.PrivateDependencies.Add("OpenXR");
+                options.PrivateDependencies.Add("GraphicsDeviceDX11");
             }
             break;
         default:
