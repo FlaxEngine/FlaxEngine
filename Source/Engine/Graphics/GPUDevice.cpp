@@ -693,6 +693,8 @@ void GPUDevice::DrawEnd()
 
     // Check if use VSync (prioritize the last window, in case of multi-window in Editor)
     bool useVSync = UseVSync();
+    if (Engine::FramePacer.IsBinded())
+        useVSync = false; // Custom frame pacing waits for the next frame
     int32 vsyncTask = -1;
     for (int32 i = RenderTask::Tasks.Count() - 1; i >= 0; i--)
     {

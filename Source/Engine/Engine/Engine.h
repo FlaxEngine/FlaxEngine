@@ -75,7 +75,7 @@ public:
     static Action PostDraw;
 
     /// <summary>
-    /// The custom frame pacing function called at the beginning of each game loop tick instead of the idle sleep (eg. to wait for the XR runtime frame timing).
+    /// The custom frame pacing function called at the beginning of each game loop tick instead of the idle sleep (eg. to wait for the XR runtime frame timing). When set, the update and draw run every tick and the VSync is not used.
     /// </summary>
     static Function<void()> FramePacer;
 

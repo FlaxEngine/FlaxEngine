@@ -285,7 +285,9 @@ bool Time::OnBeginUpdate(double time)
     }
 #endif
 
-    if (Update.OnTickBegin(time, GetFps(UpdateFPS), MaxUpdateDeltaTime))
+    // Update every frame when using the custom frame pacing
+    const float updateFps = Engine::FramePacer.IsBinded() ? 0.0f : GetFps(UpdateFPS);
+    if (Update.OnTickBegin(time, updateFps, MaxUpdateDeltaTime))
     {
         Current = &Update;
         return true;
