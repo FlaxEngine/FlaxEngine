@@ -1611,11 +1611,10 @@ RETRY_ATLAS_SETUP:
                     tile.LinkedRectTile = nullptr;
                     auto& linkedTile = linkedAtlasLight->Tiles[tileIndex];
 
-                    // Link tile and use its projection
-                    if (linkedTile.RectTile)
+                    // Link tile only if it uses the same projection (eg. directional light cascades depend on the view frustum), the tile objects are drawn on top of the linked shadow
+                    if (linkedTile.RectTile && linkedTile.WorldToShadow == tile.WorldToShadow)
                     {
                         tile.LinkedRectTile = linkedTile.RectTile;
-                        tile.WorldToShadow = linkedTile.WorldToShadow;
                     }
                 }
             }
