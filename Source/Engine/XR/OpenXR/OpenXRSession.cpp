@@ -52,6 +52,7 @@ namespace
     Array<XrView> Views;
     Array<XrCompositionLayerProjectionView> ProjectionViews;
     Array<XrCompositionLayerDepthInfoKHR> DepthInfos;
+    RenderView ProxyView;
     PFN_xrGetDisplayRefreshRateFB GetDisplayRefreshRateFB = nullptr;
     XrFrameState FrameState = { XR_TYPE_FRAME_STATE };
     bool IsSessionRunning = false;
@@ -149,6 +150,64 @@ namespace
         context->Draw(image);
         context->ResetSR(); // The eye image is used as render target in the next frames
         context->ResetRenderTarget();
+    }
+
+    void SetupProxyView()
+    {
+        // Use the orientation of the first view and the center between the views
+        const RenderView& firstView = Swapchains[0].Task->View;
+        Float3 center = Float3::Zero;
+        for (const auto& swapchain : Swapchains)
+            center += swapchain.Task->View.Position;
+        center /= (float)Swapchains.Count();
+        const Float3 up = firstView.IV.GetUp();
+        Matrix viewMatrix, projectionMatrix;
+        Matrix::LookAt(center, center + firstView.Direction, up, viewMatrix);
+
+        // Get the frustum sides that contain the frustums of all views (as tangents of the angles)
+        float tanLeft = 0.01f, tanRight = 0.01f, tanDown = 0.01f, tanUp = 0.01f, depthScale = 1.0f;
+        for (int32 i = 0; i < Swapchains.Count(); i++)
+        {
+            const XrFovf& fov = Views[i].fov;
+            const Float3 corners[4] =
+            {
+                Float3(Math::Tan(fov.angleLeft), Math::Tan(fov.angleUp), 1.0f),
+                Float3(Math::Tan(fov.angleRight), Math::Tan(fov.angleUp), 1.0f),
+                Float3(Math::Tan(fov.angleRight), Math::Tan(fov.angleDown), 1.0f),
+                Float3(Math::Tan(fov.angleLeft), Math::Tan(fov.angleDown), 1.0f),
+            };
+            for (const Float3& corner : corners)
+            {
+                Float3 direction;
+                Float3::TransformNormal(corner, Swapchains[i].Task->View.IV, direction);
+                Float3::TransformNormal(direction, viewMatrix, direction);
+                depthScale = Math::Max(depthScale, direction.Z);
+                direction /= Math::Max(direction.Z, ZeroTolerance);
+                tanLeft = Math::Max(tanLeft, -direction.X);
+                tanRight = Math::Max(tanRight, direction.X);
+                tanDown = Math::Max(tanDown, -direction.Y);
+                tanUp = Math::Max(tanUp, direction.Y);
+            }
+        }
+
+        // Move the view back so the view positions are inside its frustum
+        float offset = 0.0f;
+        for (const auto& swapchain : Swapchains)
+        {
+            const Float3 position = Float3::Transform(swapchain.Task->View.Position, viewMatrix);
+            offset = Math::Max(offset, Math::Max(position.X / tanRight, -position.X / tanLeft, position.Y / tanUp, -position.Y / tanDown) - position.Z);
+        }
+
+        // Setup view (models LOD, shadow cascades and particles sorting are the same in all views)
+        ProxyView = firstView;
+        ProxyView.Position = center - firstView.Direction * offset;
+        ProxyView.Far = offset + firstView.Far * depthScale;
+        Matrix::LookAt(ProxyView.Position, ProxyView.Position + ProxyView.Direction, up, viewMatrix);
+        Matrix::PerspectiveOffCenter(-tanLeft * ProxyView.Near, tanRight * ProxyView.Near, -tanDown * ProxyView.Near, tanUp * ProxyView.Near, ProxyView.Near, ProxyView.Far, projectionMatrix);
+        ProxyView.SetUp(viewMatrix, projectionMatrix);
+
+        // Cull the first view with the frustum of all views so its shadow maps contain all the lights visible in the other views
+        Swapchains[0].Task->View.CullingFrustum = ProxyView.Frustum;
     }
 
 #if COMPILE_WITH_DEBUG_DRAW
@@ -383,10 +442,16 @@ namespace
 #if COMPILE_WITH_DEBUG_DRAW
             swapchain.Task->PostRender.Bind(DrawViewDebug);
 #endif
+            if (viewsCount > 1)
+            {
+                // Use the same models LOD and shadow projections in all views
+                swapchain.Task->ProxyView = &ProxyView;
+            }
             if (i > 0)
             {
-                // Share the effects state (eg. shadow maps, global illumination) and the exposure of the first view so both eyes look the same
+                // Share the effects state (eg. global illumination), the shadow maps and the exposure of the first view so both eyes look the same
                 swapchain.Task->Buffers->LinkedCustomBuffers = Swapchains[0].Task->Buffers;
+                swapchain.Task->Buffers->LinkedShadows = Swapchains[0].Task->Buffers;
                 swapchain.Task->Buffers->LinkedEyeAdaptation = Swapchains[0].Task->Buffers;
             }
             Views[i] = { XR_TYPE_VIEW };
@@ -686,6 +751,8 @@ void OpenXRSession::Draw()
             depthInfo.farZ = view.Far * UNITS_TO_METERS_SCALE;
         }
     }
+    if (Swapchains.Count() > 1)
+        SetupProxyView();
     HasProjectionLayer = true;
     SetMirror(true);
 }
