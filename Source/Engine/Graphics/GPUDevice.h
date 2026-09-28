@@ -70,6 +70,21 @@ struct FLAXENGINE_API GPUDeviceCreationHints
     /// The locally unique identifier (LUID) of the adapter to use. Zero if not specified.
     /// </summary>
     uint64 RequiredAdapterLuid = 0;
+
+    /// <summary>
+    /// The custom function that creates the Vulkan instance (eg. by the XR runtime that adds the extensions it needs). Arguments: const VkInstanceCreateInfo*, VkInstance*. Returns VkResult.
+    /// </summary>
+    Function<int32(const void*, void*)> CreateVulkanInstance;
+
+    /// <summary>
+    /// The custom function that gets the Vulkan physical device to use. Arguments: VkInstance. Returns VkPhysicalDevice, or null to use the default one.
+    /// </summary>
+    Function<void*(void*)> GetVulkanPhysicalDevice;
+
+    /// <summary>
+    /// The custom function that creates the Vulkan device (eg. by the XR runtime that adds the extensions it needs). Arguments: VkPhysicalDevice, const VkDeviceCreateInfo*, VkDevice*. Returns VkResult.
+    /// </summary>
+    Function<int32(void*, const void*, void*)> CreateVulkanDevice;
 };
 
 /// <summary>
