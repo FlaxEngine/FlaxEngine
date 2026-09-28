@@ -481,6 +481,7 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
     if (setup.UseMotionVectors)
         renderContext.View.Pass |= DrawPass::MotionVectors;
     renderContext.View.Prepare(renderContext);
+    renderContext.LodProxyView = renderContext.Task->ProxyView; // Use the proxy view for models LOD (eg. to draw the same LODs in both eyes in XR)
     renderContext.Buffers->OnRendering(renderContext);
 }
 
