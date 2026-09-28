@@ -358,6 +358,7 @@ struct GPUDevice::PrivateData
 };
 
 GPUDevice* GPUDevice::Instance = nullptr;
+GPUDeviceCreationHints GPUDevice::CreationHints;
 
 void GPUDevice::OnRequestingExit()
 {
