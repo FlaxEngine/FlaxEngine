@@ -27,6 +27,61 @@ namespace Flax.Build.Platforms
     /// <seealso cref="UnixToolchain" />
     public class LinuxToolchain : UnixToolchain
     {
+        private List<string> GetPkgConfigLibDirs()
+        {
+            var targetTriple = Architecture switch
+            {
+                TargetArchitecture.x86 => "i686-linux-gnu",
+                TargetArchitecture.x64 => "x86_64-linux-gnu",
+                TargetArchitecture.ARM => "arm-linux-gnueabihf",
+                TargetArchitecture.ARM64 => "aarch64-linux-gnu",
+                _ => null,
+            };
+
+            var result = new List<string>();
+            foreach (var path in new[]
+            {
+                Path.Combine(ToolsetRoot, "usr", "lib", "pkgconfig"),
+                Path.Combine(ToolsetRoot, "usr", "share", "pkgconfig"),
+                Path.Combine(ToolsetRoot, "lib", "pkgconfig"),
+                Path.Combine(ToolsetRoot, "share", "pkgconfig"),
+                string.IsNullOrEmpty(targetTriple) ? null : Path.Combine(ToolsetRoot, "usr", "lib", targetTriple, "pkgconfig"),
+                string.IsNullOrEmpty(targetTriple) ? null : Path.Combine(ToolsetRoot, "lib", targetTriple, "pkgconfig"),
+            })
+            {
+                if (!string.IsNullOrEmpty(path) && Directory.Exists(path) && !result.Contains(path))
+                    result.Add(path);
+            }
+            return result;
+        }
+
+        private static string FindFirstExistingDirectory(params string[] candidates)
+        {
+            foreach (var candidate in candidates)
+            {
+                if (!string.IsNullOrEmpty(candidate) && Directory.Exists(candidate))
+                    return candidate;
+            }
+            return null;
+        }
+
+        private string TryGetClangResourceIncludePath()
+        {
+            try
+            {
+                var resourceDir = Utilities.ReadProcessOutput(ClangPath, "-print-resource-dir");
+                if (!string.IsNullOrWhiteSpace(resourceDir))
+                {
+                    var includePath = Path.Combine(resourceDir.Trim(), "include");
+                    if (Directory.Exists(includePath))
+                        return includePath;
+                }
+            }
+            catch
+            {
+            }
+            return null;
+        }
         /// <summary>
         /// Initializes a new instance of the <see cref="LinuxToolchain"/> class.
         /// </summary>
@@ -40,26 +95,43 @@ namespace Flax.Build.Platforms
                 Log.Error($"Old Clang version {ClangVersion}. Minimum supported is {minClangVer}.");
 
             // Setup system paths
-            var includePath = Path.Combine(ToolsetRoot, "usr", "include");
-            if (Directory.Exists(includePath))
-                SystemIncludePaths.Add(includePath);
-            else
-                Log.Error($"Missing toolset header files location {includePath}");
-            var cppIncludePath = Path.Combine(includePath, "c++", LibStdCppVersion);
-            if (Directory.Exists(cppIncludePath))
-                SystemIncludePaths.Add(cppIncludePath);
-            else
-                Log.Verbose($"Missing Clang {ClangVersion} C++ header files location {cppIncludePath}");
-            var clangLibPath = Path.Combine(ToolsetRoot, "usr", "lib", "clang");
-            var clangIncludePath = Path.Combine(clangLibPath, ClangVersion.Major.ToString(), "include");
-            if (!Directory.Exists(clangIncludePath))
+            var includePath = FindFirstExistingDirectory(
+                Path.Combine(ToolsetRoot, "usr", "include"),
+                Path.Combine(ToolsetRoot, "include"));
+            if (includePath != null)
             {
-                var error = $"Missing Clang {ClangVersion} header files location {clangIncludePath}";
-                clangIncludePath = Path.Combine(clangLibPath, ClangVersion.ToString(), "include");
-                if (!Directory.Exists(clangIncludePath))
-                    Log.Error(error);
+                SystemIncludePaths.Add(includePath);
+
+                var cppIncludePath = Path.Combine(includePath, "c++", LibStdCppVersion);
+                if (Directory.Exists(cppIncludePath))
+                    SystemIncludePaths.Add(cppIncludePath);
+                else
+                    Log.Verbose($"Missing Clang {ClangVersion} C++ header files location {cppIncludePath}");
             }
-            SystemIncludePaths.Add(clangIncludePath);
+            else
+            {
+                Log.Verbose($"Missing toolset header files location under {ToolsetRoot}");
+            }
+
+            var clangIncludePath = TryGetClangResourceIncludePath();
+            if (clangIncludePath == null)
+            {
+                var clangVersionMajor = ClangVersion.Major.ToString();
+                var clangVersionFull = ClangVersion.ToString();
+                var clangIncludeCandidates = new[]
+                {
+                    Path.Combine(ToolsetRoot, "usr", "lib", "clang", clangVersionMajor, "include"),
+                    Path.Combine(ToolsetRoot, "usr", "lib", "clang", clangVersionFull, "include"),
+                    Path.Combine(ToolsetRoot, "lib", "clang", clangVersionMajor, "include"),
+                    Path.Combine(ToolsetRoot, "lib", "clang", clangVersionFull, "include"),
+                };
+                clangIncludePath = FindFirstExistingDirectory(clangIncludeCandidates);
+            }
+
+            if (clangIncludePath != null)
+                SystemIncludePaths.Add(clangIncludePath);
+            else
+                Log.Error($"Missing Clang {ClangVersion} header files location (resource-dir and sysroot probes failed).");
         }
 
         /// <inheritdoc />
@@ -138,21 +210,12 @@ namespace Flax.Build.Platforms
             args.Add("-lz");
 
             // Link X11
-            args.Add("-L/usr/X11R6/lib");
-            args.Add("-lX11");
-            args.Add("-lXcursor");
-            args.Add("-lXinerama");
-            args.Add("-lXfixes");
+            PkgConfig.AddLibsOrFallback(args, "x11 xcursor xinerama xfixes", new[] { "-lX11", "-lXcursor", "-lXinerama", "-lXfixes" }, ToolsetRoot, GetPkgConfigLibDirs());
 
             if (EngineConfiguration.WithSDL(options))
             {
-                // Link Wayland
-                args.Add("-lwayland-client");
-
-                // Link GLib for libportal
-                args.Add("-lglib-2.0");
-                args.Add("-lgio-2.0");
-                args.Add("-lgobject-2.0");
+                // Link Wayland + GLib for libportal
+                PkgConfig.AddLibsOrFallback(args, "wayland-client glib-2.0 gio-2.0 gobject-2.0", new[] { "-lwayland-client", "-lglib-2.0", "-lgio-2.0", "-lgobject-2.0" }, ToolsetRoot, GetPkgConfigLibDirs());
             }
         }
 

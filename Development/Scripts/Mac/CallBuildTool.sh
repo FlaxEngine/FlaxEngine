@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Copyright (c) Wojciech Figat. All rights reserved
 
 set -e
