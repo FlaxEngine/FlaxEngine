@@ -304,7 +304,7 @@ namespace FlaxEditor.Modules
             //
             _toolStripBuildScenes.Enabled = (canEditScene && !isPlayMode) || Editor.StateMachine.BuildingScenesState.IsActive;
             _toolStripBuildScenes.Visible = Editor.Options.Options.General.BuildActions?.Length != 0;
-            _toolStripCook.Enabled = Editor.Windows.GameCookerWin.CanBuild(Platform.PlatformType) && !GameCooker.IsRunning;
+            _toolStripCook.Enabled = Editor.Windows.GameCookerWin.CanBuild(Platform.PlatformType) && Editor.Windows.GameCookerWin.CanCook();
             //
             var play = _toolStripPlay;
             var pause = _toolStripPause;
