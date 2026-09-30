@@ -148,11 +148,16 @@ namespace WaylandImpl
 
     wl_data_offer* DataOffer = nullptr; // The last accepted offer
     wl_data_offer* SelectionOffer = nullptr;
+    wl_event_queue* EventQueue = nullptr;
+    bool DraggingWindow = false;
     wl_data_device_listener DataDeviceListener =
     {
         [](void* data, wl_data_device* data_device, wl_data_offer* id) { }, // Data offer event
         [](void* data, wl_data_device* data_device, uint32 serial, wl_surface* surface, wl_fixed_t x, wl_fixed_t y, wl_data_offer* id) // Enter event
         {
+            if (!DraggingWindow)
+                return;
+            
             DataOffer = id;
 
             SDLWindow* sourceWindow = (SDLWindow*)data;
@@ -168,14 +173,22 @@ namespace WaylandImpl
         },
         [](void* data, wl_data_device* data_device) // Leave event
         {
+            if (!DraggingWindow)
+                return;
+            
             // The cursor left the surface area
             if (DataOffer != nullptr)
+            {
                 wl_data_offer_destroy(DataOffer);
-            DataOffer = nullptr;
+                DataOffer = nullptr;
+            }
         },
         [](void* data, wl_data_device* data_device, uint32_t time, wl_fixed_t x, wl_fixed_t y) { },  // Motion event
         [](void* data, wl_data_device* data_device) // Drop event
         {
+            if (!DraggingWindow)
+                return;
+            
             // The drop is accepted
             if (DataOffer != nullptr)
             {
@@ -186,6 +199,9 @@ namespace WaylandImpl
         },
         [](void* data, wl_data_device* data_device, wl_data_offer* id) // Selection event
         {
+            if (!DraggingWindow)
+                return;
+            
             // Clipboard: We can read the clipboard content
             if (SelectionOffer != nullptr)
                 wl_data_offer_destroy(SelectionOffer);
@@ -193,27 +209,31 @@ namespace WaylandImpl
         },
     };
 
+    bool DataSourceValid = false;
     wl_data_source_listener DataSourceListener =
     {
         [](void* data, wl_data_source* source, const char* mime_type) { }, // Target event
         [](void* data, wl_data_source* source, const char* mime_type, int32_t fd) // Send event
         {
             // Clipboard: The other end has accepted and is requesting the data
+            UnixFile file(fd);
             IGuiData* inputData = static_cast<IGuiData*>(data);
-            if (inputData->GetType() == IGuiData::Type::Text)
+            if (inputData != nullptr && inputData->GetType() == IGuiData::Type::Text)
             {
-                UnixFile file(fd);
-                StringAnsi text = StringAnsi(inputData->GetAsText());
-                file.Write(text.Get(), text.Length() * sizeof(StringAnsi::CharType));
-                file.Close();
+                if (StringUtils::Compare(mime_type, "text/plain;charset=utf-8") == 0)
+                {
+                    StringAnsi text = StringAnsi(inputData->GetAsText());
+                    file.Write(text.Get(), text.Length() * sizeof(StringAnsi::CharType));
+                }
             }
+            file.Close();
         },
         [](void* data, wl_data_source* source) // Cancelled event
         {
             // Clipboard: other application has replaced the content in clipboad
             wl_data_source_destroy(source);
-            
-            IGuiData* inputData = static_cast<IGuiData*>(data);
+            DataSourceValid = false;
+
             Platform::AtomicStore(&WaylandImpl::DragOverFlag, 1);
         },
         [](void* data, wl_data_source* source) { }, // DnD drop performed event
@@ -221,6 +241,7 @@ namespace WaylandImpl
         {
             // The destination has finally accepted the last given dnd_action
             wl_data_source_destroy(source);
+            DataSourceValid = false;
 
             IGuiData* inputData = static_cast<IGuiData*>(data);
             Platform::AtomicStore(&WaylandImpl::DragOverFlag, 1);
@@ -229,11 +250,9 @@ namespace WaylandImpl
     };
 
     wl_data_device* DataDevice = nullptr;
-    wl_event_queue* EventQueue = nullptr;
     wl_data_device_manager* WrappedDataDeviceManager = nullptr;
     wl_data_device* WrappedDataDevice = nullptr;
     bool DraggingActive = false;
-    bool DraggingWindow = false;
     StringView DraggingData = nullptr;
     class DragDropJob : public ThreadPoolTask
     {
@@ -279,8 +298,7 @@ namespace WaylandImpl
 
             // Offer data for consumption, the data source is destroyed elsewhere
             wl_data_source* dataSource = wl_data_device_manager_create_data_source(WrappedDataDeviceManager);
-            wl_data_source* wrappedDataSource = (wl_data_source*)wl_proxy_create_wrapper(dataSource);
-            wl_proxy_set_queue(reinterpret_cast<wl_proxy*>(wrappedDataSource), EventQueue);
+            DataSourceValid = true;
             if (dragWindow)
             {
                 wl_data_source_offer(dataSource, "flaxengine/window");
@@ -354,8 +372,11 @@ namespace WaylandImpl
             
             Platform::AtomicStore(&DragOverFlag, 1);
 
-            if (wrappedDataSource != nullptr)
-                wl_proxy_wrapper_destroy(wrappedDataSource);
+            if (DataSourceValid)
+            {
+                wl_data_source_destroy(dataSource);
+                DataSourceValid = false;
+            }
 
             if (SelectionOffer != nullptr)
             {
