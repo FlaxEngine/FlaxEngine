@@ -21,8 +21,9 @@ API_ENUM() enum class PlatformType
 
     /// <summary>
     /// Running Windows Store App (Universal Windows Platform).
+    /// [Deprecated and unsupported platform]
     /// </summary>
-    API_ENUM(Attributes="EditorDisplay(null, \"UWP\")")
+    API_ENUM(Attributes="EditorDisplay(null, \"UWP\"), Obsolete")
     UWP = 3,
 
     /// <summary>

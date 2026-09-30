@@ -1479,6 +1479,16 @@ namespace FlaxEditor
             if (preset == null)
             {
                 Editor.LogWarning("Missing preset.");
+                if (settings.Presets != null)
+                {
+                    Editor.LogWarning("Available presets:");
+                    foreach (var p in settings.Presets)
+                    {
+                        Editor.LogWarning($"   > {p.Name}");
+                        foreach (var t in p.Targets)
+                            Editor.LogWarning($"     * {t.Name} ({t.Platform}, {t.Mode})");
+                    }
+                }
                 return true;
             }
 

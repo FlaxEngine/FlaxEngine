@@ -94,8 +94,10 @@ namespace FlaxEditor
             {
             case BuildPlatform.Windows32:
             case BuildPlatform.Windows64: return PlatformType.Windows;
+#pragma warning disable CS0612
             case BuildPlatform.UWPx86:
             case BuildPlatform.UWPx64: return PlatformType.UWP;
+#pragma warning restore CS0612
             case BuildPlatform.XboxOne: return PlatformType.XboxOne;
             case BuildPlatform.LinuxX64: return PlatformType.Linux;
             case BuildPlatform.PS4: return PlatformType.PS4;
