@@ -10,6 +10,7 @@ using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Scripting;
 using FlaxEngine;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.GUI
 {
@@ -60,16 +61,23 @@ namespace FlaxEditor.GUI
             public long Value;
 
             /// <summary>
+            /// Marks enum entry as deprecated and should not be used by users anymore (displayed in grey).
+            /// </summary>
+            public bool IsObsolete;
+
+            /// <summary>
             /// Initializes a new instance of the <see cref="Entry"/> struct.
             /// </summary>
             /// <param name="name">The name.</param>
             /// <param name="tooltip">The tooltip.</param>
             /// <param name="value">The value.</param>
-            public Entry(string name, long value, string tooltip = null)
+            /// <param name="isObsolete">The deprecated entry flag.</param>
+            public Entry(string name, long value, string tooltip = null, bool isObsolete = false)
             {
                 Name = name;
                 Tooltip = tooltip;
                 Value = value;
+                IsObsolete = isObsolete;
             }
         }
 
@@ -280,10 +288,9 @@ namespace FlaxEditor.GUI
                     default: throw new ArgumentOutOfRangeException(nameof(formatMode), formatMode, null);
                     }
                 }
-
                 string tooltip = Editor.Instance.CodeDocs.GetTooltip(new ScriptMemberInfo(field), attributes);
-
-                entries.Add(new Entry(name, Convert.ToInt64(field.GetRawConstantValue()), tooltip));
+                bool isObsolete = attributes.Any(x => x is ObsoleteAttribute);
+                entries.Add(new Entry(name, Convert.ToInt64(field.GetRawConstantValue()), tooltip, isObsolete));
             }
         }
 
@@ -291,8 +298,11 @@ namespace FlaxEditor.GUI
         protected override void OnLayoutMenuButton(ContextMenuButton button, int index, bool construct = false)
         {
             base.OnLayoutMenuButton(button, index, construct);
+
             if (IsFlags)
                 button.CloseMenuOnClick = false;
+            if (index < _entries.Count && _entries[index].IsObsolete)
+                button.TextColor = Style.Current.ForegroundGrey;
         }
 
         /// <inheritdoc />

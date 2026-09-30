@@ -41,6 +41,11 @@ namespace FlaxEditor.GUI.ContextMenu
         public string ShortKeys;
 
         /// <summary>
+        /// The text color.
+        /// </summary>
+        public Color TextColor;
+
+        /// <summary>
         /// Item icon (best is 16x16).
         /// </summary>
         public SpriteHandle Icon;
@@ -71,6 +76,7 @@ namespace FlaxEditor.GUI.ContextMenu
         {
             Text = text;
             ShortKeys = shortKeys;
+            TextColor = Style.Current.Foreground;
         }
 
         /// <summary>
@@ -122,7 +128,7 @@ namespace FlaxEditor.GUI.ContextMenu
             var style = Style.Current;
             var backgroundRect = new Rectangle(-X + 3, 0, Parent.Width - 6, Height);
             var textRect = new Rectangle(0, 0, Width - 8, Height);
-            var textColor = Enabled ? style.Foreground : style.ForegroundDisabled;
+            var textColor = Enabled ? TextColor : style.ForegroundDisabled;
 
             // Draw background
             if (IsMouseOver && Enabled)
