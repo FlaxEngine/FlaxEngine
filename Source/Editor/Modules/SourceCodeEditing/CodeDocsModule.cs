@@ -50,6 +50,8 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             if (attributes == null)
                 attributes = type.GetAttributes(false);
             text = type.TypeName;
+            if (type.IScriptType is Content.VisualScriptType visualScriptType && visualScriptType.Asset)
+                text = $"{System.IO.Path.GetFileNameWithoutExtension(visualScriptType.Asset.Path)}\n{text}";
             var tooltip = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
             if (tooltip != null)
                 text += '\n' + tooltip.Text;
