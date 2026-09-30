@@ -51,7 +51,7 @@ struct MultiBlendAnimData
             }
         }
 
-        if (speed < 0.0f && bucket.LastUpdateFrame < context.CurrentFrameIndex - 1)
+        if (speed * context.DeltaTime < 0.0f && bucket.LastUpdateFrame < context.CurrentFrameIndex - 1)
         {
             // If speed is negative and it's the first node update then start playing from end
             sample.PrevTimePos = sample.Length;
@@ -314,11 +314,11 @@ float GetAnimPos(float& timePos, float startTimePos, float speed, bool loop, flo
         if (loop)
         {
             // Animation looped (revered playback)
-            result = length - result;
+            result = length + Math::Mod(result, length);
         }
         else
         {
-            // Animation ended (revered playback)
+            // Animation ended (reversed playback)
             result = 0;
         }
         timePos = result;
@@ -346,12 +346,14 @@ float GetAnimSamplePos(float length, Animation* anim, float pos)
 {
     // Convert into animation local time (track length may be bigger so fill the gaps with animation clip and include playback speed)
     // Also, scale the animation to fit the total animation node length without cut in a middle
-    const auto animLength = anim->GetLength();
+    const float animLength = anim->GetLength();
+    if (animLength <= ANIM_GRAPH_BLEND_THRESHOLD)
+        return 0;
     const int32 cyclesCount = Math::Max(Math::FloorToInt(length / animLength), 1);
     const float cycleLength = animLength * (float)cyclesCount;
     const float adjustRateScale = length / cycleLength;
-    auto animPos = pos * adjustRateScale;
-    while (animPos > animLength)
+    float animPos = pos * adjustRateScale;
+    animPos = Math::Mod(animPos, animLength);
     {
         animPos -= animLength;
     }
@@ -1020,7 +1022,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             const float length = anim ? anim->GetLength() : 0.0f;
 
             // Calculate new time position
-            if (speed < 0.0f && bucket.LastUpdateFrame < context.CurrentFrameIndex - 1)
+            if (speed * context.DeltaTime < 0.0f && bucket.LastUpdateFrame < context.CurrentFrameIndex - 1)
             {
                 // If speed is negative and it's the first node update then start playing from end
                 bucket.TimePosition = length;
@@ -1440,6 +1442,8 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             // Get B animation data
             auto bData = node->Values[4 + bIndex * 2].AsFloat4();
             AnimSampleData b(node->Assets[bIndex].As<Animation>(), bData.W, bIndex);
+            if (syncLength)
+                a.Length = b.Length = data.Length;
 
             // Check single B edge case
             if (Math::NearEqual(bData.X, x, ANIM_GRAPH_BLEND_THRESHOLD))
