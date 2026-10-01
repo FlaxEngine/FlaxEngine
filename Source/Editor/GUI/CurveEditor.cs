@@ -634,6 +634,9 @@ namespace FlaxEditor.GUI
         public override Type ValueType => typeof(T);
 
         /// <inheritdoc />
+        public override Panel MainPanel => _mainPanel;
+
+        /// <inheritdoc />
         public override float? FPS
         {
             get => _fps;
