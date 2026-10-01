@@ -18,6 +18,7 @@ class FLAXENGINE_API AudioSource : public Actor, IAssetReference
     DECLARE_SCENE_OBJECT(AudioSource);
     friend class AudioStreamingHandler;
     friend class AudioClip;
+    friend class AudioBackend;
 
 public:
     /// <summary>
