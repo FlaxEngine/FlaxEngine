@@ -294,12 +294,16 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             if (IsExpanded)
             {
                 // Layout bug: whole curve showing after track resize needs panel scrolls bars s smoothing disabled and showing twice
-                Curve.MainPanel.VScrollBar?.EnableSmoothing = false;
-                Curve.MainPanel.HScrollBar?.EnableSmoothing = false;
+                if (Curve.MainPanel.VScrollBar != null)
+                    Curve.MainPanel.VScrollBar.EnableSmoothing = false;
+                if (Curve.MainPanel.HScrollBar != null)
+                    Curve.MainPanel.HScrollBar.EnableSmoothing = false;
                 Curve.ShowWholeCurve();
                 Curve.ShowWholeCurve();
-                Curve.MainPanel.VScrollBar?.EnableSmoothing = true;
-                Curve.MainPanel.HScrollBar?.EnableSmoothing = true;
+                if (Curve.MainPanel.VScrollBar != null)
+                    Curve.MainPanel.VScrollBar.EnableSmoothing = true;
+                if (Curve.MainPanel.HScrollBar != null)
+                    Curve.MainPanel.HScrollBar.EnableSmoothing = true;
             }
 
             base.OnExpandedChanged();
