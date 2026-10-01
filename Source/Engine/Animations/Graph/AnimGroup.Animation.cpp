@@ -1427,11 +1427,12 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         {
             const auto aIndex = data.IndicesSorted[i];
             const auto bIndex = data.IndicesSorted[i + 1];
+            ASSERT_LOW_LAYER(aIndex != ANIM_GRAPH_MULTI_BLEND_INVALID);
             const auto aData = node->Values[4 + aIndex * 2].AsFloat4();
             AnimSampleData a(node->Assets[aIndex].As<Animation>(), aData.W, aIndex);
 
             // Check single A case
-            if (x <= aData.X + ANIM_GRAPH_BLEND_THRESHOLD)
+            if (x <= aData.X + ANIM_GRAPH_BLEND_THRESHOLD || bIndex == ANIM_GRAPH_MULTI_BLEND_INVALID)
             {
                 MultiBlendAnimData::BeforeSample(context, bucket, prevList, a, speed);
                 value = SampleAnimation(node, loop, startTimePos, a);
