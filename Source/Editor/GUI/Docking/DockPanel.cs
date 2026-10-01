@@ -247,12 +247,13 @@ namespace FlaxEditor.GUI.Docking
         /// Selects the tab page.
         /// </summary>
         /// <param name="tabIndex">The index of the tab page to select.</param>
-        public void SelectTab(int tabIndex)
+        /// <param name="autoFocus">True if focus tab after selection change.</param>
+        public void SelectTab(int tabIndex, bool autoFocus = true)
         {
             DockWindow tab = null;
             if (tabIndex >= 0 && _tabs.Count > tabIndex && _tabs.Count > 0)
                 tab = _tabs[tabIndex];
-            SelectTab(tab);
+            SelectTab(tab, autoFocus);
         }
 
         /// <summary>
