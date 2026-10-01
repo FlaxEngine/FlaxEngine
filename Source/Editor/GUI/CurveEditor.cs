@@ -1029,7 +1029,10 @@ namespace FlaxEditor.GUI
                 zoomMask &= ~UseMode.Horizontal;
             if (Mathf.IsZero(posMargin.Y))
                 zoomMask &= ~UseMode.Vertical;
-            ViewScale = ApplyUseModeMask(zoomMask, viewRect.Size / contentsSize, ViewScale);
+            var viewScale = ApplyUseModeMask(zoomMask, viewRect.Size / contentsSize, ViewScale);
+            if (_showCollapsed)
+                viewScale.Y = 1.0f;
+            ViewScale = viewScale;
 
             // Update scroll (attempt to center the area when it's smaller than the view)
             Float2 viewOffset = -posMin;
@@ -1037,6 +1040,8 @@ namespace FlaxEditor.GUI
             Float2 viewSizeLeft = viewSize - Float2.Clamp(posMax - posMin, Float2.Zero, viewSize);
             viewOffset += viewSizeLeft * 0.5f;
             viewOffset = ApplyUseModeMask(EnablePanning, viewOffset, _mainPanel.ViewOffset);
+            if (_showCollapsed)
+                viewOffset.Y = 0;
             _mainPanel.ViewOffset = viewOffset;
 
             // Do it multiple times so the view offset can be properly calculate once the view scale gets changes
@@ -1344,6 +1349,7 @@ namespace FlaxEditor.GUI
             }
 
             base.Draw();
+
             Render2D.PushClip(ref viewRect);
             DrawTangentHandles();
             DrawSelectedKeyframeLabels();
