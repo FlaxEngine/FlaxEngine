@@ -6,8 +6,6 @@
 #include "Engine/Content/AssetReference.h"
 #include "AudioClip.h"
 
-class AudioBackend;
-
 /// <summary>
 /// Represents a source for emitting audio. Audio can be played spatially (gun shot), or normally (music). Each audio source must have an AudioClip to play - back, and it can also have a position in the case of spatial (3D) audio.
 /// </summary>

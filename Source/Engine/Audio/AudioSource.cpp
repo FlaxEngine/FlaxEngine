@@ -12,6 +12,11 @@
 #include "AudioBackend.h"
 #include "Audio.h"
 
+void AudioBackend::Source::SetStreamingFirstChunk(AudioSource* source, int32 chunkIndex)
+{
+    source->_streamingFirstChunk = chunkIndex;
+}
+
 AudioSource::AudioSource(const SpawnParams& params)
     : Actor(params)
     , _velocity(Vector3::Zero)

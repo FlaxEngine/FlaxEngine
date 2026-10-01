@@ -5,7 +5,6 @@
 #include "Config.h"
 #include "Types.h"
 #include "Engine/Core/Types/BaseTypes.h"
-#include "AudioSource.h"
 
 /// <summary>
 /// The helper class for that handles active audio backend operations.
@@ -103,17 +102,8 @@ public:
     class Source
     {
     public:
-        FORCE_INLINE static void SetState(AudioSource* source, AudioSource::States state)
-        {
-            if (source)
-                source->_state = state;
-        }
-
-        FORCE_INLINE static void SetStreamingFirstChunk(AudioSource* source, int32 chunkIndex)
-        {
-            if (source)
-                source->_streamingFirstChunk = chunkIndex;
-        }
+        // Helper accessors for Audio Source playback restoring after audio device change
+        static void SetStreamingFirstChunk(AudioSource* source, int32 chunkIndex);
 
         FORCE_INLINE static uint32 Add(const AudioDataInfo& format, const Vector3& position, const Quaternion& orientation, float volume, float pitch, float pan, bool loop, bool spatial, float attenuation, float minDistance, float doppler)
         {
