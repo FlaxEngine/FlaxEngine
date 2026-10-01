@@ -156,6 +156,9 @@ public:
     void InitState(const BehaviorUpdateContext& context) override;
     void ReleaseState(const BehaviorUpdateContext& context) override;
     BehaviorUpdateResult Update(const BehaviorUpdateContext& context) override;
+#if USE_EDITOR
+    String GetDebugInfo(const BehaviorUpdateContext& context) const override;
+#endif
 
 private:
     struct State
@@ -422,6 +425,9 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeKnowledgeConditionalDecorator
 public:
     // [BehaviorTreeNode]
     bool CanUpdate(const BehaviorUpdateContext& context) override;
+#if USE_EDITOR
+    String GetDebugInfo(const BehaviorUpdateContext& context) const override;
+#endif
 };
 
 /// <summary>
@@ -447,6 +453,9 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeKnowledgeValuesConditionalDec
 public:
     // [BehaviorTreeNode]
     bool CanUpdate(const BehaviorUpdateContext& context) override;
+#if USE_EDITOR
+    String GetDebugInfo(const BehaviorUpdateContext& context) const override;
+#endif
 };
 
 /// <summary>
@@ -468,6 +477,9 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeKnowledgeBooleanDecorator : p
 public:
     // [BehaviorTreeNode]
     bool CanUpdate(const BehaviorUpdateContext& context) override;
+#if USE_EDITOR
+    String GetDebugInfo(const BehaviorUpdateContext& context) const override;
+#endif
 };
 
 /// <summary>
@@ -493,6 +505,9 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeHasTagDecorator : public Beha
 public:
     // [BehaviorTreeNode]
     bool CanUpdate(const BehaviorUpdateContext& context) override;
+#if USE_EDITOR
+    String GetDebugInfo(const BehaviorUpdateContext& context) const override;
+#endif
 };
 
 /// <summary>
@@ -510,4 +525,7 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeHasGoalDecorator : public Beh
 public:
     // [BehaviorTreeNode]
     bool CanUpdate(const BehaviorUpdateContext& context) override;
+#if USE_EDITOR
+    String GetDebugInfo(const BehaviorUpdateContext& context) const override;
+#endif
 };

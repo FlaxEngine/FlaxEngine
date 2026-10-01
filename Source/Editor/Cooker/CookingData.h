@@ -67,14 +67,16 @@ API_ENUM() enum class BuildPlatform
 
     /// <summary>
     /// Universal Windows Platform (UWP) (x86 architecture)
+    /// [Deprecated and unsupported platform]
     /// </summary>
-    API_ENUM(Attributes="EditorDisplay(null, \"Windows Store x86\")")
+    API_ENUM(Attributes="EditorDisplay(null, \"Windows Store x86\"), Obsolete")
     UWPx86 = 3,
 
     /// <summary>
     /// Universal Windows Platform (UWP) (x64 architecture)
+    /// [Deprecated and unsupported platform]
     /// </summary>
-    API_ENUM(Attributes="EditorDisplay(null, \"Windows Store x64\")")
+    API_ENUM(Attributes="EditorDisplay(null, \"Windows Store x64\"), Obsolete")
     UWPx64 = 4,
 
     /// <summary>

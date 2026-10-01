@@ -147,6 +147,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var nameRect = new Rectangle(2, 1, frameRect.Width - 4, 14);
             var button1Rect = new Rectangle(nameRect.Right + 2, 1, 14, 14);
             var button2Rect = new Rectangle(button1Rect.Right + 2, 1, 14, 14);
+            var enabled = EnabledInHierarchy;
 
             // Draw frame
             Render2D.DrawRectangle(frameRect, IsMouseOver ? style.BorderHighlighted : style.BorderNormal);
@@ -156,17 +157,17 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 // Draw deselect button
                 if (_type == ScriptType.Null)
-                    Render2D.DrawSprite(style.Cross, button1Rect, button1Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
+                    Render2D.DrawSprite(style.Cross, button1Rect, enabled ? (button1Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey) : style.ForegroundDisabled);
 
                 // Draw name
                 Render2D.PushClip(nameRect);
-                Render2D.DrawText(style.FontMedium, _valueName, nameRect, style.Foreground, TextAlignment.Near, TextAlignment.Center);
+                Render2D.DrawText(style.FontMedium, _valueName, nameRect, enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
                 Render2D.PopClip();
             }
             else
             {
                 // Draw info
-                Render2D.DrawText(style.FontMedium, "-", nameRect, Color.OrangeRed, TextAlignment.Near, TextAlignment.Center);
+                Render2D.DrawText(style.FontMedium, "-", nameRect, enabled ? Color.OrangeRed : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
             }
 
             // Draw picker button

@@ -214,6 +214,7 @@ int32 FindVertex(const MeshData& mesh, int32 vertexIndex, int32 startIndex, int3
 #if USE_SPATIAL_SORT
                  , const Assimp::SpatialSort& spatialSort
                  , std::vector<unsigned int>& spatialSortCache
+                 , float posEpsilon
 #endif
 )
 {
@@ -225,7 +226,7 @@ int32 FindVertex(const MeshData& mesh, int32 vertexIndex, int32 startIndex, int3
 
 #if USE_SPATIAL_SORT
     const Float3 vPosition = mesh.Positions[vertexIndex];
-    spatialSort.FindPositions(*(aiVector3D*)&vPosition, 1e-5f, spatialSortCache);
+    spatialSort.FindPositions(*(aiVector3D*)&vPosition, posEpsilon, spatialSortCache);
     if (spatialSortCache.empty())
         return INVALID_INDEX;
 
@@ -319,6 +320,14 @@ void MeshData::BuildIndexBuffer()
     Assimp::SpatialSort vertexFinder;
     vertexFinder.Fill((const aiVector3D*)Positions.Get(), vertexCount, sizeof(Float3));
     std::vector<unsigned int> spatialSortCache;
+
+    // Ensure that the weld radius stays above float precision based on the mesh's largest coordinate
+    float maxAbs = 0.0f;
+    for (int32 i = 0; i < vertexCount; i++)
+    {
+        maxAbs = Math::Max(maxAbs, Positions[i].GetAbsolute().MaxValue());
+    }
+    const float posEpsilon = Math::Max(1e-5f, maxAbs * 1e-6f);
 #endif
 
     // Build index buffer
@@ -327,7 +336,7 @@ void MeshData::BuildIndexBuffer()
         // Find duplicated vertex before the current one
         const int32 reuseVertexIndex = FindVertex(*this, vertexIndex, 0, vertexIndex, mapping
 #if USE_SPATIAL_SORT
-                                                  , vertexFinder, spatialSortCache
+                                                  , vertexFinder, spatialSortCache, posEpsilon
 #endif
         );
         if (reuseVertexIndex == INVALID_INDEX)

@@ -778,16 +778,41 @@ void AnimatedModel::ClearBlendShapeWeights()
 
 void AnimatedModel::PlaySlotAnimation(const StringView& slotName, Animation* anim, float speed, float blendInTime, float blendOutTime, int32 loopCount)
 {
+    PROFILE_MEM(Animations);
     CHECK(anim);
+    int32 counts = 0;
     for (auto& slot : GraphInstance.Slots)
     {
         if (slot.Animation == anim && slot.Name == slotName)
         {
-            slot.Pause = false;
-            slot.BlendInTime = blendInTime;
-            slot.LoopCount = loopCount;
-            return;
+            if (slot.Stop)
+                continue; // Stopped playing (ignore to avoid using its playback state)
+            if (slot.Pause)
+            {
+                // Resume paused animation
+                slot.Pause = false;
+                slot.Rewind = false;
+                slot.BlendInTime = blendInTime;
+                slot.LoopCount = loopCount;
+                return;
+            }
+            counts++;
         }
+    }
+    if (counts >= 2)
+    {
+        // Don't play more than 2 instances of the same animation on the same slot (they can blend together) but don't spam queue
+        // Instead rewind the last one to the beginning
+        for (int32 i = GraphInstance.Slots.Count() - 1; i >= 0; i--)
+        {
+            auto& slot = GraphInstance.Slots[i];
+            if (slot.Animation == anim && slot.Name == slotName && slot.ActiveBlend)
+            {
+                slot.Rewind = true;
+                break;
+            }
+        }
+        return;
     }
     int32 index = 0;
     for (; index < GraphInstance.Slots.Count(); index++)
@@ -804,11 +829,18 @@ void AnimatedModel::PlaySlotAnimation(const StringView& slotName, Animation* ani
     slot.BlendInTime = blendInTime;
     slot.BlendOutTime = blendOutTime;
     slot.LoopCount = loopCount;
+    slot.Pause = false;
+    slot.Stop = false;
+    slot.Rewind = false;
 }
 
 void AnimatedModel::StopSlotAnimation()
 {
-    GraphInstance.Slots.Clear();
+    for (auto& slot : GraphInstance.Slots)
+    {
+        if (slot.Animation != nullptr)
+            slot.Stop = true;
+    }
 }
 
 void AnimatedModel::StopSlotAnimation(const StringView& slotName, Animation* anim)
@@ -817,10 +849,8 @@ void AnimatedModel::StopSlotAnimation(const StringView& slotName, Animation* ani
     {
         if ((slot.Animation == anim || anim == nullptr) && slot.Name == slotName)
         {
-            //slot.Animation = nullptr; // TODO: make an immediate version of this method and set the animation to nullptr.
             if (slot.Animation != nullptr)
-                slot.Reset = true;
-            break;
+                slot.Stop = true;
         }
     }
 }
@@ -1382,7 +1412,19 @@ BoundingBox AnimatedModel::GetEditorBoundingBox() const
 {
     if (SkinnedModel)
         SkinnedModel->WaitForLoaded(100);
-    return BoundingBox::MakeScaled(_box, 1.0f / BoundsScale);
+    BoundingBox box = _box;
+    if (CustomBounds.GetSize().LengthSquared() <= 0.01f)
+    {
+        if (!IsDuringPlay())
+        {
+            Matrix world;
+            GetLocalToWorldMatrix(world);
+            box = SkinnedModel->GetBox(world);
+        }
+        else
+            box = BoundingBox::MakeScaled(box, 1.0f / BoundsScale);
+    }
+    return box;
 }
 
 #endif

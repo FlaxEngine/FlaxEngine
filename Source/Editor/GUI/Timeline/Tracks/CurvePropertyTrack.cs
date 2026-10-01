@@ -292,7 +292,15 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             Height = IsExpanded ? _expandedHeight : CollapsedHeight;
             UpdateCurve();
             if (IsExpanded)
+            {
+                // Layout bug: whole curve showing after track resize needs panel scrolls bars s smoothing disabled and showing twice
+                Curve.MainPanel.VScrollBar?.EnableSmoothing = false;
+                Curve.MainPanel.HScrollBar?.EnableSmoothing = false;
                 Curve.ShowWholeCurve();
+                Curve.ShowWholeCurve();
+                Curve.MainPanel.VScrollBar?.EnableSmoothing = true;
+                Curve.MainPanel.HScrollBar?.EnableSmoothing = true;
+            }
 
             base.OnExpandedChanged();
         }
@@ -311,7 +319,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             UpdatePreviewValue();
         }
 
-        /// <inheritdoc />
+        /// <inheritdoc />  
         public override void OnUndo()
         {
             base.OnUndo();

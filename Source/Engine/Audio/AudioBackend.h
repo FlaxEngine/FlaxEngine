@@ -102,6 +102,9 @@ public:
     class Source
     {
     public:
+        // Helper accessors for Audio Source playback restoring after audio device change
+        static void SetStreamingFirstChunk(AudioSource* source, int32 chunkIndex);
+
         FORCE_INLINE static uint32 Add(const AudioDataInfo& format, const Vector3& position, const Quaternion& orientation, float volume, float pitch, float pan, bool loop, bool spatial, float attenuation, float minDistance, float doppler)
         {
             return Instance->Source_Add(format, position, orientation, volume, pitch, pan, loop, spatial, attenuation, minDistance, doppler);

@@ -107,16 +107,25 @@ void Behavior::UpdateAsync()
     context.DeltaTime = updateDeltaTime;
     context.Time = _totalTime;
     const BehaviorUpdateResult result = tree->Graph.Root->InvokeUpdate(context);
-    if (result != BehaviorUpdateResult::Running)
+    if (_result == BehaviorUpdateResult::Running && result != BehaviorUpdateResult::Running)
+    {
+        // Update result
         _result = result;
-    if (_result != BehaviorUpdateResult::Running && tree->Graph.Root->Loop)
-    {
-        // Reset State
-        _result = BehaviorUpdateResult::Running;
+        if (_result != BehaviorUpdateResult::Running && tree->Graph.Root->Loop)
+        {
+            // Reset State
+            _result = BehaviorUpdateResult::Running;
+        }
+        else if (_result != BehaviorUpdateResult::Running)
+        {
+            // End
+            Finished();
+        }
     }
-    else if (_result != BehaviorUpdateResult::Running)
+    else if (_result != BehaviorUpdateResult::Running && tree->Graph.Root->Loop)
     {
-        Finished();
+        // Restart on end (eg. after Force Success node during Update)
+        StartLogic();
     }
 }
 
@@ -209,7 +218,25 @@ String Behavior::GetNodeDebugInfo(const BehaviorTreeNode* node, Behavior* behavi
     if (!node)
         return String::Empty;
     BehaviorUpdateContext context;
+    InitNodeDebugContext(node, behavior, context);
+    return node->GetDebugInfo(context);
+}
+
+int32 Behavior::GetDecoratorDebugResult(BehaviorTreeDecorator* node, Behavior* behavior)
+{
+    if (!node)
+        return -1;
+    BehaviorUpdateContext context;
+    InitNodeDebugContext(node, behavior, context);
+    return node->CanUpdate(context) ? 1 : 0;
+}
+
+void Behavior::InitNodeDebugContext(const BehaviorTreeNode* node, Behavior* behavior, BehaviorUpdateContext& context)
+{
+    // Zero out context
     Platform::MemoryClear(&context, sizeof(context));
+
+    // Check if the node is relevant (active in tree with state created)
     if (GetNodeDebugRelevancy(node, behavior))
     {
         // Pass behavior and knowledge data only for relevant nodes to properly access it
@@ -219,7 +246,6 @@ String Behavior::GetNodeDebugInfo(const BehaviorTreeNode* node, Behavior* behavi
         context.RelevantNodes = &behavior->_knowledge.RelevantNodes;
         context.Time = behavior->_totalTime;
     }
-    return node->GetDebugInfo(context);
 }
 
 #endif

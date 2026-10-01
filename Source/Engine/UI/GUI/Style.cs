@@ -171,6 +171,12 @@ namespace FlaxEngine.GUI
         public Color ProgressNormal;
 
         /// <summary>
+        /// The progress error color.
+        /// </summary>
+        [EditorOrder(201)]
+        public Color ProgressError;
+
+        /// <summary>
         /// The selection and drag drop highlights colors.
         /// </summary>
         [EditorOrder(205)]

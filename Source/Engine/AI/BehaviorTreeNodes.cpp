@@ -48,6 +48,31 @@ bool IsAssignableFrom(const StringAnsiView& to, const StringAnsiView& from)
     return false;
 }
 
+#if USE_EDITOR
+
+const Char* ComparisonChars(BehaviorValueComparison comp)
+{
+    switch (comp)
+    {
+    case BehaviorValueComparison::Equal:
+        return TEXT("==");
+    case BehaviorValueComparison::NotEqual:
+        return TEXT("!=");
+    case BehaviorValueComparison::Less:
+        return TEXT("<");
+    case BehaviorValueComparison::LessEqual:
+        return TEXT("<=");
+    case BehaviorValueComparison::Greater:
+        return TEXT(">");
+    case BehaviorValueComparison::GreaterEqual:
+        return TEXT(">=");
+    default:
+        return TEXT("?");
+    }
+}
+
+#endif
+
 BehaviorUpdateResult BehaviorTreeNode::InvokeUpdate(const BehaviorUpdateContext& context)
 {
     ASSERT_LOW_LAYER(_executionIndex != -1);
@@ -87,6 +112,8 @@ BehaviorUpdateResult BehaviorTreeNode::InvokeUpdate(const BehaviorUpdateContext&
         result = Update(context);
     if ((int32)result < 0 ||  (int32)result > (int32)BehaviorUpdateResult::Failed)
         result = BehaviorUpdateResult::Failed; // Invalid value is a failure
+    if (context.Behavior->GetResult() != BehaviorUpdateResult::Running)
+        return result; // Behavior is already finished, no need to continue
 
     // Post-process result from decorators
     for (BehaviorTreeDecorator* decorator : _decorators)
@@ -334,7 +361,7 @@ BehaviorUpdateResult BehaviorTreeSubTreeNode::Update(const BehaviorUpdateContext
     {
         // Validate if nested tree blackboard data matches (the same type or base type)
         const VariantType& blackboardType = context.Knowledge->Blackboard.Type;
-        if (IsAssignableFrom(treeBlackboardType, StringAnsiView(blackboardType.GetTypeName())))
+        if (!IsAssignableFrom(treeBlackboardType, StringAnsiView(blackboardType.GetTypeName())))
         {
             LOG(Error, "Cannot use nested '{}' with Blackboard of type '{}' inside '{}' with Blackboard of type '{}'",
                 tree->ToString(), String(treeBlackboardType),
@@ -352,6 +379,19 @@ BehaviorUpdateResult BehaviorTreeSubTreeNode::Update(const BehaviorUpdateContext
     // Run nested tree
     return tree->Graph.Root->InvokeUpdate(subContext);
 }
+
+#if USE_EDITOR
+
+String BehaviorTreeSubTreeNode::GetDebugInfo(const BehaviorUpdateContext& context) const
+{
+    if (Tree)
+    {
+        return StringUtils::GetFileNameWithoutExtension(Tree->GetPath());
+    }
+    return String::Empty;
+}
+
+#endif
 
 BehaviorUpdateResult BehaviorTreeForceFinishNode::Update(const BehaviorUpdateContext& context)
 {
@@ -374,7 +414,7 @@ void BehaviorTreeMoveToNode::GetAgentSize(Actor* agent, float& outRadius, float&
 {
     if (const auto* characterController = Cast<CharacterController>(agent))
     {
-        // Character Controller is an capsule
+        // Character Controller is a capsule
         outRadius = characterController->GetRadius();
         outHeight = characterController->GetHeight() + 2 * outRadius;
         return;
@@ -525,7 +565,7 @@ String BehaviorTreeMoveToNode::GetDebugInfo(const BehaviorUpdateContext& context
             Real distanceLeft = state->Path.Count() > state->TargetPathIndex ? Vector3::Distance(state->Path[state->TargetPathIndex], agentLocationOnPath) : 0;
             for (int32 i = state->TargetPathIndex; i < state->Path.Count(); i++)
                 distanceLeft += Vector3::Distance(state->Path[i - 1], state->Path[i]);
-            return String::Format(TEXT("Agent: '{}'\nGoal: '{}'\nDistance: {}"), agent, goal, (int32)distanceLeft);
+            return String::Format(TEXT("Agent: '{}'\nGoal: '{}'\nDistance: {}"), agent, goal, distanceLeft);
         }
     }
     return String::Empty;
@@ -699,10 +739,32 @@ bool BehaviorTreeKnowledgeConditionalDecorator::CanUpdate(const BehaviorUpdateCo
     return BehaviorKnowledge::CompareValues((float)ValueA.Get(context.Knowledge), ValueB, Comparison);
 }
 
+#if USE_EDITOR
+
+String BehaviorTreeKnowledgeConditionalDecorator::GetDebugInfo(const BehaviorUpdateContext& context) const
+{
+    if (ValueA)
+        return String::Format(TEXT("'{}' {} {}"), ValueA.ToString(), ComparisonChars(Comparison), ValueB);
+    return String::Empty;
+}
+
+#endif
+
 bool BehaviorTreeKnowledgeValuesConditionalDecorator::CanUpdate(const BehaviorUpdateContext& context)
 {
     return BehaviorKnowledge::CompareValues((float)ValueA.Get(context.Knowledge), (float)ValueB.Get(context.Knowledge), Comparison);
 }
+
+#if USE_EDITOR
+
+String BehaviorTreeKnowledgeValuesConditionalDecorator::GetDebugInfo(const BehaviorUpdateContext& context) const
+{
+    if (ValueA && ValueB)
+        return String::Format(TEXT("'{}' {} '{}'"), ValueA.ToString(), ComparisonChars(Comparison), ValueB.ToString());
+    return String::Empty;
+}
+
+#endif
 
 bool BehaviorTreeKnowledgeBooleanDecorator::CanUpdate(const BehaviorUpdateContext& context)
 {
@@ -711,6 +773,22 @@ bool BehaviorTreeKnowledgeBooleanDecorator::CanUpdate(const BehaviorUpdateContex
     result ^= Invert;
     return result;
 }
+
+#if USE_EDITOR
+
+String BehaviorTreeKnowledgeBooleanDecorator::GetDebugInfo(const BehaviorUpdateContext& context) const
+{
+    String result;
+    if (Value)
+    {
+        result = Value.ToString();
+        if (Invert)
+            result = TEXT("Not ") + result;
+    }
+    return result;
+}
+
+#endif
 
 bool BehaviorTreeHasTagDecorator::CanUpdate(const BehaviorUpdateContext& context)
 {
@@ -722,8 +800,30 @@ bool BehaviorTreeHasTagDecorator::CanUpdate(const BehaviorUpdateContext& context
     return result;
 }
 
+#if USE_EDITOR
+
+String BehaviorTreeHasTagDecorator::GetDebugInfo(const BehaviorUpdateContext& context) const
+{
+    if (Actor && Tag)
+        return String::Format(TEXT("'{}' Has Tag '{}'"), Actor.ToString(), Tag.ToString());
+    return String::Empty;
+}
+
+#endif
+
 bool BehaviorTreeHasGoalDecorator::CanUpdate(const BehaviorUpdateContext& context)
 {
     Variant value; // TODO: use HasGoal in Knowledge to optimize this (goal struct is copied by selector accessor)
     return Goal.TryGet(context.Knowledge, value);
 }
+
+#if USE_EDITOR
+
+String BehaviorTreeHasGoalDecorator::GetDebugInfo(const BehaviorUpdateContext& context) const
+{
+    if (Goal)
+        return String::Format(TEXT("Has Goal '{}'"), Goal.ToString());
+    return String::Empty;
+}
+
+#endif

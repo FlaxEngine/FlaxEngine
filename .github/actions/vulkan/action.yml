@@ -3,7 +3,7 @@ description: Downloads and installs Vulkan SDK.
 inputs:
   vulkan-version:
     description: 'Vulkan SDK release version (e.g. 1.2.198.1).'
-    default: '1.4.350.0'
+    default: '1.4.363.0'
     required: false
 runs:
   using: "composite"
@@ -17,7 +17,7 @@ runs:
         case `uname -s` in
           Linux)
             export VULKAN_SDK_ROOT=`pwd`/../VulkanSDK
-            wget "https://sdk.lunarg.com/sdk/download/$VULKAN_SDK_VER/linux/vulkan-sdk.tar.gz" --no-verbose -O vulkan-sdk.tar.gz
+            wget "https://sdk.lunarg.com/sdk/download/$VULKAN_SDK_VER/linux/vulkansdk-linux-x86_64-$VULKAN_SDK_VER.tar.xz" --no-verbose -O vulkan-sdk.tar.gz
             mkdir $VULKAN_SDK_ROOT
             tar -xf vulkan-sdk.tar.gz -C $VULKAN_SDK_ROOT
             export VULKAN_SDK=$VULKAN_SDK_ROOT/$VULKAN_SDK_VER/x86_64

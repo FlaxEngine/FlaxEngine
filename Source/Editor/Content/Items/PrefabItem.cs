@@ -32,7 +32,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override Actor OnEditorDrop(object context)
         {
-            return PrefabManager.SpawnPrefab(FlaxEngine.Content.LoadAsync<Prefab>(ID), null);
+            return PrefabManager.SpawnPrefab(FlaxEngine.Content.Load<Prefab>(ID), null);
         }
 
         /// <inheritdoc />

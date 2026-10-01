@@ -101,6 +101,11 @@ namespace FlaxEditor.GUI
         public abstract Type ValueType { get; }
 
         /// <summary>
+        /// Gets the main container control that holds the curve editor UI. Can be used to add custom controls to the curve editor.
+        /// </summary>
+        public abstract Panel MainPanel { get; }
+
+        /// <summary>
         /// The amount of frames per second of the curve animation (optional). Can be used to restrict the keyframes time values to the given time quantization rate.
         /// </summary>
         public abstract float? FPS { get; set; }

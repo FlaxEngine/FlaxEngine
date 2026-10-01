@@ -30,6 +30,7 @@ namespace FlaxEditor.Surface.Archetypes
             protected const float DecoratorsMarginY = 2.0f;
 
             protected bool _debugRelevant;
+            protected int _debugDecoratorResult = -1;
             protected string _debugInfo;
             protected Float2 _debugInfoSize;
             protected ScriptType _type;
@@ -90,6 +91,7 @@ namespace FlaxEditor.Surface.Archetypes
             protected virtual void UpdateDebugInfo(BehaviorTreeNode instance = null, Behavior behavior = null)
             {
                 _debugRelevant = false;
+                _debugDecoratorResult = -1;
                 _debugInfo = null;
                 _debugInfoSize = Float2.Zero;
                 if (!instance)
@@ -98,6 +100,8 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     // Get debug description for the node based on the current settings
                     _debugRelevant = Behavior.GetNodeDebugRelevancy(instance, behavior);
+                    if (instance is BehaviorTreeDecorator decorator && behavior && behavior.IsDuringPlay && behavior.Result == BehaviorUpdateResult.Running)
+                        _debugDecoratorResult = Behavior.GetDecoratorDebugResult(decorator, behavior);
                     _debugInfo = Behavior.GetNodeDebugInfo(instance, behavior);
                     if (!string.IsNullOrEmpty(_debugInfo))
                         _debugInfoSize = Style.Current.FontSmall.MeasureText(_debugInfo);
@@ -215,7 +219,7 @@ namespace FlaxEditor.Surface.Archetypes
                 var headerColor = style.BackgroundHighlighted;
                 if (_headerRect.Contains(ref _mousePosition) && !Surface.IsConnecting && !Surface.IsSelecting)
                     headerColor *= 1.07f;
-                Render2D.FillRectangle(_headerRect, style.BackgroundHighlighted);
+                Render2D.FillRectangle(_headerRect, headerColor);
                 Render2D.DrawText(style.FontLarge, Title, _headerTextRect, style.Foreground, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1f, FlaxEditor.Surface.Constants.NodeHeaderTextScale);
 
                 // Close button
@@ -227,14 +231,6 @@ namespace FlaxEditor.Surface.Archetypes
 
                 DrawChildren();
 
-                // Selection outline
-                if (_isSelected)
-                {
-                    var colorTop = Color.Orange;
-                    var colorBottom = Color.OrangeRed;
-                    Render2D.DrawRectangle(backgroundRect, colorTop, colorTop, colorBottom, colorBottom, 2.5f);
-                }
-
                 // Breakpoint dot
                 if (Breakpoint.Set)
                 {
@@ -242,16 +238,21 @@ namespace FlaxEditor.Surface.Archetypes
                     Render2D.DrawSprite(icon, new Rectangle(-7, -7, 16, 16), new Color(0.9f, 0.9f, 0.9f));
                     Render2D.DrawSprite(icon, new Rectangle(-6, -6, 14, 14), new Color(0.894117647f, 0.0784313725f, 0.0f));
                 }
+            }
 
+            protected virtual void DrawOverlays()
+            {
+                var style = Style.Current;
                 if (highlightBox != null)
                     Render2D.DrawRectangle(highlightBox.Bounds, style.BorderHighlighted, 2f);
 
-                // Debug Info
-                if (!string.IsNullOrEmpty(_debugInfo))
+                // Selection outline
+                if (_isSelected)
                 {
-                    // Draw an extra background to cover the archetype color colored node background and make text more legible
-                    Render2D.FillRectangle(new Rectangle(0, _headerRect.Bottom + 4, Width, Height - _headerRect.Bottom - 4), style.BackgroundHighlighted);
-                    Render2D.DrawText(style.FontSmall, _debugInfo, new Rectangle(4, _headerRect.Bottom + 7, _debugInfoSize), style.Foreground, scale: 0.8f);
+                    var colorTop = Color.Orange;
+                    var colorBottom = Color.OrangeRed;
+                    var rect = new Rectangle(Float2.Zero, Size);
+                    Render2D.DrawRectangle(rect, colorTop, colorTop, colorBottom, colorBottom, 2.5f);
                 }
 
                 // Debug relevancy outline
@@ -259,8 +260,9 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     var colorTop = Color.LightYellow;
                     var colorBottom = Color.Yellow;
-                    backgroundRect = new Rectangle(Float2.One, Size - new Float2(2.0f));
-                    Render2D.DrawRectangle(backgroundRect, colorTop, colorTop, colorBottom, colorBottom);
+                    var rect = new Rectangle(Float2.One, Size - new Float2(2.0f));
+                    //Render2D.DrawRectangle(backgroundRect, colorTop, colorTop, colorBottom, colorBottom);
+                    Render2D.DrawRectangle(rect, style.ProgressNormal);
                 }
             }
 
@@ -546,14 +548,30 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             }
 
+            public override void Draw()
+            {
+                base.Draw();
+
+                var style = Style.Current;
+
+                // Debug Info
+                if (!string.IsNullOrEmpty(_debugInfo))
+                {
+                    // Draw an extra background to cover the archetype color colored node background and make text more legible
+                    Render2D.FillRectangle(new Rectangle(0, _headerRect.Bottom + 4, Width, Height - _headerRect.Bottom - 4), style.BackgroundHighlighted);
+                    Render2D.DrawText(style.FontSmall, _debugInfo, new Rectangle(4, _headerRect.Bottom + 7, _debugInfoSize), style.Foreground, scale: 0.8f);
+                }
+
+                DrawOverlays();
+            }
+
             public override void ResizeAuto()
             {
                 if (Surface == null)
                     return;
-                var width = 0.0f;
+                var width = 90.0f;
                 var height = 0.0f;
                 var titleLabelFont = Style.Current.FontLarge;
-                width = Mathf.Max(width, 100.0f);
                 width = Mathf.Max(width, titleLabelFont.MeasureText(Title).X + 30);
                 if (_debugInfoSize.X > 0)
                 {
@@ -569,7 +587,7 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     decorator.ResizeAuto();
                     height += decorator.Height + DecoratorsMarginY;
-                    width = Mathf.Max(width, decorator.Width - FlaxEditor.Surface.Constants.NodeCloseButtonSize - 2 * DecoratorsMarginX);
+                    width = Mathf.Max(width, decorator.Width - FlaxEditor.Surface.Constants.NodeCloseButtonSize);
                 }
                 Size = new Float2(width + FlaxEditor.Surface.Constants.NodeMarginX * 2 + FlaxEditor.Surface.Constants.NodeCloseButtonSize, height + FlaxEditor.Surface.Constants.NodeHeaderHeight);
                 UpdateRectangles();
@@ -732,9 +750,9 @@ namespace FlaxEditor.Surface.Archetypes
                 if (_debugInfoSize.X > 0)
                 {
                     width = Mathf.Max(width, _debugInfoSize.X + 8.0f);
-                    height += _debugInfoSize.Y + 8.0f;
+                    height += _debugInfoSize.Y + 1.0f;
                 }
-                return new Float2(width + FlaxEditor.Surface.Constants.NodeCloseButtonSize * 2 + DecoratorsMarginX * 2, height + FlaxEditor.Surface.Constants.NodeHeaderHeight);
+                return new Float2(width + FlaxEditor.Surface.Constants.NodeCloseButtonSize * 2, height + FlaxEditor.Surface.Constants.NodeHeaderHeight);
             }
 
             protected override void UpdateRectangles()
@@ -798,6 +816,19 @@ namespace FlaxEditor.Surface.Archetypes
                 base.Draw();
 
                 var style = Style.Current;
+
+                // Debug Info
+                if (!string.IsNullOrEmpty(_debugInfo))
+                {
+                    var color = style.Foreground;
+                    if (_debugDecoratorResult == 0)
+                        color = style.ProgressError;
+                    else if (_debugDecoratorResult == 1)
+                        color = style.ProgressNormal;
+                    Render2D.DrawText(style.FontSmall, _debugInfo, new Rectangle(4, _headerRect.Bottom, _debugInfoSize), color, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1, 0.8f);
+                }
+
+                DrawOverlays();
 
                 // Outline
                 if (!_isSelected)

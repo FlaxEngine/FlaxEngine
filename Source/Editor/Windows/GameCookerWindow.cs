@@ -916,6 +916,15 @@ namespace FlaxEditor.Windows
         }
 
         /// <summary>
+        /// Returns true if can cook game now (based on editor state).
+        /// </summary>
+        /// <returns>True if can cook, otherwise false.</returns>
+        public bool CanCook()
+        {
+            return !GameCooker.IsRunning && Editor.StateMachine.CurrentState.CanCookGame;
+        }
+
+        /// <summary>
         /// Returns true if can build for the given platform (both supported and available).
         /// </summary>
         /// <param name="platformType">The platform.</param>
@@ -1278,7 +1287,7 @@ namespace FlaxEditor.Windows
         public override void OnUpdate()
         {
             // Building queue
-            if (!GameCooker.IsRunning)
+            if (CanCook())
             {
                 if (_buildingQueue.Count > 0)
                 {

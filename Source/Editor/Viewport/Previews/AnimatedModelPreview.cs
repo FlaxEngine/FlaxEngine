@@ -226,6 +226,9 @@ namespace FlaxEditor.Viewport.Previews
                 };
                 _nodeNameSizeButton.Enabled = ShowNodesNames;
                 nodeNameSizeValue.ValueChanged += () => NodeNamesSize = nodeNameSizeValue.Value;
+
+                // Hide not needed buttons
+                ViewWidgetButtonMenu.GetChildMenu("View Layers").Visible = false;
             }
 
             // Enable shadows
