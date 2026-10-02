@@ -189,12 +189,55 @@ namespace Flax.Build.Projects.VisualStudio
                     // Hide errors
                 }
             }
+            if (File.Exists(path) && Path.GetExtension(path).Equals(".slnx", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    XmlDocument doc = new XmlDocument();
+                    doc.Load(path);
+                    XmlNodeList elements = doc.GetElementsByTagName("Project");
+                    foreach (XmlElement element in elements)
+                    {
+                        var projectPath = element.GetAttribute("Path");
+                        if (Path.GetFileNameWithoutExtension(projectPath) == projectName && element.HasAttribute("Id"))
+                            return Guid.ParseExact(element.GetAttribute("Id").Trim("{}".ToCharArray()), "D");
+                    }
+                }
+                catch
+                {
+                    // Hide errors
+                }
+
+                // Fallback to existing .sln if present
+                var slnPath = Path.ChangeExtension(path, "sln");
+                if (File.Exists(slnPath))
+                {
+                    var id = GetProjectGuid(slnPath, projectName);
+                    if (id != Guid.Empty)
+                        return id;
+                }
+            }
+            if (!File.Exists(path))
+            {
+                if (Path.GetExtension(path).Equals(".slnx", StringComparison.OrdinalIgnoreCase))
+                {
+                    var slnPath = Path.ChangeExtension(path, "sln");
+                    if (File.Exists(slnPath))
+                        return GetProjectGuid(slnPath, projectName);
+                }
+                else if (Path.GetExtension(path).Equals(".sln", StringComparison.OrdinalIgnoreCase))
+                {
+                    var slnxPath = Path.ChangeExtension(path, "slnx");
+                    if (File.Exists(slnxPath))
+                        return GetProjectGuid(slnxPath, projectName);
+                }
+            }
 
             return Guid.Empty;
         }
 
         /// <inheritdoc />
-        public override string SolutionFileExtension => /*Version >= VisualStudioVersion.VisualStudio2026 ? "slnx" :*/ "sln";
+        public override string SolutionFileExtension => Version >= VisualStudioVersion.VisualStudio2026 ? "slnx" : "sln";
 
         /// <inheritdoc />
         public override Project CreateProject()
@@ -282,12 +325,371 @@ namespace Flax.Build.Projects.VisualStudio
                 GenerateXmlSolution(solution);
             else
                 GenerateAsciiSolution(solution);
+
+            PostGenerateSolution(solution);
+        }
+
+        private static string GetProjectFolder(VisualStudioProject project)
+        {
+            var folder = project.GroupName;
+            if (project.SourceDirectories != null && project.SourceDirectories.Count == 1)
+            {
+                var subFolder = Utilities.NormalizePath(Utilities.MakePathRelativeTo(Path.GetDirectoryName(project.SourceDirectories[0]), project.WorkspaceRootPath));
+                if (subFolder.StartsWith("Source/"))
+                    subFolder = subFolder.Substring("Source/".Length);
+                if (subFolder.Length != 0)
+                {
+                    if (!string.IsNullOrEmpty(folder))
+                        folder += '/';
+                    folder += subFolder;
+                }
+            }
+            return folder != null ? folder.Trim('/') : string.Empty;
+        }
+
+        private static string EscapeXmlAttribute(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return string.Empty;
+            return value
+                .Replace("&", "&amp;")
+                .Replace("\"", "&quot;")
+                .Replace("'", "&apos;")
+                .Replace("<", "&lt;")
+                .Replace(">", "&gt;");
+        }
+
+        private List<SolutionConfiguration> GetSolutionConfigurations(Solution solution, VisualStudioProject[] projects)
+        {
+            var configurations = new HashSet<SolutionConfiguration>();
+            var mainArchitectures = solution.MainProject?.Targets?.SelectMany(x => x.Architectures).Distinct().ToArray();
+            foreach (var project in projects)
+            {
+                if (project.Configurations == null || project.Configurations.Count == 0)
+                    throw new Exception("Missing configurations for project " + project.Name);
+
+                // Prevent generating default Debug|AnyCPU and Release|AnyCPU configurations from Flax projects
+                if (project.Name == "BuildScripts" || project.Name == "Flax.Build" || project.Name == "Flax.Build.Tests")
+                    continue;
+
+                foreach (var configuration in project.Configurations)
+                {
+                    // Skip architectures which are not included in the game project
+                    if (mainArchitectures != null && !mainArchitectures.Contains(configuration.Architecture))
+                        continue;
+
+                    configurations.Add(new SolutionConfiguration(configuration));
+                }
+            }
+
+            // Add missing configurations (Visual Studio needs all permutations of configuration/platform pair)
+            var configurationNames = configurations.Select(x => x.Configuration).Distinct().ToArray();
+            var platformNames = configurations.Select(x => x.Platform).Distinct().ToArray();
+            foreach (var configurationName in configurationNames)
+            {
+                foreach (var platformName in platformNames)
+                {
+                    configurations.Add(new SolutionConfiguration(configurationName, platformName));
+                }
+            }
+
+            // Sort configurations
+            var configurationsSorted = new List<SolutionConfiguration>(configurations);
+            configurationsSorted.Sort();
+            return configurationsSorted;
         }
 
         private void GenerateXmlSolution(Solution solution)
         {
-            // TODO: Generate the solution file in new format
-            GenerateAsciiSolution(solution);
+            var solutionDirectory = Path.GetDirectoryName(solution.Path);
+            var projects = solution.Projects.Cast<VisualStudioProject>().ToArray();
+            var configurationsSorted = GetSolutionConfigurations(solution, projects);
+
+            var distinctBuildTypes = configurationsSorted.Select(x => x.Configuration).Distinct().ToList();
+            var distinctPlatforms = configurationsSorted.Select(x => x.Platform).Distinct().ToList();
+
+            var xml = new StringBuilder();
+            xml.AppendLine("<Solution>");
+
+            // Solution Configurations
+            xml.AppendLine("  <Configurations>");
+            foreach (var buildType in distinctBuildTypes)
+                xml.AppendLine($"    <BuildType Name=\"{EscapeXmlAttribute(buildType)}\" />");
+            foreach (var platform in distinctPlatforms)
+                xml.AppendLine($"    <Platform Name=\"{EscapeXmlAttribute(platform)}\" />");
+            xml.AppendLine("  </Configurations>");
+
+            // Solution Folders and Projects
+            var allFolders = new HashSet<string>();
+            var folderProjects = new Dictionary<string, List<VisualStudioProject>>();
+            var rootProjects = new List<VisualStudioProject>();
+
+            foreach (var project in projects)
+            {
+                var folder = GetProjectFolder(project);
+                if (string.IsNullOrEmpty(folder))
+                {
+                    rootProjects.Add(project);
+                }
+                else
+                {
+                    if (!folderProjects.TryGetValue(folder, out var list))
+                    {
+                        list = new List<VisualStudioProject>();
+                        folderProjects.Add(folder, list);
+                    }
+                    list.Add(project);
+
+                    // Register folder and all parent folders
+                    var folderParents = folder.Split('/');
+                    for (int i = 0; i < folderParents.Length; i++)
+                    {
+                        var folderPath = folderParents[0];
+                        for (int j = 1; j <= i; j++)
+                            folderPath += '/' + folderParents[j];
+                        allFolders.Add(folderPath);
+                    }
+                }
+            }
+
+            var sortedFolders = allFolders.OrderBy(x => x).ToList();
+            foreach (var folder in sortedFolders)
+            {
+                if (folderProjects.TryGetValue(folder, out var projsInFolder) && projsInFolder.Count > 0)
+                {
+                    xml.AppendLine($"  <Folder Name=\"/{EscapeXmlAttribute(folder)}/\">");
+                    foreach (var project in projsInFolder)
+                    {
+                        GenerateXmlProject(xml, project, "    ", solutionDirectory, configurationsSorted, solution);
+                    }
+                    xml.AppendLine("  </Folder>");
+                }
+                else
+                {
+                    xml.AppendLine($"  <Folder Name=\"/{EscapeXmlAttribute(folder)}/\" />");
+                }
+            }
+
+            foreach (var project in rootProjects)
+            {
+                GenerateXmlProject(xml, project, "  ", solutionDirectory, configurationsSorted, solution);
+            }
+
+            xml.AppendLine("</Solution>");
+
+            // Save the file
+            Utilities.WriteFileIfChanged(solution.Path, xml.ToString());
+        }
+
+        private void GenerateXmlProject(StringBuilder xml, VisualStudioProject project, string indent, string solutionDirectory, List<SolutionConfiguration> configurationsSorted, Solution solution)
+        {
+            var projectPath = Utilities.NormalizePath(Utilities.MakePathRelativeTo(project.Path, solutionDirectory));
+
+            string typeAttr = string.Empty;
+            var ext = Path.GetExtension(project.Path);
+            bool isStandardVcxproj = ext.Equals(".vcxproj", StringComparison.OrdinalIgnoreCase) &&
+                                     (project.ProjectTypeGuid == Guid.Empty || project.ProjectTypeGuid == ProjectTypeGuids.WindowsVisualCpp);
+            bool isStandardCsproj = ext.Equals(".csproj", StringComparison.OrdinalIgnoreCase) &&
+                                    (project.ProjectTypeGuid == Guid.Empty || project.ProjectTypeGuid == ProjectTypeGuids.WindowsCSharp || project.ProjectTypeGuid == Guid.Parse("9A19103F-16F7-4668-BE54-9A1E7A4F7556"));
+            if (!isStandardVcxproj && !isStandardCsproj && project.ProjectTypeGuid != Guid.Empty)
+            {
+                typeAttr = $" Type=\"{project.ProjectTypeGuid.ToString("D").ToLowerInvariant()}\"";
+            }
+
+            var childLines = new List<string>();
+
+            // Build dependencies
+            if (project.Dependencies.Count > 0)
+            {
+                foreach (var dependency in project.Dependencies.Cast<VisualStudioProject>())
+                {
+                    var depPath = Utilities.NormalizePath(Utilities.MakePathRelativeTo(dependency.Path, solutionDirectory));
+                    childLines.Add($"<BuildDependency Project=\"{EscapeXmlAttribute(depPath)}\" />");
+                }
+            }
+
+            // Per-configuration mappings
+            var projectMappings = new List<(SolutionConfiguration solConfig, SolutionConfiguration projConfig, bool build)>();
+            foreach (var configuration in configurationsSorted)
+            {
+                SolutionConfiguration projectConfiguration;
+                bool build = false;
+                int firstFullMatch = -1, firstPlatformMatch = -1, firstEditorMatch = -1;
+                for (int i = 0; i < project.Configurations.Count; i++)
+                {
+                    var e = new SolutionConfiguration(project.Configurations[i]);
+                    if (e.Name == configuration.Name)
+                    {
+                        firstFullMatch = i;
+                        break;
+                    }
+                    if (firstPlatformMatch == -1 && e.Platform == configuration.Platform)
+                    {
+                        firstPlatformMatch = i;
+                    }
+                    if (firstEditorMatch == -1 && e.Configuration == configuration.Configuration)
+                    {
+                        firstEditorMatch = i;
+                    }
+                }
+                if (project is AndroidProject)
+                {
+                    if (firstFullMatch != -1)
+                        projectConfiguration = new SolutionConfiguration(project.Configurations[firstFullMatch]);
+                    else
+                        projectConfiguration = new SolutionConfiguration(project.Configurations[0]);
+                }
+                else if (firstFullMatch != -1)
+                {
+                    projectConfiguration = new SolutionConfiguration(project.Configurations[firstFullMatch]);
+                    build = solution.MainProject == project;
+                    build |= project.Type == TargetType.DotNetCore;
+                    build |= solution.MainProject == null && project.Name == solution.Name;
+                }
+                else if (firstPlatformMatch != -1 && !configuration.Name.StartsWith("Editor."))
+                {
+                    projectConfiguration = new SolutionConfiguration(project.Configurations[firstPlatformMatch]);
+                }
+                else if (firstEditorMatch != -1 && configuration.Name.StartsWith("Editor."))
+                {
+                    projectConfiguration = new SolutionConfiguration(project.Configurations[firstEditorMatch]);
+                }
+                else
+                {
+                    projectConfiguration = new SolutionConfiguration(project.Configurations[0]);
+                }
+
+                var originalName = projectConfiguration.OriginalName;
+                var pipeIndex = originalName.IndexOf('|');
+                var projConfigName = pipeIndex != -1 ? originalName.Substring(0, pipeIndex) : projectConfiguration.Configuration;
+                var projPlatformName = pipeIndex != -1 ? originalName.Substring(pipeIndex + 1) : projectConfiguration.Platform;
+
+                projectMappings.Add((configuration, new SolutionConfiguration(projConfigName, projPlatformName), build));
+            }
+
+            // BuildType mapping
+            bool allSameProjConfig = projectMappings.All(m => m.projConfig.Configuration == projectMappings[0].projConfig.Configuration);
+            if (allSameProjConfig)
+            {
+                var commonProjConfig = projectMappings[0].projConfig.Configuration;
+                if (!projectMappings.All(m => m.solConfig.Configuration == commonProjConfig))
+                {
+                    childLines.Add($"<BuildType Project=\"{EscapeXmlAttribute(commonProjConfig)}\" />");
+                }
+            }
+            else
+            {
+                var distinctSolConfigs = projectMappings.Select(m => m.solConfig.Configuration).Distinct().ToList();
+                foreach (var solConfigName in distinctSolConfigs)
+                {
+                    var mappingsForSolConfig = projectMappings.Where(m => m.solConfig.Configuration == solConfigName).ToList();
+                    bool allPlatformsSame = mappingsForSolConfig.All(m => m.projConfig.Configuration == mappingsForSolConfig[0].projConfig.Configuration);
+                    if (allPlatformsSame)
+                    {
+                        var projConfigName = mappingsForSolConfig[0].projConfig.Configuration;
+                        if (projConfigName != solConfigName)
+                        {
+                            childLines.Add($"<BuildType Solution=\"{EscapeXmlAttribute(solConfigName)}|*\" Project=\"{EscapeXmlAttribute(projConfigName)}\" />");
+                        }
+                    }
+                    else
+                    {
+                        foreach (var m in mappingsForSolConfig)
+                        {
+                            if (m.projConfig.Configuration != m.solConfig.Configuration)
+                            {
+                                childLines.Add($"<BuildType Solution=\"{EscapeXmlAttribute(m.solConfig.Name)}\" Project=\"{EscapeXmlAttribute(m.projConfig.Configuration)}\" />");
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Platform mapping
+            bool isDotNetProject = project.Type == TargetType.DotNetCore || project.Type == TargetType.DotNet || project.Path.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase);
+            bool allSameProjPlatform = projectMappings.All(m => m.projConfig.Platform == projectMappings[0].projConfig.Platform);
+            if (allSameProjPlatform)
+            {
+                var commonProjPlatform = projectMappings[0].projConfig.Platform;
+                bool isDefaultDotNetPlatform = isDotNetProject && (commonProjPlatform == "Any CPU" || commonProjPlatform == "AnyCPU");
+                bool matchesAllSolPlatforms = projectMappings.All(m => m.solConfig.Platform == commonProjPlatform);
+                if (!isDefaultDotNetPlatform && !matchesAllSolPlatforms)
+                {
+                    childLines.Add($"<Platform Project=\"{EscapeXmlAttribute(commonProjPlatform)}\" />");
+                }
+            }
+            else
+            {
+                var distinctSolPlatforms = projectMappings.Select(m => m.solConfig.Platform).Distinct().ToList();
+                foreach (var solPlatformName in distinctSolPlatforms)
+                {
+                    var mappingsForSolPlatform = projectMappings.Where(m => m.solConfig.Platform == solPlatformName).ToList();
+                    bool allConfigsSame = mappingsForSolPlatform.All(m => m.projConfig.Platform == mappingsForSolPlatform[0].projConfig.Platform);
+                    if (allConfigsSame)
+                    {
+                        var projPlatformName = mappingsForSolPlatform[0].projConfig.Platform;
+                        bool isDefaultDotNetPlatform = isDotNetProject && (projPlatformName == "Any CPU" || projPlatformName == "AnyCPU");
+                        if (projPlatformName != solPlatformName && !isDefaultDotNetPlatform)
+                        {
+                            childLines.Add($"<Platform Solution=\"*|{EscapeXmlAttribute(solPlatformName)}\" Project=\"{EscapeXmlAttribute(projPlatformName)}\" />");
+                        }
+                    }
+                    else
+                    {
+                        foreach (var m in mappingsForSolPlatform)
+                        {
+                            if (m.projConfig.Platform != m.solConfig.Platform)
+                            {
+                                childLines.Add($"<Platform Solution=\"{EscapeXmlAttribute(m.solConfig.Name)}\" Project=\"{EscapeXmlAttribute(m.projConfig.Platform)}\" />");
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Build flag mapping
+            bool allBuildTrue = projectMappings.All(m => m.build);
+            bool allBuildFalse = projectMappings.All(m => !m.build);
+            if (allBuildFalse)
+            {
+                childLines.Add("<Build Project=\"false\" />");
+            }
+            else if (!allBuildTrue)
+            {
+                var distinctSolConfigs = projectMappings.Select(m => m.solConfig.Configuration).Distinct().ToList();
+                foreach (var solConfigName in distinctSolConfigs)
+                {
+                    var mappingsForSolConfig = projectMappings.Where(m => m.solConfig.Configuration == solConfigName).ToList();
+                    bool allPlatformsFalse = mappingsForSolConfig.All(m => !m.build);
+                    bool allPlatformsTrue = mappingsForSolConfig.All(m => m.build);
+                    if (allPlatformsFalse)
+                    {
+                        childLines.Add($"<Build Solution=\"{EscapeXmlAttribute(solConfigName)}|*\" Project=\"false\" />");
+                    }
+                    else if (!allPlatformsTrue)
+                    {
+                        foreach (var m in mappingsForSolConfig)
+                        {
+                            if (!m.build)
+                            {
+                                childLines.Add($"<Build Solution=\"{EscapeXmlAttribute(m.solConfig.Name)}\" Project=\"false\" />");
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (childLines.Count == 0)
+            {
+                xml.AppendLine($"{indent}<Project Path=\"{EscapeXmlAttribute(projectPath)}\"{typeAttr} />");
+            }
+            else
+            {
+                xml.AppendLine($"{indent}<Project Path=\"{EscapeXmlAttribute(projectPath)}\"{typeAttr}>");
+                foreach (var line in childLines)
+                    xml.AppendLine($"{indent}  {line}");
+                xml.AppendLine($"{indent}</Project>");
+            }
         }
 
         private void GenerateAsciiSolution(Solution solution)
@@ -447,42 +849,7 @@ namespace Flax.Build.Projects.VisualStudio
             {
                 vcSolutionFileContent.AppendLine("Global");
 
-                // Collect all unique configurations
-                var configurations = new HashSet<SolutionConfiguration>();
-                var mainArchitectures = solution.MainProject?.Targets?.SelectMany(x => x.Architectures).Distinct().ToArray();
-                foreach (var project in projects)
-                {
-                    if (project.Configurations == null || project.Configurations.Count == 0)
-                        throw new Exception("Missing configurations for project " + project.Name);
-
-                    // Prevent generating default Debug|AnyCPU and Release|AnyCPU configurations from Flax projects
-                    if (project.Name == "BuildScripts" || project.Name == "Flax.Build" || project.Name == "Flax.Build.Tests")
-                        continue;
-
-                    foreach (var configuration in project.Configurations)
-                    {
-                        // Skip architectures which are not included in the game project
-                        if (mainArchitectures != null && !mainArchitectures.Contains(configuration.Architecture))
-                            continue;
-
-                        configurations.Add(new SolutionConfiguration(configuration));
-                    }
-                }
-
-                // Add missing configurations (Visual Studio needs all permutations of configuration/platform pair)
-                var configurationNames = configurations.Select(x => x.Configuration).Distinct().ToArray();
-                var platformNames = configurations.Select(x => x.Platform).Distinct().ToArray();
-                foreach (var configurationName in configurationNames)
-                {
-                    foreach (var platformName in platformNames)
-                    {
-                        configurations.Add(new SolutionConfiguration(configurationName, platformName));
-                    }
-                }
-
-                // Sort configurations
-                var configurationsSorted = new List<SolutionConfiguration>(configurations);
-                configurationsSorted.Sort();
+                var configurationsSorted = GetSolutionConfigurations(solution, projects);
 
                 // Global configurations
                 {
@@ -624,6 +991,12 @@ namespace Flax.Build.Projects.VisualStudio
 
             // Save the file
             Utilities.WriteFileIfChanged(solution.Path, vcSolutionFileContent.ToString());
+        }
+
+        private void PostGenerateSolution(Solution solution)
+        {
+            var solutionDirectory = Path.GetDirectoryName(solution.Path);
+            var projects = solution.Projects.Cast<VisualStudioProject>().ToArray();
 
             // Generate launch profiles for C# projects
             if (Version >= VisualStudioVersion.VisualStudio2022)
@@ -707,6 +1080,23 @@ namespace Flax.Build.Projects.VisualStudio
                 }
 
                 Utilities.WriteFileIfChanged(dotSettingsUserFilePath, dotSettingsFileContent.ToString());
+
+                // Solution settings (team layer) - copy from alternate solution extension if not yet present
+                string dotSettingsFilePath = solution.Path + ".DotSettings";
+                string altDotSettingsFilePath = (solution.Path.EndsWith(".slnx", StringComparison.OrdinalIgnoreCase)
+                    ? Path.ChangeExtension(solution.Path, "sln")
+                    : Path.ChangeExtension(solution.Path, "slnx")) + ".DotSettings";
+                if (!File.Exists(dotSettingsFilePath) && File.Exists(altDotSettingsFilePath))
+                {
+                    try
+                    {
+                        File.Copy(altDotSettingsFilePath, dotSettingsFilePath, overwrite: true);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning($"Failed to copy Rider settings from {altDotSettingsFilePath}: {ex.Message}");
+                    }
+                }
             }
 
             // Custom MSBuild .targets file to prevent building Flax C#-projects directly with MSBuild
