@@ -177,7 +177,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// If checked, the panel will expand all children in the relevant direction with even spacing and size (horizontally for Horizontal Panel, vertically for Vertical Panel).
         /// </summary>
-        [EditorOrder(36), DefaultValue(false)]
+        [EditorOrder(36), DefaultValue(false), VisibleIf(nameof(AutoSize), true)]
         public bool ExpandChildSize
         {
             get => _expandChildSize;

@@ -74,7 +74,7 @@ namespace FlaxEngine.GUI
                     }
                     maxWidth = Mathf.Max(maxWidth, cw);
 
-                    if (ExpandChildSize)
+                    if (ExpandChildSize && !AutoSize)
                     {
                         c.Height = itemHeight;
                     }
