@@ -14,7 +14,6 @@ class JsonAsset;
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API Engine
 {
-    friend class PlatformMain;
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(Engine);
 
 public:
@@ -136,6 +135,13 @@ public:
 
 public:
     /// <summary>
+    /// The main engine loop called in <see cref="Main"/>.
+    /// This may be called while main thread is blocked on some platforms.
+    /// </summary>
+    /// <param name="handleEvents">True if platform events should be handled.</param>
+    static void OnLoop(bool handleEvents = true);
+
+    /// <summary>
     /// Fixed update callback used by the physics simulation (fixed stepping).
     /// </summary>
     static void OnFixedUpdate();
@@ -217,7 +223,6 @@ public:
 
 private:
     static int32 OnInit(const Char* cmdLine);
-    static void OnLoop();
     static void OnPause();
     static void OnUnpause();
 };
