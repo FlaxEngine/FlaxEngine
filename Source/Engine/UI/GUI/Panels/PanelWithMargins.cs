@@ -36,6 +36,7 @@ namespace FlaxEngine.GUI
         protected TextAlignment _alignment = TextAlignment.Near;
 
         private bool _controlChildSize = true;
+        private bool _expandChildSize = false;
 
         /// <summary>
         /// Gets or sets the left margin.
@@ -168,6 +169,23 @@ namespace FlaxEngine.GUI
                 if (_controlChildSize != value)
                 {
                     _controlChildSize = value;
+                    PerformLayout();
+                }
+            }
+        }
+
+        /// <summary>
+        /// If checked, the panel will expand all children in the relevant direction with even spacing and size (horizontally for Horizontal Panel, vertically for Vertical Panel).
+        /// </summary>
+        [EditorOrder(36), DefaultValue(false), VisibleIf(nameof(AutoSize), true)]
+        public bool ExpandChildSize
+        {
+            get => _expandChildSize;
+            set
+            {
+                if (_expandChildSize != value)
+                {
+                    _expandChildSize = value;
                     PerformLayout();
                 }
             }
