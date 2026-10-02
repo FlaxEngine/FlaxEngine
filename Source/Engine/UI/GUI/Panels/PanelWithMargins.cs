@@ -35,6 +35,8 @@ namespace FlaxEngine.GUI
         /// </summary>
         protected TextAlignment _alignment = TextAlignment.Near;
 
+        private bool _controlChildSize = true;
+
         /// <summary>
         /// Gets or sets the left margin.
         /// </summary>
@@ -158,7 +160,18 @@ namespace FlaxEngine.GUI
         /// Gets or sets the value indicating whenever the panel can resize children controls (eg. auto-fit width/height).
         /// </summary>
         [EditorOrder(35), DefaultValue(true), Tooltip("If checked, the panel can resize children controls (eg. auto-fit width/height).")]
-        public bool ControlChildSize { get; set; } = true;
+        public bool ControlChildSize
+        {
+            get => _controlChildSize;
+            set
+            {
+                if (_controlChildSize != value)
+                {
+                    _controlChildSize = value;
+                    PerformLayout();
+                }
+            }
+        }
 
         /// <summary>
         /// Gets or sets the panel area margin.
