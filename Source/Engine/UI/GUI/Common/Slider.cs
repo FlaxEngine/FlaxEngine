@@ -100,7 +100,7 @@ public class Slider : ContainerControl
     private Rectangle _thumbRect;
     private float _thumbCenter;
     private Float2 _thumbSize = new Float2(16, 16);
-    private bool _isSliding;
+    private bool _isSliding, _isNavSliding;
     private bool _mouseOverThumb;
     private const float _step = 10;
 
@@ -267,7 +267,7 @@ public class Slider : ContainerControl
     /// Gets a value indicating whether user is using a slider.
     /// </summary>
     [HideInEditor]
-    public bool IsSliding => _isSliding;
+    public bool IsSliding => (_isSliding || _isNavSliding);
 
     /// <summary>
     /// Occurs when sliding starts.
@@ -399,7 +399,7 @@ public class Slider : ContainerControl
         }
 
         // Draw thumb
-        var thumbColorV = _isSliding ? ThumbColorSelected : (_mouseOverThumb || IsNavFocused ? ThumbColorHighlighted : ThumbColor);
+        var thumbColorV = (_isSliding || _isNavSliding) ? ThumbColorSelected : (_mouseOverThumb || IsNavFocused ? ThumbColorHighlighted : ThumbColor);
         if (ThumbBrush != null)
             ThumbBrush.Draw(_thumbRect, thumbColorV);
         else
@@ -414,23 +414,39 @@ public class Slider : ContainerControl
             EndSliding();
         }
 
+        if(_isNavSliding)
+            _isNavSliding = false;
+
         base.OnLostFocus();
     }
 
     /// <inheritdoc />
     public override Control OnNavigate(NavDirection direction, Float2 location, Control caller, List<Control> visited)
     {
-        // Auto-focus self when navigation comes in
-        if (!IsNavFocused)
-            return this;
+        _isNavSliding = IsFocused && direction != NavDirection.None;
 
         // Control slider via navigation actions
-        if (IsNavFocused && _isSliding)
+        if (_isNavSliding)
         {
-            var isNavUp = direction == NavDirection.Right || direction == NavDirection.Up;
-            var isDirUp = _direction == SliderDirection.HorizontalRight || _direction == SliderDirection.VerticalUp;
-            Value += (isNavUp == isDirUp ? 1 : -1) * _step;
-            return this;
+            bool isHorizontal = (Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft) &&
+                direction is NavDirection.Right or NavDirection.Left;
+            float thumbLocation = isHorizontal ? location.X : location.Y;
+            
+            float numLocation = WholeNumbers ? 1f : 0.1f;
+            var thumbValue = (thumbLocation < _thumbCenter ? -numLocation : numLocation);
+
+            switch (isHorizontal, Direction)
+            {
+                case (true, SliderDirection.HorizontalRight) or (false, SliderDirection.VerticalDown):
+                    Value += thumbValue;
+                    break;
+
+                case (true, SliderDirection.HorizontalLeft) or (false, SliderDirection.VerticalUp):
+                    Value -= thumbValue;
+                    break;
+
+                default: break;
+            }
         }
 
         return base.OnNavigate(direction, location, caller, visited);
