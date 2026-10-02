@@ -674,7 +674,8 @@ namespace Flax.Build.Projects.VisualStudioCode
                 json.AddField("gulp.autoDetect", "off");
                 json.AddField("jake.autoDetect", "off");
                 json.AddField("grunt.autoDetect", "off");
-                json.AddField("omnisharp.defaultLaunchSolution", solution.Name + ".sln");
+                bool isLegacySln = !Configuration.ProjectFormatVS2026 && (Configuration.ProjectFormatVS2022 || Configuration.ProjectFormatVS2019 || Configuration.ProjectFormatVS2017 || Configuration.ProjectFormatVS2015);
+                json.AddField("omnisharp.defaultLaunchSolution", solution.Name + (isLegacySln ? ".sln" : ".slnx"));
                 json.AddField("omnisharp.useModernNet", true);
                 json.EndObject();
 

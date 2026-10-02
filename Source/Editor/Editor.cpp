@@ -126,6 +126,7 @@ bool Editor::CheckProjectUpgrade()
 
         // Remove old project files
         FileSystem::DeleteFile(root / name + TEXT(".sln"));
+        FileSystem::DeleteFile(root / name + TEXT(".slnx"));
         FileSystem::DeleteFile(root / name + TEXT(".csproj"));
         FileSystem::DeleteFile(root / name + TEXT(".csproj.user"));
         FileSystem::DeleteFile(root / name + TEXT(".Editor.csproj"));

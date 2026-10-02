@@ -25,6 +25,8 @@ private:
     String _CLSID;
     String _solutionPath;
 
+    String GetSolutionPath() const;
+
 public:
 
     /// <summary>
