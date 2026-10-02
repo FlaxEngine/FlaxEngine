@@ -19,6 +19,8 @@ public class astc : EngineDepsModule
             return true;
         case TargetPlatform.Mac:
             return options.Architecture == TargetArchitecture.ARM64;
+        case TargetPlatform.Linux:
+            return options.Architecture == TargetArchitecture.x64;
         default:
             return false;
         }
