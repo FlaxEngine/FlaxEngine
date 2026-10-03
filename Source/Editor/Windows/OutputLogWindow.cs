@@ -487,7 +487,7 @@ namespace FlaxEditor.Windows
         }
 
         private InterfaceOptions.TimestampsFormats _timestampsFormats;
-        private bool _showLogType;
+        private bool _showLogType, _scrollToBottom;
 
         private List<Entry> _entries = new List<Entry>(1024);
         private bool _isDirty;
@@ -653,6 +653,7 @@ namespace FlaxEditor.Windows
         {
             if (options.Interface.OutputLogTimestampsFormat == _timestampsFormats &&
                 options.Interface.OutputLogShowLogType == _showLogType &&
+                options.Interface.OutputLogScrollToBottom == _scrollToBottom &&
                 _output.DefaultStyle.Font == options.Interface.OutputLogTextFont &&
                 _output.DefaultStyle.Color == options.Visual.LogInfoColor &&
                 _output.DefaultStyle.ShadowColor == options.Interface.OutputLogTextShadowColor &&
@@ -677,6 +678,7 @@ namespace FlaxEditor.Windows
 
             _timestampsFormats = options.Interface.OutputLogTimestampsFormat;
             _showLogType = options.Interface.OutputLogShowLogType;
+            _scrollToBottom = options.Interface.OutputLogScrollToBottom;
 
             Refresh();
         }
@@ -1039,7 +1041,7 @@ namespace FlaxEditor.Windows
                     cachedOutputTargetViewOffset.Y = 0;
                 _output.TargetViewOffset = cachedOutputTargetViewOffset;
                 _textBufferCount = _entries.Count;
-                if (!_vScroll.IsThumbClicked)
+                if (!_vScroll.IsThumbClicked && _scrollToBottom)
                     _vScroll.TargetValue = isBottomScroll ? _vScroll.Maximum : cachedScrollValue;
                 _output.SelectionRange = cachedSelection;
             }
