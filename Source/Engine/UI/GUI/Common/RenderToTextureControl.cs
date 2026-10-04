@@ -9,7 +9,7 @@ namespace FlaxEngine.GUI
     public class RenderToTextureControl : ContainerControl
     {
         private bool _invalid, _redrawRegistered, _isDuringTextureDraw;
-        private bool _autoSize = true;
+        private bool _autoSize = true, _constantInvalidate = false;
         private GPUTexture _texture;
         private Float2 _textureSize;
         private MaterialBase _drawMaterial;
@@ -59,6 +59,33 @@ namespace FlaxEngine.GUI
         /// </summary>
         [EditorOrder(30)]
         public bool AutomaticInvalidate { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the value whether cached texture data should be invalidated every frame (eg. when UI is animated). 
+        /// </summary>
+        [EditorOrder(40)]
+        public bool ConstantInvalidate
+        {
+            get => _constantInvalidate;
+            set
+            {
+                if (_constantInvalidate != value)
+                {
+                    _constantInvalidate = value;
+                    if (value)
+                    {
+                        // Register for constant invalidation
+                        Invalidate();
+                    }
+                    else if (_invalid && _redrawRegistered)
+                    {
+                        // Don't invalidate anymore
+                        _redrawRegistered = false;
+                        Scripting.Draw -= OnDraw;
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// Gets or sets the GUI material used to draw the cached texture to the screen.
@@ -116,13 +143,16 @@ namespace FlaxEngine.GUI
 
         private void OnDraw()
         {
-            if (_redrawRegistered)
+            if (!ConstantInvalidate)
             {
-                _redrawRegistered = false;
-                Scripting.Draw -= OnDraw;
+                if (_redrawRegistered)
+                {
+                    _redrawRegistered = false;
+                    Scripting.Draw -= OnDraw;
+                }
+                if (!_invalid)
+                    return;
             }
-            if (!_invalid)
-                return;
             _invalid = false;
 
             if (!_texture)
