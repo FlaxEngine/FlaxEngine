@@ -82,7 +82,13 @@ namespace
         Float2 Thumbstick = Float2::Zero;
         bool ThumbstickClick = false;
         bool Bumper = false;
+        XrHandTrackerEXT HandTracker = XR_NULL_HANDLE;
+        Transform JointPoses[(int32)XRHandJoint::MAX];
+        float JointRadii[(int32)XRHandJoint::MAX];
+        uint32 ValidJoints = 0;
+        XRHandTrackingSource Source = XRHandTrackingSource::Unknown;
     };
+    static_assert((int32)XRHandJoint::MAX == XR_HAND_JOINT_COUNT_EXT, "Invalid hand joints count.");
 
     const ActionDesc Actions[] =
     {
@@ -217,6 +223,9 @@ namespace
     HandState Hands[2];
     bool Buttons[(int32)GamepadButton::MAX] = {};
     Gamepad* GamepadDevice = nullptr;
+    PFN_xrCreateHandTrackerEXT CreateHandTrackerEXT = nullptr;
+    PFN_xrDestroyHandTrackerEXT DestroyHandTrackerEXT = nullptr;
+    PFN_xrLocateHandJointsEXT LocateHandJointsEXT = nullptr;
 
     class OpenXRGamepad : public Gamepad
     {
@@ -321,10 +330,95 @@ namespace
         hand = HandState();
         hand.Path = path;
     }
+
+    void InitHandTracking(XrSession session)
+    {
+        if (CreateHandTrackerEXT == nullptr)
+            return;
+
+        // Check if headset supports hand tracking
+        XrSystemHandTrackingPropertiesEXT handTrackingProperties = { XR_TYPE_SYSTEM_HAND_TRACKING_PROPERTIES_EXT };
+        XrSystemProperties systemProperties = { XR_TYPE_SYSTEM_PROPERTIES };
+        systemProperties.next = &handTrackingProperties;
+        XrResult result = xrGetSystemProperties(OpenXRInstance::Instance, OpenXRInstance::SystemId, &systemProperties);
+        if (XR_FAILED(result) || !handTrackingProperties.supportsHandTracking)
+        {
+            LOG(Info, "OpenXR hand tracking is not supported by the system");
+            return;
+        }
+
+        // Create hand trackers (use both the hands tracking and the controllers to estimate the hand pose)
+        XrHandTrackingDataSourceEXT dataSources[] = { XR_HAND_TRACKING_DATA_SOURCE_UNOBSTRUCTED_EXT, XR_HAND_TRACKING_DATA_SOURCE_CONTROLLER_EXT };
+        XrHandTrackingDataSourceInfoEXT dataSourceInfo = { XR_TYPE_HAND_TRACKING_DATA_SOURCE_INFO_EXT };
+        dataSourceInfo.requestedDataSourceCount = ARRAY_COUNT(dataSources);
+        dataSourceInfo.requestedDataSources = dataSources;
+        for (int32 i = 0; i < 2; i++)
+        {
+            XrHandTrackerCreateInfoEXT createInfo = { XR_TYPE_HAND_TRACKER_CREATE_INFO_EXT };
+            createInfo.next = OpenXRInstance::SupportsHandTrackingDataSource ? &dataSourceInfo : nullptr;
+            createInfo.hand = i == 0 ? XR_HAND_LEFT_EXT : XR_HAND_RIGHT_EXT;
+            createInfo.handJointSet = XR_HAND_JOINT_SET_DEFAULT_EXT;
+            result = CreateHandTrackerEXT(session, &createInfo, &Hands[i].HandTracker);
+            if (XR_FAILED(result))
+            {
+                LOG(Warning, "Failed to create OpenXR hand tracker ({0})", OpenXRInstance::GetResultString(result));
+                Hands[i].HandTracker = XR_NULL_HANDLE;
+            }
+        }
+        LOG(Info, "OpenXR hand tracking enabled (motion range: {0}, data source: {1})", OpenXRInstance::SupportsHandJointsMotionRange, OpenXRInstance::SupportsHandTrackingDataSource);
+    }
+
+    void LocateHandJoints(HandState& hand, XrTime time)
+    {
+        hand.ValidJoints = 0;
+        hand.Source = XRHandTrackingSource::Unknown;
+        if (hand.HandTracker == XR_NULL_HANDLE)
+            return;
+        XrHandJointsLocateInfoEXT locateInfo = { XR_TYPE_HAND_JOINTS_LOCATE_INFO_EXT };
+        locateInfo.baseSpace = Space;
+        locateInfo.time = time;
+        XrHandJointsMotionRangeInfoEXT motionRangeInfo = { XR_TYPE_HAND_JOINTS_MOTION_RANGE_INFO_EXT };
+        if (OpenXRInstance::SupportsHandJointsMotionRange)
+        {
+            motionRangeInfo.handJointsMotionRange = XR::GetHandMotionRange() == XRHandMotionRange::ConformingToController ? XR_HAND_JOINTS_MOTION_RANGE_CONFORMING_TO_CONTROLLER_EXT : XR_HAND_JOINTS_MOTION_RANGE_UNOBSTRUCTED_EXT;
+            locateInfo.next = &motionRangeInfo;
+        }
+        XrHandJointLocationEXT jointLocations[XR_HAND_JOINT_COUNT_EXT];
+        XrHandJointLocationsEXT locations = { XR_TYPE_HAND_JOINT_LOCATIONS_EXT };
+        locations.jointCount = XR_HAND_JOINT_COUNT_EXT;
+        locations.jointLocations = jointLocations;
+        XrHandTrackingDataSourceStateEXT dataSourceState = { XR_TYPE_HAND_TRACKING_DATA_SOURCE_STATE_EXT };
+        if (OpenXRInstance::SupportsHandTrackingDataSource)
+            locations.next = &dataSourceState;
+        if (XR_FAILED(LocateHandJointsEXT(hand.HandTracker, &locateInfo, &locations)) || !locations.isActive)
+            return;
+        const XrSpaceLocationFlags validFlags = XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_POSITION_VALID_BIT;
+        for (int32 i = 0; i < XR_HAND_JOINT_COUNT_EXT; i++)
+        {
+            const XrHandJointLocationEXT& location = jointLocations[i];
+            if ((location.locationFlags & validFlags) != validFlags)
+                continue;
+            hand.JointPoses[i] = OpenXRConvert::ToTransform(location.pose);
+            hand.JointRadii[i] = location.radius * METERS_TO_UNITS_SCALE;
+            hand.ValidJoints |= 1u << i;
+        }
+        if (dataSourceState.isActive)
+            hand.Source = dataSourceState.dataSource == XR_HAND_TRACKING_DATA_SOURCE_CONTROLLER_EXT ? XRHandTrackingSource::Controller : XRHandTrackingSource::Unobstructed;
+    }
 }
 
 bool OpenXRInput::Init(XrInstance instance)
 {
+    // Get hand tracking functions
+    if (OpenXRInstance::SupportsHandTracking)
+    {
+        xrGetInstanceProcAddr(instance, "xrCreateHandTrackerEXT", (PFN_xrVoidFunction*)&CreateHandTrackerEXT);
+        xrGetInstanceProcAddr(instance, "xrDestroyHandTrackerEXT", (PFN_xrVoidFunction*)&DestroyHandTrackerEXT);
+        xrGetInstanceProcAddr(instance, "xrLocateHandJointsEXT", (PFN_xrVoidFunction*)&LocateHandJointsEXT);
+        if (DestroyHandTrackerEXT == nullptr || LocateHandJointsEXT == nullptr)
+            CreateHandTrackerEXT = nullptr;
+    }
+
     // Create action set
     XrActionSetCreateInfo actionSetInfo = { XR_TYPE_ACTION_SET_CREATE_INFO };
     StringUtils::Copy(actionSetInfo.actionSetName, TEXT("gameplay"), XR_MAX_ACTION_SET_NAME_SIZE - 1);
@@ -425,6 +519,9 @@ bool OpenXRInput::InitSession(XrSession session, XrSpace space)
         HeadSpace = XR_NULL_HANDLE;
         return true;
     }
+
+    // Setup hand tracking (works without the actions)
+    InitHandTracking(session);
     if (ActionSet == XR_NULL_HANDLE)
         return true;
 
@@ -470,6 +567,8 @@ void OpenXRInput::DisposeSession()
             xrDestroySpace(hand.GripSpace);
         if (hand.AimSpace != XR_NULL_HANDLE)
             xrDestroySpace(hand.AimSpace);
+        if (hand.HandTracker != XR_NULL_HANDLE)
+            DestroyHandTrackerEXT(hand.HandTracker);
         ClearHandState(hand);
     }
     Platform::MemoryClear(Buttons, sizeof(Buttons));
@@ -493,6 +592,9 @@ void OpenXRInput::Dispose()
     }
     for (auto& action : ActionHandles)
         action = XR_NULL_HANDLE;
+    CreateHandTrackerEXT = nullptr;
+    DestroyHandTrackerEXT = nullptr;
+    LocateHandJointsEXT = nullptr;
     for (auto& hand : Hands)
         hand.Path = XR_NULL_PATH;
 }
@@ -553,6 +655,7 @@ void OpenXRInput::LocatePoses(XrTime time)
     {
         hand.IsGripValid = LocateSpace(hand.GripSpace, time, hand.GripPose);
         hand.IsAimValid = LocateSpace(hand.AimSpace, time, hand.AimPose);
+        LocateHandJoints(hand, time);
     }
 }
 
@@ -588,6 +691,30 @@ bool OpenXRInput::GetHandPose(XRHand hand, XRPoseType type, Transform& pose)
         return false;
     pose = type == XRPoseType::Aim ? state.AimPose : state.GripPose;
     return true;
+}
+
+bool OpenXRInput::IsHandTrackingSupported()
+{
+    return Hands[0].HandTracker != XR_NULL_HANDLE || Hands[1].HandTracker != XR_NULL_HANDLE;
+}
+
+bool OpenXRInput::GetHandJointPose(XRHand hand, XRHandJoint joint, Transform& pose, float& radius)
+{
+    if ((uint32)hand > (uint32)XRHand::Right || (uint32)joint >= (uint32)XRHandJoint::MAX)
+        return false;
+    const HandState& state = Hands[(int32)hand];
+    if ((state.ValidJoints & (1u << (uint32)joint)) == 0)
+        return false;
+    pose = state.JointPoses[(int32)joint];
+    radius = state.JointRadii[(int32)joint];
+    return true;
+}
+
+XRHandTrackingSource OpenXRInput::GetHandTrackingSource(XRHand hand)
+{
+    if ((uint32)hand > (uint32)XRHand::Right || Hands[(int32)hand].ValidJoints == 0)
+        return XRHandTrackingSource::Unknown;
+    return Hands[(int32)hand].Source;
 }
 
 void OpenXRInput::Vibrate(XRHand hand, float amplitude, float duration, float frequency)

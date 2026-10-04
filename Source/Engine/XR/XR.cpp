@@ -33,7 +33,32 @@ XRService XRServiceInstance;
 
 namespace
 {
+    bool UseXR = false;
     bool SessionEnabled = !USE_EDITOR;
+    XRHandMotionRange HandMotionRange = XRHandMotionRange::Unobstructed;
+}
+
+bool XR::IsEnabled()
+{
+    return UseXR;
+}
+
+bool XR::IsConnecting()
+{
+#if XR_API_OPENXR
+    return OpenXRInstance::IsInitPending();
+#else
+    return false;
+#endif
+}
+
+bool XR::IsConnected()
+{
+#if XR_API_OPENXR
+    return OpenXRInstance::Instance != XR_NULL_HANDLE;
+#else
+    return false;
+#endif
 }
 
 bool XR::IsAvailable()
@@ -91,6 +116,14 @@ StringView XR::GetSystemName()
 #endif
 }
 
+void XR::Reconnect()
+{
+#if XR_API_OPENXR
+    if (UseXR)
+        OpenXRInstance::InitAsync();
+#endif
+}
+
 float XR::GetDisplayRefreshRate()
 {
 #if XR_API_OPENXR
@@ -124,6 +157,43 @@ bool XR::GetHandPose(XRHand hand, XRPoseType type, Transform& pose)
     return false;
 }
 
+bool XR::IsHandTrackingSupported()
+{
+#if XR_API_OPENXR
+    if (OpenXRSession::IsRunning())
+        return OpenXRInput::IsHandTrackingSupported();
+#endif
+    return false;
+}
+
+XRHandMotionRange XR::GetHandMotionRange()
+{
+    return HandMotionRange;
+}
+
+void XR::SetHandMotionRange(XRHandMotionRange value)
+{
+    HandMotionRange = value;
+}
+
+bool XR::GetHandJointPose(XRHand hand, XRHandJoint joint, Transform& pose, float& radius)
+{
+#if XR_API_OPENXR
+    if (OpenXRSession::IsRunning())
+        return OpenXRInput::GetHandJointPose(hand, joint, pose, radius);
+#endif
+    return false;
+}
+
+XRHandTrackingSource XR::GetHandTrackingSource(XRHand hand)
+{
+#if XR_API_OPENXR
+    if (OpenXRSession::IsRunning())
+        return OpenXRInput::GetHandTrackingSource(hand);
+#endif
+    return XRHandTrackingSource::Unknown;
+}
+
 void XR::Vibrate(XRHand hand, float amplitude, float duration, float frequency)
 {
 #if XR_API_OPENXR
@@ -154,6 +224,7 @@ bool XRService::Init()
 
 #if XR_API_OPENXR
     // Missing runtime or head-mounted display is not an error (XR stays unavailable)
+    UseXR = true;
     OpenXRInstance::Init();
     Engine::PostDraw.Bind<&OpenXRSession::PostDraw>();
 #else
@@ -165,6 +236,7 @@ bool XRService::Init()
 void XRService::Update()
 {
 #if XR_API_OPENXR
+    OpenXRInstance::Update();
     OpenXRSession::Update();
 #endif
     XRController::UpdateAll();

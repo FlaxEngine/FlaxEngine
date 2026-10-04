@@ -5,10 +5,12 @@
 #include "OpenXRInstance.h"
 #include "OpenXRInput.h"
 #include "OpenXRGraphics.h"
+#include "Engine/XR/XRSettings.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Platform/StringUtils.h"
+#include "Engine/Threading/Task.h"
 #include "FlaxEngine.Gen.h"
 #include <ThirdParty/OpenXR/openxr/openxr_reflection.h>
 
@@ -20,6 +22,9 @@ String OpenXRInstance::SystemName;
 bool OpenXRInstance::SupportsDepthLayer = false;
 bool OpenXRInstance::SupportsDisplayRefreshRate = false;
 bool OpenXRInstance::SupportsFrameController = false;
+bool OpenXRInstance::SupportsHandTracking = false;
+bool OpenXRInstance::SupportsHandJointsMotionRange = false;
+bool OpenXRInstance::SupportsHandTrackingDataSource = false;
 
 // Not included in the OpenXR SDK headers yet
 #define OPENXR_VALVE_FRAME_CONTROLLER_INTERACTION_EXTENSION_NAME "XR_VALVE_frame_controller_interaction"
@@ -27,9 +32,77 @@ bool OpenXRInstance::SupportsFrameController = false;
 namespace
 {
     bool SystemNotFoundLogged = false;
+    Array<const char*> EnabledExtensions;
+    Task* InitTask = nullptr;
+    XrInstance InitTaskInstance = XR_NULL_HANDLE;
+    XrResult InitTaskResult = XR_SUCCESS;
+
+    XrResult CreateInstance(XrInstance& instance)
+    {
+        // Engine registration
+        XrInstanceCreateInfo createInfo = { XR_TYPE_INSTANCE_CREATE_INFO };
+        StringUtils::Copy(createInfo.applicationInfo.applicationName, *Globals::ProductName, XR_MAX_APPLICATION_NAME_SIZE - 1);
+        createInfo.applicationInfo.applicationVersion = 1;
+        StringUtils::Copy(createInfo.applicationInfo.engineName, TEXT("Flax"), XR_MAX_ENGINE_NAME_SIZE - 1);
+        createInfo.applicationInfo.engineVersion = FLAXENGINE_VERSION_BUILD;
+        createInfo.applicationInfo.apiVersion = XR_API_VERSION_1_0;
+        createInfo.enabledExtensionCount = (uint32)EnabledExtensions.Count();
+        createInfo.enabledExtensionNames = EnabledExtensions.Get();
+
+        // Create OpenXR instance (fails if there is no active runtime, can take a few seconds if the runtime has to be started)
+        instance = XR_NULL_HANDLE;
+        const XrResult result = xrCreateInstance(&createInfo, &instance);
+        if (XR_FAILED(result))
+            instance = XR_NULL_HANDLE;
+        return result;
+    }
+
+    void CreateInstanceTask()
+    {
+        InitTaskResult = CreateInstance(InitTaskInstance);
+    }
 }
 
 bool OpenXRInstance::Init()
+{
+    if (InitExtensions())
+        return true;
+    XrInstance instance;
+    const XrResult result = CreateInstance(instance);
+    return OnInstanceCreated(result, instance);
+}
+
+void OpenXRInstance::InitAsync()
+{
+    // Skip if the instance is already created or pending
+    if (Instance != XR_NULL_HANDLE || InitTask != nullptr)
+        return;
+    if (InitExtensions())
+        return;
+
+    // Create the instance in the background (the runtime can block for a few seconds when it's starting)
+    InitTask = Task::StartNew(CreateInstanceTask);
+    if (InitTask == nullptr)
+        Dispose();
+}
+
+bool OpenXRInstance::IsInitPending()
+{
+    return InitTask != nullptr;
+}
+
+void OpenXRInstance::Update()
+{
+    // Finish the instance creation on the main thread
+    if (InitTask != nullptr && InitTask->IsEnded())
+    {
+        InitTask = nullptr;
+        OnInstanceCreated(InitTaskResult, InitTaskInstance);
+        InitTaskInstance = XR_NULL_HANDLE;
+    }
+}
+
+bool OpenXRInstance::InitExtensions()
 {
     // Check if runtime supports the graphics API
     uint32 extensionsCount = 0;
@@ -44,8 +117,8 @@ bool OpenXRInstance::Init()
     for (auto& extension : extensions)
         extension = { XR_TYPE_EXTENSION_PROPERTIES };
     xrEnumerateInstanceExtensionProperties(nullptr, extensionsCount, &extensionsCount, extensions.Get());
-    Array<const char*> enabledExtensions;
-    if (OpenXRGraphics::Init(extensions, enabledExtensions))
+    EnabledExtensions.Clear();
+    if (OpenXRGraphics::Init(extensions, EnabledExtensions))
     {
         LOG(Info, "XR unavailable (runtime does not support any of the graphics APIs)");
         OpenXRGraphics::Dispose();
@@ -55,32 +128,40 @@ bool OpenXRInstance::Init()
     // Use optional extensions if supported by the runtime
     SupportsDepthLayer = HasExtension(extensions, XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME);
     if (SupportsDepthLayer)
-        enabledExtensions.Add(XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME);
+        EnabledExtensions.Add(XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME);
     SupportsDisplayRefreshRate = HasExtension(extensions, XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME);
     if (SupportsDisplayRefreshRate)
-        enabledExtensions.Add(XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME);
+        EnabledExtensions.Add(XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME);
     SupportsFrameController = HasExtension(extensions, OPENXR_VALVE_FRAME_CONTROLLER_INTERACTION_EXTENSION_NAME);
     if (SupportsFrameController)
-        enabledExtensions.Add(OPENXR_VALVE_FRAME_CONTROLLER_INTERACTION_EXTENSION_NAME);
+        EnabledExtensions.Add(OPENXR_VALVE_FRAME_CONTROLLER_INTERACTION_EXTENSION_NAME);
+    if (XRSettings::Get()->HandTracking)
+    {
+        SupportsHandTracking = HasExtension(extensions, XR_EXT_HAND_TRACKING_EXTENSION_NAME);
+        if (SupportsHandTracking)
+        {
+            EnabledExtensions.Add(XR_EXT_HAND_TRACKING_EXTENSION_NAME);
+            SupportsHandJointsMotionRange = HasExtension(extensions, XR_EXT_HAND_JOINTS_MOTION_RANGE_EXTENSION_NAME);
+            if (SupportsHandJointsMotionRange)
+                EnabledExtensions.Add(XR_EXT_HAND_JOINTS_MOTION_RANGE_EXTENSION_NAME);
+            SupportsHandTrackingDataSource = HasExtension(extensions, XR_EXT_HAND_TRACKING_DATA_SOURCE_EXTENSION_NAME);
+            if (SupportsHandTrackingDataSource)
+                EnabledExtensions.Add(XR_EXT_HAND_TRACKING_DATA_SOURCE_EXTENSION_NAME);
+        }
+    }
 
-    // Engine registration
-    XrInstanceCreateInfo createInfo = { XR_TYPE_INSTANCE_CREATE_INFO };
-    StringUtils::Copy(createInfo.applicationInfo.applicationName, *Globals::ProductName, XR_MAX_APPLICATION_NAME_SIZE - 1);
-    createInfo.applicationInfo.applicationVersion = 1;
-    StringUtils::Copy(createInfo.applicationInfo.engineName, TEXT("Flax"), XR_MAX_ENGINE_NAME_SIZE - 1);
-    createInfo.applicationInfo.engineVersion = FLAXENGINE_VERSION_BUILD;
-    createInfo.applicationInfo.apiVersion = XR_API_VERSION_1_0;
-    createInfo.enabledExtensionCount = (uint32)enabledExtensions.Count();
-    createInfo.enabledExtensionNames = enabledExtensions.Get();
+    return false;
+}
 
-    // Create OpenXR instance (fails if there is no active runtime)
-    result = xrCreateInstance(&createInfo, &Instance);
+bool OpenXRInstance::OnInstanceCreated(XrResult result, XrInstance instance)
+{
     if (XR_FAILED(result))
     {
         LOG(Info, "XR unavailable ({0})", GetResultString(result));
-        Instance = XR_NULL_HANDLE;
+        Dispose();
         return true;
     }
+    Instance = instance;
 
     // Get runtime info
     XrInstanceProperties instanceProperties = { XR_TYPE_INSTANCE_PROPERTIES };
@@ -138,6 +219,17 @@ bool OpenXRInstance::InitSystem()
 
 void OpenXRInstance::Dispose()
 {
+    if (InitTask != nullptr)
+    {
+        // Wait for the pending instance creation
+        InitTask->Wait();
+        InitTask = nullptr;
+        if (InitTaskInstance != XR_NULL_HANDLE)
+        {
+            xrDestroyInstance(InitTaskInstance);
+            InitTaskInstance = XR_NULL_HANDLE;
+        }
+    }
     OpenXRInput::Dispose();
     OpenXRGraphics::Dispose();
     if (Instance != XR_NULL_HANDLE)
@@ -152,6 +244,9 @@ void OpenXRInstance::Dispose()
     SupportsDepthLayer = false;
     SupportsDisplayRefreshRate = false;
     SupportsFrameController = false;
+    SupportsHandTracking = false;
+    SupportsHandJointsMotionRange = false;
+    SupportsHandTrackingDataSource = false;
 }
 
 bool OpenXRInstance::HasExtension(const Array<XrExtensionProperties>& extensions, const char* name)

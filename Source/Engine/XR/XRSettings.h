@@ -38,6 +38,12 @@ public:
     API_FIELD(Attributes="EditorOrder(120), Limit(0, 1000), EditorDisplay(\"Rendering\")")
     float DisplayRefreshRate = 0.0f;
 
+    /// <summary>
+    /// If checked, the hand joints are tracked (eg. by the headset cameras or estimated from the held controllers). Requires the runtime support for XR_EXT_hand_tracking. Changing this option requires restarting the game.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(200), EditorDisplay(\"Input\")")
+    bool HandTracking = true;
+
 public:
     /// <summary>
     /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.

@@ -81,6 +81,29 @@ public:
     static bool GetHandPose(XRHand hand, XRPoseType type, Transform& pose);
 
     /// <summary>
+    /// Checks if the hand trackers have been created for the session.
+    /// </summary>
+    /// <returns>True if hand tracking is supported, otherwise false.</returns>
+    static bool IsHandTrackingSupported();
+
+    /// <summary>
+    /// Gets the pose of the tracked hand joint.
+    /// </summary>
+    /// <param name="hand">The hand.</param>
+    /// <param name="joint">The hand joint.</param>
+    /// <param name="pose">The result pose (relative to the tracking space).</param>
+    /// <param name="radius">The result radius of the joint (in units).</param>
+    /// <returns>True if the joint is tracked, otherwise false.</returns>
+    static bool GetHandJointPose(XRHand hand, XRHandJoint joint, Transform& pose, float& radius);
+
+    /// <summary>
+    /// Gets the source of the tracked hand joints data.
+    /// </summary>
+    /// <param name="hand">The hand.</param>
+    /// <returns>The hand tracking source.</returns>
+    static XRHandTrackingSource GetHandTrackingSource(XRHand hand);
+
+    /// <summary>
     /// Starts the controller vibration.
     /// </summary>
     /// <param name="hand">The hand.</param>

@@ -54,12 +54,43 @@ public:
     /// </summary>
     static bool SupportsFrameController;
 
+    /// <summary>
+    /// True if the runtime supports tracking the hand joints (XR_EXT_hand_tracking).
+    /// </summary>
+    static bool SupportsHandTracking;
+
+    /// <summary>
+    /// True if the runtime supports selecting the motion range of the hand joints (XR_EXT_hand_joints_motion_range).
+    /// </summary>
+    static bool SupportsHandJointsMotionRange;
+
+    /// <summary>
+    /// True if the runtime supports reporting the source of the hand joints data (XR_EXT_hand_tracking_data_source).
+    /// </summary>
+    static bool SupportsHandTrackingDataSource;
+
 public:
     /// <summary>
     /// Creates the OpenXR instance and gets the head-mounted display system.
     /// </summary>
     /// <returns>True if failed, otherwise false.</returns>
     static bool Init();
+
+    /// <summary>
+    /// Creates the OpenXR instance in the background if it's not created yet (eg. the runtime was not running when the engine started). The instance becomes available after a later Update.
+    /// </summary>
+    static void InitAsync();
+
+    /// <summary>
+    /// Checks if the instance creation started by InitAsync is in progress.
+    /// </summary>
+    /// <returns>True if the instance is being created, otherwise false.</returns>
+    static bool IsInitPending();
+
+    /// <summary>
+    /// Finishes the instance creation started by InitAsync once it's done. Called on the main thread.
+    /// </summary>
+    static void Update();
 
     /// <summary>
     /// Gets the head-mounted display system. Can be called again later if the headset was not connected.
@@ -92,6 +123,10 @@ public:
     /// <param name="result">The result code.</param>
     /// <returns>The result code name.</returns>
     static const Char* GetResultString(XrResult result);
+
+private:
+    static bool InitExtensions();
+    static bool OnInstanceCreated(XrResult result, XrInstance instance);
 };
 
 #endif
