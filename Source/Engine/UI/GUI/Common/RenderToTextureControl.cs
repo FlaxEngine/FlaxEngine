@@ -123,6 +123,12 @@ namespace FlaxEngine.GUI
             }
         }
 
+        /// <summary>
+        /// If checked, the control will be bypassed and will not render its children to texture, instead draw children normally. It can be used to temporarily disable the effect of this control without removing it from the hierarchy.
+        /// </summary>
+        [EditorOrder(200)]
+        public bool Bypass { get; set; }
+
 #if FLAX_EDITOR
         private bool HasDrawMaterial => _drawMaterial != null;
 #endif
@@ -151,6 +157,8 @@ namespace FlaxEngine.GUI
                     Scripting.Draw -= OnDraw;
                 }
                 if (!_invalid)
+                    return;
+                if (Bypass && !_texture)
                     return;
             }
             _invalid = false;
@@ -199,7 +207,7 @@ namespace FlaxEngine.GUI
         public override void Draw()
         {
             // Draw cached texture
-            if (_texture && !_invalid && !_isDuringTextureDraw)
+            if (_texture && !_invalid && !_isDuringTextureDraw && !Bypass)
             {
                 var bounds = new Rectangle(Float2.Zero, Size);
 
