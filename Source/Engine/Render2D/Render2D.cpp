@@ -1982,7 +1982,7 @@ void Render2D::DrawBezier(const Float2& p1, const Float2& p2, const Float2& p3, 
     const Float2 d2 = p3 - p2;
     const Float2 d3 = p4 - p3;
     const float len = d1.Length() + d2.Length() + d3.Length();
-    const int32 segmentCount = Math::Clamp(Math::CeilToInt(len * 0.05f), 1, 100);
+    const int32 segmentCount = Math::Clamp(Math::CeilToInt(len * 0.05f * Platform::GetDpiScale()), 1, 100);
     const float segmentCountInv = 1.0f / (float)segmentCount;
 
     // Draw segmented curve
@@ -2008,7 +2008,7 @@ void Render2D::DrawSpline(const Float2& p1, const Float2& p2, const Float2& p3, 
     const Float2 d2 = p3 - p2;
     const Float2 d3 = p4 - p3;
     const float len = d1.Length() + d2.Length() + d3.Length();
-    const int32 segmentCount = Math::Clamp(Math::CeilToInt(len * 0.05f), 1, 100);
+    const int32 segmentCount = Math::Clamp(Math::CeilToInt(len * 0.05f * Platform::GetDpiScale()), 1, 100);
     const float segmentCountInv = 1.0f / (float)segmentCount;
 
     // Draw segmented curve
