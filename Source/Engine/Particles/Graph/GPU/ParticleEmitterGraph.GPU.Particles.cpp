@@ -185,6 +185,7 @@ void ParticleEmitterGPUGenerator::ProcessGroupParameters(Box* box, Node* node, V
             case MaterialParameterType::GPUTextureCube:
             case MaterialParameterType::GPUTextureVolume:
             case MaterialParameterType::GPUTexture:
+            case MaterialParameterType::GPUBuffer:
                 value = Value(VariantType::Object, param->ShaderName);
                 break;
             default:

@@ -133,6 +133,11 @@ API_ENUM() enum class MaterialParameterType : byte
     /// The Global SDF (textures and constants).
     /// </summary>
     GlobalSDF = 20,
+
+    /// <summary>
+    /// The GPU buffer (created from code), read-only.
+    /// </summary>
+    GPUBuffer = 21,
 };
 
 /// <summary>
@@ -191,11 +196,11 @@ private:
         Float2 _asVector2;
         Float3 _asVector3;
         Color _asColor;
-        byte AsData[16 * 4];
+        byte _asData[16 * 4];
     };
 
     AssetReference<Asset> _asAsset;
-    ScriptingObjectReference<GPUTexture> _asGPUTexture;
+    ScriptingObjectReference<ScriptingObject> _asObject;
     String _name;
 
 public:

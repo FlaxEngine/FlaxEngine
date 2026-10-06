@@ -23,6 +23,7 @@ bool ParticleEmitterGPUGenerator::loadTexture(Node* caller, Box* box, const Seri
         && texture.Type != MaterialParameterType::GPUTextureCube
         && texture.Type != MaterialParameterType::GPUTextureArray
         && texture.Type != MaterialParameterType::CubeTexture
+        && texture.Type != MaterialParameterType::GPUBuffer
         && textureValue.Type != VariantType::Object)
     {
         result = Value::Zero;

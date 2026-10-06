@@ -666,6 +666,7 @@ namespace FlaxEditor.Surface
                 newParam.Button.ButtonClicked += OnAddParameterButtonClicked;
                 layout.Space(10);
             }
+
             // Defer renaming a newly added param once its label is built and laid out
             // Adding a param can rebuild the panel more than once (disposing earlier labels) 
             // Because of this every rebuild recaptures the current label, only the surviving one actually calls StartParameterRenaming

@@ -42,6 +42,7 @@ MaterialValue* MaterialGenerator::sampleTextureRaw(Node* caller, Value& value, B
         && texture->Type != MaterialParameterType::GPUTextureVolume
         && texture->Type != MaterialParameterType::GPUTextureCube
         && texture->Type != MaterialParameterType::GPUTextureArray
+        && texture->Type != MaterialParameterType::GPUBuffer
         && texture->Type != MaterialParameterType::CubeTexture)
     {
         OnError(caller, box, TEXT("No parameter for texture sample node."));
@@ -111,6 +112,12 @@ MaterialValue* MaterialGenerator::sampleTextureRaw(Node* caller, Value& value, B
         {
             // Sample depth buffer
             String sampledValue = String::Format(TEXT("SAMPLE_RT_DEPTH({0}, {1})"), texture->ShaderName, uv);
+            valueBox->Cache = writeLocal(VariantType::Float, sampledValue, parent);
+        }
+        else if (texture->Type == MaterialParameterType::GPUBuffer)
+        {
+            // Load buffer
+            String sampledValue = String::Format(TEXT("{0}.Load({1})"), texture->ShaderName, uv);
             valueBox->Cache = writeLocal(VariantType::Float, sampledValue, parent);
         }
         else if (isNormalMap)
@@ -569,7 +576,13 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         }
 
         // Create texture sampling code
-        if (node->TypeID == 9)
+        if (textureParam->Type == MaterialParameterType::GPUBuffer)
+        {
+            // Load buffer
+            String sampledValue = String::Format(TEXT("{0}.Load({1})"), texture.Value, uvs.Value);
+            textureBox->Cache = writeLocal(VariantType::Float, sampledValue, node);
+        }
+        else if (node->TypeID == 9)
         {
             // Sample Texture
             const Char* format;
