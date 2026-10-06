@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml;
 using FlaxEditor.Content;
@@ -16,6 +15,7 @@ using FlaxEditor.Windows.Profiler;
 using FlaxEngine;
 using FlaxEngine.Assertions;
 using FlaxEngine.GUI;
+using FlaxEngine.Json;
 using DockPanel = FlaxEditor.GUI.Docking.DockPanel;
 using DockState = FlaxEditor.GUI.Docking.DockState;
 using FloatWindowDockPanel = FlaxEditor.GUI.Docking.FloatWindowDockPanel;
@@ -32,33 +32,10 @@ namespace FlaxEditor.Modules
         private DateTime _lastLayoutSaveTime;
         private float _projectIconScreenshotTimeout = -1;
         private string _windowsLayoutPath;
+        private StringBuilder _layoutStringBuilder = new StringBuilder();
 
-        private struct WindowRestoreData
-        {
-            public string AssemblyName;
-            public string TypeName;
-
-            public DockState DockState;
-            public DockPanel DockedTo;
-            public int DockedTabIndex;
-            public float? SplitterValue = null;
-
-            public bool SelectOnShow = false;
-
-            public bool Maximize;
-            public bool Minimize;
-            public Float2 FloatSize;
-            public Float2 FloatPosition;
-
-            public Guid AssetItemID;
-
-            // Constructor, to allow for default values
-            public WindowRestoreData()
-            {
-            }
-        }
-
-        private readonly List<WindowRestoreData> _restoreWindows = new List<WindowRestoreData>();
+        private List<Window> _restoreFloatingWindows = new();
+        private string _restoreWindowLayout = null;
 
         /// <summary>
         /// The main editor window.
@@ -283,11 +260,35 @@ namespace FlaxEditor.Modules
             }
 
             XmlDocument doc = new XmlDocument();
+            try
+            {
+                doc.Load(path);
+            }
+            catch (Exception ex)
+            {
+                Editor.LogWarning(string.Format("Failed to load windows layout from \'{0}\'", path));
+                Editor.LogWarning(ex);
+                return false;
+            }
+
+            return LoadLayout(doc);
+        }
+
+        /// <summary>
+        /// Loads the layout from the file.
+        /// </summary>
+        /// <param name="doc">The layout XML document.</param>
+        /// <param name="duringScriptsReload">True if called during scripts reload.</param>
+        /// <returns>True if layout has been loaded otherwise if failed (e.g. missing file).</returns>
+        internal bool LoadLayout(XmlDocument doc, bool duringScriptsReload = false)
+        {
+            if (Editor.IsHeadlessMode)
+                return false;
+
             var masterPanel = Editor.UI.MasterPanel;
 
             try
             {
-                doc.Load(path);
                 var root = doc["DockPanelLayout"];
                 if (root == null)
                 {
@@ -296,7 +297,7 @@ namespace FlaxEditor.Modules
                 }
 
                 // Reset existing layout
-                masterPanel.ResetLayout();
+                masterPanel.ResetLayoutInternal(duringScriptsReload);
 
                 // Get metadata
                 int version = int.Parse(root.Attributes["Version"].Value, CultureInfo.InvariantCulture);
@@ -335,7 +336,21 @@ namespace FlaxEditor.Modules
                             Rectangle bounds = LoadBounds(child, ref isMaximized, ref isMinimized);
 
                             // Create window and floating dock panel
-                            var window = FloatWindowDockPanel.CreateFloatWindow(MainWindow.GUI, bounds.Location, bounds.Size, WindowStartPosition.Manual, string.Empty);
+                            Window window;
+                            if (duringScriptsReload && _restoreFloatingWindows.Count > 0)
+                            {
+                                // Reuse the existing window
+                                window = _restoreFloatingWindows[0];
+                                _restoreFloatingWindows.RemoveAt(0);
+
+                                // Remove all controls
+                                var windowGUI = window.GUI;
+                                while (windowGUI.Children.Count > 0)
+                                    windowGUI.Children[^1].Dispose();
+                                windowGUI.EndTrackingMouse();
+                            }
+                            else
+                                window = FloatWindowDockPanel.CreateFloatWindow(MainWindow.GUI, bounds.Location, bounds.Size, WindowStartPosition.Manual, string.Empty);
                             var panel = new FloatWindowDockPanel(masterPanel, window.GUI);
                             LoadWindow(panel.Window.Window, ref bounds, isMaximized, isMinimized);
 
@@ -358,7 +373,8 @@ namespace FlaxEditor.Modules
 
                                 // Show
                                 window.Show();
-                                window.Focus();
+                                if (!duringScriptsReload)
+                                    window.Focus();
 
                                 // Perform layout again
                                 windowGUI.PerformLayout();
@@ -399,6 +415,7 @@ namespace FlaxEditor.Modules
                 var win = panel.Tabs[i];
                 writer.WriteStartElement("Window");
 
+                // TODO: Serialize custom editor window typename and restore data
                 writer.WriteAttributeString("Typename", win.SerializationTypename);
 
                 if (win.UseLayoutData)
@@ -458,7 +475,7 @@ namespace FlaxEditor.Modules
                             window.OnLayoutDeserialize();
                         }
 
-                        window.Show(DockState.DockFill, panel);
+                        window.Show(DockState.DockFill, panel, false);
                     }
                 }
             }
@@ -493,7 +510,7 @@ namespace FlaxEditor.Modules
                 }
             }
 
-            panel.SelectTab(selectedTab);
+            panel.SelectTab(selectedTab, false);
             panel.CollapseEmptyTabsProxy();
         }
 
@@ -633,6 +650,20 @@ namespace FlaxEditor.Modules
             if (Editor.IsHeadlessMode)
                 return;
 
+            if (SaveLayout(out var layoutContent))
+                WriteFileIfChanged(path, layoutContent);
+        }
+
+        /// <summary>
+        /// Saves the layout content.
+        /// </summary>
+        /// <param name="layoutContent">The layout XML content.</param>
+        public bool SaveLayout(out string layoutContent)
+        {
+            layoutContent = null;
+            if (Editor.IsHeadlessMode)
+                return false;
+
             //Editor.Log(string.Format("Saving editor windows layout to \'{0}\'", path));
 
             var settings = new XmlWriterSettings
@@ -645,46 +676,95 @@ namespace FlaxEditor.Modules
 
             var masterPanel = Editor.UI.MasterPanel;
             if (masterPanel == null)
-                return;
+                return false;
 
-            using (XmlWriter writer = XmlWriter.Create(path, settings))
+            using (var stringWriter = new StringWriterWithEncoding(_layoutStringBuilder, CultureInfo.InvariantCulture, Encoding.UTF8))
             {
-                writer.WriteStartDocument();
-                writer.WriteStartElement("DockPanelLayout");
-
-                // Metadata
-                writer.WriteAttributeString("Version", "4");
-
-                // Main window info
-                if (MainWindow)
+                using (XmlWriter writer = XmlWriter.Create(stringWriter, settings))
                 {
-                    writer.WriteStartElement("MainWindow");
-                    SaveBounds(writer, MainWindow);
+                    writer.WriteStartDocument();
+                    writer.WriteStartElement("DockPanelLayout");
+
+                    // Metadata
+                    writer.WriteAttributeString("Version", "4");
+
+                    // Main window info
+                    if (MainWindow)
+                    {
+                        writer.WriteStartElement("MainWindow");
+                        SaveBounds(writer, MainWindow);
+                        writer.WriteEndElement();
+                    }
+
+                    // Master panel structure
+                    writer.WriteStartElement("MasterPanel");
+                    SavePanel(writer, masterPanel);
                     writer.WriteEndElement();
-                }
 
-                // Master panel structure
-                writer.WriteStartElement("MasterPanel");
-                SavePanel(writer, masterPanel);
-                writer.WriteEndElement();
+                    // Save all floating windows structure
+                    for (int i = 0; i < masterPanel.FloatingPanels.Count; i++)
+                    {
+                        var panel = masterPanel.FloatingPanels[i];
+                        var window = panel.Window;
+                        if (window == null)
+                            continue;
 
-                // Save all floating windows structure
-                for (int i = 0; i < masterPanel.FloatingPanels.Count; i++)
-                {
-                    var panel = masterPanel.FloatingPanels[i];
-                    var window = panel.Window;
-                    if (window == null)
-                        continue;
+                        writer.WriteStartElement("Float");
+                        SavePanel(writer, panel);
+                        SaveBounds(writer, window.Window);
+                        writer.WriteEndElement();
+                    }
 
-                    writer.WriteStartElement("Float");
-                    SavePanel(writer, panel);
-                    SaveBounds(writer, window.Window);
                     writer.WriteEndElement();
+                    writer.WriteEndDocument();
                 }
-
-                writer.WriteEndElement();
-                writer.WriteEndDocument();
+                layoutContent = _layoutStringBuilder.ToString();
+                _layoutStringBuilder.Clear();
             }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Writes the file contents. Before writing reads the existing file and discards operation if contents are the same.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <param name="contents">The file contents.</param>
+        /// <returns>True if file has been modified, otherwise false.</returns>
+        private static bool WriteFileIfChanged(string path, string contents)
+        {
+            if (File.Exists(path))
+            {
+                string oldContents = null;
+                try
+                {
+                    oldContents = File.ReadAllText(path);
+                }
+                catch (Exception)
+                {
+                    Editor.LogWarning(string.Format("Failed to read file contents while trying to save it.", path));
+                }
+
+                if (string.Equals(contents, oldContents, StringComparison.OrdinalIgnoreCase))
+                {
+                    //Editor.Log(string.Format("Skipped saving file to {0}", path));
+                    return false;
+                }
+            }
+
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                File.WriteAllText(path, contents, new UTF8Encoding());
+                //Editor.Log(string.Format("Saved file to {0}", path));
+            }
+            catch
+            {
+                Editor.LogError(string.Format("Failed to save file {0}", path));
+                throw;
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -742,6 +822,11 @@ namespace FlaxEditor.Modules
                 var el = Editor.ContentDatabase.Find(id);
                 if (el != null)
                 {
+                    // Check if any window is already editing this item
+                    var window = Editor.Windows.FindEditor(el);
+                    if (window != null)
+                        return window;
+
                     // Open asset
                     return Editor.ContentEditing.Open(el, true);
                 }
@@ -816,16 +901,23 @@ namespace FlaxEditor.Modules
             Level.SceneSaving += OnSceneSaving;
             Level.SceneUnloaded += OnSceneUnloaded;
             Level.SceneUnloading += OnSceneUnloading;
+            ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
             Editor.ContentDatabase.WorkspaceRebuilt += OnWorkspaceRebuilt;
             Editor.StateMachine.StateChanged += OnEditorStateChanged;
         }
 
+        private void OnScriptsReloadBegin()
+        {
+            // Save current window layout to be restored after the asset windows are restored
+            if (_lastLayoutSaveTime.Ticks > 0) // Skip while initializing
+                SaveLayout(out _restoreWindowLayout);
+        }
+
         internal void AddToRestore(AssetEditorWindow win)
         {
-            AddToRestore(win, win.GetType(), new WindowRestoreData
-            {
-                AssetItemID = win.Item.ID,
-            });
+            var window = win.RootWindow?.Window;
+            if (window != null && !_restoreFloatingWindows.Contains(window))
+                _restoreFloatingWindows.Add(window);
         }
 
         internal void AddToRestore(CustomEditorWindow win)
@@ -836,161 +928,32 @@ namespace FlaxEditor.Modules
             if (constructor == null || type.IsGenericType)
                 return;
 
-            AddToRestore(win.Window, type, new WindowRestoreData());
-        }
-
-        private void AddToRestore(EditorWindow win, Type type, WindowRestoreData winData)
-        {
-            // Ensure that this window is only selected following recompilation
-            // if it was the active tab in its dock panel. Otherwise, there is a
-            // risk of interrupting the user's workflow by potentially selecting
-            // background tabs.
-            var window = win.RootWindow?.Window;
-            var panel = win.ParentDockPanel;
-            winData.SelectOnShow = panel.SelectedTab == win;
-            winData.DockedTabIndex = 0;
-            if (panel is FloatWindowDockPanel && window != null && panel.TabsCount == 1)
-            {
-                winData.DockState = DockState.Float;
-                winData.FloatPosition = window.Position;
-                winData.FloatSize = window.ClientSize;
-                winData.Maximize = window.IsMaximized;
-                winData.Minimize = window.IsMinimized;
-                winData.DockedTo = panel;
-            }
-            else
-            {
-                for (int i = 0; i < panel.Tabs.Count; i++)
-                {
-                    if (panel.Tabs[i] == win)
-                    {
-                        winData.DockedTabIndex = i;
-                        break;
-                    }
-                }
-                if (panel.TabsCount > 1)
-                {
-                    winData.DockState = DockState.DockFill;
-                    winData.DockedTo = panel;
-                }
-                else
-                {
-                    winData.DockState = panel.TryGetDockState(out var splitterValue);
-                    winData.DockedTo = panel.ParentDockPanel;
-                    winData.SplitterValue = splitterValue;
-                }
-            }
-            winData.AssemblyName = type.Assembly.GetName().Name;
-            winData.TypeName = type.FullName;
-            _restoreWindows.Add(winData);
+            var window = win.Window.RootWindow?.Window;
+            if (window != null && !_restoreFloatingWindows.Contains(window))
+                _restoreFloatingWindows.Add(window);
         }
 
         private void OnWorkspaceRebuilt()
         {
-            // Go in reverse order to create floating Prefab windows first before docked windows
-            for (int i = _restoreWindows.Count - 1; i >= 0; i--)
+            // Restore the window layout data including all asset editor windows
+            if (_restoreWindowLayout != null && _lastLayoutSaveTime.Ticks > 0)
             {
-                var winData = _restoreWindows[i];
-
                 try
                 {
-                    var assembly = Utils.GetAssemblyByName(winData.AssemblyName);
-                    if (assembly == null)
-                        continue;
-
-                    var type = assembly.GetType(winData.TypeName);
-                    if (type == null)
-                        continue;
-
-                    if (type.IsAssignableTo(typeof(AssetEditorWindow)))
-                    {
-                        var assetItem = Editor.ContentDatabase.FindAsset(winData.AssetItemID);
-                        var assetType = assetItem.GetType();
-                        var ctor = type.GetConstructor(new Type[] { typeof(Editor), assetType });
-                        var win = (AssetEditorWindow)ctor.Invoke(new object[] { Editor.Instance, assetItem });
-
-                        win.Show(winData.DockState, winData.DockState != DockState.Float ? winData.DockedTo : null, winData.SelectOnShow, winData.SplitterValue);
-                        if (winData.DockState == DockState.Float)
-                        {
-                            var window = win.RootWindow.Window;
-                            window.Position = winData.FloatPosition;
-                            if (winData.Maximize)
-                            {
-                                window.Maximize();
-                            }
-                            else if (winData.Minimize)
-                            {
-                                window.Minimize();
-                            }
-                            else
-                            {
-                                window.ClientSize = winData.FloatSize;
-                            }
-
-                            // Update panel reference in other windows docked to this panel
-                            foreach (ref var otherData in CollectionsMarshal.AsSpan(_restoreWindows))
-                            {
-                                if (otherData.DockedTo == winData.DockedTo)
-                                    otherData.DockedTo = win.ParentDockPanel;
-                            }
-                        }
-                        var panel = win.ParentDockPanel;
-                        int currentTabIndex = 0;
-                        for (int pi = 0; pi < panel.TabsCount; pi++)
-                        {
-                            if (panel.Tabs[pi] == win)
-                            {
-                                currentTabIndex = pi;
-                                break;
-                            }
-                        }
-                        while (currentTabIndex > winData.DockedTabIndex)
-                        {
-                            win.ParentDockPanel.MoveTabLeft(currentTabIndex);
-                            currentTabIndex--;
-                        }
-                        while (currentTabIndex < winData.DockedTabIndex)
-                        {
-                            win.ParentDockPanel.MoveTabRight(currentTabIndex);
-                            currentTabIndex++;
-                        }
-                        panel.PerformLayout(true);
-                    }
-                    else
-                    {
-                        var win = (CustomEditorWindow)Activator.CreateInstance(type);
-                        win.Show(winData.DockState, winData.DockedTo, winData.SelectOnShow, winData.SplitterValue);
-                        if (winData.DockState == DockState.Float)
-                        {
-                            var window = win.Window.RootWindow.Window;
-                            window.Position = winData.FloatPosition;
-                            if (winData.Maximize)
-                            {
-                                window.Maximize();
-                            }
-                            else if (winData.Minimize)
-                            {
-                                window.Minimize();
-                            }
-                            else
-                            {
-                                window.ClientSize = winData.FloatSize;
-                            }
-                        }
-                    }
+                    var doc = new XmlDocument();
+                    using var stream = new MemoryStream(Encoding.UTF8.GetBytes(_restoreWindowLayout));
+                    doc.Load(stream);
+                    LoadLayout(doc, true);
                 }
                 catch (Exception ex)
                 {
+                    Editor.LogWarning("Failed to restore window layout");
                     Editor.LogWarning(ex);
-                    Editor.LogWarning(string.Format("Failed to restore window {0} (assembly: {1})", winData.TypeName, winData.AssemblyName));
                 }
             }
 
-            // Restored windows stole the focus from Editor
-            if (_restoreWindows.Count > 0)
-                Editor.Instance.Windows.MainWindow.Focus();
-
-            _restoreWindows.Clear();
+            _restoreFloatingWindows.Clear();
+            _restoreWindowLayout = null;
         }
 
         private void MainWindow_OnClosing(ClosingReason reason, ref bool cancel)

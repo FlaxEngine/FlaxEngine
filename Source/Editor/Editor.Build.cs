@@ -42,6 +42,7 @@ public class Editor : EditorModule
         options.ScriptingAPI.SystemReferences.Add("System.Text.RegularExpressions");
         options.ScriptingAPI.SystemReferences.Add("System.IO.Compression.ZipFile");
         options.ScriptingAPI.SystemReferences.Add("System.Diagnostics.Process");
+        options.ScriptingAPI.SystemReferences.Add("System.Text.Encoding.Extensions");
         if (Profiler.Use(options))
             options.ScriptingAPI.Defines.Add("USE_PROFILER");
 
