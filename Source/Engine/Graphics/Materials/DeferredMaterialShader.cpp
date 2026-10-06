@@ -202,6 +202,7 @@ bool DeferredMaterialShader::Load()
     psDesc.VS = vs;
     psDesc.PS = _shader->GetPS("PS_MotionVectors");
     _cache.MotionVectors.Init(psDesc);
+    psDesc.VS = vsInstanced;
     _cacheInstanced.MotionVectors.Init(psDesc);
 
     // Motion Vectors pass with skinning
