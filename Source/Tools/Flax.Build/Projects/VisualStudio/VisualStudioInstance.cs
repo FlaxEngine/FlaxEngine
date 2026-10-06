@@ -122,17 +122,18 @@ namespace Flax.Build.Projects.VisualStudio
                         {
                             VisualStudioVersion version;
                             string displayName = instance.GetDisplayName();
-                            if (displayName.Contains("2017"))
-                                version = VisualStudioVersion.VisualStudio2017;
-                            else if (displayName.Contains("2019"))
-                                version = VisualStudioVersion.VisualStudio2019;
-                            else if (displayName.Contains("2022"))
-                                version = VisualStudioVersion.VisualStudio2022;
-                            else if (displayName.Contains("2026"))
+                            string installVer = instance.GetInstallationVersion() ?? string.Empty;
+                            if (displayName.Contains("2026") || installVer.StartsWith("18."))
                                 version = VisualStudioVersion.VisualStudio2026;
+                            else if (displayName.Contains("2022") || installVer.StartsWith("17."))
+                                version = VisualStudioVersion.VisualStudio2022;
+                            else if (displayName.Contains("2019") || installVer.StartsWith("16."))
+                                version = VisualStudioVersion.VisualStudio2019;
+                            else if (displayName.Contains("2017") || installVer.StartsWith("15."))
+                                version = VisualStudioVersion.VisualStudio2017;
                             else
                             {
-                                Log.Warning(string.Format("Unknown Visual Studio installation. Display name: {0}", displayName));
+                                Log.Warning(string.Format("Unknown Visual Studio installation. Display name: {0}, Version: {1}", displayName, installVer));
                                 continue;
                             }
 

@@ -702,6 +702,32 @@ namespace Flax.Build
                     {
                         Log.Verbose("Solution -> " + solution.Path);
                         nativeProjectGenerator.GenerateSolution(solution);
+
+                        // Clean up obsolete solution file with different extension if present
+                        if (solution.Path.EndsWith(".slnx", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var oldSln = Path.ChangeExtension(solution.Path, "sln");
+                            if (File.Exists(oldSln))
+                            {
+                                Log.Verbose("Removing obsolete solution file " + oldSln);
+                                File.Delete(oldSln);
+                            }
+                            var oldDotSettingsUser = oldSln + ".DotSettings.user";
+                            if (File.Exists(oldDotSettingsUser))
+                                File.Delete(oldDotSettingsUser);
+                        }
+                        else if (solution.Path.EndsWith(".sln", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var oldSlnx = Path.ChangeExtension(solution.Path, "slnx");
+                            if (File.Exists(oldSlnx))
+                            {
+                                Log.Verbose("Removing obsolete solution file " + oldSlnx);
+                                File.Delete(oldSlnx);
+                            }
+                            var oldDotSettingsUser = oldSlnx + ".DotSettings.user";
+                            if (File.Exists(oldDotSettingsUser))
+                                File.Delete(oldDotSettingsUser);
+                        }
                     }
                 }
             }

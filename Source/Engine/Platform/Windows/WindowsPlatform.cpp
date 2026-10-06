@@ -124,8 +124,6 @@ int32 CalculateDpi(HMODULE shCoreDll)
                 dpiY = (int32)y;
             }
         }
-
-        FreeLibrary(shCoreDll);
     }
 
     return (dpiX + dpiY) / 2;

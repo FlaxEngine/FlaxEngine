@@ -126,7 +126,7 @@ namespace FlaxEditor.GUI
                     {
                         var start = font.GetCharPosition(Name, ranges[i].StartIndex);
                         var end = font.GetCharPosition(Name, ranges[i].EndIndex);
-                        _highlights.Add(new Rectangle(start.X + 2, 0, end.X - start.X, Height));
+                        _highlights.Add(new Rectangle(start.X, 0, end.X - start.X, Height));
 
                         if (ranges[i].StartIndex <= 0)
                         {
