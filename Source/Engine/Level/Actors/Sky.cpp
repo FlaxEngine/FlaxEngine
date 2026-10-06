@@ -97,19 +97,13 @@ void Sky::Draw(RenderContextBatch& renderContextBatch)
             if (_psSky == nullptr)
             {
                 _psSky = GPUDevice::Instance->CreatePipelineState();
-
-                GPUPipelineState::Description psDesc = GPUPipelineState::Description::Default;
+                auto psDesc = GPUPipelineState::Description::Default;
                 psDesc.VS = shader->GetVS("VS");
                 psDesc.PS = shader->GetPS("PS_Sky");
                 psDesc.CullMode = CullMode::Inverted;
                 psDesc.DepthWriteEnable = false;
                 psDesc.DepthClipEnable = false;
-#if REVERSE_Z
-                psDesc.DepthFunc = ComparisonFunc::GreaterEqual;
-#else
-                psDesc.DepthFunc = ComparisonFunc::LessEqual;
-#endif
-
+                psDesc.DepthFunc = ComparisonFunc::DefaultEqual;
                 if (_psSky->Init(psDesc))
                 {
                     LOG(Warning, "Cannot create graphics pipeline state object for '{0}'.", ToString());
