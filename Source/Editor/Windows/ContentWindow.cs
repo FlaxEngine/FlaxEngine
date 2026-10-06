@@ -335,7 +335,7 @@ namespace FlaxEditor.Windows
             var menu = new ContextMenu();
             
             InterfaceOptions interfaceOptions = Editor.Instance.Options.Options.Interface;
-            bool disableUnavaliable = interfaceOptions.UnavaliableContentCreateOptions == InterfaceOptions.DisabledHidden.Disabled;
+            bool disableUnavaliable = interfaceOptions.UnavailableContentCreateOptions == InterfaceOptions.DisabledHidden.Disabled;
 
             CreateNewFolderMenu(menu, CurrentViewFolder, disableUnavaliable);
             CreateNewModuleMenu(menu, CurrentViewFolder, disableUnavaliable);

@@ -198,7 +198,7 @@ namespace
     GPUContext* Context = nullptr;
     GPUTextureView* Output = nullptr;
     GPUTextureView* DepthBuffer = nullptr;
-    Viewport View;
+    Viewport ViewViewport;
     Matrix ViewProjection;
 
     // Drawing
@@ -606,7 +606,7 @@ bool Render2D::IsRendering()
 
 const Viewport& Render2D::GetViewport()
 {
-    return View;
+    return ViewViewport;
 }
 
 #if COMPILE_WITH_DEV_ENV
@@ -705,7 +705,7 @@ void Render2D::Begin(GPUContext* context, GPUTextureView* output, GPUTextureView
     Context = context;
     Output = output;
     DepthBuffer = depthBuffer;
-    View = viewport;
+    ViewViewport = viewport;
     ViewProjection = viewProjection;
     DrawCalls.Clear();
     IsRemoveGammaEnabled = Graphics::GammaColorSpace == false;
@@ -717,7 +717,7 @@ void Render2D::Begin(GPUContext* context, GPUTextureView* output, GPUTextureView
     TransformCached = defaultTransform;
 
     // Initialize default clip mask
-    const Rectangle defaultBounds(viewport.Location, viewport.Size);
+    const Rectangle defaultBounds(Float2::Zero, Float2(GPU_MAX_TEXTURE_SIZE, GPU_MAX_TEXTURE_SIZE));
     const RotatedRectangle defaultMask(defaultBounds);
     ClipLayersStack.Clear();
     ClipLayersStack.Add({ defaultMask, defaultBounds });
@@ -777,7 +777,7 @@ void Render2D::End()
     // Set output
     Context->ResetSR();
     Context->SetRenderTarget(DepthBuffer, Output);
-    Context->SetViewportAndScissors(View);
+    Context->SetViewportAndScissors(ViewViewport);
     Context->FlushState();
 
     // Prepare constant buffer
@@ -1156,7 +1156,7 @@ void DrawBatch(int32 startIndex, int32 count)
         // Restore output
         Context->ResetRenderTarget();
         Context->SetRenderTarget(DepthBuffer, Output);
-        Context->SetViewportAndScissors(View);
+        Context->SetViewportAndScissors(ViewViewport);
         Context->UnBindCB(1);
 
         // Link for drawing final blur as a texture

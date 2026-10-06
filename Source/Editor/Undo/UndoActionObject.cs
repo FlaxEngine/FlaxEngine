@@ -7,7 +7,7 @@ using FlaxEngine;
 using Newtonsoft.Json;
 using JsonSerializer = FlaxEngine.Json.JsonSerializer;
 
-namespace FlaxEditor.History
+namespace FlaxEditor
 {
     /// <summary>
     /// Undo action object.

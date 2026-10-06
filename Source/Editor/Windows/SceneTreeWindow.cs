@@ -198,10 +198,8 @@ namespace FlaxEditor.Windows
             PerformLayout();
         }
 
-        private void Spawn(Type type)
+        private void Spawn(Actor actor)
         {
-            // Create actor
-            Actor actor = (Actor)FlaxEngine.Object.New(type);
             Actor parentActor = null;
             if (Editor.SceneEditing.HasSthSelected && Editor.SceneEditing.Selection[0] is ActorNode actorNode)
             {
@@ -220,7 +218,7 @@ namespace FlaxEditor.Windows
                 actor.Transform = parentActor.Transform;
 
                 // Rename actor to identify it easily
-                actor.Name = Utilities.Utils.IncrementNameNumber(type.Name, x => parentActor.GetChild(x) == null);
+                actor.Name = Utilities.Utils.IncrementNameNumber(actor.Name, x => parentActor.GetChild(x) == null);
             }
 
             // Spawn it

@@ -4,7 +4,7 @@ using System;
 using System.Linq;
 using FlaxEngine.Collections;
 
-namespace FlaxEditor.History
+namespace FlaxEditor
 {
     /// <summary>
     /// Controller for handling stack manipulations in history and reverse buffers.

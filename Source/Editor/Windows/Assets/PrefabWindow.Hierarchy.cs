@@ -278,15 +278,10 @@ namespace FlaxEditor.Windows.Assets
         /// <returns>The context menu.</returns>
         private ContextMenu CreateContextMenu()
         {
-            // Prepare
-
             bool hasSthSelected = Selection.Count > 0;
             bool isSingleActorSelected = Selection.Count == 1 && Selection[0] is ActorNode;
             bool isRootSelected = isSingleActorSelected && Selection[0] == Graph.Main;
             bool hasPrefabLink = isSingleActorSelected && (Selection[0] as ActorNode).HasPrefabLink;
-
-            // Create popup
-
             var contextMenu = new ContextMenu
             {
                 MinimumWidth = 120
@@ -328,61 +323,12 @@ namespace FlaxEditor.Windows.Assets
             b = contextMenu.AddButton("Select Prefab", Editor.Prefabs.SelectPrefab);
             b.Enabled = hasPrefabLink;
 
-            // Spawning actors options
-
+            // Spawning actors
             contextMenu.AddSeparator();
-
-            // Go through each actor and add it to the context menu if it has the ActorContextMenu attribute
-            foreach (var actorType in Editor.CodeEditing.Actors.Get())
-            {
-                if (actorType.IsAbstract)
-                    continue;
-                ActorContextMenuAttribute attribute = null;
-                foreach (var e in actorType.GetAttributes(false))
-                {
-                    if (e is ActorContextMenuAttribute actorContextMenuAttribute)
-                    {
-                        attribute = actorContextMenuAttribute;
-                        break;
-                    }
-                }
-                if (attribute == null)
-                    continue;
-                var parts = attribute.Path.Split('/');
-                ContextMenuChildMenu childCM = null;
-                bool mainCM = true;
-                for (int i = 0; i < parts.Length; i++)
-                {
-                    var part = parts[i].Trim();
-                    if (i == parts.Length - 1)
-                    {
-                        if (mainCM)
-                        {
-                            contextMenu.AddButton(part, () => Spawn(actorType.Type));
-                            mainCM = false;
-                        }
-                        else if (childCM != null)
-                        {
-                            childCM.ContextMenu.AddButton(part, () => Spawn(actorType.Type));
-                            childCM.ContextMenu.AutoSort = true;
-                        }
-                    }
-                    else
-                    {
-                        if (mainCM)
-                        {
-                            childCM = contextMenu.GetOrAddChildMenu(part);
-                            childCM.ContextMenu.AutoSort = true;
-                            mainCM = false;
-                        }
-                        else if (childCM != null)
-                        {
-                            childCM = childCM.ContextMenu.GetOrAddChildMenu(part);
-                            childCM.ContextMenu.AutoSort = true;
-                        }
-                    }
-                }
-            }
+            SceneEditingTools.AddActorContextMenu(contextMenu, b => {
+                Spawn(SceneEditingTools.SpawnActorMenu(b));
+                RenameSelection();
+            });
 
             // Custom options
             bool showCustomNodeOptions = Selection.Count == 1;
@@ -472,20 +418,6 @@ namespace FlaxEditor.Windows.Assets
 
             // Spawn it
             Spawn(actor, parentActor);
-        }
-
-        /// <summary>
-        /// Spawns the actor of the specified type to the prefab (adds actor to root).
-        /// </summary>
-        /// <param name="type">The actor type.</param>
-        public void Spawn(Type type)
-        {
-            // Create actor
-            Actor actor = (Actor)FlaxEngine.Object.New(type);
-
-            // Spawn it
-            Spawn(actor);
-            RenameSelection();
         }
 
         /// <summary>

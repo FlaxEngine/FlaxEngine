@@ -250,7 +250,7 @@ namespace Flax.Build
         public string ProjectFolderPath;
 
         /// <summary>
-        /// The project version.
+        /// The project version. In format: *major.minor.build.revision*.
         /// </summary>
         public Version Version;
 
@@ -275,7 +275,7 @@ namespace Flax.Build
         public string EditorTarget;
 
         /// <summary>
-        /// The project references.
+        /// The list of project references.
         /// </summary>
         public Reference[] References = new Reference[0];
 
