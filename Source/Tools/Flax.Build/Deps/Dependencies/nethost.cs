@@ -30,6 +30,7 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.PS4,
                         TargetPlatform.PS5,
                         TargetPlatform.Switch,
+                        TargetPlatform.Switch2,
                         TargetPlatform.XboxOne,
                         TargetPlatform.XboxScarlett,
                     };
@@ -114,6 +115,7 @@ namespace Flax.Deps.Dependencies
             case TargetPlatform.PS4:
             case TargetPlatform.PS5:
             case TargetPlatform.Switch:
+            case TargetPlatform.Switch2:
                 runtimeFlavor = "Mono";
                 setupVersion = true;
                 buildMonoAotCross = true;
@@ -126,6 +128,7 @@ namespace Flax.Deps.Dependencies
                     os = "ps5";
                     break;
                 case TargetPlatform.Switch:
+                case TargetPlatform.Switch2:
                     os = "switch";
                     break;
                 default: throw new InvalidPlatformException(targetPlatform);
@@ -409,6 +412,7 @@ namespace Flax.Deps.Dependencies
                         Build(options, platform, TargetArchitecture.ARM64);
                         break;
                     case TargetPlatform.Switch:
+                    case TargetPlatform.Switch2:
                         Build(options, platform, TargetArchitecture.ARM64);
                         break;
                     }

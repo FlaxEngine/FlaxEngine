@@ -185,6 +185,7 @@ namespace Flax.Deps.Dependencies
                         break;
                     }
                     case TargetPlatform.Switch:
+                    case TargetPlatform.Switch2:
                     {
                         // Build for Switch
                         SetupDirectory(buildDir, true);

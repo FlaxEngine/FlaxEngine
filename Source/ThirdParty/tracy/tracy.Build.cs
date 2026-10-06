@@ -33,6 +33,7 @@ public class tracy : ThirdPartyModule
             case TargetPlatform.Linux:
             case TargetPlatform.Windows:
             case TargetPlatform.Switch:
+            case TargetPlatform.Switch2:
             case TargetPlatform.Mac:
                 return true;
             default:
@@ -78,6 +79,7 @@ public class tracy : ThirdPartyModule
             options.PrivateDefinitions.Add("TRACY_NO_PIPE");
             break;
         case TargetPlatform.Switch:
+        case TargetPlatform.Switch2:
             options.PrivateDefinitions.Add("TRACY_USE_MALLOC");
             options.PrivateDefinitions.Add("TRACY_ONLY_IPV4");
             options.PrivateDefinitions.Add("TRACY_NO_PIPE");

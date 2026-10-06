@@ -33,6 +33,7 @@ namespace Flax.Build
             case TargetPlatform.PS5:
             case TargetPlatform.Android:
             case TargetPlatform.Switch:
+            case TargetPlatform.Switch2:
             case TargetPlatform.Mac:
             case TargetPlatform.iOS:
             case TargetPlatform.Web:

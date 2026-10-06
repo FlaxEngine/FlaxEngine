@@ -73,6 +73,11 @@ API_ENUM() enum class PlatformType
     /// Running on Web.
     /// </summary>
     Web = 12,
+
+    /// <summary>
+    /// Running on Switch 2.
+    /// </summary>
+    Switch2 = 13,
 };
 
 /// <summary>
@@ -145,6 +150,9 @@ API_ENUM() enum class ArchitectureType
 #endif
 #if !defined(PLATFORM_SWITCH)
 #define PLATFORM_SWITCH 0
+#endif
+#if !defined(PLATFORM_SWITCH2)
+#define PLATFORM_SWITCH2 0
 #endif
 #if !defined(PLATFORM_SDL)
 #define PLATFORM_SDL 0

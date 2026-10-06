@@ -53,6 +53,7 @@ public class Engine : EngineModule
             options.PublicDependencies.Add("OnlinePlatformPS5");
             break;
         case TargetPlatform.Switch:
+        case TargetPlatform.Switch2:
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Switch", "Engine", "Engine"));
             options.PublicDependencies.Add("OnlinePlatformSwitch");
             break;

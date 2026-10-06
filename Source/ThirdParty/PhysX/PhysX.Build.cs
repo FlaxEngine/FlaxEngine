@@ -77,6 +77,7 @@ public class PhysX : EngineDepsModule
         switch (options.Platform.Target)
         {
         case TargetPlatform.Switch:
+        case TargetPlatform.Switch2:
             options.PublicIncludePaths.Add(Path.Combine(Globals.EngineRoot, "Source/Platforms", options.Platform.Target.ToString(), "Binaries/Data/PhysX/physx/include"));
             options.PublicIncludePaths.Add(Path.Combine(Globals.EngineRoot, "Source/Platforms", options.Platform.Target.ToString(), "Binaries/Data/PhysX/physx/include/foundation"));
             break;
@@ -89,8 +90,16 @@ public class PhysX : EngineDepsModule
         else
         {
             options.PublicDefinitions.Add("PX_PHYSX_STATIC_LIB");
-            if (options.Platform.Target != TargetPlatform.Web)
+            switch (options.Platform.Target)
+            {
+            case TargetPlatform.Web:
+            case TargetPlatform.Switch:
+            case TargetPlatform.Switch2:
+                break;
+            default:
                 archPostFix = "_static" + archPostFix;
+                break;
+            }
 
             AddLib(options, depsRoot, string.Format("PhysX{0}", archPostFix));
             AddLib(options, depsRoot, string.Format("PhysXCharacterKinematic{0}", archPostFix));

@@ -27,6 +27,7 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.XboxOne,
                         TargetPlatform.XboxScarlett,
                         TargetPlatform.Switch,
+                        TargetPlatform.Switch2,
                         TargetPlatform.PS4,
                         TargetPlatform.PS5,
                         TargetPlatform.Web,

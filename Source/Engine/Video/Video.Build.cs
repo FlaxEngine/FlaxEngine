@@ -59,6 +59,7 @@ public class Video : EngineModule
             options.CompileEnv.PreprocessorDefinitions.Add("VIDEO_API_PS5");
             break;
         case TargetPlatform.Switch:
+        case TargetPlatform.Switch2:
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Switch", "Engine", "Video"));
             options.CompileEnv.PreprocessorDefinitions.Add("VIDEO_API_SWITCH");
             break;

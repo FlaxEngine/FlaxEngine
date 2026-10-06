@@ -340,6 +340,7 @@ namespace Flax.Build
             case TargetPlatform.PS4: return targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.PS5: return targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.Android: return targetArchitecture == TargetArchitecture.ARM64;
+            case TargetPlatform.Switch2:
             case TargetPlatform.Switch: return targetArchitecture == TargetArchitecture.ARM64;
             case TargetPlatform.Mac: return targetArchitecture == TargetArchitecture.ARM64 || targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.iOS: return targetArchitecture == TargetArchitecture.ARM64;

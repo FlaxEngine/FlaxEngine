@@ -403,6 +403,7 @@ namespace Flax.Build
                 result = "android";
                 break;
             case TargetPlatform.Switch:
+            case TargetPlatform.Switch2:
                 result = "switch";
                 break;
             case TargetPlatform.Mac:

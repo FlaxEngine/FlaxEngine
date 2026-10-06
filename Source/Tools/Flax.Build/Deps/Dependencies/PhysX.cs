@@ -168,10 +168,13 @@ namespace Flax.Deps.Dependencies
                 binariesPrefix = "lib";
                 break;
             case TargetPlatform.Switch:
+            case TargetPlatform.Switch2:
                 binariesSubDir = "switch64";
                 buildPlatform = "NX64";
                 suppressBitsPostfix = true;
                 binariesPrefix = "lib";
+                var toolchain = platform.GetToolchain(architecture);
+                envVars.Add("NINTENDO_TARGET_DEVKIT", (string)toolchain.GetType().GetField("TargetName").GetValue(toolchain));
                 envVars.Add("NintendoSdkRoot", Sdk.Get("SwitchSdk").RootPath + '\\');
                 msBuildProps.Add("NintendoSdkRoot", envVars["NintendoSdkRoot"]);
                 break;
@@ -247,6 +250,7 @@ namespace Flax.Deps.Dependencies
             case TargetPlatform.PS4:
             case TargetPlatform.PS5:
             case TargetPlatform.Switch:
+            case TargetPlatform.Switch2:
                 // Hack: Platform compiler uses .o extension for compiler output files but CMake uses .obj even if CMAKE_CXX_OUTPUT_EXTENSION/CMAKE_C_OUTPUT_EXTENSION are specified
                 Utilities.ReplaceInFiles(Path.Combine(root, "physx\\compiler\\" + binariesSubDir), "*.vcxproj", SearchOption.AllDirectories, ".obj", ".o");
                 break;
@@ -283,6 +287,8 @@ namespace Flax.Deps.Dependencies
                     Utilities.Run("cmake", "--build .", null, Path.Combine(root, "physx\\compiler\\android-" + configuration), Utilities.RunOptions.ConsoleLogOutput, envVars);
                     break;
                 case TargetPlatform.Web:
+                case TargetPlatform.Switch:
+                case TargetPlatform.Switch2:
                     Utilities.Run("cmake", "--build .", null, Path.Combine(root, "physx\\compiler\\" + preset), Utilities.RunOptions.DefaultTool, envVars);
                     break;
                 default:
@@ -306,8 +312,17 @@ namespace Flax.Deps.Dependencies
             {
                 var remove = !usePVD && physXLib.Contains("Pvd");
                 var filename = suppressBitsPostfix ? string.Format("{0}{1}_static", binariesPrefix, physXLib) : string.Format("{0}{1}_static_{2}", binariesPrefix, physXLib, bits);
-                if (targetPlatform == TargetPlatform.Web)
+                switch (targetPlatform)
+                {
+                case TargetPlatform.Web:
                     filename = binariesPrefix + physXLib;
+                    break;
+                case TargetPlatform.Switch:
+                case TargetPlatform.Switch2:
+                    srcBinaries = Path.Combine(root, "physx", "compiler", preset, "sdk_source_bin");
+                    filename = binariesPrefix + physXLib;
+                    break;
+                }
                 filename += binariesExtension;
                 if (remove)
                     Utilities.FileDelete(Path.Combine(dstBinaries, filename));
@@ -435,8 +450,9 @@ namespace Flax.Deps.Dependencies
                         break;
                     }
                     case TargetPlatform.Switch:
+                    case TargetPlatform.Switch2:
                     {
-                        Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "PhysX"), root, true, true);
+                        Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, TargetPlatform.Switch), "Data", "PhysX"), root, true, true);
                         Build(options, "switch64", platform, TargetArchitecture.ARM64);
                         break;
                     }

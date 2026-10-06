@@ -68,6 +68,7 @@ public class Main : EngineModule
             options.SourcePaths.Add(Path.Combine(FolderPath, "Android"));
             break;
         case TargetPlatform.Switch:
+        case TargetPlatform.Switch2:
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Switch", "Engine", "Main"));
             break;
         case TargetPlatform.Linux:

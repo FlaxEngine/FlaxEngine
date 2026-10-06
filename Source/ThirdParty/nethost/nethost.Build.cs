@@ -89,6 +89,7 @@ public class nethost : ThirdPartyModule
             options.DependencyFiles.Add(Path.Combine(hostRuntime.Path, "libnethost.dylib"));
             break;
         case TargetPlatform.Switch:
+        case TargetPlatform.Switch2:
         case TargetPlatform.PS4:
         case TargetPlatform.PS5:
         {

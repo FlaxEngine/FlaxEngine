@@ -230,6 +230,7 @@ public class GraphicsDeviceVulkan : GraphicsDeviceBaseModule
         switch (options.Platform.Target)
         {
         case TargetPlatform.Switch:
+        case TargetPlatform.Switch2:
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Switch", "Engine", "GraphicsDevice", "Vulkan"));
             break;
         default:

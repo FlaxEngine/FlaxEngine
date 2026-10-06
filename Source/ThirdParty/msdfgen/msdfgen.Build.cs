@@ -36,6 +36,7 @@ public class msdfgen : EngineDepsModule
         case TargetPlatform.iOS:
         case TargetPlatform.Android:
         case TargetPlatform.Switch:
+        case TargetPlatform.Switch2:
         case TargetPlatform.PS4:
         case TargetPlatform.PS5:
         case TargetPlatform.Web:

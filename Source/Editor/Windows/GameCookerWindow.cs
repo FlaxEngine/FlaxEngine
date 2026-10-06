@@ -52,6 +52,7 @@ namespace FlaxEditor.Windows
                 { PlatformType.Mac, new Mac() },
                 { PlatformType.iOS, new iOS() },
                 { PlatformType.Web, new Web() },
+                { PlatformType.Switch2, new Switch2() },
             };
 
             public BuildTabProxy(GameCookerWindow win, PlatformSelector platformSelector)
@@ -184,6 +185,7 @@ namespace FlaxEditor.Windows
                         case BuildPlatform.PS4:
                         case BuildPlatform.PS5:
                         case BuildPlatform.Switch:
+                        case BuildPlatform.Switch2:
                             text += "\nTo get access please contact via https://flaxengine.com/contact";
                             break;
                         }
@@ -508,6 +510,11 @@ namespace FlaxEditor.Windows
                 protected override BuildPlatform BuildPlatform => BuildPlatform.Switch;
             }
 
+            class Switch2 : Platform
+            {
+                protected override BuildPlatform BuildPlatform => BuildPlatform.Switch2;
+            }
+
             class PS5 : Platform
             {
                 protected override BuildPlatform BuildPlatform => BuildPlatform.PS5;
@@ -592,6 +599,9 @@ namespace FlaxEditor.Windows
                         case PlatformType.Web:
                             name = "Web";
                             layout.Label("Web platform is experimental and some features are not finished yet (eg. C# scripting)", TextAlignment.Center).Label.TextColor = Color.Yellow;
+                            break;
+                        case PlatformType.Switch2:
+                            name = "Switch 2";
                             break;
                         default:
                             name = Utilities.Utils.GetPropertyNameUI(_platform.ToString());

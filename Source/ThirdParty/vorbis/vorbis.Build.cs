@@ -38,6 +38,7 @@ public class vorbis : EngineDepsModule
         case TargetPlatform.Linux:
         case TargetPlatform.Android:
         case TargetPlatform.Switch:
+        case TargetPlatform.Switch2:
         case TargetPlatform.Mac:
         case TargetPlatform.iOS:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libvorbis.a"));

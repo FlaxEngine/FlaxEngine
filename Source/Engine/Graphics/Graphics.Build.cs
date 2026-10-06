@@ -81,6 +81,7 @@ public class Graphics : EngineModule
             options.PrivateDependencies.Add("GraphicsDeviceVulkan");
             break;
         case TargetPlatform.Switch:
+        case TargetPlatform.Switch2:
             options.PrivateDependencies.Add("GraphicsDeviceVulkan");
             break;
         case TargetPlatform.Mac:

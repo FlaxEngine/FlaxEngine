@@ -97,6 +97,7 @@ namespace Flax.Deps
                         TargetPlatform.PS5,
                         TargetPlatform.Android,
                         TargetPlatform.Switch,
+                        TargetPlatform.Switch2,
                         TargetPlatform.Web,
                     };
                 case TargetPlatform.Linux:
@@ -153,6 +154,7 @@ namespace Flax.Deps
                         TargetArchitecture.x64,
                     };
                 case TargetPlatform.Switch:
+                case TargetPlatform.Switch2:
                     return new[]
                     {
                         TargetArchitecture.ARM64,
@@ -205,7 +207,10 @@ namespace Flax.Deps
         /// <returns>The absolute path to the deps folder for the given platform and architecture configuration.</returns>
         public static string GetThirdPartyFolder(BuildOptions options, TargetPlatform platform, TargetArchitecture architecture, bool createIfMissing = true)
         {
-            var path = Path.Combine(options.PlatformsFolder, platform.ToString(), "Binaries", "ThirdParty", architecture.ToString());
+            var platformFolder = platform.ToString();
+            if (platform == TargetPlatform.Switch2)
+                platformFolder = "Switch\\Switch2"; // Use Switch module to cache deps binaries
+            var path = Path.Combine(options.PlatformsFolder, platformFolder, "Binaries", "ThirdParty", architecture.ToString());
             if (createIfMissing && !Directory.Exists(path))
                 Directory.CreateDirectory(path);
             return path;
@@ -281,6 +286,7 @@ namespace Flax.Deps
             case TargetPlatform.PS5:
             case TargetPlatform.Android:
             case TargetPlatform.Switch:
+            case TargetPlatform.Switch2:
             case TargetPlatform.Mac:
             case TargetPlatform.iOS:
             case TargetPlatform.Web:
@@ -536,10 +542,16 @@ namespace Flax.Deps
                 cmdLine = "CMakeLists.txt";
                 break;
             case TargetPlatform.Switch:
+            case TargetPlatform.Switch2:
             {
                 var nmakeSubdir = "bin\\Hostx64\\x64\\nmake.exe";
                 var toolset = WindowsPlatform.GetToolsets().First(e => File.Exists(Path.Combine(e.Value, nmakeSubdir)));
+                var toolchain = Platform.GetPlatform(platform).GetToolchain(architecture);
+                if (envVars == null)
+                    envVars = new Dictionary<string, string>();
+                envVars["NINTENDO_TARGET_DEVKIT"] = (string)toolchain.GetType().GetField("TargetName").GetValue(toolchain);
                 cmdLine = string.Format("-DCMAKE_TOOLCHAIN_FILE=\"{1}\\Source\\Platforms\\Switch\\Binaries\\Data\\Switch.cmake\" -G \"NMake Makefiles\" -DCMAKE_MAKE_PROGRAM=\"{0}\"", Path.Combine(toolset.Value, nmakeSubdir), Globals.EngineRoot);
+                cmdLine += " -DCMAKE_POLICY_VERSION_MINIMUM=3.5";
                 break;
             }
             case TargetPlatform.Android:
@@ -691,6 +703,7 @@ namespace Flax.Deps
                 break;
             case TargetPlatform.PS5:
             case TargetPlatform.Switch:
+            case TargetPlatform.Switch2:
                 vsVersion = VisualStudioVersion.VisualStudio2019;
                 break;
             }

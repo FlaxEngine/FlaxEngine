@@ -66,6 +66,11 @@ namespace Flax.Build
         /// Running on Web.
         /// </summary>
         Web = 12,
+
+        /// <summary>
+        /// Running on Switch 2.
+        /// </summary>
+        Switch2 = 13,
     }
 
     /// <summary>

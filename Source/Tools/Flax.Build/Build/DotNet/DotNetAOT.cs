@@ -373,7 +373,7 @@ namespace Flax.Build
                     };
                     buildToolchain.CompileCSharp(ref baseOptions);
                     if (!Directory.Exists(baseOptions.PlatformToolsPath))
-                        throw new Exception("Missing platform tools " + baseOptions.PlatformToolsPath);
+                        throw new Exception("Missing platform tools: " + baseOptions.PlatformToolsPath);
                     Log.Info("Platform tools found in: " + baseOptions.PlatformToolsPath);
                 }
                 {

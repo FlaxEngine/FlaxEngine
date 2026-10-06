@@ -106,6 +106,7 @@ namespace Flax.Build
             case TargetPlatform.XboxScarlett: return "PLATFORM_XBOX_SCARLETT";
             case TargetPlatform.Android: return "PLATFORM_ANDROID";
             case TargetPlatform.Switch: return "PLATFORM_SWITCH";
+            case TargetPlatform.Switch2: return "PLATFORM_SWITCH2";
             case TargetPlatform.Mac: return "PLATFORM_MAC";
             case TargetPlatform.iOS: return "PLATFORM_IOS";
             case TargetPlatform.Web: return "PLATFORM_WEB";

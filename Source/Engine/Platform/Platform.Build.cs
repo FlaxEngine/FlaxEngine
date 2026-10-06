@@ -76,6 +76,7 @@ public class Platform : EngineModule
             options.SourcePaths.Add(Path.Combine(FolderPath, "Android"));
             break;
         case TargetPlatform.Switch:
+        case TargetPlatform.Switch2:
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Switch", "Engine", "Platform"));
             break;
         case TargetPlatform.Mac:

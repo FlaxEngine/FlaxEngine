@@ -47,6 +47,7 @@ public class Audio : EngineModule
             useOpenAL = true;
             break;
         case TargetPlatform.Switch:
+        case TargetPlatform.Switch2:
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Switch", "Engine", "Audio"));
             options.CompileEnv.PreprocessorDefinitions.Add("AUDIO_API_SWITCH");
             break;

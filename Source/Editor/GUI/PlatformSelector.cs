@@ -82,17 +82,26 @@ namespace FlaxEditor.GUI
             var icons = Editor.Instance.Icons;
             var platforms = new[]
             {
+#if PLATFORM_WINDOWS
                 new PlatformData(PlatformType.Windows, icons.WindowsIcon128, "Windows"),
-                new PlatformData(PlatformType.XboxOne, icons.XBoxOne128, "Xbox One"),
+#endif
+#if PLATFORM_LINUX
                 new PlatformData(PlatformType.Linux, icons.LinuxIcon128, "Linux"),
-                new PlatformData(PlatformType.PS4, icons.PS4Icon128, "PlayStation 4"),
-                new PlatformData(PlatformType.XboxScarlett, icons.XBoxScarletIcon128, "Xbox Scarlett"),
-                new PlatformData(PlatformType.Android, icons.AndroidIcon128, "Android"),
-                new PlatformData(PlatformType.Switch, icons.SwitchIcon128, "Switch"),
-                new PlatformData(PlatformType.PS5, icons.PS5Icon128, "PlayStation 5"),
+#endif
+#if PLATFORM_MAC
                 new PlatformData(PlatformType.Mac, icons.MacOSIcon128, "macOS"),
                 new PlatformData(PlatformType.iOS, icons.IOSIcon128, "iOS"),
+#endif
+                new PlatformData(PlatformType.Android, icons.AndroidIcon128, "Android"),
                 new PlatformData(PlatformType.Web, icons.Web128, "Web"),
+#if PLATFORM_WINDOWS
+                new PlatformData(PlatformType.XboxScarlett, icons.XBoxScarletIcon128, "Xbox Scarlett"),
+                new PlatformData(PlatformType.XboxOne, icons.XBoxOne128, "Xbox One"),
+                new PlatformData(PlatformType.PS5, icons.PS5Icon128, "PlayStation 5"),
+                new PlatformData(PlatformType.PS4, icons.PS4Icon128, "PlayStation 4"),
+                new PlatformData(PlatformType.Switch, icons.SwitchIcon128, "Switch"),
+                new PlatformData(PlatformType.Switch2, icons.SwitchIcon128, "Switch 2"),
+#endif
             };
 
             const float IconSize = 64.0f;

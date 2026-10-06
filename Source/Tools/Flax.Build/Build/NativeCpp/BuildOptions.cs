@@ -317,7 +317,16 @@ namespace Flax.Build.NativeCpp
         /// <summary>
         /// The full path to the dependencies folder for the current build platform, configuration, and architecture.
         /// </summary>
-        public string DepsFolder => Path.Combine(Globals.EngineRoot, "Source", "Platforms", Platform.Target.ToString(), "Binaries", "ThirdParty", Architecture.ToString());
+        public string DepsFolder
+        {
+            get
+            {
+                var platformFolder = Platform.Target.ToString();
+                if (Platform.Target == TargetPlatform.Switch2)
+                    platformFolder = "Switch\\Switch2"; // Use Switch module to cache deps binaries
+                return Path.Combine(Globals.EngineRoot, "Source", "Platforms", platformFolder, "Binaries", "ThirdParty", Architecture.ToString());
+            }
+        }
 
         /// <summary>
         /// The C# scripting API building options.

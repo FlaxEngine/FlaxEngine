@@ -157,6 +157,8 @@ const Char* ToString(const BuildPlatform platform)
         return TEXT("Windows ARM64");
     case BuildPlatform::Web:
         return TEXT("Web");
+    case BuildPlatform::Switch2:
+        return TEXT("Switch 2");
     default:
         return TEXT("");
     }
@@ -319,6 +321,10 @@ void CookingData::GetBuildPlatformName(const Char*& platform, const Char*& archi
         platform = TEXT("Web");
         architecture = TEXT("x86");
         break;
+    case BuildPlatform::Switch2:
+        platform = TEXT("Switch2");
+        architecture = TEXT("ARM64");
+        break;
     default:
         LOG(Fatal, "Unknown or unsupported build platform.");
     }
@@ -453,6 +459,7 @@ PlatformTools* GameCooker::GetTools(BuildPlatform platform)
 #endif
 #if PLATFORM_TOOLS_SWITCH
         case BuildPlatform::Switch:
+        case BuildPlatform::Switch2:
             result = New<SwitchPlatformTools>();
             break;
 #endif
@@ -624,6 +631,9 @@ void GameCooker::GetCurrentPlatform(PlatformType& platform, BuildPlatform& build
         break;
     case PlatformType::Web:
         buildPlatform = BuildPlatform::Web;
+        break;
+    case PlatformType::Switch2:
+        buildPlatform = BuildPlatform::Switch2;
         break;
     default: ;
     }

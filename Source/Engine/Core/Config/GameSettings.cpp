@@ -111,6 +111,9 @@ IMPLEMENT_ENGINE_SETTINGS_GETTER(XboxScarlettPlatformSettings, XboxScarlettPlatf
 IMPLEMENT_ENGINE_SETTINGS_GETTER(AndroidPlatformSettings, AndroidPlatform);
 #elif PLATFORM_SWITCH
 IMPLEMENT_ENGINE_SETTINGS_GETTER(SwitchPlatformSettings, SwitchPlatform);
+#if PLATFORM_SWITCH2
+IMPLEMENT_ENGINE_SETTINGS_GETTER(Switch2PlatformSettings, Switch2Platform);
+#endif
 #elif PLATFORM_MAC
 IMPLEMENT_ENGINE_SETTINGS_GETTER(MacPlatformSettings, MacPlatform);
 #elif PLATFORM_IOS
@@ -299,6 +302,7 @@ void GameSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE(XboxScarlettPlatform);
     DESERIALIZE(AndroidPlatform);
     DESERIALIZE(SwitchPlatform);
+    DESERIALIZE(Switch2Platform);
     DESERIALIZE(PS5Platform);
     DESERIALIZE(MacPlatform);
     DESERIALIZE(iOSPlatform);

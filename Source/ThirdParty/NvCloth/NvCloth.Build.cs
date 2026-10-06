@@ -39,6 +39,7 @@ public class NvCloth : EngineDepsModule
             libName = "NvCloth";
             break;
         case TargetPlatform.Switch:
+        case TargetPlatform.Switch2:
             libName = "NvCloth";
             options.PublicIncludePaths.Add(Path.Combine(Globals.EngineRoot, "Source/Platforms/Switch/Binaries/Data/PhysX/physx/include"));
             options.PublicIncludePaths.Add(Path.Combine(Globals.EngineRoot, "Source/Platforms/Switch/Binaries/Data/PhysX/physx/include/foundation"));

@@ -55,7 +55,8 @@ namespace Flax.Deps.Dependencies
                         Build(options, platform, TargetArchitecture.x64);
                         break;
                     case TargetPlatform.Switch:
-                        Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "NvCloth"), root, true, true);
+                    case TargetPlatform.Switch2:
+                        Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, TargetPlatform.Switch), "Data", "NvCloth"), root, true, true);
                         Build(options, platform, TargetArchitecture.ARM64);
                         break;
                     case TargetPlatform.Android:
@@ -119,6 +120,7 @@ namespace Flax.Deps.Dependencies
                 binariesPrefix = "lib";
                 break;
             case TargetPlatform.Switch:
+            case TargetPlatform.Switch2:
                 cmakeArgs += " -DTARGET_BUILD_PLATFORM=NX64";
                 cmakeName = "switch";
                 binariesPrefix = "lib";

@@ -148,6 +148,11 @@ API_ENUM() enum class BuildPlatform
     /// Web
     /// </summary>
     Web = 16,
+
+    /// <summary>
+    /// Switch 2.
+    /// </summary>
+    Switch2 = 17,
 };
 
 /// <summary>
