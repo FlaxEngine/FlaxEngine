@@ -418,6 +418,13 @@ namespace FlaxEngine.GUI
             context.Caret.Y += lineSize.Y * _baseLinesGapScale;
         }
 
+        /// <summary>
+        /// Gets the next chunk end index for the given start index, based on the wrapping mode.
+        /// </summary>
+        /// <param name="start">Start index</param>
+        /// <param name="end">End index</param>
+        /// <param name="wrapping">Wrapping mode</param>
+        /// <returns>Next chunk end index</returns>
         private int NextChunkEnd(int start, int end, TextWrapping wrapping)
         {
             int pos = start;
