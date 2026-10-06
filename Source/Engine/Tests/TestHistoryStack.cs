@@ -2,7 +2,6 @@
 
 #if FLAX_TESTS
 using System;
-using FlaxEditor.History;
 using NUnit.Framework;
 using Assert = FlaxEngine.Assertions.Assert;
 
