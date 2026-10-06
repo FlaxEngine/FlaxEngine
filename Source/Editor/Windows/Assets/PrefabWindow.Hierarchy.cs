@@ -325,7 +325,10 @@ namespace FlaxEditor.Windows.Assets
 
             // Spawning actors
             contextMenu.AddSeparator();
-            SceneEditingTools.AddActorContextMenu(contextMenu, b => Spawn(((ScriptType)b.Tag).Type));
+            SceneEditingTools.AddActorContextMenu(contextMenu, b => {
+                Spawn(SceneEditingTools.SpawnActorMenu(b));
+                RenameSelection();
+            });
 
             // Custom options
             bool showCustomNodeOptions = Selection.Count == 1;
@@ -415,20 +418,6 @@ namespace FlaxEditor.Windows.Assets
 
             // Spawn it
             Spawn(actor, parentActor);
-        }
-
-        /// <summary>
-        /// Spawns the actor of the specified type to the prefab (adds actor to root).
-        /// </summary>
-        /// <param name="type">The actor type.</param>
-        public void Spawn(Type type)
-        {
-            // Create actor
-            Actor actor = (Actor)FlaxEngine.Object.New(type);
-
-            // Spawn it
-            Spawn(actor);
-            RenameSelection();
         }
 
         /// <summary>

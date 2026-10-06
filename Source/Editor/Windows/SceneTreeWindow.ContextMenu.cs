@@ -120,7 +120,7 @@ namespace FlaxEditor.Windows
 
             // Spawning actors
             contextMenu.AddSeparator();
-            SceneEditingTools.AddActorContextMenu(contextMenu, b => Spawn(((ScriptType)b.Tag).Type));
+            SceneEditingTools.AddActorContextMenu(contextMenu, b => Spawn(SceneEditingTools.SpawnActorMenu(b)));
 
             // Custom options
             bool showCustomNodeOptions = Editor.SceneEditing.Selection.Count == 1;
