@@ -11,7 +11,6 @@ using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Drag;
 using FlaxEditor.GUI.Tabs;
-using FlaxEditor.History;
 using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Previews;
 using FlaxEditor.Windows.Assets;
