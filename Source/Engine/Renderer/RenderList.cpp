@@ -1075,7 +1075,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
             uint32 drawCallIndex = listData[batch.StartIndex];
             const DrawCall& drawCall = drawCallsData[drawCallIndex];
 
-            bindParams.Instanced = batch.BatchSize != 1;
+            bindParams.Instanced = batch.BatchSize > 1;
             bindParams.DrawCall = &drawCall;
             bindParams.DrawCall->Material->Bind(bindParams);
 
