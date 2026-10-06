@@ -149,6 +149,8 @@ namespace FlaxEngine.GUI
 
         private void OnDraw()
         {
+            if (!EnabledInHierarchy || !VisibleInHierarchy)
+                return;
             if (!ConstantInvalidate)
             {
                 if (_redrawRegistered)
@@ -158,9 +160,9 @@ namespace FlaxEngine.GUI
                 }
                 if (!_invalid)
                     return;
-                if (Bypass && !_texture)
-                    return;
             }
+            if (Bypass && !_texture)
+                return;
             _invalid = false;
 
             if (!_texture)
