@@ -35,7 +35,7 @@ Follow the instructions below to compile and run the engine from source.
 * Install Git with LFS
 * Clone repo (with LFS)
 * Run **GenerateProjectFiles.bat**
-* Open `Flax.sln` and set solution configuration to **Editor.Development** and solution platform to **Win64**
+* Open `Flax.slnx` and set solution configuration to **Editor.Development** and solution platform to **Win64**
 * Set Flax (C++) or FlaxEngine (C#) as startup project
 * Compile Flax project (hit F7 or CTRL+Shift+B)
 * Optionally set Debug Type to **Managed Only (.NET Core)** to debug C#-only, or **Mixed (.NET Core)** to debug both C++ and C#
