@@ -272,29 +272,21 @@ namespace FlaxEngine.GUI
         {
             int segmentStart = range.StartIndex;
             float segmentWidth = 0.0f;
-            int pos = range.StartIndex;
-            while (pos < range.EndIndex)
-            {
-                // Consume the next "chunk" - a single character for WrapChars, or a whole word (plus trailing whitespace) for WrapWords
-                int chunkStart = pos;
-                if (wrapping == TextWrapping.WrapChars)
-                {
-                    pos++;
-                }
-                else
-                {
-                    while (pos < range.EndIndex && !char.IsWhiteSpace(_text[pos]))
-                        pos++;
-                    while (pos < range.EndIndex && char.IsWhiteSpace(_text[pos]))
-                        pos++;
-                }
 
-                var chunkRange = new TextRange { StartIndex = chunkStart, EndIndex = pos };
+            int chunkEnd;
+            for (int chunkStart = range.StartIndex; chunkStart < range.EndIndex; chunkStart = chunkEnd)
+            {
+                chunkEnd = NextChunkEnd(chunkStart, range.EndIndex, wrapping);
+
+                var chunkRange = new TextRange { StartIndex = chunkStart, EndIndex = chunkEnd };
                 var chunkWidth = font.MeasureText(_text, ref chunkRange).X;
 
-                if ((segmentWidth > 0.0f || context.Caret.X > 0.0f) && context.Caret.X + segmentWidth + chunkWidth > wrapWidth)
+                bool lineHasContent = segmentWidth > 0.0f || context.Caret.X > 0.0f;
+                bool chunkOverflows = context.Caret.X + segmentWidth + chunkWidth > wrapWidth;
+                bool mustWrapBefore = lineHasContent && chunkOverflows;
+
+                if (mustWrapBefore)
                 {
-                    // The next chunk no longer fits - emit the accumulated segment (if any) and start a new line
                     if (segmentStart < chunkStart)
                         AddWrappedTextBlock(ref context, ref textBlock, font, segmentStart, chunkStart);
                     context.Caret.X = 0;
@@ -304,16 +296,20 @@ namespace FlaxEngine.GUI
                 }
                 segmentWidth += chunkWidth;
 
-                // For Wrap Words mode: A single word wider than the whole available width can't be split further, so force it onto its own line
-                if (wrapping == TextWrapping.WrapWords && context.Caret.X <= 0.0f && segmentStart == chunkStart && segmentWidth > wrapWidth && pos < range.EndIndex)
+                bool isOversizedWord = context.Caret.X <= 0.0f && segmentStart == chunkStart
+                           && segmentWidth > wrapWidth && chunkEnd < range.EndIndex;
+
+                if (wrapping == TextWrapping.WrapWords && 
+                    isOversizedWord)
                 {
-                    AddWrappedTextBlock(ref context, ref textBlock, font, segmentStart, pos);
+                    AddWrappedTextBlock(ref context, ref textBlock, font, segmentStart, chunkEnd);
                     context.Caret.X = 0;
-                    OnLineAdded(ref context, pos - 1);
-                    segmentStart = pos;
+                    OnLineAdded(ref context, chunkEnd - 1);
+                    segmentStart = chunkEnd;
                     segmentWidth = 0.0f;
                 }
             }
+
             if (segmentStart < range.EndIndex)
                 AddWrappedTextBlock(ref context, ref textBlock, font, segmentStart, range.EndIndex);
         }
@@ -420,6 +416,19 @@ namespace FlaxEngine.GUI
             context.LineStartCharacterIndex = lineEnd + 1;
             context.LineStartTextBlockIndex = _textBlocks.Count;
             context.Caret.Y += lineSize.Y * _baseLinesGapScale;
+        }
+
+        private int NextChunkEnd(int start, int end, TextWrapping wrapping)
+        {
+            int pos = start;
+            if (wrapping == TextWrapping.WrapChars)
+                return pos + 1;
+
+            while (pos < end && !char.IsWhiteSpace(_text[pos]))
+                pos++;
+            while (pos < end && char.IsWhiteSpace(_text[pos]))
+                pos++;
+            return pos;
         }
     }
 }
