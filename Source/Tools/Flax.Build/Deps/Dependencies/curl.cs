@@ -88,7 +88,7 @@ namespace Flax.Deps.Dependencies
 
             // Get the source
             if (!File.Exists(packagePath))
-                Downloader.DownloadFileFromUrlToPath("https://curl.haxx.se/download/curl-7.88.1.zip", packagePath);
+                Downloader.DownloadFileFromUrlToPath("https://curl.haxx.se/download/curl-8.21.0.zip", packagePath);
             using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
             {
                 var newRoot = Path.Combine(root, archive.Entries.First().FullName);
