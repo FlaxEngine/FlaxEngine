@@ -410,7 +410,7 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(2, "Time", typeof(float), 2),
                     NodeElementArchetype.Factory.Output(3, "Length", typeof(float), 3),
                     NodeElementArchetype.Factory.Output(4, "Is Playing", typeof(bool), 4),
-                    NodeElementArchetype.Factory.Output(5, "Animation", typeof(FlaxEngine.Animation), 5),
+                    NodeElementArchetype.Factory.Output(5, "Animation", typeof(FlaxEngine.Animation), 9),
                     NodeElementArchetype.Factory.Input(0, "Speed", true, typeof(float), 5, 1),
                     NodeElementArchetype.Factory.Input(1, "Loop", true, typeof(bool), 6, 2),
                     NodeElementArchetype.Factory.Input(2, "Start Position", true, typeof(float), 7, 3),

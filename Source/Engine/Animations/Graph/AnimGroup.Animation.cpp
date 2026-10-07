@@ -1156,7 +1156,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             value = bucket.LastUpdateFrame >= context.CurrentFrameIndex - 1;
             break;
         // Animation
-        case 5:
+        case 9:
             value = anim;
             break;
         }
