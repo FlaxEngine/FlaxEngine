@@ -40,6 +40,10 @@ public:
     /// <returns>True if user holds down the key identified by id, otherwise false.</returns>
     API_FUNCTION() FORCE_INLINE bool GetKey(KeyboardKeys key) const
     {
+#if PLATFORM_MAC
+        if (key == KeyboardKeys::Delete)
+            return _state.Keys[static_cast<int32>(KeyboardKeys::Delete)] || _state.Keys[static_cast<int32>(KeyboardKeys::Backspace)];
+#endif
         return _state.Keys[static_cast<int32>(key)];
     }
 
@@ -50,6 +54,11 @@ public:
     /// <returns>True if user starts pressing down the key, otherwise false.</returns>
     API_FUNCTION() FORCE_INLINE bool GetKeyDown(KeyboardKeys key) const
     {
+#if PLATFORM_MAC
+        if (key == KeyboardKeys::Delete)
+            return (_state.Keys[static_cast<int32>(KeyboardKeys::Delete)] && !_prevState.Keys[static_cast<int32>(KeyboardKeys::Delete)]) ||
+                   (_state.Keys[static_cast<int32>(KeyboardKeys::Backspace)] && !_prevState.Keys[static_cast<int32>(KeyboardKeys::Backspace)]);
+#endif
         return _state.Keys[static_cast<int32>(key)] && !_prevState.Keys[static_cast<int32>(key)];
     }
 
@@ -60,6 +69,11 @@ public:
     /// <returns>True if user releases the key, otherwise false.</returns>
     API_FUNCTION() FORCE_INLINE bool GetKeyUp(KeyboardKeys key) const
     {
+#if PLATFORM_MAC
+        if (key == KeyboardKeys::Delete)
+            return (!_state.Keys[static_cast<int32>(KeyboardKeys::Delete)] && _prevState.Keys[static_cast<int32>(KeyboardKeys::Delete)]) ||
+                   (!_state.Keys[static_cast<int32>(KeyboardKeys::Backspace)] && _prevState.Keys[static_cast<int32>(KeyboardKeys::Backspace)]);
+#endif
         return !_state.Keys[static_cast<int32>(key)] && _prevState.Keys[static_cast<int32>(key)];
     }
 
