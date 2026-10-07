@@ -174,7 +174,7 @@ int32 Engine::OnInit(const Char* cmdLine)
     return 0;
 }
 
-void Engine::OnLoop()
+void Engine::OnLoop(bool handleEvents)
 {
     // Reduce CPU usage by introducing idle time if the engine is running very fast and has enough time to spend
     const bool useSleep = !PLATFORM_WEB; // TODO: this should probably be a platform setting
@@ -214,7 +214,8 @@ void Engine::OnLoop()
     // Update application (will gather data and other platform related events)
     {
         PROFILE_CPU_NAMED("Platform.Tick");
-        Platform::Tick();
+        if (handleEvents)
+            Platform::Tick();
 #if COMPILE_WITH_PROFILER
         extern void TickProfilerMemory();
         TickProfilerMemory();
