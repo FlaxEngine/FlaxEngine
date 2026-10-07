@@ -7,6 +7,11 @@
 static Array<CommandLine::Arg> Args;
 CommandLine::OptionsData CommandLine::Options;
 
+bool IsQuote(Char c)
+{
+    return c == '\"' || c == '\'';
+}
+
 bool InitCommandLine(const Char* cmdLine)
 {
     auto& options = CommandLine::Options;
@@ -135,7 +140,7 @@ bool CommandLine::Parse(const StringView& commandLine, Array<Arg>& args)
         // Read option prefix
         if (i == length)
             break;
-        bool wholeQuote = commandLine[i] == '\"';
+        bool wholeQuote = IsQuote(commandLine[i]);
         if (wholeQuote)
             i++;
         if (i == length)
@@ -152,7 +157,7 @@ bool CommandLine::Parse(const StringView& commandLine, Array<Arg>& args)
         int32 nameStart = i;
         while (i < length && commandLine[i] != '-' && commandLine[i] != '=' && !StringUtils::IsWhitespace(commandLine[i]))
             i++;
-        if (wholeQuote && commandLine[i] == '\"')
+        if (wholeQuote && IsQuote(commandLine[i]))
             i--;
         int32 nameEnd = i;
         StringView name = commandLine.Substring(nameStart, nameEnd - nameStart);
@@ -176,7 +181,7 @@ bool CommandLine::Parse(const StringView& commandLine, Array<Arg>& args)
             addedEmptyArg = true;
             if (wholeQuote)
                 i++;
-            if (i < length && commandLine[i] == '\"')
+            if (i < length && IsQuote(commandLine[i]))
                 i++;
             continue;
         }
@@ -185,22 +190,22 @@ bool CommandLine::Parse(const StringView& commandLine, Array<Arg>& args)
         // Read value
         i++;
         int32 valueStart, valueEnd;
-        if (length > i + 1 && commandLine[i] == '\\' && commandLine[i + 1] == '\"')
+        if (length > i + 1 && commandLine[i] == '\\' && IsQuote(commandLine[i + 1]))
         {
             valueStart = i + 2;
             i++;
-            while (i + 1 < length && commandLine[i] != '\\' && commandLine[i + 1] != '\"')
+            while (i + 1 < length && commandLine[i] != '\\' && !IsQuote(commandLine[i + 1]))
                 i++;
             valueEnd = i;
             i += 2;
             if (wholeQuote)
             {
-                while (i < length && commandLine[i] != '\"')
+                while (i < length && !IsQuote(commandLine[i]))
                     i++;
                 i++;
             }
         }
-        else if (commandLine[i] == '\"' || commandLine[i] == '\'')
+        else if (IsQuote(commandLine[i]))
         {
             Char quoteChar = commandLine[i];
             valueStart = i + 1;
@@ -211,7 +216,7 @@ bool CommandLine::Parse(const StringView& commandLine, Array<Arg>& args)
             i++;
             if (wholeQuote)
             {
-                while (i < length && commandLine[i] != '\"')
+                while (i < length && !IsQuote(commandLine[i]))
                     i++;
                 i++;
             }
@@ -219,7 +224,7 @@ bool CommandLine::Parse(const StringView& commandLine, Array<Arg>& args)
         else if (wholeQuote)
         {
             valueStart = i;
-            while (i < length && commandLine[i] != '\"')
+            while (i < length && !IsQuote(commandLine[i]))
                 i++;
             valueEnd = i;
             i++;
