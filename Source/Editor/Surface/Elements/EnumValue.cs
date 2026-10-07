@@ -32,7 +32,13 @@ namespace FlaxEditor.Surface.Elements
         {
             Bounds = new Rectangle(archetype.ActualPositionX, archetype.ActualPositionY, archetype.Size.X, Constants.BoxRowHeight);
             ParentNode = parentNode;
+            ParentNode.ValuesChanged += OnNodeValuesChanged;
             Archetype = archetype;
+            Value = Convert.ToInt32(ParentNode.Values[Archetype.ValueIndex]);
+        }
+
+        private void OnNodeValuesChanged()
+        {
             Value = Convert.ToInt32(ParentNode.Values[Archetype.ValueIndex]);
         }
 
@@ -42,7 +48,7 @@ namespace FlaxEditor.Surface.Elements
             if (Convert.ToInt32(ParentNode.Values[Archetype.ValueIndex]) != (int)Value)
             {
                 // Edit value
-                ParentNode.SetValue(Archetype.ValueIndex, Value);
+                ParentNode.SetValue(Archetype.ValueIndex, (int)Value);
             }
 
             base.OnValueChanged();

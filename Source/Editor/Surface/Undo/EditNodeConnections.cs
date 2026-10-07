@@ -27,7 +27,7 @@ namespace FlaxEditor.Surface.Undo
             CaptureConnections(node, out _before);
         }
 
-        public void End()
+        public bool End()
         {
             var context = _context.Get(_surface);
             var node = context.FindNode(_nodeId);
@@ -35,6 +35,8 @@ namespace FlaxEditor.Surface.Undo
                 throw new Exception("Missing node");
 
             CaptureConnections(node, out _after);
+
+            return !FlaxEngine.Json.JsonSerializer.ValueEquals(_before, _after);
         }
 
         private void CaptureConnections(SurfaceNode node, out BoxHandle[][] boxesConnections)
