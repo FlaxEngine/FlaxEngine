@@ -25,4 +25,11 @@ public:
     /// This event is called internally by the Physics service and should not be used by the others.
     /// </remarks>
     virtual void OnActiveTransformChanged() = 0;
+
+#if NESTED_PHYSICS_BODIES
+    /// <summary>
+    /// Represents how many tiers of IPhysicsActors are above this in its heirarchy.
+    /// </summary>
+    int SolverDepth = 0;
+#endif
 };
