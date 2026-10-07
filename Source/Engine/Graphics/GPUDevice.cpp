@@ -58,6 +58,10 @@ void GPUResourcePropertyBase::OnReleased()
     {
         _resource = nullptr;
         e->Releasing.Unbind<GPUResourcePropertyBase, &GPUResourcePropertyBase::OnReleased>(this);
+        // Notify async tasks bound to this resource (they must stop / cancel,
+        // otherwise they run against a released resource and log a spurious
+        // "MissingResources" failure). This action was never fired before.
+        Released();
     }
 }
 
