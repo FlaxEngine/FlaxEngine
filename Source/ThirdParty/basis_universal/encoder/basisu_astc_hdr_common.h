@@ -402,7 +402,7 @@ namespace basisu
 		uint8_t* pDst_weights);			// [wy][wx]
 
 	void downsample_ise_weights(
-		uint32_t weight_ise_range, uint32_t quant_weight_ise_range,
+		uint32_t dequant_weight_ise_range, uint32_t quant_weight_ise_range,
 		uint32_t block_w, uint32_t block_h,
 		uint32_t grid_w, uint32_t grid_h,
 		const uint8_t* pSrc_weights, uint8_t* pDst_weights);

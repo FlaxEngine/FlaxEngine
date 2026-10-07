@@ -131,12 +131,7 @@ namespace basist
 
 	// BC7
 	const uint32_t BC7ENC_BLOCK_SIZE = 16;
-
-	struct bc7_block
-	{
-		uint64_t m_qwords[2];
-	};
-
+		
 	struct bc7_optimization_results
 	{
 		uint32_t m_mode;
