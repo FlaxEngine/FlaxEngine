@@ -92,9 +92,15 @@ namespace FlaxEngine.GUI
         public Color TextColor { get; set; }
 
         /// <summary>
+        /// Gets or sets whether to use the text color highlight.
+        /// </summary>
+        [EditorDisplay("Text Style"), EditorOrder(2011), Tooltip("Whether to use the text color highlight (mouse is over).")]
+        public bool UseTextColorHighlight { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets the color of the text when it is highlighted (mouse is over).
         /// </summary>
-        [EditorDisplay("Text Style"), EditorOrder(2011), Tooltip("The color of the text when it is highlighted (mouse is over).")]
+        [EditorDisplay("Text Style"), EditorOrder(2012), Tooltip("The color of the text when it is highlighted (mouse is over).")]
         public Color TextColorHighlighted { get; set; }
 
         /// <summary>
@@ -263,7 +269,7 @@ namespace FlaxEngine.GUI
             if (ClipText)
                 Render2D.PushClip(ref rect);
 
-            var color = IsMouseOver || IsNavFocused ? TextColorHighlighted : TextColor;
+            var color = (IsMouseOver || IsNavFocused) && UseTextColorHighlight ? TextColorHighlighted : TextColor;
             if (!EnabledInHierarchy)
                 color *= 0.6f;
             var scale = 1.0f;
