@@ -18,18 +18,111 @@ struct AnimSampleData
     float PrevTimePos;
     float Length;
     float Speed;
+    Float4 Data;
     ANIM_GRAPH_MULTI_BLEND_INDEX MultiBlendIndex; // Index of the animation in the multi-blend node data array
 
-    AnimSampleData(Animation* anim, float speed = 1.0f, ANIM_GRAPH_MULTI_BLEND_INDEX multiBlendIndex = 0)
-        : Anim(anim)
-        , TimePos(0.0f)
+    AnimSampleData(AnimGraphExecutor* executor, const MultiBlendInputs& inputs, AnimGraphNode* node, ANIM_GRAPH_MULTI_BLEND_INDEX multiBlendIndex)
+        : TimePos(0.0f)
         , PrevTimePos(0.0f)
-        , Length(anim->GetLength())
-        , Speed(speed)
         , MultiBlendIndex(multiBlendIndex)
     {
+        Data = node->Values[inputs.AnimationsStartIndex + multiBlendIndex * 2].AsFloat4();
+        Speed = Data.W;
+        AnimGraphBox* box;
+        switch (inputs.Sources)
+        {
+        case MultiBlendAnimationSources::Default:
+            // Animation asset
+            Anim = node->Assets[multiBlendIndex].As<Animation>();
+            Length = Anim ? Anim->GetLength() : 0;
+            break;
+        case MultiBlendAnimationSources::InputAnimations:
+            // Animation input
+            box = node->TryGetBox(MultiBlendInputs::AnimationInputsStartIndex + multiBlendIndex);
+            Anim = TVariantValueCast<Animation*>::Cast(executor->tryGetValue(box, Variant::Null));
+            Length = Anim ? Anim->GetLength() : 0;
+            break;
+        default:
+            CRASH;
+            break;
+        }
     }
 };
+
+MultiBlendInputs::MultiBlendInputs(AnimGraphNode* node)
+{
+    Range = node->Values[0].AsFloat4();
+    Speed = (float)node->Values[1];
+    Loop = (bool)node->Values[2];
+    StartTime = (float)node->Values[3];
+    SyncLength = false;
+    if (node->Values.Count() > 4 && node->Values[4].Type.Type == VariantType::Int)
+    {
+        Sources = (MultiBlendAnimationSources)node->Values[4].AsInt;
+        AnimationsStartIndex = 5;
+    }
+}
+
+MultiBlendInputs::MultiBlendInputs(AnimGraphExecutor* executor, AnimGraphNode* node)
+{
+    Range = node->Values[0].AsFloat4();
+    Speed = (float)executor->tryGetValue(node->GetBox(1), node->Values[1]);
+    Loop = (bool)executor->tryGetValue(node->GetBox(2), node->Values[2]);
+    StartTime = (float)executor->tryGetValue(node->GetBox(3), node->Values[3]);
+    SyncLength = false; // TODO: make it configurable via node settings? (change node->Values[2] to contain flags)
+    if (node->Values.Count() > 4 && node->Values[4].Type.Type == VariantType::Int)
+    {
+        Sources = (MultiBlendAnimationSources)node->Values[4].AsInt;
+        AnimationsStartIndex = 5;
+    }
+}
+
+float MultiBlendInputs::ComputeMultiBlendLength(AnimGraphExecutor* executor, AnimGraphNode* node) const
+{
+    ANIM_GRAPH_PROFILE_EVENT("Setup Multi Blend Length");
+    float length = 0.0f;
+    switch (Sources)
+    {
+    case MultiBlendAnimationSources::Default:
+        // Read total duration time of all blend point animation
+        // TODO: lock graph or graph asset here? make it thread safe
+        for (int32 i = 0; i < node->Assets.Count(); i++)
+        {
+            auto& asset = node->Assets[i];
+            if (asset)
+            {
+                // TODO: maybe don't update if not all anims are loaded? just skip the node with the bind pose?
+                if (asset->WaitForLoaded())
+                {
+                    asset = nullptr;
+                    LOG(Warning, "Failed to load one of the animations.");
+                }
+                else
+                {
+                    const auto anim = asset.As<Animation>();
+                    const auto aData = node->Values[AnimationsStartIndex + i * 2].AsFloat4();
+                    length = Math::Max(length, anim->GetLength() * Math::Abs(aData.W));
+                }
+            }
+        }
+        break;
+    case MultiBlendAnimationSources::InputAnimations:
+        for (int32 i = 0; i * 2 + AnimationsStartIndex < node->Values.Count(); i++)
+        {
+            auto box = node->TryGetBox(MultiBlendInputs::AnimationInputsStartIndex + i);
+            if (!box)
+                break;
+            auto anim = TVariantValueCast<Animation*>::Cast(executor->tryGetValue(box, Variant::Null));
+            if (anim)
+            {
+                const auto aData = node->Values[AnimationsStartIndex + i * 2].AsFloat4();
+                length = Math::Max(length, anim->GetLength() * Math::Abs(aData.W));
+            }
+        }
+        break;
+    }
+    return length;
+}
 
 struct MultiBlendAnimData
 {
@@ -843,34 +936,6 @@ void AnimGraphExecutor::UpdateStateTransitions(AnimGraphContext& context, const 
     }
 }
 
-void ComputeMultiBlendLength(float& length, AnimGraphNode* node)
-{
-    ANIM_GRAPH_PROFILE_EVENT("Setup Multi Blend Length");
-
-    // TODO: lock graph or graph asset here? make it thread safe
-
-    length = 0.0f;
-    for (int32 i = 0; i < node->Assets.Count(); i++)
-    {
-        auto& asset = node->Assets[i];
-        if (asset)
-        {
-            // TODO: maybe don't update if not all anims are loaded? just skip the node with the bind pose?
-            if (asset->WaitForLoaded())
-            {
-                asset = nullptr;
-                LOG(Warning, "Failed to load one of the animations.");
-            }
-            else
-            {
-                const auto anim = asset.As<Animation>();
-                const auto aData = node->Values[4 + i * 2].AsFloat4();
-                length = Math::Max(length, anim->GetLength() * Math::Abs(aData.W));
-            }
-        }
-    }
-}
-
 void AnimGraphExecutor::ProcessGroupParameters(Box* box, Node* node, Value& value)
 {
     auto& context = *Context.Get();
@@ -1073,6 +1138,10 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         case 4:
             // If anim was updated during this or a previous frame
             value = bucket.LastUpdateFrame >= context.CurrentFrameIndex - 1;
+            break;
+        // Animation
+        case 5:
+            value = anim;
             break;
         }
         break;
@@ -1394,30 +1463,15 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         ANIM_GRAPH_PROFILE_EVENT("Multi Blend 1D");
         ASSERT(box->ID == 0);
         value = Value::Null;
-
-        // Note data layout:
-        // [0]: Float4 Range (minX, maxX, 0, 0)
-        // [1]: float Speed
-        // [2]: bool Loop
-        // [3]: float StartPosition
-        // Per Blend Sample data layout:
-        // [0]: Float4 Info (x=posX, y=0, z=0, w=Speed)
-        // [1]: Guid Animation
-
-        // Prepare
         auto& bucket = context.Data->State[node->BucketIndex].MultiBlend;
-        const auto range = node->Values[0].AsFloat4();
-        const auto speed = (float)tryGetValue(node->GetBox(1), node->Values[1]);
-        const auto loop = (bool)tryGetValue(node->GetBox(2), node->Values[2]);
-        const auto startTimePos = (float)tryGetValue(node->GetBox(3), node->Values[3]);
-        const auto syncLength = false; // TODO: make it configurable via node settings? (change node->Values[2] to contain flags)
+        MultiBlendInputs inputs(this, node);
         auto& data = node->Data.MultiBlend1D;
         if (data.Count == 0)
             break; // Skip if no valid animations added
 
         // Get axis X
         float x = (float)tryGetValue(node->GetBox(4), Value::Zero);
-        x = Math::Clamp(x, range.X, range.Y);
+        x = Math::Clamp(x, inputs.Range.X, inputs.Range.Y);
 
         // Add to trace
         if (context.Data->EnableTracing)
@@ -1428,7 +1482,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
 
         // Check if need to evaluate multi blend length
         if (data.Length < 0)
-            ComputeMultiBlendLength(data.Length, node);
+            data.Length = inputs.ComputeMultiBlendLength(this, node);
         if (data.Length <= ZeroTolerance)
             break;
 
@@ -1441,40 +1495,38 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             const auto aIndex = data.IndicesSorted[i];
             const auto bIndex = data.IndicesSorted[i + 1];
             ASSERT_LOW_LAYER(aIndex != ANIM_GRAPH_MULTI_BLEND_INVALID);
-            const auto aData = node->Values[4 + aIndex * 2].AsFloat4();
-            AnimSampleData a(node->Assets[aIndex].As<Animation>(), aData.W, aIndex);
+            AnimSampleData a(this, inputs, node, aIndex);
 
             // Check single A case
-            if (x <= aData.X + ANIM_GRAPH_BLEND_THRESHOLD || bIndex == ANIM_GRAPH_MULTI_BLEND_INVALID)
+            if (x <= a.Data.X + ANIM_GRAPH_BLEND_THRESHOLD || bIndex == ANIM_GRAPH_MULTI_BLEND_INVALID)
             {
-                MultiBlendAnimData::BeforeSample(context, bucket, prevList, a, speed);
-                value = SampleAnimation(node, loop, startTimePos, a);
+                MultiBlendAnimData::BeforeSample(context, bucket, prevList, a, inputs.Speed);
+                value = SampleAnimation(node, inputs.Loop, inputs.StartTime, a);
                 MultiBlendAnimData::AfterSample(newList, a);
                 break;
             }
 
             // Get B animation data
-            auto bData = node->Values[4 + bIndex * 2].AsFloat4();
-            AnimSampleData b(node->Assets[bIndex].As<Animation>(), bData.W, bIndex);
-            if (syncLength)
+            AnimSampleData b(this, inputs, node, bIndex);
+            if (inputs.SyncLength)
                 a.Length = b.Length = data.Length;
 
             // Check single B edge case
-            if (Math::NearEqual(bData.X, x, ANIM_GRAPH_BLEND_THRESHOLD))
+            if (Math::NearEqual(b.Data.X, x, ANIM_GRAPH_BLEND_THRESHOLD))
             {
-                MultiBlendAnimData::BeforeSample(context, bucket, prevList, b, speed);
-                value = SampleAnimation(node, loop, startTimePos, b);
+                MultiBlendAnimData::BeforeSample(context, bucket, prevList, b, inputs.Speed);
+                value = SampleAnimation(node, inputs.Loop, inputs.StartTime, b);
                 MultiBlendAnimData::AfterSample(newList, b);
                 break;
             }
 
             // Blend A and B
-            const float alpha = (x - aData.X) / (bData.X - aData.X);
+            const float alpha = (x - a.Data.X) / (b.Data.X - a.Data.X);
             if (alpha > 1.0f)
                 continue;
-            MultiBlendAnimData::BeforeSample(context, bucket, prevList, a, speed);
-            MultiBlendAnimData::BeforeSample(context, bucket, prevList, b, speed);
-            value = SampleAnimationsWithBlend(node, loop, startTimePos, a, b, alpha);
+            MultiBlendAnimData::BeforeSample(context, bucket, prevList, a, inputs.Speed);
+            MultiBlendAnimData::BeforeSample(context, bucket, prevList, b, inputs.Speed);
+            value = SampleAnimationsWithBlend(node, inputs.Loop, inputs.StartTime, a, b, alpha);
             MultiBlendAnimData::AfterSample(newList, a);
             MultiBlendAnimData::AfterSample(newList, b);
             break;
@@ -1483,10 +1535,9 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         {
             // Sample the last animation if had no result
             const auto aIndex = data.IndicesSorted[data.Count - 1];
-            const auto aData = node->Values[4 + aIndex * 2].AsFloat4();
-            AnimSampleData a(node->Assets[aIndex].As<Animation>(), aData.W, aIndex);
-            MultiBlendAnimData::BeforeSample(context, bucket, prevList, a, speed);
-            value = SampleAnimation(node, loop, startTimePos, a);
+            AnimSampleData a(this, inputs, node, aIndex);
+            MultiBlendAnimData::BeforeSample(context, bucket, prevList, a, inputs.Speed);
+            value = SampleAnimation(node, inputs.Loop, inputs.StartTime, a);
             MultiBlendAnimData::AfterSample(newList, a);
         }
 
@@ -1501,34 +1552,19 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         ANIM_GRAPH_PROFILE_EVENT("Multi Blend 2D");
         ASSERT(box->ID == 0);
         value = Value::Null;
-
-        // Note data layout:
-        // [0]: Float4 Range (minX, maxX, minY, maxY)
-        // [1]: float Speed
-        // [2]: bool Loop
-        // [3]: float StartPosition
-        // Per Blend Sample data layout:
-        // [0]: Float4 Info (x=posX, y=posY, z=0, w=Speed)
-        // [1]: Guid Animation
-
-        // Prepare
         auto& bucket = context.Data->State[node->BucketIndex].MultiBlend;
-        const auto range = node->Values[0].AsFloat4();
-        const auto speed = (float)tryGetValue(node->GetBox(1), node->Values[1]);
-        const auto loop = (bool)tryGetValue(node->GetBox(2), node->Values[2]);
-        const auto startTimePos = (float)tryGetValue(node->GetBox(3), node->Values[3]);
-        const auto syncLength = false; // TODO: make it configurable via node settings? (change node->Values[2] to contain flags)
+        MultiBlendInputs inputs(this, node);
         auto& data = node->Data.MultiBlend2D;
         if (data.TrianglesCount == 0)
             break; // Skip if no valid animations added
 
         // Get axis X
         float x = (float)tryGetValue(node->GetBox(4), Value::Zero);
-        x = Math::Clamp(x, range.X, range.Y);
+        x = Math::Clamp(x, inputs.Range.X, inputs.Range.Y);
 
         // Get axis Y
         float y = (float)tryGetValue(node->GetBox(5), Value::Zero);
-        y = Math::Clamp(y, range.Z, range.W);
+        y = Math::Clamp(y, inputs.Range.Z, inputs.Range.W);
 
         // Add to trace
         if (context.Data->EnableTracing)
@@ -1540,7 +1576,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
 
         // Check if need to evaluate multi blend length
         if (data.Length < 0)
-            ComputeMultiBlendLength(data.Length, node);
+            data.Length = inputs.ComputeMultiBlendLength(this, node);
         if (data.Length <= ZeroTolerance)
             break;
 
@@ -1559,21 +1595,18 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             const auto aIndex = data.Triangles[t++];
             const auto bIndex = data.Triangles[t++];
             const auto cIndex = data.Triangles[t++];
-            const auto aData = node->Values[4 + aIndex * 2].AsFloat4();
-            const auto bData = node->Values[4 + bIndex * 2].AsFloat4();
-            const auto cData = node->Values[4 + cIndex * 2].AsFloat4();
-            AnimSampleData a(node->Assets[aIndex].As<Animation>(), aData.W, aIndex);
-            AnimSampleData b(node->Assets[bIndex].As<Animation>(), bData.W, bIndex);
-            AnimSampleData c(node->Assets[cIndex].As<Animation>(), cData.W, cIndex);
-            if (syncLength)
+            AnimSampleData a(this, inputs, node, aIndex);
+            AnimSampleData b(this, inputs, node, bIndex);
+            AnimSampleData c(this, inputs, node, cIndex);
+            if (inputs.SyncLength)
                 a.Length = b.Length = c.Length = data.Length;
 
             // Get triangle coords
             byte anims[3] = { aIndex, bIndex, cIndex };
             Float2 points[3] = {
-                Float2(aData.X, aData.Y),
-                Float2(bData.X, bData.Y),
-                Float2(cData.X, cData.Y)
+                Float2(a.Data.X, a.Data.Y),
+                Float2(b.Data.X, b.Data.Y),
+                Float2(c.Data.X, c.Data.Y)
             };
 
             // Check if blend using this triangle
@@ -1582,24 +1615,24 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 if (Float2::DistanceSquared(p, points[0]) < ANIM_GRAPH_BLEND_THRESHOLD2)
                 {
                     // Use only vertex A
-                    MultiBlendAnimData::BeforeSample(context, bucket, prevList, a, speed);
-                    value = SampleAnimation(node, loop, startTimePos, a);
+                    MultiBlendAnimData::BeforeSample(context, bucket, prevList, a, inputs.Speed);
+                    value = SampleAnimation(node, inputs.Loop, inputs.StartTime, a);
                     MultiBlendAnimData::AfterSample(newList, a);
                     break;
                 }
                 if (Float2::DistanceSquared(p, points[1]) < ANIM_GRAPH_BLEND_THRESHOLD2)
                 {
                     // Use only vertex B
-                    MultiBlendAnimData::BeforeSample(context, bucket, prevList, b, speed);
-                    value = SampleAnimation(node, loop, startTimePos, b);
+                    MultiBlendAnimData::BeforeSample(context, bucket, prevList, b, inputs.Speed);
+                    value = SampleAnimation(node, inputs.Loop, inputs.StartTime, b);
                     MultiBlendAnimData::AfterSample(newList, b);
                     break;
                 }
                 if (Float2::DistanceSquared(p, points[2]) < ANIM_GRAPH_BLEND_THRESHOLD2)
                 {
                     // Use only vertex C
-                    MultiBlendAnimData::BeforeSample(context, bucket, prevList, c, speed);
-                    value = SampleAnimation(node, loop, startTimePos, c);
+                    MultiBlendAnimData::BeforeSample(context, bucket, prevList, c, inputs.Speed);
+                    value = SampleAnimation(node, inputs.Loop, inputs.StartTime, c);
                     MultiBlendAnimData::AfterSample(newList, c);
                     break;
                 }
@@ -1621,8 +1654,8 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                     if (xAxis && yAxis)
                     {
                         // Single animation
-                        MultiBlendAnimData::BeforeSample(context, bucket, prevList, a, speed);
-                        value = SampleAnimation(node, loop, startTimePos, a);
+                        MultiBlendAnimData::BeforeSample(context, bucket, prevList, a, inputs.Speed);
+                        value = SampleAnimation(node, inputs.Loop, inputs.StartTime, a);
                         MultiBlendAnimData::AfterSample(newList, a);
                     }
                     else if (xAxis || yAxis)
@@ -1658,17 +1691,17 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                                 blendData = { p.Y - v1.Y, v0.Y - v1.Y, &c, &b };
                         }
                         const float alpha = Math::IsZero(blendData.AlphaY) ? 0.0f : blendData.AlphaX / blendData.AlphaY;
-                        MultiBlendAnimData::BeforeSample(context, bucket, prevList, *blendData.SampleA, speed);
-                        MultiBlendAnimData::BeforeSample(context, bucket, prevList, *blendData.SampleB, speed);
-                        value = SampleAnimationsWithBlend(node, loop, startTimePos, *blendData.SampleA, *blendData.SampleB, alpha);
+                        MultiBlendAnimData::BeforeSample(context, bucket, prevList, *blendData.SampleA, inputs.Speed);
+                        MultiBlendAnimData::BeforeSample(context, bucket, prevList, *blendData.SampleB, inputs.Speed);
+                        value = SampleAnimationsWithBlend(node, inputs.Loop, inputs.StartTime, *blendData.SampleA, *blendData.SampleB, alpha);
                         MultiBlendAnimData::AfterSample(newList, *blendData.SampleA);
                         MultiBlendAnimData::AfterSample(newList, *blendData.SampleB);
                     }
                     else
                     {
                         // Use only vertex A for invalid triangle
-                        MultiBlendAnimData::BeforeSample(context, bucket, prevList, a, speed);
-                        value = SampleAnimation(node, loop, startTimePos, a);
+                        MultiBlendAnimData::BeforeSample(context, bucket, prevList, a, inputs.Speed);
+                        value = SampleAnimation(node, inputs.Loop, inputs.StartTime, a);
                         MultiBlendAnimData::AfterSample(newList, a);
                     }
                     break;
@@ -1678,10 +1711,10 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 const float u = 1.0f - v - w;
 
                 // Blend A and B and C
-                MultiBlendAnimData::BeforeSample(context, bucket, prevList, a, speed);
-                MultiBlendAnimData::BeforeSample(context, bucket, prevList, b, speed);
-                MultiBlendAnimData::BeforeSample(context, bucket, prevList, c, speed);
-                value = SampleAnimationsWithBlend(node, loop, startTimePos, a, b, c, u, v, w);
+                MultiBlendAnimData::BeforeSample(context, bucket, prevList, a, inputs.Speed);
+                MultiBlendAnimData::BeforeSample(context, bucket, prevList, b, inputs.Speed);
+                MultiBlendAnimData::BeforeSample(context, bucket, prevList, c, inputs.Speed);
+                value = SampleAnimationsWithBlend(node, inputs.Loop, inputs.StartTime, a, b, c, u, v, w);
                 MultiBlendAnimData::AfterSample(newList, a);
                 MultiBlendAnimData::AfterSample(newList, b);
                 MultiBlendAnimData::AfterSample(newList, c);
@@ -1689,11 +1722,12 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             }
 
             // Try to find the best blend weights for blend position being outside the all triangles (edge case)
-            for (int j = 0; j < 3; j++)
+            for (int32 j = 0; j < 3; j++)
             {
+                int32 jNext = (j + 1) % 3;
                 Float2 s[2] = {
                     points[j],
-                    points[(j + 1) % 3]
+                    points[jNext]
                 };
                 Float2 closest;
                 CollisionsHelper::ClosestPointPointLine(p, s[0], s[1], closest);
@@ -1706,7 +1740,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                     bestWeight = d < ANIM_GRAPH_BLEND_THRESHOLD ? 0 : Float2::Distance(s[0], closest) / d;
 
                     bestAnims[0] = anims[j];
-                    bestAnims[1] = anims[(j + 1) % 3];
+                    bestAnims[1] = anims[jNext];
                 }
             }
         }
@@ -1716,23 +1750,21 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         {
             const auto best0Index = bestAnims[0];
             const auto best1Index = bestAnims[1];
-            const auto best0Data = node->Values[4 + best0Index * 2].AsFloat4();
-            const auto best1Data = node->Values[4 + best1Index * 2].AsFloat4();
-            AnimSampleData best0(node->Assets[best0Index].As<Animation>(), best0Data.W, best0Index);
-            AnimSampleData best1(node->Assets[best1Index].As<Animation>(), best1Data.W, best1Index);
-            if (syncLength)
+            AnimSampleData best0(this, inputs, node, best0Index);
+            AnimSampleData best1(this, inputs, node, best1Index);
+            if (inputs.SyncLength)
                 best0.Length = best1.Length = data.Length;
 
             // Check if use only one sample
-            MultiBlendAnimData::BeforeSample(context, bucket, prevList, best0, speed);
+            MultiBlendAnimData::BeforeSample(context, bucket, prevList, best0, inputs.Speed);
             if (bestWeight < ANIM_GRAPH_BLEND_THRESHOLD)
             {
-                value = SampleAnimation(node, loop, startTimePos, best0);
+                value = SampleAnimation(node, inputs.Loop, inputs.StartTime, best0);
             }
             else
             {
-                MultiBlendAnimData::BeforeSample(context, bucket, prevList, best1, speed);
-                value = SampleAnimationsWithBlend(node, loop, startTimePos, best0, best1, bestWeight);
+                MultiBlendAnimData::BeforeSample(context, bucket, prevList, best1, inputs.Speed);
+                value = SampleAnimationsWithBlend(node, inputs.Loop, inputs.StartTime, best0, best1, bestWeight);
                 MultiBlendAnimData::AfterSample(newList, best1);
             }
             MultiBlendAnimData::AfterSample(newList, best0);
