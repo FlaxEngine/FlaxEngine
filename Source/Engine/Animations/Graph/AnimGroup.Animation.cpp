@@ -757,7 +757,23 @@ Variant AnimGraphExecutor::SampleAnimationsWithBlend(AnimGraphNode* node, bool l
     if (a.Anim == nullptr || !a.Anim->IsLoaded() ||
         b.Anim == nullptr || !b.Anim->IsLoaded() ||
         c.Anim == nullptr || !c.Anim->IsLoaded())
+    {
+        // Blending a pair of anims to avoid T-Posing
+        if (a.Anim && a.Anim->IsLoaded())
+        {
+            if (b.Anim && b.Anim->IsLoaded())
+                return SampleAnimationsWithBlend(node, loop, startTimePos, a, b, alphaB);
+            if (c.Anim && c.Anim->IsLoaded())
+                return SampleAnimationsWithBlend(node, loop, startTimePos, a, b, alphaB);
+        }
+        if (b.Anim && b.Anim->IsLoaded())
+        {
+            if (c.Anim && c.Anim->IsLoaded())
+                return SampleAnimationsWithBlend(node, loop, startTimePos, a, c, alphaC);
+        }
+
         return Value::Null;
+    }
 
     // Get actual animation position (includes looping and start offset)
     float posA, prevPosA, posB, prevPosB, posC, prevPosC;
