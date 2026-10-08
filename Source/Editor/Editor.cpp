@@ -24,7 +24,7 @@
 #include "Engine/Content/Cache/AssetsCache.h"
 #include "Engine/Serialization/JsonWriters.h"
 #include "FlaxEngine.Gen.h"
-#if PLATFORM_LINUX
+#if PLATFORM_LINUX || PLATFORM_MAC
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #endif
 
@@ -520,7 +520,10 @@ int32 Editor::LoadProduct()
             (project->MinEngineVersion.Major() == 0 && project->MinEngineVersion.Minor() == 0 && project->MinEngineVersion.Build() > engineVersion.Build())
         )
         {
-            Platform::Fatal(String::Format(TEXT("Cannot open project \"{0}\".\nIt requires version {1} but editor has version {2}.\nPlease update the editor."), project->Name, project->MinEngineVersion.ToString(), engineVersion.ToString()));
+            String msg = String::Format(TEXT("Cannot open project \"{0}\".\nIt requires version {1} but editor has version {2}.\nPlease update the editor or press 'Cancel' to try loading it."), project->Name, project->MinEngineVersion.ToString(), engineVersion.ToString());
+            const auto result = MessageBox::Show(msg, TEXT("Engine version"), MessageBoxButtons::OKCancel, MessageBoxIcon::Error);
+            if (result == DialogResult::Cancel)
+                break; // Ignore error and try loading project
             return -2;
         }
     }
