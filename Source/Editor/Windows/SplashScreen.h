@@ -80,7 +80,6 @@ private:
 
     void OnShown();
     void OnDraw();
-    bool HasLoadedFonts() const;
     void OnFontLoaded(Asset* asset);
     void OnSplashLoaded();
 };

@@ -229,7 +229,6 @@ void SplashScreen::Close()
 {
     if (!IsVisible())
         return;
-
     LOG(Info, "Closing splash screen");
 
     // Close window
@@ -253,8 +252,6 @@ void SplashScreen::OnDraw()
     const float s = _dpiScale;
     const float width = _size.X;
     const float height = _size.Y;
-
-    // Peek time
     const float time = static_cast<float>((DateTime::NowUTC() - _startTime).GetTotalSeconds());
 
     // Background
@@ -279,18 +276,14 @@ void SplashScreen::OnDraw()
     const float anim = Math::Sin(time * 4.0f) * 0.5f + 0.5f;
     Render2D::DrawRectangle(Rectangle(0, 0, width, height), Math::Lerp(Color::Gray * 0.8f, Color::FromRGB(0x007ACC), anim));
 
-    // Check fonts
-    if (!HasLoadedFonts())
-        return;
-
     // Title
-    const auto titleLength = _titleFont->MeasureText(GetTitle());
+    const auto titleLength = _titleFont ? _titleFont->MeasureText(_title) : 0;
     TextLayoutOptions layout;
     layout.Bounds = Rectangle(10 * s, 10 * s, width - 10 * s, 50 * s);
     layout.HorizontalAlignment = TextAlignment::Near;
     layout.VerticalAlignment = TextAlignment::Near;
     layout.Scale = Math::Min((width - 20 * s) / titleLength.X, 1.0f);
-    Render2D::DrawText(_titleFont, GetTitle(), Color::White, layout);
+    Render2D::DrawText(_titleFont, _title, Color::White, layout);
 
     // Subtitle
     String subtitle(_quote);
@@ -327,11 +320,6 @@ void SplashScreen::OnDraw()
     Render2D::DrawText(_subtitleFont, _infoText, Color::FromRGB(0xFFFFFF) * 0.9f, layout);
 }
 
-bool SplashScreen::HasLoadedFonts() const
-{
-    return _titleFont && _subtitleFont;
-}
-
 void SplashScreen::OnFontLoaded(Asset* asset)
 {
     ASSERT(asset && asset->IsLoaded());
@@ -343,6 +331,17 @@ void SplashScreen::OnFontLoaded(Asset* asset)
     const float s = _dpiScale;
     _titleFont = font->CreateFont(35 * s);
     _subtitleFont = font->CreateFont(9 * s);
+
+    // Cache characters
+    if (_titleFont)
+    {
+        _titleFont->CacheText(_title);
+    }
+    if (_subtitleFont)
+    {
+        _subtitleFont->CacheText(_quote);
+        _subtitleFont->CacheText(_infoText);
+    }
 }
 
 void SplashScreen::OnSplashLoaded()

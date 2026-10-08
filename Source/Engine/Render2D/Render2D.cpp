@@ -666,6 +666,9 @@ void Render2DService::Dispose()
 void Render2D::BeginFrame()
 {
     ASSERT(!IsRendering());
+
+    // Synchronize the texture atlases data (from CacheText/DrawText done since previous frame start)
+    FontManager::Flush();
 }
 
 void Render2D::Begin(GPUContext* context, GPUTexture* output, GPUTexture* depthBuffer)
@@ -828,9 +831,6 @@ void Render2D::End()
 void Render2D::EndFrame()
 {
     ASSERT(!IsRendering());
-
-    // Synchronize the texture atlases data
-    FontManager::Flush();
 }
 
 void Render2D::PushTransform(const Matrix3x3& transform)
