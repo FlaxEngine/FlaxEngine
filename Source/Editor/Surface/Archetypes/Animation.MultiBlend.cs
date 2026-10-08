@@ -1072,6 +1072,7 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnLoading(action);
             }
 
+            /// <inheritdoc />
             public override void OnLoaded(SurfaceNodeActions action)
             {
                 // Spawn boxes for animation inputs
