@@ -250,6 +250,9 @@ API_ENUM() enum class ArchitectureType
 #if !defined(PLATFORM_SIMD_NEON) && (defined(_M_ARM) || defined(__ARM_NEON__) || defined(__ARM_NEON))
 #define PLATFORM_SIMD_NEON 1
 #endif
+#ifndef PLATFORM_SIMD_F16C
+#define PLATFORM_SIMD_F16C 0
+#endif
 #define PLATFORM_SIMD (PLATFORM_SIMD_SSE2 || PLATFORM_SIMD_SSE3 || PLATFORM_SIMD_SSE4_1 || PLATFORM_SIMD_SSE4_2 || PLATFORM_SIMD_NEON)
 
 // Unicode text macro

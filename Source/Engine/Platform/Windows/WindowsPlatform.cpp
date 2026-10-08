@@ -565,6 +565,7 @@ void CheckInstructionSet()
     bool SSE42 = cpuInfo[2] & (1u << 20);
     bool AVX = cpuInfo[2] & (1u << 28);
     bool POPCNT = cpuInfo[2] & (1u << 23);
+    bool F16C = cpuInfo[2] & (1u << 29);
     bool AVX2 = false;
     if (cpuInfoSize >= 7)
     {
@@ -597,6 +598,10 @@ void CheckInstructionSet()
         missingFeature = TEXT("SSE4.2");
     if (!POPCNT)
         missingFeature = TEXT("POPCNT");
+#endif
+#if PLATFORM_SIMD_F16C
+    if (!F16C)
+        missingFeature = TEXT("F16C");
 #endif
     if (missingFeature)
     {
