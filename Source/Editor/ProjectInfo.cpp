@@ -9,82 +9,12 @@
 #include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/JsonWriters.h"
 #include "Engine/Serialization/JsonTools.h"
-#include <ThirdParty/pugixml/pugixml.hpp>
-using namespace pugi;
 
 Array<ProjectInfo*> ProjectInfo::ProjectsCache;
-
-struct XmlCharAsChar
-{
-#if PLATFORM_TEXT_IS_CHAR16
-    Char* Str = nullptr;
-    
-    XmlCharAsChar(const pugi::char_t* str)
-    {
-        if (!str)
-            return;
-        int32 length = 0;
-        while (str[length])
-            length++;
-        Str = (Char*)Platform::Allocate(length * sizeof(Char), sizeof(Char));
-        for (int32 i = 0; i <= length; i++)
-            Str[i] = (Char)str[i];
-    }
-
-    ~XmlCharAsChar()
-    {
-        Platform::Free(Str);
-    }
-#else
-    const Char* Str;
-
-    XmlCharAsChar(const pugi::char_t* str)
-        : Str(str)
-    {
-    }
-#endif
-};
 
 void ShowProjectLoadError(const Char* errorMsg, const String& projectRootFolder)
 {
     Platform::Error(String::Format(TEXT("Failed to load project. {0}\nPath: '{1}'"), errorMsg, projectRootFolder));
-}
-
-Vector3 GetVector3FromXml(const xml_node& parent, const PUGIXML_CHAR* name, const Vector3& defaultValue)
-{
-    const auto node = parent.child(name);
-    if (!node.empty())
-    {
-        const auto x = node.child_value(PUGIXML_TEXT("X"));
-        const auto y = node.child_value(PUGIXML_TEXT("Y"));
-        const auto z = node.child_value(PUGIXML_TEXT("Z"));
-        if (x && y && z)
-        {
-            XmlCharAsChar xs(x), ys(y), zs(z);
-            Float3 v;
-            if (!StringUtils::Parse(xs.Str, &v.X) && !StringUtils::Parse(ys.Str, &v.Y) && !StringUtils::Parse(zs.Str, &v.Z))
-            {
-                return (Vector3)v;
-            }
-        }
-    }
-    return defaultValue;
-}
-
-int32 GetIntFromXml(const xml_node& parent, const PUGIXML_CHAR* name, const int32 defaultValue)
-{
-    const auto node = parent.child_value(name);
-    if (node)
-    {
-        XmlCharAsChar s(node);
-        int32 v;
-        if (!StringUtils::Parse(s.Str, &v))
-        {
-            return v;
-        }
-    }
-
-    return defaultValue;
 }
 
 bool ProjectInfo::SaveProject()
@@ -266,52 +196,6 @@ bool ProjectInfo::LoadProject(const String& projectPath)
     if (Name.Length() == 0)
     {
         ShowProjectLoadError(TEXT("Missing project name."), projectPath);
-        return true;
-    }
-
-    return false;
-}
-
-bool ProjectInfo::LoadOldProject(const String& projectPath)
-{
-    // Open Xml file
-    xml_document doc;
-    const xml_parse_result result = doc.load_file((const PUGIXML_CHAR*)*projectPath);
-    if (result.status)
-    {
-        ShowProjectLoadError(TEXT("Xml file parsing error."), projectPath);
-        return true;
-    }
-
-    // Get root node
-    const xml_node root = doc.child(PUGIXML_TEXT("Project"));
-    if (!root)
-    {
-        ShowProjectLoadError(TEXT("Missing Project root node in xml file."), projectPath);
-        return true;
-    }
-
-    // Load data
-    Name = (const Char*)root.child_value(PUGIXML_TEXT("Name"));
-    ProjectPath = projectPath;
-    ProjectFolderPath = StringUtils::GetDirectoryName(projectPath);
-    DefaultScene = Guid::Empty;
-    const auto defaultScene = root.child_value(PUGIXML_TEXT("DefaultSceneId"));
-    if (defaultScene)
-    {
-        Guid::Parse((const Char*)defaultScene, DefaultScene);
-    }
-    DefaultSceneSpawn.Position = GetVector3FromXml(root, PUGIXML_TEXT("DefaultSceneSpawnPos"), Vector3::Zero);
-    DefaultSceneSpawn.Direction = Quaternion::Euler(GetVector3FromXml(root, PUGIXML_TEXT("DefaultSceneSpawnDir"), Vector3::Zero)) * Vector3::Forward;
-    MinEngineVersion = ::Version(0, 0, GetIntFromXml(root, PUGIXML_TEXT("MinVersionSupported"), 0));
-
-    // Always reference engine project
-    auto& flaxReference = References.AddOne();
-    flaxReference.Name = TEXT("$(EnginePath)/Flax.flaxproj");
-    flaxReference.Project = Load(Globals::StartupFolder / TEXT("Flax.flaxproj"));
-    if (!flaxReference.Project)
-    {
-        ShowProjectLoadError(TEXT("Failed to load Flax Engine project."), projectPath);
         return true;
     }
 

@@ -129,14 +129,6 @@ public:
     bool LoadProject(const String& projectPath);
 
     /// <summary>
-    /// Loads the old project file (Project.xml).
-    /// [Deprecated: 16.04.2020, expires 16.04.2021]
-    /// </summary>
-    /// <param name="projectPath">The absolute path to the file with a project.</param>
-    /// <returns>True if cannot load it, otherwise false.</returns>
-    bool LoadOldProject(const String& projectPath);
-
-    /// <summary>
     /// Gets all projects including this project, it's references and their references (any deep level of references).
     /// </summary>
     /// <param name="result">The result list of projects (this and all references).</param>
