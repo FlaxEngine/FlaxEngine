@@ -53,6 +53,11 @@ public:
     static int32 LastProjectOpenedEngineBuild;
 
     /// <summary>
+    /// The version of the last editor instance that opened the current project. Empty version 0.0 means project was not opened recently (eg. new or fresh copy).
+    /// </summary>
+    static Version LastOpenedVersion;
+
+    /// <summary>
     /// Checks if the project upgrade is required and may perform it. Will update IsOldProjectOpened flag.
     /// </summary>
     /// <returns>True if engine should exit, otherwise false.</returns>

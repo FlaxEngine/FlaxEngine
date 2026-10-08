@@ -5,13 +5,12 @@
 #include "Editor.h"
 #include "ProjectInfo.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Collections/HashSet.h"
 #include "Scripting/ScriptsBuilder.h"
 #include "Windows/SplashScreen.h"
 #include "Managed/ManagedEditor.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
-#include "Engine/Serialization/FileWriteStream.h"
-#include "Engine/Serialization/FileReadStream.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/MessageBox.h"
@@ -21,6 +20,9 @@
 #include "Engine/ShadowsOfMordor/Builder.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
+#include "Engine/Content/Content.h"
+#include "Engine/Content/Cache/AssetsCache.h"
+#include "Engine/Serialization/JsonWriters.h"
 #include "FlaxEngine.Gen.h"
 #if PLATFORM_LINUX
 #include "Engine/Tools/TextureTool/TextureTool.h"
@@ -29,16 +31,57 @@
 namespace EditorImpl
 {
     bool HasFocus = false;
+    bool UpgradeOldProject = false;
+    Version OldProjectMinVersion;
     SplashScreen* Splash = nullptr;
 
     void OnUpdate();
 }
+
+// Version with major.minor components
+struct ProjectVersion
+{
+    int32 Major = 0, Minor = 0;
+
+    ProjectVersion() = default;
+    ProjectVersion(int32 major, int32 minor)
+        : Major(major)
+        , Minor(minor)
+    {
+    }
+
+    bool operator==(const ProjectVersion& other) const
+    {
+        return Major == other.Major && Minor == other.Minor;
+    }
+    bool operator<(const ProjectVersion& other) const
+    {
+        return Major < other.Major || (Major == other.Major && Minor < other.Minor);
+    }
+    bool operator<=(const ProjectVersion& other) const
+    {
+        return Major <= other.Major || (Major == other.Major && Minor <= other.Minor);
+    }
+    bool operator>(const ProjectVersion& other) const
+    {
+        return other < *this;
+    }
+    bool operator>=(const ProjectVersion& other) const
+    {
+        return other <= *this;
+    }
+    bool operator!=(const ProjectVersion& other) const
+    {
+        return !(*this == other);
+    }
+};
 
 ManagedEditor* Editor::Managed = nullptr;
 ProjectInfo* Editor::Project = nullptr;
 bool Editor::IsPlayMode = false;
 bool Editor::IsOldProjectOpened = true;
 int32 Editor::LastProjectOpenedEngineBuild = 0;
+Version Editor::LastOpenedVersion;
 
 void Editor::CloseSplashScreen()
 {
@@ -47,6 +90,7 @@ void Editor::CloseSplashScreen()
 
 bool Editor::CheckProjectUpgrade()
 {
+    PROFILE_CPU();
     PROFILE_MEM(Editor);
     const auto versionFilePath = Globals::ProjectCacheFolder / TEXT("version");
 
@@ -54,45 +98,83 @@ bool Editor::CheckProjectUpgrade()
     struct VersionCache
     {
         // When changing this ensure that Flax Launcher properly reads the version
-        int32 Major = FLAXENGINE_VERSION_MAJOR;
-        int32 Minor = FLAXENGINE_VERSION_MINOR;
+        ProjectVersion Version = { FLAXENGINE_VERSION_MAJOR, FLAXENGINE_VERSION_MINOR };
         int32 Build = FLAXENGINE_VERSION_BUILD;
         int32 RealSize = sizeof(Real); // Rebuild when changing between Large Worlds
     };
-    VersionCache lastVersion;
+    VersionCache versionCache;
     if (FileSystem::FileExists(versionFilePath))
     {
-        auto file = FileReadStream::Open(versionFilePath);
+        auto file = File::Open(versionFilePath, FileMode::OpenExisting, FileAccess::Read, FileShare::Read);
         if (file)
         {
-            file->ReadBytes(&lastVersion, sizeof(lastVersion));
+            bool failed = file->Read(&versionCache, sizeof(versionCache));
 
             // Invalidate results if data has issues
-            if (file->HasError() || lastVersion.Major < 0 || lastVersion.Minor < 0 || lastVersion.Major > 100 || lastVersion.Minor > 1000)
+            if (failed || versionCache.Version.Major < 0 || versionCache.Version.Minor < 0 || versionCache.Version.Major > 100 || versionCache.Version.Minor > 1000)
             {
-                lastVersion = VersionCache();
+                versionCache = VersionCache();
                 LOG(Warning, "Invalid version cache data");
             }
             else
             {
-                LOG(Info, "Last project open version: {0}.{1}.{2}", lastVersion.Major, lastVersion.Minor, lastVersion.Build);
-                LastProjectOpenedEngineBuild = lastVersion.Build;
+                LOG(Info, "Last project open version: {0}.{1}.{2}", versionCache.Version.Major, versionCache.Version.Minor, versionCache.Build);
+                LastProjectOpenedEngineBuild = versionCache.Build;
+                LastOpenedVersion = Version(versionCache.Version.Major, versionCache.Version.Minor, versionCache.Build);
             }
 
             Delete(file);
         }
     }
 
-    // Check if last version was the same
-    if (lastVersion.Major == FLAXENGINE_VERSION_MAJOR && lastVersion.Minor == FLAXENGINE_VERSION_MINOR)
+    // Check if need to backup and upgrade project
+    ProjectVersion engineVersion(FLAXENGINE_VERSION_MAJOR, FLAXENGINE_VERSION_MINOR);
+    ProjectVersion minEngineVersion = ProjectVersion(Project->MinEngineVersion.Major(), Project->MinEngineVersion.Minor());
+    EditorImpl::OldProjectMinVersion = Project->MinEngineVersion;
+    if ((versionCache.Version == engineVersion && LastProjectOpenedEngineBuild != 0) || minEngineVersion == engineVersion)
     {
-        // Do nothing
+        // Project was opened last time or saved with the current engine version
         IsOldProjectOpened = false;
     }
-    // Check if last version was older
-    else if (lastVersion.Major < FLAXENGINE_VERSION_MAJOR || (lastVersion.Major == FLAXENGINE_VERSION_MAJOR && lastVersion.Minor < FLAXENGINE_VERSION_MINOR))
+    else if (minEngineVersion < engineVersion)
     {
-        LOG(Warning, "The project was last opened with an older editor version");
+        // Project was created/saved with an older engine version so perform upgrade (silent)
+        EditorImpl::UpgradeOldProject = true;
+        LOG(Info, "The project was used with an older editor version ({}.{})", minEngineVersion.Major, minEngineVersion.Minor);
+
+        // Re-save project with a current version to skip upgrading next time it's opened
+        HashSet<ProjectInfo*> projects;
+        Project->GetAllProjects(projects);
+        for (auto& e : projects)
+        {
+            if (e.Item->Name == TEXT("Flax"))
+                continue;
+            const String& projectPath = e.Item->ProjectPath;
+            StringAnsi fileData;
+            if (!File::ReadAllText(projectPath, fileData))
+            {
+                rapidjson_flax::Document document;
+                document.Parse(fileData.Get(), fileData.Length());
+                if (!document.HasParseError())
+                {
+                    const auto minEngineVersionMember = document.FindMember("MinEngineVersion");
+                    if (minEngineVersionMember != document.MemberEnd())
+                        minEngineVersionMember->value.SetString(FLAXENGINE_VERSION_TEXT);
+                    else
+                        document.AddMember("MinEngineVersion", FLAXENGINE_VERSION_TEXT, document.GetAllocator());
+                }
+                rapidjson_flax::StringBuffer buffer;
+                PrettyJsonWriter writer(buffer);
+                document.Accept(writer.GetWriter());
+                File::WriteAllBytes(projectPath, (byte*)buffer.GetString(), (int32)buffer.GetSize());
+            }
+        }
+    }
+    else if (versionCache.Version < engineVersion)
+    {
+        // Project was opened with an older older engine version so ask user if backup or cancel operation
+        LOG(Info, "The project was last opened with an older editor version");
+        EditorImpl::UpgradeOldProject = true;
         const auto result = MessageBox::Show(TEXT("The project was last opened with an older editor version.\nLoading it may modify existing data, which can result in older editor versions being unable to open it.\n\nDo you want to perform a backup before or cancel the operation?"), TEXT("Project upgrade"), MessageBoxButtons::YesNoCancel, MessageBoxIcon::Question);
         if (result == DialogResult::Yes)
         {
@@ -108,13 +190,14 @@ bool Editor::CheckProjectUpgrade()
         }
         else
         {
-            // Cancel
+            // Cancel loading
             return true;
         }
     }
     // Check if last version was newer
-    else if (lastVersion.Major > FLAXENGINE_VERSION_MAJOR || (lastVersion.Major == FLAXENGINE_VERSION_MAJOR && lastVersion.Minor > FLAXENGINE_VERSION_MINOR))
+    else if (versionCache.Version > engineVersion)
     {
+        // Project was opened with a newer version previously so ask user if backup or cancel operation
         LOG(Warning, "The project was last opened with a newer editor version");
         const auto result = MessageBox::Show(TEXT("The project was last opened with a newer editor version.\nLoading it may fail and corrupt existing data.\n\nDo you want to perform a backup before loading or cancel the operation?"), TEXT("Project upgrade"), MessageBoxButtons::YesNoCancel, MessageBoxIcon::Warning);
         if (result == DialogResult::Yes)
@@ -137,26 +220,28 @@ bool Editor::CheckProjectUpgrade()
     }
 
     // When changing between major/minor version clear some caches to prevent possible issues
-    if (lastVersion.Major != FLAXENGINE_VERSION_MAJOR || lastVersion.Minor != FLAXENGINE_VERSION_MINOR || lastVersion.RealSize != sizeof(Real))
+    if (versionCache.Version != engineVersion || versionCache.RealSize != sizeof(Real))
     {
+        PROFILE_CPU_NAMED("Clean");
         LOG(Info, "Cleaning cache files from different engine version");
         FileSystem::DeleteDirectory(Globals::ProjectFolder / TEXT("Cache/Cooker"));
-        FileSystem::DeleteDirectory(Globals::ProjectFolder / TEXT("Cache/Intermediate"));
+        FileSystem::DeleteDirectory(Globals::ProjectFolder / TEXT("Cache/Thumbnails"));
+        FileSystem::DeleteDirectory(Globals::ProjectFolder / TEXT("Cache/Shaders"));
+        HashSet<ProjectInfo*> projects;
+        Project->GetAllProjects(projects);
+        for (auto& e : projects)
+        {
+            if (e.Item->Name == TEXT("Flax"))
+                continue;
+            FileSystem::DeleteDirectory(e.Item->ProjectFolderPath / TEXT("Cache/Intermediate"));
+        }
     }
 
     // Update version the cache file
+    versionCache = VersionCache();
+    if (File::WriteAllBytes(versionFilePath, &versionCache, sizeof(versionCache)))
     {
-        auto file = FileWriteStream::Open(versionFilePath);
-        if (file)
-        {
-            lastVersion = VersionCache();
-            file->WriteBytes(&lastVersion, sizeof(lastVersion));
-            Delete(file);
-        }
-        else
-        {
-            LOG(Error, "Failed to create version cache file");
-        }
+        LOG(Error, "Failed to create version cache file");
     }
 
     return false;
@@ -164,8 +249,11 @@ bool Editor::CheckProjectUpgrade()
 
 bool Editor::BackupProject()
 {
+    PROFILE_CPU();
+
     // Create backup directory
     auto dstPath = Globals::ProjectFolder + TEXT(" - Backup");
+    LOG(Info, "Backup project to \"{0}\"", dstPath);
     {
         int32 count = 0;
         while (count < 1000 && FileSystem::DirectoryExists(dstPath))
@@ -173,8 +261,6 @@ bool Editor::BackupProject()
             dstPath = Globals::ProjectFolder + TEXT(" - Backup") + StringUtils::ToString(count++);
         }
     }
-
-    LOG(Info, "Backup project to \"{0}\"", dstPath);
 
     // Copy everything
     return FileSystem::CopyDirectory(dstPath, Globals::ProjectFolder);
@@ -245,6 +331,7 @@ int32 Editor::LoadProduct()
     }
     if (CommandLine::Options.NewProject.IsTrue())
     {
+        PROFILE_CPU_NAMED("New");
         if (projectPath.IsEmpty())
             projectPath = Platform::GetWorkingDirectory();
         else if (!FileSystem::DirectoryExists(projectPath))
@@ -487,6 +574,42 @@ bool Editor::Init()
     }
     PROFILE_CPU();
     PROFILE_MEM(Editor);
+
+    // When loading project that was opened with older engine version, load all assets to auto-save ones that were deprecated (see Asset::onLoad that does resave)
+    if (EditorImpl::UpgradeOldProject)
+    {
+        PROFILE_CPU_NAMED("Upgrade");
+
+        // Upgrade assets
+        AssetsCache* registry = Content::GetRegistry();
+        auto assets = Content::GetAllAssets();
+        LOG(Info, "Upgrading {} assets...", assets.Count());
+        int32 loadedCount = 0;
+        for (const Guid& id : assets)
+        {
+            AssetInfo info;
+            if (registry->FindAsset(id, info))
+            {
+                // Skip assets that don't need this reload
+                if (info.TypeName == TEXT("FlaxEngine.Texture") ||
+                    info.TypeName == TEXT("FlaxEngine.CubeTexture") ||
+                    info.TypeName == TEXT("FlaxEngine.AudioClip") ||
+                    info.TypeName == TEXT("FlaxEngine.SkinnedModel") ||
+                    info.TypeName == TEXT("FlaxEngine.Model"))
+                    continue;
+
+                if (Content::LoadAsync(info.ID))
+                {
+                    loadedCount++;
+                }
+            }
+        }
+        LOG(Info, "Upgrade ended with {} assets loaded", loadedCount);
+        auto stats = Content::GetStats();
+        LOG(Info, "Loaded assets: {}, loading assets: {}", stats.LoadedAssetsCount, stats.LoadingAssetsCount);
+
+        // TODO: should we upgrade prefabs and scenes? they can contain deprecated data too
+    }
 
     // If during last lightmaps baking engine crashed we could try to restore the progress
     ShadowsOfMordor::Builder::Instance()->CheckIfRestoreState();
