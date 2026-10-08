@@ -22,7 +22,7 @@ public:
     Array<AssetReference<LocalizedStringTable>> FallbackStringTables;
 
     LocalizationService()
-        : EngineService(TEXT("Localization"), -500)
+        : EngineService(TEXT("Localization"), -28)
         , CurrentCulture(0)
         , CurrentLanguage(0)
     {

@@ -56,7 +56,7 @@ class InputService : public EngineService
 {
 public:
     InputService()
-        : EngineService(TEXT("Input"), -60)
+        : EngineService(TEXT("Input"), -5)
     {
     }
 

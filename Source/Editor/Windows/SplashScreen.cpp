@@ -153,8 +153,6 @@ void SplashScreen::Show()
     if (IsVisible() || CommandLine::Options.Headless.IsTrue())
         return;
 
-    LOG(Info, "Showing splash screen");
-
     // Create window
     const float dpiScale = Platform::GetDpiScale();
     CreateWindowSettings settings;
@@ -207,14 +205,12 @@ void SplashScreen::Show()
     if (font == nullptr)
     {
         LOG(Fatal, "Cannot load GUI primary font.");
+        return;
     }
+    if (font->IsLoaded())
+        OnFontLoaded(font);
     else
-    {
-        if (font->IsLoaded())
-            OnFontLoaded(font);
-        else
-            font->Loaded.Bind<SplashScreen, &SplashScreen::OnFontLoaded>(this);
-    }
+        font->Loaded.Bind<SplashScreen, &SplashScreen::OnFontLoaded>(this);
 
     // Load custom image
     _splashTexture.Loaded.Bind<SplashScreen, &SplashScreen::OnSplashLoaded>(this);
@@ -223,6 +219,13 @@ void SplashScreen::Show()
         _splashTexture = Content::LoadAsync<Texture>(splashImagePath);
     
     _window->Show();
+
+#if SPLASH_SCREEN_IMMEDIATE
+    // Wait on resources
+    font->WaitForLoaded();
+    if (_splashTexture)
+        _splashTexture->WaitForLoaded();
+#endif
 }
 
 void SplashScreen::Close()

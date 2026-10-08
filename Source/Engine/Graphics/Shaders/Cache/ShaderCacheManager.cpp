@@ -241,10 +241,13 @@ bool ShaderCacheManagerService::Init()
         || cacheVersion.Flags != cacheVersionDefault.Flags
     )
     {
-        LOG(Warning, "Shaders cache database is invalid. Performing reset.");
-        if (FileSystem::DirectoryExists(rootDir) && FileSystem::DeleteDirectory(rootDir))
+        if (FileSystem::DirectoryExists(rootDir))
         {
-            LOG(Warning, "Failed to reset shaders cache database.");
+            LOG(Warning, "Shaders cache database is invalid. Performing reset.");
+            if (FileSystem::DeleteDirectory(rootDir))
+            {
+                LOG(Warning, "Failed to reset shaders cache database.");
+            }
         }
         if (FileSystem::CreateDirectory(rootDir))
         {

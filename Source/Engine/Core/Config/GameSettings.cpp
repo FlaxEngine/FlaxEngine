@@ -31,7 +31,7 @@ class GameSettingsService : public EngineService
 {
 public:
     GameSettingsService()
-        : EngineService(TEXT("GameSettings"), -70)
+        : EngineService(TEXT("GameSettings"), -27)
     {
     }
 

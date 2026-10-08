@@ -589,7 +589,7 @@ class Render2DService : public EngineService
 {
 public:
     Render2DService()
-        : EngineService(TEXT("Render2D"), 10)
+        : EngineService(TEXT("Render2D"), -35)
     {
     }
 

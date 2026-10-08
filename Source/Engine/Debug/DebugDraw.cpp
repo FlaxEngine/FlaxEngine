@@ -529,7 +529,7 @@ class DebugDrawService : public EngineService
 {
 public:
     DebugDrawService()
-        : EngineService(TEXT("Debug Draw"), -80)
+        : EngineService(TEXT("Debug Draw"), 10)
     {
     }
 

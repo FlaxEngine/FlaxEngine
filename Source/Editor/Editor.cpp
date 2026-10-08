@@ -17,6 +17,7 @@
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Engine/EngineService.h"
 #include "Engine/ShadowsOfMordor/Builder.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
@@ -26,6 +27,9 @@
 #include "FlaxEngine.Gen.h"
 #if PLATFORM_LINUX || PLATFORM_MAC
 #include "Engine/Tools/TextureTool/TextureTool.h"
+#endif
+#if SPLASH_SCREEN_IMMEDIATE
+#include "Engine/Graphics/GPUDevice.h"
 #endif
 
 namespace EditorImpl
@@ -76,6 +80,35 @@ struct ProjectVersion
     }
 };
 
+class SplashScreenService : public EngineService
+{
+public:
+    SplashScreenService()
+        : EngineService(TEXT("Splash Screen"), -29) // Right after: Graphics, Render2D and Windows Manager
+    {
+    }
+
+    bool Init() override
+    {
+        if (CommandLine::Options.Headless.IsTrue())
+            return false;
+
+        // Show splash screen
+        PROFILE_CPU_NAMED("Splash");
+        EditorImpl::Splash = New<SplashScreen>();
+        EditorImpl::Splash->SetTitle(Editor::Project->Name);
+        EditorImpl::Splash->Show();
+
+#if SPLASH_SCREEN_IMMEDIATE
+        // Run a dummy frame to show splash screen without waiting on engine to start
+        GPUDevice::Instance->Draw();
+#endif
+
+        return false;
+    }
+};
+
+SplashScreenService SplashScreenServiceInstance;
 ManagedEditor* Editor::Managed = nullptr;
 ProjectInfo* Editor::Project = nullptr;
 bool Editor::IsPlayMode = false;
@@ -619,16 +652,6 @@ bool Editor::Init()
 
     Engine::Update.Bind(&EditorImpl::OnUpdate);
     Managed = New<ManagedEditor>();
-
-    // Show splash screen
-    if (!CommandLine::Options.Headless.IsTrue())
-    {
-        PROFILE_CPU_NAMED("Splash");
-        if (EditorImpl::Splash == nullptr)
-            EditorImpl::Splash = New<SplashScreen>();
-        EditorImpl::Splash->SetTitle(Project->Name);
-        EditorImpl::Splash->Show();
-    }
 
     // Initialize managed editor
     Managed->Init();

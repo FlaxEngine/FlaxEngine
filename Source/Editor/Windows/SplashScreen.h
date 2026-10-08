@@ -10,6 +10,9 @@
 class Asset;
 class Font;
 
+// Enables immediate splash screen showing with main thread waiting on its resources to apear quickly, otherwise uses lazy-loading and delays the start
+#define SPLASH_SCREEN_IMMEDIATE 1
+
 /// <summary>
 /// Splash Screen popup
 /// </summary>

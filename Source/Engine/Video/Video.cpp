@@ -153,7 +153,7 @@ class VideoService : public EngineService
 {
 public:
     VideoService()
-        : EngineService(TEXT("Video"), -40)
+        : EngineService(TEXT("Video"), -8)
     {
     }
 

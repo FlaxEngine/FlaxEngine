@@ -46,7 +46,7 @@ void AssetsCache::Init()
     if (!FileSystem::FileExists(_path))
     {
         _isDirty = true;
-        LOG(Warning, "Cannot find assets cache file");
+        LOG(Info, "Cannot find assets cache file");
         return;
     }
 

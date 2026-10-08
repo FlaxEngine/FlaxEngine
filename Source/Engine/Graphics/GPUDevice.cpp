@@ -458,9 +458,11 @@ bool GPUDevice::LoadContent()
     }
 
     // Load default material
+#if !USE_EDITOR // Lazy-load in Editor to avoid asset search before splash-screen
     _res->DefaultMaterial = Content::LoadAsyncInternal<Material>(TEXT("Engine/DefaultMaterial"));
     if (_res->DefaultMaterial == nullptr)
         return true;
+#endif
     _res->DefaultDeformableMaterial = Guid(0x639e12c0, 0x42d34bae, 0x89dd8b81, 0x7e1efc2d);
 
     // Load default normal map
@@ -893,6 +895,10 @@ GPUTasksManager* GPUDevice::GetTasksManager() const
 
 MaterialBase* GPUDevice::GetDefaultMaterial() const
 {
+#if USE_EDITOR
+    if (!_res->DefaultMaterial)
+        _res->DefaultMaterial = Content::LoadAsyncInternal<Material>(TEXT("Engine/DefaultMaterial"));
+#endif
     return _res->DefaultMaterial;
 }
 

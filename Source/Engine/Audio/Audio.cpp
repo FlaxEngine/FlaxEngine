@@ -61,7 +61,7 @@ class AudioService : public EngineService
 public:
 
     AudioService()
-        : EngineService(TEXT("Audio"), -50)
+        : EngineService(TEXT("Audio"), -22)
     {
     }
 
