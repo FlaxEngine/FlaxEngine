@@ -592,6 +592,8 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
                     format = TEXT("{0}.SampleLevel({1}, {2}, {3} + MaterialTextureMipBias, {4})");
                 else if (useLevel)
                     format = TEXT("{0}.SampleLevel({1}, {2}, {3} + MaterialTextureMipBias)");
+                else if (!canUseSample)
+                    format = TEXT("{0}.SampleLevel({1}, {2}, MaterialTextureMipBias)");
                 else if (useOffset)
                     format = TEXT("{0}.SampleBias({1}, {2}, MaterialTextureMipBias, {4})");
                 else
