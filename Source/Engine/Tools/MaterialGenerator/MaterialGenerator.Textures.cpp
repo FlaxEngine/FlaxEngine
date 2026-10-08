@@ -750,7 +750,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         {
             // Get world position and normal
             float3 tiling = %SCALE% * 0.001f;
-            float3 position = ((%POSITION%) + GetLargeWorldsTileOffset(1.0f / length(tiling))) * tiling;
+            float3 position = ((%POSITION%) + GetLargeWorldsTileOffset(1.0f / tiling)) * tiling;
             float3 normal = normalize(%NORMAL%);
 
             // Compute triplanar blend weights using power distribution
@@ -840,7 +840,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         {
             // Get world position and normal
             float3 tiling = %SCALE% * 0.001f;
-            float3 position = ((%POSITION%) + GetLargeWorldsTileOffset(1.0f / length(tiling))) * tiling;
+            float3 position = ((%POSITION%) + GetLargeWorldsTileOffset(1.0f / tiling)) * tiling;
             float3 normal = normalize(%NORMAL%);
 
             // Compute triplanar blend weights using power distribution
