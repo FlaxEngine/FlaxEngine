@@ -74,7 +74,11 @@ namespace FlaxEditor.Content.Import
         : base(ref request)
         {
             // Try to restore target asset model import options (useful for fast reimport)
-            Editor.TryRestoreImportOptions(ref _settings.Settings, ResultUrl);
+            if (Editor.TryRestoreImportOptions(ref _settings.Settings, ResultUrl))
+                return;
+
+            // Try to guess target asset type
+            _settings.Settings.Type = ModelTool.DetectModelType(request.InputPath);
         }
 
         /// <inheritdoc />

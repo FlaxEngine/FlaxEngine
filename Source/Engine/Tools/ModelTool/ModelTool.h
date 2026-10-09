@@ -413,6 +413,14 @@ public:
     static bool ImportModel(const String& path, ModelData& data, Options& options, String& errorMsg, const String& autoImportOutput = String::Empty);
 
 public:
+#if USE_EDITOR
+    /// <summary>
+    /// Tries to detect ideal model type for a given soruce asset. For example, if file contains only animation clip can be imported as Animation.
+    /// </summary>
+    /// <param name="path">The file path.</param>
+    /// <returns>Detected model type.</returns>
+    API_FUNCTION() static ModelType DetectModelType(const StringView& path);
+#endif
     static int32 DetectLodIndex(const String& nodeName);
     static bool FindTexture(const String& sourcePath, const String& file, String& path);
 
@@ -440,15 +448,27 @@ public:
     }
 
 private:
+    enum class ModelFeatures
+    {
+        None = 0,
+        Error = 1,
+        Meshes = 2,
+        SkinnedMeshes = 4,
+        Animations = 8,
+        Objects = 16, // cameras/lights/etc.
+    };
+
     static void CalculateBoneOffsetMatrix(const Array<SkeletonNode>& nodes, Matrix& offsetMatrix, int32 nodeIndex);
 #if USE_ASSIMP
-    static bool ImportDataAssimp(const String& path, ModelData& data, Options& options, String& errorMsg);
+    static bool ImportDataAssimp(const StringView& path, ModelData& data, Options& options, String& errorMsg);
+    static ModelFeatures DetectModelTypeAssimp(const StringView& path);
 #endif
 #if USE_AUTODESK_FBX_SDK
 	static bool ImportDataAutodeskFbxSdk(const String& path, ModelData& data, Options& options, String& errorMsg);
 #endif
 #if USE_OPEN_FBX
-    static bool ImportDataOpenFBX(const String& path, ModelData& data, Options& options, String& errorMsg);
+    static bool ImportDataOpenFBX(const StringView& path, ModelData& data, Options& options, String& errorMsg);
+    static ModelFeatures DetectModelTypeOpenFBX(const StringView& path);
 #endif
 #endif
 };

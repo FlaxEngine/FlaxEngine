@@ -2166,6 +2166,46 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
     return false;
 }
 
+#if USE_EDITOR
+
+ModelTool::ModelType ModelTool::DetectModelType(const StringView& path)
+{
+    PROFILE_CPU();
+    auto result = ModelTool::ModelType::Model;
+    auto fileSize = FileSystem::GetFileSize(path);
+    if (fileSize > 0 && fileSize < 100 * 1024 * 1024) // Skip too large files (100mb)
+    {
+        // Read file
+        auto features = ModelFeatures::Error;
+        if (path.EndsWith(TEXT(".fbx"), StringSearchCase::IgnoreCase))
+        {
+#if USE_OPEN_FBX
+            features = DetectModelTypeOpenFBX(path);
+            goto SKIP;
+#endif
+        }
+#if USE_ASSIMP
+        features = DetectModelTypeAssimp(path);
+#endif
+    SKIP:
+
+        // Detect format based on file features
+        if (features == ModelFeatures::Error)
+        { } // Use default
+        if (EnumHasAllFlags(features, ModelFeatures::Objects))
+            result = ModelType::Prefab;
+        else if (EnumHasAllFlags(features, ModelFeatures::SkinnedMeshes))
+            result = ModelType::SkinnedModel;
+        else if (EnumHasAllFlags(features, ModelFeatures::Animations))
+            result = ModelType::Animation;
+        else
+            result = ModelType::Model;
+    }
+    return result;
+}
+
+#endif
+
 int32 ModelTool::DetectLodIndex(const String& nodeName)
 {
     int32 index = nodeName.FindLast(TEXT("LOD"), StringSearchCase::IgnoreCase);

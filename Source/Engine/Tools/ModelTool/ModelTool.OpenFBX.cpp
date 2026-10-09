@@ -1252,7 +1252,7 @@ static Float3 FbxVectorFromAxisAndSign(int axis, int sign)
     return { 0.f, 0.f, 0.f };
 }
 
-bool ModelTool::ImportDataOpenFBX(const String& path, ModelData& data, Options& options, String& errorMsg)
+bool ModelTool::ImportDataOpenFBX(const StringView& path, ModelData& data, Options& options, String& errorMsg)
 {
     // Import file
     Array<byte> fileData;
@@ -1472,6 +1472,63 @@ bool ModelTool::ImportDataOpenFBX(const String& path, ModelData& data, Options& 
     }
 
     return false;
+}
+
+ModelTool::ModelFeatures ModelTool::DetectModelTypeOpenFBX(const StringView& path)
+{
+    // Import file but don't process all data
+    Array<byte> fileData;
+    if (File::ReadAllBytes(path, fileData))
+        return ModelFeatures::Error;
+    ofbx::LoadFlags loadFlags = ofbx::LoadFlags::IGNORE_MATERIALS |
+        ofbx::LoadFlags::IGNORE_VIDEOS |
+        //ofbx::LoadFlags::IGNORE_GEOMETRY | // This skips skin setup so cannot guess the skinned mesh format
+        ofbx::LoadFlags::IGNORE_TEXTURES;
+    ofbx::IScene* scene;
+    {
+        PROFILE_CPU_NAMED("ofbx::load");
+        scene = ofbx::load(fileData.Get(), fileData.Count(), (ofbx::u16)loadFlags);
+    }
+    if (!scene)
+        return ModelFeatures::Error;
+    std::unique_ptr<ofbx::IScene> scenePtr(scene);
+    fileData.Resize(0);
+
+    // Detect features
+    auto result = ModelFeatures::None;
+    if (scene->getMeshCount() != 0)
+    {
+        result = EnumAddFlags(result, ModelFeatures::Meshes);
+        for (int i = 0; i < scene->getMeshCount(); i++)
+        {
+            const auto aMesh = scene->getMesh(i);
+            const ofbx::Skin* skin = aMesh->getSkin();
+            const ofbx::BlendShape* blendShape = aMesh->getBlendShape();
+            if (skin || blendShape)
+            {
+                result = EnumAddFlags(result, ModelFeatures::SkinnedMeshes);
+                break;
+            }
+        }
+    }
+    if (scene->getAnimationStackCount() != 0)
+    {
+        for (int i = 0; i < scene->getAnimationStackCount(); i++)
+        {
+            const ofbx::AnimationStack* stack = scene->getAnimationStack(i);
+            const ofbx::AnimationLayer* layer = stack->getLayer(0);
+            const ofbx::TakeInfo* takeInfo = scene->getTakeInfo(stack->name);
+            if (takeInfo && takeInfo->local_time_to - takeInfo->local_time_from > ZeroTolerance)
+            {
+                result = EnumAddFlags(result, ModelFeatures::Animations);
+                break;
+            }
+        }
+    }
+    if (scene->getCameraCount() != 0 || scene->getLightCount() != 0)
+        result = EnumAddFlags(result, ModelFeatures::Objects);
+
+    return result;
 }
 
 #endif

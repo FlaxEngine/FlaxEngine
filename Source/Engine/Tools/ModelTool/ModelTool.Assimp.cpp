@@ -744,7 +744,7 @@ void ImportAnimation(int32 index, ModelData& data, AssimpImporterData& importerD
     }
 }
 
-bool ModelTool::ImportDataAssimp(const String& path, ModelData& data, Options& options, String& errorMsg)
+bool ModelTool::ImportDataAssimp(const StringView& path, ModelData& data, Options& options, String& errorMsg)
 {
     GetAssimpLogger();
     bool importMeshes = EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry);
@@ -885,6 +885,43 @@ bool ModelTool::ImportDataAssimp(const String& path, ModelData& data, Options& o
     }
 
     return false;
+}
+
+ModelTool::ModelFeatures ModelTool::DetectModelTypeAssimp(const StringView& path)
+{
+    // Import file but don't process all data
+    GetAssimpLogger();
+    unsigned int flags =
+        aiProcess_DropNormals |
+        //aiProcess_ValidateDataStructure |
+        aiProcess_ConvertToLeftHanded;
+    Assimp::Importer importer;
+    AnsiPathTempFile tempFile(path);
+    const aiScene* scene = importer.ReadFile(tempFile.Path.Get(), flags);
+    if (scene == nullptr)
+        return ModelFeatures::Error;
+
+    // Detect features
+    auto result = ModelFeatures::None;
+    if (scene->mNumMeshes != 0)
+    {
+        result = EnumAddFlags(result, ModelFeatures::Meshes);
+        for (unsigned int i = 0; i < scene->mNumMeshes; i++)
+        {
+            const aiMesh* aMesh = scene->mMeshes[i];
+            if ((aMesh->mNumBones > 0 && aMesh->mBones) || aMesh->mNumAnimMeshes > 0)
+            {
+                result = EnumAddFlags(result, ModelFeatures::SkinnedMeshes);
+                break;
+            }
+        }
+    }
+    if (scene->mNumAnimations)
+        result = EnumAddFlags(result, ModelFeatures::Animations);
+    if (scene->mNumCameras != 0 || scene->mNumLights != 0)
+        result = EnumAddFlags(result, ModelFeatures::Objects);
+
+    return result;
 }
 
 #endif
