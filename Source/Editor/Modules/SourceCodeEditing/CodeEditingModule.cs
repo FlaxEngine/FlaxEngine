@@ -150,12 +150,12 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         /// </summary>
         public event Action TypesChanged;
 
-        /// <summary> 
+        /// <summary>
         /// The all types collection from all assemblies (excluding C# system libraries). Includes only primitive and basic types from std lib.
         /// </summary>
         public readonly CachedTypesCollection All = new CachedAllTypesCollection(8096, ScriptType.Null, type => true, HasAssemblyValidAnyTypes);
 
-        /// <summary> 
+        /// <summary>
         /// The all types collection from all assemblies (including C# system libraries).
         /// </summary>
         public readonly CachedTypesCollection AllWithStd = new CachedTypesCollection(8096, ScriptType.Null, type => true, assembly => true);
@@ -590,9 +590,10 @@ namespace FlaxEditor.Modules.SourceCodeEditing
 
             // Skip runtime related assemblies
             string repositoryUrl = assembly.GetCustomAttributes<AssemblyMetadataAttribute>().FirstOrDefault(x => x.Key == "RepositoryUrl")?.Value ?? "";
-            if (repositoryUrl != "https://github.com/dotnet/runtime")
-                return true;
-            return false;
+            if (repositoryUrl.StartsWith("https://github.com/dotnet/"))
+                return false;
+
+            return true;
         }
 
         private static bool HasAssemblyValidScriptingTypes(Assembly a)
