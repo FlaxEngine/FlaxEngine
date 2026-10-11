@@ -490,7 +490,7 @@ namespace FlaxEngine.Json
         /// <inheritdoc />
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
         {
-            if (reader.TokenType == JsonToken.Integer)
+            if (reader.TokenType == JsonToken.String)
                 return ulong.Parse((string)reader.Value);
             return 0UL;
         }
