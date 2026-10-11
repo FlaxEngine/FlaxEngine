@@ -1,8 +1,9 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System;
 using FlaxEditor.Utilities;
 using FlaxEngine;
+using System;
+using System.Globalization;
 
 namespace FlaxEditor.GUI.Input
 {
@@ -119,13 +120,47 @@ namespace FlaxEditor.GUI.Input
         {
             try
             {
-                var value = ShuntingYard.Parse(Text);
-                Value = (ulong)value;
+                // Reminder: ShuntingYard.Parse returns double, which loses
+                // integer precision for large ulong values.
+                //
+                // Example:
+                // 18446744073709551615 (ulong.MaxValue) cannot be represented
+                // exactly by double.
+                //
+                // Do not use ShuntingYard.Parse here until an exact integer
+                // expression parser is implemented.
+                //
+                // var value = ShuntingYard.Parse(Text);
+                // Value = (ulong)value;
+
+                // TODO: Implement correct ShuntingYard.Parse for integers.
+
+                // For now, use simple parsing until the proper integer
+                // expression parser is implemented.
+                //
+                // Input: 184467440737095516
+                // Must not be converted to 184467440737095520
+                // because of double precision loss.
+
+                if (ulong.TryParse(
+                        Text,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out ulong val))
+                {
+                    Value = val;
+                }
+                else
+                {
+                    // Restore the previous value when parsing fails.
+                    UpdateText();
+                }
             }
             catch (Exception ex)
             {
                 // Fall back to previous value
                 Editor.LogWarning(ex);
+                UpdateText();
             }
         }
 
