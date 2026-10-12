@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.IO;
+using System.Collections.Generic;
 using Flax.Build;
 
 namespace Flax.Deps.Dependencies
@@ -112,12 +113,17 @@ namespace Flax.Deps.Dependencies
                     }
                     case TargetPlatform.Linux:
                     {
+                        var envVars = new Dictionary<string, string>
+                        {
+                            { "CXX", "clang-" + LinuxConfiguration.ClangMinVer },
+                            { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
+                        };
                         string buildDir = Path.Combine(root, "build-" + architecture);
                         var isa = architecture == TargetArchitecture.ARM64 ? "-DASTCENC_ISA_NEON=ON" : "-DASTCENC_ISA_SSE2=ON";
                         var lib = architecture == TargetArchitecture.ARM64 ? "libastcenc-neon-static.a" : "libastcenc-sse2-static.a";
                         SetupDirectory(buildDir, true);
-                        RunCmake(buildDir, platform, architecture, ".. -DCMAKE_BUILD_TYPE=Release -DASTCENC_CLI=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON " + isa);
-                        BuildCmake(buildDir);
+                        RunCmake(buildDir, platform, architecture, ".. -DCMAKE_BUILD_TYPE=Release -DASTCENC_CLI=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON " + isa, envVars);
+                        BuildCmake(buildDir, envVars);
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         Utilities.FileCopy(Path.Combine(buildDir, "Source", lib), Path.Combine(depsFolder, "libastcenc.a"));
                         break;
