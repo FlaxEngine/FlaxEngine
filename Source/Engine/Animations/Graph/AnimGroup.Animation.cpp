@@ -1072,6 +1072,49 @@ void AnimGraphExecutor::ProcessGroupTools(Box* box, Node* nodeBase, Value& value
         value = box->ID == 0 ? bucket.TimePosition : context.DeltaTime;
         break;
     }
+#if USE_EDITOR
+    // Debug Draw (cache shapes to be drawn by AnimatedModel on main-thread)
+    case 35:
+    case 36:
+    case 37:
+    {
+        value = tryGetValue(node->GetBox(0));
+        auto& shape = context.Data->DebugShapes.AddOne();
+        Platform::MemoryClear(&shape, sizeof(shape));
+        shape.Color = (Color)tryGetValue(node->GetBox(3), 0, Value::One);
+        shape.Duration = (float)tryGetValue(node->GetBox(4), 1, Value::Zero);
+        shape.DepthTest = (bool)tryGetValue(node->GetBox(5), 2, Value::Zero);
+        shape.Wireframe = (bool)tryGetValue(node->GetBox(6), 3, Value::Zero);
+        switch (node->TypeID)
+        {
+        case 35:
+            shape.Type = AnimGraphInstanceData::DebugShape::BoxType;
+            *(BoundingBox*)&shape.Box = (BoundingBox)tryGetValue(node->GetBox(2));
+            static_assert(sizeof(BoundingBox) == sizeof(shape.Box), "Invalid data size.");
+            break;
+        case 36:
+            shape.Type = AnimGraphInstanceData::DebugShape::SphereType;
+            *(BoundingSphere*)&shape.Sphere = (BoundingSphere)tryGetValue(node->GetBox(2));
+            static_assert(sizeof(BoundingSphere) == sizeof(shape.Sphere), "Invalid data size.");
+            break;
+        case 37:
+        {
+            shape.Type = AnimGraphInstanceData::DebugShape::PoseType;
+            auto pose = tryGetValue(node->GetBox(2));
+            if (ANIM_GRAPH_IS_VALID_PTR(pose))
+            {
+                auto* nodes = (AnimGraphImpulse*)pose.AsPointer;
+                shape.Pose.Count = nodes->Nodes.Count();
+                shape.Pose.Nodes = (Matrix*)Allocator::Allocate(sizeof(Matrix) * shape.Pose.Count);
+                for (int32 nodeIndex = 0; nodeIndex < shape.Pose.Count; nodeIndex++)
+                    shape.Pose.Nodes[nodeIndex] = nodes->GetNodeModelTransformation(_graph.BaseModel->Skeleton, nodeIndex).GetWorld();
+            }
+            break;
+        }
+        }
+        break;
+    }
+#endif
     default:
         VisjectExecutor::ProcessGroupTools(box, nodeBase, value);
         break;

@@ -1104,6 +1104,12 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
     case 34:
         value = Noise::CustomNoise((Float3)tryGetValue(node->GetBox(0)));
         break;
+    // Debug Draw (pass-through)
+    case 35:
+    case 36:
+    case 37:
+        value = tryGetValue(node->GetBox(0));
+        break;
     default:
         break;
     }

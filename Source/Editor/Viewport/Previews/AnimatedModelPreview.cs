@@ -15,7 +15,7 @@ namespace FlaxEditor.Viewport.Previews
     public class AnimatedModelPreview : AssetPreview
     {
         private AnimatedModel _previewModel;
-        private ContextMenuButton _showNodesButton, _showBoundsButton, _showFloorButton, _showNodesNamesButton, _nodeNameSizeButton;
+        private ContextMenuButton _showNodesButton, _showBoundsButton, _showFloorButton, _showNodesNamesButton, _nodeNameSizeButton, _showDebugShapesButton;
         private bool _showNodes, _showBounds, _showFloor, _showNodesNames;
         private StaticModel _floorModel;
         private bool _playAnimation, _playAnimationOnce, _autoAdjustCamera = true;
@@ -75,6 +75,24 @@ namespace FlaxEditor.Viewport.Previews
                     _previewModel.UpdateSpeed = value;
                 else
                     _playSpeed = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether show animated model debug shapes (from Anim Graph).
+        /// </summary>
+        public bool ShowDebugShapes
+        {
+            get => _previewModel.ShowDebugDrawShapes;
+            set
+            {
+                if (_previewModel.ShowDebugDrawShapes == value)
+                    return;
+                _previewModel.ShowDebugDrawShapes = value;
+                if (value)
+                    ShowDebugDraw = true;
+                if (_showDebugShapesButton != null)
+                    _showDebugShapesButton.Checked = value;
             }
         }
 
@@ -203,6 +221,10 @@ namespace FlaxEditor.Viewport.Previews
                 // Show Bounds
                 _showBoundsButton = ViewWidgetShowMenu.AddButton("Bounds", () => ShowBounds = !ShowBounds);
                 _showBoundsButton.CloseMenuOnClick = false;
+
+                // Show Debug Shapes
+                _showDebugShapesButton = ViewWidgetShowMenu.AddButton("Debug Shapes", () => ShowDebugShapes = !ShowDebugShapes);
+                _showDebugShapesButton.CloseMenuOnClick = false;
 
                 // Show Skeleton
                 _showNodesButton = ViewWidgetShowMenu.AddButton("Skeleton", () => ShowNodes = !ShowNodes);
@@ -405,6 +427,12 @@ namespace FlaxEditor.Viewport.Previews
                 }
             }
 
+            // Draw debug shapes
+            if (_previewModel.ShowDebugDrawShapes)
+            {
+                _previewModel.OnDebugDraw();
+            }
+
             // Draw bounds
             if (_showBounds)
             {
@@ -466,6 +494,7 @@ namespace FlaxEditor.Viewport.Previews
             _showBoundsButton = null;
             _showFloorButton = null;
             _showNodesNamesButton = null;
+            _showDebugShapesButton = null;
 
             base.OnDestroy();
         }

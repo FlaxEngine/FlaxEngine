@@ -1361,6 +1361,39 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 #include "Engine/Debug/DebugDraw.h"
 
+void DebugDrawPose(AnimatedModel* actor, Span<Matrix> nodes, const Color& color, float duration = 0, bool depthTest = false)
+{
+    Matrix world;
+    actor->GetLocalToWorldMatrix(world);
+
+    // Draw bounding box at the node locations
+    const float boxSize = Math::Min(1.0f, (float)actor->GetBoundingSphere().Radius / 100.0f);
+    OrientedBoundingBox localBox(Vector3(-boxSize), Vector3(boxSize));
+    for (int32 nodeIndex = 0; nodeIndex < nodes.Length(); nodeIndex++)
+    {
+        Matrix transform = nodes[nodeIndex] * world;
+        Float3 scale, translation;
+        Matrix3x3 rotation;
+        transform.Decompose(scale, rotation, translation);
+        transform = Matrix::Invert(Matrix::Scaling(scale)) * transform;
+        OrientedBoundingBox box = localBox * transform;
+        DEBUG_DRAW_WIRE_BOX(box, color, duration, depthTest);
+    }
+
+    // Nodes connections
+    auto& skeletonNodes = actor->SkinnedModel->Skeleton.Nodes;
+    for (int32 nodeIndex = 0; nodeIndex < skeletonNodes.Count(); nodeIndex++)
+    {
+        int32 parentIndex = skeletonNodes[nodeIndex].ParentIndex;
+        if (parentIndex != -1)
+        {
+            Float3 parentPos = (nodes[parentIndex] * world).GetTranslation();
+            Float3 bonePos = (nodes[nodeIndex] * world).GetTranslation();
+            DEBUG_DRAW_LINE(parentPos, bonePos, color, duration, depthTest);
+        }
+    }
+}
+
 void AnimatedModel::OnDebugDrawSelected()
 {
     DEBUG_DRAW_WIRE_BOX(_box, Color::Violet.RGBMultiplied(0.8f), 0, true);
@@ -1375,32 +1408,39 @@ void AnimatedModel::OnDebugDraw()
     {
         if (GraphInstance.NodesPose.IsEmpty())
             PreInitSkinningData();
-        Matrix world;
-        GetLocalToWorldMatrix(world);
+        DebugDrawPose(this, ToSpan(GraphInstance.NodesPose), Color::Green);
+    }
 
-        // Draw bounding box at the node locations
-        const float boxSize = Math::Min(1.0f, (float)_sphere.Radius / 100.0f);
-        OrientedBoundingBox localBox(Vector3(-boxSize), Vector3(boxSize));
-        for (int32 nodeIndex = 0; nodeIndex < GraphInstance.NodesPose.Count(); nodeIndex++)
+    if (ShowDebugDrawShapes)
+    {
+        // Draw shape accumilated during the last Anim Graph update
+        for (auto& shape : GraphInstance.DebugShapes)
         {
-            Matrix transform = GraphInstance.NodesPose[nodeIndex] * world;
-            Float3 scale, translation;
-            Matrix3x3 rotation;
-            transform.Decompose(scale, rotation, translation);
-            transform = Matrix::Invert(Matrix::Scaling(scale)) * transform;
-            OrientedBoundingBox box = localBox * transform;
-            DEBUG_DRAW_WIRE_BOX(box, Color::Green, 0, false);
-        }
-
-        // Nodes connections
-        for (int32 nodeIndex = 0; nodeIndex < SkinnedModel->Skeleton.Nodes.Count(); nodeIndex++)
-        {
-            int32 parentIndex = SkinnedModel->Skeleton.Nodes[nodeIndex].ParentIndex;
-            if (parentIndex != -1)
+            switch (shape.Type)
             {
-                Float3 parentPos = (GraphInstance.NodesPose[parentIndex] * world).GetTranslation();
-                Float3 bonePos = (GraphInstance.NodesPose[nodeIndex] * world).GetTranslation();
-                DEBUG_DRAW_LINE(parentPos, bonePos, Color::Green, 0, false);
+            case AnimGraphInstanceData::DebugShape::BoxType:
+            {
+                OrientedBoundingBox box(*(BoundingBox*)&shape.Box);
+                box.Transform(_transform);
+                if (shape.Wireframe)
+                    DebugDraw::DrawWireBox(box, shape.Color, shape.Duration, shape.DepthTest);
+                else
+                    DebugDraw::DrawBox(box, shape.Color, shape.Duration, shape.DepthTest);
+                break;
+            }
+            case AnimGraphInstanceData::DebugShape::SphereType:
+            {
+                BoundingSphere sphere(*(BoundingSphere*)&shape.Sphere);
+                BoundingSphere::Transform(sphere, _transform, sphere);
+                if (shape.Wireframe)
+                    DebugDraw::DrawWireSphere(sphere, shape.Color, shape.Duration, shape.DepthTest);
+                else
+                    DebugDraw::DrawSphere(sphere, shape.Color, shape.Duration, shape.DepthTest);
+                break;
+            }
+            case AnimGraphInstanceData::DebugShape::PoseType:
+                DebugDrawPose(this, Span<Matrix>(shape.Pose.Nodes, shape.Pose.Count), shape.Color, shape.Duration, shape.DepthTest);
+                break;
             }
         }
     }

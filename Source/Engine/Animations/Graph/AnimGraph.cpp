@@ -318,6 +318,9 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
         for (auto& e : data.ActiveEvents)
             e.Hit = false;
         data.TraceEvents.Clear();
+#if USE_EDITOR
+        data.DebugShapes.Clear();
+#endif
 
         // Init empty nodes data
         context.EmptyNodes.RootMotion = Transform::Identity;

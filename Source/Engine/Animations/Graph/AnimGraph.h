@@ -11,7 +11,6 @@
 #include "../Config.h"
 
 #define ANIM_GRAPH_PARAM_BASE_MODEL_ID Guid(1000, 0, 0, 0)
-
 #define ANIM_GRAPH_IS_VALID_PTR(value) (value.Type.Type == VariantType::Pointer && value.AsPointer != nullptr)
 #define ANIM_GRAPH_MULTI_BLEND_INDEX byte
 #define ANIM_GRAPH_MULTI_BLEND_INVALID 0xff
@@ -253,6 +252,7 @@ API_STRUCT(NoDefault) struct FLAXENGINE_API AnimGraphTraceEvent
 class FLAXENGINE_API AnimGraphInstanceData
 {
     friend AnimGraphExecutor;
+    friend AnimatedModel;
 public:
     // ---- Quick documentation ----
     // AnimGraphInstanceData holds a single animation graph instance playback data.
@@ -471,6 +471,48 @@ private:
 
     Array<ActiveEvent, InlinedAllocation<8>> ActiveEvents;
     Array<OutgoingEvent, InlinedAllocation<8>> OutgoingEvents;
+
+#if USE_EDITOR
+    struct DebugShape
+    {
+        enum Types
+        {
+            BoxType,
+            SphereType,
+            PoseType,
+        };
+        union
+        {
+            struct
+            {
+                Vector3 Min, Max;
+            } Box;
+            struct
+            {
+                Vector3 Center;
+                Real Radius;
+            } Sphere;
+            struct
+            {
+                Matrix* Nodes;
+                int32 Count;
+            } Pose;
+        };
+        Color Color;
+        float Duration;
+        uint8 Type : 6;
+        uint8 DepthTest : 1;
+        uint8 Wireframe : 1;
+
+        ~DebugShape()
+        {
+            if (Type == PoseType)
+                Allocator::Free(Pose.Nodes);
+        }
+    };
+
+    Array<DebugShape> DebugShapes;
+#endif
 };
 
 /// <summary>

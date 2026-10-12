@@ -205,6 +205,11 @@ public:
     /// If checked, the skeleton pose will be shown during debug shapes drawing.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(200), EditorDisplay(\"Skeleton\"), VisibleIf(nameof(ShowDebugDrawOptions))") bool ShowDebugDrawSkeleton = false;
+
+    /// <summary>
+    /// If checked, the graph debug shapes (from graph) will be shown.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(210), EditorDisplay(\"Skeleton\"), VisibleIf(nameof(ShowDebugDrawOptions))") bool ShowDebugDrawShapes = false;
 #endif
 
 public:
