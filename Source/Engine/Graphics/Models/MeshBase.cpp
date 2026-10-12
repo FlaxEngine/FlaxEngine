@@ -227,6 +227,8 @@ bool MeshAccessor::LoadMesh(const MeshBase* mesh, bool forceGpu, Span<MeshBuffer
         PixelFormat format = PixelFormat::Unknown;
         if (meshLayouts[i] && meshLayouts[i]->GetElements().Count() == 1)
             format = meshLayouts[i]->GetElements()[0].Format;
+        else if (buffers[i] == MeshBufferType::Index)
+            format = mesh->Use16BitIndexBuffer() ? PixelFormat::R16_UInt : PixelFormat::R32_UInt;
         _formats[buffer] = format;
     }
     return false;
