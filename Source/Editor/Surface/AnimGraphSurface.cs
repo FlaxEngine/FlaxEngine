@@ -335,6 +335,8 @@ namespace FlaxEditor.Surface
         {
             if (type.Type == typeof(void))
                 return "Skeleton Pose (local space)";
+            if (type.Type == typeof(Matrix[]))
+                return "Skeleton Pose";
             return base.GetTypeName(type);
         }
 

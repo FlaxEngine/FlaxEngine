@@ -2688,6 +2688,65 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         }
         break;
     }
+    // Transform Skeleton Pose
+    case 38:
+    {
+        const Value input = tryGetValue(node->GetBox(1), Value::Null);
+        if (input.Type.Type == VariantType::Array)
+        {
+            const auto& inputNodes = input.AsArray();
+            if (inputNodes.Count() == 0)
+                break;
+            if (inputNodes.Count() != _skeletonNodesCount)
+                LOG(Warning, "Incorrect Skeleton Pose has size {} instead of {} nodes", inputNodes.Count(), _skeletonNodesCount);
+            const auto nodes = node->GetNodes(this);
+            const int32 count = Math::Min(inputNodes.Count(), nodes->Nodes.Count());
+            auto& skeleton = _graph.BaseModel->Skeleton;
+            for (int32 nodeIndex = 0; nodeIndex < inputNodes.Count(); nodeIndex++)
+            {
+                if (inputNodes[nodeIndex].Type.Type != VariantType::Matrix)
+                    continue;
+                Transform t;
+                inputNodes[nodeIndex].AsMatrix().Decompose(t);
+                const int32 parentIndex = skeleton.Nodes[nodeIndex].ParentIndex;
+                if (parentIndex != -1)
+                {
+                    Transform parent;
+                    inputNodes[parentIndex].AsMatrix().Decompose(parent);
+                    parent.WorldToLocal(t, t);
+                }
+                nodes->Nodes[nodeIndex] = t;
+            }
+            value = nodes;
+        }
+        break;
+    }
+    // Transform Skeleton Pose
+    case 39:
+    {
+        const Value input = tryGetValue(node->GetBox(1), Value::Null);
+        if (ANIM_GRAPH_IS_VALID_PTR(input))
+        {
+            const auto* inputNodes = (AnimGraphImpulse*)input.AsPointer;
+            const int32 count = Math::Min(inputNodes->Nodes.Count(), _skeletonNodesCount);
+            Array<Variant> nodes;
+            Array<Transform> parents;
+            nodes.Resize(count);
+            parents.Resize(count);
+            auto& skeleton = _graph.BaseModel->Skeleton;
+            for (int32 nodeIndex = 0; nodeIndex < count; nodeIndex++)
+            {
+                Transform t = inputNodes->Nodes[nodeIndex];
+                const int32 parentIndex = skeleton.Nodes[nodeIndex].ParentIndex;
+                if (parentIndex != -1)
+                    t = parents[parentIndex].LocalToWorld(t);
+                parents[nodeIndex] = t;
+                nodes[nodeIndex] = Variant(t.GetWorld());
+            }
+            value = MoveTemp(nodes);
+        }
+        break;
+    }
     default:
         break;
     }

@@ -661,7 +661,7 @@ namespace FlaxEditor.Surface
             var newParameterTypes = window.NewParameterTypes;
             if (newParameterTypes != null)
             {
-                layout.Space(parameters.Count > 0 ? 10 : 4);
+                layout.Space(parameters.Any() ? 10 : 4);
                 var newParam = layout.Button("Add parameter...");
                 newParam.Button.ButtonClicked += OnAddParameterButtonClicked;
                 layout.Space(10);

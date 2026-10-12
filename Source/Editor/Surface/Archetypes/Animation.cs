@@ -883,7 +883,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 25,
                 Title = "Transform Node (local space)",
-                Description = "Transforms the skeleton node",
+                Description = "Transforms the skeleton node in local space of its parent node",
                 Flags = NodeFlags.AnimGraph,
                 Size = new Float2(280, 130),
                 DefaultValues = new object[]
@@ -908,7 +908,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 26,
                 Title = "Transform Node (model space)",
-                Description = "Transforms the skeleton node",
+                Description = "Transforms the skeleton node in model space",
                 Flags = NodeFlags.AnimGraph,
                 Size = new Float2(280, 130),
                 DefaultValues = new object[]
@@ -1151,6 +1151,32 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(1, "Position", typeof(Vector3), 1),
                     NodeElementArchetype.Factory.Output(2, "Rotation", typeof(Quaternion), 2),
                     NodeElementArchetype.Factory.Output(3, "Scale", typeof(Float3), 3),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 38,
+                Title = "Transform Skeleton Pose (model space)",
+                Description = "Transforms the skeleton pose from model space into local space",
+                Flags = NodeFlags.AnimGraph,
+                Size = new Float2(100, 40),
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, "Local-Space Pose", typeof(void), 0),
+                    NodeElementArchetype.Factory.Input(0, "Model-Space Pose", true, typeof(Matrix[]), 1),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 39,
+                Title = "Transform Skeleton Pose (local space)",
+                Description = "Transforms the skeleton pose from local space into model space",
+                Flags = NodeFlags.AnimGraph,
+                Size = new Float2(100, 40),
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, "Model-Space Pose", typeof(Matrix[]), 0),
+                    NodeElementArchetype.Factory.Input(0, "Local-Space Pose", true, typeof(void), 1),
                 }
             },
         };

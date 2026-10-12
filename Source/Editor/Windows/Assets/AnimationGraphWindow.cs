@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using FlaxEditor.Content;
 using FlaxEditor.CustomEditors;
@@ -31,6 +32,8 @@ namespace FlaxEditor.Windows.Assets
     public sealed class AnimationGraphWindow : VisjectSurfaceWindow<AnimationGraph, AnimGraphSurface, AnimatedModelPreview>, ISearchWindow
     {
         internal static Guid BaseModelId = new Guid(1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        private static ScriptType[] AdditionalParameterTypes = [ new ScriptType(typeof(Matrix[])) ]; // Skeleton Pose
+        private static ScriptType[] HiddenParameterTypes = [ new ScriptType(typeof(void)) ]; // Skeleton Pose (local)
 
         private sealed class AnimationGraphPreview : AnimationPreview
         {
@@ -289,7 +292,7 @@ namespace FlaxEditor.Windows.Assets
         }
 
         /// <inheritdoc />
-        public override IEnumerable<ScriptType> NewParameterTypes => Editor.CodeEditing.VisualScriptPropertyTypes.Get();
+        public override IEnumerable<ScriptType> NewParameterTypes => Editor.CodeEditing.VisualScriptPropertyTypes.Get().Except(HiddenParameterTypes).Concat(AdditionalParameterTypes);
 
         /// <inheritdoc />
         public override void SetParameter(int index, object value)
