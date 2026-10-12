@@ -116,6 +116,45 @@ enum class RootMotionExtraction
 };
 
 /// <summary>
+/// Possible input animation sources for the Multi Blend points.
+/// </summary>
+enum class MultiBlendAnimationSources
+{
+    /// <summary>
+    /// Default source with animation assigned to each blend point.
+    /// </summary>
+    Default,
+
+    /// <summary>
+    /// Node exposes series of inputs to plug in custom animation assets used by each blend point. Can be used to provide different animations based for the same Multi Blend (eg. male and female versions).
+    /// </summary>
+    InputAnimations,
+};
+
+// Note data layout:
+// [0]: Float4 Range (minX, maxX, minY, maxY)
+// [1]: float Speed
+// [2]: bool Loop
+// [3]: float StartPosition
+// [4]: MultiBlendAnimationSources Source
+// Per Blend Sample data layout:
+// [0]: Float4 Info (x=posX, y=posY, z=0, w=Speed)
+// [1]: Guid Animation
+struct MultiBlendInputs
+{
+    Float4 Range;
+    float Speed, StartTime;
+    bool Loop, SyncLength;
+    MultiBlendAnimationSources Sources = MultiBlendAnimationSources::Default;
+    int32 AnimationsStartIndex = 4;
+    static const int32 AnimationInputsStartIndex = 10;
+
+    MultiBlendInputs(AnimGraphNode* node);
+    MultiBlendInputs(AnimGraphExecutor* executor, AnimGraphNode* node);
+    float ComputeMultiBlendLength(AnimGraphExecutor* executor, AnimGraphNode* node) const;
+};
+
+/// <summary>
 /// Data container for the animation graph state machine transition between two states.
 /// </summary>
 class AnimGraphStateTransition

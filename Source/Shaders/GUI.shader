@@ -157,5 +157,5 @@ float4 PS_Blur(Quad_VS2PS input) : SV_Target0
 		}
 	}
 
-	return float4(result.rgb, 1);
+	return result;
 }

@@ -121,6 +121,13 @@ namespace FlaxEditor.Surface
         }
 
         /// <summary>
+        /// Called when control is loading - has data loaded but not UI created yet.
+        /// </summary>
+        public virtual void OnLoading(SurfaceNodeActions action)
+        {
+        }
+
+        /// <summary>
         /// Called when control gets loaded and added to surface.
         /// </summary>
         public virtual void OnLoaded(SurfaceNodeActions action)

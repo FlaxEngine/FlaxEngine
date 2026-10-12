@@ -190,6 +190,8 @@ namespace FlaxEditor.Windows.Search
                 ContextMenuButton b;
                 var cm = new ContextMenu { Tag = contentItem };
                 b = cm.AddButton("Open", () => Editor.Instance.ContentFinding.Open(Item));
+                proxy?.OnContentWindowContextMenu(cm, contentItem);
+                contentItem.OnContextMenu(cm);
                 cm.AddSeparator();
                 cm.AddButton(Utilities.Constants.ShowInExplorer, () => FileSystem.ShowFileExplorer(System.IO.Path.GetDirectoryName(contentItem.Path)));
                 cm.AddButton("Show in Content window", () => Editor.Instance.Windows.ContentWin.Select(contentItem, true));
@@ -213,8 +215,6 @@ namespace FlaxEditor.Windows.Search
                     cm.AddButton("Copy path to Clipboard", () => Clipboard.Text = assetItem.Path);
                     cm.AddSeparator();
                 }
-                proxy?.OnContentWindowContextMenu(cm, contentItem);
-                contentItem.OnContextMenu(cm);
                 cm.Show(this, location);
                 _cm = cm;
                 return true;

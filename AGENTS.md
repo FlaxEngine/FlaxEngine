@@ -31,7 +31,7 @@ Use these commands from the repo root.
 Generate project files:
 
 ```powershell
-.\GenerateProjectFiles.bat -vs2022 -log -verbose -printSDKs -dotnet=8
+.\GenerateProjectFiles.bat -vs2026 -log -verbose -printSDKs -dotnet=8
 ```
 
 Alternative default generation:
@@ -54,7 +54,7 @@ Run the editor:
 
 Visual Studio workflow after generation:
 
-- Open `Flax.sln`.
+- Open `Flax.slnx`.
 - Use solution configuration `Editor.Development` and platform `Win64`.
 - Set `Flax` or `FlaxEngine` as the startup project.
 

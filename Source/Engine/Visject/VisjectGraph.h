@@ -211,12 +211,8 @@ protected:
         return defaultValue;
     }
 
-    FORCE_INLINE Value tryGetValue(Box* box)
-    {
-        return box && box->Connections.HasItems() ? eatBox(box->GetParent<Node>(), (VisjectGraphBox*)box->Connections.Get()[0]) : Value::Zero;
-    }
-
-    FORCE_INLINE Value tryGetValue(Box* box, const Value& defaultValue)
+public:
+    FORCE_INLINE Value tryGetValue(Box* box, const Value& defaultValue = Value::Zero)
     {
         return box && box->Connections.HasItems() ? eatBox(box->GetParent<Node>(), (VisjectGraphBox*)box->Connections.Get()[0]) : defaultValue;
     }

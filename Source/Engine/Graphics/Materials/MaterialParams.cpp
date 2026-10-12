@@ -6,11 +6,12 @@
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Deprecated.h"
-#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Engine/GameplayGlobals.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Renderer/Utils/GlobalSignDistanceFieldPass.h"
 #include "Engine/Scripting/Enums.h"
@@ -148,11 +149,11 @@ Variant MaterialParameter::GetValue() const
     case MaterialParameterType::Vector3:
         return _asVector3;
     case MaterialParameterType::Vector4:
-        return *(Float4*)&AsData;
+        return *(Float4*)&_asData;
     case MaterialParameterType::Color:
         return _asColor;
     case MaterialParameterType::Matrix:
-        return Variant(*(Matrix*)&AsData);
+        return Variant(*(Matrix*)&_asData);
     case MaterialParameterType::NormalMap:
     case MaterialParameterType::Texture:
     case MaterialParameterType::CubeTexture:
@@ -162,7 +163,8 @@ Variant MaterialParameter::GetValue() const
     case MaterialParameterType::GPUTextureArray:
     case MaterialParameterType::GPUTextureCube:
     case MaterialParameterType::GPUTexture:
-        return _asGPUTexture.Get();
+    case MaterialParameterType::GPUBuffer:
+        return _asObject.Get();
     default:
         return Variant::Zero;
     }
@@ -192,13 +194,13 @@ void MaterialParameter::SetValue(const Variant& value)
         _asVector3 = (Float3)value;
         break;
     case MaterialParameterType::Vector4:
-        *(Float4*)&AsData = (Float4)value;
+        *(Float4*)&_asData = (Float4)value;
         break;
     case MaterialParameterType::Color:
         _asColor = (Color)value;
         break;
     case MaterialParameterType::Matrix:
-        *(Matrix*)&AsData = (Matrix)value;
+        *(Matrix*)&_asData = (Matrix)value;
         break;
     case MaterialParameterType::NormalMap:
     case MaterialParameterType::Texture:
@@ -230,20 +232,29 @@ void MaterialParameter::SetValue(const Variant& value)
     case MaterialParameterType::GPUTextureCube:
     case MaterialParameterType::GPUTextureArray:
     case MaterialParameterType::GPUTexture:
+    case MaterialParameterType::GPUBuffer:
         switch (value.Type.Type)
         {
         case VariantType::Null:
-            _asGPUTexture = nullptr;
+            _asObject = nullptr;
             break;
         case VariantType::Guid:
-            _asGPUTexture = *(Guid*)value.AsData;
+            _asObject = *(Guid*)value.AsData;
             break;
         case VariantType::Pointer:
-            _asGPUTexture = (GPUTexture*)value.AsPointer;
+            _asObject = (GPUResource*)value.AsPointer;
             break;
         case VariantType::Object:
-            _asGPUTexture = Cast<GPUTexture>(value.AsObject);
-            invalidType = _asGPUTexture == nullptr && value.AsObject != nullptr;
+            switch (_type)
+            {
+            case MaterialParameterType::GPUBuffer:
+                _asObject = Cast<GPUBuffer>(value.AsObject);
+                break;
+            default:
+                _asObject = Cast<GPUTexture>(value.AsObject);
+                break;
+            }
+            invalidType = _asObject == nullptr && value.AsObject != nullptr;
             break;
         default:
             invalidType = true;
@@ -310,7 +321,7 @@ void MaterialParameter::Bind(BindMeta& meta) const
         break;
     case MaterialParameterType::Vector4:
         ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)(_offset + sizeof(Float4)));
-        *((Float4*)(meta.Constants.Get() + _offset)) = *(Float4*)&AsData;
+        *((Float4*)(meta.Constants.Get() + _offset)) = *(Float4*)&_asData;
         break;
     case MaterialParameterType::Color:
         ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)(_offset + sizeof(Float4)));
@@ -318,7 +329,7 @@ void MaterialParameter::Bind(BindMeta& meta) const
         break;
     case MaterialParameterType::Matrix:
         ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)(_offset + sizeof(Matrix)));
-        Matrix::Transpose(*(Matrix*)&AsData, *(Matrix*)(meta.Constants.Get() + _offset));
+        Matrix::Transpose(*(Matrix*)&_asData, *(Matrix*)(meta.Constants.Get() + _offset));
         break;
     case MaterialParameterType::NormalMap:
     {
@@ -340,7 +351,7 @@ void MaterialParameter::Bind(BindMeta& meta) const
     }
     case MaterialParameterType::GPUTexture:
     {
-        const auto texture = _asGPUTexture.Get();
+        const auto texture = _asObject.As<GPUTexture>();
         const auto view = GET_TEXTURE_VIEW_SAFE(texture);
         meta.Context->BindSR(_registerIndex, view);
         break;
@@ -348,13 +359,15 @@ void MaterialParameter::Bind(BindMeta& meta) const
     case MaterialParameterType::GPUTextureArray:
     case MaterialParameterType::GPUTextureCube:
     {
-        const auto view = _asGPUTexture ? _asGPUTexture->ViewArray() : nullptr;
+        const auto texture = _asObject.As<GPUTexture>();
+        const auto view = texture ? texture->ViewArray() : nullptr;
         meta.Context->BindSR(_registerIndex, view);
         break;
     }
     case MaterialParameterType::GPUTextureVolume:
     {
-        const auto view = _asGPUTexture ? _asGPUTexture->ViewVolume() : nullptr;
+        const auto texture = _asObject.As<GPUTexture>();
+        const auto view = texture ? texture->ViewVolume() : nullptr;
         meta.Context->BindSR(_registerIndex, view);
         break;
     }
@@ -507,6 +520,13 @@ void MaterialParameter::Bind(BindMeta& meta) const
         *((GlobalSignDistanceFieldPass::ConstantsData*)(meta.Constants.Get() + _offset)) = bindingData.Constants;
         break;
     }
+    case MaterialParameterType::GPUBuffer:
+    {
+        const auto buffer = _asObject.As<GPUBuffer>();
+        const auto view = buffer ? buffer->View() : nullptr;
+        meta.Context->BindSR(_registerIndex, view);
+        break;
+    }
     default:
         break;
     }
@@ -550,19 +570,19 @@ void MaterialParameter::clone(const MaterialParameter* param)
         _asVector3 = param->_asVector3;
         break;
     case MaterialParameterType::Vector4:
-        *(Float4*)&AsData = *(Float4*)&param->AsData;
+        *(Float4*)&_asData = *(Float4*)&param->_asData;
         break;
     case MaterialParameterType::Color:
         _asColor = param->_asColor;
         break;
     case MaterialParameterType::Matrix:
-        *(Matrix*)&AsData = *(Matrix*)&param->AsData;
+        *(Matrix*)&_asData = *(Matrix*)&param->_asData;
         break;
     default:
         break;
     }
     _asAsset = param->_asAsset;
-    _asGPUTexture = param->_asGPUTexture;
+    _asObject = param->_asObject;
 }
 
 bool MaterialParameter::operator==(const MaterialParameter& other) const
@@ -731,13 +751,13 @@ bool MaterialParams::Load(ReadStream* stream)
                     stream->Read(param->_asVector3);
                     break;
                 case MaterialParameterType::Vector4:
-                    stream->Read((Float4&)param->AsData);
+                    stream->Read((Float4&)param->_asData);
                     break;
                 case MaterialParameterType::Color:
                     stream->Read(param->_asColor);
                     break;
                 case MaterialParameterType::Matrix:
-                    stream->Read((Matrix&)param->AsData);
+                    stream->Read((Matrix&)param->_asData);
                     break;
                 case MaterialParameterType::NormalMap:
                 case MaterialParameterType::Texture:
@@ -749,8 +769,9 @@ bool MaterialParams::Load(ReadStream* stream)
                 case MaterialParameterType::GPUTextureCube:
                 case MaterialParameterType::GPUTextureArray:
                 case MaterialParameterType::GPUTexture:
+                case MaterialParameterType::GPUBuffer:
                     stream->Read(id);
-                    param->_asGPUTexture = id;
+                    param->_asObject = id;
                     break;
                 case MaterialParameterType::GameplayGlobal:
                     stream->Read(id);
@@ -807,13 +828,13 @@ bool MaterialParams::Load(ReadStream* stream)
                     stream->Read(param->_asVector3);
                     break;
                 case MaterialParameterType::Vector4:
-                    stream->Read((Float4&)param->AsData);
+                    stream->Read((Float4&)param->_asData);
                     break;
                 case MaterialParameterType::Color:
                     stream->Read(param->_asColor);
                     break;
                 case MaterialParameterType::Matrix:
-                    stream->Read((Matrix&)param->AsData);
+                    stream->Read((Matrix&)param->_asData);
                     break;
                 case MaterialParameterType::NormalMap:
                 case MaterialParameterType::Texture:
@@ -825,8 +846,9 @@ bool MaterialParams::Load(ReadStream* stream)
                 case MaterialParameterType::GPUTextureCube:
                 case MaterialParameterType::GPUTextureArray:
                 case MaterialParameterType::GPUTexture:
+                case MaterialParameterType::GPUBuffer:
                     stream->Read(id);
-                    param->_asGPUTexture = id;
+                    param->_asObject = id;
                     break;
                 case MaterialParameterType::GameplayGlobal:
                     stream->Read(id);
@@ -882,13 +904,13 @@ bool MaterialParams::Load(ReadStream* stream)
                     stream->Read(param->_asVector3);
                     break;
                 case MaterialParameterType::Vector4:
-                    stream->Read((Float4&)param->AsData);
+                    stream->Read((Float4&)param->_asData);
                     break;
                 case MaterialParameterType::Color:
                     stream->Read(param->_asColor);
                     break;
                 case MaterialParameterType::Matrix:
-                    stream->Read((Matrix&)param->AsData);
+                    stream->Read((Matrix&)param->_asData);
                     break;
                 case MaterialParameterType::NormalMap:
                 case MaterialParameterType::Texture:
@@ -900,8 +922,9 @@ bool MaterialParams::Load(ReadStream* stream)
                 case MaterialParameterType::GPUTextureCube:
                 case MaterialParameterType::GPUTextureArray:
                 case MaterialParameterType::GPUTexture:
+                case MaterialParameterType::GPUBuffer:
                     stream->Read(id);
-                    param->_asGPUTexture = id;
+                    param->_asObject = id;
                     break;
                 case MaterialParameterType::GameplayGlobal:
                     stream->Read(id);
@@ -975,13 +998,13 @@ void MaterialParams::Save(WriteStream* stream)
             stream->Write(param->_asVector3);
             break;
         case MaterialParameterType::Vector4:
-            stream->Write((Float4&)param->AsData);
+            stream->Write((Float4&)param->_asData);
             break;
         case MaterialParameterType::Color:
             stream->Write(param->_asColor);
             break;
         case MaterialParameterType::Matrix:
-            stream->Write((Matrix&)param->AsData);
+            stream->Write((Matrix&)param->_asData);
             break;
         case MaterialParameterType::NormalMap:
         case MaterialParameterType::Texture:
@@ -994,7 +1017,8 @@ void MaterialParams::Save(WriteStream* stream)
         case MaterialParameterType::GPUTextureArray:
         case MaterialParameterType::GPUTextureCube:
         case MaterialParameterType::GPUTexture:
-            id = param->_asGPUTexture.GetID();
+        case MaterialParameterType::GPUBuffer:
+            id = param->_asObject.GetID();
             stream->Write(id);
             break;
         default:
@@ -1066,6 +1090,7 @@ void MaterialParams::Save(WriteStream* stream, const Array<SerializedMaterialPar
             case MaterialParameterType::GPUTextureCube:
             case MaterialParameterType::GPUTextureArray:
             case MaterialParameterType::GPUTexture:
+            case MaterialParameterType::GPUBuffer:
                 stream->Write(param.AsGuid);
                 break;
             default:

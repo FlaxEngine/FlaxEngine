@@ -220,9 +220,9 @@ namespace Flax.Build
         public static bool ProjectFormatCLion = false;
 
         /// <summary>
-        /// Generates Visual Studio 2022 project format files for Rider. Valid only with -genproject option.
+        /// Generates Visual Studio 2026 project format files for Rider. Valid only with -genproject option.
         /// </summary>
-        [CommandLine("rider", "Generates Visual Studio 2022 project format files for Rider. Valid only with -genproject option.")]
+        [CommandLine("rider", "Generates Visual Studio 2026 project format files for Rider. Valid only with -genproject option.")]
         public static bool ProjectFormatRider = false;
 
         /// <summary>

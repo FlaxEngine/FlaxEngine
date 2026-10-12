@@ -90,7 +90,7 @@ public:
     bool SkipDefaultFonts = false;
 
     /// <summary>
-    /// The maximum acceptable mesh vertex position error (in world units) for data quantization. Use 0 to disable this feature. Affects meshes during import (or reimpport).
+    /// The maximum acceptable mesh vertex position error (in world units) for data quantization. Use 0 to disable this feature. Affects meshes during import (or reimport).
     /// </summary>
     API_FIELD(Attributes="EditorOrder(2200), EditorDisplay(\"Content\"), ValueCategory(Utils.ValueCategory.Distance)")
     float MaxMeshPositionError = 0.5f;

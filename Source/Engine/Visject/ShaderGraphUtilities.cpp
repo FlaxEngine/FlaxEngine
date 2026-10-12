@@ -199,6 +199,9 @@ const Char* ShaderGraphUtilities::GenerateShaderResources(TextWriterUnicode& wri
             zeroOffset = false;
             registers = 2;
             break;
+        case MaterialParameterType::GPUBuffer:
+            format = TEXT("Buffer {0} : register(t{1});");
+            break;
         }
         if (format)
         {

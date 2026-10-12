@@ -426,21 +426,21 @@ namespace FlaxEditor.Options
         /// Gets or sets the automatic pause on error for debug log messages.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Debug Log", "Show error messages"), EditorOrder(370), Tooltip("Shows/hides error messages.")]
+        [EditorDisplay("Debug Log", "Show Error Messages"), EditorOrder(370), Tooltip("Shows/hides error messages.")]
         public bool DebugLogShowErrorMessages { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the automatic pause on error for debug log messages.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Debug Log", "Show warning messages"), EditorOrder(371), Tooltip("Shows/hides warning messages.")]
+        [EditorDisplay("Debug Log", "Show Warning Messages"), EditorOrder(371), Tooltip("Shows/hides warning messages.")]
         public bool DebugLogShowWarningMessages { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the automatic pause on error for debug log messages.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Debug Log", "Show info messages"), EditorOrder(372), Tooltip("Shows/hides info messages.")]
+        [EditorDisplay("Debug Log", "Show Info messages"), EditorOrder(372), Tooltip("Shows/hides info messages.")]
         public bool DebugLogShowInfoMessages { get; set; } = true;
 
         /// <summary>
@@ -519,7 +519,7 @@ namespace FlaxEditor.Options
         /// Gets or sets the value for automatic scroll to bottom in output log.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Output Log", "Scroll to bottom"), EditorOrder(470), Tooltip("Scroll the output log view to bottom automatically after new lines are added.")]
+        [EditorDisplay("Output Log", "Scroll To Bottom"), EditorOrder(470), Tooltip("Scroll the output log view to bottom automatically after new lines are added.")]
         public bool OutputLogScrollToBottom { get; set; } = true;
 
         /// <summary>
@@ -588,15 +588,15 @@ namespace FlaxEditor.Options
         /// Gets or sets a value that indicates if a warning should be displayed when deleting a Visject parameter that is used in a graph.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Visject", "Warn when deleting used parameter"), EditorOrder(552)]
+        [EditorDisplay("Visject", "Warn When Deleting Used Parameter"), EditorOrder(552)]
         public bool WarnOnDeletingUsedVisjectParameter { get; set; } = true;
 
         /// <summary>
-        /// Gets or sets a value indicating what should happen to unavaliable options in the content create menu.
+        /// Gets or sets a value indicating what should happen to unavailable options in the content create menu.
         /// </summary>
         [DefaultValue(DisabledHidden.Hidden)]
         [EditorDisplay("Content"), EditorOrder(600)]
-        public DisabledHidden UnavaliableContentCreateOptions { get; set; } = DisabledHidden.Hidden;
+        public DisabledHidden UnavailableContentCreateOptions { get; set; } = DisabledHidden.Hidden;
 
         private static FontAsset DefaultFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.PrimaryFont);
         private static FontAsset ConsoleFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.InconsolataRegularFont);

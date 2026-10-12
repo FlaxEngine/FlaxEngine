@@ -501,7 +501,7 @@ public:
     /// <typeparam name="T">Type of the object.</typeparam>
     /// <param name="activeOnly">Finds only active actors.</param>
     /// <returns>Found actors list.</returns>
-    template<typename T>
+    template<typename T = Actor>
     static Array<T*> GetActors(bool activeOnly = false)
     {
         Array<Actor*> actors = GetActors(T::GetStaticClass(), activeOnly);

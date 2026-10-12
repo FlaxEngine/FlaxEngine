@@ -1,6 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-namespace FlaxEditor.History
+namespace FlaxEditor
 {
     /// <summary>
     /// Interface for <see cref="HistoryStack"/> actions.

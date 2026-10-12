@@ -166,7 +166,7 @@ void MaterialGenerator::prepareLayer(MaterialLayer* layer, bool allowVisiblePara
     ASSERT(layer->HasAnyVariableName() == false);
 
     // Add all parameters to be saved in the result material parameters collection (perform merge)
-    bool isRooLayer = GetRootLayer() == layer;
+    bool isRootLayer = GetRootLayer() == layer;
     for (int32 j = 0; j < layer->Graph.Parameters.Count(); j++)
     {
         const auto param = &layer->Graph.Parameters[j];
@@ -174,7 +174,7 @@ void MaterialGenerator::prepareLayer(MaterialLayer* layer, bool allowVisiblePara
         // For all not root layers (sub-layers) we won't to change theirs ID in order to prevent duplicated ID)
         m.SrcId = param->Identifier;
         m.DstId = param->Identifier;
-        if (!isRooLayer)
+        if (!isRootLayer)
         {
             // Generate new ID (stable permutation based on the original ID)
             m.DstId.A += _parameters.Count() * 17 + 13;
@@ -280,6 +280,8 @@ void MaterialGenerator::prepareLayer(MaterialLayer* layer, bool allowVisiblePara
             }
             if (StringUtils::Compare(param->Type.TypeName, "FlaxEngine.GPUTexture") == 0)
                 mp.Type = MaterialParameterType::GPUTexture;
+            else if (StringUtils::Compare(param->Type.TypeName, "FlaxEngine.GPUBuffer") == 0)
+                mp.Type = MaterialParameterType::GPUBuffer;
             else
                 OnError(nullptr, nullptr, String::Format(TEXT("Invalid or unsupported material parameter type {0}."), param->Type));
             mp.AsGuid = (Guid)param->Value;

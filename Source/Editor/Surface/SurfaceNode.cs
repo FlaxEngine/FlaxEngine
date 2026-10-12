@@ -611,9 +611,9 @@ namespace FlaxEditor.Surface
         internal Box GetNextBox(Box box)
         {
             // Get the one after it
-            for (int i = box.IndexInParent + 1; i < Elements.Count; i++)
+            for (int i = box.IndexInParent + 1; i < Children.Count; i++)
             {
-                if (Elements[i] is Box b)
+                if (Children[i] is Box b)
                 {
                     return b;
                 }
@@ -625,9 +625,9 @@ namespace FlaxEditor.Surface
         internal Box GetPreviousBox(Box box)
         {
             // Get the one before it
-            for (int i = box.IndexInParent - 1; i >= 0; i--)
+            for (int i = box.IndexInParent - 1; i >= 0 && Children.Count > 0; i--)
             {
-                if (Elements[i] is Box b)
+                if (Children[i] is Box b)
                 {
                     return b;
                 }

@@ -3,6 +3,7 @@
 using System;
 using FlaxEditor.Content.Create;
 using FlaxEditor.Content.Thumbnails;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Viewport.Previews;
 using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
@@ -87,8 +88,18 @@ namespace FlaxEditor.Content
         {
             bool resetTransform = false;
             var transform = Transform.Identity;
+            if (arg is PrefabItem item)
+                arg = item.LoadAsync();
+            if (arg is Prefab prefab)
+            {
+                // Create prefab variant
+                var instance = PrefabManager.SpawnPrefab(prefab, null);
+                FlaxEngine.Object.Destroy(instance, 20.0f);
+                arg = instance;
+            }
             if (!(arg is Actor actor))
             {
+                // Show dialog with root actor type picker
                 Editor.Instance.ContentImporting.Create(new PrefabCreateEntry(outputPath));
                 return;
             }
@@ -103,6 +114,26 @@ namespace FlaxEditor.Content
             PrefabManager.CreatePrefab(actor, outputPath, true);
             if (resetTransform)
                 actor.LocalTransform = transform;
+        }
+
+        /// <inheritdoc />
+        public override void OnContentWindowContextMenu(ContextMenu menu, ContentItem item)
+        {
+            base.OnContentWindowContextMenu(menu, item);
+
+            if (item is PrefabItem prefabItem)
+            {
+                var button = menu.AddButton("Create Prefab Variant", OnCreatePrefabVariant);
+                button.TooltipText = "Creates a new prefab that uses this prefab as base (nested in) and allows for further customizations.";
+                button.Tag = prefabItem;
+            }
+        }
+
+        private void OnCreatePrefabVariant(ContextMenuButton button)
+        {
+            var prefabItem = (PrefabItem)button.Tag;
+            var newName = prefabItem.ShortName + " Variant";
+            Editor.Instance.Windows.ContentWin.NewItem(this, prefabItem, null, newName);
         }
 
         /// <inheritdoc />

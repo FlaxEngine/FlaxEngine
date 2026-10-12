@@ -79,7 +79,11 @@ void MaterialGenerator::ProcessGroupParameters(Box* box, Node* node, Value& valu
             case MaterialParameterType::GPUTexture:
                 sampleTexture(node, value, box, param, false);
                 break;
-            default: CRASH;
+            case MaterialParameterType::GPUBuffer:
+                value = Value(VariantType::Object, param->ShaderName);
+                break;
+            default:
+                CRASH;
                 break;
             }
         }

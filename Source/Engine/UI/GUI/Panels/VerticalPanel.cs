@@ -44,6 +44,15 @@ namespace FlaxEngine.GUI
             float w = Width - _margin.Width;
             float maxWidth = w;
             bool hasAnyTop = false, hasAnyBottom = false;
+
+            float itemHeight = 0;
+            if (_children.Count > 0)
+            {
+                float totalGaps = (_children.Count - 1) * Spacing;
+                float availableHeight = Height - totalGaps - _margin.Height;
+                itemHeight = availableHeight / _children.Count;
+            }
+
             for (int i = 0; i < _children.Count; i++)
             {
                 Control c = _children[i];
@@ -64,6 +73,11 @@ namespace FlaxEngine.GUI
                         hasAnyBottom = true;
                     }
                     maxWidth = Mathf.Max(maxWidth, cw);
+
+                    if (ExpandChildSize && !AutoSize)
+                    {
+                        c.Height = itemHeight;
+                    }
                 }
             }
             if (hasAnyTop)

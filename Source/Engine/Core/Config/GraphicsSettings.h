@@ -202,7 +202,7 @@ public:
 
 public:
     /// <summary>
-    /// The default Post Process settings. Can be overriden by PostFxVolume on a level locally, per camera or for a whole map.
+    /// The default Post Process settings. Can be overridden by PostFxVolume on a level locally, per camera or for a whole map.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(10000), EditorDisplay(\"Post Process Settings\", EditorDisplayAttribute.InlineStyle)")
     PostProcessSettings PostProcessSettings;
