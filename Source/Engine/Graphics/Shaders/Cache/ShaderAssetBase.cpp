@@ -318,7 +318,7 @@ bool ShaderAssetBase::LoadShaderCache(ShaderCacheResult& result)
             // Save results to cache
             if (ShaderCacheManager::SetCache(shaderProfile, cachedEntry, cacheStream))
             {
-                LOG(Warning, "Cannot save shader cache.");
+                LOG(Warning, "Cannot save shader cache '{}'.", cachedEntry.Path);
                 return true;
             }
         }

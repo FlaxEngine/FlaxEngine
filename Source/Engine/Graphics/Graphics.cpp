@@ -10,8 +10,19 @@
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerGPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
-#if !USE_EDITOR
+#if PLATFORM_DESKTOP
+#include "Engine/Profiler/ProfilerCPU.h"
+#endif
+#if USE_EDITOR
+#include "Engine/Platform/FileSystem.h"
+#include "Engine/Engine/Globals.h"
+#else
 #include "Engine/Render2D/Font.h"
+#if PLATFORM_WINDOWS
+#include "Engine/Core/Config/PlatformSettings.h"
+#include "Engine/Engine/Globals.h"
+#include "Engine/Platform/File.h"
+#endif
 #endif
 
 bool Graphics::UseVSync = false;
@@ -113,6 +124,92 @@ bool GraphicsService::Init()
     LOG(Info, "Creating Graphics Device...");
     PixelFormatExtensions::Init();
     GPUDevice* device = nullptr;
+
+    // Clearing GPU shaders cache and PSOs storage to run with a empty-state as first run
+#if PLATFORM_DESKTOP
+    bool clearShadersCache = CommandLine::Get(TEXT("gpuclear"));
+
+    // Auto-clear PSO/cache files on startup after game updates
+#if PLATFORM_WINDOWS && !USE_EDITOR
+    int32 shaderCacheVersion = PlatformSettings::Get()->ShaderCacheVersion, loadedCacheVersion = -1;
+    if (shaderCacheVersion != 0)
+    {
+        const String shaderVersionPath = Globals::ProductLocalFolder / TEXT("ShaderVersion.cache");
+        if (auto* shaderVersionFile = File::Open(shaderVersionPath, FileMode::OpenExisting, FileAccess::Read))
+        {
+            shaderVersionFile->Read(&loadedCacheVersion, sizeof(loadedCacheVersion));
+            Delete(shaderVersionFile);
+        }
+        if (shaderCacheVersion != loadedCacheVersion)
+        {
+            // Version mismatch (eg. after game update), so clear driver cache and save the current version
+            LOG(Info, "Loaded shaders cache version: {}, current version: {}", loadedCacheVersion, shaderCacheVersion);
+            clearShadersCache = true;
+            if (auto* shaderVersionFile = File::Open(shaderVersionPath, FileMode::CreateAlways, FileAccess::Write))
+            {
+                shaderVersionFile->Write(&shaderCacheVersion, sizeof(shaderCacheVersion));
+                Delete(shaderVersionFile);
+            }
+            else
+                LOG(Error, "Failed to save shaders cache version to '{}'", shaderVersionPath);
+        }
+    }
+#endif
+
+    if (clearShadersCache)
+    {
+        PROFILE_CPU_NAMED("Clear Shader Cache");
+        LOG(Info, "Cleaning GPU shaders cache");
+        auto ClearFolder = [](Array<String>& files, const String& folder)
+        {
+            files.Clear();
+            FileSystem::DirectoryGetFiles(files, folder, TEXT("*"), DirectorySearchOption::TopDirectoryOnly);
+            for (const String& file : files)
+                FileSystem::DeleteFile(file);
+        };
+        Array<String> files;
+#if USE_EDITOR
+#define CACHE_FOLDER Globals::ProjectCacheFolder
+#else
+#define CACHE_FOLDER Globals::ProductLocalFolder
+#endif
+
+#if USE_EDITOR
+        // Editor shaders cache
+        ClearFolder(files, CACHE_FOLDER / TEXT("Shaders"));
+#endif
+#if PLATFORM_WINDOWS
+        String localAppData;
+        FileSystem::GetSpecialFolderPath(SpecialFolder::LocalAppData, localAppData);
+
+        // Disk Cleanup utility clears folder %LOCALAPPDATA%\D3DSCache
+        String path = localAppData / TEXT("D3DSCache");
+        if (FileSystem::DirectoryExists(path))
+        {
+            FileSystem::DeleteDirectory(path);
+            FileSystem::CreateDirectory(path);
+        }
+
+        // Vulkan
+        FileSystem::DeleteFile(CACHE_FOLDER / TEXT("VulkanPipeline.cache"));
+        FileSystem::DeleteFile(CACHE_FOLDER / TEXT("VulkanValidation.cache"));
+#undef VULKAN_CACHE_FOLDER
+
+        // NVIDIA
+        ClearFolder(files, localAppData / TEXT("/NVIDIA/DXCache"));
+        ClearFolder(files, localAppData / TEXT("/../LocalLow/NVIDIA/PerDriverVersion/DXCache"));
+
+        // AMD
+        ClearFolder(files, localAppData / TEXT("/AMD/DxCache"));
+        ClearFolder(files, localAppData / TEXT("/AMD/DxcCache"));
+        ClearFolder(files, localAppData / TEXT("/../LocalLow/AMD/DxCache"));
+        ClearFolder(files, localAppData / TEXT("/../LocalLow/AMD/DxcCache"));
+
+        // Intel
+        ClearFolder(files, localAppData / TEXT("/../LocalLow/Intel/ShaderCache"));
+#endif
+    }
+#endif
 
     // Null
     if (!device && CommandLine::Options.Null.IsTrue())

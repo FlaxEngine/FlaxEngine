@@ -86,6 +86,12 @@ API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     bool SupportVulkan = false;
 
     /// <summary>
+    /// Custom version number for GPU shaders cache and PSOs storage. Increment it after major game updates to clear local GPU driver cache to avoid PSO hitches. Unused if set to 0.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2050), EditorDisplay(\"Graphics\")")
+    int32 ShaderCacheVersion = 0;
+
+    /// <summary>
     /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
     /// </summary>
     static WindowsPlatformSettings* Get();
