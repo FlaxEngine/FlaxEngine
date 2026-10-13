@@ -677,7 +677,7 @@ namespace FlaxEngine
                 data = ib;
                 format = _formats[(int)MeshBufferType.Index];
                 stride = PixelFormatExtensions.SizeInBytes(format);
-                count = data.Length / stride;
+                count = stride != 0 ? data.Length / stride : 0;
             }
             return new Stream(data, format, stride, count);
         }

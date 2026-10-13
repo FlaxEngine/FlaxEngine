@@ -378,7 +378,7 @@ MeshAccessor::Stream MeshAccessor::Index()
         data = ib;
         format = _formats[(int32)MeshBufferType::Index];
         stride = PixelFormatExtensions::SizeInBytes(format);
-        count = data.Length() / stride;
+        count = stride != 0 ? data.Length() / stride : 0;
     }
     return Stream(data, format, stride, count);
 }
