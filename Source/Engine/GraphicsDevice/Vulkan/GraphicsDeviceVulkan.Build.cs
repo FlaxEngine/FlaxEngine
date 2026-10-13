@@ -224,7 +224,7 @@ public class GraphicsDeviceVulkan : GraphicsDeviceBaseModule
         base.Setup(options);
 
         options.PublicDefinitions.Add("GRAPHICS_API_VULKAN");
-
+        options.PublicDefinitions.Add("COMPILE_WITH_PSO_PRECACHING");
         options.PrivateDependencies.Add("VulkanMemoryAllocator");
 
         switch (options.Platform.Target)

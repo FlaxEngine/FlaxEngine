@@ -5,6 +5,7 @@
 #include "GPUShaderDX12.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Graphics/GPUPipelineStateCache.h"
 #include "GPUShaderProgramDX12.h"
 #include "Types.h"
 #include "../RenderToolsDX.h"
@@ -77,6 +78,7 @@ ID3D12PipelineState* GPUShaderProgramCSDX12::GetOrCreateState()
     GetDebugName(name);
     ZoneText(name.Get(), name.Count() - 1);
 #endif
+    GPUPipelineStateLookup psoLookup;
 
     // Create description
     D3D12_COMPUTE_PIPELINE_STATE_DESC psDesc;

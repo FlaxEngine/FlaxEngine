@@ -9,6 +9,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
+#include "Engine/Graphics/GPUPipelineStateCache.h"
 #if GPU_D3D12_PSO_STREAM
 // TODO: migrate to Agility SDK and remove that custom header
 #include <ThirdParty/DirectX12Agility/d3dx12/d3dx12_pipeline_state_stream_custom.h>
@@ -110,6 +111,7 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
     GetDebugName(name);
     ZoneText(name.Get(), name.Count() - 1);
 #endif
+    GPUPipelineStateLookup psoLookup;
 
     // Setup description to match the pipeline
     GraphicsPipelineStateStreamDX12 desc = {};

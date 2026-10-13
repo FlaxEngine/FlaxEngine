@@ -447,6 +447,13 @@ public:
     /// </summary>
     API_FUNCTION(Attributes="DebugCommand") static void DumpResources();
 
+#if COMPILE_WITH_PSO_PRECACHING && !BUILD_RELEASE
+    /// <summary>
+    /// Dumps shaders and PSOs cache information to the log. Useful when profiling GPU driver hitches on DirectX 12 or Vulkan.
+    /// </summary>
+    API_FUNCTION(Attributes="DebugCommand") static void DumpPSOs();
+#endif
+
 protected:
     virtual void preDispose();
 
