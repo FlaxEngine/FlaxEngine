@@ -244,6 +244,17 @@ bool MeshAccessor::LoadBuffer(MeshBufferType bufferType, Span<byte> bufferData, 
     return false;
 }
 
+bool MeshAccessor::LoadBuffer(MeshBufferType bufferType, Span<byte> bufferData, PixelFormat format)
+{
+    const int32 stride = PixelFormatExtensions::SizeInBytes(format);
+    CHECK_RETURN(stride, true);
+    CHECK_RETURN(bufferData.IsValid(), true);
+    const int32 idx = (int32)bufferType;
+    _data[idx].Link(bufferData);
+    _formats[idx] = format;
+    return false;
+}
+
 bool MeshAccessor::LoadFromMeshData(const void* meshDataPtr)
 {
     if (!meshDataPtr)
