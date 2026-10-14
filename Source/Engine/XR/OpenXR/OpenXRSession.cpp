@@ -451,7 +451,7 @@ namespace
             // Create depth swapchain for the view (used by the runtime to improve the reprojection)
             if (depthFormat != PixelFormat::Unknown)
             {
-                swapchainInfo.usageFlags = XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+                swapchainInfo.usageFlags = XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT; // Scene depth is copied into it
                 swapchainInfo.format = graphics->ToNativeFormat(depthFormat);
                 result = xrCreateSwapchain(Session, &swapchainInfo, &swapchain.DepthHandle);
                 if (XR_FAILED(result))
