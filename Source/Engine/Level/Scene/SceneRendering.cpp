@@ -152,6 +152,10 @@ void SceneRendering::CollectPostFxVolumes(RenderContext& renderContext)
 
 void SceneRendering::Clear()
 {
+    // When unloading on crash during rendering, force unlock scene to clear it
+    if (_isRendering && Engine::FatalError != FatalErrorType::None)
+        Locker.WriteUnlock();
+
     ScopeWriteLock lock(Locker);
     for (auto* listener : _listeners)
     {

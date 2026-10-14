@@ -1127,6 +1127,12 @@ void GPUDeviceDX12::Dispose()
 
     // Clear DirectX stuff
     SAFE_DELETE(_adapter);
+#ifdef __ID3D12Device1_FWD_DEFINED__
+    SAFE_RELEASE(_device1);
+#endif
+#ifdef __ID3D12Device2_FWD_DEFINED__
+    SAFE_RELEASE(_device2);
+#endif
     SAFE_RELEASE(_device);
     SAFE_RELEASE(_factoryDXGI);
 

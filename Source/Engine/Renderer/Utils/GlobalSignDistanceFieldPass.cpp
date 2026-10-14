@@ -493,6 +493,10 @@ public:
 
     void OnSceneRenderingClear(SceneRendering* scene) override
     {
+        // When unloading on crash during rendering, force unlock scene to clear it
+        if (Engine::FatalError != FatalErrorType::None)
+            Locker.WriteUnlock();
+
         ScopeWriteLock lock(Locker);
         for (auto& cascade : Cascades)
         {
