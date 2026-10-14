@@ -107,7 +107,7 @@ namespace Flax.Deps.Dependencies
                     }
                     RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -Wno-dev " + cmakeArgs, envVars);
                     BuildCmake(buildDir, configuration);
-                    Utilities.Run("cmake", $"--install {buildDir} --prefix {installDir} --config {configuration}", null, root, Utilities.RunOptions.DefaultTool);
+                    Utilities.Run("cmake", $"--install \"{buildDir}\" --prefix \"{installDir}\" --config {configuration}", null, root, Utilities.RunOptions.DefaultTool);
                     Utilities.FileCopy(Path.Combine(installDir, "lib", libName), Path.Combine(depsFolder, libName));
                 }
             }
