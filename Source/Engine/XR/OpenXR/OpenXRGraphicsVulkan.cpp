@@ -23,22 +23,6 @@ namespace
     XrGraphicsBindingVulkan2KHR GraphicsBinding = { XR_TYPE_GRAPHICS_BINDING_VULKAN2_KHR };
     bool IsDeviceCreatedByRuntime = false;
 
-    bool GetGraphicsRequirements(XrInstance instance, XrSystemId systemId, XrGraphicsRequirementsVulkan2KHR& requirements)
-    {
-        // Get the Vulkan version required by the runtime
-        PFN_xrGetVulkanGraphicsRequirements2KHR getGraphicsRequirements = nullptr;
-        XrResult result = xrGetInstanceProcAddr(instance, "xrGetVulkanGraphicsRequirements2KHR", (PFN_xrVoidFunction*)&getGraphicsRequirements);
-        requirements = { XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN2_KHR };
-        if (XR_SUCCEEDED(result))
-            result = getGraphicsRequirements(instance, systemId, &requirements);
-        if (XR_FAILED(result))
-        {
-            LOG(Warning, "Failed to get OpenXR graphics requirements ({0})", OpenXRInstance::GetResultString(result));
-            return true;
-        }
-        return false;
-    }
-
     VkResult CreateVulkanInstance(const VkInstanceCreateInfo* createInfo, VkInstance* vulkanInstance)
     {
         // Create the instance by the runtime so it can add the extensions it needs
@@ -126,7 +110,7 @@ bool OpenXRGraphicsVulkan::SetupDeviceHints(XrInstance instance, XrSystemId syst
 {
     // Create the graphics device by the runtime (requirements have to be queried before)
     XrGraphicsRequirementsVulkan2KHR requirements;
-    if (GetGraphicsRequirements(instance, systemId, requirements))
+    if (GetGraphicsRequirements(instance, systemId, "xrGetVulkanGraphicsRequirements2KHR", XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN2_KHR, requirements))
         return true;
     GPUDeviceVulkan::CreateInstanceOverride.Bind(CreateVulkanInstance);
     GPUDeviceVulkan::GetPhysicalDeviceOverride.Bind(GetVulkanPhysicalDevice);
@@ -137,7 +121,7 @@ bool OpenXRGraphicsVulkan::SetupDeviceHints(XrInstance instance, XrSystemId syst
 bool OpenXRGraphicsVulkan::SetupDevice(XrInstance instance, XrSystemId systemId)
 {
     XrGraphicsRequirementsVulkan2KHR requirements;
-    if (GetGraphicsRequirements(instance, systemId, requirements))
+    if (GetGraphicsRequirements(instance, systemId, "xrGetVulkanGraphicsRequirements2KHR", XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN2_KHR, requirements))
         return true;
 
     // Check if the graphics device can be used by the runtime
@@ -174,21 +158,9 @@ int64 OpenXRGraphicsVulkan::ToNativeFormat(PixelFormat format) const
 bool OpenXRGraphicsVulkan::InitSwapchainImages(XrSwapchain swapchain, PixelFormat format, int32 width, int32 height, GPUTextureFlags flags, Array<GPUTexture*>& images)
 {
     // Get swapchain images
-    uint32 imagesCount = 0;
-    XrResult result = xrEnumerateSwapchainImages(swapchain, 0, &imagesCount, nullptr);
     Array<XrSwapchainImageVulkan2KHR> swapchainImages;
-    if (XR_SUCCEEDED(result))
-    {
-        swapchainImages.Resize(imagesCount);
-        for (auto& swapchainImage : swapchainImages)
-            swapchainImage = { XR_TYPE_SWAPCHAIN_IMAGE_VULKAN2_KHR };
-        result = xrEnumerateSwapchainImages(swapchain, imagesCount, &imagesCount, (XrSwapchainImageBaseHeader*)swapchainImages.Get());
-    }
-    if (XR_FAILED(result) || imagesCount == 0)
-    {
-        LOG(Warning, "Failed to get OpenXR swapchain images ({0})", OpenXRInstance::GetResultString(result));
+    if (GetSwapchainImages(swapchain, XR_TYPE_SWAPCHAIN_IMAGE_VULKAN2_KHR, swapchainImages))
         return true;
-    }
 
     // Render to the sRGB swapchain through the non-sRGB view (the engine output is already gamma-encoded, images are created with the mutable format)
     if (PixelFormatExtensions::IsSRGB(format))
@@ -198,9 +170,7 @@ bool OpenXRGraphicsVulkan::InitSwapchainImages(XrSwapchain swapchain, PixelForma
     const auto desc = GPUTextureDescription::New2D(width, height, format, flags);
     for (const auto& swapchainImage : swapchainImages)
     {
-        auto texture = GPUDevice::Instance->CreateTexture(TEXT("OpenXR.Swapchain"));
-        images.Add(texture);
-        if (texture->InitFromNative(desc, (void*)swapchainImage.image))
+        if (CreateSwapchainTexture(desc, (void*)swapchainImage.image, images))
             return true;
     }
 

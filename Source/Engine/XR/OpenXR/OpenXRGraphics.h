@@ -134,6 +134,70 @@ public:
     /// <param name="formats">The native formats supported by the runtime.</param>
     /// <returns>The selected format, or unknown if the runtime doesn't support any of the formats used by the engine.</returns>
     PixelFormat SelectSwapchainFormat(const Array<int64>& formats) const;
+
+protected:
+    /// <summary>
+    /// Gets the graphics requirements of the runtime for the graphics API of the backend.
+    /// </summary>
+    /// <param name="instance">The OpenXR instance.</param>
+    /// <param name="systemId">The head-mounted display system.</param>
+    /// <param name="functionName">The name of the extension function that gets the requirements.</param>
+    /// <param name="type">The type of the requirements structure.</param>
+    /// <param name="requirements">The result requirements.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    template<typename T>
+    static bool GetGraphicsRequirements(XrInstance instance, XrSystemId systemId, const char* functionName, XrStructureType type, T& requirements)
+    {
+        XrResult (XRAPI_PTR* getGraphicsRequirements)(XrInstance, XrSystemId, T*) = nullptr;
+        XrResult result = xrGetInstanceProcAddr(instance, functionName, (PFN_xrVoidFunction*)&getGraphicsRequirements);
+        requirements = { type };
+        if (XR_SUCCEEDED(result))
+            result = getGraphicsRequirements(instance, systemId, &requirements);
+        return CheckGraphicsRequirements(result);
+    }
+
+    /// <summary>
+    /// Gets the native images of the swapchain.
+    /// </summary>
+    /// <param name="swapchain">The swapchain.</param>
+    /// <param name="type">The type of the swapchain image structure.</param>
+    /// <param name="swapchainImages">The result images.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    template<typename T>
+    static bool GetSwapchainImages(XrSwapchain swapchain, XrStructureType type, Array<T>& swapchainImages)
+    {
+        uint32 imagesCount = 0;
+        XrResult result = xrEnumerateSwapchainImages(swapchain, 0, &imagesCount, nullptr);
+        if (XR_SUCCEEDED(result))
+        {
+            swapchainImages.Resize(imagesCount);
+            for (auto& swapchainImage : swapchainImages)
+                swapchainImage = { type };
+            result = xrEnumerateSwapchainImages(swapchain, imagesCount, &imagesCount, (XrSwapchainImageBaseHeader*)swapchainImages.Get());
+        }
+        return CheckSwapchainImages(result, imagesCount);
+    }
+
+    /// <summary>
+    /// Creates the texture for the native image of the swapchain and adds it to the list.
+    /// </summary>
+    /// <param name="desc">The texture description.</param>
+    /// <param name="nativeImage">The native image of the swapchain.</param>
+    /// <param name="images">The output textures.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    static bool CreateSwapchainTexture(const GPUTextureDescription& desc, void* nativeImage, Array<GPUTexture*>& images);
+
+    /// <summary>
+    /// Gets the format of the texture views used to render to the swapchain images. The engine output is already gamma-encoded so the sRGB swapchain is rendered through the non-sRGB views, which requires the typeless images.
+    /// </summary>
+    /// <param name="format">The swapchain format.</param>
+    /// <param name="imageFormat">The native format of the swapchain images.</param>
+    /// <returns>The format of the views.</returns>
+    PixelFormat GetSwapchainViewFormat(PixelFormat format, int64 imageFormat) const;
+
+private:
+    static bool CheckGraphicsRequirements(XrResult result);
+    static bool CheckSwapchainImages(XrResult result, uint32 imagesCount);
 };
 
 #endif

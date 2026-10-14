@@ -9,6 +9,7 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUResourceAccess.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #if GRAPHICS_API_DIRECTX11
 #include "OpenXRGraphicsD3D11.h"
@@ -125,6 +126,43 @@ PixelFormat OpenXRGraphics::SelectDepthSwapchainFormat(const Array<int64>& forma
 void OpenXRGraphics::TransitionImage(GPUContext* context, GPUTexture* image) const
 {
     context->Transition(image, image->IsDepthStencil() ? GPUResourceAccess::DepthWrite : GPUResourceAccess::RenderTarget);
+}
+
+bool OpenXRGraphics::CreateSwapchainTexture(const GPUTextureDescription& desc, void* nativeImage, Array<GPUTexture*>& images)
+{
+    auto texture = GPUDevice::Instance->CreateTexture(TEXT("OpenXR.Swapchain"));
+    images.Add(texture);
+    return texture->InitFromNative(desc, nativeImage);
+}
+
+PixelFormat OpenXRGraphics::GetSwapchainViewFormat(PixelFormat format, int64 imageFormat) const
+{
+    if (!PixelFormatExtensions::IsSRGB(format))
+        return format;
+    if (imageFormat == ToNativeFormat(PixelFormatExtensions::MakeTypeless(format)))
+        return PixelFormatExtensions::ToNonsRGB(format);
+    LOG(Warning, "OpenXR swapchain texture is not typeless, the headset image will be too bright");
+    return format;
+}
+
+bool OpenXRGraphics::CheckGraphicsRequirements(XrResult result)
+{
+    if (XR_FAILED(result))
+    {
+        LOG(Warning, "Failed to get OpenXR graphics requirements ({0})", OpenXRInstance::GetResultString(result));
+        return true;
+    }
+    return false;
+}
+
+bool OpenXRGraphics::CheckSwapchainImages(XrResult result, uint32 imagesCount)
+{
+    if (XR_FAILED(result) || imagesCount == 0)
+    {
+        LOG(Warning, "Failed to get OpenXR swapchain images ({0})", OpenXRInstance::GetResultString(result));
+        return true;
+    }
+    return false;
 }
 
 #endif
