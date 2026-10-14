@@ -32,6 +32,7 @@
 // Inline into this module to leave it as a header-only
 #include <ThirdParty/D3D12MemoryAllocator/D3D12MemAlloc.h>
 #include <ThirdParty/D3D12MemoryAllocator/D3D12MemAlloc.cpp>
+#include <ThirdParty/DirectX12Agility/d3dx12/d3dx12_check_feature_support.h>
 
 static bool CheckDX12Support(IDXGIAdapter* adapter)
 {
@@ -799,11 +800,12 @@ bool GPUDeviceDX12::Init()
     _state = DeviceState::Created;
 
     // Spawn some info about the hardware
-    D3D12_FEATURE_DATA_D3D12_OPTIONS options;
-    VALIDATE_DIRECTX_CALL(_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options)));
-    LOG(Info, "Tiled Resources Tier: {0}", (int32)options.TiledResourcesTier);
-    LOG(Info, "Resource Binding Tier: {0}", (int32)options.ResourceBindingTier);
-    LOG(Info, "Resource Heap Tier: {0}", (int32)options.ResourceHeapTier);
+    CD3DX12FeatureSupport featureSupport;
+    featureSupport.Init(_device);
+    LOG(Info, "Highest Shader Model: {0}", RenderToolsDX::GetShaderModelString(featureSupport.HighestShaderModel()));
+    LOG(Info, "Tiled Resources Tier: {0}", (int32)featureSupport.TiledResourcesTier());
+    LOG(Info, "Resource Binding Tier: {0}", (int32)featureSupport.ResourceBindingTier());
+    LOG(Info, "Resource Heap Tier: {0}", (int32)featureSupport.ResourceHeapTier());
 
     // Init device limits
     {
@@ -817,12 +819,13 @@ bool GPUDeviceDX12::Init()
         limits.HasAppendConsumeBuffers = true;
         limits.HasDepthAsSRV = true;
         limits.HasDepthClip = true;
+        limits.HasDepthBounds = !!featureSupport.DepthBoundsTestSupported();
         limits.HasReadOnlyDepth = true;
         PRAGMA_DISABLE_DEPRECATION_WARNINGS
         limits.HasMultisampleDepthAsSRV = true;
         limits.HasSeparateRenderTargetBlendState = true;
         PRAGMA_ENABLE_DEPRECATION_WARNINGS
-        limits.HasTypedUAVLoad = options.TypedUAVLoadAdditionalFormats != 0;
+        limits.HasTypedUAVLoad = featureSupport.TypedUAVLoadAdditionalFormats() != 0;
         limits.MaximumMipLevelsCount = D3D12_REQ_MIP_LEVELS;
         limits.MaximumTexture1DSize = D3D12_REQ_TEXTURE1D_U_DIMENSION;
         limits.MaximumTexture1DArraySize = D3D12_REQ_TEXTURE1D_ARRAY_AXIS_DIMENSION;
@@ -845,10 +848,6 @@ bool GPUDeviceDX12::Init()
                 support |= FormatSupport::UnorderedAccess;
             FeaturesPerFormat[i] = FormatFeatures(maximumMultisampleCount, support);
         }
-
-        D3D12_FEATURE_DATA_D3D12_OPTIONS2 options2 = {};
-        if (SUCCEEDED(_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS2, &options2, sizeof(options2))))
-            limits.HasDepthBounds = !!options2.DepthBoundsTestSupported;
     }
 
 #if USE_EDITOR || !BUILD_RELEASE

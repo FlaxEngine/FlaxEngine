@@ -248,6 +248,47 @@ const Char* RenderToolsDX::GetFeatureLevelString(D3D_FEATURE_LEVEL featureLevel)
         return TEXT("12");
     case D3D_FEATURE_LEVEL_12_1:
         return TEXT("12.1");
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 3)
+    case D3D_FEATURE_LEVEL_12_2:
+        return TEXT("12.2");
+#endif
+#endif
+    default:
+        return TEXT("?");
+    }
+}
+
+const Char* RenderToolsDX::GetShaderModelString(D3D_SHADER_MODEL shaderModel)
+{
+    switch (shaderModel)
+    {
+    case D3D_SHADER_MODEL_5_1:
+        return TEXT("5.1");
+    case D3D_SHADER_MODEL_6_0:
+        return TEXT("6.0");
+    case D3D_SHADER_MODEL_6_1:
+        return TEXT("6.1");
+    case D3D_SHADER_MODEL_6_2:
+        return TEXT("6.2");
+    case D3D_SHADER_MODEL_6_3:
+        return TEXT("6.3");
+    case D3D_SHADER_MODEL_6_4:
+        return TEXT("6.4");
+    case D3D_SHADER_MODEL_6_5:
+        return TEXT("6.5");
+    case D3D_SHADER_MODEL_6_6:
+        return TEXT("6.6");
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 3)
+    case D3D_SHADER_MODEL_6_7:
+        return TEXT("6.7");
+#endif
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 606)
+    case D3D_SHADER_MODEL_6_8:
+        return TEXT("6.8");
+#endif
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612)
+    case D3D_SHADER_MODEL_6_9:
+        return TEXT("6.9");
 #endif
     default:
         return TEXT("?");

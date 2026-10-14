@@ -58,6 +58,7 @@ namespace RenderToolsDX
 
     DXGI_FORMAT ToDxgiFormat(PixelFormat format);
     const Char* GetFeatureLevelString(D3D_FEATURE_LEVEL featureLevel);
+    const Char* GetShaderModelString(enum D3D_SHADER_MODEL shaderModel);
     uint32 CountAdapterOutputs(IDXGIAdapter* adapter);
     void LogD3DResult(HRESULT result, const char* file = nullptr, uint32 line = 0, bool fatal = false);
     LPCSTR GetVertexInputSemantic(VertexElement::Types type, UINT& semanticIndex);
