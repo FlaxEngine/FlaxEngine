@@ -472,6 +472,22 @@ LPCSTR RenderToolsDX::GetVertexInputSemantic(VertexElement::Types type, UINT& se
     }
 }
 
+void GPUAdapterDX::SelectRequired(const Array<GPUAdapterDX>& adapters, GPUAdapterDX& selectedAdapter)
+{
+    const uint64 requiredLuid = GPUDevice::CreationHints.RequiredAdapterLuid;
+    if (requiredLuid == 0)
+        return;
+    for (const auto& adapter : adapters)
+    {
+        if (adapter.GetLuid() == requiredLuid)
+        {
+            selectedAdapter = adapter;
+            return;
+        }
+    }
+    LOG(Warning, "Failed to find the required DirectX adapter (LUID: 0x{0:x}).", requiredLuid);
+}
+
 void GPUAdapterDX::GetDriverVersion()
 {
 #if GPU_DRIVER_DETECTION_WIN32_REGISTRY

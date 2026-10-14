@@ -532,22 +532,7 @@ GPUDevice* GPUDeviceDX12::Create()
             }
         }
     }
-    if (GPUDevice::CreationHints.RequiredAdapterLuid != 0)
-    {
-        bool found = false;
-        for (const auto& adapter : adapters)
-        {
-            const uint64 luid = ((uint64)(uint32)adapter.Description.AdapterLuid.HighPart << 32) | (uint64)adapter.Description.AdapterLuid.LowPart;
-            if (luid == GPUDevice::CreationHints.RequiredAdapterLuid)
-            {
-                selectedAdapter = adapter;
-                found = true;
-                break;
-            }
-        }
-        if (!found)
-            LOG(Warning, "Failed to find the required DirectX adapter (LUID: 0x{0:x}).", GPUDevice::CreationHints.RequiredAdapterLuid);
-    }
+    GPUAdapterDX::SelectRequired(adapters, selectedAdapter);
     if (!selectedAdapter.IsValid())
     {
         LOG(Error, "Failed to choose valid DirectX adapter!");
