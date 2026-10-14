@@ -306,6 +306,198 @@ namespace
             DestroySession();
     }
 
+    bool CreateReferenceSpace(XrReferenceSpaceType& spaceType)
+    {
+        // Use stage space if supported, otherwise local space
+        uint32 spacesCount = 0;
+        Array<XrReferenceSpaceType> spaces;
+        XrResult result = xrEnumerateReferenceSpaces(Session, 0, &spacesCount, nullptr);
+        if (XR_SUCCEEDED(result))
+        {
+            spaces.Resize(spacesCount);
+            result = xrEnumerateReferenceSpaces(Session, spacesCount, &spacesCount, spaces.Get());
+        }
+        spaceType = spaces.Contains(XR_REFERENCE_SPACE_TYPE_STAGE) ? XR_REFERENCE_SPACE_TYPE_STAGE : XR_REFERENCE_SPACE_TYPE_LOCAL;
+        XrReferenceSpaceCreateInfo spaceInfo = { XR_TYPE_REFERENCE_SPACE_CREATE_INFO };
+        spaceInfo.referenceSpaceType = spaceType;
+        spaceInfo.poseInReferenceSpace.orientation.w = 1.0f;
+        if (XR_SUCCEEDED(result))
+            result = xrCreateReferenceSpace(Session, &spaceInfo, &Space);
+        if (XR_FAILED(result))
+        {
+            LOG(Warning, "Failed to create OpenXR reference space ({0})", OpenXRInstance::GetResultString(result));
+            Space = XR_NULL_HANDLE;
+            return true;
+        }
+        return false;
+    }
+
+    XrEnvironmentBlendMode GetBlendMode()
+    {
+        // Use the blend mode preferred by the runtime
+        const XrInstance instance = OpenXRInstance::Instance;
+        const XrSystemId systemId = OpenXRInstance::SystemId;
+        uint32 blendModesCount = 0;
+        Array<XrEnvironmentBlendMode> blendModes;
+        XrResult result = xrEnumerateEnvironmentBlendModes(instance, systemId, ViewConfigurationType, 0, &blendModesCount, nullptr);
+        if (XR_SUCCEEDED(result))
+        {
+            blendModes.Resize(blendModesCount);
+            result = xrEnumerateEnvironmentBlendModes(instance, systemId, ViewConfigurationType, blendModesCount, &blendModesCount, blendModes.Get());
+        }
+        return XR_SUCCEEDED(result) && blendModes.HasItems() ? blendModes[0] : XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
+    }
+
+    bool GetViewConfiguration(Array<XrViewConfigurationView>& configViews)
+    {
+        const XrInstance instance = OpenXRInstance::Instance;
+        const XrSystemId systemId = OpenXRInstance::SystemId;
+        uint32 viewsCount = 0;
+        XrResult result = xrEnumerateViewConfigurationViews(instance, systemId, ViewConfigurationType, 0, &viewsCount, nullptr);
+        if (XR_SUCCEEDED(result))
+        {
+            configViews.Resize(viewsCount);
+            for (auto& configView : configViews)
+                configView = { XR_TYPE_VIEW_CONFIGURATION_VIEW };
+            result = xrEnumerateViewConfigurationViews(instance, systemId, ViewConfigurationType, viewsCount, &viewsCount, configViews.Get());
+        }
+        if (XR_FAILED(result) || viewsCount == 0)
+        {
+            LOG(Warning, "Failed to get OpenXR views ({0})", OpenXRInstance::GetResultString(result));
+            return true;
+        }
+        return false;
+    }
+
+    bool GetSwapchainFormats(PixelFormat& format, PixelFormat& depthFormat)
+    {
+        const OpenXRGraphics* graphics = OpenXRGraphics::Get();
+        uint32 formatsCount = 0;
+        Array<int64> formats;
+        XrResult result = xrEnumerateSwapchainFormats(Session, 0, &formatsCount, nullptr);
+        if (XR_SUCCEEDED(result))
+        {
+            formats.Resize(formatsCount);
+            result = xrEnumerateSwapchainFormats(Session, formatsCount, &formatsCount, formats.Get());
+        }
+        format = XR_SUCCEEDED(result) ? graphics->SelectSwapchainFormat(formats) : PixelFormat::Unknown;
+        if (format == PixelFormat::Unknown)
+        {
+            LOG(Warning, "Failed to get OpenXR swapchain format ({0})", OpenXRInstance::GetResultString(result));
+            return true;
+        }
+
+        // Depth is optional (unknown format if not submitted)
+        depthFormat = XRSettings::Get()->SubmitDepth && OpenXRInstance::SupportsDepthLayer ? graphics->SelectDepthSwapchainFormat(formats) : PixelFormat::Unknown;
+        return false;
+    }
+
+    bool CreateViewSwapchains(Swapchain& swapchain, const XrViewConfigurationView& configView, PixelFormat format, PixelFormat depthFormat)
+    {
+        OpenXRGraphics* graphics = OpenXRGraphics::Get();
+        const float renderScale = XRSettings::Get()->RenderScale;
+        XrSwapchainCreateInfo swapchainInfo = { XR_TYPE_SWAPCHAIN_CREATE_INFO };
+        swapchainInfo.usageFlags = XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT | XR_SWAPCHAIN_USAGE_SAMPLED_BIT;
+        if (PixelFormatExtensions::IsSRGB(format))
+            swapchainInfo.usageFlags |= XR_SWAPCHAIN_USAGE_MUTABLE_FORMAT_BIT; // Rendered through the non-sRGB view
+        swapchainInfo.format = graphics->ToNativeFormat(format);
+        swapchainInfo.sampleCount = 1;
+        swapchainInfo.width = (uint32)Math::Clamp(Math::RoundToInt((float)configView.recommendedImageRectWidth * renderScale), 1, (int32)configView.maxImageRectWidth);
+        swapchainInfo.height = (uint32)Math::Clamp(Math::RoundToInt((float)configView.recommendedImageRectHeight * renderScale), 1, (int32)configView.maxImageRectHeight);
+        swapchainInfo.faceCount = 1;
+        swapchainInfo.arraySize = 1;
+        swapchainInfo.mipCount = 1;
+        XrResult result = xrCreateSwapchain(Session, &swapchainInfo, &swapchain.Handle);
+        if (XR_FAILED(result))
+        {
+            LOG(Warning, "Failed to create OpenXR swapchain ({0})", OpenXRInstance::GetResultString(result));
+            swapchain.Handle = XR_NULL_HANDLE;
+            return true;
+        }
+        swapchain.Width = (int32)swapchainInfo.width;
+        swapchain.Height = (int32)swapchainInfo.height;
+        if (graphics->InitSwapchainImages(swapchain.Handle, format, swapchain.Width, swapchain.Height, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget, swapchain.Images))
+            return true;
+        if (depthFormat == PixelFormat::Unknown)
+            return false;
+
+        // Create depth swapchain for the view (used by the runtime to improve the reprojection)
+        swapchainInfo.usageFlags = XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT; // Scene depth is copied into it
+        swapchainInfo.format = graphics->ToNativeFormat(depthFormat);
+        result = xrCreateSwapchain(Session, &swapchainInfo, &swapchain.DepthHandle);
+        if (XR_FAILED(result))
+        {
+            LOG(Warning, "Failed to create OpenXR depth swapchain ({0})", OpenXRInstance::GetResultString(result));
+            swapchain.DepthHandle = XR_NULL_HANDLE;
+            return true;
+        }
+        return graphics->InitSwapchainImages(swapchain.DepthHandle, depthFormat, swapchain.Width, swapchain.Height, GPUTextureFlags::DepthStencil, swapchain.DepthImages);
+    }
+
+    void CreateViewTask(int32 viewIndex)
+    {
+        auto& swapchain = Swapchains[viewIndex];
+        swapchain.Task = New<SceneRenderTask>();
+        swapchain.Task->Enabled = false;
+        swapchain.Task->Order = -100 + viewIndex; // Render before the main view that is used to mirror the headset image (first view goes first)
+        if (swapchain.DepthHandle != XR_NULL_HANDLE)
+            swapchain.Task->Render.Bind(CopyViewDepth);
+        swapchain.Task->End.Bind(EndView);
+#if COMPILE_WITH_DEBUG_DRAW
+        swapchain.Task->PostRender.Bind(DrawViewDebug);
+#endif
+        if (Swapchains.Count() > 1)
+        {
+            // Use the same models LOD and shadow projections in all views
+            swapchain.Task->ProxyView = &ProxyView;
+        }
+        if (viewIndex > 0)
+        {
+            // Share the effects state (eg. global illumination), the shadow maps and the exposure of the first view so both eyes look the same
+            swapchain.Task->Buffers->LinkedCustomBuffers = Swapchains[0].Task->Buffers;
+            swapchain.Task->Buffers->LinkedShadows = Swapchains[0].Task->Buffers;
+            swapchain.Task->Buffers->LinkedEyeAdaptation = Swapchains[0].Task->Buffers;
+        }
+    }
+
+    bool CreateSessionResources()
+    {
+        XrReferenceSpaceType spaceType;
+        if (CreateReferenceSpace(spaceType))
+            return true;
+
+        // Setup controllers input (session can be used without it)
+        if (!OpenXRInput::IsInitialized())
+            OpenXRInput::Init(OpenXRInstance::Instance);
+        OpenXRInput::InitSession(Session, Space);
+
+        // Get views and formats
+        BlendMode = GetBlendMode();
+        Array<XrViewConfigurationView> configViews;
+        PixelFormat format, depthFormat;
+        if (GetViewConfiguration(configViews) || GetSwapchainFormats(format, depthFormat))
+            return true;
+
+        // Create swapchains and rendering task for each view
+        const int32 viewsCount = configViews.Count();
+        Swapchains.Resize(viewsCount);
+        Views.Resize(viewsCount);
+        ProjectionViews.Resize(viewsCount);
+        DepthInfos.Resize(viewsCount);
+        for (int32 i = 0; i < viewsCount; i++)
+        {
+            if (CreateViewSwapchains(Swapchains[i], configViews[i], format, depthFormat))
+                return true;
+            CreateViewTask(i);
+            Views[i] = { XR_TYPE_VIEW };
+            ProjectionViews[i] = { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW };
+            DepthInfos[i] = { XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR };
+        }
+
+        LOG(Info, "OpenXR session created. Views: {0}, Size: {1}x{2}, Format: {3}, Depth Format: {4}, Reference Space: {5}", viewsCount, Swapchains[0].Width, Swapchains[0].Height, ScriptingEnum::ToString(format), ScriptingEnum::ToString(depthFormat), spaceType == XR_REFERENCE_SPACE_TYPE_STAGE ? TEXT("Stage") : TEXT("Local"));
+        return false;
+    }
+
     bool CreateSession()
     {
         // Get head-mounted display system (the headset can be connected later)
@@ -320,13 +512,12 @@ namespace
             OpenXRInstance::Dispose();
             return true;
         }
-        OpenXRGraphics* graphics = OpenXRGraphics::Get();
 
         // Create session
         XrSessionCreateInfo createInfo = { XR_TYPE_SESSION_CREATE_INFO };
-        createInfo.next = graphics->GetGraphicsBinding();
+        createInfo.next = OpenXRGraphics::Get()->GetGraphicsBinding();
         createInfo.systemId = systemId;
-        XrResult result = xrCreateSession(instance, &createInfo, &Session);
+        const XrResult result = xrCreateSession(instance, &createInfo, &Session);
         if (XR_FAILED(result))
         {
             if (!CreateFailedLogged)
@@ -339,163 +530,12 @@ namespace
         }
         CreateFailedLogged = false;
 
-        // Create reference space (stage if supported, otherwise local)
-        uint32 spacesCount = 0;
-        Array<XrReferenceSpaceType> spaces;
-        result = xrEnumerateReferenceSpaces(Session, 0, &spacesCount, nullptr);
-        if (XR_SUCCEEDED(result))
+        // Create reference space, input and views (session cannot be used without them)
+        if (CreateSessionResources())
         {
-            spaces.Resize(spacesCount);
-            result = xrEnumerateReferenceSpaces(Session, spacesCount, &spacesCount, spaces.Get());
-        }
-        XrReferenceSpaceCreateInfo spaceInfo = { XR_TYPE_REFERENCE_SPACE_CREATE_INFO };
-        spaceInfo.referenceSpaceType = spaces.Contains(XR_REFERENCE_SPACE_TYPE_STAGE) ? XR_REFERENCE_SPACE_TYPE_STAGE : XR_REFERENCE_SPACE_TYPE_LOCAL;
-        spaceInfo.poseInReferenceSpace.orientation.w = 1.0f;
-        if (XR_SUCCEEDED(result))
-            result = xrCreateReferenceSpace(Session, &spaceInfo, &Space);
-        if (XR_FAILED(result))
-        {
-            LOG(Warning, "Failed to create OpenXR reference space ({0})", OpenXRInstance::GetResultString(result));
             DestroySession();
             return true;
         }
-
-        // Setup controllers input (session can be used without it)
-        if (!OpenXRInput::IsInitialized())
-            OpenXRInput::Init(instance);
-        OpenXRInput::InitSession(Session, Space);
-
-        // Get environment blend mode
-        uint32 blendModesCount = 0;
-        Array<XrEnvironmentBlendMode> blendModes;
-        result = xrEnumerateEnvironmentBlendModes(instance, systemId, ViewConfigurationType, 0, &blendModesCount, nullptr);
-        if (XR_SUCCEEDED(result))
-        {
-            blendModes.Resize(blendModesCount);
-            result = xrEnumerateEnvironmentBlendModes(instance, systemId, ViewConfigurationType, blendModesCount, &blendModesCount, blendModes.Get());
-        }
-        BlendMode = XR_SUCCEEDED(result) && blendModes.HasItems() ? blendModes[0] : XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
-
-        // Get views
-        uint32 viewsCount = 0;
-        Array<XrViewConfigurationView> configViews;
-        result = xrEnumerateViewConfigurationViews(instance, systemId, ViewConfigurationType, 0, &viewsCount, nullptr);
-        if (XR_SUCCEEDED(result))
-        {
-            configViews.Resize(viewsCount);
-            for (auto& configView : configViews)
-                configView = { XR_TYPE_VIEW_CONFIGURATION_VIEW };
-            result = xrEnumerateViewConfigurationViews(instance, systemId, ViewConfigurationType, viewsCount, &viewsCount, configViews.Get());
-        }
-        if (XR_FAILED(result) || viewsCount == 0)
-        {
-            LOG(Warning, "Failed to get OpenXR views ({0})", OpenXRInstance::GetResultString(result));
-            DestroySession();
-            return true;
-        }
-
-        // Get swapchain format
-        uint32 formatsCount = 0;
-        Array<int64> formats;
-        result = xrEnumerateSwapchainFormats(Session, 0, &formatsCount, nullptr);
-        if (XR_SUCCEEDED(result))
-        {
-            formats.Resize(formatsCount);
-            result = xrEnumerateSwapchainFormats(Session, formatsCount, &formatsCount, formats.Get());
-        }
-        const PixelFormat format = XR_SUCCEEDED(result) ? graphics->SelectSwapchainFormat(formats) : PixelFormat::Unknown;
-        if (format == PixelFormat::Unknown)
-        {
-            LOG(Warning, "Failed to get OpenXR swapchain format ({0})", OpenXRInstance::GetResultString(result));
-            DestroySession();
-            return true;
-        }
-        const PixelFormat depthFormat = XRSettings::Get()->SubmitDepth && OpenXRInstance::SupportsDepthLayer ? graphics->SelectDepthSwapchainFormat(formats) : PixelFormat::Unknown;
-
-        // Create swapchain for each view
-        const float renderScale = XRSettings::Get()->RenderScale;
-        Swapchains.Resize(viewsCount);
-        Views.Resize(viewsCount);
-        ProjectionViews.Resize(viewsCount);
-        DepthInfos.Resize(viewsCount);
-        for (uint32 i = 0; i < viewsCount; i++)
-        {
-            auto& swapchain = Swapchains[i];
-            XrSwapchainCreateInfo swapchainInfo = { XR_TYPE_SWAPCHAIN_CREATE_INFO };
-            swapchainInfo.usageFlags = XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT | XR_SWAPCHAIN_USAGE_SAMPLED_BIT;
-            if (PixelFormatExtensions::IsSRGB(format))
-                swapchainInfo.usageFlags |= XR_SWAPCHAIN_USAGE_MUTABLE_FORMAT_BIT; // Rendered through the non-sRGB view
-            swapchainInfo.format = graphics->ToNativeFormat(format);
-            swapchainInfo.sampleCount = 1;
-            swapchainInfo.width = (uint32)Math::Clamp(Math::RoundToInt((float)configViews[i].recommendedImageRectWidth * renderScale), 1, (int32)configViews[i].maxImageRectWidth);
-            swapchainInfo.height = (uint32)Math::Clamp(Math::RoundToInt((float)configViews[i].recommendedImageRectHeight * renderScale), 1, (int32)configViews[i].maxImageRectHeight);
-            swapchainInfo.faceCount = 1;
-            swapchainInfo.arraySize = 1;
-            swapchainInfo.mipCount = 1;
-            result = xrCreateSwapchain(Session, &swapchainInfo, &swapchain.Handle);
-            if (XR_FAILED(result))
-            {
-                LOG(Warning, "Failed to create OpenXR swapchain ({0})", OpenXRInstance::GetResultString(result));
-                swapchain.Handle = XR_NULL_HANDLE;
-                DestroySession();
-                return true;
-            }
-            swapchain.Width = (int32)swapchainInfo.width;
-            swapchain.Height = (int32)swapchainInfo.height;
-            if (graphics->InitSwapchainImages(swapchain.Handle, format, swapchain.Width, swapchain.Height, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget, swapchain.Images))
-            {
-                DestroySession();
-                return true;
-            }
-
-            // Create depth swapchain for the view (used by the runtime to improve the reprojection)
-            if (depthFormat != PixelFormat::Unknown)
-            {
-                swapchainInfo.usageFlags = XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT; // Scene depth is copied into it
-                swapchainInfo.format = graphics->ToNativeFormat(depthFormat);
-                result = xrCreateSwapchain(Session, &swapchainInfo, &swapchain.DepthHandle);
-                if (XR_FAILED(result))
-                {
-                    LOG(Warning, "Failed to create OpenXR depth swapchain ({0})", OpenXRInstance::GetResultString(result));
-                    swapchain.DepthHandle = XR_NULL_HANDLE;
-                    DestroySession();
-                    return true;
-                }
-                if (graphics->InitSwapchainImages(swapchain.DepthHandle, depthFormat, swapchain.Width, swapchain.Height, GPUTextureFlags::DepthStencil, swapchain.DepthImages))
-                {
-                    DestroySession();
-                    return true;
-                }
-            }
-
-            // Create task for rendering the view
-            swapchain.Task = New<SceneRenderTask>();
-            swapchain.Task->Enabled = false;
-            swapchain.Task->Order = -100 + (int32)i; // Render before the main view that is used to mirror the headset image (first view goes first)
-            if (depthFormat != PixelFormat::Unknown)
-                swapchain.Task->Render.Bind(CopyViewDepth);
-            swapchain.Task->End.Bind(EndView);
-#if COMPILE_WITH_DEBUG_DRAW
-            swapchain.Task->PostRender.Bind(DrawViewDebug);
-#endif
-            if (viewsCount > 1)
-            {
-                // Use the same models LOD and shadow projections in all views
-                swapchain.Task->ProxyView = &ProxyView;
-            }
-            if (i > 0)
-            {
-                // Share the effects state (eg. global illumination), the shadow maps and the exposure of the first view so both eyes look the same
-                swapchain.Task->Buffers->LinkedCustomBuffers = Swapchains[0].Task->Buffers;
-                swapchain.Task->Buffers->LinkedShadows = Swapchains[0].Task->Buffers;
-                swapchain.Task->Buffers->LinkedEyeAdaptation = Swapchains[0].Task->Buffers;
-            }
-            Views[i] = { XR_TYPE_VIEW };
-            ProjectionViews[i] = { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW };
-            DepthInfos[i] = { XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR };
-        }
-
-        LOG(Info, "OpenXR session created. Views: {0}, Size: {1}x{2}, Format: {3}, Depth Format: {4}, Reference Space: {5}", viewsCount, Swapchains[0].Width, Swapchains[0].Height, ScriptingEnum::ToString(format), ScriptingEnum::ToString(depthFormat), spaceInfo.referenceSpaceType == XR_REFERENCE_SPACE_TYPE_STAGE ? TEXT("Stage") : TEXT("Local"));
         return false;
     }
 
