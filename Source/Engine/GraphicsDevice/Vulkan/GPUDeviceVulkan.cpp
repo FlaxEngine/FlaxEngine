@@ -47,6 +47,9 @@ GPUDeviceVulkan::OptionalVulkanDeviceExtensions GPUDeviceVulkan::OptionalDeviceE
 VkInstance GPUDeviceVulkan::Instance = VK_NULL_HANDLE;
 Array<const char*> GPUDeviceVulkan::InstanceExtensions;
 Array<const char*> GPUDeviceVulkan::InstanceLayers;
+Function<VkResult(const VkInstanceCreateInfo*, VkInstance*)> GPUDeviceVulkan::CreateInstanceOverride;
+Function<VkPhysicalDevice(VkInstance)> GPUDeviceVulkan::GetPhysicalDeviceOverride;
+Function<VkResult(VkPhysicalDevice, const VkDeviceCreateInfo*, VkDevice*)> GPUDeviceVulkan::CreateDeviceOverride;
 
 bool SupportsDebugUtilsExt = false;
 #if VULKAN_USE_DEBUG_LAYER
@@ -1115,8 +1118,8 @@ GPUDevice* GPUDeviceVulkan::Create()
 #endif
 
     // Create Vulkan instance
-    if (GPUDevice::CreationHints.CreateVulkanInstance.IsBinded())
-        result = (VkResult)GPUDevice::CreationHints.CreateVulkanInstance(&instInfo, &Instance);
+    if (CreateInstanceOverride.IsBinded())
+        result = CreateInstanceOverride(&instInfo, &Instance);
     else
         result = vkCreateInstance(&instInfo, nullptr, &Instance);
     if (result == VK_ERROR_INCOMPATIBLE_DRIVER)
@@ -1292,7 +1295,7 @@ GPUDevice* GPUDeviceVulkan::Create()
             }
         }
     }
-    const VkPhysicalDevice requiredGpu = GPUDevice::CreationHints.GetVulkanPhysicalDevice.IsBinded() ? (VkPhysicalDevice)GPUDevice::CreationHints.GetVulkanPhysicalDevice(Instance) : VK_NULL_HANDLE;
+    const VkPhysicalDevice requiredGpu = GetPhysicalDeviceOverride.IsBinded() ? GetPhysicalDeviceOverride(Instance) : VK_NULL_HANDLE;
     if (requiredGpu != VK_NULL_HANDLE)
     {
         bool found = false;
@@ -1842,9 +1845,9 @@ bool GPUDeviceVulkan::Init()
 #endif
 
     // Create the device
-    if (GPUDevice::CreationHints.CreateVulkanDevice.IsBinded())
+    if (CreateDeviceOverride.IsBinded())
     {
-        VALIDATE_VULKAN_RESULT((VkResult)GPUDevice::CreationHints.CreateVulkanDevice(gpu, &deviceInfo, &Device));
+        VALIDATE_VULKAN_RESULT(CreateDeviceOverride(gpu, &deviceInfo, &Device));
     }
     else
     {

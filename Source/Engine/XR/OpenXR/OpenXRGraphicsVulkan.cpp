@@ -39,7 +39,7 @@ namespace
         return false;
     }
 
-    int32 CreateVulkanInstance(const void* createInfo, void* vulkanInstance)
+    VkResult CreateVulkanInstance(const VkInstanceCreateInfo* createInfo, VkInstance* vulkanInstance)
     {
         // Create the instance by the runtime so it can add the extensions it needs
         PFN_xrCreateVulkanInstanceKHR createInstance = nullptr;
@@ -52,18 +52,18 @@ namespace
             XrVulkanInstanceCreateInfoKHR info = { XR_TYPE_VULKAN_INSTANCE_CREATE_INFO_KHR };
             info.systemId = OpenXRInstance::SystemId;
             info.pfnGetInstanceProcAddr = vkGetInstanceProcAddr;
-            info.vulkanCreateInfo = (const VkInstanceCreateInfo*)createInfo;
-            result = createInstance(OpenXRInstance::Instance, &info, (VkInstance*)vulkanInstance, &vulkanResult);
+            info.vulkanCreateInfo = createInfo;
+            result = createInstance(OpenXRInstance::Instance, &info, vulkanInstance, &vulkanResult);
         }
         if (XR_SUCCEEDED(result))
             return vulkanResult;
 
         // Create the instance without the runtime (XR will be unavailable)
         LOG(Warning, "Failed to create Vulkan instance by OpenXR runtime ({0})", OpenXRInstance::GetResultString(result));
-        return vkCreateInstance((const VkInstanceCreateInfo*)createInfo, nullptr, (VkInstance*)vulkanInstance);
+        return vkCreateInstance(createInfo, nullptr, vulkanInstance);
     }
 
-    void* GetVulkanPhysicalDevice(void* vulkanInstance)
+    VkPhysicalDevice GetVulkanPhysicalDevice(VkInstance vulkanInstance)
     {
         // Use the physical device connected to the headset
         PFN_xrGetVulkanGraphicsDevice2KHR getGraphicsDevice = nullptr;
@@ -75,7 +75,7 @@ namespace
         {
             XrVulkanGraphicsDeviceGetInfoKHR info = { XR_TYPE_VULKAN_GRAPHICS_DEVICE_GET_INFO_KHR };
             info.systemId = OpenXRInstance::SystemId;
-            info.vulkanInstance = (VkInstance)vulkanInstance;
+            info.vulkanInstance = vulkanInstance;
             result = getGraphicsDevice(OpenXRInstance::Instance, &info, &physicalDevice);
         }
         if (XR_FAILED(result))
@@ -83,7 +83,7 @@ namespace
         return physicalDevice;
     }
 
-    int32 CreateVulkanDevice(void* physicalDevice, const void* createInfo, void* vulkanDevice)
+    VkResult CreateVulkanDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* createInfo, VkDevice* vulkanDevice)
     {
         // Create the device by the runtime so it can add the extensions it needs
         PFN_xrCreateVulkanDeviceKHR createDevice = nullptr;
@@ -96,9 +96,9 @@ namespace
             XrVulkanDeviceCreateInfoKHR info = { XR_TYPE_VULKAN_DEVICE_CREATE_INFO_KHR };
             info.systemId = OpenXRInstance::SystemId;
             info.pfnGetInstanceProcAddr = vkGetInstanceProcAddr;
-            info.vulkanPhysicalDevice = (VkPhysicalDevice)physicalDevice;
-            info.vulkanCreateInfo = (const VkDeviceCreateInfo*)createInfo;
-            result = createDevice(OpenXRInstance::Instance, &info, (VkDevice*)vulkanDevice, &vulkanResult);
+            info.vulkanPhysicalDevice = physicalDevice;
+            info.vulkanCreateInfo = createInfo;
+            result = createDevice(OpenXRInstance::Instance, &info, vulkanDevice, &vulkanResult);
         }
         if (XR_SUCCEEDED(result))
         {
@@ -108,7 +108,7 @@ namespace
 
         // Create the device without the runtime (XR will be unavailable)
         LOG(Warning, "Failed to create Vulkan device by OpenXR runtime ({0})", OpenXRInstance::GetResultString(result));
-        return vkCreateDevice((VkPhysicalDevice)physicalDevice, (const VkDeviceCreateInfo*)createInfo, nullptr, (VkDevice*)vulkanDevice);
+        return vkCreateDevice(physicalDevice, createInfo, nullptr, vulkanDevice);
     }
 }
 
@@ -128,9 +128,9 @@ bool OpenXRGraphicsVulkan::SetupDeviceHints(XrInstance instance, XrSystemId syst
     XrGraphicsRequirementsVulkan2KHR requirements;
     if (GetGraphicsRequirements(instance, systemId, requirements))
         return true;
-    GPUDevice::CreationHints.CreateVulkanInstance.Bind(CreateVulkanInstance);
-    GPUDevice::CreationHints.GetVulkanPhysicalDevice.Bind(GetVulkanPhysicalDevice);
-    GPUDevice::CreationHints.CreateVulkanDevice.Bind(CreateVulkanDevice);
+    GPUDeviceVulkan::CreateInstanceOverride.Bind(CreateVulkanInstance);
+    GPUDeviceVulkan::GetPhysicalDeviceOverride.Bind(GetVulkanPhysicalDevice);
+    GPUDeviceVulkan::CreateDeviceOverride.Bind(CreateVulkanDevice);
     return false;
 }
 
