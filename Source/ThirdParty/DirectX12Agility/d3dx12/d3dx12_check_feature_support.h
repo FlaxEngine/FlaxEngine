@@ -1,4 +1,4 @@
-﻿//*********************************************************
+//*********************************************************
 //
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License (MIT).
@@ -11,13 +11,9 @@
 #error D3DX12 requires C++
 #endif
 
-#include "d3d12.h"
-
 //================================================================================================
 // D3DX12 Check Feature Support
 //================================================================================================
-
-#include <vector>
 
 class CD3DX12FeatureSupport
 {
@@ -54,9 +50,6 @@ public: // Function declaration
 
     // FORMAT_SUPPORT
     HRESULT FormatSupport(DXGI_FORMAT Format, D3D12_FORMAT_SUPPORT1& Support1, D3D12_FORMAT_SUPPORT2& Support2) const;
-
-    // MUTLTISAMPLE_QUALITY_LEVELS
-    HRESULT MultisampleQualityLevels(DXGI_FORMAT Format, UINT SampleCount, D3D12_MULTISAMPLE_QUALITY_LEVEL_FLAGS Flags, UINT& NumQualityLevels) const;
 
     // FORMAT_INFO
     HRESULT FormatInfo(DXGI_FORMAT Format, UINT8& PlaneCount) const;
@@ -147,9 +140,6 @@ public: // Function declaration
     // PROTECTED_RESOURCE_SESSION_TYPE_COUNT
     UINT ProtectedResourceSessionTypeCount(UINT NodeIndex = 0) const;
 
-    // PROTECTED_RESOURCE_SESSION_TYPES
-    std::vector<GUID> ProtectedResourceSessionTypes(UINT NodeIndex = 0) const;
-
 #if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 3)
     // D3D12_OPTIONS8
     BOOL UnalignedBlockTexturesSupported() const noexcept;
@@ -231,12 +221,12 @@ public: // Function declaration
     BOOL ComputeOnlyWriteWatchSupported() const noexcept;
 #endif
 
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612) && PLATFORM_WINDOWS
     D3D12_EXECUTE_INDIRECT_TIER ExecuteIndirectTier() const noexcept;
     D3D12_WORK_GRAPHS_TIER WorkGraphsTier() const noexcept;
 #endif
 
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 617)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 617) && PLATFORM_WINDOWS
     D3D12_TIGHT_ALIGNMENT_TIER TightAlignmentSupportTier() const noexcept;
 #endif
 
@@ -250,11 +240,6 @@ public: // Function declaration
 
 
 private: // Private structs and helpers declaration
-    struct ProtectedResourceSessionTypesLocal : D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPES
-    {
-        std::vector<GUID> TypeVec;
-    };
-
     // Helper function to decide the highest shader model supported by the system
     // Stores the result in m_dShaderModel
     // Must be updated whenever a new shader model is added to the d3d12.h header
@@ -283,16 +268,13 @@ private: // Member data
     D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT m_dGPUVASupport;
     D3D12_FEATURE_DATA_SHADER_MODEL m_dShaderModel;
     D3D12_FEATURE_DATA_D3D12_OPTIONS1 m_dOptions1;
-    std::vector<D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT> m_dProtectedResourceSessionSupport;
     D3D12_FEATURE_DATA_ROOT_SIGNATURE m_dRootSignature;
-    std::vector<D3D12_FEATURE_DATA_ARCHITECTURE1> m_dArchitecture1;
     D3D12_FEATURE_DATA_D3D12_OPTIONS2 m_dOptions2;
     D3D12_FEATURE_DATA_SHADER_CACHE m_dShaderCache;
     D3D12_FEATURE_DATA_COMMAND_QUEUE_PRIORITY m_dCommandQueuePriority;
     D3D12_FEATURE_DATA_D3D12_OPTIONS3 m_dOptions3;
     D3D12_FEATURE_DATA_EXISTING_HEAPS m_dExistingHeaps;
     D3D12_FEATURE_DATA_D3D12_OPTIONS4 m_dOptions4;
-    std::vector<D3D12_FEATURE_DATA_SERIALIZATION> m_dSerialization; // Cat2 NodeIndex
     D3D12_FEATURE_DATA_CROSS_NODE m_dCrossNode;
     D3D12_FEATURE_DATA_D3D12_OPTIONS5 m_dOptions5;
 #if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 4)
@@ -300,8 +282,6 @@ private: // Member data
 #endif
     D3D12_FEATURE_DATA_D3D12_OPTIONS6 m_dOptions6;
     D3D12_FEATURE_DATA_D3D12_OPTIONS7 m_dOptions7;
-    std::vector<D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPE_COUNT> m_dProtectedResourceSessionTypeCount; // Cat2 NodeIndex
-    std::vector<ProtectedResourceSessionTypesLocal> m_dProtectedResourceSessionTypes; // Cat3
 #if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 3)
     D3D12_FEATURE_DATA_D3D12_OPTIONS8 m_dOptions8;
     D3D12_FEATURE_DATA_D3D12_OPTIONS9 m_dOptions9;
@@ -318,30 +298,32 @@ private: // Member data
 #endif
 #if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 606)
     D3D12_FEATURE_DATA_D3D12_OPTIONS14 m_dOptions14;
+#if PLATFORM_WINDOWS
     D3D12_FEATURE_DATA_D3D12_OPTIONS15 m_dOptions15;
 #endif
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 608)
+#endif
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 608) && PLATFORM_WINDOWS
     D3D12_FEATURE_DATA_D3D12_OPTIONS16 m_dOptions16;
 #endif
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 609)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 609) && PLATFORM_WINDOWS
     D3D12_FEATURE_DATA_D3D12_OPTIONS17 m_dOptions17;
 #endif
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 609)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 609) && PLATFORM_WINDOWS
     D3D12_FEATURE_DATA_D3D12_OPTIONS18 m_dOptions18;
 #endif
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 610)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 610) && PLATFORM_WINDOWS
     D3D12_FEATURE_DATA_D3D12_OPTIONS19 m_dOptions19;
 #endif
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 611)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 611) && PLATFORM_WINDOWS
     D3D12_FEATURE_DATA_D3D12_OPTIONS20 m_dOptions20;
 #endif
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612) && PLATFORM_WINDOWS
     D3D12_FEATURE_DATA_D3D12_OPTIONS21 m_dOptions21;
 #endif
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 619)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 619) && PLATFORM_WINDOWS
     D3D12_FEATURE_DATA_D3D12_OPTIONS22 m_dOptions22;
 #endif
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 617)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 617) && PLATFORM_WINDOWS
     D3D12_FEATURE_DATA_TIGHT_ALIGNMENT m_dTightAlignment;
 #endif
 };
@@ -418,30 +400,32 @@ inline CD3DX12FeatureSupport::CD3DX12FeatureSupport() noexcept
 #endif
 #if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 606)
 , m_dOptions14{}
+#if PLATFORM_WINDOWS
 , m_dOptions15{}
 #endif
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 608)
+#endif
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 608) && PLATFORM_WINDOWS
 , m_dOptions16{}
 #endif
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 609)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 609) && PLATFORM_WINDOWS
 , m_dOptions17{}
 #endif
-#if defined (D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 609)
+#if defined (D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 609) && PLATFORM_WINDOWS
 , m_dOptions18{}
 #endif
-#if defined (D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 610)
+#if defined (D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 610) && PLATFORM_WINDOWS
 , m_dOptions19{}
 #endif
-#if defined (D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 611)
+#if defined (D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 611) && PLATFORM_WINDOWS
 , m_dOptions20{}
 #endif
-#if defined (D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612)
+#if defined (D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612) && PLATFORM_WINDOWS
 , m_dOptions21{}
 #endif
-#if defined (D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 619)
+#if defined (D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 619) && PLATFORM_WINDOWS
 , m_dOptions22{}
 #endif
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 617)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 617) && PLATFORM_WINDOWS
 , m_dTightAlignment{}
 #endif
 {}
@@ -569,20 +553,22 @@ inline HRESULT CD3DX12FeatureSupport::Init(ID3D12Device* pDevice)
         m_dOptions14 = {};
     }
 
+#if PLATFORM_WINDOWS
     if (FAILED(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS15, &m_dOptions15, sizeof(m_dOptions15))))
     {
         m_dOptions15 = {};
     }
 #endif
+#endif
 
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 608)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 608) && PLATFORM_WINDOWS
     if (FAILED(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS16, &m_dOptions16, sizeof(m_dOptions16))))
     {
         m_dOptions16 = {};
     }
 #endif
 
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 609)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 609) && PLATFORM_WINDOWS
     if (FAILED(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS17, &m_dOptions17, sizeof(m_dOptions17))))
     {
         m_dOptions17 = {};
@@ -594,7 +580,7 @@ inline HRESULT CD3DX12FeatureSupport::Init(ID3D12Device* pDevice)
     }
 #endif
 
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 610)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 610) && PLATFORM_WINDOWS
     if (FAILED(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS19, &m_dOptions19, sizeof(m_dOptions19))))
     {
         m_dOptions19 = {};
@@ -605,21 +591,21 @@ inline HRESULT CD3DX12FeatureSupport::Init(ID3D12Device* pDevice)
     }
 #endif
 
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 611)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 611) && PLATFORM_WINDOWS
     if (FAILED(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS20, &m_dOptions20, sizeof(m_dOptions20))))
     {
         m_dOptions20 = {};
     }
 #endif
 
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612) && PLATFORM_WINDOWS
     if (FAILED(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS21, &m_dOptions21, sizeof(m_dOptions21))))
     {
         m_dOptions21 = {};
     }
 #endif
 
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 619)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 619) && PLATFORM_WINDOWS
     if (FAILED(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS22, &m_dOptions22, sizeof(m_dOptions22))))
     {
         m_dOptions22 = {};
@@ -628,62 +614,12 @@ inline HRESULT CD3DX12FeatureSupport::Init(ID3D12Device* pDevice)
 
 
 
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 617)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 617) && PLATFORM_WINDOWS
     if (FAILED(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_TIGHT_ALIGNMENT, &m_dTightAlignment, sizeof(m_dTightAlignment))))
     {
         m_dTightAlignment = {};
     }
 #endif
-
-    // Initialize per-node feature support data structures
-    const UINT uNodeCount = m_pDevice->GetNodeCount();
-    m_dProtectedResourceSessionSupport.resize(uNodeCount);
-    m_dArchitecture1.resize(uNodeCount);
-    m_dSerialization.resize(uNodeCount);
-    m_dProtectedResourceSessionTypeCount.resize(uNodeCount);
-    m_dProtectedResourceSessionTypes.resize(uNodeCount);
-    for (UINT NodeIndex = 0; NodeIndex < uNodeCount; NodeIndex++)
-    {
-        m_dProtectedResourceSessionSupport[NodeIndex].NodeIndex = NodeIndex;
-        if (FAILED(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_PROTECTED_RESOURCE_SESSION_SUPPORT, &m_dProtectedResourceSessionSupport[NodeIndex], sizeof(m_dProtectedResourceSessionSupport[NodeIndex]))))
-        {
-            m_dProtectedResourceSessionSupport[NodeIndex].Support = D3D12_PROTECTED_RESOURCE_SESSION_SUPPORT_FLAG_NONE;
-        }
-
-        m_dArchitecture1[NodeIndex].NodeIndex = NodeIndex;
-        if (FAILED(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE1, &m_dArchitecture1[NodeIndex], sizeof(m_dArchitecture1[NodeIndex]))))
-        {
-            D3D12_FEATURE_DATA_ARCHITECTURE dArchLocal = {};
-            dArchLocal.NodeIndex = NodeIndex;
-            if (FAILED(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE, &dArchLocal, sizeof(dArchLocal))))
-            {
-                dArchLocal.TileBasedRenderer = false;
-                dArchLocal.UMA = false;
-                dArchLocal.CacheCoherentUMA = false;
-            }
-
-            m_dArchitecture1[NodeIndex].TileBasedRenderer = dArchLocal.TileBasedRenderer;
-            m_dArchitecture1[NodeIndex].UMA = dArchLocal.UMA;
-            m_dArchitecture1[NodeIndex].CacheCoherentUMA = dArchLocal.CacheCoherentUMA;
-            m_dArchitecture1[NodeIndex].IsolatedMMU = false;
-        }
-
-        m_dSerialization[NodeIndex].NodeIndex = NodeIndex;
-        if (FAILED(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_SERIALIZATION, &m_dSerialization[NodeIndex], sizeof(m_dSerialization[NodeIndex]))))
-        {
-            m_dSerialization[NodeIndex].HeapSerializationTier = D3D12_HEAP_SERIALIZATION_TIER_0;
-        }
-
-        m_dProtectedResourceSessionTypeCount[NodeIndex].NodeIndex = NodeIndex;
-        if (FAILED(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_PROTECTED_RESOURCE_SESSION_TYPE_COUNT, &m_dProtectedResourceSessionTypeCount[NodeIndex], sizeof(m_dProtectedResourceSessionTypeCount[NodeIndex]))))
-        {
-            m_dProtectedResourceSessionTypeCount[NodeIndex].Count = 0;
-        }
-
-        // Special procedure to initialize local protected resource session types structs
-        // Must wait until session type count initialized
-        QueryProtectedResourceSessionTypes(NodeIndex, m_dProtectedResourceSessionTypeCount[NodeIndex].Count);
-    }
 
     // Initialize features that requires highest version check
     if (FAILED(m_hStatus = QueryHighestShaderModel()))
@@ -770,28 +706,6 @@ inline HRESULT CD3DX12FeatureSupport::FormatSupport(DXGI_FORMAT Format, D3D12_FO
     return result;
 }
 
-// 4: Multisample Quality Levels
-inline HRESULT CD3DX12FeatureSupport::MultisampleQualityLevels(DXGI_FORMAT Format, UINT SampleCount, D3D12_MULTISAMPLE_QUALITY_LEVEL_FLAGS Flags, UINT& NumQualityLevels) const
-{
-    D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS dMultisampleQualityLevels;
-    dMultisampleQualityLevels.Format = Format;
-    dMultisampleQualityLevels.SampleCount = SampleCount;
-    dMultisampleQualityLevels.Flags = Flags;
-
-    HRESULT result = m_pDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &dMultisampleQualityLevels, sizeof(D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS));
-
-    if (SUCCEEDED(result))
-    {
-        NumQualityLevels = dMultisampleQualityLevels.NumQualityLevels;
-    }
-    else
-    {
-        NumQualityLevels = 0;
-    }
-
-    return result;
-}
-
 // 5: Format Info
 inline HRESULT CD3DX12FeatureSupport::FormatInfo(DXGI_FORMAT Format, UINT8& PlaneCount) const
 {
@@ -828,24 +742,11 @@ FEATURE_SUPPORT_GET(UINT, m_dOptions1, TotalLaneCount);
 FEATURE_SUPPORT_GET(BOOL, m_dOptions1, ExpandedComputeResourceStates);
 FEATURE_SUPPORT_GET(BOOL, m_dOptions1, Int64ShaderOps);
 
-// 10: Protected Resource Session Support
-inline D3D12_PROTECTED_RESOURCE_SESSION_SUPPORT_FLAGS CD3DX12FeatureSupport::ProtectedResourceSessionSupport(UINT NodeIndex) const
-{
-    return m_dProtectedResourceSessionSupport[NodeIndex].Support;
-}
-
 // 12: Root Signature
 inline D3D_ROOT_SIGNATURE_VERSION CD3DX12FeatureSupport::HighestRootSignatureVersion() const noexcept
 {
     return m_dRootSignature.HighestVersion;
 }
-
-// 16: Architecture1
-// Same data fields can be queried from m_dArchitecture
-FEATURE_SUPPORT_GET_NODE_INDEXED(BOOL, m_dArchitecture1, TileBasedRenderer);
-FEATURE_SUPPORT_GET_NODE_INDEXED(BOOL, m_dArchitecture1, UMA);
-FEATURE_SUPPORT_GET_NODE_INDEXED(BOOL, m_dArchitecture1, CacheCoherentUMA);
-FEATURE_SUPPORT_GET_NODE_INDEXED(BOOL, m_dArchitecture1, IsolatedMMU);
 
 // 18: D3D12 Options2
 FEATURE_SUPPORT_GET(BOOL, m_dOptions2, DepthBoundsTestSupported);
@@ -883,9 +784,6 @@ FEATURE_SUPPORT_GET(BOOL, m_dOptions4, MSAA64KBAlignedTextureSupported);
 FEATURE_SUPPORT_GET(D3D12_SHARED_RESOURCE_COMPATIBILITY_TIER, m_dOptions4, SharedResourceCompatibilityTier);
 FEATURE_SUPPORT_GET(BOOL, m_dOptions4, Native16BitShaderOpsSupported);
 
-// 24: Serialization
-FEATURE_SUPPORT_GET_NODE_INDEXED(D3D12_HEAP_SERIALIZATION_TIER, m_dSerialization, HeapSerializationTier);
-
 // 25: Cross Node
 // CrossNodeSharingTier handled in D3D12Options
 FEATURE_SUPPORT_GET_NAME(BOOL, m_dCrossNode, AtomicShaderInstructions, CrossNodeAtomicShaderInstructions);
@@ -918,12 +816,6 @@ inline HRESULT CD3DX12FeatureSupport::QueryMetaCommand(D3D12_FEATURE_DATA_QUERY_
 // 32: D3D12 Options7
 FEATURE_SUPPORT_GET(D3D12_MESH_SHADER_TIER, m_dOptions7, MeshShaderTier);
 FEATURE_SUPPORT_GET(D3D12_SAMPLER_FEEDBACK_TIER, m_dOptions7, SamplerFeedbackTier);
-
-// 33: Protected Resource Session Type Count
-FEATURE_SUPPORT_GET_NODE_INDEXED_NAME(UINT, m_dProtectedResourceSessionTypeCount, Count, ProtectedResourceSessionTypeCount);
-
-// 34: Protected Resource Session Types
-FEATURE_SUPPORT_GET_NODE_INDEXED_NAME(std::vector<GUID>, m_dProtectedResourceSessionTypes, TypeVec, ProtectedResourceSessionTypes);
 
 #if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 3)
 // 36: Options8
@@ -970,16 +862,18 @@ FEATURE_SUPPORT_GET(BOOL, m_dOptions14, AdvancedTextureOpsSupported);
 FEATURE_SUPPORT_GET(BOOL, m_dOptions14, WriteableMSAATexturesSupported);
 FEATURE_SUPPORT_GET(BOOL, m_dOptions14, IndependentFrontAndBackStencilRefMaskSupported);
 
+#if PLATFORM_WINDOWS
 // 44: Options15
 FEATURE_SUPPORT_GET(BOOL, m_dOptions15, TriangleFanSupported);
 FEATURE_SUPPORT_GET(BOOL, m_dOptions15, DynamicIndexBufferStripCutSupported);
 #endif
+#endif
 
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 608)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 608) && PLATFORM_WINDOWS
 // 45: Options16
 FEATURE_SUPPORT_GET(BOOL, m_dOptions16, DynamicDepthBiasSupported);
 #endif
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 609)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 609) && PLATFORM_WINDOWS
 FEATURE_SUPPORT_GET(BOOL, m_dOptions16, GPUUploadHeapSupported);
 
 // 46: Options17
@@ -990,7 +884,7 @@ FEATURE_SUPPORT_GET(BOOL, m_dOptions17, ManualWriteTrackingResourceSupported);
 FEATURE_SUPPORT_GET(BOOL, m_dOptions18, RenderPassesValid);
 #endif
 
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 610)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 610) && PLATFORM_WINDOWS
 FEATURE_SUPPORT_GET(BOOL, m_dOptions19, MismatchingOutputDimensionsSupported);
 FEATURE_SUPPORT_GET(UINT, m_dOptions19, SupportedSampleCountsWithNoOutputs);
 FEATURE_SUPPORT_GET(BOOL, m_dOptions19, PointSamplingAddressesNeverRoundUp);
@@ -1002,23 +896,23 @@ FEATURE_SUPPORT_GET(UINT, m_dOptions19, MaxSamplerDescriptorHeapSizeWithStaticSa
 FEATURE_SUPPORT_GET(UINT, m_dOptions19, MaxViewDescriptorHeapSize);
 #endif
 
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 611)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 611) && PLATFORM_WINDOWS
 // 49: Options20
 FEATURE_SUPPORT_GET(BOOL, m_dOptions20, ComputeOnlyWriteWatchSupported);
 #endif
 
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612) && PLATFORM_WINDOWS
 // 50: Options21
 FEATURE_SUPPORT_GET(D3D12_EXECUTE_INDIRECT_TIER, m_dOptions21, ExecuteIndirectTier);
 FEATURE_SUPPORT_GET(D3D12_WORK_GRAPHS_TIER, m_dOptions21, WorkGraphsTier);
 #endif
 
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 617)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 617) && PLATFORM_WINDOWS
 // 51: TightAlignment
 FEATURE_SUPPORT_GET_NAME(D3D12_TIGHT_ALIGNMENT_TIER, m_dTightAlignment, SupportTier, TightAlignmentSupportTier);
 #endif
 
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 619)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 619) && PLATFORM_WINDOWS
 // 52: Options22
 FEATURE_SUPPORT_GET(BOOL, m_dOptions22, ShaderExecutionReorderingActuallyReorders);
 FEATURE_SUPPORT_GET(BOOL, m_dOptions22, CreateByteOffsetViewsSupported);
@@ -1037,10 +931,10 @@ inline HRESULT CD3DX12FeatureSupport::QueryHighestShaderModel()
 
     const D3D_SHADER_MODEL allModelVersions[] =
     {
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612) && PLATFORM_WINDOWS
         D3D_SHADER_MODEL_6_9,
 #endif
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 606)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 606) && PLATFORM_WINDOWS
         D3D_SHADER_MODEL_6_8,
 #endif
 #if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 3)
@@ -1086,7 +980,7 @@ inline HRESULT CD3DX12FeatureSupport::QueryHighestRootSignatureVersion()
 
     const D3D_ROOT_SIGNATURE_VERSION allRootSignatureVersions[] =
     {
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 609)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 609) && PLATFORM_WINDOWS
         D3D_ROOT_SIGNATURE_VERSION_1_2,
 #endif
         D3D_ROOT_SIGNATURE_VERSION_1_1,
@@ -1124,7 +1018,7 @@ inline HRESULT CD3DX12FeatureSupport::QueryHighestFeatureLevel()
     // Needs to be updated for future feature levels
     const D3D_FEATURE_LEVEL allLevels[] =
     {
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 3)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 3) && !PLATFORM_XBOX_ONE
         D3D_FEATURE_LEVEL_12_2,
 #endif
         D3D_FEATURE_LEVEL_12_1,
@@ -1136,10 +1030,10 @@ inline HRESULT CD3DX12FeatureSupport::QueryHighestFeatureLevel()
         D3D_FEATURE_LEVEL_9_3,
         D3D_FEATURE_LEVEL_9_2,
         D3D_FEATURE_LEVEL_9_1,
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 5)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 5) && PLATFORM_WINDOWS
         D3D_FEATURE_LEVEL_1_0_CORE,
 #endif
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 611)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 611) && PLATFORM_WINDOWS
         D3D_FEATURE_LEVEL_1_0_GENERIC
 #endif
     };
@@ -1163,25 +1057,6 @@ inline HRESULT CD3DX12FeatureSupport::QueryHighestFeatureLevel()
             result = S_OK;
         }
     }
-    return result;
-}
-
-// Helper function to initialize local protected resource session types structs
-inline HRESULT CD3DX12FeatureSupport::QueryProtectedResourceSessionTypes(UINT NodeIndex, UINT Count)
-{
-    auto& CurrentPRSTypes = m_dProtectedResourceSessionTypes[NodeIndex];
-    CurrentPRSTypes.NodeIndex = NodeIndex;
-    CurrentPRSTypes.Count = Count;
-    CurrentPRSTypes.TypeVec.resize(CurrentPRSTypes.Count);
-    CurrentPRSTypes.pTypes = CurrentPRSTypes.TypeVec.data();
-
-    HRESULT result = m_pDevice->CheckFeatureSupport(D3D12_FEATURE_PROTECTED_RESOURCE_SESSION_TYPES, &m_dProtectedResourceSessionTypes[NodeIndex], sizeof(D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPES));
-    if (FAILED(result))
-    {
-        // Resize TypeVec to empty
-        CurrentPRSTypes.TypeVec.clear();
-    }
-
     return result;
 }
 
