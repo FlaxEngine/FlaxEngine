@@ -10,6 +10,8 @@ using Flax.Build.NativeCpp;
 /// </summary>
 public class XR : EngineModule
 {
+    private static bool _logMissingLoader;
+
     /// <inheritdoc />
     public override void Setup(BuildOptions options)
     {
@@ -23,7 +25,9 @@ public class XR : EngineModule
         case TargetPlatform.Windows:
             if (options.Architecture == TargetArchitecture.x64)
             {
-                // OpenXR
+                // OpenXR (the loader has to be built for this platform, see OpenXR dependency)
+                if (!HasOpenXRLoader(options, "openxr_loader.lib"))
+                    break;
                 options.SourcePaths.Add(Path.Combine(FolderPath, "OpenXR"));
                 options.CompileEnv.PreprocessorDefinitions.Add("XR_API_OPENXR");
                 options.PrivateDependencies.Add("OpenXR");
@@ -41,7 +45,9 @@ public class XR : EngineModule
         case TargetPlatform.Linux:
             if (VulkanSdk.Instance.IsValid)
             {
-                // OpenXR
+                // OpenXR (the loader has to be built for this platform, see OpenXR dependency)
+                if (!HasOpenXRLoader(options, "libopenxr_loader.a"))
+                    break;
                 options.SourcePaths.Add(Path.Combine(FolderPath, "OpenXR"));
                 options.CompileEnv.PreprocessorDefinitions.Add("XR_API_OPENXR");
                 options.PrivateDependencies.Add("OpenXR");
@@ -53,6 +59,14 @@ public class XR : EngineModule
             // Not implemented
             break;
         }
+    }
+
+    private static bool HasOpenXRLoader(BuildOptions options, string libName)
+    {
+        if (File.Exists(Path.Combine(options.DepsFolder, libName)))
+            return true;
+        Log.WarningOnce(string.Format("Building for {0} without OpenXR (loader library is missing, run Flax.Build -BuildDeps -depsToBuild=OpenXR)", options.Platform.Target), ref _logMissingLoader);
+        return false;
     }
 
     /// <inheritdoc />
