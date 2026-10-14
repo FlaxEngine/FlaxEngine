@@ -168,15 +168,10 @@ bool GraphicsService::Init()
                 FileSystem::DeleteFile(file);
         };
         Array<String> files;
-#if USE_EDITOR
-#define CACHE_FOLDER Globals::ProjectCacheFolder
-#else
-#define CACHE_FOLDER Globals::ProductLocalFolder
-#endif
 
 #if USE_EDITOR
         // Editor shaders cache
-        ClearFolder(files, CACHE_FOLDER / TEXT("Shaders"));
+        ClearFolder(files, GPU_CACHE_FOLDER / TEXT("Shaders"));
 #endif
 #if PLATFORM_WINDOWS
         String localAppData;
@@ -191,9 +186,8 @@ bool GraphicsService::Init()
         }
 
         // Vulkan
-        FileSystem::DeleteFile(CACHE_FOLDER / TEXT("VulkanPipeline.cache"));
-        FileSystem::DeleteFile(CACHE_FOLDER / TEXT("VulkanValidation.cache"));
-#undef VULKAN_CACHE_FOLDER
+        FileSystem::DeleteFile(GPU_CACHE_FOLDER / TEXT("VulkanPipeline.cache"));
+        FileSystem::DeleteFile(GPU_CACHE_FOLDER / TEXT("VulkanValidation.cache"));
 
         // NVIDIA
         ClearFolder(files, localAppData / TEXT("/NVIDIA/DXCache"));

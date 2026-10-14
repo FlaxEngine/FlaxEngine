@@ -1505,12 +1505,6 @@ bool VulkanPlatformBase::SaveCache(const String& folder, const Char* filename, c
     return File::WriteAllBytes(path, data);
 }
 
-#if USE_EDITOR
-#define CACHE_FOLDER Globals::ProjectCacheFolder
-#else
-#define CACHE_FOLDER Globals::ProductLocalFolder
-#endif
-
 #if VULKAN_USE_PIPELINE_CACHE
 bool SavePipelineCacheAsync()
 {
@@ -1554,7 +1548,7 @@ bool GPUDeviceVulkan::SavePipelineCache(bool async, bool cached)
     PipelineCacheUsage = 0;
 
     // Save data
-    return VulkanPlatform::SaveCache(CACHE_FOLDER, TEXT("VulkanPipeline.cache"), PipelineCacheSaveData);
+    return VulkanPlatform::SaveCache(GPU_CACHE_FOLDER, TEXT("VulkanPipeline.cache"), PipelineCacheSaveData);
 #else
     return false;
 #endif
@@ -1583,7 +1577,7 @@ bool GPUDeviceVulkan::SaveValidationCache()
     LOG_VULKAN_RESULT_WITH_RETURN(result);
 
     // Save data
-    return VulkanPlatform::SaveCache(CACHE_FOLDER, TEXT("VulkanValidation.cache"), data);
+    return VulkanPlatform::SaveCache(GPU_CACHE_FOLDER, TEXT("VulkanValidation.cache"), data);
 }
 
 #endif
@@ -2062,7 +2056,7 @@ bool GPUDeviceVulkan::Init()
     if (vkCreatePipelineCache)
     {
         Array<uint8> data;
-        VulkanPlatform::LoadCache(CACHE_FOLDER, TEXT("VulkanPipeline.cache"), data);
+        VulkanPlatform::LoadCache(GPU_CACHE_FOLDER, TEXT("VulkanPipeline.cache"), data);
         VkPipelineCacheCreateInfo pipelineCacheCreateInfo;
         RenderToolsVulkan::ZeroStruct(pipelineCacheCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO);
         pipelineCacheCreateInfo.initialDataSize = data.Count();
@@ -2076,7 +2070,7 @@ bool GPUDeviceVulkan::Init()
     if (OptionalDeviceExtensions.HasEXTValidationCache && vkCreateValidationCacheEXT && vkDestroyValidationCacheEXT)
     {
         Array<uint8> data;
-        VulkanPlatform::LoadCache(CACHE_FOLDER, TEXT("VulkanValidation.cache"), data);
+        VulkanPlatform::LoadCache(GPU_CACHE_FOLDER, TEXT("VulkanValidation.cache"), data);
         if (data.HasItems())
         {
             int32* dataPtr = (int32*)data.Get();

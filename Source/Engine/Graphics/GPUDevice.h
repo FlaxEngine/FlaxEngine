@@ -589,3 +589,10 @@ struct FLAXENGINE_API GPUDeviceLock : NonCopyable
 #else
 #define GPU_GET_RESOURCE_NAME_FROM_ASSET(assetInfo) info->Path
 #endif
+
+// Folder path to put GPU cache file (eg. shader validation or PSO library data)
+#if USE_EDITOR
+#define GPU_CACHE_FOLDER Globals::ProjectCacheFolder
+#else
+#define GPU_CACHE_FOLDER Globals::ProductLocalFolder
+#endif
