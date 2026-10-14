@@ -15,6 +15,9 @@ class GPUVertexLayoutDX12 : public GPUResourceDX12<GPUVertexLayout>
 public:
 	GPUVertexLayoutDX12(GPUDeviceDX12* device, const Elements& elements, bool explicitOffsets);
 
+#if DX12_USE_PIPELINE_LIBRARY
+    uint64 Hash;
+#endif
 	uint32 InputElementsCount;
 	D3D12_INPUT_ELEMENT_DESC InputElements[GPU_MAX_VS_ELEMENTS];
 };

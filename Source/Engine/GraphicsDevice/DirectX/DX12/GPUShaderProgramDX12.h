@@ -116,12 +116,18 @@ private:
     GPUDeviceDX12* _device;
     Array<byte> _data;
     ID3D12PipelineState* _state;
+#if DX12_USE_PIPELINE_LIBRARY
+    DxShaderHashName _hashName;
+#endif
 
 public:
     GPUShaderProgramCSDX12(GPUDeviceDX12* device, const GPUShaderProgramInitializer& initializer, const DxShaderHeader* header, Span<byte> bytecode)
         : GPUShaderProgramDX12(initializer, header, bytecode)
         , _device(device)
         , _state(nullptr)
+#if DX12_USE_PIPELINE_LIBRARY
+        , _hashName(header->Hash)
+#endif
     {
     }
 

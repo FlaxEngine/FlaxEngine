@@ -484,7 +484,12 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
             }
         }
 
-        if (WriteShaderFunctionPermutation(_context, meta, permutationIndex, bindings, &header, sizeof(header), shaderBuffer->GetBufferPointer(), (int32)shaderBuffer->GetBufferSize()))
+        // Generate shader bytecode hash for PSOs
+        void* shaderCodePtr = shaderBuffer->GetBufferPointer();
+        int32 shaderCodeSize = (int32)shaderBuffer->GetBufferSize();
+        header.Hash = DxShaderHash::Generate(shaderCodePtr, shaderCodeSize);
+
+        if (WriteShaderFunctionPermutation(_context, meta, permutationIndex, bindings, &header, sizeof(header), shaderCodePtr, shaderCodeSize))
             return true;
 
         if (customDataWrite && customDataWrite(_context, meta, permutationIndex, _macros, additionalData))

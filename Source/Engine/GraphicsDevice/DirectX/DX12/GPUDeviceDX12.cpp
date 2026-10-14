@@ -28,6 +28,12 @@
 #include "Engine/Core/Utilities.h"
 #include "Engine/Threading/Threading.h"
 #include "CommandSignatureDX12.h"
+#if DX12_USE_PIPELINE_LIBRARY
+#include "Engine/Platform/File.h"
+#include "Engine/Platform/FileSystem.h"
+#include "Engine/Engine/Globals.h"
+#include "Engine/Threading/ThreadPoolTask.h"
+#endif
 
 // Inline into this module to leave it as a header-only
 #include <ThirdParty/D3D12MemoryAllocator/D3D12MemAlloc.h>
@@ -64,9 +70,10 @@ GPUVertexLayoutDX12::GPUVertexLayoutDX12(GPUDeviceDX12* device, const Elements& 
     , InputElementsCount(elements.Count())
 {
     SetElements(elements, explicitOffsets);
+    const VertexElement* ptr = GetElements().Get();
     for (int32 i = 0; i < elements.Count(); i++)
     {
-        const VertexElement& src = GetElements().Get()[i];
+        const VertexElement& src = ptr[i];
         D3D12_INPUT_ELEMENT_DESC& dst = InputElements[i];
         dst.SemanticName = RenderToolsDX::GetVertexInputSemantic(src.Type, dst.SemanticIndex);
         dst.Format = RenderToolsDX::ToDxgiFormat(src.Format);
@@ -75,6 +82,9 @@ GPUVertexLayoutDX12::GPUVertexLayoutDX12(GPUDeviceDX12* device, const Elements& 
         dst.InputSlotClass = src.PerInstance ? D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA : D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
         dst.InstanceDataStepRate = src.PerInstance ? 1 : 0;
     }
+#if DX12_USE_PIPELINE_LIBRARY
+    Hash = DxShaderHash::Generate(ptr, elements.Count() * sizeof(VertexElement));
+#endif
 }
 
 RootSignatureDX12::RootSignatureDX12()
@@ -806,6 +816,7 @@ bool GPUDeviceDX12::Init()
     LOG(Info, "Tiled Resources Tier: {0}", (int32)featureSupport.TiledResourcesTier());
     LOG(Info, "Resource Binding Tier: {0}", (int32)featureSupport.ResourceBindingTier());
     LOG(Info, "Resource Heap Tier: {0}", (int32)featureSupport.ResourceHeapTier());
+    LOG(Info, "Pipeline Library: {0}", (int32)featureSupport.ShaderCacheSupportFlags());
 
     // Init device limits
     {
@@ -976,12 +987,54 @@ bool GPUDeviceDX12::Init()
         DispatchIndirectCommandSignature->Finalize();
     }
 
+    // Load pipeline library for caching PSOs between game runs
+#if DX12_USE_PIPELINE_LIBRARY && defined(__ID3D12Device1_FWD_DEFINED__)
+    if (_device1 && EnumHasAllFlags(featureSupport.ShaderCacheSupportFlags(), D3D12_SHADER_CACHE_SUPPORT_LIBRARY))
+    {
+        // Load cache from file
+        String path = GPU_CACHE_FOLDER / TEXT("D3D12Library.cache");
+        if (FileSystem::FileExists(path))
+        {
+            if (File::ReadAllBytes(path, _pipelineLibInitData))
+                _pipelineLibInitData.Clear();
+            LOG(Info, "Loading D3D12 pipeline library from '{}' ({} kB)", path, _pipelineLibInitData.Count() / 1024);
+        }
+
+        // Create library
+        _device1->CreatePipelineLibrary(_pipelineLibInitData.Get(), _pipelineLibInitData.Count(), IID_PPV_ARGS(&PipelineLibrary));
+        if (!PipelineLibrary && _pipelineLibInitData.HasItems())
+        {
+            // Failed to initialize with specific data (eg. driver version changed, or different GPU used)
+            _pipelineLibInitData.Clear();
+            _device1->CreatePipelineLibrary(nullptr, 0, IID_PPV_ARGS(&PipelineLibrary));
+        }
+        if (!PipelineLibrary)
+            LOG(Error, "Failed to create Pipeline Library");
+        else
+        {
+            PipelineLibrary->QueryInterface(IID_PPV_ARGS(&PipelineLibrary1));
+        }
+        _pipelineLibSaveTime = Platform::GetTimeSeconds();
+    }
+#endif
+
     _state = DeviceState::Ready;
     return GPUDeviceDX::Init();
 }
 
 void GPUDeviceDX12::DrawBegin()
 {
+#if DX12_USE_PIPELINE_LIBRARY
+    // Serialize pipeline cache periodically for less PSO hitches on next app run
+    const double time = Platform::GetTimeSeconds();
+    const double saveTimeFrequency = Engine::FrameCount < 60 * Math::Clamp(Engine::GetFramesPerSecond(), 30, 60) ? 10 : 180; // More frequent saves during the first 1min of gameplay
+    if (Engine::HasFocus && time - _pipelineLibSaveTime >= saveTimeFrequency)
+    {
+        SavePipelineLibrary(true);
+        _pipelineLibSaveTime = time;
+    }
+#endif
+
     {
         PROFILE_CPU_NAMED("Wait For GPU");
         //_commandQueue->WaitForGPU();
@@ -1094,6 +1147,19 @@ void GPUDeviceDX12::Dispose()
 
     // Wait for rendering end
     WaitForGPU();
+
+#if DX12_USE_PIPELINE_LIBRARY
+    if (PipelineLibrary)
+    {
+        if (SavePipelineLibrary())
+            LOG(Warning, "Failed to save D3D12 pipeline library");
+        if (PipelineLibrary1)
+            PipelineLibrary1->Release();
+        PipelineLibrary->Release();
+        PipelineLibrary1 = nullptr;
+        PipelineLibrary = nullptr;
+    }
+#endif
 
     // Pre dispose
     preDispose();
@@ -1220,6 +1286,52 @@ GPUConstantBuffer* GPUDeviceDX12::CreateConstantBuffer(uint32 size, const String
     return New<GPUConstantBufferDX12>(this, size, name);
 }
 
+#if DX12_USE_PIPELINE_LIBRARY
+
+bool SavePipelineLibraryAsync()
+{
+    PROFILE_CPU();
+    ((GPUDeviceDX12*)GPUDevice::Instance)->SavePipelineLibrary(false, true);
+    return false;
+}
+
+bool GPUDeviceDX12::SavePipelineLibrary(bool async, bool cached)
+{
+    if (PipelineLibrary == nullptr || PipelineLibraryUsage == 0)
+        return false;
+    PROFILE_CPU();
+    PROFILE_MEM(Graphics);
+
+    if (!cached)
+    {
+        // Query data size
+        SIZE_T serializedSize = PipelineLibrary->GetSerializedSize();
+        if (serializedSize <= 0)
+            return false;
+
+        // Query data
+        _pipelineLibSaveData.Resize((int32)serializedSize);
+        HRESULT result = PipelineLibrary->Serialize(_pipelineLibSaveData.Get(), serializedSize);
+        LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
+    }
+
+    if (async)
+    {
+        // Kick off the async job that will save the cached bytes
+        Function<bool()> action(SavePipelineLibraryAsync);
+        return Task::StartNew(action) != nullptr;
+    }
+
+    // Reset usage counter
+    PipelineLibraryUsage = 0;
+
+    // Save data
+    String path = GPU_CACHE_FOLDER / TEXT("D3D12Library.cache");
+    LOG(Info, "Saving D3D12 pipeline library to '{}' ({} kB)", path, _pipelineLibSaveData.Count() / 1024);
+    return File::WriteAllBytes(path, _pipelineLibSaveData);
+}
+
+#endif
 
 void GPUDeviceDX12::AddResourceToLateRelease(IGraphicsUnknown* resource, D3D12MA::Allocation* allocation, uint32 safeFrameCount)
 {

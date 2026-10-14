@@ -189,6 +189,9 @@ bool GraphicsService::Init()
         FileSystem::DeleteFile(GPU_CACHE_FOLDER / TEXT("VulkanPipeline.cache"));
         FileSystem::DeleteFile(GPU_CACHE_FOLDER / TEXT("VulkanValidation.cache"));
 
+        // DirectX 12
+        FileSystem::DeleteFile(GPU_CACHE_FOLDER / TEXT("D3D12Library.cache"));
+
         // NVIDIA
         ClearFolder(files, localAppData / TEXT("/NVIDIA/DXCache"));
         ClearFolder(files, localAppData / TEXT("/../LocalLow/NVIDIA/PerDriverVersion/DXCache"));

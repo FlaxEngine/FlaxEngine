@@ -4,12 +4,14 @@
 
 #include "GPUPipelineStateDX12.h"
 #include "GPUShaderProgramDX12.h"
+#include "GPUShaderDX12.h"
 #include "GPUVertexLayoutDX12.h"
 #include "GPUTextureDX12.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/GPUPipelineStateCache.h"
+#include "Engine/Serialization/MemoryReadStream.h"
 #if GPU_D3D12_PSO_STREAM
 // TODO: migrate to Agility SDK and remove that custom header
 #include <ThirdParty/DirectX12Agility/d3dx12/d3dx12_pipeline_state_stream_custom.h>
@@ -67,9 +69,117 @@ static D3D12_STENCIL_OP ToStencilOp(StencilOperation value)
     };
 }
 
+GPUShaderProgram* GPUShaderDX12::CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, Span<byte> bytecode, MemoryReadStream& stream)
+{
+    // Extract the DX shader header from the cache
+    DxShaderHeader* header = (DxShaderHeader*)bytecode.Get();
+    bytecode = bytecode.Slice(sizeof(DxShaderHeader));
+
+    GPUShaderProgram* shader = nullptr;
+    switch (type)
+    {
+    case ShaderStage::Vertex:
+    {
+        GPUVertexLayout* inputLayout, * vertexLayout;
+        ReadVertexLayout(stream, inputLayout, vertexLayout);
+        shader = New<GPUShaderProgramVSDX12>(initializer, header, bytecode, inputLayout, vertexLayout);
+        break;
+    }
+#if GPU_ALLOW_TESSELLATION_SHADERS
+    case ShaderStage::Hull:
+    {
+        int32 controlPointsCount;
+        stream.ReadInt32(&controlPointsCount);
+        shader = New<GPUShaderProgramHSDX12>(initializer, header, bytecode, controlPointsCount);
+        break;
+    }
+    case ShaderStage::Domain:
+        shader = New<GPUShaderProgramDSDX12>(initializer, header, bytecode);
+        break;
+#else
+    case ShaderStage::Hull:
+    {
+        int32 controlPointsCount;
+        stream.ReadInt32(&controlPointsCount);
+        break;
+    }
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
+    case ShaderStage::Geometry:
+        shader = New<GPUShaderProgramGSDX12>(initializer, header, bytecode);
+        break;
+#endif
+    case ShaderStage::Pixel:
+        shader = New<GPUShaderProgramPSDX12>(initializer, header, bytecode);
+        break;
+    case ShaderStage::Compute:
+        shader = New<GPUShaderProgramCSDX12>(_device, initializer, header, bytecode);
+        break;
+    }
+    return shader;
+}
+
+ID3D12PipelineState* GPUShaderProgramCSDX12::GetOrCreateState()
+{
+    if (_state)
+        return _state;
+    PROFILE_CPU();
+#if !BUILD_RELEASE
+    DebugName name;
+    GetDebugName(name);
+    ZoneText(name.Get(), name.Count() - 1);
+#endif
+    GPUPipelineStateLookup psoLookup;
+    HRESULT result;
+
+    // Create description
+    D3D12_COMPUTE_PIPELINE_STATE_DESC psDesc;
+    Platform::MemoryClear(&psDesc, sizeof(D3D12_COMPUTE_PIPELINE_STATE_DESC));
+    psDesc.pRootSignature = _device->GetRootSignature();
+
+    // Shader
+    psDesc.CS = { GetBufferHandle(), GetBufferSize() };
+
+#if DX12_USE_PIPELINE_LIBRARY
+    // Try loading PSO using Pipeline Library
+    if (_device->PipelineLibrary)
+    {
+        result = _device->PipelineLibrary->LoadComputePipeline(_hashName, &psDesc, IID_PPV_ARGS(&_state));
+        if (result == S_OK)
+        {
+            return _state;
+        }
+        if (result != E_INVALIDARG)
+        {
+            LOG(Warning, "LoadComputePipeline failed");
+            LOG_DIRECTX_RESULT(result);
+        }
+    }
+#endif
+
+    // Create object
+    result = _device->GetDevice()->CreateComputePipelineState(&psDesc, IID_PPV_ARGS(&_state));
+    LOG_DIRECTX_RESULT(result);
+
+#if DX12_USE_PIPELINE_LIBRARY
+    // Store created PSO in Pipeline Library
+    if (_device->PipelineLibrary && result == S_OK)
+    {
+        result = _device->PipelineLibrary->StorePipeline(_hashName, _state);
+        if (result != E_INVALIDARG && result != S_OK)
+        {
+            LOG(Warning, "StorePipeline failed");
+            LOG_DIRECTX_RESULT(result);
+        }
+        _device->PipelineLibraryUsage++;
+    }
+#endif
+
+    return _state;
+}
+
 GPUPipelineStateDX12::GPUPipelineStateDX12(GPUDeviceDX12* device)
     : GPUResourceDX12(device, StringView::Empty)
-    , _states(16)
 {
 }
 
@@ -112,6 +222,7 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
     ZoneText(name.Get(), name.Count() - 1);
 #endif
     GPUPipelineStateLookup psoLookup;
+    HRESULT result;
 
     // Setup description to match the pipeline
     GraphicsPipelineStateStreamDX12 desc = {};
@@ -121,6 +232,7 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
     desc.RasterizerState = _rasterizer;
     desc.BlendState = _blend;
 #if GPU_D3D12_PSO_STREAM
+    D3D12_PIPELINE_STATE_STREAM_DESC streamDesc = { sizeof(desc), &desc };
     D3D12_RT_FORMAT_ARRAY rtFormats = {};
     rtFormats.NumRenderTargets = key.RTsCount;
     for (int32 i = 0; i < GPU_MAX_RT_BINDED; i++)
@@ -157,12 +269,62 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
     desc.VS = _shaderVS;
     desc.PS = _shaderPS;
 
+#if DX12_USE_PIPELINE_LIBRARY
+    // Mix PSO hash with dynamic state
+    uint64 hash = Header.Hash;
+    struct alignas(16) DataToHash
+    {
+        DXGI_SAMPLE_DESC SampleDesc;
+        DXGI_FORMAT DSVFormat;
+        D3D12_RT_FORMAT_ARRAY RTFormats;
+    } dataToHash;
+    dataToHash.SampleDesc = desc.SampleDesc;
+    dataToHash.DSVFormat = desc.DSVFormat;
+#if GPU_D3D12_PSO_STREAM
+    dataToHash.RTFormats = desc.RTFormats;
+    ID3D12PipelineLibrary1* pipelineLibrary = _device->PipelineLibrary1;
+#else
+    dataToHash.RTFormats.NumRenderTargets = desc.NumRenderTargets;
+    static_assert(ARRAY_COUNT(dataToHash.RTFormats.RTFormats) == ARRAY_COUNT(desc.RTVFormats), "Wrong RT count.");
+    Platform::MemoryCopy(dataToHash.RTFormats.RTFormats, desc.RTVFormats, ARRAY_COUNT(dataToHash.RTFormats.RTFormats));
+    ID3D12PipelineLibrary* pipelineLibrary = _device->PipelineLibrary;
+#endif
+    DxShaderHash::Combine(hash, DxShaderHash::Generate(&dataToHash, sizeof(dataToHash)));
+    if (vertexLayout)
+        DxShaderHash::Combine(hash, vertexLayout->Hash);
+    DxShaderHashName hashName(hash);
+#endif
+
+#if DX12_USE_PIPELINE_LIBRARY
+    // Try loading PSO using Pipeline Library
+    if (pipelineLibrary)
+    {
+#if GPU_D3D12_PSO_STREAM
+        result = pipelineLibrary->LoadPipeline(hashName, &streamDesc, IID_PPV_ARGS(&state));
+#else
+        result = pipelineLibrary->LoadGraphicsPipeline(hashName, &desc, IID_PPV_ARGS(&state));
+#endif
+        if (result == S_OK)
+        {
+#if GPU_ENABLE_RESOURCE_NAMING && !BUILD_RELEASE
+            SetDebugObjectName(state, name.Get(), name.Count() - 1);
+#endif
+            _states.Add(key, state);
+            return state;
+        }
+        if (result != E_INVALIDARG)
+        {
+            LOG(Warning, "LoadGraphicsPipeline failed");
+            LOG_DIRECTX_RESULT(result);
+        }
+    }
+#endif
+
     // Create object
 #if GPU_D3D12_PSO_STREAM
-    D3D12_PIPELINE_STATE_STREAM_DESC streamDesc = { sizeof(desc), &desc };
-    const HRESULT result = _device->GetDevice2()->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&state));
+    result = _device->GetDevice2()->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&state));
 #else
-    const HRESULT result = _device->GetDevice()->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&state));
+    result = _device->GetDevice()->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&state));
 #endif
     LOG_DIRECTX_RESULT(result);
     if (FAILED(result))
@@ -174,6 +336,20 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
     }
 #if GPU_ENABLE_RESOURCE_NAMING && !BUILD_RELEASE
     SetDebugObjectName(state, name.Get(), name.Count() - 1);
+#endif
+
+#if DX12_USE_PIPELINE_LIBRARY
+    // Store created PSO in Pipeline Library
+    if (pipelineLibrary)
+    {
+        result = pipelineLibrary->StorePipeline(hashName, state);
+        if (result != E_INVALIDARG && result != S_OK)
+        {
+            LOG(Warning, "StorePipeline failed");
+            LOG_DIRECTX_RESULT(result);
+        }
+        _device->PipelineLibraryUsage++;
+    }
 #endif
 
     // Cache it
@@ -211,6 +387,7 @@ bool GPUPipelineStateDX12::Init(const Description& desc)
         for (uint32 i = 0; i < uaCount; i++) \
             if (shader->Header.UaDimensions[i]) \
                 Header.UaDimensions[i] = shader->Header.UaDimensions[i]; \
+        DxShaderHash::Combine(Header.Hash, shader->Header.Hash); \
     } \
     else _shader##stage = {};
 #if GPU_ALLOW_TESSELLATION_SHADERS
@@ -305,6 +482,28 @@ bool GPUPipelineStateDX12::Init(const Description& desc)
 
     // Set non-zero memory usage
     _memoryUsage = sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC);
+
+#if DX12_USE_PIPELINE_LIBRARY
+    // Mix PSO hash with static state
+    struct alignas(16) DataToHash
+    {
+#if GPU_D3D12_PSO_STREAM
+        D3D12_DEPTH_STENCIL_DESC1 DepthStencil;
+#else
+        D3D12_DEPTH_STENCIL_DESC DepthStencil;
+#endif
+        D3D12_RASTERIZER_DESC Rasterizer;
+        D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimitiveTopology;
+        BOOL AlphaToCoverageEnable;
+        D3D12_RENDER_TARGET_BLEND_DESC BlendDesc;
+    } dataToHash;
+    dataToHash.DepthStencil = _depthStencil;
+    dataToHash.Rasterizer = _rasterizer;
+    dataToHash.PrimitiveTopology = _primitiveTopology;
+    dataToHash.AlphaToCoverageEnable = _blend.AlphaToCoverageEnable;
+    dataToHash.BlendDesc = _blend.RenderTarget[0];
+    DxShaderHash::Combine(Header.Hash, DxShaderHash::Generate(&dataToHash, sizeof(dataToHash)));
+#endif
 
     return GPUPipelineState::Init(desc);
 }

@@ -55,7 +55,6 @@ class GPUPipelineStateDX12 : public GPUResourceDX12<GPUPipelineState>
 {
 private:
     Dictionary<GPUPipelineStateKeyDX12, ID3D12PipelineState*> _states;
-    //GraphicsPipelineStateStreamDX12 _desc;
 #if GPU_D3D12_PSO_STREAM
     D3D12_DEPTH_STENCIL_DESC1 _depthStencil;
 #else

@@ -12,6 +12,10 @@
 #include "QueryHeapDX12.h"
 #include "DescriptorHeapDX12.h"
 
+#ifndef DX12_USE_PIPELINE_LIBRARY
+#define DX12_USE_PIPELINE_LIBRARY PLATFORM_WINDOWS
+#endif
+
 #if PLATFORM_WINDOWS
 #define DX12_BACK_BUFFER_COUNT 3
 #else
@@ -77,6 +81,11 @@ private:
     // Heaps
     DescriptorHeapWithSlotsDX12::Slot _nullSrv[D3D12_SRV_DIMENSION_TEXTURECUBEARRAY + 1];
     DescriptorHeapWithSlotsDX12::Slot _nullUav;
+
+    // Pipeline Library
+    Array<byte> _pipelineLibInitData; // Initial data must remain loaded whole time
+    Array<byte> _pipelineLibSaveData;
+    double _pipelineLibSaveTime = 0.0f;
 
 public:
 
@@ -167,6 +176,19 @@ public:
     DescriptorHeapRingBufferDX12 RingHeap_CBV_SRV_UAV;
     DescriptorHeapRingBufferDX12 RingHeap_Sampler;
 
+#if DX12_USE_PIPELINE_LIBRARY
+    ID3D12PipelineLibrary* PipelineLibrary = nullptr;
+    ID3D12PipelineLibrary1* PipelineLibrary1 = nullptr;
+    uint32 PipelineLibraryUsage = 0;
+
+    /// <summary>
+    /// Saves the pipeline library to file.
+    /// </summary>
+    /// <param name="async">Enables async writing to file to reduce stuttering of main thread.</param>
+    /// <param name="cached">Uses cached results from the last call to Serialize/GetSerializedSize, used to just save cached data when running in async.</param>
+    bool SavePipelineLibrary(bool async = false, bool cached = false);
+#endif
+
 public:
 
     // Add resource to late release service (will be released after 'safeFrameCount' frames)
@@ -179,14 +201,14 @@ public:
         return 0xffffffff;
     }
 
-#if PLATFORM_XBOX_SCARLETT ||PLATFORM_XBOX_ONE
+#if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
     void OnSuspended();
     void OnResumed();
 #endif
 
 private:
 
-#if PLATFORM_XBOX_SCARLETT ||PLATFORM_XBOX_ONE
+#if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
     void updateFrameEvents();
 #endif
     void updateRes2Dispose();
