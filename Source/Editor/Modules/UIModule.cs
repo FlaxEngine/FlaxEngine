@@ -835,6 +835,7 @@ namespace FlaxEditor.Modules
 #endif
             tooltip.Append("Configuration: ").AppendLine(configuration);
             tooltip.Append("Graphics: ").Append(GPUDevice.Instance.RendererType);
+            tooltip.Append(", ").Append(GPUDevice.Instance.Adapter.Description);
 #if PLATFORM_LINUX
             var driver = LinuxPlatform.DisplayServer;
             if (!string.IsNullOrEmpty(driver))
