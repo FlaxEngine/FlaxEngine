@@ -72,8 +72,17 @@ namespace FlaxEditor.Modules
         private Label _progressLabel;
         private ProgressBar _progressBar;
         private Button _outputLogButton;
+        private enum XRStatus
+        {
+            Disconnected,
+            Connecting,
+            HeadsetNotFound,
+            Ready,
+            Active,
+        }
+
         private Label _xrStatusLabel;
-        private int _xrStatus = -1;
+        private XRStatus? _xrStatus;
         private List<Status> _statusMessages;
         private int _statusID = 1;
         private ContentStats _contentStats;
@@ -587,18 +596,15 @@ namespace FlaxEditor.Modules
             // Show XR runtime state
             if (_xrStatusLabel != null)
             {
-                var xrStatus = XR.IsActive ? 4 : XR.IsAvailable ? 3 : XR.IsConnected ? 2 : XR.IsConnecting ? 1 : 0;
+                var xrStatus = GetXRStatus();
                 if (xrStatus != _xrStatus)
                 {
                     _xrStatus = xrStatus;
-                    if (xrStatus == 1)
-                        _xrStatusLabel.Text = "Connecting to XR runtime...";
-                    else if (xrStatus != 0)
-                        _xrStatusLabel.Text = string.Format("{0} {1}: {2}", XR.RuntimeName, XR.RuntimeVersion, xrStatus == 4 ? "Active" : xrStatus == 3 ? "Ready" : "Head-mounted display not found");
-                    _xrStatusLabel.TooltipText = xrStatus >= 3 ? "Head-mounted display: " + XR.SystemName : null;
+                    _xrStatusLabel.Text = GetXRStatusText(xrStatus);
+                    _xrStatusLabel.TooltipText = xrStatus == XRStatus.Ready || xrStatus == XRStatus.Active ? "Head-mounted display: " + XR.SystemName : null;
                     UpdateToolstrip();
                 }
-                _xrStatusLabel.Visible = xrStatus != 0 && !ProgressVisible;
+                _xrStatusLabel.Visible = xrStatus != XRStatus.Disconnected && !ProgressVisible;
             }
         }
 
@@ -1311,6 +1317,29 @@ namespace FlaxEditor.Modules
             var options = Editor.Options.Options;
             options.Interface.PlayButtonAction = newPlayAction;
             Editor.Options.Apply(options);
+        }
+
+        private static XRStatus GetXRStatus()
+        {
+            if (XR.IsActive)
+                return XRStatus.Active;
+            if (XR.IsAvailable)
+                return XRStatus.Ready;
+            if (XR.IsConnected)
+                return XRStatus.HeadsetNotFound;
+            return XR.IsConnecting ? XRStatus.Connecting : XRStatus.Disconnected;
+        }
+
+        private static string GetXRStatusText(XRStatus status)
+        {
+            switch (status)
+            {
+            case XRStatus.Connecting: return "Connecting to XR runtime...";
+            case XRStatus.HeadsetNotFound: return string.Format("{0} {1}: Head-mounted display not found", XR.RuntimeName, XR.RuntimeVersion);
+            case XRStatus.Ready: return string.Format("{0} {1}: Ready", XR.RuntimeName, XR.RuntimeVersion);
+            case XRStatus.Active: return string.Format("{0} {1}: Active", XR.RuntimeName, XR.RuntimeVersion);
+            default: return string.Empty;
+            }
         }
 
         private void TogglePlayInVR()
