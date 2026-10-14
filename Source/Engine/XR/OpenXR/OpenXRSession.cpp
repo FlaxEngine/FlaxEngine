@@ -243,7 +243,7 @@ namespace
 
     void SetMirror(bool enable)
     {
-        // Use the main view to mirror the headset image instead of rendering the scene again
+        // Use the main view to mirror the headset image instead of rendering the scene again (the main view is marked as custom rendering so the game code uses the headset views as the scene views)
         const auto mainTask = MainRenderTask::Instance;
         if (IsMirrorEnabled == enable || mainTask == nullptr)
             return;
@@ -614,7 +614,6 @@ namespace
     void EndFrame()
     {
         IsFrameBegun = false;
-        SetMirror(false);
 
         // Release swapchain images (rendering commands have to be submitted before)
         if (HasProjectionLayer)
@@ -622,7 +621,6 @@ namespace
         for (int32 i = 0; i < Swapchains.Count(); i++)
         {
             auto& swapchain = Swapchains[i];
-            swapchain.Task->Enabled = false;
             swapchain.Task->Output = nullptr;
             swapchain.DepthOutput = nullptr;
             ReleaseImage(swapchain.Handle, swapchain.IsAcquired);
@@ -647,6 +645,93 @@ namespace
         PROFILE_CPU_NAMED("xrEndFrame");
         xrEndFrame(Session, &endInfo);
         HasProjectionLayer = false;
+    }
+
+    bool TrySetupViews()
+    {
+        // Locate views at the predicted display time
+        XrViewLocateInfo locateInfo = { XR_TYPE_VIEW_LOCATE_INFO };
+        locateInfo.viewConfigurationType = ViewConfigurationType;
+        locateInfo.displayTime = FrameState.predictedDisplayTime;
+        locateInfo.space = Space;
+        XrViewState viewState = { XR_TYPE_VIEW_STATE };
+        uint32 viewsCount = 0;
+        XrResult result = xrLocateViews(Session, &locateInfo, &viewState, (uint32)Views.Count(), &viewsCount, Views.Get());
+        if (XR_FAILED(result) || (viewState.viewStateFlags & XR_VIEW_STATE_ORIENTATION_VALID_BIT) == 0)
+            return false;
+
+        // Locate controllers again for rendering
+        OpenXRInput::LocatePoses(FrameState.predictedDisplayTime);
+
+        const Camera* camera = Camera::GetMainCamera();
+        const Transform origin = XR::GetTrackingOrigin();
+
+        // Setup each view
+        for (int32 i = 0; i < Swapchains.Count(); i++)
+        {
+            auto& swapchain = Swapchains[i];
+            uint32 imageIndex = 0, depthImageIndex = 0;
+            if (AcquireImage(swapchain.Handle, swapchain.IsAcquired, imageIndex))
+                return false;
+            if (swapchain.DepthHandle != XR_NULL_HANDLE && AcquireImage(swapchain.DepthHandle, swapchain.IsDepthAcquired, depthImageIndex))
+                return false;
+
+            // Setup the view
+            auto task = swapchain.Task;
+            auto& view = task->View;
+            if (camera)
+            {
+                view.Near = camera->GetNearPlane();
+                view.Far = camera->GetFarPlane();
+                view.RenderLayersMask = camera->RenderLayersMask;
+                view.Flags = camera->RenderFlags;
+                view.Mode = camera->RenderMode;
+            }
+            const Transform pose = origin.LocalToWorld(OpenXRConvert::ToTransform(Views[i].pose));
+            if (i == 0)
+                LargeWorlds::UpdateOrigin(view.Origin, pose.Translation);
+            else
+                view.Origin = Swapchains[0].Task->View.Origin; // Use the same origin in all views to share the shadow maps
+            view.Position = pose.Translation - view.Origin;
+            view.Direction = pose.GetForward();
+            Matrix viewMatrix, projectionMatrix;
+            Matrix::LookAt(view.Position, view.Position + view.Direction, pose.GetUp(), viewMatrix);
+            OpenXRConvert::ToProjection(Views[i].fov, view.Near, view.Far, projectionMatrix);
+            view.SetUp(viewMatrix, projectionMatrix);
+
+            // Disable effects that don't work in the head-mounted display (head movement would blur the whole view, focus doesn't follow the eyes, flares differ between the eyes)
+            view.Flags &= ~(ViewFlags::MotionBlur | ViewFlags::DepthOfField | ViewFlags::LensFlares);
+
+            // Render to the swapchain image
+            task->Output = swapchain.Images[imageIndex];
+
+            // Drop the history of the temporal effects if the view was not rendered in the previous frame (eg. headset was taken off)
+            if (task->LastUsedFrame + 1 < Engine::FrameCount)
+                task->IsCameraCut = true;
+
+            auto& projectionView = ProjectionViews[i];
+            projectionView.pose = Views[i].pose;
+            projectionView.fov = Views[i].fov;
+            projectionView.subImage.swapchain = swapchain.Handle;
+            projectionView.subImage.imageRect.offset = { 0, 0 };
+            projectionView.subImage.imageRect.extent = { swapchain.Width, swapchain.Height };
+
+            // Setup depth (copied from the scene depth buffer after rendering)
+            if (swapchain.DepthHandle != XR_NULL_HANDLE)
+            {
+                swapchain.DepthOutput = swapchain.DepthImages[depthImageIndex];
+                auto& depthInfo = DepthInfos[i];
+                depthInfo.subImage.swapchain = swapchain.DepthHandle;
+                depthInfo.subImage.imageRect = projectionView.subImage.imageRect;
+                depthInfo.minDepth = 0.0f;
+                depthInfo.maxDepth = 1.0f;
+                depthInfo.nearZ = view.Near * UNITS_TO_METERS_SCALE;
+                depthInfo.farZ = view.Far * UNITS_TO_METERS_SCALE;
+            }
+        }
+        if (Swapchains.Count() > 1)
+            SetupProxyView();
+        return true;
     }
 }
 
@@ -716,98 +801,20 @@ void OpenXRSession::Update()
 
 void OpenXRSession::Draw()
 {
-    if (!IsFrameWaited)
-        return;
-    PROFILE_CPU();
-    IsFrameWaited = false;
-    if (!BeginFrame() || !FrameState.shouldRender || IsExitRequested)
-        return;
-
-    // Locate views at the predicted display time
-    XrViewLocateInfo locateInfo = { XR_TYPE_VIEW_LOCATE_INFO };
-    locateInfo.viewConfigurationType = ViewConfigurationType;
-    locateInfo.displayTime = FrameState.predictedDisplayTime;
-    locateInfo.space = Space;
-    XrViewState viewState = { XR_TYPE_VIEW_STATE };
-    uint32 viewsCount = 0;
-    XrResult result = xrLocateViews(Session, &locateInfo, &viewState, (uint32)Views.Count(), &viewsCount, Views.Get());
-    if (XR_FAILED(result) || (viewState.viewStateFlags & XR_VIEW_STATE_ORIENTATION_VALID_BIT) == 0)
-        return;
-
-    // Locate controllers again for rendering
-    OpenXRInput::LocatePoses(FrameState.predictedDisplayTime);
-
-    const Camera* camera = Camera::GetMainCamera();
-    const Transform origin = XR::GetTrackingOrigin();
-
-    // Render each view
-    for (int32 i = 0; i < Swapchains.Count(); i++)
+    // Render the views only if the runtime displays the frame
+    bool isRendering = false;
+    if (IsFrameWaited)
     {
-        auto& swapchain = Swapchains[i];
-        uint32 imageIndex = 0, depthImageIndex = 0;
-        if (AcquireImage(swapchain.Handle, swapchain.IsAcquired, imageIndex))
-            return;
-        if (swapchain.DepthHandle != XR_NULL_HANDLE && AcquireImage(swapchain.DepthHandle, swapchain.IsDepthAcquired, depthImageIndex))
-            return;
-
-        // Setup the view
-        auto task = swapchain.Task;
-        auto& view = task->View;
-        if (camera)
-        {
-            view.Near = camera->GetNearPlane();
-            view.Far = camera->GetFarPlane();
-            view.RenderLayersMask = camera->RenderLayersMask;
-            view.Flags = camera->RenderFlags;
-            view.Mode = camera->RenderMode;
-        }
-        const Transform pose = origin.LocalToWorld(OpenXRConvert::ToTransform(Views[i].pose));
-        if (i == 0)
-            LargeWorlds::UpdateOrigin(view.Origin, pose.Translation);
-        else
-            view.Origin = Swapchains[0].Task->View.Origin; // Use the same origin in all views to share the shadow maps
-        view.Position = pose.Translation - view.Origin;
-        view.Direction = pose.GetForward();
-        Matrix viewMatrix, projectionMatrix;
-        Matrix::LookAt(view.Position, view.Position + view.Direction, pose.GetUp(), viewMatrix);
-        OpenXRConvert::ToProjection(Views[i].fov, view.Near, view.Far, projectionMatrix);
-        view.SetUp(viewMatrix, projectionMatrix);
-
-        // Disable effects that don't work in the head-mounted display (head movement would blur the whole view, focus doesn't follow the eyes, flares differ between the eyes)
-        view.Flags &= ~(ViewFlags::MotionBlur | ViewFlags::DepthOfField | ViewFlags::LensFlares);
-
-        // Render to the swapchain image
-        task->Output = swapchain.Images[imageIndex];
-        task->Enabled = true;
-
-        // Drop the history of the temporal effects if the view was not rendered in the previous frame (eg. headset was taken off)
-        if (task->LastUsedFrame + 1 < Engine::FrameCount)
-            task->IsCameraCut = true;
-
-        auto& projectionView = ProjectionViews[i];
-        projectionView.pose = Views[i].pose;
-        projectionView.fov = Views[i].fov;
-        projectionView.subImage.swapchain = swapchain.Handle;
-        projectionView.subImage.imageRect.offset = { 0, 0 };
-        projectionView.subImage.imageRect.extent = { swapchain.Width, swapchain.Height };
-
-        // Setup depth (copied from the scene depth buffer after rendering)
-        if (swapchain.DepthHandle != XR_NULL_HANDLE)
-        {
-            swapchain.DepthOutput = swapchain.DepthImages[depthImageIndex];
-            auto& depthInfo = DepthInfos[i];
-            depthInfo.subImage.swapchain = swapchain.DepthHandle;
-            depthInfo.subImage.imageRect = projectionView.subImage.imageRect;
-            depthInfo.minDepth = 0.0f;
-            depthInfo.maxDepth = 1.0f;
-            depthInfo.nearZ = view.Near * UNITS_TO_METERS_SCALE;
-            depthInfo.farZ = view.Far * UNITS_TO_METERS_SCALE;
-        }
+        PROFILE_CPU();
+        IsFrameWaited = false;
+        isRendering = BeginFrame() && FrameState.shouldRender && !IsExitRequested && TrySetupViews();
     }
-    if (Swapchains.Count() > 1)
-        SetupProxyView();
-    HasProjectionLayer = true;
-    SetMirror(true);
+    for (auto& swapchain : Swapchains)
+        swapchain.Task->Enabled = isRendering;
+    HasProjectionLayer = isRendering;
+
+    // Mirror the headset image in the main view as long as the views are rendered (kept between the frames so the game uses the headset view instead of the main view, eg. particles during update)
+    SetMirror(isRendering);
 }
 
 void OpenXRSession::PostDraw()
