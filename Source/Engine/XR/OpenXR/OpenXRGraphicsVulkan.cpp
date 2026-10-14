@@ -106,6 +106,12 @@ bool OpenXRGraphicsVulkan::IsSupported(RendererType rendererType) const
     return rendererType == RendererType::Vulkan;
 }
 
+bool OpenXRGraphicsVulkan::CanUseDevice() const
+{
+    // The instance and the device have to be created by the runtime (cannot be done once the graphics device exists)
+    return IsDeviceCreatedByRuntime;
+}
+
 bool OpenXRGraphicsVulkan::SetupDeviceHints(XrInstance instance, XrSystemId systemId)
 {
     // Create the graphics device by the runtime (requirements have to be queried before)

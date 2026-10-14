@@ -15,6 +15,7 @@ public:
     // [OpenXRGraphics]
     const char* GetExtensionName() const override;
     bool IsSupported(RendererType rendererType) const override;
+    bool CanUseDevice() const override;
     bool SetupDeviceHints(XrInstance instance, XrSystemId systemId) override;
     bool SetupDevice(XrInstance instance, XrSystemId systemId) override;
     const void* GetGraphicsBinding() const override;

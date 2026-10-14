@@ -941,7 +941,7 @@ namespace FlaxEditor.Modules
 
             // Play In VR
             _toolStripPlayVR = ToolStrip.AddButton("VR", TogglePlayInVR);
-            _toolStripPlayVR.LinkTooltip("Play In VR - renders the game to the head-mounted display in play mode. Connects to the XR runtime if it was not running (eg. SteamVR started after the editor)");
+            _toolStripPlayVR.LinkTooltip("Play In VR - renders the game to the head-mounted display in play mode. Connects to the XR runtime if it was not running (eg. SteamVR started after the editor, not supported when using Vulkan)");
             Editor.Options.OptionsChanged += options => { _toolStripPlayVR.Checked = XR.IsConnected && options.Interface.PlayInVR; };
 
             // Play

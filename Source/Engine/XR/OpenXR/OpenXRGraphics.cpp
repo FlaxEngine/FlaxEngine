@@ -94,6 +94,22 @@ bool OpenXRGraphics::Setup(XrInstance instance, XrSystemId systemId)
     return Current->SetupDevice(instance, systemId);
 }
 
+bool OpenXRGraphics::CanConnect()
+{
+    // Any backend can be used if the graphics device is not created yet
+    const auto device = GPUDevice::Instance;
+    if (device == nullptr)
+        return true;
+    for (const OpenXRGraphics* backend : Backends)
+    {
+        if (backend->IsSupported(device->GetRendererType()))
+            return backend->CanUseDevice();
+    }
+
+    // Unsupported renderer is reported by the setup
+    return true;
+}
+
 OpenXRGraphics* OpenXRGraphics::Get()
 {
     return Current;

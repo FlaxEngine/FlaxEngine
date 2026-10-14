@@ -79,6 +79,12 @@ void OpenXRInstance::InitAsync()
         return;
     if (InitExtensions())
         return;
+    if (!OpenXRGraphics::CanConnect())
+    {
+        LOG(Warning, "XR unavailable, the graphics device was not created for the XR runtime (start the XR runtime before the engine)");
+        Dispose();
+        return;
+    }
 
     // Create the instance in the background (the runtime can block for a few seconds when it's starting)
     InitTask = Task::StartNew(CreateInstanceTask);

@@ -46,6 +46,12 @@ public:
     static bool Setup(XrInstance instance, XrSystemId systemId);
 
     /// <summary>
+    /// Checks if the runtime can be connected with the graphics device that is already created (eg. the runtime was started after the engine).
+    /// </summary>
+    /// <returns>True if the runtime can be connected, otherwise false.</returns>
+    static bool CanConnect();
+
+    /// <summary>
     /// Gets the graphics backend selected for the graphics device.
     /// </summary>
     /// <returns>The graphics backend, or null if not selected yet.</returns>
@@ -64,6 +70,15 @@ public:
     /// <param name="rendererType">The renderer type.</param>
     /// <returns>True if supported, otherwise false.</returns>
     virtual bool IsSupported(RendererType rendererType) const = 0;
+
+    /// <summary>
+    /// Checks if the graphics device that is already created can be used by the runtime that gets connected later.
+    /// </summary>
+    /// <returns>True if the graphics device can be used, otherwise false.</returns>
+    virtual bool CanUseDevice() const
+    {
+        return true;
+    }
 
     /// <summary>
     /// Gets the graphics requirements of the runtime and sets the graphics device creation hints (called before the device is created).

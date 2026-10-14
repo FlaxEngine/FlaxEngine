@@ -288,7 +288,7 @@ public:
     API_PROPERTY() static StringView GetSystemName();
 
     /// <summary>
-    /// Connects to the XR runtime again if it's not available (eg. the runtime was not running when the engine started). Connecting runs in the background and can start the runtime, which takes a few seconds (see IsConnecting). Does nothing if XR is disabled, or the runtime is already connected or connecting.
+    /// Connects to the XR runtime again if it's not available (eg. the runtime was not running when the engine started). Connecting runs in the background and can start the runtime, which takes a few seconds (see IsConnecting). Does nothing if XR is disabled, or the runtime is already connected or connecting. Not supported when using Vulkan, because its graphics device has to be created by the runtime that is running when the engine starts.
     /// </summary>
     API_FUNCTION() static void Reconnect();
 
