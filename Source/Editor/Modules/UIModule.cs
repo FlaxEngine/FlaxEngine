@@ -951,7 +951,7 @@ namespace FlaxEditor.Modules
             Editor.Options.OptionsChanged += options => { _toolStripPlayVR.Checked = XR.IsConnected && options.Interface.PlayInVR; };
 
             // Play
-            _toolStripPlay =ToolStrip.AddButton(Editor.Icons.Play64, Editor.Simulation.DelegatePlayOrStopPlayInEditor).LinkTooltip("Play In Editor", ref inputOptions.Play);
+            _toolStripPlay = ToolStrip.AddButton(Editor.Icons.Play64, Editor.Simulation.DelegatePlayOrStopPlayInEditor).LinkTooltip("Play In Editor", ref inputOptions.Play);
             _toolStripPlay.ContextMenu = new ContextMenu();
             var playSubMenu = _toolStripPlay.ContextMenu.AddChildMenu("Play button action");
             var playActionGroup = new ContextMenuSingleSelectGroup<InterfaceOptions.PlayAction>();
