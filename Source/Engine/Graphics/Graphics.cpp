@@ -12,9 +12,9 @@
 #include "Engine/Profiler/ProfilerMemory.h"
 #if PLATFORM_DESKTOP
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Platform/FileSystem.h"
 #endif
 #if USE_EDITOR
-#include "Engine/Platform/FileSystem.h"
 #include "Engine/Engine/Globals.h"
 #else
 #include "Engine/Render2D/Font.h"

@@ -10,12 +10,12 @@
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Threading/JobSystem.h"
 #include "Engine/Physics/Actors/IPhysicsDebug.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 #if !BUILD_RELEASE
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Engine/Engine.h"
 #endif
 
 #if BUILD_RELEASE
