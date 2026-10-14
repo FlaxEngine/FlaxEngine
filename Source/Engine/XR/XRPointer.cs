@@ -19,6 +19,7 @@ namespace FlaxEngine
         private CanvasRootControl _hitCanvas;
         private Float2 _hitLocation;
         private bool _isPressed;
+        private bool _isCanvasPressed;
 
         /// <summary>
         /// Gets the UI canvas under the pointer. Null if the pointer doesn't point at any canvas.
@@ -65,7 +66,7 @@ namespace FlaxEngine
             // Send mouse events to the canvas
             if (hitCanvas != _hitCanvas)
             {
-                _hitCanvas?.OnMouseLeave();
+                LeaveCanvas();
                 _hitCanvas = hitCanvas;
                 _hitCanvas?.OnMouseEnter(hitLocation);
             }
@@ -78,21 +79,37 @@ namespace FlaxEngine
             if (isPressed != _isPressed)
             {
                 _isPressed = isPressed;
-                if (isPressed)
-                    _hitCanvas?.OnMouseDown(hitLocation, MouseButton.Left);
-                else
-                    _hitCanvas?.OnMouseUp(hitLocation, MouseButton.Left);
+                if (isPressed && _hitCanvas != null)
+                {
+                    _isCanvasPressed = true;
+                    _hitCanvas.OnMouseDown(hitLocation, MouseButton.Left);
+                }
+                else if (!isPressed && _isCanvasPressed)
+                {
+                    _isCanvasPressed = false;
+                    _hitCanvas.OnMouseUp(hitLocation, MouseButton.Left);
+                }
             }
         }
 
         /// <inheritdoc />
         public override void OnDisable()
         {
-            if (_isPressed)
-                _hitCanvas?.OnMouseUp(_hitLocation, MouseButton.Left);
-            _hitCanvas?.OnMouseLeave();
-            _hitCanvas = null;
+            LeaveCanvas();
             _isPressed = false;
+        }
+
+        private void LeaveCanvas()
+        {
+            // Release the canvas before leaving it so it gets the mouse up event for its mouse down event (skip the canvas that was removed)
+            if (_hitCanvas != null && !_hitCanvas.IsDisposing)
+            {
+                if (_isCanvasPressed)
+                    _hitCanvas.OnMouseUp(_hitLocation, MouseButton.Left);
+                _hitCanvas.OnMouseLeave();
+            }
+            _hitCanvas = null;
+            _isCanvasPressed = false;
         }
 
         private bool IsTriggerPressed()
