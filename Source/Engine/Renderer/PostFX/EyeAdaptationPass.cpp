@@ -63,12 +63,7 @@ void EyeAdaptationPass::Render(RenderContext& renderContext, GPUTexture* colorBu
         const auto cb0 = shader->GetCB(0);
         context->UpdateCB(cb0, &data);
         context->BindCB(0, cb0);
-        context->BindSR(0, linkedBuffers->LuminanceMap);
-        context->SetRenderTarget(*colorBuffer);
-        context->SetViewportAndScissors((float)colorBuffer->Width(), (float)colorBuffer->Height());
-        context->SetState(_psApplyLuminance);
-        context->DrawFullscreenTriangle();
-        context->UnBindSR(0);
+        ApplyLuminance(context, colorBuffer, linkedBuffers->LuminanceMap);
         return;
     }
     switch (mode)
@@ -210,12 +205,7 @@ void EyeAdaptationPass::Render(RenderContext& renderContext, GPUTexture* colorBu
     }
 
     // Apply the luminance
-    context->BindSR(0, *currentLuminanceMap);
-    context->SetRenderTarget(*colorBuffer);
-    context->SetViewportAndScissors((float)colorBuffer->Width(), (float)colorBuffer->Height());
-    context->SetState(_psApplyLuminance);
-    context->DrawFullscreenTriangle();
-    context->UnBindSR(0);
+    ApplyLuminance(context, colorBuffer, currentLuminanceMap);
 
     // Update the luminance map buffer
     renderContext.Buffers->LastEyeAdaptationTime = time;
@@ -225,6 +215,16 @@ void EyeAdaptationPass::Render(RenderContext& renderContext, GPUTexture* colorBu
     // Cleanup
     if (previousLuminanceMap)
         RenderTargetPool::Release(previousLuminanceMap);
+}
+
+void EyeAdaptationPass::ApplyLuminance(GPUContext* context, GPUTexture* colorBuffer, GPUTexture* luminanceMap)
+{
+    context->BindSR(0, luminanceMap);
+    context->SetRenderTarget(*colorBuffer);
+    context->SetViewportAndScissors((float)colorBuffer->Width(), (float)colorBuffer->Height());
+    context->SetState(_psApplyLuminance);
+    context->DrawFullscreenTriangle();
+    context->UnBindSR(0);
 }
 
 String EyeAdaptationPass::ToString() const
