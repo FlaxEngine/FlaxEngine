@@ -62,6 +62,12 @@ API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     SoftObjectReference<Texture> OverrideIcon;
 
     /// <summary>
+    /// The executable file description (metadata for Windows executable). If empty, the project Product Name will be used.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(1040), EditorDisplay(\"Other\")")
+    String Description;
+
+    /// <summary>
     /// Enables support for DirectX 12. Disabling it reduces compiled shaders count.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(2000), DefaultValue(false), EditorDisplay(\"Graphics\", \"Support DirectX 12\")")
