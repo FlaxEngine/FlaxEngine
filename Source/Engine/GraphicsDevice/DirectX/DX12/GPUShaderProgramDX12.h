@@ -114,8 +114,8 @@ class GPUShaderProgramCSDX12 : public GPUShaderProgramDX12<GPUShaderProgramCS>
 {
 private:
     GPUDeviceDX12* _device;
-    Array<byte> _data;
     ID3D12PipelineState* _state;
+    Array<byte> _data;
 #if DX12_USE_PIPELINE_LIBRARY
     DxShaderHashName _hashName;
 #endif
@@ -138,17 +138,12 @@ public:
 
 public:
     /// <summary>
-    /// Gets DirectX 12 compute pipeline state object
-    /// </summary>
-    FORCE_INLINE ID3D12PipelineState* GetState() const
-    {
-        return _state;
-    }
-
-    /// <summary>
     /// Gets or creates compute pipeline state for that compute shader.
     /// </summary>
-    ID3D12PipelineState* GetOrCreateState();
+    ID3D12PipelineState* GetState(bool precaching = false);
+
+    // [GPUShaderProgramCS]
+    void PrecachePSO() override;
 };
 
 #endif

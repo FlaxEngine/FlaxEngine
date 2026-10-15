@@ -124,6 +124,11 @@ public:
     /// Gets buffer size (in bytes).
     /// </summary>
     virtual uint32 GetBufferSize() const = 0;
+
+    /// <summary>
+    /// Precaches shader pipeline to be ready haead of time. Used by compute shaders. Can be called in async from content loading threads but before shader is fully loaded.
+    /// </summary>
+    virtual void PrecachePSO() {}
 };
 
 /// <summary>

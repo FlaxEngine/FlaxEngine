@@ -1281,7 +1281,7 @@ void GPUContextVulkan::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCo
     if (cmdBuffer->IsInsideRenderPass())
         EndRenderPass();
 
-    auto pipelineState = shaderVulkan->GetOrCreateState();
+    auto pipelineState = shaderVulkan->GetState();
     UpdateDescriptorSets(pipelineState);
     FlushBarriers();
 
@@ -1320,7 +1320,7 @@ void GPUContextVulkan::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* b
     if (cmdBuffer->IsInsideRenderPass())
         EndRenderPass();
 
-    auto pipelineState = shaderVulkan->GetOrCreateState();
+    auto pipelineState = shaderVulkan->GetState();
     UpdateDescriptorSets(pipelineState);
     AddBufferBarrier(bufferForArgsVulkan, VK_ACCESS_INDIRECT_COMMAND_READ_BIT);
     FlushBarriers();

@@ -37,6 +37,15 @@ public:
     }
 
     /// <summary>
+    /// Initializes <see cref="ConcurrentDictionary"/> by reserving space.
+    /// </summary>
+    /// <param name="capacity">The number of elements that can be added without a need to allocate more memory.</param>
+    FORCE_INLINE explicit ConcurrentDictionary(const int32 capacity)
+    {
+        Base::SetCapacity(capacity);
+    }
+
+    /// <summary>
     /// Initializes an empty <see cref="ConcurrentDictionary"/> without reserving any space.
     /// </summary>
     /// <param name="tag">The custom allocation tag.</param>
@@ -126,6 +135,19 @@ public:
     {
         Writer writer(this);
         Base::Clear();
+    }
+
+    /// <summary>
+    /// Clears the collection and deletes value objects.
+    /// Note: collection must contain pointers to the objects that have public destructor and were allocated using New method.
+    /// </summary>
+#if defined(_MSC_VER)
+    template<typename = typename TEnableIf<TIsPointer<ValueType>::Value>::Type>
+#endif
+    void ClearDelete()
+    {
+        Writer writer(this);
+        Base::ClearDelete();
     }
 
 public:

@@ -9,6 +9,10 @@
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Profiler/ProfilerMemory.h"
+#if COMPILE_WITH_PSO_PRECACHING
+#include "Engine/Graphics/GPUPipelineCache.h"
+#include "Engine/Profiler/ProfilerCPU.h"
+#endif
 
 static FORCE_INLINE uint32 HashPermutation(const StringAnsiView& name, int32 permutationIndex)
 {
@@ -166,6 +170,19 @@ bool GPUShader::Create(MemoryReadStream& stream)
         _constantBuffers[slotIndex] = cb;
         _memoryUsage += sizeof(GPUConstantBuffer);
     }
+
+#if COMPILE_WITH_PSO_PRECACHING
+    // Precache PSO for compute shaders
+    if (GPU_PSO_PRECACHING(Shader))
+    {
+        PROFILE_CPU_NAMED("Precache PSOs");
+        ZoneColor(GPU_PSO_ZONE_COLOR_PRECACHE);
+        for (auto& e : _shaders)
+        {
+            e.Value->PrecachePSO();
+        }
+    }
+#endif
 
     // Don't read additional data
 

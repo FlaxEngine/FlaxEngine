@@ -1370,7 +1370,13 @@ PipelineLayoutVulkan* GPUDeviceVulkan::GetOrCreateLayout(DescriptorSetLayoutInfo
     PROFILE_CPU_NAMED("Create Pipeline Layout");
     PROFILE_MEM(GraphicsCommands);
     layout = New<PipelineLayoutVulkan>(this, key);
-    _layouts.Add(key, layout);
+    if (!_layouts.Add(key, layout))
+    {
+        // Other thread added the value
+        Delete(layout);
+        bool found = _layouts.TryGet(key, layout);
+        ASSERT(found);
+    }
     return layout;
 }
 
@@ -1871,6 +1877,7 @@ bool GPUDeviceVulkan::Init()
         limits.HasMultisampleDepthAsSRV = !!PhysicalDeviceFeatures.sampleRateShading;
         PRAGMA_ENABLE_DEPRECATION_WARNINGS
         limits.HasTypedUAVLoad = true;
+        limits.HasPipelineCaching = true;
         limits.MaximumMipLevelsCount = Math::Min(static_cast<int32>(log2(PhysicalDeviceLimits.maxImageDimension2D)), GPU_MAX_TEXTURE_MIP_LEVELS);
         limits.MaximumTexture1DSize = PhysicalDeviceLimits.maxImageDimension1D;
         limits.MaximumTexture1DArraySize = PhysicalDeviceLimits.maxImageArrayLayers;

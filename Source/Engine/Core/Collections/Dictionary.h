@@ -502,8 +502,8 @@ public:
 
 public:
     /// <summary>
-    /// Clears the collection and delete value objects.
-    /// Note: collection must contain pointers to the objects that have public destructor and be allocated using New method.
+    /// Clears the collection and deletes value objects.
+    /// Note: collection must contain pointers to the objects that have public destructor and were allocated using New method.
     /// </summary>
 #if defined(_MSC_VER)
     template<typename = typename TEnableIf<TIsPointer<ValueType>::Value>::Type>

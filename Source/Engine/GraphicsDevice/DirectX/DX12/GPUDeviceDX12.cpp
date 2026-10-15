@@ -837,6 +837,7 @@ bool GPUDeviceDX12::Init()
         limits.HasSeparateRenderTargetBlendState = true;
         PRAGMA_ENABLE_DEPRECATION_WARNINGS
         limits.HasTypedUAVLoad = featureSupport.TypedUAVLoadAdditionalFormats() != 0;
+        limits.HasPipelineCaching = PLATFORM_WINDOWS;
         limits.MaximumMipLevelsCount = D3D12_REQ_MIP_LEVELS;
         limits.MaximumTexture1DSize = D3D12_REQ_TEXTURE1D_U_DIMENSION;
         limits.MaximumTexture1DArraySize = D3D12_REQ_TEXTURE1D_ARRAY_AXIS_DIMENSION;

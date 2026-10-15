@@ -10,7 +10,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
-#include "Engine/Graphics/GPUPipelineStateCache.h"
+#include "Engine/Graphics/GPUPipelineCache.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #if GPU_D3D12_PSO_STREAM
 // TODO: migrate to Agility SDK and remove that custom header
@@ -119,7 +119,7 @@ GPUShaderProgram* GPUShaderDX12::CreateGPUShaderProgram(ShaderStage type, const 
     return shader;
 }
 
-ID3D12PipelineState* GPUShaderProgramCSDX12::GetOrCreateState()
+ID3D12PipelineState* GPUShaderProgramCSDX12::GetState(bool precaching)
 {
     if (_state)
         return _state;
@@ -129,7 +129,13 @@ ID3D12PipelineState* GPUShaderProgramCSDX12::GetOrCreateState()
     GetDebugName(name);
     ZoneText(name.Get(), name.Count() - 1);
 #endif
-    GPUPipelineStateLookup psoLookup;
+    GPUPipelineLookup psoLookup;
+    if (precaching)
+        psoLookup.Flags |= GPUPipelineLookup::Precaching;
+    else
+    {
+        ZoneColor(GPU_PSO_ZONE_COLOR_MISS);
+    }
     HRESULT result;
 
     // Create description
@@ -159,6 +165,7 @@ ID3D12PipelineState* GPUShaderProgramCSDX12::GetOrCreateState()
 
     // Create object
     result = _device->GetDevice()->CreateComputePipelineState(&psDesc, IID_PPV_ARGS(&_state));
+    psoLookup.Flags |= GPUPipelineLookup::Miss;
     LOG_DIRECTX_RESULT(result);
 
 #if DX12_USE_PIPELINE_LIBRARY
@@ -176,6 +183,11 @@ ID3D12PipelineState* GPUShaderProgramCSDX12::GetOrCreateState()
 #endif
 
     return _state;
+}
+
+void GPUShaderProgramCSDX12::PrecachePSO()
+{
+    GetState(true);
 }
 
 GPUPipelineStateDX12::GPUPipelineStateDX12(GPUDeviceDX12* device)
@@ -221,7 +233,7 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
     GetDebugName(name);
     ZoneText(name.Get(), name.Count() - 1);
 #endif
-    GPUPipelineStateLookup psoLookup;
+    GPUPipelineLookup psoLookup;
     HRESULT result;
 
     // Setup description to match the pipeline
@@ -326,6 +338,7 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
 #else
     result = _device->GetDevice()->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&state));
 #endif
+    psoLookup.Flags |= GPUPipelineLookup::Miss;
     LOG_DIRECTX_RESULT(result);
     if (FAILED(result))
     {

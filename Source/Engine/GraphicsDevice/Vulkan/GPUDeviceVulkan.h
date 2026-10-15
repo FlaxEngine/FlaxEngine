@@ -6,6 +6,7 @@
 
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUResource.h"
+#include "Engine/Threading/ConcurrentDictionary.h"
 #include "DescriptorSetVulkan.h"
 #include "UploadBufferVulkan.h"
 #include "IncludeVulkanHeaders.h"
@@ -363,11 +364,9 @@ class GPUDeviceVulkan : public GPUDevice
 private:
     CriticalSection _fenceLock;
     mutable void* _nativePtr[4];
-
     Dictionary<RenderTargetLayoutVulkan, RenderPassVulkan*> _renderPasses;
     Dictionary<FramebufferVulkan::Key, FramebufferVulkan*> _framebuffers;
-    Dictionary<DescriptorSetLayoutInfoVulkan, PipelineLayoutVulkan*> _layouts;
-    // TODO: use mutex to protect those collections BUT use 2 pools per cache: one lock-free with lookup only and second protected with mutex synced on frame end!
+    ConcurrentDictionary<DescriptorSetLayoutInfoVulkan, PipelineLayoutVulkan*> _layouts;
 
 public:
     static GPUDevice* Create();

@@ -2,7 +2,7 @@
 
 #if COMPILE_WITH_PSO_PRECACHING
 
-#include "GPUPipelineStateCache.h"
+#include "GPUPipelineCache.h"
 #include "GPUDevice.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
@@ -33,31 +33,47 @@ struct Counter
         if (Count == 0)
             return;
         double inv = (1000.0 / TimeFreq); // Convert cycles count to miliseconds
-        LOG(Info, "    > Lookup time: avg {:.2f} ms (min: {:.2f}, max: {:.2f})", TimeSum * inv / Count, TimeMin * inv, TimeMax * inv);
+        LOG(Info, "    > Time: avg {:.2f} ms (min: {:.2f} ms, max: {:.2f} ms, sum: {:.1f}s)", TimeSum * inv / Count, TimeMin * inv, TimeMax * inv, TimeSum * inv * 0.001);
     }
 };
 
 namespace
 {
     constexpr double HitchMinTime = 0.004; // 4ms
+    volatile int64 MissCounter = 0;
+    Counter PrecachingCounter;
     Counter LookupCounter;
     Counter HitchCounter;
 };
 
-GPUPipelineStateLookup::~GPUPipelineStateLookup()
+GPUPipelineCacheModes PipelineCacheModes = GPUPipelineCacheModes::None;
+
+GPUPipelineLookup::~GPUPipelineLookup()
 {
     double time = Platform::GetTimeSeconds() - StartTime;
-    LookupCounter.Register(time);
-    if (time > HitchMinTime)
+    if (EnumHasAnyFlags(Flags, Precaching))
     {
-        HitchCounter.Register(time);
+        PrecachingCounter.Register(time);
     }
+    else
+    {
+        LookupCounter.Register(time);
+        if (time > HitchMinTime)
+        {
+            HitchCounter.Register(time);
+        }
+    }
+    if (EnumHasAnyFlags(Flags, Miss))
+        Platform::InterlockedIncrement(&MissCounter);
 }
 
 void GPUDevice::DumpPSOs()
 {
-    LOG(Info, "GPU PSO cache stats:");
+    LOG(Info, "GPU PSO precache stats:");
+    PrecachingCounter.Log();
+    LOG(Info, "GPU PSO lookup stats:");
     LookupCounter.Log();
+    LOG(Info, "    > Misses: {}", MissCounter);
     LOG(Info, "GPU PSO hitch stats:");
     HitchCounter.Log();
 }

@@ -3,6 +3,7 @@
 #include "GPUDevice.h"
 #include "RenderTargetPool.h"
 #include "GPUPipelineState.h"
+#include "GPUPipelineCache.h"
 #include "GPUResourceProperty.h"
 #include "GPUSwapChain.h"
 #include "RenderTask.h"
@@ -15,11 +16,11 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Utilities.h"
 #include "Engine/Core/Types/StringBuilder.h"
+#include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/SoftAssetReference.h"
-#include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Render2D/Render2D.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/Engine.h"
@@ -409,6 +410,11 @@ bool GPUDevice::Init()
     Limits.MaximumTexture1DArraySize = Math::Min(Limits.MaximumTexture1DArraySize, GPU_MAX_TEXTURE_ARRAY_SIZE);
     Limits.MaximumTexture2DArraySize = Math::Min(Limits.MaximumTexture2DArraySize, GPU_MAX_TEXTURE_ARRAY_SIZE);
     Limits.MaximumMipLevelsCount = Math::Min(Limits.MaximumMipLevelsCount, GPU_MAX_TEXTURE_MIP_LEVELS);
+
+#if COMPILE_WITH_PSO_PRECACHING
+    // Control PSO precaching
+    PipelineCacheModes = Limits.HasPipelineCaching ? GPUPipelineCacheModes::Full : GPUPipelineCacheModes::None;
+#endif
 
     _res->TasksManager.SetExecutor(CreateTasksExecutor());
     LOG(Info, "Total graphics memory: {0}", Utilities::BytesToText(TotalGraphicsMemory));

@@ -1218,12 +1218,9 @@ void GPUContextDX12::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCoun
     flushCBs();
     flushSamplers();
 
-    auto shaderDX12 = (GPUShaderProgramCSDX12*)shader;
-    auto computeState = shaderDX12->GetOrCreateState();
-
     if (bindPipelineState)
     {
-        _commandList->SetPipelineState(computeState);
+        _commandList->SetPipelineState(((GPUShaderProgramCSDX12*)shader)->GetState());
         RENDER_STAT_PS_STATE_CHANGE();
     }
 
@@ -1255,12 +1252,9 @@ void GPUContextDX12::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* buf
     flushCBs();
     flushSamplers();
 
-    auto shaderDX12 = (GPUShaderProgramCSDX12*)shader;
-    auto computeState = shaderDX12->GetOrCreateState();
-
     if (bindPipelineState)
     {
-        _commandList->SetPipelineState(computeState);
+        _commandList->SetPipelineState(((GPUShaderProgramCSDX12*)shader)->GetState());
         RENDER_STAT_PS_STATE_CHANGE();
     }
 

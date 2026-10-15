@@ -333,6 +333,11 @@ API_STRUCT(NoDefault) struct GPULimits
     API_FIELD() bool HasTypedUAVLoad = false;
 
     /// <summary>
+    /// True if device can run PSO precaching to speed up shader compilation ahead of rendering. Otherwise assumed not available or shaders are already compiled for a specific GPU.
+    /// </summary>
+    API_FIELD() bool HasPipelineCaching = false;
+
+    /// <summary>
     /// The maximum amount of texture mip levels.
     /// </summary>
     API_FIELD() int32 MaximumMipLevelsCount = 1;

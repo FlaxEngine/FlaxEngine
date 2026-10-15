@@ -12,7 +12,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
-#include "Engine/Graphics/GPUPipelineStateCache.h"
+#include "Engine/Graphics/GPUPipelineCache.h"
 
 static VkStencilOp ToVulkanStencilOp(const StencilOperation value)
 {
@@ -88,14 +88,20 @@ GPUShaderProgramCSVulkan::~GPUShaderProgramCSVulkan()
         Delete(_pipelineState);
 }
 
-ComputePipelineStateVulkan* GPUShaderProgramCSVulkan::GetOrCreateState()
+ComputePipelineStateVulkan* GPUShaderProgramCSVulkan::GetState(bool precaching)
 {
     if (_pipelineState)
         return _pipelineState;
     PROFILE_CPU();
     PROFILE_MEM(GraphicsShaders);
     ZoneText(*_name, _name.Length());
-    GPUPipelineStateLookup psoLookup;
+    GPUPipelineLookup psoLookup;
+    if (precaching)
+        psoLookup.Flags |= GPUPipelineLookup::Precaching;
+    else
+    {
+        ZoneColor(GPU_PSO_ZONE_COLOR_MISS);
+    }
 
     // Create pipeline layout
     DescriptorSetLayoutInfoVulkan descriptorSetLayoutInfo;
@@ -153,6 +159,11 @@ ComputePipelineStateVulkan* GPUShaderProgramCSVulkan::GetOrCreateState()
     _pipelineState->DSWriter.DynamicOffsets = _pipelineState->DynamicOffsets.Get();
 
     return _pipelineState;
+}
+
+void GPUShaderProgramCSVulkan::PrecachePSO()
+{
+    GetState(true);
 }
 
 ComputePipelineStateVulkan::ComputePipelineStateVulkan(GPUDeviceVulkan* device, VkPipeline pipeline, PipelineLayoutVulkan* layout)
@@ -234,7 +245,7 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVer
     GetDebugName(name);
     ZoneText(name.Get(), name.Count() - 1);
 #endif
-    GPUPipelineStateLookup psoLookup;
+    GPUPipelineLookup psoLookup;
 
     // Bind vertex input
 	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo;

@@ -148,7 +148,10 @@ public:
     /// <summary>
     /// Gets the state of the pipeline for the compute shader execution or creates a new one if missing.
     /// </summary>
-    ComputePipelineStateVulkan* GetOrCreateState();
+    ComputePipelineStateVulkan* GetState(bool precaching = false);
+
+    // [GPUShaderProgramCS]
+    void PrecachePSO() override;
 };
 
 #endif
