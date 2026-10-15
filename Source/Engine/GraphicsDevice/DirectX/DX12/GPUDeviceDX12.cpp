@@ -726,7 +726,10 @@ bool GPUDeviceDX12::Init()
     UpdateOutputs(dxgiAdapter);
 
     // Create DirectX device
-    VALIDATE_DIRECTX_CALL(D3D12CreateDevice(dxgiAdapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&_device)));
+    {
+        PROFILE_CPU_NAMED("D3D12CreateDevice");
+        VALIDATE_DIRECTX_CALL(D3D12CreateDevice(dxgiAdapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&_device)));
+    }
 
 #if PLATFORM_WINDOWS
     // Detect RenderDoc usage (UUID {A7AA6116-9C8D-4BBA-9083-B4D816B71B78})
@@ -811,7 +814,10 @@ bool GPUDeviceDX12::Init()
 
     // Spawn some info about the hardware
     CD3DX12FeatureSupport featureSupport;
-    featureSupport.Init(_device);
+    {
+        PROFILE_CPU_NAMED("FeatureSupport");
+        featureSupport.Init(_device);
+    }
     LOG(Info, "Highest Shader Model: {0}", RenderToolsDX::GetShaderModelString(featureSupport.HighestShaderModel()));
     LOG(Info, "Tiled Resources Tier: {0}", (int32)featureSupport.TiledResourcesTier());
     LOG(Info, "Resource Binding Tier: {0}", (int32)featureSupport.ResourceBindingTier());
@@ -820,6 +826,7 @@ bool GPUDeviceDX12::Init()
 
     // Init device limits
     {
+        PROFILE_CPU_NAMED("Limits");
         auto& limits = Limits;
         limits.HasCompute = true;
         limits.HasTessellation = GPU_ALLOW_TESSELLATION_SHADERS;
@@ -992,6 +999,8 @@ bool GPUDeviceDX12::Init()
 #if DX12_USE_PIPELINE_LIBRARY && defined(__ID3D12Device1_FWD_DEFINED__)
     if (_device1 && EnumHasAllFlags(featureSupport.ShaderCacheSupportFlags(), D3D12_SHADER_CACHE_SUPPORT_LIBRARY))
     {
+        PROFILE_CPU_NAMED("PSO");
+
         // Load cache from file
         String path = GPU_CACHE_FOLDER / TEXT("D3D12Library.cache");
         if (FileSystem::FileExists(path))

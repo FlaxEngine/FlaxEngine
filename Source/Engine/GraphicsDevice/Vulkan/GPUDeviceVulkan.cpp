@@ -1823,7 +1823,10 @@ bool GPUDeviceVulkan::Init()
 #endif
 
     // Create the device
-    VALIDATE_VULKAN_RESULT(vkCreateDevice(gpu, &deviceInfo, nullptr, &Device));
+    {
+        PROFILE_CPU_NAMED("vkCreateDevice");
+        VALIDATE_VULKAN_RESULT(vkCreateDevice(gpu, &deviceInfo, nullptr, &Device));
+    }
     PhysicalDeviceFeatures12.pNext = nullptr;
 
 #if !PLATFORM_SWITCH
@@ -1843,6 +1846,7 @@ bool GPUDeviceVulkan::Init()
 
     // Init device limits
     {
+        PROFILE_CPU_NAMED("Limits");
         PhysicalDeviceLimits = Adapter->GpuProps.limits;
         MSAALevel maxMsaa = MSAALevel::None;
         if (PhysicalDeviceFeatures.sampleRateShading)
@@ -1975,6 +1979,7 @@ bool GPUDeviceVulkan::Init()
 
     // Initialize memory allocator
     {
+        PROFILE_CPU_NAMED("Allocator");
         VmaVulkanFunctions vulkanFunctions;
         Platform::MemoryClear(&vulkanFunctions, sizeof(vulkanFunctions));
 #define INIT_FUNC(name) vulkanFunctions.name = name
@@ -2062,6 +2067,7 @@ bool GPUDeviceVulkan::Init()
 #if VULKAN_USE_PIPELINE_CACHE
     if (vkCreatePipelineCache)
     {
+        PROFILE_CPU_NAMED("PipelineCache");
         Array<uint8> data;
         VulkanPlatform::LoadCache(GPU_CACHE_FOLDER, TEXT("VulkanPipeline.cache"), data);
         VkPipelineCacheCreateInfo pipelineCacheCreateInfo;
@@ -2076,6 +2082,7 @@ bool GPUDeviceVulkan::Init()
 #if VULKAN_USE_VALIDATION_CACHE
     if (OptionalDeviceExtensions.HasEXTValidationCache && vkCreateValidationCacheEXT && vkDestroyValidationCacheEXT)
     {
+        PROFILE_CPU_NAMED("ValidationCache");
         Array<uint8> data;
         VulkanPlatform::LoadCache(GPU_CACHE_FOLDER, TEXT("VulkanValidation.cache"), data);
         if (data.HasItems())

@@ -456,6 +456,8 @@ bool FindAssets(const ProjectInfo* project, HashSet<const ProjectInfo*>& project
 {
     if (projects.Contains(project))
         return false;
+    PROFILE_CPU();
+    ZoneText(*project->Name, project->Name.Length());
     projects.Add(project);
     bool found = findAsset(id, project->ProjectFolderPath / TEXT("Content"), tmpCache, info);
     for (const auto& reference : project->References)
@@ -1543,16 +1545,20 @@ bool findAsset(const Guid& id, const String& directory, Array<String>& tmpCache,
 {
     // Get all asset files
     tmpCache.Clear();
-    if (FileSystem::DirectoryGetFiles(tmpCache, directory))
     {
-        if (FileSystem::DirectoryExists(directory))
-            LOG(Error, "Cannot query files in folder '{0}'.", directory);
-        return false;
+        PROFILE_CPU_NAMED("Get Files");
+        if (FileSystem::DirectoryGetFiles(tmpCache, directory))
+        {
+            if (FileSystem::DirectoryExists(directory))
+                LOG(Error, "Cannot query files in folder '{0}'.", directory);
+            return false;
+        }
     }
 
     // Start searching for asset with given ID
     bool result = false;
     LOG(Info, "Start searching asset with ID: {0} in '{1}'. {2} potential files to check...", id, directory, tmpCache.Count());
+    PROFILE_CPU_NAMED("Process Files");
     for (int32 i = 0; i < tmpCache.Count(); i++)
     {
         String& path = tmpCache[i];
