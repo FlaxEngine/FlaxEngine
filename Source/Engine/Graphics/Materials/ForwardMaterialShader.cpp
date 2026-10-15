@@ -82,7 +82,6 @@ void ForwardMaterialShader::Bind(BindParameters& params)
         // Invert culling when scale is negative
         cullMode = cullMode == CullMode::Normal ? CullMode::Inverted : CullMode::Normal;
     }
-    ASSERT_LOW_LAYER(!(useSkinning && params.Instanced)); // No support for instancing skinned meshes
     const auto cacheObj = params.Instanced ? &_cacheInstanced : &_cache;
     PipelineStateCache* psCache = cacheObj->GetPS(view.Pass, useSkinning);
     ASSERT(psCache);
@@ -208,6 +207,8 @@ bool ForwardMaterialShader::Load()
     _cacheInstanced.Depth.Init(psDesc);
     psDesc.VS = _shader->GetVS("VS_Skinned");
     _cache.DepthSkinned.Init(psDesc);
+    psDesc.VS = _shader->GetVS("VS_Skinned", 2);
+    _cacheInstanced.DepthSkinned.Init(psDesc);
 
 #if PLATFORM_PS5
     // Fix shader binding issues on forward shading materials on PS5
