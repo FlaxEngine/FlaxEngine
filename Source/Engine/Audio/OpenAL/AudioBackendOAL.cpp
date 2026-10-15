@@ -27,6 +27,9 @@
 #include <OpenAL/alc.h>
 #include <OpenAL/alext.h>
 
+#ifndef ALC_DEVICE_DETECTION
+#define ALC_DEVICE_DETECTION 1
+#endif
 #define FLAX_DST_TO_OAL(x) x * UNITS_TO_METERS_SCALE
 #define FLAX_POS_TO_OAL(vec) ((ALfloat)vec.X * -UNITS_TO_METERS_SCALE), ((ALfloat)vec.Y * UNITS_TO_METERS_SCALE), ((ALfloat)vec.Z * UNITS_TO_METERS_SCALE)
 #define FLAX_VEL_TO_OAL(vec) ((ALfloat)vec.X * -(UNITS_TO_METERS_SCALE*UNITS_TO_METERS_SCALE)), ((ALfloat)vec.Y * (UNITS_TO_METERS_SCALE*UNITS_TO_METERS_SCALE)), ((ALfloat)vec.Z * (UNITS_TO_METERS_SCALE*UNITS_TO_METERS_SCALE))
@@ -947,6 +950,7 @@ bool AudioBackendOAL::Base_Init()
 
 void AudioBackendOAL::Base_Update()
 {
+#if ALC_DEVICE_DETECTION
     // Check if active audio device got disconnected or invalidated (WASAPI AUDCLNT_E_DEVICE_INVALIDATED 0x88890004)
     bool forceCheck = false;
     if (ALC::Device != nullptr)
@@ -1138,6 +1142,7 @@ void AudioBackendOAL::Base_Update()
             }
         }
     }
+#endif
 #endif
 }
 

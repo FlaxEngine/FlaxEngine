@@ -101,9 +101,11 @@ public class Audio : EngineModule
                 options.OutputFiles.Add(Path.Combine(depsRoot, "libopenal.a"));
                 options.Libraries.Add("CoreAudio.framework");
                 options.Libraries.Add("AudioToolbox.framework");
+                options.PrivateDefinitions.Add("ALC_DEVICE_DETECTION=0");
                 break;
             case TargetPlatform.Web:
                 options.LinkEnv.CustomArgs.Add("-lopenal");
+                options.PrivateDefinitions.Add("ALC_DEVICE_DETECTION=0");
                 break;
             default: throw new InvalidPlatformException(options.Platform.Target);
             }
