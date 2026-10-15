@@ -353,7 +353,7 @@ public:
             atlasLight.StaticState = ShadowAtlasLight::Unused;
             atlasLight.Cache.StaticValid = false;
             for (int32 i = 0; i < atlasLight.TilesCount; i++)
-                atlasLight.Tiles[i].ClearDynamic();
+                atlasLight.Tiles[i].ClearStatic();
         }
         StaticAtlas.Clear();
         StaticAtlasPixelsUsed = 0;
@@ -518,7 +518,7 @@ void UpdateDumpShadows(ShadowsCustomBuffer* shadows = nullptr)
     if (shadows->StaticAtlas.Width > 0)
     {
         float usage = (float)shadows->StaticAtlasPixelsUsed / (shadows->StaticAtlas.Width * shadows->StaticAtlas.Height);
-        LOG(Info, "  > Static {}x{}, {}% used, {} tiles", shadows->Atlas.Width, shadows->Atlas.Height, (int32)(usage * 100), shadows->StaticAtlas.Count());
+        LOG(Info, "  > Static {}x{}, {}% used, {} tiles", shadows->StaticAtlas.Width, shadows->StaticAtlas.Height, (int32)(usage * 100), shadows->StaticAtlas.Count());
     }
     LOG(Info, "  > Buffer size: {}", Utilities::BytesToText(shadows->ShadowsBuffer.Data.Count()));
     LOG(Info, "  > Lights: {}", shadows->Lights.Count());
