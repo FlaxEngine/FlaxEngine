@@ -144,7 +144,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
                 "			collision = any(absDir >= size);\n"
                 "		else\n"
                 "			collision = all(absDir <= size);\n"
-                "		kill = kill || collision\n"
+                "		kill = kill || collision;\n"
                 "	}}\n"
             ), position.Value, boxCenter.Value, boxSize.Value, invert);
         break;
