@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Engine/Base/ApplicationBase.h"
+#include "Engine/Core/Types/Version.h"
 
 class Actor;
 class SplashScreen;
