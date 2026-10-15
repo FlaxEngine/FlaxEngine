@@ -353,7 +353,7 @@ public:
             atlasLight.StaticState = ShadowAtlasLight::Unused;
             atlasLight.Cache.StaticValid = false;
             for (int32 i = 0; i < atlasLight.TilesCount; i++)
-                atlasLight.Tiles[i].ClearDynamic();
+                atlasLight.Tiles[i].ClearStatic();
         }
         StaticAtlas.Clear();
         StaticAtlasPixelsUsed = 0;
