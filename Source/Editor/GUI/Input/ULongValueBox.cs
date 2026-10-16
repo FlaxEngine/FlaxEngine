@@ -1,8 +1,8 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
 using FlaxEditor.Utilities;
 using FlaxEngine;
-using System;
 using System.Globalization;
 
 namespace FlaxEditor.GUI.Input
