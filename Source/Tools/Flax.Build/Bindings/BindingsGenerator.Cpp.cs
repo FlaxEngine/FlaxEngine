@@ -3283,7 +3283,9 @@ namespace Flax.Build.Bindings
 
                         header.AppendFormat("    DLLEXPORT USED static void Unbox({0}& result, MObject* obj)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
-                        header.Append("        MClass* klass = MCore::Object::GetClass(obj);").AppendLine();
+                        header.Append("        if (!obj) return;").AppendLine();
+                        header.AppendFormat("        MClass* klass = {0}::TypeInitializer.GetClass();", fullName).AppendLine();
+                        //header.Append("        MClass* klass = MCore::Object::GetClass(obj);").AppendLine();
                         header.Append("        void* v = nullptr;").AppendLine();
                         for (var i = 0; i < fields.Count; i++)
                         {
