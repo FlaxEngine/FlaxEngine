@@ -11,7 +11,6 @@ template<class T, class MemoryAllocator = Allocator>
 class DeleteMe
 {
 private:
-
     T* _toDelete;
 
     DeleteMe()
@@ -22,13 +21,21 @@ private:
     {
     };
 
+    DeleteMe(DeleteMe&&)
+    {
+    };
+
     DeleteMe& operator=(const DeleteMe&)
     {
         return *this;
     };
 
-public:
+    DeleteMe& operator=(DeleteMe&&)
+    {
+        return *this;
+    };
 
+public:
     /// <summary>
     /// Init
     /// </summary>
@@ -48,7 +55,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Delete linked object and assign new one
     /// </summary>
@@ -75,54 +81,27 @@ public:
         }
     }
 
-    FORCE_INLINE bool IsSet() const
-    {
-        return _toDelete != nullptr;
-    }
-
-    FORCE_INLINE bool IsMissing() const
-    {
-        return _toDelete == nullptr;
-    }
-
     FORCE_INLINE T* Get() const
     {
         return _toDelete;
     }
 
 public:
-
-    /// <summary>
-    /// Object
-    /// </summary>
-    /// <returns></returns>
     T* operator->()
     {
         return _toDelete;
     }
 
-    /// <summary>
-    /// Object
-    /// </summary>
-    /// <returns>Object</returns>
     const T* operator->() const
     {
         return _toDelete;
     }
 
-    /// <summary>
-    /// Object
-    /// </summary>
-    /// <returns>Object</returns>
     T* operator*()
     {
         return _toDelete;
     }
 
-    /// <summary>
-    /// Object
-    /// </summary>
-    /// <returns>Object</returns>
     const T& operator*() const
     {
         return *_toDelete;
