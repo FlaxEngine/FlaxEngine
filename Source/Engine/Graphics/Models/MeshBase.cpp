@@ -460,7 +460,7 @@ void MeshBase::SetBounds(const BoundingBox& box, const BoundingSphere& sphere)
 
 GPUVertexLayout* MeshBase::GetVertexLayout() const
 {
-    return GPUVertexLayout::Get(Span<GPUBuffer*>(_vertexBuffers, MODEL_MAX_VB));
+    return _vertexLayout;
 }
 
 bool MeshBase::Init(uint32 vertices, uint32 triangles, const Array<const void*, FixedAllocation<MODEL_MAX_VB>>& vbData, const void* ibData, bool use16BitIndexBuffer, Array<GPUVertexLayout*, FixedAllocation<MODEL_MAX_VB>> vbLayout)
@@ -528,6 +528,7 @@ bool MeshBase::Init(uint32 vertices, uint32 triangles, const Array<const void*, 
     _vertexBuffers[1] = vertexBuffer1;
     _vertexBuffers[2] = vertexBuffer2;
     _indexBuffer = indexBuffer;
+    _vertexLayout = GPUVertexLayout::Get(Span<GPUBuffer*>(_vertexBuffers, vbData.Count()));
     _triangles = triangles;
     _vertices = vertices;
     _use16BitIndexBuffer = use16BitIndexBuffer;
@@ -554,6 +555,7 @@ void MeshBase::Release()
     SAFE_DELETE_GPU_RESOURCE(_vertexBuffers[1]);
     SAFE_DELETE_GPU_RESOURCE(_vertexBuffers[2]);
     SAFE_DELETE_GPU_RESOURCE(_indexBuffer);
+    _vertexLayout = nullptr;
 #if MODEL_USE_PRECISE_MESH_INTERSECTS
     _collisionProxy.Clear();
 #endif
@@ -866,7 +868,7 @@ void MeshBase::Render(GPUContext* context) const
 {
     if (!IsInitialized())
         return;
-    context->BindVB(ToSpan(_vertexBuffers, 3));
+    context->BindVB(ToSpan(_vertexBuffers, 3), nullptr, _vertexLayout);
     context->BindIB(_indexBuffer);
     context->DrawIndexed(_triangles * 3);
 }

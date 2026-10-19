@@ -49,6 +49,7 @@ protected:
 
     GPUBuffer* _vertexBuffers[MODEL_MAX_VB] = {};
     GPUBuffer* _indexBuffer = nullptr;
+    GPUVertexLayout* _vertexLayout = nullptr;
 
     mutable BytesContainer _cachedVertexBuffers[MODEL_MAX_VB];
     mutable GPUVertexLayout* _cachedVertexLayouts[MODEL_MAX_VB + 1] = {};
@@ -208,7 +209,6 @@ public:
     /// <summary>
     /// Gets the vertex buffers layout. Made out of all buffers used by this mesh.
     /// </summary>
-    /// <returns>The vertex layout.</returns>
     API_PROPERTY() GPUVertexLayout* GetVertexLayout() const;
 
 public:

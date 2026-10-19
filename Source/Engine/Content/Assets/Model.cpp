@@ -5,6 +5,7 @@
 #include "Engine/Engine/Engine.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Content/WeakAssetReference.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Content/Upgraders/ModelAssetUpgrader.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Graphics/RenderTools.h"
@@ -264,6 +265,7 @@ bool Model::LoadHeader(ReadStream& stream, byte& headerVersion)
     PROFILE_MEM(GraphicsMeshes);
     if (ModelBase::LoadHeader(stream, headerVersion))
         return true;
+    static_assert(MODEL_HEADER_VERSION == 3, "Update code");
     
     // LODs
     byte lods = stream.ReadByte();
@@ -298,7 +300,7 @@ bool Model::LoadHeader(ReadStream& stream, byte& headerVersion)
                 LOG(Warning, "Invalid material slot index {0} for mesh {1}. Slots count: {2}.", materialSlotIndex, meshIndex, MaterialSlots.Count());
                 return true;
             }
-            mesh.SetMaterialSlotIndex(materialSlotIndex);
+            mesh._materialSlotIndex = materialSlotIndex;
 
             // Bounds
             BoundingBox box;
@@ -311,6 +313,18 @@ bool Model::LoadHeader(ReadStream& stream, byte& headerVersion)
             int8 lightmapUVs;
             stream.ReadInt8(&lightmapUVs);
             mesh.LightmapUVsIndex = (int32)lightmapUVs;
+
+            if (headerVersion >= 3)
+            {
+                // Triangle/Vertex count
+                stream.Read(mesh._vertices);
+                stream.Read(mesh._triangles);
+
+                // Vertex Layout
+                GPUVertexLayout::Elements layout;
+                stream.Read(layout);
+                mesh._vertexLayout = GPUVertexLayout::Get(layout, true);
+            }
         }
     }
 
@@ -323,7 +337,7 @@ bool Model::SaveHeader(WriteStream& stream) const
 {
     if (ModelBase::SaveHeader(stream))
         return true;
-    static_assert(MODEL_HEADER_VERSION == 2, "Update code");
+    static_assert(MODEL_HEADER_VERSION == 3, "Update code");
     
     // LODs
     stream.Write((byte)LODs.Count());
@@ -340,6 +354,10 @@ bool Model::SaveHeader(WriteStream& stream) const
             stream.Write(mesh.GetBox());
             stream.Write(mesh.GetSphere());
             stream.Write((int8)mesh.LightmapUVsIndex);
+            stream.Write((uint32)mesh.GetTriangleCount());
+            stream.Write((uint32)mesh.GetVertexCount());
+            GPUVertexLayout* layout = mesh.GetVertexLayout();
+            stream.Write(layout ? layout->GetElements() : GPUVertexLayout::Elements());
         }
     }
 
@@ -350,7 +368,7 @@ bool Model::SaveHeader(WriteStream& stream, const ModelData& modelData)
 {
     if (ModelBase::SaveHeader(stream, modelData))
         return true;
-    static_assert(MODEL_HEADER_VERSION == 2, "Update code");
+    static_assert(MODEL_HEADER_VERSION == 3, "Update code");
     
     // LODs
     stream.Write((byte)modelData.LODs.Count());
@@ -370,6 +388,10 @@ bool Model::SaveHeader(WriteStream& stream, const ModelData& modelData)
             stream.Write(box);
             stream.Write(sphere);
             stream.Write((int8)mesh->LightmapUVsIndex);
+            stream.Write((uint32)mesh->Indices.Count() / 3);
+            stream.Write((uint32)mesh->Positions.Count() / 3);
+            auto layout = mesh->CalculateVertexLayout(modelData);
+            stream.Write(layout ? layout->GetElements() : GPUVertexLayout::Elements());
         }
     }
 
@@ -577,6 +599,16 @@ Asset::LoadResult Model::load()
         }
     }
 #endif
+
+    if (headerVersion == 2)
+    {
+        // [Deprecated in 1.14]
+        // Load all meshes to get their all vertex layouts and triangle/vertex count at load time, not after streamed in
+        // Then mark as deprecated to re-save asset for future
+        // (header ver 2 -> 3 added vertex format and mesh triangle/vertex counts to be available after aset load for PSO precaching)
+        LoadAllLODs();
+        MARK_CONTENT_DEPRECATED();
+    }
 
     // Request resource streaming
     StartStreaming(true);

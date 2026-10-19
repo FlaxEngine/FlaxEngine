@@ -18,7 +18,7 @@
 // Chunk 15: SDF
 #define MODEL_LOD_TO_CHUNK_INDEX(lod) (lod + 1)
 
-#define MODEL_HEADER_VERSION (byte)2
+#define MODEL_HEADER_VERSION (byte)3
 #define MODEL_MESH_VERSION (byte)2
 
 class MeshBase;
@@ -293,6 +293,9 @@ public:
     API_FUNCTION(Sealed) virtual void GetMeshes(API_PARAM(Out) Array<MeshBase*>& meshes, int32 lodIndex = 0) = 0;
 
 public:
+    // Loads all LODs with all mesh data (in sync).
+    bool LoadAllLODs();
+
     /// <summary>
     /// Requests the LOD data asynchronously (creates task that will gather chunk data or null if already here).
     /// </summary>

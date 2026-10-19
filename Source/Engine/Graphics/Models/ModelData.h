@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Graphics/Enums.h"
+#include "Engine/Graphics/Shaders/VertexElement.h"
 #include "Types.h"
 #include "Config.h"
 #include "SkeletonData.h"
@@ -186,6 +187,19 @@ public:
     /// <param name="box">Output box.</param>
     /// <param name="sphere">Output sphere.</param>
     void CalculateBounds(BoundingBox& box, BoundingSphere& sphere) const;
+
+    typedef Array<struct VertexElement, FixedAllocation<GPU_MAX_VS_ELEMENTS>> VertexElements;
+    typedef Array<VertexElements, FixedAllocation<MODEL_MAX_VB>> VertexBuffersLayout;
+
+    /// <summary>
+    /// Calculates vertex buffers layout for this mesh data.
+    /// </summary>
+    VertexBuffersLayout CalculateVertexBuffersLayout(const ModelData& modelData) const;
+
+    /// <summary>
+    /// Calculates vertex layout for this mesh data.
+    /// </summary>
+    GPUVertexLayout* CalculateVertexLayout(const ModelData& modelData) const;
 
 #if COMPILE_WITH_MODEL_TOOL
     /// <summary>

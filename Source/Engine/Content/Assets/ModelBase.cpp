@@ -6,6 +6,7 @@
 #include "Engine/Core/Config/BuildSettings.h"
 #include "Engine/Content/WeakAssetReference.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Graphics/Config.h"
 #include "Engine/Graphics/Models/MeshBase.h"
@@ -54,6 +55,7 @@ public:
         AssetReference<ModelBase> model = _model.Get();
         if (model == nullptr)
             return true;
+        PROFILE_CPU();
         PROFILE_MEM(GraphicsMeshes);
 
         // Get data
@@ -205,6 +207,29 @@ MaterialSlot* ModelBase::GetSlot(const StringView& name)
     return result;
 }
 
+bool ModelBase::LoadAllLODs()
+{
+    PROFILE_CPU();
+    if (_streamingTask)
+        _streamingTask->Wait();
+    ScopeLock lock(Locker);
+    int32 lods = GetLODsCount();
+    if (lods == _loadedLODs)
+        return false; // All already loaded
+    for (int32 lod = lods - 1 - _loadedLODs; lod >= 0; lod--)
+    {
+        if (LoadChunks(GET_CHUNK_FLAG(MODEL_LOD_TO_CHUNK_INDEX(lod))))
+            return true;
+        auto task = New<StreamModelLODTask>(this, lod);
+        _streamingTask = task;
+        task->Run();
+        task->OnEnd();
+    }
+    _loadedLODs = lods;
+    ResidencyChanged();
+    return false;
+}
+
 ContentLoadTask* ModelBase::RequestLODDataAsync(int32 lodIndex)
 {
     const int32 chunkIndex = MODEL_LOD_TO_CHUNK_INDEX(lodIndex);
@@ -316,7 +341,7 @@ bool ModelBase::LoadHeader(ReadStream& stream, byte& headerVersion)
         LOG(Warning, "Unsupported model asset header version {}", headerVersion);
         return true;
     }
-    static_assert(MODEL_HEADER_VERSION == 2, "Update code");
+    static_assert(MODEL_HEADER_VERSION == 3, "Update code");
     stream.Read(MinScreenSize);
 
     // Materials
@@ -400,7 +425,7 @@ bool ModelBase::LoadMesh(MemoryReadStream& stream, byte meshVersion, MeshBase* m
 bool ModelBase::SaveHeader(WriteStream& stream) const
 {
     // Basic info
-    static_assert(MODEL_HEADER_VERSION == 2, "Update code");
+    static_assert(MODEL_HEADER_VERSION == 3, "Update code");
     stream.Write(MODEL_HEADER_VERSION);
     stream.Write(MinScreenSize);
 
@@ -444,7 +469,7 @@ bool ModelBase::SaveHeader(WriteStream& stream, const ModelData& modelData)
     }
 
     // Basic info
-    static_assert(MODEL_HEADER_VERSION == 2, "Update code");
+    static_assert(MODEL_HEADER_VERSION == 3, "Update code");
     stream.Write(MODEL_HEADER_VERSION);
     stream.Write(modelData.MinScreenSize);
 
@@ -668,97 +693,8 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
             return true;
         }
 
-        // Process mesh data if need to decide vertex buffer on format dynamically
-        auto positionFormat = modelData.PositionFormat;
-        if (positionFormat == ModelData::PositionFormats::Automatic)
-        {
-            const float maxPositionError = BuildSettings::Get()->MaxMeshPositionError; // In world-units
-            const float maxPositionErrorSq = maxPositionError * maxPositionError;
-            if (maxPositionErrorSq > 0.0f)
-            {
-                positionFormat = ModelData::PositionFormats::Float16;
-                const Float3* positions = mesh.Positions.Get();
-                for (int32 i = 0; i < mesh.Positions.Count(); i++)
-                {
-                    // Encode to Half3 and decode back to see the position error
-                    Float3 position = positions[i];
-                    Half3 encoded(position);
-                    Float3 decoded = encoded.ToFloat3();
-                    if (Float3::DistanceSquared(position, decoded) > maxPositionErrorSq)
-                    {
-                        // Cannot use lower quality so go back to full precision
-                        positionFormat = ModelData::PositionFormats::Float32;
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                // Full precision as default
-                positionFormat = ModelData::PositionFormats::Float32;
-            }
-        }
-
-        // Define vertex buffers layout and packing
-        Array<GPUVertexLayout::Elements, FixedAllocation<MODEL_MAX_VB>> vbElements;
-        const bool useSeparatePositions = !isSkinned;
-        const bool useSeparateColors = !isSkinned;
-        PixelFormat positionsFormat = positionFormat == ModelData::PositionFormats::Float32 ? PixelFormat::R32G32B32_Float : PixelFormat::R16G16B16A16_Float;
-        PixelFormat texCoordsFormat = modelData.TexCoordFormat == ModelData::TexCoordFormats::Float16 ? PixelFormat::R16G16_Float : PixelFormat::R8G8_UNorm;
-        PixelFormat blendIndicesFormat = PixelFormat::R8G8B8A8_UInt;
-        PixelFormat blendWeightsFormat = PixelFormat::R8G8B8A8_UNorm;
-        for (const Int4& indices : mesh.BlendIndices)
-        {
-            if (indices.MaxValue() > MAX_uint8)
-            {
-                blendIndicesFormat = PixelFormat::R16G16B16A16_UInt;
-                break;
-            }
-        }
-        {
-            byte vbIndex = 0;
-
-            // Position
-            if (useSeparatePositions)
-            {
-                auto& vb0 = vbElements.AddOne();
-                vb0.Add({ VertexElement::Types::Position, vbIndex, 0, 0, positionsFormat });
-                vbIndex++;
-            }
-
-            // General purpose components
-            {
-                auto& vb = vbElements.AddOne();
-                if (!useSeparatePositions)
-                    vb.Add({ VertexElement::Types::Position, vbIndex, 0, 0, positionsFormat });
-                for (int32 channelIdx = 0; channelIdx < mesh.UVs.Count(); channelIdx++)
-                {
-                    auto& channel = mesh.UVs.Get()[channelIdx];
-                    if (channel.HasItems())
-                    {
-                        vb.Add({ (VertexElement::Types)((int32)VertexElement::Types::TexCoord0 + channelIdx), vbIndex, 0, 0, texCoordsFormat });
-                    }
-                }
-                vb.Add({ VertexElement::Types::Normal, vbIndex, 0, 0, PixelFormat::R10G10B10A2_UNorm });
-                vb.Add({ VertexElement::Types::Tangent, vbIndex, 0, 0, PixelFormat::R10G10B10A2_UNorm });
-                if (isSkinned)
-                {
-                    vb.Add({ VertexElement::Types::BlendIndices, vbIndex, 0, 0, blendIndicesFormat });
-                    vb.Add({ VertexElement::Types::BlendWeights, vbIndex, 0, 0, blendWeightsFormat });
-                }
-                if (!useSeparateColors && hasColors)
-                    vb.Add({ VertexElement::Types::Color, vbIndex, 0, 0, PixelFormat::R8G8B8A8_UNorm });
-                vbIndex++;
-            }
-
-            // Colors
-            if (useSeparateColors && hasColors)
-            {
-                auto& vb = vbElements.AddOne();
-                vb.Add({ VertexElement::Types::Color, vbIndex, 0, 0, PixelFormat::R8G8B8A8_UNorm });
-                vbIndex++;
-            }
-        }
+        // Define vertex buffers layouts
+        auto vbElements = mesh.CalculateVertexBuffersLayout(modelData);
 
         // Write descriptor
         stream.Write(vertices);
@@ -771,7 +707,12 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
         // Write vertex buffers
         for (int32 vbIndex = 0; vbIndex < vbCount; vbIndex++)
         {
-            if (useSeparatePositions && vbIndex == 0 && positionsFormat == PixelFormat::R32G32B32_Float)
+            const GPUVertexLayout::Elements& layout = vbElements[vbIndex];
+
+            if (vbIndex == 0 &&
+                layout.Count() == 1 &&
+                layout[0].Type == VertexElement::Types::Position &&
+                layout[0].Format == PixelFormat::R32G32B32_Float)
             {
                 // Fast path for vertex positions of static models using the first buffer
                 stream.WriteBytes(mesh.Positions.Get(), sizeof(Float3) * vertices);
@@ -779,7 +720,6 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
             }
 
             // Write vertex components interleaved
-            const GPUVertexLayout::Elements& layout = vbElements[vbIndex];
             for (uint32 vertex = 0; vertex < vertices; vertex++)
             {
                 for (const VertexElement& element : layout)
@@ -789,12 +729,12 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
                     case VertexElement::Types::Position:
                     {
                         const Float3 position = mesh.Positions.Get()[vertex];
-                        if (positionsFormat == PixelFormat::R16G16B16A16_Float)
+                        if (element.Format == PixelFormat::R16G16B16A16_Float)
                         {
                             const Half4 positionEnc(Float4(position, 0.0f));
                             stream.Write(positionEnc);
                         }
-                        else //if (positionsFormat == PixelFormat::R32G32B32_Float)
+                        else //if (element.Format == PixelFormat::R32G32B32_Float)
                         {
                             stream.Write(position);
                         }
@@ -825,13 +765,13 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
                     case VertexElement::Types::BlendIndices:
                     {
                         const Int4 blendIndices = mesh.BlendIndices.Get()[vertex];
-                        if (blendIndicesFormat == PixelFormat::R8G8B8A8_UInt)
+                        if (element.Format == PixelFormat::R8G8B8A8_UInt)
                         {
                             // 8-bit indices
                             const Color32 blendIndicesEnc(blendIndices.X, blendIndices.Y, blendIndices.Z, blendIndices.W);
                             stream.Write(blendIndicesEnc);
                         }
-                        else //if (blendWeightsFormat == PixelFormat::R16G16B16A16_UInt)
+                        else //if (element.Format == PixelFormat::R16G16B16A16_UInt)
                         {
                             // 16-bit indices
                             const uint16 blendIndicesEnc[4] = { (uint16)blendIndices.X, (uint16)blendIndices.Y, (uint16)blendIndices.Z, (uint16)blendIndices.W };
@@ -842,13 +782,13 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
                     case VertexElement::Types::BlendWeights:
                     {
                         const Float4 blendWeights = mesh.BlendWeights.Get()[vertex];
-                        if (blendWeightsFormat == PixelFormat::R8G8B8A8_UNorm)
+                        if (element.Format == PixelFormat::R8G8B8A8_UNorm)
                         {
                             // 8-bit weights
                             const Color32 blendWeightsEnc(blendWeights);
                             stream.Write(blendWeightsEnc);
                         }
-                        else //if (blendWeightsFormat == PixelFormat::R16G16B16A16_Float)
+                        else //if (element.Format == PixelFormat::R16G16B16A16_Float)
                         {
                             // 16-bit weights
                             const Half4 blendWeightsEnc(blendWeights);
@@ -863,12 +803,12 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
                     {
                         const int32 channelIdx = (int32)element.Type - (int32)VertexElement::Types::TexCoord0;
                         const Float2 uv = mesh.UVs.Get()[channelIdx].Get()[vertex];
-                        if (texCoordsFormat == PixelFormat::R8G8_UNorm)
+                        if (element.Format == PixelFormat::R8G8_UNorm)
                         {
                             stream.Write((uint8)Math::Clamp<int32>((int32)(uv.X * 255), 0, 255));
                             stream.Write((uint8)Math::Clamp<int32>((int32)(uv.Y * 255), 0, 255));
                         }
-                        else //if (texCoordsFormat == PixelFormat::R16G16_Float)
+                        else //if (element.Format == PixelFormat::R16G16_Float)
                         {
                             const Half2 uvEnc(uv);
                             stream.Write(uvEnc);
