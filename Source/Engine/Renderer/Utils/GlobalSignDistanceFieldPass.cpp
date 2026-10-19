@@ -694,6 +694,13 @@ bool GlobalSignDistanceFieldPass::Init()
     const auto device = GPUDevice::Instance;
     _supported = device->GetFeatureLevel() >= FeatureLevel::SM5 && device->Limits.HasCompute && device->Limits.HasTypedUAVLoad
             && EnumHasAllFlags(device->GetFormatFeatures(GLOBAL_SDF_FORMAT).Support, FormatSupport::ShaderSample | FormatSupport::Texture3D);
+
+    // Preload shader only when supported and enabled in project settings
+    auto settings = GraphicsSettings::Get();
+    auto& giSettings = settings->PostProcessSettings.GlobalIllumination;
+    if (_supported && (settings->EnableGlobalSDF || giSettings.Mode == GlobalIlluminationMode::DDGI))
+        _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Utils/GlobalSignDistanceField"));
+
     return false;
 }
 

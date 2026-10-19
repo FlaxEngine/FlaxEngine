@@ -788,6 +788,12 @@ bool GlobalSurfaceAtlasPass::Init()
     // Check platform support
     const auto device = GPUDevice::Instance;
     _supported = device->GetFeatureLevel() >= FeatureLevel::SM5 && device->Limits.HasCompute && device->Limits.HasTypedUAVLoad;
+
+    // Preload shader only when supported and enabled in project settings
+    auto& giSettings = GraphicsSettings::Get()->PostProcessSettings.GlobalIllumination;
+    if (_supported && giSettings.Mode == GlobalIlluminationMode::DDGI)
+        _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/GI/GlobalSurfaceAtlas"));
+
     return false;
 }
 

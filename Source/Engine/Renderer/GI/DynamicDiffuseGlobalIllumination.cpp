@@ -280,6 +280,12 @@ bool DynamicDiffuseGlobalIlluminationPass::Init()
     const auto device = GPUDevice::Instance;
     _supported = device->GetFeatureLevel() >= FeatureLevel::SM5 && device->Limits.HasCompute && device->Limits.HasTypedUAVLoad;
     _depthBounds = device->Limits.HasDepthBounds && device->Limits.HasReadOnlyDepth;
+
+    // Preload shader only when supported and enabled in project settings
+    auto& giSettings = GraphicsSettings::Get()->PostProcessSettings.GlobalIllumination;
+    if (_supported && giSettings.Mode == GlobalIlluminationMode::DDGI)
+        _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/GI/DDGI"));
+
     return false;
 }
 
