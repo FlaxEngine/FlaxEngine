@@ -373,10 +373,9 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
 
 void GPUPipelineStateDX12::OnReleaseGPU()
 {
+    constexpr bool canHaveRefs = true; // PSO can still be referenced by Pipeline Library
     for (auto i = _states.Begin(); i.IsNotEnd(); ++i)
-    {
-        _device->AddResourceToLateRelease(i->Value);
-    }
+        _device->AddResourceToLateRelease(i->Value, nullptr, DX12_RESOURCE_DELETE_SAFE_FRAMES_COUNT, true);
     _states.Clear();
 }
 

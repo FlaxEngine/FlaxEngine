@@ -1343,7 +1343,7 @@ bool GPUDeviceDX12::SavePipelineLibrary(bool async, bool cached)
 
 #endif
 
-void GPUDeviceDX12::AddResourceToLateRelease(IGraphicsUnknown* resource, D3D12MA::Allocation* allocation, uint32 safeFrameCount)
+void GPUDeviceDX12::AddResourceToLateRelease(IGraphicsUnknown* resource, D3D12MA::Allocation* allocation, uint32 safeFrameCount, bool canHaveRefs)
 {
     if (resource == nullptr)
         return;
@@ -1354,6 +1354,7 @@ void GPUDeviceDX12::AddResourceToLateRelease(IGraphicsUnknown* resource, D3D12MA
     entry.Resource = resource;
     entry.Allocation = allocation;
     entry.TargetFrame = Engine::FrameCount + safeFrameCount;
+    entry.CanHaveRefs = canHaveRefs;
     _res2Dispose.Add(entry);
 }
 
@@ -1369,17 +1370,17 @@ void GPUDeviceDX12::updateRes2Dispose()
     _res2DisposeLock.Lock();
     for (int32 i = _res2Dispose.Count() - 1; i >= 0 && i < _res2Dispose.Count(); i--)
     {
-        const DisposeResourceEntry& entry = _res2Dispose[i];
+        DisposeResourceEntry entry = _res2Dispose[i];
         if (entry.TargetFrame <= currentFrame)
         {
+            _res2Dispose.RemoveAt(i);
             if (entry.Allocation)
                 entry.Allocation->Release();
             auto refs = entry.Resource->Release();
-            if (refs != 0)
+            if (refs != 0 && !entry.CanHaveRefs)
             {
                 LOG(Error, "Late release resource has not been fully released. References left: {0}", refs);
             }
-            _res2Dispose.RemoveAt(i);
         }
     }
     _res2DisposeLock.Unlock();

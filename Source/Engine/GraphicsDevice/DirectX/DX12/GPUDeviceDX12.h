@@ -56,7 +56,8 @@ private:
     {
         IGraphicsUnknown* Resource;
         D3D12MA::Allocation* Allocation;
-        uint64 TargetFrame;
+        uint64 TargetFrame : 63;
+        uint64 CanHaveRefs : 1;
     };
 
 private:
@@ -192,7 +193,7 @@ public:
 public:
 
     // Add resource to late release service (will be released after 'safeFrameCount' frames)
-    void AddResourceToLateRelease(IGraphicsUnknown* resource, D3D12MA::Allocation* allocation = nullptr, uint32 safeFrameCount = DX12_RESOURCE_DELETE_SAFE_FRAMES_COUNT);
+    void AddResourceToLateRelease(IGraphicsUnknown* resource, D3D12MA::Allocation* allocation = nullptr, uint32 safeFrameCount = DX12_RESOURCE_DELETE_SAFE_FRAMES_COUNT, bool canHaveRefs = false);
 
     static FORCE_INLINE uint32 GetMaxMSAAQuality(uint32 sampleCount)
     {
