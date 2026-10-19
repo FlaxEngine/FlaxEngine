@@ -164,7 +164,7 @@ void Task::Execute()
     {
         OnFail();
     }
-    else
+    else if (IsRunning())
     {
         OnFinish();
     }
