@@ -63,14 +63,7 @@ namespace
                 }
             }
             result = anyValid ? GPUVertexLayout::Get(elements, true) : nullptr;
-            if (!VertexBufferCache.Add(key, result))
-            {
-                // Other thread added the value
-                Delete(result);
-                bool found = VertexBufferCache.TryGet(key, result);
-                ASSERT(found);
-            }
-
+            VertexBufferCache.Add(key, result);
         }
         return result;
     }
