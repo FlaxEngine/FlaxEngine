@@ -8,13 +8,13 @@
 #ifndef FMT_XCHAR_H_
 #define FMT_XCHAR_H_
 
-#include "color.h"
+//#include "color.h"
 #include "format.h"
-#include "ostream.h"
-#include "ranges.h"
+//#include "ostream.h"
+//#include "ranges.h"
 
 #ifndef FMT_MODULE
-#  include <cwchar>
+//#  include <cwchar>
 #  if FMT_USE_LOCALE
 #    include <locale>
 #  endif
@@ -48,10 +48,17 @@ inline auto write_loc(basic_appender<wchar_t> out, loc_value value,
 #if FMT_USE_LOCALE
   auto& numpunct =
       std::use_facet<std::numpunct<wchar_t>>(loc.get<std::locale>());
+#if FMT_USE_LOCALE_GROUPING
   auto separator = std::wstring();
   auto grouping = numpunct.grouping();
   if (!grouping.empty()) separator = std::wstring(1, numpunct.thousands_sep());
   return value.visit(loc_writer<wchar_t>{out, specs, separator, grouping, {}});
+#else
+  auto separator = wchar_t();
+  auto grouping = numpunct.grouping();
+  if (!grouping.empty()) separator = numpunct.thousands_sep();
+  return value.visit(loc_writer<wchar_t>{out, specs, separator, {}});
+#endif
 #endif
   return false;
 }
@@ -141,6 +148,7 @@ auto arg(const wchar_t* name, const T& arg) -> named_arg<T, wchar_t> {
   return {name, arg};
 }
 
+#if false
 template <typename It, typename Sentinel, typename S,
           typename Char = typename decltype(detail::to_string_view(
               std::declval<S>()))::value_type,
@@ -174,6 +182,8 @@ auto join(const Tuple& tuple, S&& sep) -> tuple_join_view<Tuple, Char> {
   return {tuple, detail::to_string_view(sep)};
 }
 
+#endif
+#if FMT_USE_STRING
 template <typename Char, FMT_ENABLE_IF(!std::is_same<Char, char>::value)>
 auto vformat(basic_string_view<Char> fmt,
              basic_format_args<buffered_context<Char>> args)
@@ -187,6 +197,7 @@ template <typename... T>
 auto format(wformat_string<T...> fmt, T&&... args) -> std::wstring {
   return vformat(fmt.get(), fmt::make_wformat_args(args...));
 }
+#endif
 
 template <typename OutputIt, typename... T>
 auto format_to(OutputIt out, wformat_string<T...> fmt, T&&... args)
@@ -194,6 +205,7 @@ auto format_to(OutputIt out, wformat_string<T...> fmt, T&&... args)
   return vformat_to(out, fmt.get(), fmt::make_wformat_args(args...));
 }
 
+#if FMT_USE_STRING
 // Pass char_t as a default template parameter instead of using
 // std::basic_string<char_t<S>> to reduce the symbol size.
 template <typename S, typename... T,
@@ -223,6 +235,7 @@ inline auto format(locale_ref loc, const S& fmt, T&&... args)
   return vformat(loc, detail::to_string_view(fmt),
                  fmt::make_format_args<buffered_context<Char>>(args...));
 }
+#endif
 
 template <typename OutputIt, typename S,
           typename Char = detail::format_string_char_t<S>,
@@ -307,12 +320,13 @@ inline auto formatted_size(const S& fmt, T&&... args) -> size_t {
   return buf.count();
 }
 
+#if false
 inline void vprint(std::FILE* f, wstring_view fmt, wformat_args args) {
   auto buf = wmemory_buffer();
   detail::vformat_to(buf, fmt, args);
   buf.push_back(L'\0');
   if (std::fputws(buf.data(), f) == -1)
-    FMT_THROW(system_error(errno, FMT_STRING("cannot write to file")));
+    FMT_THROW("cannot write to file");
 }
 
 inline void vprint(wstring_view fmt, wformat_args args) {
@@ -337,6 +351,7 @@ template <typename... T> void println(wformat_string<T...> fmt, T&&... args) {
   return print(L"{}\n", fmt::format(fmt, std::forward<T>(args)...));
 }
 
+#if false
 inline auto vformat(text_style ts, wstring_view fmt, wformat_args args)
     -> std::wstring {
   auto buf = wmemory_buffer();
@@ -356,6 +371,7 @@ inline void vprint(std::wostream& os, wstring_view fmt, wformat_args args) {
   detail::write_buffer(os, buffer);
 }
 
+#endif
 template <typename... T>
 void print(std::wostream& os, wformat_string<T...> fmt, T&&... args) {
   vprint(os, fmt.get(),
@@ -371,6 +387,7 @@ void println(std::wostream& os, wformat_string<T...> fmt, T&&... args) {
 template <typename T> inline auto to_wstring(const T& value) -> std::wstring {
   return format(FMT_STRING(L"{}"), value);
 }
+#endif
 FMT_END_EXPORT
 FMT_END_NAMESPACE
 

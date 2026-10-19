@@ -8,14 +8,54 @@
 #ifndef FMT_BASE_H_
 #define FMT_BASE_H_
 
+/*
+Customizations done to fmt lib:
+- Expose fmt within Flax DLL
+- Use Flax utilities instead of std (eg. string length util, assert)
+- Remove: dynamic args, chrono, colors, printf, ranges, os
+- Disable file-related api
+- Reduce `std` library usage (including `std::string`)
+- Disable literal-based api
+- Disable compile-time formatting
+- Move `bigint`, `format_float` to internal api
+- Remove `fmt::ptr`, `fmt::vformat_to_n`, `fmt::print`, `fmt::underlying`, `fmt::to_string`, `fmt::join`
+- Disable locale
+*/
+
+#include "Engine/Platform/Platform.h"
+#include "Engine/Platform/StringUtils.h"
+#include "Engine/Core/Memory/StlWrapper.h"
+
+#define FMT_USE_CONSTEXPR 0
+#define FMT_USE_CONSTEVAL 0
+#define FMT_CONSTEXPR_CHAR_TRAITS
+#define FMT_USE_COMPILE_TIME 0
+#define FMT_USE_STRING 0
+#define FMT_USE_STRING_VIEW 0
+#define FMT_USE_LONG_DOUBLE 0
+#define FMT_USE_FLOAT128 0
+#define FMT_USE_ITERATOR 0
+#define FMT_USE_LOCALE_GROUPING 0
+#define FMT_USE_EXCEPTIONS 0 
+#define FMT_USE_LOCALE 0
+#define FMT_USE_FILE 0
+#define FMT_CUSTOM_ASSERT_FAIL 1
+#if ENABLE_ASSERTION
+#define FMT_ASSERT(condition, message) if (!(condition)) { Platform::Assert(message, __FILE__, __LINE__); }
+#else
+#define FMT_ASSERT(condition, message) ((void)0)
+#endif
+#define FMT_THROW(x) do { static_cast<void>(sizeof(x)); FMT_ASSERT(false, ""); } while (false)
+#define FMT_API FLAXENGINE_API
+
 #if defined(FMT_IMPORT_STD) && !defined(FMT_MODULE)
 #  define FMT_MODULE
 #endif
 
 #ifndef FMT_MODULE
 #  include <limits.h>  // CHAR_BIT
-#  include <stdio.h>   // FILE
-#  include <string.h>  // memcmp
+//#  include <stdio.h>   // FILE
+//#  include <string.h>  // memcmp
 
 #  include <type_traits>  // std::enable_if
 #endif
@@ -375,7 +415,7 @@ constexpr auto is_constant_evaluated(bool default_value = false) noexcept
     (FMT_CLANG_VERSION >= 1400 && FMT_CLANG_VERSION < 1500)
   ignore_unused(default_value);
   return __builtin_is_constant_evaluated();
-#elif defined(__cpp_lib_is_constant_evaluated)
+#elif defined(__cpp_lib_is_constant_evaluated) && FMT_USE_CONSTEVAL
   ignore_unused(default_value);
   return std::is_constant_evaluated();
 #else
@@ -526,6 +566,9 @@ template <typename Char> class basic_string_view {
   FMT_ALWAYS_INLINE
 #endif
   FMT_CONSTEXPR basic_string_view(const Char* s) : data_(s) {
+#if !FMT_USE_STRING
+    size_ = StringUtils::Length(s);
+#else
 #if FMT_HAS_BUILTIN(__builtin_strlen) || FMT_GCC_VERSION || FMT_CLANG_VERSION
     if (std::is_same<Char, char>::value && !detail::is_constant_evaluated()) {
       size_ = __builtin_strlen(detail::narrow(s));  // strlen is not constexpr.
@@ -535,6 +578,7 @@ template <typename Char> class basic_string_view {
     size_t len = 0;
     while (*s++) ++len;
     size_ = len;
+#endif
   }
 
   template <
@@ -2395,10 +2439,12 @@ constexpr auto is_locking() -> bool {
 FMT_API void vformat_to(buffer<char>& buf, string_view fmt, format_args args,
                         locale_ref loc = {});
 
+#if FMT_USE_FILE
 #if FMT_WIN32
 FMT_API void vprint_mojibake(FILE*, string_view, format_args, bool);
 #else  // format_args is passed by reference since it is defined later.
 inline void vprint_mojibake(FILE*, string_view, const format_args&, bool) {}
+#endif
 #endif
 }  // namespace detail
 
@@ -2880,6 +2926,7 @@ FMT_NODISCARD FMT_INLINE auto formatted_size(format_string<T...> fmt,
 }
 
 FMT_API void vprint(string_view fmt, format_args args);
+#if FMT_USE_FILE
 FMT_API void vprint(FILE* f, string_view fmt, format_args args);
 FMT_API void vprintln(FILE* f, string_view fmt, format_args args);
 FMT_API void vprint_buffered(FILE* f, string_view fmt, format_args args);
@@ -2933,6 +2980,7 @@ template <typename... T>
 FMT_INLINE void println(format_string<T...> fmt, T&&... args) {
   fmt::println(stdout, fmt, static_cast<T&&>(args)...);
 }
+#endif
 
 FMT_PRAGMA_GCC(pop_options)
 FMT_END_EXPORT

@@ -286,7 +286,7 @@ namespace fmt
         }
 
         template<typename FormatContext>
-        auto format(const DateTime& v, FormatContext& ctx)
+        auto format(const DateTime& v, FormatContext& ctx) const
         {
             int32 year, month, day;
             v.GetDate(year, month, day);

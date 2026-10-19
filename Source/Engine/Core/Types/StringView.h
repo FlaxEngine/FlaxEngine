@@ -412,9 +412,9 @@ namespace fmt
         }
 
         template<typename FormatContext>
-        auto format(const StringView& v, FormatContext& ctx) -> decltype(ctx.out())
+        auto format(const StringView& v, FormatContext& ctx) const -> decltype(ctx.out())
         {
-            return fmt::detail::copy_str<Char>(v.Get(), v.Get() + v.Length(), ctx.out());
+            return fmt::detail::copy<Char>(v.Get(), v.Get() + v.Length(), ctx.out());
         }
     };
 }
@@ -594,9 +594,9 @@ namespace fmt
         }
 
         template<typename FormatContext>
-        auto format(const StringAnsiView& v, FormatContext& ctx) -> decltype(ctx.out())
+        auto format(const StringAnsiView& v, FormatContext& ctx) const -> decltype(ctx.out())
         {
-            return fmt::detail::copy_str<char>(v.Get(), v.Get() + v.Length(), ctx.out());
+            return fmt::detail::copy<char>(v.Get(), v.Get() + v.Length(), ctx.out());
         }
     };
 }
