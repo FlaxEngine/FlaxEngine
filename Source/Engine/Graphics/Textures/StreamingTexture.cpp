@@ -10,6 +10,7 @@
 #include "Engine/Graphics/Async/Tasks/GPUUploadTextureMipTask.h"
 #include "Engine/Scripting/Enums.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 
 TextureHeader_Deprecated::TextureHeader_Deprecated()
 {
@@ -225,6 +226,7 @@ protected:
     {
         if (_streamingTexture == nullptr)
             return Result::MissingResources;
+        PROFILE_CPU();
 
         // Copy all shared mips from previous texture to the new one
         GPUTexture* dstTexture = _newTexture;
@@ -374,6 +376,7 @@ protected:
     // [GPUTask]
     Result run(GPUTasksContext* context) override
     {
+        PROFILE_CPU();
         const auto texture = _texture.Get();
         if (texture == nullptr || !texture->IsAllocated())
             return Result::MissingResources;

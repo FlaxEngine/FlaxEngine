@@ -54,5 +54,6 @@ inline GPUPipelineLookup::Flag& operator|=(GPUPipelineLookup::Flag& a, GPUPipeli
 
 #endif
 
+#define GPU_PSO_ZONE_NAME_PRECACHE "Precache PSOs"
 #define GPU_PSO_ZONE_COLOR_PRECACHE 0x04BABA
 #define GPU_PSO_ZONE_COLOR_MISS 0xBA4404

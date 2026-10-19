@@ -56,6 +56,7 @@ GPUShader::GPUShader()
 
 bool GPUShader::Create(MemoryReadStream& stream)
 {
+    PROFILE_MEM(GraphicsShaders);
     ReleaseGPU();
     _memoryUsage = sizeof(GPUShader);
 
@@ -175,12 +176,11 @@ bool GPUShader::Create(MemoryReadStream& stream)
     // Precache PSO for compute shaders
     if (GPU_PSO_PRECACHING(Shader))
     {
-        PROFILE_CPU_NAMED("Precache PSOs");
+        PROFILE_CPU_NAMED(GPU_PSO_ZONE_NAME_PRECACHE);
+        PROFILE_MEM(GraphicsShaders);
         ZoneColor(GPU_PSO_ZONE_COLOR_PRECACHE);
         for (auto& e : _shaders)
-        {
             e.Value->PrecachePSO();
-        }
     }
 #endif
 
