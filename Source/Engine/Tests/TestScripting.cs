@@ -45,6 +45,60 @@ namespace FlaxEngine.Tests
         }
 
         /// <summary>
+        /// Tests that one assembly can import several native libraries through the engine's import resolver.
+        /// </summary>
+        public static int TestNativeLibrariesPerAssembly()
+        {
+            // Two system libraries under test names: the resolver loads each name once, so the names must be new to it
+            string[] systemLibraries;
+            if (OperatingSystem.IsWindows())
+                systemLibraries = new[] { "kernel32.dll", "user32.dll" };
+            else if (OperatingSystem.IsMacOS())
+                systemLibraries = new[] { "/usr/lib/libSystem.B.dylib", "/usr/lib/libobjc.A.dylib" };
+            else
+                systemLibraries = new[] { "libc.so.6", "libm.so.6" };
+            var names = new[] { "TestNativeLibrary1", "TestNativeLibrary2" };
+
+            // An assembly that does not import native libraries through the resolver
+            var assembly = typeof(System.Linq.Enumerable).Assembly;
+            var interop = typeof(Interop.NativeInterop);
+            var resolver = interop.GetMethod("NativeLibraryImportResolver", BindingFlags.NonPublic | BindingFlags.Static);
+            var loadedLibraries = (Dictionary<string, IntPtr>)interop.GetField("loadedNativeLibraries", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null);
+            var ownedLibraries = (System.Collections.IDictionary)interop.GetField("assemblyOwnedNativeLibraries", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null);
+            if (resolver == null || loadedLibraries == null || ownedLibraries == null)
+                return -1;
+
+            var result = 0;
+            try
+            {
+                for (int i = 0; i < names.Length; i++)
+                {
+                    Interop.NativeInterop.libraryPaths[names[i]] = systemLibraries[i];
+                    var library = (IntPtr)resolver.Invoke(null, new object[] { names[i], assembly, null });
+                    if (library == IntPtr.Zero)
+                        result++;
+                }
+            }
+            catch (TargetInvocationException ex)
+            {
+                Debug.LogError("Native library import failed: " + ex.InnerException?.Message);
+                result += 10;
+            }
+            finally
+            {
+                // Remove the test libraries from the resolver (also after a failure)
+                foreach (var name in names)
+                {
+                    Interop.NativeInterop.libraryPaths.Remove(name);
+                    if (loadedLibraries.Remove(name, out var library))
+                        NativeLibrary.Free(library);
+                }
+                ownedLibraries.Remove(assembly);
+            }
+            return result;
+        }
+
+        /// <summary>
         /// Tests <see cref="ScriptingObjectInterfaceReference{T}"/> usage with marshalling.
         /// </summary>
         public static int TestInterfaceReference()
