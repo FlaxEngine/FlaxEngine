@@ -38,6 +38,8 @@ bool GPUSamplerVulkan::OnInit()
         return true;
     }
     VALIDATE_VULKAN_RESULT(vkCreateSampler(_device->Device, &createInfo, nullptr, &Sampler));
+    // Non-zero memory usage, so GPUResource::ReleaseGPU calls OnReleaseGPU (as the DX11 and DX12 samplers do)
+    _memoryUsage = sizeof(VkSamplerCreateInfo);
     return false;
 }
 
@@ -45,7 +47,7 @@ void GPUSamplerVulkan::OnReleaseGPU()
 {
     if (Sampler != VK_NULL_HANDLE)
     {
-        _device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Buffer, Sampler);
+        _device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Sampler, Sampler);
         Sampler = VK_NULL_HANDLE;
     }
 
