@@ -4,12 +4,11 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Collections/Array.h"
 #include <ThirdParty/catch2/catch.hpp>
-#include <string>
 
 namespace
 {
     // Parses the command line and returns the value of the given argument (empty if not set), as text that Catch can print.
-    std::string ParseValue(const String& commandLine, const StringView& name, int32* argsCount = nullptr)
+    StringAnsi ParseValue(const String& commandLine, const StringView& name, int32* argsCount = nullptr)
     {
         Array<CommandLine::Arg> args;
         CHECK(!CommandLine::Parse(commandLine, args));
@@ -18,9 +17,9 @@ namespace
         for (const CommandLine::Arg& arg : args)
         {
             if (arg.Name == name)
-                return arg.Value.HasChars() ? std::string(String(arg.Value).ToStringAnsi().Get()) : std::string();
+                return arg.Value.HasChars() ? StringAnsi(arg.Value) : StringAnsi::Empty;
         }
-        return std::string();
+        return StringAnsi::Empty;
     }
 }
 
