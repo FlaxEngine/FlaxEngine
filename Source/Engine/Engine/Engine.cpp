@@ -59,6 +59,7 @@ DateTime Engine::StartupTime;
 bool Engine::HasFocus = false;
 uint64 Engine::UpdateCount = 0;
 uint64 Engine::FrameCount = 0;
+int32 Engine::ForcedGCInterval = 60;
 Action Engine::FixedUpdate;
 Action Engine::Update;
 TaskGraph* Engine::UpdateGraph = nullptr;

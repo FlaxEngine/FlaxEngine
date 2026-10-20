@@ -38,6 +38,11 @@ public:
     /// </summary>
     API_FIELD(ReadOnly) static uint64 FrameCount;
 
+    /// <summary>
+    /// The number of update ticks between the background garbage collections that a cooked .NET game forces (to avoid large blocking collections later). Use 0 to disable them, for example in a game that makes no garbage while it runs. It can be changed at any time. Not used in the editor. Default value is 60.
+    /// </summary>
+    API_FIELD() static int32 ForcedGCInterval;
+
 public:
     /// <summary>
     /// Event called on engine fixed update.

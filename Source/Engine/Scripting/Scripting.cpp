@@ -28,6 +28,7 @@
 #include "Engine/Core/Types/Stopwatch.h"
 #include "Engine/Content/Asset.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Engine/Time.h"
@@ -265,8 +266,8 @@ void ScriptingService::Update()
     _objectsLocker.Unlock();
 
 #if USE_NETCORE && !USE_EDITOR
-    // Force GC to run in background periodically to avoid large blocking collections causing hitches
-    if (Time::Update.TicksCount % 60 == 0)
+    // Force GC to run in background periodically to avoid large blocking collections causing hitches (Engine::ForcedGCInterval sets the interval, 0 disables it)
+    if (Engine::ForcedGCInterval > 0 && Time::Update.TicksCount % Engine::ForcedGCInterval == 0)
     {
         MCore::GC::Collect(MCore::GC::MaxGeneration(), MGCCollectionMode::Forced, false, false);
     }
