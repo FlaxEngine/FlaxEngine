@@ -930,7 +930,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
         }
 
         DrawBatch batch;
-        static_assert(sizeof(DrawBatch) == sizeof(uint64) * 2, "Fix the size of draw batch to optimize memory access.");
+        static_assert(sizeof(DrawBatch) == sizeof(uint64) * 3, "Fix the size of draw batch to optimize memory access.");
         batch.SortKey = sortedKeys[i];
         batch.StartIndex = i;
         batch.BatchSize = batchSize;
