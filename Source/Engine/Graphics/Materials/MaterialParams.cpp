@@ -360,14 +360,16 @@ void MaterialParameter::Bind(BindMeta& meta) const
     case MaterialParameterType::GPUTextureCube:
     {
         const auto texture = _asObject.As<GPUTexture>();
-        const auto view = texture ? texture->ViewArray() : nullptr;
+        // Like GET_TEXTURE_VIEW_SAFE: a texture that hasn't streamed in yet isn't allocated (its array size is 0), and
+        // ViewArray asserts on a texture with a single slice
+        const auto view = texture && texture->ResidentMipLevels() > 0 && texture->ArraySize() > 1 ? texture->ViewArray() : nullptr;
         meta.Context->BindSR(_registerIndex, view);
         break;
     }
     case MaterialParameterType::GPUTextureVolume:
     {
         const auto texture = _asObject.As<GPUTexture>();
-        const auto view = texture ? texture->ViewVolume() : nullptr;
+        const auto view = texture && texture->ResidentMipLevels() > 0 && texture->IsVolume() ? texture->ViewVolume() : nullptr;
         meta.Context->BindSR(_registerIndex, view);
         break;
     }
