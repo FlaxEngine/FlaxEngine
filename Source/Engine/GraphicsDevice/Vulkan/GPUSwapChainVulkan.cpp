@@ -125,6 +125,8 @@ void GPUSwapChainVulkan::SetFullscreen(bool isFullscreen)
 #else
     if (!_surface)
         return;
+    if (isFullscreen == IsFullscreen())
+        return; // No change (eg. a windowed game that sets windowed mode)
     // TODO: support fullscreen mode on Vulkan
     MISSING_CODE("support fullscreen mode on Vulkan");
 #endif
