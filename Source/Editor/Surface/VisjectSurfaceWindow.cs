@@ -253,6 +253,63 @@ namespace FlaxEditor.Surface
     }
 
     /// <summary>
+    /// The surface GPU Texture parameter type (2D texture, texture array, volume texture or cube texture) edit action for undo.
+    /// </summary>
+    /// <seealso cref="IVisjectSurfaceWindow" />
+    sealed class EditParamGPUTextureTypeAction : IUndoAction
+    {
+        /// <summary>
+        /// The window reference.
+        /// </summary>
+        public IVisjectSurfaceWindow Window;
+
+        /// <summary>
+        /// The index of the parameter.
+        /// </summary>
+        public int Index;
+
+        /// <summary>
+        /// The type before.
+        /// </summary>
+        public MaterialParameterType Before;
+
+        /// <summary>
+        /// The type after.
+        /// </summary>
+        public MaterialParameterType After;
+
+        /// <inheritdoc />
+        public string ActionString => "Edit GPU texture type";
+
+        /// <inheritdoc />
+        public void Do()
+        {
+            Set(After);
+        }
+
+        /// <inheritdoc />
+        public void Undo()
+        {
+            Set(Before);
+        }
+
+        private void Set(MaterialParameterType value)
+        {
+            var param = Window.VisjectSurface.Parameters[Index];
+            param.Meta.SetGPUTextureType(value);
+            Window.VisjectSurface.OnParamEdited(param);
+            Window.VisjectSurface.MarkAsEdited();
+            Window.OnParamEditAttributesUndo();
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            Window = null;
+        }
+    }
+
+    /// <summary>
     /// The undo action for adding or removing surface parameter.
     /// </summary>
     /// <seealso cref="FlaxEditor.Windows.Assets.ClonedAssetEditorWindowBase{TAsset}" />
@@ -294,6 +351,11 @@ namespace FlaxEditor.Surface
         /// </summary>
         public object InitValue;
 
+        /// <summary>
+        /// The metadata entries of the removed parameter (restored when adding it back).
+        /// </summary>
+        public SurfaceMeta.Entry[] Meta;
+
         /// <inheritdoc />
         public string ActionString => IsAdd ? "Add parameter" : "Remove parameter";
 
@@ -318,8 +380,11 @@ namespace FlaxEditor.Surface
         private void Add()
         {
             var type = Type;
+            var gpuTextureType = GPUTextureTypes.FromNewParameterType(type.Type);
             if (IsAdd && type.Type == typeof(NormalMap))
                 type = new ScriptType(typeof(Texture));
+            else if (IsAdd && gpuTextureType != MaterialParameterType.Invalid)
+                type = new ScriptType(typeof(GPUTexture));
             var param = new SurfaceParameter
             {
                 ID = Id,
@@ -330,6 +395,10 @@ namespace FlaxEditor.Surface
             };
             if (IsAdd && Type.Type == typeof(NormalMap))
                 param.Value = FlaxEngine.Content.LoadAsyncInternal<Texture>("Engine/Textures/NormalTexture");
+            if (IsAdd && gpuTextureType != MaterialParameterType.Invalid)
+                param.Meta.SetGPUTextureType(gpuTextureType);
+            if (Meta != null)
+                param.Meta.Entries.AddRange(Meta);
             Window.VisjectSurface.Parameters.Insert(Index, param);
             Window.VisjectSurface.OnParamCreated(param);
             Window.OnParamAddUndo();
@@ -342,6 +411,7 @@ namespace FlaxEditor.Surface
             {
                 Name = param.Name;
                 Type = param.Type;
+                Meta = param.Meta.Entries.ToArray();
             }
             Window.VisjectSurface.Parameters.RemoveAt(Index);
             Window.VisjectSurface.OnParamDeleted(param);
@@ -644,6 +714,8 @@ namespace FlaxEditor.Surface
                 if (!p.IsPublic)
                     propertyLabel.TextColor = propertyLabel.TextColor.RGBMultiplied(0.7f);
                 var tooltipText = "Type: " + window.VisjectSurface.GetTypeName(p.Type);
+                if (p.Type.Type == typeof(GPUTexture) && p.Meta.GetGPUTextureType() != MaterialParameterType.GPUTexture)
+                    tooltipText += " (" + GPUTextureTypes.GetName(p.Meta.GetGPUTextureType()) + ")";
                 var tooltip = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
                 if (tooltip != null)
                     tooltipText += '\n' + tooltip.Text;
@@ -739,8 +811,42 @@ namespace FlaxEditor.Surface
             menu.AddSeparator();
             menu.AddButton("Rename", () => StartParameterRenaming(index, label));
             menu.AddButton("Edit attributes...", () => EditAttributesParameter(index, label));
+            SetupGPUTextureTypeContextMenu(index, menu);
             menu.AddButton("Delete", () => DeleteParameter(index));
             OnParamContextMenu(index, menu);
+        }
+
+        private void SetupGPUTextureTypeContextMenu(int index, FlaxEditor.GUI.ContextMenu.ContextMenu menu)
+        {
+            // Only GPU Texture parameters in graphs that support texture arrays, volumes and cubes (materials and particles)
+            var window = (IVisjectSurfaceWindow)Values[0];
+            var param = window.VisjectSurface.Parameters[index];
+            if (param.Type.Type != typeof(GPUTexture) || window.NewParameterTypes == null || !window.NewParameterTypes.Any(x => x.Type == typeof(GPUTextureArray)))
+                return;
+            var current = param.Meta.GetGPUTextureType();
+            var childMenu = menu.AddChildMenu("GPU texture type").ContextMenu;
+            foreach (var type in GPUTextureTypes.All)
+            {
+                var button = childMenu.AddButton(GPUTextureTypes.GetName(type), () => SetGPUTextureType(index, type));
+                button.Checked = type == current;
+            }
+        }
+
+        private void SetGPUTextureType(int index, MaterialParameterType type)
+        {
+            var window = (IVisjectSurfaceWindow)Values[0];
+            var before = window.VisjectSurface.Parameters[index].Meta.GetGPUTextureType();
+            if (before == type)
+                return;
+            var action = new EditParamGPUTextureTypeAction
+            {
+                Window = window,
+                Index = index,
+                Before = before,
+                After = type,
+            };
+            window.VisjectSurface.Undo.AddAction(action);
+            action.Do();
         }
 
         private void CopyAllParameterNamesAsConstantCSharpCode()
@@ -855,6 +961,75 @@ namespace FlaxEditor.Surface
     [Tooltip("Texture asset contains a normal map that is stored on a GPU and is used during rendering graphics to implement normal mapping (aka bump mapping).")]
     internal sealed class NormalMap
     {
+    }
+
+    /// <summary>
+    /// Dummy class to inject GPU Texture Array parameter type (a GPU Texture parameter declared as Texture2DArray) for the material and particle parameter adding picker.
+    /// </summary>
+    [Tooltip("GPU texture array (created from code) that is sampled with float3(uv, slice). Bound with GPUTexture.ViewArray.")]
+    internal sealed class GPUTextureArray
+    {
+    }
+
+    /// <summary>
+    /// Dummy class to inject GPU Texture Volume parameter type (a GPU Texture parameter declared as Texture3D) for the material and particle parameter adding picker.
+    /// </summary>
+    [Tooltip("GPU volume texture (created from code) that is sampled with float3 UVW. Bound with GPUTexture.ViewVolume.")]
+    internal sealed class GPUTextureVolume
+    {
+    }
+
+    /// <summary>
+    /// Dummy class to inject GPU Texture Cube parameter type (a GPU Texture parameter declared as TextureCube) for the material and particle parameter adding picker.
+    /// </summary>
+    [Tooltip("GPU cube texture (created from code) that is sampled with a float3 direction. Bound with GPUTexture.ViewArray.")]
+    internal sealed class GPUTextureCube
+    {
+    }
+
+    /// <summary>
+    /// Helpers for the type a GPU Texture parameter is declared as in shaders (stored in the parameter metadata).
+    /// </summary>
+    internal static class GPUTextureTypes
+    {
+        /// <summary>
+        /// All GPU Texture parameter types.
+        /// </summary>
+        public static readonly MaterialParameterType[] All =
+        {
+            MaterialParameterType.GPUTexture,
+            MaterialParameterType.GPUTextureArray,
+            MaterialParameterType.GPUTextureVolume,
+            MaterialParameterType.GPUTextureCube,
+        };
+
+        /// <summary>
+        /// Gets the display name of the GPU Texture parameter type.
+        /// </summary>
+        public static string GetName(MaterialParameterType type)
+        {
+            switch (type)
+            {
+            case MaterialParameterType.GPUTextureArray: return "Array";
+            case MaterialParameterType.GPUTextureVolume: return "Volume";
+            case MaterialParameterType.GPUTextureCube: return "Cube";
+            default: return "2D";
+            }
+        }
+
+        /// <summary>
+        /// Gets the GPU Texture parameter type for the dummy type from the parameter adding picker, or <see cref="MaterialParameterType.Invalid"/> if it's not one of them.
+        /// </summary>
+        public static MaterialParameterType FromNewParameterType(Type type)
+        {
+            if (type == typeof(GPUTextureArray))
+                return MaterialParameterType.GPUTextureArray;
+            if (type == typeof(GPUTextureVolume))
+                return MaterialParameterType.GPUTextureVolume;
+            if (type == typeof(GPUTextureCube))
+                return MaterialParameterType.GPUTextureCube;
+            return MaterialParameterType.Invalid;
+        }
     }
 
     /// <summary>

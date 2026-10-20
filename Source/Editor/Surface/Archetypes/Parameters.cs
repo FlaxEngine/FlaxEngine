@@ -325,6 +325,17 @@ namespace FlaxEditor.Surface.Archetypes
                 },
             };
 
+            private static readonly NodeElementArchetype[] _gpuTexture3DParameterElements =
+            {
+                NodeElementArchetype.Factory.Input(1, "UVs", true, typeof(Float3), 0, -1),
+                NodeElementArchetype.Factory.Output(1, "", typeof(FlaxEngine.Object), 6),
+                NodeElementArchetype.Factory.Output(2, "Color", typeof(Float4), 1),
+                NodeElementArchetype.Factory.Output(3, "R", typeof(float), 2),
+                NodeElementArchetype.Factory.Output(4, "G", typeof(float), 3),
+                NodeElementArchetype.Factory.Output(5, "B", typeof(float), 4),
+                NodeElementArchetype.Factory.Output(6, "A", typeof(float), 5),
+            };
+
             private readonly NodeElementArchetype[] _normalMapParameterElements =
             {
                 NodeElementArchetype.Factory.Input(1, "UVs", true, typeof(Float2), 0, -1),
@@ -361,6 +372,10 @@ namespace FlaxEditor.Surface.Archetypes
                             if (asset != null && !asset.WaitForLoaded() && asset.IsNormalMap)
                                 elements = _normalMapParameterElements;
                         }
+
+                        // Special case for GPU texture arrays, volumes and cubes (sampled with 3D UVs)
+                        if (selected.Type.Type == typeof(GPUTexture) && Prototypes == DefaultPrototypes && selected.Meta.GetGPUTextureType() != MaterialParameterType.GPUTexture)
+                            elements = _gpuTexture3DParameterElements;
                         return elements;
                     }
 
@@ -377,7 +392,7 @@ namespace FlaxEditor.Surface.Archetypes
                 // Add elements and calculate node size if type changes
                 var selected = GetSelected();
                 var type = selected?.Type ?? ScriptType.Null;
-                if (type != _layoutType || type.Type == typeof(Texture))
+                if (type != _layoutType || type.Type == typeof(Texture) || type.Type == typeof(GPUTexture))
                 {
                     var elements = GetElementArchetypes(selected);
                     if (elements != _layoutElements)

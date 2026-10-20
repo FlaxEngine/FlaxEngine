@@ -50,6 +50,11 @@ namespace FlaxEditor.Surface
         public const int AttributeMetaTypeID = 13;
 
         /// <summary>
+        /// The GPU texture type meta type identifier. Uses a single byte with the <see cref="MaterialParameterType"/> a GPU Texture parameter is declared as in shaders (<see cref="MaterialParameterType.GPUTexture"/>, <see cref="MaterialParameterType.GPUTextureArray"/>, <see cref="MaterialParameterType.GPUTextureVolume"/> or <see cref="MaterialParameterType.GPUTextureCube"/>).
+        /// </summary>
+        public const int GPUTextureTypeMetaTypeID = 14;
+
+        /// <summary>
         /// Gets the attributes collection from the data.
         /// </summary>
         /// <param name="data">The graph metadata serialized with JsonSerializer.</param>
@@ -157,6 +162,39 @@ namespace FlaxEditor.Surface
                 AddEntry(AttributeMetaTypeID, GetAttributesData(attributes));
                 RemoveEntry(OldAttributeMetaTypeID);
             }
+        }
+
+        /// <summary>
+        /// Gets the type a GPU Texture parameter is declared as in shaders (2D texture, texture array, volume texture or cube texture).
+        /// </summary>
+        /// <returns>The GPU texture parameter type. <see cref="MaterialParameterType.GPUTexture"/> for a 2D texture.</returns>
+        public MaterialParameterType GetGPUTextureType()
+        {
+            var data = GetEntry(GPUTextureTypeMetaTypeID).Data;
+            if (data != null && data.Length == 1)
+            {
+                var type = (MaterialParameterType)data[0];
+                if (IsGPUTextureType(type))
+                    return type;
+            }
+            return MaterialParameterType.GPUTexture;
+        }
+
+        /// <summary>
+        /// Sets the type a GPU Texture parameter is declared as in shaders (2D texture, texture array, volume texture or cube texture).
+        /// </summary>
+        /// <param name="type">The GPU texture parameter type. <see cref="MaterialParameterType.GPUTexture"/> for a 2D texture.</param>
+        public void SetGPUTextureType(MaterialParameterType type)
+        {
+            if (type != MaterialParameterType.GPUTexture && IsGPUTextureType(type))
+                AddEntry(GPUTextureTypeMetaTypeID, new[] { (byte)type });
+            else
+                RemoveEntry(GPUTextureTypeMetaTypeID);
+        }
+
+        internal static bool IsGPUTextureType(MaterialParameterType type)
+        {
+            return type == MaterialParameterType.GPUTexture || type == MaterialParameterType.GPUTextureArray || type == MaterialParameterType.GPUTextureVolume || type == MaterialParameterType.GPUTextureCube;
         }
 
         /// <summary>
