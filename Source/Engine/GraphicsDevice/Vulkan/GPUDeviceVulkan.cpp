@@ -409,7 +409,7 @@ void DeferredDeletionQueueVulkan::ReleaseResources(bool immediately)
                 SWITCH_CASE(QueryPool);
 #undef SWITCH_CASE
                 default:
-#if !BUILD_RELEASE
+#if GPU_ENABLE_DEVELOPMENT
                     CRASH;
 #endif
                     break;
@@ -425,7 +425,7 @@ void DeferredDeletionQueueVulkan::ReleaseResources(bool immediately)
                 {
                     vmaDestroyBuffer(_device->Allocator, (VkBuffer)e->Handle, e->AllocationHandle);
                 }
-#if !BUILD_RELEASE
+#if GPU_ENABLE_DEVELOPMENT
                 else
                 {
                     CRASH;
@@ -461,8 +461,6 @@ uint32 GetHash(const RenderTargetLayoutVulkan& key)
     CombineHash(hash, (uint32)(key.Flags & MAX_uint32));
     CombineHash(hash, (uint32)((key.Flags >> 32) & MAX_uint32));
     CombineHash(hash, (uint32)key.DepthFormat * 93473262);
-    CombineHash(hash, key.Extent.width);
-    CombineHash(hash, key.Extent.height);
     for (int32 i = 0; i < ARRAY_COUNT(key.RTVsFormats); i++)
         CombineHash(hash, (uint32)key.RTVsFormats[i]);
     return hash;
@@ -488,6 +486,66 @@ GPUVertexLayoutVulkan::GPUVertexLayoutVulkan(GPUDeviceVulkan* device, const Elem
         MaxSlot = Math::Max(MaxSlot, (int32)src.Slot);
     }
 }
+
+#if GPU_ENABLE_DEVELOPMENT
+
+#include "Engine/Core/Types/StringBuilder.h"
+
+String RenderTargetLayoutVulkan::ToString() const
+{
+    StringBuilder sb;
+    if (DepthFormat != PixelFormat::Unknown)
+    {
+        sb.Append(TEXT("Depth: ")).Append(ScriptingEnum::ToString(DepthFormat));
+        if (ReadDepth && WriteStencil)
+        {
+        }
+        if (ReadDepth && !WriteDepth)
+            sb.Append(TEXT(" (read-only depth)"));
+        else if (!ReadDepth && WriteDepth)
+            sb.Append(TEXT(" (write-only depth)"));
+        else if (!ReadDepth && !WriteDepth)
+            sb.Append(TEXT(" (no depth)"));
+        if (PixelFormatExtensions::HasStencil(DepthFormat))
+        {
+            if (ReadStencil && WriteStencil)
+            {
+            }
+            if (ReadStencil && !WriteStencil)
+                sb.Append(TEXT(" (read-only stencil)"));
+            else if (!ReadStencil && WriteStencil)
+                sb.Append(TEXT(" (write-only stencil)"));
+            else if (!ReadStencil && !WriteStencil)
+                sb.Append(TEXT(" (no stencil)"));
+        }
+        uint64 mask = 1ull << RTsCount;
+        if (LoadClear & mask)
+            sb.Append(TEXT(" (clear)"));
+        if (LoadDontCare & mask)
+            sb.Append(TEXT(" (no load)"));
+        if (StoreDontCare & mask)
+            sb.Append(TEXT(" (no store)"));
+        sb.AppendLine();
+    }
+    if (MSAA != MSAALevel::None)
+        sb.Append(TEXT("MSAA: ")).Append(ScriptingEnum::ToString(MSAA)).AppendLine();
+    for (int32 i = 0; i < RTsCount; i++)
+    {
+        sb.AppendFormat(TEXT("RT[{}]: "), i).Append(ScriptingEnum::ToString(RTVsFormats[i]));
+        uint64 mask = 1ull << i;
+        if (LoadClear & mask)
+            sb.Append(TEXT(" (clear)"));
+        if (LoadDontCare & mask)
+            sb.Append(TEXT(" (no load)"));
+        if (StoreDontCare & mask)
+            sb.Append(TEXT(" (no store)"));
+        sb.AppendLine();
+    }
+    //sb.AppendFormat(TEXT("Flags: {}"), Flags).AppendLine();
+    return sb.ToString();
+}
+
+#endif
 
 FramebufferVulkan::FramebufferVulkan(GPUDeviceVulkan* device, const Key& key, const VkExtent2D& extent, uint32 layers)
     : Device(device)
@@ -1344,7 +1402,13 @@ RenderPassVulkan* GPUDeviceVulkan::GetOrCreateRenderPass(RenderTargetLayoutVulka
     PROFILE_CPU_NAMED("Create Render Pass");
     PROFILE_MEM(GraphicsCommands);
     renderPass = New<RenderPassVulkan>(this, layout);
-    _renderPasses.Add(layout, renderPass);
+    if (!_renderPasses.Add(layout, renderPass))
+    {
+        // Other thread added the value
+        Delete(renderPass);
+        bool found = _renderPasses.TryGet(layout, renderPass);
+        ASSERT(found);
+    }
     return renderPass;
 }
 
@@ -1480,7 +1544,7 @@ PixelFormat GPUDeviceVulkan::GetClosestSupportedPixelFormat(PixelFormat format, 
                 remap = PixelFormat::R32G32B32A32_Float;
                 break;
             }
-#if !BUILD_RELEASE
+#if GPU_ENABLE_DEVELOPMENT
             if (format != remap)
             {
                 LOG(Warning, "Unsupported Vulkan format {0}. Remapping to {1}", ScriptingEnum::ToString(format), ScriptingEnum::ToString(remap));

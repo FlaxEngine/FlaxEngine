@@ -1302,3 +1302,36 @@ API_ENUM() enum class ProbeCubemapResolution
     // Cubemap with 2048x2048.
     _2048 = 2048,
 };
+
+/// <summary>
+/// GPU pass operations on attached render targets and depth buffer. Defines the load/store actions for each attachment to optimize GPU rendering by reducing memory bandwidth usage.
+/// </summary>
+enum class GPUDrawPassAction : uint8
+{
+    // No action, the content of the render target or depth buffer is undefined. Discards the resulting value of the render pass for this attachment.
+    None = 0,
+
+    // Loads the existing value for this attachment into the draw pass.
+    Load = 1,
+
+    // Loads the clear value for this attachment into the draw pass. Clear value is provided by the GPUContext::Clear performed on the texture before pass begins.
+    Clear = 2,
+
+    // Stores the resulting value of the render pass for this attachment.
+    Store = 4,
+
+    // Resolves the resulting MSAA value and stores final value into the attachment.
+    ResolveMultisample = 8,
+
+    // Mask of flags allowed by load operation (reading data from attachment).
+    LoadMask = None | Load | Clear,
+
+    // Mask of flags allowed by store operation (writing data to attachment).
+    StoreMask = None | Store | ResolveMultisample,
+
+    // Loads the existing value for this attachment into the draw pass and stores the resulting value of the render pass for this attachment.
+    LoadStore = Load | Store,
+
+    // Loads the clear value for this attachment into the draw pass and stores the resulting value of the render pass for this attachment.
+    ClearStore = Clear | Store,
+};

@@ -31,6 +31,16 @@ struct GPUPipelineStateKeyDX12
         return Platform::MemoryCompare((void*)this, &other, sizeof(GPUPipelineStateKeyDX12)) == 0;
     }
 
+#if GPU_ENABLE_DEVELOPMENT
+    bool IsRenderFormatMatch(GPUPipelineStateKeyDX12 other) const
+    {
+        other.VertexLayout = VertexLayout;
+        return Platform::MemoryCompare((void*)this, &other, sizeof(GPUPipelineStateKeyDX12)) == 0;
+    }
+
+    String ToString() const;
+#endif
+
     friend inline uint32 GetHash(const GPUPipelineStateKeyDX12& key)
     {
         uint32 hash = (int32)key.MSAA * 11;
@@ -70,6 +80,9 @@ private:
     D3D12_SHADER_BYTECODE _shaderGS;
 #endif
     D3D12_SHADER_BYTECODE _shaderVS, _shaderPS;
+#if GPU_ENABLE_DEVELOPMENT
+    Array<GPUPipelineStateKeyDX12, InlinedAllocation<2>> _precachedPSOs;
+#endif
 
 public:
     GPUPipelineStateDX12(GPUDeviceDX12* device);
@@ -83,17 +96,20 @@ public:
     /// <summary>
     /// Gets DirectX 12 graphics pipeline state object for the given rendering state. Uses depth buffer and render targets formats and multi-sample levels to setup a proper PSO. Uses caching.
     /// </summary>
-    /// <param name="depth">The depth buffer (can be null).</param>
+    /// <param name="depth">The depth buffer format (can be empty).</param>
     /// <param name="rtCount">The render targets count (can be 0).</param>
     /// <param name="rtHandles">The render target handles array.</param>
+    /// <param name="rtHandles">The MSAA level to use.</param>
     /// <param name="vertexLayout">The vertex buffers layout.</param>
+    /// <param name="precaching">True if action is called during precaching of PSO, instead of during rendering.</param>
     /// <returns>DirectX 12 graphics pipeline state object</returns>
-    ID3D12PipelineState* GetState(GPUTextureViewDX12* depth, int32 rtCount, GPUTextureViewDX12** rtHandles, GPUVertexLayoutDX12* vertexLayout);
+    ID3D12PipelineState* GetState(PixelFormat depthFormat, int32 rtCount, const PixelFormat* rtFormats, MSAALevel msaa, GPUVertexLayoutDX12* vertexLayout, bool precaching = false);
 
 public:
     // [GPUPipelineState]
     bool IsValid() const override;
     bool Init(const Description& desc) override;
+    void PrecachePSO(const PrecacheContext& context) override;
 
 protected:
     // [GPUResourceDX12]

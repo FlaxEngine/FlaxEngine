@@ -8,6 +8,7 @@
 #include "GPUSwapChain.h"
 #include "RenderTask.h"
 #include "RenderTools.h"
+#include "RenderBuffers.h"
 #include "Graphics.h"
 #include "Shaders/GPUShader.h"
 #include "Shaders/GPUVertexLayout.h"
@@ -75,6 +76,18 @@ GPUPipelineState* GPUPipelineState::New()
 GPUPipelineState::GPUPipelineState()
     : GPUResource(SpawnParams(Guid::New(), TypeInitializer))
 {
+}
+
+void GPUPipelineState::PrecacheContext::SetReadOnlyDepthFormat()
+{
+    auto renderBuffers = MainRenderTask::Instance->Buffers;
+    DepthFormat = GPUDevice::Instance->Limits.HasReadOnlyDepth ? renderBuffers->GetDepthFormat() : PixelFormat::Unknown;
+    DepthAction = GPUDrawPassAction::Load;
+}
+
+void GPUPipelineState::PrecacheContext::SetFullscreenTriangleLayout()
+{
+    VertexLayout = GPUDevice::Instance->GetFullscreenTriangleVB()->GetVertexLayout();
 }
 
 #if !BUILD_RELEASE
@@ -413,7 +426,7 @@ bool GPUDevice::Init()
 
 #if COMPILE_WITH_PSO_PRECACHING
     // Control PSO precaching
-    PipelineCacheModes = Limits.HasPipelineCaching ? GPUPipelineCacheModes::Full : GPUPipelineCacheModes::None;
+    GPUPipelineCache::CacheModes = Limits.HasPipelineCaching ? GPUPipelineCacheModes::Full : GPUPipelineCacheModes::None;
 #endif
 
     _res->TasksManager.SetExecutor(CreateTasksExecutor());

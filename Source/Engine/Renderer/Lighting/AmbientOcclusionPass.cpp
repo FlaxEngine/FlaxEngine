@@ -112,7 +112,6 @@ bool AmbientOcclusionPass::Init()
 
 bool AmbientOcclusionPass::setupResources()
 {
-    // Check shader
     if (!_shader->IsLoaded())
         return true;
     const auto shader = _shader->GPU;
@@ -196,6 +195,43 @@ bool AmbientOcclusionPass::setupResources()
 
     return false;
 }
+
+#if COMPILE_WITH_PSO_PRECACHING
+
+void AmbientOcclusionPass::PrecachePSO()
+{
+    if (_shader->WaitForLoaded() ||
+        checkIfSkipPass(true))
+        return;
+    GPUPipelineState::PrecacheContext context;
+    auto renderBuffers = MainRenderTask::Instance->Buffers;
+    context.SetFullscreenTriangleLayout();
+    context.RTCount = 2;
+    context.RTFormats[0] = SSAO_DEPTH_FORMAT;
+    context.RTFormats[1] = SSAO_DEPTH_FORMAT;
+    context.RTAction = GPUDrawPassAction::Store;
+    _psPrepareDepthsHalf->PrecachePSO(context);
+    context.RTCount = 4;
+    context.RTFormats[2] = SSAO_DEPTH_FORMAT;
+    context.RTFormats[3] = SSAO_DEPTH_FORMAT;
+    _psPrepareDepths->PrecachePSO(context);
+    context.DepthFormat = PixelFormat::Unknown;
+    context.RTCount = 1;
+    context.RTFormats[0] = SSAO_AO_RESULT_FORMAT;
+    for (int32 i = 0; i < ARRAY_COUNT(_psGenerate); i++)
+        _psGenerate[i]->PrecachePSO(context);
+    _psSmartBlur->PrecachePSO(context);
+    _psSmartBlurWide->PrecachePSO(context);
+    _psNonSmartBlur->PrecachePSO(context);
+    if (_depthBounds)
+        context.SetReadOnlyDepthFormat();
+    context.RTFormats[0] = GBUFFER0_FORMAT;
+    context.RTAction = GPUDrawPassAction::LoadStore;
+    _psApply->PrecachePSO(context);
+    _psApplyHalf->PrecachePSO(context);
+}
+
+#endif
 
 void AmbientOcclusionPass::Dispose()
 {
@@ -392,8 +428,10 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
                     m_halfDepths[0]->View(),
                     m_halfDepths[3]->View()
                 };
-                context->SetRenderTarget(nullptr, ToSpan(twoDepths, ARRAY_COUNT(twoDepths)));
+                GPUDrawPassAction actions[] = { GPUDrawPassAction::Store, GPUDrawPassAction::Store };
+                GPUDrawPass pass(context, ToSpan(twoDepths, ARRAY_COUNT(twoDepths)), ToSpan(actions, ARRAY_COUNT(actions)));
                 context->SetState(_psPrepareDepthsHalf);
+                context->DrawFullscreenTriangle();
             }
             else
             {
@@ -404,10 +442,11 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
                     m_halfDepths[2]->View(),
                     m_halfDepths[3]->View()
                 };
-                context->SetRenderTarget(nullptr, ToSpan(fourDepths, ARRAY_COUNT(fourDepths)));
+                GPUDrawPassAction actions[] = { GPUDrawPassAction::Store, GPUDrawPassAction::Store, GPUDrawPassAction::Store, GPUDrawPassAction::Store };
+                GPUDrawPass pass(context, ToSpan(fourDepths, ARRAY_COUNT(fourDepths)), ToSpan(actions, ARRAY_COUNT(actions)));
                 context->SetState(_psPrepareDepths);
+                context->DrawFullscreenTriangle();
             }
-            context->DrawFullscreenTriangle();
             context->ResetRenderTarget();
         }
 
@@ -534,12 +573,14 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
     }
 
     // Apply
-    context->SetDepthBounds(GPU_DEPTH_RANGE_BOUNDS(GPU_DEPTH_RANGE_MIN, RenderTools::GetDepthBounds(renderContext.View, aoSettings.FadeOutDistance, false)));
-    context->BindSR(SSAO_TEXTURE_SLOT0, m_finalResults->ViewArray());
-    context->SetViewportAndScissors((float)m_sizeX, (float)m_sizeY);
-    context->SetState(settings.SkipHalfPixels ? _psApplyHalf : _psApply);
-    context->SetRenderTarget(depthBufferApply, renderContext.Buffers->GBuffer0->View());
-    context->DrawFullscreenTriangle();
+    {
+        GPUDrawPass pass(context, depthBufferApply, GPUDrawPassAction::Load, renderContext.Buffers->GBuffer0->View(), GPUDrawPassAction::LoadStore);
+        context->SetDepthBounds(GPU_DEPTH_RANGE_BOUNDS(GPU_DEPTH_RANGE_MIN, RenderTools::GetDepthBounds(renderContext.View, aoSettings.FadeOutDistance, false)));
+        context->BindSR(SSAO_TEXTURE_SLOT0, m_finalResults->ViewArray());
+        context->SetViewportAndScissors((float)m_sizeX, (float)m_sizeY);
+        context->SetState(settings.SkipHalfPixels ? _psApplyHalf : _psApply);
+        context->DrawFullscreenTriangle();
+    }
 
     // Release and cleanup
     for (int i = 0; i < 4; i++)

@@ -9,6 +9,7 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUPipelineState.h"
+#include "Engine/Graphics/GPUPipelineCache.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
@@ -25,6 +26,9 @@
 
 // Amount of frames to hold shader resources in memory before auto-release
 #define ATMOSPHERE_PRECOMPUTE_AUTO_RELEASE_FRAMES 70
+
+// Format of atmosphere lookup textures
+#define ATMOSPHERE_PRECOMPUTE_FORMAT PixelFormat::R16G16B16A16_Float
 
 const float DensityHeight = 0.5f;
 const int32 MaxScatteringOrder = 4;
@@ -59,9 +63,15 @@ GPU_CB_STRUCT(Data {
 namespace AtmospherePreComputeImpl
 {
     bool _isUpdatePending = false;
+    bool _isShaderReady = false;
     bool _isReadyForCompute = false;
     bool _hasDataCached = false;
-    uint64 _dataCachedFrameNumber;
+    bool _wasCancelled = false;
+#if COMPILE_WITH_PSO_PRECACHING
+    volatile int32 _precacheHandle = 0;
+#endif
+    uint64 _dataCachedFrameNumber = 0;
+    uint64 _updateFrameNumber = 0;
 
     AssetReference<Shader> _shader;
     GPUPipelineState* _psTransmittance = nullptr;
@@ -80,13 +90,34 @@ namespace AtmospherePreComputeImpl
     GPUTexture* AtmosphereIrradiance = nullptr;
     GPUTexture* AtmosphereInscatter = nullptr;
 
-    uint64 _updateFrameNumber;
-    bool _wasCancelled;
-
     FORCE_INLINE bool isUpdateSynced()
     {
         return _updateFrameNumber > 0 && _updateFrameNumber + ATMOSPHERE_PRECOMPUTE_LATENCY_FRAMES <= Engine::FrameCount;
     }
+
+    bool InitShader();
+
+#if COMPILE_WITH_PSO_PRECACHING
+    void PrecachePSO()
+    {
+        if (_shader->WaitForLoaded() || InitShader())
+            return;
+        GPUPipelineState::PrecacheContext context;
+        context.SetFullscreenTriangleLayout();
+        context.RTCount = 1;
+        context.RTFormats[0] = ATMOSPHERE_PRECOMPUTE_FORMAT;
+        _psTransmittance->PrecachePSO(context);
+        _psIrradiance1->PrecachePSO(context);
+        _psIrradianceN->PrecachePSO(context);
+        _psCopyIrradianceAdd->PrecachePSO(context);
+        _psInscatter1_A->PrecachePSO(context);
+        _psInscatter1_B->PrecachePSO(context);
+        _psInscatter1_B->PrecachePSO(context);
+        _psCopyInscatterNAdd->PrecachePSO(context);
+        _psInscatterS->PrecachePSO(context);
+        _psInscatterN->PrecachePSO(context);
+    }
+#endif
 
     void Render(RenderTask* task, GPUContext* context);
 }
@@ -133,87 +164,8 @@ bool InitAtmospherePreCompute()
     PROFILE_CPU();
 
     // Load shader
-    if (_shader == nullptr)
-    {
-        LOG(Warning, "Failed to load AtmospherePreCompute shader!");
+    if (InitShader())
         return true;
-    }
-    if (_shader->WaitForLoaded())
-    {
-        LOG(Warning, "Loading AtmospherePreCompute shader timeout!");
-        return true;
-    }
-    auto shader = _shader->GPU;
-    ASSERT(shader->GetCB(0) != nullptr);
-    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
-    auto device = GPUDevice::Instance;
-
-    // Create pipeline stages
-    _psTransmittance = device->CreatePipelineState();
-    _psIrradiance1 = device->CreatePipelineState();
-    _psIrradianceN = device->CreatePipelineState();
-    _psCopyIrradianceAdd = device->CreatePipelineState();
-    _psInscatter1_A = device->CreatePipelineState();
-    _psInscatter1_B = device->CreatePipelineState();
-    _psCopyInscatter1 = device->CreatePipelineState();
-    _psInscatterS = device->CreatePipelineState();
-    _psInscatterN = device->CreatePipelineState();
-    _psCopyInscatterNAdd = device->CreatePipelineState();
-    GPUPipelineState::Description psDesc, psDescLayers;
-    psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
-    psDescLayers = psDesc;
-    {
-        psDesc.PS = shader->GetPS("PS_Transmittance");
-        if (_psTransmittance->Init(psDesc))
-            return true;
-    }
-    {
-        psDesc.PS = shader->GetPS("PS_Irradiance1");
-        if (_psIrradiance1->Init(psDesc))
-            return true;
-    }
-    {
-        psDesc.PS = shader->GetPS("PS_IrradianceN");
-        if (_psIrradianceN->Init(psDesc))
-            return true;
-    }
-    {
-        psDescLayers.PS = shader->GetPS("PS_Inscatter1_A");
-        if (_psInscatter1_A->Init(psDescLayers))
-            return true;
-    }
-    {
-        psDescLayers.PS = shader->GetPS("PS_Inscatter1_B");
-        if (_psInscatter1_B->Init(psDescLayers))
-            return true;
-    }
-    {
-        psDescLayers.PS = shader->GetPS("PS_CopyInscatter1");
-        if (_psCopyInscatter1->Init(psDescLayers))
-            return true;
-    }
-    {
-        psDescLayers.PS = shader->GetPS("PS_InscatterS");
-        if (_psInscatterS->Init(psDescLayers))
-            return true;
-    }
-    {
-        psDescLayers.PS = shader->GetPS("PS_InscatterN");
-        if (_psInscatterN->Init(psDescLayers))
-            return true;
-    }
-    psDescLayers.BlendMode = BlendingMode::Add;
-    psDesc.BlendMode = BlendingMode::Add;
-    {
-        psDescLayers.PS = shader->GetPS("PS_CopyInscatterN");
-        if (_psCopyInscatterNAdd->Init(psDescLayers))
-            return true;
-    }
-    {
-        psDesc.PS = shader->GetPS("PS_CopyIrradiance1");
-        if (_psCopyIrradianceAdd->Init(psDesc))
-            return true;
-    }
 
     // Init rendering pipeline
     _task = New<SceneRenderTask>();
@@ -224,16 +176,17 @@ bool InitAtmospherePreCompute()
     // Init render targets
     if (!AtmosphereTransmittance)
     {
+        auto device = GPUDevice::Instance;
         AtmosphereTransmittance = device->CreateTexture(TEXT("AtmospherePreCompute.Transmittance"));
-        auto desc = GPUTextureDescription::New2D(TransmittanceTexWidth, TransmittanceTexHeight, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
+        auto desc = GPUTextureDescription::New2D(TransmittanceTexWidth, TransmittanceTexHeight, ATMOSPHERE_PRECOMPUTE_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
         if (AtmosphereTransmittance->Init(desc))
             return true;
         AtmosphereIrradiance = device->CreateTexture(TEXT("AtmospherePreCompute.Irradiance"));
-        desc = GPUTextureDescription::New2D(IrradianceTexWidth, IrradianceTexHeight, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
+        desc = GPUTextureDescription::New2D(IrradianceTexWidth, IrradianceTexHeight, ATMOSPHERE_PRECOMPUTE_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
         if (AtmosphereIrradiance->Init(desc))
             return true;
         AtmosphereInscatter = device->CreateTexture(TEXT("AtmospherePreCompute.Inscatter"));
-        desc = GPUTextureDescription::New3D(InscatterWidth, InscatterHeight, InscatterDepth, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerSliceViews);
+        desc = GPUTextureDescription::New3D(InscatterWidth, InscatterHeight, InscatterDepth, ATMOSPHERE_PRECOMPUTE_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerSliceViews);
         if (AtmosphereInscatter->Init(desc))
             return true;
     }
@@ -287,9 +240,21 @@ void AtmospherePreComputeService::Update()
 
         // Wait for the shader
         if (!_shader)
+        {
             _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Lighting/AtmospherePreCompute"));
-        if (_shader && !_shader->IsLoaded())
+            if (!_shader)
+                return;
+#if COMPILE_WITH_PSO_PRECACHING
+            if (_precacheHandle == 0 && GPU_PSO_PRECACHING(Renderer))
+                GPUPipelineCache::PrecacheAsync(AtmospherePreComputeImpl::PrecachePSO, &_precacheHandle);
+#endif
+        }
+        if (!_shader->IsLoaded())
             return;
+        if (!GPU_PSO_READY(_precacheHandle))
+            return;
+
+        // Lazy-init
         if (InitAtmospherePreCompute())
         {
             LOG(Fatal, "Cannot setup Atmosphere Pre Compute!");
@@ -328,6 +293,48 @@ void GetLayerValue(int32 layer, float& atmosphereR, Float4& dhdh)
     dhdh = Float4(dMin, dMax, dMinP, dMaxP);
 }
 
+bool AtmospherePreComputeImpl::InitShader()
+{
+    if (_isShaderReady)
+        return false;
+    if (_shader == nullptr)
+    {
+        LOG(Warning, "Failed to load AtmospherePreCompute shader!");
+        return true;
+    }
+    if (_shader->WaitForLoaded())
+    {
+        LOG(Warning, "Loading AtmospherePreCompute shader timeout!");
+        return true;
+    }
+    auto shader = _shader->GPU;
+    ASSERT(shader->GetCB(0) != nullptr);
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
+    auto device = GPUDevice::Instance;
+
+    // Create pipeline stages
+    auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+    bool failed = false;
+#define INIT_PS(field, psName) field = device->CreatePipelineState(); psDesc.PS = shader->GetPS(psName); failed |= field->Init(psDesc)
+    INIT_PS(_psTransmittance, "PS_Transmittance");
+    INIT_PS(_psIrradiance1, "PS_Irradiance1");
+    INIT_PS(_psIrradianceN, "PS_IrradianceN");
+    INIT_PS(_psInscatter1_A, "PS_Inscatter1_A");
+    INIT_PS(_psInscatter1_B, "PS_Inscatter1_B");
+    INIT_PS(_psCopyInscatter1, "PS_CopyInscatter1");
+    INIT_PS(_psInscatterS, "PS_InscatterS");
+    INIT_PS(_psInscatterN, "PS_InscatterN");
+    psDesc.BlendMode = BlendingMode::Add;
+    INIT_PS(_psCopyIrradianceAdd, "PS_CopyIrradiance1");
+    INIT_PS(_psCopyInscatterNAdd, "PS_CopyInscatterN");
+#undef INIT_PS
+    if (failed)
+        return true;
+
+    _isShaderReady = true;
+    return false;
+}
+
 void AtmospherePreComputeImpl::Render(RenderTask* task, GPUContext* context)
 {
     // If job has been cancelled (eg. on window close)
@@ -340,13 +347,13 @@ void AtmospherePreComputeImpl::Render(RenderTask* task, GPUContext* context)
     PROFILE_GPU_CPU("AtmospherePreCompute");
 
     // Allocate temporary render targets
-    auto desc = GPUTextureDescription::New2D(IrradianceTexWidth, IrradianceTexHeight, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
+    auto desc = GPUTextureDescription::New2D(IrradianceTexWidth, IrradianceTexHeight, ATMOSPHERE_PRECOMPUTE_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
     auto AtmosphereDeltaE = RenderTargetPool::Get(desc);
-    desc = GPUTextureDescription::New3D(InscatterWidth, InscatterHeight, InscatterDepth, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerSliceViews);
+    desc = GPUTextureDescription::New3D(InscatterWidth, InscatterHeight, InscatterDepth, ATMOSPHERE_PRECOMPUTE_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerSliceViews);
     auto AtmosphereDeltaSR = RenderTargetPool::Get(desc);
-    desc = GPUTextureDescription::New3D(InscatterWidth, InscatterHeight, InscatterDepth, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerSliceViews);
+    desc = GPUTextureDescription::New3D(InscatterWidth, InscatterHeight, InscatterDepth, ATMOSPHERE_PRECOMPUTE_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerSliceViews);
     auto AtmosphereDeltaSM = RenderTargetPool::Get(desc);
-    desc = GPUTextureDescription::New3D(InscatterWidth, InscatterHeight, InscatterDepth, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerSliceViews);
+    desc = GPUTextureDescription::New3D(InscatterWidth, InscatterHeight, InscatterDepth, ATMOSPHERE_PRECOMPUTE_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerSliceViews);
     auto AtmosphereDeltaJ = RenderTargetPool::Get(desc);
     if (!AtmosphereDeltaE || !AtmosphereDeltaSR || !AtmosphereDeltaSM || !AtmosphereDeltaJ)
         return;

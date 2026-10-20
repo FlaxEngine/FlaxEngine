@@ -686,7 +686,12 @@ void GPUContextDX12::flushPS()
             LOG(Error, "Missing Vertex Layout (not assigned to GPUBuffer). Vertex Shader won't read valid data resulting incorrect visuals.");
         }
 #endif
-        ID3D12PipelineState* pso = _currentState->GetState(_rtDepth, _rtCount, _rtHandles, _vertexLayout);
+        PixelFormat depthFormat = _rtDepth ? _rtDepth->GetFormat() : PixelFormat::Unknown;
+        MSAALevel msaa = _rtDepth ? _rtDepth->GetMSAA() : (_rtCount ? _rtHandles[0]->GetMSAA() : MSAALevel::None);
+        PixelFormat rtFormats[GPU_MAX_RT_BINDED];
+        for (int32 i = 0; i < _rtCount; i++)
+            rtFormats[i] = _rtHandles[i]->GetFormat();
+        ID3D12PipelineState* pso = _currentState->GetState(depthFormat, _rtCount, rtFormats, msaa, _vertexLayout);
         ASSERT(pso);
         _commandList->SetPipelineState(pso);
         if (_primitiveTopology != _currentState->PrimitiveTopology)

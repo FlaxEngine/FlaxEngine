@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Shaders/GPUShaderProgram.h"
+#include "PixelFormat.h"
 #include "Enums.h"
 #include "GPUResource.h"
 
@@ -171,6 +172,31 @@ public:
         API_FIELD(ReadOnly) static Description DefaultFullscreenTriangle;
     };
 
+    /// <summary>
+    /// Pipeline state precaching dynamic context (mimics context used during rendering).
+    /// </summary>
+    struct FLAXENGINE_API PrecacheContext
+    {
+        PixelFormat DepthFormat;
+        int32 RTCount;
+        GPUDrawPassAction DepthAction;
+        GPUDrawPassAction RTAction;
+        PixelFormat RTFormats[GPU_MAX_RT_BINDED];
+        MSAALevel MSAA;
+        GPUVertexLayout* VertexLayout;
+
+        PrecacheContext()
+        {
+            Platform::MemoryClear(this, sizeof(PrecacheContext));
+            DepthAction = GPUDrawPassAction::Store;
+            RTAction = GPUDrawPassAction::LoadStore;
+            MSAA = MSAALevel::None;
+        }
+
+        void SetReadOnlyDepthFormat();
+        void SetFullscreenTriangleLayout();
+    };
+
 protected:
     ShaderBindings _meta;
 
@@ -225,16 +251,22 @@ public:
 
 public:
     /// <summary>
-    /// Returns true if pipeline state is valid and ready to use
+    /// Returns true if pipeline state is valid and ready to use.
     /// </summary>
     API_PROPERTY() virtual bool IsValid() const = 0;
 
     /// <summary>
-    /// Create new state data
+    /// Initializes the pipeline state data.
     /// </summary>
-    /// <param name="desc">Full pipeline state description</param>
+    /// <param name="desc">The pipeline description.</param>
     /// <returns>True if cannot create state, otherwise false</returns>
     API_FUNCTION() virtual bool Init(API_PARAM(Ref) const Description& desc);
+
+    /// <summary>
+    /// Precaches shader pipeline to be ready ahead of time. Can be called in async.
+    /// </summary>
+    /// <param name="context">The dynamic context for PSO compilation that is expected to exist during rendering (such as render target formats and input vertex buffers layouts).</param>
+    virtual void PrecachePSO(const PrecacheContext& context) {}
 
 public:
     // [GPUResource]

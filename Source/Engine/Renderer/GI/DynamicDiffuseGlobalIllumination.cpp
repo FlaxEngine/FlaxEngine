@@ -357,10 +357,35 @@ bool DynamicDiffuseGlobalIlluminationPass::setupResources()
     return false;
 }
 
+#if COMPILE_WITH_PSO_PRECACHING
+
+void DynamicDiffuseGlobalIlluminationPass::PrecachePSO()
+{
+    if (!_supported ||
+        !_shader ||
+        _shader->WaitForLoaded() ||
+        checkIfSkipPass(true))
+        return;
+    GPUPipelineState::PrecacheContext context;
+    context.RTCount = 1;
+    context.RTFormats[0] = PixelFormat::R11G11B10_Float;
+    context.RTAction = GPUDrawPassAction::Store;
+    context.SetFullscreenTriangleLayout();
+    _psSpecularLighting->PrecachePSO(context);
+    context.SetReadOnlyDepthFormat();
+    context.DepthAction = GPUDrawPassAction::Load;
+    context.RTAction = GPUDrawPassAction::LoadStore;
+    auto& settings = Graphics::PostProcessSettings.GlobalIllumination;
+    _psIndirectLighting[(settings.IndirectResolution == ResolutionMode::Full ? 0 : 2) + (Graphics::GICascadesBlending ? 1 : 0)]->PrecachePSO(context);
+}
+
+#endif
+
 #if COMPILE_WITH_DEV_ENV
 
 void DynamicDiffuseGlobalIlluminationPass::OnShaderReloading(Asset* obj)
 {
+    invalidateResources();
     LastFrameShaderReload = Engine::FrameCount;
     _csClassify = nullptr;
     _csUpdateProbesInitArgs = nullptr;
@@ -374,7 +399,6 @@ void DynamicDiffuseGlobalIlluminationPass::OnShaderReloading(Asset* obj)
     _csUpdateProbesRadiance = nullptr;
     SAFE_DELETE_GPU_RESOURCES(_psIndirectLighting);
     SAFE_DELETE_GPU_RESOURCE(_psSpecularLighting);
-    invalidateResources();
 }
 
 #endif
@@ -937,10 +961,10 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         {
             // Full-res
             GPUTextureView* depthBufferRTV = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView) ? depthBuffer->ViewReadOnlyDepth() : nullptr;
+            GPUDrawPass pass(context, depthBufferRTV, GPUDrawPassAction::Load, lightBuffer);
             if (_depthBounds)
                 context->SetDepthBounds(GPU_DEPTH_RANGE_BOUNDS(GPU_DEPTH_RANGE_MIN, RenderTools::DepthBoundMaxBackground));
             context->SetViewportAndScissors(renderContext.View.ScreenSize.X, renderContext.View.ScreenSize.Y);
-            context->SetRenderTarget(depthBufferRTV, lightBuffer);
             context->SetState(_psIndirectLighting[Graphics::GICascadesBlending ? 1 : 0]);
             context->DrawFullscreenTriangle();
             if (_depthBounds)
@@ -1085,10 +1109,8 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderReflections(RenderContext& rend
         if (settings.ReflectionsResolution == ResolutionMode::Full || !MultiScaler::Instance()->IsReady())
         {
             // Full-res
-            auto rtAction = GPUDrawPassAction::Store;
-            GPUDrawPass pass(context, ToSpan(&reflectionsBuffer, 1), ToSpan(&rtAction, 1));
+            GPUDrawPass pass(context, reflectionsBuffer, GPUDrawPassAction::Store);
             context->SetViewportAndScissors(renderContext.View.ScreenSize.X, renderContext.View.ScreenSize.Y);
-            context->SetRenderTarget(reflectionsBuffer);
             context->SetState(_psSpecularLighting);
             context->DrawFullscreenTriangle();
         }

@@ -24,10 +24,15 @@ private:
     GPUPipelineStatePermutationsPs<int32(Quality::MAX) * 2> _psShadowPointInside;
     GPUPipelineStatePermutationsPs<int32(Quality::MAX) * 2> _psShadowSpot;
     GPUPipelineStatePermutationsPs<int32(Quality::MAX) * 2> _psShadowSpotInside;
-    PixelFormat _shadowMapFormat; // Cached on initialization
+    PixelFormat _shadowMapFormat, _shadowMaskFormat; // Cached on initialization
     bool _depthBounds = false;
 
 public:
+    PixelFormat GetShadowMaskFormat() const
+    {
+        return _shadowMaskFormat;
+    }
+
     /// <summary>
     /// Setups the shadows rendering for batched scene drawing. Checks which lights will cast a shadow.
     /// </summary>
@@ -63,16 +68,17 @@ private:
     static void SetupLight(ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderSpotLightData& light, ShadowAtlasLight& atlasLight);
     void ClearShadowMapTile(GPUContext* context, GPUConstantBuffer* quadShaderCB, struct QuadShaderData& quadShaderData) const;
     void CopyShadowMapTile(GPUContext* context, GPUConstantBuffer* quadShaderCB, struct QuadShaderData& quadShaderData, const GPUTexture* srcShadowMap, const struct ShadowsAtlasRectTile* srcTile) const;
+    static bool GetBlendCSM();
 
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
+        invalidateResources();
         _psShadowDir.Release();
         _psShadowPoint.Release();
         _psShadowPointInside.Release();
         _psShadowSpot.Release();
         _psShadowSpotInside.Release();
-        invalidateResources();
     }
 #endif
 
@@ -85,4 +91,7 @@ public:
 protected:
     // [RendererPass]
     bool setupResources() override;
+#if COMPILE_WITH_PSO_PRECACHING
+    void PrecachePSO() override;
+#endif
 };

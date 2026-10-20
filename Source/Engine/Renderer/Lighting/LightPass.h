@@ -9,12 +9,13 @@
 #include "Engine/Content/Assets/Model.h"
 
 /// <summary>
-/// Lighting rendering service. Handles dynamic lights diffuse and specular color calculations.
+/// Draws dynamic lighting with diffuse and specular colors.
 /// </summary>
 class LightPass : public RendererPass<LightPass>
 {
 private:
     AssetReference<Shader> _shader;
+    AssetReference<Model> _sphereModel;
     GPUPipelineStatePermutationsPs<2> _psLightDir;
     GPUPipelineStatePermutationsPs<4> _psLightLocal;
     GPUPipelineStatePermutationsPs<4> _psLightLocalInside;
@@ -23,8 +24,6 @@ private:
     GPUPipelineState* _psClearDiffuse = nullptr;
     GPUPipelineState* _psComplexity = nullptr;
     GPUPipelineState* _psLightOverlap[2] = {};
-    AssetReference<Model> _sphereModel;
-    PixelFormat _shadowMaskFormat;
     bool _depthBounds = false;
 
 public:
@@ -54,6 +53,7 @@ private:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
+        invalidateResources();
         _psLightDir.Release();
         _psLightLocal.Release();
         _psLightLocalInside.Release();
@@ -64,7 +64,6 @@ private:
         SAFE_DELETE_GPU_RESOURCE(_psComplexity);
         SAFE_DELETE_GPU_RESOURCE(_psLightOverlap[0]);
         SAFE_DELETE_GPU_RESOURCE(_psLightOverlap[1]);
-        invalidateResources();
     }
 #endif
 #if GPU_ENABLE_DEVELOPMENT
@@ -80,4 +79,7 @@ public:
 protected:
     // [RendererPass]
     bool setupResources() override;
+#if COMPILE_WITH_PSO_PRECACHING
+    void PrecachePSO() override;
+#endif
 };

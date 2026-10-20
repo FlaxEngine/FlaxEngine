@@ -9,6 +9,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Core/Math/OrientedBoundingBox.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/RenderContext.h"
@@ -185,8 +186,7 @@ bool ReflectionsPass::Init()
 
 bool ReflectionsPass::setupResources()
 {
-    // Wait for the assets
-    if (!_sphereModel->CanBeRendered() || !_boxModel->CanBeRendered() || !_preIntegratedGF->IsLoaded() || !_shader->IsLoaded())
+    if (!_shader->IsLoaded())
         return true;
     const auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
@@ -226,6 +226,35 @@ bool ReflectionsPass::setupResources()
 
     return false;
 }
+
+#if COMPILE_WITH_PSO_PRECACHING
+
+#include "Engine/Graphics/Graphics.h"
+
+void ReflectionsPass::PrecachePSO()
+{
+    if (_shader->WaitForLoaded() ||
+        checkIfSkipPass(true))
+        return;
+    GPUPipelineState::PrecacheContext context;
+    context.SetFullscreenTriangleLayout();
+    context.RTCount = 1;
+    context.RTFormats[0] = MainRenderTask::Instance->Buffers->GetOutputFormat();
+    context.RTAction = GPUDrawPassAction::LoadStore;
+    if (_depthBounds)
+        context.SetReadOnlyDepthFormat();
+    _psCombinePass->PrecachePSO(context);
+    if (Graphics::PostProcessSettings.GlobalIllumination.Reflections == ReflectionsMode::EnvironmentProbes)
+    {
+        if (!_depthBounds)
+            context.SetReadOnlyDepthFormat();
+        context.RTFormats[0] = PixelFormat::R11G11B10_Float;
+        _psProbe->PrecachePSO(context);
+        _psProbeInside->PrecachePSO(context);
+    }
+}
+
+#endif
 
 void ReflectionsPass::Dispose()
 {
@@ -271,8 +300,8 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     bool renderProbes = probesCount > 0 && renderContext.List->Settings.GlobalIllumination.Reflections == ReflectionsMode::EnvironmentProbes;
     bool renderDDGI = renderContext.List->Settings.GlobalIllumination.Reflections == ReflectionsMode::DDGI;
 
-    // Check if no need to render reflection environment
-    if (!useReflections || !(renderProbes || useSSR || renderDDGI) || checkIfSkipPass())
+    // Check if no need to render reflection environment (or resurces are not ready yet)
+    if (!useReflections || !(renderProbes || useSSR || renderDDGI) || checkIfSkipPass() || !_sphereModel->CanBeRendered() || !_boxModel->CanBeRendered() || !_preIntegratedGF->IsLoaded())
     {
         // Skip pass (just clear buffer when doing debug preview)
         if (renderContext.View.Mode == ViewMode::Reflections)
@@ -416,14 +445,10 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     else
     {
         // Combine reflections and light buffer (additive mode)
+        GPUDrawPass drawPass(context, depthBuffer.RTV, GPUDrawPassAction::Load, lightBuffer, GPUDrawPassAction::LoadStore);
         PROFILE_GPU("Combine");
         if (_depthBounds)
-        {
-            context->SetRenderTarget(depthBuffer.RTV, lightBuffer);
             context->SetDepthBounds(GPU_DEPTH_RANGE_BOUNDS(GPU_DEPTH_RANGE_MIN, RenderTools::DepthBoundMaxBackground));
-        }
-        else
-            context->SetRenderTarget(lightBuffer);
         context->BindCB(0, cb);
         if (probesCount == 0 || !renderProbes)
             context->UpdateCB(cb, &data);

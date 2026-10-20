@@ -5,6 +5,7 @@
 #include "Engine/Renderer/GBufferPass.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
@@ -633,13 +634,20 @@ bool ShadowsPass::Init()
     if (_shadowMapFormat == PixelFormat::Unknown)
         LOG(Warning, "GPU doesn't support shadows rendering");
 
+    // Pick the format for shadow mask (rendered shadow projection into screen-space)
+    auto format = PixelFormat::R8G8_UNorm;
+    if (EnumHasNoneFlags(GPUDevice::Instance->GetFormatFeatures(format).Support, FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D))
+    {
+        format = PixelFormat::B8G8R8A8_UNorm;
+    }
+    _shadowMaskFormat = format;
+
     return false;
 }
 
 bool ShadowsPass::setupResources()
 {
-    // Wait for the assets
-    if (!_sphereModel->CanBeRendered() || !_shader->IsLoaded())
+    if (!_shader->IsLoaded())
         return true;
     auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
@@ -713,6 +721,54 @@ bool ShadowsPass::setupResources()
 
     return false;
 }
+
+#if COMPILE_WITH_PSO_PRECACHING
+
+void ShadowsPass::PrecachePSO()
+{
+    if (_shadowMapFormat == PixelFormat::Unknown ||
+        _shader->WaitForLoaded() ||
+        _sphereModel->WaitForLoaded() ||
+        checkIfSkipPass(true))
+        return;
+    GPUPipelineState::PrecacheContext context;
+    context.SetReadOnlyDepthFormat();
+    context.RTCount = 1;
+    context.RTFormats[0] = _shadowMaskFormat;
+    context.RTAction = GPUDrawPassAction::Store;
+    context.VertexLayout = _sphereModel->LODs[0].Meshes[0].GetVertexLayout();
+    Quality minQuality = Quality::Low;
+    Quality maxQuality = Quality::Ultra;
+    for (int32 shadowQuality = (int32)minQuality; shadowQuality <= (int32)maxQuality; shadowQuality++)
+    {
+        for (int32 contactShadows = 0; contactShadows <= 1; contactShadows++)
+        {
+            const int32 permutationIndex = shadowQuality + (contactShadows ? 4 : 0);
+            _psShadowPoint[permutationIndex]->PrecachePSO(context);
+            _psShadowSpot[permutationIndex]->PrecachePSO(context);
+            _psShadowPointInside[permutationIndex]->PrecachePSO(context);
+            _psShadowSpotInside[permutationIndex]->PrecachePSO(context);
+        }
+    }
+    context.SetFullscreenTriangleLayout();
+    const bool blendCSM = GetBlendCSM();
+    for (int32 shadowQuality = (int32)minQuality; shadowQuality <= (int32)maxQuality; shadowQuality++)
+    {
+        for (int32 contactShadows = 0; contactShadows <= 1; contactShadows++)
+        {
+            const int32 permutationIndex = shadowQuality + (contactShadows ? 4 : 0);
+            _psShadowDir[permutationIndex + (blendCSM ? 8 : 0)]->PrecachePSO(context);
+        }
+    }
+    context.RTCount = 0;
+    context.DepthFormat = _shadowMapFormat;
+    context.DepthAction = GPUDrawPassAction::Store;
+    context.RTAction = GPUDrawPassAction::None;
+    _psDepthClear->PrecachePSO(context);
+    _psDepthCopy->PrecachePSO(context);
+}
+
+#endif
 
 void ShadowsPass::SetupRenderContext(RenderContext& renderContext, RenderContext& shadowContext, ShadowAtlasLight* atlasLight, RenderContext* dynamicContext)
 {
@@ -984,15 +1040,7 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
 #endif
     const int32 csmCount = atlasLight.TilesCount;
     const auto shadowMapsSize = (float)atlasLight.Resolution;
-    atlasLight.BlendCSM = Graphics::AllowCSMBlending;
-#if USE_EDITOR
-    // Disable cascades blending when baking lightmaps
-    if (IsRunningRadiancePass)
-        atlasLight.BlendCSM = false;
-#elif PLATFORM_WEB || PLATFORM_SWITCH || PLATFORM_IOS || PLATFORM_ANDROID
-    // Disable cascades blending on low-end platforms
-    atlasLight.BlendCSM = false;
-#endif
+    atlasLight.BlendCSM = GetBlendCSM();
 
     // Calculate cascade splits
     const float minDistance = renderContext.View.Near;
@@ -1311,6 +1359,20 @@ void ShadowsPass::CopyShadowMapTile(GPUContext* context, GPUConstantBuffer* quad
     context->DrawFullscreenTriangle();
 }
 
+bool ShadowsPass::GetBlendCSM()
+{
+    bool result = Graphics::AllowCSMBlending;
+#if USE_EDITOR
+    // Disable cascades blending when baking lightmaps
+    if (IsRunningRadiancePass)
+        result = false;
+#elif PLATFORM_WEB || PLATFORM_SWITCH || PLATFORM_IOS || PLATFORM_ANDROID
+    // Disable cascades blending on low-end platforms
+    result = false;
+#endif
+    return result;
+}
+
 void ShadowsPass::Dispose()
 {
     // Base
@@ -1337,6 +1399,7 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
     Array<RenderLightData*, RendererAllocation> shadowedLights;
     if (_shadowMapFormat != PixelFormat::Unknown && EnumHasAllFlags(renderContext.View.Flags, ViewFlags::Shadows) && !checkIfSkipPass())
     {
+        bool hasSphereMesh = _sphereModel->CanBeRendered();
         for (auto& light : renderContext.List->DirectionalLights)
         {
             if (light.CanRenderShadow(renderContext.View))
@@ -1344,12 +1407,12 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
         }
         for (auto& light : renderContext.List->SpotLights)
         {
-            if (light.CanRenderShadow(renderContext.View))
+            if (light.CanRenderShadow(renderContext.View) && hasSphereMesh)
                 shadowedLights.Add(&light);
         }
         for (auto& light : renderContext.List->PointLights)
         {
-            if (light.CanRenderShadow(renderContext.View))
+            if (light.CanRenderShadow(renderContext.View) && hasSphereMesh)
                 shadowedLights.Add(&light);
         }
     }
@@ -1890,7 +1953,7 @@ void ShadowsPass::RenderShadowMask(RenderContextBatch& renderContextBatch, Rende
     context->BindSR(6, shadows.ShadowMapAtlas);
     const int32 permutationIndex = shadowQuality + (sperLight.ContactShadowsLength > ZeroTolerance ? 4 : 0);
     auto depthBuffer = renderContext.Buffers->GetReadOnlyDepthBuffer();
-    context->SetRenderTarget(depthBuffer.RTV, shadowMask);
+    GPUDrawPass pass(context, depthBuffer.RTV, GPUDrawPassAction::Load, shadowMask, GPUDrawPassAction::Store);
     if (_depthBounds)
     {
         Float2 minMaxDepth;

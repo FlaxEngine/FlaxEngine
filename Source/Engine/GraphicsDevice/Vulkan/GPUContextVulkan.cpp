@@ -441,7 +441,6 @@ void GPUContextVulkan::BeginRenderPass()
     framebufferKey.AttachmentCount = _rtCount;
     RenderTargetLayoutVulkan layout;
     Platform::MemoryClear(&layout, sizeof(layout));
-    layout.Flags = 0;
     layout.RTsCount = _rtCount;
     layout.DepthFormat = _rtDepth ? _rtDepth->GetFormat() : PixelFormat::Unknown;
     VkClearValue clearValues[GPU_MAX_RT_BINDED + 1];
@@ -514,9 +513,6 @@ void GPUContextVulkan::BeginRenderPass()
         layout.WriteDepth = false;
     }
     layout.MSAA = handle->GetMSAA();
-    layout.Extent.width = handle->Extent.width;
-    layout.Extent.height = handle->Extent.height;
-    layout.Layers = handle->Layers;
 
     // Clear textures that are not bind to the render pass
     if (_pendingClears.HasItems())
@@ -525,7 +521,8 @@ void GPUContextVulkan::BeginRenderPass()
     // Get or create objects
     auto renderPass = _device->GetOrCreateRenderPass(layout);
     framebufferKey.RenderPass = renderPass;
-    auto framebuffer = _device->GetOrCreateFramebuffer(framebufferKey, layout.Extent, layout.Layers);
+    VkExtent2D extent2D = { handle->Extent.width, handle->Extent.height };
+    auto framebuffer = _device->GetOrCreateFramebuffer(framebufferKey, extent2D, handle->Layers);
     _renderPass = renderPass;
     _drawPassCanClear = false;
 

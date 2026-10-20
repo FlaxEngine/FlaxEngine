@@ -23,8 +23,8 @@ private:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
-        _psCAS->ReleaseGPU();
         invalidateResources();
+        _psCAS->ReleaseGPU();
     }
 #endif
 

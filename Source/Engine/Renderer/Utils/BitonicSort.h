@@ -46,10 +46,10 @@ public:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
+        invalidateResources();
         _preSortCS.Clear();
         _innerSortCS = nullptr;
         _outerSortCS = nullptr;
-        invalidateResources();
     }
 #endif
 

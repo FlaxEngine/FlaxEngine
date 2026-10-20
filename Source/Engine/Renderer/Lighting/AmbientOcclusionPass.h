@@ -114,6 +114,7 @@ private:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
+        invalidateResources();
         _psPrepareDepths->ReleaseGPU();
         _psPrepareDepthsHalf->ReleaseGPU();
         for (int32 i = 0; i < ARRAY_COUNT(_psPrepareDepthMip); i++)
@@ -125,7 +126,6 @@ private:
         _psNonSmartBlur->ReleaseGPU();
         _psApply->ReleaseGPU();
         _psApplyHalf->ReleaseGPU();
-        invalidateResources();
     }
 #endif
 
@@ -140,4 +140,7 @@ protected:
 
     // [RendererPass]
     bool setupResources() override;
+#if COMPILE_WITH_PSO_PRECACHING
+    void PrecachePSO() override;
+#endif
 };

@@ -59,6 +59,7 @@ private:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
+        invalidateResources();
         _psCameraMotionVectors->ReleaseGPU();
 #if GPU_ENABLE_DEVELOPMENT
         _psMotionVectorsDebug->ReleaseGPU();
@@ -67,7 +68,6 @@ private:
         _psTileMaxVariable->ReleaseGPU();
         _psNeighborMax->ReleaseGPU();
         _psMotionBlur->ReleaseGPU();
-        invalidateResources();
     }
 #endif
 
@@ -82,4 +82,7 @@ protected:
 
     // [RendererPass]
     bool setupResources() override;
+#if COMPILE_WITH_PSO_PRECACHING
+    void PrecachePSO() override;
+#endif
 };

@@ -199,15 +199,14 @@ struct RenderTargetLayoutVulkan
     {
         struct
         {
-            uint64 Layers : 10; // Limited by GPU_MAX_TEXTURE_ARRAY_SIZE
             uint64 RTsCount : 3; // Limited by GPU_MAX_RT_BINDED
             uint64 ReadDepth : 1;
             uint64 WriteDepth : 1;
             uint64 ReadStencil : 1;
             uint64 WriteStencil : 1;
-            uint64 LoadClear : 7; // GPU_MAX_RT_BINDED + 1
-            uint64 LoadDontCare : 7; // GPU_MAX_RT_BINDED + 1
-            uint64 StoreDontCare : 7; // GPU_MAX_RT_BINDED + 1
+            uint64 LoadClear : 7; // GPU_MAX_RT_BINDED + 1 (depth/stencil)
+            uint64 LoadDontCare : 7; // GPU_MAX_RT_BINDED + 1 (depth/stencil)
+            uint64 StoreDontCare : 7; // GPU_MAX_RT_BINDED + 1 (depth/stencil)
         };
 
         uint64 Flags;
@@ -216,12 +215,15 @@ struct RenderTargetLayoutVulkan
     MSAALevel MSAA;
     PixelFormat DepthFormat;
     PixelFormat RTVsFormats[GPU_MAX_RT_BINDED];
-    VkExtent2D Extent;
 
     FORCE_INLINE bool operator==(const RenderTargetLayoutVulkan& other) const
     {
         return Platform::MemoryCompare(this, &other, sizeof(RenderTargetLayoutVulkan)) == 0;
     }
+
+#if GPU_ENABLE_DEVELOPMENT
+    String ToString() const;
+#endif
 };
 
 uint32 GetHash(const RenderTargetLayoutVulkan& key);
@@ -364,7 +366,7 @@ class GPUDeviceVulkan : public GPUDevice
 private:
     CriticalSection _fenceLock;
     mutable void* _nativePtr[4];
-    Dictionary<RenderTargetLayoutVulkan, RenderPassVulkan*> _renderPasses;
+    ConcurrentDictionary<RenderTargetLayoutVulkan, RenderPassVulkan*> _renderPasses;
     Dictionary<FramebufferVulkan::Key, FramebufferVulkan*> _framebuffers;
     ConcurrentDictionary<DescriptorSetLayoutInfoVulkan, PipelineLayoutVulkan*> _layouts;
 

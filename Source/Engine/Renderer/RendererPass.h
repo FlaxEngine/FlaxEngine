@@ -8,6 +8,7 @@
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Assets/Texture.h"
 #include "Engine/Content/Assets/Model.h"
+#include "Engine/Graphics/Config.h"
 #include "Engine/Graphics/GPUPipelineState.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Engine/Profiler/Profiler.h"
@@ -24,72 +25,62 @@ protected:
 #if !GPU_ENABLE_PRELOADING_RESOURCES
     bool _lazyInit = true;
 #endif
-    bool _hasValidResources;
+    bool _hasValidResources = false;
+#if COMPILE_WITH_PSO_PRECACHING
+    volatile int32 _precacheHandle = 0;
+#endif
 
-    /// <summary>
-    /// Init
-    /// </summary>
     RendererPassBase()
     {
-        _hasValidResources = false;
     }
 
 public:
-
     /// <summary>
-    /// Initialize service.
+    /// Initializes the pass.
     /// </summary>
     virtual bool Init()
     {
         return false;
     }
 
+#if COMPILE_WITH_PSO_PRECACHING
     /// <summary>
-    /// Cleanup service data.
+    /// Initializes PSOs precaching for the pass.
     /// </summary>
-    virtual void Dispose()
-    {
-        // Clear flag
-        _hasValidResources = false;
-    }
+    void InitPrecachePSO();
+#endif
+
+    /// <summary>
+    /// Cleanups pass data.
+    /// </summary>
+    virtual void Dispose();
 
     /// <summary>
     /// Determines whether can render this pass. Checks if pass is ready and has valid resources loaded.
     /// </summary>
-    /// <returns><c>true</c> if can render pass; otherwise, <c>false</c>.</returns>
     bool IsReady()
     {
         return !checkIfSkipPass();
     }
 
 protected:
+    bool checkIfSkipPass(bool precaching = false);
 
-    bool checkIfSkipPass()
-    {
-        if (_hasValidResources)
-            return false;
-#if !GPU_ENABLE_PRELOADING_RESOURCES
-        if (_lazyInit)
-        {
-            _lazyInit = false;
-            Init();
-        }
-#endif
-        const bool setupFailed = setupResources();
-        _hasValidResources = !setupFailed;
-        return setupFailed;
-    }
-
-    void invalidateResources()
-    {
-        // Clear flag
-        _hasValidResources = false;
-    }
+    void invalidateResources();
 
     virtual bool setupResources()
     {
         return false;
     }
+
+#if COMPILE_WITH_PSO_PRECACHING
+    /// <summary>
+    /// Precaches shader pipelines to be ready ahead of time. PSOs used by this pass can warm-up in async before rendering happens with runtime-defined render target formats and vertex layouts.
+    /// </summary>
+    virtual void PrecachePSO()
+    {
+    }
+#endif
 };
 
 /// <summary>

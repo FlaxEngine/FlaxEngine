@@ -99,8 +99,8 @@ public:
 
 void ColorGradingPass::OnShaderReloading(Asset* obj)
 {
-    _psLut.Release();
     invalidateResources();
+    _psLut.Release();
     _reloadedFrame = Engine::FrameCount;
 }
 
@@ -121,6 +121,23 @@ bool ColorGradingPass::Init()
     PostProcessSettings defaultSettings;
     GPUTexture* defaultLut;
     DefaultData.Init(defaultSettings, defaultLut);
+
+    // Check if can use volume texture (3D) for a LUT (faster on modern platforms, requires geometry shader)
+    const auto device = GPUDevice::Instance;
+    bool use3D = GPU_ALLOW_GEOMETRY_SHADERS && Graphics::PostProcessing::ColorGradingVolumeLUT;
+    use3D &= device->Limits.HasGeometryShaders && device->Limits.HasVolumeTextureRendering;
+    use3D &= !PLATFORM_SWITCH; // TODO: move this in future to platform-specific configs
+    _use3D = use3D;
+
+    // Pick a proper LUT pixels format
+    auto lutFormat = PixelFormat::R10G10B10A2_UNorm;
+    const auto formatSupport = device->GetFormatFeatures(lutFormat).Support;
+    FormatSupport formatSupportFlags = FormatSupport::ShaderSample | FormatSupport::RenderTarget;
+    formatSupportFlags |= use3D ? FormatSupport::Texture3D : FormatSupport::Texture2D;
+    if (EnumHasNoneFlags(formatSupport, formatSupportFlags))
+        lutFormat = PixelFormat::R8G8B8A8_UNorm;
+    _lutFormat = lutFormat;
+
     return false;
 }
 
@@ -135,7 +152,7 @@ bool ColorGradingPass::setupResources()
     auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
     StringAnsiView psName;
 #if GPU_ALLOW_GEOMETRY_SHADERS
-    if (_use3D == 1)
+    if (_use3D)
     {
         psDesc.VS = shader->GetVS("VS_WriteToSlice");
         psDesc.GS = shader->GetGS("GS_WriteToSlice");
@@ -152,6 +169,25 @@ bool ColorGradingPass::setupResources()
     return false;
 }
 
+#if COMPILE_WITH_PSO_PRECACHING
+
+void ColorGradingPass::PrecachePSO()
+{
+    if (_shader->WaitForLoaded() ||
+        checkIfSkipPass(true))
+        return;
+    GPUPipelineState::PrecacheContext context;
+    auto renderBuffers = MainRenderTask::Instance->Buffers;
+    auto& toneMapping = Graphics::PostProcessSettings.ToneMapping;
+    context.RTCount = 1;
+    context.RTFormats[0] = _lutFormat;
+    context.RTAction = GPUDrawPassAction::Store;
+    context.SetFullscreenTriangleLayout();
+    _psLut[(int32)toneMapping.Mode]->PrecachePSO(context);
+}
+
+#endif
+
 void ColorGradingPass::Dispose()
 {
     RendererPass::Dispose();
@@ -160,7 +196,7 @@ void ColorGradingPass::Dispose()
     _shader = nullptr;
 }
 
-GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
+GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext, GPUContext* context)
 {
     PROFILE_CPU();
 
@@ -176,38 +212,17 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
         toneMapping.Mode == ToneMappingMode::None)
         return nullptr;
 
-    // Check if can use volume texture (3D) for a LUT (faster on modern platforms, requires geometry shader)
-    const auto device = GPUDevice::Instance;
-    bool use3D = GPU_ALLOW_GEOMETRY_SHADERS && Graphics::PostProcessing::ColorGradingVolumeLUT;
-    use3D &= device->Limits.HasGeometryShaders && device->Limits.HasVolumeTextureRendering;
-    use3D &= !PLATFORM_SWITCH; // TODO: move this in future to platform-specific configs
-
-    // Rebuild PSO on change
-    if (_use3D != (int32)use3D)
-    {
-        invalidateResources();
-        _use3D = use3D;
-    }
-
     // Ensure to have valid data
     if (checkIfSkipPass())
         return nullptr;
 
-    // Pick a proper LUT pixels format
-    auto lutFormat = PixelFormat::R10G10B10A2_UNorm;
-    const auto formatSupport = device->GetFormatFeatures(lutFormat).Support;
-    FormatSupport formatSupportFlags = FormatSupport::ShaderSample | FormatSupport::RenderTarget;
-    formatSupportFlags |= use3D ? FormatSupport::Texture3D : FormatSupport::Texture2D;
-    if (EnumHasNoneFlags(formatSupport, formatSupportFlags))
-        lutFormat = PixelFormat::R8G8B8A8_UNorm;
-
     // For a 3D texture, the viewport is 32x32 (per slice), for a 2D texture, it's unwrapped to 1024x32
     constexpr int32 lutSize = 32; // this must match value in shader (see ColorGrading.shader and PostProcessing.shader)
     GPUTextureDescription lutDesc;
-    if (use3D)
-        lutDesc = GPUTextureDescription::New3D(lutSize, lutSize, lutSize, 1, lutFormat);
+    if (_use3D)
+        lutDesc = GPUTextureDescription::New3D(lutSize, lutSize, lutSize, 1, _lutFormat);
     else
-        lutDesc = GPUTextureDescription::New2D(lutSize * lutSize, lutSize, 1, lutFormat);
+        lutDesc = GPUTextureDescription::New2D(lutSize * lutSize, lutSize, 1, _lutFormat);
 
     // Use existing texture or allocate a new one
     auto& colorGradingBuffer = *renderContext.Buffers->GetCustomBuffer<ColorGradingCustomBuffer>(TEXT("ColorGrading"));
@@ -244,19 +259,16 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
 
     // Render LUT
     PROFILE_GPU("Color Grading LUT");
-    auto context = device->GetMainContext();
     const auto cb = _shader->GPU->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
     context->SetViewportAndScissors((float)lutDesc.Width, (float)lutDesc.Height);
     context->SetState(_psLut.Get((int32)toneMapping.Mode));
     context->BindSR(0, lutTexture);
-    auto rtAction = GPUDrawPassAction::Store;
 #if GPU_ALLOW_GEOMETRY_SHADERS
-    if (use3D)
+    if (_use3D)
     {
-        auto rt = colorGradingBuffer.LUT->ViewVolume();
-        GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
+        GPUDrawPass drawPass(context, colorGradingBuffer.LUT->ViewVolume(), GPUDrawPassAction::Store);
 
         // Render one fullscreen-triangle per slice intersecting the bounds
         const int32 numInstances = lutDesc.Depth;
@@ -265,8 +277,7 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
     else
 #endif
     {
-        auto rt = colorGradingBuffer.LUT->View();
-        GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
+        GPUDrawPass drawPass(context, colorGradingBuffer.LUT->View(), GPUDrawPassAction::Store);
         context->DrawFullscreenTriangle();
     }
     context->UnBindSR(0);

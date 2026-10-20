@@ -26,8 +26,8 @@ private:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
-        _ps->ReleaseGPU();
         invalidateResources();
+        _ps->ReleaseGPU();
     }
 #endif
 

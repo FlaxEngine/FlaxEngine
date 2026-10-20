@@ -12,6 +12,12 @@ GPU_CB_STRUCT(Data {
     Float4 ScreenSize;
     });
 
+static int32 GetPermutationIndex()
+{
+    const auto qualityLevel = Math::Clamp(static_cast<int32>(Graphics::AAQuality), 0, static_cast<int32>(Quality::MAX) - 1);
+    return qualityLevel;
+}
+
 String FXAA::ToString() const
 {
     return TEXT("FXAA");
@@ -47,6 +53,27 @@ bool FXAA::setupResources()
     return false;
 }
 
+#if COMPILE_WITH_PSO_PRECACHING
+
+#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderBuffers.h"
+
+void FXAA::PrecachePSO()
+{
+    const auto& settings = Graphics::PostProcessSettings.AntiAliasing;
+    if (_shader->WaitForLoaded() ||
+        settings.Mode != AntialiasingMode::FastApproximateAntialiasing ||
+        checkIfSkipPass(true))
+        return;
+    GPUPipelineState::PrecacheContext context;
+    context.RTCount = 1;
+    context.RTFormats[0] = MainRenderTask::Instance->Buffers->GetOutputFormat();
+    context.SetReadOnlyDepthFormat();
+    _psFXAA[GetPermutationIndex()]->PrecachePSO(context);
+}
+
+#endif
+
 void FXAA::Dispose()
 {
     // Base
@@ -79,7 +106,6 @@ void FXAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureVie
     context->BindSR(0, input);
 
     // Render
-    const auto qualityLevel = Math::Clamp(static_cast<int32>(Graphics::AAQuality), 0, static_cast<int32>(Quality::MAX) - 1);
-    context->SetState(_psFXAA.Get(qualityLevel));
+    context->SetState(_psFXAA.Get(GetPermutationIndex()));
     context->DrawFullscreenTriangle();
 }

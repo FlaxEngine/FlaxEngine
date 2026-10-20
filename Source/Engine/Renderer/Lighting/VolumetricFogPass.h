@@ -52,12 +52,12 @@ private:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
+        invalidateResources();
         // TODO: this should reload all Materials that use VolumeParticleMaterialShader
         _psInjectLight.Release();
         _csInitialize = nullptr;
         _csLightScattering.Clear();
         _csFinalIntegration = nullptr;
-        invalidateResources();
     }
 #endif
 

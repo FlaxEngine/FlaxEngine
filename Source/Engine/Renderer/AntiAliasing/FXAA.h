@@ -27,8 +27,8 @@ private:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
-        _psFXAA.Release();
         invalidateResources();
+        _psFXAA.Release();
     }
 #endif
 
@@ -41,4 +41,7 @@ public:
 protected:
     // [RendererPass]
     bool setupResources() override;
+#if COMPILE_WITH_PSO_PRECACHING
+    void PrecachePSO() override;
+#endif
 };

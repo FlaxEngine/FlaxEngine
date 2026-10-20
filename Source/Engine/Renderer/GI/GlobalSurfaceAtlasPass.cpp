@@ -819,6 +819,11 @@ bool GlobalSurfaceAtlasPass::setupResources()
     if (!_cb0)
         return true;
     _csCullObjects = shader->GetCS("CS_CullObjects");
+    _vbLayout = GPUVertexLayout::Get({
+        { VertexElement::Types::Position, 0, 0, 0, PixelFormat::R32G32_Float },
+        { VertexElement::Types::TexCoord0, 0, 0, 0, PixelFormat::R32G32_Float },
+        { VertexElement::Types::TexCoord1, 0, 0, 0, PixelFormat::R32_UInt },
+        });
 
     // Create pipeline state
     GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
@@ -884,10 +889,39 @@ bool GlobalSurfaceAtlasPass::setupResources()
     return false;
 }
 
+#if COMPILE_WITH_PSO_PRECACHING
+
+void GlobalSurfaceAtlasPass::PrecachePSO()
+{
+    if (!_supported ||
+        _shader->WaitForLoaded() ||
+        checkIfSkipPass(true))
+        return;
+    GPUPipelineState::PrecacheContext context;
+    context.VertexLayout = _vbLayout;
+    context.DepthFormat = PixelFormat::D16_UNorm;
+    context.RTCount = 3;
+    context.RTFormats[0] = PixelFormat::R11G11B10_Float;
+    context.RTFormats[1] = GBUFFER0_FORMAT;
+    context.RTFormats[2] = GBUFFER1_FORMAT;
+    _psClear->PrecachePSO(context);
+    context.RTCount = 3;
+    _psCopy->PrecachePSO(context);
+    context.DepthFormat = PixelFormat::Unknown;
+    context.RTCount = 1;
+    _psClearLighting->PrecachePSO(context);
+    _psDirectLighting0->PrecachePSO(context);
+    _psDirectLighting1->PrecachePSO(context);
+    _psIndirectLighting->PrecachePSO(context);
+}
+
+#endif
+
 #if COMPILE_WITH_DEV_ENV
 
 void GlobalSurfaceAtlasPass::OnShaderReloading(Asset* obj)
 {
+    invalidateResources();
     SAFE_DELETE_GPU_RESOURCE(_psCopy);
     SAFE_DELETE_GPU_RESOURCE(_psClear);
     SAFE_DELETE_GPU_RESOURCE(_psClearLighting);
@@ -898,7 +932,6 @@ void GlobalSurfaceAtlasPass::OnShaderReloading(Asset* obj)
     SAFE_DELETE_GPU_RESOURCE(_psDebug0);
     SAFE_DELETE_GPU_RESOURCE(_psDebug1);
 #endif
-    invalidateResources();
 }
 
 #endif
@@ -1026,12 +1059,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         surfaceAtlasData.ListenSceneRendering(scene);
     if (!_vertexBuffer)
     {
-        auto layout = GPUVertexLayout::Get({
-            { VertexElement::Types::Position, 0, 0, 0, PixelFormat::R32G32_Float },
-            { VertexElement::Types::TexCoord0, 0, 0, 0, PixelFormat::R32G32_Float },
-            { VertexElement::Types::TexCoord1, 0, 0, 0, PixelFormat::R32_UInt },
-        });
-        _vertexBuffer = New<DynamicVertexBuffer>(0u, (uint32)sizeof(AtlasTileVertex), TEXT("GlobalSurfaceAtlas.VertexBuffer"), layout);
+        _vertexBuffer = New<DynamicVertexBuffer>(0u, (uint32)sizeof(AtlasTileVertex), TEXT("GlobalSurfaceAtlas.VertexBuffer"), _vbLayout);
     }
 
     // Ensure that async objects drawing ended
@@ -1802,7 +1830,7 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
 
         // Color Grading and Post-Processing to improve readability in bright/dark scenes
         context->ResetRenderTarget();
-        auto colorGradingLUT = ColorGradingPass::Instance()->RenderLUT(renderContext);
+        auto colorGradingLUT = ColorGradingPass::Instance()->RenderLUT(renderContext, context);
         EyeAdaptationPass::Instance()->Render(renderContext, tempBuffer);
         PostProcessingPass::Instance()->Render(renderContext, tempBuffer, output->View(), Viewport(output->Size()), colorGradingLUT);
         RenderTargetPool::Release(tempBuffer);

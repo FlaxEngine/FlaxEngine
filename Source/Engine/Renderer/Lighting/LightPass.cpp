@@ -9,6 +9,7 @@
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/GPULimits.h"
+#include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Content/Assets/CubeTexture.h"
@@ -45,21 +46,12 @@ bool LightPass::Init()
         return true;
     BIND_SHADER_RELOADING(_shader, LightPass, OnShaderReloading);
 
-    // Pick the format for shadow mask (rendered shadow projection into screen-space)
-    auto format = PixelFormat::R8G8_UNorm;
-    if (EnumHasNoneFlags(GPUDevice::Instance->GetFormatFeatures(format).Support, FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D))
-    {
-        format = PixelFormat::B8G8R8A8_UNorm;
-    }
-    _shadowMaskFormat = format;
-
     return false;
 }
 
 bool LightPass::setupResources()
 {
-    // Wait for the assets
-    if (!_sphereModel->CanBeRendered() || !_shader->IsLoaded())
+    if (!_shader->IsLoaded())
         return true;
     auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, PerLight);
@@ -113,6 +105,29 @@ bool LightPass::setupResources()
 
     return false;
 }
+
+#if COMPILE_WITH_PSO_PRECACHING
+
+void LightPass::PrecachePSO()
+{
+    if (_shader->WaitForLoaded() ||
+        _sphereModel->WaitForLoaded() ||
+        checkIfSkipPass(true))
+        return;
+    GPUPipelineState::PrecacheContext context;
+    auto renderBuffers = MainRenderTask::Instance->Buffers;
+    context.SetReadOnlyDepthFormat();
+    context.RTCount = 1;
+    context.RTFormats[0] = renderBuffers->GetOutputFormat();
+    context.VertexLayout = _sphereModel->LODs[0].Meshes[0].GetVertexLayout();
+    _psLightSkyInside->PrecachePSO(context);
+    _psLightLocal[0]->PrecachePSO(context);
+    _psLightLocalInside[0]->PrecachePSO(context);
+    context.SetFullscreenTriangleLayout();
+    _psLightDir[0]->PrecachePSO(context);
+}
+
+#endif
 
 void LightPass::Dispose()
 {
@@ -204,11 +219,11 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
     // Temporary data
     PerLight perLight;
     PerFrame perFrame;
-    auto& sphereMesh = _sphereModel->LODs.Get()[0].Meshes.Get()[0];
+    auto* sphereMesh = _sphereModel->CanBeRendered() ? _sphereModel->LODs.Get()[0].Meshes.Get() : nullptr;
 
     // Bind output
     auto depthBuffer = renderContext.Buffers->GetReadOnlyDepthBuffer();
-    context->SetRenderTarget(depthBuffer.RTV, lightBuffer);
+    GPUDrawPass pass(context, depthBuffer.RTV, GPUDrawPassAction::Load, lightBuffer, GPUDrawPassAction::LoadStore);
 
     // Set per frame data
     GBufferPass::SetInputs(renderContext.View, perFrame.GBuffer);
@@ -227,14 +242,14 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
     GPUTexture* shadowMask = nullptr;
 #define GET_SHADOW_MASK() \
     if (!shadowMask) { \
-        auto rtDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), _shadowMaskFormat); \
+        auto rtDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), ShadowsPass::Instance()->GetShadowMaskFormat()); \
         shadowMask = RenderTargetPool::Get(rtDesc); \
         RENDER_TARGET_POOL_SET_NAME(shadowMask, "ShadowMask"); \
     } \
     auto shadowMaskView = shadowMask->View()
 
     // Render all point lights
-    for (int32 lightIndex = 0; lightIndex < mainCache->PointLights.Count(); lightIndex++)
+    for (int32 lightIndex = 0; sphereMesh && lightIndex < mainCache->PointLights.Count(); lightIndex++)
     {
         PROFILE_GPU_CPU_NAMED("Point Light");
         auto& light = mainCache->PointLights[lightIndex];
@@ -249,9 +264,10 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         // Fullscreen shadow mask rendering
         if (light.HasShadow)
         {
+            context->EndDrawPass();
             GET_SHADOW_MASK();
             ShadowsPass::Instance()->RenderShadowMask(renderContextBatch, light, shadowMaskView);
-            context->SetRenderTarget(depthBuffer.RTV, lightBuffer);
+            context->BeginDrawPass(pass);
             context->BindSR(5, shadowMaskView);
         }
         else
@@ -276,13 +292,13 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         context->BindCB(1, cb1);
         int32 permutationIndex = (disableSpecular ? 1 : 0) + (useIES ? 2 : 0);
         context->SetState((isViewInside ? _psLightLocalInside : _psLightLocal).Get(permutationIndex));
-        sphereMesh.Render(context);
+        sphereMesh->Render(context);
     }
 
     context->UnBindCB(0);
 
     // Render all spot lights
-    for (int32 lightIndex = 0; lightIndex < mainCache->SpotLights.Count(); lightIndex++)
+    for (int32 lightIndex = 0; sphereMesh && lightIndex < mainCache->SpotLights.Count(); lightIndex++)
     {
         PROFILE_GPU_CPU_NAMED("Spot Light");
         auto& light = mainCache->SpotLights[lightIndex];
@@ -297,9 +313,10 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         // Fullscreen shadow mask rendering
         if (light.HasShadow)
         {
+            context->EndDrawPass();
             GET_SHADOW_MASK();
             ShadowsPass::Instance()->RenderShadowMask(renderContextBatch, light, shadowMaskView);
-            context->SetRenderTarget(depthBuffer.RTV, lightBuffer);
+            context->BeginDrawPass(pass);
             context->BindSR(5, shadowMaskView);
         }
         else
@@ -324,7 +341,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         context->BindCB(1, cb1);
         int32 permutationIndex = (disableSpecular ? 1 : 0) + (useIES ? 2 : 0);
         context->SetState((isViewInside ? _psLightLocalInside : _psLightLocal).Get(permutationIndex));
-        sphereMesh.Render(context);
+        sphereMesh->Render(context);
     }
 
     context->UnBindCB(0);
@@ -338,9 +355,10 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         // Fullscreen shadow mask rendering
         if (light.HasShadow)
         {
+            context->EndDrawPass();
             GET_SHADOW_MASK();
             ShadowsPass::Instance()->RenderShadowMask(renderContextBatch, light, shadowMaskView);
-            context->SetRenderTarget(depthBuffer.RTV, lightBuffer);
+            context->BeginDrawPass(pass);
             context->BindSR(5, shadowMaskView);
         }
         else
@@ -362,7 +380,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
     context->UnBindCB(0);
 
     // Render all sky lights
-    for (int32 lightIndex = 0; lightIndex < mainCache->SkyLights.Count(); lightIndex++)
+    for (int32 lightIndex = 0; sphereMesh && lightIndex < mainCache->SkyLights.Count(); lightIndex++)
     {
         PROFILE_GPU_CPU_NAMED("Sky Light");
         auto& light = mainCache->SkyLights[lightIndex];
@@ -390,7 +408,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         context->BindCB(0, cb0);
         context->BindCB(1, cb1);
         context->SetState(isViewInside ? _psLightSkyInside : _psLightSky);
-        sphereMesh.Render(context);
+        sphereMesh->Render(context);
     }
 
     RenderTargetPool::Release(shadowMask);

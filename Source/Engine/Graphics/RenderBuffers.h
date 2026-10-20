@@ -213,6 +213,11 @@ public:
     API_PROPERTY() PixelFormat GetOutputFormat() const;
 
     /// <summary>
+    /// Gets the depth buffer format.
+    /// </summary>
+    API_PROPERTY() PixelFormat GetDepthFormat() const;
+
+    /// <summary>
     /// True if support alpha output in the rendering buffers and pass-though alpha mask of the scene during rendering (at cost of reduced performance).
     /// </summary>
     API_PROPERTY() bool GetUseAlpha() const;

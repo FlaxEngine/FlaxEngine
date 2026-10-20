@@ -39,9 +39,9 @@ private:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
+        invalidateResources();
         _csClearHistogram = nullptr;
         _csGenerateHistogram = nullptr;
-        invalidateResources();
     }
 #endif
 

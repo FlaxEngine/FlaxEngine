@@ -1,8 +1,10 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Renderer.h"
+#include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUPass.h"
+#include "Engine/Graphics/GPUPipelineCache.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -37,7 +39,6 @@
 #include "Engine/Level/Level.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Core/Config/GraphicsSettings.h"
-#include "Engine/Graphics/Graphics.h"
 #include "Engine/Threading/JobSystem.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 #if USE_EDITOR
@@ -71,6 +72,47 @@ public:
 };
 
 RendererService RendererServiceInstance;
+
+#if COMPILE_WITH_PSO_PRECACHING
+
+void RendererPassBase::InitPrecachePSO()
+{
+    Function<void()> f;
+    f.Bind<RendererPassBase, &RendererPassBase::PrecachePSO>(this);
+    GPUPipelineCache::PrecacheAsync(f, &_precacheHandle);
+}
+
+#endif
+
+void RendererPassBase::Dispose()
+{
+    GPU_PSO_WAIT(_precacheHandle);
+    _hasValidResources = false;
+}
+
+bool RendererPassBase::checkIfSkipPass(bool precaching)
+{
+    if (!precaching && !GPU_PSO_READY(_precacheHandle))
+        return true;
+    if (_hasValidResources)
+        return false;
+#if !GPU_ENABLE_PRELOADING_RESOURCES
+    if (_lazyInit)
+    {
+        _lazyInit = false;
+        Init();
+    }
+#endif
+    const bool setupFailed = setupResources();
+    _hasValidResources = !setupFailed;
+    return setupFailed;
+}
+
+void RendererPassBase::invalidateResources()
+{
+    GPU_PSO_WAIT(_precacheHandle);
+    _hasValidResources = false;
+}
 
 void RenderInner(RenderContext& renderContext, RenderContextBatch& renderContextBatch);
 
@@ -111,7 +153,10 @@ bool RendererService::Init()
     if (GPUDevice::Instance->GetRendererType() == RendererType::Null)
         return false;
 
-    // Init child services
+    // Preload all passes
+#if COMPILE_WITH_PSO_PRECACHING
+    bool precachePSOs = GPU_PSO_PRECACHING(Renderer);
+#endif
     for (int32 i = 0; i < PassList.Count(); i++)
     {
         if (PassList[i]->Init())
@@ -119,6 +164,10 @@ bool RendererService::Init()
             LOG(Fatal, "Cannot init {0}. Please see a log file for more info.", PassList[i]->ToString());
             return true;
         }
+#if COMPILE_WITH_PSO_PRECACHING
+        if (precachePSOs)
+            PassList[i]->InitPrecachePSO();
+#endif
     }
 #endif
 
@@ -185,7 +234,7 @@ void RenderAntiAliasingPass(RenderContext& renderContext, GPUTexture* input, GPU
 void RenderLightBuffer(GPUContext* context, RenderContext& renderContext, GPUTexture* lightBuffer, const GPUTextureDescription& tempDesc)
 {
     context->ResetRenderTarget();
-    auto colorGradingLUT = ColorGradingPass::Instance()->RenderLUT(renderContext);
+    auto colorGradingLUT = ColorGradingPass::Instance()->RenderLUT(renderContext, context);
     auto tempBuffer = RenderTargetPool::Get(tempDesc);
     RENDER_TARGET_POOL_SET_NAME(tempBuffer, "TempBuffer");
     EyeAdaptationPass::Instance()->Render(renderContext, lightBuffer);
@@ -875,7 +924,7 @@ void RenderInner(RenderContext& renderContext, RenderContextBatch& renderContext
     MotionBlurPass::Instance()->Render(renderContext, frameBuffer, tempBuffer);
 
     // Color Grading LUT generation
-    auto colorGradingLUT = ColorGradingPass::Instance()->RenderLUT(renderContext);
+    auto colorGradingLUT = ColorGradingPass::Instance()->RenderLUT(renderContext, context);
 
     // Post-processing
     EyeAdaptationPass::Instance()->Render(renderContext, frameBuffer);

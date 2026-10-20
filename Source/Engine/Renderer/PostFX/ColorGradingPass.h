@@ -11,7 +11,8 @@
 class ColorGradingPass : public RendererPass<ColorGradingPass>
 {
 private:
-    int32 _use3D = -1;
+    bool _use3D;
+    PixelFormat _lutFormat;
     AssetReference<Shader> _shader;
     GPUPipelineStatePermutationsPs<4> _psLut;
 
@@ -20,8 +21,9 @@ public:
     /// Renders Look Up table with color grading parameters mixed in.
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
+    /// <param name="context">The GPU command context.</param>
     /// <returns>Allocated temp render target with a rendered LUT - cached within Render Buffers, released automatically.</returns>
-    GPUTexture* RenderLUT(RenderContext& renderContext);
+    GPUTexture* RenderLUT(RenderContext& renderContext, GPUContext* context);
 
 private:
 #if COMPILE_WITH_DEV_ENV
@@ -38,4 +40,7 @@ public:
 protected:
     // [RendererPass]
     bool setupResources() override;
+#if COMPILE_WITH_PSO_PRECACHING
+    void PrecachePSO() override;
+#endif
 };

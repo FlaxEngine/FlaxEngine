@@ -39,6 +39,7 @@ private:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
+        invalidateResources();
         _psBloomBrightPass->ReleaseGPU();
         _psBloomDownsample->ReleaseGPU();
         _psBloomDualFilterUpsample->ReleaseGPU();
@@ -46,7 +47,6 @@ private:
         _psBlurV->ReleaseGPU();
         _psGenGhosts->ReleaseGPU();
         _psComposite.Release();
-        invalidateResources();
     }
 #endif
 
@@ -59,4 +59,7 @@ public:
 protected:
     // [RendererPass]
     bool setupResources() override;
+#if COMPILE_WITH_PSO_PRECACHING
+    void PrecachePSO() override;
+#endif
 };

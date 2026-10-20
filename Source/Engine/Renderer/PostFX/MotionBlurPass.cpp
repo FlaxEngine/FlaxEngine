@@ -9,6 +9,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPULimits.h"
+#include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/GPUDevice.h"
@@ -131,6 +132,22 @@ bool MotionBlurPass::setupResources()
     return false;
 }
 
+#if COMPILE_WITH_PSO_PRECACHING
+
+void MotionBlurPass::PrecachePSO()
+{
+    if (_shader->WaitForLoaded() ||
+        checkIfSkipPass(true))
+        return;
+    GPUPipelineState::PrecacheContext context;
+    context.RTCount = 1;
+    context.RTFormats[0] = _motionVectorsFormat;
+    context.SetFullscreenTriangleLayout();
+    _psCameraMotionVectors->PrecachePSO(context);
+}
+
+#endif
+
 void MotionBlurPass::Dispose()
 {
     // Base
@@ -211,7 +228,7 @@ void MotionBlurPass::RenderMotionVectors(RenderContext& renderContext)
     if (!data.TemporalAAJitter.IsZero() || data.CurrentVP != data.PreviousVP)
     {
         PROFILE_GPU("Camera Motion Vectors");
-        context->SetRenderTarget(motionVectors->View());
+        GPUDrawPass pass(context, motionVectors->View());
         context->SetState(_psCameraMotionVectors);
         context->DrawFullscreenTriangle();
     }

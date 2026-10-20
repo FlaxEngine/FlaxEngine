@@ -75,8 +75,6 @@ bool ScreenSpaceReflectionsPass::Init()
 
 bool ScreenSpaceReflectionsPass::setupResources()
 {
-    if (!_preIntegratedGF->IsLoaded())
-        return true;
     if (!_shader->IsLoaded())
         return true;
     const auto shader = _shader->GPU;
@@ -110,6 +108,29 @@ bool ScreenSpaceReflectionsPass::setupResources()
     return false;
 }
 
+#if COMPILE_WITH_PSO_PRECACHING
+
+void ScreenSpaceReflectionsPass::PrecachePSO()
+{
+    if (_shader->WaitForLoaded() ||
+        checkIfSkipPass(true))
+        return;
+    GPUPipelineState::PrecacheContext context;
+    context.SetFullscreenTriangleLayout();
+    context.RTCount = 1;
+    context.RTFormats[0] = PixelFormat::R16G16B16A16_Float;
+    context.RTAction = GPUDrawPassAction::Store;
+    for (auto& ps : _psRayTracePass.States)
+        ps->PrecachePSO(context);
+    for (auto& ps : _psResolvePass.States)
+        ps->PrecachePSO(context);
+    _psTemporalPass->PrecachePSO(context);
+    context.RTFormats[0] = PixelFormat::R11G11B10_Float;
+    _psCombinePass->PrecachePSO(context);
+}
+
+#endif
+
 void ScreenSpaceReflectionsPass::Dispose()
 {
     // Base
@@ -127,7 +148,7 @@ void ScreenSpaceReflectionsPass::Dispose()
 GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* reflectionsRT, GPUTextureView* lightBuffer)
 {
     // Skip pass if resources aren't ready
-    if (checkIfSkipPass())
+    if (checkIfSkipPass() || !_preIntegratedGF->IsLoaded())
         return nullptr;
     const RenderView& view = renderContext.View;
     RenderBuffers* buffers = renderContext.Buffers;
@@ -283,9 +304,7 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
     // Combine pass
     {
         PROFILE_GPU("Combine");
-        auto rt = colorBuffer0->View(0);
-        auto rtAction = GPUDrawPassAction::Store;
-        GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
+        GPUDrawPass drawPass(context, colorBuffer0->View(0), GPUDrawPassAction::Store);
         context->BindSR(0, buffers->GBuffer0);
         context->BindSR(1, buffers->GBuffer1);
         context->BindSR(2, buffers->GBuffer2);
@@ -331,9 +350,7 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
     // Ray Trace Pass
     {
         PROFILE_GPU("RayTrace");
-        auto rt = traceBuffer->View();
-        auto rtAction = GPUDrawPassAction::Store;
-        GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
+        GPUDrawPass drawPass(context, traceBuffer->View(), GPUDrawPassAction::Store);
         context->SetViewportAndScissors((float)traceWidth, (float)traceHeight);
         context->BindSR(3, depthBufferTrace);
         context->BindSR(TEXTURE0, colorBuffer0->View());
@@ -356,9 +373,7 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
     // Resolve Pass
     {
         PROFILE_GPU("Resolve");
-        auto rt = resolveBuffer->View();
-        auto rtAction = GPUDrawPassAction::Store;
-        GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
+        GPUDrawPass drawPass(context, resolveBuffer->View(), GPUDrawPassAction::Store);
         context->SetViewportAndScissors((float)resolveWidth, (float)resolveHeight);
         context->BindSR(TEXTURE0, traceBuffer->View());
         context->SetState(_psResolvePass.Get(resolvePassIndex));
@@ -392,9 +407,7 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
         }
         else
         {
-            auto rt = newTemporal->View();
-            auto rtAction = GPUDrawPassAction::Store;
-            GPUDrawPass drawPass(context, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
+            GPUDrawPass drawPass(context, newTemporal->View(), GPUDrawPassAction::Store);
             context->BindSR(TEXTURE0, resolveBuffer);
             context->BindSR(TEXTURE1, buffers->TemporalSSR);
             context->BindSR(TEXTURE2, buffers->MotionVectors && buffers->MotionVectors->IsAllocated() ? buffers->MotionVectors->View() : nullptr);
@@ -417,11 +430,11 @@ GPUTexture* ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPU
 
 void ScreenSpaceReflectionsPass::OnShaderReloading(Asset* obj)
 {
+    invalidateResources();
     _psCombinePass->ReleaseGPU();
     _psTemporalPass->ReleaseGPU();
     _psRayTracePass.Release();
     _psResolvePass.Release();
-    invalidateResources();
 }
 
 #endif

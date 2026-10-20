@@ -33,12 +33,12 @@ private:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
+        invalidateResources();
         _psManual->ReleaseGPU();
         _psLuminanceMap->ReleaseGPU();
         _psBlendLuminance->ReleaseGPU();
         _psApplyLuminance->ReleaseGPU();
         _psHistogram->ReleaseGPU();
-        invalidateResources();
     }
 #endif
 

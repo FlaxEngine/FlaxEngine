@@ -51,7 +51,7 @@ GPUTexture* RenderTargetPool::Get(const GPUTextureDescription& desc)
 
     // Initialize render targets with pink color in debug builds to prevent incorrect data usage (GPU doesn't clear texture upon creation)
 #if BUILD_DEBUG && PLATFORM_DESKTOP
-    #define RENDER_TARGET_POOL_CLEAR() if (desc.Dimensions == TextureDimensions::Texture && EnumHasAllFlags(desc.Flags, GPUTextureFlags::RenderTarget) && GPUDevice::Instance->IsRendering() && IsInMainThread()) GPUDevice::Instance->GetMainContext()->Clear(e.RT->View(), Color::Pink);
+    #define RENDER_TARGET_POOL_CLEAR() if (desc.Dimensions == TextureDimensions::Texture && EnumHasAllFlags(desc.Flags, GPUTextureFlags::RenderTarget) && GPUDevice::Instance->GetRendererType() != RendererType::Vulkan && GPUDevice::Instance->IsRendering() && IsInMainThread()) GPUDevice::Instance->GetMainContext()->Clear(e.RT->View(), Color::Pink);
 #else
     #define RENDER_TARGET_POOL_CLEAR()
 #endif

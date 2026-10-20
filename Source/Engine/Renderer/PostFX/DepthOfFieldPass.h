@@ -51,6 +51,7 @@ private:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
+        invalidateResources();
         _psDofDepthBlurGeneration->ReleaseGPU();
         if (_psBokehGeneration)
             _psBokehGeneration->ReleaseGPU();
@@ -58,7 +59,6 @@ private:
             _psBokeh->ReleaseGPU();
         if (_psBokehComposite)
             _psBokehComposite->ReleaseGPU();
-        invalidateResources();
     }
 #endif
 

@@ -37,8 +37,8 @@ private:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
-        _psApplyDistortion->ReleaseGPU();
         invalidateResources();
+        _psApplyDistortion->ReleaseGPU();
     }
 #endif
 

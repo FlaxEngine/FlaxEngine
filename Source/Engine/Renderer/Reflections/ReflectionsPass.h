@@ -44,14 +44,17 @@ public:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
+        invalidateResources();
         _psProbe->ReleaseGPU();
         _psProbeInside->ReleaseGPU();
         _psCombinePass->ReleaseGPU();
-        invalidateResources();
     }
 #endif
 
 protected:
     // [RendererPass]
     bool setupResources() override;
+#if COMPILE_WITH_PSO_PRECACHING
+    void PrecachePSO() override;
+#endif
 };

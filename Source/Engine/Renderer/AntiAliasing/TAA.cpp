@@ -4,6 +4,7 @@
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderContext.h"
@@ -23,6 +24,25 @@ GPU_CB_STRUCT(Data {
     float Sharpness;
     ShaderGBufferData GBuffer;
     });
+
+static int32 GetPermutationIndex()
+{
+    int qualityLevel;
+    switch (Graphics::AAQuality)
+    {
+    case Quality::Low:
+        qualityLevel = 0;
+        break;
+    case Quality::Medium:
+        qualityLevel = 1;
+        break;
+    case Quality::High:
+    case Quality::Ultra:
+        qualityLevel = 2;
+        break;
+    }
+    return qualityLevel;
+}
 
 bool TAA::Init()
 {
@@ -49,6 +69,27 @@ bool TAA::setupResources()
     }
     return false;
 }
+
+#if COMPILE_WITH_PSO_PRECACHING
+
+#include "Engine/Graphics/RenderTask.h"
+
+void TAA::PrecachePSO()
+{
+    const auto& settings = Graphics::PostProcessSettings.AntiAliasing;
+    if (_shader->WaitForLoaded() ||
+        settings.Mode != AntialiasingMode::TemporalAntialiasing ||
+        checkIfSkipPass(true))
+        return;
+    GPUPipelineState::PrecacheContext context;
+    context.RTCount = 1;
+    context.RTFormats[0] = MainRenderTask::Instance->Buffers->GetOutputFormat();
+    context.RTAction = GPUDrawPassAction::Store;
+    context.SetFullscreenTriangleLayout();
+    _psTAA[GetPermutationIndex()]->PrecachePSO(context);
+}
+
+#endif
 
 void TAA::Dispose()
 {
@@ -131,24 +172,12 @@ void TAA::Render(const RenderContext& renderContext, GPUTexture* input, GPUTextu
     context->BindSR(3, renderContext.Buffers->DepthBuffer);
 
     // Render
-    context->SetViewportAndScissors(viewport);
-    context->SetRenderTarget(output->View());
-    int qualityLevel;
-    switch (Graphics::AAQuality)
     {
-    case Quality::Low:
-        qualityLevel = 0;
-        break;
-    case Quality::Medium:
-        qualityLevel = 1;
-        break;
-    case Quality::High:
-    case Quality::Ultra:
-        qualityLevel = 2;
-        break;
+        GPUDrawPass pass(context, output->View(), GPUDrawPassAction::Store);
+        context->SetViewportAndScissors(viewport);
+        context->SetState(_psTAA.Get(GetPermutationIndex()));
+        context->DrawFullscreenTriangle();
     }
-    context->SetState(_psTAA.Get(qualityLevel));
-    context->DrawFullscreenTriangle();
 
     // Update the history
     {

@@ -743,6 +743,7 @@ bool GlobalSignDistanceFieldPass::setupResources()
 
 void GlobalSignDistanceFieldPass::OnShaderReloading(Asset* obj)
 {
+    invalidateResources();
 #if GPU_ENABLE_DEVELOPMENT
     SAFE_DELETE_GPU_RESOURCE(_psDebug);
     SAFE_DELETE_GPU_RESOURCE(_psOverdraw);
@@ -754,7 +755,6 @@ void GlobalSignDistanceFieldPass::OnShaderReloading(Asset* obj)
     _csGenerateMip = nullptr;
     _cb0 = nullptr;
     _cb1 = nullptr;
-    invalidateResources();
 }
 
 #endif

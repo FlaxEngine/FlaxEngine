@@ -55,6 +55,7 @@ private:
 #endif
     GPUConstantBuffer* _cb0 = nullptr;
     GPUShaderProgramCS* _csCullObjects;
+    GPUVertexLayout* _vbLayout = nullptr;
 
     // Cache
     class GPUBuffer* _culledObjectsSizeBuffer = nullptr;
@@ -128,4 +129,7 @@ public:
 protected:
     // [RendererPass]
     bool setupResources() override;
+#if COMPILE_WITH_PSO_PRECACHING
+    void PrecachePSO() override;
+#endif
 };

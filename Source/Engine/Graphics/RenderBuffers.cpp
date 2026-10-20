@@ -193,6 +193,14 @@ PixelFormat RenderBuffers::GetOutputFormat() const
     }
 }
 
+PixelFormat RenderBuffers::GetDepthFormat() const
+{
+    PixelFormat result = GPU_DEPTH_BUFFER_PIXEL_FORMAT;
+    if (!EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(result).Support, FormatSupport::DepthStencil | FormatSupport::Texture2D))
+        result = result == PixelFormat::D24_UNorm_S8_UInt ? PixelFormat::D32_Float_S8X24_UInt : PixelFormat::D32_Float;
+    return result;
+}
+
 bool RenderBuffers::GetUseAlpha() const
 {
     return _useAlpha;
@@ -233,9 +241,7 @@ bool RenderBuffers::Init(int32 width, int32 height)
     bool result = false;
 
     // Depth Buffer
-    auto desc = GPUTextureDescription::New2D(width, height, GPU_DEPTH_BUFFER_PIXEL_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil);
-    if (!EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(desc.Format).Support, FormatSupport::DepthStencil | FormatSupport::Texture2D))
-        desc.Format = desc.Format == PixelFormat::D24_UNorm_S8_UInt ? PixelFormat::D32_Float_S8X24_UInt : PixelFormat::D32_Float;
+    auto desc = GPUTextureDescription::New2D(width, height, GetDepthFormat(), GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil);
     if (GPUDevice::Instance->Limits.HasReadOnlyDepth)
         desc.Flags |= GPUTextureFlags::ReadOnlyDepthView;
     
@@ -316,6 +322,7 @@ void RenderBuffers::Release()
 RenderBuffers::ReadOnlyDepthBuffer RenderBuffers::GetReadOnlyDepthBuffer() const
 {
     GPUTexture* depthBuffer = DepthBuffer;
+    ASSERT(depthBuffer && depthBuffer->IsAllocated());
     const bool depthBufferReadOnly = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView);
     GPUTextureView* depthBufferRTV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : nullptr;
     GPUTextureView* depthBufferSRV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();

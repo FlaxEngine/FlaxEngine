@@ -13,6 +13,10 @@
 #include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/GPUPipelineCache.h"
+#include "Engine/Graphics/GPUPass.h"
+#if GPU_ENABLE_DEVELOPMENT
+#include "Engine/Engine/CommandLine.h"
+#endif
 
 static VkStencilOp ToVulkanStencilOp(const StencilOperation value)
 {
@@ -123,6 +127,7 @@ ComputePipelineStateVulkan* GPUShaderProgramCSVulkan::GetState(bool precaching)
     // Create pipeline object
     VkPipeline pipeline;
     VkResult result = vkCreateComputePipelines(_device->Device, _device->PipelineCache, 1, &desc, nullptr, &pipeline);
+    psoLookup.Flags |= GPUPipelineLookup::Miss;
     _device->PipelineCacheUsage++;
     LOG_VULKAN_RESULT(result);
     if (result != VK_SUCCESS)
@@ -221,7 +226,7 @@ PipelineLayoutVulkan* GPUPipelineStateVulkan::GetLayout()
     return _layout;
 }
 
-VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVertexLayoutVulkan* vertexLayout)
+VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVertexLayoutVulkan* vertexLayout, bool precaching)
 {
     ASSERT(renderPass);
 
@@ -246,6 +251,12 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVer
     ZoneText(name.Get(), name.Count() - 1);
 #endif
     GPUPipelineLookup psoLookup;
+    if (precaching)
+        psoLookup.Flags |= GPUPipelineLookup::Precaching;
+    else
+    {
+        ZoneColor(GPU_PSO_ZONE_COLOR_MISS);
+    }
 
     // Bind vertex input
 	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo;
@@ -333,6 +344,7 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVer
     _descDepthStencil.depthWriteEnable &= renderPass->CanDepthStencilWrite ? 1 : 0;
     _descDepthStencil.front.writeMask &= renderPass->CanDepthStencilWrite ? MAX_uint32 : 0;
     const VkResult result = vkCreateGraphicsPipelines(_device->Device, _device->PipelineCache, 1, &_desc, nullptr, &pipeline);
+    psoLookup.Flags |= GPUPipelineLookup::Miss;
     _device->PipelineCacheUsage++;
     _descDepthStencil.depthWriteEnable = depthWrite;
     _descDepthStencil.front.writeMask = _descDepthStencil.back.writeMask = stencilWriteMask;
@@ -347,6 +359,58 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVer
 
     // Cache it
     _pipelines.Add(key, pipeline);
+
+#if GPU_ENABLE_DEVELOPMENT
+    // Check if similar PSO was precached but this one missed (eg. due to RT/Depth mismatch on load/store)
+    if (_precachedPSOs.HasItems() && CommandLine::Options.GPUDebug.IsTrue())
+    {
+        bool logged = false;
+        String nameStr(name.Get(), name.Count() - 1);
+        for (auto& e : _precachedPSOs)
+        {
+            if (e.RenderPassLayout == renderPass->Layout)
+            {
+                // Render Pass Layout matches but Vertex Layout doesn't
+                LOG(Warning, "PSO precaching miss for '{}' with wrong Vertex Layout:", nameStr);
+                LOG(Warning, "   > Requested:\n{}\n", key.Second ? key.Second->GetElementsString() : String::Empty);
+                for (auto& q : _precachedPSOs)
+                {
+                    if (q.RenderPassLayout == renderPass->Layout)
+                    {
+                        LOG(Warning, "   > Precached:\n{}\n", q.VertexLayout ? q.VertexLayout->GetElementsString() : String::Empty);
+                    }
+                }
+                logged = true;
+                break;
+            }
+        }
+        for (auto& e : _precachedPSOs)
+        {
+            if (e.VertexLayout == key.Second && !logged)
+            {
+                // Vertex Layout matches but Render Pass Layout doesn't
+                LOG(Warning, "PSO precaching miss for '{}' with wrong Render Pass Layout:", nameStr);
+                LOG(Warning, "   > Requested:\n{}\n", key.First->Layout.ToString());
+                for (auto& q : _precachedPSOs)
+                {
+                    if (q.VertexLayout == key.Second)
+                    {
+                        LOG(Warning, "   > Precached:\n{}\n", q.RenderPassLayout.ToString());
+                    }
+                }
+                logged = true;
+                break;
+            }
+        }
+
+#if 0 // Turn it on to hit PSO misses with a debugger (with -gpudebug)
+        if (logged && Platform::IsDebuggerPresent())
+        {
+            PLATFORM_DEBUG_BREAK;
+        }
+#endif
+    }
+#endif
 
     return pipeline;
 }
@@ -368,6 +432,9 @@ void GPUPipelineStateVulkan::OnReleaseGPU()
     }
     _layout = nullptr;
     _pipelines.Clear();
+#if GPU_ENABLE_DEVELOPMENT
+    _precachedPSOs.Clear();
+#endif
 }
 
 bool GPUPipelineStateVulkan::IsValid() const
@@ -599,6 +666,50 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _memoryUsage = sizeof(VkGraphicsPipelineCreateInfo);
 
     return GPUPipelineState::Init(desc);
+}
+
+void GPUPipelineStateVulkan::PrecachePSO(const PrecacheContext& context)
+{
+    RenderTargetLayoutVulkan layout;
+    Platform::MemoryClear(&layout, sizeof(layout));
+    layout.RTsCount = context.RTCount;
+    layout.DepthFormat = context.DepthFormat;
+    layout.MSAA = context.MSAA;
+    for (int32 i = 0; i < layout.RTsCount; i++)
+        layout.RTVsFormats[i] = context.RTFormats[i];
+    if (context.DepthFormat != PixelFormat::Unknown)
+    {
+        GPUDrawPassAction action = context.DepthAction;
+        layout.ReadDepth = true;
+        layout.ReadStencil = PixelFormatExtensions::HasStencil(context.DepthFormat);
+        layout.WriteDepth = EnumHasAllFlags(action, GPUDrawPassAction::Store);
+        layout.WriteStencil = layout.ReadStencil && layout.WriteDepth;
+        uint64 mask = 1ull << context.RTCount;
+        if ((uint32)action & (uint32)GPUDrawPassAction::Clear)
+            layout.LoadClear |= mask;
+        else if (((uint32)action & (uint32)GPUDrawPassAction::LoadMask) == 0)
+            layout.LoadDontCare |= mask;
+        else if (((uint32)action & (uint32)GPUDrawPassAction::StoreMask) == 0)
+            layout.StoreDontCare |= mask;
+    }
+    for (int32 i = 0; i < context.RTCount; i++)
+    {
+        GPUDrawPassAction action = (GPUDrawPassAction)context.RTAction;
+        uint64 mask = 1ull << i;
+        if ((uint32)action & (uint32)GPUDrawPassAction::Clear)
+            layout.LoadClear |= mask;
+        else if (((uint32)action & (uint32)GPUDrawPassAction::LoadMask) == 0)
+            layout.LoadDontCare |= mask;
+        else if (((uint32)action & (uint32)GPUDrawPassAction::StoreMask) == 0)
+            layout.StoreDontCare |= mask;
+    }
+    auto renderPass = _device->GetOrCreateRenderPass(layout);
+    GetState(renderPass, (GPUVertexLayoutVulkan*)context.VertexLayout, true);
+
+#if GPU_ENABLE_DEVELOPMENT
+    // Cache render pass layouts (built from context) to debug PSO precaching misses due to RT/Depth load/store mismatch
+    _precachedPSOs.Add({ layout, context.VertexLayout });
+#endif
 }
 
 #endif

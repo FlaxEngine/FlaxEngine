@@ -106,6 +106,7 @@ void MultiScaler::Dispose()
 
 void MultiScaler::OnShaderReloading(Asset* obj)
 {
+    invalidateResources();
     for (const auto& e : _psBilateralUpscale)
         e.Value->ReleaseGPU();
     _psBilateralUpscale.ClearDelete();
@@ -114,7 +115,6 @@ void MultiScaler::OnShaderReloading(Asset* obj)
     _psBlur9.Release();
     _psBlur13.Release();
     _psHalfDepth.Release();
-    invalidateResources();
 }
 
 #endif

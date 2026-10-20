@@ -41,10 +41,10 @@ private:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
+        invalidateResources();
         _psEdge.Release();
         _psBlend.Release();
         _psNeighbor->ReleaseGPU();
-        invalidateResources();
     }
 #endif
 

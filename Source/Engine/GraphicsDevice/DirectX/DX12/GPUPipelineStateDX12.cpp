@@ -16,6 +16,9 @@
 // TODO: migrate to Agility SDK and remove that custom header
 #include <ThirdParty/DirectX12Agility/d3dx12/d3dx12_pipeline_state_stream_custom.h>
 #endif
+#if GPU_ENABLE_DEVELOPMENT
+#include "Engine/Engine/CommandLine.h"
+#endif
 
 #if GPU_D3D12_PSO_STREAM
 struct alignas(void*) GraphicsPipelineStateStreamDX12
@@ -68,6 +71,25 @@ static D3D12_STENCIL_OP ToStencilOp(StencilOperation value)
         return D3D12_STENCIL_OP_KEEP;
     };
 }
+
+#if GPU_ENABLE_DEVELOPMENT
+
+#include "Engine/Core/Types/StringBuilder.h"
+#include "Engine/Scripting/Enums.h"
+
+String GPUPipelineStateKeyDX12::ToString() const
+{
+    StringBuilder sb;
+    if (DepthFormat != PixelFormat::Unknown)
+        sb.Append(TEXT("Depth: ")).Append(ScriptingEnum::ToString(DepthFormat)).AppendLine();
+    if (MSAA != MSAALevel::None)
+        sb.Append(TEXT("MSAA: ")).Append(ScriptingEnum::ToString(MSAA)).AppendLine();
+    for (int32 i = 0; i < RTsCount; i++)
+        sb.AppendFormat(TEXT("RT[{}]: "), i).Append(ScriptingEnum::ToString(RTVsFormats[i])).AppendLine();
+    return sb.ToString();
+}
+
+#endif
 
 GPUShaderProgram* GPUShaderDX12::CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, Span<byte> bytecode, MemoryReadStream& stream)
 {
@@ -200,18 +222,16 @@ bool GPUPipelineStateDX12::IsValid() const
     return !!_memoryUsage;
 }
 
-ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, int32 rtCount, GPUTextureViewDX12** rtHandles, GPUVertexLayoutDX12* vertexLayout)
+ID3D12PipelineState* GPUPipelineStateDX12::GetState(PixelFormat depthFormat, int32 rtCount, const PixelFormat* rtFormats, MSAALevel msaa, GPUVertexLayoutDX12* vertexLayout, bool precaching)
 {
-    ASSERT(depth || rtCount);
-
     // Prepare key
     GPUPipelineStateKeyDX12 key;
     key.RTsCount = rtCount;
     key.VertexLayout = vertexLayout;
-    key.DepthFormat = depth ? depth->GetFormat() : PixelFormat::Unknown;
-    key.MSAA = depth ? depth->GetMSAA() : (rtCount ? rtHandles[0]->GetMSAA() : MSAALevel::None);
+    key.DepthFormat = depthFormat;
+    key.MSAA = msaa;
     for (int32 i = 0; i < rtCount; i++)
-        key.RTVsFormats[i] = rtHandles[i]->GetFormat();
+        key.RTVsFormats[i] = rtFormats[i];
     for (int32 i = rtCount; i < GPU_MAX_RT_BINDED; i++)
         key.RTVsFormats[i] = PixelFormat::Unknown;
 
@@ -234,6 +254,12 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
     ZoneText(name.Get(), name.Count() - 1);
 #endif
     GPUPipelineLookup psoLookup;
+    if (precaching)
+        psoLookup.Flags |= GPUPipelineLookup::Precaching;
+    else
+    {
+        ZoneColor(GPU_PSO_ZONE_COLOR_MISS);
+    }
     HRESULT result;
 
     // Setup description to match the pipeline
@@ -245,11 +271,11 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
     desc.BlendState = _blend;
 #if GPU_D3D12_PSO_STREAM
     D3D12_PIPELINE_STATE_STREAM_DESC streamDesc = { sizeof(desc), &desc };
-    D3D12_RT_FORMAT_ARRAY rtFormats = {};
-    rtFormats.NumRenderTargets = key.RTsCount;
+    D3D12_RT_FORMAT_ARRAY rtvFormats = {};
+    rtvFormats.NumRenderTargets = key.RTsCount;
     for (int32 i = 0; i < GPU_MAX_RT_BINDED; i++)
-        rtFormats.RTFormats[i] = RenderToolsDX::ToDxgiFormat(key.RTVsFormats[i]);
-    desc.RTFormats = rtFormats;
+        rtvFormats.RTFormats[i] = RenderToolsDX::ToDxgiFormat(key.RTVsFormats[i]);
+    desc.RTFormats = rtvFormats;
 #else
     desc.NumRenderTargets = key.RTsCount;
     for (int32 i = 0; i < GPU_MAX_RT_BINDED; i++)
@@ -365,8 +391,62 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
     }
 #endif
 
+#if GPU_ENABLE_DEVELOPMENT
+    // Check if similar PSO was precached but this one missed (eg. due to RT/Depth formats mismatch)
+    if (_precachedPSOs.HasItems() && CommandLine::Options.GPUDebug.IsTrue())
+    {
+        bool logged = false;
+        String nameStr(name.Get(), name.Count() - 1);
+        for (auto& e : _precachedPSOs)
+        {
+            if (e.IsRenderFormatMatch(key))
+            {
+                // Render Formats match but Vertex Layout doesn't
+                LOG(Warning, "PSO precaching miss for '{}' with wrong Vertex Layout:", nameStr);
+                LOG(Warning, "   > Requested:\n{}\n", key.VertexLayout ? key.VertexLayout->GetElementsString() : String::Empty);
+                for (auto& q : _precachedPSOs)
+                {
+                    if (q.IsRenderFormatMatch(key))
+                    {
+                        LOG(Warning, "   > Precached:\n{}\n", q.VertexLayout ? q.VertexLayout->GetElementsString() : String::Empty);
+                    }
+                }
+                logged = true;
+                break;
+            }
+        }
+        for (auto& e : _precachedPSOs)
+        {
+            if (e.VertexLayout == key.VertexLayout && !logged)
+            {
+                // Vertex Layout matches but Render Formats don't
+                LOG(Warning, "PSO precaching miss for '{}' with wrong Render Formats:", nameStr);
+                LOG(Warning, "   > Requested:\n{}\n", key.ToString());
+                for (auto& q : _precachedPSOs)
+                {
+                    if (q.VertexLayout == key.VertexLayout)
+                    {
+                        LOG(Warning, "   > Precached:\n{}\n", q.ToString());
+                    }
+                }
+                logged = true;
+                break;
+            }
+        }
+
+#if 0 // Turn it on to hit PSO misses with a debugger (with -gpudebug)
+        if (logged && Platform::IsDebuggerPresent())
+        {
+            PLATFORM_DEBUG_BREAK;
+        }
+#endif
+    }
+#endif
+
     // Cache it
     _states.Add(key, state);
+    if (precaching)
+        _precachedPSOs.Add(key);
 
     return state;
 }
@@ -377,6 +457,7 @@ void GPUPipelineStateDX12::OnReleaseGPU()
     for (auto i = _states.Begin(); i.IsNotEnd(); ++i)
         _device->AddResourceToLateRelease(i->Value, nullptr, DX12_RESOURCE_DELETE_SAFE_FRAMES_COUNT, true);
     _states.Clear();
+    _precachedPSOs.Clear();
 }
 
 bool GPUPipelineStateDX12::Init(const Description& desc)
@@ -518,6 +599,11 @@ bool GPUPipelineStateDX12::Init(const Description& desc)
 #endif
 
     return GPUPipelineState::Init(desc);
+}
+
+void GPUPipelineStateDX12::PrecachePSO(const PrecacheContext& context)
+{
+    GetState(context.DepthFormat, context.RTCount, context.RTFormats, context.MSAA, (GPUVertexLayoutDX12*)context.VertexLayout, true);
 }
 
 #endif

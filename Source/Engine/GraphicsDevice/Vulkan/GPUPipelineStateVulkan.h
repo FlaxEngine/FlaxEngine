@@ -106,6 +106,14 @@ private:
     VkPipelineColorBlendStateCreateInfo _descColorBlend;
     VkPipelineColorBlendAttachmentState _descColorBlendAttachments[GPU_MAX_RT_BINDED];
     PipelineLayoutVulkan* _layout;
+#if GPU_ENABLE_DEVELOPMENT
+    struct PrecachedPSO
+    {
+        RenderTargetLayoutVulkan RenderPassLayout;
+        GPUVertexLayout* VertexLayout;
+    };
+    Array<PrecachedPSO, InlinedAllocation<2>> _precachedPSOs;
+#endif
 
 public:
     /// <summary>
@@ -144,7 +152,6 @@ public:
 
     DescriptorSetWriteContainerVulkan DSWriteContainer;
     DescriptorSetWriterVulkan DSWriter[DescriptorSet::GraphicsStagesCount];
-
     const DescriptorSetLayoutVulkan* DescriptorSetsLayout = nullptr;
     TypedDescriptorPoolSetVulkan* CurrentTypedDescriptorPoolSet = nullptr;
     GPUVertexLayoutVulkan* VertexInputLayout = nullptr;
@@ -183,13 +190,15 @@ public:
     /// </summary>
     /// <param name="renderPass">The render pass.</param>
     /// <param name="vertexLayout">The vertex layout.</param>
+    /// <param name="precaching">True if action is called during precaching of PSO, instead of during rendering.</param>
     /// <returns>Vulkan graphics pipeline object.</returns>
-    VkPipeline GetState(RenderPassVulkan* renderPass, GPUVertexLayoutVulkan* vertexLayout);
+    VkPipeline GetState(RenderPassVulkan* renderPass, GPUVertexLayoutVulkan* vertexLayout, bool precaching = false);
 
 public:
     // [GPUPipelineState]
     bool IsValid() const final override;
     bool Init(const Description& desc) final override;
+    void PrecachePSO(const PrecacheContext& context) override;
 
 protected:
     // [GPUResourceVulkan]
