@@ -183,9 +183,12 @@ void RenderView::SetProjector(float nearPlane, float farPlane, const Float3& pos
     NonJitteredProjection = Projection;
     Matrix::Invert(Projection, IP);
 
-    // Create view matrix
+    // Create view matrix (the rotation with the eye at zero, then the translation: Position + Direction would round the direction far from the origin)
     Direction = direction;
-    Matrix::LookAt(Position, Position + Direction, up, View);
+    Matrix::LookAt(Float3::Zero, Direction, up, View);
+    View.M41 = -Float3::Dot(Position, Float3(View.M11, View.M21, View.M31));
+    View.M42 = -Float3::Dot(Position, Float3(View.M12, View.M22, View.M32));
+    View.M43 = -Float3::Dot(Position, Float3(View.M13, View.M23, View.M33));
     Matrix::Invert(View, IV);
 
     // Compute frustum matrix
