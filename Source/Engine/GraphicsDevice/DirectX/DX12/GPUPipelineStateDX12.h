@@ -28,7 +28,15 @@ struct GPUPipelineStateKeyDX12
 
     bool operator==(const GPUPipelineStateKeyDX12& other) const
     {
-        return Platform::MemoryCompare((void*)this, &other, sizeof(GPUPipelineStateKeyDX12)) == 0;
+        // Compare field by field: the struct has padding bytes (after the last field, for the pointer's alignment) that a byte compare includes but no field writes
+        if (RTsCount != other.RTsCount || MSAA != other.MSAA || VertexLayout != other.VertexLayout || DepthFormat != other.DepthFormat)
+            return false;
+        for (int32 i = 0; i < GPU_MAX_RT_BINDED; i++)
+        {
+            if (RTVsFormats[i] != other.RTVsFormats[i])
+                return false;
+        }
+        return true;
     }
 
     friend inline uint32 GetHash(const GPUPipelineStateKeyDX12& key)

@@ -22,6 +22,10 @@ public class Tests : EngineModule
 
         options.PrivateDependencies.Add("ModelTool");
         options.PrivateDependencies.Add("ShadersCompilation");
+
+        // DirectX 12 backend tests (with the condition that the Graphics module uses for this backend)
+        if (options.Platform.Target == TargetPlatform.Windows && options.Toolchain is Flax.Build.Platforms.WindowsToolchain windowsToolchain && windowsToolchain.SDK != Flax.Build.Platforms.WindowsPlatformSDK.v8_1)
+            options.PrivateDependencies.Add("GraphicsDeviceDX12");
     }
 
     /// <inheritdoc />

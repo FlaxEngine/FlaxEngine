@@ -81,8 +81,9 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
 {
     ASSERT(depth || rtCount);
 
-    // Prepare key
+    // Prepare key (cleared: the cache stores a copy of it, padding bytes included)
     GPUPipelineStateKeyDX12 key;
+    Platform::MemoryClear(&key, sizeof(key));
     key.RTsCount = rtCount;
     key.VertexLayout = vertexLayout;
     key.DepthFormat = depth ? depth->GetFormat() : PixelFormat::Unknown;
