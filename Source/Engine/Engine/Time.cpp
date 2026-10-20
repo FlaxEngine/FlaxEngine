@@ -192,6 +192,10 @@ bool Time::FixedStepTickData::OnTickBegin(double time, float targetFps, float ma
 
 double Time::GetNextTick()
 {
+    // With uncapped drawing a frame is always due, so the main loop must not idle until the next update or physics tick
+    if (DrawFPS <= ZeroTolerance)
+        return 0.0;
+
     const double nextUpdate = Time::Update.NextBegin;
     const double nextPhysics = Time::Physics.NextBegin;
     const double nextDraw = Time::Draw.NextBegin;
