@@ -145,6 +145,30 @@ bool CommandLine::Parse(const StringView& commandLine, Array<Arg>& args)
             i++;
         if (i == length)
             break;
+
+        // If previous argument was empty and this one is quoted or has no prefix then it's a value for the previous argument (without '=', eg. '-project "C:\Flax Projects\My-Game"')
+        // Read the whole value: up to the matching quote, or up to white space when not quoted (it may contain '-', '=', white space or the other quote character)
+        if (addedEmptyArg && (wholeQuote || (commandLine[i] != '-' && commandLine[i] != '/')))
+        {
+            const int32 valueStart = i;
+            if (wholeQuote)
+            {
+                const Char quoteChar = commandLine[i - 1];
+                while (i < length && commandLine[i] != quoteChar)
+                    i++;
+            }
+            else
+            {
+                while (i < length && !StringUtils::IsWhitespace(commandLine[i]))
+                    i++;
+            }
+            args.Last().Value = commandLine.Substring(valueStart, i - valueStart);
+            if (wholeQuote && i < length)
+                i++; // Skip the closing quote
+            addedEmptyArg = false;
+            continue;
+        }
+
         bool hasArgPrefix = commandLine[i] == '-' || commandLine[i] == '/';
         if (hasArgPrefix)
             i++;
@@ -162,14 +186,6 @@ bool CommandLine::Parse(const StringView& commandLine, Array<Arg>& args)
         int32 nameEnd = i;
         StringView name = commandLine.Substring(nameStart, nameEnd - nameStart);
 
-        // If previous argument was empty and this one is a quote then assume it's a value for the previous argument (without '=')
-        if ((wholeQuote || !hasArgPrefix) && addedEmptyArg)
-        {
-            args.Last().Value = name;
-            i++;
-            continue;
-        }
-
         // Skip white space
         while (i < length && StringUtils::IsWhitespace(commandLine[i]))
             i++;
@@ -181,8 +197,7 @@ bool CommandLine::Parse(const StringView& commandLine, Array<Arg>& args)
             addedEmptyArg = true;
             if (wholeQuote)
                 i++;
-            if (i < length && IsQuote(commandLine[i]))
-                i++;
+            // Don't skip a quote here: it opens the value that may follow (read whole in the next iteration)
             continue;
         }
         addedEmptyArg = false;
