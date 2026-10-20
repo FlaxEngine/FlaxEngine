@@ -325,7 +325,7 @@ namespace FlaxEditor.Surface.Archetypes
                 },
             };
 
-            private static readonly NodeElementArchetype[] _gpuTexture3DParameterElements =
+            private readonly NodeElementArchetype[] _gpuTexture3DParameterElements =
             {
                 NodeElementArchetype.Factory.Input(1, "UVs", true, typeof(Float3), 0, -1),
                 NodeElementArchetype.Factory.Output(1, "", typeof(FlaxEngine.Object), 6),

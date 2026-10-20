@@ -966,7 +966,7 @@ namespace FlaxEditor.Surface
     /// <summary>
     /// Dummy class to inject GPU Texture Array parameter type (a GPU Texture parameter declared as Texture2DArray) for the material and particle parameter adding picker.
     /// </summary>
-    [Tooltip("GPU texture array (created from code) that is sampled with float3(uv, slice). Bound with GPUTexture.ViewArray.")]
+    [Tooltip("GPU texture (created from code) declared as a texture array and sampled with float3(uv, slice). Assign a GPUTexture created as a texture array (ArraySize > 1).")]
     internal sealed class GPUTextureArray
     {
     }
@@ -974,7 +974,7 @@ namespace FlaxEditor.Surface
     /// <summary>
     /// Dummy class to inject GPU Texture Volume parameter type (a GPU Texture parameter declared as Texture3D) for the material and particle parameter adding picker.
     /// </summary>
-    [Tooltip("GPU volume texture (created from code) that is sampled with float3 UVW. Bound with GPUTexture.ViewVolume.")]
+    [Tooltip("GPU texture (created from code) declared as a volume texture and sampled with float3 UVW. Assign a GPUTexture created as a volume texture.")]
     internal sealed class GPUTextureVolume
     {
     }
@@ -982,7 +982,7 @@ namespace FlaxEditor.Surface
     /// <summary>
     /// Dummy class to inject GPU Texture Cube parameter type (a GPU Texture parameter declared as TextureCube) for the material and particle parameter adding picker.
     /// </summary>
-    [Tooltip("GPU cube texture (created from code) that is sampled with a float3 direction. Bound with GPUTexture.ViewArray.")]
+    [Tooltip("GPU texture (created from code) declared as a cube texture and sampled with a float3 direction. Assign a GPUTexture created as a cube texture.")]
     internal sealed class GPUTextureCube
     {
     }
