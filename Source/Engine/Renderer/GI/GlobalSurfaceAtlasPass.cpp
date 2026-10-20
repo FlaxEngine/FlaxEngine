@@ -1879,7 +1879,7 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
         // Calculate optimal tile resolution for the object side
         Float3 boundsSizeTile = boundsSize;
         boundsSizeTile.Raw[tileIndex / 2] = MAX_float; // Ignore depth size
-        uint16 tileResolution = (uint16)(boundsSizeTile.GetAbsolute().MinValue() * tilesScale);
+        uint16 tileResolution = (uint16)Math::Min(boundsSizeTile.GetAbsolute().MinValue() * tilesScale, (float)MAX_uint16); // Clamp in float before the cast to avoid overflow
         if (tileResolution < 4)
         {
             // Skip too small surfaces
