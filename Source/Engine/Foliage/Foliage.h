@@ -217,9 +217,20 @@ private:
     RenderContextBatch* _renderContextBatch;
 #endif
 
-    void PreDraw(const RenderView& view);
+    void PreDraw(const RenderContextBatch& renderContextBatch);
     void InitType(const RenderView& view, int32 typeIndex);
+    void InitType(int32 typeIndex, DrawPass drawModes);
     void UpdateBounds();
+
+public:
+    /// <summary>
+    /// Gets the draw passes of a foliage type in a batch of render views (the main view and the shadow views): the passes that the type draws in at least one of the views.
+    /// </summary>
+    /// <param name="typeDrawModes">The draw passes of the foliage type.</param>
+    /// <param name="shadowsMode">The shadows casting mode of the foliage type.</param>
+    /// <param name="renderContextBatch">The batch of render contexts to draw.</param>
+    /// <returns>The draw passes (none if the type is not drawn in any view of the batch).</returns>
+    static DrawPass GetBatchDrawModes(DrawPass typeDrawModes, ShadowsCastingMode shadowsMode, const RenderContextBatch& renderContextBatch);
 
 public:
     /// <summary>

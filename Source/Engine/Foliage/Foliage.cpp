@@ -610,9 +610,10 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Me
 #endif
 }
 
-void Foliage::PreDraw(const RenderView& view)
+void Foliage::PreDraw(const RenderContextBatch& renderContextBatch)
 {
     // When origin changes, then update all instance matrices
+    const RenderView& view = renderContextBatch.GetMainContext().View;
     if (_cachedDrawWorldOrigin != view.Origin)
     {
         _cachedDrawWorldOrigin = view.Origin;
@@ -620,15 +621,32 @@ void Foliage::PreDraw(const RenderView& view)
             i->CachedDrawWorldValid = false;
     }
 
-    // Cache data per foliage instance type
+    // Cache data per foliage instance type (with the passes of all views in the batch: the draw jobs filter each view's own passes)
     for (int32 i = 0; i < FoliageTypes.Count(); i++)
-        InitType(view, i);
+    {
+        const FoliageType& type = FoliageTypes[i];
+        InitType(i, GetBatchDrawModes(type._drawModes, type.ShadowsMode, renderContextBatch));
+    }
+}
+
+DrawPass Foliage::GetBatchDrawModes(DrawPass typeDrawModes, ShadowsCastingMode shadowsMode, const RenderContextBatch& renderContextBatch)
+{
+    // The main view does not draw the Depth pass: a type that only casts shadows is drawn by the shadow views alone
+    DrawPass drawModes = DrawPass::None;
+    for (const RenderContext& renderContext : renderContextBatch.Contexts)
+        drawModes |= typeDrawModes & renderContext.View.Pass & renderContext.View.GetShadowsDrawPassMask(shadowsMode);
+    return drawModes;
 }
 
 void Foliage::InitType(const RenderView& view, int32 typeIndex)
 {
+    const FoliageType& type = FoliageTypes[typeIndex];
+    InitType(typeIndex, type._drawModes & view.Pass & view.GetShadowsDrawPassMask(type.ShadowsMode));
+}
+
+void Foliage::InitType(int32 typeIndex, DrawPass drawModes)
+{
     FoliageType& type = FoliageTypes[typeIndex];
-    const DrawPass drawModes = type._drawModes & view.Pass & view.GetShadowsDrawPassMask(type.ShadowsMode);
     type._canDraw = type.IsReady() && drawModes != DrawPass::None && type.Model && type.Model->CanBeRendered();
 #if USE_EDITOR
     type._canDraw &= _drawFoliageType == -1 || _drawFoliageType == typeIndex;
@@ -1305,7 +1323,7 @@ void Foliage::Draw(RenderContextBatch& renderContextBatch)
     // Run async job for each foliage type
     if (EnumHasAnyFlags(view.Pass, DrawPass::GBuffer) && !(view.Pass & (DrawPass::GlobalSDF | DrawPass::GlobalSurfaceAtlas)) && renderContextBatch.EnableAsync)
     {
-        PreDraw(view);
+        PreDraw(renderContextBatch);
 
         // Run async job for each foliage type
         _renderContextBatch = &renderContextBatch;
