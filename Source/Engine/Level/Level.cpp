@@ -36,6 +36,7 @@
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Serialization/JsonWriters.h"
+#include "SceneAction.h"
 #include "Prefabs/Prefab.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
@@ -94,36 +95,36 @@ enum class SceneEventType
     OnScenePreloaded = 8,
 };
 
-enum class SceneResult
+void SceneAction::RunActions(Array<SceneAction*>& actions, Context& context)
 {
-    Success,
-    Failed,
-    Wait,
-};
+    // The first action runs until it is done. When it waits (for an asset, or for the next frame after its time slice), the actions after it wait too.
+    while (actions.HasItems() && context.TimeBudget >= 0.0)
+    {
+        auto action = actions[0];
+        Stopwatch time;
+        auto result = action->Do(context);
+        time.Stop();
+        context.TimeBudget -= time.GetTotalSeconds();
+        if (result == SceneResult::Wait)
+            break;
+        actions.RemoveAtKeepOrder(0);
+        Delete(action);
+    }
+}
 
-class SceneAction
+void SceneAction::RemovePreloadingActions(Array<SceneAction*>& actions)
 {
-public:
-    virtual ~SceneAction()
+    // Go backwards: a removal moves only the actions after the removed one
+    for (int32 i = actions.Count() - 1; i >= 0; i--)
     {
+        auto action = actions[i];
+        if (action->IsPreloading())
+        {
+            actions.RemoveAtKeepOrder(i);
+            Delete(action);
+        }
     }
-
-    struct Context
-    {
-        // Amount of seconds that action can take to run within a budget.
-        float TimeBudget = MAX_float;
-    };
-
-    virtual SceneResult Do(Context& context)
-    {
-        return SceneResult::Failed;
-    }
-
-    virtual bool IsPreloading(const Guid* sceneId = nullptr)
-    {
-        return false;
-    }
-};
+}
 
 #if USE_EDITOR
 
@@ -946,19 +947,7 @@ void LevelImpl::flushActions()
 
     // Runs actions in order
     ScopeLock lock(_sceneActionsLocker);
-    for (int32 i = 0; i < _sceneActions.Count() && context.TimeBudget >= 0.0; i++)
-    {
-        auto action = _sceneActions[0];
-        Stopwatch time;
-        auto result = action->Do(context);
-        time.Stop();
-        context.TimeBudget -= time.GetTotalSeconds();
-        if (result != SceneResult::Wait)
-        {
-            _sceneActions.RemoveAtKeepOrder(i--);
-            Delete(action);
-        }
-    }
+    SceneAction::RunActions(_sceneActions, context);
 }
 
 bool LevelImpl::unloadScene(Scene* scene)
@@ -999,15 +988,7 @@ bool LevelImpl::unloadScenes()
 
     // Preloading actions
     _sceneActionsLocker.Lock();
-    for (int32 i = _sceneActions.Count() - 1; i >= 0; i--)
-    {
-        auto action = _sceneActions[i];
-        if (action->IsPreloading())
-        {
-            _sceneActions.RemoveAtKeepOrder(i--);
-            Delete(action);
-        }
-    }
+    SceneAction::RemovePreloadingActions(_sceneActions);
     _sceneActionsLocker.Unlock();
 
     // Preloaded scenes
