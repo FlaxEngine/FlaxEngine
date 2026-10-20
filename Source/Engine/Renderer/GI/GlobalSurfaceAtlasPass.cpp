@@ -918,6 +918,12 @@ void GlobalSurfaceAtlasPass::Dispose()
     _shader = nullptr;
 }
 
+uint16 GlobalSurfaceAtlasPass::GetTileResolution(float side, float texelsPerUnit)
+{
+    // Clamp in float before the cast: a value above the uint16 range does not convert (eg. a terrain several kilometers large gave 0, so the side was skipped as too small)
+    return (uint16)Math::Min(side * texelsPerUnit, (float)MAX_uint16);
+}
+
 bool GlobalSurfaceAtlasPass::Get(const RenderBuffers* buffers, BindingData& result)
 {
     auto* surfaceAtlasData = buffers ? buffers->FindCustomBuffer<GlobalSurfaceAtlasCustomBuffer>(TEXT("GlobalSurfaceAtlas")) : nullptr;
@@ -1879,7 +1885,7 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
         // Calculate optimal tile resolution for the object side
         Float3 boundsSizeTile = boundsSize;
         boundsSizeTile.Raw[tileIndex / 2] = MAX_float; // Ignore depth size
-        uint16 tileResolution = (uint16)(boundsSizeTile.GetAbsolute().MinValue() * tilesScale);
+        uint16 tileResolution = GetTileResolution(boundsSizeTile.GetAbsolute().MinValue(), tilesScale);
         if (tileResolution < 4)
         {
             // Skip too small surfaces

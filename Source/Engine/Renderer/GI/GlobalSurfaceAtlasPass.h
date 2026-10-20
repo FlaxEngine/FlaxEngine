@@ -73,6 +73,14 @@ public:
     bool Get(const RenderBuffers* buffers, BindingData& result);
 
     /// <summary>
+    /// Gets the resolution of an object's tile in the atlas, before its clamp to the tile size limits: the smaller side of the object's face in texels, at most MAX_uint16 (eg. for terrains or sea planes that are several kilometers large).
+    /// </summary>
+    /// <param name="side">The smaller side of the object's face (in world units).</param>
+    /// <param name="texelsPerUnit">The atlas texels per world unit for the object.</param>
+    /// <returns>The tile resolution in texels (below 4: too small to draw).</returns>
+    static uint16 GetTileResolution(float side, float texelsPerUnit);
+
+    /// <summary>
     /// Calls drawing scene objects in async early in the frame.
     /// </summary>
     /// <param name="renderContextBatch">The rendering context batch.</param>
