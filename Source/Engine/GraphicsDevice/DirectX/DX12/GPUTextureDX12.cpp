@@ -233,6 +233,22 @@ void GPUTextureDX12::OnResidentMipsChanged()
         view.Init(this, _device, this, Format(), MultiSampleLevel());
     if (mipLevels != 0)
         view.SetSRV(srDesc);
+
+    // A streamed texture array also gets its whole-array view (ViewArray), over the same resident mips
+    if (ArraySize() > 1 && !IsCubeMap() && !IsVolume())
+    {
+        srDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+        srDesc.Texture2DArray.MostDetailedMip = firstMipIndex;
+        srDesc.Texture2DArray.MipLevels = mipLevels;
+        srDesc.Texture2DArray.FirstArraySlice = 0;
+        srDesc.Texture2DArray.ArraySize = ArraySize();
+        srDesc.Texture2DArray.PlaneSlice = 0;
+        srDesc.Texture2DArray.ResourceMinLODClamp = 0;
+        if (_handleArray.GetParent() == nullptr)
+            _handleArray.Init(this, _device, this, Format(), MultiSampleLevel());
+        if (mipLevels != 0)
+            _handleArray.SetSRV(srDesc);
+    }
 }
 
 void GPUTextureDX12::OnReleaseGPU()
