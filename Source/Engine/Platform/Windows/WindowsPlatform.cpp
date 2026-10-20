@@ -1198,6 +1198,11 @@ int32 WindowsPlatform::CreateProcess(CreateProcessSettings& settings)
                 result = exitCode;
             CloseHandle(shExecInfo.hProcess);
         }
+        else if (shExecInfo.hProcess)
+        {
+            // Not waiting for the process, so close its handle (SEE_MASK_NOCLOSEPROCESS returns it)
+            CloseHandle(shExecInfo.hProcess);
+        }
     }
     else
     {
