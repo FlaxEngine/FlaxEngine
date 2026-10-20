@@ -23,6 +23,26 @@ TestNesting2::TestNesting2(const SpawnParams& params)
 {
 }
 
+int32 TestScriptLifecycle::AwakeCount = 0;
+int32 TestScriptLifecycle::DestroyCount = 0;
+
+TestScriptLifecycle::TestScriptLifecycle(const SpawnParams& params)
+    : Script(params)
+{
+}
+
+TestScriptAddingScript::TestScriptAddingScript(const SpawnParams& params)
+    : Script(params)
+{
+}
+
+void TestScriptAddingScript::OnAwake()
+{
+    // The actor is not in play yet (the scene loads), so the new script is not initialized here
+    auto script = ScriptingObject::NewObject<TestScriptLifecycle>();
+    script->SetParent(GetActor());
+}
+
 TestClassNative::TestClassNative(const SpawnParams& params)
     : ScriptingObject(params)
 {

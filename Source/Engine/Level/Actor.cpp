@@ -1035,6 +1035,9 @@ void Actor::BeginPlay(SceneBeginData* data)
         auto e = Scripts.Get()[i];
         if (!e->IsDuringPlay())
         {
+            // A script added after the scene objects were initialized (eg. by another script's OnAwake during scene loading) was not initialized yet: without OnAwake, its OnDestroy is never called either
+            if (!e->_wasAwakeCalled)
+                e->Initialize();
             e->BeginPlay(data);
             ACTOR_LOOP_CHECK_MODIFIED_HIERARCHY();
         }

@@ -7,6 +7,7 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Scripting/ScriptingObject.h"
+#include "Engine/Scripting/Script.h"
 #include "Engine/Scripting/ScriptingObjectInterfaceReference.h"
 #include "Engine/Scripting/SerializableScriptingObject.h"
 #include "Engine/Scripting/SoftTypeReference.h"
@@ -251,4 +252,31 @@ API_CLASS() class FLAXENGINE_API TestDebugCommand2 : public ScriptingObject
 
     // Static method to test.
     API_FUNCTION(Attributes="DebugCommand") static void Exec();
+};
+
+// Test script that counts its lifecycle events (in static counters: the script is deleted before the test checks them).
+API_CLASS(Attributes="ExecuteInEditMode") class FLAXENGINE_API TestScriptLifecycle : public Script
+{
+    DECLARE_SCRIPTING_TYPE(TestScriptLifecycle);
+
+    static int32 AwakeCount;
+    static int32 DestroyCount;
+
+    void OnAwake() override
+    {
+        AwakeCount++;
+    }
+
+    void OnDestroy() override
+    {
+        DestroyCount++;
+    }
+};
+
+// Test script that adds a TestScriptLifecycle script to its actor in OnAwake (as a script that sets up its actor while the scene loads).
+API_CLASS(Attributes="ExecuteInEditMode") class FLAXENGINE_API TestScriptAddingScript : public Script
+{
+    DECLARE_SCRIPTING_TYPE(TestScriptAddingScript);
+
+    void OnAwake() override;
 };

@@ -3,8 +3,11 @@
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/StringView.h"
+#include "Engine/Level/Level.h"
 #include "Engine/Level/LargeWorlds.h"
+#include "Engine/Level/Actors/EmptyActor.h"
 #include "Engine/Level/Tags.h"
+#include "TestScripting.h"
 #include <ThirdParty/catch2/catch.hpp>
 
 TEST_CASE("LargeWorlds")
@@ -66,5 +69,27 @@ TEST_CASE("Tags")
         CHECK(Tags::HasTagExact(list, c) == false);
 
         Tags::List = prevTags;
+    }
+}
+
+TEST_CASE("Actor")
+{
+    SECTION("Test script added during OnAwake")
+    {
+        // Scene loading initializes each loaded object (SceneLoader::OnInitialize calls OnAwake of the scripts), then
+        // starts the scene (BeginPlay). A script that another script's OnAwake adds in between is not in the loaded
+        // objects, but it must also get OnAwake, and so OnDestroy when deleted.
+        TestScriptLifecycle::AwakeCount = 0;
+        TestScriptLifecycle::DestroyCount = 0;
+        auto actor = ScriptingObject::NewObject<EmptyActor>();
+        auto script = ScriptingObject::NewObject<TestScriptAddingScript>();
+        script->SetParent(actor);
+        actor->Initialize();
+        script->Initialize();
+        Level::CallBeginPlay(actor);
+        CHECK(actor->Scripts.Count() == 2);
+        CHECK(TestScriptLifecycle::AwakeCount == 1);
+        actor->DeleteObjectNow();
+        CHECK(TestScriptLifecycle::DestroyCount == 1);
     }
 }
