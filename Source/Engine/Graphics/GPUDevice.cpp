@@ -58,6 +58,9 @@ void GPUResourcePropertyBase::OnReleased()
     {
         _resource = nullptr;
         e->Releasing.Unbind<GPUResourcePropertyBase, &GPUResourcePropertyBase::OnReleased>(this);
+
+        // Tell the owner (eg. a GPU task cancels itself, else it stays queued and fails with MissingResources)
+        Released();
     }
 }
 
