@@ -2617,15 +2617,14 @@ void NetworkInternal::OnNetworkMessageObjectRpcPart(NetworkEvent& event, Network
     PartsItem* rpcItem = AddObjectRpcItem(event, msgData.OwnerFrame, msgData.PartsCount, msgData.DataSize, objectId, msgData.PartStart, msgData.PartSize, senderClientId);
     if (rpcItem && rpcItem->PartsLeft == 0)
     {
-        // Got all parts so invoke RPC
-        ScriptingObject* obj = rpcItem->Object.Get();
+        // Got all parts so remove the item from the queue (its index is the element offset from the array start), then invoke RPC
+        const int32 partIndex = (int32)(rpcItem - RpcParts.Get());
+        PartsItem item = MoveTemp(*rpcItem);
+        RpcParts.RemoveAt(partIndex);
+        ScriptingObject* obj = item.Object.Get();
         if (obj)
         {
-            InvokeObjectRpc((const NetworkRpcInfo*)rpcItem->Tag, rpcItem->Data.Get(), rpcItem->Data.Count(), rpcItem->OwnerClientId, obj);
+            InvokeObjectRpc((const NetworkRpcInfo*)item.Tag, item.Data.Get(), item.Data.Count(), item.OwnerClientId, obj);
         }
-
-        // Remove item
-        int32 partIndex = (int32)(RpcParts.Get() - rpcItem);
-        RpcParts.RemoveAt(partIndex);
     }
 }
