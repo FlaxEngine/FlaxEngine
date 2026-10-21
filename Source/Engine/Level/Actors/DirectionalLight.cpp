@@ -27,7 +27,7 @@ void DirectionalLight::Draw(RenderContextBatch& renderContextBatch)
     if (color.SumValues() > ZeroTolerance
         && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::DirectionalLights)
         && EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GBuffer)
-        && CheckViewDistance(renderContext.View.Position, renderContext.View.Origin, position, brightness))
+        && CheckViewDistance(renderContext.View.Position, renderContext.View.Origin.Quantize(), position, brightness))
     {
         RenderDirectionalLightData data;
         data.Position = position;

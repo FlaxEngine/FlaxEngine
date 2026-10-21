@@ -367,7 +367,10 @@ public:
 
         // Setup data for rendering
         CurrentFrame = currentFrame;
-        ViewWorldPosition = renderContext.View.WorldPosition;
+
+        //not to day throw what ever real is
+        //Todo: proper code to support FongFloat range fully
+        ViewWorldPosition = renderContext.View.WorldPosition.Quantize();
         TileTexelsPerWorldUnit = 1.0f / METERS_TO_UNITS(0.1f); // Scales the tiles resolution
         DistanceScalingStart = METERS_TO_UNITS(20.0f); // Distance from camera at which the tiles resolution starts to be scaled down
         DistanceScalingEnd = METERS_TO_UNITS(50.0f); // Distance from camera at which the tiles resolution end to be scaled down
@@ -377,11 +380,15 @@ public:
         CullingPosDistance = Vector4(renderContext.View.Position, distance);
         AsyncRenderContextBatch = RenderContext(renderContext);
         AsyncRenderContextBatch.GetMainContext().View.Pass = DrawPass::GlobalSurfaceAtlas;
-        if (ObjectsOrigin != renderContext.View.Origin)
+        
+        //not to day throw what ever real is
+        //Todo: proper code to support FongFloat range fully
+        const auto rvo = renderContext.View.Origin.Quantize();
+        if (ObjectsOrigin != rvo)
         {
             // Force write all objects on origin changes
             ObjectsOriginDirty = true;
-            ObjectsOrigin = renderContext.View.Origin;
+            ObjectsOrigin = rvo;
         }
 
         // Each scene uses own atomic counter to draw all actors

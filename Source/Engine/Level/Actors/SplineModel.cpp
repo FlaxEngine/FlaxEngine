@@ -432,10 +432,12 @@ void SplineModel::Draw(RenderContextBatch& renderContextBatch)
     renderContext.View.GetWorldMatrix(splineTransform, drawCall.World);
     drawCall.ObjectPosition = drawCall.World.GetTranslation() + drawCall.Deformable.LocalMatrix.GetTranslation();
     drawCall.ObjectRadius = (float)_sphere.Radius; // TODO: use radius for the spline chunk rather than whole spline
+    
+    const auto rcvoq = renderContext.View.Origin.Quantize();
     for (int32 segment = 0; segment < _instances.Count(); segment++)
     {
         auto& instance = _instances[segment];
-        BoundingSphere instanceSphere(instance.Sphere.Center - renderContext.View.Origin, instance.Sphere.Radius);
+        BoundingSphere instanceSphere(instance.Sphere.Center - rcvoq, instance.Sphere.Radius);
         if (!(renderContext.View.IsCullingDisabled || renderContext.View.CullingFrustum.Intersects(instanceSphere)))
             continue;
         drawCall.Deformable.Segment = (float)segment;

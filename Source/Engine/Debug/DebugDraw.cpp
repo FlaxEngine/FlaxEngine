@@ -808,7 +808,9 @@ BoundingFrustum DebugDraw::GetViewFrustum()
 
 void DebugDraw::SetView(const RenderView& view)
 {
-    Context->LastViewPosition = view.WorldPosition;
+    //not to day throw what ever real is to renderer
+    //Todo: proper code needed for whole DebugDraw to support FongFloat range fully
+    Context->LastViewPosition = view.WorldPosition.Quantize();
     Context->LastViewProjection = view.Projection;
     Context->LastViewFrustum = view.Frustum;
 }
@@ -827,13 +829,17 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
     if (renderContext.Buffers == nullptr || !DebugDrawVB)
         return;
     auto context = GPUDevice::Instance->GetMainContext();
-    if (Context->Origin != view.Origin)
+
+    //not to day throw what ever real is to renderer
+    //Todo: proper code needed for whole DebugDraw to support FongFloat range fully
+    auto viewOrigin = view.Origin.Quantize();
+    if (Context->Origin != view.Origin.Quantize())
     {
         // Teleport existing debug shapes to maintain their location
-        Float3 delta = Context->Origin - view.Origin;
+        Float3 delta = Context->Origin - viewOrigin;
         Context->DebugDrawDefault.Teleport(delta);
         Context->DebugDrawDepthTest.Teleport(delta);
-        Context->Origin = view.Origin;
+        Context->Origin = viewOrigin;
     }
     TaaJitterRemoveContext taaJitterRemove(view);
 

@@ -136,7 +136,7 @@ void SpriteRender::Draw(RenderContextBatch& renderContextBatch)
     Matrix::Multiply(m2, m3, m1);
     if (FaceCamera)
     {
-        Matrix::Billboard(_transform.Translation - view.Origin, view.Position, Vector3::Up, view.Direction, m2);
+        Matrix::Billboard(renderContext.View.GetRelativeToOriginQuantized(_transform.Translation), view.Position, Vector3::Up, view.Direction, m2);
         Matrix::Multiply(m1, m2, m3);
         Matrix::Scaling(_transform.Scale, m1);
         Matrix::Multiply(m1, m3, world);

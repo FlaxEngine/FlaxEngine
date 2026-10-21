@@ -19,6 +19,8 @@
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/Scene.h"
+#include "Engine/Core/Math/Vector3LongFloat.h"
+#include "Engine/Core/Math/LongFloat.h"
 
 EnvironmentProbe::EnvironmentProbe(const SpawnParams& params)
     : Actor(params)
@@ -189,7 +191,7 @@ void EnvironmentProbe::Draw(RenderContextBatch& renderContextBatch)
         EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GBuffer))
     {
         // Size culling
-        const Float3 position = _sphere.Center - renderContext.View.Origin;
+        const Float3 position = renderContext.View.GetRelativeToOriginQuantized(_sphere.Center);
         const float radius = (float)_sphere.Radius;
         const float drawMinScreenSize = 0.02f;
         const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);

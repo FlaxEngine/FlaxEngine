@@ -44,6 +44,7 @@
 #include "Engine/Serialization/JsonSerializer.h"
 #include "Editor/Scripting/ScriptsBuilder.h"
 #endif
+#include <Engine/Core/Math/Vector3LongFloat.h>
 
 #if USE_LARGE_WORLDS
 bool LargeWorlds::Enable = true;
@@ -59,6 +60,29 @@ void LargeWorlds::UpdateOrigin(Vector3& origin, const Vector3& position)
         constexpr Real chunkSizeHalf = ChunkSize * 0.5;
         origin = Vector3(Int3((position - chunkSizeHalf) * chunkSizeInv)) * ChunkSize;
     }
+}
+
+void LargeWorlds::UpdateOrigin(Vector3LongFloat& origin, const Vector3LongFloat& position)
+{
+    //todo: todo.png
+
+    //if (Enable)
+    //{
+    //    constexpr Real chunkSizeInv  = 1.0 / ChunkSize;
+    //    constexpr Real chunkSizeHalf = ChunkSize * 0.5;
+    //    origin = Vector3(Int3((position - chunkSizeHalf) * chunkSizeInv)) * ChunkSize;
+    //}
+}
+void LargeWorlds::UpdateOrigin(Vector3LongFloat& origin, const Vector3& position)
+{
+    //todo: todo.png
+
+    //if (Enable)
+    //{
+    //    constexpr Real chunkSizeInv  = 1.0 / ChunkSize;
+    //    constexpr Real chunkSizeHalf = ChunkSize * 0.5;
+    //    origin = Vector3(Int3((position - chunkSizeHalf) * chunkSizeInv)) * ChunkSize;
+    //}
 }
 
 bool LayersMask::HasLayer(const StringView& layerName) const

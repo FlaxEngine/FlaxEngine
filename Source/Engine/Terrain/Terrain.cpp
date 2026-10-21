@@ -613,7 +613,7 @@ void Terrain::DrawImpl(RenderContext& renderContext, DrawPass drawModes, HashSet
 
     // Frustum vs Box culling for patches
     const BoundingFrustum frustum = renderContext.View.CullingFrustum;
-    const Vector3 origin = renderContext.View.Origin;
+    const Vector3 origin = renderContext.View.Origin.Quantize();
     auto scene = _scene ? &_scene->Rendering : nullptr;
     for (int32 patchIndex = 0; patchIndex < _patches.Count(); patchIndex++)
     {

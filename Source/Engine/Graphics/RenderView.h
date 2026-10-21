@@ -11,6 +11,7 @@
 #include "Engine/Core/Types/LayersMask.h"
 #include "Engine/Level/Types.h"
 #include "Enums.h"
+#include "Engine/Core/Math/Vector3LongFloat.h"
 
 struct RenderContext;
 struct RenderContextBatch;
@@ -30,12 +31,12 @@ API_STRUCT(NoDefault) struct FLAXENGINE_API RenderView
     /// <summary>
     /// The position of the view origin (in world-units). Used for camera-relative rendering to achieve large worlds support with keeping 32-bit precision for coordinates in scene rendering.
     /// </summary>
-    API_FIELD() Vector3 Origin = Vector3::Zero;
+    API_FIELD() Vector3LongFloat Origin = Vector3LongFloat::Zero;
 
     /// <summary>
     /// The global position of the view (Origin+Position).
     /// </summary>
-    API_FIELD() Vector3 WorldPosition;
+    API_FIELD() Vector3LongFloat WorldPosition;
 
     /// <summary>
     /// The position of the view (relative to the origin).
@@ -206,7 +207,7 @@ public:
     /// <summary>
     /// The previous frame rendering view origin.
     /// </summary>
-    API_FIELD() Vector3 PrevOrigin;
+    API_FIELD() Vector3LongFloat PrevOrigin;
 
     /// <summary>
     /// The previous frame view matrix.
@@ -361,13 +362,37 @@ public:
     // Applies the render origin to the transformation instance matrix.
     FORCE_INLINE void GetWorldMatrix(Matrix& world) const
     {
-        world.M41 -= (float)Origin.X;
-        world.M42 -= (float)Origin.Y;
-        world.M43 -= (float)Origin.Z;
+        //Todo: IMPORTANT orginal code has probably a bug, fallowed what was here the cast to (flaot)Origin.XYZ with QuantizeToFloat,
+        //path doesn’t fully preserve large-world precision.
+        //looking at where is called
+        //for now qantize it to float same way it was done
+        world.M41 -= Origin.X.QuantizeToFloat();
+        world.M42 -= Origin.Y.QuantizeToFloat();
+        world.M43 -= Origin.Z.QuantizeToFloat();
     }
 
     // Applies the render origin to the transformation instance matrix.
     void GetWorldMatrix(Double4x4& world) const;
+    
+    /// <summary>
+    /// Gets vector in relation to origin.
+    /// </summary>
+    /// <param name="worldPosition">The world position.</param>
+    /// <returns>Quantized vector</returns>
+    Float3 RenderView::GetRelativeToOriginQuantized(const Float3& worldPosition) const
+    {
+        return (Vector3LongFloat(worldPosition.X, worldPosition.Y, worldPosition.Z) - Origin).QuantizeToFloat3();
+    }
+
+    /// <summary>
+    /// Gets vector in relation to origin.
+    /// </summary>
+    /// <param name="worldPosition">The world position.</param>
+    /// <returns>Quantized vector</returns>
+    Double3 RenderView::GetRelativeToOriginQuantized(const Double3& worldPosition) const
+    {
+        return (Vector3LongFloat(worldPosition.X, worldPosition.Y, worldPosition.Z) - Origin).QuantizeToDouble3();
+    }
 };
 
 // Removes TAA jitter from the RenderView when drawing geometry after TAA has been resolved to prevent unwanted jittering.

@@ -9,6 +9,7 @@
 #include "Engine/Core/Math/BoundingFrustum.h"
 #include "Engine/Core/Memory/ArenaAllocation.h"
 #include "Engine/Level/Actor.h"
+#include "Engine/Core/Math/Vector3LongFloat.h"
 
 /// <summary>
 /// Represents a foliage actor that contains a set of instanced meshes.
@@ -20,7 +21,7 @@ API_CLASS() class FLAXENGINE_API Foliage final : public Actor
 private:
     bool _disableFoliageTypeEvents;
     int32 _sceneRenderingKey = -1;
-    Vector3 _cachedDrawWorldOrigin = Vector3::Zero;
+    Vector3LongFloat _cachedDrawWorldOrigin = Vector3LongFloat::Zero;
 
 public:
     /// <summary>
@@ -165,9 +166,9 @@ private:
     {
         RenderContext& RenderContext;
         Model* FoliageTypeModel;
-        Vector3 ViewOrigin;
+        Vector3LongFloat ViewOrigin;
         float ViewScreenSizeSq;
-        Float3 LodViewOrigin;
+        Vector3LongFloat LodViewOrigin;
         float MinObjectPixelSizeSq;
         Float3 LodViewPosition;
         int32 MinLOD, MaxLOD;

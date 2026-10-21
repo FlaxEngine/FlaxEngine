@@ -2334,7 +2334,7 @@ void TerrainPatch::CacheDebugLines()
 void TerrainPatch::DrawPhysicsDebug(RenderView& view)
 {
 #if COMPILE_WITH_DEBUG_DRAW
-    const BoundingBox bounds(_bounds.Minimum - view.Origin, _bounds.Maximum - view.Origin);
+    const BoundingBox bounds(view.GetRelativeToOriginQuantized(_bounds.Minimum), view.GetRelativeToOriginQuantized(_bounds.Maximum));
     if (!_physicsShape || !view.CullingFrustum.Intersects(bounds))
         return;
     PROFILE_MEM(LevelTerrain);

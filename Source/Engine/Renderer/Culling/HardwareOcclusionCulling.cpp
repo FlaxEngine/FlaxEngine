@@ -58,9 +58,12 @@ void HardwareOcclusionCulling::BeginFrame(const RenderContext& renderContext)
     _boundsScale = Math::Max(settings->OcclusionBoundsScale, 1.01f);
 
     // Handle origin-relative rendering
-    _forceUpdateBounds = renderContext.View.Origin != _origin;
-    _origin = renderContext.View.Origin;
-    _viewPos = renderContext.View.WorldPosition;
+
+    const auto viewOrigin = renderContext.View.Origin.Quantize();
+    const auto viewWorldPosition = renderContext.View.WorldPosition.Quantize();
+    _forceUpdateBounds = viewOrigin != _origin;
+    _origin = viewOrigin;
+    _viewPos = viewWorldPosition;
 
     // Skip reading occlusion results on camera cuts (but issue queries for the next frame)
     bool forceVisible = renderContext.Task->IsCameraCut;

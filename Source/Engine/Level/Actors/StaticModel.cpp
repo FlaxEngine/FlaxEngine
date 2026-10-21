@@ -408,7 +408,7 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
     draw.LightmapUVs = &Lightmap.UVsArea;
     draw.Flags = _staticFlags;
     draw.Bounds = _sphere;
-    draw.Bounds.Center -= renderContext.View.Origin;
+    draw.Bounds.Center -= renderContext.View.Origin.Quantize();
     draw.PerInstanceRandom = GetPerInstanceRandom();
     draw.LODBias = _lodBias;
     draw.ForcedLOD = _forcedLod;

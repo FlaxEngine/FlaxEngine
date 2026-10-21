@@ -502,7 +502,7 @@ void ProbesRendererService::OnRender(RenderTask* task, GPUContext* context)
 
             // Setup view
             LargeWorlds::UpdateOrigin(_task->View.Origin, position);
-            _task->View.SetUpCube(nearPlane, farPlane, position - _task->View.Origin);
+            _task->View.SetUpCube(nearPlane, farPlane, _task->View.GetRelativeToOriginQuantized(position));
         }
         else if (_current.Type == ProbeEntry::Types::SkyLight)
         {
@@ -514,7 +514,7 @@ void ProbesRendererService::OnRender(RenderTask* task, GPUContext* context)
 
             // Setup view
             LargeWorlds::UpdateOrigin(_task->View.Origin, position);
-            _task->View.SetUpCube(nearPlane, farPlane, position - _task->View.Origin);
+            _task->View.SetUpCube(nearPlane, farPlane, _task->View.GetRelativeToOriginQuantized(position));
         }
 
         // Resize buffers

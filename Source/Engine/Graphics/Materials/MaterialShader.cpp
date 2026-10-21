@@ -21,6 +21,8 @@
 #include "ParticleMaterialShader.h"
 #include "DeformableMaterialShader.h"
 #include "VolumeParticleMaterialShader.h"
+#include <Engine/Core/Math/Vector3LongFloat.h>
+#include <Engine/Core/Math/LongFloat.h>
 
 GPU_CB_STRUCT(MaterialShaderDataPerView {
     Matrix ViewMatrix;
@@ -86,7 +88,25 @@ void IMaterial::BindParameters::BindViewData()
     cb.ViewInfo = view.ViewInfo;
     cb.ScreenSize = view.ScreenSize;
     cb.TemporalAAJitter = view.TemporalAAJitter;
-    cb.LargeWorldsChunkIndex = LargeWorlds::Enable ? (Float3)Int3(view.Origin / LargeWorlds::ChunkSize) : Float3::Zero;
+
+    //The shader field is already Float3, so the final value of LargeWorldsChunkIndex is approximate either way.
+    //uness chunk index is splited in to specyfic representation
+    //support here will be limited
+
+    //orginal code here was  LargeWorlds::Enable ? (Float3)Int3(view.Origin / LargeWorlds::ChunkSize) : Float3::Zero; 
+
+    Float3 Index = Float3::Zero;
+    const static LongFloat ChunkSize = LargeWorlds::ChunkSize;
+    if (LargeWorlds::Enable)
+    {
+        Vector3LongFloat r = view.Origin / ChunkSize;
+        //Quantize(); to what read vector then do truc on 32bit number
+        Index = (Float3)Int3(r.Quantize());
+    }
+
+    cb.LargeWorldsChunkIndex = Index;
+
+
     cb.LargeWorldsChunkSize = LargeWorlds::ChunkSize;
     cb.MaterialTextureMipBias = RenderContext.List->Setup.MaterialTextureMipBias;
     cb.TestValue = Graphics::TestValue;

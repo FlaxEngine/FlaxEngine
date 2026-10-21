@@ -38,7 +38,7 @@ void CapsuleCollider::SetHeight(const float value)
 
 void CapsuleCollider::DrawPhysicsDebug(RenderView& view)
 {
-    const BoundingSphere sphere(_sphere.Center - view.Origin, _sphere.Radius);
+    const BoundingSphere sphere(view.GetRelativeToOriginQuantized(_sphere.Center), _sphere.Radius);
     if (!view.CullingFrustum.Intersects(sphere))
         return;
     Quaternion rotation;

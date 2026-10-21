@@ -912,7 +912,7 @@ void Cloth::Draw(RenderContextBatch& renderContextBatch)
 {
     // Update min draw distance for the next simulation tick
     const RenderContext& renderContext = renderContextBatch.GetMainContext();
-    _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.WorldPosition));
+    _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.WorldPosition.Quantize()));
 }
 
 void Cloth::RunClothDeformer(const MeshBase* mesh, MeshDeformationData& deformation)

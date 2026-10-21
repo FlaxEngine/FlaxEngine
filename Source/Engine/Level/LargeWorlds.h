@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Types/BaseTypes.h"
+#include "Engine/Core/Math/Vector3LongFloat.h"
 
 /// <summary>
 /// The engine utility for large worlds support. Contains constants and tools for using 64-bit precision coordinates in various game systems (eg. scene rendering).
@@ -28,4 +29,20 @@ API_CLASS(Static) class FLAXENGINE_API LargeWorlds
     /// <param name="position">The current input position (eg. render view location or auto listener position).</param>
     /// <remarks>Used only if LargeWorlds::Enabled is true.</remarks>
     API_FUNCTION() static void UpdateOrigin(API_PARAM(Ref) Vector3& origin, const Vector3& position);
+
+    /// <summary>
+    /// Updates the large world origin to match the input position. The origin is snapped to the best matching chunk location.
+    /// </summary>
+    /// <param name="origin">The current origin of the large world. Gets updated with the input position.</param>
+    /// <param name="position">The current input position (eg. render view location or auto listener position).</param>
+    /// <remarks>Used only if LargeWorlds::Enabled is true.</remarks>
+    API_FUNCTION() static void UpdateOrigin(API_PARAM(Ref) Vector3LongFloat& origin, const Vector3LongFloat& position);
+
+    /// <summary>
+    /// Updates the large world origin to match the input position. The origin is snapped to the best matching chunk location.
+    /// </summary>
+    /// <param name="origin">The current origin of the large world. Gets updated with the input position.</param>
+    /// <param name="position">The current input position (eg. render view location or auto listener position).</param>
+    /// <remarks>Used only if LargeWorlds::Enabled is true.</remarks>
+    API_FUNCTION() static void UpdateOrigin(API_PARAM(Ref) Vector3LongFloat& origin, const Vector3& position);
 };

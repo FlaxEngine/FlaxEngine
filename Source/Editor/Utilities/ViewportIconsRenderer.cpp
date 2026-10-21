@@ -25,6 +25,7 @@
 #include "Engine/Animations/SceneAnimations/SceneAnimationPlayer.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Video/VideoPlayer.h"
+#include <Engine/Core/Math/Vector3LongFloat.h>
 
 enum class IconTypes
 {
@@ -136,7 +137,11 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Scene
     for (Actor* icon : icons)
     {
         BoundingSphere sphere;
-        ViewportIconsRenderer::GetBounds(icon->GetPosition() - renderContext.View.Origin, renderContext.View.Position, sphere);
+
+        ViewportIconsRenderer::GetBounds(
+            renderContext.View.GetRelativeToOriginQuantized(icon->GetPosition()),
+            renderContext.View.Position, sphere);
+
         if (!frustum.Intersects(sphere))
             continue;
         IconTypes iconType;
@@ -197,7 +202,11 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Actor
     const BoundingFrustum frustum = view.Frustum;
     Matrix m1, m2, world;
     BoundingSphere sphere;
-    ViewportIconsRenderer::GetBounds(actor->GetPosition() - renderContext.View.Origin, renderContext.View.Position, sphere);
+
+    ViewportIconsRenderer::GetBounds(
+        renderContext.View.GetRelativeToOriginQuantized(actor->GetPosition()),
+        renderContext.View.Position, sphere);
+
     IconTypes iconType;
     AssetReference<Texture> texture;
 

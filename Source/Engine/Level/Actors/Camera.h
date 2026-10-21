@@ -14,6 +14,7 @@
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"
 #include "Engine/Content/Assets/Model.h"
 #endif
+#include "Engine/Core/Math/Vector3LongFloat.h"
 
 /// <summary>
 /// Describes the camera projection and view. Provides information about how to render scene (viewport location and direction, etc.).
@@ -61,6 +62,15 @@ public:
     API_PROPERTY() FORCE_INLINE BoundingFrustum GetFrustum() const
     {
         return _frustum;
+    }
+
+    const Vector3LongFloat& GetPositionLong() const
+    {
+        const static Vector3LongFloat todo = Vector3LongFloat(0);
+
+        //Todo: Actor minimal implementation is needed
+        //to swap Translation on Actor
+        return todo;
     }
 
 public:
@@ -249,6 +259,15 @@ public:
     /// <param name="viewport">The custom output viewport.</param>
     /// <param name="origin">The rendering view origin (for relative-to-camera rendering).</param>
     API_FUNCTION() void GetMatrices(API_PARAM(Out) Matrix& view, API_PARAM(Out) Matrix& projection, API_PARAM(Ref) const Viewport& viewport, API_PARAM(Ref) const Vector3& origin) const;
+
+    /// <summary>
+    /// Calculates the view and the projection matrices for the camera. Support using custom viewport and view origin.
+    /// </summary>
+    /// <param name="view">The result camera view matrix.</param>
+    /// <param name="projection">The result camera projection matrix.</param>
+    /// <param name="viewport">The custom output viewport.</param>
+    /// <param name="origin">The rendering view origin (for relative-to-camera rendering).</param>
+    API_FUNCTION() void GetMatrices(Matrix& view,Matrix& projection,const Viewport& viewport,const Vector3LongFloat& origin) const;
 
 #if USE_EDITOR
     // Intersection check for editor picking the camera

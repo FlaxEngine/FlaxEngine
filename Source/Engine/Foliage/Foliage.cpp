@@ -133,6 +133,8 @@ void Foliage::AddToCluster(ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_S
 
 void Foliage::DrawInstance(DrawContext& context, FoliageInstance& instance, int32 lod, float lodDitherFactor, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const
 {
+    const auto viewOrigin = context.ViewOrigin.Quantize();
+
     const auto& drawCalls = drawCallsLists[lod];
     const auto* drawCallsPtr = drawCalls.Get();
     for (int32 i = 0; i < drawCalls.Count(); i++)
@@ -160,7 +162,7 @@ void Foliage::DrawInstance(DrawContext& context, FoliageInstance& instance, int3
         {
             Transform transform;
             _transform.LocalToWorld(instance.Transform, transform);
-            const Float3 translation = transform.Translation - context.ViewOrigin;
+            const Float3 translation = transform.Translation - viewOrigin;
             Matrix::Transformation(transform.Scale, transform.Orientation, translation, instance.CachedDrawWorld);
             instance.CachedDrawWorldValid = true;
         }
@@ -171,7 +173,7 @@ void Foliage::DrawInstance(DrawContext& context, FoliageInstance& instance, int3
 void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const
 {
     // Skip clusters that around too far from view
-    if (Float3::Distance(context.LodViewPosition, cluster->TotalBoundsSphere.Center - context.LodViewOrigin) - (float)cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
+    if (Float3::Distance(context.LodViewPosition, cluster->TotalBoundsSphere.Center - context.LodViewOrigin.Quantize()) - (float)cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
         return;
     //DebugDraw::DrawBox(cluster->Bounds, Color::Red);
 
@@ -181,14 +183,17 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCal
     if (isMain && !context.RenderContext.Buffers->TestOcclusionCulling(context.Scene, this, cluster->TotalBounds, cullingId, cluster))
         return;
 
+
+    const auto viewOrigin = context.ViewOrigin.Quantize();
+
     // Draw visible children
     if (cluster->Children[0])
     {
         BoundingBox box;
 #define DRAW_CLUSTER(idx) \
         box = cluster->Children[idx]->TotalBounds; \
-        box.Minimum -= context.ViewOrigin; \
-        box.Maximum -= context.ViewOrigin; \
+        box.Minimum -= viewOrigin; \
+        box.Maximum -= viewOrigin; \
 		if (context.CullingFrustum.Intersects(box)) \
 			DrawCluster(context, cluster->Children[idx], drawCallsLists, result)
         DRAW_CLUSTER(0);
@@ -211,7 +216,7 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCal
             auto& instance = *instances[i];
             Platform::MemoryPrefetch(instances[i + 1]);
             BoundingSphere sphere = instance.Bounds;
-            sphere.Center -= context.ViewOrigin;
+            sphere.Center -= viewOrigin;
             if (Float3::Distance(context.LodViewPosition, sphere.Center) - (float)sphere.Radius < instance.CullDistance &&
                 context.CullingFrustum.Intersects(sphere) &&
                 RenderTools::ComputeBoundsScreenRadiusSquared(sphere.Center, (float)sphere.Radius, context.RenderContext.View) * context.ViewScreenSizeSq >= context.MinObjectPixelSizeSq)

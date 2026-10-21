@@ -201,7 +201,7 @@ void MotionBlurPass::RenderMotionVectors(RenderContext& renderContext)
     Matrix::Transpose(renderContext.View.ViewProjection(), data.CurrentVP);
     Matrix::Transpose(renderContext.View.PrevViewProjection, data.PreviousVP);
     data.TemporalAAJitter = renderContext.View.TemporalAAJitter;
-    data.PrevWorldOriginOffset = renderContext.View.Origin - renderContext.View.PrevOrigin;
+    data.PrevWorldOriginOffset = (renderContext.View.Origin - renderContext.View.PrevOrigin).QuantizeToFloat3();
     auto cb = _shader->GPU->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);

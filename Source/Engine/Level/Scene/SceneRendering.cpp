@@ -257,13 +257,13 @@ void SceneRendering::DrawActorsJob(int32 i)
     PROFILE_MEM(Graphics);
     auto& mainContext = _drawBatch->GetMainContext();
     const auto& view = mainContext.View;
-    const Vector3 viewOrigin = view.Origin;
+    const Vector3 viewOrigin = view.Origin.Quantize();
     const uint32 viewRenderLayersMask = view.RenderLayersMask.Mask;
     if (view.StaticFlagsMask != StaticFlags::None)
     {
         // Static-flags culling
         FOR_EACH_BATCH_ACTOR
-            e.Bounds.Center -= viewOrigin;
+            e.Bounds.Center = view.GetRelativeToOriginQuantized(e.Bounds.Center);
             if (CHECK_ACTOR && (e.Actor->GetStaticFlags() & view.StaticFlagsMask) == view.StaticFlagsCompare)
             {
                 DRAW_ACTOR(*_drawBatch);
@@ -295,7 +295,7 @@ void SceneRendering::DrawActorsJob(int32 i)
     {
         // Generic case
         FOR_EACH_BATCH_ACTOR
-            e.Bounds.Center -= viewOrigin;
+            e.Bounds.Center = view.GetRelativeToOriginQuantized(e.Bounds.Center);
             if (CHECK_ACTOR)
             {
                 DRAW_ACTOR(*_drawBatch);

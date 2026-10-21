@@ -113,7 +113,7 @@ void SkyLight::Draw(RenderContextBatch& renderContextBatch)
     RenderContext& renderContext = renderContextBatch.GetMainContext();
     float brightness = Brightness;
     AdjustBrightness(renderContext.View, brightness);
-    const Float3 position = GetPosition() - renderContext.View.Origin;
+    const Float3 position = renderContext.View.GetRelativeToOriginQuantized(GetPosition());
     if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::SkyLights)
         && EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GBuffer)
         && brightness > ZeroTolerance

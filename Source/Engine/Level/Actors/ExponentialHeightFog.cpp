@@ -130,7 +130,7 @@ bool ExponentialHeightFog::IntersectsItself(const Ray& ray, Real& distance, Vect
 
 void ExponentialHeightFog::GetVolumetricFogOptions(const RenderView& view, VolumetricFogOptions& result) const
 {
-    const float height = (float)(GetPosition().Y - view.Origin.Y);
+    const float height = (float)(GetPosition().Y - view.Origin.Y.Quantize());
     const float density = FogDensity / 1000.0f;
     const float heightFalloff = FogHeightFalloff / 1000.0f;
 
@@ -145,7 +145,7 @@ void ExponentialHeightFog::GetVolumetricFogOptions(const RenderView& view, Volum
 
 void ExponentialHeightFog::GetExponentialHeightFogData(const RenderView& view, ShaderExponentialHeightFogData& result) const
 {
-    const float height = (float)(GetPosition().Y - view.Origin.Y);
+    const float height = (float)(GetPosition().Y - view.Origin.Y.Quantize());
     const float density = FogDensity / 1000.0f;
     const float heightFalloff = FogHeightFalloff / 1000.0f;
     const float viewHeight = view.Position.Y;

@@ -8,6 +8,7 @@
 #include "RenderBuffers.h"
 #include "RenderTools.h"
 #include "RenderContext.h"
+#include <Engine/Core/Math/Vector3LongFloat.h>
 
 void RenderView::Prepare(RenderContext& renderContext)
 {
@@ -77,7 +78,7 @@ void RenderView::PrepareCache(const RenderContext& renderContext, float width, f
     TemporalAAJitter.X = temporalAAJitter.X;
     TemporalAAJitter.Y = temporalAAJitter.Y;
 
-    WorldPosition = Origin + Position;
+    WorldPosition = Origin + Vector3LongFloat(Position.X, Position.Y, Position.Z);
 
     ModelLODDistanceFactorSqrt = ModelLODDistanceFactor * ModelLODDistanceFactor;
 
@@ -196,12 +197,13 @@ void RenderView::SetProjector(float nearPlane, float farPlane, const Float3& pos
 
 void RenderView::CopyFrom(const Camera* camera, const Viewport* viewport)
 {
-    const Vector3 cameraPos = camera->GetPosition();
+    const Vector3LongFloat cameraPos = camera->GetPositionLong();
     LargeWorlds::UpdateOrigin(Origin, cameraPos);
-    Position = cameraPos - Origin;
+    Position = (cameraPos - Origin).Quantize();
     Direction = camera->GetForward();
     Near = camera->GetNearPlane();
     Far = camera->GetFarPlane();
+
     camera->GetMatrices(View, Projection, viewport ? *viewport : camera->GetViewport(), Origin);
     Frustum.SetMatrix(View, Projection);
     NonJitteredProjection = Projection;
@@ -217,15 +219,15 @@ void RenderView::CopyFrom(const Camera* camera, const Viewport* viewport)
 
 void RenderView::GetWorldMatrix(const Transform& transform, Matrix& world) const
 {
-    const Float3 translation = transform.Translation - Origin;
+    const Float3 translation = GetRelativeToOriginQuantized(transform.Translation);
     Matrix::Transformation(transform.Scale, transform.Orientation, translation, world);
 }
 
 void RenderView::GetWorldMatrix(Double4x4& world) const
 {
-    world.M41 -= Origin.X;
-    world.M42 -= Origin.Y;
-    world.M43 -= Origin.Z;
+    world.M41 -= Origin.X.QuantizeToDouble();;
+    world.M42 -= Origin.Y.QuantizeToDouble();;
+    world.M43 -= Origin.Z.QuantizeToDouble();;
 }
 
 TaaJitterRemoveContext::TaaJitterRemoveContext(const RenderView& view)

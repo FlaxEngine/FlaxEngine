@@ -51,7 +51,7 @@ internal class DirectionGizmo : ContainerControl
         private Matrix _viewProjection;
         private BoundingFrustum _frustum;
         private FlaxEngine.Viewport _viewport;
-        private Vector3 _origin;
+        private Vector3LongFloat _origin;
 
         public void Init(EditorViewport editorViewport)
         {

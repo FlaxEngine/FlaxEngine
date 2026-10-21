@@ -93,7 +93,7 @@ void PointLight::Draw(RenderContextBatch& renderContextBatch)
         && EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GBuffer)
         && brightness > ZeroTolerance
         && radius > ZeroTolerance
-        && CheckViewDistance(renderContext.View.Position, renderContext.View.Origin, position, brightness))
+        && CheckViewDistance(renderContext.View.Position, renderContext.View.Origin.Quantize(), position, brightness))
     {
         RenderPointLightData data;
         data.Position = position;
@@ -161,7 +161,7 @@ void PointLight::OnDebugDrawSelected()
 
 void PointLight::DrawLightsDebug(RenderView& view)
 {
-    const BoundingSphere sphere(_sphere.Center - view.Origin, _sphere.Radius);
+    const BoundingSphere sphere(view.GetRelativeToOriginQuantized(_sphere.Center), _sphere.Radius);
     if (!view.CullingFrustum.Intersects(sphere) || !EnumHasAnyFlags(view.Flags, ViewFlags::PointLights))
         return;
     

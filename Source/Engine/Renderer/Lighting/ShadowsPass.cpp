@@ -763,7 +763,7 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     atlasLight.Bias = light.ShadowsDepthBias;
     atlasLight.FadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
     atlasLight.Distance = Math::Min(renderContext.View.Far, light.ShadowsDistance);
-    atlasLight.Bounds.Center = light.Position + renderContext.View.Origin; // Keep bounds in world-space to properly handle DirtyStaticBounds
+    atlasLight.Bounds.Center = light.Position + renderContext.View.Origin.Quantize(); // Keep bounds in world-space to properly handle DirtyStaticBounds
     atlasLight.Bounds.Radius = 0.0f;
 
     // Adjust bias to account for lower shadow quality (mix between different shadow map resolution and filter size) to automatically hide artifacts
@@ -1371,7 +1371,7 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
     // Initialize shadow atlas
     auto& shadows = *renderContext.Buffers->GetCustomBuffer<ShadowsCustomBuffer>(TEXT("Shadows"), false);
     shadows.LinkedShadows = renderContext.Buffers->FindLinkedBuffer<ShadowsCustomBuffer>(TEXT("Shadows"));
-    if (shadows.LinkedShadows && (shadows.LinkedShadows->LastFrameUsed != currentFrame || shadows.LinkedShadows->ViewOrigin != renderContext.View.Origin))
+    if (shadows.LinkedShadows && (shadows.LinkedShadows->LastFrameUsed != currentFrame || shadows.LinkedShadows->ViewOrigin != renderContext.View.Origin.Quantize()))
         shadows.LinkedShadows = nullptr; // Don't use incompatible linked shadows buffer
     if (shadows.LastFrameUsed == currentFrame)
         shadows.Reset();
@@ -1414,13 +1414,15 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
 #endif
         shadows.ClearShadowMapAtlas = true;
         shadows.Resolution = atlasResolution;
-        shadows.ViewOrigin = renderContext.View.Origin;
+        shadows.ViewOrigin = renderContext.View.Origin.Quantize();
     }
-    if (renderContext.View.Origin != shadows.ViewOrigin)
+    const auto rcvoq = renderContext.View.Origin.Quantize();
+
+    if (rcvoq != shadows.ViewOrigin)
     {
         // Large Worlds chunk movement so invalidate cached shadows
         shadows.Reset();
-        shadows.ViewOrigin = renderContext.View.Origin;
+        shadows.ViewOrigin = rcvoq;
     }
     if (shadows.StaticAtlas.Width != 0 && (float)shadows.StaticAtlasPixelsUsed / (shadows.StaticAtlas.Width * shadows.StaticAtlas.Height) < SHADOWS_MAX_STATIC_ATLAS_CAPACITY_TO_DEFRAG)
     {

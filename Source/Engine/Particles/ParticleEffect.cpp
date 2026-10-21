@@ -622,7 +622,7 @@ void ParticleEffect::Draw(RenderContextBatch& renderContextBatch)
     Particles::DrawParticles(renderContextBatch, this, drawModes);
 
     // Cull again against the main context (if using multiple ones) to skip caching draw distance from shadow projections
-    const BoundingSphere bounds(_sphere.Center - mainView.Origin, _sphere.Radius);
+    const BoundingSphere bounds(mainView.GetRelativeToOriginQuantized(_sphere.Center), _sphere.Radius);
     if (renderContextBatch.Contexts.Count() > 1 && !mainView.CullingFrustum.Intersects(bounds))
         return;
     _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(bounds.Center, mainView.Position));

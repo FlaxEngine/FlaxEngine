@@ -18,6 +18,7 @@
 #include "Engine/Engine/Engine.h"
 #include "Engine/Platform/Window.h"
 #endif
+#include <Engine/Core/Math/Vector3LongFloat.h>
 
 Array<Camera*> Camera::Cameras;
 Camera* Camera::CutSceneCamera = nullptr;
@@ -326,6 +327,28 @@ void Camera::GetMatrices(Matrix& view, Matrix& projection, const Viewport& viewp
 
 #if USE_EDITOR
 
+
+void Camera::GetMatrices(Matrix& view, Matrix& projection, const Viewport& viewport, const Vector3LongFloat& origin) const
+{
+    // Projection setup stays unchanged.
+
+    const Vector3LongFloat cameraPosition(
+        LongFloat(_transform.Translation.X),
+        LongFloat(_transform.Translation.Y),
+        LongFloat(_transform.Translation.Z));
+
+    const Vector3 position = (cameraPosition - origin).Quantize();
+    const Vector3 direction = Vector3::Transform(Vector3::Forward, GetOrientation());
+    const Vector3 target = position + direction;
+
+    Vector3 up;
+    Vector3::Transform(Vector3::Up, GetOrientation(), up);
+
+    Real4x4 viewResult;
+    Real4x4::LookAt(position, target, up, viewResult);
+    view = Matrix(viewResult);
+}
+
 void Camera::OnPreviewModelLoaded()
 {
     _previewModelBuffer.Setup(_previewModel.Get());
@@ -378,7 +401,7 @@ void Camera::Draw(RenderContextBatch& renderContextBatch)
         draw.Flags = StaticFlags::Transform;
         draw.DrawModes = (DrawPass::Depth | DrawPass::GBuffer | DrawPass::Forward) & renderContext.View.Pass;
         BoundingSphere::FromBox(_previewModelBox, draw.Bounds);
-        draw.Bounds.Center -= renderContext.View.Origin;
+        draw.Bounds.Center = renderContext.View.GetRelativeToOriginQuantized(draw.Bounds.Center);
         draw.PerInstanceRandom = GetPerInstanceRandom();
         if (draw.DrawModes != DrawPass::None)
         {

@@ -79,7 +79,7 @@ void MeshCollider::DrawPhysicsDebug(RenderView& view)
 {
     if (CollisionData && CollisionData->IsLoaded())
     {
-        const BoundingSphere sphere(_sphere.Center - view.Origin, _sphere.Radius);
+        const BoundingSphere sphere(view.GetRelativeToOriginQuantized(_sphere.Center), _sphere.Radius);
         if (!view.CullingFrustum.Intersects(sphere))
             return;
         if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())

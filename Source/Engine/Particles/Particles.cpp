@@ -1143,9 +1143,10 @@ void Particles::DrawParticles(RenderContextBatch& renderContextBatch, ParticleEf
     PROFILE_MEM(Particles);
 
     // Drawing assumes that all views within a batch have the same Origin
-    const Vector3& viewOrigin = renderContextBatch.GetMainContext().View.Origin;
+    const auto view = renderContextBatch.GetMainContext().View;
+    const Vector3& viewOrigin = view.Origin.Quantize();
     BoundingSphere bounds = effect->GetBoundingSphere();
-    bounds.Center -= viewOrigin;
+    bounds.Center = view.GetRelativeToOriginQuantized(bounds.Center);
 
     // Cull particles against all views
     bool drawAnyView = false, drawMainView = false;

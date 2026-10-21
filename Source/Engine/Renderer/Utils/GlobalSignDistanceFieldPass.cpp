@@ -334,7 +334,10 @@ public:
         int32 resolution, cascadesCount, resolutionMip;
         float distance;
         GetOptions(renderContext, resolution, cascadesCount, resolutionMip, distance);
-        if (Cascades.Count() != cascadesCount || Resolution != resolution || Origin != renderContext.View.Origin)
+        if (Cascades.Count() != cascadesCount || Resolution != resolution || 
+            //not to day throw what ever real is
+            //Todo: proper code to support FongFloat range fully
+            Origin != renderContext.View.Origin.Quantize())
             return; // Not yet initialized
         PROFILE_CPU();
 
@@ -855,9 +858,14 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         uint64 memoryUsage = sdfData.Texture->GetMemoryUsage() + sdfData.TextureMip->GetMemoryUsage();
         LOG(Info, "Global SDF memory usage: {0} MB", memoryUsage / (1024 * 1024));
     }
-    if (sdfData.Origin != renderContext.View.Origin)
+
+    //not to day throw what ever real is
+    //Todo: proper code to support FongFloat range fully
+
+    const auto rvoq = renderContext.View.Origin.Quantize();
+    if (sdfData.Origin != renderContext.View.Origin.Quantize())
     {
-        sdfData.Origin = renderContext.View.Origin;
+        sdfData.Origin = rvoq;
         reset = true;
     }
     GPUTexture* tmpMip = nullptr;

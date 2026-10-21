@@ -25,6 +25,7 @@
 #else
 #include "Engine/Engine/Screen.h"
 #endif
+#include "Engine/Core/Math/Vector3LongFloat.h"
 
 Array<RenderTask*> RenderTask::Tasks;
 CriticalSection RenderTask::TasksLocker;
@@ -211,7 +212,7 @@ void SceneRenderTask::CollectPostFxVolumes(RenderContext& renderContext)
     PROFILE_CPU();
 
     // Cache WorldPosition used for PostFx volumes blending (RenderView caches it later on)
-    renderContext.View.WorldPosition = renderContext.View.Origin + renderContext.View.Position;
+    renderContext.View.WorldPosition = renderContext.View.Origin + Vector3LongFloat(renderContext.View.Position.X,renderContext.View.Position.Y,renderContext.View.Position.Z);
 
     if (EnumHasAllFlags(ActorsSource, ActorsSources::Scenes))
     {

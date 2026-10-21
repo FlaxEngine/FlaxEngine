@@ -27,6 +27,7 @@
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/Serialization.h"
+#include <Engine/Core/Math/Vector3LongFloat.h>
 
 // Implements efficient skinning data update within a shared GPUBuffer with memory sharing for all animated models.
 class AnimatedModelRenderListExtension : public RenderList::IExtension
@@ -1290,7 +1291,8 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
     if (renderContext.View.Pass == DrawPass::GlobalSDF || renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
         return; // Not supported
     Matrix world;
-    const Float3 translation = _transform.Translation - renderContext.View.Origin;
+    const auto LongTransformTranslation = Vector3LongFloat(_transform.Translation.X, _transform.Translation.Y, _transform.Translation.Z);
+    const Float3 translation = renderContext.View.GetRelativeToOriginQuantized(_transform.Translation);
     Matrix::Transformation(_transform.Scale, _transform.Orientation, translation, world);
     auto drawState = renderContext.Buffers->GetGeometryDrawState(&GetScene()->Rendering, _sceneRenderingKey, this);
     SkinnedMesh::DrawInfo draw;
@@ -1304,7 +1306,7 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
     }
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(drawState, world);
 
-    _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.WorldPosition));
+    _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3LongFloat::DistanceSquared(LongTransformTranslation, renderContext.View.WorldPosition).Quantize());
     if (_bones.IsAllocated)
     {
         // Flush skinning data with GPU
@@ -1329,7 +1331,11 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
         draw.DrawState = drawState;
         draw.Deformation = _deformation;
         draw.Bounds = _sphere;
-        draw.Bounds.Center -= renderContext.View.Origin;
+        //todo: INPIRTANT investigate it
+        //this is probably a bug, probably not correct way to do it it was 
+        //draw.Bounds.Center -= draw.Bounds.Center
+        //done same stuff so it was no me :)
+        draw.Bounds.Center = renderContext.View.GetRelativeToOriginQuantized(draw.Bounds.Center);
         draw.PerInstanceRandom = GetPerInstanceRandom();
         draw.LODBias = LODBias;
         draw.ForcedLOD = ForcedLOD;
