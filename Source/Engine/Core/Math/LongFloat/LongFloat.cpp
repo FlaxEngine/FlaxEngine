@@ -1,7 +1,9 @@
 #include "Engine/Core/Math/Mathd.h"
-#include "../LongFloat.h"
+#include "Engine/Core/Types/String.h"
+#include "Engine/Core/Math/Vector3.h"
+#include "Engine/Core/Math/LongFloat.h"
+#include "Engine/Core/Math/Vector3LongFloat.h"
 #include "InstructionGlue.h"
-#include <Engine/Core/Types/String.h>
 
 constexpr uint64 LongFloat::SqrtSamples[128] =
 {
@@ -825,6 +827,48 @@ bool LongFloatMath::IsNAN(const LongFloat& lhs)
 {
     return lhs.highbits == 0x8000000000000000ULL && lhs.lowbits == 0;
 }
+
+
+Vector3 LongFloatMath::Quantize(const Vector3LongFloat& value)
+{
+    return Float3(Quantize(value.X), Quantize(value.Y), Quantize(value.Z));
+}
+
+Float3 LongFloatMath::QuantizeToFloat3(const Vector3LongFloat& value)
+{
+    return Float3(QuantizeToFlaot(value.X), QuantizeToFlaot(value.Y), QuantizeToFlaot(value.Z));
+}
+
+Double3 LongFloatMath::QuantizeToDouble3(const Vector3LongFloat& value)
+{
+    return Double3(QuantizeToFlaot(value.X), QuantizeToFlaot(value.Y), QuantizeToFlaot(value.Z));
+}
+double LongFloatMath::QuantizeToDouble(const LongFloat& value)
+{
+    if (IsNAN(value))
+        return NAN;
+
+    const bool negative = IsNegative(value);
+    uint64 high = value.highbits;
+    uint64 low = value.lowbits;
+
+    if (negative)
+    {
+        low = ~low + 1;
+        high = ~high + (low == 0 ? 1 : 0);
+    }
+
+    constexpr double TwoTo64 = 18446744073709551616.0;
+    const double raw =
+        static_cast<double>(high) * TwoTo64 +
+        static_cast<double>(low);
+
+    constexpr double scale = static_cast<double>(LongFloat::ComputeScale());
+    const double result = raw / scale;
+
+    return negative ? -result : result;
+}
+
 LongFloat LongFloatMath::GetNAN()
 {
     return LongFloat(0x8000000000000000ULL, 0);
@@ -833,10 +877,9 @@ LongFloat LongFloatMath::GetZero()
 {
     return LongFloat(0, 0);
 }
-void LongFloatMath::Negate(LongFloat& lhs)
+LongFloat LongFloatMath::Negate(const LongFloat& lhs)
 {
-    lhs.lowbits = ~lhs.lowbits + 1;
-    lhs.highbits = ~lhs.highbits + (lhs.lowbits == 0);
+    return LongFloat(~lhs.highbits + (lhs.lowbits == 0), ~lhs.lowbits + 1);
 }
 int32 LongFloatMath::Sign(const LongFloat& lhs)
 {
