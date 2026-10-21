@@ -102,8 +102,8 @@ struct RasterizeChunk
     uint16 ModelsCount;
     uint16 HeightfieldsCount : 15;
     uint16 Dynamic : 1;
-    uint16 Models[GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT];
-    uint16 Heightfields[GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT];
+    uint32 Models[GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT];
+    uint32 Heightfields[GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT];
 
     RasterizeChunk()
     {
@@ -179,7 +179,7 @@ struct CascadeData
     Array<RasterizeObject> RasterizeObjects;
     Array<byte> ObjectsData;
     Array<GPUTextureView*> ObjectsTextures;
-    Dictionary<uint16, uint16> ObjectIndexToDataIndex;
+    Dictionary<uint32, uint32> ObjectIndexToDataIndex;
     HashSet<GPUTexture*> PendingSDFTextures;
     HashSet<ScriptingTypeHandle> PendingObjectTypes;
 
@@ -602,7 +602,7 @@ void GlobalSignDistanceFieldCustomBuffer::WriteCascadeObjects(CascadeData& casca
             mipLevelIndex--;
 
             // Add object data for the GPU buffer
-            uint16 dataIndex = objectsBufferCount++;
+            uint32 dataIndex = objectsBufferCount++;
             ObjectRasterizeData objectData;
             Platform::MemoryClear(&objectData, sizeof(objectData));
             Matrix localToWorld, worldToLocal, volumeToWorld;
@@ -633,7 +633,7 @@ void GlobalSignDistanceFieldCustomBuffer::WriteCascadeObjects(CascadeData& casca
             const auto& object = cascade.RasterizeObjects.Get()[objectIndex];
 
             // Add object data for the GPU buffer
-            uint16 dataIndex = objectsBufferCount++;
+            uint32 dataIndex = objectsBufferCount++;
             ObjectRasterizeData objectData;
             Platform::MemoryClear(&objectData, sizeof(objectData));
             Matrix localToWorld, worldToLocal;
@@ -1358,7 +1358,7 @@ void GlobalSignDistanceFieldPass::RasterizeModelSDF(Actor* actor, const ModelBas
         const Int3 objectChunkMax(objectBoundsCascade.Maximum / cascade.ChunkSize);
 
         // Add object data
-        const uint16 dataIndex = cascade.RasterizeObjects.Count();
+        const uint32 dataIndex = cascade.RasterizeObjects.Count();
         auto& data = cascade.RasterizeObjects.AddOne();
         data.Actor = actor;
         data.SDF = &sdf;
@@ -1418,7 +1418,7 @@ void GlobalSignDistanceFieldPass::RasterizeHeightfield(Actor* actor, GPUTexture*
         const Int3 objectChunkMax(objectBoundsCascade.Maximum / cascade.ChunkSize);
 
         // Add object data
-        const uint16 dataIndex = cascade.RasterizeObjects.Count();
+        const uint32 dataIndex = cascade.RasterizeObjects.Count();
         auto& data = cascade.RasterizeObjects.AddOne();
         data.Actor = actor;
         data.Heightfield = heightfield;
