@@ -1113,7 +1113,7 @@ namespace FlaxEditor.Surface
             _cmPrimaryMenu?.Dispose();
 
             ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
-            Editor.Instance.Options.OptionsChanged += OnEditorOptionsChanged;
+            Editor.Instance.Options.OptionsChanged -= OnEditorOptionsChanged;
 
             base.OnDestroy();
         }
