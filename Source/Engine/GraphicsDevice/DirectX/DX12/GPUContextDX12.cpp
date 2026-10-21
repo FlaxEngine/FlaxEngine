@@ -185,6 +185,9 @@ GPUContextDX12::~GPUContextDX12()
 #if GPU_ENABLE_TRACY
     tracy::DestroyD3D12Context(_tracyContext);
 #endif
+#ifdef __ID3D12GraphicsCommandList1_FWD_DEFINED__
+    SAFE_RELEASE(_commandList1);
+#endif
     DX_SAFE_RELEASE_CHECK(_commandList, 0);
 }
 
