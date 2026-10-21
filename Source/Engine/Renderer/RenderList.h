@@ -242,14 +242,14 @@ struct DrawBatch
     uint64 SortKey;
 
     /// <summary>
-    /// The first draw call index (32-bit: a list can hold more than 65,535 draw calls).
+    /// The first draw call index.
     /// </summary>
-    int32 StartIndex;
+    uint16 StartIndex;
 
     /// <summary>
     /// A number of draw calls to be submitted at once.
     /// </summary>
-    int32 BatchSize;
+    uint16 BatchSize;
 
     /// <summary>
     /// The total amount of instances (sum from all draw calls in this batch).
@@ -265,7 +265,7 @@ struct DrawBatch
 struct BatchedDrawCall
 {
     DrawCall DrawCall;
-    int32 ObjectsStartIndex = 0; // Index of the instances start in the ObjectsBuffer (set internally; 32-bit: the buffer can hold more than 65,535 objects).
+    int32 ObjectsStartIndex = 0; // Index of the instances start in the ObjectsBuffer (set internally). 32-bit: the buffer holds the instances of all batched draw calls (eg. foliage), which can be more than 65,535.
     Array<struct ShaderObjectData, ConcurrentArenaAllocation> Instances;
 
     BatchedDrawCall() { CRASH; } // Don't use it
