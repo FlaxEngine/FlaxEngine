@@ -300,17 +300,17 @@ public:
     LongFloat(double Value);
     LongFloat(uint64 Value);
 
-    float LongFloat::QuantizeToFloat() const
+    float QuantizeToFloat() const
     {
         return LongFloatMath::QuantizeToFloat(*this);
     }
 
-    double LongFloat::QuantizeToDouble() const
+    double QuantizeToDouble() const
     {
         return LongFloatMath::QuantizeToDouble(*this);
     }
 
-    Real LongFloat::Quantize() const
+    Real Quantize() const
     {
         return LongFloatMath::Quantize(*this);
     }
