@@ -1,10 +1,9 @@
-#include "LongFloat.h"
-#include <iostream>
-#include <string>
-#include <cmath>
+#include "Engine/Core/Types/BaseTypes.h"
+#include "Engine/Core/Math/Mathd.h"
+#include "../LongFloat.h"
 #include "InstructionGlue.h"
 
-constexpr uint64_t LongFloat::SqrtSamples[128] =
+constexpr uint64 LongFloat::SqrtSamples[128] =
 {
     0ULL,                    // 0   0
     1ULL,                    // 0   1
@@ -135,12 +134,12 @@ constexpr uint64_t LongFloat::SqrtSamples[128] =
     6521908912460134400ULL,  // 125
     9223372036854775808ULL   // 126
 };
-static bool Divide192By128(const uint32_t numerator[6], const uint32_t divisor[4], uint32_t quotient[6], uint32_t remainder[4])
+static bool Divide192By128(const uint32 numerator[6], const uint32 divisor[4], uint32 quotient[6], uint32 remainder[4])
 {
-    constexpr uint64_t B = 0x100000000ULL;
+    constexpr uint64 B = 0x100000000ULL;
 
-    uint32_t u[7]{};
-    uint32_t v[4]{};
+    uint32 u[7]{};
+    uint32 v[4]{};
 
     for (int i = 0; i < 6; ++i)
         quotient[i] = 0;
@@ -222,14 +221,14 @@ static bool Divide192By128(const uint32_t numerator[6], const uint32_t divisor[4
 
     const unsigned shift = 31u - leadingBit;
 
-    uint64_t carry = 0;
+    uint64 carry = 0;
 
     for (int i = 0; i < divisorLength; ++i)
     {
-        const uint64_t value =
-            (static_cast<uint64_t>(divisor[i]) << shift) | carry;
+        const uint64 value =
+            (static_cast<uint64>(divisor[i]) << shift) | carry;
 
-        v[i] = static_cast<uint32_t>(value);
+        v[i] = static_cast<uint32>(value);
         carry = value >> 32;
     }
 
@@ -238,14 +237,14 @@ static bool Divide192By128(const uint32_t numerator[6], const uint32_t divisor[4
 
     for (int i = 0; i < numeratorLength; ++i)
     {
-        const uint64_t value =
-            (static_cast<uint64_t>(numerator[i]) << shift) | carry;
+        const uint64 value =
+            (static_cast<uint64>(numerator[i]) << shift) | carry;
 
-        u[i] = static_cast<uint32_t>(value);
+        u[i] = static_cast<uint32>(value);
         carry = value >> 32;
     }
 
-    u[numeratorLength] = static_cast<uint32_t>(carry);
+    u[numeratorLength] = static_cast<uint32>(carry);
 
     const int n = divisorLength;
     const int m = numeratorLength - n;
@@ -253,12 +252,12 @@ static bool Divide192By128(const uint32_t numerator[6], const uint32_t divisor[4
     // Knuth-style normalized quotient estimation.
     for (int j = m; j >= 0; --j)
     {
-        const uint64_t top =
-            (static_cast<uint64_t>(u[j + n]) << 32) |
+        const uint64 top =
+            (static_cast<uint64>(u[j + n]) << 32) |
             u[j + n - 1];
 
-        uint64_t qhat = top / v[n - 1];
-        uint64_t rhat = top % v[n - 1];
+        uint64 qhat = top / v[n - 1];
+        uint64 rhat = top % v[n - 1];
 
         // The quotient estimate must fit in one 32-bit limb.
         if (qhat >= B)
@@ -280,19 +279,19 @@ static bool Divide192By128(const uint32_t numerator[6], const uint32_t divisor[4
         }
 
         // Subtract qhat * v from the corresponding numerator limbs.
-        uint64_t productCarry = 0;
+        uint64 productCarry = 0;
 
         for (int i = 0; i < n; ++i)
         {
-            const uint64_t product =
+            const uint64 product =
                 qhat * v[i] + productCarry;
 
             productCarry = product >> 32;
 
-            const uint32_t productLow =
-                static_cast<uint32_t>(product);
+            const uint32 productLow =
+                static_cast<uint32>(product);
 
-            const uint32_t oldValue = u[j + i];
+            const uint32 oldValue = u[j + i];
 
             u[j + i] = oldValue - productLow;
 
@@ -300,10 +299,10 @@ static bool Divide192By128(const uint32_t numerator[6], const uint32_t divisor[4
                 ++productCarry;
         }
 
-        const uint32_t oldTop = u[j + n];
+        const uint32 oldTop = u[j + n];
 
         u[j + n] =
-            oldTop - static_cast<uint32_t>(productCarry);
+            oldTop - static_cast<uint32>(productCarry);
 
         const bool overestimated = oldTop < productCarry;
 
@@ -312,23 +311,23 @@ static bool Divide192By128(const uint32_t numerator[6], const uint32_t divisor[4
         {
             --qhat;
 
-            uint64_t additionCarry = 0;
+            uint64 additionCarry = 0;
 
             for (int i = 0; i < n; ++i)
             {
-                const uint64_t sum =
-                    static_cast<uint64_t>(u[j + i]) +
+                const uint64 sum =
+                    static_cast<uint64>(u[j + i]) +
                     v[i] +
                     additionCarry;
 
-                u[j + i] = static_cast<uint32_t>(sum);
+                u[j + i] = static_cast<uint32>(sum);
                 additionCarry = sum >> 32;
             }
 
-            u[j + n] += static_cast<uint32_t>(additionCarry);
+            u[j + n] += static_cast<uint32>(additionCarry);
         }
 
-        quotient[j] = static_cast<uint32_t>(qhat);
+        quotient[j] = static_cast<uint32>(qhat);
     }
 
     // Undo normalization to recover the remainder.
@@ -358,15 +357,15 @@ __forceinline
 #else
 inline
 #endif
-uint64_t Divide64Digit(
-    uint64_t u[4], const uint64_t v[2], int j)
+uint64 Divide64Digit(
+    uint64 u[4], const uint64 v[2], int j)
 {
-    uint64_t qhat;
-    uint64_t rhat;
+    uint64 qhat;
+    uint64 rhat;
     bool rhatOverflow = false;
     if (u[j + 2] >= v[1])
     {
-        qhat = UINT64_MAX;
+        qhat = MAX_uint64;
         rhat = u[j + 1] + v[1];
         rhatOverflow = rhat < u[j + 1];
     }
@@ -375,8 +374,8 @@ uint64_t Divide64Digit(
         qhat = LongFloatGlue::UnsignedDivide128(u[j + 2], u[j + 1], v[1], &rhat);
     }
 
-    uint64_t p0Low = 0;
-    uint64_t p0High = 0;
+    uint64 p0Low = 0;
+    uint64 p0High = 0;
     for (;;)
     {
         p0Low = LongFloatGlue::UnsignedMultiply128(qhat, v[0], &p0High);
@@ -385,55 +384,55 @@ uint64_t Divide64Digit(
             break;
 
         --qhat;
-        const uint64_t oldRhat = rhat;
+        const uint64 oldRhat = rhat;
         rhat += v[1];
         rhatOverflow = rhat < oldRhat;
     }
 
-    uint64_t p1High = 0;
-    const uint64_t p1Low = LongFloatGlue::UnsignedMultiply128(qhat, v[1], &p1High);
-    const uint64_t productMiddle0 = p0High + p1Low;
-    const uint64_t carry0 = productMiddle0 < p0High;
-    const uint64_t oldU0 = u[j];
+    uint64 p1High = 0;
+    const uint64 p1Low = LongFloatGlue::UnsignedMultiply128(qhat, v[1], &p1High);
+    const uint64 productMiddle0 = p0High + p1Low;
+    const uint64 carry0 = productMiddle0 < p0High;
+    const uint64 oldU0 = u[j];
     u[j] -= p0Low;
-    const uint64_t borrow0 = oldU0 < p0Low;
+    const uint64 borrow0 = oldU0 < p0Low;
 
-    const uint64_t productMiddle = productMiddle0 + borrow0;
-    const uint64_t carry1 = productMiddle < productMiddle0;
-    const uint64_t productTop = p1High + carry0 + carry1;
+    const uint64 productMiddle = productMiddle0 + borrow0;
+    const uint64 carry1 = productMiddle < productMiddle0;
+    const uint64 productTop = p1High + carry0 + carry1;
 
-    const uint64_t oldU1 = u[j + 1];
+    const uint64 oldU1 = u[j + 1];
     u[j + 1] -= productMiddle;
-    const uint64_t borrow1 = oldU1 < productMiddle;
+    const uint64 borrow1 = oldU1 < productMiddle;
 
-    const uint64_t oldU2 = u[j + 2];
+    const uint64 oldU2 = u[j + 2];
     u[j + 2] -= productTop;
-    const uint64_t borrow2a = oldU2 < productTop;
-    const uint64_t beforeTopBorrow = u[j + 2];
+    const uint64 borrow2a = oldU2 < productTop;
+    const uint64 beforeTopBorrow = u[j + 2];
     u[j + 2] -= borrow1;
     const bool overestimated = borrow2a || beforeTopBorrow < borrow1;
 
     if (overestimated)
     {
         --qhat;
-        const uint64_t oldLow = u[j];
+        const uint64 oldLow = u[j];
         u[j] += v[0];
-        const uint64_t carry = u[j] < oldLow;
-        const uint64_t oldHigh = u[j + 1];
+        const uint64 carry = u[j] < oldLow;
+        const uint64 oldHigh = u[j + 1];
         u[j + 1] += v[1];
-        const uint64_t carryHigh0 = u[j + 1] < oldHigh;
-        const uint64_t beforeCarry = u[j + 1];
+        const uint64 carryHigh0 = u[j + 1] < oldHigh;
+        const uint64 beforeCarry = u[j + 1];
         u[j + 1] += carry;
-        const uint64_t carryHigh1 = u[j + 1] < beforeCarry;
+        const uint64 carryHigh1 = u[j + 1] < beforeCarry;
         u[j + 2] += carryHigh0 | carryHigh1;
     }
     return qhat;
 }
 
 static bool Divide192By128_64(
-    const uint64_t numerator[3],
-    const uint64_t divisor[2],
-    uint64_t quotient[3])
+    const uint64 numerator[3],
+    const uint64 divisor[2],
+    uint64 quotient[3])
 {
     quotient[0] = quotient[1] = quotient[2] = 0;
 
@@ -450,7 +449,7 @@ static bool Divide192By128_64(
     // A one-word divisor uses the processor's 128-by-64 divide directly.
     if (divisorLength == 1)
     {
-        uint64_t rem = 0;
+        uint64 rem = 0;
         for (int i = numeratorLength - 1; i >= 0; --i)
             quotient[i] = LongFloatGlue::UnsignedDivide128(rem, numerator[i], divisor[0], &rem);
         return true;
@@ -475,8 +474,8 @@ static bool Divide192By128_64(
     LongFloatGlue::BitScanReverse64(&topBit, divisor[1]);
     const unsigned shift = 63u - topBit;
 
-    uint64_t v[2];
-    uint64_t u[4]{};
+    uint64 v[2];
+    uint64 u[4]{};
     if (shift == 0)
     {
         v[0] = divisor[0];
@@ -522,8 +521,8 @@ static LongFloat DivideWithAlgorithm(
     const LongFloat& lhs,
     const LongFloat& rhs)
 {
-    constexpr uint64_t SignMask = 0x8000000000000000ULL;
-    constexpr uint64_t Scale = LongFloat::ComputeScale();
+    constexpr uint64 SignMask = 0x8000000000000000ULL;
+    constexpr uint64 Scale = LongFloat::ComputeScale();
     LongFloat out;
     // Division by zero.
     if (rhs.lowbits == 0 && rhs.highbits == 0)
@@ -539,11 +538,11 @@ static LongFloat DivideWithAlgorithm(
     const bool resultNegative = lhsNegative != rhsNegative;
 
     // Convert operands to unsigned magnitudes.
-    uint64_t DividendLow = lhs.lowbits;
-    uint64_t DividendHigh = lhs.highbits;
+    uint64 DividendLow = lhs.lowbits;
+    uint64 DividendHigh = lhs.highbits;
 
-    uint64_t DivisorLow = rhs.lowbits;
-    uint64_t DivisorHigh = rhs.highbits;
+    uint64 DivisorLow = rhs.lowbits;
+    uint64 DivisorHigh = rhs.highbits;
 
     if (lhsNegative)
     {
@@ -562,13 +561,13 @@ static LongFloat DivideWithAlgorithm(
     // limb arrays and entering the general 192-by-128 divider.
     if (DividendHigh == 0 && DivisorHigh == 0)
     {
-        uint64_t NumeratorHigh = 0;
-        const uint64_t NumeratorLow =
+        uint64 NumeratorHigh = 0;
+        const uint64 NumeratorLow =
             LongFloatGlue::UnsignedMultiply128(DividendLow, Scale, &NumeratorHigh);
 
-        uint64_t QuotientHigh = NumeratorHigh / DivisorLow;
-        uint64_t DivisionRemainder = NumeratorHigh % DivisorLow;
-        uint64_t QuotientLow = LongFloatGlue::UnsignedDivide128(
+        uint64 QuotientHigh = NumeratorHigh / DivisorLow;
+        uint64 DivisionRemainder = NumeratorHigh % DivisorLow;
+        uint64 QuotientLow = LongFloatGlue::UnsignedDivide128(
             DivisionRemainder,
             NumeratorLow,
             DivisorLow,
@@ -583,8 +582,8 @@ static LongFloat DivideWithAlgorithm(
 
         if (resultNegative)
         {
-            const uint64_t MagnitudeLow = QuotientLow;
-            const uint64_t MagnitudeHigh = QuotientHigh;
+            const uint64 MagnitudeLow = QuotientLow;
+            const uint64 MagnitudeHigh = QuotientHigh;
             QuotientHigh = ~MagnitudeHigh + (MagnitudeLow == 0);
             QuotientLow = ~MagnitudeLow + 1;
 
@@ -601,20 +600,20 @@ static LongFloat DivideWithAlgorithm(
     }
 
     // Construct abs(lhs) * Scale as a 192-bit numerator.
-    uint64_t ProductHigh;
-    const uint64_t ProductLow =
+    uint64 ProductHigh;
+    const uint64 ProductLow =
         LongFloatGlue::UnsignedMultiply128(DividendLow, Scale, &ProductHigh);
 
-    uint64_t UpperProductHigh;
-    const uint64_t UpperProductLow =
+    uint64 UpperProductHigh;
+    const uint64 UpperProductLow =
         LongFloatGlue::UnsignedMultiply128(DividendHigh, Scale, &UpperProductHigh);
 
-    const uint64_t Numerator0 = ProductLow;
+    const uint64 Numerator0 = ProductLow;
 
-    const uint64_t Numerator1 = ProductHigh + UpperProductLow;
-    const uint64_t Carry = Numerator1 < ProductHigh;
+    const uint64 Numerator1 = ProductHigh + UpperProductLow;
+    const uint64 Carry = Numerator1 < ProductHigh;
 
-    const uint64_t Numerator2 = UpperProductHigh + Carry;
+    const uint64 Numerator2 = UpperProductHigh + Carry;
 
     // The fixed-point quotient truncates toward zero. If the scaled
     // numerator is smaller than the divisor, the answer is exactly zero.
@@ -629,46 +628,46 @@ static LongFloat DivideWithAlgorithm(
     }
 
     // Convert numerator and divisor to base-2^32 limbs.
-    const uint32_t Numerator[6] =
+    const uint32 Numerator[6] =
     {
-        static_cast<uint32_t>(Numerator0),
-        static_cast<uint32_t>(Numerator0 >> 32),
-        static_cast<uint32_t>(Numerator1),
-        static_cast<uint32_t>(Numerator1 >> 32),
-        static_cast<uint32_t>(Numerator2),
-        static_cast<uint32_t>(Numerator2 >> 32)
+        static_cast<uint32>(Numerator0),
+        static_cast<uint32>(Numerator0 >> 32),
+        static_cast<uint32>(Numerator1),
+        static_cast<uint32>(Numerator1 >> 32),
+        static_cast<uint32>(Numerator2),
+        static_cast<uint32>(Numerator2 >> 32)
     };
 
-    const uint32_t Divisor[4] =
+    const uint32 Divisor[4] =
     {
-        static_cast<uint32_t>(DivisorLow),
-        static_cast<uint32_t>(DivisorLow >> 32),
-        static_cast<uint32_t>(DivisorHigh),
-        static_cast<uint32_t>(DivisorHigh >> 32)
+        static_cast<uint32>(DivisorLow),
+        static_cast<uint32>(DivisorLow >> 32),
+        static_cast<uint32>(DivisorHigh),
+        static_cast<uint32>(DivisorHigh >> 32)
     };
 
-    uint32_t Quotient[6]{};
-    uint32_t Remainder[4]{};
+    uint32 Quotient[6]{};
+    uint32 Remainder[4]{};
 
     bool DivideSucceeded;
     if constexpr (Use64BitDivider)
     {
-        const uint64_t Numerator64[3] =
+        const uint64 Numerator64[3] =
         {
             Numerator0, Numerator1, Numerator2
         };
-        const uint64_t Divisor64[2] =
+        const uint64 Divisor64[2] =
         {
             DivisorLow, DivisorHigh
         };
-        uint64_t Quotient64[3]{};
+        uint64 Quotient64[3]{};
         DivideSucceeded = Divide192By128_64(
             Numerator64, Divisor64, Quotient64);
         for (unsigned i = 0; i < 3; ++i)
         {
-            Quotient[i * 2] = static_cast<uint32_t>(Quotient64[i]);
+            Quotient[i * 2] = static_cast<uint32>(Quotient64[i]);
             Quotient[i * 2 + 1] =
-                static_cast<uint32_t>(Quotient64[i] >> 32);
+                static_cast<uint32>(Quotient64[i] >> 32);
         }
     }
     else
@@ -695,13 +694,13 @@ static LongFloat DivideWithAlgorithm(
         return out;
     }
 
-    uint64_t QuotientLow =
-        static_cast<uint64_t>(Quotient[0]) |
-        (static_cast<uint64_t>(Quotient[1]) << 32);
+    uint64 QuotientLow =
+        static_cast<uint64>(Quotient[0]) |
+        (static_cast<uint64>(Quotient[1]) << 32);
 
-    uint64_t QuotientHigh =
-        static_cast<uint64_t>(Quotient[2]) |
-        (static_cast<uint64_t>(Quotient[3]) << 32);
+    uint64 QuotientHigh =
+        static_cast<uint64>(Quotient[2]) |
+        (static_cast<uint64>(Quotient[3]) << 32);
 
     // The signed minimum bit pattern is reserved for NaN.
     if ((QuotientHigh & SignMask) != 0)
@@ -736,16 +735,16 @@ static LongFloat DivideWithAlgorithm(
 }
 
 
-LongFloat::LongFloat(uint64_t highbits, uint64_t lowbits)
+LongFloat::LongFloat(uint64 highbits, uint64 lowbits)
 {
     this->lowbits = lowbits;
     this->highbits = highbits;
 }
 
-LongFloat::LongFloat(int32_t Value)
+LongFloat::LongFloat(int32 Value)
 {
-    lowbits = static_cast<uint64_t>(Value);
-    highbits = Value < 0 ? UINT64_MAX : 0;
+    lowbits = static_cast<uint64>(Value);
+    highbits = Value < 0 ? MAX_uint64 : 0;
 
     //decimal shift by 10
     LongFloat Result = *this;
@@ -763,10 +762,10 @@ LongFloat::LongFloat(int32_t Value)
     *this = Result;
 }
 
-LongFloat::LongFloat(int64_t Value)
+LongFloat::LongFloat(uint64 Value)
 {
-    lowbits = static_cast<uint64_t>(Value);
-    highbits = Value < 0 ? UINT64_MAX : 0;
+    lowbits = static_cast<uint64>(Value);
+    highbits = Value < 0 ? MAX_uint64 : 0;
 
     //decimal shift by 10
     LongFloat Result = *this;
@@ -786,18 +785,18 @@ LongFloat::LongFloat(int64_t Value)
 
 LongFloat::LongFloat(double Value)
 {
-    constexpr int64_t DecimalScale = LongFloat::ComputeScale();
+    constexpr uint64 DecimalScale = LongFloat::ComputeScale();
 
-    const int64_t Whole = static_cast<int64_t>(Value);
+    const uint64 Whole = static_cast<uint64>(Value);
     const double Fraction = Value - static_cast<double>(Whole);
-    const int64_t FractionScaled = static_cast<int64_t>(
-        std::round(Fraction * DecimalScale)
+    const uint64 FractionScaled = static_cast<uint64>(
+        Math::Round(Fraction * DecimalScale)
         );
 
     LongFloat f = Whole;
 
-    const uint64_t OldLow = f.lowbits;
-    f.lowbits += static_cast<uint64_t>(FractionScaled);
+    const uint64 OldLow = f.lowbits;
+    f.lowbits += static_cast<uint64>(FractionScaled);
 
     // Carry or borrow into the upper 64 bits.
     if (f.lowbits < OldLow)
@@ -809,27 +808,14 @@ LongFloat::LongFloat(double Value)
     *this = f;
 }
 
-LongFloat::LongFloat(uint64_t Value)
-{
-    lowbits = Value;
-    highbits = Value < 0 ? UINT64_MAX : 0;
-
-    for (int64_t i = 0; i < DecimalPoint; ++i)
-    {
-        uint64_t Carry;
-        lowbits = LongFloatGlue::UnsignedMultiply128(lowbits, 10, &Carry);
-        highbits = highbits * 10 + Carry;
-    }
-}
-
 bool LongFloat::IsNegative() const
 {
     return (highbits & 0x8000000000000000ul) != 0;
 }
 bool LongFloat::IsFractional() const
 {
-    constexpr uint64_t Scale = 1'000'000'000'000'000ULL;
-    uint64_t maskedHbits = highbits & 0b0111111111111111111111111111111111111111111111111111111111111111ul;
+    constexpr uint64 Scale = 1'000'000'000'000'000ULL;
+    uint64 maskedHbits = highbits & 0b0111111111111111111111111111111111111111111111111111111111111111ul;
 
     if (maskedHbits != 0)
         return false;
@@ -901,7 +887,7 @@ LongFloat LongFloat::SubstractUInt128(const LongFloat& lhs, const LongFloat& rhs
 }
 LongFloat LongFloat::DivideUInt128(const LongFloat& lhs, const LongFloat& rhs)
 {
-    constexpr uint64_t SignMask = 0x8000000000000000ULL;
+    constexpr uint64 SignMask = 0x8000000000000000ULL;
     auto ilhs = lhs;
     auto irhs = rhs;
     LongFloat out{};
@@ -926,8 +912,8 @@ LongFloat LongFloat::DivideUInt128(const LongFloat& lhs, const LongFloat& rhs)
     const bool NegativeResult = NegativeA != NegativeB;
 
     // Convert dividend to unsigned magnitude.
-    uint64_t DividendLow = ilhs.lowbits;
-    uint64_t DividendHigh = ilhs.highbits;
+    uint64 DividendLow = ilhs.lowbits;
+    uint64 DividendHigh = ilhs.highbits;
 
     if (NegativeA)
     {
@@ -936,8 +922,8 @@ LongFloat LongFloat::DivideUInt128(const LongFloat& lhs, const LongFloat& rhs)
     }
 
     // Convert divisor to unsigned magnitude.
-    uint64_t DivisorLow = irhs.lowbits;
-    uint64_t DivisorHigh = irhs.highbits;
+    uint64 DivisorLow = irhs.lowbits;
+    uint64 DivisorHigh = irhs.highbits;
 
     if (NegativeB)
     {
@@ -945,9 +931,9 @@ LongFloat LongFloat::DivideUInt128(const LongFloat& lhs, const LongFloat& rhs)
         DivisorHigh = ~DivisorHigh + (DivisorLow == 0);
     }
 
-    uint64_t QuotientHigh = 0;
-    uint64_t QuotientLow = 0;
-    uint64_t Remainder = 0;
+    uint64 QuotientHigh = 0;
+    uint64 QuotientLow = 0;
+    uint64 Remainder = 0;
 
     if (DivisorHigh == 0)
     {
@@ -965,12 +951,12 @@ LongFloat LongFloat::DivideUInt128(const LongFloat& lhs, const LongFloat& rhs)
     {
         // General 128-bit / 128-bit long division.
         // The quotient can contain at most 128 bits.
-        uint64_t RemainderHigh = 0;
-        uint64_t RemainderLow = 0;
+        uint64 RemainderHigh = 0;
+        uint64 RemainderLow = 0;
 
         for (int i = 127; i >= 0; --i)
         {
-            const uint64_t Bit = (i >= 64)
+            const uint64 Bit = (i >= 64)
                 ? ((DividendHigh >> (i - 64)) & 1ULL)
                 : ((DividendLow >> i) & 1ULL);
 
@@ -986,7 +972,7 @@ LongFloat LongFloat::DivideUInt128(const LongFloat& lhs, const LongFloat& rhs)
                 (RemainderHigh == DivisorHigh &&
                     RemainderLow >= DivisorLow))
             {
-                const uint64_t OldLow = RemainderLow;
+                const uint64 OldLow = RemainderLow;
 
                 RemainderLow -= DivisorLow;
 
@@ -1025,8 +1011,8 @@ LongFloat LongFloat::MultiplayUInt128(const LongFloat& lhs, const LongFloat& rhs
 LongFloat LongFloat::SquareRootUInt128(const LongFloat& Input)
 {
     // Operates on nonnegative values. Exclude the high sign bit.
-    const uint64_t inputHigh = Input.highbits & 0x7FFFFFFFFFFFFFFFULL;
-    const uint64_t inputLow = Input.lowbits;
+    const uint64 inputHigh = Input.highbits & 0x7FFFFFFFFFFFFFFFULL;
+    const uint64 inputLow = Input.lowbits;
 
     unsigned long bit = 0;
     unsigned long index = 0;
@@ -1047,29 +1033,29 @@ LongFloat LongFloat::SquareRootUInt128(const LongFloat& Input)
     }
 
     // The samples bracket the integer root; high is exclusive.
-    uint64_t low = SqrtSamples[bit + 1];
-    uint64_t high = SqrtSamples[bit + 2] + 1;
+    uint64 low = SqrtSamples[bit + 1];
+    uint64 high = SqrtSamples[bit + 2] + 1;
 
     // Use linear interpolation to choose a starting point.
     LongFloat lowValueOfRoot(0, 1);
     lowValueOfRoot.ShiftLeft(bit);
     const LongFloat distanceLeft =
         SubstractUInt128(Input, lowValueOfRoot);
-    const uint64_t rootSpan = high - low - 1;
+    const uint64 rootSpan = high - low - 1;
 
-    uint64_t lowProductHigh = 0;
-    const uint64_t lowProduct = LongFloatGlue::UnsignedMultiply128(
+    uint64 lowProductHigh = 0;
+    const uint64 lowProduct = LongFloatGlue::UnsignedMultiply128(
         distanceLeft.lowbits, rootSpan, &lowProductHigh);
 
-    uint64_t highProductHigh = 0;
-    const uint64_t highProductLow = LongFloatGlue::UnsignedMultiply128(
+    uint64 highProductHigh = 0;
+    const uint64 highProductLow = LongFloatGlue::UnsignedMultiply128(
         distanceLeft.highbits, rootSpan, &highProductHigh);
 
-    const uint64_t middleProduct = lowProductHigh + highProductLow;
-    const uint64_t upperProduct = highProductHigh +
+    const uint64 middleProduct = lowProductHigh + highProductLow;
+    const uint64 upperProduct = highProductHigh +
         (middleProduct < lowProductHigh);
 
-    uint64_t interpolatedOffset;
+    uint64 interpolatedOffset;
     if (bit == 0)
     {
         interpolatedOffset = lowProduct;
@@ -1090,10 +1076,10 @@ LongFloat LongFloat::SquareRootUInt128(const LongFloat& Input)
             (middleProduct >> shift) | (upperProduct << (64 - shift));
     }
 
-    const uint64_t pivot = low + interpolatedOffset;
+    const uint64 pivot = low + interpolatedOffset;
 
-    uint64_t pivotSquareHigh = 0;
-    const uint64_t pivotSquareLow =
+    uint64 pivotSquareHigh = 0;
+    const uint64 pivotSquareLow =
         LongFloatGlue::UnsignedMultiply128(pivot, pivot, &pivotSquareHigh);
 
     if (pivotSquareHigh < inputHigh ||
@@ -1102,9 +1088,9 @@ LongFloat LongFloat::SquareRootUInt128(const LongFloat& Input)
         low = pivot;
 
         // Bound the remaining interval using the interpolation error.
-        const uint64_t interpolationErrorBound =
+        const uint64 interpolationErrorBound =
             (rootSpan + 19) / 20 + 2;
-        const uint64_t narrowedHigh =
+        const uint64 narrowedHigh =
             pivot + interpolationErrorBound + 1;
 
         if (narrowedHigh < high)
@@ -1118,10 +1104,10 @@ LongFloat LongFloat::SquareRootUInt128(const LongFloat& Input)
     // Exact binary search for floor(sqrt(Input)).
     while (high - low > 1)
     {
-        const uint64_t candidate = low + (high - low) / 2;
+        const uint64 candidate = low + (high - low) / 2;
 
-        uint64_t squareHigh = 0;
-        const uint64_t squareLow =
+        uint64 squareHigh = 0;
+        const uint64 squareLow =
             LongFloatGlue::UnsignedMultiply128(candidate, candidate, &squareHigh);
 
         if (squareHigh < inputHigh ||
@@ -1165,8 +1151,8 @@ LongFloat LongFloat::Substract(const LongFloat& lhs, const LongFloat& rhs)
 LongFloat LongFloat::Divide(const LongFloat& lhs, const LongFloat& rhs)
 {
 #if 0
-    constexpr uint64_t SignMask = 0x8000000000000000ULL;
-    constexpr uint64_t Scale = ComputeScale();
+    constexpr uint64 SignMask = 0x8000000000000000ULL;
+    constexpr uint64 Scale = ComputeScale();
     LongFloat out;
     // Division by zero.
     if (rhs.lowbits == 0 && rhs.highbits == 0)
@@ -1182,11 +1168,11 @@ LongFloat LongFloat::Divide(const LongFloat& lhs, const LongFloat& rhs)
     const bool resultNegative = lhsNegative != rhsNegative;
 
     // Convert operands to unsigned magnitudes.
-    uint64_t DividendLow = lhs.lowbits;
-    uint64_t DividendHigh = lhs.highbits;
+    uint64 DividendLow = lhs.lowbits;
+    uint64 DividendHigh = lhs.highbits;
 
-    uint64_t DivisorLow = rhs.lowbits;
-    uint64_t DivisorHigh = rhs.highbits;
+    uint64 DivisorLow = rhs.lowbits;
+    uint64 DivisorHigh = rhs.highbits;
 
     if (lhsNegative)
     {
@@ -1201,42 +1187,42 @@ LongFloat LongFloat::Divide(const LongFloat& lhs, const LongFloat& rhs)
     }
 
     // Construct abs(lhs) * Scale as a 192-bit numerator.
-    uint64_t ProductHigh;
-    const uint64_t ProductLow =
+    uint64 ProductHigh;
+    const uint64 ProductLow =
         LongFloatGlue::UnsignedMultiply128(DividendLow, Scale, &ProductHigh);
 
-    uint64_t UpperProductHigh;
-    const uint64_t UpperProductLow =
+    uint64 UpperProductHigh;
+    const uint64 UpperProductLow =
         LongFloatGlue::UnsignedMultiply128(DividendHigh, Scale, &UpperProductHigh);
 
-    const uint64_t Numerator0 = ProductLow;
+    const uint64 Numerator0 = ProductLow;
 
-    const uint64_t Numerator1 = ProductHigh + UpperProductLow;
-    const uint64_t Carry = Numerator1 < ProductHigh;
+    const uint64 Numerator1 = ProductHigh + UpperProductLow;
+    const uint64 Carry = Numerator1 < ProductHigh;
 
-    const uint64_t Numerator2 = UpperProductHigh + Carry;
+    const uint64 Numerator2 = UpperProductHigh + Carry;
 
     // Convert numerator and divisor to base-2^32 limbs.
-    const uint32_t Numerator[6] =
+    const uint32 Numerator[6] =
     {
-        static_cast<uint32_t>(Numerator0),
-        static_cast<uint32_t>(Numerator0 >> 32),
-        static_cast<uint32_t>(Numerator1),
-        static_cast<uint32_t>(Numerator1 >> 32),
-        static_cast<uint32_t>(Numerator2),
-        static_cast<uint32_t>(Numerator2 >> 32)
+        static_cast<uint32>(Numerator0),
+        static_cast<uint32>(Numerator0 >> 32),
+        static_cast<uint32>(Numerator1),
+        static_cast<uint32>(Numerator1 >> 32),
+        static_cast<uint32>(Numerator2),
+        static_cast<uint32>(Numerator2 >> 32)
     };
 
-    const uint32_t Divisor[4] =
+    const uint32 Divisor[4] =
     {
-        static_cast<uint32_t>(DivisorLow),
-        static_cast<uint32_t>(DivisorLow >> 32),
-        static_cast<uint32_t>(DivisorHigh),
-        static_cast<uint32_t>(DivisorHigh >> 32)
+        static_cast<uint32>(DivisorLow),
+        static_cast<uint32>(DivisorLow >> 32),
+        static_cast<uint32>(DivisorHigh),
+        static_cast<uint32>(DivisorHigh >> 32)
     };
 
-    uint32_t Quotient[6]{};
-    uint32_t Remainder[4]{};
+    uint32 Quotient[6]{};
+    uint32 Remainder[4]{};
 
     if (!Divide192By128(Numerator, Divisor, Quotient, Remainder))
     {
@@ -1256,13 +1242,13 @@ LongFloat LongFloat::Divide(const LongFloat& lhs, const LongFloat& rhs)
         return out;
     }
 
-    uint64_t QuotientLow =
-        static_cast<uint64_t>(Quotient[0]) |
-        (static_cast<uint64_t>(Quotient[1]) << 32);
+    uint64 QuotientLow =
+        static_cast<uint64>(Quotient[0]) |
+        (static_cast<uint64>(Quotient[1]) << 32);
 
-    uint64_t QuotientHigh =
-        static_cast<uint64_t>(Quotient[2]) |
-        (static_cast<uint64_t>(Quotient[3]) << 32);
+    uint64 QuotientHigh =
+        static_cast<uint64>(Quotient[2]) |
+        (static_cast<uint64>(Quotient[3]) << 32);
 
     // The signed minimum bit pattern is reserved for NaN.
     if ((QuotientHigh & SignMask) != 0)
@@ -1300,7 +1286,7 @@ LongFloat LongFloat::Divide(const LongFloat& lhs, const LongFloat& rhs)
 }
 
 LongFloat LongFloat::Multiplay(const LongFloat& lhs,const LongFloat& rhs) {
-    constexpr uint64_t Scale = ComputeScale();
+    constexpr uint64 Scale = ComputeScale();
 
     // ---------------------------------------------------------
     // 1. Extract signs
@@ -1315,11 +1301,11 @@ LongFloat LongFloat::Multiplay(const LongFloat& lhs,const LongFloat& rhs) {
     // 2. Load operands
     // ---------------------------------------------------------
 
-    uint64_t aLow = lhs.lowbits;
-    uint64_t aHigh = lhs.highbits;
+    uint64 aLow = lhs.lowbits;
+    uint64 aHigh = lhs.highbits;
 
-    uint64_t bLow = rhs.lowbits;
-    uint64_t bHigh = rhs.highbits;
+    uint64 bLow = rhs.lowbits;
+    uint64 bHigh = rhs.highbits;
 
     // ---------------------------------------------------------
     // 3. Convert signed operands to unsigned magnitudes
@@ -1341,21 +1327,21 @@ LongFloat LongFloat::Multiplay(const LongFloat& lhs,const LongFloat& rhs) {
     // 4. Four 64 x 64-bit partial products
     // ---------------------------------------------------------
 
-    uint64_t p00High;
-    uint64_t p01High;
-    uint64_t p10High;
-    uint64_t p11High;
+    uint64 p00High;
+    uint64 p01High;
+    uint64 p10High;
+    uint64 p11High;
 
-    const uint64_t p00Low =
+    const uint64 p00Low =
         LongFloatGlue::UnsignedMultiply128(aLow, bLow, &p00High);
 
-    const uint64_t p01Low =
+    const uint64 p01Low =
         LongFloatGlue::UnsignedMultiply128(aLow, bHigh, &p01High);
 
-    const uint64_t p10Low =
+    const uint64 p10Low =
         LongFloatGlue::UnsignedMultiply128(aHigh, bLow, &p10High);
 
-    const uint64_t p11Low =
+    const uint64 p11Low =
         LongFloatGlue::UnsignedMultiply128(aHigh, bHigh, &p11High);
 
     // ---------------------------------------------------------
@@ -1367,39 +1353,39 @@ LongFloat LongFloat::Multiplay(const LongFloat& lhs,const LongFloat& rhs) {
     // The carry assembly must be validated independently.
     // ---------------------------------------------------------
 
-    uint64_t product[4];
+    uint64 product[4];
 
     product[0] = p00Low;
 
     product[1] = p00High;
     product[1] += p01Low;
 
-    const uint64_t carry1a = product[1] < p00High;
+    const uint64 carry1a = product[1] < p00High;
 
-    const uint64_t temp1 = product[1];
+    const uint64 temp1 = product[1];
 
     product[1] += p10Low;
 
-    const uint64_t carry1b = product[1] < temp1;
+    const uint64 carry1b = product[1] < temp1;
 
     product[2] = p01High;
     product[2] += p10High;
 
-    const uint64_t carry2a = product[2] < p01High;
+    const uint64 carry2a = product[2] < p01High;
 
-    const uint64_t temp2 = product[2];
+    const uint64 temp2 = product[2];
 
     product[2] += p11Low;
 
-    const uint64_t carry2b = product[2] < temp2;
+    const uint64 carry2b = product[2] < temp2;
 
-    const uint64_t carry1 = carry1a + carry1b;
+    const uint64 carry1 = carry1a + carry1b;
 
-    const uint64_t temp3 = product[2];
+    const uint64 temp3 = product[2];
 
     product[2] += carry1;
 
-    const uint64_t carry2c = product[2] < temp3;
+    const uint64 carry2c = product[2] < temp3;
 
     product[3] = p11High + carry2a + carry2b + carry2c;
 
@@ -1412,7 +1398,7 @@ LongFloat LongFloat::Multiplay(const LongFloat& lhs,const LongFloat& rhs) {
     // shift, multiply-by-Scale and subtract instructions.
     // ---------------------------------------------------------
 
-    uint64_t remainder = 0;
+    uint64 remainder = 0;
 
     for (int32_t i = 3; i >= 0; --i)
     {
@@ -1455,7 +1441,7 @@ LongFloat LongFloat::Multiplay(const LongFloat& lhs,const LongFloat& rhs) {
 }
 LongFloat LongFloat::SquareRoot(const LongFloat& Input)
 {
-    constexpr uint64_t Scale = ComputeScale();
+    constexpr uint64 Scale = ComputeScale();
 
     if (Input.IsNegative())
     {
@@ -1468,7 +1454,7 @@ LongFloat LongFloat::SquareRoot(const LongFloat& Input)
         return LongFloat(0, 0);
 
     LongFloat in = Input;
-    uint64_t remainder = 0;
+    uint64 remainder = 0;
     in.highbits = LongFloatGlue::UnsignedDivide128(0, in.highbits, Scale, &remainder);
     in.lowbits = LongFloatGlue::UnsignedDivide128(remainder, in.lowbits, Scale, &remainder);
 
@@ -1478,7 +1464,7 @@ LongFloat LongFloat::SquareRoot(const LongFloat& Input)
     {
         const double fractionalInput =
             static_cast<double>(Input.lowbits) / static_cast<double>(Scale);
-        return LongFloat(std::sqrt(fractionalInput));
+        return LongFloat(Math::Sqrt(fractionalInput));
     }
 
     // Find k = floor(sqrt(floor(Input))).
@@ -1500,9 +1486,9 @@ LongFloat LongFloat::SquareRoot(const LongFloat& Input)
     if (rootRemainder.highbits == 0 && rootRemainder.lowbits == 0)
         return wholeRootScaled;
 
-    const uint64_t k = wholeRoot.lowbits;
+    const uint64 k = wholeRoot.lowbits;
     const double remainderRaw =
-        std::ldexp(static_cast<double>(rootRemainder.highbits), 64) +
+        static_cast<double>(rootRemainder.highbits) * Math::Exp2(64.0) +
         static_cast<double>(rootRemainder.lowbits);
     const double remainderValue =
         remainderRaw / static_cast<double>(Scale);
@@ -1510,40 +1496,40 @@ LongFloat LongFloat::SquareRoot(const LongFloat& Input)
     // Stable solution of f^2 + 2*k*f = remainderValue.
     const double kDouble = static_cast<double>(k);
     double fraction = remainderValue /
-        (std::sqrt(kDouble * kDouble + remainderValue) + kDouble);
+        (Math::Sqrt(kDouble * kDouble + remainderValue) + kDouble);
 
     if (fraction < 0.0)
         fraction = 0.0;
     if (fraction >= 1.0)
         fraction = 1.0;
 
-    uint64_t fractionRaw = static_cast<uint64_t>(fraction * Scale);
+    uint64 fractionRaw = static_cast<uint64>(fraction * Scale);
     if (fractionRaw >= Scale)
         fractionRaw = Scale - 1;
 
     // Check a raw fractional candidate exactly.
-    const auto FractionFits = [&](uint64_t f) -> bool
+    const auto FractionFits = [&](uint64 f) -> bool
         {
-            uint64_t squareQuotient;
-            uint64_t squareRemainder;
+            uint64 squareQuotient;
+            uint64 squareRemainder;
 
-            if constexpr (ComputeScale() <= UINT32_MAX)
+            if (ComputeScale() <= MAX_uint32)
             {
-                const uint64_t square = f * f;
+                const uint64 square = f * f;
                 squareQuotient = square / Scale;
                 squareRemainder = square % Scale;
             }
             else
             {
-                uint64_t squareHigh = 0;
-                const uint64_t squareLow = LongFloatGlue::UnsignedMultiply128(f, f, &squareHigh);
+                uint64 squareHigh = 0;
+                const uint64 squareLow = LongFloatGlue::UnsignedMultiply128(f, f, &squareHigh);
                 squareQuotient =
                     LongFloatGlue::UnsignedDivide128(squareHigh, squareLow, Scale, &squareRemainder);
             }
 
-            uint64_t productHigh = 0;
-            uint64_t productLow = LongFloatGlue::UnsignedMultiply128(2 * k, f, &productHigh);
-            const uint64_t oldLow = productLow;
+            uint64 productHigh = 0;
+            uint64 productLow = LongFloatGlue::UnsignedMultiply128(2 * k, f, &productHigh);
+            const uint64 oldLow = productLow;
             productLow += squareQuotient;
             productHigh += (productLow < oldLow);
 
@@ -1585,7 +1571,7 @@ void LongFloat::BitwiseNOT()
     lowbits = ~lowbits;
     highbits = ~highbits;
 }
-void LongFloat::ShiftLeft(uint32_t Shift)
+void LongFloat::ShiftLeft(uint32 Shift)
 {
     if (Shift >= 128)
     {
@@ -1604,7 +1590,7 @@ void LongFloat::ShiftLeft(uint32_t Shift)
         lowbits <<= Shift;
     }
 }
-void LongFloat::ShiftRight(uint32_t Shift)
+void LongFloat::ShiftRight(uint32 Shift)
 {
     if (Shift >= 128)
     {
@@ -1625,41 +1611,43 @@ void LongFloat::ShiftRight(uint32_t Shift)
 }
 #pragma endregion
 
-void LongFloat::PrintBits(bool CodeMode)
+String LongFloat::BitsToString(bool CodeMode) const
 {
     union
     {
-        uint32_t Bits[4];
+        uint32 Bits[4];
         struct
         {
-            uint64_t lb;
-            uint64_t hb;
+            uint64 lb;
+            uint64 hb;
         };
     };
+
     hb = highbits;
     lb = lowbits;
 
-
+    String Result;
     if (CodeMode)
-    {
-        std::cout << "0b";
-    }
+        Result = "0b";
+
     for (size_t word = NumWords; word-- > 0;)
     {
-
         for (int bit = 31; bit >= 0; --bit)
         {
-            std::cout << ((Bits[word] >> bit) & 1);
+            const Char digit = static_cast<Char>(
+                '0' + ((Bits[word] >> bit) & 1));
+            Result += digit;
         }
+
         if (!CodeMode)
-        {
-            std::cout << ' ';
-        }
+            Result += static_cast<Char>(' ');
     }
 
-    std::cout << '\n';
+    Result += static_cast<Char>('\n');
+    return Result;
 }
-std::string LongFloat::ToString() const
+
+String LongFloat::ToString() const
 {
     // Detect the sign using the highest bit.
     const bool Negative = IsNegative();
@@ -1667,11 +1655,11 @@ std::string LongFloat::ToString() const
     // Work on a copy so the original value remains unchanged.
     union
     {
-        uint32_t Magnitude[4];
+        uint32 Magnitude[4];
         struct
         {
-            uint64_t lb;
-            uint64_t hb;
+            uint64 lb;
+            uint64 hb;
         };
     };
 
@@ -1684,14 +1672,14 @@ std::string LongFloat::ToString() const
         for (int32_t i = 0; i < 4; ++i)
             Magnitude[i] = ~Magnitude[i];
 
-        uint64_t Carry = 1;
+        uint64 Carry = 1;
 
         for (int32_t i = 0; i < 4 && Carry != 0; ++i)
         {
-            const uint64_t Sum =
-                static_cast<uint64_t>(Magnitude[i]) + Carry;
+            const uint64 Sum =
+                static_cast<uint64>(Magnitude[i]) + Carry;
 
-            Magnitude[i] = static_cast<uint32_t>(Sum);
+            Magnitude[i] = static_cast<uint32>(Sum);
             Carry = Sum >> 32;
         }
     }
@@ -1709,28 +1697,28 @@ std::string LongFloat::ToString() const
     }
 
     if (IsZero)
-        return "0";
+        return String("0");
 
     // Convert the unsigned magnitude to decimal.
-    std::string Result;
-    Result.reserve(40);
+    Char ResultBuffer[40];
+    int32 ResultLength = 0;
 
     while (!IsZero)
     {
-        uint64_t Remainder = 0;
+        uint64 Remainder = 0;
 
         // Divide the entire 128-bit number by 10.
         for (int32_t i = NumWords - 1; i >= 0; --i)
         {
-            const uint64_t Current =
+            const uint64 Current =
                 (Remainder << 32) | Magnitude[i];
 
-            Magnitude[i] = static_cast<uint32_t>(Current / 10);
+            Magnitude[i] = static_cast<uint32>(Current / 10);
             Remainder = Current % 10;
         }
 
         // Each remainder is one decimal digit.
-        Result += static_cast<char>('0' + Remainder);
+        ResultBuffer[ResultLength++] = static_cast<Char>('0' + Remainder);
 
         // Check whether the quotient is zero.
         IsZero = true;
@@ -1745,25 +1733,34 @@ std::string LongFloat::ToString() const
         }
     }
 
-    std::reverse(Result.begin(), Result.end());
+    for (int32 i = 0; i < ResultLength / 2; ++i)
+    {
+        const Char temp = ResultBuffer[i];
+        ResultBuffer[i] = ResultBuffer[ResultLength - i - 1];
+        ResultBuffer[ResultLength - i - 1] = temp;
+    }
+    String Result(ResultBuffer, ResultLength);
 
     // Insert the virtual decimal point.
     if (DecimalPoint > 0)
     {
         const size_t Point = static_cast<size_t>(DecimalPoint);
 
-        if (Result.size() <= Point)
-            Result.insert(0, Point - Result.size() + 1, '0');
+        if (Result.Length() <= Point)
+        {
+            for (int32 i = Result.Length(); i <= Point; ++i)
+                Result.Insert(0, String("0"));
+        }
 
-        Result.insert(Result.size() - Point, 1, '.');
+        Result.Insert(Result.Length() - Point, String("."));
     }
 
     // Restore the sign.
     if (Negative)
-        Result.insert(Result.begin(), '-');
+        Result.Insert(0, String("-"));
 
     if (IsNAN())
-        return std::string("NaN { ") + Result + std::string(" } ");
+        return String("NaN { ") + Result + String(" } ");
 
     return Result;
 }

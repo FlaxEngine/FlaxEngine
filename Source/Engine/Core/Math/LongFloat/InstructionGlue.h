@@ -1,9 +1,10 @@
 #pragma once
 
-#include <cstdint>
 
 #if defined(_MSC_VER) && defined(_M_X64)
 #include <intrin0.inl.h>
+#else
+#include <cstdint>
 #endif
 
 namespace LongFloatGlue

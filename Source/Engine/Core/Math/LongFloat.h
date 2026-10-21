@@ -1,19 +1,19 @@
 #pragma once
-#include <cstdint>
-#include <string>
-
+#include <Engine/Core/Types/BaseTypes.h>
+#include <Engine/Core/Types/String.h>
 
 /// <summary>
 /// Fixed-point floating-point number.
 /// </summary>
 struct LongFloat
 {
-    constexpr static int64_t NumWords = 4;
-    constexpr static int64_t DecimalPoint = 6;
+    constexpr static int64 NumWords = 4;
+    //maybe add a compile setting for it ?
+    constexpr static int64 DecimalPoint = 15;
 
-    constexpr static int64_t ComputeScale()
+    constexpr static int64 ComputeScale()
     {
-        int64_t Scale = 1;
+        int64 Scale = 1;
 
         for (int i = 0; i < DecimalPoint; ++i)
             Scale *= 10;
@@ -21,26 +21,26 @@ struct LongFloat
         return Scale;
     }
 
-    static const uint64_t SqrtSamples[128];
-    uint64_t lowbits;
-    uint64_t highbits;
+    static const uint64 SqrtSamples[128];
+    uint64 lowbits;
+    uint64 highbits;
 
-    static void FromUInt64Unscaled(LongFloat& ref,uint64_t Value)
+    static void FromUInt64Unscaled(LongFloat& ref,uint64 Value)
     {
         ref.lowbits = Value;
-        ref.highbits = Value < 0 ? UINT64_MAX : 0;
+        ref.highbits = Value < 0 ? MAX_uint64 : 0;
     }
 public:
     LongFloat() = default;
-    LongFloat(uint64_t highbits, uint64_t lowbits);
-    LongFloat(int32_t Value);
-    LongFloat(int64_t Value);
+    LongFloat(uint64 highbits, uint64 lowbits);
+    LongFloat(int32 Value);
+    LongFloat(int64 Value);
     LongFloat(double Value);
-    LongFloat(uint64_t Value);
+    LongFloat(uint64 Value);
 
     [[nodiscard]] bool IsNegative() const;
     [[nodiscard]] bool IsFractional() const;
-    [[nodiscard]] int32_t Sign() const;
+    [[nodiscard]] int32 Sign() const;
     [[nodiscard]] bool IsNAN() const;
     void SetNAN();
     void Zero();
@@ -63,11 +63,11 @@ public:
     void BitwiseOR(const LongFloat& Other);
     void BitwiseXOR(const LongFloat& Other);
     void BitwiseNOT();
-    void ShiftLeft(uint32_t Shift);
-    void ShiftRight(uint32_t Shift);
+    void ShiftLeft(uint32 Shift);
+    void ShiftRight(uint32 Shift);
 public:
-    void PrintBits(bool CodeMode = false);
-    [[nodiscard]] std::string ToString() const;
+    String BitsToString(bool CodeMode = false) const;
+    [[nodiscard]] String ToString() const;
 public:
     [[nodiscard]] bool operator==(const LongFloat& Other) const
     {
@@ -122,7 +122,6 @@ public:
     {
         (*this) = Divide(*this, Other);
     }
-
 
     [[nodiscard]] LongFloat operator+(const LongFloat& Other)
     {
