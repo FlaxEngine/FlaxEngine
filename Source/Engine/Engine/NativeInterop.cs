@@ -68,16 +68,43 @@ namespace FlaxEngine.Interop
 
                 nativeLibrary = NativeLibrary.Load(nativeLibraryPath, assembly, dllImportSearchPath);
                 loadedNativeLibraries.Add(libraryName, nativeLibrary);
-
-                // An assembly can import several native libraries (eg. kernel32 and user32)
-                if (!assemblyOwnedNativeLibraries.TryGetValue(assembly, out var ownedLibraries))
-                {
-                    ownedLibraries = new List<string>();
-                    assemblyOwnedNativeLibraries.Add(assembly, ownedLibraries);
-                }
-                ownedLibraries.Add(libraryName);
             }
+
+            // An assembly can import several native libraries (eg. kernel32 and user32), and several assemblies can import the same library: each one is an owner of the library
+            if (!assemblyOwnedNativeLibraries.TryGetValue(assembly, out var ownedLibraries))
+            {
+                ownedLibraries = new List<string>();
+                assemblyOwnedNativeLibraries.Add(assembly, ownedLibraries);
+            }
+            if (!ownedLibraries.Contains(libraryName))
+                ownedLibraries.Add(libraryName);
             return nativeLibrary;
+        }
+
+        /// <summary>
+        /// Releases the native libraries of the assembly. A library that another assembly still uses stays loaded.
+        /// </summary>
+        internal static void ReleaseNativeLibraries(Assembly assembly)
+        {
+            if (!assemblyOwnedNativeLibraries.Remove(assembly, out var ownedLibraries))
+                return;
+            foreach (string nativeLibraryName in ownedLibraries)
+            {
+                bool usedByOtherAssembly = false;
+                foreach (var otherLibraries in assemblyOwnedNativeLibraries.Values)
+                {
+                    if (otherLibraries.Contains(nativeLibraryName))
+                    {
+                        usedByOtherAssembly = true;
+                        break;
+                    }
+                }
+                if (usedByOtherAssembly)
+                    continue;
+                if (loadedNativeLibraries.Remove(nativeLibraryName, out IntPtr nativeLibrary))
+                    NativeLibrary.Free(nativeLibrary);
+                libraryPaths.Remove(nativeLibraryName);
+            }
         }
 
         [UnmanagedCallersOnly]

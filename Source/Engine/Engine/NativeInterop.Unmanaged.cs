@@ -961,16 +961,8 @@ namespace FlaxEngine.Interop
 
             AssemblyLocations.Remove(assembly.FullName);
 
-            // Unload native library handles associated for this assembly (all of them)
-            if (assemblyOwnedNativeLibraries.Remove(assembly, out var ownedLibraries))
-            {
-                foreach (string nativeLibraryName in ownedLibraries)
-                {
-                    if (loadedNativeLibraries.Remove(nativeLibraryName, out IntPtr nativeLibrary))
-                        NativeLibrary.Free(nativeLibrary);
-                    libraryPaths.Remove(nativeLibraryName);
-                }
-            }
+            // Unload native library handles associated for this assembly (not the ones that other assemblies still use)
+            ReleaseNativeLibraries(assembly);
         }
 
         [UnmanagedCallersOnly]

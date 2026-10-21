@@ -99,6 +99,60 @@ namespace FlaxEngine.Tests
         }
 
         /// <summary>
+        /// Tests that a native library imported by two assemblies stays loaded until both assemblies release it.
+        /// </summary>
+        public static int TestNativeLibrarySharedByAssemblies()
+        {
+            // A system library under a test name, imported by two assemblies that do not import native libraries through the resolver
+            string systemLibrary = OperatingSystem.IsWindows() ? "kernel32.dll" : OperatingSystem.IsMacOS() ? "/usr/lib/libSystem.B.dylib" : "libc.so.6";
+            const string name = "TestNativeLibrary3";
+            var assemblyA = typeof(System.Linq.Enumerable).Assembly;
+            var assemblyB = typeof(System.Text.RegularExpressions.Regex).Assembly;
+            var interop = typeof(Interop.NativeInterop);
+            var resolver = interop.GetMethod("NativeLibraryImportResolver", BindingFlags.NonPublic | BindingFlags.Static);
+            var release = interop.GetMethod("ReleaseNativeLibraries", BindingFlags.NonPublic | BindingFlags.Static);
+            var loadedLibraries = (Dictionary<string, IntPtr>)interop.GetField("loadedNativeLibraries", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null);
+            var ownedLibraries = (System.Collections.IDictionary)interop.GetField("assemblyOwnedNativeLibraries", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null);
+            if (resolver == null || release == null || loadedLibraries == null || ownedLibraries == null)
+                return -1;
+
+            var result = 0;
+            try
+            {
+                Interop.NativeInterop.libraryPaths[name] = systemLibrary;
+                var libraryA = (IntPtr)resolver.Invoke(null, new object[] { name, assemblyA, null });
+                var libraryB = (IntPtr)resolver.Invoke(null, new object[] { name, assemblyB, null });
+                if (libraryA == IntPtr.Zero || libraryB != libraryA)
+                    result += 1;
+
+                // The first assembly releases its libraries: the other one still uses the library
+                release.Invoke(null, new object[] { assemblyA });
+                if (!loadedLibraries.ContainsKey(name))
+                    result += 2;
+
+                // The last assembly releases its libraries: the library is freed
+                release.Invoke(null, new object[] { assemblyB });
+                if (loadedLibraries.ContainsKey(name))
+                    result += 4;
+            }
+            catch (TargetInvocationException ex)
+            {
+                Debug.LogError("Native library import failed: " + ex.InnerException?.Message);
+                result += 10;
+            }
+            finally
+            {
+                // Remove the test library from the resolver (also after a failure)
+                Interop.NativeInterop.libraryPaths.Remove(name);
+                if (loadedLibraries.Remove(name, out var library))
+                    NativeLibrary.Free(library);
+                ownedLibraries.Remove(assemblyA);
+                ownedLibraries.Remove(assemblyB);
+            }
+            return result;
+        }
+
+        /// <summary>
         /// Tests <see cref="ScriptingObjectInterfaceReference{T}"/> usage with marshalling.
         /// </summary>
         public static int TestInterfaceReference()
