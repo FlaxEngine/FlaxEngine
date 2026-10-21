@@ -350,7 +350,7 @@ namespace FlaxEngine
                 {
                     // Someone added another action within current callback
                     var tmp = new List<Action>();
-                    for (int i = newlyAdded; i < UpdateActions.Count; i++)
+                    for (int i = count; i < UpdateActions.Count; i++)
                         tmp.Add(UpdateActions[i]);
                     UpdateActions.Clear();
                     UpdateActions.AddRange(tmp);
