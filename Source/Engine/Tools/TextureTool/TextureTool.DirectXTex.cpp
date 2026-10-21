@@ -772,8 +772,8 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, Span<byte> bytes, Text
         for (size_t i = 0; i < currentImage->GetImageCount(); i++)
             ((DirectX::Image*)currentImage->GetImages())[i].format = sourceDxgiFormat;
     }
-    // Import as sRGB data for Linear color space
-    else if (options.sRGB && !GraphicsSettings::Get()->GammaColorSpace)
+    // Import as sRGB data for Linear color space (also when the source format was sRGB, eg. PNG with sRGB chunk)
+    if (options.sRGB && !GraphicsSettings::Get()->GammaColorSpace)
     {
         sourceDxgiFormat = ToDxgiFormat(PixelFormatExtensions::TosRGB(::ToPixelFormat(sourceDxgiFormat)));
         ((DirectX::TexMetadata&)currentImage->GetMetadata()).format = sourceDxgiFormat;
