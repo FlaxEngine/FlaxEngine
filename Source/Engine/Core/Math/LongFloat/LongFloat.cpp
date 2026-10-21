@@ -876,7 +876,7 @@ LongFloat LongFloat::SubtractUInt128(const LongFloat& lhs, const LongFloat& rhs)
         rhs.lowbits,
         &out.lowbits
     );
-    _subborrow_u64(
+    LongFloatGlue::SubtractBorrowUnsignedInt64(
         Borrow,
         lhs.highbits,
         rhs.highbits,
