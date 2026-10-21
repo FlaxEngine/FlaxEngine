@@ -83,6 +83,9 @@ public:
     // Formats path into valid format used by the storage system (normalized and absolute).
     static void FormatPath(String& path);
 
+    // Checks if path is already in the format of FormatPath, without a copy (false when not sure, then the caller formats it).
+    static bool IsFormattedPath(const StringView& path);
+
 public:
     /// <summary>
     /// Determines whether the specified path can be a binary asset file (based on it's extension).

@@ -522,8 +522,15 @@ bool Content::GetAssetInfo(const Guid& id, AssetInfo& info)
 bool Content::GetAssetInfo(const StringView& inputPath, AssetInfo& info)
 {
     // Use the path format of the content storage, so one file has one path in the registry (another spelling of the same file, eg. with '\' separators, would register it again with a new asset ID)
-    String path(inputPath);
-    ContentStorageManager::FormatPath(path);
+    // A path in that format is used as it is: no copy
+    StringView path = inputPath;
+    String formatted;
+    if (!ContentStorageManager::IsFormattedPath(path))
+    {
+        formatted = inputPath;
+        ContentStorageManager::FormatPath(formatted);
+        path = formatted;
+    }
 #if ENABLE_ASSETS_DISCOVERY
     // Find asset in registry
     if (Cache.FindAsset(path, info))
@@ -770,8 +777,15 @@ Asset* Content::GetAsset(const StringView& inputPath)
 {
     if (inputPath.IsEmpty())
         return nullptr;
-    String outputPath(inputPath);
-    ContentStorageManager::FormatPath(outputPath);
+    // The path format of the content storage (see GetAssetInfo); a path in that format is used as it is
+    StringView outputPath = inputPath;
+    String formatted;
+    if (!ContentStorageManager::IsFormattedPath(outputPath))
+    {
+        formatted = inputPath;
+        ContentStorageManager::FormatPath(formatted);
+        outputPath = formatted;
+    }
     PROFILE_CPU();
     ScopeLock lock(AssetsLocker);
     for (auto i = Assets.Begin(); i.IsNotEnd(); ++i)

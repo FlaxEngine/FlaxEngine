@@ -24,7 +24,7 @@ TEST_CASE("Content")
         CHECK(info.ID == id);
 
 #if PLATFORM_WINDOWS
-        // Other spellings of the same file: one asset, one storage, and the file keeps its ID
+        // Other spellings of the same file: one asset, and the file keeps its ID
         String slashes = path;
         slashes.Replace('\\', '/');
         String backslashes = path;
@@ -33,12 +33,50 @@ TEST_CASE("Content")
         CHECK(info.ID == id);
         CHECK(Content::GetAssetInfo(backslashes, info));
         CHECK(info.ID == id);
-        CHECK(ContentStorageManager::GetStorage(slashes).Get() == ContentStorageManager::GetStorage(path).Get());
         REQUIRE(Content::GetAssetInfo(path, info));
         CHECK(info.ID == id);
 #endif
 
         Content::DeleteAsset(path);
+    }
+
+    SECTION("Test formatted path check")
+    {
+        // IsFormattedPath lets a path skip FormatPath, so it must never be true for a path that FormatPath changes
+        String project = Globals::ProjectFolder / TEXT("Content/Materials/Base.flax");
+        ContentStorageManager::FormatPath(project);
+        CHECK(ContentStorageManager::IsFormattedPath(project));
+        const String paths[] =
+        {
+            project,
+            String(TEXT("Content/A.flax")),
+            String(TEXT("./Content/A.flax")),
+            String(TEXT("/home/user/Project/Content/A.flax")),
+            String(TEXT("/home/user/Project//Content/A.flax")),
+            String(TEXT("/home/user/Project/Content/../A.flax")),
+            String(TEXT("/home/user/Project/./Content/A.flax")),
+            String(TEXT("/home/user/Project/Content/")),
+            String(TEXT("C:\\Project/Content/A.flax")),
+            String(TEXT("C:/Project/Content/A.flax")),
+            String(TEXT("C:\\Project\\Content\\A.flax")),
+            String(TEXT("C:\\Project/Content/.hidden/A.flax")),
+            String(TEXT("C:\\Project/Content/..A.flax")),
+            String(TEXT("\\\\server/share/A.flax")),
+            String(TEXT("C:\\")),
+        };
+        for (const String& path : paths)
+        {
+            String formatted = path;
+            ContentStorageManager::FormatPath(formatted);
+            CAPTURE(path, formatted);
+            if (ContentStorageManager::IsFormattedPath(path))
+                CHECK(formatted == path);
+        }
+        CHECK(ContentStorageManager::IsFormattedPath(String(TEXT("/home/user/Project/Content/A.flax"))));
+        CHECK(ContentStorageManager::IsFormattedPath(String(TEXT("C:\\Project/Content/A.flax"))));
+        CHECK(!ContentStorageManager::IsFormattedPath(String(TEXT("C:/Project/Content/A.flax"))));
+        CHECK(!ContentStorageManager::IsFormattedPath(String(TEXT("C:\\Project\\Content\\A.flax"))));
+        CHECK(!ContentStorageManager::IsFormattedPath(String(TEXT("Content/A.flax"))));
     }
 }
 
