@@ -238,6 +238,7 @@ public:
     SceneResult OnBeginPlay(Args& args);
     SceneResult OnEnd(Args& args);
 
+    void PostLoad(Args& args);
     static bool LoadPreloadedScene(::Scene* scene);
 };
 
@@ -1453,6 +1454,7 @@ SceneResult SceneLoader::OnBeginPlay(Args& args)
         _preloadedScenes.Add(Scene);
         CallSceneEvent(SceneEventType::OnScenePreloaded, Scene, SceneId);
         LOG(Info, "Scene pre-loaded in {}ms ({} frames)", (int32)(TotalTime * 1000.0), Engine::UpdateCount - StartFrame);
+        PostLoad(args);
         Stage = Stages::Loaded;
         return SceneResult::Success;
     }
@@ -1489,6 +1491,14 @@ SceneResult SceneLoader::OnEnd(Args& args)
     time.Stop();
     LOG(Info, "Scene loaded in {}ms ({} frames)", (int32)((TotalTime + time.GetTotalSeconds()) * 1000.0), Engine::UpdateCount - StartFrame);
 
+    PostLoad(args);
+
+    NextStage();
+    return SceneResult::Success;
+}
+
+void SceneLoader::PostLoad(Args& args)
+{
 #if USE_EDITOR
     // Resave assets that use deprecated data format
     for (auto& e : Context.DeprecatedPrefabs)
@@ -1509,15 +1519,13 @@ SceneResult SceneLoader::OnEnd(Args& args)
         }
     }
 #endif
-
-    NextStage();
-    return SceneResult::Success;
 }
 
 bool SceneLoader::LoadPreloadedScene(::Scene* scene)
 {
     PROFILE_CPU_NAMED("BeginPlay");
     ASSERT_LOW_LAYER(IsInMainThread());
+    Stopwatch time;
 
     // Link scene
     ScopeLock lock(Level::ScenesLock);
@@ -1528,6 +1536,12 @@ bool SceneLoader::LoadPreloadedScene(::Scene* scene)
     SceneBeginData beginData;
     scene->BeginPlay(&beginData);
     beginData.OnDone();
+
+    // Fire event
+    CallSceneEvent(SceneEventType::OnSceneLoaded, scene, scene->GetID());
+
+    time.Stop();
+    LOG(Info, "Scene loaded in {}ms", (int32)(time.GetTotalSeconds() * 1000.0));
 
     return false;
 }
