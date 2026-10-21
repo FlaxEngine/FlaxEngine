@@ -949,7 +949,7 @@ void LevelImpl::flushActions()
     ScopeLock lock(_sceneActionsLocker);
     for (int32 i = 0; i < _sceneActions.Count() && context.TimeBudget >= 0.0; i++)
     {
-        auto action = _sceneActions[0];
+        auto action = _sceneActions[i];
         Stopwatch time;
         auto result = action->Do(context);
         time.Stop();
@@ -1005,7 +1005,7 @@ bool LevelImpl::unloadScenes()
         auto action = _sceneActions[i];
         if (action->IsPreloading())
         {
-            _sceneActions.RemoveAtKeepOrder(i--);
+            _sceneActions.RemoveAtKeepOrder(i);
             Delete(action);
         }
     }
