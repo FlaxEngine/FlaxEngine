@@ -62,7 +62,7 @@ public:
     /// <returns>
     /// Quantized float
     /// </returns>
-    [[nodiscard]] static float QuantizeToFlaot(const LongFloat& value)
+    [[nodiscard]] static float QuantizeToFloat(const LongFloat& value)
     {
         return static_cast<float>(QuantizeToDouble(value));
     }
@@ -279,7 +279,9 @@ API_STRUCT() struct FLAXENGINE_API LongFloat
     /// The high 64 bits of the signed fixed-point value.
     /// </summary>
     API_FIELD() uint64 highbits;
-
+public:
+    static LongFloat Min;
+    static LongFloat Max;
 public:
     constexpr static int64 ComputeScale()
     {
@@ -297,6 +299,21 @@ public:
     LongFloat(int64 Value);
     LongFloat(double Value);
     LongFloat(uint64 Value);
+
+    float LongFloat::QuantizeToFloat() const
+    {
+        return LongFloatMath::QuantizeToFloat(*this);
+    }
+
+    double LongFloat::QuantizeToDouble() const
+    {
+        return LongFloatMath::QuantizeToDouble(*this);
+    }
+
+    Real LongFloat::Quantize() const
+    {
+        return LongFloatMath::Quantize(*this);
+    }
 public:
     [[nodiscard]] bool operator==(const LongFloat& Other) const
     {
@@ -352,19 +369,19 @@ public:
         (*this) = LongFloatMath::Divide(*this, Other);
     }
 
-    [[nodiscard]] LongFloat operator+(const LongFloat& Other)
+    [[nodiscard]] LongFloat operator+(const LongFloat& Other) const
     {
         return LongFloatMath::Add(*this, Other);
     }
-    [[nodiscard]] LongFloat operator-(const LongFloat& Other)
+    [[nodiscard]] LongFloat operator-(const LongFloat& Other) const
     {
         return LongFloatMath::Subtract(*this, Other);
     }
-    [[nodiscard]] LongFloat operator*(const LongFloat& Other)
+    [[nodiscard]] LongFloat operator*(const LongFloat& Other) const
     {
         return LongFloatMath::Multiply(*this, Other);
     }
-    [[nodiscard]] LongFloat operator/(const LongFloat& Other)
+    [[nodiscard]] LongFloat operator/(const LongFloat& Other) const
     {
         return LongFloatMath::Divide(*this, Other);
     }

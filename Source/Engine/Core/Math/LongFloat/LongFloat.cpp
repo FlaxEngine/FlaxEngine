@@ -5,6 +5,9 @@
 #include "Engine/Core/Math/Vector3LongFloat.h"
 #include "InstructionGlue.h"
 
+LongFloat LongFloat::Max = LongFloat(0x7FFF'FFFF'FFFF'FFFFULL, 0xFFFF'FFFF'FFFF'FFFFULL);
+LongFloat LongFloat::Min = LongFloat(0x8000'0000'0000'0000ULL, 0x0000'0000'0000'0001ULL);
+
 constexpr uint64 LongFloat::SqrtSamples[128] =
 {
     0ULL,                    // 0   0
@@ -814,7 +817,7 @@ bool LongFloatMath::IsNegative(const LongFloat& lhs)
 }
 bool LongFloatMath::IsFractional(const LongFloat& lhs)
 {
-    constexpr uint64 Scale = 1'000'000'000'000'000ULL;
+    constexpr uint64 Scale = LongFloat::ComputeScale();
     uint64 maskedHbits = lhs.highbits & 0b0111111111111111111111111111111111111111111111111111111111111111ul;
 
     if (maskedHbits != 0)
@@ -836,12 +839,12 @@ Vector3 LongFloatMath::Quantize(const Vector3LongFloat& value)
 
 Float3 LongFloatMath::QuantizeToFloat3(const Vector3LongFloat& value)
 {
-    return Float3(QuantizeToFlaot(value.X), QuantizeToFlaot(value.Y), QuantizeToFlaot(value.Z));
+    return Float3(QuantizeToFloat(value.X), QuantizeToFloat(value.Y), QuantizeToFloat(value.Z));
 }
 
 Double3 LongFloatMath::QuantizeToDouble3(const Vector3LongFloat& value)
 {
-    return Double3(QuantizeToFlaot(value.X), QuantizeToFlaot(value.Y), QuantizeToFlaot(value.Z));
+    return Double3(QuantizeToFloat(value.X), QuantizeToFloat(value.Y), QuantizeToFloat(value.Z));
 }
 double LongFloatMath::QuantizeToDouble(const LongFloat& value)
 {
@@ -858,14 +861,18 @@ double LongFloatMath::QuantizeToDouble(const LongFloat& value)
         high = ~high + (low == 0 ? 1 : 0);
     }
 
+    constexpr uint64 Scale = LongFloat::ComputeScale();
     constexpr double TwoTo64 = 18446744073709551616.0;
-    const double raw =
-        static_cast<double>(high) * TwoTo64 +
-        static_cast<double>(low);
 
-    constexpr double scale = static_cast<double>(LongFloat::ComputeScale());
-    const double result = raw / scale;
+    // Divide the 128-bit magnitude by the decimal scale.
+    const uint64 wholeHigh = high / Scale;
+    uint64 remainder = high % Scale;
+    const uint64 wholeLow =LongFloatGlue::UnsignedDivide128(remainder, low, Scale, &remainder);
 
+    const double whole = static_cast<double>(wholeHigh) * TwoTo64 + static_cast<double>(wholeLow);
+    const double fraction = static_cast<double>(remainder) / static_cast<double>(Scale);
+
+    const double result = whole + fraction;
     return negative ? -result : result;
 }
 
