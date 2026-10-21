@@ -1,6 +1,7 @@
 #include "Engine/Core/Math/Mathd.h"
 #include "../LongFloat.h"
 #include "InstructionGlue.h"
+#include <Engine/Core/Types/String.h>
 
 constexpr uint64 LongFloat::SqrtSamples[128] =
 {
@@ -575,8 +576,7 @@ static LongFloat DivideWithAlgorithm(
         // The minimum signed bit pattern is reserved for NaN.
         if ((QuotientHigh & SignMask) != 0)
         {
-            out.SetNAN();
-            return out;
+            return LongFloatMath::GetNAN();
         }
 
         if (resultNegative)
@@ -588,8 +588,7 @@ static LongFloat DivideWithAlgorithm(
 
             if (QuotientHigh == SignMask && QuotientLow == 0)
             {
-                out.SetNAN();
-                return out;
+                return LongFloatMath::GetNAN();
             }
         }
 
@@ -752,8 +751,8 @@ LongFloat::LongFloat(int32 Value)
         LongFloat A = Result;
         LongFloat B = Result;
 
-        A.ShiftLeft(3);
-        B.ShiftLeft(1);
+        A = LongFloatMath::ShiftLeft(A, 3);
+        B = LongFloatMath::ShiftLeft(B,1);
 
         A += B;
         Result = A;
@@ -773,8 +772,8 @@ LongFloat::LongFloat(uint64 Value)
         LongFloat A = Result;
         LongFloat B = Result;
 
-        A.ShiftLeft(3);
-        B.ShiftLeft(1);
+        A = LongFloatMath::ShiftLeft(A,3);
+        B = LongFloatMath::ShiftLeft(B,1);
 
         A += B;
         Result = A;
@@ -807,50 +806,48 @@ LongFloat::LongFloat(double Value)
     *this = f;
 }
 
-bool LongFloat::IsNegative() const
+bool LongFloatMath::IsNegative(const LongFloat& lhs)
 {
-    return (highbits & 0x8000000000000000ul) != 0;
+    return (lhs.highbits & 0x8000000000000000ul) != 0;
 }
-bool LongFloat::IsFractional() const
+bool LongFloatMath::IsFractional(const LongFloat& lhs)
 {
     constexpr uint64 Scale = 1'000'000'000'000'000ULL;
-    uint64 maskedHbits = highbits & 0b0111111111111111111111111111111111111111111111111111111111111111ul;
+    uint64 maskedHbits = lhs.highbits & 0b0111111111111111111111111111111111111111111111111111111111111111ul;
 
     if (maskedHbits != 0)
         return false;
     // The low word now contains the complete value
     // for positive values, or the two's-complement low word for negative ones.
-    return (lowbits % Scale) != 0;
+    return (lhs.lowbits % Scale) != 0;
 }
-bool LongFloat::IsNAN() const
+bool LongFloatMath::IsNAN(const LongFloat& lhs)
 {
-    return highbits == 0x8000000000000000ULL && lowbits == 0;
+    return lhs.highbits == 0x8000000000000000ULL && lhs.lowbits == 0;
 }
-void LongFloat::SetNAN()
+LongFloat LongFloatMath::GetNAN()
 {
-    highbits = 0x8000000000000000ULL;
-    lowbits = 0;
+    return LongFloat(0x8000000000000000ULL, 0);
 }
-void LongFloat::Zero()
+LongFloat LongFloatMath::GetZero()
 {
-    highbits = 0;
-    lowbits = 0;
+    return LongFloat(0, 0);
 }
-void LongFloat::Negate()
+void LongFloatMath::Negate(LongFloat& lhs)
 {
-    lowbits = ~lowbits + 1;
-    highbits = ~highbits + (lowbits == 0);
+    lhs.lowbits = ~lhs.lowbits + 1;
+    lhs.highbits = ~lhs.highbits + (lhs.lowbits == 0);
 }
-int32 LongFloat::Sign() const
+int32 LongFloatMath::Sign(const LongFloat& lhs)
 {
-    if (highbits == 0 && lowbits == 0)
+    if (lhs.highbits == 0 && lhs.lowbits == 0)
         return 0;
 
-    return IsNegative() ? -1 : 1;
+    return IsNegative(lhs) ? -1 : 1;
 }
 
 #pragma region Aretmatic
-LongFloat LongFloat::AddUInt128(const LongFloat& lhs, const LongFloat& rhs)
+LongFloat LongFloatMath::AddUInt128(const LongFloat& lhs, const LongFloat& rhs)
 {
     LongFloat out{};
     unsigned char Carry = LongFloatGlue::AddCarryUnsignedInt64(
@@ -867,7 +864,7 @@ LongFloat LongFloat::AddUInt128(const LongFloat& lhs, const LongFloat& rhs)
     );
     return out;
 }
-LongFloat LongFloat::SubtractUInt128(const LongFloat& lhs, const LongFloat& rhs)
+LongFloat LongFloatMath::SubtractUInt128(const LongFloat& lhs, const LongFloat& rhs)
 {
     LongFloat out{};
     unsigned char Borrow = LongFloatGlue::SubtractBorrowUnsignedInt64(
@@ -884,7 +881,7 @@ LongFloat LongFloat::SubtractUInt128(const LongFloat& lhs, const LongFloat& rhs)
     );
     return out;
 }
-LongFloat LongFloat::DivideUInt128(const LongFloat& lhs, const LongFloat& rhs)
+LongFloat LongFloatMath::DivideUInt128(const LongFloat& lhs, const LongFloat& rhs)
 {
     constexpr uint64 SignMask = 0x8000000000000000ULL;
     auto ilhs = lhs;
@@ -895,8 +892,8 @@ LongFloat LongFloat::DivideUInt128(const LongFloat& lhs, const LongFloat& rhs)
     {
         if (irhs.lowbits == 0)
         {
-            out.SetNAN(); // divisor is zero
-            return out;
+            // divisor is zero
+            return GetNAN();
         }
         if (ilhs.highbits == 0)
         {
@@ -995,7 +992,7 @@ LongFloat LongFloat::DivideUInt128(const LongFloat& lhs, const LongFloat& rhs)
     out.lowbits = QuotientLow;
     return out;
 }
-LongFloat LongFloat::MultiplyUInt128(const LongFloat& lhs, const LongFloat& rhs)
+LongFloat LongFloatMath::MultiplyUInt128(const LongFloat& lhs, const LongFloat& rhs)
 {
     auto ilhs = lhs;
     auto irhs = rhs;
@@ -1007,7 +1004,7 @@ LongFloat LongFloat::MultiplyUInt128(const LongFloat& lhs, const LongFloat& rhs)
     out.highbits += ilhs.highbits * irhs.lowbits;
     return out;
 }
-LongFloat LongFloat::SquareRootUInt128(const LongFloat& Input)
+LongFloat LongFloatMath::SquareRootUInt128(const LongFloat& Input)
 {
     // Operates on nonnegative values. Exclude the high sign bit.
     const uint64 inputHigh = Input.highbits & 0x7FFFFFFFFFFFFFFFULL;
@@ -1032,14 +1029,14 @@ LongFloat LongFloat::SquareRootUInt128(const LongFloat& Input)
     }
 
     // The samples bracket the integer root; high is exclusive.
-    uint64 low = SqrtSamples[bit + 1];
-    uint64 high = SqrtSamples[bit + 2] + 1;
+    uint64 low = LongFloat::SqrtSamples[bit + 1];
+    uint64 high = LongFloat::SqrtSamples[bit + 2] + 1;
 
     // Use linear interpolation to choose a starting point.
     LongFloat lowValueOfRoot(0, 1);
-    lowValueOfRoot.ShiftLeft(bit);
+    lowValueOfRoot = LongFloatMath::ShiftLeft(lowValueOfRoot,bit);
     const LongFloat distanceLeft =
-        SubtractUInt128(Input, lowValueOfRoot);
+        LongFloatMath::SubtractUInt128(Input, lowValueOfRoot);
     const uint64 rootSpan = high - low - 1;
 
     uint64 lowProductHigh = 0;
@@ -1123,9 +1120,9 @@ LongFloat LongFloat::SquareRootUInt128(const LongFloat& Input)
     return LongFloat(0, low);
 }
 
-LongFloat LongFloat::Add(const LongFloat& lhs, const LongFloat& rhs)
+LongFloat  LongFloatMath::Add(const LongFloat& lhs, const LongFloat& rhs)
 {
-    LongFloat out = AddUInt128(lhs, rhs);
+    LongFloat out = LongFloatMath::AddUInt128(lhs, rhs);
     auto overflow = (lhs.highbits ^ out.highbits) & (rhs.highbits ^ out.highbits) & 0b1000000000000000000000000000000000000000000000000000000000000000ul;
     if (overflow)
     {
@@ -1135,9 +1132,9 @@ LongFloat LongFloat::Add(const LongFloat& lhs, const LongFloat& rhs)
     }
     return out;
 }
-LongFloat LongFloat::Subtract(const LongFloat& lhs, const LongFloat& rhs)
+LongFloat LongFloatMath::Subtract(const LongFloat& lhs, const LongFloat& rhs)
 {
-    LongFloat out = SubtractUInt128(lhs, rhs);
+    LongFloat out = LongFloatMath::SubtractUInt128(lhs, rhs);
     auto overflow = (lhs.highbits ^ rhs.highbits) & (lhs.highbits ^ out.highbits) & 0b1000000000000000000000000000000000000000000000000000000000000000ul;
     if (overflow)
     {
@@ -1147,7 +1144,7 @@ LongFloat LongFloat::Subtract(const LongFloat& lhs, const LongFloat& rhs)
     }
     return out;
 }
-LongFloat LongFloat::Divide(const LongFloat& lhs, const LongFloat& rhs)
+LongFloat LongFloatMath::Divide(const LongFloat& lhs, const LongFloat& rhs)
 {
 #if 0
     constexpr uint64 SignMask = 0x8000000000000000ULL;
@@ -1284,8 +1281,8 @@ LongFloat LongFloat::Divide(const LongFloat& lhs, const LongFloat& rhs)
 #endif // 0
 }
 
-LongFloat LongFloat::Multiply(const LongFloat& lhs,const LongFloat& rhs) {
-    constexpr uint64 Scale = ComputeScale();
+LongFloat LongFloatMath::Multiply(const LongFloat& lhs,const LongFloat& rhs) {
+    constexpr uint64 Scale = LongFloat::ComputeScale();
 
     // ---------------------------------------------------------
     // 1. Extract signs
@@ -1438,15 +1435,13 @@ LongFloat LongFloat::Multiply(const LongFloat& lhs,const LongFloat& rhs) {
     }
     return out;
 }
-LongFloat LongFloat::SquareRoot(const LongFloat& Input)
+LongFloat LongFloatMath::SquareRoot(const LongFloat& Input)
 {
-    constexpr uint64 Scale = ComputeScale();
+    constexpr uint64 Scale = LongFloat::ComputeScale();
 
-    if (Input.IsNegative())
+    if (LongFloatMath::IsNegative(Input))
     {
-        LongFloat out{};
-        out.SetNAN();
-        return out;
+        return LongFloatMath::GetNAN();
     }
 
     if (Input.highbits == 0 && Input.lowbits == 0)
@@ -1467,19 +1462,19 @@ LongFloat LongFloat::SquareRoot(const LongFloat& Input)
     }
 
     // Find k = floor(sqrt(floor(Input))).
-    const LongFloat wholeRoot = SquareRootUInt128(in);
+    const LongFloat wholeRoot = LongFloatMath::SquareRootUInt128(in);
     const LongFloat scaleValue(0, Scale);
     const LongFloat wholeRootScaled =
-        MultiplyUInt128(wholeRoot, scaleValue);
+        LongFloatMath::MultiplyUInt128(wholeRoot, scaleValue);
 
     // D = Input - k^2. The fractional root f satisfies
     //     f^2 + 2*k*f = D.
     const LongFloat wholeRootSquared =
-        MultiplyUInt128(wholeRoot, wholeRoot);
+        LongFloatMath::MultiplyUInt128(wholeRoot, wholeRoot);
     const LongFloat wholeRootSquaredScaled =
-        MultiplyUInt128(wholeRootSquared, scaleValue);
+        LongFloatMath::MultiplyUInt128(wholeRootSquared, scaleValue);
     const LongFloat rootRemainder =
-        SubtractUInt128(Input, wholeRootSquaredScaled);
+        LongFloatMath::SubtractUInt128(Input, wholeRootSquaredScaled);
 
     // Exact whole-root inputs need no fractional refinement.
     if (rootRemainder.highbits == 0 && rootRemainder.lowbits == 0)
@@ -1512,7 +1507,7 @@ LongFloat LongFloat::SquareRoot(const LongFloat& Input)
             uint64 squareQuotient;
             uint64 squareRemainder;
 
-            if (ComputeScale() <= MAX_uint32)
+            if (LongFloat::ComputeScale() <= MAX_uint32)
             {
                 const uint64 square = f * f;
                 squareQuotient = square / Scale;
@@ -1546,71 +1541,78 @@ LongFloat LongFloat::SquareRoot(const LongFloat& Input)
         ++fractionRaw;
 
     const LongFloat fractionalRoot(0, fractionRaw);
-    return AddUInt128(wholeRootScaled, fractionalRoot);
+    return LongFloatMath::AddUInt128(wholeRootScaled, fractionalRoot);
 }
 #pragma endregion
 #pragma region Bitwise
-void LongFloat::BitwiseAND(const LongFloat& Other)
+LongFloat LongFloatMath::BitwiseAND(const LongFloat& lhs, const LongFloat& rhs)
 {
-    lowbits &= Other.lowbits;
-    highbits &= Other.highbits;
+    return LongFloat(lhs.highbits & rhs.highbits, lhs.lowbits & rhs.lowbits);
 }
-void LongFloat::BitwiseOR(const LongFloat& Other)
+
+LongFloat LongFloatMath::BitwiseOR(const LongFloat& lhs, const LongFloat& rhs)
 {
-    lowbits |= Other.lowbits;
-    highbits |= Other.highbits;
+    return LongFloat(lhs.highbits | rhs.highbits, lhs.lowbits | rhs.lowbits);
 }
-void LongFloat::BitwiseXOR(const LongFloat& Other)
+
+LongFloat LongFloatMath::BitwiseXOR(const LongFloat& lhs, const LongFloat& rhs)
 {
-    lowbits ^= Other.lowbits;
-    highbits ^= Other.highbits;
+    return LongFloat(lhs.highbits ^ rhs.highbits, lhs.lowbits ^ rhs.lowbits);
 }
-void LongFloat::BitwiseNOT()
+
+LongFloat LongFloatMath::BitwiseNOT(const LongFloat& value)
 {
-    lowbits = ~lowbits;
-    highbits = ~highbits;
+    return LongFloat(~value.highbits, ~value.lowbits);
 }
-void LongFloat::ShiftLeft(uint32 Shift)
+
+LongFloat LongFloatMath::ShiftLeft(const LongFloat& lhs, uint32 Shift)
 {
+    LongFloat result = lhs;
+
     if (Shift >= 128)
     {
-        Zero();
+        result = LongFloatMath::GetZero();
     }
     else if (Shift >= 64)
     {
-        highbits = lowbits << (Shift - 64);
-        lowbits = 0;
+        result.highbits = result.lowbits << (Shift - 64);
+        result.lowbits = 0;
     }
     else if (Shift != 0)
     {
-        highbits = (highbits << Shift) |
-            (lowbits >> (64 - Shift));
-
-        lowbits <<= Shift;
+        result.highbits = (result.highbits << Shift) |
+            (result.lowbits >> (64 - Shift));
+        result.lowbits <<= Shift;
     }
+
+    return result;
 }
-void LongFloat::ShiftRight(uint32 Shift)
+
+LongFloat LongFloatMath::ShiftRight(const LongFloat& lhs, uint32 Shift)
 {
+    LongFloat result = lhs;
+
     if (Shift >= 128)
     {
-        Zero();
+        result = LongFloatMath::GetZero();
     }
     else if (Shift >= 64)
     {
-        lowbits = highbits >> (Shift - 64);
-        highbits = 0;
+        result.lowbits = result.highbits >> (Shift - 64);
+        result.highbits = 0;
     }
     else if (Shift != 0)
     {
-        lowbits = (lowbits >> Shift) |
-            (highbits << (64 - Shift));
-
-        highbits >>= Shift;
+        result.lowbits = (result.lowbits >> Shift) |
+            (result.highbits << (64 - Shift));
+        result.highbits >>= Shift;
     }
+
+    return result;
 }
 #pragma endregion
 
-String LongFloat::BitsToString(bool CodeMode) const
+String LongFloatMath::BitsToString(const LongFloat& lhs,bool CodeMode)
 {
     union
     {
@@ -1622,14 +1624,14 @@ String LongFloat::BitsToString(bool CodeMode) const
         };
     };
 
-    hb = highbits;
-    lb = lowbits;
+    hb = lhs.highbits;
+    lb = lhs.lowbits;
 
     String Result;
     if (CodeMode)
         Result = "0b";
 
-    for (size_t word = NumWords; word-- > 0;)
+    for (size_t word = LongFloat::NumWords; word-- > 0;)
     {
         for (int bit = 31; bit >= 0; --bit)
         {
@@ -1646,10 +1648,10 @@ String LongFloat::BitsToString(bool CodeMode) const
     return Result;
 }
 
-String LongFloat::ToString() const
+String LongFloatMath::ToString(const LongFloat& lhs)
 {
     // Detect the sign using the highest bit.
-    const bool Negative = IsNegative();
+    const bool Negative = LongFloatMath::IsNegative(lhs);
 
     // Work on a copy so the original value remains unchanged.
     union
@@ -1662,8 +1664,8 @@ String LongFloat::ToString() const
         };
     };
 
-    hb = highbits;
-    lb = lowbits;
+    hb = lhs.highbits;
+    lb = lhs.lowbits;
 
     // Convert negative two's-complement to unsigned magnitude.
     if (Negative)
@@ -1686,7 +1688,7 @@ String LongFloat::ToString() const
     // Check whether the magnitude is zero.
     bool IsZero = true;
 
-    for (int32_t i = 0; i < NumWords; ++i)
+    for (int32_t i = 0; i < LongFloat::NumWords; ++i)
     {
         if (Magnitude[i] != 0)
         {
@@ -1707,7 +1709,7 @@ String LongFloat::ToString() const
         uint64 Remainder = 0;
 
         // Divide the entire 128-bit number by 10.
-        for (int32_t i = NumWords - 1; i >= 0; --i)
+        for (int32_t i = LongFloat::NumWords - 1; i >= 0; --i)
         {
             const uint64 Current =
                 (Remainder << 32) | Magnitude[i];
@@ -1722,7 +1724,7 @@ String LongFloat::ToString() const
         // Check whether the quotient is zero.
         IsZero = true;
 
-        for (int32_t i = 0; i < NumWords; ++i)
+        for (int32_t i = 0; i < LongFloat::NumWords; ++i)
         {
             if (Magnitude[i] != 0)
             {
@@ -1741,9 +1743,9 @@ String LongFloat::ToString() const
     String Result(ResultBuffer, ResultLength);
 
     // Insert the virtual decimal point.
-    if (DecimalPoint > 0)
+    if (LongFloat::DecimalPoint > 0)
     {
-        const size_t Point = static_cast<size_t>(DecimalPoint);
+        const size_t Point = static_cast<size_t>(LongFloat::DecimalPoint);
 
         if (Result.Length() <= Point)
         {
@@ -1758,7 +1760,7 @@ String LongFloat::ToString() const
     if (Negative)
         Result.Insert(0, String("-"));
 
-    if (IsNAN())
+    if (LongFloatMath::IsNAN(lhs))
         return String("NaN { ") + Result + String(" } ");
 
     return Result;
