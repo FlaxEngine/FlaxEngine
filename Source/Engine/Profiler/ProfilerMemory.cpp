@@ -314,15 +314,21 @@ void InitProfilerMemory(const Char* cmdLine, int32 stage)
 
 void TickProfilerMemory()
 {
-    // Update .NET GC memory stats
-    int64 totalCommitted, heapSize;
-    MCore::GC::MemoryInfo(totalCommitted, heapSize);
-    int64 gcComittedDelta = totalCommitted - GroupMemory[(int32)ProfilerMemory::Groups::ScriptingCSharpGCCommitted];
-    GroupMemory[(int32)ProfilerMemory::Groups::ScriptingCSharpGCCommitted] = totalCommitted;
-    GroupMemory[(int32)ProfilerMemory::Groups::ScriptingCSharpGCHeap] = heapSize;
-    UPDATE_PEEK(ProfilerMemory::Groups::ScriptingCSharpGCCommitted);
-    UPDATE_PEEK(ProfilerMemory::Groups::ScriptingCSharpGCHeap);
-    Platform::InterlockedAdd(&GroupMemory[(int32)ProfilerMemory::Groups::TotalTracked], gcComittedDelta);
+    // Update .NET GC memory stats (at most 10 times per second: GC.GetGCMemoryInfo allocates managed memory)
+    static double LastGCStatsTime = 0.0;
+    const double time = Platform::GetTimeSeconds();
+    if (time - LastGCStatsTime >= 0.1)
+    {
+        LastGCStatsTime = time;
+        int64 totalCommitted, heapSize;
+        MCore::GC::MemoryInfo(totalCommitted, heapSize);
+        int64 gcComittedDelta = totalCommitted - GroupMemory[(int32)ProfilerMemory::Groups::ScriptingCSharpGCCommitted];
+        GroupMemory[(int32)ProfilerMemory::Groups::ScriptingCSharpGCCommitted] = totalCommitted;
+        GroupMemory[(int32)ProfilerMemory::Groups::ScriptingCSharpGCHeap] = heapSize;
+        UPDATE_PEEK(ProfilerMemory::Groups::ScriptingCSharpGCCommitted);
+        UPDATE_PEEK(ProfilerMemory::Groups::ScriptingCSharpGCHeap);
+        Platform::InterlockedAdd(&GroupMemory[(int32)ProfilerMemory::Groups::TotalTracked], gcComittedDelta);
+    }
 
     // Update profiler memory
     PointersLocker.Lock();
