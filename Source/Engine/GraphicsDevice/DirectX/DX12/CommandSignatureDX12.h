@@ -181,6 +181,8 @@ public:
 
         const auto result = _device->GetDevice()->CreateCommandSignature(&desc, rootSig, IID_PPV_ARGS(&_signature));
         LOG_DIRECTX_RESULT(result);
+        if (FAILED(result))
+            return;
 
         _signature->SetName(L"CommandSignature");
 

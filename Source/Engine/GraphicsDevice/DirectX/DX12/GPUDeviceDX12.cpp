@@ -1122,6 +1122,8 @@ void GPUDeviceDX12::Dispose()
     RingHeap_Sampler.ReleaseGPU();
     UploadBuffer.ReleaseGPU();
     SAFE_DELETE(DrawIndirectCommandSignature);
+    SAFE_DELETE(DrawIndexedIndirectCommandSignature);
+    SAFE_DELETE(DispatchIndirectCommandSignature);
     SAFE_DELETE(_mainContext);
     SAFE_DELETE(_commandQueue);
     SAFE_RELEASE(Allocator);
