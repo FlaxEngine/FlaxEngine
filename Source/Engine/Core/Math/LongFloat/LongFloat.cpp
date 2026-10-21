@@ -744,6 +744,27 @@ LongFloat::LongFloat(uint64 highbits, uint64 lowbits)
     this->highbits = highbits;
 }
 
+LongFloat::LongFloat(int64 Value)
+{
+    lowbits = static_cast<uint64>(Value);
+    highbits = Value < 0 ? MAX_uint64 : 0;
+
+    //decimal shift by 10
+    LongFloat Result = *this;
+    for (int i = 0; i < DecimalPoint; ++i)
+    {
+        LongFloat A = Result;
+        LongFloat B = Result;
+
+        A = LongFloatMath::ShiftLeft(A, 3);
+        B = LongFloatMath::ShiftLeft(B, 1);
+
+        A += B;
+        Result = A;
+    }
+    *this = Result;
+}
+
 LongFloat::LongFloat(int32 Value)
 {
     lowbits = static_cast<uint64>(Value);
