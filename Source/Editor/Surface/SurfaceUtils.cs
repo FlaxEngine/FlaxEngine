@@ -108,6 +108,7 @@ namespace FlaxEditor.Surface
             case MaterialParameterType.GameplayGlobal: return typeof(GameplayGlobals);
             case MaterialParameterType.TextureGroupSampler: return typeof(int);
             case MaterialParameterType.GlobalSDF: return typeof(object);
+            case MaterialParameterType.GPUBuffer: return typeof(GPUBuffer);
             default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
         }
