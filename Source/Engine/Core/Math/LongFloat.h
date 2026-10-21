@@ -5,8 +5,10 @@
 /// <summary>
 /// Fixed-point floating-point number.
 /// </summary>
-struct LongFloat
+API_STRUCT() struct FLAXENGINE_API LongFloat
 {
+    DECLARE_SCRIPTING_TYPE_MINIMAL(LongFloat);
+
     constexpr static int64 NumWords = 4;
     //maybe add a compile setting for it ?
     constexpr static int64 DecimalPoint = 15;
@@ -22,8 +24,8 @@ struct LongFloat
     }
 
     static const uint64 SqrtSamples[128];
-    uint64 lowbits;
-    uint64 highbits;
+    API_FIELD() uint64 lowbits;
+    API_FIELD() uint64 highbits;
 
     static void FromUInt64Unscaled(LongFloat& ref,uint64 Value)
     {
