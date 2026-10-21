@@ -10,6 +10,42 @@
 namespace LongFloatGlue
 {
 #if defined(_MSC_VER) && defined(_M_X64)
+    __forceinline unsigned char __cdecl AddCarryUnsignedInt64(
+        unsigned char carryIn, unsigned __int64 lhs, unsigned __int64 rhs, unsigned __int64* result)
+    {
+        return _addcarry_u64(carryIn, lhs, rhs, result);
+    }
+#else
+    inline unsigned char __cdecl AddCarryUnsignedInt64(
+        unsigned char carryIn, std::uint64_t lhs, std::uint64_t rhs, std::uint64_t* result)
+    {
+        const std::uint64_t sum = lhs + rhs;
+        const unsigned char carryFromAdd = sum < lhs;
+        *result = sum + carryIn;
+        const unsigned char carryFromCarryIn = *result < sum;
+        return static_cast<unsigned char>(carryFromAdd | carryFromCarryIn);
+    }
+#endif
+
+#if defined(_MSC_VER) && defined(_M_X64)
+    __forceinline unsigned char __cdecl SubtractBorrowUnsignedInt64(
+        unsigned char borrowIn, unsigned __int64 lhs, unsigned __int64 rhs, unsigned __int64* result)
+    {
+        return _subborrow_u64(borrowIn, lhs, rhs, result);
+    }
+#else
+    inline unsigned char __cdecl SubtractBorrowUnsignedInt64(
+        unsigned char borrowIn, std::uint64_t lhs, std::uint64_t rhs, std::uint64_t* result)
+    {
+        const std::uint64_t difference = lhs - rhs;
+        const unsigned char borrowFromSubtract = lhs < rhs;
+        *result = difference - borrowIn;
+        const unsigned char borrowFromBorrowIn = difference < borrowIn;
+        return static_cast<unsigned char>(borrowFromSubtract | borrowFromBorrowIn);
+    }
+#endif
+
+#if defined(_MSC_VER) && defined(_M_X64)
     __forceinline unsigned char BitScanReverse(unsigned long* index, unsigned long mask)
     {
         return _BitScanReverse(index, mask);

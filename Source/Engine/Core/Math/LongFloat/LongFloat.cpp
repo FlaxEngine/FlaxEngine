@@ -650,7 +650,7 @@ static LongFloat DivideWithAlgorithm(
     uint32 Remainder[4]{};
 
     bool DivideSucceeded;
-    if constexpr (Use64BitDivider)
+    if (Use64BitDivider)
     {
         const uint64 Numerator64[3] =
         {
@@ -842,7 +842,7 @@ void LongFloat::Negate()
     lowbits = ~lowbits + 1;
     highbits = ~highbits + (lowbits == 0);
 }
-int32_t LongFloat::Sign() const
+int32 LongFloat::Sign() const
 {
     if (highbits == 0 && lowbits == 0)
         return 0;
@@ -854,13 +854,13 @@ int32_t LongFloat::Sign() const
 LongFloat LongFloat::AddUInt128(const LongFloat& lhs, const LongFloat& rhs)
 {
     LongFloat out{};
-    unsigned char Carry = _addcarry_u64(
+    unsigned char Carry = LongFloatGlue::AddCarryUnsignedInt64(
         0,
         lhs.lowbits,
         rhs.lowbits,
         &out.lowbits
     );
-    auto carryFinal = _addcarry_u64(
+    auto carryFinal = LongFloatGlue::AddCarryUnsignedInt64(
         Carry,
         lhs.highbits,
         rhs.highbits,
@@ -868,10 +868,10 @@ LongFloat LongFloat::AddUInt128(const LongFloat& lhs, const LongFloat& rhs)
     );
     return out;
 }
-LongFloat LongFloat::SubstractUInt128(const LongFloat& lhs, const LongFloat& rhs)
+LongFloat LongFloat::SubtractUInt128(const LongFloat& lhs, const LongFloat& rhs)
 {
     LongFloat out{};
-    unsigned char Borrow = _subborrow_u64(
+    unsigned char Borrow = LongFloatGlue::SubtractBorrowUnsignedInt64(
         0,
         lhs.lowbits,
         rhs.lowbits,
@@ -996,7 +996,7 @@ LongFloat LongFloat::DivideUInt128(const LongFloat& lhs, const LongFloat& rhs)
     out.lowbits = QuotientLow;
     return out;
 }
-LongFloat LongFloat::MultiplayUInt128(const LongFloat& lhs, const LongFloat& rhs)
+LongFloat LongFloat::MultiplyUInt128(const LongFloat& lhs, const LongFloat& rhs)
 {
     auto ilhs = lhs;
     auto irhs = rhs;
@@ -1040,7 +1040,7 @@ LongFloat LongFloat::SquareRootUInt128(const LongFloat& Input)
     LongFloat lowValueOfRoot(0, 1);
     lowValueOfRoot.ShiftLeft(bit);
     const LongFloat distanceLeft =
-        SubstractUInt128(Input, lowValueOfRoot);
+        SubtractUInt128(Input, lowValueOfRoot);
     const uint64 rootSpan = high - low - 1;
 
     uint64 lowProductHigh = 0;
@@ -1136,9 +1136,9 @@ LongFloat LongFloat::Add(const LongFloat& lhs, const LongFloat& rhs)
     }
     return out;
 }
-LongFloat LongFloat::Substract(const LongFloat& lhs, const LongFloat& rhs)
+LongFloat LongFloat::Subtract(const LongFloat& lhs, const LongFloat& rhs)
 {
-    LongFloat out = SubstractUInt128(lhs, rhs);
+    LongFloat out = SubtractUInt128(lhs, rhs);
     auto overflow = (lhs.highbits ^ rhs.highbits) & (lhs.highbits ^ out.highbits) & 0b1000000000000000000000000000000000000000000000000000000000000000ul;
     if (overflow)
     {
@@ -1285,7 +1285,7 @@ LongFloat LongFloat::Divide(const LongFloat& lhs, const LongFloat& rhs)
 #endif // 0
 }
 
-LongFloat LongFloat::Multiplay(const LongFloat& lhs,const LongFloat& rhs) {
+LongFloat LongFloat::Multiply(const LongFloat& lhs,const LongFloat& rhs) {
     constexpr uint64 Scale = ComputeScale();
 
     // ---------------------------------------------------------
@@ -1471,16 +1471,16 @@ LongFloat LongFloat::SquareRoot(const LongFloat& Input)
     const LongFloat wholeRoot = SquareRootUInt128(in);
     const LongFloat scaleValue(0, Scale);
     const LongFloat wholeRootScaled =
-        MultiplayUInt128(wholeRoot, scaleValue);
+        MultiplyUInt128(wholeRoot, scaleValue);
 
     // D = Input - k^2. The fractional root f satisfies
     //     f^2 + 2*k*f = D.
     const LongFloat wholeRootSquared =
-        MultiplayUInt128(wholeRoot, wholeRoot);
+        MultiplyUInt128(wholeRoot, wholeRoot);
     const LongFloat wholeRootSquaredScaled =
-        MultiplayUInt128(wholeRootSquared, scaleValue);
+        MultiplyUInt128(wholeRootSquared, scaleValue);
     const LongFloat rootRemainder =
-        SubstractUInt128(Input, wholeRootSquaredScaled);
+        SubtractUInt128(Input, wholeRootSquaredScaled);
 
     // Exact whole-root inputs need no fractional refinement.
     if (rootRemainder.highbits == 0 && rootRemainder.lowbits == 0)

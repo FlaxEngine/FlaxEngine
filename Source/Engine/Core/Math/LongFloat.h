@@ -47,16 +47,16 @@ public:
     void Negate();
 public:
     [[nodiscard]] static LongFloat Add(const LongFloat& lhs, const LongFloat& rhs);
-    [[nodiscard]] static LongFloat Substract(const LongFloat& lhs, const LongFloat& rhs);
+    [[nodiscard]] static LongFloat Subtract(const LongFloat& lhs, const LongFloat& rhs);
     [[nodiscard]] static LongFloat Divide(const LongFloat& lhs, const LongFloat& rhs);
-    [[nodiscard]] static LongFloat Multiplay(const LongFloat& lhs, const LongFloat& rhs);
+    [[nodiscard]] static LongFloat Multiply(const LongFloat& lhs, const LongFloat& rhs);
     [[nodiscard]] static LongFloat SquareRoot(const LongFloat& Input);
 
     //treets values as UInt128 / UInt128 dose not care abaut overflow
     [[nodiscard]] static LongFloat AddUInt128(const LongFloat& lhs, const LongFloat& rhs);
-    [[nodiscard]] static LongFloat SubstractUInt128(const LongFloat& lhs, const LongFloat& rhs);
+    [[nodiscard]] static LongFloat SubtractUInt128(const LongFloat& lhs, const LongFloat& rhs);
     [[nodiscard]] static LongFloat DivideUInt128(const LongFloat& lhs, const LongFloat& rhs);
-    [[nodiscard]] static LongFloat MultiplayUInt128(const LongFloat& lhs, const LongFloat& rhs);
+    [[nodiscard]] static LongFloat MultiplyUInt128(const LongFloat& lhs, const LongFloat& rhs);
     [[nodiscard]] static LongFloat SquareRootUInt128(const LongFloat& Input);
 public:
     void BitwiseAND(const LongFloat& Other);
@@ -112,11 +112,11 @@ public:
     }
     void operator-=(const LongFloat& Other)
     {
-        (*this) = Substract(*this, Other);
+        (*this) = Subtract(*this, Other);
     }
     void operator*=(const LongFloat& Other)
     {
-        (*this) = Multiplay(*this, Other);
+        (*this) = Multiply(*this, Other);
     }
     void operator/=(const LongFloat& Other)
     {
@@ -129,11 +129,11 @@ public:
     }
     [[nodiscard]] LongFloat operator-(const LongFloat& Other)
     {
-        return Substract(*this, Other);
+        return Subtract(*this, Other);
     }
     [[nodiscard]] LongFloat operator*(const LongFloat& Other)
     {
-        return Multiplay(*this, Other);
+        return Multiply(*this, Other);
     }
     [[nodiscard]] LongFloat operator/(const LongFloat& Other)
     {
