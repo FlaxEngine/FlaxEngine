@@ -348,7 +348,9 @@ bool MeshAccessor::UpdateMesh(MeshBase* mesh, bool calculateBounds)
         triangles = _data[IB].Length() / PixelFormatExtensions::SizeInBytes(_formats[IB]) / 3;
     }
 
-    if (mesh->Init(vertices, triangles, vbData, ibData, use16BitIndexBuffer, vbLayout))
+    // Refill the existing buffers when only their contents change, otherwise create new buffers
+    if (mesh->UpdateBuffers(vertices, triangles, vbData, ibData, use16BitIndexBuffer, vbLayout) &&
+        mesh->Init(vertices, triangles, vbData, ibData, use16BitIndexBuffer, vbLayout))
         return true;
 
     if (calculateBounds)
@@ -486,49 +488,6 @@ bool MeshBase::Init(uint32 vertices, uint32 triangles, const Array<const void*, 
         CHECK_RETURN(indices <= MAX_uint16, true);
     }
     ASSERT(_model);
-
-    // Refill the existing buffers when only their contents change (same counts, index format and vertex layouts), during rendering on the main thread (the data goes into the frame's command list, as GPUBuffer::SetData does). Creating new GPU buffers on each update of a mesh is slow (eg. on DirectX 12).
-    if (_vertexBuffers[0] && _indexBuffer && _vertices == vertices && _triangles == triangles && _use16BitIndexBuffer == use16BitIndexBuffer &&
-        GPUDevice::Instance->IsRendering() && IsInMainThread())
-    {
-        bool sameBuffers = true;
-        for (int32 i = 0; i < MODEL_MAX_VB; i++)
-        {
-            const void* data = i < vbData.Count() ? vbData[i] : nullptr;
-            const GPUVertexLayout* layout = i < vbLayout.Count() ? vbLayout[i] : nullptr;
-            const GPUBuffer* buffer = _vertexBuffers[i];
-            if ((data != nullptr) != (buffer != nullptr) || (buffer && buffer->GetVertexLayout() != layout))
-            {
-                sameBuffers = false;
-                break;
-            }
-        }
-        if (sameBuffers)
-        {
-            RenderContext::GPULocker.Lock();
-            GPUContext* context = GPUDevice::Instance->GetMainContext();
-            for (int32 i = 0; i < MODEL_MAX_VB; i++)
-            {
-                if (_vertexBuffers[i])
-                    context->UpdateBuffer(_vertexBuffers[i], vbData[i], _vertexBuffers[i]->GetSize());
-            }
-            context->UpdateBuffer(_indexBuffer, ibData, _indexBuffer->GetSize());
-            RenderContext::GPULocker.Unlock();
-#if MODEL_USE_PRECISE_MESH_INTERSECTS
-            const VertexElement position = vbLayout[0]->FindElement(VertexElement::Types::Position);
-            if (use16BitIndexBuffer)
-                _collisionProxy.Init<uint16>(vertices, triangles, (const Float3*)vbData[0], (const uint16*)ibData, _vertexBuffers[0]->GetStride(), position.Format);
-            else
-                _collisionProxy.Init<uint32>(vertices, triangles, (const Float3*)vbData[0], (const uint32*)ibData, _vertexBuffers[0]->GetStride(), position.Format);
-#endif
-            _cachedVertexBuffers[0].Release();
-            _cachedVertexBuffers[1].Release();
-            _cachedVertexBuffers[2].Release();
-            Platform::MemoryClear(_cachedVertexLayouts, sizeof(_cachedVertexLayouts));
-            return false;
-        }
-    }
-
     GPUBuffer* vertexBuffer0 = nullptr;
     GPUBuffer* vertexBuffer1 = nullptr;
     GPUBuffer* vertexBuffer2 = nullptr;
@@ -601,6 +560,52 @@ ERROR_LOAD_END:
     SAFE_DELETE_GPU_RESOURCE(vertexBuffer2);
     SAFE_DELETE_GPU_RESOURCE(indexBuffer);
     return true;
+}
+
+bool MeshBase::UpdateBuffers(uint32 vertices, uint32 triangles, const Array<const void*, FixedAllocation<MODEL_MAX_VB>>& vbData, const void* ibData, bool use16BitIndexBuffer, const Array<GPUVertexLayout*, FixedAllocation<MODEL_MAX_VB>>& vbLayout)
+{
+    // The data goes into the frame's command list of the main context (as GPUBuffer::SetData does), so this works only during rendering on the main thread
+    if (!_vertexBuffers[0] || !_indexBuffer || !ibData || _vertices != vertices || _triangles != triangles || _use16BitIndexBuffer != use16BitIndexBuffer ||
+        !GPUDevice::Instance->IsRendering() || !IsInMainThread())
+        return true;
+
+    // The new data must use the same vertex buffers with the same layouts
+    for (int32 i = 0; i < MODEL_MAX_VB; i++)
+    {
+        const void* data = i < vbData.Count() ? vbData[i] : nullptr;
+        const GPUVertexLayout* layout = i < vbLayout.Count() ? vbLayout[i] : nullptr;
+        const GPUBuffer* buffer = _vertexBuffers[i];
+        if ((data != nullptr) != (buffer != nullptr) || (buffer && buffer->GetVertexLayout() != layout))
+            return true;
+    }
+    PROFILE_CPU();
+
+    // Refill the existing buffers
+    RenderContext::GPULocker.Lock();
+    GPUContext* context = GPUDevice::Instance->GetMainContext();
+    for (int32 i = 0; i < MODEL_MAX_VB; i++)
+    {
+        if (_vertexBuffers[i])
+            context->UpdateBuffer(_vertexBuffers[i], vbData[i], _vertexBuffers[i]->GetSize());
+    }
+    context->UpdateBuffer(_indexBuffer, ibData, _indexBuffer->GetSize());
+    RenderContext::GPULocker.Unlock();
+
+    // Update collision proxy
+#if MODEL_USE_PRECISE_MESH_INTERSECTS
+    const VertexElement positionsElement = vbLayout[0]->FindElement(VertexElement::Types::Position);
+    if (use16BitIndexBuffer)
+        _collisionProxy.Init<uint16>(vertices, triangles, (const Float3*)vbData[0], (const uint16*)ibData, _vertexBuffers[0]->GetStride(), positionsElement.Format);
+    else
+        _collisionProxy.Init<uint32>(vertices, triangles, (const Float3*)vbData[0], (const uint32*)ibData, _vertexBuffers[0]->GetStride(), positionsElement.Format);
+#endif
+
+    // Clear the CPU-side cache of the old data
+    _cachedVertexBuffers[0].Release();
+    _cachedVertexBuffers[1].Release();
+    _cachedVertexBuffers[2].Release();
+    Platform::MemoryClear(_cachedVertexLayouts, sizeof(_cachedVertexLayouts));
+    return false;
 }
 
 void MeshBase::Release()
