@@ -217,8 +217,7 @@ private:
     RenderContextBatch* _renderContextBatch;
 #endif
 
-    void PreDraw(const RenderView& view);
-    void InitType(const RenderView& view, int32 typeIndex);
+    void InitType(RenderContextBatch& renderContextBatch, const RenderView& mainView, int32 typeIndex);
     void UpdateBounds();
 
 public:

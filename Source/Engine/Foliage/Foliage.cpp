@@ -610,25 +610,12 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Me
 #endif
 }
 
-void Foliage::PreDraw(const RenderView& view)
-{
-    // When origin changes, then update all instance matrices
-    if (_cachedDrawWorldOrigin != view.Origin)
-    {
-        _cachedDrawWorldOrigin = view.Origin;
-        for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
-            i->CachedDrawWorldValid = false;
-    }
-
-    // Cache data per foliage instance type
-    for (int32 i = 0; i < FoliageTypes.Count(); i++)
-        InitType(view, i);
-}
-
-void Foliage::InitType(const RenderView& view, int32 typeIndex)
+void Foliage::InitType(RenderContextBatch& renderContextBatch, const RenderView& mainView, int32 typeIndex)
 {
     FoliageType& type = FoliageTypes[typeIndex];
-    const DrawPass drawModes = type._drawModes & view.Pass & view.GetShadowsDrawPassMask(type.ShadowsMode);
+    DrawPass drawModes = DrawPass::None;
+    for (const RenderContext& renderContext : renderContextBatch.Contexts)
+        drawModes |= FOLIAGE_GET_DRAW_MODES(renderContext, type);
     type._canDraw = type.IsReady() && drawModes != DrawPass::None && type.Model && type.Model->CanBeRendered();
 #if USE_EDITOR
     type._canDraw &= _drawFoliageType == -1 || _drawFoliageType == typeIndex;
@@ -1283,7 +1270,7 @@ void Foliage::Draw(RenderContextBatch& renderContextBatch)
         // Draw single foliage instance projection into Global Surface Atlas
         auto& instance = *(FoliageInstance*)GlobalSurfaceAtlasPass::Instance()->GetCurrentActorObject();
         auto& type = FoliageTypes[instance.Type];
-        InitType(renderContext.View, instance.Type);
+        InitType(renderContextBatch, view, instance.Type);
         Matrix world;
         const Transform transform = _transform.LocalToWorld(instance.Transform);
         renderContext.View.GetWorldMatrix(transform, world);
@@ -1301,13 +1288,22 @@ void Foliage::Draw(RenderContextBatch& renderContextBatch)
         return;
     }
 
+    // When origin changes, then update all instance matrices
+    if (_cachedDrawWorldOrigin != view.Origin)
+    {
+        _cachedDrawWorldOrigin = view.Origin;
+        for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
+            i->CachedDrawWorldValid = false;
+    }
+
+    // Cache data per foliage instance type
+    for (int32 i = 0; i < FoliageTypes.Count(); i++)
+        InitType(renderContextBatch, view, i);
+
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE
     // Run async job for each foliage type
     if (EnumHasAnyFlags(view.Pass, DrawPass::GBuffer) && !(view.Pass & (DrawPass::GlobalSDF | DrawPass::GlobalSurfaceAtlas)) && renderContextBatch.EnableAsync)
     {
-        PreDraw(view);
-
-        // Run async job for each foliage type
         _renderContextBatch = &renderContextBatch;
         Function<void(int32)> func;
         func.Bind<Foliage, &Foliage::DrawFoliageJob>(this);
