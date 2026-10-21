@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "TestScripting.h"
+#include "Engine/Level/Actors/EmptyActor.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
@@ -24,6 +25,8 @@ TestNesting2::TestNesting2(const SpawnParams& params)
 }
 
 int32 TestScriptLifecycle::AwakeCount = 0;
+int32 TestScriptLifecycle::StartCount = 0;
+int32 TestScriptLifecycle::EnableCount = 0;
 int32 TestScriptLifecycle::DestroyCount = 0;
 
 TestScriptLifecycle::TestScriptLifecycle(const SpawnParams& params)
@@ -41,6 +44,20 @@ void TestScriptAddingScript::OnAwake()
     // The actor is not in play yet (the scene loads), so the new script is not initialized here
     auto script = ScriptingObject::NewObject<TestScriptLifecycle>();
     script->SetParent(GetActor());
+}
+
+TestScriptSpawningActor::TestScriptSpawningActor(const SpawnParams& params)
+    : Script(params)
+{
+}
+
+void TestScriptSpawningActor::OnAwake()
+{
+    // The new actor is enabled when it is parented to the (loading) scene, before the script is added to it
+    auto actor = ScriptingObject::NewObject<EmptyActor>();
+    actor->SetParent(GetActor(), false, true);
+    auto script = ScriptingObject::NewObject<TestScriptLifecycle>();
+    script->SetParent(actor);
 }
 
 TestClassNative::TestClassNative(const SpawnParams& params)

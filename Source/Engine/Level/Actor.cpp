@@ -1055,9 +1055,12 @@ void Actor::BeginPlay(SceneBeginData* data)
     }
 
     // Fire events for scripting
-    if (IsActiveInHierarchy() && GetScene() && !_isEnabled)
+    if (IsActiveInHierarchy() && GetScene())
     {
-        OnEnable();
+        if (!_isEnabled)
+            OnEnable();
+        else
+            EnableScripts(); // The actor was enabled before its play (eg. parented to a loading scene by another script's OnAwake): the scripts added since then still need OnStart and OnEnable
     }
 }
 
@@ -1322,7 +1325,11 @@ void Actor::OnEnable()
 {
     CHECK_DEBUG(!_isEnabled);
     _isEnabled = true;
+    EnableScripts();
+}
 
+void Actor::EnableScripts()
+{
     ACTOR_LOOP_START_MODIFIED_HIERARCHY();
     for (int32 i = 0; i < Scripts.Count(); i++)
     {

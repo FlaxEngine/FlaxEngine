@@ -6,6 +6,7 @@
 #include "Engine/Level/Level.h"
 #include "Engine/Level/LargeWorlds.h"
 #include "Engine/Level/Actors/EmptyActor.h"
+#include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/Tags.h"
 #include "TestScripting.h"
 #include <ThirdParty/catch2/catch.hpp>
@@ -79,8 +80,7 @@ TEST_CASE("Actor")
         // Scene loading initializes each loaded object (SceneLoader::OnInitialize calls OnAwake of the scripts), then
         // starts the scene (BeginPlay). A script that another script's OnAwake adds in between is not in the loaded
         // objects, but it must also get OnAwake, and so OnDestroy when deleted.
-        TestScriptLifecycle::AwakeCount = 0;
-        TestScriptLifecycle::DestroyCount = 0;
+        TestScriptLifecycle::ResetCounts();
         auto actor = ScriptingObject::NewObject<EmptyActor>();
         auto script = ScriptingObject::NewObject<TestScriptAddingScript>();
         script->SetParent(actor);
@@ -90,6 +90,25 @@ TEST_CASE("Actor")
         CHECK(actor->Scripts.Count() == 2);
         CHECK(TestScriptLifecycle::AwakeCount == 1);
         actor->DeleteObjectNow();
+        CHECK(TestScriptLifecycle::DestroyCount == 1);
+    }
+    SECTION("Test script added to an actor created during OnAwake")
+    {
+        // A script's OnAwake creates an actor and parents it to the loading scene, which enables the actor (the scene is
+        // active), then adds a script to it. The added script must still get OnAwake, OnStart and OnEnable when the scene
+        // starts (issue 3619).
+        TestScriptLifecycle::ResetCounts();
+        auto scene = ScriptingObject::NewObject<Scene>();
+        auto script = ScriptingObject::NewObject<TestScriptSpawningActor>();
+        script->SetParent(scene);
+        ((SceneObject*)scene)->Initialize(); // As SceneLoader::OnInitialize (through SceneObject)
+        script->Initialize();
+        Level::CallBeginPlay(scene);
+        REQUIRE(scene->Children.Count() == 1);
+        CHECK(TestScriptLifecycle::AwakeCount == 1);
+        CHECK(TestScriptLifecycle::StartCount == 1);
+        CHECK(TestScriptLifecycle::EnableCount == 1);
+        scene->DeleteObjectNow();
         CHECK(TestScriptLifecycle::DestroyCount == 1);
     }
 }

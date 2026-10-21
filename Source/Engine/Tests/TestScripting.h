@@ -260,11 +260,28 @@ API_CLASS(Attributes="ExecuteInEditMode") class FLAXENGINE_API TestScriptLifecyc
     DECLARE_SCRIPTING_TYPE(TestScriptLifecycle);
 
     static int32 AwakeCount;
+    static int32 StartCount;
+    static int32 EnableCount;
     static int32 DestroyCount;
+
+    static void ResetCounts()
+    {
+        AwakeCount = StartCount = EnableCount = DestroyCount = 0;
+    }
 
     void OnAwake() override
     {
         AwakeCount++;
+    }
+
+    void OnStart() override
+    {
+        StartCount++;
+    }
+
+    void OnEnable() override
+    {
+        EnableCount++;
     }
 
     void OnDestroy() override
@@ -277,6 +294,14 @@ API_CLASS(Attributes="ExecuteInEditMode") class FLAXENGINE_API TestScriptLifecyc
 API_CLASS(Attributes="ExecuteInEditMode") class FLAXENGINE_API TestScriptAddingScript : public Script
 {
     DECLARE_SCRIPTING_TYPE(TestScriptAddingScript);
+
+    void OnAwake() override;
+};
+
+// Test script that creates an actor in OnAwake, parents it to its own actor and adds a TestScriptLifecycle script to it.
+API_CLASS(Attributes="ExecuteInEditMode") class FLAXENGINE_API TestScriptSpawningActor : public Script
+{
+    DECLARE_SCRIPTING_TYPE(TestScriptSpawningActor);
 
     void OnAwake() override;
 };
