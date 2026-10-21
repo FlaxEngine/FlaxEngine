@@ -1,5 +1,5 @@
 #pragma once
-
+#include "Engine/Core/Types/BaseTypes.h"
 
 #if defined(_MSC_VER) && defined(_M_X64)
 #include <intrin0.inl.h>
@@ -17,9 +17,11 @@ namespace LongFloatGlue
     }
 #else
     inline unsigned char __cdecl AddCarryUnsignedInt64(
-        unsigned char carryIn, std::uint64_t lhs, std::uint64_t rhs, std::uint64_t* result)
+        unsigned char carryIn, uint64 lhs, uint64 rhs, uint64* result)
     {
-        const std::uint64_t sum = lhs + rhs;
+        //Portable crap code :) say bye to performance
+
+        const uint64 sum = lhs + rhs;
         const unsigned char carryFromAdd = sum < lhs;
         *result = sum + carryIn;
         const unsigned char carryFromCarryIn = *result < sum;
@@ -35,9 +37,11 @@ namespace LongFloatGlue
     }
 #else
     inline unsigned char __cdecl SubtractBorrowUnsignedInt64(
-        unsigned char borrowIn, std::uint64_t lhs, std::uint64_t rhs, std::uint64_t* result)
+        unsigned char borrowIn, uint64 lhs, uint64 rhs, uint64* result)
     {
-        const std::uint64_t difference = lhs - rhs;
+        //Portable crap code :) say bye to performance
+
+        const uint64 difference = lhs - rhs;
         const unsigned char borrowFromSubtract = lhs < rhs;
         *result = difference - borrowIn;
         const unsigned char borrowFromBorrowIn = difference < borrowIn;
@@ -71,36 +75,36 @@ namespace LongFloatGlue
     }
 #elif defined(__SIZEOF_INT128__)
     // Native 128-bit multiplication yields both halves directly.
-    inline std::uint64_t UnsignedMultiply128(
-        std::uint64_t multiplier,
-        std::uint64_t multiplicand,
-        std::uint64_t* highProduct)
+    inline uint64 UnsignedMultiply128(
+        uint64 multiplier,
+        uint64 multiplicand,
+        uint64* highProduct)
     {
         const unsigned __int128 product =
             static_cast<unsigned __int128>(multiplier) * multiplicand;
-        *highProduct = static_cast<std::uint64_t>(product >> 64);
-        return static_cast<std::uint64_t>(product);
+        *highProduct = static_cast<uint64>(product >> 64);
+        return static_cast<uint64>(product);
     }
 #else
-    inline std::uint64_t UnsignedMultiply128(
-        std::uint64_t multiplier,
-        std::uint64_t multiplicand,
-        std::uint64_t* highProduct)
+    inline uint64 UnsignedMultiply128(
+        uint64 multiplier,
+        uint64 multiplicand,
+        uint64* highProduct)
     {
         //Portable crap code :) say bye to performance
 
-        const std::uint64_t a0 = static_cast<std::uint32_t>(multiplier);
-        const std::uint64_t a1 = multiplier >> 32;
-        const std::uint64_t b0 = static_cast<std::uint32_t>(multiplicand);
-        const std::uint64_t b1 = multiplicand >> 32;
-        const std::uint64_t p00 = a0 * b0;
-        const std::uint64_t p01 = a0 * b1;
-        const std::uint64_t p10 = a1 * b0;
-        const std::uint64_t p11 = a1 * b1;
-        const std::uint64_t middle = (p00 >> 32) +
-            static_cast<std::uint32_t>(p01) + static_cast<std::uint32_t>(p10);
+        const uint64 a0 = static_cast<uint32>(multiplier);
+        const uint64 a1 = multiplier >> 32;
+        const uint64 b0 = static_cast<uint32>(multiplicand);
+        const uint64 b1 = multiplicand >> 32;
+        const uint64 p00 = a0 * b0;
+        const uint64 p01 = a0 * b1;
+        const uint64 p10 = a1 * b0;
+        const uint64 p11 = a1 * b1;
+        const uint64 middle = (p00 >> 32) +
+            static_cast<uint32>(p01) + static_cast<uint32>(p10);
         *highProduct = p11 + (p01 >> 32) + (p10 >> 32) + (middle >> 32);
-        return (middle << 32) | static_cast<std::uint32_t>(p00);
+        return (middle << 32) | static_cast<uint32>(p00);
     }
 #endif
 
@@ -115,32 +119,32 @@ namespace LongFloatGlue
     }
 #elif defined(__SIZEOF_INT128__)
     // Native 128-bit division produces the quotient and remainder.
-    inline std::uint64_t UnsignedDivide128(
-        std::uint64_t highDividend,
-        std::uint64_t lowDividend,
-        std::uint64_t divisor,
-        std::uint64_t* remainder)
+    inline uint64 UnsignedDivide128(
+        uint64 highDividend,
+        uint64 lowDividend,
+        uint64 divisor,
+        uint64* remainder)
     {
         const unsigned __int128 dividend =
             (static_cast<unsigned __int128>(highDividend) << 64) | lowDividend;
-        const std::uint64_t quotient =
-            static_cast<std::uint64_t>(dividend / divisor);
-        *remainder = static_cast<std::uint64_t>(dividend % divisor);
+        const uint64 quotient =
+            static_cast<uint64>(dividend / divisor);
+        *remainder = static_cast<uint64>(dividend % divisor);
         return quotient;
     }
 #else
     // Restoring long division; requires divisor != 0 and highDividend < divisor.
-    inline std::uint64_t UnsignedDivide128(
-        std::uint64_t highDividend,
-        std::uint64_t lowDividend,
-        std::uint64_t divisor,
-        std::uint64_t* remainder)
+    inline uint64 UnsignedDivide128(
+        uint64 highDividend,
+        uint64 lowDividend,
+        uint64 divisor,
+        uint64* remainder)
     {
         //Portable crap code :) say bye to performance
 
         // As with _udiv128, callers must ensure divisor != 0 and highDividend < divisor.
-        std::uint64_t rem = highDividend;
-        std::uint64_t quotient = 0;
+        uint64 rem = highDividend;
+        uint64 quotient = 0;
         for (int bit = 63; bit >= 0; --bit)
         {
             const bool carry = (rem >> 63) != 0;
@@ -148,7 +152,7 @@ namespace LongFloatGlue
             if (carry || rem >= divisor)
             {
                 rem -= divisor;
-                quotient |= std::uint64_t(1) << bit;
+                quotient |= uint64(1) << bit;
             }
         }
         *remainder = rem;
@@ -164,10 +168,10 @@ namespace LongFloatGlue
     }
 #else
     // Shift until the highest set bit reaches bit zero; zero has no index.
-    inline unsigned char BitScanReverse64(unsigned long* index, std::uint64_t mask)
+    inline unsigned char BitScanReverse64(unsigned long* index, uint64 mask)
     {
         if (mask == 0) return 0;
-        std::uint64_t bit = 0;
+        uint64 bit = 0;
         while (mask >>= 1) ++bit;
         *index = bit;
         return 1;
