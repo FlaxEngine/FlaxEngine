@@ -142,15 +142,6 @@ public:
     /// <returns>True if failed, otherwise false.</returns>
     static bool Save(const StringView& path, const Registry& entries, const PathsMapping& pathsMapping, const AssetsCacheFlags flags = AssetsCacheFlags::None);
 
-    /// <summary>
-    /// Checks if two paths name the same file in the registry. On Windows, the letter case and the directory separator
-    /// ('/' or '\') are ignored. On other platforms, the paths must be equal.
-    /// </summary>
-    /// <param name="a">The first path.</param>
-    /// <param name="b">The second path.</param>
-    /// <returns>True if both paths name the same file, otherwise false.</returns>
-    static bool IsSamePath(const StringView& a, const StringView& b);
-
 public:
     /// <summary>
     /// Finds the asset path by id. In editor, it returns the actual asset path, at runtime it returns the mapped asset path.

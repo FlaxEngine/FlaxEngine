@@ -22,26 +22,6 @@
 #define ASSETS_CACHE_LOCK()
 #endif
 
-bool AssetsCache::IsSamePath(const StringView& a, const StringView& b)
-{
-#if PLATFORM_WINDOWS
-    // On Windows, the letter case and the separator ('/' or '\') do not change the file (e.g. 'C:/x' and 'c:\x').
-    // A path taken for another file makes the asset ID look duplicated, and the asset gets a new ID.
-    if (a.Length() != b.Length())
-        return false;
-    for (int32 i = 0; i < a.Length(); i++)
-    {
-        Char ca = a[i] == '\\' ? '/' : a[i];
-        Char cb = b[i] == '\\' ? '/' : b[i];
-        if (ca != cb && StringUtils::ToLower(ca) != StringUtils::ToLower(cb))
-            return false;
-    }
-    return true;
-#else
-    return a == b;
-#endif
-}
-
 int32 AssetsCache::Size() const
 {
     ASSETS_CACHE_LOCK();
@@ -313,7 +293,7 @@ bool AssetsCache::FindAsset(const StringView& path, AssetInfo& info)
     for (auto i = _registry.Begin(); i.IsNotEnd(); ++i)
     {
         auto& e = i->Value;
-        if (IsSamePath(e.Info.Path, path))
+        if (e.Info.Path == path)
         {
             const auto validation = IsEntryValid(e);
             if (validation == EntryValidation::Invalid)
@@ -409,11 +389,10 @@ void AssetsCache::RegisterAssets(FlaxStorage* storage)
     ASSETS_CACHE_LOCK();
     auto storagePath = storage->GetPath();
 
-    // Remove all old entries from that location (with the same path rule as the duplicate check below, so an entry
-    // of this file under another spelling is not taken for a duplicate asset)
+    // Remove all old entries from that location
     for (auto i = _registry.Begin(); i.IsNotEnd(); ++i)
     {
-        if (IsSamePath(i->Value.Info.Path, storagePath))
+        if (i->Value.Info.Path == storagePath)
             _registry.Remove(i);
     }
 
@@ -430,7 +409,7 @@ void AssetsCache::RegisterAssets(FlaxStorage* storage)
         {
 #if PLATFORM_WINDOWS
             // On Windows - if you start your project using a shortcut/VS commandline -project, and using a upper/lower drive letter, it could the cache (case doesn't matter on OS)
-            if (!IsSamePath(storagePath, info.Path))
+            if (StringUtils::CompareIgnoreCase(storagePath.GetText(), info.Path.GetText()) != 0)
             {
                 LOG(Warning, "Founded duplicated asset \'{0}\'. Locations: \'{1}\' and \'{2}\'", e.ID, storagePath, info.Path);
                 duplicatedEntries.Add(i);
@@ -440,7 +419,7 @@ void AssetsCache::RegisterAssets(FlaxStorage* storage)
                 // Remove from registry so we can add it again later with the original ID, so we don't loose relations
                 for (auto j = _registry.Begin(); j.IsNotEnd(); ++j)
                 {
-                    if (IsSamePath(j->Value.Info.Path, storagePath))
+                    if (StringUtils::CompareIgnoreCase(j->Value.Info.Path.GetText(), storagePath.GetText()) == 0)
                         _registry.Remove(j);
                 }
             }
@@ -527,7 +506,7 @@ void AssetsCache::RegisterAsset(const Guid& id, const String& typeName, const St
             break;
         }
 
-        if (IsSamePath(e.Info.Path, path))
+        if (e.Info.Path == path)
         {
             if (e.Info.ID != id)
             {
@@ -558,7 +537,7 @@ bool AssetsCache::DeleteAsset(const StringView& path, AssetInfo* info)
     ASSETS_CACHE_LOCK();
     for (auto i = _registry.Begin(); i.IsNotEnd(); ++i)
     {
-        if (IsSamePath(i->Value.Info.Path, path))
+        if (i->Value.Info.Path == path)
         {
             if (info)
                 *info = i->Value.Info;
@@ -593,7 +572,7 @@ bool AssetsCache::RenameAsset(const StringView& oldPath, const StringView& newPa
     ASSETS_CACHE_LOCK();
     for (auto i = _registry.Begin(); i.IsNotEnd(); ++i)
     {
-        if (IsSamePath(i->Value.Info.Path, oldPath))
+        if (i->Value.Info.Path == oldPath)
         {
             i->Value.Info.Path = newPath;
             _isDirty = true;
