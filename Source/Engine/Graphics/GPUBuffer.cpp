@@ -478,9 +478,7 @@ void GPUBuffer::SetData(const void* data, uint32 size)
             // Upload with a GPU task (the data is copied)
             auto task = ::New<GPUUploadBufferTask>(this, 0, Span<byte>((const byte*)data, size), true);
             task->Start();
-            return;
         }
-        LOG(Error, "Cannot map buffer {0} for SetData", ToString());
         return;
     }
     Platform::MemoryCopy(mapped, data, size);
