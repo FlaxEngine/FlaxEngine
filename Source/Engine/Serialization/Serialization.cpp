@@ -31,6 +31,7 @@ ISerializeModifier::ISerializeModifier()
 {
     EngineBuild = FLAXENGINE_VERSION_BUILD;
     CurrentInstance = -1;
+    LoadDepth = 0;
 }
 
 void ISerializable::DeserializeIfExists(DeserializeStream& stream, const char* memberName, ISerializeModifier* modifier)

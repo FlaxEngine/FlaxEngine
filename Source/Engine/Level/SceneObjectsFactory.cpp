@@ -256,7 +256,7 @@ SceneObject* SceneObjectsFactory::Spawn(Context& context, const ISerializable::D
     return obj;
 }
 
-void SceneObjectsFactory::Deserialize(Context& context, SceneObject* obj, ISerializable::DeserializeStream& stream)
+void SceneObjectsFactory::Deserialize(Context& context, SceneObject* obj, ISerializable::DeserializeStream& stream, int32 loadDepth)
 {
     CHECK_DEBUG(obj);
     ISerializeModifier* modifier = context.GetModifier();
@@ -301,7 +301,7 @@ void SceneObjectsFactory::Deserialize(Context& context, SceneObject* obj, ISeria
 #if USE_EDITOR
         bool prevDeprecated = ContentDeprecated::Clear();
 #endif
-        Deserialize(context, obj, *(ISerializable::DeserializeStream*)prefabData);
+        Deserialize(context, obj, *(ISerializable::DeserializeStream*)prefabData, loadDepth + 1);
 #if USE_EDITOR
         if (ContentDeprecated::Clear(prevDeprecated))
         {
@@ -317,6 +317,7 @@ void SceneObjectsFactory::Deserialize(Context& context, SceneObject* obj, ISeria
     context.SetupIdsMapping(obj, modifier);
 
     // Load data
+    modifier->LoadDepth = loadDepth;
     obj->Deserialize(stream, modifier);
 }
 

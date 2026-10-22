@@ -67,7 +67,8 @@ public:
     /// <param name="context">The serialization context.</param>
     /// <param name="obj">The instance to deserialize.</param>
     /// <param name="stream">The serialized data stream.</param>
-    static void Deserialize(Context& context, SceneObject* obj, ISerializable::DeserializeStream& stream);
+    /// <param name="loadDepth">The initial recursive deserialization depth.</param>
+    static void Deserialize(Context& context, SceneObject* obj, ISerializable::DeserializeStream& stream, int32 loadDepth = 0);
 
     /// <summary>
     /// Handles the object deserialization error.

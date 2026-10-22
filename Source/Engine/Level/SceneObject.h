@@ -68,11 +68,8 @@ public:
 
     // Scene Object lifetime flow:
     // - Create
-    // - Is created from code:
-    //    - Post Spawn
-    // - otherwise:
+    // - Is loaded from file:
     //   - Deserialize (more than once for prefab instances)
-    //   - Post Load
     // - Begin Play
     // - End Play
     // - Destroy
