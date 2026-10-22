@@ -83,6 +83,11 @@ PACK_BEGIN() struct FLAXENGINE_API VertexElement
     {
         return !operator==(other);
     }
+
+    FORCE_INLINE operator bool() const
+    {
+        return Format != PixelFormat::Unknown;
+    }
 } PACK_END();
 
 uint32 FLAXENGINE_API GetHash(const VertexElement& key);

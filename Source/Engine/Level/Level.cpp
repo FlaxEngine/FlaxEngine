@@ -1264,6 +1264,7 @@ SceneResult SceneLoader::OnSpawn(Args& args)
         Level::ScenesLock.Unlock(); // Unlock scenes from Main Thread so Job Threads can use it to safely setup actors hierarchy (see Actor::Deserialize)
         JobSystem::Execute([&](int32 i)
         {
+            PROFILE_CPU_NAMED("SpawnJob");
             PROFILE_MEM(Level);
             i++; // Start from 1. at index [0] was scene
             auto& stream = args.Data[i];
@@ -1345,6 +1346,7 @@ SceneResult SceneLoader::OnDeserialize(Args& args)
             auto obj = objects[i];
             if (obj)
             {
+                PROFILE_CPU_NAMED("LoadJob");
                 auto& idMapping = Scripting::ObjectsLookupIdMapping.Get();
                 idMapping = &Context.GetModifier()->IdsMapping;
                 SceneObjectsFactory::Deserialize(Context, obj, args.Data[i]);

@@ -19,6 +19,7 @@
 #include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Graphics/Models/ModelDraw.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Renderer/DrawCall.h"
@@ -533,7 +534,7 @@ Asset::LoadResult Model::load()
     if (chunk0 == nullptr || chunk0->IsMissing())
         return LoadResult::MissingDataChunk;
     MemoryReadStream headerStream(chunk0->Get(), chunk0->Size());
-   
+
     // Load asset data (anything but mesh contents that use streaming)
     byte headerVersion;
     if (LoadHeader(headerStream, headerVersion))

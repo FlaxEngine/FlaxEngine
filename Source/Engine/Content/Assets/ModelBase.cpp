@@ -225,8 +225,6 @@ bool ModelBase::LoadAllLODs()
         task->Run();
         task->OnEnd();
     }
-    _loadedLODs = lods;
-    ResidencyChanged();
     return false;
 }
 

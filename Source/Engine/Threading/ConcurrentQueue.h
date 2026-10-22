@@ -54,7 +54,7 @@ public:
     /// <param name="item">The item to add.</param>
     FORCE_INLINE void Add(const T& item)
     {
-        enqueue(item);
+        Base::enqueue(item);
     }
 
     /// <summary>
@@ -63,6 +63,6 @@ public:
     /// <param name="item">The item to add.</param>
     FORCE_INLINE void Add(T&& item)
     {
-        enqueue(item);
+        Base::enqueue(MoveTemp(item));
     }
 };

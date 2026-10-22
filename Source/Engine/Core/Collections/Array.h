@@ -511,6 +511,17 @@ public:
     }
 
     /// <summary>
+    /// Adds the other collection to the collection ensuring all items stay unique.
+    /// </summary>
+    /// <param name="other">The other collection to add.</param>
+    template<typename Other, typename OtherAllocationType = AllocationType>
+    FORCE_INLINE void AddUnique(const Array<Other, OtherAllocationType>& other)
+    {
+        for (auto& e : other)
+            AddUnique(e);
+    }
+
+    /// <summary>
     /// Adds the given amount of items to the collection.
     /// </summary>
     /// <param name="count">The items count.</param>
