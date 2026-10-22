@@ -19,17 +19,17 @@ typedef uint32_t wasm_bool_t;
 
 // Compression constants
 
-#define BU_QUALITY_MIN 0
+#define BU_QUALITY_MIN 1
 #define BU_QUALITY_MAX 100
 
 #define BU_EFFORT_MIN 0
 #define BU_EFFORT_MAX 10
-#define BU_EFFORT_SUPER_FAST = 0
-#define BU_EFFORT_FAST = 2
-#define BU_EFFORT_NORMAL = 5
-#define BU_EFFORT_DEFAULT = 2
-#define BU_EFFORT_SLOW = 8
-#define BU_EFFORT_VERY_SLOW = 10
+#define BU_EFFORT_SUPER_FAST 0
+#define BU_EFFORT_FAST 2
+#define BU_EFFORT_NORMAL 5
+#define BU_EFFORT_DEFAULT 2
+#define BU_EFFORT_SLOW 8
+#define BU_EFFORT_VERY_SLOW 10
 
 #define BU_COMP_FLAGS_NONE  					(0)
 #define BU_COMP_FLAGS_USE_OPENCL       			(1 << 8 )
@@ -59,6 +59,19 @@ typedef uint32_t wasm_bool_t;
 #define BU_COMP_FLAGS_TEXTURE_TYPE_VIDEO_FRAMES		(3 << 25)
 #define BU_COMP_FLAGS_TEXTURE_TYPE_SHIFT			(25)
 #define BU_COMP_FLAGS_TEXTURE_TYPE_MASK				(3)
+
+// ASTC/XUASTC LDR deblocking control. By default 10x8 or larger block sizes (>= 80 texels/block) get deblocking-aware
+// encoding and the deblocking ID is written to the output file.
+#define BU_COMP_FLAGS_DISABLE_DEBLOCKING			(1 << 27) // disable all deblocking related features
+#define BU_COMP_FLAGS_FORCE_DEBLOCKING				(1 << 28) // force deblocking-aware encoding on all block sizes
+
+// XUBC7 only: selects the BC7 base encoder (and, for bc7e_scalar, its quality level), packed into a 3-bit field.
+// Field value 0 = bc7f (the default fast real-time packer; no level). Values 1-7 = bc7e_scalar (slower, higher quality)
+// at level 0-6 (i.e. bc7e_scalar level = field value - 1). Build a bc7e_scalar value as:
+//   ((level + 1) << BU_COMP_FLAGS_XUBC7_BASE_ENCODER_SHIFT)
+#define BU_COMP_FLAGS_XUBC7_BASE_ENCODER_BC7F		(0 << 29)
+#define BU_COMP_FLAGS_XUBC7_BASE_ENCODER_SHIFT		(29)
+#define BU_COMP_FLAGS_XUBC7_BASE_ENCODER_MASK		(7)
 
 #define BU_COMP_FLAGS_VERBOSE (BU_COMP_FLAGS_DEBUG_OUTPUT | BU_COMP_FLAGS_PRINT_STATS | BU_COMP_FLAGS_PRINT_STATUS)
 
@@ -96,7 +109,8 @@ typedef uint32_t wasm_bool_t;
 #define BTF_ASTC_LDR_10X10 30
 #define BTF_ASTC_LDR_12X10 31
 #define BTF_ASTC_LDR_12X12 32
-#define BTF_TOTAL_FORMATS 33
+#define BTF_XUBC7 33
+#define BTF_TOTAL_FORMATS 34
 
 // Transcoding constants
 
@@ -151,6 +165,5 @@ typedef uint32_t wasm_bool_t;
 #define DECODE_FLAGS_HIGH_QUALITY 32
 #define DECODE_FLAGS_NO_ETC1S_CHROMA_FILTERING 64
 #define DECODE_FLAGS_NO_DEBLOCK_FILTERING 128
-#define DECODE_FLAGS_STRONGER_DEBLOCK_FILTERING 256
 #define DECODE_FLAGS_FORCE_DEBLOCK_FILTERING 512
 #define DECODE_FLAGS_XUASTC_LDR_DISABLE_FAST_BC7_TRANSCODING 1024

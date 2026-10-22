@@ -22,10 +22,12 @@
 
 // v1.50: Added UASTC HDR 4x4 support
 // v1.60: Added RDO ASTC HDR 6x6 and intermediate support
-// v1.65: Added ASTC LDR 4x4-12x12 and XUASTC LDR 4x4-12x12
+// v1.65: Added ASTC LDR 4x4-12x12 and XUASTC LDR 4x4-12x12 (not publically released)
 // v2.00: Added unified effort/quality options across all formats, fast direct transcoding of XUASTC 4x4/6x6/8x6 to BC7, adaptive deblocking, ZStd or arithmetic profiles, weight grid DCT
-#define BASISD_LIB_VERSION 200
-#define BASISD_VERSION_STRING "02.00"
+// v2.10: Khronos modifications to KTX2 file format for UASTC HDR 6x6i support for KTX-Software compatiblity (we're also modifying how XUASTC LDR files use KTX2 to be compatible)
+// v2.50: SCD, in-loop deblocking, standardized deblocking operator astcf encoder, bc7->astc 4x4 transcoder, astc ldr 4x4 encoder using bc7f->transcoding, astc ldr encoder optimizations, XUBC7 format, DDS transcoding/unpacking/info support
+#define BASISD_LIB_VERSION 250
+#define BASISD_VERSION_STRING "02.50"
 
 #ifdef _DEBUG
 #define BASISD_BUILD_DEBUG
@@ -215,6 +217,36 @@ namespace basist
 		}
 		return 4;
 	}
+
+	struct bc7_block
+	{
+		uint64_t m_qwords[2];
+	};
+
+	struct bc1_block
+	{
+		enum { cTotalEndpointBytes = 2, cTotalSelectorBytes = 4 };
+
+		uint8_t m_low_color[cTotalEndpointBytes];
+		uint8_t m_high_color[cTotalEndpointBytes];
+		uint8_t m_selectors[cTotalSelectorBytes];
+
+		inline uint32_t get_high_color() const { return m_high_color[0] | (m_high_color[1] << 8U); }
+		inline uint32_t get_low_color() const { return m_low_color[0] | (m_low_color[1] << 8U); }
+
+		static void unpack_color(uint32_t c, uint32_t& r, uint32_t& g, uint32_t& b)
+		{
+			r = (c >> 11) & 31;
+			g = (c >> 5) & 63;
+			b = c & 31;
+
+			r = (r << 3) | (r >> 2);
+			g = (g << 2) | (g >> 4);
+			b = (b << 3) | (b >> 2);
+		}
+
+		inline uint32_t get_selector(uint32_t x, uint32_t y) const { assert((x < 4U) && (y < 4U)); return (m_selectors[y] >> (x * 2)) & 3; }
+	};
 
 	const int COLOR5_PAL0_PREV_HI = 9, COLOR5_PAL0_DELTA_LO = -9, COLOR5_PAL0_DELTA_HI = 31;
 	const int COLOR5_PAL1_PREV_HI = 21, COLOR5_PAL1_DELTA_LO = -21, COLOR5_PAL1_DELTA_HI = 21;
@@ -921,18 +953,20 @@ namespace basist
 			uint32_t m;
 		};
 
-		//color32() { }
 		color32() = default;
 
+		// both constructors are no clamping now (not this classes original intention - optimization)
 		color32(uint32_t vr, uint32_t vg, uint32_t vb, uint32_t va) { set(vr, vg, vb, va); }
 		color32(eNoClamp unused, uint32_t vr, uint32_t vg, uint32_t vb, uint32_t va) { (void)unused; set_noclamp_rgba(vr, vg, vb, va); }
 
+		// no clamping
 		void set(uint32_t vr, uint32_t vg, uint32_t vb, uint32_t va) { c[0] = static_cast<uint8_t>(vr); c[1] = static_cast<uint8_t>(vg); c[2] = static_cast<uint8_t>(vb); c[3] = static_cast<uint8_t>(va); }
 
 		void set_noclamp_rgb(uint32_t vr, uint32_t vg, uint32_t vb) { c[0] = static_cast<uint8_t>(vr); c[1] = static_cast<uint8_t>(vg); c[2] = static_cast<uint8_t>(vb); }
 		void set_noclamp_rgba(uint32_t vr, uint32_t vg, uint32_t vb, uint32_t va) { set(vr, vg, vb, va); }
 
-		void set_clamped(int vr, int vg, int vb, int va) { c[0] = clamp255(vr); c[1] = clamp255(vg);	c[2] = clamp255(vb); c[3] = clamp255(va); }
+		// clamped to [0,255]
+		void set_clamped(int vr, int vg, int vb, int va) { c[0] = clamp255(vr); c[1] = clamp255(vg); c[2] = clamp255(vb); c[3] = clamp255(va); }
 
 		uint8_t operator[] (uint32_t idx) const { assert(idx < 4); return c[idx]; }
 		uint8_t &operator[] (uint32_t idx) { assert(idx < 4); return c[idx]; }
@@ -1512,6 +1546,11 @@ namespace basist
 				
 		typedef basisu::vector<float> fvec;
 
+		extern const uint16_t g_total_unique_patterns[astc_helpers::NUM_ASTC_BLOCK_SIZES][2];
+		uint32_t get_total_unique_patterns(uint32_t astc_block_size_index, uint32_t num_parts);
+		extern const uint16_t* g_unique_index_to_astc_part_seed[2][astc_helpers::NUM_ASTC_BLOCK_SIZES]; // [num_parts][astc_block_size_index]
+		uint16_t unique_pat_index_to_part_seed(uint32_t astc_block_size_index, uint32_t num_parts, uint32_t unique_pat_index);
+						
 		void init();
 
 		color_rgba blue_contract_enc(color_rgba orig, bool& did_clamp, int encoded_b);
@@ -1526,6 +1565,8 @@ namespace basist
 
 			astc_block_grid_config(uint32_t block_width, uint32_t block_height, uint32_t grid_width, uint32_t grid_height)
 			{
+				static_assert(sizeof(*this) == sizeof(uint16_t) * 4, "bad struct size");
+
 				assert((block_width >= 4) && (block_width <= 12));
 				assert((block_height >= 4) && (block_height <= 12));
 				m_block_width = (uint16_t)block_width;
@@ -1546,18 +1587,145 @@ namespace basist
 
 		struct astc_block_grid_data
 		{
+#if defined(DEBUG) || defined(_DEBUG)
+			uint32_t m_bw, m_bh, m_gw, m_gh;
+#endif
+
 			float m_weight_gamma;
 
 			// An unfortunate difference of containers, but in memory these matrices are both addressed as [r][c].
-			basisu::vector2D<float> m_upsample_matrix;
+			basisu::vector2D<float> m_upsample_matrix; // rows=output num_block_samples (texels), cols=input num_grid_samples
+			
+			basisu::vector<float> m_downsample_matrix; // rows=output num_grid_sampless, cols=input num_block_samples (texels)
 
-			basisu::vector<float> m_downsample_matrix;
+			// encoding only
+			
+			// For each grid entry: a list of texel indices that are impacted by that grid weight
+			basisu::vector< basisu::uint16_vec > m_grid_to_texel_influence_list;
+			
+			basisu::vector<astc_helpers::weighted_sample> m_upsample_weights;
+
+			// for gradient descent
+			basisu::vector<float> m_unweighted_downsample_matrix, m_one_over_diag_AtA;
 
 			astc_block_grid_data() {}
 			astc_block_grid_data(float weight_gamma) : m_weight_gamma(weight_gamma) {}
 		};
 
-		typedef basisu::hash_map<astc_block_grid_config, astc_block_grid_data, bit_hasher<astc_block_grid_config> > astc_block_grid_data_hash_t;
+		//typedef basisu::hash_map<astc_block_grid_config, astc_block_grid_data, bit_hasher<astc_block_grid_config> > astc_block_grid_data_hash_t;
+				
+		struct astc_block_grid_data_hash_t
+		{
+			static constexpr uint32_t BWH_MIN = 4, BWH_MAX = 12;
+			static constexpr uint32_t GWH_MIN = 2, GWH_MAX = 12;
+
+			static constexpr uint32_t BWH_COUNT = 9;
+			static constexpr uint32_t GWH_COUNT = 11;
+
+			// 9801 entries
+			static constexpr uint32_t LUT_SIZE = BWH_COUNT * BWH_COUNT * GWH_COUNT * GWH_COUNT;
+			
+			// [bw][bh][gw][gh]
+			static constexpr uint32_t BW_MUL = BWH_COUNT * GWH_COUNT * GWH_COUNT;
+			static constexpr uint32_t BH_MUL = GWH_COUNT * GWH_COUNT;
+			static constexpr uint32_t GW_MUL = GWH_COUNT;
+
+			static constexpr uint32_t INDEX_BIAS = (BW_MUL * 4) + (BH_MUL * 4) + (2 * GW_MUL) + 2;
+
+			static inline uint32_t astc_cfg_index(uint32_t bw, uint32_t bh, uint32_t gw, uint32_t gh)
+			{
+				assert(astc_helpers::is_valid_block_size(bw, bh));
+				assert((bw >= 4) && (bw <= 12));
+				assert((bh >= 4) && (bh <= 12));
+				assert((gw >= 2) && (gw <= bw));
+				assert((gh >= 2) && (gh <= bh));
+				assert((gw * gh) <= astc_helpers::MAX_GRID_WEIGHTS);
+
+				int idx = bw * BW_MUL + bh * BH_MUL + gw * GW_MUL + gh;
+				idx -= INDEX_BIAS;
+
+				assert((uint32_t)idx == (gh - GWH_MIN) + (gw - GWH_MIN) * GWH_COUNT + (bh - BWH_MIN) * GWH_COUNT * GWH_COUNT + (bw - BWH_MIN) * GWH_COUNT * GWH_COUNT * BWH_COUNT);
+
+				assert(idx < (int)LUT_SIZE);
+				return idx;
+			}
+
+			static inline void astc_cfg_from_index(uint32_t idx, uint32_t& bw, uint32_t& bh, uint32_t& gw, uint32_t& gh)
+			{
+				assert(idx < LUT_SIZE);
+
+				bw = (idx / BW_MUL) + BWH_MIN;
+				idx %= BW_MUL;
+
+				bh = (idx / BH_MUL) + BWH_MIN;
+				idx %= BH_MUL;
+
+				gw = (idx / GW_MUL) + GWH_MIN;
+				gh = (idx % GW_MUL) + GWH_MIN;
+
+				assert(astc_helpers::is_valid_block_size(bw, bh));
+				assert((bw >= BWH_MIN) && (bw <= BWH_MAX)); 
+				assert((bh >= BWH_MIN) && (bh <= BWH_MAX));
+				assert((gw >= GWH_MIN) && (gw <= GWH_MAX));
+				assert((gh >= GWH_MIN) && (gh <= GWH_MAX));
+				assert((gw <= bw) && (gh <= bh) && (gw * gh <= astc_helpers::MAX_GRID_WEIGHTS));
+			}
+						
+			uint16_t m_hash[LUT_SIZE] = { 0 };
+
+			basisu::vector<astc_block_grid_data> m_grid_data;
+
+			void insert(uint32_t block_width, uint32_t block_height, uint32_t grid_width, uint32_t grid_height, const astc_block_grid_data& data)
+			{
+				const uint32_t idx = astc_cfg_index(block_width, block_height, grid_width, grid_height);
+
+#if defined(DEBUG) || defined(_DEBUG)
+				{
+					uint32_t rbw, rbh, rgw, rgh;
+					astc_cfg_from_index(idx, rbw, rbh, rgw, rgh);
+					assert((block_width == rbw) && (block_height == rbh) && (grid_width == rgw) && (grid_height == rgh));
+				}
+#endif
+
+				assert(m_hash[idx] == 0);
+								
+				m_hash[idx] = basisu::safe_cast_uint16(m_grid_data.size_u32() + 1);
+				m_grid_data.push_back(data);
+
+#if defined(DEBUG) || defined(_DEBUG)
+				m_grid_data.back().m_bw = block_width;
+				m_grid_data.back().m_bh = block_height;
+				m_grid_data.back().m_gw = grid_width;
+				m_grid_data.back().m_gh = grid_height;
+#endif
+			}
+
+			inline const astc_block_grid_data* find(uint32_t block_width, uint32_t block_height, uint32_t grid_width, uint32_t grid_height) const
+			{
+				const uint32_t hash_idx = astc_cfg_index(block_width, block_height, grid_width, grid_height);
+				
+				uint32_t grid_data_idx = m_hash[hash_idx];
+				assert(grid_data_idx);
+				
+				const astc_block_grid_data* p = &m_grid_data[grid_data_idx - 1];
+
+#if defined(DEBUG) || defined(_DEBUG)
+				assert(p->m_bw == block_width);
+				assert(p->m_bh == block_height);
+				assert(p->m_gw == grid_width);
+				assert(p->m_gh == grid_height);
+#endif
+
+				return p;
+			}
+		};
+
+		extern astc_block_grid_data_hash_t g_astc_block_grid_data_hash;
+
+		inline const astc_block_grid_data* find_astc_block_grid_data(uint32_t block_width, uint32_t block_height, uint32_t grid_width, uint32_t grid_height)
+		{
+			return g_astc_block_grid_data_hash.find(block_width, block_height, grid_width, grid_height);
+		}
 						
 		void decode_endpoints_ise20(uint32_t cem_index, const uint8_t* pEndpoint_vals, color32& l, color32& h);
 		void decode_endpoints(uint32_t cem_index, const uint8_t* pEndpoint_vals, uint32_t endpoint_ise_index, color32& l, color32& h, float* pScale = nullptr);
@@ -1590,6 +1758,9 @@ namespace basist
 			
 			void forward(const float* pSrc, uint32_t src_stride,
 				float* pDst, uint32_t dst_stride, fvec& work) const;
+
+			void forward(const float* pSrc, uint32_t src_stride,
+				float* pDst, uint32_t dst_stride, float* pWork) const;
 			
 			void inverse(const float* pSrc, uint32_t src_stride,
 				float* pDst, uint32_t dst_stride, fvec& work) const;
@@ -1633,7 +1804,8 @@ namespace basist
 				coeff(uint16_t num_zeros, int16_t coeff) : m_num_zeros(num_zeros), m_coeff(coeff) {}
 			};
 
-			basisu::static_vector<coeff, 65> m_coeffs;
+			//basisu::static_vector<coeff, 65> m_coeffs;
+			basisu::vector<coeff> m_coeffs;
 
 			uint32_t m_max_coeff_mag;
 			uint32_t m_max_zigzag_index;
@@ -1663,9 +1835,7 @@ namespace basist
 		typedef basisu::hash_map<grid_dim_key, grid_dim_value, bit_hasher<grid_dim_key> > grid_dim_hash_map;
 
 		void init_astc_block_grid_data_hash();
-
-		const astc_block_grid_data* find_astc_block_grid_data(uint32_t block_width, uint32_t block_height, uint32_t grid_width, uint32_t grid_height);
-
+				
 		const float DEADZONE_ALPHA = .5f;
 		const float SCALED_WEIGHT_BASE_CODING_SCALE = .5f; // typically ~5 bits [0,32], or 3 [0,8]
 
@@ -1714,7 +1884,6 @@ namespace basist
 				float q, uint32_t plane_index, // plane of weights to decode and IDCT from stream
 				astc_helpers::log_astc_block& log_blk, // must be initialized except for the plane weights which are decoded
 				basist::bitwise_decoder* pDec,
-				const astc_block_grid_data* pGrid_data, // grid data for this grid size
 				block_stats* pS,
 				fvec& dct_work, // thread local
 				const dct_syms* pSyms = nullptr) const;
@@ -1738,7 +1907,7 @@ namespace basist
 				return scaled;
 			}
 
-			float compute_level_scale(float q, float span_len, float weight_gamma, uint32_t grid_width, uint32_t grid_height, uint32_t weight_ise_range) const;
+			float compute_level_scale(float q, float span_len, uint32_t grid_width, uint32_t grid_height, uint32_t weight_ise_range) const;
 
 			int sample_quant_table(sample_quant_table_state& state, uint32_t x, uint32_t y) const;
 
@@ -1853,6 +2022,11 @@ namespace basist
 		const uint32_t OTM_NUM_CCS = 5; // -1 to 3
 		const uint32_t OTM_NUM_GRID_SIZES = 2; // 0=small or 1=large (grid_w>=block_w-1 and grid_h>=block_h-1)
 		const uint32_t OTM_NUM_GRID_ANISOS = 3; // 0=W=H, 1=W>H, 2=W<H
+				
+		inline uint32_t calc_grid_size_val(uint32_t grid_width, uint32_t grid_height, uint32_t block_width, uint32_t block_height)
+		{
+			return (grid_width >= (block_width - 1)) && (grid_height >= (block_height - 1));
+		}
 
 		inline uint32_t calc_grid_aniso_val(uint32_t gw, uint32_t gh, uint32_t bw, uint32_t bh)
 		{
@@ -2088,6 +2262,10 @@ namespace basist
 
 			return 0;
 		}
+
+		bool requantize_ise_endpoints(uint32_t cem,
+			uint32_t src_ise_endpoint_range, const uint8_t* pSrc_endpoints,
+			uint32_t dst_ise_endpoint_range, uint8_t* pDst_endpoints);
 				
 		bool pack_base_offset(
 			uint32_t cem_index, uint32_t dst_ise_endpoint_range, uint8_t* pPacked_endpoints,
@@ -3046,6 +3224,191 @@ namespace basist
 		int determine_bc7_mode_4_or_5_rotation(const void* pBlock);
 		bool unpack_bc7_mode6(const void* pBlock_bits, color_rgba* pPixels);
 		bool unpack_bc7(const void* pBlock, color_rgba* pPixels);
+
+		extern uint8_t g_weight_quant[3][65]; // [2-4][0-64] - maps [0,64] normalized weight to nearest quantized value
+
+		void init_weight_quant();
+
+		// A logical BC7 block directly corresponds to the data packed into each physical block.
+		// Unpacking from physical and then packing back to physical is always 100% lossless.
+		struct log_bc7_block
+		{
+			int8_t m_mode; // 0-7, -1=invalid
+
+			uint8_t m_num_partitions; // 1-3 subsets
+			uint8_t m_pattern_bits; // 0, 4 or 6
+			uint8_t m_pattern_index; // 0-15 (mode 0) or 0-63 (modes 1-3)
+
+			uint8_t m_num_planes; // 1-2
+			uint8_t m_dp_rotation_index; // 0-3 for mode 4/5, 0 for other modes
+
+			// For dual plane (mode 4-5): normally weight plane 0 is for RGB (vector plane) and weight plane 1 is for A (scalar plane), but for mode 4 this can be inverted.
+			// This is the vector plane's weight plane (BEFORE final component rotation/swapping).
+			// Could also be called "m_dp_rgb_vector_weight_plane_index".
+			uint8_t m_mode4_index_selector; // 0 or 1 for mode 4 (which weight plane's weights has RGB, the other plane has alpha), otherwise always 0
+
+			uint8_t m_endpoint_bits[2]; // [rgb or a], 0 or [4,7] - note for mode 4/5 (dual plane) this is BEFORE the component rotation/swapping at the end of decoding
+			uint8_t m_endpoints[3][2][4]; // [subset][l or h][component]
+
+			// For mode 4: weight plane 0 is always 2-bits, plane 1 is 3-bits. For mode 5, both are always 2-bits. This allocation is per-mode and is not affected by the mode 4 index selector bit.
+			// For mode 4: m_mode4_index_selector is the index of the vector plane. For mode 5, plane 0=vector, plane 1=scalar.
+			uint8_t m_weight_bits[2]; // [plane], [2,4] - note for mode 4 this are always fixed to 2,3 (i.e. m_mode4_index_selector determines which plane contains the RGB weights)
+			uint8_t m_weights[2][16]; // [plane][texel_index]
+
+			uint8_t m_num_pbits; // 0-6, total p-bits for all subsets
+			bool m_shared_pbits; // true: p-bits shared per endpoint pair, false: unique p-bit per endpoint
+			uint8_t m_pbits[6];
+
+			bool is_valid() const { return m_mode >= 0; }
+
+			bool is_dual_plane() const { return m_num_planes == 2; }
+
+			uint32_t get_num_weight_vals(uint32_t plane_index) const { assert(plane_index < 2); return 1u << m_weight_bits[plane_index]; }
+
+			uint32_t get_num_endpoint_vals(uint32_t rgb_or_a_index) const { assert(rgb_or_a_index < 2); return 1u << m_endpoint_bits[rgb_or_a_index]; }
+
+			uint32_t get_vector_weight_plane_index() const
+			{
+				return m_mode4_index_selector;
+			}
+
+			uint32_t get_scalar_weight_plane_index() const
+			{
+				return 1 - m_mode4_index_selector;
+			}
+
+			// returns the color channel separately interpolated on the scalar plane (not necessarily plane 1!)
+			int get_color_component_selector() const
+			{
+				if (!is_dual_plane())
+					return -1;
+				else
+					return (m_dp_rotation_index + 3) & 3;
+			} 
+
+			// For endpoint channel c (NOT decoded texel channel c): which weight plane will be used to interpolate it at the endpoint level
+			uint32_t get_endpoint_channel_weight_plane(uint32_t c) const
+			{
+				assert(c <= 3);
+
+				// always 0 in SP
+				if (!is_dual_plane())
+					return 0;
+
+				// scalar plane index is always endpoint channel 3 (alpha): until the final mode 4/5 channel rotation/swap
+				if (c == 3)
+					return 1 - m_mode4_index_selector; 
+
+				return m_mode4_index_selector; // vector plane index
+			}
+		
+			// For each fully decoded pixel: Returns the weight plane index [0,1] that is used for decoded pixel channel c [0,3], taking into account mode 4/5 channel rotation and the mode 4 index selector bit
+			uint32_t get_decoded_channel_weight_plane(uint32_t c) const
+			{
+				assert(c <= 3);
+
+				// always 0 in SP
+				if (!is_dual_plane())
+					return 0; 
+
+				// determine which channel uses the other scalar plane
+				const uint32_t ccs_index = (m_dp_rotation_index + 3) & 3;
+
+				if (c != ccs_index)
+					return m_mode4_index_selector; // vector plane index
+
+				return 1 - m_mode4_index_selector; // scalar plane index
+			}
+			
+			bool has_alpha() const { return m_endpoint_bits[1] != 0; }
+
+			// this is the # of endpoint comps
+			uint32_t get_num_comps() const { return m_endpoint_bits[1] ? 4 : 3; }
+
+			uint32_t get_num_pbits_per_subset() const { return m_num_pbits ? (m_shared_pbits ? 1 : 2) : 0; }
+
+			void clear()
+			{
+				memset(this, 0, sizeof(*this));
+			}
+		};
+
+		struct phys_bc7_block
+		{
+			uint8_t m_bytes[16];
+		};
+
+		bool unpack_bc7(const void* pPhys_block, log_bc7_block& log_blk);
+
+		void unpack_endpoints(const log_bc7_block& log_blk, color_rgba pEndpoints[2], uint32_t subset); // returns raw endpoints (note for dual plane 1 component may be swapped with a, which is handled during decoding)
+
+		struct endpoint_format
+		{
+			uint8_t m_num_rgb_bits;
+			uint8_t m_num_a_bits;
+			uint8_t m_num_pbits; // p-bits per-subset: 0, 1 (shared) or 2 (unique)
+		};
+
+		extern const endpoint_format g_endpoint_formats[8];
+
+		// dequantizes a BC7 weight to a normalized [0,64] value; w should be in the range [0, 2^num_weight_bits - 1]
+		int dequant_weight(uint32_t w, uint32_t num_weight_bits);
+				
+		// quantizes a normalized [0,64] weight to nearest quantized BC7 weight value
+		// val should range from [0,64] (it's silently clamped)
+		// num_weight_bits should be [2,4]
+		inline uint8_t quant_weight(int val, uint32_t num_weight_bits)
+		{
+			assert((num_weight_bits >= 2) && (num_weight_bits <= 4));
+			assert(g_weight_quant[2][64]);
+			
+			val = basisu::clamp<int>(val, 0, 64);
+
+			return g_weight_quant[num_weight_bits - 2][val];
+		}
+
+		void init_log_blk(log_bc7_block& log_blk, uint32_t mode);
+
+		void create_solid_blk(log_bc7_block& log_blk, const color_rgba& c);
+
+		bool is_solid_blk(const log_bc7_block& log_blk);
+
+		bool validate_log_blk(const log_bc7_block& log_blk);
+
+		void pack_endpoints(
+			uint32_t mode_index,
+			const color_rgba pSrc_endpoints[2], // always 8-bits (unpacked)
+			color_rgba pDst_endpoints[2], uint8_t pDst_pbits[2]); // BC7 packed with optional shared or unique p-bits, not this does not take into account any mode 4/5 channel swapping with A
+
+		void endpoint_dpcm(
+			bool decode_flag,
+			const log_bc7_block& predictor_log_blk, uint32_t predictor_subset_index, // the logical block we are predicting from
+			log_bc7_block& log_blk, uint32_t subset_index, // the logical block which has the endpoint we want to code/decode
+			uint8_t* pResiduals, uint32_t& num_residuals, uint8_t* pBits, uint32_t& num_pbits); // the DPCM encoded values, in RR, GG, BB, AA order, pResiduals[] is always modified!
+
+		void set_endpoints(log_bc7_block& log_blk, uint32_t subset, const color_rgba pEndpoints[2], const uint8_t pbits[2]); // must be packed
+
+		bool unpack_bc7(const log_bc7_block& log_blk, color_rgba* pPixels);
+
+		bool unpack_bc7_texel(const log_bc7_block& log_blk, color_rgba& pixel, uint32_t x, uint32_t y);
+
+		uint32_t get_texel_subset(log_bc7_block& log_blk, uint32_t x, uint32_t y);
+
+		void canonicalize_endpoints(log_bc7_block& log_blk);
+		
+		// note the packing code may swap endpoints if needed to pack the weights, which is lossless for decoding to pixels
+		bool pack_bc7(const log_bc7_block& log_blk, void* pPhys_block);
+
+		bool compare_block_configs(const log_bc7_block& a, const log_bc7_block& b, bool compare_partition_index = true); // true if a's mode/config matches b's (everything EXCEPT endpoint/pbits/weight)
+		
+		bool compare_block_endpoints(const log_bc7_block& a, const log_bc7_block& b); 
+
+		bool compare_block_pbits(const log_bc7_block& a, const log_bc7_block& b);
+
+		bool compare_block_weights(const log_bc7_block& a, const log_bc7_block& b);
+
+		bool compare_block_full(const log_bc7_block& a, const log_bc7_block& b);
+
 	} // namespace bc7u
 
 	namespace bc7f 
@@ -3073,6 +3436,10 @@ namespace basist
 			cPackBC7FlagNonAnalyticalRGB = 1024, // very slow/brute force, totally abuses the encoder, MUST use with cPackBC7FlagPartiallyAnalyticalRGB flag
 			cPackBC7FlagNonAnalyticalRGBA = 2048, // very slow/brute force, totally abuses the encoder, MUST use with cPackBC7FlagPartiallyAnalyticalRGBA flag
 
+			cPackBC7FlagASTCCompatible = 4096, // disallow 2/3 partition patterns not in common with ASTC LDR 4x4
+
+			cPackBC7FlagDisableRGBDualPlane = 8192, // don't use RGB dual plane channels (but A is OK)
+
 			// Default to use first:
 
 			// Decent analytical BC7 defaults
@@ -3084,6 +3451,7 @@ namespace basist
 			cPackBC7FlagDefaultFast = cPackBC7FlagUse2SubsetsRGB | cPackBC7FlagUse2SubsetsRGBA | cPackBC7FlagUseDualPlaneRGBA |
 				cPackBC7FlagPBitOpt | cPackBC7FlagUseTrivialMode6,
 
+			// Reasonable defaults, but not highest quality but fast
 			cPackBC7FlagDefault = (cPackBC7FlagUse2SubsetsRGB | cPackBC7FlagUse2SubsetsRGBA | cPackBC7FlagUse3SubsetsRGB) |
 				(cPackBC7FlagUseDualPlaneRGB | cPackBC7FlagUseDualPlaneRGBA) |
 				(cPackBC7FlagPBitOpt | cPackBC7FlagPBitOptMode6) |
@@ -3098,21 +3466,27 @@ namespace basist
 
 		void init();
 		
+		// Asumes block has NO ALPHA.
 		void fast_pack_bc7_rgb_analytical(uint8_t* pBlock, const color_rgba* pPixels, uint32_t flags);
 		uint32_t fast_pack_bc7_rgb_partial_analytical(uint8_t* pBlock, const color_rgba* pPixels, uint32_t flags);
 
+		// Assumes block HAS ALPHA: Importantly, note if the block doesn't actually have alpha, this isn't what you want because it won't utilize the 2-3 subset RGB configs.
 		void fast_pack_bc7_rgba_analytical(uint8_t* pBlock, const color_rgba* pPixels, uint32_t flags);
 		uint32_t fast_pack_bc7_rgba_partial_analytical(uint8_t* pBlock, const color_rgba* pPixels, uint32_t flags);
 		
+		// Automatically determines if the block has alpha and dispatches to the appropriate function (RGB vs. RGBA).
+		// basisu::create_bc7_debug_images() can be used to print and visualize BC7 config statistics.
 		uint32_t fast_pack_bc7_auto_rgba(uint8_t* pBlock, const color_rgba* pPixels, uint32_t flags);
 
 		void print_perf_stats();
 
-#if 0
-		// Very basic BC7 mode 6 only to ASTC.
-		void fast_pack_astc(void* pBlock, const color_rgba* pPixels);
-#endif
-		
+		bool fast_pack_astc(astc_helpers::log_astc_block& log_blk, const color_rgba* pPixels, uint32_t bc7f_override_flags = 0);
+		bool fast_pack_astc(const basist::bc7_block& phys_bc7_block, astc_helpers::log_astc_block& log_blk, const color_rgba* pPixels); // pPixels may be nullptr
+		bool fast_pack_astc(void* pASTC_block, const color_rgba* pPixels, uint32_t bc7f_override_flags = 0);
+
+		bool fast_pack_astc(astc_helpers::log_astc_block& log_astc_blk, const basist::bc7_block& phys_bc7_block, uint32_t bc7f_override_flags = 0);
+		bool fast_pack_astc(void* pASTC_block, const basist::bc7_block& phys_bc7_block, uint32_t bc7f_override_flags = 0);
+				
 		uint32_t calc_sse(const uint8_t* pBlock, const color_rgba* pPixels);
 
 	} // namespace bc7f
@@ -3166,7 +3540,7 @@ namespace basist
 		const basisu::vector2D<color32>& temp_image,
 		uint32_t dst_num_blocks_x, uint32_t dst_num_blocks_y, bool from_alpha);
 		
-	void transcode_4x4_block(
+	bool transcode_4x4_block(
 		block_format fmt, // desired output block format
 		uint32_t block_x, uint32_t block_y, // 4x4 block being processed
 		void* pDst_blocks, // base pointer to output buffer/bitmap
@@ -3257,6 +3631,413 @@ namespace basist
 		};
 	};
 
+	// ---------------- Fixed-point math helpers ----------------
+	// Moved here from encoder/basisu_math.h (was namespace bu_math) so the
+	// transcoder + XBC7 decode path can use them. Pure integer Q(31-FRAC).FRAC;
+	// no encoder dependencies. The self-test still lives in basisu_math.h.
+	namespace fixed_detail
+	{
+		constexpr int clz64(uint64_t x)   // x != 0
+		{
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(FIXED_PORTABLE_CLZ)
+			return __builtin_clzll(x);
+#else
+			// Portable constexpr binary search (6 compares). Used by MSVC on
+			// x86 / x64 / ARM / ARM64: the _BitScanReverse intrinsics are not
+			// usable in constexpr, and C++17 has no is_constant_evaluated() to
+			// split compile-time from runtime, so one standard-C++ path serves
+			// both. (If you move to /std:c++20 you could route the runtime path
+			// through the intrinsics; the gain is minor next to the divide.)
+			int n = 0;
+			if (x <= 0x00000000FFFFFFFFull) { n += 32; x <<= 32; }
+			if (x <= 0x0000FFFFFFFFFFFFull) { n += 16; x <<= 16; }
+			if (x <= 0x00FFFFFFFFFFFFFFull) { n += 8; x <<= 8; }
+			if (x <= 0x0FFFFFFFFFFFFFFFull) { n += 4; x <<= 4; }
+			if (x <= 0x3FFFFFFFFFFFFFFFull) { n += 2; x <<= 2; }
+			if (x <= 0x7FFFFFFFFFFFFFFFull) { n += 1; }
+			return n;
+#endif
+		}
+
+		constexpr uint64_t isqrt_floor(uint64_t x)   // exact floor(sqrt(x))
+		{
+			if (x == 0) return 0;
+			uint64_t r = 0;
+			uint64_t bit = uint64_t(1) << ((63 - clz64(x)) & ~1);
+			while (bit) {
+				const uint64_t t = r + bit;
+				const uint64_t mask = uint64_t(0) - uint64_t(x >= t);
+				x -= t & mask;
+				r = (r >> 1) + (bit & mask);
+				bit >>= 2;
+			}
+			return r;
+		}
+
+		// Seed table for sqrt_fast: entry i ~ sqrt((i + 0.5) * 2^57) for the
+		// normalized argument X in [2^62, 2^64), indexed by its top 7 bits.
+		// Index = X >> 57, and X >= 2^62 means the index is always >= 32, so
+		// entries [0, 31] are unreachable; they stay zero-initialized, which
+		// fails loudly (divide by zero in the Newton step) if the normalization
+		// is ever broken. Burning 32 slots beats a subtract in the hot path.
+		// FRAC_BITS-independent, built at compile time from the exact isqrt.
+		struct sqrt_lut_t { uint32_t e[128]; };
+		constexpr sqrt_lut_t make_sqrt_lut()
+		{
+			sqrt_lut_t l{};
+			for (int i = 32; i < 128; i++)   // X >= 2^62 -> index >= 32
+				l.e[i] = uint32_t(2 * isqrt_floor(uint64_t(2 * i + 1) << 54));
+			return l;
+		}
+		inline constexpr sqrt_lut_t SQRT_LUT = make_sqrt_lut();
+	}
+
+	// C++17 fixed-point number, Q(31-FRAC_BITS).FRAC_BITS signed format.
+	// Fully constexpr: constants can be built at compile time, e.g.
+	//   constexpr auto PI = fixed<16>::from_float(3.14159265f);
+	// Rounding convention everywhere: round half away from zero
+	// (matches the original round_to_int / operator* behaviour).
+	//
+	// Debug builds (NDEBUG not defined) assert on:
+	//   - arithmetic overflow of the int32_t result (+, -, *, /, scaling,
+	//     from_int, from_float/double, ceil, <<)
+	//   - division by zero (fixed or integer divisor)
+	//   - out-of-range shift counts
+	//   - INT32_MIN passed to operator-() or abs()
+	// In constexpr evaluation a failed assert is a compile error.
+	// With NDEBUG the asserts vanish and the preconditions are the
+	// caller's responsibility, unchecked.
+	//
+	// Portability assumptions (hold on all mainstream targets:
+	// x86/x64, ARM, RISC-V, WASM):
+	//   - >> on negative signed values is an arithmetic shift
+	//     (implementation-defined in C++17, guaranteed in C++20).
+	//   - Two's complement representation (floor/ceil/frac bit masks rely on it;
+	//     guaranteed in C++20).
+	template<int FRAC_BITS>
+	struct fixed
+	{
+		static_assert(FRAC_BITS > 0 && FRAC_BITS < 31, "FRAC_BITS must be in [1, 30]");
+
+		int32_t v;
+
+		static constexpr int32_t ONE = int32_t(1) << FRAC_BITS;
+
+		// ---- construction -------------------------------------------------
+
+		constexpr fixed() : v(0) {}
+
+		static constexpr fixed from_raw(int32_t raw) { return fixed(raw, raw_tag{}); }
+
+		static constexpr fixed from_int(int32_t x)
+		{
+			// x * ONE instead of x << FRAC_BITS: shifting negatives is UB until
+			// C++20, and the multiply compiles to the same shift anyway.
+			return fixed(checked32(int64_t(x) * ONE), raw_tag{});
+		}
+
+		// Compile-time capable: float/double arithmetic and the float->int
+		// conversion are valid in constexpr as long as the value fits.
+		static constexpr fixed from_float(float f) { return from_double(double(f)); }
+
+		// For fixed constants that should be readable as decimal values while
+		// still using the raw integer as the source of truth. Debug builds
+		// repack the float to raw fixed-point and verify it matches the supplied
+		// raw value; release builds ignore the float argument.
+		static constexpr fixed from_float_and_raw(float f, int32_t raw)
+		{
+#ifndef NDEBUG
+			const int32_t repacked_raw = from_float(f).v;
+			assert(repacked_raw == raw && "fixed: raw constant does not match float value");
+#else
+			(void)f;
+#endif
+			return from_raw(raw);
+		}
+
+		static constexpr fixed from_double(double d)
+		{
+			const double scaled = d * double(ONE) + (d >= 0.0 ? 0.5 : -0.5);
+			assert(scaled >= double(INT32_MIN) && scaled <= double(INT32_MAX) &&
+				"fixed: from_float/from_double out of range");
+			return fixed(int32_t(scaled), raw_tag{});
+		}
+
+		// ---- conversion out ------------------------------------------------
+
+		constexpr float  to_float()  const { return float(v) / float(ONE); }
+		constexpr double to_double() const { return double(v) / double(ONE); }
+
+		constexpr int32_t to_int() const                  // truncate toward -inf
+		{
+			return v >> FRAC_BITS;
+		}
+
+		constexpr int32_t trunc_to_int() const            // truncate toward 0
+		{
+			// C++ integer division truncates toward zero; defined for negatives
+			// and INT32_MIN-safe (no negation involved).
+			return v / ONE;
+		}
+
+		constexpr int32_t round_to_int() const            // round half away from 0
+		{
+			// Widen before negating: -v overflows for v == INT32_MIN.
+			const int64_t w = v;
+			return w >= 0
+				? int32_t((w + (ONE >> 1)) >> FRAC_BITS)
+				: -int32_t(((-w) + (ONE >> 1)) >> FRAC_BITS);
+		}
+
+		// Multiply by b and round the mathematical product to the nearest
+		// integer (half away from zero), computed entirely in 64 bits with NO
+		// fixed-point intermediate. Use this when (*this * b) exceeds the fixed
+		// range but the rounded INTEGER result is what's wanted anyway (e.g.
+		// quantization tables at very low quality: base * level_scale can reach
+		// ~41700 at q=1, far past Q15.16, while the int result is fine).
+		//
+		// Total for fixed16_16: the Q(2*FRAC) product of any two raws is
+		// <= 2^62 (fits int64), and the rounded integer of two Q15.16 values is
+		// <= 2^30 (fits int32). For low-FRAC formats the int result can exceed
+		// int32, so it narrows through checked32 like everything else.
+		constexpr int32_t mul_round_to_int(fixed b) const
+		{
+			const int64_t p = int64_t(v) * int64_t(b.v);   // Q(2*FRAC_BITS), exact
+			return checked32(rounded_rshift(p, 2 * FRAC_BITS));
+		}
+
+		// ---- arithmetic ----------------------------------------------------
+
+		constexpr fixed operator+(fixed b) const
+		{
+			return from_raw(checked32(int64_t(v) + int64_t(b.v)));
+		}
+
+		constexpr fixed operator-(fixed b) const
+		{
+			return from_raw(checked32(int64_t(v) - int64_t(b.v)));
+		}
+
+		constexpr fixed operator-() const
+		{
+			assert(v != INT32_MIN && "fixed: negating INT32_MIN");
+			return from_raw(-v);
+		}
+
+		constexpr fixed operator+() const { return *this; }
+
+		constexpr fixed operator*(fixed b) const
+		{
+			return from_raw(checked32(rounded_rshift(int64_t(v) * int64_t(b.v), FRAC_BITS)));
+		}
+
+		constexpr fixed operator/(fixed b) const
+		{
+			assert(b.v != 0 && "fixed: division by zero");
+			// Compute with one extra bit so we can round half away from zero.
+			// Multiply instead of left-shifting v: shifting a negative value is
+			// UB until C++20. |v| * 2^(FRAC_BITS+1) <= 2^62, fits in int64.
+			const int64_t q = (int64_t(v) * (int64_t(1) << (FRAC_BITS + 1))) / int64_t(b.v);
+			return from_raw(checked32(rounded_rshift(q, 1)));
+		}
+
+		// Cheap scaling by plain integers (no shift/precision loss on multiply).
+		constexpr fixed operator*(int32_t s) const
+		{
+			return from_raw(checked32(int64_t(v) * int64_t(s)));
+		}
+
+		constexpr fixed operator/(int32_t s) const
+		{
+			assert(s != 0 && "fixed: division by zero");
+			return from_raw(rounded_div(v, s));
+		}
+
+		friend constexpr fixed operator*(int32_t s, fixed a) { return a * s; }
+
+		// ---- wide accumulate pattern -------------------------------------------
+		// For dot products / filters: sum mul_wide() products in an int64_t, then
+		// convert back with ONE rounding via from_sum. Far faster than rounding
+		// every multiply (vectorizes), same accuracy in practice.
+		constexpr int64_t mul_wide(fixed b) const { return int64_t(v) * int64_t(b.v); }
+
+		static constexpr fixed from_sum(int64_t s)      // s in Q(2*FRAC_BITS)
+		{
+			// |s| must stay below ~2^62 (any sum whose result fits int32 does, by
+			// a wide margin); the rounding add itself would overflow int64 beyond.
+			return from_raw(checked32(rounded_rshift(s, FRAC_BITS)));
+		}
+
+		// a + (b - a)*t, rounded; diff and product computed in 64-bit so any
+		// representable a, b are safe. Exact at t=0 and t=1. t in [0,1] is always
+		// safe; extrapolation is fine while (b-a)*t fits in int64.
+		static constexpr fixed lerp(fixed a, fixed b, fixed t)
+		{
+			return from_raw(checked32(a.v + rounded_rshift((int64_t(b.v) - a.v) * t.v, FRAC_BITS)));
+		}
+
+		// ---- fast (truncating) variants ---------------------------------------
+		// Skip the round-half-away-from-zero work: one multiply + one shift (or
+		// one divide). Result differs from the rounding versions by at most 1 ulp.
+		// Note the truncation directions differ, as is conventional:
+		//   mul_fast truncates toward -inf (arithmetic shift),
+		//   div_fast truncates toward zero (C++ integer division).
+
+		constexpr fixed mul_fast(fixed b) const
+		{
+			return from_raw(checked32((int64_t(v) * int64_t(b.v)) >> FRAC_BITS));
+		}
+
+		constexpr fixed div_fast(fixed b) const
+		{
+			assert(b.v != 0 && "fixed: division by zero");
+			return from_raw(checked32((int64_t(v) * ONE) / int64_t(b.v)));
+		}
+
+		constexpr fixed div_fast(int32_t s) const
+		{
+			assert(s != 0 && "fixed: division by zero");
+			// the one input pair where 32-bit division itself overflows (UB/trap)
+			assert(!(v == INT32_MIN && s == -1) && "fixed: overflow");
+			return from_raw(v / s);
+		}
+
+		// Multiply instead of <<: left-shifting a negative value is UB until C++20.
+		constexpr fixed operator<<(int s) const
+		{
+			assert(s >= 0 && s < 31 && "fixed: shift count out of range");
+			return from_raw(checked32(int64_t(v) * (int64_t(1) << s)));
+		}
+
+		constexpr fixed operator>>(int s) const
+		{
+			assert(s >= 0 && s < 32 && "fixed: shift count out of range");
+			return from_raw(v >> s);
+		}
+
+		// ---- compound assignment --------------------------------------------
+
+		constexpr fixed& operator+=(fixed b) { *this = *this + b; return *this; }
+		constexpr fixed& operator-=(fixed b) { *this = *this - b; return *this; }
+		constexpr fixed& operator*=(fixed b) { *this = *this * b; return *this; }
+		constexpr fixed& operator/=(fixed b) { *this = *this / b; return *this; }
+		constexpr fixed& operator*=(int32_t s) { *this = *this * s; return *this; }
+		constexpr fixed& operator/=(int32_t s) { *this = *this / s; return *this; }
+		constexpr fixed& operator<<=(int s) { *this = *this << s; return *this; }
+		constexpr fixed& operator>>=(int s) { *this = *this >> s; return *this; }
+
+		// ---- comparison ------------------------------------------------------
+
+		constexpr bool operator==(fixed b) const { return v == b.v; }
+		constexpr bool operator!=(fixed b) const { return v != b.v; }
+		constexpr bool operator< (fixed b) const { return v < b.v; }
+		constexpr bool operator<=(fixed b) const { return v <= b.v; }
+		constexpr bool operator> (fixed b) const { return v > b.v; }
+		constexpr bool operator>=(fixed b) const { return v >= b.v; }
+
+		// ---- misc helpers ------------------------------------------------------
+
+		constexpr fixed abs() const
+		{
+			assert(v != INT32_MIN && "fixed: abs(INT32_MIN)");
+			return v >= 0 ? *this : from_raw(-v);
+		}
+
+		constexpr fixed floor() const { return from_raw(v & ~(ONE - 1)); }
+
+		constexpr fixed ceil() const
+		{
+			return from_raw(checked32((int64_t(v) + (ONE - 1)) & ~int64_t(ONE - 1)));
+		}
+
+		// nearest integer, half away from zero, kept as fixed point
+		// (the fixed-valued analog of round_to_int, like floor()/ceil())
+		constexpr fixed round() const
+		{
+			return from_raw(checked32(int64_t(round_to_int()) * ONE));
+		}
+
+		// integer part, toward zero, kept as fixed point (analog of trunc_to_int).
+		// Magnitude never grows, so no overflow check needed; INT32_MIN-safe.
+		constexpr fixed trunc() const { return from_raw((v / ONE) * ONE); }
+
+		constexpr fixed frac() const { return from_raw(v & (ONE - 1)); }   // always >= 0
+
+		// Deterministic square root, round-to-nearest, max error 1/2 ulp.
+		// Pure integer shift-subtract on sqrt(v * 2^FRAC_BITS): identical results
+		// on every platform/compiler, no FPU. v must be >= 0.
+		constexpr fixed sqrt() const
+		{
+			assert(v >= 0 && "fixed: sqrt of negative");
+			const uint64_t x = uint64_t(uint32_t(v)) << FRAC_BITS;
+			const uint64_t f = fixed_detail::isqrt_floor(x);
+			// round to nearest: remainder x - f^2 > f means nearer to f+1
+			return from_raw(checked32(int64_t(f + (x - f * f > f))));
+		}
+
+		// Approximate square root: LUT seed + one Newton-Raphson step.
+		// Pure integer, deterministic, constexpr, ~15x faster than sqrt().
+		// Relative error <= ~2^-15 (~0.003%) plus ~1 ulp of output quantization
+		// (which dominates for results near zero). Slight upward bias
+		// (Newton converges from above). v must be >= 0.
+		constexpr fixed sqrt_fast() const
+		{
+			assert(v >= 0 && "fixed: sqrt of negative");
+			const uint64_t x = uint64_t(uint32_t(v)) << FRAC_BITS;
+			if (x == 0) return fixed();
+			// normalize by an even shift: X = x << t in [2^62, 2^64)
+			const int t = fixed_detail::clz64(x) & ~1;
+			const uint64_t X = x << t;
+			// ~7-bit seed from the table, one Newton step -> ~15 bits relative
+			const uint64_t r0 = fixed_detail::SQRT_LUT.e[X >> 57];
+			const uint64_t r1 = (r0 + X / r0) >> 1;
+			// sqrt(x) = sqrt(X) >> (t/2), rounded
+			const int s = t >> 1;
+			const uint64_t half = s ? (uint64_t(1) << (s - 1)) : 0;
+			return from_raw(checked32(int64_t((r1 + half) >> s)));
+		}
+
+	private:
+		struct raw_tag {};
+		constexpr fixed(int32_t raw, raw_tag) : v(raw) {}
+
+		// Asserts that a widened intermediate fits back into int32_t.
+		static constexpr int32_t checked32(int64_t x)
+		{
+			assert(x >= INT32_MIN && x <= INT32_MAX && "fixed: overflow");
+			return int32_t(x);
+		}
+
+		// (x + half) >> bits, rounding half away from zero, valid for negatives.
+		// Returns int64 so the caller can range-check before narrowing.
+		static constexpr int64_t rounded_rshift(int64_t x, int bits)
+		{
+			const int64_t half = int64_t(1) << (bits - 1);
+			return x >= 0
+				? ((x + half) >> bits)
+				: -(((-x) + half) >> bits);
+		}
+
+		static constexpr int32_t rounded_div(int64_t num, int64_t den)
+		{
+			// round half away from zero for any sign combination
+			const int64_t half = den >= 0 ? den / 2 : -den / 2;
+			const bool neg = (num < 0) != (den < 0);
+			const int64_t n = num < 0 ? -num : num;
+			const int64_t d = den < 0 ? -den : den;
+			const int64_t q = (n + half) / d;
+			// checked: INT32_MIN / -1 is the one quotient that doesn't fit back
+			return checked32(neg ? -q : q);
+		}
+	};
+
+	// Common instantiations
+	using fixed24_8 = fixed<8>;		// Q23.8
+	using fixed22_10 = fixed<10>;   // Q21.10
+	using fixed16_16 = fixed<16>;   // Q15.16
+	using fixed8_24 = fixed<24>;	// Q7.24
+
+#define BU_F16_16(x) basist::fixed16_16::from_float(x)
 } // namespace basist
 
 
