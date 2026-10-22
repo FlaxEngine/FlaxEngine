@@ -747,93 +747,84 @@ LongFloat::LongFloat(uint64 highbits, uint64 lowbits)
 #pragma region Converters
 LongFloat LongFloatMath::Expand(int64 Value)
 {
+    if (Value == 0)
+        return LongFloatMath::GetZero();
+
     LongFloat Result
     {
-        static_cast<uint64>(Value),
-        Value < 0 ? MAX_uint64 : 0
+        Value < 0 ? MAX_uint64 : 0,
+        static_cast<uint64>(Value)
     };
 
-    //decimal shift by 10
     for (int i = 0; i < LongFloat::DecimalPoint; ++i)
     {
-        LongFloat A = Result;
-        LongFloat B = Result;
-
-        A = LongFloatMath::ShiftLeft(A, 3);
-        B = LongFloatMath::ShiftLeft(B, 1);
-
-        A += B;
-        Result = A;
+        const LongFloat A = LongFloatMath::ShiftLeft(Result, 3);
+        const LongFloat B = LongFloatMath::ShiftLeft(Result, 1);
+        Result = A + B;
     }
     return Result;
 }
+
 LongFloat LongFloatMath::Expand(int32 Value)
 {
+    if (Value == 0)
+        return LongFloatMath::GetZero();
+
     LongFloat Result
     {
-        static_cast<uint64>(Value),
-        Value < 0 ? MAX_uint64 : 0
+        Value < 0 ? MAX_uint64 : 0,
+        static_cast<uint64>(Value)
     };
 
-    //decimal shift by 10
     for (int i = 0; i < LongFloat::DecimalPoint; ++i)
     {
-        LongFloat A = Result;
-        LongFloat B = Result;
-
-        A = LongFloatMath::ShiftLeft(A, 3);
-        B = LongFloatMath::ShiftLeft(B, 1);
-
-        A += B;
-        Result = A;
+        const LongFloat A = LongFloatMath::ShiftLeft(Result, 3);
+        const LongFloat B = LongFloatMath::ShiftLeft(Result, 1);
+        Result = A + B;
     }
     return Result;
 }
+
 LongFloat LongFloatMath::Expand(uint64 Value)
 {
-    LongFloat Result
-    {
-        static_cast<uint64>(Value),
-        Value < 0 ? MAX_uint64 : 0
-    };
+    if (Value == 0)
+        return LongFloatMath::GetZero();
 
-    //decimal shift by 10
+    LongFloat Result{ 0, Value };
+
     for (int i = 0; i < LongFloat::DecimalPoint; ++i)
     {
-        LongFloat A = Result;
-        LongFloat B = Result;
-
-        A = LongFloatMath::ShiftLeft(A, 3);
-        B = LongFloatMath::ShiftLeft(B, 1);
-
-        A += B;
-        Result = A;
+        const LongFloat A = LongFloatMath::ShiftLeft(Result, 3);
+        const LongFloat B = LongFloatMath::ShiftLeft(Result, 1);
+        Result = A + B;
     }
     return Result;
 }
+
 LongFloat LongFloatMath::Expand(double Value)
 {
+    constexpr double TwoTo64 = 18446744073709551616.0;
     constexpr uint64 DecimalScale = LongFloat::ComputeScale();
 
-    const uint64 Whole = static_cast<uint64>(Value);
-    const double Fraction = Value - static_cast<double>(Whole);
+    // Also rejects NaN and infinities.
+    if (!(Value > -TwoTo64 && Value < TwoTo64))
+        return LongFloat(0x8000000000000000ULL, 0);
+
+    if (Value == 0.0)
+        return LongFloatMath::GetZero();
+
+    const bool Negative = Value < 0.0;
+    const double Magnitude = Negative ? -Value : Value;
+
+    const uint64 Whole = static_cast<uint64>(Magnitude);
+    const double Fraction = Magnitude - static_cast<double>(Whole);
     const uint64 FractionScaled = static_cast<uint64>(
-        Math::Round(Fraction * DecimalScale)
-        );
+        Math::Round(Fraction * static_cast<double>(DecimalScale)));
 
-    LongFloat f = Whole;
+    LongFloat Result = LongFloatMath::Expand(Whole);
+    Result += LongFloat(0, FractionScaled);
 
-    const uint64 OldLow = f.lowbits;
-    f.lowbits += static_cast<uint64>(FractionScaled);
-
-    // Carry or borrow into the upper 64 bits.
-    if (f.lowbits < OldLow)
-        ++f.highbits;
-
-    else if (FractionScaled < 0 && f.lowbits > OldLow)
-        --f.highbits;
-
-    return f;
+    return Negative ? LongFloatMath::Negate(Result) : Result;
 }
 #pragma endregion
 
