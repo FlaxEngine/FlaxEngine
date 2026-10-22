@@ -67,6 +67,16 @@ public:
 public:
 
     /// <summary>
+    /// The current holiday present as determined based on startup date.
+    /// </summary>
+    enum HolidayStatus {None,Christmas};//Add more conditions as needed and use GetHolidayStatus function to incorporate logic
+    /// <summary>
+    /// Function that returns the current holiday based on date.
+    /// </summary>
+    /// <param name="CurrentDate"></param>
+    /// <returns></returns>
+    HolidayStatus GetHolidayStatus(DateTime CurrentDate);
+    /// <summary>
     /// Shows popup.
     /// </summary>
     void Show();
