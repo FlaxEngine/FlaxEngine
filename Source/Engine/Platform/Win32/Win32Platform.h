@@ -48,6 +48,10 @@ public:
         return _interlockedexchange64(dst, 1) + 1;
 #endif
     }
+    static int32 InterlockedIncrement(int32 volatile* dst)
+    {
+        return _InterlockedIncrement((long volatile*)dst);
+    }
     static int64 InterlockedDecrement(int64 volatile* dst)
     {
 #if WIN64
@@ -55,6 +59,10 @@ public:
 #else
         return _interlockedexchangeadd64(dst, -1) - 1;
 #endif
+    }
+    static int32 InterlockedDecrement(int32 volatile* dst)
+    {
+        return _InterlockedDecrement((long volatile*)dst);
     }
     static int64 InterlockedAdd(int64 volatile* dst, int64 value)
     {

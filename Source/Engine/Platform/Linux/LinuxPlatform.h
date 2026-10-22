@@ -66,9 +66,17 @@ public:
     {
         return __sync_val_compare_and_swap(dst, comperand, exchange);
     }
+    FORCE_INLINE static int64 InterlockedIncrement(int32 volatile* dst)
+    {
+        return __sync_add_and_fetch(dst, 1);
+    }
     FORCE_INLINE static int64 InterlockedIncrement(int64 volatile* dst)
     {
         return __sync_add_and_fetch(dst, 1);
+    }
+    FORCE_INLINE static int64 InterlockedDecrement(int32 volatile* dst)
+    {
+        return __sync_sub_and_fetch(dst, 1);
     }
     FORCE_INLINE static int64 InterlockedDecrement(int64 volatile* dst)
     {
