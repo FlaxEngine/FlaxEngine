@@ -1,12 +1,70 @@
 using FlaxEngine.Utilities;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using FlaxEngine;
+
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+using Mathr = FlaxEngine.Mathd;
+#else
+using Real = System.Single;
+using Mathr = FlaxEngine.Mathf;
+#endif
 
 namespace FlaxEngine
 {
     public partial struct LongFloat
     {
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LongFloat"/> struct.
+        /// </summary>
+        /// <param name="highbits">The highbits.</param>
+        /// <param name="lowbits">The lowbits.</param>
+        public LongFloat(ulong highbits, ulong lowbits)
+        {
+            this.lowbits = lowbits;
+            this.highbits = highbits;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LongFloat"/> struct.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        public LongFloat(float value)
+        {
+            this = LongFloatMath.Expand(value);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LongFloat"/> struct.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        public LongFloat(uint value)
+        {
+            this = LongFloatMath.Expand(value);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LongFloat"/> struct.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        public LongFloat(double value)
+        {
+            this = LongFloatMath.Expand(value);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LongFloat"/> struct.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        public LongFloat(ulong value)
+        {
+            this = LongFloatMath.Expand(value);
+        }
+
         /// <summary>Checks whether this value is negative.</summary>
         /// <returns>True if this value is negative; otherwise, false.</returns>
         public bool IsNegative() => LongFloatMath.IsNegative(this);
@@ -102,7 +160,42 @@ namespace FlaxEngine
         /// <returns>The binary representation of the raw bits.</returns>
         public string BitsToString(bool codeMode = false) => LongFloatMath.BitsToString(this, codeMode);
 
-        /// <summary>Converts this value to its decimal string representation.</summary>
+        /// <summary>
+        /// Quantizes Long flaot to the Real Value.
+        /// </summary>
+        /// <returns>
+        /// Quantized Real
+        /// </returns>
+        static Real Quantize(in LongFloat value)
+        {
+            return (Real)LongFloatMath.QuantizeToDouble(value);
+        }
+
+        /// <summary>
+        /// Quantizes Long flaot to the Real Value.
+        /// </summary>
+        /// <returns>
+        /// Quantized float
+        /// </returns>
+        static float QuantizeToFloat(in LongFloat value)
+        {
+            return (float)LongFloatMath.QuantizeToDouble(value);
+        }
+
+        /// <summary>
+        /// Quantizes Long flaot to the Real Value.
+        /// </summary>
+        /// <returns>
+        /// Quantized float
+        /// </returns>
+        static double QuantizeToDouble(in LongFloat value)
+        {
+            return (double)LongFloatMath.QuantizeToDouble(value);
+        }
+
+        /// <summary>
+        /// Converts this value to its decimal string representation.
+        /// </summary>
         /// <returns>The decimal representation of this value.</returns>
         public override string ToString() => LongFloatMath.ToString(this);
     }

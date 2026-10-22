@@ -64,7 +64,7 @@ internal class DirectionGizmo : ContainerControl
 
         public void ProjectPoint(Vector3 worldSpaceLocation, out Float2 viewportSpaceLocation)
         {
-            worldSpaceLocation -= _origin;
+            worldSpaceLocation = RenderView.GetRelativeToOriginQuantized(_origin, worldSpaceLocation);
             _viewport.Project(ref worldSpaceLocation, ref _viewProjection, out var projected);
             viewportSpaceLocation = new Float2((float)projected.X, (float)projected.Y);
         }
@@ -240,7 +240,7 @@ internal class DirectionGizmo : ContainerControl
         var features = Render2D.Features;
         Render2D.Features = features & ~Render2D.RenderingFeatures.VertexSnapping;
         _viewportProjection.Init(_owner.Viewport);
-        _gizmoCenter = _viewport.Task.View.WorldPosition + _viewport.Task.View.Direction * 1500;
+        _gizmoCenter = _viewport.Task.View.WorldPosition.Quantize() + _viewport.Task.View.Direction * 1500;
         _viewportProjection.ProjectPoint(_gizmoCenter, out var gizmoCenterScreen);
 
         var relativeCenter = Size * 0.5f;

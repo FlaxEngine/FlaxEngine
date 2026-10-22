@@ -111,9 +111,9 @@ namespace FlaxEngine
         /// <param name="viewport">The custom viewport to use for view/projeection matrices override.</param>
         public void CopyFrom(Camera camera, ref Viewport viewport)
         {
-            Vector3 cameraPos = camera.Position;
+            Vector3LongFloat cameraPos = camera.PositionLong;
             LargeWorlds.UpdateOrigin(ref Origin, cameraPos);
-            Position = cameraPos - Origin;
+            Position = (cameraPos - Origin).Quantize();
             Direction = camera.Forward;
             Near = camera.NearPlane;
             Far = camera.FarPlane;
@@ -135,8 +135,79 @@ namespace FlaxEngine
         /// <param name="world">The output matrix.</param>
         public void GetWorldMatrix(ref Transform transform, out Matrix world)
         {
-            Float3 translation = transform.Translation - Origin;
+            Float3 translation = GetRelativeToOriginQuantized(transform.Translation);
             Matrix.Transformation(ref transform.Scale, ref transform.Orientation, ref translation, out world);
+        }
+
+        /// <summary>
+        /// Gets vector in relation to origin.
+        /// </summary>
+        /// <param name="worldPosition">The world position.</param>
+        /// <returns>Quantized vector</returns>
+        public readonly Float3 GetRelativeToOriginQuantized(Float3 worldPosition)
+        {
+            return (new Vector3LongFloat(worldPosition.X, worldPosition.Y, worldPosition.Z) - Origin).QuantizeToFloat3();
+        }
+
+        /// <summary>
+        /// Gets vector in relation to origin.
+        /// </summary>
+        /// <param name="worldPosition">The world position.</param>
+        /// <returns>Quantized vector</returns>
+        public readonly Double3 GetRelativeToOriginQuantized(Double3 worldPosition)
+        {
+            return (new Vector3LongFloat(worldPosition.X, worldPosition.Y, worldPosition.Z) - Origin).QuantizeToDouble3();
+        }
+
+        /// <summary>
+        /// Gets vector in relation to origin.
+        /// </summary>
+        /// <param name="worldPosition">The world position.</param>
+        /// <returns>Quantized vector</returns>
+        public readonly Vector3 GetRelativeToOriginQuantized(Vector3 worldPosition)
+        {
+#if USE_LARGE_WORLDS
+            return (new Vector3LongFloat(worldPosition.X, worldPosition.Y, worldPosition.Z) - Origin).QuantizeToDouble3();
+#else
+            return (new Vector3LongFloat(worldPosition.X, worldPosition.Y, worldPosition.Z) - Origin).QuantizeToFloat3();
+#endif
+        }
+
+        /// <summary>
+        /// Gets the relative to origin quantized.
+        /// </summary>
+        /// <param name="Origin">The origin.</param>
+        /// <param name="worldPosition">The world position.</param>
+        /// <returns></returns>
+        public static Float3 GetRelativeToOriginQuantized(in Vector3LongFloat Origin, Float3 worldPosition)
+        {
+            return (new Vector3LongFloat(worldPosition.X, worldPosition.Y, worldPosition.Z) - Origin).QuantizeToFloat3();
+        }
+
+        /// <summary>
+        /// Gets the relative to origin quantized.
+        /// </summary>
+        /// <param name="Origin">The origin.</param>
+        /// <param name="worldPosition">The world position.</param>
+        /// <returns></returns>
+        public static Double3 GetRelativeToOriginQuantized(in Vector3LongFloat Origin, Double3 worldPosition)
+        {
+            return (new Vector3LongFloat(worldPosition.X, worldPosition.Y, worldPosition.Z) - Origin).QuantizeToDouble3();
+        }
+
+        /// <summary>
+        /// Gets the relative to origin quantized.
+        /// </summary>
+        /// <param name="Origin">The origin.</param>
+        /// <param name="worldPosition">The world position.</param>
+        /// <returns></returns>
+        public static Vector3 GetRelativeToOriginQuantized(in Vector3LongFloat Origin, Vector3 worldPosition)
+        {
+#if USE_LARGE_WORLDS
+            return (new Vector3LongFloat(worldPosition.X, worldPosition.Y, worldPosition.Z) - Origin).QuantizeToDouble3();
+#else
+            return (new Vector3LongFloat(worldPosition.X, worldPosition.Y, worldPosition.Z) - Origin).QuantizeToFloat3();
+#endif
         }
     }
 }

@@ -6,9 +6,9 @@ API_STRUCT() struct FLAXENGINE_API Vector3LongFloat
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(Vector3LongFloat);
 public:
-    LongFloat X;
-    LongFloat Y;
-    LongFloat Z;
+    API_FIELD() LongFloat X;
+    API_FIELD() LongFloat Y;
+    API_FIELD() LongFloat Z;
 
     static Vector3LongFloat Zero;
     static Vector3LongFloat One;

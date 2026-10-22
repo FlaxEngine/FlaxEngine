@@ -95,7 +95,7 @@ namespace FlaxEditor.Tools.Terrain
                                    Matrix.Translation(patchSize * (0.5f + patchCoord.X), 0, patchSize * (0.5f + patchCoord.Y)) *
                                    Matrix.Scaling(terrain.Scale) *
                                    Matrix.RotationQuaternion(terrain.Orientation) *
-                                   Matrix.Translation(terrain.Position - renderContext.View.Origin);
+                                   Matrix.Translation(renderContext.View.GetRelativeToOriginQuantized(terrain.Position));
                     _planeModel.Draw(ref renderContext, _highlightMaterial, ref world);
                 }
 

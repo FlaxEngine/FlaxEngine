@@ -744,14 +744,17 @@ LongFloat::LongFloat(uint64 highbits, uint64 lowbits)
     this->highbits = highbits;
 }
 
-LongFloat::LongFloat(int64 Value)
+#pragma region Converters
+LongFloat LongFloatMath::Expand(int64 Value)
 {
-    lowbits = static_cast<uint64>(Value);
-    highbits = Value < 0 ? MAX_uint64 : 0;
+    LongFloat Result
+    {
+        static_cast<uint64>(Value),
+        Value < 0 ? MAX_uint64 : 0
+    };
 
     //decimal shift by 10
-    LongFloat Result = *this;
-    for (int i = 0; i < DecimalPoint; ++i)
+    for (int i = 0; i < LongFloat::DecimalPoint; ++i)
     {
         LongFloat A = Result;
         LongFloat B = Result;
@@ -762,52 +765,53 @@ LongFloat::LongFloat(int64 Value)
         A += B;
         Result = A;
     }
-    *this = Result;
+    return Result;
 }
-
-LongFloat::LongFloat(int32 Value)
+LongFloat LongFloatMath::Expand(int32 Value)
 {
-    lowbits = static_cast<uint64>(Value);
-    highbits = Value < 0 ? MAX_uint64 : 0;
+    LongFloat Result
+    {
+        static_cast<uint64>(Value),
+        Value < 0 ? MAX_uint64 : 0
+    };
 
     //decimal shift by 10
-    LongFloat Result = *this;
-    for (int i = 0; i < DecimalPoint; ++i)
+    for (int i = 0; i < LongFloat::DecimalPoint; ++i)
     {
         LongFloat A = Result;
         LongFloat B = Result;
 
         A = LongFloatMath::ShiftLeft(A, 3);
-        B = LongFloatMath::ShiftLeft(B,1);
+        B = LongFloatMath::ShiftLeft(B, 1);
 
         A += B;
         Result = A;
     }
-    *this = Result;
+    return Result;
 }
-
-LongFloat::LongFloat(uint64 Value)
+LongFloat LongFloatMath::Expand(uint64 Value)
 {
-    lowbits = static_cast<uint64>(Value);
-    highbits = Value < 0 ? MAX_uint64 : 0;
+    LongFloat Result
+    {
+        static_cast<uint64>(Value),
+        Value < 0 ? MAX_uint64 : 0
+    };
 
     //decimal shift by 10
-    LongFloat Result = *this;
-    for (int i = 0; i < DecimalPoint; ++i)
+    for (int i = 0; i < LongFloat::DecimalPoint; ++i)
     {
         LongFloat A = Result;
         LongFloat B = Result;
 
-        A = LongFloatMath::ShiftLeft(A,3);
-        B = LongFloatMath::ShiftLeft(B,1);
+        A = LongFloatMath::ShiftLeft(A, 3);
+        B = LongFloatMath::ShiftLeft(B, 1);
 
         A += B;
         Result = A;
     }
-    *this = Result;
+    return Result;
 }
-
-LongFloat::LongFloat(double Value)
+LongFloat LongFloatMath::Expand(double Value)
 {
     constexpr uint64 DecimalScale = LongFloat::ComputeScale();
 
@@ -829,8 +833,11 @@ LongFloat::LongFloat(double Value)
     else if (FractionScaled < 0 && f.lowbits > OldLow)
         --f.highbits;
 
-    *this = f;
+    return f;
 }
+#pragma endregion
+
+
 
 bool LongFloatMath::IsNegative(const LongFloat& lhs)
 {
@@ -1717,6 +1724,16 @@ String LongFloatMath::BitsToString(const LongFloat& lhs,bool CodeMode)
 
     Result += static_cast<Char>('\n');
     return Result;
+}
+
+int64 LongFloatMath::GetDecimalPoint()
+{
+    return LongFloat::DecimalPoint;
+}
+
+int64 LongFloatMath::GetDecimalPointScale()
+{
+    return LongFloat::ComputeScale();
 }
 
 String LongFloatMath::ToString(const LongFloat& lhs)

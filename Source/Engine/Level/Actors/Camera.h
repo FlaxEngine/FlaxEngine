@@ -47,7 +47,7 @@ private:
     float _far;
     float _orthoSize;
     float _orthoScale;
-
+    Vector3LongFloat _position;
 #if USE_EDITOR
     AssetReference<Model> _previewModel;
     ModelInstanceEntries _previewModelBuffer;
@@ -64,15 +64,22 @@ public:
         return _frustum;
     }
 
-    const Vector3LongFloat& GetPositionLong() const
+    API_PROPERTY() const Vector3LongFloat& GetPositionLong() const
     {
-        const static Vector3LongFloat todo = Vector3LongFloat(0);
+        //const static Vector3LongFloat todo = Vector3LongFloat(0);
 
         //Todo: Actor minimal implementation is needed
         //to swap Translation on Actor
-        return todo;
+        return _position;
     }
+    API_PROPERTY() void SetPositionLong(const Vector3LongFloat& NewLongPosition)
+    {
+        //const static Vector3LongFloat todo = Vector3LongFloat(0);
 
+        //Todo: Actor minimal implementation is needed
+        //to swap Translation on Actor
+        _position = NewLongPosition;
+    }
 public:
     /// <summary>
     /// Gets the value indicating if camera should use perspective rendering mode, otherwise it will use orthographic projection.
@@ -267,7 +274,7 @@ public:
     /// <param name="projection">The result camera projection matrix.</param>
     /// <param name="viewport">The custom output viewport.</param>
     /// <param name="origin">The rendering view origin (for relative-to-camera rendering).</param>
-    API_FUNCTION() void GetMatrices(Matrix& view,Matrix& projection,const Viewport& viewport,const Vector3LongFloat& origin) const;
+    API_FUNCTION() void GetMatrices(API_PARAM(Out) Matrix& view, API_PARAM(Out)  Matrix& projection, API_PARAM(Ref) const Viewport& viewport, API_PARAM(Ref) const Vector3LongFloat& origin) const;
 
 #if USE_EDITOR
     // Intersection check for editor picking the camera

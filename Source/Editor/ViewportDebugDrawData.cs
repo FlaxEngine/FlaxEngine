@@ -127,7 +127,7 @@ namespace FlaxEditor
                     var bounds = BoundingSphere.FromBox(staticModel.BoundingBox);
 
                     // Pick a proper LOD
-                    Float3 center = bounds.Center - renderContext.View.Origin;
+                    Float3 center = renderContext.View.GetRelativeToOriginQuantized(bounds.Center);
                     int lodIndex = RenderTools.ComputeModelLOD(model, ref center, (float)bounds.Radius, ref renderContext);
                     var lods = model.LODs;
                     if (lods == null || lods.Length < lodIndex || lodIndex < 0)
@@ -153,7 +153,7 @@ namespace FlaxEditor
                     var bones = animatedModel.SkinnedMeshBones;
 
                     // Pick a proper LOD
-                    Float3 center = bounds.Center - renderContext.View.Origin;
+                    Float3 center = renderContext.View.GetRelativeToOriginQuantized(bounds.Center);
                     int lodIndex = RenderTools.ComputeModelLOD(model, ref center, (float)bounds.Radius, ref renderContext);
                     var lods = model.LODs;
                     if (lods == null || lods.Length < lodIndex || lodIndex < 0)

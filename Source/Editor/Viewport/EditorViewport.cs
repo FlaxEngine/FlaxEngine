@@ -363,7 +363,7 @@ namespace FlaxEditor.Viewport
         {
             get
             {
-                Vector3 viewOrigin = Task.View.Origin;
+                Vector3 viewOrigin = Task.View.Origin.Quantize();
                 Float3 position = ViewPosition - viewOrigin;
                 CreateViewMatrix(position, out var view);
                 CreateProjectionMatrix(out var projection);
@@ -1405,7 +1405,7 @@ namespace FlaxEditor.Viewport
         {
             Vector3 position = ViewPosition;
             LargeWorlds.UpdateOrigin(ref view.Origin, position);
-            view.Position = position - view.Origin;
+            view.Position = view.GetRelativeToOriginQuantized(position);
             view.Direction = ViewDirection;
             view.Near = _nearPlane;
             view.Far = _farPlane;
@@ -1492,8 +1492,8 @@ namespace FlaxEditor.Viewport
             if (viewport.Width < Mathf.Epsilon || viewport.Height < Mathf.Epsilon)
                 return ViewRay;
 
-            Vector3 viewOrigin = Task.View.Origin;
-            Float3 position = ViewPosition - viewOrigin;
+            Vector3 viewOrigin = Task.View.Origin.Quantize();
+            Float3 position = Task.View.GetRelativeToOriginQuantized(ViewPosition);
 
             // Use different logic in orthographic projection
             if (_isOrtho)
@@ -1539,8 +1539,8 @@ namespace FlaxEditor.Viewport
             var viewport = new FlaxEngine.Viewport(0, 0, Width, Height);
             if (viewport.Width < Mathf.Epsilon || viewport.Height < Mathf.Epsilon)
                 return;
-            Vector3 viewOrigin = Task.View.Origin;
-            Float3 position = ViewPosition - viewOrigin;
+
+            Float3 position = Task.View.GetRelativeToOriginQuantized(ViewPosition);
             CreateProjectionMatrix(out var p);
             CreateViewMatrix(position, out var v);
             Matrix.Multiply(ref v, ref p, out var vp);

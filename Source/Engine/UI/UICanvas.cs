@@ -78,7 +78,7 @@ namespace FlaxEngine
             if (!Canvas.IsVisible(renderContext.View.RenderLayersMask))
                 return;
             var bounds = Canvas.Bounds;
-            bounds.Transformation.Translation -= renderContext.View.Origin;
+            bounds.Transformation.Translation = renderContext.View.GetRelativeToOriginQuantized(bounds.Transformation.Translation);
             if (renderContext.View.Frustum.Contains(bounds.GetBoundingBox()) == ContainmentType.Disjoint)
                 return;
             var drawInWorld = Canvas.RenderMode == CanvasRenderMode.CameraSpace || Canvas.RenderMode == CanvasRenderMode.WorldSpace || Canvas.RenderMode == CanvasRenderMode.WorldSpaceFaceCamera; 
@@ -87,7 +87,7 @@ namespace FlaxEngine
             Profiler.BeginEventGPU("UI Canvas");
 
             // Calculate rendering matrix (world*view*projection)
-            Canvas.GetWorldMatrix(renderContext.View.Origin, out Matrix worldMatrix);
+            Canvas.GetWorldMatrix(renderContext.View.Origin.Quantize(), out Matrix worldMatrix);
             Matrix.Multiply(ref worldMatrix, ref renderContext.View.View, out Matrix viewMatrix);
             Matrix projectionMatrix = renderContext.View.Projection;
             if (drawInWorld && (Canvas.RenderLocation == PostProcessEffectLocation.Default || Canvas.RenderLocation == PostProcessEffectLocation.AfterAntiAliasingPass))

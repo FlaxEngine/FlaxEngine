@@ -581,7 +581,7 @@ namespace FlaxEditor.Tools
                     _brushMaterial.SetParameterValue("Color", new Color(1.0f, 0.85f, 0.0f));
                     _brushMaterial.SetParameterValue("DepthBuffer", Owner.RenderTask.Buffers.DepthBuffer);
                     Quaternion rotation = RootNode.RaycastNormalRotation(ref _hitNormal);
-                    Matrix transform = Matrix.Scaling(_gizmoMode.BrushSize * 0.01f) * Matrix.RotationQuaternion(rotation) * Matrix.Translation(_hitLocation - viewOrigin);
+                    Matrix transform = Matrix.Scaling(_gizmoMode.BrushSize * 0.01f) * Matrix.RotationQuaternion(rotation) * Matrix.Translation(renderContext.View.GetRelativeToOriginQuantized(_hitLocation));
                     _brushModel.Draw(ref renderContext, _brushMaterial, ref transform);
                 }
 
@@ -615,7 +615,7 @@ namespace FlaxEditor.Tools
                                 var pos = instanceTransform.LocalToWorld(positionStream.GetFloat3(vertexIndex));
                                 if (brushSphere.Contains(ref pos) == ContainmentType.Disjoint)
                                     continue;
-                                Matrix transform = modelScaleMatrix * Matrix.Translation(pos - viewOrigin);
+                                Matrix transform = modelScaleMatrix * Matrix.Translation(renderContext.View.GetRelativeToOriginQuantized(pos));
                                 _brushModel.Draw(ref renderContext, _verticesPreviewMaterial, ref transform);
                             }
                         }

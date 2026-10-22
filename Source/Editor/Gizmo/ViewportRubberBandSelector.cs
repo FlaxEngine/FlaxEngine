@@ -122,7 +122,7 @@ public sealed class ViewportRubberBandSelector
             _viewport = new Viewport(0, 0, editorViewport.Width, editorViewport.Height);
             _frustum = editorViewport.ViewFrustum;
             _viewProjection = _frustum.Matrix;
-            _origin = editorViewport.Task.View.Origin;
+            _origin = editorViewport.Task.View.Origin.Quantize();
         }
 
         public void ProjectPoint(Vector3 worldSpaceLocation, out Float2 viewportSpaceLocation)

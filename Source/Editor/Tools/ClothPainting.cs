@@ -292,7 +292,6 @@ namespace FlaxEngine.Tools
             if (_hasHit)
             {
                 var viewOrigin = renderContext.View.Origin;
-
                 // Draw paint brush
                 if (!_brushModel)
                     _brushModel = Content.LoadAsyncInternal<Model>("Editor/Primitives/Sphere");
@@ -303,7 +302,7 @@ namespace FlaxEngine.Tools
                     _brushMaterial.SetParameterValue("Color", new Color(1.0f, 0.85f, 0.0f)); // TODO: expose to editor options
                     _brushMaterial.SetParameterValue("DepthBuffer", Owner.RenderTask.Buffers.DepthBuffer);
                     Quaternion rotation = RootNode.RaycastNormalRotation(ref _hitNormal);
-                    Matrix transform = Matrix.Scaling(_gizmoMode.BrushSize * 0.01f) * Matrix.RotationQuaternion(rotation) * Matrix.Translation(_hitLocation - viewOrigin);
+                    Matrix transform = Matrix.Scaling(_gizmoMode.BrushSize * 0.01f) * Matrix.RotationQuaternion(rotation) * Matrix.Translation(renderContext.View.GetRelativeToOriginQuantized(_hitLocation));
                     _brushModel.Draw(ref renderContext, _brushMaterial, ref transform);
                 }
             }

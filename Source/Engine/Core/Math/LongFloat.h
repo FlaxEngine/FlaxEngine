@@ -46,61 +46,6 @@ public:
     [[nodiscard]] API_FUNCTION() static bool IsNAN(const LongFloat& lhs);
 
     /// <summary>
-    /// Quantizes Long flaot to the Real Value.
-    /// </summary>
-    /// <returns>
-    /// Quantized Real
-    /// </returns>
-    [[nodiscard]] static Real Quantize(const LongFloat& value)
-    {
-        return static_cast<Real>(QuantizeToDouble(value));
-    }
-
-    /// <summary>
-    /// Quantizes Long flaot to the Real Value.
-    /// </summary>
-    /// <returns>
-    /// Quantized float
-    /// </returns>
-    [[nodiscard]] static float QuantizeToFloat(const LongFloat& value)
-    {
-        return static_cast<float>(QuantizeToDouble(value));
-    }
-
-    /// <summary>
-    /// Quantizes Long flaot to the Real Vector.
-    /// </summary>
-    /// <returns>
-    /// Quantized Real Vector
-    /// </returns>
-    [[nodiscard]] static Vector3 Quantize(const Vector3LongFloat& value);
-
-    /// <summary>
-    /// Quantizes Long flaot to the Float3.
-    /// </summary>
-    /// <returns>
-    /// Quantized Float3 Vector
-    /// </returns>
-    [[nodiscard]] static Float3 QuantizeToFloat3(const Vector3LongFloat& value);
-
-    /// <summary>
-    /// Quantizes Long flaot to the Double3.
-    /// </summary>
-    /// <returns>
-    /// Quantized Double3 Vector
-    /// </returns>
-    [[nodiscard]] static Double3 QuantizeToDouble3(const Vector3LongFloat& value);
-
-    /// <summary>
-    /// Quantizes Long flaot to the double Value.
-    /// </summary>
-    /// <returns>
-    /// Quantized double
-    /// </returns>
-    [[nodiscard]] API_FUNCTION() static double QuantizeToDouble(const LongFloat& value);
-
-
-    /// <summary>
     /// Gets the NaN value.
     /// </summary>
     /// <returns>The NaN value.</returns>
@@ -251,12 +196,100 @@ public:
     /// <returns>The binary representation of the raw bits.</returns>
     [[nodiscard]] API_FUNCTION() static String BitsToString(const LongFloat& lhs, bool CodeMode = false);
 
+    [[nodiscard]] API_FUNCTION() static int64 GetDecimalPoint();
+
+    [[nodiscard]] API_FUNCTION() static int64 GetDecimalPointScale();
+
+#pragma region Converters    
+    /// <summary>
+    /// Expands the specified value.
+    /// </summary>
+    /// <param name="Value">The value.</param>
+    /// <returns></returns>
+    [[nodiscard]] static LongFloat Expand(int64 Value);
+
+    /// <summary>
+    /// Expands the specified value.
+    /// </summary>
+    /// <param name="Value">The value.</param>
+    /// <returns></returns>
+    [[nodiscard]] static LongFloat Expand(int32 Value);
+
+    /// <summary>
+    /// Expands the specified value.
+    /// </summary>
+    /// <param name="Value">The value.</param>
+    /// <returns></returns>
+    [[nodiscard]] API_FUNCTION() static LongFloat Expand(uint64 Value);
+
+    /// <summary>
+    /// Expands the specified value.
+    /// </summary>
+    /// <param name="Value">The value.</param>
+    /// <returns></returns>
+    [[nodiscard]] API_FUNCTION() static LongFloat Expand(double Value);
+
+    /// <summary>
+    /// Quantizes Long flaot to the Real Value.
+    /// </summary>
+    /// <returns>
+    /// Quantized Real
+    /// </returns>
+    [[nodiscard]] static Real Quantize(const LongFloat& value)
+    {
+        return static_cast<Real>(QuantizeToDouble(value));
+    }
+
+    /// <summary>
+    /// Quantizes Long flaot to the Real Value.
+    /// </summary>
+    /// <returns>
+    /// Quantized float
+    /// </returns>
+    [[nodiscard]] static float QuantizeToFloat(const LongFloat& value)
+    {
+        return static_cast<float>(QuantizeToDouble(value));
+    }
+
+    /// <summary>
+    /// Quantizes Long flaot to the Real Vector.
+    /// </summary>
+    /// <returns>
+    /// Quantized Real Vector
+    /// </returns>
+    [[nodiscard]] static Vector3 Quantize(const Vector3LongFloat& value);
+
+    /// <summary>
+    /// Quantizes Long flaot to the Float3.
+    /// </summary>
+    /// <returns>
+    /// Quantized Float3 Vector
+    /// </returns>
+    [[nodiscard]] static Float3 QuantizeToFloat3(const Vector3LongFloat& value);
+
+    /// <summary>
+    /// Quantizes Long flaot to the Double3.
+    /// </summary>
+    /// <returns>
+    /// Quantized Double3 Vector
+    /// </returns>
+    [[nodiscard]] static Double3 QuantizeToDouble3(const Vector3LongFloat& value);
+
+    /// <summary>
+    /// Quantizes Long flaot to the double Value.
+    /// </summary>
+    /// <returns>
+    /// Quantized double
+    /// </returns>
+    [[nodiscard]] API_FUNCTION() static double QuantizeToDouble(const LongFloat& value);
+
     /// <summary>
     /// Converts a value to its decimal string representation.
     /// </summary>
     /// <param name="lhs">The value to convert.</param>
     /// <returns>The decimal representation of the value.</returns>
     [[nodiscard]] API_FUNCTION() static String ToString(const LongFloat& lhs);
+#pragma endregion
 };
 
 /// <summary>
@@ -271,6 +304,7 @@ API_STRUCT() struct FLAXENGINE_API LongFloat
     //maybe add a compile setting for it ?
     constexpr static int64 DecimalPoint = 15;
 
+public:
     /// <summary>
     /// The low 64 bits of the signed fixed-point value.
     /// </summary>
@@ -295,10 +329,22 @@ public:
 public:
     LongFloat() = default;
     LongFloat(uint64 highbits, uint64 lowbits);
-    LongFloat(int32 Value);
-    LongFloat(int64 Value);
-    LongFloat(double Value);
-    LongFloat(uint64 Value);
+    LongFloat(int32 Value)
+    {
+        (*this) = LongFloatMath::Expand(Value);
+    }
+    LongFloat(int64 Value)
+    {
+        (*this) = LongFloatMath::Expand(Value);
+    }
+    LongFloat(double Value)
+    {
+        (*this) = LongFloatMath::Expand(Value);
+    }
+    LongFloat(uint64 Value)
+    {
+        (*this) = LongFloatMath::Expand(Value);
+    }
 
     float QuantizeToFloat() const
     {
