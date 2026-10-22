@@ -84,6 +84,13 @@ bool SDLPlatform::UsesX11()
 
 bool SDLPlatform::EventFilterCallback(void* userdata, SDL_Event* event)
 {
+    // TODO: Refactor the same way as in Windows EventFilterCallback
+    /*if (event->type == SDL_EVENT_WINDOW_EXPOSED)
+    {
+        if (!Engine::ShouldExit())
+            Engine::OnLoop();
+    }*/
+
     Window* draggedWindow = *(Window**)userdata;
     if (draggedWindow == nullptr)
     {

@@ -35,6 +35,10 @@ public:
         Scripting::GetScriptsDomain()->Dispatch();
         while (Platform::AtomicRead(&ExitFlag) == 0)
         {
+            // TODO: The engine loop can't be called here due to some services like ObjectsRemovalService needs to be run on main thread.
+            //if (!Engine::ShouldExit())
+            //    Engine::OnLoop(false);
+            
 #if USE_EDITOR
             // Flush any single-frame shapes to prevent memory leaking (eg. via terrain collision debug during scene drawing with PhysicsColliders or PhysicsDebug flag)
             DebugDraw::UpdateContext(nullptr, 0.0f);
