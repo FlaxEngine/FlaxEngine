@@ -226,14 +226,13 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(PixelFormat depthFormat, int
 {
     // Prepare key
     GPUPipelineStateKeyDX12 key;
+    memset(&key, 0, sizeof(key));
     key.RTsCount = rtCount;
     key.VertexLayout = vertexLayout;
     key.DepthFormat = depthFormat;
     key.MSAA = msaa;
     for (int32 i = 0; i < rtCount; i++)
         key.RTVsFormats[i] = rtFormats[i];
-    for (int32 i = rtCount; i < GPU_MAX_RT_BINDED; i++)
-        key.RTVsFormats[i] = PixelFormat::Unknown;
 
     // Try reuse cached version
     ID3D12PipelineState* state = nullptr;
