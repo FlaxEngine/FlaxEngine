@@ -13,7 +13,7 @@ public class pugixml : ThirdPartyModule
         base.Init();
 
         LicenseType = LicenseTypes.MIT;
-        LicenseFilePath = "pugixml license.txt";
+        LicenseFilePath = "LICENSE.md";
 
         // Merge third-party modules into engine binary
         BinaryModuleName = "FlaxEngine";
