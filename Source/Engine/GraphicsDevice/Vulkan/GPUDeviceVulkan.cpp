@@ -258,9 +258,7 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         {
             if (auto* state = (GPUPipelineStateVulkan*)context->GetState())
             {
-                GPUPipelineState::DebugName name;
-                state->GetDebugName(name);
-                LOG(Warning, "[Vulkan] Error during rendering with {}", String(name.Get(), name.Count() - 1));
+                LOG(Warning, "[Vulkan] Error during rendering with {}", state->ToString());
             }
         }
     }

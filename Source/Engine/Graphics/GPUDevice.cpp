@@ -94,6 +94,43 @@ void GPUPipelineState::PrecacheContext::SetFullscreenTriangleLayout()
 
 void GPUPipelineState::GetDebugName(DebugName& name) const
 {
+    auto owner = DebugDesc.VS ? DebugDesc.VS->_owner : nullptr;
+    if (
+#define CHECK_OWNER(e) (!DebugDesc.e || DebugDesc.e->_owner == owner) &&
+        CHECK_OWNER(PS)
+#if GPU_ALLOW_TESSELLATION_SHADERS
+        CHECK_OWNER(HS)
+        CHECK_OWNER(DS)
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
+        CHECK_OWNER(GS)
+#endif
+#undef CHECK_OWNER
+        owner)
+    {
+        // All shader programs come from the same shader so use shorter name
+        GPUShaderProgram::DebugName n;
+        DebugDesc.VS->GetDebugName(n);
+        name.Add(n.Get(), n.Count() - 1);
+        name.Add('+');
+#define GET_NAME(e) \
+    if (DebugDesc.e) \
+    { \
+        name.Add(DebugDesc.e->_name.Get(), DebugDesc.e->_name.Length()); \
+        name.Add('+'); \
+    }
+#if GPU_ALLOW_TESSELLATION_SHADERS
+        GET_NAME(HS);
+        GET_NAME(DS);
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
+        GET_NAME(GS);
+#endif
+        GET_NAME(PS);
+#undef GET_NAME
+    }
+    else
+    {
 #define GET_NAME(e) \
     if (DebugDesc.e) \
     { \
@@ -102,16 +139,17 @@ void GPUPipelineState::GetDebugName(DebugName& name) const
         name.Add(n.Get(), n.Count() - 1); \
         name.Add('+'); \
     }
-    GET_NAME(VS);
+        GET_NAME(VS);
 #if GPU_ALLOW_TESSELLATION_SHADERS
-    GET_NAME(HS);
-    GET_NAME(DS);
+        GET_NAME(HS);
+        GET_NAME(DS);
 #endif
 #if GPU_ALLOW_GEOMETRY_SHADERS
-    GET_NAME(GS);
+        GET_NAME(GS);
 #endif
-    GET_NAME(PS);
+        GET_NAME(PS);
 #undef GET_NAME
+    }
     if (name.Count() != 0 && name[name.Count() - 1] == '+')
         name.RemoveLast();
     name.Add('\0');
@@ -170,6 +208,17 @@ GPUResourceType GPUPipelineState::GetResourceType() const
 {
     return GPUResourceType::PipelineState;
 }
+
+#if !BUILD_RELEASE
+
+String GPUPipelineState::ToString() const
+{
+    DebugName name;
+    GetDebugName(name);
+    return String(name.Get(), name.Count());
+}
+
+#endif
 
 // @formatter:off
 GPUPipelineState::Description GPUPipelineState::Description::Default =

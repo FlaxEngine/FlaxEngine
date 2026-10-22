@@ -271,4 +271,7 @@ public:
 public:
     // [GPUResource]
     GPUResourceType GetResourceType() const final override;
+#if !BUILD_RELEASE
+    String ToString() const override;
+#endif
 };
