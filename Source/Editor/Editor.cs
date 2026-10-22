@@ -136,6 +136,11 @@ namespace FlaxEditor
         public ProgressReportingModule ProgressReporting;
 
         /// <summary>
+        /// The menu item module.
+        /// </summary>
+        public MenuItemModule MenuItems;
+        
+        /// <summary>
         /// The content editing module.
         /// </summary>
         public ContentEditingModule ContentEditing;
@@ -295,6 +300,7 @@ namespace FlaxEditor
             RegisterModule(CodeDocs = new CodeDocsModule(this));
             RegisterModule(ProgressReporting = new ProgressReportingModule(this));
             RegisterModule(ContentFinding = new ContentFindingModule(this));
+            RegisterModule(MenuItems = new MenuItemModule(this));
             Profiler.EndEvent();
 
             StateMachine = new EditorStateMachine(this);
