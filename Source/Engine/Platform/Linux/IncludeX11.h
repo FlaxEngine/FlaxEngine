@@ -8,7 +8,7 @@
 #define register
 
 // Pre-include X11 required headers
-#include <stdio.h>
+#include <cstdio>
 
 // Include X11
 namespace X11
