@@ -148,6 +148,8 @@ namespace FlaxEditor.Content.GUI
                 if (value != _viewScale)
                 {
                     _viewScale = value;
+                    // Switch to list view if tile view becomes too small to see anything
+                    ViewType = ViewScale < 0.5f ? ContentViewType.List : ContentViewType.Tiles;
                     ViewScaleChanged?.Invoke();
                     PerformLayout();
                 }
