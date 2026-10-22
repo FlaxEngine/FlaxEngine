@@ -33,7 +33,7 @@ public:
 private:
     void OnResourceReleased()
     {
-        Cancel();
+        CancelByRelease();
     }
 
 public:
