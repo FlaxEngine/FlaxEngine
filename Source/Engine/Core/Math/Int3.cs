@@ -108,6 +108,28 @@ namespace FlaxEngine
         /// <summary>
         /// Initializes a new instance of the <see cref="Int3" /> struct.
         /// </summary>
+        /// <param name="value">A vector containing the values with which to initialize the X, Y and Z components.</param>
+        public Int3(Float3 value)
+        {
+            X = (int)value.X;
+            Y = (int)value.Y;
+            Z = (int)value.Z;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Int3" /> struct.
+        /// </summary>
+        /// <param name="value">A vector containing the values with which to initialize the X, Y and Z components.</param>
+        public Int3(Vector3 value)
+        {
+            X = (int)value.X;
+            Y = (int)value.Y;
+            Z = (int)value.Z;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Int3" /> struct.
+        /// </summary>
         /// <param name="values">The values to assign to the X, Y, and Z components of the vector. This must be an array with three elements.
         /// </param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>

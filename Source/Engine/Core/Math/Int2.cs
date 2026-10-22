@@ -97,6 +97,26 @@ namespace FlaxEngine
         /// <summary>
         /// Initializes a new instance of the <see cref="Int2" /> struct.
         /// </summary>
+        /// <param name="value">A vector containing the values with which to initialize the X and Y components.</param>
+        public Int2(Float2 value)
+        {
+            X = (int)value.X;
+            Y = (int)value.Y;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Int2" /> struct.
+        /// </summary>
+        /// <param name="value">A vector containing the values with which to initialize the X and Y components.</param>
+        public Int2(Vector2 value)
+        {
+            X = (int)value.X;
+            Y = (int)value.Y;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Int2" /> struct.
+        /// </summary>
         /// <param name="values">The values to assign to the X and Y components of the vector. This must be an array with two elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="values" /> contains more or less than two elements.

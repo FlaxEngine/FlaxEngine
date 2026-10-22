@@ -120,6 +120,30 @@ namespace FlaxEngine
         /// <summary>
         /// Initializes a new instance of the <see cref="Int4" /> struct.
         /// </summary>
+        /// <param name="value">A vector containing the values with which to initialize the X, Y, Z and W components.</param>
+        public Int4(Float4 value)
+        {
+            X = (int)value.X;
+            Y = (int)value.Y;
+            Z = (int)value.Z;
+            W = (int)value.W;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Int4" /> struct.
+        /// </summary>
+        /// <param name="value">A vector containing the values with which to initialize the X, Y, Z and W components.</param>
+        public Int4(Vector4 value)
+        {
+            X = (int)value.X;
+            Y = (int)value.Y;
+            Z = (int)value.Z;
+            W = (int)value.W;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Int4" /> struct.
+        /// </summary>
         /// <param name="values">The values to assign to the X, Y, Z, and W components of the vector. This must be an array with four elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="values" /> contains more or less than four elements.</exception>
