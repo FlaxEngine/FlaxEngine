@@ -272,6 +272,24 @@ public:
     }
 };
 
+class GPUPipelineCacheService : public EngineService
+{
+public:
+    GPUPipelineCacheService()
+        : EngineService(TEXT("GPUPipelineCache"), -5)
+    {
+    }
+
+    void BeforeExit() override
+    {
+        IsClosing = true;
+    }
+};
+
+GPUPipelineCacheService GPUPipelineCacheServiceInstance;
+GPUPipelineCacheModes GPUPipelineCache::CacheModes = GPUPipelineCacheModes::None;
+GPUPipelineMissModes GPUPipelineCache::MissModes = GPUPipelineMissModes::SkipDraw;
+
 #if GPU_ENABLE_DEVELOPMENT
 
 // Utility for measuring time of the hitches with basic statistics.
@@ -301,22 +319,6 @@ struct Counter
     }
 };
 
-class GPUPipelineCacheService : public EngineService
-{
-public:
-    GPUPipelineCacheService()
-        : EngineService(TEXT("GPUPipelineCache"), -5)
-    {
-    }
-
-    void BeforeExit() override
-    {
-        IsClosing = true;
-    }
-};
-
-GPUPipelineCacheService GPUPipelineCacheServiceInstance;
-
 namespace
 {
     constexpr double HitchMinTime = 0.005; // 5ms
@@ -327,9 +329,6 @@ namespace
     Counter LookupCounter;
     Counter HitchCounter;
 };
-
-GPUPipelineCacheModes GPUPipelineCache::CacheModes = GPUPipelineCacheModes::None;
-GPUPipelineMissModes GPUPipelineCache::MissModes = GPUPipelineMissModes::SkipDraw;
 
 GPUPipelineLookup::GPUPipelineLookup()
 {
