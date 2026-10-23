@@ -5,6 +5,7 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "IShaderResourceDX12.h"
 #include "DescriptorHeapDX12.h"
+#include "GPUPipelineStateKeyDX12.h"
 #include "../IncludeDirectXHeaders.h"
 #include <ThirdParty/tracy/tracy/TracyD3D12.hpp>
 
@@ -61,11 +62,11 @@ private:
     int32 _cbComputeDirtyFlag : 1;
     int32 _samplersDirtyFlag : 1;
 
+    GPUPipelineStateKeyDX12 _psoKey;
     GPUTextureViewDX12* _rtDepth;
     GPUTextureViewDX12* _rtHandles[GPU_MAX_RT_BINDED];
     IShaderResourceDX12* _srHandles[GPU_MAX_SR_BINDED];
     IShaderResourceDX12* _uaHandles[GPU_MAX_UA_BINDED];
-    GPUVertexLayoutDX12* _vertexLayout;
     GPUBufferDX12* _ibHandle;
     GPUBufferDX12* _vbHandles[GPU_MAX_VB_BINDED];
     D3D12_INDEX_BUFFER_VIEW _ibView;
@@ -152,6 +153,7 @@ protected:
     void GetActiveHeapDescriptor(const D3D12_CPU_DESCRIPTOR_HANDLE& cpuHandle, Descriptor& descriptor);
 
 private:
+    void InitPSOKey();
     void flushSwapChains();
     void flushSRVs();
     void flushRTVs();

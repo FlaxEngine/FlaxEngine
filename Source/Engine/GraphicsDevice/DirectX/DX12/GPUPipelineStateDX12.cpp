@@ -72,6 +72,22 @@ static D3D12_STENCIL_OP ToStencilOp(StencilOperation value)
     };
 }
 
+uint32 GetHash(const GPUPipelineStateKeyDX12& key)
+{
+    uint32 hash = (int32)key.MSAA * 11;
+    CombineHash(hash, (uint32)key.DepthFormat * 93473262);
+    CombineHash(hash, key.RTsCount * 136);
+    CombineHash(hash, GetHash(key.VertexLayout));
+    CombineHash(hash, (uint32)key.RTVsFormats[0]);
+    CombineHash(hash, (uint32)key.RTVsFormats[1]);
+    CombineHash(hash, (uint32)key.RTVsFormats[2]);
+    CombineHash(hash, (uint32)key.RTVsFormats[3]);
+    CombineHash(hash, (uint32)key.RTVsFormats[4]);
+    CombineHash(hash, (uint32)key.RTVsFormats[5]);
+    static_assert(GPU_MAX_RT_BINDED == 6, "Update hash combine code to match RT count (manually inlined loop).");
+    return hash;
+}
+
 #if GPU_ENABLE_DEVELOPMENT
 
 #include "Engine/Core/Types/StringBuilder.h"
@@ -222,18 +238,8 @@ bool GPUPipelineStateDX12::IsValid() const
     return !!_memoryUsage;
 }
 
-ID3D12PipelineState* GPUPipelineStateDX12::GetState(PixelFormat depthFormat, int32 rtCount, const PixelFormat* rtFormats, MSAALevel msaa, GPUVertexLayoutDX12* vertexLayout, bool precaching)
+ID3D12PipelineState* GPUPipelineStateDX12::GetState(const GPUPipelineStateKeyDX12& key, bool precaching)
 {
-    // Prepare key
-    GPUPipelineStateKeyDX12 key;
-    memset(&key, 0, sizeof(key));
-    key.RTsCount = rtCount;
-    key.VertexLayout = vertexLayout;
-    key.DepthFormat = depthFormat;
-    key.MSAA = msaa;
-    for (int32 i = 0; i < rtCount; i++)
-        key.RTVsFormats[i] = rtFormats[i];
-
     // Try reuse cached version
     ID3D12PipelineState* state = nullptr;
     if (_states.TryGet(key, state))
@@ -283,8 +289,7 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(PixelFormat depthFormat, int
     desc.SampleDesc = { (UINT)key.MSAA, key.MSAA == MSAALevel::None ? 0 : GPUDeviceDX12::GetMaxMSAAQuality((int32)key.MSAA) };
     desc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
     desc.DSVFormat = RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::FindDepthStencilFormat(key.DepthFormat));
-    if (!vertexLayout)
-        vertexLayout = VertexBufferLayout; // Fallback to shader-specified layout (if using old APIs)
+    auto vertexLayout = key.VertexLayout ? key.VertexLayout : VertexBufferLayout; // Fallback to shader-specified layout (if using old APIs)
     if (vertexLayout)
     {
         int32 missingSlotOverride = GPU_MAX_VB_BINDED; // Use additional slot with empty VB
@@ -602,7 +607,9 @@ bool GPUPipelineStateDX12::Init(const Description& desc)
 
 void GPUPipelineStateDX12::PrecachePSO(const PrecacheContext& context)
 {
-    GetState(context.DepthFormat, context.RTCount, context.RTFormats, context.MSAA, (GPUVertexLayoutDX12*)context.VertexLayout, true);
+    GPUPipelineStateKeyDX12 key;
+    key.Init(context.DepthFormat, context.RTCount, context.RTFormats, context.MSAA, (GPUVertexLayoutDX12*)context.VertexLayout);
+    GetState(key, true);
 }
 
 #endif

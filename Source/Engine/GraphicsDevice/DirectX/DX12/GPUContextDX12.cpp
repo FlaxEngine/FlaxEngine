@@ -329,11 +329,11 @@ void GPUContextDX12::Reset()
     _currentCompute = nullptr;
     _rbBufferSize = 0;
     _vbCount = 0;
+    Platform::MemoryClear(&_psoKey, sizeof(_psoKey));
     Platform::MemoryClear(_rtHandles, sizeof(_rtHandles));
     Platform::MemoryClear(_srHandles, sizeof(_srHandles));
     Platform::MemoryClear(_uaHandles, sizeof(_uaHandles));
     Platform::MemoryClear(_vbHandles, sizeof(_vbHandles));
-    _vertexLayout = nullptr;
     _ibHandle = nullptr;
     Platform::MemoryClear(&_cbHandles, sizeof(_cbHandles));
     Platform::MemoryClear(&_samplers, sizeof(_samplers));
@@ -403,6 +403,16 @@ void GPUContextDX12::GetActiveHeapDescriptor(const D3D12_CPU_DESCRIPTOR_HANDLE& 
 
     // Copy descriptor
     _device->GetDevice()->CopyDescriptorsSimple(1, descriptor.CPU, cpuHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+}
+
+void GPUContextDX12::InitPSOKey()
+{
+    PixelFormat depthFormat = _rtDepth ? _rtDepth->GetFormat() : PixelFormat::Unknown;
+    MSAALevel msaa = _rtDepth ? _rtDepth->GetMSAA() : (_rtCount ? _rtHandles[0]->GetMSAA() : MSAALevel::None);
+    PixelFormat rtFormats[GPU_MAX_RT_BINDED];
+    for (int32 i = 0; i < _rtCount; i++)
+        rtFormats[i] = _rtHandles[i]->GetFormat();
+    _psoKey.Init(depthFormat, _rtCount, rtFormats, msaa, _psoKey.VertexLayout);
 }
 
 void GPUContextDX12::flushSwapChains()
@@ -681,17 +691,12 @@ void GPUContextDX12::flushPS()
         // Change state
         ASSERT(_currentState->IsValid());
 #if GPU_ENABLE_ASSERTION_LOW_LAYERS
-        if (!_vertexLayout && _vbHandles[0] && !_currentState->VertexBufferLayout)
+        if (!_psoKey.VertexLayout && _vbHandles[0] && !_currentState->VertexBufferLayout)
         {
             LOG(Error, "Missing Vertex Layout (not assigned to GPUBuffer). Vertex Shader won't read valid data resulting incorrect visuals.");
         }
 #endif
-        PixelFormat depthFormat = _rtDepth ? _rtDepth->GetFormat() : PixelFormat::Unknown;
-        MSAALevel msaa = _rtDepth ? _rtDepth->GetMSAA() : (_rtCount ? _rtHandles[0]->GetMSAA() : MSAALevel::None);
-        PixelFormat rtFormats[GPU_MAX_RT_BINDED];
-        for (int32 i = 0; i < _rtCount; i++)
-            rtFormats[i] = _rtHandles[i]->GetFormat();
-        ID3D12PipelineState* pso = _currentState->GetState(depthFormat, _rtCount, rtFormats, msaa, _vertexLayout);
+        ID3D12PipelineState* pso = _currentState->GetState(_psoKey);
         ASSERT(pso);
         _commandList->SetPipelineState(pso);
         if (_primitiveTopology != _currentState->PrimitiveTopology)
@@ -963,6 +968,7 @@ void GPUContextDX12::ResetRenderTarget()
         _rtCount = 0;
         _rtDepth = nullptr;
         Platform::MemoryClear(_rtHandles, sizeof(_rtHandles));
+        InitPSOKey();
 
         D3D12_CPU_DESCRIPTOR_HANDLE rtCPU[GPU_MAX_RT_BINDED];
         Platform::MemoryClear(rtCPU, sizeof(rtCPU));
@@ -981,6 +987,7 @@ void GPUContextDX12::SetRenderTarget(GPUTextureView* rt)
         _rtCount = 1;
         _rtDepth = nullptr;
         _rtHandles[0] = rtDX12;
+        InitPSOKey();
     }
 }
 
@@ -997,6 +1004,7 @@ void GPUContextDX12::SetRenderTarget(GPUTextureView* depthBuffer, GPUTextureView
         _rtCount = rtCount;
         _rtDepth = depthBufferDX12;
         _rtHandles[0] = rtDX12;
+        InitPSOKey();
     }
 }
 
@@ -1020,6 +1028,7 @@ void GPUContextDX12::SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPU
         _rtCount = rts.Length();
         _rtDepth = depthBufferDX12;
         Platform::MemoryCopy(_rtHandles, rtvs, rtvsSize);
+        InitPSOKey();
     }
 }
 
@@ -1150,9 +1159,9 @@ void GPUContextDX12::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32*
     }
     if (!vertexLayout)
          vertexLayout = GPUVertexLayout::Get(vertexBuffers);
-    if (_vertexLayout != vertexLayout)
+    if (_psoKey.VertexLayout != vertexLayout)
     {
-        _vertexLayout = (GPUVertexLayoutDX12*)vertexLayout;
+        _psoKey.VertexLayout = (GPUVertexLayoutDX12*)vertexLayout;
         _psDirtyFlag = true;
     }
 }
