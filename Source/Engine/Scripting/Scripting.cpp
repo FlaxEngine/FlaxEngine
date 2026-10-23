@@ -177,7 +177,9 @@ bool ScriptingService::Init()
     PROFILE_MEM(Scripting);
     Stopwatch stopwatch;
 
+    _objectsLocker.Lock();
     _objectsDictionary.EnsureCapacity(16 * 1024);
+    _objectsLocker.Unlock();
 
     // Initialize managed runtime
     if (MCore::LoadEngine())
