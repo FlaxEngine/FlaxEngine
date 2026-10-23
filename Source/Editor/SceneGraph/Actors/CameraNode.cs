@@ -39,7 +39,7 @@ namespace FlaxEditor.SceneGraph.Actors
             {
                 var c = Actor as Camera;
                 var viewport = Editor.Instance.Windows.EditWin.Viewport;
-                c.Position = viewport.ViewPosition;
+                c.Position = viewport.ViewPosition.Quantize();
                 c.Orientation = viewport.ViewOrientation;
             };
         }

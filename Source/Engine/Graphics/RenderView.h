@@ -379,7 +379,7 @@ public:
     /// </summary>
     /// <param name="worldPosition">The world position.</param>
     /// <returns>Quantized vector</returns>
-    Float3 RenderView::GetRelativeToOriginQuantized(const Float3& worldPosition) const
+    Float3 GetRelativeToOriginQuantized(const Float3& worldPosition) const
     {
         return (Vector3LongFloat(worldPosition.X, worldPosition.Y, worldPosition.Z) - Origin).QuantizeToFloat3();
     }
@@ -389,9 +389,19 @@ public:
     /// </summary>
     /// <param name="worldPosition">The world position.</param>
     /// <returns>Quantized vector</returns>
-    Double3 RenderView::GetRelativeToOriginQuantized(const Double3& worldPosition) const
+    Double3 GetRelativeToOriginQuantized(const Double3& worldPosition) const
     {
         return (Vector3LongFloat(worldPosition.X, worldPosition.Y, worldPosition.Z) - Origin).QuantizeToDouble3();
+    }
+
+    /// <summary>
+    /// Gets vector in relation to origin.
+    /// </summary>
+    /// <param name="worldPosition">The world position.</param>
+    /// <returns>vector</returns>
+    Vector3LongFloat GetRelativeToOrigin(const Vector3LongFloat& worldPosition)
+    {
+        return worldPosition - Origin;
     }
 };
 

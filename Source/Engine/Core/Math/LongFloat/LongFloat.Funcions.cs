@@ -17,6 +17,8 @@ namespace FlaxEngine
 {
     public partial struct LongFloat
     {
+        internal static readonly LongFloat Max = new(0x7FFFFFFFFFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL);
+        internal static readonly LongFloat Min = new(0x8000000000000000UL, 0x0000000000000001UL);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LongFloat"/> struct.
@@ -34,6 +36,15 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="value">The value.</param>
         public LongFloat(float value)
+        {
+            this = LongFloatMath.Expand(value);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LongFloat"/> struct.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        public LongFloat(int value)
         {
             this = LongFloatMath.Expand(value);
         }
@@ -61,6 +72,15 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="value">The value.</param>
         public LongFloat(ulong value)
+        {
+            this = LongFloatMath.Expand(value);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LongFloat"/> struct.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        public LongFloat(long value)
         {
             this = LongFloatMath.Expand(value);
         }
@@ -160,13 +180,49 @@ namespace FlaxEngine
         /// <returns>The binary representation of the raw bits.</returns>
         public string BitsToString(bool codeMode = false) => LongFloatMath.BitsToString(this, codeMode);
 
+
         /// <summary>
         /// Quantizes Long flaot to the Real Value.
         /// </summary>
         /// <returns>
         /// Quantized Real
         /// </returns>
-        static Real Quantize(in LongFloat value)
+        public readonly Real Quantize()
+        {
+            return (Real)LongFloatMath.QuantizeToDouble(this);
+        }
+
+        /// <summary>
+        /// Quantizes Long flaot to the Real Value.
+        /// </summary>
+        /// <returns>
+        /// Quantized float
+        /// </returns>
+        public readonly float QuantizeToFloat()
+        {
+            return (float)LongFloatMath.QuantizeToDouble(this);
+        }
+
+        /// <summary>
+        /// Quantizes Long flaot to the Real Value.
+        /// </summary>
+        /// <returns>
+        /// Quantized float
+        /// </returns>
+        public readonly double QuantizeToDouble()
+        {
+            return (double)LongFloatMath.QuantizeToDouble(this);
+        }
+
+
+
+        /// <summary>
+        /// Quantizes Long flaot to the Real Value.
+        /// </summary>
+        /// <returns>
+        /// Quantized Real
+        /// </returns>
+        public static Real Quantize(in LongFloat value)
         {
             return (Real)LongFloatMath.QuantizeToDouble(value);
         }
@@ -177,7 +233,7 @@ namespace FlaxEngine
         /// <returns>
         /// Quantized float
         /// </returns>
-        static float QuantizeToFloat(in LongFloat value)
+        public static float QuantizeToFloat(in LongFloat value)
         {
             return (float)LongFloatMath.QuantizeToDouble(value);
         }
@@ -188,7 +244,7 @@ namespace FlaxEngine
         /// <returns>
         /// Quantized float
         /// </returns>
-        static double QuantizeToDouble(in LongFloat value)
+        public static double QuantizeToDouble(in LongFloat value)
         {
             return (double)LongFloatMath.QuantizeToDouble(value);
         }

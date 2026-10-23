@@ -303,22 +303,9 @@ namespace FlaxEditor.Viewport
         public Float2 MousePositionDelta => _mouseDelta;
 
         /// <summary>
-        /// Gets the view transform.
-        /// </summary>
-        public Transform ViewTransform
-        {
-            get => new Transform(ViewPosition, ViewOrientation);
-            set
-            {
-                ViewPosition = value.Translation;
-                ViewOrientation = value.Orientation;
-            }
-        }
-
-        /// <summary>
         /// Gets or sets the view position.
         /// </summary>
-        public Vector3 ViewPosition { get; set; }
+        public Vector3LongFloat ViewPosition { get; set; }
 
         /// <summary>
         /// Gets or sets the view orientation.
@@ -348,10 +335,12 @@ namespace FlaxEditor.Viewport
         /// </summary>
         public Ray ViewRay
         {
-            get => new Ray(ViewPosition, ViewDirection);
+            //Todo: longer cordynates are needed for Ray
+            //just position
+            get => new Ray(ViewPosition.Quantize(), ViewDirection);
             set
             {
-                ViewPosition = value.Position;
+                ViewPosition = new(value.Position.X, value.Position.Y, value.Position.Z);
                 ViewDirection = value.Direction;
             }
         }
@@ -363,9 +352,7 @@ namespace FlaxEditor.Viewport
         {
             get
             {
-                Vector3 viewOrigin = Task.View.Origin.Quantize();
-                Float3 position = ViewPosition - viewOrigin;
-                CreateViewMatrix(position, out var view);
+                CreateViewMatrix(out var view);
                 CreateProjectionMatrix(out var projection);
                 Matrix.Multiply(ref view, ref projection, out var viewProjection);
                 return new BoundingFrustum(ref viewProjection);
@@ -1255,7 +1242,8 @@ namespace FlaxEditor.Viewport
         {
             if (ViewportCamera is FPSCamera fpsCamera)
             {
-                var pos = ViewPosition + Float3.Backward * orientation * 2000.0f;
+                var otientation = Float3.Backward * orientation * 2000.0f;
+                var pos = ViewPosition + new Vector3LongFloat(otientation.X, otientation.Y, otientation.Z);
                 fpsCamera.MoveViewport(pos, orientation);
             }
             else
@@ -1403,15 +1391,14 @@ namespace FlaxEditor.Viewport
         /// <param name="view">The view.</param>
         public void CopyViewData(ref RenderView view)
         {
-            Vector3 position = ViewPosition;
-            LargeWorlds.UpdateOrigin(ref view.Origin, position);
-            view.Position = view.GetRelativeToOriginQuantized(position);
+            LargeWorlds.UpdateOrigin(ref view.Origin, ViewPosition);
+            view.Position = view.GetRelativeToOrigin(ViewPosition).QuantizeToFloat3();
             view.Direction = ViewDirection;
             view.Near = _nearPlane;
             view.Far = _farPlane;
 
             CreateProjectionMatrix(out view.Projection);
-            CreateViewMatrix(view.Position, out view.View);
+            CreateViewMatrix(out view.View);
 
             view.UpdateCachedData();
         }
@@ -1457,15 +1444,18 @@ namespace FlaxEditor.Viewport
         /// <summary>
         /// Creates the view matrix.
         /// </summary>
-        /// <param name="position">The view position.</param>
         /// <param name="result">The result.</param>
-        protected virtual void CreateViewMatrix(Float3 position, out Matrix result)
+        protected virtual void CreateViewMatrix(out Matrix result)
         {
             var direction = ViewDirection;
-            var target = position + direction;
             var right = Mathf.Abs(Float3.Dot(direction, Float3.Up)) < 1.0f - Mathf.Epsilon ? Float3.Normalize(Float3.Cross(Float3.Up, direction)) : Float3.Forward;
             var up = Float3.Normalize(Float3.Cross(direction, right));
-            Matrix.LookAt(ref position, ref target, ref up, out result);
+            Matrix.FromDirection(ref direction, ref up, out result);
+            DebugDraw.DrawText(
+                $"M11={result.M11:R} M12={result.M12:R} M13={result.M13:R}\n" +
+                $"M21={result.M21:R} M22={result.M22:R} M23={result.M23:R}\n" +
+                $"M31={result.M31:R} M32={result.M32:R} M33={result.M33:R}"
+                , new Vector2(0, 100), Color.Red, 14, 0);
         }
 
         /// <summary>
@@ -1493,7 +1483,7 @@ namespace FlaxEditor.Viewport
                 return ViewRay;
 
             Vector3 viewOrigin = Task.View.Origin.Quantize();
-            Float3 position = Task.View.GetRelativeToOriginQuantized(ViewPosition);
+            Float3 position = Task.View.GetRelativeToOrigin(ViewPosition).QuantizeToFloat3();
 
             // Use different logic in orthographic projection
             if (_isOrtho)
@@ -1510,7 +1500,7 @@ namespace FlaxEditor.Viewport
 
             // Create view frustum
             CreateProjectionMatrix(out var p);
-            CreateViewMatrix(position, out var v);
+            CreateViewMatrix(out var v);
             Matrix.Multiply(ref v, ref p, out var ivp);
             ivp.Invert();
 
@@ -1540,9 +1530,9 @@ namespace FlaxEditor.Viewport
             if (viewport.Width < Mathf.Epsilon || viewport.Height < Mathf.Epsilon)
                 return;
 
-            Float3 position = Task.View.GetRelativeToOriginQuantized(ViewPosition);
+            Float3 position = Task.View.GetRelativeToOrigin(ViewPosition).QuantizeToFloat3();
             CreateProjectionMatrix(out var p);
-            CreateViewMatrix(position, out var v);
+            CreateViewMatrix(out var v);
             Matrix.Multiply(ref v, ref p, out var vp);
             viewport.Project(ref worldSpaceLocation, ref vp, out var projected);
             viewportSpaceLocation = new Float2((float)projected.X, (float)projected.Y);

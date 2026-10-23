@@ -17,13 +17,13 @@ namespace FlaxEditor.Viewport.Cameras
     [HideInEditor]
     public class ArcBallCamera : ViewportCamera
     {
-        private Vector3 _orbitCenter;
+        private Vector3LongFloat _orbitCenter;
         private Real _orbitRadius;
 
         /// <summary>
         /// Gets or sets the orbit center.
         /// </summary>
-        public Vector3 OrbitCenter
+        public Vector3LongFloat OrbitCenter
         {
             get => _orbitCenter;
             set
@@ -61,7 +61,7 @@ namespace FlaxEditor.Viewport.Cameras
         /// </summary>
         /// <param name="orbitCenter">The orbit center.</param>
         /// <param name="radius">The orbit radius.</param>
-        public ArcBallCamera(Vector3 orbitCenter, float radius)
+        public ArcBallCamera(Vector3LongFloat orbitCenter, float radius)
         {
             _orbitCenter = orbitCenter;
             _orbitRadius = radius;
@@ -97,11 +97,11 @@ namespace FlaxEditor.Viewport.Cameras
         {
             // Move camera to look at orbit center point
             Vector3 localPosition = Viewport.ViewDirection * (-1 * _orbitRadius);
-            Viewport.ViewPosition = _orbitCenter + localPosition;
+            Viewport.ViewPosition = _orbitCenter + Vector3LongFloat.Expand(localPosition);
         }
 
         /// <inheritdoc />
-        public override void SetArcBallView(Quaternion orientation, Vector3 orbitCenter, Real orbitRadius)
+        public override void SetArcBallView(Quaternion orientation, Vector3LongFloat orbitCenter, Real orbitRadius)
         {
             base.SetArcBallView(orientation, orbitCenter, orbitRadius);
 

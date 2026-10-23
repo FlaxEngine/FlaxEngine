@@ -540,7 +540,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 _focusCamera = false;
                 Editor.GetActorEditorSphere(_viewport.Instance, out BoundingSphere bounds);
-                _viewport.ViewPosition = bounds.Center - _viewport.ViewDirection * (bounds.Radius * 1.2f);
+                _viewport.ViewPosition = Vector3LongFloat.Expand(bounds.Center - _viewport.ViewDirection * (bounds.Radius * 1.2f));
             }
 
             // Auto save

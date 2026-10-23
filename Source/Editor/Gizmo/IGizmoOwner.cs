@@ -64,7 +64,7 @@ namespace FlaxEditor.Gizmo
         /// <summary>
         /// Gets the view position.
         /// </summary>
-        Vector3 ViewPosition { get; }
+        Vector3LongFloat ViewPosition { get; }
 
         /// <summary>
         /// Gets the view orientation.

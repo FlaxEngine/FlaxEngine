@@ -519,7 +519,7 @@ namespace FlaxEditor.Tools
 
             // Perform detailed tracing to find cursor location for the brush
             var ray = Owner.MouseRay;
-            var view = new Ray(Owner.ViewPosition, Owner.ViewDirection);
+            var view = new Ray(Owner.ViewPosition.Quantize(), Owner.ViewDirection);
             var rayCastFlags = SceneGraphNode.RayCastData.FlagTypes.SkipColliders | SceneGraphNode.RayCastData.FlagTypes.SkipEditorPrimitives;
             var hit = Editor.Instance.Scene.Root.RayCast(ref ray, ref view, out var closest, out var hitNormal, rayCastFlags);
             if (hit != null && hit is ActorNode actorNode && actorNode.Actor as StaticModel != model)
@@ -547,7 +547,7 @@ namespace FlaxEditor.Tools
         public override void Pick()
         {
             var ray = Owner.MouseRay;
-            var view = new Ray(Owner.ViewPosition, Owner.ViewDirection);
+            var view = new Ray(Owner.ViewPosition.Quantize(), Owner.ViewDirection);
             var rayCastFlags = SceneGraphNode.RayCastData.FlagTypes.SkipColliders | SceneGraphNode.RayCastData.FlagTypes.SkipEditorPrimitives;
             var hit = Owner.SceneGraphRoot.RayCast(ref ray, ref view, out _, rayCastFlags);
             if (hit != null && hit is ActorNode actorNode && actorNode.Actor is StaticModel model)

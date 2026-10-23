@@ -249,7 +249,7 @@ namespace FlaxEditor.Tools.Terrain
             {
                 // Get mouse ray and try to hit terrain
                 var ray = Owner.MouseRay;
-                var view = new Ray(Owner.ViewPosition, Owner.ViewDirection);
+                var view = new Ray(Owner.ViewPosition.Quantize(), Owner.ViewDirection);
                 var rayCastFlags = SceneGraphNode.RayCastData.FlagTypes.SkipColliders;
                 var hit = Editor.Instance.Scene.Root.RayCast(ref ray, ref view, out _, rayCastFlags) as TerrainNode;
 

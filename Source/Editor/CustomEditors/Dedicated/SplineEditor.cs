@@ -768,7 +768,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // Auto smooth tangent if's linear
             if (keyframe.TangentIn.Translation.Length == 0)
             {
-                var cameraTransform = editor.Presenter.Owner.PresenterViewport.ViewTransform.Translation;
+                var cameraTransform = editor.Presenter.Owner.PresenterViewport.ViewPosition.Quantize();
                 var smoothRange = SplineNode.NodeSizeByDistance(spline.GetSplineTangent(index, false).Translation, 10f, cameraTransform);
                 var previousKeyframe = spline.GetSplineKeyframe(index - 1);
                 var tangentDirection = keyframe.Value.WorldToLocalVector(previousKeyframe.Value.Translation - keyframe.Value.Translation);
@@ -788,7 +788,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // Auto smooth tangent if's linear
             if (keyframe.TangentOut.Translation.Length == 0)
             {
-                var cameraTransform = editor.Presenter.Owner.PresenterViewport.ViewTransform.Translation;
+                var cameraTransform = editor.Presenter.Owner.PresenterViewport.ViewPosition.Quantize();
                 var smoothRange = SplineNode.NodeSizeByDistance(spline.GetSplineTangent(index, false).Translation, 10f, cameraTransform);
                 var nextKeyframe = spline.GetSplineKeyframe(index + 1);
                 var tangentDirection = keyframe.Value.WorldToLocalVector(nextKeyframe.Value.Translation - keyframe.Value.Translation);
@@ -810,7 +810,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             var isLastKeyframe = index >= spline.SplinePointsCount - 1;
             var isFirstKeyframe = index <= 0;
-            var cameraTransform = editor.Presenter.Owner.PresenterViewport.ViewTransform.Translation;
+            var cameraTransform = editor.Presenter.Owner.PresenterViewport.ViewPosition.Quantize();
             var smoothRange = SplineNode.NodeSizeByDistance(spline.GetSplinePoint(index), 10f, cameraTransform);
 
             // Force smooth it's linear point

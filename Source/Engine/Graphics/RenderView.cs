@@ -174,40 +174,13 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Gets the relative to origin quantized.
+        /// Gets vector in relation to origin.
         /// </summary>
-        /// <param name="Origin">The origin.</param>
         /// <param name="worldPosition">The world position.</param>
-        /// <returns></returns>
-        public static Float3 GetRelativeToOriginQuantized(in Vector3LongFloat Origin, Float3 worldPosition)
+        /// <returns>vector</returns>
+        public readonly Vector3LongFloat GetRelativeToOrigin(Vector3LongFloat worldPosition)
         {
-            return (new Vector3LongFloat(worldPosition.X, worldPosition.Y, worldPosition.Z) - Origin).QuantizeToFloat3();
-        }
-
-        /// <summary>
-        /// Gets the relative to origin quantized.
-        /// </summary>
-        /// <param name="Origin">The origin.</param>
-        /// <param name="worldPosition">The world position.</param>
-        /// <returns></returns>
-        public static Double3 GetRelativeToOriginQuantized(in Vector3LongFloat Origin, Double3 worldPosition)
-        {
-            return (new Vector3LongFloat(worldPosition.X, worldPosition.Y, worldPosition.Z) - Origin).QuantizeToDouble3();
-        }
-
-        /// <summary>
-        /// Gets the relative to origin quantized.
-        /// </summary>
-        /// <param name="Origin">The origin.</param>
-        /// <param name="worldPosition">The world position.</param>
-        /// <returns></returns>
-        public static Vector3 GetRelativeToOriginQuantized(in Vector3LongFloat Origin, Vector3 worldPosition)
-        {
-#if USE_LARGE_WORLDS
-            return (new Vector3LongFloat(worldPosition.X, worldPosition.Y, worldPosition.Z) - Origin).QuantizeToDouble3();
-#else
-            return (new Vector3LongFloat(worldPosition.X, worldPosition.Y, worldPosition.Z) - Origin).QuantizeToFloat3();
-#endif
+            return worldPosition - Origin;
         }
     }
 }

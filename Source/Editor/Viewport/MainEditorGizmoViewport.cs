@@ -334,12 +334,12 @@ namespace FlaxEditor.Viewport
 
                 if (ContainsFocus)
                 {
-                    var viewportFocusDistance = Vector3.Distance(ViewPosition, selectionBounds.Center) / 10f;
+                    var viewportFocusDistance = (Vector3LongFloat.Distance(ViewPosition, Vector3LongFloat.Expand(selectionBounds.Center)) / new LongFloat(10f)).Quantize();
                     _lockedFocusOffset -= FlaxEngine.Input.Mouse.ScrollDelta * viewportFocusDistance;
                 }
 
                 var focusDistance = Mathf.Max(selectionBounds.Radius * 2d, 100d);
-                ViewPosition = selectionBounds.Center + (-ViewDirection * (focusDistance + _lockedFocusOffset));
+                ViewPosition = Vector3LongFloat.Expand(selectionBounds.Center + (-ViewDirection * (focusDistance + _lockedFocusOffset)));
             }
         }
 
@@ -377,7 +377,8 @@ namespace FlaxEditor.Viewport
             {
                 StaticFlags = StaticFlags.None,
                 Name = Utilities.Utils.IncrementNameNumber("Camera", x => parent.GetChild(x) == null),
-                Transform = ViewTransform,
+                Transform = new Transform(ViewPosition.Quantize(), ViewOrientation, Float3.Zero),
+                PositionLong = ViewPosition,
                 NearPlane = NearPlane,
                 FarPlane = FarPlane,
                 OrthographicScale = OrthographicScale,

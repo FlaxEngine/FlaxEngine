@@ -84,7 +84,7 @@ namespace FlaxEditor.Viewport
 
         internal DragDropEffect DragDrop(ref Float2 location, DragData data)
         {
-            Vector3 hitLocation = _viewport.ViewPosition, hitNormal = -_viewport.ViewDirection;
+            Vector3 hitLocation = _viewport.ViewPosition.Quantize(), hitNormal = -_viewport.ViewDirection;
             SceneGraphNode hit = null;
             if (HasValidDrag)
             {
@@ -159,7 +159,7 @@ namespace FlaxEditor.Viewport
         {
             // Get mouse ray and try to hit any object
             var ray = _viewport.ConvertMouseToRay(ref location);
-            var view = new Ray(_viewport.ViewPosition, _viewport.ViewDirection);
+            var view = new Ray(_viewport.ViewPosition.Quantize(), _viewport.ViewDirection);
             var gridPlane = new Plane(Vector3.Zero, Vector3.Up);
             var flags = SceneGraphNode.RayCastData.FlagTypes.SkipColliders | SceneGraphNode.RayCastData.FlagTypes.SkipEditorPrimitives;
             hit = _owner.SceneGraphRoot.RayCast(ref ray, ref view, out var closest, out var normal, flags);

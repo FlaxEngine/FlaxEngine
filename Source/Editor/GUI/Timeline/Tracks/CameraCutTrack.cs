@@ -794,7 +794,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                             {
                                 if (memberTrack.MemberName == "Position" && value is Vector3 asPosition)
                                 {
-                                    editWin.Viewport.ViewPosition = asPosition;
+                                    editWin.Viewport.ViewPosition = Vector3LongFloat.Expand(asPosition);
                                     hasPositionTrack = true;
                                 }
                                 else if (memberTrack.MemberName == "Orientation" && value is Quaternion asRotation)

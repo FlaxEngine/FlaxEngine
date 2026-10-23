@@ -263,7 +263,7 @@ namespace FlaxEngine.Tools
                 if (hasPaintInput)
                 {
                     // Select something else
-                    var view = new Ray(Owner.ViewPosition, Owner.ViewDirection);
+                    var view = new Ray(Owner.ViewPosition.Quantize(), Owner.ViewDirection);
                     var rayCastFlags = SceneGraphNode.RayCastData.FlagTypes.SkipColliders | SceneGraphNode.RayCastData.FlagTypes.SkipEditorPrimitives;
                     var hit = Owner.SceneGraphRoot.RayCast(ref ray, ref view, out _, rayCastFlags);
                     if (hit != null && hit is ActorNode)

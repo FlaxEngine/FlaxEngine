@@ -2112,10 +2112,52 @@ namespace FlaxEngine
             Float3.Dot(ref xaxis, ref eye, out result.M41);
             Float3.Dot(ref yaxis, ref eye, out result.M42);
             Float3.Dot(ref zaxis, ref eye, out result.M43);
-
+        
             result.M41 = -result.M41;
             result.M42 = -result.M42;
             result.M43 = -result.M43;
+        }
+
+
+        /// <summary>
+        /// Creates a left-handed, look-at matrix From the directions.
+        /// </summary>
+        /// <param name="direction">The direction.</param>
+        /// <param name="up">Up.</param>
+        /// <param name="result">The result.</param>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public static void FromDirection(ref Float3 direction, ref Float3 up, out Matrix result)
+        {
+            var forward = direction;
+            if (forward.LengthSquared < Mathf.Epsilon)
+            {
+                result = Identity;
+                return;
+            }
+
+            forward.Normalize();
+
+            var right = Float3.Cross(up, forward);
+            if (right.LengthSquared < Mathf.Epsilon)
+            {
+                // Pick an axis that isn't parallel to forward.
+                var fallbackUp = Mathf.Abs(forward.Y) < 0.999f ? Float3.Up : Float3.Right;
+                right = Float3.Cross(fallbackUp, forward);
+            }
+
+            right.Normalize();
+            var correctedUp = Float3.Cross(forward, right);
+
+            result = Identity;
+            result.M11 = right.X;
+            result.M21 = right.Y;
+            result.M31 = right.Z;
+            result.M12 = correctedUp.X;
+            result.M22 = correctedUp.Y;
+            result.M32 = correctedUp.Z;
+            result.M13 = forward.X;
+            result.M23 = forward.Y;
+            result.M33 = forward.Z;
         }
 
         /// <summary>

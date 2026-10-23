@@ -104,7 +104,7 @@ namespace FlaxEditor.Gizmo
             var ray = new Ray(Position, Vector3.Down);
             while (true)
             {
-                var view = new Ray(Owner.ViewPosition, Owner.ViewDirection);
+                var view = new Ray(Owner.ViewPosition.Quantize(), Owner.ViewDirection);
                 var rayCastFlags = SceneGraphNode.RayCastData.FlagTypes.SkipEditorPrimitives | SceneGraphNode.RayCastData.FlagTypes.SkipTriggers;
                 var hit = Owner.SceneGraphRoot.RayCast(ref ray, ref view, out var distance, out _, rayCastFlags);
                 if (hit != null)
@@ -159,7 +159,7 @@ namespace FlaxEditor.Gizmo
 
             // Get mouse ray and try to hit any object
             var ray = Owner.MouseRay;
-            var view = new Ray(Owner.ViewPosition, Owner.ViewDirection);
+            var view = new Ray(Owner.ViewPosition.Quantize(), Owner.ViewDirection);
             var renderView = Owner.RenderTask.View;
             bool selectColliders = (renderView.Flags & ViewFlags.PhysicsDebug) == ViewFlags.PhysicsDebug || renderView.Mode == ViewMode.PhysicsColliders;
             SceneGraphNode.RayCastData.FlagTypes rayCastFlags = SceneGraphNode.RayCastData.FlagTypes.None;

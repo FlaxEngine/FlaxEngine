@@ -192,7 +192,7 @@ namespace FlaxEditor.Gizmo
             }
             else
             {
-                Vector3 vLength = Owner.ViewPosition - position;
+                Vector3 vLength = Owner.ViewPosition.Quantize() - position;
                 float gizmoSize = Editor.Instance.Options.Options.Visual.GizmoSize;
                 _screenScale = (float)(vLength.Length / GizmoScaleFactor * gizmoSize);
             }
@@ -330,7 +330,7 @@ namespace FlaxEditor.Gizmo
             }
             case Axis.Center:
             {
-                var gizmoToView = Position - Owner.ViewPosition;
+                var gizmoToView = (Vector3LongFloat.Expand(Position) - Owner.ViewPosition).Quantize();
                 var plane = new Plane(-Vector3.Normalize(gizmoToView), gizmoToView.Length);
                 if (ray.Intersects(ref plane, out intersection))
                 {
@@ -472,7 +472,7 @@ namespace FlaxEditor.Gizmo
                 else
                     dir = Float3.Forward * _gizmoWorld.Orientation;
 
-                Float3 viewDir = Owner.ViewPosition - Position;
+                Float3 viewDir = Owner.ViewPosition.Quantize() - Position;
                 Float3.Dot(ref viewDir, ref dir, out float dot);
                 if (dot < 0.0f)
                     delta *= -1;

@@ -572,7 +572,7 @@ namespace FlaxEditor.Viewport
 
             // Get mouse ray and try to hit any object
             var ray = MouseRay;
-            var view = new Ray(ViewPosition, ViewDirection);
+            var view = new Ray(ViewPosition.Quantize(), ViewDirection);
             var hit = _window.Graph.Root.RayCast(ref ray, ref view, out _, SceneGraphNode.RayCastData.FlagTypes.SkipColliders);
 
             // Update selection

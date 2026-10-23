@@ -1199,7 +1199,7 @@ namespace FlaxEditor.Modules
             {
                 var actor = node.Actor;
                 var viewport = Editor.Windows.EditWin.Viewport;
-                ((FPSCamera)viewport.ViewportCamera).MoveViewport(actor.Transform);
+                ((FPSCamera)viewport.ViewportCamera).MoveViewport(Vector3LongFloat.Expand(actor.Transform.Translation), actor.Transform.Orientation);
             }
         }
 
@@ -1212,7 +1212,7 @@ namespace FlaxEditor.Modules
                 var viewport = Editor.Windows.EditWin.Viewport;
                 using (new UndoBlock(Undo, actor, "Move to viewport"))
                 {
-                    actor.Position = viewport.ViewPosition;
+                    actor.Position = viewport.ViewPosition.Quantize();
                 }
             }
         }
@@ -1226,7 +1226,7 @@ namespace FlaxEditor.Modules
                 var viewport = Editor.Windows.EditWin.Viewport;
                 using (new UndoBlock(Undo, actor, "Align with viewport"))
                 {
-                    actor.Position = viewport.ViewPosition;
+                    actor.Position = viewport.ViewPosition.Quantize();
                     actor.Orientation = viewport.ViewOrientation;
                 }
             }

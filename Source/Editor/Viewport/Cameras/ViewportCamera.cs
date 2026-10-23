@@ -51,7 +51,7 @@ namespace FlaxEditor.Viewport.Cameras
                 var gizmoBounds = gizmos.Active.FocusBounds;
                 if (gizmoBounds != BoundingSphere.Empty)
                 {
-                    ShowSphere(ref gizmoBounds, ref orientation);
+                    ShowSphere(Vector3LongFloat.Expand(gizmoBounds.Center), gizmoBounds.Radius, ref orientation);
                     return;
                 }
             }
@@ -65,7 +65,7 @@ namespace FlaxEditor.Viewport.Cameras
         public virtual void ShowActor(Actor actor)
         {
             Editor.GetActorEditorSphere(actor, out BoundingSphere sphere);
-            ShowSphere(ref sphere);
+            ShowSphere(Vector3LongFloat.Expand(sphere.Center), sphere.Radius);
         }
 
         /// <summary>
@@ -97,27 +97,29 @@ namespace FlaxEditor.Viewport.Cameras
 
             if (mergesSphere == BoundingSphere.Empty)
                 return;
-            ShowSphere(ref mergesSphere, ref orientation);
+            ShowSphere(Vector3LongFloat.Expand(mergesSphere.Center), mergesSphere.Radius, ref orientation);
         }
 
         /// <summary>
         /// Moves the camera to visualize given world area defined by the sphere.
         /// </summary>
-        /// <param name="sphere">The sphere.</param>
-        public void ShowSphere(ref BoundingSphere sphere)
+        /// <param name="center">The center.</param>
+        /// <param name="radius">The radius.</param>
+        public void ShowSphere(Vector3LongFloat center, Real radius)
         {
             var q = new Quaternion(0.424461186f, -0.0940724313f, 0.0443938486f, 0.899451137f);
-            ShowSphere(ref sphere, ref q);
+            ShowSphere(center, radius, ref q);
         }
 
         /// <summary>
         /// Moves the camera to visualize given world area defined by the sphere.
         /// </summary>
-        /// <param name="sphere">The sphere.</param>
-        /// <param name="orientation">The camera orientation.</param>
-        public virtual void ShowSphere(ref BoundingSphere sphere, ref Quaternion orientation)
+        /// <param name="center">The center.</param>
+        /// <param name="radius">The radius.</param>
+        /// <param name="orientation">The orientation.</param>
+        public virtual void ShowSphere(Vector3LongFloat center, Real radius, ref Quaternion orientation)
         {
-            SetArcBallView(orientation, sphere.Center, sphere.Radius);
+            SetArcBallView(orientation, center, radius);
         }
 
         /// <summary>
@@ -137,7 +139,7 @@ namespace FlaxEditor.Viewport.Cameras
         /// <param name="marginDistanceScale">The margin distance scale of the orbit radius.</param>
         public void SetArcBallView(BoundingSphere objectBounds, float marginDistanceScale = 2.0f)
         {
-            SetArcBallView(new Quaternion(-0.08f, -0.92f, 0.31f, -0.23f), objectBounds.Center, objectBounds.Radius * marginDistanceScale);
+            SetArcBallView(new Quaternion(-0.08f, -0.92f, 0.31f, -0.23f), Vector3LongFloat.Expand(objectBounds.Center), objectBounds.Radius * marginDistanceScale);
         }
 
         /// <summary>
@@ -146,7 +148,7 @@ namespace FlaxEditor.Viewport.Cameras
         /// <param name="orbitRadius">The orbit radius.</param>
         public void SetArcBallView(float orbitRadius)
         {
-            SetArcBallView(new Quaternion(-0.08f, -0.92f, 0.31f, -0.23f), Vector3.Zero, orbitRadius);
+            SetArcBallView(new Quaternion(-0.08f, -0.92f, 0.31f, -0.23f), Vector3LongFloat.Zero, orbitRadius);
         }
 
         /// <summary>
@@ -155,14 +157,14 @@ namespace FlaxEditor.Viewport.Cameras
         /// <param name="orientation">The view rotation.</param>
         /// <param name="orbitCenter">The orbit center location.</param>
         /// <param name="orbitRadius">The orbit radius.</param>
-        public virtual void SetArcBallView(Quaternion orientation, Vector3 orbitCenter, Real orbitRadius)
+        public virtual void SetArcBallView(Quaternion orientation, Vector3LongFloat orbitCenter, Real orbitRadius)
         {
             // Rotate
             Viewport.ViewOrientation = orientation;
 
             // Move camera to look at orbit center point
             Vector3 localPosition = Viewport.ViewDirection * (-1 * orbitRadius);
-            Viewport.ViewPosition = orbitCenter + localPosition;
+            Viewport.ViewPosition = orbitCenter + Vector3LongFloat.Expand(localPosition);
         }
 
         /// <inheritdoc />

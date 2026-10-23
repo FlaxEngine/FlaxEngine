@@ -186,7 +186,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 var pos = actor.GetSplinePoint(Index);
                 var tangentIn = actor.GetSplineTangent(Index, true).Translation;
                 var tangentOut = actor.GetSplineTangent(Index, false).Translation;
-                var cameraTransform = Root.SceneContext.Viewport.ViewTransform.Translation;
+                var cameraTransform = Root.SceneContext.Viewport.ViewPosition.Quantize();
                 var pointSize = NodeSizeByDistance(pos, PointNodeSize, cameraTransform);
                 var tangentInSize = NodeSizeByDistance(tangentIn, TangentNodeSize, cameraTransform);
                 var tangentOutSize = NodeSizeByDistance(tangentOut, TangentNodeSize, cameraTransform);
@@ -275,7 +275,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 // Draw selected tangent highlight
                 var actor = (Spline)_node.Actor;
                 var pos = actor.GetSplineTangent(_index, _isIn).Translation;
-                var cameraTransform = Root.SceneContext.Viewport.ViewTransform.Translation;
+                var cameraTransform = Root.SceneContext.Viewport.ViewPosition.Quantize();
                 var tangentSize = NodeSizeByDistance(Transform.Translation, TangentNodeSize, cameraTransform);
                 DebugDraw.DrawSphere(new BoundingSphere(pos, tangentSize), Color.YellowGreen, 0, false);
             }
@@ -444,7 +444,7 @@ namespace FlaxEditor.SceneGraph.Actors
             allSplinesInView.Remove(spline);
             if (allSplinesInView.Count == 0)
                 return;
-            var cameraTransform = Root.SceneContext.Viewport.ViewTransform.Translation;
+            var cameraTransform = Root.SceneContext.Viewport.ViewPosition.Quantize();
 
             var snappedOnSplinePoint = false;
             for (int i = 0; i < allSplinesInView.Count; i++)

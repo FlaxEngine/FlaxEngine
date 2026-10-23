@@ -10,6 +10,11 @@ namespace FlaxEngine
     public partial struct Vector3LongFloat : IEquatable<Vector3LongFloat>
     {
         /// <summary>
+        /// Vector3LongFloat zero vector
+        /// </summary>
+        public readonly static Vector3LongFloat Zero = new(0ul);
+
+        /// <summary>
         /// Implements the operator +.
         /// </summary>
         /// <param name="lhs">The LHS.</param>
@@ -55,6 +60,23 @@ namespace FlaxEngine
             lhs.Z = LongFloatMath.Multiply(lhs.Z, rhs.Z);
             return lhs;
         }
+
+        /// <summary>
+        /// Implements the operator *.
+        /// </summary>
+        /// <param name="lhs">The LHS.</param>
+        /// <param name="rhs">The RHS.</param>
+        /// <returns>
+        /// The result of the operator.
+        /// </returns>
+        public static Vector3LongFloat operator *(Vector3LongFloat lhs, LongFloat rhs)
+        {
+            lhs.X = LongFloatMath.Multiply(lhs.X, rhs);
+            lhs.Y = LongFloatMath.Multiply(lhs.Y, rhs);
+            lhs.Z = LongFloatMath.Multiply(lhs.Z, rhs);
+            return lhs;
+        }
+
         /// <summary>
         /// Implements the operator /.
         /// </summary>
@@ -180,6 +202,43 @@ namespace FlaxEngine
         public bool Equals(Vector3LongFloat other)
         {
             return this == other;
+        }
+
+        /// <summary>
+        /// Expands the specified float3 to Vector3LongFloat.
+        /// </summary>
+        /// <param name="value">The float3.</param>
+        /// <returns></returns>
+        public static Vector3LongFloat Expand(Float3 value)
+        {
+            return new Vector3LongFloat(value.X, value.Y, value.Z);
+        }
+
+        /// <summary>
+        /// Distances the specified position.
+        /// </summary>
+        /// <param name="position">The position.</param>
+        /// <param name="targetPoint">The target point.</param>
+        /// <returns></returns>
+        public static LongFloat Distance(Vector3LongFloat position, Vector3LongFloat targetPoint)
+        {
+            LongFloat dx = position.X - targetPoint.X;
+            LongFloat dy = position.Y - targetPoint.Y;
+            LongFloat dz = position.Z - targetPoint.Z;
+
+            return LongFloatMath.SquareRoot(dx * dx + dy * dy + dz * dz);
+        }
+
+        /// <summary>
+        /// lerp.
+        /// </summary>
+        /// <param name="start">The start.</param>
+        /// <param name="end">The end.</param>
+        /// <param name="amount">The amount.</param>
+        /// <returns></returns>
+        public static Vector3LongFloat Lerp(Vector3LongFloat start, Vector3LongFloat end, LongFloat amount)
+        {
+            return start + (end - start) * amount;
         }
     }
 }

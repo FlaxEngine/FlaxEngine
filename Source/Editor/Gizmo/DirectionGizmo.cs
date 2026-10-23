@@ -64,7 +64,7 @@ internal class DirectionGizmo : ContainerControl
 
         public void ProjectPoint(Vector3 worldSpaceLocation, out Float2 viewportSpaceLocation)
         {
-            worldSpaceLocation = RenderView.GetRelativeToOriginQuantized(_origin, worldSpaceLocation);
+            worldSpaceLocation = (Vector3LongFloat.Expand(worldSpaceLocation) - _origin).Quantize();
             _viewport.Project(ref worldSpaceLocation, ref _viewProjection, out var projected);
             viewportSpaceLocation = new Float2((float)projected.X, (float)projected.Y);
         }
@@ -156,7 +156,7 @@ internal class DirectionGizmo : ContainerControl
 
             const float orbitRadius = 500f;
             Quaternion newOrientation = _viewport.ViewOrientation * Quaternion.RotationYawPitchRoll(delta.X , delta.Y, 0f);
-            Vector3 orbitCenter = _viewport.ViewPosition + _viewport.ViewDirection * orbitRadius;
+            Vector3LongFloat orbitCenter = _viewport.ViewPosition + Vector3LongFloat.Expand(_viewport.ViewDirection * orbitRadius);
             _viewport.ViewportCamera.SetArcBallView(newOrientation, orbitCenter, orbitRadius);
 
             return;

@@ -190,7 +190,8 @@ namespace FlaxEditor.Windows
             _pilotActor = actor;
             _pilotStart = actor.Transform;
             _pilotBounds = actor.BoundingBoxWithChildren;
-            Viewport.ViewTransform = _pilotStart;
+            Viewport.ViewPosition = Vector3LongFloat.Expand(_pilotStart.Translation);
+            Viewport.ViewOrientation = _pilotStart.Orientation;
             if (_pilotWidget == null)
             {
                 var container = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperLeft)
@@ -400,9 +401,7 @@ namespace FlaxEditor.Windows
 
             if (_pilotActor)
             {
-                var transform = Viewport.ViewTransform;
-                transform.Scale = _pilotActor.Scale;
-                _pilotActor.Transform = transform;
+                _pilotActor.Transform = new Transform(Viewport.ViewPosition.Quantize(), Viewport.ViewOrientation, _pilotActor.Scale);
             }
         }
 
