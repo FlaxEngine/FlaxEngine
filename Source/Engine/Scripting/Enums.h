@@ -15,8 +15,7 @@ public:
     template<class EnumType>
     static const ScriptingType::EnumItem* GetItems()
     {
-        const ScriptingTypeHandle typeHandle = StaticType<EnumType>();
-        if (typeHandle)
+        if (const ScriptingTypeHandle typeHandle = StaticType<EnumType>())
         {
             const ScriptingType& type = typeHandle.GetType();
             if (type.Type == ScriptingTypes::Enum)
@@ -44,7 +43,29 @@ public:
     template<class EnumType>
     static String ToString(EnumType value)
     {
-        return String(GetName<EnumType>(value));
+        String result;
+        const char* name = GetName<EnumType>(value);
+        if (name)
+            result = String(name);
+        else if (const ScriptingTypeHandle typeHandle = StaticType<EnumType>())
+        {
+            // Flags
+            const ScriptingType& type = typeHandle.GetType();
+            if (type.Type == ScriptingTypes::Enum && type.Enum.Flags && type.Enum.Items)
+            {
+                auto items = type.Enum.Items;
+                for (int32 i = 0; items[i].Name; i++)
+                {
+                    if (((uint64)value & items[i].Value) == items[i].Value && items[i].Value)
+                    {
+                        if (result.Length())
+                            result += TEXT("|");
+                        result += items[i].Name;
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     // Gets the value of the enum based on the name.
@@ -66,6 +87,7 @@ public:
     template<class EnumType>
     static EnumType FromString(const StringView& name)
     {
+        // TODO: add parsing flags (with '|' separator)
         return FromString<EnumType>(StringAnsi(name));
     }
 

@@ -204,7 +204,7 @@ ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* modul
     Struct.SetField = setField;
 }
 
-ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* module, int32 size, EnumItem* items, bool stringSerialization)
+ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* module, int32 size, EnumItem* items, bool stringSerialization, bool flags)
     : ManagedClass(nullptr)
     , Module(module)
     , InitRuntime(DefaultInitRuntime)
@@ -216,6 +216,7 @@ ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* modul
 {
     Enum.Items = items;
     Enum.StringSerialization = stringSerialization;
+    Enum.Flags = flags;
 }
 
 ScriptingType::ScriptingType(const StringAnsiView& fullname, BinaryModule* module, InitRuntimeHandler initRuntime, SetupScriptVTableHandler setupScriptVTable, SetupScriptObjectVTableHandler setupScriptObjectVTable, GetInterfaceWrapper getInterfaceWrapper)
@@ -272,6 +273,7 @@ ScriptingType::ScriptingType(const ScriptingType& other)
     case ScriptingTypes::Enum:
         Enum.Items = other.Enum.Items;
         Enum.StringSerialization = other.Enum.StringSerialization;
+        Enum.Flags = other.Enum.Flags;
         break;
     case ScriptingTypes::Interface:
         Interface.SetupScriptVTable = other.Interface.SetupScriptVTable;
@@ -326,6 +328,7 @@ ScriptingType::ScriptingType(ScriptingType&& other)
     case ScriptingTypes::Enum:
         Enum.Items = other.Enum.Items;
         Enum.StringSerialization = other.Enum.StringSerialization;
+        Enum.Flags = other.Enum.Flags;
         break;
     case ScriptingTypes::Interface:
         Interface.SetupScriptVTable = other.Interface.SetupScriptVTable;
@@ -642,11 +645,11 @@ ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const S
     INIT_TYPE(size, initRuntime, ctor, dtor, copy, box, unbox, getField, setField, baseType, interfaces);
 }
 
-ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::EnumItem* items, bool stringSerialization)
+ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::EnumItem* items, bool stringSerialization, bool flags)
     : ScriptingTypeHandle(module, module->Types.Count())
 {
     // Enum
-    INIT_TYPE(size, items, stringSerialization);
+    INIT_TYPE(size, items, stringSerialization, flags);
 }
 
 ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::SetupScriptVTableHandler setupScriptVTable, ScriptingType::SetupScriptObjectVTableHandler setupScriptObjectVTable, ScriptingType::GetInterfaceWrapper getInterfaceWrapper)
