@@ -879,7 +879,14 @@ void RenderInner(RenderContext& renderContext, RenderContextBatch& renderContext
 
     // Post-processing
     EyeAdaptationPass::Instance()->Render(renderContext, frameBuffer);
+    // The post-processing goes straight to the back buffer only when no anti-aliasing pass runs after it: TAA has run
+    // already, FXAA, SMAA and CAS run in RenderAntiAliasingPass below
+    const AntialiasingMode aaMode = renderContext.List->Settings.AntiAliasing.Mode;
+    const bool hasAntiAliasingPass = aaMode == AntialiasingMode::FastApproximateAntialiasing ||
+                                     aaMode == AntialiasingMode::SubpixelMorphologicalAntialiasing ||
+                                     ContrastAdaptiveSharpeningPass::Instance()->CanRender(renderContext);
     if (!useUpscaling &&
+        !hasAntiAliasingPass &&
         !renderContext.List->HasAnyPostFx(renderContext, PostProcessEffectLocation::AfterAntiAliasingPass, MaterialPostFxLocation::AfterAntiAliasingPass) &&
         !renderContext.List->HasAnyPostFx(renderContext, PostProcessEffectLocation::Default, MaterialPostFxLocation::AfterPostProcessingPass) &&
         !renderContext.List->HasAnyPostFx(renderContext, MaterialPostFxLocation::AfterCustomPostEffects) &&
