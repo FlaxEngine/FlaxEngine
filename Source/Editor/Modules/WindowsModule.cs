@@ -540,10 +540,12 @@ namespace FlaxEditor.Modules
 
             if (isMaximized)
             {
-                if (win.IsMaximized)
+                var wasMaximized = win.IsMaximized;
+                if (!wasMaximized)
                     win.Restore();
                 win.ClientPosition = bounds.Location;
-                win.Maximize();
+                if (!wasMaximized)
+                    win.Maximize();
             }
             else
             {
@@ -555,7 +557,7 @@ namespace FlaxEditor.Modules
                 {
                     win.ClientPosition = bounds.Location;
                 }
-                if (isMinimized)
+                if (isMinimized && !win.IsMinimized)
                     win.Minimize();
             }
         }
