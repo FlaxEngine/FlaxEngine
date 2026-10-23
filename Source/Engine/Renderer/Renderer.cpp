@@ -879,7 +879,12 @@ void RenderInner(RenderContext& renderContext, RenderContextBatch& renderContext
 
     // Post-processing
     EyeAdaptationPass::Instance()->Render(renderContext, frameBuffer);
+    const AntialiasingMode aaMode = renderContext.List->Settings.AntiAliasing.Mode;
+    const bool hasAntiAliasingPass = aaMode == AntialiasingMode::FastApproximateAntialiasing ||
+                                     aaMode == AntialiasingMode::SubpixelMorphologicalAntialiasing ||
+                                     ContrastAdaptiveSharpeningPass::Instance()->CanRender(renderContext);
     if (!useUpscaling &&
+        !hasAntiAliasingPass &&
         !renderContext.List->HasAnyPostFx(renderContext, PostProcessEffectLocation::AfterAntiAliasingPass, MaterialPostFxLocation::AfterAntiAliasingPass) &&
         !renderContext.List->HasAnyPostFx(renderContext, PostProcessEffectLocation::Default, MaterialPostFxLocation::AfterPostProcessingPass) &&
         !renderContext.List->HasAnyPostFx(renderContext, MaterialPostFxLocation::AfterCustomPostEffects) &&
