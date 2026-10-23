@@ -349,10 +349,11 @@ namespace FlaxEditor.Viewport
         /// Gets the bounding frustum of the current viewport camera.
         /// </summary>
         public BoundingFrustum ViewFrustum
-        {
+        {//Vector3LongFloat
             get
             {
-                CreateViewMatrix(out var view);
+                Float3 position = (ViewPosition - Task.View.Origin).Quantize();
+                CreateViewMatrix(position, out var view);
                 CreateProjectionMatrix(out var projection);
                 Matrix.Multiply(ref view, ref projection, out var viewProjection);
                 return new BoundingFrustum(ref viewProjection);
