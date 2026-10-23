@@ -54,10 +54,15 @@ namespace FlaxEditor.GUI.Docking
         /// </summary>
         public void ResetLayout()
         {
+            ResetLayoutInternal(false);
+        }
+
+        internal void ResetLayoutInternal(bool duringScriptsReload = false)
+        {
             // Close all windows
             var windows = Windows.ToArray();
             for (int i = 0; i < windows.Length; i++)
-                windows[i].Close();
+                windows[i].Close(duringScriptsReload ? ClosingReason.ScriptsReload : ClosingReason.CloseEvent);
 
             // Ensure that has no docked windows
             var childPanels = ChildPanels.ToArray();
