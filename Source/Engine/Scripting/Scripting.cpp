@@ -177,7 +177,11 @@ bool ScriptingService::Init()
     PROFILE_MEM(Scripting);
     Stopwatch stopwatch;
 
-    _objectsDictionary.EnsureCapacity(16 * 1024);
+    {
+        // The content loading threads (started by the Content service, which initializes before this one) can already register objects
+        ScopeLock lock(_objectsLocker);
+        _objectsDictionary.EnsureCapacity(16 * 1024);
+    }
 
     // Initialize managed runtime
     if (MCore::LoadEngine())
