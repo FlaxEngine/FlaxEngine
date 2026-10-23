@@ -771,6 +771,8 @@ void GlobalSignDistanceFieldPass::OnCollectDrawCalls(RenderContextBatch& renderC
     if (renderContext.List->Scenes.Count() == 0)
         return;
     auto& sdfData = *renderContext.Buffers->GetCustomBuffer<GlobalSignDistanceFieldCustomBuffer>(TEXT("GlobalSignDistanceField"));
+    if (sdfData.LastFrameUsed == Engine::FrameCount)
+        return; // Already rendered in the current frame (eg. by the view with linked buffers)
     Current = &sdfData;
     sdfData.StartDrawing(renderContext, renderContextBatch.EnableAsync);
 }

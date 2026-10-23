@@ -47,6 +47,9 @@ GPUDeviceVulkan::OptionalVulkanDeviceExtensions GPUDeviceVulkan::OptionalDeviceE
 VkInstance GPUDeviceVulkan::Instance = VK_NULL_HANDLE;
 Array<const char*> GPUDeviceVulkan::InstanceExtensions;
 Array<const char*> GPUDeviceVulkan::InstanceLayers;
+Function<VkResult(const VkInstanceCreateInfo*, VkInstance*)> GPUDeviceVulkan::CreateInstanceOverride;
+Function<VkPhysicalDevice(VkInstance)> GPUDeviceVulkan::GetPhysicalDeviceOverride;
+Function<VkResult(VkPhysicalDevice, const VkDeviceCreateInfo*, VkDevice*)> GPUDeviceVulkan::CreateDeviceOverride;
 
 bool SupportsDebugUtilsExt = false;
 #if VULKAN_USE_DEBUG_LAYER
@@ -1115,7 +1118,10 @@ GPUDevice* GPUDeviceVulkan::Create()
 #endif
 
     // Create Vulkan instance
-    result = vkCreateInstance(&instInfo, nullptr, &Instance);
+    if (CreateInstanceOverride.IsBinded())
+        result = CreateInstanceOverride(&instInfo, &Instance);
+    else
+        result = vkCreateInstance(&instInfo, nullptr, &Instance);
     if (result == VK_ERROR_INCOMPATIBLE_DRIVER)
     {
         // Missing driver
@@ -1288,6 +1294,22 @@ GPUDevice* GPUDeviceVulkan::Create()
                 break;
             }
         }
+    }
+    const VkPhysicalDevice requiredGpu = GetPhysicalDeviceOverride.IsBinded() ? GetPhysicalDeviceOverride(Instance) : VK_NULL_HANDLE;
+    if (requiredGpu != VK_NULL_HANDLE)
+    {
+        bool found = false;
+        for (int32 i = 0; i < adapters.Count(); i++)
+        {
+            if (adapters[i].Gpu == requiredGpu)
+            {
+                selectedAdapterIndex = i;
+                found = true;
+                break;
+            }
+        }
+        if (!found)
+            LOG(Warning, "Failed to find the required Vulkan adapter.");
     }
     GPUAdapterVulkan& selectedAdapter = adapters[selectedAdapterIndex];
     ASSERT(selectedAdapter.IsValid());
@@ -1823,7 +1845,14 @@ bool GPUDeviceVulkan::Init()
 #endif
 
     // Create the device
-    VALIDATE_VULKAN_RESULT(vkCreateDevice(gpu, &deviceInfo, nullptr, &Device));
+    if (CreateDeviceOverride.IsBinded())
+    {
+        VALIDATE_VULKAN_RESULT(CreateDeviceOverride(gpu, &deviceInfo, &Device));
+    }
+    else
+    {
+        VALIDATE_VULKAN_RESULT(vkCreateDevice(gpu, &deviceInfo, nullptr, &Device));
+    }
     PhysicalDeviceFeatures12.pNext = nullptr;
 
 #if !PLATFORM_SWITCH

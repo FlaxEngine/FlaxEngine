@@ -414,27 +414,25 @@ SceneRenderTask* ParticleEffect::GetRenderTask() const
     if (customViewRenderTask && customViewRenderTask->Enabled && customViewRenderTask->LastUsedFrame >= minFrame)
         return customViewRenderTask;
 
-    // Main task
+    // Main task (skipped if it doesn't render the scene, eg. when it mirrors the XR headset image)
     const auto mainRenderTask = MainRenderTask::Instance;
-    if (mainRenderTask && mainRenderTask->Enabled && mainRenderTask->LastUsedFrame >= minFrame)
+    if (mainRenderTask && mainRenderTask->Enabled && !mainRenderTask->IsCustomRendering && mainRenderTask->LastUsedFrame >= minFrame)
         return mainRenderTask;
 
-    // Editor viewport
-#if USE_EDITOR
+    // Editor viewport or XR view
     for (auto task : RenderTask::Tasks)
     {
         if (task->LastUsedFrame >= minFrame && task->Enabled)
         {
             if (const auto sceneRenderTask = Cast<SceneRenderTask>(task))
             {
-                if (sceneRenderTask->ActorsSource == ActorsSources::Scenes)
+                if (sceneRenderTask->ActorsSource == ActorsSources::Scenes && !sceneRenderTask->IsCustomRendering)
                 {
                     return sceneRenderTask;
                 }
             }
         }
     }
-#endif
     return nullptr;
 }
 

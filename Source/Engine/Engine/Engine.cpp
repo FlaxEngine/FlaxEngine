@@ -65,6 +65,8 @@ TaskGraph* Engine::UpdateGraph = nullptr;
 Action Engine::LateUpdate;
 Action Engine::LateFixedUpdate;
 Action Engine::Draw;
+Action Engine::PostDraw;
+Function<void()> Engine::FramePacer;
 Action Engine::Pause;
 Action Engine::Unpause;
 Action Engine::RequestingExit;
@@ -178,7 +180,13 @@ void Engine::OnLoop()
 {
     // Reduce CPU usage by introducing idle time if the engine is running very fast and has enough time to spend
     const bool useSleep = !PLATFORM_WEB; // TODO: this should probably be a platform setting
-    if ((useSleep && Time::UpdateFPS > ZeroTolerance) || !Platform::GetHasFocus())
+    if (FramePacer.IsBinded())
+    {
+        // Wait for the next frame using the custom frame pacing
+        PROFILE_CPU_NAMED("FramePacer");
+        FramePacer();
+    }
+    else if ((useSleep && Time::UpdateFPS > ZeroTolerance) || !Platform::GetHasFocus())
     {
         double nextTick = Time::GetNextTick();
         double timeToTick = nextTick - Platform::GetTimeSeconds();
@@ -403,6 +411,7 @@ void Engine::OnDraw()
 #endif
 
     device->Draw();
+    PostDraw();
 
     // End frame rendering
     FrameMark;

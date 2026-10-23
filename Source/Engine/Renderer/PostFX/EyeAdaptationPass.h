@@ -30,6 +30,8 @@ public:
 
 private:
 
+    void ApplyLuminance(GPUContext* context, GPUTexture* colorBuffer, GPUTexture* luminanceMap);
+
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {

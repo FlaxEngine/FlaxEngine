@@ -418,6 +418,21 @@ public:
     /// </summary>
     static Array<const char*> InstanceLayers;
 
+    /// <summary>
+    /// The custom function that creates the Vulkan instance (eg. by the XR runtime that adds the extensions it needs). Must be set before the graphics service initialization.
+    /// </summary>
+    static Function<VkResult(const VkInstanceCreateInfo*, VkInstance*)> CreateInstanceOverride;
+
+    /// <summary>
+    /// The custom function that gets the Vulkan physical device to use (eg. the one connected to the XR headset). Returns null handle to use the default one. Must be set before the graphics service initialization.
+    /// </summary>
+    static Function<VkPhysicalDevice(VkInstance)> GetPhysicalDeviceOverride;
+
+    /// <summary>
+    /// The custom function that creates the Vulkan device (eg. by the XR runtime that adds the extensions it needs). Must be set before the graphics service initialization.
+    /// </summary>
+    static Function<VkResult(VkPhysicalDevice, const VkDeviceCreateInfo*, VkDevice*)> CreateDeviceOverride;
+
 public:
     /// <summary>
     /// The main Vulkan commands context.

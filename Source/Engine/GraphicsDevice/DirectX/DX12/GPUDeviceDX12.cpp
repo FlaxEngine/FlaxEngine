@@ -532,6 +532,7 @@ GPUDevice* GPUDeviceDX12::Create()
             }
         }
     }
+    GPUAdapterDX::SelectRequired(adapters, selectedAdapter);
     if (!selectedAdapter.IsValid())
     {
         LOG(Error, "Failed to choose valid DirectX adapter!");

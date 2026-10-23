@@ -166,6 +166,7 @@ private:
     DXGI_FORMAT _dxgiFormatSRV;
     DXGI_FORMAT _dxgiFormatRTV;
     DXGI_FORMAT _dxgiFormatUAV;
+    bool _isNativeResource = false;
 
 public:
     /// <summary>
@@ -246,6 +247,7 @@ public:
 protected:
     // [GPUTexture]
     bool OnInit() override;
+    bool OnInitFromNative(void* nativeResource) override;
     void OnResidentMipsChanged() override;
     void OnReleaseGPU() override;
 #if GPU_ENABLE_RESOURCE_NAMING
