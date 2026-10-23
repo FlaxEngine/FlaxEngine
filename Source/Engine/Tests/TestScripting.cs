@@ -50,16 +50,18 @@ namespace FlaxEngine.Tests
         [LibraryImport("user32")]
         private static partial int GetSystemMetrics(int index);
 
+        // Linux: the versioned libm name (libm.so is a linker script where the C development files are installed); "libc" is
+        // mapped by .NET itself
         [LibraryImport("libc", EntryPoint = "getpid")]
         private static partial int LinuxGetPid();
 
-        [LibraryImport("libm", EntryPoint = "floor")]
+        [LibraryImport("libm.so.6", EntryPoint = "floor")]
         private static partial double LinuxFloor(double value);
 
-        [LibraryImport("libSystem", EntryPoint = "getpid")]
+        [LibraryImport("/usr/lib/libSystem.B.dylib", EntryPoint = "getpid")]
         private static partial int MacGetPid();
 
-        [LibraryImport("libobjc", EntryPoint = "objc_getClassList")]
+        [LibraryImport("/usr/lib/libobjc.A.dylib", EntryPoint = "objc_getClassList")]
         private static partial int MacGetClassList(IntPtr buffer, int bufferCount);
 
         /// <summary>
