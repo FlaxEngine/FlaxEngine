@@ -40,11 +40,11 @@ TEST_CASE("Scripting")
         CHECK(MUtils::Unbox<int32>(result) == 0);
     }
 
-    SECTION("Test Native Libraries Per Assembly")
+    SECTION("Test Native Library Imports")
     {
         MClass* klass = Scripting::FindClass("FlaxEngine.Tests.TestScripting");
         CHECK(klass);
-        MMethod* method = klass->GetMethod("TestNativeLibrariesPerAssembly");
+        MMethod* method = klass->GetMethod("TestNativeLibraryImports");
         CHECK(method);
         MObject* result = method->Invoke(nullptr, nullptr, nullptr);
         CHECK(MUtils::Unbox<int32>(result) == 0);

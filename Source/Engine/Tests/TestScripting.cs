@@ -11,7 +11,7 @@ namespace FlaxEngine.Tests
     /// <summary>
     /// Tests for scripting.
     /// </summary>
-    public class TestScripting
+    public partial class TestScripting
     {
         /// <summary>
         /// Tests all <see cref="LibraryImportAttribute"/> usages in the engine to verify all bindings are correct to work with P/Invoke.
@@ -44,58 +44,54 @@ namespace FlaxEngine.Tests
             return result;
         }
 
+        [LibraryImport("kernel32")]
+        private static partial uint GetTickCount();
+
+        [LibraryImport("user32")]
+        private static partial int GetSystemMetrics(int index);
+
+        [LibraryImport("libc", EntryPoint = "getpid")]
+        private static partial int LinuxGetPid();
+
+        [LibraryImport("libm", EntryPoint = "floor")]
+        private static partial double LinuxFloor(double value);
+
+        [LibraryImport("libSystem", EntryPoint = "getpid")]
+        private static partial int MacGetPid();
+
+        [LibraryImport("libobjc", EntryPoint = "objc_getClassList")]
+        private static partial int MacGetClassList(IntPtr buffer, int bufferCount);
+
         /// <summary>
-        /// Tests that one assembly can import several native libraries through the engine's import resolver.
+        /// Tests that one assembly can import several native libraries: calls functions of two system libraries through
+        /// <see cref="LibraryImportAttribute"/> (with parameters that need no runtime marshalling).
         /// </summary>
-        public static int TestNativeLibrariesPerAssembly()
+        public static int TestNativeLibraryImports()
         {
-            // Two system libraries under test names: the resolver loads each name once, so the names must be new to it
-            string[] systemLibraries;
-            if (OperatingSystem.IsWindows())
-                systemLibraries = new[] { "kernel32.dll", "user32.dll" };
-            else if (OperatingSystem.IsMacOS())
-                systemLibraries = new[] { "/usr/lib/libSystem.B.dylib", "/usr/lib/libobjc.A.dylib" };
-            else
-                systemLibraries = new[] { "libc.so.6", "libm.so.6" };
-            var names = new[] { "TestNativeLibrary1", "TestNativeLibrary2" };
-
-            // An assembly that does not import native libraries through the resolver
-            var assembly = typeof(System.Linq.Enumerable).Assembly;
-            var interop = typeof(Interop.NativeInterop);
-            var resolver = interop.GetMethod("NativeLibraryImportResolver", BindingFlags.NonPublic | BindingFlags.Static);
-            var loadedLibraries = (Dictionary<string, IntPtr>)interop.GetField("loadedNativeLibraries", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null);
-            var ownedLibraries = (System.Collections.IDictionary)interop.GetField("assemblyOwnedNativeLibraries", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null);
-            if (resolver == null || loadedLibraries == null || ownedLibraries == null)
-                return -1;
-
-            var result = 0;
             try
             {
-                for (int i = 0; i < names.Length; i++)
+                if (OperatingSystem.IsWindows())
                 {
-                    Interop.NativeInterop.libraryPaths[names[i]] = systemLibraries[i];
-                    var library = (IntPtr)resolver.Invoke(null, new object[] { names[i], assembly, null });
-                    if (library == IntPtr.Zero)
-                        result++;
+                    GetTickCount();
+                    GetSystemMetrics(0);
+                }
+                else if (OperatingSystem.IsMacOS())
+                {
+                    MacGetPid();
+                    MacGetClassList(IntPtr.Zero, 0);
+                }
+                else
+                {
+                    LinuxGetPid();
+                    LinuxFloor(0.5);
                 }
             }
-            catch (TargetInvocationException ex)
+            catch (Exception ex)
             {
-                Debug.LogError("Native library import failed: " + ex.InnerException?.Message);
-                result += 10;
+                Debug.LogError("Native library import failed: " + ex.Message);
+                return 1;
             }
-            finally
-            {
-                // Remove the test libraries from the resolver (also after a failure)
-                foreach (var name in names)
-                {
-                    Interop.NativeInterop.libraryPaths.Remove(name);
-                    if (loadedLibraries.Remove(name, out var library))
-                        NativeLibrary.Free(library);
-                }
-                ownedLibraries.Remove(assembly);
-            }
-            return result;
+            return 0;
         }
 
         /// <summary>
