@@ -765,7 +765,8 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, Span<byte> bytes, Text
     }
 
     // Fix sRGB problem
-    if (!keepAsIs && DirectX::IsSRGB(sourceDxgiFormat))
+    // (not for an sRGB import in Linear color space: sRGB source data is already in the target encoding, and the conversion to the sRGB target format would encode it again)
+    if (!keepAsIs && DirectX::IsSRGB(sourceDxgiFormat) && (!options.sRGB || GraphicsSettings::Get()->GammaColorSpace))
     {
         sourceDxgiFormat = ToDxgiFormat(PixelFormatExtensions::ToNonsRGB(::ToPixelFormat(sourceDxgiFormat)));
         ((DirectX::TexMetadata&)currentImage->GetMetadata()).format = sourceDxgiFormat;
