@@ -3,6 +3,7 @@
 #include "ModelInstanceActor.h"
 #include "Engine/Content/Assets/MaterialInstance.h"
 #include "Engine/Level/Scene/SceneRendering.h"
+#include "Engine/Graphics/GPUPipelineCache.h"
 
 ModelInstanceActor::ModelInstanceActor(const SpawnParams& params)
     : Actor(params)
@@ -22,6 +23,7 @@ MeshBase* ModelInstanceActor::MeshReference::Get() const
 
 void ModelInstanceActor::SetEntries(const Array<ModelInstanceEntry>& value)
 {
+    GPU_PSO_WAIT(_precacheHandle);
     WaitForModelLoad();
     bool anyChanged = false;
     Entries.Resize(value.Count());
@@ -36,6 +38,7 @@ void ModelInstanceActor::SetEntries(const Array<ModelInstanceEntry>& value)
 
 void ModelInstanceActor::SetMaterial(int32 entryIndex, MaterialBase* material)
 {
+    GPU_PSO_WAIT(_precacheHandle);
     WaitForModelLoad();
     if (Entries.Count() == 0 && !material)
         return;
@@ -52,6 +55,7 @@ void ModelInstanceActor::SetMaterial(int32 entryIndex, MaterialBase* material)
 
 MaterialInstance* ModelInstanceActor::CreateAndSetVirtualMaterialInstance(int32 entryIndex)
 {
+    GPU_PSO_WAIT(_precacheHandle);
     WaitForModelLoad();
     const int32 slotsCount = GetMaterialSlots().Length();
     CHECK_RETURN(entryIndex >= 0 && entryIndex < slotsCount, nullptr);

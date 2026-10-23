@@ -118,9 +118,9 @@ void IMaterial::BindParameters::BindDrawData()
     GPUContext->BindCB(2, PerDrawConstants);
 }
 
-GPUPipelineState* MaterialShader::PipelineStateCache::InitPS(const MaterialShader* owner, CullMode mode)
+GPUPipelineState* MaterialShader::PipelineStateCache::InitPS(const MaterialShader* owner, CullMode cullMode)
 {
-    Desc.CullMode = mode;
+    Desc.CullMode = cullMode;
     auto ps = GPUDevice::Instance->CreatePipelineState();
     if (ps->Init(Desc))
     {
@@ -134,6 +134,35 @@ GPUPipelineState* MaterialShader::PipelineStateCache::InitPS(const MaterialShade
     }
     return ps;
 }
+
+#if COMPILE_WITH_PSO_PRECACHING
+
+#define VERBOSE_LOG_PSO_PRECACHING 0
+#if VERBOSE_LOG_PSO_PRECACHING
+#include "Engine/Scripting/Enums.h"
+#endif
+
+void MaterialShader::PipelineStateCache::PrecachePSO(PipelineStateCache* psCache, const PrecacheParameters& params, const MaterialShader* owner, CullMode cullMode)
+{
+    if (!psCache || psCache->Desc.VS == nullptr)
+    {
+        // Not supported pass or permutation
+#if VERBOSE_LOG_PSO_PRECACHING
+        LOG(Info, "Cannot precache PSO for material '{}' (pass: {}, geo={}, flags: {})", owner->GetShader()->ToString(), ScriptingEnum::ToString(params.Pass), params.MaterialFlags.Geoemtry, params.MaterialFlags.Flags);
+#endif
+        return;
+    }
+    GPUPipelineState* state = psCache->GetPS(owner, cullMode);
+    if (state)
+    {
+#if VERBOSE_LOG_PSO_PRECACHING
+        LOG(Info, "Precache PSO for '{}': pass={}, geo={}, cull={}, flags={}", state->ToString(), ScriptingEnum::ToString(params.Pass), params.MaterialFlags.Geoemtry, (uint32)cullMode, params.MaterialFlags.Flags);
+#endif
+        state->PrecachePSO(*(GPUPipelineState::PrecacheContext*)params.PrecacheContext);
+    }
+}
+
+#endif
 
 MaterialShader::MaterialShader(const StringView& name)
     : _isLoaded(false)

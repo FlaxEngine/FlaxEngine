@@ -82,6 +82,9 @@ public:
     DrawPass GetDrawModes() const override;
     bool CanUseInstancing(const RenderContext& renderContext, InstancingHandler& handler) const override;
     void Bind(BindParameters& params) override;
+#if COMPILE_WITH_PSO_PRECACHING
+    void PrecachePSO(const PrecacheParameters& params) override;
+#endif
     void Unload() override;
 
 protected:

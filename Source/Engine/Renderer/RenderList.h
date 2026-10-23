@@ -718,6 +718,8 @@ PACK_STRUCT(struct ShaderObjectDrawInstanceData
     uint32 ObjectIndex;
     });
 
+#define INSTANCED_DRAW_OBJECT_ID_ELEMENT { VertexElement::Types::Attribute0, 3, 0, 1, PixelFormat::R32_UInt }
+
 struct SurfaceDrawCallHandler
 {
     static void GetHash(const DrawCall& drawCall, uint32& batchKey);

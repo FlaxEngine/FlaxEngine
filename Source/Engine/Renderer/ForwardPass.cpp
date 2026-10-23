@@ -8,6 +8,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderContext.h"
@@ -138,8 +139,23 @@ void ForwardPass::Render(RenderContext& renderContext, GPUTexture*& input, GPUTe
     if (!forwardList.IsEmpty())
     {
         // Run forward pass
+        GPUDrawPass pass(context, depthBufferHandle, GPUDrawPassAction::Load, output->View(), GPUDrawPassAction::LoadStore);
         view.Pass = DrawPass::Forward;
-        context->SetRenderTarget(depthBufferHandle, output->View());
         mainCache->ExecuteDrawCalls(renderContext, forwardList, input->View());
     }
 }
+
+#if COMPILE_WITH_PSO_PRECACHING
+
+#include "Engine/Graphics/GPUPipelineCache.h"
+
+GPU_PSO_PRECACHING_PASS(ForwardPassPSO, {
+    auto renderBuffers = MainRenderTask::Instance->Buffers;
+    context.DepthFormat = renderBuffers->GetDepthFormat();
+    context.DepthAction = GPUDrawPassAction::Load;
+    context.RTCount = 1;
+    context.RTFormats[0] = renderBuffers->GetOutputFormat();
+    params.Pass = DrawPass::Forward;
+});
+
+#endif

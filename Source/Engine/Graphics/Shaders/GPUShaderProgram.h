@@ -11,6 +11,7 @@
 
 class GPUShader;
 class GPUVertexLayout;
+class GPUPipelineState;
 
 /// <summary>
 /// The shader program metadata container. Contains description about resources used by the shader.
@@ -61,6 +62,7 @@ struct GPUShaderProgramInitializer
 /// </summary>
 class FLAXENGINE_API GPUShaderProgram
 {
+    friend GPUPipelineState;
 protected:
     StringAnsi _name;
     ShaderBindings _bindings;

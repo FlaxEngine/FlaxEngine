@@ -160,6 +160,7 @@ public:
 private:
     void OnModelResidencyChanged();
     void FlushVertexColors();
+    void PrecachePSOBatch(struct GPUPipelineCacheBatch& batch);
 
     // [IAssetReference]
     void OnAssetChanged(Asset* asset, void* caller) override;
@@ -184,6 +185,7 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS;
     MeshBase* GetMesh(const MeshReference& ref) const override;
     MeshDeformation* GetMeshDeformation() const override;
     void UpdateBounds() override;
+    void PrecachePSO() override;
 
 protected:
     // [ModelInstanceActor]

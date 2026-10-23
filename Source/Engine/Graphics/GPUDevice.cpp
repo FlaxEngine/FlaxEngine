@@ -78,6 +78,8 @@ GPUPipelineState::GPUPipelineState()
 {
 }
 
+#if COMPILE_WITH_PSO_PRECACHING
+
 void GPUPipelineState::PrecacheContext::SetReadOnlyDepthFormat()
 {
     auto renderBuffers = MainRenderTask::Instance->Buffers;
@@ -89,6 +91,8 @@ void GPUPipelineState::PrecacheContext::SetFullscreenTriangleLayout()
 {
     VertexLayout = GPUDevice::Instance->GetFullscreenTriangleVB()->GetVertexLayout();
 }
+
+#endif
 
 #if !BUILD_RELEASE
 

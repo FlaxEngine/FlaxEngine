@@ -3,6 +3,9 @@
 #pragma once
 
 #include "MaterialInfo.h"
+#if COMPILE_WITH_PSO_PRECACHING
+#include "MaterialPrecacheFlags.h"
+#endif
 
 struct MaterialParamsLink;
 class GPUShader;
@@ -176,4 +179,25 @@ public:
     /// </summary>
     /// <param name="params">The material bind settings.</param>
     virtual void Bind(BindParameters& params) = 0;
+
+public:
+#if COMPILE_WITH_PSO_PRECACHING
+    /// <summary>
+    /// Settings for the material PSO precaching.
+    /// </summary>
+    struct PrecacheParameters
+    {
+        DrawPass Pass;
+        void* PrecacheContext; // GPUPipelineState::PrecacheContext*
+        MaterialPrecacheFlags MaterialFlags;
+    };
+
+    /// <summary>
+    /// Precaches shader pipeline to be ready ahead of time. Can be called in async.
+    /// </summary>
+    /// <param name="params">The material PSO precaching parameters.</param>
+    virtual void PrecachePSO(const PrecacheParameters& params)
+    {
+    }
+#endif
 };

@@ -905,7 +905,9 @@ void GlobalSurfaceAtlasPass::PrecachePSO()
     context.RTFormats[1] = GBUFFER0_FORMAT;
     context.RTFormats[2] = GBUFFER1_FORMAT;
     _psClear->PrecachePSO(context);
-    context.RTCount = 3;
+    _psCopy->PrecachePSO(context);
+    context.RTCount = 4;
+    context.RTFormats[3] = PixelFormat::R11G11B10_Float;
     _psCopy->PrecachePSO(context);
     context.DepthFormat = PixelFormat::Unknown;
     context.RTCount = 1;
@@ -1981,3 +1983,18 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
         surfaceAtlasData.AsyncNewObjects.Add({ actorObject, actor, bounds, actorObjectBounds, useVisibility });
     }
 }
+
+#if COMPILE_WITH_PSO_PRECACHING
+
+#include "Engine/Graphics/GPUPipelineCache.h"
+
+GPU_PSO_PRECACHING_PASS(GlobalSurfaceAtlasGBufferPassPSO, {
+    context.DepthFormat = PixelFormat::D16_UNorm;;
+    context.RTCount = 3;
+    context.RTFormats[0] = PixelFormat::R11G11B10_Float;
+    context.RTFormats[1] = GBUFFER0_FORMAT;
+    context.RTFormats[2] = GBUFFER1_FORMAT;
+    params.Pass = DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas;
+    });
+
+#endif

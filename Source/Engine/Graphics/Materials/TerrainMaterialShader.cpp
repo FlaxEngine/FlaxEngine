@@ -96,16 +96,11 @@ void TerrainMaterialShader::Bind(BindParameters& params)
     }
 
     // Select pipeline state based on current pass and render mode
-    CullMode cullMode = view.Pass == DrawPass::Depth ? CullMode::TwoSided : _info.CullMode;
+    CullMode cullMode = GetCullMode(view.Pass, drawCall.WorldDeterminant);
 #if USE_EDITOR
     if (IsRunningRadiancePass)
         cullMode = CullMode::TwoSided;
 #endif
-    if (cullMode != CullMode::TwoSided && drawCall.WorldDeterminant)
-    {
-        // Invert culling when scale is negative
-        cullMode = cullMode == CullMode::Normal ? CullMode::Inverted : CullMode::Normal;
-    }
     const PipelineStateCache* psCache = _cache.GetPS(view.Pass, useLightmap);
     ASSERT(psCache);
     GPUPipelineState* state = ((PipelineStateCache*)psCache)->GetPS(this, cullMode);

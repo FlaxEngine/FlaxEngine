@@ -392,7 +392,7 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(PixelFormat depthFormat, int
 
 #if GPU_ENABLE_DEVELOPMENT
     // Check if similar PSO was precached but this one missed (eg. due to RT/Depth formats mismatch)
-    if (_precachedPSOs.HasItems() && CommandLine::Options.GPUDebug.IsTrue())
+    if (!precaching && _precachedPSOs.HasItems() && CommandLine::Options.GPUDebug.IsTrue())
     {
         bool logged = false;
         String nameStr(name.Get(), name.Count() - 1);

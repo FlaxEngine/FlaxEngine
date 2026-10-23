@@ -246,7 +246,7 @@ void AtmospherePreComputeService::Update()
                 return;
 #if COMPILE_WITH_PSO_PRECACHING
             if (_precacheHandle == 0 && GPU_PSO_PRECACHING(Renderer))
-                GPUPipelineCache::PrecacheAsync(AtmospherePreComputeImpl::PrecachePSO, &_precacheHandle);
+                GPUPipelineCache::PrecacheAsync(GPUPipelineCache::Callback(AtmospherePreComputeImpl::PrecachePSO), &_precacheHandle);
 #endif
         }
         if (!_shader->IsLoaded())

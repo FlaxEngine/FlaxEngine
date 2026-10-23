@@ -172,6 +172,7 @@ public:
         API_FIELD(ReadOnly) static Description DefaultFullscreenTriangle;
     };
 
+#if COMPILE_WITH_PSO_PRECACHING
     /// <summary>
     /// Pipeline state precaching dynamic context (mimics context used during rendering).
     /// </summary>
@@ -187,7 +188,7 @@ public:
 
         PrecacheContext()
         {
-            Platform::MemoryClear(this, sizeof(PrecacheContext));
+            memset(this, 0, sizeof(PrecacheContext));
             DepthAction = GPUDrawPassAction::Store;
             RTAction = GPUDrawPassAction::LoadStore;
             MSAA = MSAALevel::None;
@@ -196,6 +197,7 @@ public:
         void SetReadOnlyDepthFormat();
         void SetFullscreenTriangleLayout();
     };
+#endif
 
 protected:
     ShaderBindings _meta;
@@ -262,11 +264,13 @@ public:
     /// <returns>True if cannot create state, otherwise false</returns>
     API_FUNCTION() virtual bool Init(API_PARAM(Ref) const Description& desc);
 
+#if COMPILE_WITH_PSO_PRECACHING
     /// <summary>
     /// Precaches shader pipeline to be ready ahead of time. Can be called in async.
     /// </summary>
     /// <param name="context">The dynamic context for PSO compilation that is expected to exist during rendering (such as render target formats and input vertex buffers layouts).</param>
     virtual void PrecachePSO(const PrecacheContext& context) {}
+#endif
 
 public:
     // [GPUResource]

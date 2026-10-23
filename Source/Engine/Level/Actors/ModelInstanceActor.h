@@ -34,6 +34,9 @@ API_CLASS(Abstract) class FLAXENGINE_API ModelInstanceActor : public Actor
 
 protected:
     int32 _sceneRenderingKey = -1; // Uses SceneRendering::DrawCategory::SceneDrawAsync
+#if PLATFORM_DESKTOP || PLATFORM_APPLE_FAMILY || PLATFORM_SWITCH // COMPILE_WITH_PSO_PRECACHING could be used with Graphics module in PublicDependencies
+    volatile int32 _precacheHandle = 0;
+#endif
 
 public:
     /// <summary>

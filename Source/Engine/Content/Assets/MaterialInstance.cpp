@@ -126,6 +126,11 @@ bool MaterialInstance::IsMaterialInstance() const
     return true;
 }
 
+Material* MaterialInstance::GetMaterial() const
+{
+    return _baseMaterial ? _baseMaterial->GetMaterial() : nullptr;
+}
+
 #if USE_EDITOR
 
 void MaterialInstance::GetReferences(Array<Guid>& assets, Array<String>& files) const
@@ -205,6 +210,16 @@ void MaterialInstance::Bind(BindParameters& params)
         params.ParamsLink = nullptr;
     }
 }
+
+#if COMPILE_WITH_PSO_PRECACHING
+
+void MaterialInstance::PrecachePSO(const PrecacheParameters& context)
+{
+    if (_baseMaterial)
+        _baseMaterial->PrecachePSO(context);
+}
+
+#endif
 
 Asset::LoadResult MaterialInstance::load()
 {

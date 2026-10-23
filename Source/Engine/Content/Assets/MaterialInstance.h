@@ -42,6 +42,7 @@ private:
 public:
     // [MaterialBase]
     bool IsMaterialInstance() const override;
+    Material* GetMaterial() const override;
 #if USE_EDITOR
     void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
     bool Save(const StringView& path = StringView::Empty) override;
@@ -55,6 +56,9 @@ public:
     bool CanUseLightmap() const override;
     bool CanUseInstancing(const RenderContext& renderContext, InstancingHandler& handler) const override;
     void Bind(BindParameters& params) override;
+#if COMPILE_WITH_PSO_PRECACHING
+    void PrecachePSO(const PrecacheParameters& params) override;
+#endif
 
 protected:
     // [MaterialBase]

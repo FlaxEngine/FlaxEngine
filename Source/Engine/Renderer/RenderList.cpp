@@ -594,7 +594,7 @@ RenderList::RenderList(const SpawnParams& params)
     , Blendable(32)
     , ObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Buffer"))
     , TempObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Buffer"))
-    , _instanceBuffer(0, sizeof(ShaderObjectDrawInstanceData), TEXT("Instance Buffer"), GPUVertexLayout::Get({ { VertexElement::Types::Attribute0, 3, 0, 1, PixelFormat::R32_UInt } }))
+    , _instanceBuffer(0, sizeof(ShaderObjectDrawInstanceData), TEXT("Instance Buffer"), GPUVertexLayout::Get({ INSTANCED_DRAW_OBJECT_ID_ELEMENT }))
 {
 }
 

@@ -82,12 +82,7 @@ void DeformableMaterialShader::Bind(BindParameters& params)
     }
 
     // Select pipeline state based on current pass and render mode
-    CullMode cullMode = view.Pass == DrawPass::Depth ? CullMode::TwoSided : _info.CullMode;
-    if (cullMode != CullMode::TwoSided && drawCall.WorldDeterminant)
-    {
-        // Invert culling when scale is negative
-        cullMode = cullMode == CullMode::Normal ? CullMode::Inverted : CullMode::Normal;
-    }
+    CullMode cullMode = GetCullMode(view.Pass, drawCall.WorldDeterminant);
     PipelineStateCache* psCache = _cache.GetPS(view.Pass);
     ASSERT(psCache);
     GPUPipelineState* state = psCache->GetPS(this, cullMode);

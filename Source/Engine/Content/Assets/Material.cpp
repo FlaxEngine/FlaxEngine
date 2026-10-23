@@ -41,6 +41,11 @@ bool Material::IsMaterialInstance() const
     return false;
 }
 
+Material* Material::GetMaterial() const
+{
+    return (Material*)this;
+}
+
 #if USE_EDITOR
 
 void Material::GetReferences(Array<Guid>& assets, Array<String>& files) const
@@ -137,6 +142,16 @@ void Material::Bind(BindParameters& params)
         params.ParamsLink = nullptr;
     }
 }
+
+#if COMPILE_WITH_PSO_PRECACHING
+
+void Material::PrecachePSO(const PrecacheParameters& params)
+{
+    ASSERT(IsReady());
+    _materialShader->PrecachePSO(params);
+}
+
+#endif
 
 #if COMPILE_WITH_MATERIAL_GRAPH && COMPILE_WITH_SHADER_COMPILER
 

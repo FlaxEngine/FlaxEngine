@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Config.h"
+#if COMPILE_WITH_PSO_PRECACHING
 
 // Different modes for Pipeline State Objects (PSOs) precaching in the engine. Used as flags.
 enum class GPUPipelineCacheModes
@@ -13,8 +13,10 @@ enum class GPUPipelineCacheModes
     Shader = 1,
     // Rendering systems will precache pipeline states (such as post-processing and lighting shader).
     Renderer = 2,
+    // Visual actors will precache pipeline states (such as model material shaders).
+    Level = 4,
     // All precaching modes active.
-    Full = Shader | Renderer,
+    Full = Shader | Renderer | Level,
 };
 
 // Different modes for Pipeline State Objects (PSOs) precaching miss that define what to do if PSO is not ready on time.
@@ -26,9 +28,10 @@ enum class GPUPipelineMissModes
     SkipDraw = 1,
 };
 
-#if COMPILE_WITH_PSO_PRECACHING
-
-#include "Engine/Platform/Platform.h"
+#include "Engine/Core/Types/BaseTypes.h"
+#include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Graphics/Materials/MaterialPrecacheFlags.h"
 
 // Helper structure for PSO creating or using from cache used to track potential PSO hitches.
 struct GPUPipelineLookup
@@ -39,17 +42,38 @@ struct GPUPipelineLookup
         Precaching = 1,
         Miss = 2,
     } Flags;
-#if GPU_ENABLE_DEVELOPMENT
+#if (!BUILD_RELEASE || USE_EDITOR) // GPU_ENABLE_DEVELOPMENT
     double StartTime;
 
-    GPUPipelineLookup()
-    {
-        StartTime = Platform::GetTimeSeconds();
-        Flags = Empty;
-    }
-
+    GPUPipelineLookup();
     ~GPUPipelineLookup();
 #endif
+};
+
+enum class DrawPass : int32;
+
+// Utility for collecting PSOs in batches for a set of objects (eg. actors) for efficient precaching at scale for diferent rendering passes at once.
+struct GPUPipelineCacheBatch
+{
+    struct MaterialPSO
+    {
+        DrawPass DrawModes = (DrawPass)0;
+        MaterialPrecacheFlags MaterialFlags = {};
+        Array<class GPUVertexLayout*, InlinedAllocation<4>> VertexLayouts;
+
+        friend MaterialPSO& operator|=(MaterialPSO& a, const MaterialPSO& b);
+    };
+
+    struct DrawPassPSO
+    {
+        void (*Callback)(void* paramsPtr);
+        DrawPassPSO* Next;
+
+        DrawPassPSO(void(*callback)(void* paramsPtr));
+    };
+
+    // Pending PSOs to precache for each material.
+    Dictionary<class Material*, MaterialPSO> Materials;
 };
 
 // Utility for PSO precaching.
@@ -61,8 +85,14 @@ public:
     // Current modes for PSO misses handling.
     static GPUPipelineMissModes MissModes;
 
-    // Starts async precaching of the PSOs by a given coroutine. Returns handle to the task which can be used to wait on it (optional).
-    static void PrecacheAsync(const Function<void()>& callback, volatile int32* handle = nullptr);
+    typedef Function<void()> Callback;
+    typedef Function<void(GPUPipelineCacheBatch& batch)> BatchCallback;
+
+    // Starts async precaching of the PSOs by a given coroutine. Writes a handle to the task which can be used to wait on it (optional).
+    static void PrecacheAsync(const Callback& callback, volatile int32* handle = nullptr);
+
+    // Starts async precaching of the PSOs by a given coroutine (with batching). Writes a handle to the task which can be used to wait on it (optional).
+    static void PrecacheAsync(const BatchCallback& callback, volatile int32* handle = nullptr);
 
     // Checks if specific async precaching job to be finished. Can be used to skip drawing or wait for PSO.
     static bool IsPrecacheReady(volatile int32* handle, bool wait = false);
@@ -79,6 +109,16 @@ inline GPUPipelineLookup::Flag& operator|=(GPUPipelineLookup::Flag& a, GPUPipeli
 #define GPU_PSO_READY(handle) GPUPipelineCache::IsPrecacheReady(&handle, GPUPipelineCache::MissModes == GPUPipelineMissModes::Wait)
 // Waits on a PSO async handle until it's finished (to avoid race-condition).
 #define GPU_PSO_WAIT(handle) GPUPipelineCache::IsPrecacheReady(&handle, true)
+
+// Utility macro for render passes that process draw calls to precache PSOs
+#define GPU_PSO_PRECACHING_PASS(name, callback) \
+    void On##name(void* paramsPtr) \
+    { \
+        auto& params = *(IMaterial::PrecacheParameters*)paramsPtr; \
+        auto& context = *(GPUPipelineState::PrecacheContext*)params.PrecacheContext; \
+        callback; \
+    } \
+    GPUPipelineCacheBatch::DrawPassPSO name(On##name)
 
 #else
 

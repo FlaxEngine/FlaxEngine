@@ -44,16 +44,18 @@ protected:
             Desc = desc;
         }
 
-        GPUPipelineState* GetPS(const MaterialShader* owner, CullMode mode)
+        GPUPipelineState* GetPS(const MaterialShader* owner, CullMode cullMode)
         {
-            const int32 index = (int32)mode;
-            auto ps = PS[index];
+            auto ps = PS[(int32)cullMode];
             if (!ps)
-                PS[index] = ps = InitPS(owner, mode);
+                PS[(int32)cullMode] = ps = InitPS(owner, cullMode);
             return ps;
         }
 
         GPUPipelineState* InitPS(const MaterialShader* owner, CullMode mode);
+#if COMPILE_WITH_PSO_PRECACHING
+        static void PrecachePSO(PipelineStateCache* psCache, const PrecacheParameters& params, const MaterialShader* owner, CullMode mode);
+#endif
 
         void Release()
         {
@@ -108,6 +110,17 @@ public:
 protected:
     bool Load(MemoryReadStream& shaderCacheStream, const MaterialInfo& info);
     virtual bool Load() = 0;
+
+    FORCE_INLINE CullMode GetCullMode(DrawPass pass, bool worldDeterminantSign) const
+    {
+        CullMode cullMode = pass == DrawPass::Depth ? CullMode::TwoSided : _info.CullMode;
+        if (cullMode != CullMode::TwoSided && worldDeterminantSign)
+        {
+            // Invert culling when scale is negative
+            cullMode = cullMode == CullMode::Normal ? CullMode::Inverted : CullMode::Normal;
+        }
+        return cullMode;
+    }
 
 public:
     // [IMaterial]

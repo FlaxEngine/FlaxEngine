@@ -569,3 +569,23 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
 
     context->ResetSR();
 }
+
+#if COMPILE_WITH_PSO_PRECACHING
+
+#include "Engine/Graphics/GPUPipelineCache.h"
+
+GPU_PSO_PRECACHING_PASS(GBufferPassPSO, {
+    auto renderBuffers = MainRenderTask::Instance->Buffers;
+    context.DepthFormat = renderBuffers->GetDepthFormat();
+    context.DepthAction = GPUDrawPassAction::ClearStore;
+    context.RTAction = GPUDrawPassAction::ClearStore;
+    context.RTCount = 5;
+    context.RTFormats[0] = renderBuffers->GetOutputFormat();
+    context.RTFormats[1] = GBUFFER0_FORMAT;
+    context.RTFormats[2] = GBUFFER1_FORMAT;
+    context.RTFormats[3] = GBUFFER2_FORMAT;
+    context.RTFormats[4] = GBUFFER3_FORMAT;
+    params.Pass = DrawPass::GBuffer;
+    });
+
+#endif

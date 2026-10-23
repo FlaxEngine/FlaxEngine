@@ -16,6 +16,9 @@
 #if USE_EDITOR
 #include "Engine/Renderer/Lightmaps.h"
 #endif
+#if COMPILE_WITH_PSO_PRECACHING
+#include "Engine/Utilities/BitIterator.h"
+#endif
 
 bool DeferredMaterialShader::CanUseLightmap() const
 {
@@ -68,16 +71,11 @@ void DeferredMaterialShader::Bind(BindParameters& params)
     }
 
     // Select pipeline state based on current pass and render mode
-    CullMode cullMode = view.Pass == DrawPass::Depth ? CullMode::TwoSided : _info.CullMode;
+    CullMode cullMode = GetCullMode(view.Pass, drawCall.WorldDeterminant);
 #if USE_EDITOR
     if (IsRunningRadiancePass)
         cullMode = CullMode::TwoSided;
 #endif
-    if (cullMode != CullMode::TwoSided && drawCall.WorldDeterminant)
-    {
-        // Invert culling when scale is negative
-        cullMode = cullMode == CullMode::Normal ? CullMode::Inverted : CullMode::Normal;
-    }
     const auto cache = params.Instanced ? &_cacheInstanced : &_cache;
     PipelineStateCache* psCache = cache->GetPS(view.Pass, useLightmap, useSkinning, usePerBoneMotionBlur);
     ASSERT(psCache);
@@ -87,6 +85,46 @@ void DeferredMaterialShader::Bind(BindParameters& params)
     context->SetState(state);
     context->SetStencilRef(drawCall.StencilValue);
 }
+
+#if COMPILE_WITH_PSO_PRECACHING
+
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
+
+void DeferredMaterialShader::PrecachePSO(const PrecacheParameters& params)
+{
+    // Precache all used shader permutations
+    PROFILE_CPU();
+    auto& context = *(GPUPipelineState::PrecacheContext*)params.PrecacheContext;
+    uint32 canUseInstancing = _instanced || params.Pass == DrawPass::Depth;
+    for (uint32 instanced = 0; instanced <= canUseInstancing; instanced++)
+    {
+        auto vertexLayout = context.VertexLayout;
+        if (instanced && vertexLayout)
+        {
+            // Insert instanced object index into the vertex stream
+            auto elements = vertexLayout->GetElements();
+            elements.Add(INSTANCED_DRAW_OBJECT_ID_ELEMENT);
+            context.VertexLayout = GPUVertexLayout::Get(elements, true);
+        }
+        auto cache = instanced ? &_cacheInstanced : &_cache;
+        constexpr uint32 geometryTypes = MaterialPrecacheFlags::GeometrySurface;
+        for (uint32 geometry : BitIterator(params.MaterialFlags.Geoemtry & geometryTypes))
+        {
+            bool useSkinning = geometry != MaterialPrecacheFlags::Mesh;
+            bool usePerBoneMotionBlur = geometry == MaterialPrecacheFlags::SkinnedWithPrevBones;
+            bool useLightmap = _info.BlendMode == MaterialBlendMode::Opaque && geometry == MaterialPrecacheFlags::MeshLightmapped;
+            for (uint32 worldDeterminant : BitIterator(params.MaterialFlags.WorldDeterminant))
+            {
+                auto psCache = cache->GetPS(params.Pass, useLightmap, useSkinning, usePerBoneMotionBlur);
+                auto cullMode = GetCullMode(params.Pass, worldDeterminant == MaterialPrecacheFlags::Negative);
+                PipelineStateCache::PrecachePSO(psCache, params, this, cullMode);
+            }
+        }
+        context.VertexLayout = vertexLayout;
+    }
+}
+
+#endif
 
 void DeferredMaterialShader::Unload()
 {

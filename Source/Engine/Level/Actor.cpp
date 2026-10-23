@@ -2161,6 +2161,10 @@ Actor* Actor::Clone()
     return output[0];
 }
 
+void Actor::PrecachePSO()
+{
+}
+
 void Actor::SetPhysicsScene(PhysicsScene* scene)
 {
     CHECK(scene);

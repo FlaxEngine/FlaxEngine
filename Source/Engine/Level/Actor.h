@@ -1067,6 +1067,14 @@ public:
     /// </summary>
     API_FUNCTION(Attributes="NoAnimate") Actor* Clone();
 
+    /// <summary>
+    /// Starts async precaching of shader pipelines used by this actor to be ready ahead of time.
+    /// PSOs used by this pass can warm-up in async before rendering happens with runtime-defined render target formats and vertex layouts.
+    /// Implemented on visual actors such as models and particles.
+    /// Can be used after editing actor visual properties that might affect PSO (such as material change).
+    /// </summary>
+    API_FUNCTION(Attributes="NoAnimate", Sealed) virtual void PrecachePSO();
+
 public:
     /// <summary>
     /// Called when actor gets added to game systems. Occurs on BeginPlay event or when actor gets activated in hierarchy. Use this event to register object to other game system (eg. audio).

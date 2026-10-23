@@ -6,6 +6,7 @@
 #include "Engine/Content/Deprecated.h"
 #include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/GPUBufferDescription.h"
+#include "Engine/Graphics/GPUPipelineCache.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderBuffers.h"
@@ -22,6 +23,9 @@
 #include "Engine/Utilities/Encryption.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
+#endif
+#if COMPILE_WITH_PSO_PRECACHING
+#include "Engine/Content/Assets/Material.h"
 #endif
 
 void LightmapEntry::Serialize(ISerializable::SerializeStream& stream) const
@@ -69,6 +73,7 @@ StaticModel::~StaticModel()
         SAFE_DELETE_GPU_RESOURCE(_vertexColorsBuffer[lodIndex]);
     if (_deformation)
         Delete(_deformation);
+    GPU_PSO_WAIT(_precacheHandle);
 }
 
 float StaticModel::GetScaleInLightmap() const
@@ -268,12 +273,14 @@ void StaticModel::RemoveVertexColors()
 
 void StaticModel::OnAssetChanged(Asset* asset, void* caller)
 {
+    GPU_PSO_WAIT(_precacheHandle);
     if (_residencyChangedModel)
     {
         _residencyChangedModel = nullptr;
         Model->ResidencyChanged.Unbind<StaticModel, &StaticModel::OnModelResidencyChanged>(this);
     }
-    RemoveVertexColors();
+    if (_vertexColorsCount)
+        RemoveVertexColors();
     Entries.Release();
     if (Model && !Model->IsLoaded())
         UpdateBounds();
@@ -330,6 +337,16 @@ void StaticModel::UpdateBounds()
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Bounds);
 }
 
+void StaticModel::PrecachePSO()
+{
+#if COMPILE_WITH_PSO_PRECACHING
+    GPU_PSO_WAIT(_precacheHandle);
+    Function<void(GPUPipelineCacheBatch& batch)> f;
+    f.Bind<StaticModel, &StaticModel::PrecachePSOBatch>(this);
+    GPUPipelineCache::PrecacheAsync(f, &_precacheHandle);
+#endif
+}
+
 void StaticModel::FlushVertexColors()
 {
     RenderContext::GPULocker.Lock();
@@ -358,6 +375,44 @@ void StaticModel::FlushVertexColors()
     RenderContext::GPULocker.Unlock();
 }
 
+void StaticModel::PrecachePSOBatch(GPUPipelineCacheBatch& batch)
+{
+#if COMPILE_WITH_PSO_PRECACHING
+    auto* model = Model.Get();
+    if (!model || model->WaitForLoaded())
+        return;
+
+    // Setup material precache flags
+    INIT_MATERIAL_PRECACHE_FLAGS(materialFlags, this);
+    materialFlags.Geoemtry |= _scene && Lightmap.TextureIndex != -1 ? MaterialPrecacheFlags::MeshLightmapped : MaterialPrecacheFlags::Mesh;
+
+    // Add all materials used on meshes with specific vertex layouts to precache in batches
+    for (const auto& lod : model->LODs)
+    {
+        for (const auto& mesh : lod.Meshes)
+        {
+            const int32 materialSlot = mesh.GetMaterialSlotIndex();
+            MaterialBase* material = nullptr;
+            if (materialSlot < Entries.Count())
+                material = Entries[materialSlot].Material;
+            if (!material && materialSlot < model->MaterialSlots.Count())
+                material = model->MaterialSlots[materialSlot].Material;
+            if (!material)
+                material = GPUDevice::Instance->GetDefaultMaterial();
+            if (!material || material->WaitForLoaded())
+                continue;
+            Material* mat = material->GetMaterial();
+            auto& materialPSO = batch.Materials[mat];
+            materialPSO.DrawModes |= _drawModes;
+            materialPSO.MaterialFlags |= materialFlags;
+            GPUVertexLayout* vertexLayout = mesh.GetVertexLayout();
+            materialPSO.VertexLayouts.AddUnique(vertexLayout);
+        }
+    }
+
+#endif
+}
+
 void StaticModel::OnAssetUnloaded(Asset* asset, void* caller)
 {
 }
@@ -375,13 +430,13 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
     const RenderContext& renderContext = renderContextBatch.GetMainContext();
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
     {
-        if (EnumHasAnyFlags(_drawModes, DrawPass::GlobalSDF) && model->SDF.Texture)
+        if (EnumHasAnyFlags(_drawModes, DrawPass::GlobalSDF) && model->SDF.Texture && GPU_PSO_WAIT(_precacheHandle))
             GlobalSignDistanceFieldPass::Instance()->RasterizeModelSDF(this, model->SDF, _transform, _box);
         return;
     }
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
     {
-        if (EnumHasAnyFlags(_drawModes, DrawPass::GlobalSurfaceAtlas) && model->SDF.Texture)
+        if (EnumHasAnyFlags(_drawModes, DrawPass::GlobalSurfaceAtlas) && model->SDF.Texture && GPU_PSO_WAIT(_precacheHandle))
             GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, this, _sphere, _transform, model->LODs.Last().GetBox());
         return;
     }
@@ -396,6 +451,8 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
         if (renderContextBatch.Contexts.Count() == 1 || draw.DrawModes == DrawPass::None)
             return;
     }
+    if (!GPU_PSO_READY(_precacheHandle))
+        return;
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(drawState, world);
     if (_vertexColorsDirty)
         FlushVertexColors();
@@ -569,6 +626,12 @@ void StaticModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
             _drawModes = (DrawPass)member->value.GetInt();
         }
     }
+
+#if COMPILE_WITH_PSO_PRECACHING
+    // Start PSO precaching after loading model (once actor options are loaded too)
+    if (GPU_PSO_PRECACHING(Level) && Model && modifier->LoadDepth == 0)
+        PrecachePSO();
+#endif
 }
 
 const Span<MaterialSlot> StaticModel::GetMaterialSlots() const

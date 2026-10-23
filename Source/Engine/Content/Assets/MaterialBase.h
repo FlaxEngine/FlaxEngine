@@ -29,6 +29,11 @@ public:
     /// </summary>
     virtual bool IsMaterialInstance() const = 0;
 
+    /// <summary>
+    /// Gets the material (instances resolve this to the lowest base material).
+    /// </summary>
+    virtual class Material* GetMaterial() const = 0;
+
 public:
     /// <summary>
     /// Gets the material parameters collection.

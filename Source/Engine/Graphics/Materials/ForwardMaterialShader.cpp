@@ -15,6 +15,9 @@
 #if USE_EDITOR
 #include "Engine/Renderer/Lightmaps.h"
 #endif
+#if COMPILE_WITH_PSO_PRECACHING
+#include "Engine/Utilities/BitIterator.h"
+#endif
 
 DrawPass ForwardMaterialShader::GetDrawModes() const
 {
@@ -72,25 +75,58 @@ void ForwardMaterialShader::Bind(BindParameters& params)
     }
 
     // Select pipeline state based on current pass and render mode
-    CullMode cullMode = view.Pass == DrawPass::Depth ? CullMode::TwoSided : _info.CullMode;
+    CullMode cullMode = GetCullMode(view.Pass, drawCall.WorldDeterminant);
 #if USE_EDITOR
     if (IsRunningRadiancePass)
         cullMode = CullMode::TwoSided;
 #endif
-    if (cullMode != CullMode::TwoSided && drawCall.WorldDeterminant)
-    {
-        // Invert culling when scale is negative
-        cullMode = cullMode == CullMode::Normal ? CullMode::Inverted : CullMode::Normal;
-    }
     ASSERT_LOW_LAYER(!(useSkinning && params.Instanced)); // No support for instancing skinned meshes
-    const auto cacheObj = params.Instanced ? &_cacheInstanced : &_cache;
-    PipelineStateCache* psCache = cacheObj->GetPS(view.Pass, useSkinning);
+    const auto cache = params.Instanced ? &_cacheInstanced : &_cache;
+    PipelineStateCache* psCache = cache->GetPS(view.Pass, useSkinning);
     ASSERT(psCache);
     GPUPipelineState* state = psCache->GetPS(this, cullMode);
 
     // Bind pipeline
     context->SetState(state);
 }
+
+#if COMPILE_WITH_PSO_PRECACHING
+
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
+
+void ForwardMaterialShader::PrecachePSO(const PrecacheParameters& params)
+{
+    // Precache all used shader permutations
+    PROFILE_CPU();
+    auto& context = *(GPUPipelineState::PrecacheContext*)params.PrecacheContext;
+    uint32 canUseInstancing = params.Pass == DrawPass::Depth;
+    for (uint32 instanced = 0; instanced <= canUseInstancing; instanced++)
+    {
+        auto vertexLayout = context.VertexLayout;
+        if (instanced && vertexLayout)
+        {
+            // Insert instanced object index into the vertex stream
+            auto elements = vertexLayout->GetElements();
+            elements.Add(INSTANCED_DRAW_OBJECT_ID_ELEMENT);
+            context.VertexLayout = GPUVertexLayout::Get(elements, true);
+        }
+        auto cache = instanced ? &_cacheInstanced : &_cache;
+        constexpr uint32 geometryTypes = MaterialPrecacheFlags::GeometrySurface;
+        for (uint32 geometry : BitIterator(params.MaterialFlags.Geoemtry & geometryTypes))
+        {
+            bool useSkinning = geometry == MaterialPrecacheFlags::Skinned;
+            for (uint32 worldDeterminant : BitIterator(params.MaterialFlags.WorldDeterminant))
+            {
+                auto psCache = cache->GetPS(params.Pass, useSkinning);
+                auto cullMode = GetCullMode(params.Pass, worldDeterminant == MaterialPrecacheFlags::Negative);
+                PipelineStateCache::PrecachePSO(psCache, params, this, cullMode);
+            }
+        }
+        context.VertexLayout = vertexLayout;
+    }
+}
+
+#endif
 
 void ForwardMaterialShader::Unload()
 {
