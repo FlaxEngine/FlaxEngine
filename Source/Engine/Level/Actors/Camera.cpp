@@ -319,11 +319,8 @@ void Camera::GetMatrices(Matrix& view, Matrix& projection, const Viewport& viewp
     Vector3 up;
     Vector3::Transform(Vector3::Up, GetOrientation(), up);
     Real4x4 viewResult;
-    // Build the rotation with the eye at zero, then add the translation: LookAt(position, position + direction) would round the direction to the precision of a position far from the origin
-    Real4x4::LookAt(Vector3::Zero, direction, up, viewResult);
-    viewResult.M41 = -Vector3::Dot(position, Vector3(viewResult.M11, viewResult.M21, viewResult.M31));
-    viewResult.M42 = -Vector3::Dot(position, Vector3(viewResult.M12, viewResult.M22, viewResult.M32));
-    viewResult.M43 = -Vector3::Dot(position, Vector3(viewResult.M13, viewResult.M23, viewResult.M33));
+    // LookTo with the direction: LookAt(position, position + direction) would round the direction to the precision of a position far from the origin
+    Real4x4::LookTo(position, direction, up, viewResult);
     view = Matrix(viewResult);
 }
 

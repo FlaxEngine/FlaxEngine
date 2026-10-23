@@ -86,13 +86,9 @@ namespace FlaxEngine
             NonJitteredProjection = Projection;
             TemporalAAJitter = Float4.Zero;
 
-            // Create view matrix (the rotation with the eye at zero, then the translation: Position + Direction would round the direction far from the origin)
+            // Create view matrix (LookTo with the direction: Position + Direction would round the direction far from the origin)
             Direction = direction;
-            var eye = Float3.Zero;
-            Matrix.LookAt(ref eye, ref Direction, ref up, out View);
-            View.M41 = -Float3.Dot(Position, new Float3(View.M11, View.M21, View.M31));
-            View.M42 = -Float3.Dot(Position, new Float3(View.M12, View.M22, View.M32));
-            View.M43 = -Float3.Dot(Position, new Float3(View.M13, View.M23, View.M33));
+            Matrix.LookTo(ref Position, ref Direction, ref up, out View);
 
             UpdateCachedData();
         }

@@ -1464,12 +1464,8 @@ namespace FlaxEditor.Viewport
             var direction = ViewDirection;
             var right = Mathf.Abs(Float3.Dot(direction, Float3.Up)) < 1.0f - Mathf.Epsilon ? Float3.Normalize(Float3.Cross(Float3.Up, direction)) : Float3.Forward;
             var up = Float3.Normalize(Float3.Cross(direction, right));
-            // The rotation with the eye at zero, then the translation: position + direction would round the direction far from the origin
-            var eye = Float3.Zero;
-            Matrix.LookAt(ref eye, ref direction, ref up, out result);
-            result.M41 = -Float3.Dot(position, new Float3(result.M11, result.M21, result.M31));
-            result.M42 = -Float3.Dot(position, new Float3(result.M12, result.M22, result.M32));
-            result.M43 = -Float3.Dot(position, new Float3(result.M13, result.M23, result.M33));
+            // LookTo with the direction: position + direction would round the direction far from the origin
+            Matrix.LookTo(ref position, ref direction, ref up, out result);
         }
 
         /// <summary>
