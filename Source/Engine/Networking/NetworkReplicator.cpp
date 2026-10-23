@@ -2625,7 +2625,7 @@ void NetworkInternal::OnNetworkMessageObjectRpcPart(NetworkEvent& event, Network
         }
 
         // Remove item
-        int32 partIndex = (int32)(RpcParts.Get() - rpcItem);
+        int32 partIndex = (int32)(rpcItem - RpcParts.Get());
         RpcParts.RemoveAt(partIndex);
     }
 }

@@ -80,7 +80,10 @@ public:
         if (storageFormat != _data.Format)
         {
             if (TextureTool::Convert(tmpData, _data, storageFormat))
+            {
+                ProbesRenderer::OnFinishBake(_entry.Actor.Get());
                 return true;
+            }
             data = &tmpData;
         }
 #endif
@@ -98,6 +101,7 @@ public:
         }
         else
         {
+            ProbesRenderer::OnFinishBake(actor);
             return true;
         }
 

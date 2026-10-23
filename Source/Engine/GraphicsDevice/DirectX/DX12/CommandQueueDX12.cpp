@@ -24,7 +24,11 @@ bool FenceDX12::Init()
 #endif
 
     _event = CreateEvent(nullptr, false, false, nullptr);
-    ASSERT(_event != INVALID_HANDLE_VALUE);
+    if (_event == nullptr) // CreateEvent returns null on failure (not INVALID_HANDLE_VALUE)
+    {
+        LOG(Error, "Cannot create the fence event.");
+        return true;
+    }
     return false;
 }
 

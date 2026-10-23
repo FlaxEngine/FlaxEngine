@@ -199,7 +199,7 @@ void HZBOcclusionCulling::Submit(const RenderContext& renderContext)
     }
 
     // Upload object bounds data
-    if (_dirtyBounds)
+    if (_dirtyBounds || _boundsBuffer.GetBuffer()->GetSize() < sizeof(Float3) * 2 * itemsCount)
         _boundsBuffer.Flush(context);
     ASSERT(_boundsBuffer.GetBuffer()->GetSize() >= sizeof(Float3) * 2 * itemsCount);
     ASSERT(_resultsBuffer->GetSize() >= itemsCount * sizeof(ResultValue));

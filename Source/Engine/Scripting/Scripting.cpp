@@ -382,8 +382,12 @@ bool Scripting::LoadBinaryModules(const String& path, const String& projectFolde
     if (versionControlInfoMember != document.MemberEnd())
     {
         String versionControlInfo = versionControlInfoMember->value.GetText();
-        versionControlInfo.Replace(TEXT("+"), TEXT(", "));
-        LOG(Info, "Version: {}", versionControlInfo);
+        Array<String> components;
+        versionControlInfo.Split('+', components);
+        if (components.Count() == 3)
+            LOG(Info, "Version: {}, branch: {}, commit: {}", components[0], components[1], components[2]);
+        else
+            LOG(Info, "Version: {}", versionControlInfo);
     }
 
     // Load all references

@@ -12,18 +12,18 @@ Color32 Color32::White(255, 255, 255, 255);
 
 Color32::Color32(const Color& c)
 {
-    R = static_cast<byte>(c.R * 255);
-    G = static_cast<byte>(c.G * 255);
-    B = static_cast<byte>(c.B * 255);
-    A = static_cast<byte>(c.A * 255);
+    R = (byte)Math::Min(c.R * 255, 255.0f);
+    G = (byte)Math::Min(c.G * 255, 255.0f);
+    B = (byte)Math::Min(c.B * 255, 255.0f);
+    A = (byte)Math::Min(c.A * 255, 255.0f);
 }
 
 Color32::Color32(const Vector4& c)
 {
-    R = static_cast<byte>(c.X * 255);
-    G = static_cast<byte>(c.Y * 255);
-    B = static_cast<byte>(c.Z * 255);
-    A = static_cast<byte>(c.W * 255);
+    R = (byte)Math::Min((float)c.X * 255, 255.0f);
+    G = (byte)Math::Min((float)c.Y * 255, 255.0f);
+    B = (byte)Math::Min((float)c.Z * 255, 255.0f);
+    A = (byte)Math::Min((float)c.W * 255, 255.0f);
 }
 
 String Color32::ToString() const

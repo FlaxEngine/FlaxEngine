@@ -757,13 +757,14 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
             break;
         }
         bool isDstSRGB = PixelFormatExtensions::IsSRGB(dstFormat);
+        bool isSrcOpaque = !PixelFormatExtensions::HasAlpha(src.Format);
 
         // bc7enc init
         bc7enc16_compress_block_params params;
         if (dstFormat == PixelFormat::BC7_UNorm || dstFormat == PixelFormat::BC7_UNorm_sRGB)
         {
-            bc7enc16_compress_block_params_init(&params);
             bc7enc16_compress_block_init();
+            bc7enc16_compress_block_params_init(&params);
         }
 
         // Compress all array slices
@@ -804,6 +805,8 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
                                 Color color = sampler->SamplePoint(srcMip.Data.Get(), xBlock * 4 + x, yBlock * 4 + y, srcMip.RowPitch);
                                 if (isDstSRGB)
                                     color = Color::LinearToSrgb(color);
+                                if (isSrcOpaque)
+                                    color.A = 1.0f;
                                 srcBlock[y * 4 + x] = Color32(color);
                             }
                         }
@@ -832,6 +835,7 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
                             break;
                         case PixelFormat::BC7_UNorm:
                         case PixelFormat::BC7_UNorm_sRGB:
+                            // TODO: use a different library for HDR BC7 compression (this one is LDR-only)
                             bc7enc16_compress_block(dstBlock, &srcBlock, &params);
                             break;
                         default:

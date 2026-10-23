@@ -535,6 +535,26 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Loads the data from the provided mesh buffer.
+        /// </summary>
+        /// <param name="bufferType">Type of the mesh buffer to load.</param>
+        /// <param name="bufferData">Data used by that buffer.</param>
+        /// <param name="format">Format of the elements in the buffer.</param>
+        /// <returns>True if failed, otherwise false.</returns>
+        public bool LoadBuffer(MeshBufferType bufferType, Span<byte> bufferData, PixelFormat format)
+        {
+            if (bufferData.IsEmpty)
+                return true;
+            int stride = PixelFormatExtensions.SizeInBytes(format);
+            if (stride <= 0)
+                return true;
+            int idx = (int)bufferType;
+            _data[idx] = bufferData.ToArray();
+            _formats[idx] = format;
+            return false;
+        }
+
+        /// <summary>
         /// Allocates the data for the mesh vertex buffer.
         /// </summary>
         /// <param name="bufferType">Type of the mesh buffer to initialize.</param>
@@ -677,7 +697,7 @@ namespace FlaxEngine
                 data = ib;
                 format = _formats[(int)MeshBufferType.Index];
                 stride = PixelFormatExtensions.SizeInBytes(format);
-                count = data.Length / stride;
+                count = stride != 0 ? data.Length / stride : 0;
             }
             return new Stream(data, format, stride, count);
         }

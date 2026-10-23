@@ -764,9 +764,9 @@ DragDropEffect Window::DoDragDropWayland(const StringView& data, Window* dragSou
 DragDropEffect Window::DoDragDropX11(const StringView& data)
 {
     using namespace X11Impl;
-	auto cursorWrong = X11::XCreateFontCursor(xDisplay, 54);
+	auto cursorWrong = X11::XCreateFontCursor(xDisplay, 0);
 	auto cursorTransient = X11::XCreateFontCursor(xDisplay, 24);
-	auto cursorGood = X11::XCreateFontCursor(xDisplay, 4);
+	auto cursorGood = X11::XCreateFontCursor(xDisplay, 58);
     Array<X11::Atom, FixedAllocation<3>> formats;
     formats.Add(X11::XInternAtom(xDisplay, "text/plain", 0));
     formats.Add(xAtomText);
@@ -805,6 +805,7 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
         CanDrop,
     };
     int status = Unaware, previousVersion = -1;
+    bool isOverFlaxWindow = false;
     X11::Window previousWindow = 0;
     DragDropEffect result = DragDropEffect::None;
     float lastDraw = Platform::GetTimeSeconds();
@@ -816,7 +817,8 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
         // Hardcoded hack for SDL3 with X11 to end drag
         if (event.type == XFixesSelectionNotifyEvent - 2)
             break;
-            
+
+        bool isGenericMotion = false, isGenericButtonRelease = false;
         if (event.type == GenericEvent)
         {
             X11::XGenericEventCookie& cookie = event.xcookie;
@@ -824,10 +826,13 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
             {
                 switch (cookie.evtype)
                 {
+                case XI_ButtonRelease:
+                    isGenericButtonRelease = true;
+                    break;
                 case XI_Motion:
                 {
-                    auto xev = (const X11::xXIDeviceEvent*)cookie.data;
-                    // TODO: implement drag over/move/leave events via XInput2 and restore it in Editor (SDL_VIDEO_X11_XINPUT2=1 in SDLPlatform.cpp)
+                    //auto xev = (const X11::xXIDeviceEvent*)cookie.data;
+                    isGenericMotion = true;
                     break;
                 }
                 default:
@@ -836,9 +841,7 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
                 }
                 X11::XFreeEventData(xDisplay, &cookie);
             }
-            continue;
         }
-
         if (event.type == SelectionClear)
             break;
         if (event.type == SelectionRequest)
@@ -874,7 +877,7 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
             }
             X11::XSendEvent(event.xselection.display, event.xselectionrequest.requestor, 1, 0, &s);
         }
-        else if (event.type == MotionNotify)
+        else if (event.type == MotionNotify || isGenericMotion)
         {
             // Find window under mouse
             auto window = X11Impl::FindAppWindow(xDisplay, rootWindow);
@@ -900,10 +903,15 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
             	status = Unreceptive;
             else if(version == -1)
             	status = Unaware;
-            xDndPos = Float2((float)event.xmotion.x_root, (float)event.xmotion.y_root);
+            if (event.type == MotionNotify)
+                xDndPos = Float2((float)event.xmotion.x_root, (float)event.xmotion.y_root);
+            else
+                xDndPos = GetX11MousePosition();
 
             // Update mouse grab
-            if (status == Unaware)
+            if (isOverFlaxWindow)
+                X11::XChangeActivePointerGrab(xDisplay, Button1MotionMask | ButtonReleaseMask, xDndResult != DragDropEffect::None ? cursorGood : cursorWrong, CurrentTime);
+            else if (status == Unaware)
                 X11::XChangeActivePointerGrab(xDisplay, Button1MotionMask | ButtonReleaseMask, cursorWrong, CurrentTime);
             else if(status == Unreceptive)
                 X11::XChangeActivePointerGrab(xDisplay, Button1MotionMask | ButtonReleaseMask, cursorTransient, CurrentTime);
@@ -921,6 +929,7 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
                 }
                 else
                 {
+                    isOverFlaxWindow = false;
                     X11::XClientMessageEvent m;
                     memset(&m, 0, sizeof(m));
                     m.type = ClientMessage;
@@ -944,12 +953,15 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
                 auto ww = WindowsManager::GetByNativePtr((void*)window);
                 if (ww)
                 {
+                    isOverFlaxWindow = true;
                     xDndPos = ww->ScreenToClient(X11Impl::GetX11MousePosition());
                     xDndResult = DragDropEffect::None;
                     ww->OnDragEnter(&dropData, xDndPos, xDndResult);
+                    X11::XChangeActivePointerGrab(xDisplay, Button1MotionMask | ButtonReleaseMask, xDndResult != DragDropEffect::None ? cursorGood : cursorWrong, CurrentTime);
                 }
                 else
                 {
+                    isOverFlaxWindow = false;
                     X11::XClientMessageEvent m;
                     memset(&m, 0, sizeof(m));
                     m.type = ClientMessage;
@@ -973,14 +985,17 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
                 auto ww = WindowsManager::GetByNativePtr((void*)window);
                 if (ww)
                 {
+                    isOverFlaxWindow = true;
                     xDndPos = ww->ScreenToClient(X11Impl::GetX11MousePosition());
                     ww->_dragOver = true;
                     xDndResult = DragDropEffect::None;
                     ww->OnDragOver(&dropData, xDndPos, xDndResult);
                     status = CanDrop;
+                    X11::XChangeActivePointerGrab(xDisplay, Button1MotionMask | ButtonReleaseMask, xDndResult != DragDropEffect::None ? cursorGood : cursorWrong, CurrentTime);
                 }
                 else
                 {
+                    isOverFlaxWindow = false;
                     int x, y, tmp;
                     unsigned int utmp;
                     X11::Window wtmp;
@@ -1012,7 +1027,7 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
             if (!(event.xclient.data.l[1]&1) && status != Unaware)
                 status = Unreceptive;
         }
-        else if (event.type == ButtonRelease && event.xbutton.button == Button1)
+        else if ((event.type == ButtonRelease && event.xbutton.button == Button1) || isGenericButtonRelease)
         {
             if (status == CanDrop)
             {
@@ -1050,10 +1065,9 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
 
         // Redraw
         const float time = Platform::GetTimeSeconds();
-        if (time - lastDraw >= 1.0f / 20.0f)
+        if (time - lastDraw >= 1.0f / 30.0f)
         {
             lastDraw = time;
-            
             Engine::OnDraw();
         }
 

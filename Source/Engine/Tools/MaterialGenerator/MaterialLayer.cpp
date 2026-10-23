@@ -172,25 +172,35 @@ MaterialLayer* MaterialLayer::Load(const Guid& id, ReadStream* graphData, const 
     // Ensure to have valid root node
     else if (layer->Root->Boxes.Count() < static_cast<int32>(MaterialGraphBoxes::MAX))
     {
-#define ADD_BOX(type, valueType) \
-		if (layer->Root->Boxes.Count() <= static_cast<int32>(MaterialGraphBoxes::type)) \
-			layer->Root->Boxes.Add(MaterialGraphBox(layer->Root, static_cast<int32>(MaterialGraphBoxes::type), VariantType::valueType))
-        ADD_BOX(TessellationMultiplier, Float);
-        ADD_BOX(WorldDisplacement, Float3);
-        ADD_BOX(SubsurfaceColor, Float3);
+        LOG(Warning, "Incorrect root node in '{0}'.", caller);
+        layer->Root->Boxes.Resize(static_cast<int32>(MaterialGraphBoxes::MAX));
+#define INIT_BOX(type, valueType) \
+    { \
+        auto& box = layer->Root->Boxes[(int32)MaterialGraphBoxes::type]; \
+        if (box.Parent != layer->Root || box.ID != (int32)MaterialGraphBoxes::type || box.Type.Type != VariantType::valueType) \
+        { \
+            box.Parent = layer->Root; \
+            box.ID = (int32)MaterialGraphBoxes::type; \
+            box.Type.Type = VariantType::valueType; \
+        } \
+    }
+        INIT_BOX(Layer, Void);
+        INIT_BOX(Color, Float3);
+        INIT_BOX(Mask, Float);
+        INIT_BOX(Emissive, Float3);
+        INIT_BOX(Metalness, Float);
+        INIT_BOX(Specular, Float);
+        INIT_BOX(Roughness, Float);
+        INIT_BOX(AmbientOcclusion, Float);
+        INIT_BOX(Normal, Float3);
+        INIT_BOX(Opacity, Float);
+        INIT_BOX(Refraction, Float);
+        INIT_BOX(PositionOffset, Float3);
+        INIT_BOX(TessellationMultiplier, Float);
+        INIT_BOX(WorldDisplacement, Float3);
+        INIT_BOX(SubsurfaceColor, Float3);
+#undef INIT_BOX
         static_assert(static_cast<int32>(MaterialGraphBoxes::MAX) == 15, "Invalid amount of boxes added for root node. Please update the code above");
-        ASSERT(layer->Root->Boxes.Count() == static_cast<int32>(MaterialGraphBoxes::MAX));
-#if BUILD_DEBUG
-        // Test for valid pointers after node upgrade
-        for (int32 i = 0; i < layer->Root->Boxes.Count(); i++)
-        {
-            if (layer->Root->Boxes[i].Parent != layer->Root)
-            {
-                CRASH;
-            }
-        }
-#endif
-#undef ADD_BOX
     }
 
     // Setup

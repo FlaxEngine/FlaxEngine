@@ -268,6 +268,7 @@ bool TextureTool::ImportTexture(const StringView& path, TextureData& textureData
 
     // Detect texture format type
     ImageType type;
+    Array<byte> bytes;
     if (options.InternalLoad.IsBinded())
     {
         type = ImageType::Internal;
@@ -276,14 +277,13 @@ bool TextureTool::ImportTexture(const StringView& path, TextureData& textureData
     {
         if (GetImageType(path, type))
             return true;
-    }
 
-    // Load raw bytes from file
-    Array<byte> bytes;
-    if (File::ReadAllBytes(path, bytes))
-    {
-        LOG(Warning, "Failed to load file data.");
-        return true;
+        // Load raw bytes from file
+        if (File::ReadAllBytes(path, bytes))
+        {
+            LOG(Warning, "Failed to load file data.");
+            return true;
+        }
     }
 
     // Clamp values

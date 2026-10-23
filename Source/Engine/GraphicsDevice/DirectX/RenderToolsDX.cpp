@@ -104,7 +104,7 @@ namespace Windows
 
 // @formatter:off
 
-DXGI_FORMAT PixelFormatToDXGIFormat[110] =
+DXGI_FORMAT PixelFormatToDXGIFormat[] =
 {
     DXGI_FORMAT_UNKNOWN,
     DXGI_FORMAT_R32G32B32A32_TYPELESS,
@@ -216,7 +216,9 @@ DXGI_FORMAT PixelFormatToDXGIFormat[110] =
     DXGI_FORMAT_UNKNOWN, // ASTC_10x10_UNorm_sRGB
     DXGI_FORMAT_YUY2,
     DXGI_FORMAT_NV12,
+    DXGI_FORMAT_UNKNOWN, // Basis (transcoded to a GPU format on load)
 };
+static_assert(ARRAY_COUNT(PixelFormatToDXGIFormat) == (int32)PixelFormat::MAX, "One DXGI format per pixel format.");
 
 // @formatter:on
 
