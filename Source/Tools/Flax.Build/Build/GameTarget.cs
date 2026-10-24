@@ -21,6 +21,8 @@ namespace Flax.Build
             LinkType = TargetLinkType.Monolithic;
             OutputType = TargetOutputType.Executable;
             Modules.Add("Main");*/
+
+            GlobalDefinitions.Add("FLAX_GAME");
         }
     }
 
@@ -51,6 +53,7 @@ namespace Flax.Build
             };
             ConfigurationName = "Editor";
             GlobalDefinitions.Add("USE_EDITOR");
+            GlobalDefinitions.Add("FLAX_EDITOR");
         }
     }
 }
