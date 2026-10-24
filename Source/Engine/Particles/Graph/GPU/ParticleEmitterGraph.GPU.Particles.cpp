@@ -462,13 +462,14 @@ void ParticleEmitterGPUGenerator::ProcessGroupParticles(Box* box, Node* node, Va
 
         // Peek the function output (function->Outputs maps the functions outputs to output nodes indices)
         const int32 outputIndex = box->ID - 16;
-        if (!function->Outputs.IsValidIndex(outputIndex) || !graph->Nodes.IsValidIndex(function->Outputs[outputIndex]))
+        auto& functionNodes = ((ParticleEmitterGraphGPU*)graph)->Nodes;
+        if (!function->Outputs.IsValidIndex(outputIndex) || !functionNodes.IsValidIndex(function->Outputs[outputIndex]))
         {
             OnError(node, box, TEXT("Invalid function output box."));
             value = Value::Zero;
             break;
         }
-        Node* functionOutputNode = &graph->Nodes[function->Outputs[outputIndex]];
+        Node* functionOutputNode = &functionNodes[function->Outputs[outputIndex]];
         Box* functionOutputBox = functionOutputNode->TryGetBox(0);
 
         // Evaluate the function output
@@ -527,7 +528,7 @@ void ParticleEmitterGPUGenerator::ProcessGroupFunction(Box* box, Node* node, Val
         int32 inputIndex = -1;
         for (int32 i = 0; i < function->Inputs.Count(); i++)
         {
-            if (node->ID == graph->Nodes[function->Inputs[i]].ID)
+            if (node->ID == ((ParticleEmitterGraphGPU*)graph)->Nodes[function->Inputs[i]].ID)
             {
                 inputIndex = i;
                 break;
