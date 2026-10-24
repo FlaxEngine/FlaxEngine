@@ -459,7 +459,11 @@ namespace FlaxEditor.Viewport
         public float NearPlane
         {
             get => _nearPlane;
-            set => _nearPlane = value;
+            set
+            {
+                float maxNearPlane = Math.Max(0.01f, Math.Min(_farPlane - 1.0f, 1_999_999.0f));
+                _nearPlane = Math.Clamp(value, 0.01f, maxNearPlane);
+            }
         }
 
         /// <summary>
@@ -468,7 +472,11 @@ namespace FlaxEditor.Viewport
         public float FarPlane
         {
             get => _farPlane;
-            set => _farPlane = value;
+            set
+            {
+                float minFarPlane = Math.Max(10.0f, _nearPlane + 1.0f);
+                _farPlane = Math.Clamp(value, minFarPlane, 2_000_000.0f);
+            }
         }
 
         /// <summary>
@@ -1517,7 +1525,9 @@ namespace FlaxEditor.Viewport
             // Create near and far points, with device depth of 1 and 0 respectively
 #if REVERSE_Z
             var nearPoint = new Vector3(mousePosition, 1.0f);
-            var farPoint = new Vector3(mousePosition, 0.0f);
+            // Depth 0 is the reverse-Z far plane and can unproject to a point at infinity
+            // (homogeneous W == 0). Use a finite depth sample to derive the ray direction.
+            var farPoint = new Vector3(mousePosition, 0.5f);
 #else
             var nearPoint = new Vector3(mousePosition, 0.0f);
             var farPoint = new Vector3(mousePosition, 1.0f);
