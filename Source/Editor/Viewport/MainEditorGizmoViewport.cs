@@ -240,7 +240,7 @@ namespace FlaxEditor.Viewport
                 AnchorPreset = AnchorPresets.TopRight,
                 Parent = this,
             };
-
+ 
             // Add grid
             Grid = new GridGizmo(this);
             Grid.EnabledChanged += gizmo => _showGridButton.Icon = gizmo.Enabled ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
@@ -309,7 +309,7 @@ namespace FlaxEditor.Viewport
             _showDirectionGizmoButton.Checked = _directionGizmo.Visible;
             _directionGizmo.Size = new Float2(DirectionGizmo.DefaultGizmoSize * options.Viewport.DirectionGizmoScale);
             _directionGizmo.LocalX = -_directionGizmo.Size.X * 0.5f;
-            _directionGizmo.LocalY = _directionGizmo.Size.Y * 0.5f + ViewportWidgetsContainer.WidgetsHeight;
+            _directionGizmo.LocalY = _directionGizmo.Size.Y * 0.5f + ViewportWidgetsContainer.WidgetsHeight + ViewportWidgetsContainer.WidgetsMargin * 2;
         }
 
         /// <inheritdoc />

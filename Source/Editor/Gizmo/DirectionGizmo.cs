@@ -38,6 +38,7 @@ internal class DirectionGizmo : ContainerControl
 
     private bool _mouseDown;
     private Float2 _mouseDownLocation;
+    private Float2 _mouseLocation;
 
     private SpriteHandle _posHandle;
 
@@ -142,44 +143,72 @@ internal class DirectionGizmo : ContainerControl
     /// <inheritdoc />
     public override void OnMouseMove(Float2 location)
     {
-        _hoveredAxisIndex = -1;
-        
+        _mouseLocation = location;
+
+        //something might be using it and mouse is hidden
+        //this is not correct way to cheek it but will do
+        //this solves the box select drag over not correct way to do it
+        //TODO: find better way to do it
+        if (Cursor == CursorType.Hidden && !_mouseDown)
+        {
+            _hoveredAxisIndex = -1;
+            return;
+        }
+
         if (_mouseDown)
         {
-            StartMouseCapture(true);
-            Cursor = CursorType.Hidden;
-
             const float sensitivity = 0.125f;
             Float2 delta = Input.MousePositionDelta;
             delta *= Mathf.DegreesToRadians;
             delta *= sensitivity;
 
             const float orbitRadius = 500f;
-            Quaternion newOrientation = _viewport.ViewOrientation * Quaternion.RotationYawPitchRoll(delta.X , delta.Y, 0f);
+            //TODO: correct this it will flip axis when dragged is specific way use correct math here delta.X will overflow swapping sine on Yaw
+            Quaternion newOrientation = _viewport.ViewOrientation * Quaternion.RotationYawPitchRoll(delta.X, delta.Y, 0f);
             Vector3 orbitCenter = _viewport.ViewPosition + _viewport.ViewDirection * orbitRadius;
             _viewport.ViewportCamera.SetArcBallView(newOrientation, orbitCenter, orbitRadius);
-
             return;
         }
-         
-        // Check which axis is being hovered - check from closest to farthest for proper layering
-        for (int i = _spritePositions.Count - 1; i >= 0; i--)
+        base.OnMouseMove(location);
+    }
+    public override void Update(float deltaTime)
+    {
+        if (!_mouseDown)
         {
-            if (IsPointInSprite(location, _spritePositions[i].position))
+            _hoveredAxisIndex = -1;
+            // Check which axis is being hovered - check from closest to farthest for proper layering
+            for (int i = _spritePositions.Count - 1; i >= 0; i--)
             {
-                _hoveredAxisIndex = i;
-                break;
+                if (IsPointInSprite(_mouseLocation, _spritePositions[i].position))
+                {
+                    _hoveredAxisIndex = i;
+                    break;
+                }
             }
         }
 
-        base.OnMouseMove(location);
+        base.Update(deltaTime);
     }
 
+    /// <inheritdoc />
     public override bool OnMouseDown(Float2 location, MouseButton button)
     {
-        _mouseDown = true;
-        _mouseDownLocation = location;
-        return true;
+        //something might be using it and mouse is hidden
+        //this is not correct way to cheek it but will do
+        //this solves the box select drag over not correct way to do it
+        //TODO: find better way to do it
+        if (Cursor != CursorType.Hidden)
+        {
+            StartMouseCapture(true);
+            Cursor = CursorType.Hidden;
+            _mouseDown = true;
+            _mouseDownLocation = location;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     /// <inheritdoc />
@@ -188,31 +217,24 @@ internal class DirectionGizmo : ContainerControl
         if (_mouseDown)
         {
             _mouseDown = false;
-    
-            if (_mouseDownLocation != location)
+            if (_mouseDownLocation == location)
             {
-                _mouseDown = false;
-                EndMouseCapture();
-                Root.MousePosition = PointToParent(Root, _mouseDownLocation);
-                Cursor = CursorType.Default;
-                return true;
+                // Check which axis is being clicked - check from closest to farthest for proper layering
+                for (int i = _spritePositions.Count - 1; i >= 0; i--)
+                {
+                    if (IsPointInSprite(location, _spritePositions[i].position))
+                    {
+                        OrientViewToAxis(_spritePositions[i].direction);
+                        break;
+                    }
+                }
             }
-        }
-
-        if (base.OnMouseUp(location, button))
+            EndMouseCapture();
+            Cursor = CursorType.Default;
+            _hoveredAxisIndex = -1;
             return true;
-
-        // Check which axis is being clicked - check from closest to farthest for proper layering
-        for (int i = _spritePositions.Count - 1; i >= 0; i--)
-        {
-            if (IsPointInSprite(location, _spritePositions[i].position))
-            {
-                OrientViewToAxis(_spritePositions[i].direction);
-                return true;
-            }
         }
-
-        return false;
+        return base.OnMouseUp(location, button);
     }
 
     private void OrientViewToAxis(AxisDirection direction)
@@ -235,11 +257,33 @@ internal class DirectionGizmo : ContainerControl
     /// </summary>
     public override void DrawSelf()
     {
+        //TODO: fix the bugs with drawing
+
+        //keep it in the perspective or orto else needs scaling for orto space
+        //this code dose not handles it correctly
+        //it pulls projection every single frame with (_viewportProjection.Init(_owner.Viewport))
+        //it is missing orto case for draw
+
+        //and there is better way of doing it
+        //in 3D in UI space can be handled composed as image on top of viewport
+        //avoids the far from origin issues
+
+        //this code throws 3D UI it in the world and prays it dose not break at all
+        //at lest test the code if it works wll in orto mode
+
+        //current issues with:
+        //- it orto draw is broken overflows when camera is swapped to orto mode handed overflows to the buttons
+        //- far from origin it starts to crap it self handed go allover the place
+
+        //leaving comment above here as reminder this is screwed up in more then 1 way
+
         base.DrawSelf();
 
         var features = Render2D.Features;
         Render2D.Features = features & ~Render2D.RenderingFeatures.VertexSnapping;
+
         _viewportProjection.Init(_owner.Viewport);
+
         _gizmoCenter = _viewport.Task.View.WorldPosition + _viewport.Task.View.Direction * 1500;
         _viewportProjection.ProjectPoint(_gizmoCenter, out var gizmoCenterScreen);
 
@@ -309,7 +353,7 @@ internal class DirectionGizmo : ContainerControl
         // Rebuild sprite positions list for hover detection
         _spritePositions.Clear();
 
-        if (IsMouseOver)
+        if ((IsMouseOver && !_mouseDown && _hoveredAxisIndex == -1) || _mouseDown)
         {
             Rectangle backgroundRect = new Rectangle(0, 0, Size);
             Color backgroundColor = Color.DarkGray.AlphaMultiplied(_backgroundOpacity);
@@ -321,7 +365,7 @@ internal class DirectionGizmo : ContainerControl
         {
             var axis = _axisData[i];
             Float2 tipScreen = relativeCenter + axis.Delta * _axisLength;
-            bool isHovered = _hoveredAxisIndex == i;
+            bool isHovered = _hoveredAxisIndex == i && !_mouseDown;
 
             // Store sprite position for hover detection
             _spritePositions.Add((tipScreen, axis.Direction));
