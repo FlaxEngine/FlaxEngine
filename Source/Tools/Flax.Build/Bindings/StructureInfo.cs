@@ -26,6 +26,35 @@ namespace Flax.Build.Bindings
         {
             base.Init(buildData);
 
+            // Give struct methods stable, unique binding names. These names are used by both
+            // the native wrapper and the generated LibraryImport entry point. Class methods
+            // get this in VirtualClassInfo.Init, but structures do not derive from that type.
+            var usedFunctionNames = new HashSet<string>(StringComparer.Ordinal);
+            for (var baseType = BaseType; baseType != null; baseType = baseType.BaseType)
+            {
+                foreach (var baseFunction in baseType.Functions)
+                    usedFunctionNames.Add(string.IsNullOrEmpty(baseFunction.UniqueName) ? baseFunction.Name : baseFunction.UniqueName);
+            }
+            foreach (var functionInfo in Functions)
+            {
+                var uniqueName = functionInfo.Name;
+                var suffix = 1;
+                while (!usedFunctionNames.Add(uniqueName))
+                    uniqueName = functionInfo.Name + suffix++;
+                functionInfo.UniqueName = uniqueName;
+            }
+
+            // Virtual methods add a native v-table pointer, which cannot be represented by a POD C# struct.
+            // Require an explicit NoPod annotation so the struct uses the non-POD binding path.
+            if (!ForceNoPod)
+            {
+                foreach (var functionInfo in Functions)
+                {
+                    if (functionInfo.IsVirtual)
+                        throw new NotSupportedException($"Structure '{FullNameNative}' declares virtual API function '{functionInfo.Name}' but is not marked API_STRUCT(NoPod). Virtual struct methods require the non-POD layout.");
+                }
+            }
+
             if (ForceNoPod || (Interfaces != null && Interfaces.Count != 0) || IsTemplate)
             {
                 _isPod = false;
