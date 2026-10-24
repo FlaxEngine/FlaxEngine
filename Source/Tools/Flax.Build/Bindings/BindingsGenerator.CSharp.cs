@@ -783,7 +783,7 @@ namespace Flax.Build.Bindings
             var separator = false;
             if (!functionInfo.IsStatic)
             {
-                contents.Append("__unmanagedPtr");
+                contents.Append(caller is StructureInfo ? "ref this" : "__unmanagedPtr");
                 separator = true;
             }
             for (var i = 0; i < functionInfo.Parameters.Count; i++)
@@ -1920,7 +1920,8 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).AppendLine(structNativeMarshaling);
             contents.Append(indent).Append(GenerateCSharpAccessLevel(structureInfo.Access));
             contents.Append("unsafe partial struct ").Append(structureInfo.Name);
-            if (structureInfo.BaseType != null && structureInfo.IsPod)
+            bool hasBase = structureInfo.BaseType != null && structureInfo.IsPod;
+            if (hasBase)
                 contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo(structureInfo.BaseType), structureInfo));
             bool hasInterface = false;
             if (structureInfo.Interfaces != null)
@@ -2045,6 +2046,8 @@ namespace Flax.Build.Bindings
                     if (functionInfo.IsStatic)
                         contents.Append("static ");
                     var returnValueType = GenerateCSharpNativeToManaged(buildData, functionInfo.ReturnType, structureInfo);
+                    contents.Append(returnValueType).Append(' ').Append(functionInfo.Name).Append('(');
+
                     for (var i = 0; i < functionInfo.Parameters.Count; i++)
                     {
                         var parameterInfo = functionInfo.Parameters[i];
