@@ -352,6 +352,7 @@ namespace Flax.Build.Bindings
                 return typeInfo.Type;
 
             // Array or Span or DataContainer
+
             if ((typeInfo.Type == "Array" || typeInfo.Type == "Span" || typeInfo.Type == "DataContainer" || typeInfo.Type == "MonoArray" || typeInfo.Type == "MArray") && typeInfo.GenericArgs != null)
             {
                 var arrayTypeInfo = typeInfo.GenericArgs[0];
@@ -414,7 +415,7 @@ namespace Flax.Build.Bindings
                 return delegateName;
             }
 
-            // Find API type info
+
             var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
             var typeName = typeInfo.Type.Replace("::", ".");
             if (typeInfo.GenericArgs != null)
@@ -481,6 +482,14 @@ namespace Flax.Build.Bindings
             if (typeInfo.IsObjectRef)
                 return GenerateCSharpFullyQualifiedNativeToManaged(buildData, typeInfo.GenericArgs[0], caller, marshalling);
 
+            // SoftTypeReference<T> is generic in native code but its managed binding is not.
+            if (typeInfo.Type == "SoftTypeReference")
+            {
+                var softTypeReference = FindApiTypeInfo(buildData, typeInfo, caller);
+                if (softTypeReference != null)
+                    return "global::" + softTypeReference.FullNameManaged.Replace('+', '.');
+                return "global::FlaxEngine.SoftTypeReference";
+            }
             if ((typeInfo.Type == "Array" || typeInfo.Type == "Span" || typeInfo.Type == "DataContainer" || typeInfo.Type == "MonoArray" || typeInfo.Type == "MArray") && typeInfo.GenericArgs != null)
                 return GenerateCSharpFullyQualifiedNativeToManaged(buildData, typeInfo.GenericArgs[0], caller, marshalling) + "[]";
 
