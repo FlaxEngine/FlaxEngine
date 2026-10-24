@@ -590,10 +590,14 @@ bool ImportMaterials(ModelData& result, AssimpImporterData& data, String& errorM
             float aFloat;
             if (aMaterial->Get(AI_MATKEY_OPACITY, aFloat) == AI_SUCCESS)
                 materialSlot.Opacity.Value = aFloat;
-            if (aMaterial->Get(AI_MATKEY_GLOSSINESS_FACTOR, aFloat) == AI_SUCCESS)
+            if (aMaterial->Get(AI_MATKEY_ROUGHNESS_FACTOR, aFloat) == AI_SUCCESS)
+                materialSlot.Roughness.Value = aFloat;
+            else if (aMaterial->Get(AI_MATKEY_GLOSSINESS_FACTOR, aFloat) == AI_SUCCESS)
                 materialSlot.Roughness.Value = 1.0f - aFloat;
             else if (aMaterial->Get(AI_MATKEY_SHININESS, aFloat) == AI_SUCCESS)
                 materialSlot.Roughness.Value = MaterialSlotEntry::ShininessToRoughness(aFloat);
+            if (aMaterial->Get(AI_MATKEY_METALLIC_FACTOR, aFloat) == AI_SUCCESS)
+                materialSlot.Metalness.Value = aFloat;
             if (aMaterial->Get(AI_MATKEY_EMISSIVE_INTENSITY, aFloat) == AI_SUCCESS)
                 materialSlot.Emissive.Color *= aFloat;
 
