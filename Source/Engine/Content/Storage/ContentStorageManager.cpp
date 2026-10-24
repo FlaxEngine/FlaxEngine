@@ -196,6 +196,34 @@ void ContentStorageManager::FormatPath(String& path)
     }
 }
 
+bool ContentStorageManager::IsFormattedPath(const StringView& path)
+{
+    // Absolute, '/' separators ('\' only after a drive letter), no empty, '.' or '..' parts and no separator at the end
+    const int32 length = path.Length();
+    if (length == 0 || FileSystem::IsRelative(path))
+        return false;
+    const Char* p = path.Get();
+    const bool drive = length >= 3 && StringUtils::IsAlpha(p[0]) && p[1] == ':';
+    if (drive && p[2] != '\\')
+        return false;
+    for (int32 i = 0; i < length; i++)
+    {
+        const bool separator = p[i] == '/' || (drive && i == 2);
+        if (!separator)
+        {
+            if (p[i] == '\\')
+                return false;
+            continue;
+        }
+        const int32 next = i + 1;
+        if (next >= length || p[next] == '/' || p[next] == '\\')
+            return false;
+        if (p[next] == '.' && (next + 1 >= length || p[next + 1] == '/' || (p[next + 1] == '.' && (next + 2 >= length || p[next + 2] == '/'))))
+            return false;
+    }
+    return true;
+}
+
 bool ContentStorageManager::IsFlaxStoragePath(const String& path)
 {
     auto extension = FileSystem::GetExtension(path).ToLower();
