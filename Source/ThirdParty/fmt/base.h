@@ -45,7 +45,7 @@ Customizations done to fmt lib:
 #else
 #define FMT_ASSERT(condition, message) ((void)0)
 #endif
-#define FMT_THROW(x) do { static_cast<void>(sizeof(x)); FMT_ASSERT(false, ""); } while (false)
+#define FMT_THROW(x) do { static_cast<void>(sizeof(x)); FMT_ASSERT(false, x); } while (false)
 #define FMT_API FLAXENGINE_API
 
 #if defined(FMT_IMPORT_STD) && !defined(FMT_MODULE)

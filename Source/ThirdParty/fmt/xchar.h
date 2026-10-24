@@ -148,6 +148,11 @@ auto arg(const wchar_t* name, const T& arg) -> named_arg<T, wchar_t> {
   return {name, arg};
 }
 
+template <typename T>
+auto arg(const char16_t* name, const T& arg) -> named_arg<T, char16_t> {
+  return {name, arg};
+}
+
 #if false
 template <typename It, typename Sentinel, typename S,
           typename Char = typename decltype(detail::to_string_view(
