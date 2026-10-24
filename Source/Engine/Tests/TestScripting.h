@@ -133,6 +133,19 @@ API_STRUCT(NoDefault) struct TestStruct : public ISerializable
     // Scene Ref
     API_FIELD() SceneReference SceneRef;
 
+    //invalid case it adds a vtable and it might get lost on pod type virtual not allowed unless
+    //NoPod is set needs special handling and testing
+#if 0
+    API_FUNCTION() virtual void AddInvalid()
+    {
+        Vector += 1;
+    }
+#endif // 0
+    API_FUNCTION() void AddValid()
+    {
+        Vector += 1;
+    }
+
     friend bool operator==(const TestStruct& lhs, const TestStruct& rhs)
     {
         return lhs.Vector == rhs.Vector && 

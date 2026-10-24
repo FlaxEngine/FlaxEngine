@@ -646,7 +646,14 @@ namespace Flax.Build.Bindings
             var separator = false;
             if (!functionInfo.IsStatic)
             {
-                contents.Append("IntPtr __obj");
+                if (caller is StructureInfo structureInfo)
+                {
+                    contents.Append("ref ").Append(structureInfo.Name).Append(" __obj");
+                }
+                else
+                {
+                    contents.Append("IntPtr __obj");
+                }
                 separator = true;
             }
 
@@ -776,7 +783,7 @@ namespace Flax.Build.Bindings
             var separator = false;
             if (!functionInfo.IsStatic)
             {
-                contents.Append("__unmanagedPtr");
+                contents.Append(caller is StructureInfo ? "ref this" : "__unmanagedPtr");
                 separator = true;
             }
             for (var i = 0; i < functionInfo.Parameters.Count; i++)
@@ -1913,8 +1920,24 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).AppendLine(structNativeMarshaling);
             contents.Append(indent).Append(GenerateCSharpAccessLevel(structureInfo.Access));
             contents.Append("unsafe partial struct ").Append(structureInfo.Name);
-            if (structureInfo.BaseType != null && structureInfo.IsPod)
+            bool hasBase = structureInfo.BaseType != null && structureInfo.IsPod;
+            if (hasBase)
                 contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo(structureInfo.BaseType), structureInfo));
+            bool hasInterface = false;
+            if (structureInfo.Interfaces != null)
+            {
+                foreach (var interfaceInfo in structureInfo.Interfaces)
+                {
+                    if (interfaceInfo.Access != AccessLevel.Public)
+                        continue;
+                    if (hasInterface || hasBase)
+                        contents.Append(", ");
+                    else
+                        contents.Append(" : ");
+                    hasInterface = true;
+                    contents.Append(interfaceInfo.FullNameManaged);
+                }
+            }
             contents.AppendLine();
             contents.Append(indent + "{");
             indent += "    ";
@@ -2007,6 +2030,104 @@ namespace Flax.Build.Bindings
                 {
                     contents.Append(';').AppendLine();
                 }
+            }
+
+            // Properties
+            foreach (var propertyInfo in structureInfo.Properties)
+            {
+                if (propertyInfo.IsHidden)
+                    continue;
+
+                contents.AppendLine();
+                GenerateCSharpComment(contents, indent, propertyInfo.Comment, true);
+                GenerateCSharpAttributes(buildData, contents, indent, structureInfo, propertyInfo, true);
+                contents.Append(indent).Append(GenerateCSharpAccessLevel(propertyInfo.Access));
+                if (propertyInfo.IsStatic)
+                    contents.Append("static ");
+                var propertyType = GenerateCSharpNativeToManaged(buildData, propertyInfo.Type, structureInfo);
+                contents.Append(propertyType).Append(' ').AppendLine(propertyInfo.Name);
+                contents.AppendLine(indent + "{");
+                indent += "    ";
+
+                if (propertyInfo.Getter != null)
+                {
+                    contents.Append(indent);
+                    if (propertyInfo.Access != propertyInfo.Getter.Access)
+                        contents.Append(GenerateCSharpAccessLevel(propertyInfo.Getter.Access));
+                    contents.Append("get { ");
+                    GenerateCSharpWrapperFunctionCall(buildData, contents, structureInfo, propertyInfo.Getter);
+                    contents.Append(" }").AppendLine();
+                }
+
+                if (propertyInfo.Setter != null)
+                {
+                    contents.Append(indent);
+                    if (propertyInfo.Access != propertyInfo.Setter.Access)
+                        contents.Append(GenerateCSharpAccessLevel(propertyInfo.Setter.Access));
+                    contents.Append("set { ");
+                    GenerateCSharpWrapperFunctionCall(buildData, contents, structureInfo, propertyInfo.Setter, true);
+                    contents.Append(" }").AppendLine();
+                }
+
+                indent = indent.Substring(0, indent.Length - 4);
+                contents.AppendLine(indent + "}");
+
+                if (propertyInfo.Getter != null)
+                    GenerateCSharpWrapperFunction(buildData, contents, indent, structureInfo, propertyInfo.Getter);
+                if (propertyInfo.Setter != null)
+                    GenerateCSharpWrapperFunction(buildData, contents, indent, structureInfo, propertyInfo.Setter);
+            }
+
+            // Functions
+            foreach (var functionInfo in structureInfo.Functions)
+            {
+                if (functionInfo.IsHidden)
+                    continue;
+                if (!functionInfo.NoProxy)
+                {
+                    contents.AppendLine();
+                    GenerateCSharpComment(contents, indent, functionInfo.Comment);
+                    GenerateCSharpAttributes(buildData, contents, indent, structureInfo, functionInfo, true);
+                    contents.Append(indent).Append(GenerateCSharpAccessLevel(functionInfo.Access));
+                    if (functionInfo.IsStatic)
+                        contents.Append("static ");
+                    var returnValueType = GenerateCSharpNativeToManaged(buildData, functionInfo.ReturnType, structureInfo);
+                    contents.Append(returnValueType).Append(' ').Append(functionInfo.Name).Append('(');
+
+                    for (var i = 0; i < functionInfo.Parameters.Count; i++)
+                    {
+                        var parameterInfo = functionInfo.Parameters[i];
+                        if (i != 0)
+                            contents.Append(", ");
+                        if (!string.IsNullOrEmpty(parameterInfo.Attributes))
+                            contents.Append('[').Append(parameterInfo.Attributes).Append("] ");
+
+                        var managedType = GenerateCSharpNativeToManaged(buildData, parameterInfo.Type, structureInfo);
+                        if (parameterInfo.IsOut)
+                            contents.Append("out ");
+                        else if (parameterInfo.IsRef)
+                            contents.Append("ref ");
+                        else if (parameterInfo.IsThis)
+                            contents.Append("this ");
+                        else if (parameterInfo.IsParams)
+                            contents.Append("params ");
+                        contents.Append(managedType).Append(' ').Append(parameterInfo.Name);
+
+                        var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, structureInfo, parameterInfo.Type, false, managedType);
+                        if (!string.IsNullOrEmpty(defaultValue))
+                            contents.Append(" = ").Append(defaultValue);
+                    }
+
+                    contents.Append(')').AppendLine().AppendLine(indent + "{");
+                    indent += "    ";
+                    contents.Append(indent);
+                    GenerateCSharpWrapperFunctionCall(buildData, contents, structureInfo, functionInfo);
+                    indent = indent.Substring(0, indent.Length - 4);
+                    contents.AppendLine();
+                    contents.AppendLine(indent + "}");
+                }
+
+                GenerateCSharpWrapperFunction(buildData, contents, indent, structureInfo, functionInfo);
             }
 
             // Default value

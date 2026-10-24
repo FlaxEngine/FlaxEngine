@@ -1002,16 +1002,29 @@ namespace Flax.Build.Bindings
             if (propertyName.StartsWith("Get") || propertyName.StartsWith("Set"))
                 propertyName = propertyName.Remove(0, 3);
 
-            var classInfo = context.ScopeInfo as ClassInfo;
-            if (classInfo == null)
-                throw new ParseException(ref context, $"Found property {propertyName} outside the class");
+            List<PropertyInfo> properties;
+            string ownerName;
+            if (context.ScopeInfo is ClassInfo classInfo)
+            {
+                properties = classInfo.Properties;
+                ownerName = classInfo.Name;
+            }
+            else if (context.ScopeInfo is StructureInfo structureInfo)
+            {
+                properties = structureInfo.Properties;
+                ownerName = structureInfo.Name;
+            }
+            else
+            {
+                throw new ParseException(ref context, $"Found property {propertyName} outside a class or structure");
+            }
 
             var isGetter = !functionInfo.ReturnType.IsVoid;
             if (!isGetter && functionInfo.Parameters.Count == 0)
-                throw new ParseException(ref context, $"Property {propertyName} setter method in class {classInfo.Name} has to have value parameter to set (line {context.Tokenizer.CurrentLine}).");
+                throw new ParseException(ref context, $"Property {propertyName} setter method in {ownerName} has to have value parameter to set (line {context.Tokenizer.CurrentLine}).");
             var propertyType = isGetter ? functionInfo.ReturnType : functionInfo.Parameters[0].Type;
 
-            var propertyInfo = classInfo.Properties.FirstOrDefault(x => x.Name == propertyName);
+            var propertyInfo = properties.FirstOrDefault(x => x.Name == propertyName);
             if (propertyInfo == null)
             {
                 propertyInfo = new PropertyInfo
@@ -1024,12 +1037,12 @@ namespace Flax.Build.Bindings
                     Attributes = functionInfo.Attributes,
                     Type = propertyType,
                 };
-                classInfo.Properties.Add(propertyInfo);
+                properties.Add(propertyInfo);
             }
             else
             {
                 if (propertyInfo.IsStatic != functionInfo.IsStatic)
-                    throw new ParseException(ref context, $"Property {propertyName} in class {classInfo.Name} has to have both getter and setter methods static or non-static (line {context.Tokenizer.CurrentLine}).");
+                    throw new ParseException(ref context, $"Property {propertyName} in {ownerName} has to have both getter and setter methods static or non-static (line {context.Tokenizer.CurrentLine}).");
             }
             if (functionInfo.Tags != null)
             {
@@ -1046,9 +1059,9 @@ namespace Flax.Build.Bindings
             }
 
             if (isGetter && propertyInfo.Getter != null)
-                throw new ParseException(ref context, $"Property {propertyName} in class {classInfo.Name} cannot have multiple getter method (line {context.Tokenizer.CurrentLine}). Getter methods of properties must return value, while setters take this as a parameter.");
+                throw new ParseException(ref context, $"Property {propertyName} in {ownerName} cannot have multiple getter method (line {context.Tokenizer.CurrentLine}). Getter methods of properties must return value, while setters take this as a parameter.");
             if (!isGetter && propertyInfo.Setter != null)
-                throw new ParseException(ref context, $"Property {propertyName} in class {classInfo.Name} cannot have multiple setter method (line {context.Tokenizer.CurrentLine}). Getter methods of properties must return value, while setters take this as a parameter.");
+                throw new ParseException(ref context, $"Property {propertyName} in {ownerName} cannot have multiple setter method (line {context.Tokenizer.CurrentLine}). Getter methods of properties must return value, while setters take this as a parameter.");
 
             if (isGetter)
                 propertyInfo.Getter = functionInfo;
@@ -1076,7 +1089,7 @@ namespace Flax.Build.Bindings
                         return propertyInfo;
                     if (getterType.Type == "Array" && setterType.Type == "Span" && getterType.GenericArgs?.Count == 1 && setterType.GenericArgs?.Count == 1 && getterType.GenericArgs[0].Equals(setterType.GenericArgs[0]))
                         return propertyInfo;
-                    throw new ParseException(ref context, $"Property {propertyName} in class {classInfo.Name} (line {context.Tokenizer.CurrentLine}) has mismatching getter return type ({getterType}) and setter parameter type ({setterType}). Both getter and setter methods must use the same value type used for property.");
+                    throw new ParseException(ref context, $"Property {propertyName} in {ownerName} (line {context.Tokenizer.CurrentLine}) has mismatching getter return type ({getterType}) and setter parameter type ({setterType}). Both getter and setter methods must use the same value type used for property.");
                 }
 
                 if (propertyInfo.Comment != null)

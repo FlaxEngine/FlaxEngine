@@ -1068,6 +1068,11 @@ namespace Flax.Build.Bindings
 
         private static void GenerateCppWrapperFunction(BuildData buildData, StringBuilder contents, ApiTypeInfo caller, string callerName, FunctionInfo functionInfo, string callFormat = "{0}({1})")
         {
+            var callerStructure = caller as StructureInfo;
+            bool marshalCallerStructure = !functionInfo.IsStatic && callerStructure != null && !callerStructure.IsPod;
+            if (marshalCallerStructure && !CppUsedNonPodTypes.Contains(callerStructure))
+                CppUsedNonPodTypes.Add(callerStructure);
+
             // Setup function binding glue to ensure that wrapper method signature matches for C++ and C#
             functionInfo.Glue = new FunctionInfo.GlueInfo
             {
@@ -1143,11 +1148,11 @@ namespace Flax.Build.Bindings
             var signatureStart = contents.Length;
             if (!functionInfo.IsStatic)
             {
-                contents.Append(caller.Name).Append("* __obj");
+                contents.Append(marshalCallerStructure ? GenerateCppManagedWrapperName(callerStructure) : caller.Name).Append("* __obj");
                 separator = true;
             }
 
-            var useInlinedReturn = true;
+            var useInlinedReturn = !marshalCallerStructure;
             for (var i = 0; i < functionInfo.Parameters.Count; i++)
             {
                 var parameterInfo = functionInfo.Parameters[i];
@@ -1255,6 +1260,9 @@ namespace Flax.Build.Bindings
             if (!functionInfo.IsStatic)
                 contents.Append(indent).AppendLine("if (__obj == nullptr) DebugLog::ThrowNullReference();");
 
+            if (marshalCallerStructure)
+                contents.Append(indent).AppendLine("auto __objNative = ToNative(*__obj);");
+
             string callBegin = indent;
             if (functionInfo.Glue.UseReferenceForResult)
             {
@@ -1290,7 +1298,7 @@ namespace Flax.Build.Bindings
             else
             {
                 // Call native member method
-                call = $"__obj->{functionInfo.Name}";
+                call = marshalCallerStructure ? $"__objNative.{functionInfo.Name}" : $"__obj->{functionInfo.Name}";
             }
             string callParams = string.Empty;
             separator = false;
@@ -1405,6 +1413,9 @@ namespace Flax.Build.Bindings
 
             contents.Append(';');
             contents.AppendLine();
+
+            if (marshalCallerStructure)
+                contents.Append(indent).AppendLine("*__obj = ToManaged(__objNative);");
 
             // Convert special parameters back to managed world
             if (!useInlinedReturn)
@@ -2536,12 +2547,23 @@ namespace Flax.Build.Bindings
                     GenerateCppWrapperFunction(buildData, contents, structureInfo, internalTypeName, fieldInfo.Setter, "{0} = {1}");
             }
 
+            // Properties
+            foreach (var propertyInfo in structureInfo.Properties)
+            {
+                if (!useCSharp || propertyInfo.IsHidden)
+                    continue;
+                if (propertyInfo.Getter != null)
+                    GenerateCppWrapperFunction(buildData, contents, structureInfo, internalTypeName, propertyInfo.Getter);
+                if (propertyInfo.Setter != null)
+                    GenerateCppWrapperFunction(buildData, contents, structureInfo, internalTypeName, propertyInfo.Setter);
+            }
+
             // Functions
             foreach (var functionInfo in structureInfo.Functions)
             {
-                // TODO: add support for API functions in structures
-                throw new NotImplementedException($"TODO: add support for API functions in structures (function {functionInfo} in structure {structureInfo.Name})");
-                //GenerateCppWrapperFunction(buildData, contents, structureInfo, structureTypeNameInternal, functionInfo);
+                if (!useCSharp || functionInfo.IsHidden)
+                    continue;
+                GenerateCppWrapperFunction(buildData, contents, structureInfo, internalTypeName, functionInfo);
             }
 
             GenerateCppTypeInternals?.Invoke(buildData, structureInfo, contents);
