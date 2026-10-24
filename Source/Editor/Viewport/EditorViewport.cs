@@ -1462,10 +1462,10 @@ namespace FlaxEditor.Viewport
         protected virtual void CreateViewMatrix(Float3 position, out Matrix result)
         {
             var direction = ViewDirection;
-            var target = position + direction;
             var right = Mathf.Abs(Float3.Dot(direction, Float3.Up)) < 1.0f - Mathf.Epsilon ? Float3.Normalize(Float3.Cross(Float3.Up, direction)) : Float3.Forward;
             var up = Float3.Normalize(Float3.Cross(direction, right));
-            Matrix.LookAt(ref position, ref target, ref up, out result);
+            // LookTo with the direction: position + direction would round the direction far from the origin
+            Matrix.LookTo(ref position, ref direction, ref up, out result);
         }
 
         /// <summary>
