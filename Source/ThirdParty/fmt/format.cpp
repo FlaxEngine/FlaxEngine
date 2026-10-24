@@ -30,8 +30,6 @@ template FMT_API auto decimal_point_impl(locale_ref) -> char;
 // DEPRECATED!
 template FMT_API void buffer<char>::append(const char*, const char*);
 
-template FMT_API int format_float(double value, int precision, float_specs specs, buffer<char>& buf);
-
 // Explicit instantiations for wchar_t.
 
 template FMT_API auto thousands_sep_impl(locale_ref)
