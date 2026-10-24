@@ -453,6 +453,105 @@ namespace Flax.Build.Bindings
             return typeName;
         }
 
+        private static string GenerateCSharpFullyQualifiedNativeToManaged(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, bool marshalling = false)
+        {
+            if (typeInfo == null || typeInfo.Type == null)
+                throw new ArgumentNullException(nameof(typeInfo));
+
+            if (typeInfo.IsArray)
+            {
+                typeInfo.IsArray = false;
+                try
+                {
+                    return GenerateCSharpFullyQualifiedNativeToManaged(buildData, typeInfo, caller, marshalling) + "[]";
+                }
+                finally
+                {
+                    typeInfo.IsArray = true;
+                }
+            }
+
+            if (typeInfo.IsBitField)
+            {
+                if (typeInfo.BitSize == 1)
+                    return "bool";
+                throw new NotImplementedException("TODO: support bit-fields with more than 1 bit.");
+            }
+
+            if (typeInfo.IsObjectRef)
+                return GenerateCSharpFullyQualifiedNativeToManaged(buildData, typeInfo.GenericArgs[0], caller, marshalling);
+
+            if ((typeInfo.Type == "Array" || typeInfo.Type == "Span" || typeInfo.Type == "DataContainer" || typeInfo.Type == "MonoArray" || typeInfo.Type == "MArray") && typeInfo.GenericArgs != null)
+                return GenerateCSharpFullyQualifiedNativeToManaged(buildData, typeInfo.GenericArgs[0], caller, marshalling) + "[]";
+
+            if (typeInfo.Type == "Dictionary" && typeInfo.GenericArgs != null)
+                return $"global::System.Collections.Generic.Dictionary<{GenerateCSharpFullyQualifiedNativeToManaged(buildData, typeInfo.GenericArgs[0], caller, marshalling)}, {GenerateCSharpFullyQualifiedNativeToManaged(buildData, typeInfo.GenericArgs[1], caller, marshalling)}>";
+
+            if (typeInfo.Type == "HashSet" && typeInfo.GenericArgs != null)
+                return $"global::System.Collections.Generic.HashSet<{GenerateCSharpFullyQualifiedNativeToManaged(buildData, typeInfo.GenericArgs[0], caller, marshalling)}>";
+
+            var nativeTypeName = typeInfo.Type;
+            var namespaceSeparator = nativeTypeName.LastIndexOf("::", StringComparison.Ordinal);
+            if (namespaceSeparator >= 0)
+                nativeTypeName = nativeTypeName.Substring(namespaceSeparator + 2);
+            if (nativeTypeName == "Version")
+                return "global::System.Version";
+            if (CSharpNativeToManagedBasicTypes.TryGetValue(nativeTypeName, out var basicType))
+                return typeInfo.IsPtr ? basicType + "*" : basicType;
+            if (CSharpNativeToManagedDefault.TryGetValue(nativeTypeName, out var defaultType))
+                return defaultType.Contains('.') ? "global::" + defaultType : defaultType;
+
+            var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
+            if (apiType != null && !(apiType is LangType))
+            {
+                if (marshalling && apiType.MarshalAs != null)
+                    return GenerateCSharpFullyQualifiedNativeToManaged(buildData, apiType.MarshalAs, caller);
+
+                // Keep the managed spelling selected by the native-to-managed mapper. This matters for
+                // aliases such as Vector3, whose native typedef resolves to Float3 or Double3 depending
+                // on Real, while the generated accessor signature intentionally uses Vector3.
+                var mappedType = GenerateCSharpNativeToManaged(buildData, typeInfo, caller, marshalling);
+                var suffixStart = mappedType.IndexOfAny(new[] { '<', '[', '*' });
+                var mappedName = suffixStart >= 0 ? mappedType.Substring(0, suffixStart) : mappedType;
+                var suffix = suffixStart >= 0 ? mappedType.Substring(suffixStart) : string.Empty;
+                string fullName;
+                var resolvedFullName = apiType.FullNameManaged.Replace('+', '.');
+                if (mappedName.StartsWith("global::", StringComparison.Ordinal))
+                {
+                    fullName = mappedName;
+                }
+                else if (mappedName == apiType.Name || mappedName.EndsWith("." + apiType.Name, StringComparison.Ordinal))
+                {
+                    // Keep the API type's original namespace and nesting for normal types.
+                    fullName = "global::" + resolvedFullName;
+                }
+                else
+                {
+                    // Preserve a native typedef's managed alias (eg. Vector3) while borrowing
+                    // the resolved API type's namespace (eg. FlaxEngine from Float3).
+                    var namespaceEnd = resolvedFullName.LastIndexOf('.');
+                    var managedNamespace = namespaceEnd >= 0 ? resolvedFullName.Substring(0, namespaceEnd) : string.Empty;
+                    fullName = string.IsNullOrEmpty(managedNamespace) ? mappedName : $"global::{managedNamespace}.{mappedName}";
+                }
+                var managedType = fullName + suffix;
+                if (typeInfo.GenericArgs != null && !mappedType.Contains('<', StringComparison.Ordinal))
+                {
+                    managedType += "<";
+                    for (int i = 0; i < typeInfo.GenericArgs.Count; i++)
+                    {
+                        if (i != 0)
+                            managedType += ", ";
+                        managedType += GenerateCSharpFullyQualifiedNativeToManaged(buildData, typeInfo.GenericArgs[i], caller, marshalling);
+                    }
+                    managedType += ">";
+                }
+                return typeInfo.IsPtr && apiType.IsPod ? managedType + "*" : managedType;
+            }
+
+            var result = GenerateCSharpNativeToManaged(buildData, typeInfo, caller, marshalling);
+            return result.Contains('.') && !result.StartsWith("global::", StringComparison.Ordinal) ? "global::" + result : result;
+        }
+
         private static string GenerateCSharpManagedToNativeType(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, bool marshalling = false)
         {
             // Fixed-size array
@@ -505,66 +604,66 @@ namespace Flax.Build.Bindings
 
             switch (typeInfo.Type)
             {
-            case "String":
-            case "StringView":
-            case "StringAnsi":
-            case "StringAnsiView":
-                // String
-                return string.Empty;
-            case "ScriptingObject":
-            case "PersistentScriptingObject":
-            case "ManagedScriptingObject":
-                // object
-                return "FlaxEngine.Object.GetUnmanagedPtr({0})";
-            case "Function":
-                // delegate
-                return "NativeInterop.GetFunctionPointerForDelegate({0})";
-            case "Array":
-            case "Span":
-            case "DataContainer":
-                if (typeInfo.GenericArgs != null)
-                {
-                    // Convert array that uses different type for marshalling
-                    var arrayTypeInfo = typeInfo.GenericArgs[0];
-                    var arrayApiType = FindApiTypeInfo(buildData, arrayTypeInfo, caller);
-                    if (arrayApiType != null && arrayApiType.MarshalAs != null)
-                        return $"{{0}}.ConvertArray(x => ({GenerateCSharpNativeToManaged(buildData, arrayApiType.MarshalAs, caller)})x)";
-                }
-                return string.Empty;
-            case "Dictionary":
-                if (typeInfo.GenericArgs != null && typeInfo.GenericArgs.Count == 2)
-                {
-                    // Convert dictionary that uses different type for marshalling
-                    var keyApiType = FindApiTypeInfo(buildData, typeInfo.GenericArgs[0], caller);
-                    var valueApiType = FindApiTypeInfo(buildData, typeInfo.GenericArgs[1], caller);
-                    if ((keyApiType != null && keyApiType.MarshalAs != null) || (valueApiType != null && valueApiType.MarshalAs != null))
+                case "String":
+                case "StringView":
+                case "StringAnsi":
+                case "StringAnsiView":
+                    // String
+                    return string.Empty;
+                case "ScriptingObject":
+                case "PersistentScriptingObject":
+                case "ManagedScriptingObject":
+                    // object
+                    return "FlaxEngine.Object.GetUnmanagedPtr({0})";
+                case "Function":
+                    // delegate
+                    return "NativeInterop.GetFunctionPointerForDelegate({0})";
+                case "Array":
+                case "Span":
+                case "DataContainer":
+                    if (typeInfo.GenericArgs != null)
                     {
-                        var keyConverter = keyApiType != null && keyApiType.MarshalAs != null ? $"({GenerateCSharpNativeToManaged(buildData, keyApiType.MarshalAs, caller)})" : "";
-                        var valueConverter = valueApiType != null && valueApiType.MarshalAs != null ? $"({GenerateCSharpNativeToManaged(buildData, valueApiType.MarshalAs, caller)})" : "";
-                        //return $"{{0}} != null ? System.Linq.Enumerable.ToDictionary({{0}}, x => {keyConverter}, x => {valueConverter}) : null";
-                        return $"{{0}}.ConvertDictionary(key => {keyConverter}key, value => {valueConverter}value)";
+                        // Convert array that uses different type for marshalling
+                        var arrayTypeInfo = typeInfo.GenericArgs[0];
+                        var arrayApiType = FindApiTypeInfo(buildData, arrayTypeInfo, caller);
+                        if (arrayApiType != null && arrayApiType.MarshalAs != null)
+                            return $"{{0}}.ConvertArray(x => ({GenerateCSharpNativeToManaged(buildData, arrayApiType.MarshalAs, caller)})x)";
                     }
-                }
-                return string.Empty;
-            default:
-                var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
-                if (apiType != null)
-                {
-                    // Scripting Object
-                    if (apiType.IsScriptingObject)
+                    return string.Empty;
+                case "Dictionary":
+                    if (typeInfo.GenericArgs != null && typeInfo.GenericArgs.Count == 2)
+                    {
+                        // Convert dictionary that uses different type for marshalling
+                        var keyApiType = FindApiTypeInfo(buildData, typeInfo.GenericArgs[0], caller);
+                        var valueApiType = FindApiTypeInfo(buildData, typeInfo.GenericArgs[1], caller);
+                        if ((keyApiType != null && keyApiType.MarshalAs != null) || (valueApiType != null && valueApiType.MarshalAs != null))
+                        {
+                            var keyConverter = keyApiType != null && keyApiType.MarshalAs != null ? $"({GenerateCSharpNativeToManaged(buildData, keyApiType.MarshalAs, caller)})" : "";
+                            var valueConverter = valueApiType != null && valueApiType.MarshalAs != null ? $"({GenerateCSharpNativeToManaged(buildData, valueApiType.MarshalAs, caller)})" : "";
+                            //return $"{{0}} != null ? System.Linq.Enumerable.ToDictionary({{0}}, x => {keyConverter}, x => {valueConverter}) : null";
+                            return $"{{0}}.ConvertDictionary(key => {keyConverter}key, value => {valueConverter}value)";
+                        }
+                    }
+                    return string.Empty;
+                default:
+                    var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
+                    if (apiType != null)
+                    {
+                        // Scripting Object
+                        if (apiType.IsScriptingObject)
+                            return "FlaxEngine.Object.GetUnmanagedPtr({0})";
+
+                        // interface
+                        if (apiType.IsInterface)
+                            return string.Format("FlaxEngine.Object.GetUnmanagedInterface({{0}}, typeof({0}))", apiType.Name);
+                    }
+
+                    // Object reference property
+                    if (typeInfo.IsObjectRef)
                         return "FlaxEngine.Object.GetUnmanagedPtr({0})";
 
-                    // interface
-                    if (apiType.IsInterface)
-                        return string.Format("FlaxEngine.Object.GetUnmanagedInterface({{0}}, typeof({0}))", apiType.Name);
-                }
-
-                // Object reference property
-                if (typeInfo.IsObjectRef)
-                    return "FlaxEngine.Object.GetUnmanagedPtr({0})";
-
-                // Default
-                return string.Empty;
+                    // Default
+                    return string.Empty;
             }
         }
 
@@ -958,7 +1057,7 @@ namespace Flax.Build.Bindings
                 if (defaultValue != null)
                     contents.Append(indent).Append("[DefaultValue(").Append(defaultValue).Append(")]").AppendLine();
             }
-            
+
             // Check if array has fixed allocation and add in MaxCount Collection attribute if a Collection attribute does not already exist.
             if (defaultValueType != null && (string.IsNullOrEmpty(attributes) || !attributes.Contains("Collection", StringComparison.Ordinal)))
             {
@@ -1066,7 +1165,12 @@ namespace Flax.Build.Bindings
             contents.Append("unsafe partial class ").Append(classInfo.Name);
             var hasBase = classInfo.BaseType != null && !classInfo.IsBaseTypeHidden;
             if (hasBase)
-                contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo(classInfo.BaseType), classInfo));
+            {
+                var managedBaseType = classInfo.Namespace == "FlaxEditor.Content.Settings" && classInfo.BaseType.Name == "SettingsBase"
+                    ? "global::FlaxEditor.Content.Settings.SettingsBase"
+                    : GenerateCSharpFullyQualifiedNativeToManaged(buildData, new TypeInfo(classInfo.BaseType), classInfo);
+                contents.Append(" : ").Append(managedBaseType);
+            }
             var hasInterface = false;
             if (classInfo.Interfaces != null)
             {
@@ -1079,7 +1183,7 @@ namespace Flax.Build.Bindings
                     else
                         contents.Append(" : ");
                     hasInterface = true;
-                    contents.Append(interfaceInfo.FullNameManaged);
+                    contents.Append($"global::{interfaceInfo.FullNameManaged.Replace('+', '.')}");
                 }
             }
             contents.AppendLine();
@@ -1245,7 +1349,8 @@ namespace Flax.Build.Bindings
                 else if (fieldInfo.IsStatic)
                     contents.Append("static ");
 
-                var managedType = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, classInfo);
+                var managedTypeSource = fieldInfo.Getter != null ? fieldInfo.Getter.ReturnType : fieldInfo.Setter != null && fieldInfo.Setter.Parameters.Count > 0 ? fieldInfo.Setter.Parameters[0].Type : fieldInfo.Type;
+                var managedType = GenerateCSharpFullyQualifiedNativeToManaged(buildData, managedTypeSource, classInfo);
                 contents.Append(managedType).Append(' ').Append(fieldInfo.Name);
 
                 if (!useUnmanaged || fieldInfo.IsConstexpr)
@@ -1591,7 +1696,7 @@ namespace Flax.Build.Bindings
                     structContents.Append(structIndent).AppendLine("[StructLayout(LayoutKind.Sequential)]");
                     structContents.Append(structIndent).Append("public struct ").Append(structureInfo.Name).Append("Internal");
                     if (structureInfo.BaseType != null && structureInfo.IsPod)
-                        structContents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo { Type = structureInfo.BaseType.Name }, structureInfo));
+                        structContents.Append(" : ").Append(GenerateCSharpFullyQualifiedNativeToManaged(buildData, new TypeInfo { Type = structureInfo.BaseType.Name }, structureInfo));
                     structContents.AppendLine();
                     structContents.Append(structIndent + "{");
                     structIndent += "    ";
@@ -1615,11 +1720,11 @@ namespace Flax.Build.Bindings
                         {
                             // Fixed-size array that needs to be inlined into structure instead of passing it as managed array
                             marshalType.IsArray = false;
-                            originalType = type = GenerateCSharpNativeToManaged(buildData, marshalType, structureInfo);
+                            originalType = type = GenerateCSharpFullyQualifiedNativeToManaged(buildData, marshalType, structureInfo);
                             marshalType.IsArray = true;
                         }
                         else
-                            originalType = type = GenerateCSharpNativeToManaged(buildData, marshalType, structureInfo);
+                            originalType = type = GenerateCSharpFullyQualifiedNativeToManaged(buildData, marshalType, structureInfo);
                         structContents.Append(structIndent).Append("public ");
                         string internalTypeMarshaller = "";
                         if (marshalType.IsArray && (fieldInfo.NoArray || structureInfo.IsPod))
@@ -1682,8 +1787,9 @@ namespace Flax.Build.Bindings
                                 type = "IntPtr";
                             else if (internalType)
                             {
-                                internalTypeMarshaller = type + "Marshaller";
-                                type = $"{internalTypeMarshaller}.{type}Internal";
+                                var marshallerNamespace = string.IsNullOrEmpty(apiType.Namespace) ? "Interop" : $"{apiType.Namespace}.Interop";
+                                internalTypeMarshaller = $"global::{marshallerNamespace}.{apiType.Name}Marshaller";
+                                type = $"{internalTypeMarshaller}.{apiType.Name}Internal";
                             }
                             //else if (type == "Guid")
                             //    type = "GuidNative";
@@ -1734,7 +1840,7 @@ namespace Flax.Build.Bindings
                             if (internalType)
                             {
                                 // Marshal blittable array elements back to original non-blittable elements
-                                string originalElementTypeMarshaller = (!string.IsNullOrEmpty(apiType?.Namespace) ? $"{apiType?.Namespace}.Interop." : "") + $"{originalElementType}Marshaller";
+                                string originalElementTypeMarshaller = !string.IsNullOrEmpty(apiType?.Namespace) ? $"global::{apiType.Namespace}.Interop.{apiType.Name}Marshaller" : $"global::Interop.{apiType.Name}Marshaller";
                                 string originalElementTypeName = originalElementType.Substring(originalElementType.LastIndexOf('.') + 1); // Strip namespace
                                 string internalElementType = $"{originalElementTypeMarshaller}.{originalElementTypeName}Internal";
                                 toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.ConvertArray((Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Target)).ToSpan<{internalElementType}>(), {originalElementTypeMarshaller}.ToManaged) : null;");
@@ -1922,7 +2028,7 @@ namespace Flax.Build.Bindings
             contents.Append("unsafe partial struct ").Append(structureInfo.Name);
             bool hasBase = structureInfo.BaseType != null && structureInfo.IsPod;
             if (hasBase)
-                contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo(structureInfo.BaseType), structureInfo));
+                contents.Append(" : ").Append(GenerateCSharpFullyQualifiedNativeToManaged(buildData, new TypeInfo(structureInfo.BaseType), structureInfo));
             bool hasInterface = false;
             if (structureInfo.Interfaces != null)
             {
@@ -1935,7 +2041,7 @@ namespace Flax.Build.Bindings
                     else
                         contents.Append(" : ");
                     hasInterface = true;
-                    contents.Append(interfaceInfo.FullNameManaged);
+                    contents.Append($"global::{interfaceInfo.FullNameManaged.Replace('+', '.')}");
                 }
             }
             contents.AppendLine();
@@ -1964,7 +2070,7 @@ namespace Flax.Build.Bindings
                 if (fieldInfo.Type.IsArray && (fieldInfo.NoArray || structureInfo.IsPod))
                 {
                     fieldInfo.Type.IsArray = false;
-                    managedType = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
+                    managedType = GenerateCSharpFullyQualifiedNativeToManaged(buildData, fieldInfo.Type, structureInfo);
                     fieldInfo.Type.IsArray = true;
                     if (GenerateCSharpUseFixedBuffer(managedType))
                     {
@@ -1990,7 +2096,7 @@ namespace Flax.Build.Bindings
                     continue;
                 }
 
-                managedType = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
+                managedType = GenerateCSharpFullyQualifiedNativeToManaged(buildData, fieldInfo.Type, structureInfo);
                 contents.Append(managedType).Append(' ').Append(fieldInfo.Name);
 
                 if (fieldInfo.IsConstexpr)
