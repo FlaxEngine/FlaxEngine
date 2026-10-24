@@ -35,7 +35,9 @@ float ColorCorrectionHighlightsMin;
 float WhiteTemp;
 float WhiteTint;
 
-float3 Dummy;
+float3 LookSlope;
+float LookSaturation;
+float3 LookPower;
 float LutWeight;
 META_CB_END
 
@@ -198,7 +200,7 @@ float3 agxAscCdl(float3 color, float3 slope, float3 offset, float3 power, float 
 {
     const float3 lw = float3(0.2126, 0.7152, 0.0722);
     float luma = dot(color, lw);
-    float3 c = pow(color * slope + offset, power);
+    float3 c = pow(max(color * slope + offset, 0.0), power);
     return luma + sat * (c - luma);
 }
 
@@ -234,7 +236,8 @@ float3 TonemapAGX(float3 linearColor)
             + 0.1191    * color
             - 0.00232;
 
-    // color = agxAscCdl(color, float3(1.0, 1.0, 1.0), float3(0.0, 0.0, 0.0), float3(1.35, 1.35, 1.35), 1.4);
+    // Look (none, punchy or golden)
+    color = agxAscCdl(color, LookSlope, float3(0.0, 0.0, 0.0), LookPower, LookSaturation);
     color = mul(color, AgXOutsetMatrix);
     color = pow(max(float3(0.0, 0.0, 0.0), color), float3(2.2, 2.2, 2.2));
     color = saturate(color);
