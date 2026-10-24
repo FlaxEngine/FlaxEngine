@@ -116,11 +116,10 @@ HANDLE StringToHandle(const StringView& str)
     // Allocate and lock a global memory buffer.
     // Make it fixed data so we don't have to use GlobalLock
     const int32 length = str.Length();
-    char* ptr = static_cast<char*>(GlobalAlloc(GMEM_FIXED, length + 1));
+    Char* ptr = static_cast<Char*>(GlobalAlloc(GMEM_FIXED, (length + 1) * sizeof(Char)));
 
-    // Copy the string into the buffer as ANSI text
-    StringUtils::ConvertUTF162ANSI(str.Get(), ptr, length);
-    ptr[length] = '\0';
+    // Copy the string into the buffer
+    StringUtils::Copy(ptr, str.Get(), length + 1);
 
     return ptr;
 }
@@ -577,7 +576,7 @@ DragDropEffect Window::DoDragDrop(const StringView& data)
         Platform::Sleep(1);
 
     // Create descriptors
-    FORMATETC fmtetc = { CF_TEXT, nullptr, DVASPECT_CONTENT, -1, TYMED_HGLOBAL };
+    FORMATETC fmtetc = { CF_UNICODETEXT, nullptr, DVASPECT_CONTENT, -1, TYMED_HGLOBAL };
     STGMEDIUM stgmed = { TYMED_HGLOBAL, { nullptr }, nullptr };
 
     // Create a HGLOBAL inside the storage medium
