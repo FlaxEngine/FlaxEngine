@@ -3085,7 +3085,7 @@ template <typename Char> struct udl_arg {
   const Char* str;
 
   template <typename T> auto operator=(T&& value) const -> named_arg<T, Char> {
-    return {str, std::forward<T>(value)};
+    return {str, Forward<T>(value)};
   }
 };
 #endif  // FMT_USE_NONTYPE_TEMPLATE_ARGS
