@@ -2032,6 +2032,52 @@ namespace Flax.Build.Bindings
                 }
             }
 
+            // Properties
+            foreach (var propertyInfo in structureInfo.Properties)
+            {
+                if (propertyInfo.IsHidden)
+                    continue;
+
+                contents.AppendLine();
+                GenerateCSharpComment(contents, indent, propertyInfo.Comment, true);
+                GenerateCSharpAttributes(buildData, contents, indent, structureInfo, propertyInfo, true);
+                contents.Append(indent).Append(GenerateCSharpAccessLevel(propertyInfo.Access));
+                if (propertyInfo.IsStatic)
+                    contents.Append("static ");
+                var propertyType = GenerateCSharpNativeToManaged(buildData, propertyInfo.Type, structureInfo);
+                contents.Append(propertyType).Append(' ').AppendLine(propertyInfo.Name);
+                contents.AppendLine(indent + "{");
+                indent += "    ";
+
+                if (propertyInfo.Getter != null)
+                {
+                    contents.Append(indent);
+                    if (propertyInfo.Access != propertyInfo.Getter.Access)
+                        contents.Append(GenerateCSharpAccessLevel(propertyInfo.Getter.Access));
+                    contents.Append("get { ");
+                    GenerateCSharpWrapperFunctionCall(buildData, contents, structureInfo, propertyInfo.Getter);
+                    contents.Append(" }").AppendLine();
+                }
+
+                if (propertyInfo.Setter != null)
+                {
+                    contents.Append(indent);
+                    if (propertyInfo.Access != propertyInfo.Setter.Access)
+                        contents.Append(GenerateCSharpAccessLevel(propertyInfo.Setter.Access));
+                    contents.Append("set { ");
+                    GenerateCSharpWrapperFunctionCall(buildData, contents, structureInfo, propertyInfo.Setter, true);
+                    contents.Append(" }").AppendLine();
+                }
+
+                indent = indent.Substring(0, indent.Length - 4);
+                contents.AppendLine(indent + "}");
+
+                if (propertyInfo.Getter != null)
+                    GenerateCSharpWrapperFunction(buildData, contents, indent, structureInfo, propertyInfo.Getter);
+                if (propertyInfo.Setter != null)
+                    GenerateCSharpWrapperFunction(buildData, contents, indent, structureInfo, propertyInfo.Setter);
+            }
+
             // Functions
             foreach (var functionInfo in structureInfo.Functions)
             {

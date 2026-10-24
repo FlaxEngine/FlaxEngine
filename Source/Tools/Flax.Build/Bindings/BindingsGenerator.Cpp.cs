@@ -2547,6 +2547,17 @@ namespace Flax.Build.Bindings
                     GenerateCppWrapperFunction(buildData, contents, structureInfo, internalTypeName, fieldInfo.Setter, "{0} = {1}");
             }
 
+            // Properties
+            foreach (var propertyInfo in structureInfo.Properties)
+            {
+                if (!useCSharp || propertyInfo.IsHidden)
+                    continue;
+                if (propertyInfo.Getter != null)
+                    GenerateCppWrapperFunction(buildData, contents, structureInfo, internalTypeName, propertyInfo.Getter);
+                if (propertyInfo.Setter != null)
+                    GenerateCppWrapperFunction(buildData, contents, structureInfo, internalTypeName, propertyInfo.Setter);
+            }
+
             // Functions
             foreach (var functionInfo in structureInfo.Functions)
             {
