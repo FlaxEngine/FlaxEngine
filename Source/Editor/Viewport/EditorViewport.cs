@@ -1525,8 +1525,7 @@ namespace FlaxEditor.Viewport
             // Create near and far points, with device depth of 1 and 0 respectively
 #if REVERSE_Z
             var nearPoint = new Vector3(mousePosition, 1.0f);
-            // Depth 0 is the reverse-Z far plane and can unproject to a point at infinity
-            // (homogeneous W == 0). Use a finite depth sample to derive the ray direction.
+            // Depth 0 is the reverse-Z far plane and can unproject to a point at infinity (homogeneous W is 0) so use a finite depth sample to derive the ray direction
             var farPoint = new Vector3(mousePosition, 0.5f);
 #else
             var nearPoint = new Vector3(mousePosition, 0.0f);
