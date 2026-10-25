@@ -68,10 +68,8 @@ bool DeleteUnixPathTree(const char* path)
     struct dirent* entry;
 
     // Stat for the path
-    stat(path, &statPath);
-
     // If path does not exists or is not dir - exit with status -1
-    if (S_ISDIR(statPath.st_mode) == 0)
+    if (stat(path, &statPath) != 0 || S_ISDIR(statPath.st_mode) == 0)
     {
         // Is not directory
         return true;
@@ -103,10 +101,8 @@ bool DeleteUnixPathTree(const char* path)
         strcat(full_path, entry->d_name);
 
         // Stat for the entry
-        stat(full_path, &statEntry);
-
         // Recursively remove a nested directory
-        if (S_ISDIR(statEntry.st_mode) != 0)
+        if (stat(full_path, &statEntry) == 0 && S_ISDIR(statEntry.st_mode) != 0)
         {
             if (DeleteUnixPathTree(full_path))
                 return true;
@@ -179,10 +175,8 @@ bool UnixFileSystem::GetChildDirectories(Array<String>& results, const String& p
     const char* pathStr = pathANSI.Get();
 
     // Stat for the path
-    stat(pathStr, &statPath);
-
     // If path does not exists or is not dir - exit with status -1
-    if (S_ISDIR(statPath.st_mode) == 0)
+    if (stat(pathStr, &statPath) != 0 || S_ISDIR(statPath.st_mode) == 0)
     {
         // Is not directory
         return true;
@@ -214,10 +208,8 @@ bool UnixFileSystem::GetChildDirectories(Array<String>& results, const String& p
         strcat(fullPath, entry->d_name);
 
         // Stat for the entry
-        stat(fullPath, &statEntry);
-
         // Check for directory
-        if (S_ISDIR(statEntry.st_mode) != 0)
+        if (stat(fullPath, &statEntry) == 0 && S_ISDIR(statEntry.st_mode) != 0)
         {
             // Add directory
             results.Add(String(fullPath));
@@ -333,10 +325,8 @@ bool UnixFileSystem::getFilesFromDirectoryTop(Array<String>& results, const char
     struct dirent* entry;
 
     // Stat for the path
-    stat(path, &statPath);
-
     // If path does not exists or is not dir - exit with status -1
-    if (S_ISDIR(statPath.st_mode) == 0)
+    if (stat(path, &statPath) != 0 || S_ISDIR(statPath.st_mode) == 0)
     {
         // Is not directory
         return true;
@@ -369,10 +359,8 @@ bool UnixFileSystem::getFilesFromDirectoryTop(Array<String>& results, const char
         strcat(fullPath, entry->d_name);
 
         // Stat for the entry
-        stat(fullPath, &statEntry);
-
         // Check for file
-        if (S_ISREG(statEntry.st_mode) != 0)
+        if (stat(fullPath, &statEntry) == 0 && S_ISREG(statEntry.st_mode) != 0)
         {
             // Validate with filter
             if (FileSystemBase::PathFilterHelper(fullPath, searchPattern))
@@ -400,10 +388,8 @@ bool UnixFileSystem::getFilesFromDirectoryAll(Array<String>& results, const char
     struct dirent* entry;
 
     // Stat for the path
-    stat(path, &statPath);
-
     // If path does not exists or is not dir - exit with status -1
-    if (S_ISDIR(statPath.st_mode) == 0)
+    if (stat(path, &statPath) != 0 || S_ISDIR(statPath.st_mode) == 0)
     {
         // Is not directory
         return true;
@@ -435,10 +421,8 @@ bool UnixFileSystem::getFilesFromDirectoryAll(Array<String>& results, const char
         strcat(full_path, entry->d_name);
 
         // Stat for the entry
-        stat(full_path, &statEntry);
-
         // Check for directory
-        if (S_ISDIR(statEntry.st_mode) != 0)
+        if (stat(full_path, &statEntry) == 0 && S_ISDIR(statEntry.st_mode) != 0)
         {
             if (getFilesFromDirectoryAll(results, full_path, searchPattern))
             {
