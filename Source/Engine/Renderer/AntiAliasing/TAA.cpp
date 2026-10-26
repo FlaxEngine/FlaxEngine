@@ -77,7 +77,8 @@ bool TAA::setupResources()
 void TAA::PrecachePSO()
 {
     const auto& settings = Graphics::PostProcessSettings.AntiAliasing;
-    if (_shader->WaitForLoaded() ||
+    if (!_shader ||
+        _shader->WaitForLoaded() ||
         settings.Mode != AntialiasingMode::TemporalAntialiasing ||
         checkIfSkipPass(true))
         return;

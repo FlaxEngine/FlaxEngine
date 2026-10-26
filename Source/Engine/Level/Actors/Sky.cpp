@@ -12,6 +12,7 @@
 #include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUPipelineCache.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Serialization/Serialization.h"
@@ -39,7 +40,7 @@ Sky::Sky(const SpawnParams& params)
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Lighting/Sky"));
     if (_shader == nullptr)
     {
-        LOG(Fatal, "Cannot load sky shader.");
+        LOG(Error, "Cannot load sky shader.");
         return;
     }
 #if COMPILE_WITH_DEV_ENV
@@ -49,7 +50,43 @@ Sky::Sky(const SpawnParams& params)
 
 Sky::~Sky()
 {
+    GPU_PSO_WAIT(_precacheHandle);
     SAFE_DELETE_GPU_RESOURCE(_psSky);
+}
+
+void Sky::InitPSO()
+{
+    _psSky = GPUDevice::Instance->CreatePipelineState();
+    auto psDesc = GPUPipelineState::Description::Default;
+    psDesc.VS = _shader->GPU->GetVS("VS");
+    psDesc.PS = _shader->GPU->GetPS("PS_Sky");
+    psDesc.CullMode = CullMode::Inverted;
+    psDesc.DepthWriteEnable = false;
+    psDesc.DepthClipEnable = false;
+    psDesc.DepthFunc = ComparisonFunc::DefaultEqual;
+    if (_psSky->Init(psDesc))
+    {
+        LOG(Warning, "Cannot create graphics pipeline state object for '{0}'.", ToString());
+    }
+}
+
+void Sky::PrecachePSOAsync()
+{
+#if COMPILE_WITH_PSO_PRECACHING
+    if (!_shader || _shader->WaitForLoaded())
+        return;
+    if (_psSky == nullptr)
+        InitPSO();
+    auto skyModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/Sphere"));
+    if (!skyModel || skyModel->WaitForLoaded())
+        return;
+    GPUPipelineState::PrecacheContext context;
+    context.SetGBufferFormat();
+    context.DepthAction = GPUDrawPassAction::Load;
+    context.RTAction = GPUDrawPassAction::Store;
+    context.VertexLayout = skyModel->LODs[0].Meshes[0].GetVertexLayout();
+    _psSky->PrecachePSO(context);
+#endif
 }
 
 void Sky::InitConfig(ShaderAtmosphericFogData& config) const
@@ -88,28 +125,11 @@ void Sky::Draw(RenderContextBatch& renderContextBatch)
     const RenderContext& renderContext = renderContextBatch.GetMainContext();
     if (HasContentLoaded() && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Sky))
     {
-        // Ensure to have pipeline state cache created
+        // Ensure to have pipeline state created
+        if (!GPU_PSO_READY(_precacheHandle))
+            return;
         if (_psSky == nullptr)
-        {
-            const auto shader = _shader->GPU;
-
-            // Create pipeline states
-            if (_psSky == nullptr)
-            {
-                _psSky = GPUDevice::Instance->CreatePipelineState();
-                auto psDesc = GPUPipelineState::Description::Default;
-                psDesc.VS = shader->GetVS("VS");
-                psDesc.PS = shader->GetPS("PS_Sky");
-                psDesc.CullMode = CullMode::Inverted;
-                psDesc.DepthWriteEnable = false;
-                psDesc.DepthClipEnable = false;
-                psDesc.DepthFunc = ComparisonFunc::DefaultEqual;
-                if (_psSky->Init(psDesc))
-                {
-                    LOG(Warning, "Cannot create graphics pipeline state object for '{0}'.", ToString());
-                }
-            }
-        }
+            InitPSO();
 
         // Register for the sky and fog pass
         renderContext.List->Sky = this;
@@ -138,6 +158,16 @@ void Sky::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     DESERIALIZE(SunDiscScale);
     DESERIALIZE(SunPower);
     DESERIALIZE(IndirectLightingIntensity);
+
+    if (modifier->LoadDepth == 0)
+    {
+        // Warm up PSO during scene load
+        AtmospherePreCompute::GetCache(nullptr);
+#if COMPILE_WITH_PSO_PRECACHING
+        if (GPU_PSO_PRECACHING(Level))
+            PrecachePSO();
+#endif
+    }
 }
 
 bool Sky::HasContentLoaded() const
@@ -148,6 +178,16 @@ bool Sky::HasContentLoaded() const
 bool Sky::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return false;
+}
+
+void Sky::PrecachePSO()
+{
+#if COMPILE_WITH_PSO_PRECACHING
+    GPU_PSO_WAIT(_precacheHandle);
+    GPUPipelineCache::Callback f;
+    f.Bind<Sky, &Sky::PrecachePSOAsync>(this);
+    GPUPipelineCache::PrecacheAsync(f, &_precacheHandle);
+#endif
 }
 
 void Sky::DrawFog(GPUContext* context, RenderContext& renderContext, GPUTextureView* output)
@@ -197,13 +237,6 @@ void Sky::ApplySky(GPUContext* context, RenderContext& renderContext, const Matr
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
     context->SetState(_psSky);
-}
-
-void Sky::EndPlay()
-{
-    SAFE_DELETE_GPU_RESOURCE(_psSky);
-
-    Actor::EndPlay();
 }
 
 void Sky::OnEnable()

@@ -110,7 +110,8 @@ bool LightPass::setupResources()
 
 void LightPass::PrecachePSO()
 {
-    if (_shader->WaitForLoaded() ||
+    if (!_shader ||
+        _shader->WaitForLoaded() ||
         _sphereModel->WaitForLoaded() ||
         checkIfSkipPass(true))
         return;
@@ -123,6 +124,8 @@ void LightPass::PrecachePSO()
     _psLightSkyInside->PrecachePSO(context);
     _psLightLocal[0]->PrecachePSO(context);
     _psLightLocalInside[0]->PrecachePSO(context);
+    _psLightLocal[2]->PrecachePSO(context);
+    _psLightLocalInside[2]->PrecachePSO(context);
     context.SetFullscreenTriangleLayout();
     _psLightDir[0]->PrecachePSO(context);
 }

@@ -240,7 +240,20 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTexture* lightBuffer)
     if (renderContext.List->Sky && _skyModel && _skyModel->CanBeRendered() && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Sky))
     {
         PROFILE_GPU_CPU_NAMED("Sky");
-        context->SetRenderTarget(*renderContext.Buffers->DepthBuffer, ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)));
+        GPUDrawPassAction targetActions2[5] =
+        {
+            GPUDrawPassAction::Store,
+            GPUDrawPassAction::Store,
+            GPUDrawPassAction::Store,
+            GPUDrawPassAction::Store,
+            GPUDrawPassAction::Store,
+        };
+        GPUDrawPass drawPass(
+            context,
+            *renderContext.Buffers->DepthBuffer,
+            GPUDrawPassAction::Load,
+            ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)),
+            ToSpan(targetActions2, ARRAY_COUNT(targetActions2)));
         DrawSky(renderContext, context);
     }
 
@@ -575,17 +588,22 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
 #include "Engine/Graphics/GPUPipelineCache.h"
 
 GPU_PSO_PRECACHING_PASS(GBufferPassPSO, {
-    auto renderBuffers = MainRenderTask::Instance->Buffers;
-    context.DepthFormat = renderBuffers->GetDepthFormat();
-    context.DepthAction = GPUDrawPassAction::ClearStore;
-    context.RTAction = GPUDrawPassAction::ClearStore;
-    context.RTCount = 5;
-    context.RTFormats[0] = renderBuffers->GetOutputFormat();
-    context.RTFormats[1] = GBUFFER0_FORMAT;
-    context.RTFormats[2] = GBUFFER1_FORMAT;
-    context.RTFormats[3] = GBUFFER2_FORMAT;
-    context.RTFormats[4] = GBUFFER3_FORMAT;
+    context.SetGBufferFormat();
     params.Pass = DrawPass::GBuffer;
     });
+
+void GPUPipelineState::PrecacheContext::SetGBufferFormat()
+{
+    auto renderBuffers = MainRenderTask::Instance->Buffers;
+    DepthFormat = renderBuffers->GetDepthFormat();
+    DepthAction = GPUDrawPassAction::ClearStore;
+    RTAction = GPUDrawPassAction::ClearStore;
+    RTCount = 5;
+    RTFormats[0] = renderBuffers->GetOutputFormat();
+    RTFormats[1] = GBUFFER0_FORMAT;
+    RTFormats[2] = GBUFFER1_FORMAT;
+    RTFormats[3] = GBUFFER2_FORMAT;
+    RTFormats[4] = GBUFFER3_FORMAT;
+}
 
 #endif

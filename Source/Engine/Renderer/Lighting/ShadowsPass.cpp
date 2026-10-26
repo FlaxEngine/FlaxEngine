@@ -2001,3 +2001,17 @@ void ShadowsPass::GetShadowAtlas(const RenderBuffers* renderBuffers, GPUTexture*
         shadowsBuffer = nullptr;
     }
 }
+
+#if COMPILE_WITH_PSO_PRECACHING
+
+#include "Engine/Graphics/GPUPipelineCache.h"
+
+GPU_PSO_PRECACHING_PASS(ShadowPassPSO, {
+    context.RTCount = 0;
+    context.DepthFormat = ShadowsPass::Instance()->GetShadowMapFormat();
+    context.DepthAction = GPUDrawPassAction::Store;
+    context.RTAction = GPUDrawPassAction::None;
+    params.Pass = DrawPass::Depth;
+    });
+
+#endif

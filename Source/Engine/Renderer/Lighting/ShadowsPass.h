@@ -28,6 +28,11 @@ private:
     bool _depthBounds = false;
 
 public:
+    PixelFormat GetShadowMapFormat() const
+    {
+        return _shadowMapFormat;
+    }
+
     PixelFormat GetShadowMaskFormat() const
     {
         return _shadowMaskFormat;

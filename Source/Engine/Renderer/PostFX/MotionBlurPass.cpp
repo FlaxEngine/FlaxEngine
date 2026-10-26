@@ -136,7 +136,8 @@ bool MotionBlurPass::setupResources()
 
 void MotionBlurPass::PrecachePSO()
 {
-    if (_shader->WaitForLoaded() ||
+    if (!_shader ||
+        _shader->WaitForLoaded() ||
         checkIfSkipPass(true))
         return;
     GPUPipelineState::PrecacheContext context;

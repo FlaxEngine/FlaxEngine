@@ -894,6 +894,7 @@ bool GlobalSurfaceAtlasPass::setupResources()
 void GlobalSurfaceAtlasPass::PrecachePSO()
 {
     if (!_supported ||
+        !_shader ||
         _shader->WaitForLoaded() ||
         checkIfSkipPass(true))
         return;

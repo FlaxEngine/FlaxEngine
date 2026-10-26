@@ -40,6 +40,7 @@ private:
     TextLayoutOptions _layoutOptions;
     float _size;
     int32 _sceneRenderingKey = -1;
+    volatile int32 _precacheHandle = 0;
 
     BoundingBox _localBox;
     DynamicIndexBuffer _ib;
@@ -50,6 +51,8 @@ private:
     Array<DrawChunk, InlinedAllocation<8>> _drawChunks;
 
 public:
+    ~TextRender();
+
     /// <summary>
     /// Gets the text.
     /// </summary>
@@ -156,6 +159,7 @@ private:
         // Invalidate data
         _isDirty = true;
     }
+    void PrecachePSOBatch(struct GPUPipelineCacheBatch& batch);
 
 public:
     // [Actor]
@@ -166,6 +170,7 @@ public:
 #endif
     void OnLayerChanged() override;
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
+    void PrecachePSO() override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 

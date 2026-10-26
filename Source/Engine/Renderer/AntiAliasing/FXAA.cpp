@@ -61,7 +61,8 @@ bool FXAA::setupResources()
 void FXAA::PrecachePSO()
 {
     const auto& settings = Graphics::PostProcessSettings.AntiAliasing;
-    if (_shader->WaitForLoaded() ||
+    if (!_shader ||
+        _shader->WaitForLoaded() ||
         settings.Mode != AntialiasingMode::FastApproximateAntialiasing ||
         checkIfSkipPass(true))
         return;
@@ -86,9 +87,7 @@ void FXAA::Dispose()
 void FXAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output)
 {
     auto context = GPUDevice::Instance->GetMainContext();
-
-    auto rtAction = GPUDrawPassAction::Store;
-    GPUDrawPass drawPass(context, ToSpan(&output, 1), ToSpan(&rtAction, 1));
+    GPUDrawPass drawPass(context, output, GPUDrawPassAction::Store);
     if (checkIfSkipPass())
     {
         // Resources are missing. Do not perform rendering, just copy input frame.

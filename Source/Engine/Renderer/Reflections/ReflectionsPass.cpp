@@ -233,7 +233,10 @@ bool ReflectionsPass::setupResources()
 
 void ReflectionsPass::PrecachePSO()
 {
-    if (_shader->WaitForLoaded() ||
+    if (!_shader ||
+        _shader->WaitForLoaded() ||
+        _sphereModel->WaitForLoaded() ||
+        _boxModel->WaitForLoaded() ||
         checkIfSkipPass(true))
         return;
     GPUPipelineState::PrecacheContext context;
@@ -249,6 +252,10 @@ void ReflectionsPass::PrecachePSO()
         if (!_depthBounds)
             context.SetReadOnlyDepthFormat();
         context.RTFormats[0] = PixelFormat::R11G11B10_Float;
+        context.VertexLayout = _sphereModel->LODs[0].Meshes[0].GetVertexLayout();
+        _psProbe->PrecachePSO(context);
+        _psProbeInside->PrecachePSO(context);
+        context.VertexLayout = _boxModel->LODs[0].Meshes[0].GetVertexLayout();
         _psProbe->PrecachePSO(context);
         _psProbeInside->PrecachePSO(context);
     }

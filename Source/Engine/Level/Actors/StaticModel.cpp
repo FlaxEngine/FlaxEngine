@@ -24,9 +24,6 @@
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #endif
-#if COMPILE_WITH_PSO_PRECACHING
-#include "Engine/Content/Assets/Material.h"
-#endif
 
 void LightmapEntry::Serialize(ISerializable::SerializeStream& stream) const
 {
@@ -341,7 +338,7 @@ void StaticModel::PrecachePSO()
 {
 #if COMPILE_WITH_PSO_PRECACHING
     GPU_PSO_WAIT(_precacheHandle);
-    Function<void(GPUPipelineCacheBatch& batch)> f;
+    GPUPipelineCache::BatchCallback f;
     f.Bind<StaticModel, &StaticModel::PrecachePSOBatch>(this);
     GPUPipelineCache::PrecacheAsync(f, &_precacheHandle);
 #endif
@@ -381,35 +378,9 @@ void StaticModel::PrecachePSOBatch(GPUPipelineCacheBatch& batch)
     auto* model = Model.Get();
     if (!model || model->WaitForLoaded())
         return;
-
-    // Setup material precache flags
     INIT_MATERIAL_PRECACHE_FLAGS(materialFlags, this);
     materialFlags.Geoemtry |= _scene && Lightmap.TextureIndex != -1 ? MaterialPrecacheFlags::MeshLightmapped : MaterialPrecacheFlags::Mesh;
-
-    // Add all materials used on meshes with specific vertex layouts to precache in batches
-    for (const auto& lod : model->LODs)
-    {
-        for (const auto& mesh : lod.Meshes)
-        {
-            const int32 materialSlot = mesh.GetMaterialSlotIndex();
-            MaterialBase* material = nullptr;
-            if (materialSlot < Entries.Count())
-                material = Entries[materialSlot].Material;
-            if (!material && materialSlot < model->MaterialSlots.Count())
-                material = model->MaterialSlots[materialSlot].Material;
-            if (!material)
-                material = GPUDevice::Instance->GetDefaultMaterial();
-            if (!material || material->WaitForLoaded())
-                continue;
-            Material* mat = material->GetMaterial();
-            auto& materialPSO = batch.Materials[mat];
-            materialPSO.DrawModes |= _drawModes;
-            materialPSO.MaterialFlags |= materialFlags;
-            GPUVertexLayout* vertexLayout = mesh.GetVertexLayout();
-            materialPSO.VertexLayouts.AddUnique(vertexLayout);
-        }
-    }
-
+    model->PrecachePSO(batch, materialFlags, Entries, _drawModes, _forcedLod, _lodBias, _vertexColorsCount);
 #endif
 }
 

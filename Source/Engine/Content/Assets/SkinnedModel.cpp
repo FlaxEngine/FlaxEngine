@@ -264,6 +264,51 @@ void SkinnedModel::Draw(const RenderContextBatch& renderContextBatch, const Skin
     ModelDraw(this, renderContextBatch.GetMainContext(), renderContextBatch, info);
 }
 
+#if COMPILE_WITH_PSO_PRECACHING
+
+#include "Engine/Graphics/GPUPipelineCache.h"
+#include "Engine/Graphics/GPUDevice.h"
+
+void SkinnedModel::PrecachePSO(GPUPipelineCacheBatch& batch, MaterialPrecacheFlags materialFlags, const ModelInstanceEntries& entries, DrawPass drawModes, int32 forcedLod, int32 lodBias)
+{
+    // Customize range of LODs to use
+    int32 lodMin = 0, lodMax = LODs.Count() - 1;
+    if (forcedLod != -1)
+        lodMin = lodMax = forcedLod;
+    else if (lodBias > 0)
+    {
+        lodMin = Math::Min(lodMin + lodBias, lodMax);
+        lodMax = Math::Min(lodMax + lodBias, lodMin);
+    }
+
+    // Add all materials used on meshes with specific vertex layouts to precache in batches
+    for (int32 lodIndex = lodMin; lodIndex <= lodMax; lodIndex++)
+    {
+        const auto& lod = LODs[lodIndex];
+        for (const auto& mesh : lod.Meshes)
+        {
+            const int32 materialSlot = mesh.GetMaterialSlotIndex();
+            MaterialBase* material = nullptr;
+            if (materialSlot < entries.Count())
+                material = entries[materialSlot].Material;
+            if (!material && materialSlot < MaterialSlots.Count())
+                material = MaterialSlots[materialSlot].Material;
+            if (!material)
+                material = GPUDevice::Instance->GetDefaultMaterial();
+            if (!material || material->WaitForLoaded())
+                continue;
+            Material* mat = material->GetMaterial();
+            auto& materialPSO = batch.Materials[mat];
+            materialPSO.DrawModes |= drawModes;
+            materialPSO.MaterialFlags |= materialFlags;
+            GPUVertexLayout* vertexLayout = mesh.GetVertexLayout();
+            materialPSO.VertexLayouts.AddUnique(vertexLayout);
+        }
+    }
+}
+
+#endif
+
 bool SkinnedModel::SetupLODs(const Span<int32>& meshesCountPerLod)
 {
     ScopeLock lock(Locker);

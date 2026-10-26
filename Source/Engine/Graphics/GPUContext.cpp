@@ -95,9 +95,7 @@ void GPUContext::Draw(GPUTexture* dst, GPUTexture* src)
     ResetRenderTarget();
     const float width = (float)dst->Width();
     const float height = (float)dst->Height();
-    auto rt = dst->View();
-    auto rtAction = GPUDrawPassAction::Store;
-    GPUDrawPass drawPass(this, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
+    GPUDrawPass drawPass(this, dst->View(), GPUDrawPassAction::Store);
     SetViewport(width, height);
     BindSR(0, src->View());
     SetState(_device->GetCopyLinearPS());
@@ -110,9 +108,7 @@ void GPUContext::Draw(GPUTexture* dst, GPUTextureView* src)
     ResetRenderTarget();
     const float width = (float)dst->Width();
     const float height = (float)dst->Height();
-    auto rt = dst->View();
-    auto rtAction = GPUDrawPassAction::Store;
-    GPUDrawPass drawPass(this, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
+    GPUDrawPass drawPass(this, dst->View(), GPUDrawPassAction::Store);
     SetViewport(width, height);
     BindSR(0, src);
     SetState(_device->GetCopyLinearPS());

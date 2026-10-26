@@ -196,6 +196,7 @@ public:
 
         void SetReadOnlyDepthFormat();
         void SetFullscreenTriangleLayout();
+        void SetGBufferFormat();
     };
 #endif
 

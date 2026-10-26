@@ -14,6 +14,7 @@
 #include "Engine/Content/Deprecated.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUPipelineCache.h"
 #include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderBuffers.h"
@@ -295,6 +296,7 @@ AnimatedModel::~AnimatedModel()
 {
     if (_deformation)
         Delete(_deformation);
+    GPU_PSO_WAIT(_precacheHandle);
 }
 
 void AnimatedModel::ResetAnimation()
@@ -1039,6 +1041,20 @@ void AnimatedModel::RunBlendShapeDeformer(const MeshBase* mesh, MeshDeformationD
     deformation.DirtyMaxIndex = Math::Max(maxVertexIndex, deformation.DirtyMaxIndex);
 }
 
+void AnimatedModel::PrecachePSOBatch(GPUPipelineCacheBatch& batch)
+{
+#if COMPILE_WITH_PSO_PRECACHING
+    auto* model = SkinnedModel.Get();
+    if (!model || model->WaitForLoaded())
+        return;
+    INIT_MATERIAL_PRECACHE_FLAGS(materialFlags, this);
+    materialFlags.Geoemtry |= MaterialPrecacheFlags::Skinned;
+    if (PerBoneMotionBlur)
+        materialFlags.Geoemtry |= MaterialPrecacheFlags::SkinnedWithPrevBones;
+    model->PrecachePSO(batch, materialFlags, Entries, DrawModes, ForcedLOD, LODBias);
+#endif
+}
+
 void AnimatedModel::BeginPlay(SceneBeginData* data)
 {
     if (GraphInstance.NodesPose.IsEmpty())
@@ -1123,6 +1139,16 @@ void AnimatedModel::UpdateBounds()
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Bounds);
 }
 
+void AnimatedModel::PrecachePSO()
+{
+#if COMPILE_WITH_PSO_PRECACHING
+    GPU_PSO_WAIT(_precacheHandle);
+    GPUPipelineCache::BatchCallback f;
+    f.Bind<AnimatedModel, &AnimatedModel::PrecachePSOBatch>(this);
+    GPUPipelineCache::PrecacheAsync(f, &_precacheHandle);
+#endif
+}
+
 void AnimatedModel::UpdateSockets()
 {
     for (int32 i = 0; i < Children.Count(); i++)
@@ -1184,6 +1210,7 @@ void AnimatedModel::OnAnimationUpdated()
 
 void AnimatedModel::OnSkinnedModelChanged()
 {
+    GPU_PSO_WAIT(_precacheHandle);
     Entries.Release();
     if (SkinnedModel && !SkinnedModel->IsLoaded())
     {
@@ -1302,6 +1329,8 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
         if (renderContextBatch.Contexts.Count() == 1 || draw.DrawModes == DrawPass::None)
             return;
     }
+    if (!GPU_PSO_READY(_precacheHandle))
+        return;
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(drawState, world);
 
     _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.WorldPosition));
@@ -1545,6 +1574,12 @@ void AnimatedModel::Deserialize(DeserializeStream& stream, ISerializeModifier* m
         MARK_CONTENT_DEPRECATED();
         DrawModes |= DrawPass::GlobalSurfaceAtlas;
     }
+
+#if COMPILE_WITH_PSO_PRECACHING
+    // Start PSO precaching after loading model (once actor options are loaded too)
+    if (GPU_PSO_PRECACHING(Level) && SkinnedModel && modifier->LoadDepth == 0)
+        PrecachePSO();
+#endif
 }
 
 const Span<MaterialSlot> AnimatedModel::GetMaterialSlots() const

@@ -14,5 +14,6 @@ public class UI : EngineModule
         base.Setup(options);
 
         options.PublicDependencies.Add("Localization");
+        options.PrivateDependencies.Add("Graphics");
     }
 }

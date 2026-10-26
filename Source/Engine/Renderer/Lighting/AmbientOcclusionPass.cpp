@@ -200,7 +200,8 @@ bool AmbientOcclusionPass::setupResources()
 
 void AmbientOcclusionPass::PrecachePSO()
 {
-    if (_shader->WaitForLoaded() ||
+    if (!_shader ||
+        _shader->WaitForLoaded() ||
         checkIfSkipPass(true))
         return;
     GPUPipelineState::PrecacheContext context;
@@ -520,8 +521,7 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
                 if (blurPasses == 0)
                     rts = m_finalResults->View(pass);
 
-                GPUDrawPassAction rtsAction = GPUDrawPassAction::Store;
-                GPUDrawPass drawPass(context, ToSpan(&rts, 1), ToSpan(&rtsAction, 1));
+                GPUDrawPass drawPass(context, rts, GPUDrawPassAction::Store);
                 context->BindSR(SSAO_TEXTURE_SLOT0, m_halfDepths[pass]);
                 context->BindSR(SSAO_TEXTURE_SLOT1, renderContext.Buffers->GBuffer1);
                 context->SetState(_psGenerate[settings.QualityLevel]);
@@ -543,8 +543,7 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
                     if (i == (blurPasses - 1))
                         rts = m_finalResults->View(pass);
 
-                    GPUDrawPassAction rtsAction = GPUDrawPassAction::Store;
-                    GPUDrawPass drawPass(context, ToSpan(&rts, 1), ToSpan(&rtsAction, 1));
+                    GPUDrawPass drawPass(context, rts, GPUDrawPassAction::Store);
                     context->BindSR(SSAO_TEXTURE_SLOT0, pPingRT);
 
                     if (settings.QualityLevel == 0)

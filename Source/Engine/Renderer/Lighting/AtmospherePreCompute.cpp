@@ -100,7 +100,7 @@ namespace AtmospherePreComputeImpl
 #if COMPILE_WITH_PSO_PRECACHING
     void PrecachePSO()
     {
-        if (_shader->WaitForLoaded() || InitShader())
+        if (!_shader || _shader->WaitForLoaded() || InitShader())
             return;
         GPUPipelineState::PrecacheContext context;
         context.SetFullscreenTriangleLayout();
@@ -112,7 +112,7 @@ namespace AtmospherePreComputeImpl
         _psCopyIrradianceAdd->PrecachePSO(context);
         _psInscatter1_A->PrecachePSO(context);
         _psInscatter1_B->PrecachePSO(context);
-        _psInscatter1_B->PrecachePSO(context);
+        _psCopyInscatter1->PrecachePSO(context);
         _psCopyInscatterNAdd->PrecachePSO(context);
         _psInscatterS->PrecachePSO(context);
         _psInscatterN->PrecachePSO(context);

@@ -218,7 +218,8 @@ void GB_ComputeKernel(float sigma, float width, float height, Float4 gaussianBlu
 
 void PostProcessingPass::PrecachePSO()
 {
-    if (_shader->WaitForLoaded() ||
+    if (!_shader ||
+        _shader->WaitForLoaded() ||
         checkIfSkipPass(true))
         return;
     GPUPipelineState::PrecacheContext context;
@@ -226,6 +227,7 @@ void PostProcessingPass::PrecachePSO()
     context.RTFormats[0] = MainRenderTask::Instance->Buffers->GetOutputFormat();
     context.SetFullscreenTriangleLayout();
     context.RTAction = GPUDrawPassAction::Store;
+RETRY:
     _psBloomBrightPass->PrecachePSO(context);
     _psBloomDownsample->PrecachePSO(context);
     _psBloomDualFilterUpsample->PrecachePSO(context);
@@ -234,6 +236,14 @@ void PostProcessingPass::PrecachePSO()
     _psGenGhosts->PrecachePSO(context);
     _psComposite[0]->PrecachePSO(context); // No LUT
     _psComposite[1]->PrecachePSO(context); // 3D LUT
+#if USE_EDITOR
+    if (context.RTFormats[0] != PixelFormat::R8G8B8A8_UNorm)
+    {
+        // Different output format for editor
+        context.RTFormats[0] = PixelFormat::R8G8B8A8_UNorm;
+        goto RETRY;
+    }
+#endif
 }
 
 #endif

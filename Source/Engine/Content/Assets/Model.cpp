@@ -149,6 +149,57 @@ void Model::Draw(const RenderContextBatch& renderContextBatch, const Mesh::DrawI
     ModelDraw(this, renderContextBatch.GetMainContext(), renderContextBatch, info);
 }
 
+#if COMPILE_WITH_PSO_PRECACHING
+
+#include "Engine/Graphics/GPUPipelineCache.h"
+
+void Model::PrecachePSO(GPUPipelineCacheBatch& batch, MaterialPrecacheFlags materialFlags, const ModelInstanceEntries& entries, DrawPass drawModes, int32 forcedLod, int32 lodBias, bool hasVertexColors)
+{
+    // Customize range of LODs to use
+    int32 lodMin = 0, lodMax = LODs.Count() - 1;
+    if (forcedLod != -1)
+        lodMin = lodMax = forcedLod;
+    else if (lodBias > 0)
+    {
+        lodMin = Math::Min(lodMin + lodBias, lodMax);
+        lodMax = Math::Min(lodMax + lodBias, lodMin);
+    }
+
+    // Add all materials used on meshes with specific vertex layouts to precache in batches
+    for (int32 lodIndex = lodMin; lodIndex <= lodMax; lodIndex++)
+    {
+        const auto& lod = LODs[lodIndex];
+        for (const auto& mesh : lod.Meshes)
+        {
+            const int32 materialSlot = mesh.GetMaterialSlotIndex();
+            MaterialBase* material = nullptr;
+            if (materialSlot < entries.Count())
+                material = entries[materialSlot].Material;
+            if (!material && materialSlot < MaterialSlots.Count())
+                material = MaterialSlots[materialSlot].Material;
+            if (!material)
+                material = GPUDevice::Instance->GetDefaultMaterial();
+            if (!material || material->WaitForLoaded())
+                continue;
+            Material* mat = material->GetMaterial();
+            auto& materialPSO = batch.Materials[mat];
+            materialPSO.DrawModes |= drawModes;
+            materialPSO.MaterialFlags |= materialFlags;
+            GPUVertexLayout* vertexLayout = mesh.GetVertexLayout();
+            if (hasVertexColors && !vertexLayout->FindElement(VertexElement::Types::Color))
+            {
+                // Add vertex color element into the layout
+                auto elements = vertexLayout->GetElements();
+                elements.Add({ VertexElement::Types::Color, 2, 0, 0, PixelFormat::R8G8B8A8_UNorm });
+                vertexLayout = GPUVertexLayout::Get(elements, true);
+            }
+            materialPSO.VertexLayouts.AddUnique(vertexLayout);
+        }
+    }
+}
+
+#endif
+
 bool Model::SetupLODs(const Span<int32>& meshesCountPerLod)
 {
     ScopeLock lock(Locker);

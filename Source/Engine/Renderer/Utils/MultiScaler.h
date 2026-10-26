@@ -118,4 +118,7 @@ public:
 protected:
     // [RendererPass]
     bool setupResources() override;
+#if COMPILE_WITH_PSO_PRECACHING
+    void PrecachePSO() override;
+#endif
 };

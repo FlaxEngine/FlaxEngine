@@ -4,6 +4,7 @@
 #include "Engine/Core/Math/OrientedBoundingBox.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUPipelineCache.h"
 #include "Engine/Graphics/Models/Types.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Graphics/RenderContext.h"
@@ -69,6 +70,11 @@ TextRender::TextRender(const SpawnParams& params)
     Font.Changed.Bind<TextRender, &TextRender::Invalidate>(this);
     Font.Unload.Bind<TextRender, &TextRender::Invalidate>(this);
     Material.Changed.Bind<TextRender, &TextRender::Invalidate>(this);
+}
+
+TextRender::~TextRender()
+{
+    GPU_PSO_WAIT(_precacheHandle);
 }
 
 const LocalizedString& TextRender::GetText() const
@@ -359,6 +365,22 @@ void TextRender::UpdateLayout()
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Auto | ISceneRenderingListener::AutoDelayDuringRendering);
 }
 
+void TextRender::PrecachePSOBatch(GPUPipelineCacheBatch& batch)
+{
+#if COMPILE_WITH_PSO_PRECACHING
+    auto* material = Material.Get();
+    if (!material || material->WaitForLoaded())
+        return;
+    INIT_MATERIAL_PRECACHE_FLAGS(materialFlags, this);
+    materialFlags.Geoemtry |= MaterialPrecacheFlags::Mesh;
+    ::Material* mat = material->GetMaterial();
+    auto& materialPSO = batch.Materials[mat];
+    materialPSO.DrawModes |= DrawModes;
+    materialPSO.MaterialFlags |= materialFlags;
+    materialPSO.VertexLayouts.AddUnique(_vb.GetLayout());
+#endif
+}
+
 bool TextRender::HasContentLoaded() const
 {
     return (Material == nullptr || Material->IsLoaded()) && (Font == nullptr || Font->IsLoaded());
@@ -371,6 +393,8 @@ void TextRender::Draw(RenderContextBatch& renderContextBatch)
         return; // TODO: Text rendering to Global SDF
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
         return; // TODO: Text rendering to Global Surface Atlas
+    if (!GPU_PSO_READY(_precacheHandle))
+        return;
     if (_isDirty)
         UpdateLayout();
     if (_vb.Data.IsEmpty())
@@ -461,6 +485,16 @@ bool TextRender::IntersectsItself(const Ray& ray, Real& distance, Vector3& norma
 #endif
 }
 
+void TextRender::PrecachePSO()
+{
+#if COMPILE_WITH_PSO_PRECACHING
+    GPU_PSO_WAIT(_precacheHandle);
+    GPUPipelineCache::BatchCallback f;
+    f.Bind<TextRender, &TextRender::PrecachePSOBatch>(this);
+    GPUPipelineCache::PrecacheAsync(f, &_precacheHandle);
+#endif
+}
+
 void TextRender::Serialize(SerializeStream& stream, const void* otherObj)
 {
     // Base
@@ -518,6 +552,11 @@ void TextRender::Deserialize(DeserializeStream& stream, ISerializeModifier* modi
     }
 
     _isDirty = true;
+
+#if COMPILE_WITH_PSO_PRECACHING
+    if (GPU_PSO_PRECACHING(Level) && modifier->LoadDepth == 0 && Font && Material)
+        PrecachePSO();
+#endif
 }
 
 void TextRender::OnEnable()

@@ -422,6 +422,35 @@ struct GPUDevice::PrivateData
     AssetReference<Texture> DefaultWhiteTexture;
     AssetReference<Texture> DefaultBlackTexture;
     GPUTasksManager TasksManager;
+#if COMPILE_WITH_PSO_PRECACHING
+    volatile int32 PSOHandle = 0;
+
+    void PrecachePSO()
+    {
+        if (QuadShader->WaitForLoaded())
+            return;
+        GPUPipelineState::PrecacheContext context;
+        context.SetFullscreenTriangleLayout();
+        context.RTCount = 1;
+        context.RTAction = GPUDrawPassAction::Store;
+        for (auto format : {
+            PixelFormat::R8G8B8A8_UNorm,
+            PixelFormat::R16G16B16A16_Float,
+            PixelFormat::R10G10B10A2_UNorm,
+            PixelFormat::R11G11B10_Float,
+            PixelFormat::R16_Float,
+            PixelFormat::R32_Float })
+        {
+            context.RTFormats[0] = format;
+            PS_CopyLinear->PrecachePSO(context);
+        }
+#if USE_EDITOR
+        context.MSAA = MSAALevel::X4;
+        context.RTFormats[0] = PixelFormat::R11G11B10_Float;
+        PS_CopyLinear->PrecachePSO(context);
+#endif
+    }
+#endif
 };
 
 GPUDevice* GPUDevice::Instance = nullptr;
@@ -551,6 +580,12 @@ bool GPUDevice::LoadContent()
     _res->DefaultBlackTexture = Content::LoadAsyncInternal<Texture>(TEXT("Engine/Textures/BlackTexture"));
     if (_res->DefaultBlackTexture == nullptr)
         return true;
+
+#if COMPILE_WITH_PSO_PRECACHING
+    Function<void()> f;
+    f.Bind<PrivateData, &PrivateData::PrecachePSO>(_res);
+    GPUPipelineCache::PrecacheAsync(f, &_res->PSOHandle);
+#endif
 
     return false;
 }

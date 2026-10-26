@@ -22,6 +22,7 @@ private:
     AssetReference<Shader> _shader;
     GPUPipelineState* _psSky = nullptr;
     int32 _sceneRenderingKey = -1;
+    volatile int32 _precacheHandle = 0;
 
 public:
     ~Sky();
@@ -52,12 +53,14 @@ public:
     float IndirectLightingIntensity = 1.0f;
 
 private:
+    void InitPSO();
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
         _psSky = nullptr;
     }
 #endif
+    void PrecachePSOAsync();
     void InitConfig(ShaderAtmosphericFogData& config) const;
 
 public:
@@ -74,6 +77,7 @@ public:
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     bool HasContentLoaded() const override;
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
+    void PrecachePSO() override;
 
     // [IAtmosphericFogRenderer]
     void DrawFog(GPUContext* context, RenderContext& renderContext, GPUTextureView* output) override;
@@ -85,7 +89,6 @@ public:
 
 protected:
     // [Actor]
-    void EndPlay() override;
     void OnEnable() override;
     void OnDisable() override;
     void OnTransformChanged() override;

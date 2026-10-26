@@ -479,6 +479,7 @@ private:
     void ApplyRootMotion(const Transform& rootMotionDelta);
     void SyncParameters();
     void RunBlendShapeDeformer(const MeshBase* mesh, struct MeshDeformationData& deformation);
+    void PrecachePSOBatch(struct GPUPipelineCacheBatch& batch);
 
     void Update();
     void UpdateSockets();
@@ -519,6 +520,7 @@ PRAGMA_DISABLE_DEPRECATION_WARNINGS;
 PRAGMA_ENABLE_DEPRECATION_WARNINGS;
     MeshBase* GetMesh(const MeshReference& ref) const override;
     void UpdateBounds() override;
+    void PrecachePSO() override;
     MeshDeformation* GetMeshDeformation() const override;
     void OnDeleteObject() override;
 
