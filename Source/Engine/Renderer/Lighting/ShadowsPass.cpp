@@ -762,8 +762,8 @@ void ShadowsPass::PrecachePSO()
     }
     context.RTCount = 0;
     context.DepthFormat = _shadowMapFormat;
-    context.DepthAction = GPUDrawPassAction::Store;
     context.RTAction = GPUDrawPassAction::None;
+    context.DepthAction = GPUDrawPassAction::LoadStore;
     _psDepthClear->PrecachePSO(context);
     _psDepthCopy->PrecachePSO(context);
 }
@@ -1764,7 +1764,11 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
     {
         PROFILE_GPU_CPU("Static");
         if (shadows.ClearStaticShadowMapAtlas)
+        {
             context->ClearDepth(shadows.StaticShadowMapAtlas->View());
+            if (GPUDevice::Instance->GetRendererType() == RendererType::Vulkan)
+                context->FlushState(); // Do hardware clear outside the render pass to avoid PSO misses
+        }
         bool renderedAny = false;
         for (auto& e : shadows.Lights)
         {
@@ -1836,7 +1840,11 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
 
     // Render depth to all shadow map tiles
     if (shadows.ClearShadowMapAtlas)
+    {
         context->ClearDepth(shadows.ShadowMapAtlas->View());
+        if (GPUDevice::Instance->GetRendererType() == RendererType::Vulkan)
+            context->FlushState(); // Do hardware clear outside the render pass to avoid PSO misses
+    }
     context->SetRenderTarget(shadows.ShadowMapAtlas->View(), (GPUTextureView*)nullptr);
     for (auto& e : shadows.Lights)
     {
@@ -2009,7 +2017,7 @@ void ShadowsPass::GetShadowAtlas(const RenderBuffers* renderBuffers, GPUTexture*
 GPU_PSO_PRECACHING_PASS(ShadowPassPSO, {
     context.RTCount = 0;
     context.DepthFormat = ShadowsPass::Instance()->GetShadowMapFormat();
-    context.DepthAction = GPUDrawPassAction::Store;
+    context.DepthAction = GPUDrawPassAction::LoadStore;
     context.RTAction = GPUDrawPassAction::None;
     params.Pass = DrawPass::Depth;
     });

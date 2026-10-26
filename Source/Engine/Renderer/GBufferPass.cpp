@@ -250,7 +250,7 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTexture* lightBuffer)
         };
         GPUDrawPass drawPass(
             context,
-            *renderContext.Buffers->DepthBuffer,
+            renderContext.Buffers->GetReadOnlyDepthBuffer().SRV,
             GPUDrawPassAction::Load,
             ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)),
             ToSpan(targetActions2, ARRAY_COUNT(targetActions2)));

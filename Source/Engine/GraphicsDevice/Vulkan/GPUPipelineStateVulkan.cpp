@@ -687,6 +687,17 @@ void GPUPipelineStateVulkan::PrecachePSO(const PrecacheContext& context)
     auto renderPass = _device->GetOrCreateRenderPass(layout);
     GetState(renderPass, (GPUVertexLayoutVulkan*)context.VertexLayout, true);
 
+    // When precaching with render target action set to clear, we need to precache PSO with load action as well to avoid PSO misses when render pass breaks mid-drawing
+    // TODO: this is a workaround for now, remove it once resource transitions is not automatic anymore
+    if (context.DepthAction == GPUDrawPassAction::ClearStore ||
+        context.RTAction == GPUDrawPassAction::ClearStore)
+    {
+        layout.LoadClear = 0;
+        layout.LoadDontCare = 0;
+        renderPass = _device->GetOrCreateRenderPass(layout);
+        GetState(renderPass, (GPUVertexLayoutVulkan*)context.VertexLayout, true);
+    }
+
 #if GPU_ENABLE_DEVELOPMENT
     // Cache render pass layouts (built from context) to debug PSO precaching misses due to RT/Depth load/store mismatch
     _precachedPSOs.Add({ layout, context.VertexLayout });

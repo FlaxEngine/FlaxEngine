@@ -97,7 +97,7 @@ void ForwardPass::Render(RenderContext& renderContext, GPUTexture*& input, GPUTe
     if (distortionList.IsEmpty() || checkIfSkipPass())
     {
         // Copy frame
-        context->SetRenderTarget(output->View());
+        GPUDrawPass drawPass(context, output->View(), GPUDrawPassAction::Store);
         context->Draw(input);
     }
     else
