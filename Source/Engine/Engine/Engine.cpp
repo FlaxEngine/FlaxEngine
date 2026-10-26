@@ -394,6 +394,7 @@ void Engine::OnDraw()
     PROFILE_CPU_NAMED("Draw");
 
     // Begin frame rendering
+    Globals::RenderThreadID = Platform::GetCurrentThreadID();
     FrameCount++;
     const double time = Platform::GetTimeSeconds();
     auto device = GPUDevice::Instance;
