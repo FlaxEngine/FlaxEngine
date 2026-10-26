@@ -293,10 +293,12 @@ void MultiScaler::DownscaleDepth(GPUContext* context, int32 dstWidth, int32 dstH
 
     // Draw
     context->SetViewportAndScissors((float)dstWidth, (float)dstHeight);
+    GPUTextureView* rtColor = nullptr, *rtDepth = nullptr;
     if (outputDepth)
-        context->SetRenderTarget(dst, (GPUTextureView*)nullptr);
+        rtDepth = dst;
     else
-        context->SetRenderTarget(dst);
+        rtColor = dst;
+    GPUDrawPass drawPass(context, rtDepth, GPUDrawPassAction::Store, rtColor, GPUDrawPassAction::Store);
     context->BindSR(0, src);
     context->SetState(_psHalfDepth[outputDepth ? 1 : 0]);
     context->DrawFullscreenTriangle();

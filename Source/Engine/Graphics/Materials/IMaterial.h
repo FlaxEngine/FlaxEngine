@@ -188,6 +188,7 @@ public:
     struct PrecacheParameters
     {
         DrawPass Pass;
+        uint32 Domain; // GPUPipelineCacheBatch::PassDomains
         void* PrecacheContext; // GPUPipelineState::PrecacheContext*
         MaterialPrecacheFlags MaterialFlags;
     };

@@ -243,11 +243,12 @@ public:
         {
             GPUPipelineState::PrecacheContext context;
             params.Pass = DrawPass::None;
+            params.Domain = (uint32)GPUPipelineCacheBatch::PassDomains::DrawCalls;
             params.PrecacheContext = &context;
             params.MaterialFlags = materialBatches.MaterialFlags;
             drawPass->Callback(&params);
             params.Pass &= drawModes;
-            if (params.Pass == DrawPass::None)
+            if (params.Pass == DrawPass::None || params.Domain != (uint32)pso.Domain)
                 continue; // Pass is inactive (or not matching material/actors usage flags)
 
             // For all used vertex layouts

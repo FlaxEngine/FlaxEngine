@@ -16,13 +16,18 @@
 /// <seealso cref="Actor" />
 API_CLASS() class FLAXENGINE_API Foliage final : public Actor
 {
+    friend struct FoliageReader;
     DECLARE_SCENE_OBJECT(Foliage);
 private:
     bool _disableFoliageTypeEvents;
+    bool _useLightmapPSO = false;
     int32 _sceneRenderingKey = -1;
+    volatile int32 _precacheHandle = 0;
     Vector3 _cachedDrawWorldOrigin = Vector3::Zero;
 
 public:
+    ~Foliage();
+
     /// <summary>
     /// The allocated foliage instances. It's read-only.
     /// </summary>
@@ -219,6 +224,7 @@ private:
 
     void InitType(RenderContextBatch& renderContextBatch, const RenderView& mainView, int32 typeIndex);
     void UpdateBounds();
+    void PrecachePSOBatch(struct GPUPipelineCacheBatch& batch);
 
 public:
     /// <summary>
@@ -244,6 +250,7 @@ public:
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     void OnLayerChanged() override;
+    void PrecachePSO() override;
 
 protected:
     // [Actor]

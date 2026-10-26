@@ -8,6 +8,10 @@
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/GPUPipelineCache.h"
+#if COMPILE_WITH_PSO_PRECACHING
+#include "Engine/Renderer/GBufferPass.h"
+#endif
 
 Decal::Decal(const SpawnParams& params)
     : Actor(params)
@@ -18,6 +22,11 @@ Decal::Decal(const SpawnParams& params)
     _bounds.Transformation = _transform;
     _bounds.GetBoundingBox(_box);
     BoundingSphere::FromBox(_box, _sphere);
+}
+
+Decal::~Decal()
+{
+    GPU_PSO_WAIT(_precacheHandle);
 }
 
 void Decal::SetSize(const Vector3& value)
@@ -39,6 +48,19 @@ MaterialInstance* Decal::CreateAndSetVirtualMaterialInstance()
     const auto result = material->CreateVirtualInstance();
     Material = result;
     return result;
+}
+
+void Decal::PrecachePSOBatch(GPUPipelineCacheBatch& batch)
+{
+#if COMPILE_WITH_PSO_PRECACHING
+    auto* material = Material.Get();
+    if (!material || material->WaitForLoaded())
+        return;
+    auto& materialPSO = batch.Materials[material->GetMaterial()];
+    materialPSO.Domain = GPUPipelineCacheBatch::PassDomains::Decals;
+    materialPSO.DrawModes |= DrawPass::GBuffer;
+    materialPSO.VertexLayouts.AddUnique(GBufferPass::Instance()->GetDecalVertexLayout());
+#endif
 }
 
 #if USE_EDITOR
@@ -82,6 +104,8 @@ void Decal::Draw(RenderContextBatch& renderContextBatch)
         const float screenRadiusSquared = RenderTools::ComputeBoundsScreenRadiusSquared(_sphere.Center - renderContext.View.Origin, (float)_sphere.Radius, *lodView) * renderContext.View.ModelLODDistanceFactorSqrt;
         if (Math::Square(DrawMinScreenSize * 0.5f) > screenRadiusSquared)
             return;
+        if (!GPU_PSO_READY(_precacheHandle))
+            return;
 
         RenderDecalData data;
         Transform transform = GetTransform();
@@ -120,11 +144,26 @@ void Decal::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     DESERIALIZE(DrawMinScreenSize);
 
     _bounds.Extents = _size * 0.5f;
+
+#if COMPILE_WITH_PSO_PRECACHING
+    if (GPU_PSO_PRECACHING(Level) && Material && modifier->LoadDepth == 0)
+        PrecachePSO();
+#endif
 }
 
 bool Decal::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return _bounds.Intersects(ray, distance, normal);
+}
+
+void Decal::PrecachePSO()
+{
+#if COMPILE_WITH_PSO_PRECACHING
+    GPU_PSO_WAIT(_precacheHandle);
+    GPUPipelineCache::BatchCallback f;
+    f.Bind<Decal, &Decal::PrecachePSOBatch>(this);
+    GPUPipelineCache::PrecacheAsync(f, &_precacheHandle);
+#endif
 }
 
 void Decal::OnEnable()

@@ -20,8 +20,13 @@ private:
     Vector3 _size;
     OrientedBoundingBox _bounds;
     int32 _sceneRenderingKey = -1;
+#if PLATFORM_DESKTOP || PLATFORM_APPLE_FAMILY || PLATFORM_SWITCH || PLATFORM_ANDROID // COMPILE_WITH_PSO_PRECACHING could be used with Graphics module in PublicDependencies
+    volatile int32 _precacheHandle = 0;
+#endif
 
 public:
+    ~Decal();
+
     /// <summary>
     /// The decal material. Must have domain mode to Decal type.
     /// </summary>
@@ -67,6 +72,9 @@ public:
     /// <returns>The created virtual material instance.</returns>
     API_FUNCTION() MaterialInstance* CreateAndSetVirtualMaterialInstance();
 
+private:
+    void PrecachePSOBatch(struct GPUPipelineCacheBatch& batch);
+
 public:
     // [Actor]
 #if USE_EDITOR
@@ -78,6 +86,7 @@ public:
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
+    void PrecachePSO() override;
 
 protected:
     // [Actor]

@@ -114,14 +114,14 @@ void ForwardPass::Render(RenderContext& renderContext, GPUTexture*& input, GPUTe
         auto distortionRT = RenderTargetPool::Get(tempDesc);
         RENDER_TARGET_POOL_SET_NAME(distortionRT, "Forward.Distortion");
 
-        // Clear distortion vectors
-        context->Clear(distortionRT->View(), Color::Transparent);
-        context->SetViewportAndScissors((float)distortionWidth, (float)distortionHeight);
-        context->SetRenderTarget(depthBufferHandle, distortionRT->View());
-
-        // Render distortion pass
-        view.Pass = DrawPass::Distortion;
-        mainCache->ExecuteDrawCalls(renderContext, distortionList);
+        // Render distortion vectors
+        {
+            GPUDrawPass drawPass(context, depthBufferHandle, GPUDrawPassAction::ClearStore, distortionRT->View(), GPUDrawPassAction::Store);
+            context->Clear(distortionRT->View(), Color::Transparent);
+            context->SetViewportAndScissors((float)distortionWidth, (float)distortionHeight);
+            view.Pass = DrawPass::Distortion;
+            mainCache->ExecuteDrawCalls(renderContext, distortionList);
+        }
 
         // Copy combined frame with distortion from transparent materials
         context->SetViewportAndScissors((float)width, (float)height);
@@ -156,6 +156,15 @@ GPU_PSO_PRECACHING_PASS(ForwardPassPSO, {
     context.RTCount = 1;
     context.RTFormats[0] = renderBuffers->GetOutputFormat();
     params.Pass = DrawPass::Forward;
+});
+
+GPU_PSO_PRECACHING_PASS(DistortionPassPSO, {
+    auto renderBuffers = MainRenderTask::Instance->Buffers;
+    context.DepthFormat = renderBuffers->GetDepthFormat();
+    context.DepthAction = GPUDrawPassAction::Load;
+    context.RTCount = 1;
+    context.RTFormats[0] = PixelFormat::R8G8B8A8_UNorm;
+    params.Pass = DrawPass::Distortion;
 });
 
 #endif

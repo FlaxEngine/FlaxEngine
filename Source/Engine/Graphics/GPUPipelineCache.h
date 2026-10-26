@@ -55,8 +55,16 @@ enum class DrawPass : int32;
 // Utility for collecting PSOs in batches for a set of objects (eg. actors) for efficient precaching at scale for diferent rendering passes at once.
 struct GPUPipelineCacheBatch
 {
+    enum class PassDomains
+    {
+        None = 0,
+        DrawCalls = 1,
+        Decals = 2,
+    };
+
     struct MaterialPSO
     {
+        PassDomains Domain = PassDomains::DrawCalls;
         DrawPass DrawModes = (DrawPass)0;
         MaterialPrecacheFlags MaterialFlags = {};
         Array<class GPUVertexLayout*, InlinedAllocation<4>> VertexLayouts;

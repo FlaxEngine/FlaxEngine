@@ -1047,7 +1047,7 @@ void AnimatedModel::PrecachePSOBatch(GPUPipelineCacheBatch& batch)
     auto* model = SkinnedModel.Get();
     if (!model || model->WaitForLoaded())
         return;
-    INIT_MATERIAL_PRECACHE_FLAGS(materialFlags, this);
+    INIT_MATERIAL_PRECACHE_FLAGS_ACTOR(materialFlags, this);
     materialFlags.Geoemtry |= MaterialPrecacheFlags::Skinned;
     if (PerBoneMotionBlur)
         materialFlags.Geoemtry |= MaterialPrecacheFlags::SkinnedWithPrevBones;

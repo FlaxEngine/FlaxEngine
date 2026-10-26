@@ -54,11 +54,16 @@ struct MaterialPrecacheFlags
     }
 };
 
-#define INIT_MATERIAL_PRECACHE_FLAGS(flags, actor) \
+#define INIT_MATERIAL_PRECACHE_FLAGS(flags) \
     MaterialPrecacheFlags flags; \
     flags.Flags = 0; \
+    flags.WorldDeterminant = MaterialPrecacheFlags::Positive
+
+#define INIT_MATERIAL_PRECACHE_FLAGS_ACTOR(flags, actor) \
     Matrix world; \
     actor->GetLocalToWorldMatrix(world); \
-    flags.WorldDeterminant |= world.RotDeterminant() < 0 ? MaterialPrecacheFlags::Negative : MaterialPrecacheFlags::Positive
+    MaterialPrecacheFlags flags; \
+    flags.Flags = 0; \
+    flags.WorldDeterminant = world.RotDeterminant() < 0 ? MaterialPrecacheFlags::Negative : MaterialPrecacheFlags::Positive
 
 #endif

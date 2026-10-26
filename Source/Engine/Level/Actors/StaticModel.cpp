@@ -378,7 +378,7 @@ void StaticModel::PrecachePSOBatch(GPUPipelineCacheBatch& batch)
     auto* model = Model.Get();
     if (!model || model->WaitForLoaded())
         return;
-    INIT_MATERIAL_PRECACHE_FLAGS(materialFlags, this);
+    INIT_MATERIAL_PRECACHE_FLAGS_ACTOR(materialFlags, this);
     materialFlags.Geoemtry |= _scene && Lightmap.TextureIndex != -1 ? MaterialPrecacheFlags::MeshLightmapped : MaterialPrecacheFlags::Mesh;
     model->PrecachePSO(batch, materialFlags, Entries, _drawModes, _forcedLod, _lodBias, _vertexColorsCount);
 #endif

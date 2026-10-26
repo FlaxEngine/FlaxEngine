@@ -585,9 +585,12 @@ bool GPUDevice::LoadContent()
         return true;
 
 #if COMPILE_WITH_PSO_PRECACHING
-    Function<void()> f;
-    f.Bind<PrivateData, &PrivateData::PrecachePSO>(_res);
-    GPUPipelineCache::PrecacheAsync(f, &_res->PSOHandle);
+    if (Limits.HasPipelineCaching)
+    {
+        Function<void()> f;
+        f.Bind<PrivateData, &PrivateData::PrecachePSO>(_res);
+        GPUPipelineCache::PrecacheAsync(f, &_res->PSOHandle);
+    }
 #endif
 
     return false;

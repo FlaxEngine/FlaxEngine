@@ -20,6 +20,9 @@
 #if USE_EDITOR
 #include "Engine/Renderer/Lightmaps.h"
 #endif
+#if COMPILE_WITH_PSO_PRECACHING
+#include "Engine/Graphics/Graphics.h"
+#endif
 
 GPU_CB_STRUCT(Data {
     Matrix WorldViewProjection;
@@ -86,6 +89,14 @@ void Sky::PrecachePSOAsync()
     context.RTAction = GPUDrawPassAction::Store;
     context.VertexLayout = skyModel->LODs[0].Meshes[0].GetVertexLayout();
     _psSky->PrecachePSO(context);
+    auto& giSettings = Graphics::PostProcessSettings.GlobalIllumination;
+    if (giSettings.Mode == GlobalIlluminationMode::DDGI)
+    {
+        context.DepthFormat = PixelFormat::Unknown;
+        context.RTCount = 1;
+        context.RTFormats[0] = PixelFormat::R11G11B10_Float;
+        _psSky->PrecachePSO(context);
+    }
 #endif
 }
 

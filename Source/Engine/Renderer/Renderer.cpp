@@ -225,7 +225,7 @@ void RenderAntiAliasingPass(RenderContext& renderContext, GPUTexture* input, GPU
         else
         {
             PROFILE_GPU("Copy frame");
-            context->SetRenderTarget(output);
+            GPUDrawPass drawPass(context, output, GPUDrawPassAction::Store);
             context->Draw(input);
         }
     }

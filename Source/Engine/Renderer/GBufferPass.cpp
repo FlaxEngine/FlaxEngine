@@ -425,6 +425,13 @@ void GBufferPass::DrawMaterialComplexity(RenderContext& renderContext, GPUContex
 
 #endif
 
+GPUVertexLayout* GBufferPass::GetDecalVertexLayout() const
+{
+    if (!_boxModel || _boxModel->WaitForLoaded())
+        return nullptr;
+    return _boxModel->LODs.Get()->Meshes.Get()->GetVertexLayout();
+}
+
 bool GBufferPass::IsDebugView(ViewMode mode)
 {
     switch (mode)
@@ -587,11 +594,6 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
 
 #include "Engine/Graphics/GPUPipelineCache.h"
 
-GPU_PSO_PRECACHING_PASS(GBufferPassPSO, {
-    context.SetGBufferFormat();
-    params.Pass = DrawPass::GBuffer;
-    });
-
 void GPUPipelineState::PrecacheContext::SetGBufferFormat()
 {
     auto renderBuffers = MainRenderTask::Instance->Buffers;
@@ -605,5 +607,18 @@ void GPUPipelineState::PrecacheContext::SetGBufferFormat()
     RTFormats[3] = GBUFFER2_FORMAT;
     RTFormats[4] = GBUFFER3_FORMAT;
 }
+
+GPU_PSO_PRECACHING_PASS(GBufferPassPSO, {
+    context.SetGBufferFormat();
+    params.Pass = DrawPass::GBuffer;
+    });
+
+GPU_PSO_PRECACHING_PASS(DecalsPassPSO, {
+    context.SetGBufferFormat();
+    context.DepthAction = GPUDrawPassAction::Load;
+    context.RTAction = GPUDrawPassAction::LoadStore;
+    params.Pass = DrawPass::GBuffer;
+    params.Domain = (uint32)GPUPipelineCacheBatch::PassDomains::Decals;
+    });
 
 #endif

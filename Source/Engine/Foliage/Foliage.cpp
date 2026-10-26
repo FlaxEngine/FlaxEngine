@@ -13,6 +13,7 @@
 #include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUPipelineCache.h"
 #include "Engine/Content/Deprecated.h"
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE
 #include "Engine/Threading/JobSystem.h"
@@ -43,6 +44,11 @@ Foliage::Foliage(const SpawnParams& params)
 #else
     _drawCategory = SceneRendering::SceneDraw;
 #endif
+}
+
+Foliage::~Foliage()
+{
+    GPU_PSO_WAIT(_precacheHandle);
 }
 
 void Foliage::AddToCluster(ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_SIZE>& clusters, FoliageCluster* cluster, FoliageInstance& instance)
@@ -672,6 +678,23 @@ void Foliage::UpdateBounds()
     }
 }
 
+void Foliage::PrecachePSOBatch(GPUPipelineCacheBatch& batch)
+{
+#if COMPILE_WITH_PSO_PRECACHING
+    INIT_MATERIAL_PRECACHE_FLAGS(materialFlags);
+    materialFlags.Geoemtry = MaterialPrecacheFlags::Mesh;
+    if (_useLightmapPSO)
+        materialFlags.Geoemtry |= MaterialPrecacheFlags::MeshLightmapped;
+    for (auto& type : FoliageTypes)
+    {
+        auto* model = type.Model.Get();
+        if (!model || model->WaitForLoaded())
+            return;
+        model->PrecachePSO(batch, materialFlags, type.Entries, type._drawModes);
+    }
+#endif
+}
+
 int32 Foliage::GetInstancesCount() const
 {
     return Instances.Count();
@@ -1207,7 +1230,7 @@ void Foliage::Draw(RenderContextBatch& renderContextBatch)
     const RenderContext& renderContext = renderContextBatch.GetMainContext();
     const RenderView& view = renderContext.View;
 
-    if (renderContext.View.Pass == DrawPass::GlobalSDF)
+    if (renderContext.View.Pass == DrawPass::GlobalSDF && GPU_PSO_WAIT(_precacheHandle))
     {
         // Draw into Global SDF
         auto globalSDF = GlobalSignDistanceFieldPass::Instance();
@@ -1235,7 +1258,7 @@ void Foliage::Draw(RenderContextBatch& renderContextBatch)
 #endif
         return;
     }
-    if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
+    if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas && GPU_PSO_WAIT(_precacheHandle))
     {
         // Draw foliage instances into Global Surface Atlas
         auto globalSA = GlobalSurfaceAtlasPass::Instance();
@@ -1265,7 +1288,7 @@ void Foliage::Draw(RenderContextBatch& renderContextBatch)
 #endif
         return;
     }
-    if (EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GlobalSurfaceAtlas))
+    if (EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GlobalSurfaceAtlas) && GPU_PSO_WAIT(_precacheHandle))
     {
         // Draw single foliage instance projection into Global Surface Atlas
         auto& instance = *(FoliageInstance*)GlobalSurfaceAtlasPass::Instance()->GetCurrentActorObject();
@@ -1287,6 +1310,8 @@ void Foliage::Draw(RenderContextBatch& renderContextBatch)
         type.Model->Draw(renderContext, draw);
         return;
     }
+    if (!GPU_PSO_READY(_precacheHandle))
+        return;
 
     // When origin changes, then update all instance matrices
     if (_cachedDrawWorldOrigin != view.Origin)
@@ -1531,6 +1556,10 @@ struct FoliageReader
             {
                 memory.Read(instance.LightmapTextureIndex);
                 memory.Read(instance.LightmapUVsArea);
+#if COMPILE_WITH_PSO_PRECACHING
+                if (instance.LightmapTextureIndex != -1)
+                    foliage._useLightmapPSO = true;
+#endif
             }
         }
     }
@@ -1694,6 +1723,10 @@ void Foliage::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
                     instance.Transform.Scale = enc.Scale;
                     instance.LightmapTextureIndex = enc.LightmapTextureIndex;
                     instance.LightmapUVsArea = Half4(enc.LightmapUVsArea);
+#if COMPILE_WITH_PSO_PRECACHING
+                    if (enc.LightmapTextureIndex != -1)
+                        _useLightmapPSO = true;
+#endif
                 }
             }
         }
@@ -1719,12 +1752,28 @@ void Foliage::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
         auto& type = FoliageTypes[instance.Type];
         instance.CullDistance = type.CullDistance + type.CullDistanceRandomRange * instance.Random;
     }
+
+#if COMPILE_WITH_PSO_PRECACHING
+    // Start PSO precaching
+    if (GPU_PSO_PRECACHING(Level) && Instances.HasItems() && modifier->LoadDepth == 0)
+        PrecachePSO();
+#endif
 }
 
 void Foliage::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Layer);
+}
+
+void Foliage::PrecachePSO()
+{
+#if COMPILE_WITH_PSO_PRECACHING
+    GPU_PSO_WAIT(_precacheHandle);
+    GPUPipelineCache::BatchCallback f;
+    f.Bind<Foliage, &Foliage::PrecachePSOBatch>(this);
+    GPUPipelineCache::PrecacheAsync(f, &_precacheHandle);
+#endif
 }
 
 void Foliage::OnEnable()

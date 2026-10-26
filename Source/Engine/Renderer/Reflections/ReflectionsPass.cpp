@@ -252,6 +252,7 @@ void ReflectionsPass::PrecachePSO()
         if (!_depthBounds)
             context.SetReadOnlyDepthFormat();
         context.RTFormats[0] = PixelFormat::R11G11B10_Float;
+        context.RTAction = GPUDrawPassAction::ClearStore;
         context.VertexLayout = _sphereModel->LODs[0].Meshes[0].GetVertexLayout();
         _psProbe->PrecachePSO(context);
         _psProbeInside->PrecachePSO(context);
@@ -338,8 +339,8 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     if (renderProbes)
     {
         PROFILE_GPU_CPU("Env Probes");
+        GPUDrawPass drawPass(context, depthBuffer.RTV, GPUDrawPassAction::Load, *reflectionsBuffer, GPUDrawPassAction::ClearStore);
         context->SetViewportAndScissors((float)tempDesc.Width, (float)tempDesc.Height);
-        context->SetRenderTarget(depthBuffer.RTV, *reflectionsBuffer);
         context->Clear(*reflectionsBuffer, Color::Black);
         context->BindSR(0, renderContext.Buffers->GBuffer0);
         context->BindSR(1, renderContext.Buffers->GBuffer1);

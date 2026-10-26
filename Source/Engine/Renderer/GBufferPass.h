@@ -72,6 +72,8 @@ public:
     void DrawMaterialComplexity(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer);
 #endif
 
+    GPUVertexLayout* GetDecalVertexLayout() const;
+
 public:
 
     static bool IsDebugView(ViewMode mode);

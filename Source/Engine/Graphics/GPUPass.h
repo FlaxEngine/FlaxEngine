@@ -124,7 +124,7 @@ struct FLAXENGINE_API GPUDrawPass : GPUPass
         , DepthBuffer(depthBuffer)
         , RenderTargets(&_inlinedRT)
         , RenderTargetsActions(&_inlinedRTAction)
-        , RenderTargetsCount(1)
+        , RenderTargetsCount(renderTarget ? 1 : 0)
         , DepthAction(depthAction)
     {
         Context->BeginDrawPass(*this);
@@ -137,7 +137,7 @@ struct FLAXENGINE_API GPUDrawPass : GPUPass
         , DepthBuffer(nullptr)
         , RenderTargets(&_inlinedRT)
         , RenderTargetsActions(&_inlinedRTAction)
-        , RenderTargetsCount(1)
+        , RenderTargetsCount(renderTarget ? 1 : 0)
         , DepthAction(GPUDrawPassAction::None)
     {
         Context->BeginDrawPass(*this);

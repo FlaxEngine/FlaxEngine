@@ -144,8 +144,8 @@ void TAA::Render(const RenderContext& renderContext, GPUTexture* input, GPUTextu
     float blendStrength = 1.0f;
     if (resetHistory)
     {
+        GPUDrawPass drawPass(context, inputHistory->View(), GPUDrawPassAction::Store);
         context->SetViewportAndScissors(viewport);
-        context->SetRenderTarget(inputHistory->View());
         // TODO: when using upscalimg, copu history via MultiScaler to reduce aliasing
         context->Draw(input);
         context->ResetRenderTarget();
@@ -184,7 +184,7 @@ void TAA::Render(const RenderContext& renderContext, GPUTexture* input, GPUTextu
     {
         RenderTargetPool::Release(inputHistory);
         context->ResetRenderTarget();
-        context->SetRenderTarget(outputHistory->View());
+        GPUDrawPass drawPass(context, outputHistory->View(), GPUDrawPassAction::Store);
         context->Draw(output);
         renderContext.Buffers->TemporalAA = outputHistory;
     }

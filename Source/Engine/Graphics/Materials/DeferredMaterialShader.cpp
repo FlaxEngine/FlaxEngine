@@ -89,6 +89,7 @@ void DeferredMaterialShader::Bind(BindParameters& params)
 #if COMPILE_WITH_PSO_PRECACHING
 
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 
 void DeferredMaterialShader::PrecachePSO(const PrecacheParameters& params)
 {

@@ -85,6 +85,58 @@ void DecalMaterialShader::Bind(BindParameters& params)
     context->SetState(isCameraInside ? _cache.Inside : _cache.Outside);
 }
 
+#if COMPILE_WITH_PSO_PRECACHING
+
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
+#include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Graphics/RenderTask.h"
+
+void DecalMaterialShader::PrecachePSO(const PrecacheParameters& params)
+{
+    PROFILE_CPU();
+    auto& context = *(GPUPipelineState::PrecacheContext*)params.PrecacheContext;
+    const MaterialUsageFlags usageFlags = _info.UsageFlags & (MaterialUsageFlags::UseEmissive | MaterialUsageFlags::UseNormal);
+    auto renderBuffers = MainRenderTask::Instance->Buffers;
+    switch (_info.DecalBlendingMode) // Setup render targets based on decal type
+    {
+    case MaterialDecalBlendingMode::Translucent:
+        context.RTCount = 2;
+        context.RTFormats[0] = GBUFFER0_FORMAT;
+        context.RTFormats[1] = GBUFFER2_FORMAT;
+        if (EnumHasAnyFlags(usageFlags, MaterialUsageFlags::UseEmissive))
+        {
+            context.RTCount++;
+            context.RTFormats[2] = renderBuffers->GetOutputFormat();
+            if (EnumHasAnyFlags(usageFlags, MaterialUsageFlags::UseNormal))
+            {
+                context.RTCount++;
+                context.RTFormats[3] = GBUFFER1_FORMAT;
+            }
+        }
+        else if (EnumHasAnyFlags(usageFlags, MaterialUsageFlags::UseNormal))
+        {
+            context.RTCount++;
+            context.RTFormats[2] = GBUFFER1_FORMAT;
+        }
+        break;
+    case MaterialDecalBlendingMode::Stain:
+        context.RTCount = 1;
+        context.RTFormats[0] = GBUFFER0_FORMAT;
+        break;
+    case MaterialDecalBlendingMode::Normal:
+        context.RTCount = 1;
+        context.RTFormats[0] = GBUFFER1_FORMAT;
+        break;
+    case MaterialDecalBlendingMode::Emissive:
+        context.RTCount = 1;
+        context.RTFormats[0] = renderBuffers->GetOutputFormat();
+        break;
+    }
+    _cache.Outside->PrecachePSO(context);
+}
+
+#endif
+
 void DecalMaterialShader::Unload()
 {
     // Base
