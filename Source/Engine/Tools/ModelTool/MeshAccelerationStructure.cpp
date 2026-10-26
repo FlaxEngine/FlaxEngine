@@ -393,7 +393,7 @@ void MeshAccelerationStructure::Add(const ModelData* modelData, int32 lodIndex, 
 
 void MeshAccelerationStructure::Add(Float3* vb, int32 vertices, void* ib, int32 indices, bool use16BitIndex, bool copy)
 {
-    ASSERT(vertices % 3 == 0);
+    ASSERT(indices % 3 == 0);
     auto& meshData = _meshes.AddOne();
     meshData.Asset = nullptr;
     if (copy)
@@ -423,19 +423,16 @@ void MeshAccelerationStructure::MergeMeshes(bool force16BitIndexBuffer)
     _meshes.Resize(1);
     auto& mesh = _meshes[0];
     mesh.Asset = nullptr;
-    mesh.Use16BitIndexBuffer = true;
+    mesh.Use16BitIndexBuffer = false; // The merged mesh is written with 32-bit indices (below)
     mesh.Indices = 0;
     mesh.Vertices = 0;
     mesh.Bounds = meshes[0].Bounds;
     for (auto& e : meshes)
     {
-        if (!e.Use16BitIndexBuffer)
-            mesh.Use16BitIndexBuffer = false;
         mesh.Vertices += e.Vertices;
         mesh.Indices += e.Indices;
         BoundingBox::Merge(mesh.Bounds, e.Bounds, mesh.Bounds);
     }
-    mesh.Use16BitIndexBuffer &= mesh.Indices <= MAX_uint16 && !force16BitIndexBuffer;
     mesh.VertexBuffer.Allocate(mesh.Vertices * sizeof(Float3));
     mesh.IndexBuffer.Allocate(mesh.Indices * sizeof(uint32));
     int32 vertexCounter = 0, indexCounter = 0;
@@ -454,7 +451,7 @@ void MeshAccelerationStructure::MergeMeshes(bool force16BitIndexBuffer)
         {
             for (int32 i = 0; i < e.Indices; i++)
             {
-                uint16 index = ((uint32*)e.IndexBuffer.Get())[i];
+                uint32 index = ((uint32*)e.IndexBuffer.Get())[i];
                 ((uint32*)mesh.IndexBuffer.Get())[indexCounter + i] = vertexCounter + index;
             }
         }

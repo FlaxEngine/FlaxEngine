@@ -1068,7 +1068,6 @@ void GPUContextDX12::ResetUA()
             _srMaskDirtyGraphics |= 1 << slot;
             _srMaskDirtyCompute |= 1 << slot;
             _uaHandles[slot] = nullptr;
-            break;
         }
     }
 }
