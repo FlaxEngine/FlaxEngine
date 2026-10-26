@@ -41,7 +41,7 @@ private:
     D3D12_SHADER_BYTECODE _shaderGS;
 #endif
     D3D12_SHADER_BYTECODE _shaderVS, _shaderPS;
-#if GPU_ENABLE_DEVELOPMENT
+#if GPU_ENABLE_DEVELOPMENT && COMPILE_WITH_PSO_PRECACHING
     Array<GPUPipelineStateKeyDX12, InlinedAllocation<2>> _precachedPSOs;
 #endif
 
@@ -66,7 +66,9 @@ public:
     // [GPUPipelineState]
     bool IsValid() const override;
     bool Init(const Description& desc) override;
+#if COMPILE_WITH_PSO_PRECACHING
     void PrecachePSO(const PrecacheContext& context) override;
+#endif
 
 protected:
     // [GPUResourceDX12]

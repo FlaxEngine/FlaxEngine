@@ -372,7 +372,7 @@ void TextRender::PrecachePSOBatch(GPUPipelineCacheBatch& batch)
     if (!material || material->WaitForLoaded())
         return;
     INIT_MATERIAL_PRECACHE_FLAGS_ACTOR(materialFlags, this);
-    materialFlags.Geoemtry |= MaterialPrecacheFlags::Mesh;
+    materialFlags.Geometry |= MaterialPrecacheFlags::Mesh;
     ::Material* mat = material->GetMaterial();
     auto& materialPSO = batch.Materials[mat];
     materialPSO.DrawModes |= DrawModes;

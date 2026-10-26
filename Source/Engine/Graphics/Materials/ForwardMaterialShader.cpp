@@ -109,7 +109,7 @@ void ForwardMaterialShader::PrecachePSO(const PrecacheParameters& params)
             context.VertexLayout = GPUVertexLayout::Get(elements, true);
         }
         auto cache = instanced ? &_cacheInstanced : &_cache;
-        for (uint32 geometry : BitIterator(params.MaterialFlags.Geoemtry & MaterialPrecacheFlags::GeometrySurface))
+        for (uint32 geometry : BitIterator(params.MaterialFlags.Geometry& MaterialPrecacheFlags::GeometrySurface))
         {
             bool useSkinning = geometry == MaterialPrecacheFlags::Skinned;
             for (uint32 worldDeterminant : BitIterator(params.MaterialFlags.WorldDeterminant))

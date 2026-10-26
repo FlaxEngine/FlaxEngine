@@ -106,7 +106,7 @@ void DeferredMaterialShader::PrecachePSO(const PrecacheParameters& params)
             context.VertexLayout = GPUVertexLayout::Get(elements, true);
         }
         auto cache = instanced ? &_cacheInstanced : &_cache;
-        for (uint32 geometry : BitIterator(params.MaterialFlags.Geoemtry & MaterialPrecacheFlags::GeometrySurface))
+        for (uint32 geometry : BitIterator(params.MaterialFlags.Geometry& MaterialPrecacheFlags::GeometrySurface))
         {
             bool useSkinning = geometry != MaterialPrecacheFlags::Mesh;
             bool usePerBoneMotionBlur = geometry == MaterialPrecacheFlags::SkinnedWithPrevBones;

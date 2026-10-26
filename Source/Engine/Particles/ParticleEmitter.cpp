@@ -9,6 +9,7 @@
 #include "Engine/Content/Upgraders/ShaderAssetUpgrader.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DataContainer.h"
+#include "Engine/Graphics/GPUPipelineCache.h"
 #include "Engine/Graphics/Shaders/Cache/ShaderCacheManager.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Level/Level.h"
@@ -35,7 +36,6 @@
 #include "Engine/Utilities/Encryption.h"
 #endif
 #if COMPILE_WITH_PSO_PRECACHING
-#include "Engine/Graphics/GPUPipelineCache.h"
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Assets/Material.h"
@@ -120,7 +120,7 @@ void ParticleEmitter::PrecachePSOBatch(GPUPipelineCacheBatch& batch)
                 auto& materialPSO = batch.Materials[material->GetMaterial()];
                 materialPSO.DrawModes = moduleDrawModes;
                 materialPSO.MaterialFlags |= materialFlags;
-                materialPSO.MaterialFlags.Geoemtry |= MaterialPrecacheFlags::Sprite;
+                materialPSO.MaterialFlags.Geometry |= MaterialPrecacheFlags::Sprite;
                 materialPSO.VertexLayouts.AddUnique(ParticleSpriteVertex::GetLayout());
             }
             break;
@@ -145,7 +145,7 @@ void ParticleEmitter::PrecachePSOBatch(GPUPipelineCacheBatch& batch)
                         auto& materialPSO = batch.Materials[material->GetMaterial()];
                         materialPSO.DrawModes |= moduleDrawModes;
                         materialPSO.MaterialFlags |= materialFlags;
-                        materialPSO.MaterialFlags.Geoemtry |= MaterialPrecacheFlags::Mesh;
+                        materialPSO.MaterialFlags.Geometry |= MaterialPrecacheFlags::Mesh;
                         materialPSO.VertexLayouts.AddUnique(mesh.GetVertexLayout());
                     }
                 }
@@ -165,7 +165,7 @@ void ParticleEmitter::PrecachePSOBatch(GPUPipelineCacheBatch& batch)
                 auto& materialPSO = batch.Materials[material->GetMaterial()];
                 materialPSO.DrawModes = moduleDrawModes;
                 materialPSO.MaterialFlags |= materialFlags;
-                materialPSO.MaterialFlags.Geoemtry |= MaterialPrecacheFlags::Ribbon;
+                materialPSO.MaterialFlags.Geometry |= MaterialPrecacheFlags::Ribbon;
                 materialPSO.VertexLayouts.AddUnique(ParticleRibbonVertex::GetLayout());
             }
             break;

@@ -121,8 +121,8 @@ public class Graphics : EngineModule
             options.SourceFiles.Add(Path.Combine(FolderPath, "../GraphicsDevice/DirectX/RenderToolsDX.cpp"));
         }
 
-        // Expose precaching definition to the public if one of the grapgics backends uses it
-        if (options.PrivateDependencies.Contains("GraphicsDeviceDX12") ||
+        // Expose precaching definition to the public if one of the graphics backends uses it
+        if ((options.PrivateDependencies.Contains("GraphicsDeviceDX12") && options.Platform.Target == TargetPlatform.Windows) ||
             options.PrivateDependencies.Contains("GraphicsDeviceVulkan"))
         {
             options.PublicDefinitions.Add("COMPILE_WITH_PSO_PRECACHING");

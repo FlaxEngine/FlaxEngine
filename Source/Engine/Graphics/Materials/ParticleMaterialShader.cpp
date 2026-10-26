@@ -177,8 +177,7 @@ void ParticleMaterialShader::PrecachePSO(const PrecacheParameters& params)
 {
     // Precache all used shader permutations
     PROFILE_CPU();
-    auto& context = *(GPUPipelineState::PrecacheContext*)params.PrecacheContext;
-    for (uint32 geometry : BitIterator(params.MaterialFlags.Geoemtry & MaterialPrecacheFlags::Particle))
+    for (uint32 geometry : BitIterator(params.MaterialFlags.Geometry & MaterialPrecacheFlags::Particle))
     {
         PipelineStateCache* psCache = nullptr;
         switch (geometry)

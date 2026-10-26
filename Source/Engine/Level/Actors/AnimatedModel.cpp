@@ -1048,9 +1048,9 @@ void AnimatedModel::PrecachePSOBatch(GPUPipelineCacheBatch& batch)
     if (!model || model->WaitForLoaded())
         return;
     INIT_MATERIAL_PRECACHE_FLAGS_ACTOR(materialFlags, this);
-    materialFlags.Geoemtry |= MaterialPrecacheFlags::Skinned;
+    materialFlags.Geometry |= MaterialPrecacheFlags::Skinned;
     if (PerBoneMotionBlur)
-        materialFlags.Geoemtry |= MaterialPrecacheFlags::SkinnedWithPrevBones;
+        materialFlags.Geometry |= MaterialPrecacheFlags::SkinnedWithPrevBones;
     model->PrecachePSO(batch, materialFlags, Entries, DrawModes, ForcedLOD, LODBias);
 #endif
 }

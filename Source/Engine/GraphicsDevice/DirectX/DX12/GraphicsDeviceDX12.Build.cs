@@ -20,10 +20,10 @@ public class GraphicsDeviceDX12 : GraphicsDeviceBaseModule
         base.Setup(options);
 
         options.PublicDefinitions.Add("GRAPHICS_API_DIRECTX12");
-        options.PublicDefinitions.Add("COMPILE_WITH_PSO_PRECACHING");
         switch (options.Platform.Target)
         {
             case TargetPlatform.Windows:
+                options.PublicDefinitions.Add("COMPILE_WITH_PSO_PRECACHING");
                 options.OutputFiles.Add("d3d12.lib");
                 options.DelayLoadLibraries.Add("d3d12.dll");
                 break;

@@ -73,14 +73,12 @@ protected:
         return false;
     }
 
-#if COMPILE_WITH_PSO_PRECACHING
     /// <summary>
     /// Precaches shader pipelines to be ready ahead of time. PSOs used by this pass can warm-up in async before rendering happens with runtime-defined render target formats and vertex layouts.
     /// </summary>
     virtual void PrecachePSO()
     {
     }
-#endif
 };
 
 /// <summary>

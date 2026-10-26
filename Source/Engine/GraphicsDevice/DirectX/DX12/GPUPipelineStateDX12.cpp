@@ -16,7 +16,7 @@
 // TODO: migrate to Agility SDK and remove that custom header
 #include <ThirdParty/DirectX12Agility/d3dx12/d3dx12_pipeline_state_stream_custom.h>
 #endif
-#if GPU_ENABLE_DEVELOPMENT
+#if GPU_ENABLE_DEVELOPMENT && COMPILE_WITH_PSO_PRECACHING
 #include "Engine/Engine/CommandLine.h"
 #endif
 
@@ -167,10 +167,12 @@ ID3D12PipelineState* GPUShaderProgramCSDX12::GetState(bool precaching)
     GetDebugName(name);
     ZoneText(name.Get(), name.Count() - 1);
 #endif
+#if COMPILE_WITH_PSO_PRECACHING
     GPUPipelineLookup psoLookup;
     if (precaching)
         psoLookup.Flags |= GPUPipelineLookup::Precaching;
     else
+#endif
     {
         ZoneColor(GPU_PSO_ZONE_COLOR_MISS);
     }
@@ -203,7 +205,9 @@ ID3D12PipelineState* GPUShaderProgramCSDX12::GetState(bool precaching)
 
     // Create object
     result = _device->GetDevice()->CreateComputePipelineState(&psDesc, IID_PPV_ARGS(&_state));
+#if COMPILE_WITH_PSO_PRECACHING
     psoLookup.Flags |= GPUPipelineLookup::Miss;
+#endif
     LOG_DIRECTX_RESULT(result);
 
 #if DX12_USE_PIPELINE_LIBRARY
@@ -258,10 +262,12 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(const GPUPipelineStateKeyDX1
     GetDebugName(name);
     ZoneText(name.Get(), name.Count() - 1);
 #endif
+#if COMPILE_WITH_PSO_PRECACHING
     GPUPipelineLookup psoLookup;
     if (precaching)
         psoLookup.Flags |= GPUPipelineLookup::Precaching;
     else
+#endif
     {
         ZoneColor(GPU_PSO_ZONE_COLOR_MISS);
     }
@@ -368,7 +374,9 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(const GPUPipelineStateKeyDX1
 #else
     result = _device->GetDevice()->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&state));
 #endif
+#if COMPILE_WITH_PSO_PRECACHING
     psoLookup.Flags |= GPUPipelineLookup::Miss;
+#endif
     LOG_DIRECTX_RESULT(result);
     if (FAILED(result))
     {
@@ -395,7 +403,7 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(const GPUPipelineStateKeyDX1
     }
 #endif
 
-#if GPU_ENABLE_DEVELOPMENT
+#if GPU_ENABLE_DEVELOPMENT && COMPILE_WITH_PSO_PRECACHING
     // Check if similar PSO was precached but this one missed (eg. due to RT/Depth formats mismatch)
     if (!precaching && _precachedPSOs.HasItems() && CommandLine::Options.GPUDebug.IsTrue())
     {
@@ -449,7 +457,7 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(const GPUPipelineStateKeyDX1
 
     // Cache it
     _states.Add(key, state);
-#if GPU_ENABLE_DEVELOPMENT
+#if GPU_ENABLE_DEVELOPMENT && COMPILE_WITH_PSO_PRECACHING
     if (precaching)
         _precachedPSOs.Add(key);
 #endif
@@ -463,7 +471,7 @@ void GPUPipelineStateDX12::OnReleaseGPU()
     for (auto i = _states.Begin(); i.IsNotEnd(); ++i)
         _device->AddResourceToLateRelease(i->Value, nullptr, DX12_RESOURCE_DELETE_SAFE_FRAMES_COUNT, true);
     _states.Clear();
-#if GPU_ENABLE_DEVELOPMENT
+#if GPU_ENABLE_DEVELOPMENT && COMPILE_WITH_PSO_PRECACHING
     _precachedPSOs.Clear();
 #endif
 }
@@ -609,11 +617,15 @@ bool GPUPipelineStateDX12::Init(const Description& desc)
     return GPUPipelineState::Init(desc);
 }
 
+#if COMPILE_WITH_PSO_PRECACHING
+
 void GPUPipelineStateDX12::PrecachePSO(const PrecacheContext& context)
 {
     GPUPipelineStateKeyDX12 key;
     key.Init(context.DepthFormat, context.RTCount, context.RTFormats, context.MSAA, (GPUVertexLayoutDX12*)context.VertexLayout);
     GetState(key, true);
 }
+
+#endif
 
 #endif

@@ -8,7 +8,7 @@
 struct MaterialPrecacheFlags
 {
     // Different vertex geometry types that affect Vertex Shader permutations.
-    enum GeometryFlags
+    enum GeometryFlags : uint32
     {
         Mesh = 1 << 0,
         MeshLightmapped = 1 << 1,
@@ -21,8 +21,8 @@ struct MaterialPrecacheFlags
         GeometryBits = 6
     };
 
-    // Based on object scale (World matrix determinant sign) geoemtry needs to be flipped and so culling mode
-    enum WorldDeterminantFlags
+    // Based on object scale (World matrix determinant sign) geometry needs to be flipped and so culling mode
+    enum WorldDeterminantFlags : uint32
     {
         Positive = 1,
         Negative = 2,
@@ -33,7 +33,7 @@ struct MaterialPrecacheFlags
     {
         struct
         {
-            uint32 Geoemtry : GeometryBits;
+            uint32 Geometry : GeometryBits;
             uint32 WorldDeterminant : WorldDeterminantBits;
         };
         uint32 Flags;

@@ -682,9 +682,9 @@ void Foliage::PrecachePSOBatch(GPUPipelineCacheBatch& batch)
 {
 #if COMPILE_WITH_PSO_PRECACHING
     INIT_MATERIAL_PRECACHE_FLAGS(materialFlags);
-    materialFlags.Geoemtry = MaterialPrecacheFlags::Mesh;
+    materialFlags.Geometry = MaterialPrecacheFlags::Mesh;
     if (_useLightmapPSO)
-        materialFlags.Geoemtry |= MaterialPrecacheFlags::MeshLightmapped;
+        materialFlags.Geometry |= MaterialPrecacheFlags::MeshLightmapped;
     for (auto& type : FoliageTypes)
     {
         auto* model = type.Model.Get();
