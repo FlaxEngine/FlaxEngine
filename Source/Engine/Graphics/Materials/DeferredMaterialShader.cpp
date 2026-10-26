@@ -16,9 +16,6 @@
 #if USE_EDITOR
 #include "Engine/Renderer/Lightmaps.h"
 #endif
-#if COMPILE_WITH_PSO_PRECACHING
-#include "Engine/Utilities/BitIterator.h"
-#endif
 
 bool DeferredMaterialShader::CanUseLightmap() const
 {
@@ -90,6 +87,7 @@ void DeferredMaterialShader::Bind(BindParameters& params)
 
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Utilities/BitIterator.h"
 
 void DeferredMaterialShader::PrecachePSO(const PrecacheParameters& params)
 {
@@ -108,8 +106,7 @@ void DeferredMaterialShader::PrecachePSO(const PrecacheParameters& params)
             context.VertexLayout = GPUVertexLayout::Get(elements, true);
         }
         auto cache = instanced ? &_cacheInstanced : &_cache;
-        constexpr uint32 geometryTypes = MaterialPrecacheFlags::GeometrySurface;
-        for (uint32 geometry : BitIterator(params.MaterialFlags.Geoemtry & geometryTypes))
+        for (uint32 geometry : BitIterator(params.MaterialFlags.Geoemtry & MaterialPrecacheFlags::GeometrySurface))
         {
             bool useSkinning = geometry != MaterialPrecacheFlags::Mesh;
             bool usePerBoneMotionBlur = geometry == MaterialPrecacheFlags::SkinnedWithPrevBones;

@@ -14,8 +14,11 @@ struct MaterialPrecacheFlags
         MeshLightmapped = 1 << 1,
         Skinned = 1 << 2,
         SkinnedWithPrevBones = 1 << 3,
+        Sprite = 1 << 4,
+        Ribbon = 1 << 5,
         GeometrySurface = Mesh | MeshLightmapped | Skinned | SkinnedWithPrevBones,
-        GeometryBits = 4
+        Particle = Mesh | Sprite | Ribbon,
+        GeometryBits = 6
     };
 
     // Based on object scale (World matrix determinant sign) geoemtry needs to be flipped and so culling mode

@@ -20,6 +20,11 @@ class ParticleEmitterInstance;
 API_CLASS(NoSpawn) class FLAXENGINE_API ParticleEmitter : public ShaderAssetTypeBase<BinaryAsset>
 {
     DECLARE_BINARY_ASSET_HEADER(ParticleEmitter, ShadersSerializedVersion);
+    friend class Particles;
+private:
+#if PLATFORM_DESKTOP || PLATFORM_APPLE_FAMILY || PLATFORM_SWITCH || PLATFORM_ANDROID // COMPILE_WITH_PSO_PRECACHING could be used with Graphics module in PublicDependencies
+    volatile int32 _precacheHandle = 0;
+#endif
 
 public:
     /// <summary>
@@ -170,6 +175,7 @@ public:
 
 private:
     void WaitForAsset(Asset* asset);
+    void PrecachePSOBatch(struct GPUPipelineCacheBatch& batch);
 
 public:
     // [BinaryAsset]

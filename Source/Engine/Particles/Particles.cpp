@@ -13,6 +13,7 @@
 #include "Engine/Graphics/DynamicBuffer.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUPass.h"
+#include "Engine/Graphics/GPUPipelineCache.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
@@ -31,13 +32,23 @@
 #include "Editor/Editor.h"
 #endif
 
-PACK_STRUCT(struct SpriteParticleVertex
-    {
-    float X;
-    float Y;
-    float U;
-    float V;
-    });
+GPUVertexLayout* ParticleSpriteVertex::GetLayout()
+{
+    return GPUVertexLayout::Get({
+            { VertexElement::Types::Position, 0, 0, 0, PixelFormat::R32G32_Float },
+            { VertexElement::Types::TexCoord, 0, 0, 0, PixelFormat::R32G32_Float }
+        });
+}
+
+GPUVertexLayout* ParticleRibbonVertex::GetLayout()
+{
+    return GPUVertexLayout::Get({
+        { VertexElement::Types::TexCoord0, 0, 0, 0, PixelFormat::R32_UInt },
+        { VertexElement::Types::TexCoord1, 0, 0, 0, PixelFormat::R32_UInt },
+        { VertexElement::Types::TexCoord2, 0, 0, 0, PixelFormat::R32_UInt },
+        { VertexElement::Types::TexCoord3, 0, 0, 0, PixelFormat::R32_Float },
+        });
+}
 
 class SpriteParticleRenderer
 {
@@ -58,7 +69,7 @@ public:
             return false;
         VB = GPUDevice::Instance->CreateBuffer(TEXT("SpriteParticleRenderer.VB"));
         IB = GPUDevice::Instance->CreateBuffer(TEXT("SpriteParticleRenderer.IB"));
-        SpriteParticleVertex vertexBuffer[] =
+        ParticleSpriteVertex vertexBuffer[] =
         {
             { -0.5f, -0.5f, 0.0f, 0.0f },
             { +0.5f, -0.5f, 1.0f, 0.0f },
@@ -66,11 +77,8 @@ public:
             { -0.5f, +0.5f, 0.0f, 1.0f },
         };
         uint16 indexBuffer[] = { 0, 1, 2, 0, 2, 3, };
-        auto layout = GPUVertexLayout::Get({
-            { VertexElement::Types::Position, 0, 0, 0, PixelFormat::R32G32_Float },
-            { VertexElement::Types::TexCoord, 0, 0, 0, PixelFormat::R32G32_Float },
-        });
-        bool result = VB->Init(GPUBufferDescription::Vertex(layout, sizeof(SpriteParticleVertex), VertexCount, vertexBuffer)) ||
+        auto layout = ParticleSpriteVertex::GetLayout();
+        bool result = VB->Init(GPUBufferDescription::Vertex(layout, sizeof(ParticleSpriteVertex), VertexCount, vertexBuffer)) ||
                       IB->Init(GPUBufferDescription::Index(sizeof(uint16), IndexCount, indexBuffer));
         Platform::AtomicStore(&Ready, 1);
         return result;
@@ -95,24 +103,6 @@ public:
         drawCall.Draw.IndicesCount = IndexCount;
     }
 };
-
-PACK_STRUCT(struct RibbonParticleVertex {
-    uint32 Order;
-    uint32 ParticleIndex;
-    uint32 PrevParticleIndex;
-    float Distance;
-    // TODO: pack into half/uint16 data
-
-    static GPUVertexLayout* GetLayout()
-    {
-        return GPUVertexLayout::Get({
-            { VertexElement::Types::TexCoord0, 0, 0, 0, PixelFormat::R32_UInt },
-            { VertexElement::Types::TexCoord1, 0, 0, 0, PixelFormat::R32_UInt },
-            { VertexElement::Types::TexCoord2, 0, 0, 0, PixelFormat::R32_UInt },
-            { VertexElement::Types::TexCoord3, 0, 0, 0, PixelFormat::R32_Float },
-        });
-    }
-    });
 
 struct EmitterCache
 {
@@ -360,7 +350,7 @@ void DrawEmitterCPU(RenderContextBatch& renderContextBatch, ParticleBuffer* buff
         else
             buffer->GPU.RibbonIndexBufferDynamic->Clear();
         if (!buffer->GPU.RibbonVertexBufferDynamic)
-            buffer->GPU.RibbonVertexBufferDynamic = New<DynamicVertexBuffer>(0, (uint32)sizeof(RibbonParticleVertex), TEXT("RibbonVertexBufferDynamic"), RibbonParticleVertex::GetLayout());
+            buffer->GPU.RibbonVertexBufferDynamic = New<DynamicVertexBuffer>(0, (uint32)sizeof(ParticleRibbonVertex), TEXT("RibbonVertexBufferDynamic"), ParticleRibbonVertex::GetLayout());
         else
             buffer->GPU.RibbonVertexBufferDynamic->Clear();
         auto& indexBuffer = buffer->GPU.RibbonIndexBufferDynamic->Data;
@@ -396,10 +386,10 @@ void DrawEmitterCPU(RenderContextBatch& renderContextBatch, ParticleBuffer* buff
 
                 // 2 vertices
                 {
-                    vertexBuffer.AddUninitialized(2 * sizeof(RibbonParticleVertex));
-                    auto ptr = (RibbonParticleVertex*)(vertexBuffer.Get() + firstVertexIndex);
+                    vertexBuffer.AddUninitialized(2 * sizeof(ParticleRibbonVertex));
+                    auto ptr = (ParticleRibbonVertex*)(vertexBuffer.Get() + firstVertexIndex);
 
-                    RibbonParticleVertex v = { 0, idxThis, idxThis, totalDistance };
+                    ParticleRibbonVertex v = { 0, idxThis, idxThis, totalDistance };
 
                     *ptr++ = v;
                     *ptr++ = v;
@@ -419,11 +409,11 @@ void DrawEmitterCPU(RenderContextBatch& renderContextBatch, ParticleBuffer* buff
                     // 2 vertices
                     {
                         auto idx = vertexBuffer.Count();
-                        vertexBuffer.AddUninitialized(2 * sizeof(RibbonParticleVertex));
-                        auto ptr = (RibbonParticleVertex*)(vertexBuffer.Get() + idx);
+                        vertexBuffer.AddUninitialized(2 * sizeof(ParticleRibbonVertex));
+                        auto ptr = (ParticleRibbonVertex*)(vertexBuffer.Get() + idx);
 
                         // TODO: this could be optimized by manually fetching per-particle data in vertex shader (2x less data to send and fetch)
-                        RibbonParticleVertex v = { i, idxThis, idxPrev, totalDistance };
+                        ParticleRibbonVertex v = { i, idxThis, idxPrev, totalDistance };
 
                         *ptr++ = v;
                         *ptr++ = v;
@@ -458,7 +448,7 @@ void DrawEmitterCPU(RenderContextBatch& renderContextBatch, ParticleBuffer* buff
                 continue;
             {
                 // Fix first particle vertex data to have proper direction
-                auto ptr0 = (RibbonParticleVertex*)(vertexBuffer.Get() + firstVertexIndex);
+                auto ptr0 = (ParticleRibbonVertex*)(vertexBuffer.Get() + firstVertexIndex);
                 auto ptr1 = ptr0 + 1;
                 auto ptr2 = ptr1 + 1;
                 ptr0->PrevParticleIndex = ptr1->PrevParticleIndex = ptr2->ParticleIndex;
@@ -1205,7 +1195,7 @@ void Particles::DrawParticles(RenderContextBatch& renderContextBatch, ParticleEf
         if (!buffer)
             continue;
         auto emitter = buffer->Emitter;
-        if (!emitter || !emitter->IsLoaded())
+        if (!emitter || !emitter->IsLoaded() || !GPU_PSO_READY(emitter->_precacheHandle))
             continue;
 
         drawCall.World = worlds[(int32)emitter->SimulationSpace];

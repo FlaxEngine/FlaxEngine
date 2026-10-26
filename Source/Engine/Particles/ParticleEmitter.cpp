@@ -34,6 +34,12 @@
 #if COMPILE_WITH_PARTICLE_GPU_GRAPH && COMPILE_WITH_SHADER_COMPILER
 #include "Engine/Utilities/Encryption.h"
 #endif
+#if COMPILE_WITH_PSO_PRECACHING
+#include "Engine/Graphics/GPUPipelineCache.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
+#include "Engine/Content/Assets/Model.h"
+#include "Engine/Content/Assets/Material.h"
+#endif
 
 REGISTER_BINARY_ASSET_WITH_UPGRADER(ParticleEmitter, "FlaxEngine.ParticleEmitter", ShaderAssetUpgrader, false);
 
@@ -90,6 +96,95 @@ void ParticleEmitter::WaitForAsset(Asset* asset)
             }
         }
     }
+}
+
+void ParticleEmitter::PrecachePSOBatch(GPUPipelineCacheBatch& batch)
+{
+#if COMPILE_WITH_PSO_PRECACHING
+    INIT_MATERIAL_PRECACHE_FLAGS(materialFlags);
+    for (int32 moduleIndex = 0; moduleIndex < Graph.RenderModules.Count() && moduleIndex < 32; moduleIndex++)
+    {
+        auto module = Graph.RenderModules[moduleIndex];
+        switch (module->TypeID)
+        {
+        // Sprite Rendering
+        case 400:
+        {
+            const auto material = (MaterialBase*)module->Assets[0].Get();
+            const auto moduleDrawModes = module->Values.Count() > 3 ? (DrawPass)module->Values[3].AsInt : DrawPass::Default;
+            if (material &&
+                !material->WaitForLoaded() &&
+                material->IsParticle() &&
+                (material->GetDrawModes() & moduleDrawModes) != DrawPass::None)
+            {
+                auto& materialPSO = batch.Materials[material->GetMaterial()];
+                materialPSO.DrawModes = moduleDrawModes;
+                materialPSO.MaterialFlags |= materialFlags;
+                materialPSO.MaterialFlags.Geoemtry |= MaterialPrecacheFlags::Sprite;
+                materialPSO.VertexLayouts.AddUnique(ParticleSpriteVertex::GetLayout());
+            }
+            break;
+        }
+        // Model Rendering
+        case 403:
+        {
+            const auto model = (Model*)module->Assets[0].Get();
+            const auto material = (MaterialBase*)module->Assets[1].Get();
+            const auto moduleDrawModes = module->Values.Count() > 4 ? (DrawPass)module->Values[4].AsInt : DrawPass::Default;
+            if (model &&
+                !model->WaitForLoaded() &&
+                material &&
+                !material->WaitForLoaded() &&
+                material->IsParticle() &&
+                (material->GetDrawModes() & moduleDrawModes) != DrawPass::None)
+            {
+                for (const auto& lod : model->LODs)
+                {
+                    for (const auto& mesh : lod.Meshes)
+                    {
+                        auto& materialPSO = batch.Materials[material->GetMaterial()];
+                        materialPSO.DrawModes |= moduleDrawModes;
+                        materialPSO.MaterialFlags |= materialFlags;
+                        materialPSO.MaterialFlags.Geoemtry |= MaterialPrecacheFlags::Mesh;
+                        materialPSO.VertexLayouts.AddUnique(mesh.GetVertexLayout());
+                    }
+                }
+            }
+            break;
+        }
+        // Ribbon Rendering
+        case 404:
+        {
+            const auto material = (MaterialBase*)module->Assets[0].Get();
+            const auto moduleDrawModes = module->Values.Count() > 6 ? (DrawPass)module->Values[6].AsInt : DrawPass::Default;
+            if (material &&
+                !material->WaitForLoaded() &&
+                material->IsParticle() &&
+                (material->GetDrawModes() & moduleDrawModes) != DrawPass::None)
+            {
+                auto& materialPSO = batch.Materials[material->GetMaterial()];
+                materialPSO.DrawModes = moduleDrawModes;
+                materialPSO.MaterialFlags |= materialFlags;
+                materialPSO.MaterialFlags.Geoemtry |= MaterialPrecacheFlags::Ribbon;
+                materialPSO.VertexLayouts.AddUnique(ParticleRibbonVertex::GetLayout());
+            }
+            break;
+        }
+        // Volumetric Fog Rendering
+        case 405:
+        {
+            const auto material = (MaterialBase*)module->Assets[0].Get();
+            if (material &&
+                !material->WaitForLoaded() &&
+                material->GetInfo().Domain == MaterialDomain::VolumeParticle)
+            {
+                // TODO: precaching volume particles
+            }
+            break;
+        }
+        }
+    }
+#endif
 }
 
 #if COMPILE_WITH_PARTICLE_GPU_GRAPH && COMPILE_WITH_SHADER_COMPILER
@@ -328,6 +423,16 @@ Asset::LoadResult ParticleEmitter::load()
 	SimulationMode = ParticlesSimulationMode::CPU;
 #endif
 
+#if COMPILE_WITH_PSO_PRECACHING
+    // Precache PSOs for mesh rendering modules
+    if (GPU_PSO_PRECACHING(Level))
+    {
+        GPUPipelineCache::BatchCallback f;
+        f.Bind<ParticleEmitter, &ParticleEmitter::PrecachePSOBatch>(this);
+        GPUPipelineCache::PrecacheAsync(f, &_precacheHandle);
+    }
+#endif
+
     // Wait for resources used by the emitter to be loaded
     // eg. texture used to place particles on spawn needs to be available
     for (const auto& node : Graph.Nodes)
@@ -354,6 +459,7 @@ Asset::LoadResult ParticleEmitter::load()
 
 void ParticleEmitter::unload(bool isReloading)
 {
+    GPU_PSO_WAIT(_precacheHandle);
     ScopeWriteLock systemScope(Particles::SystemLocker);
 #if COMPILE_WITH_SHADER_COMPILER
     UnregisterForShaderReloads(this);

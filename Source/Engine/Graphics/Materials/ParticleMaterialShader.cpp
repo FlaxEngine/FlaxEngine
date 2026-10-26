@@ -167,6 +167,41 @@ void ParticleMaterialShader::Bind(BindParameters& params)
     context->SetState(state);
 }
 
+#if COMPILE_WITH_PSO_PRECACHING
+
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
+#include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Utilities/BitIterator.h"
+
+void ParticleMaterialShader::PrecachePSO(const PrecacheParameters& params)
+{
+    // Precache all used shader permutations
+    PROFILE_CPU();
+    auto& context = *(GPUPipelineState::PrecacheContext*)params.PrecacheContext;
+    for (uint32 geometry : BitIterator(params.MaterialFlags.Geoemtry & MaterialPrecacheFlags::Particle))
+    {
+        PipelineStateCache* psCache = nullptr;
+        switch (geometry)
+        {
+        case MaterialPrecacheFlags::Sprite:
+            psCache = _cacheSprite.GetPS(params.Pass);
+            break;
+        case MaterialPrecacheFlags::Mesh:
+            psCache = _cacheModel.GetPS(params.Pass);
+            break;
+        case MaterialPrecacheFlags::Ribbon:
+            psCache = _cacheRibbon.GetPS(params.Pass);
+            break;
+        }
+        if (!psCache)
+            continue;
+        auto cullMode = params.Pass == DrawPass::Depth ? CullMode::TwoSided : _info.CullMode;
+        PipelineStateCache::PrecachePSO(psCache, params, this, cullMode);
+    }
+}
+
+#endif
+
 void ParticleMaterialShader::Unload()
 {
     // Base

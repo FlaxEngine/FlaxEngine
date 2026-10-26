@@ -15,6 +15,27 @@ class ParticleSystem;
 class ParticleBuffer;
 class SceneRenderTask;
 class Actor;
+class GPUVertexLayout;
+
+PACK_STRUCT(struct ParticleSpriteVertex
+{
+    float X;
+    float Y;
+    float U;
+    float V;
+
+    static GPUVertexLayout* GetLayout();
+});
+
+PACK_STRUCT(struct ParticleRibbonVertex {
+    uint32 Order;
+    uint32 ParticleIndex;
+    uint32 PrevParticleIndex;
+    float Distance;
+    // TODO: pack into half/uint16 data
+
+    static GPUVertexLayout* GetLayout();
+});
 
 /// <summary>
 /// The particles simulation service.

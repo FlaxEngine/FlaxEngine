@@ -15,9 +15,6 @@
 #if USE_EDITOR
 #include "Engine/Renderer/Lightmaps.h"
 #endif
-#if COMPILE_WITH_PSO_PRECACHING
-#include "Engine/Utilities/BitIterator.h"
-#endif
 
 DrawPass ForwardMaterialShader::GetDrawModes() const
 {
@@ -93,6 +90,7 @@ void ForwardMaterialShader::Bind(BindParameters& params)
 
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Utilities/BitIterator.h"
 
 void ForwardMaterialShader::PrecachePSO(const PrecacheParameters& params)
 {
@@ -111,8 +109,7 @@ void ForwardMaterialShader::PrecachePSO(const PrecacheParameters& params)
             context.VertexLayout = GPUVertexLayout::Get(elements, true);
         }
         auto cache = instanced ? &_cacheInstanced : &_cache;
-        constexpr uint32 geometryTypes = MaterialPrecacheFlags::GeometrySurface;
-        for (uint32 geometry : BitIterator(params.MaterialFlags.Geoemtry & geometryTypes))
+        for (uint32 geometry : BitIterator(params.MaterialFlags.Geoemtry & MaterialPrecacheFlags::GeometrySurface))
         {
             bool useSkinning = geometry == MaterialPrecacheFlags::Skinned;
             for (uint32 worldDeterminant : BitIterator(params.MaterialFlags.WorldDeterminant))
