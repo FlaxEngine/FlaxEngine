@@ -252,10 +252,8 @@ public:
     /// <param name="info">The packed drawing info data.</param>
     void Draw(const RenderContextBatch& renderContextBatch, const Mesh::DrawInfo& info);
 
-#if COMPILE_WITH_PSO_PRECACHING
     // Adds PSO precaching into the batch for all materials and options for a specific model instance.
     void PrecachePSO(struct GPUPipelineCacheBatch& batch, MaterialPrecacheFlags materialFlags, const ModelInstanceEntries& entries, DrawPass drawModes = DrawPass::Default, int32 forcedLod = -1, int32 lodBias = 0, bool hasVertexColors = false);
-#endif
 
 public:
     /// <summary>

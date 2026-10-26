@@ -25,6 +25,10 @@
 #include "Engine/Graphics/Models/ModelData.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 #endif
+#if COMPILE_WITH_PSO_PRECACHING
+#include "Engine/Graphics/GPUPipelineCache.h"
+#include "Engine/Graphics/GPUDevice.h"
+#endif
 
 REGISTER_BINARY_ASSET_WITH_UPGRADER(SkinnedModel, "FlaxEngine.SkinnedModel", SkinnedModelAssetUpgrader, true);
 
@@ -264,13 +268,9 @@ void SkinnedModel::Draw(const RenderContextBatch& renderContextBatch, const Skin
     ModelDraw(this, renderContextBatch.GetMainContext(), renderContextBatch, info);
 }
 
-#if COMPILE_WITH_PSO_PRECACHING
-
-#include "Engine/Graphics/GPUPipelineCache.h"
-#include "Engine/Graphics/GPUDevice.h"
-
 void SkinnedModel::PrecachePSO(GPUPipelineCacheBatch& batch, MaterialPrecacheFlags materialFlags, const ModelInstanceEntries& entries, DrawPass drawModes, int32 forcedLod, int32 lodBias)
 {
+#if COMPILE_WITH_PSO_PRECACHING
     // Customize range of LODs to use
     int32 lodMin = 0, lodMax = LODs.Count() - 1;
     if (forcedLod != -1)
@@ -305,9 +305,8 @@ void SkinnedModel::PrecachePSO(GPUPipelineCacheBatch& batch, MaterialPrecacheFla
             materialPSO.VertexLayouts.AddUnique(vertexLayout);
         }
     }
-}
-
 #endif
+}
 
 bool SkinnedModel::SetupLODs(const Span<int32>& meshesCountPerLod)
 {

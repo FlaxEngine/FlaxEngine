@@ -29,6 +29,9 @@
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #endif
+#if COMPILE_WITH_PSO_PRECACHING
+#include "Engine/Graphics/GPUPipelineCache.h"
+#endif
 
 REGISTER_BINARY_ASSET_ABSTRACT(ModelBase, "FlaxEngine.ModelBase");
 
@@ -149,12 +152,9 @@ void Model::Draw(const RenderContextBatch& renderContextBatch, const Mesh::DrawI
     ModelDraw(this, renderContextBatch.GetMainContext(), renderContextBatch, info);
 }
 
-#if COMPILE_WITH_PSO_PRECACHING
-
-#include "Engine/Graphics/GPUPipelineCache.h"
-
 void Model::PrecachePSO(GPUPipelineCacheBatch& batch, MaterialPrecacheFlags materialFlags, const ModelInstanceEntries& entries, DrawPass drawModes, int32 forcedLod, int32 lodBias, bool hasVertexColors)
 {
+#if COMPILE_WITH_PSO_PRECACHING
     // Customize range of LODs to use
     int32 lodMin = 0, lodMax = LODs.Count() - 1;
     if (forcedLod != -1)
@@ -196,9 +196,8 @@ void Model::PrecachePSO(GPUPipelineCacheBatch& batch, MaterialPrecacheFlags mate
             materialPSO.VertexLayouts.AddUnique(vertexLayout);
         }
     }
-}
-
 #endif
+}
 
 bool Model::SetupLODs(const Span<int32>& meshesCountPerLod)
 {
