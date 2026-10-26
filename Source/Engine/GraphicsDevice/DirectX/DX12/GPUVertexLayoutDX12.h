@@ -13,7 +13,7 @@
 class GPUVertexLayoutDX12 : public GPUResourceDX12<GPUVertexLayout>
 {
 public:
-	GPUVertexLayoutDX12(GPUDeviceDX12* device, const Elements& elements, bool explicitOffsets);
+	GPUVertexLayoutDX12(GPUDeviceDX12* device, const Elements& elements);
 
 #if DX12_USE_PIPELINE_LIBRARY
     uint64 Hash;

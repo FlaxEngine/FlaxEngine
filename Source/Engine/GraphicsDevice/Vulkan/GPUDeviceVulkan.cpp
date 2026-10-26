@@ -473,10 +473,10 @@ uint32 GetHash(const FramebufferVulkan::Key& key)
     return hash;
 }
 
-GPUVertexLayoutVulkan::GPUVertexLayoutVulkan(GPUDeviceVulkan* device, const Elements& elements, bool explicitOffsets)
+GPUVertexLayoutVulkan::GPUVertexLayoutVulkan(GPUDeviceVulkan* device, const Elements& elements)
     : GPUResourceVulkan<GPUVertexLayout>(device, StringView::Empty)
 {
-    SetElements(elements, explicitOffsets);
+    SetElements(elements);
     MaxSlot = 0;
     for (int32 i = 0; i < elements.Count(); i++)
     {
@@ -2393,9 +2393,9 @@ GPUSampler* GPUDeviceVulkan::CreateSampler()
     return New<GPUSamplerVulkan>(this);
 }
 
-GPUVertexLayout* GPUDeviceVulkan::CreateVertexLayout(const VertexElements& elements, bool explicitOffsets)
+GPUVertexLayout* GPUDeviceVulkan::CreateVertexLayout(const VertexElements& elements)
 {
-    return New<GPUVertexLayoutVulkan>(this, elements, explicitOffsets);
+    return New<GPUVertexLayoutVulkan>(this, elements);
 }
 
 GPUSwapChain* GPUDeviceVulkan::CreateSwapChain(Window* window)

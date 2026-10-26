@@ -24,10 +24,10 @@
 #include "Engine/Profiler/ProfilerMemory.h"
 #include <emscripten/emscripten.h>
 
-GPUVertexLayoutWebGPU::GPUVertexLayoutWebGPU(GPUDeviceWebGPU* device, const Elements& elements, bool explicitOffsets)
+GPUVertexLayoutWebGPU::GPUVertexLayoutWebGPU(GPUDeviceWebGPU* device, const Elements& elements)
     : GPUResourceBase<GPUDeviceWebGPU, GPUVertexLayout>(device, StringView::Empty)
 {
-    SetElements(elements, explicitOffsets);
+    SetElements(elements);
 }
 
 GPUQuerySetWebGPU::GPUQuerySetWebGPU(WGPUInstance instance, WGPUDevice device, GPUQueryType type, uint32 count)
@@ -959,9 +959,9 @@ GPUSampler* GPUDeviceWebGPU::CreateSampler()
     return New<GPUSamplerWebGPU>(this);
 }
 
-GPUVertexLayout* GPUDeviceWebGPU::CreateVertexLayout(const VertexElements& elements, bool explicitOffsets)
+GPUVertexLayout* GPUDeviceWebGPU::CreateVertexLayout(const VertexElements& elements)
 {
-    return New<GPUVertexLayoutWebGPU>(this, elements, explicitOffsets);
+    return New<GPUVertexLayoutWebGPU>(this, elements);
 }
 
 GPUSwapChain* GPUDeviceWebGPU::CreateSwapChain(Window* window)

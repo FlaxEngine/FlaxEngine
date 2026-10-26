@@ -23,7 +23,7 @@ private:
 protected:
     GPUVertexLayout();
 
-    void SetElements(const Elements& elements, bool explicitOffsets);
+    void SetElements(const Elements& elements);
 
 public:
     /// <summary>

@@ -13,7 +13,7 @@
 class GPUVertexLayoutVulkan : public GPUResourceVulkan<GPUVertexLayout>
 {
 public:
-	GPUVertexLayoutVulkan(GPUDeviceVulkan* device, const Elements& elements, bool explicitOffsets);
+	GPUVertexLayoutVulkan(GPUDeviceVulkan* device, const Elements& elements);
 
 	int32 MaxSlot;
 };

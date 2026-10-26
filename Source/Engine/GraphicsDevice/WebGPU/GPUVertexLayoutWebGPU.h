@@ -13,7 +13,7 @@
 class GPUVertexLayoutWebGPU : public GPUResourceBase<GPUDeviceWebGPU, GPUVertexLayout>
 {
 public:
-	GPUVertexLayoutWebGPU(GPUDeviceWebGPU* device, const Elements& elements, bool explicitOffsets);
+	GPUVertexLayoutWebGPU(GPUDeviceWebGPU* device, const Elements& elements);
 };
 
 #endif

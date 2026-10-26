@@ -65,11 +65,11 @@ void D3D12MA_Free(void* pMemory, void* pPrivateData)
     Platform::Free(pMemory);
 }
 
-GPUVertexLayoutDX12::GPUVertexLayoutDX12(GPUDeviceDX12* device, const Elements& elements, bool explicitOffsets)
+GPUVertexLayoutDX12::GPUVertexLayoutDX12(GPUDeviceDX12* device, const Elements& elements)
     : GPUResourceDX12<GPUVertexLayout>(device, StringView::Empty)
     , InputElementsCount(elements.Count())
 {
-    SetElements(elements, explicitOffsets);
+    SetElements(elements);
     const VertexElement* ptr = GetElements().Get();
     for (int32 i = 0; i < elements.Count(); i++)
     {
@@ -1282,9 +1282,9 @@ GPUSampler* GPUDeviceDX12::CreateSampler()
     return New<GPUSamplerDX12>(this);
 }
 
-GPUVertexLayout* GPUDeviceDX12::CreateVertexLayout(const VertexElements& elements, bool explicitOffsets)
+GPUVertexLayout* GPUDeviceDX12::CreateVertexLayout(const VertexElements& elements)
 {
-    return New<GPUVertexLayoutDX12>(this, elements, explicitOffsets);
+    return New<GPUVertexLayoutDX12>(this, elements);
 }
 
 GPUSwapChain* GPUDeviceDX12::CreateSwapChain(Window* window)

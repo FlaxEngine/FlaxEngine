@@ -98,25 +98,20 @@ GPUVertexLayout::GPUVertexLayout()
 {
 }
 
-void GPUVertexLayout::SetElements(const Elements& elements, bool explicitOffsets)
+void GPUVertexLayout::SetElements(const Elements& elements)
 {
     uint32 offsets[GPU_MAX_VB_BINDED + 1] = {};
-    uint32 maxOffset[GPU_MAX_VB_BINDED + 1] = {};
+    uint32 maxStride[GPU_MAX_VB_BINDED + 1] = {};
     _elements = elements;
     for (int32 i = 0; i < _elements.Count(); i++)
     {
         VertexElement& e = _elements[i];
         ASSERT(e.Slot <= GPU_MAX_VB_BINDED); // One special slot after all VBs for any missing vertex elements binding (on Vulkan)
-        uint32& offset = offsets[e.Slot];
-        if (e.Offset != 0 || explicitOffsets)
-            offset = e.Offset;
-        else
-            e.Offset = (byte)offset;
-        offset += PixelFormatExtensions::SizeInBytes(e.Format);
-        maxOffset[e.Slot] = Math::Max(maxOffset[e.Slot], offset);
+        uint32 stride = e.Offset + PixelFormatExtensions::SizeInBytes(e.Format);
+        maxStride[e.Slot] = Math::Max(maxStride[e.Slot], stride);
     }
     _stride = 0;
-    for (uint32 offset : maxOffset)
+    for (uint32 offset : maxStride)
         _stride += offset;
 }
 
@@ -144,9 +139,27 @@ VertexElement GPUVertexLayout::FindElement(VertexElement::Types type) const
 
 GPUVertexLayout* GPUVertexLayout::Get(const Elements& elements, bool explicitOffsets)
 {
+    const Elements* elementsPtr = &elements;
+    Elements newElements;
+    if (!explicitOffsets)
+    {
+        // Calculate offsets
+        uint32 offsets[GPU_MAX_VB_BINDED + 1] = {};
+        newElements = elements;
+        for (int32 i = 0; i < newElements.Count(); i++)
+        {
+            VertexElement& e = newElements[i];
+            ASSERT(e.Slot <= GPU_MAX_VB_BINDED); // One special slot after all VBs for any missing vertex elements binding (on Vulkan)
+            uint32& offset = offsets[e.Slot];
+            e.Offset = (byte)offset;
+            offset += PixelFormatExtensions::SizeInBytes(e.Format);
+        }
+        elementsPtr = &newElements;
+    }
+
     // Hash input layout
-    uint32 hash = explicitOffsets ? 131 : 0;
-    for (const VertexElement& element : elements)
+    uint32 hash = 0;
+    for (const VertexElement& element : *elementsPtr)
     {
         CombineHash(hash, GetHash(element));
     }
@@ -155,7 +168,7 @@ GPUVertexLayout* GPUVertexLayout::Get(const Elements& elements, bool explicitOff
     GPUVertexLayout* result;
     if (!LayoutCache.TryGet(hash, result))
     {
-        result = GPUDevice::Instance->CreateVertexLayout(elements, explicitOffsets);
+        result = GPUDevice::Instance->CreateVertexLayout(*elementsPtr);
         if (!result)
         {
 #if GPU_ENABLE_ASSERTION_LOW_LAYERS

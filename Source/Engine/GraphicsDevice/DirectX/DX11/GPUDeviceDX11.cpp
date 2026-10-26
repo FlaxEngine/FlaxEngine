@@ -196,11 +196,11 @@ static bool TryCreateDevice(IDXGIAdapter* adapter, D3D_FEATURE_LEVEL maxFeatureL
     return false;
 }
 
-GPUVertexLayoutDX11::GPUVertexLayoutDX11(GPUDeviceDX11* device, const Elements& elements, bool explicitOffsets)
+GPUVertexLayoutDX11::GPUVertexLayoutDX11(GPUDeviceDX11* device, const Elements& elements)
     : GPUResourceBase<GPUDeviceDX11, GPUVertexLayout>(device, StringView::Empty)
     , InputElementsCount(elements.Count())
 {
-    SetElements(elements, explicitOffsets);
+    SetElements(elements);
     for (int32 i = 0; i < elements.Count(); i++)
     {
         const VertexElement& src = GetElements().Get()[i];
@@ -1127,9 +1127,9 @@ GPUSampler* GPUDeviceDX11::CreateSampler()
     return New<GPUSamplerDX11>(this);
 }
 
-GPUVertexLayout* GPUDeviceDX11::CreateVertexLayout(const VertexElements& elements, bool explicitOffsets)
+GPUVertexLayout* GPUDeviceDX11::CreateVertexLayout(const VertexElements& elements)
 {
-    return New<GPUVertexLayoutDX11>(this, elements, explicitOffsets);
+    return New<GPUVertexLayoutDX11>(this, elements);
 }
 
 GPUSwapChain* GPUDeviceDX11::CreateSwapChain(Window* window)
