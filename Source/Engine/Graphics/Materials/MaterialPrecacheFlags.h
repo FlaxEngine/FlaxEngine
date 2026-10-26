@@ -69,4 +69,11 @@ struct MaterialPrecacheFlags
     flags.Flags = 0; \
     flags.WorldDeterminant = world.RotDeterminant() < 0 ? MaterialPrecacheFlags::Negative : MaterialPrecacheFlags::Positive
 
+#else
+
+struct MaterialPrecacheFlags
+{
+    uint32 Flags;
+};
+
 #endif

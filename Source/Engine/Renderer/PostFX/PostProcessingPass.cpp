@@ -227,7 +227,9 @@ void PostProcessingPass::PrecachePSO()
     context.RTFormats[0] = MainRenderTask::Instance->Buffers->GetOutputFormat();
     context.SetFullscreenTriangleLayout();
     context.RTAction = GPUDrawPassAction::Store;
-RETRY:
+#if USE_EDITOR
+    RETRY:
+#endif
     _psBloomBrightPass->PrecachePSO(context);
     _psBloomDownsample->PrecachePSO(context);
     _psBloomDualFilterUpsample->PrecachePSO(context);

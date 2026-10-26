@@ -3,9 +3,7 @@
 #pragma once
 
 #include "MaterialInfo.h"
-#if COMPILE_WITH_PSO_PRECACHING
 #include "MaterialPrecacheFlags.h"
-#endif
 
 struct MaterialParamsLink;
 class GPUShader;
@@ -181,7 +179,6 @@ public:
     virtual void Bind(BindParameters& params) = 0;
 
 public:
-#if COMPILE_WITH_PSO_PRECACHING
     /// <summary>
     /// Settings for the material PSO precaching.
     /// </summary>
@@ -200,5 +197,4 @@ public:
     virtual void PrecachePSO(const PrecacheParameters& params)
     {
     }
-#endif
 };

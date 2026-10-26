@@ -159,7 +159,7 @@ bool AtmospherePreCompute::GetCache(AtmosphereCache* cache)
 
 bool InitAtmospherePreCompute()
 {
-    if (_isReadyForCompute)
+    if (_isReadyForCompute || GPUDevice::Instance->GetRendererType() == RendererType::Null)
         return false;
     PROFILE_CPU();
 
@@ -226,10 +226,13 @@ void ReleaseAtmospherePreCompute()
 
 void AtmospherePreComputeService::Update()
 {
-    // Check if render job is done
+#if PLATFORM_DESKTOP
+    if (GPUDevice::Instance->GetRendererType() == RendererType::Null)
+        return;
+#endif
     if (isUpdateSynced())
     {
-        // Clear flags
+        // Clear flags when job is done
         _updateFrameNumber = 0;
         _isUpdatePending = false;
     }
