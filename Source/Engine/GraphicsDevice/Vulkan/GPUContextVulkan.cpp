@@ -442,7 +442,7 @@ void GPUContextVulkan::BeginRenderPass()
     RenderTargetLayoutVulkan layout;
     Platform::MemoryClear(&layout, sizeof(layout));
     layout.RTsCount = _rtCount;
-    layout.DepthFormat = _rtDepth ? _rtDepth->GetFormat() : PixelFormat::Unknown;
+    layout.DepthFormat = (byte)(_rtDepth ? _rtDepth->GetFormat() : PixelFormat::Unknown);
     VkClearValue clearValues[GPU_MAX_RT_BINDED + 1];
     PendingClear clear;
     for (int32 i = 0; i < _rtCount; i++)
@@ -450,7 +450,7 @@ void GPUContextVulkan::BeginRenderPass()
         auto handle = _rtTargets[i];
         if (handle)
         {
-            layout.RTVsFormats[i] = handle->GetFormat();
+            layout.RTVsFormats[i] = (byte)handle->GetFormat();
             framebufferKey.Attachments[i] = handle->GetFramebufferView();
             AddImageBarrier(handle, handle->LayoutRTV);
             uint64 mask = 1ull << i;
@@ -461,13 +461,7 @@ void GPUContextVulkan::BeginRenderPass()
             }
             if (_drawPass && _drawPass->RenderTargetsActions)
             {
-                GPUDrawPassAction action = _drawPass->RenderTargetsActions[i];
-                if ((uint32)action & (uint32)GPUDrawPassAction::Clear && _drawPassCanClear)
-                    layout.LoadClear |= mask;
-                else if (((uint32)action & (uint32)GPUDrawPassAction::LoadMask) == 0)
-                    layout.LoadDontCare |= mask;
-                else if (((uint32)action & (uint32)GPUDrawPassAction::StoreMask) == 0)
-                    layout.StoreDontCare |= mask;
+                layout.SetOp(_drawPass->RenderTargetsActions[i], mask, _drawPassCanStart);
             }
         }
     }
@@ -475,10 +469,6 @@ void GPUContextVulkan::BeginRenderPass()
     if (_rtDepth)
     {
         handle = _rtDepth;
-        layout.ReadDepth = true;
-        layout.ReadStencil = PixelFormatExtensions::HasStencil(handle->GetFormat());
-        layout.WriteDepth = handle->LayoutRTV == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || handle->LayoutRTV == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL || handle->LayoutRTV == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-        layout.WriteStencil = handle->LayoutRTV == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || handle->LayoutRTV == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL || handle->LayoutRTV == VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
         framebufferKey.AttachmentCount++;
         framebufferKey.Attachments[_rtCount] = handle->GetFramebufferView();
         AddImageBarrier(handle, handle->LayoutRTV);
@@ -490,13 +480,16 @@ void GPUContextVulkan::BeginRenderPass()
         }
         if (_drawPass)
         {
-            GPUDrawPassAction action = _drawPass->DepthAction;
-            if ((uint32)action & (uint32)GPUDrawPassAction::Clear && _drawPassCanClear)
-                layout.LoadClear |= mask;
-            else if (((uint32)action & (uint32)GPUDrawPassAction::LoadMask) == 0)
-                layout.LoadDontCare |= mask;
-            else if (((uint32)action & (uint32)GPUDrawPassAction::StoreMask) == 0)
+            layout.SetOp(_drawPass->DepthAction, mask, _drawPassCanStart);
+        }
+        else
+        {
+            bool writeDepth = handle->LayoutRTV == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || handle->LayoutRTV == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL || handle->LayoutRTV == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+            bool writeStencil = handle->LayoutRTV == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || handle->LayoutRTV == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL || handle->LayoutRTV == VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
+            if (!writeDepth && !writeStencil)
+            {
                 layout.StoreDontCare |= mask;
+            }
         }
     }
     else
@@ -509,8 +502,6 @@ void GPUContextVulkan::BeginRenderPass()
             return;
         }
 #endif
-        layout.ReadDepth = false;
-        layout.WriteDepth = false;
     }
     layout.MSAA = handle->GetMSAA();
 
@@ -524,7 +515,7 @@ void GPUContextVulkan::BeginRenderPass()
     VkExtent2D extent2D = { handle->Extent.width, handle->Extent.height };
     auto framebuffer = _device->GetOrCreateFramebuffer(framebufferKey, extent2D, handle->Layers);
     _renderPass = renderPass;
-    _drawPassCanClear = false;
+    _drawPassCanStart = false;
 
     FlushBarriers();
 
@@ -2072,7 +2063,7 @@ void GPUContextVulkan::BeginDrawPass(GPUDrawPass& pass)
     _drawPass = &pass;
     _rtDirtyFlag = true;
     _psDirtyFlag = true;
-    _drawPassCanClear = true;
+    _drawPassCanStart = true;
     _rtCount = pass.RenderTargetsCount;
     _rtDepth = (GPUTextureViewVulkan*)pass.DepthBuffer;
     Platform::MemoryCopy(_rtTargets, pass.RenderTargets, pass.RenderTargetsCount * sizeof(void*));

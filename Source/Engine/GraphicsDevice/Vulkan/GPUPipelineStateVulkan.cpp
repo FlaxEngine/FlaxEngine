@@ -673,35 +673,16 @@ void GPUPipelineStateVulkan::PrecachePSO(const PrecacheContext& context)
     RenderTargetLayoutVulkan layout;
     Platform::MemoryClear(&layout, sizeof(layout));
     layout.RTsCount = context.RTCount;
-    layout.DepthFormat = context.DepthFormat;
+    layout.DepthFormat = (byte)context.DepthFormat;
     layout.MSAA = context.MSAA;
-    for (int32 i = 0; i < layout.RTsCount; i++)
-        layout.RTVsFormats[i] = context.RTFormats[i];
     if (context.DepthFormat != PixelFormat::Unknown)
     {
-        GPUDrawPassAction action = context.DepthAction;
-        layout.ReadDepth = true;
-        layout.ReadStencil = PixelFormatExtensions::HasStencil(context.DepthFormat);
-        layout.WriteDepth = EnumHasAllFlags(action, GPUDrawPassAction::Store);
-        layout.WriteStencil = layout.ReadStencil && layout.WriteDepth;
-        uint64 mask = 1ull << context.RTCount;
-        if ((uint32)action & (uint32)GPUDrawPassAction::Clear)
-            layout.LoadClear |= mask;
-        else if (((uint32)action & (uint32)GPUDrawPassAction::LoadMask) == 0)
-            layout.LoadDontCare |= mask;
-        else if (((uint32)action & (uint32)GPUDrawPassAction::StoreMask) == 0)
-            layout.StoreDontCare |= mask;
+        layout.SetOp(context.DepthAction, 1ull << context.RTCount);
     }
     for (int32 i = 0; i < context.RTCount; i++)
     {
-        GPUDrawPassAction action = (GPUDrawPassAction)context.RTAction;
-        uint64 mask = 1ull << i;
-        if ((uint32)action & (uint32)GPUDrawPassAction::Clear)
-            layout.LoadClear |= mask;
-        else if (((uint32)action & (uint32)GPUDrawPassAction::LoadMask) == 0)
-            layout.LoadDontCare |= mask;
-        else if (((uint32)action & (uint32)GPUDrawPassAction::StoreMask) == 0)
-            layout.StoreDontCare |= mask;
+        layout.RTVsFormats[i] = (byte)context.RTFormats[i];
+        layout.SetOp(context.RTAction, 1ull << i);
     }
     auto renderPass = _device->GetOrCreateRenderPass(layout);
     GetState(renderPass, (GPUVertexLayoutVulkan*)context.VertexLayout, true);

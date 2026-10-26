@@ -199,26 +199,29 @@ struct RenderTargetLayoutVulkan
     {
         struct
         {
-            uint64 RTsCount : 3; // Limited by GPU_MAX_RT_BINDED
-            uint64 ReadDepth : 1;
-            uint64 WriteDepth : 1;
-            uint64 ReadStencil : 1;
-            uint64 WriteStencil : 1;
-            uint64 LoadClear : 7; // GPU_MAX_RT_BINDED + 1 (depth/stencil)
-            uint64 LoadDontCare : 7; // GPU_MAX_RT_BINDED + 1 (depth/stencil)
-            uint64 StoreDontCare : 7; // GPU_MAX_RT_BINDED + 1 (depth/stencil)
+            uint32 RTsCount : 3; // Limited by GPU_MAX_RT_BINDED
+            uint32 LoadClear : 7; // GPU_MAX_RT_BINDED + 1 (depth/stencil)
+            uint32 LoadDontCare : 7; // GPU_MAX_RT_BINDED + 1 (depth/stencil)
+            uint32 StoreDontCare : 7; // GPU_MAX_RT_BINDED + 1 (depth/stencil)
+            MSAALevel MSAA : 4;
         };
 
-        uint64 Flags;
+        uint32 Flags;
     };
 
-    MSAALevel MSAA;
-    PixelFormat DepthFormat;
-    PixelFormat RTVsFormats[GPU_MAX_RT_BINDED];
+    byte DepthFormat;
+    byte RTVsFormats[GPU_MAX_RT_BINDED];
 
-    FORCE_INLINE bool operator==(const RenderTargetLayoutVulkan& other) const
+    bool operator==(const RenderTargetLayoutVulkan& other) const;
+
+    void SetOp(GPUDrawPassAction action, uint64 mask, bool drawPassCanStart = true)
     {
-        return Platform::MemoryCompare(this, &other, sizeof(RenderTargetLayoutVulkan)) == 0;
+        if ((uint32)action & (uint32)GPUDrawPassAction::Clear && drawPassCanStart)
+            LoadClear |= mask;
+        else if (((uint32)action & (uint32)GPUDrawPassAction::LoadMask) == 0 && drawPassCanStart)
+            LoadDontCare |= mask;
+        else if (((uint32)action & (uint32)GPUDrawPassAction::StoreMask) == 0)
+            StoreDontCare |= mask;
     }
 
 #if GPU_ENABLE_DEVELOPMENT

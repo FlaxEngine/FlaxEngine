@@ -467,14 +467,27 @@ void DeferredDeletionQueueVulkan::EnqueueGenericResource(Type type, uint64 handl
     _entries.Add(entry);
 }
 
+PACK_STRUCT(struct alignas(4) RenderTargetLayoutVulkanRaw
+{
+    uint64 Data1;
+    uint32 Data2;
+});
+
+static_assert(sizeof(RenderTargetLayoutVulkanRaw) == sizeof(RenderTargetLayoutVulkan), "Invalid size");
+
+bool RenderTargetLayoutVulkan::operator==(const RenderTargetLayoutVulkan& other) const
+{
+    auto thisRaw = (const RenderTargetLayoutVulkanRaw*)this;
+    auto otherRaw = (const RenderTargetLayoutVulkanRaw*)&other;
+    return thisRaw->Data1 == otherRaw->Data1 && thisRaw->Data2 == otherRaw->Data2;
+}
+
 uint32 GetHash(const RenderTargetLayoutVulkan& key)
 {
-    uint32 hash = (int32)key.MSAA * 11;
-    CombineHash(hash, (uint32)(key.Flags & MAX_uint32));
-    CombineHash(hash, (uint32)((key.Flags >> 32) & MAX_uint32));
-    CombineHash(hash, (uint32)key.DepthFormat * 93473262);
-    for (int32 i = 0; i < ARRAY_COUNT(key.RTVsFormats); i++)
-        CombineHash(hash, (uint32)key.RTVsFormats[i]);
+    auto keyRaw = (const RenderTargetLayoutVulkanRaw*)&key;
+    uint32 hash = keyRaw->Data2;
+    CombineHash(hash, (uint32)(keyRaw->Data1 & MAX_uint32));
+    CombineHash(hash, (uint32)((keyRaw->Data1 >> 32) & MAX_uint32));
     return hash;
 }
 
@@ -503,55 +516,31 @@ GPUVertexLayoutVulkan::GPUVertexLayoutVulkan(GPUDeviceVulkan* device, const Elem
 
 #include "Engine/Core/Types/StringBuilder.h"
 
+void AddLayoutOp(const RenderTargetLayoutVulkan& layout, StringBuilder& sb, uint64 mask)
+{
+    if (layout.LoadClear & mask)
+        sb.Append(TEXT(" (clear)"));
+    if (layout.LoadDontCare & mask)
+        sb.Append(TEXT(" (no load)"));
+    if (layout.StoreDontCare & mask)
+        sb.Append(TEXT(" (no store)"));
+    sb.AppendLine();
+}
+
 String RenderTargetLayoutVulkan::ToString() const
 {
     StringBuilder sb;
-    if (DepthFormat != PixelFormat::Unknown)
+    if (DepthFormat != 0)
     {
-        sb.Append(TEXT("Depth: ")).Append(ScriptingEnum::ToString(DepthFormat));
-        if (ReadDepth && WriteStencil)
-        {
-        }
-        if (ReadDepth && !WriteDepth)
-            sb.Append(TEXT(" (read-only depth)"));
-        else if (!ReadDepth && WriteDepth)
-            sb.Append(TEXT(" (write-only depth)"));
-        else if (!ReadDepth && !WriteDepth)
-            sb.Append(TEXT(" (no depth)"));
-        if (PixelFormatExtensions::HasStencil(DepthFormat))
-        {
-            if (ReadStencil && WriteStencil)
-            {
-            }
-            if (ReadStencil && !WriteStencil)
-                sb.Append(TEXT(" (read-only stencil)"));
-            else if (!ReadStencil && WriteStencil)
-                sb.Append(TEXT(" (write-only stencil)"));
-            else if (!ReadStencil && !WriteStencil)
-                sb.Append(TEXT(" (no stencil)"));
-        }
-        uint64 mask = 1ull << RTsCount;
-        if (LoadClear & mask)
-            sb.Append(TEXT(" (clear)"));
-        if (LoadDontCare & mask)
-            sb.Append(TEXT(" (no load)"));
-        if (StoreDontCare & mask)
-            sb.Append(TEXT(" (no store)"));
-        sb.AppendLine();
+        sb.Append(TEXT("Depth: ")).Append(ScriptingEnum::ToString((PixelFormat)DepthFormat));
+        AddLayoutOp(*this, sb, 1ull << RTsCount);
     }
     if (MSAA != MSAALevel::None)
         sb.Append(TEXT("MSAA: ")).Append(ScriptingEnum::ToString(MSAA)).AppendLine();
-    for (int32 i = 0; i < RTsCount; i++)
+    for (uint32 i = 0; i < RTsCount; i++)
     {
-        sb.AppendFormat(TEXT("RT[{}]: "), i).Append(ScriptingEnum::ToString(RTVsFormats[i]));
-        uint64 mask = 1ull << i;
-        if (LoadClear & mask)
-            sb.Append(TEXT(" (clear)"));
-        if (LoadDontCare & mask)
-            sb.Append(TEXT(" (no load)"));
-        if (StoreDontCare & mask)
-            sb.Append(TEXT(" (no store)"));
-        sb.AppendLine();
+        sb.AppendFormat(TEXT("RT[{}]: "), i).Append(ScriptingEnum::ToString((PixelFormat)RTVsFormats[i]));
+        AddLayoutOp(*this, sb, 1ull << i);
     }
     //sb.AppendFormat(TEXT("Flags: {}"), Flags).AppendLine();
     return sb.ToString();
@@ -600,7 +589,7 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
     , CanDepthStencilWrite(true)
 {
     const int32 colorAttachmentsCount = layout.RTsCount;
-    const bool hasDepthStencilAttachment = layout.DepthFormat != PixelFormat::Unknown;
+    const bool hasDepthStencilAttachment = layout.DepthFormat != 0;
     const int32 attachmentsCount = colorAttachmentsCount + (hasDepthStencilAttachment ? 1 : 0);
 
     VkAttachmentReference colorReferences[GPU_MAX_RT_BINDED];
@@ -617,7 +606,7 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
     {
         VkAttachmentDescription& attachment = attachments[i];
         attachment.flags = 0;
-        attachment.format = RenderToolsVulkan::ToVulkanFormat(layout.RTVsFormats[i]);
+        attachment.format = RenderToolsVulkan::ToVulkanFormat((PixelFormat)layout.RTVsFormats[i]);
         attachment.samples = (VkSampleCountFlagBits)layout.MSAA;
         uint64 mask = 1ull << i;
         attachment.loadOp = layout.LoadClear & mask ? VK_ATTACHMENT_LOAD_OP_CLEAR : (layout.LoadDontCare & mask ? VK_ATTACHMENT_LOAD_OP_DONT_CARE : VK_ATTACHMENT_LOAD_OP_LOAD);
@@ -632,60 +621,36 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
     }
     if (hasDepthStencilAttachment)
     {
-        VkImageLayout depthStencilLayout;
-#if 0
-        // TODO: enable extension and use separateDepthStencilLayouts from Vulkan 1.2
-        if (layout.ReadStencil || layout.WriteStencil)
-        {
-            if (layout.WriteDepth && layout.WriteStencil)
-                depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-            else if (layout.WriteDepth && !layout.WriteStencil)
-                depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL;
-            else if (layout.WriteStencil && !layout.WriteDepth)
-                depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
-            else if (layout.ReadDepth)
-                depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-            else
-                depthStencilLayout = VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL;
-        }
-        else
-        {
-            // Depth-only
-            if (layout.ReadDepth && !layout.WriteDepth)
-                depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
-            else
-                depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-        }
-#else
-        if ((layout.ReadDepth || layout.ReadStencil) && !(layout.WriteDepth || layout.WriteStencil))
-            depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-        else
-            depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-#endif
-
         // Use last slot for depth stencil attachment
         VkAttachmentDescription& attachment = attachments[colorAttachmentsCount];
         attachment.flags = 0;
-        attachment.format = RenderToolsVulkan::ToVulkanFormat(layout.DepthFormat);
+        attachment.format = RenderToolsVulkan::ToVulkanFormat((PixelFormat)layout.DepthFormat);
         attachment.samples = (VkSampleCountFlagBits)layout.MSAA;
-        attachment.loadOp = layout.ReadDepth || layout.ReadStencil ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        //attachment.storeOp = layout.WriteDepth || layout.WriteStencil ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // For some reason, read-only depth results in artifacts
-        // TODO: use VK_ATTACHMENT_STORE_OP_NONE for readonly depth/stencil but check for 'VK_KHR_load_store_op_none' extension
-        attachment.stencilLoadOp = layout.ReadStencil ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachment.stencilStoreOp = layout.WriteStencil ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachment.loadOp = attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+        attachment.storeOp = attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+        if (!PixelFormatExtensions::HasStencil((PixelFormat)layout.DepthFormat))
+        {
+            attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        }
+        VkImageLayout depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         uint64 mask = 1ull << colorAttachmentsCount;
         if (layout.LoadClear & mask)
             attachment.loadOp = attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         else if (layout.LoadDontCare & mask)
             attachment.loadOp = attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        if (layout.StoreDontCare & mask)
+        {
+            // TODO: use VK_ATTACHMENT_STORE_OP_NONE for readonly depth/stencil on API 1.3+ or with extension 'VK_KHR_load_store_op_none'
+            //attachment.storeOp = attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_NONE;
+            depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+            CanDepthStencilWrite = false;
+        }
         attachment.initialLayout = depthStencilLayout;
         attachment.finalLayout = depthStencilLayout;
         depthStencilReference.attachment = colorAttachmentsCount;
         depthStencilReference.layout = depthStencilLayout;
         subpassDesc.pDepthStencilAttachment = &depthStencilReference;
-        if (!layout.WriteDepth && !layout.WriteStencil)
-            CanDepthStencilWrite = false;
     }
 
     VkRenderPassCreateInfo createInfo;
