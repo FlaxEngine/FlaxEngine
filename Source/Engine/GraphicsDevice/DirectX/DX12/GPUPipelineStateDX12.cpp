@@ -449,8 +449,10 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(const GPUPipelineStateKeyDX1
 
     // Cache it
     _states.Add(key, state);
+#if GPU_ENABLE_DEVELOPMENT
     if (precaching)
         _precachedPSOs.Add(key);
+#endif
 
     return state;
 }
@@ -461,7 +463,9 @@ void GPUPipelineStateDX12::OnReleaseGPU()
     for (auto i = _states.Begin(); i.IsNotEnd(); ++i)
         _device->AddResourceToLateRelease(i->Value, nullptr, DX12_RESOURCE_DELETE_SAFE_FRAMES_COUNT, true);
     _states.Clear();
+#if GPU_ENABLE_DEVELOPMENT
     _precachedPSOs.Clear();
+#endif
 }
 
 bool GPUPipelineStateDX12::Init(const Description& desc)

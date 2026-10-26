@@ -128,6 +128,7 @@ public:
         // Go over all collected materials
         for (auto& e : batch.Materials)
         {
+            ASSERT(e.Key);
             PSOMaterialBatchJob stolenJob;
 
             // Check if this material is already during processing (otherwise multiple task could cause multithreading issues inside GPUPipelineState or inefficient locking)

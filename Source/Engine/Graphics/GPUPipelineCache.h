@@ -124,7 +124,7 @@ inline GPUPipelineLookup::Flag& operator|=(GPUPipelineLookup::Flag& a, GPUPipeli
 
 #define GPU_PSO_PRECACHING(mode) false
 #define GPU_PSO_READY(mode) true
-#define GPU_PSO_WAIT(mode)
+#define GPU_PSO_WAIT(mode) true
 
 #endif
 
