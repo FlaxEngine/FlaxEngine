@@ -8,6 +8,9 @@
 #include "GPUDeviceVulkan.h"
 #include "GPUAdapterVulkan.h"
 #include "GPUShaderVulkan.h"
+#if VULKAN_USE_DEBUG_LAYER
+#include "GPUShaderProgramVulkan.h"
+#endif
 #include "GPUContextVulkan.h"
 #include "GPUPipelineStateVulkan.h"
 #include "GPUTextureVulkan.h"
@@ -256,7 +259,18 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         }
         else if (auto* context = (GPUContextVulkan*)GPUDevice::Instance->GetMainContext())
         {
-            if (auto* state = (GPUPipelineStateVulkan*)context->GetState())
+            if (auto* cs = context->GetCurrentCS())
+            {
+#if !BUILD_RELEASE
+                GPUShaderProgram::DebugName nameBuf;
+                cs->GetDebugName(nameBuf);
+                String name(nameBuf.Get(), nameBuf.Count() - 1);
+#else
+                name = TEXT("Compute Shader");
+#endif
+                LOG(Warning, "[Vulkan] Error during rendering with {}", name);
+            }
+            else if (auto* state = (GPUPipelineStateVulkan*)context->GetState())
             {
                 LOG(Warning, "[Vulkan] Error during rendering with {}", state->ToString());
             }

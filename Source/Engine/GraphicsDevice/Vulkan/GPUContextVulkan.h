@@ -145,6 +145,11 @@ public:
         return _cmdBufferManager;
     }
 
+    FORCE_INLINE GPUShaderProgramCSVulkan* GetCurrentCS() const
+    {
+        return _currentCompute;
+    }
+
     void AddImageBarrier(VkImage image, VkImageLayout srcLayout, VkImageLayout dstLayout, const VkImageSubresourceRange& subresourceRange, GPUTextureViewVulkan* handle);
     void AddImageBarrier(GPUTextureViewVulkan* handle, VkImageLayout dstLayout);
     void AddImageBarrier(GPUTextureVulkan* texture, int32 mipSlice, int32 arraySlice, VkImageLayout dstLayout);
