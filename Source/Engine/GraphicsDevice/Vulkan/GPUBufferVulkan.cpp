@@ -163,7 +163,7 @@ bool GPUBufferVulkan::OnInit()
             // Faster path using Map/Unmap sequence
             SetData(_desc.InitData, _desc.Size);
         }
-        else if (_device->IsRendering() && IsInMainThread())
+        else if (_device->IsRendering() && IsInRenderThread())
         {
             // Upload resource data now
             _device->GetMainContext()->UpdateBuffer(this, _desc.InitData, _desc.Size);

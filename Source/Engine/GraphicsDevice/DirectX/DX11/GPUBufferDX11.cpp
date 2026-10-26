@@ -21,7 +21,7 @@ GPUBufferView* GPUBufferDX11::View() const
 void* GPUBufferDX11::Map(GPUResourceMapMode mode)
 {
     CHECK_RETURN(_resource, nullptr);
-    const bool isMainThread = IsInMainThread();
+    const bool isMainThread = IsInRenderThread();
     if (!isMainThread)
         _device->Locker.Lock();
     ASSERT(!_mapped);
@@ -63,7 +63,7 @@ void GPUBufferDX11::Unmap()
     ASSERT(_mapped);
     _mapped = false;
     _device->GetIM()->Unmap(_resource, 0);
-    if (!IsInMainThread())
+    if (!IsInRenderThread())
         _device->Locker.Unlock();
 }
 

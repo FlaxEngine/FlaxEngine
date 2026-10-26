@@ -85,6 +85,9 @@ public:
     // Main Engine thread id.
     API_FIELD(ReadOnly) static uint64 MainThreadID;
 
+    // Render thread id (usually main thread, set on rendering begin).
+    API_FIELD(ReadOnly) static uint64 RenderThreadID;
+
 public:
     /// <summary>
     /// The full engine version.

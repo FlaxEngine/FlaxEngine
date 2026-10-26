@@ -21,6 +21,7 @@ bool Globals::IsRequestingExit;
 int32 Globals::ExitCode;
 PRAGMA_ENABLE_DEPRECATION_WARNINGS;
 uint64 Globals::MainThreadID;
+uint64 Globals::RenderThreadID;
 String Globals::EngineVersion(TEXT(FLAXENGINE_VERSION_TEXT));
 int32 Globals::EngineBuildNumber = FLAXENGINE_VERSION_BUILD;
 String Globals::ProductName;
