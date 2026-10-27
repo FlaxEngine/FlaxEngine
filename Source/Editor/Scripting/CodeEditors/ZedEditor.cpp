@@ -17,6 +17,7 @@
 #include <AppKit/AppKit.h>
 #endif
 
+#if PLATFORM_LINUX
 bool TryGetPathForCommand(const String& cmd, String& path)
 {
     const StringAnsi runCommand(StringAnsi::Format("/bin/bash -c \"type -p {0}\"", cmd.ToStringAnsi()));
@@ -37,6 +38,7 @@ bool TryGetPathForCommand(const String& cmd, String& path)
     path = String::Empty;
     return false;
 }
+#endif
 
 ZedEditor::ZedEditor(const String& execPath)
     : _execPath(execPath)
