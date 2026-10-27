@@ -802,7 +802,7 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
                         {
                             for (int32 x = 0; x < 4; x++)
                             {
-                                Color color = sampler->SamplePoint(srcMip.Data.Get(), xBlock * 4 + x, yBlock * 4 + y, srcMip.RowPitch);
+                                Color color = sampler->SamplePoint(srcMip.Data.Get(), Math::Min<int32>(xBlock * 4 + x, mipWidth - 1), Math::Min<int32>(yBlock * 4 + y, mipHeight - 1), srcMip.RowPitch);
                                 if (isDstSRGB)
                                     color = Color::LinearToSrgb(color);
                                 if (isSrcOpaque)
