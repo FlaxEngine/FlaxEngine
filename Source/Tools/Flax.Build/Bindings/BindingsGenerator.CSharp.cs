@@ -819,7 +819,7 @@ namespace Flax.Build.Bindings
 
                 // Out parameters that need additional converting will be converted at the native side (eg. object reference)
                 if (parameterInfo.IsOut && !string.IsNullOrEmpty(GenerateCSharpManagedToNativeConverter(buildData, parameterInfo.Type, caller)))
-                    nativeType = parameterInfo.Type.Type;
+                    nativeType = GenerateCSharpNativeToManaged(buildData, parameterInfo.Type, caller, true);
 
                 contents.Append(nativeType);
                 contents.Append(' ');
