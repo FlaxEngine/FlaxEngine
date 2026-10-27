@@ -194,10 +194,10 @@ namespace Flax.Build.Projects.CMake
             {
                 var preset = buildPresets[i];
                 contents.AppendLine("    {");
-                contents.AppendLine($"      \"name\": {JsonString(preset.Name)},");
-                contents.AppendLine($"      \"displayName\": {JsonString(preset.DisplayName)},");
+                contents.AppendLine($"      \"name\": {Utilities.ToJsonString(preset.Name)},");
+                contents.AppendLine($"      \"displayName\": {Utilities.ToJsonString(preset.DisplayName)},");
                 contents.AppendLine("      \"configurePreset\": \"flax\",");
-                contents.AppendLine($"      \"targets\": [{JsonString(preset.Target)}]");
+                contents.AppendLine($"      \"targets\": [{Utilities.ToJsonString(preset.Target)}]");
                 contents.Append("    }");
                 if (i != buildPresets.Count - 1)
                     contents.Append(',');
@@ -608,11 +608,6 @@ namespace Flax.Build.Projects.CMake
         private static string EscapeString(string value)
         {
             return value.Replace("\\", "\\\\").Replace(";", "\\;").Replace("\"", "\\\"");
-        }
-
-        private static string JsonString(string value)
-        {
-            return "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
         }
 
         private static string CppString(string value)

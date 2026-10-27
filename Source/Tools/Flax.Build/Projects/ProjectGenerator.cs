@@ -216,6 +216,7 @@ namespace Flax.Build.Projects
                 ? (ProjectGenerator)new CSProjectGenerator(VisualStudioVersion.VisualStudio2015)
                 : (ProjectGenerator)new VisualStudioCodeProjectGenerator();
             case ProjectFormat.CMake: return new CMakeProjectGenerator();
+            case ProjectFormat.Clangd: return new ClangdProjectGenerator();
             case ProjectFormat.XCode: return new XCodeProjectGenerator();
             case ProjectFormat.Omnisharp: return new OmnisharpProjectGenerator();
             case ProjectFormat.Custom:

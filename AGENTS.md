@@ -112,7 +112,7 @@ If a change is localized, prefer the narrowest possible target build and only ru
 - `FlaxEditor` is the main standalone editor target.
 - `FlaxGame` is the standalone game target.
 - `FlaxTestsTarget` builds the native test executable.
-- `Flax.Build` supports project generation switches such as `-vs2022`, `-vs2026`, `-vscode`, and `-rider`.
+- `Flax.Build` supports project generation switches such as `-vs2026`, `-vscode`, `-clion`, `-rider`, `-clangd`, `-zed`.
 - `GenerateProjectFiles.bat` also builds C# bindings for `FlaxEditor` on Windows.
 
 ## Agent Guidance

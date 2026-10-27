@@ -61,5 +61,10 @@ namespace Flax.Build.Projects
         /// Omnisharp.
         /// </summary>
         Omnisharp,
+
+        /// <summary>
+        /// clangd language server.
+        /// </summary>
+        Clangd,
     }
 }
