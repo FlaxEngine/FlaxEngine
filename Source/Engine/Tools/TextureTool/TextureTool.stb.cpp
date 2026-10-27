@@ -57,10 +57,10 @@
 #include <ThirdParty/detex/detex.h>
 #include <ThirdParty/bc7enc16/bc7enc16.h>
 #define BC6H_ENC_IMPLEMENTATION
-#ifdef PLATFORM_SIMD_SSE2
+#ifdef PLATFORM_SIMD_SSE4_2 // TODO: SSE2 with F16C
 #define BC6H_SSE_INTRINSICS
 #elif PLATFORM_SIMD_NEON
-#define BC6H_ARM_NEON_INTRINSICS
+//#define BC6H_ARM_NEON_INTRINSICS // TODO: fix those and test on macOS
 #endif
 #include <ThirdParty/bc6h_enc/bc6h_enc.h>
 #include "Engine/Core/Math/Half.h"
