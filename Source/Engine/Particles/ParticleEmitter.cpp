@@ -170,18 +170,6 @@ void ParticleEmitter::PrecachePSOBatch(GPUPipelineCacheBatch& batch)
             }
             break;
         }
-        // Volumetric Fog Rendering
-        case 405:
-        {
-            const auto material = (MaterialBase*)module->Assets[0].Get();
-            if (material &&
-                !material->WaitForLoaded() &&
-                material->GetInfo().Domain == MaterialDomain::VolumeParticle)
-            {
-                // TODO: precaching volume particles
-            }
-            break;
-        }
         }
     }
 #endif

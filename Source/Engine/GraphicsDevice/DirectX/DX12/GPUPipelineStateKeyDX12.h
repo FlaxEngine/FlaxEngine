@@ -9,11 +9,20 @@
 
 struct GPUPipelineStateKeyDX12
 {
-    int32 RTsCount;
-    MSAALevel MSAA;
+    union
+    {
+        struct
+        {
+            uint32 RTsCount : 3; // Limited by GPU_MAX_RT_BINDED
+            MSAALevel MSAA : 4;
+            PixelFormat DepthFormat : 8;
+        };
+
+        uint32 Flags;
+    };
+
+    byte RTVsFormats[GPU_MAX_RT_BINDED];
     class GPUVertexLayoutDX12* VertexLayout;
-    PixelFormat DepthFormat;
-    PixelFormat RTVsFormats[GPU_MAX_RT_BINDED];
 
     bool operator==(const GPUPipelineStateKeyDX12& other) const
     {
@@ -28,7 +37,7 @@ struct GPUPipelineStateKeyDX12
         DepthFormat = depthFormat;
         MSAA = msaa;
         for (int32 i = 0; i < rtCount; i++)
-            RTVsFormats[i] = rtFormats[i];
+            RTVsFormats[i] = (byte)rtFormats[i];
     }
 
 #if GPU_ENABLE_DEVELOPMENT

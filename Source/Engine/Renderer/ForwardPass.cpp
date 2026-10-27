@@ -116,7 +116,7 @@ void ForwardPass::Render(RenderContext& renderContext, GPUTexture*& input, GPUTe
 
         // Render distortion vectors
         {
-            GPUDrawPass drawPass(context, depthBufferHandle, GPUDrawPassAction::ClearStore, distortionRT->View(), GPUDrawPassAction::Store);
+            GPUDrawPass drawPass(context, depthBufferHandle, GPUDrawPassAction::Load, distortionRT->View(), GPUDrawPassAction::ClearStore);
             context->Clear(distortionRT->View(), Color::Transparent);
             context->SetViewportAndScissors((float)distortionWidth, (float)distortionHeight);
             view.Pass = DrawPass::Distortion;
@@ -162,6 +162,7 @@ GPU_PSO_PRECACHING_PASS(DistortionPassPSO, {
     auto renderBuffers = MainRenderTask::Instance->Buffers;
     context.DepthFormat = renderBuffers->GetDepthFormat();
     context.DepthAction = GPUDrawPassAction::Load;
+    context.RTAction = GPUDrawPassAction::ClearStore;
     context.RTCount = 1;
     context.RTFormats[0] = PixelFormat::R8G8B8A8_UNorm;
     params.Pass = DrawPass::Distortion;

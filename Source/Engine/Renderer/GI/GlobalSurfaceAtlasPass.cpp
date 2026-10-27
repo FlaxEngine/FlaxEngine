@@ -901,12 +901,14 @@ void GlobalSurfaceAtlasPass::PrecachePSO()
     GPUPipelineState::PrecacheContext context;
     context.VertexLayout = _vbLayout;
     context.DepthFormat = PixelFormat::D16_UNorm;
+    context.DepthAction = GPUDrawPassAction::LoadStore;
     context.RTCount = 3;
     context.RTFormats[0] = PixelFormat::R11G11B10_Float;
     context.RTFormats[1] = GBUFFER0_FORMAT;
     context.RTFormats[2] = GBUFFER1_FORMAT;
     _psClear->PrecachePSO(context);
     _psCopy->PrecachePSO(context);
+    context.DepthAction = GPUDrawPassAction::Store;
     context.RTCount = 4;
     context.RTFormats[3] = PixelFormat::R11G11B10_Float;
     _psCopy->PrecachePSO(context);
@@ -1203,41 +1205,49 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             surfaceAtlasData.AtlasGBuffer0->View(),
             surfaceAtlasData.AtlasGBuffer1->View(),
         };
-        context->SetRenderTarget(depthBuffer, ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)));
-        if (!atlasDefrag)
+        GPUDrawPassAction targetActions[3] =
         {
-            PROFILE_GPU_CPU_NAMED("Clear");
-            if (atlasResized || GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES)
+            GPUDrawPassAction::LoadStore,
+            GPUDrawPassAction::LoadStore,
+            GPUDrawPassAction::LoadStore,
+        };
+        bool clear = !atlasDefrag;
+        if (clear && (atlasResized || GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES))
+        {
+            // Full-atlas hardware clear
+            PROFILE_GPU("Clear");
+            context->ClearDepth(depthBuffer);
+            context->Clear(targetBuffers[0], Color::Transparent);
+            context->Clear(targetBuffers[1], Color::Transparent);
+            context->Clear(targetBuffers[2], Color::Transparent);
+            if (GPUDevice::Instance->GetRendererType() == RendererType::Vulkan)
+                context->FlushState(); // Flush hardware clear to avoid PSO misses
+            clear = false;
+        }
+        GPUDrawPass drawPass(context, depthBuffer, GPUDrawPassAction::LoadStore, ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)), ToSpan(targetActions, ARRAY_COUNT(targetActions)));
+        context->SetRenderTarget(depthBuffer, ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)));
+        if (clear)
+        {
+            // Per-tile clear (with a single draw call)
+            _vertexBuffer->Clear();
+            _vertexBuffer->Data.EnsureCapacity(surfaceAtlasData.DirtyObjectsBuffer.Count() * 6 * sizeof(AtlasTileVertex));
+            for (void* actorObject : surfaceAtlasData.DirtyObjectsBuffer)
             {
-                // Full-atlas hardware clear
-                context->ClearDepth(depthBuffer);
-                context->Clear(targetBuffers[0], Color::Transparent);
-                context->Clear(targetBuffers[1], Color::Transparent);
-                context->Clear(targetBuffers[2], Color::Transparent);
-            }
-            else
-            {
-                // Per-tile clear (with a single draw call)
-                _vertexBuffer->Clear();
-                _vertexBuffer->Data.EnsureCapacity(surfaceAtlasData.DirtyObjectsBuffer.Count() * 6 * sizeof(AtlasTileVertex));
-                for (void* actorObject : surfaceAtlasData.DirtyObjectsBuffer)
+                const GlobalSurfaceAtlasObject* objectPtr = surfaceAtlasData.Objects.TryGet(actorObject);
+                if (!objectPtr)
+                    continue;
+                const GlobalSurfaceAtlasObject& object = *objectPtr;
+                for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
                 {
-                    const GlobalSurfaceAtlasObject* objectPtr = surfaceAtlasData.Objects.TryGet(actorObject);
-                    if (!objectPtr)
+                    auto* tile = object.Tiles[tileIndex];
+                    if (!tile)
                         continue;
-                    const GlobalSurfaceAtlasObject& object = *objectPtr;
-                    for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
-                    {
-                        auto* tile = object.Tiles[tileIndex];
-                        if (!tile)
-                            continue;
-                        VB_WRITE_TILE(tile);
-                    }
+                    VB_WRITE_TILE(tile);
                 }
-                context->SetState(_psClear);
-                context->SetViewportAndScissors(Viewport(0, 0, (float)resolution, (float)resolution));
-                VB_DRAW();
             }
+            context->SetState(_psClear);
+            context->SetViewportAndScissors(Viewport(0, 0, (float)resolution, (float)resolution));
+            VB_DRAW();
         }
 
         // Draw all dirty tiles
@@ -1990,7 +2000,9 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
 #include "Engine/Graphics/GPUPipelineCache.h"
 
 GPU_PSO_PRECACHING_PASS(GlobalSurfaceAtlasGBufferPassPSO, {
-    context.DepthFormat = PixelFormat::D16_UNorm;;
+    context.DepthFormat = PixelFormat::D16_UNorm;
+    context.DepthAction = GPUDrawPassAction::LoadStore;
+    context.RTAction = GPUDrawPassAction::LoadStore;
     context.RTCount = 3;
     context.RTFormats[0] = PixelFormat::R11G11B10_Float;
     context.RTFormats[1] = GBUFFER0_FORMAT;

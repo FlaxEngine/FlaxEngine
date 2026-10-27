@@ -116,6 +116,7 @@ public:
         //LOG(Error, "PSO batch size: {} with {} materials", bufferCount, batch.Materials.Count());
 
         // Increment job handles by amount of materials so each material processing can decrement it and job will complete when all materials from batch are done
+        if (batch.Materials.HasItems())
         {
             auto it = batch.Materials.Begin();
             while ((++it).IsNotEnd())
@@ -123,6 +124,12 @@ public:
                 for (auto handle : batchHandles)
                     Platform::InterlockedIncrement(handle);
             }
+        }
+        else
+        {
+            // Empty PSO job so free handles now (there will be no material job to do it later)
+            for (auto handle : batchHandles)
+                Platform::InterlockedDecrement(handle);
         }
 
         // Go over all collected materials

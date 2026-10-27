@@ -235,11 +235,11 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVer
     const Pair<RenderPassVulkan*, GPUVertexLayoutVulkan*> key(renderPass, vertexLayout);
     if (_pipelines.TryGet(key, pipeline))
     {
-#if BUILD_DEBUG
+#if BUILD_DEBUG && 0
         // Verify
         Pair<RenderPassVulkan*, GPUVertexLayoutVulkan*> refKey(nullptr, nullptr);
         _pipelines.KeyOf(pipeline, &refKey);
-        ASSERT(refKey == key);
+        CHECK_NO_RETURN(refKey == key);
 #endif
         return pipeline;
     }

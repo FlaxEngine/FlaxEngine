@@ -18,11 +18,17 @@ public:
     // Data used by particle material for rasterization into Volumetric Fog buffers (see VolumeParticleMaterialShader)
     struct CustomData
     {
-        GPUShader* Shader;
         Float3 GridSize;
         float VolumetricFogMaxDistance;
         Float4 GridSliceParameters;
         int32 ParticleIndex;
+    };
+
+    // Shared shaders.
+    struct ShaderPrograms
+    {
+        GPUShaderProgramVS* VS_WriteToSlice;
+        GPUShaderProgramGS* GS_WriteToSlice;
     };
 
 private:
@@ -41,6 +47,8 @@ public:
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     void Render(RenderContext& renderContext);
+
+    ShaderPrograms GetShaders() const;
 
 private:
     bool Init(struct FrameCache& cache, RenderContext& renderContext, GPUContext* context);

@@ -538,7 +538,6 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
 
         MaterialBase::BindParameters bindParams(context, renderContext);
         CustomData customData;
-        customData.Shader = _shader->GPU;
         customData.GridSize = cache.GridSize;
         customData.VolumetricFogMaxDistance = cache.Data.VolumetricFogRange.Y;
         customData.GridSliceParameters = cache.Data.GridSliceParameters;
@@ -723,6 +722,17 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     context->ResetRenderTarget();
     auto viewport = renderContext.Task->GetViewport();
     context->SetViewportAndScissors(viewport);
+}
+
+VolumetricFogPass::ShaderPrograms VolumetricFogPass::GetShaders() const
+{
+    ShaderPrograms result = {};
+    if (_shader && !_shader->WaitForLoaded())
+    {
+        result.VS_WriteToSlice = _shader->GPU->GetVS("VS_WriteToSlice");
+        result.GS_WriteToSlice = _shader->GPU->GetGS("GS_WriteToSlice");
+    }
+    return result;
 }
 
 void VolumetricFogPass::InitCircleBuffer()

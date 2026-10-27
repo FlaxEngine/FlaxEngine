@@ -220,6 +220,8 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTexture* lightBuffer)
             ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)),
             ToSpan(targetActions, ARRAY_COUNT(targetActions)));
         renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::GBuffer);
+        if (GPUDevice::Instance->GetRendererType() == RendererType::Vulkan)
+            context->FlushState(); // Flush hardware clear to avoid PSO misses
     }
 
     // Submit occlusion queries
@@ -242,11 +244,11 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTexture* lightBuffer)
         PROFILE_GPU_CPU_NAMED("Sky");
         GPUDrawPassAction targetActions2[5] =
         {
-            GPUDrawPassAction::Store,
-            GPUDrawPassAction::Store,
-            GPUDrawPassAction::Store,
-            GPUDrawPassAction::Store,
-            GPUDrawPassAction::Store,
+            GPUDrawPassAction::LoadStore,
+            GPUDrawPassAction::LoadStore,
+            GPUDrawPassAction::LoadStore,
+            GPUDrawPassAction::LoadStore,
+            GPUDrawPassAction::LoadStore,
         };
         GPUDrawPass drawPass(
             context,

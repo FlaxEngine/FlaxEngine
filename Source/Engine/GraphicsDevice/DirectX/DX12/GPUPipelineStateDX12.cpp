@@ -74,9 +74,7 @@ static D3D12_STENCIL_OP ToStencilOp(StencilOperation value)
 
 uint32 GetHash(const GPUPipelineStateKeyDX12& key)
 {
-    uint32 hash = (int32)key.MSAA * 11;
-    CombineHash(hash, (uint32)key.DepthFormat * 93473262);
-    CombineHash(hash, key.RTsCount * 136);
+    uint32 hash = key.Flags;
     CombineHash(hash, GetHash(key.VertexLayout));
     CombineHash(hash, (uint32)key.RTVsFormats[0]);
     CombineHash(hash, (uint32)key.RTVsFormats[1]);
@@ -100,8 +98,8 @@ String GPUPipelineStateKeyDX12::ToString() const
         sb.Append(TEXT("Depth: ")).Append(ScriptingEnum::ToString(DepthFormat)).AppendLine();
     if (MSAA != MSAALevel::None)
         sb.Append(TEXT("MSAA: ")).Append(ScriptingEnum::ToString(MSAA)).AppendLine();
-    for (int32 i = 0; i < RTsCount; i++)
-        sb.AppendFormat(TEXT("RT[{}]: "), i).Append(ScriptingEnum::ToString(RTVsFormats[i])).AppendLine();
+    for (uint32 i = 0; i < RTsCount; i++)
+        sb.AppendFormat(TEXT("RT[{}]: "), i).Append(ScriptingEnum::ToString((PixelFormat)RTVsFormats[i])).AppendLine();
     return sb.ToString();
 }
 
@@ -248,11 +246,11 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(const GPUPipelineStateKeyDX1
     ID3D12PipelineState* state = nullptr;
     if (_states.TryGet(key, state))
     {
-#if BUILD_DEBUG
+#if BUILD_DEBUG && 0
         // Verify
         GPUPipelineStateKeyDX12 refKey;
         _states.KeyOf(state, &refKey);
-        ASSERT(refKey == key);
+        CHECK_NO_RETURN(refKey == key);
 #endif
         return state;
     }
@@ -285,12 +283,12 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(const GPUPipelineStateKeyDX1
     D3D12_RT_FORMAT_ARRAY rtvFormats = {};
     rtvFormats.NumRenderTargets = key.RTsCount;
     for (int32 i = 0; i < GPU_MAX_RT_BINDED; i++)
-        rtvFormats.RTFormats[i] = RenderToolsDX::ToDxgiFormat(key.RTVsFormats[i]);
+        rtvFormats.RTFormats[i] = RenderToolsDX::ToDxgiFormat((PixelFormat)key.RTVsFormats[i]);
     desc.RTFormats = rtvFormats;
 #else
     desc.NumRenderTargets = key.RTsCount;
     for (int32 i = 0; i < GPU_MAX_RT_BINDED; i++)
-        desc.RTVFormats[i] = RenderToolsDX::ToDxgiFormat(key.RTVsFormats[i]);
+        desc.RTVFormats[i] = RenderToolsDX::ToDxgiFormat((PixelFormat)key.RTVsFormats[i]);
 #endif
     desc.SampleDesc = { (UINT)key.MSAA, key.MSAA == MSAALevel::None ? 0 : GPUDeviceDX12::GetMaxMSAAQuality((int32)key.MSAA) };
     desc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;

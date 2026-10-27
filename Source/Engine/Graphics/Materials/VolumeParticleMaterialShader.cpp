@@ -14,6 +14,11 @@
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Engine/Particles/Graph/CPU/ParticleEmitterGraph.CPU.h"
+#if COMPILE_WITH_PSO_PRECACHING
+#include "Engine/Graphics/GPUPipelineCache.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
+#include "Engine/Profiler/ProfilerCPU.h"
+#endif
 
 PACK_STRUCT(struct VolumeParticleMaterialShaderData {
     Matrix InverseViewProjectionMatrix;
@@ -98,22 +103,11 @@ void VolumeParticleMaterialShader::Bind(BindParameters& params)
     }
 
     // Bind pipeline
-    if (_psVolumetricFog == nullptr)
-    {
-        auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
-        psDesc.BlendMode = BlendingMode::Add;
-        psDesc.VS = customData->Shader->GetVS("VS_WriteToSlice");
-        psDesc.GS = customData->Shader->GetGS("GS_WriteToSlice");
-        psDesc.PS = _shader->GetPS("PS_VolumetricFog");
-        _psVolumetricFog = GPUDevice::Instance->CreatePipelineState();
-        _psVolumetricFog->Init(psDesc);
-    }
     context->SetState(_psVolumetricFog);
 }
 
 void VolumeParticleMaterialShader::Unload()
 {
-    // Base
     MaterialShader::Unload();
 
     SAFE_DELETE_GPU_RESOURCE(_psVolumetricFog);
@@ -121,5 +115,32 @@ void VolumeParticleMaterialShader::Unload()
 
 bool VolumeParticleMaterialShader::Load()
 {
+    // Create pipeline state
+    auto shaders = VolumetricFogPass::Instance()->GetShaders();
+    auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+    psDesc.BlendMode = BlendingMode::Add;
+    psDesc.VS = shaders.VS_WriteToSlice;
+    psDesc.GS = shaders.GS_WriteToSlice;
+    psDesc.PS = _shader->GetPS("PS_VolumetricFog");
+    _psVolumetricFog = GPUDevice::Instance->CreatePipelineState();
+    if (_psVolumetricFog->Init(psDesc))
+        return true;
+
+#if COMPILE_WITH_PSO_PRECACHING
+    // Precache PSO
+    if (GPU_PSO_PRECACHING(Shader))
+    {
+        PROFILE_CPU_NAMED(GPU_PSO_ZONE_NAME_PRECACHE);
+        PROFILE_MEM(GraphicsShaders);
+        ZoneColor(GPU_PSO_ZONE_COLOR_PRECACHE);
+        GPUPipelineState::PrecacheContext context;
+        context.RTCount = 2;
+        context.RTFormats[0] = PixelFormat::R16G16B16A16_Float;
+        context.RTFormats[1] = PixelFormat::R11G11B10_Float;
+        context.VertexLayout = GPUVertexLayout::Get({ { VertexElement::Types::TexCoord, 0, 0, 0, PixelFormat::R32G32_Float } });
+        _psVolumetricFog->PrecachePSO(context);
+    }
+#endif
+
     return false;
 }

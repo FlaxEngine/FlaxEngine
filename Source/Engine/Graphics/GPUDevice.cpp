@@ -435,7 +435,6 @@ struct GPUDevice::PrivateData
         GPUPipelineState::PrecacheContext context;
         context.SetFullscreenTriangleLayout();
         context.RTCount = 1;
-        context.RTAction = GPUDrawPassAction::Store;
         for (auto format : {
             PixelFormat::R8G8B8A8_UNorm,
             PixelFormat::R16G16B16A16_Float,
@@ -445,6 +444,9 @@ struct GPUDevice::PrivateData
             PixelFormat::R32_Float })
         {
             context.RTFormats[0] = format;
+            context.RTAction = GPUDrawPassAction::LoadStore;
+            PS_CopyLinear->PrecachePSO(context);
+            context.RTAction = GPUDrawPassAction::Store;
             PS_CopyLinear->PrecachePSO(context);
         }
 #if USE_EDITOR

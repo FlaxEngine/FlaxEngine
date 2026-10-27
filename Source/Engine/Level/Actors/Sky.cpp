@@ -86,7 +86,7 @@ void Sky::PrecachePSOAsync()
     GPUPipelineState::PrecacheContext context;
     context.SetGBufferFormat();
     context.DepthAction = GPUDrawPassAction::Load;
-    context.RTAction = GPUDrawPassAction::Store;
+    context.RTAction = GPUDrawPassAction::LoadStore;
     context.VertexLayout = skyModel->LODs[0].Meshes[0].GetVertexLayout();
     _psSky->PrecachePSO(context);
     auto& giSettings = Graphics::PostProcessSettings.GlobalIllumination;
