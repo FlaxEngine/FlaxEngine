@@ -188,6 +188,7 @@ public:
     bool ObjectsBufferDirty = true;
     bool ObjectsOriginDirty = false;
     int32 CulledObjectsCounterIndex = -1;
+    uint64 CulledObjectsCounterFrame = 0;
     Vector3 ObjectsOrigin = Vector3::Zero;
     GlobalSurfaceAtlasPass::BindingData Result;
     RectPackAtlas<GlobalSurfaceAtlasTile> Atlas;
@@ -903,7 +904,7 @@ void GlobalSurfaceAtlasPass::Dispose()
 
     // Cleanup
     SAFE_DELETE(_vertexBuffer);
-    SAFE_DELETE_GPU_RESOURCE(_culledObjectsSizeBuffer);
+    SAFE_DELETE_GPU_RESOURCES(_culledObjectsSizeBuffers);
     SAFE_DELETE_GPU_RESOURCE(_psClear);
     SAFE_DELETE_GPU_RESOURCE(_psClearLighting);
     SAFE_DELETE_GPU_RESOURCE(_psCopy);
@@ -1302,46 +1303,79 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         PROFILE_GPU_CPU_NAMED("Cull Objects");
         uint32 objectsBufferCapacity = (uint32)((float)surfaceAtlasData.Objects.Count() * 1.3f);
 
-        // Copy counter from ChunksBuffer into staging buffer to access current chunks memory usage to adapt dynamically to the scene complexity
-        if (!_culledObjectsSizeBuffer)
+        // Copy counter from ChunksBuffer into staging buffers to access current chunks memory usage to adapt dynamically to the scene complexity
+        // Use a ring of staging buffers and read the one copied the most frames ago without waiting to not stall the CPU (eg. on D3D11 Map waits for the pending copy)
+        if (!_culledObjectsSizeBuffers[0])
         {
             Platform::MemoryClear(_culledObjectsSizeFrames, sizeof(_culledObjectsSizeFrames));
-            _culledObjectsSizeBuffer = GPUDevice::Instance->CreateBuffer(TEXT("GlobalSurfaceAtlas.CulledObjectsSizeBuffer"));
-            const GPUBufferDescription desc = GPUBufferDescription::Buffer(ARRAY_COUNT(_culledObjectsSizeFrames) * sizeof(uint32), GPUBufferFlags::None, PixelFormat::R32_UInt, _culledObjectsSizeFrames, sizeof(uint32), GPUResourceUsage::StagingReadback);
-            if (_culledObjectsSizeBuffer->Init(desc))
-                return true;
+            Platform::MemoryClear(_culledObjectsSizeCopyFrames, sizeof(_culledObjectsSizeCopyFrames));
+            Platform::MemoryClear(_culledObjectsSizeData, sizeof(_culledObjectsSizeData));
+            Platform::MemoryClear(_culledObjectsSizeDataFrames, sizeof(_culledObjectsSizeDataFrames));
+            _culledObjectsSizeReadFrame = 0;
+            for (int32 i = 0; i < GLOBAL_SURFACE_ATLAS_READBACK_FRAMES; i++)
+            {
+                _culledObjectsSizeBuffers[i] = GPUDevice::Instance->CreateBuffer(TEXT("GlobalSurfaceAtlas.CulledObjectsSizeBuffer"));
+                const GPUBufferDescription desc = GPUBufferDescription::Buffer(ARRAY_COUNT(_culledObjectsSizeData) * sizeof(uint32), GPUBufferFlags::None, PixelFormat::R32_UInt, _culledObjectsSizeData, sizeof(uint32), GPUResourceUsage::StagingReadback);
+                if (_culledObjectsSizeBuffers[i]->Init(desc))
+                    return true;
+            }
+        }
+        const int32 readbackIndex = (int32)(currentFrame % GLOBAL_SURFACE_ATLAS_READBACK_FRAMES);
+        GPUBuffer* culledObjectsSizeBuffer = _culledObjectsSizeBuffers[readbackIndex];
+        if (_culledObjectsSizeReadFrame != currentFrame)
+        {
+            // Read back counters from the staging buffer copied the most frames ago (once per frame, before any copies into it within this frame)
+            _culledObjectsSizeReadFrame = currentFrame;
+            uint64* copyFrames = _culledObjectsSizeCopyFrames[readbackIndex];
+            bool anyCopy = false;
+            for (int32 i = 0; i < ARRAY_COUNT(_culledObjectsSizeData); i++)
+                anyCopy |= copyFrames[i] != 0;
+            if (anyCopy)
+            {
+                PROFILE_CPU_NAMED("Readback Object Count");
+                auto data = (uint32*)culledObjectsSizeBuffer->Map(GPUResourceMapMode::Read | GPUResourceMapMode::NoWait);
+                if (data)
+                {
+                    for (int32 i = 0; i < ARRAY_COUNT(_culledObjectsSizeData); i++)
+                    {
+                        if (copyFrames[i] != 0)
+                        {
+                            _culledObjectsSizeData[i] = data[i];
+                            _culledObjectsSizeDataFrames[i] = copyFrames[i];
+                            copyFrames[i] = 0;
+                        }
+                    }
+                    culledObjectsSizeBuffer->Unmap();
+                }
+            }
         }
         if (surfaceAtlasData.CulledObjectsCounterIndex != -1)
         {
-            // Get the last counter value
+            // Get the last counter value (skip value that was copied before this atlas started using that counter slot)
             notReady = true;
-            PROFILE_CPU_NAMED("Readback Object Count");
-            ZoneColor(TracyWaitZoneColor);
-            auto data = (uint32*)_culledObjectsSizeBuffer->Map(GPUResourceMapMode::Read);
-            if (data)
+            const int32 counterIndex = surfaceAtlasData.CulledObjectsCounterIndex;
+            const uint32 counter = _culledObjectsSizeData[counterIndex];
+            if (_culledObjectsSizeDataFrames[counterIndex] >= surfaceAtlasData.CulledObjectsCounterFrame && counter > 0)
             {
-                uint32 counter = data[surfaceAtlasData.CulledObjectsCounterIndex];
-                if (counter > 0)
-                {
-                    objectsBufferCapacity = counter;
-                    notReady = false;
-                }
-                _culledObjectsSizeBuffer->Unmap();
+                objectsBufferCapacity = counter;
+                notReady = false;
             }
 
-            // Allow to be ready if the buffer was already used
+            // Allow to be ready if the buffer was already used (counter is read with a latency so keep using the current capacity until it arrives)
             if (notReady && surfaceAtlasData.CulledObjectsBuffer && surfaceAtlasData.CulledObjectsBuffer->IsAllocated())
                 notReady = false;
         }
         if (surfaceAtlasData.CulledObjectsCounterIndex == -1)
         {
-            // Find a free timer slot
+            // Find a free counter slot
             notReady = true;
             for (int32 i = 0; i < ARRAY_COUNT(_culledObjectsSizeFrames); i++)
             {
-                if (currentFrame - _culledObjectsSizeFrames[i] > GPU_ASYNC_LATENCY)
+                if (currentFrame - _culledObjectsSizeFrames[i] > GLOBAL_SURFACE_ATLAS_READBACK_FRAMES)
                 {
                     surfaceAtlasData.CulledObjectsCounterIndex = i;
+                    surfaceAtlasData.CulledObjectsCounterFrame = currentFrame;
+                    _culledObjectsSizeFrames[i] = currentFrame;
                     break;
                 }
             }
@@ -1349,8 +1383,10 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         if (surfaceAtlasData.CulledObjectsCounterIndex != -1 && surfaceAtlasData.CulledObjectsBuffer)
         {
             // Copy current counter value
-            _culledObjectsSizeFrames[surfaceAtlasData.CulledObjectsCounterIndex] = currentFrame;
-            context->CopyBuffer(_culledObjectsSizeBuffer, surfaceAtlasData.CulledObjectsBuffer, sizeof(uint32), surfaceAtlasData.CulledObjectsCounterIndex * sizeof(uint32), 0);
+            const int32 counterIndex = surfaceAtlasData.CulledObjectsCounterIndex;
+            _culledObjectsSizeFrames[counterIndex] = currentFrame;
+            _culledObjectsSizeCopyFrames[readbackIndex][counterIndex] = currentFrame;
+            context->CopyBuffer(culledObjectsSizeBuffer, surfaceAtlasData.CulledObjectsBuffer, sizeof(uint32), counterIndex * sizeof(uint32), 0);
         }
 
         // Calculate optimal capacity for the objects buffer
