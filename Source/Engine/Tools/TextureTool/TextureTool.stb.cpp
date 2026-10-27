@@ -667,20 +667,64 @@ bool TextureTool::ImportTextureStb(ImageType type, Span<byte> bytes, TextureData
         textureData.Format = PixelFormatExtensions::TosRGB(textureData.Format);
     }
 
-    if (options.FlipX)
+    // Process texture
+    if (options.FlipX || options.InvertRedChannel || options.InvertGreenChannel || options.InvertBlueChannel || options.InvertAlphaChannel || options.ReconstructZChannel)
     {
-        // TODO: impl this
-        LOG(Warning, "Option 'Flip X' is not supported");
-    }
-    if (options.InvertRedChannel || options.InvertGreenChannel || options.InvertBlueChannel || options.InvertAlphaChannel)
-    {
-        // TODO: impl this
-        LOG(Warning, "Option to invert channels is not supported");
-    }
-    if (options.ReconstructZChannel)
-    {
-        // TODO: impl this
-        LOG(Warning, "Option 'Reconstruct Z Channel' is not supported");
+        if (auto sampler = PixelFormatSampler::Get(textureDataSrc->Format))
+        {
+            if (options.FlipX)
+            {
+                *textureDataDst = *textureDataSrc;
+                for (int32 itemIndex = 0; itemIndex < textureDataSrc->Items.Count(); itemIndex++)
+                {
+                    auto& srcItem = textureDataSrc->Items[itemIndex];
+                    auto& dstItem = textureDataDst->Items[itemIndex];
+                    for (int32 mipIndex = 0; mipIndex < srcItem.Mips.Count(); mipIndex++)
+                    {
+                        auto& srcMip = srcItem.Mips[mipIndex];
+                        auto& dstMip = dstItem.Mips[mipIndex];
+                        for (int32 y = 0; y < height; y++)
+                        {
+                            for (int32 x = 0; x < width; x++)
+                            {
+                                Color c = sampler->SamplePoint(srcMip.Data.Get(), x, y, dstMip.RowPitch);
+                                sampler->Store(dstMip.Data.Get(), height - x - 1, y, dstMip.RowPitch, c);
+                            }
+                        }
+                    }
+                }
+                ::Swap(textureDataSrc, textureDataDst);
+            }
+            else if (options.InvertRedChannel || options.InvertGreenChannel || options.InvertBlueChannel || options.InvertAlphaChannel || options.ReconstructZChannel)
+            {
+                const Color invertMask(options.InvertRedChannel, options.InvertGreenChannel, options.InvertBlueChannel, options.InvertAlphaChannel);
+                const Color invertMaskInv = Color::White - invertMask;
+                for (auto& item : textureDataSrc->Items)
+                {
+                    for (auto& mip : item.Mips)
+                    {
+                        for (int32 y = 0; y < height; y++)
+                        {
+                            for (int32 x = 0; x < width; x++)
+                            {
+                                Color c = sampler->SamplePoint(mip.Data.Get(), x, y, mip.RowPitch);
+                                c = c * invertMaskInv + (Color::White - c) * invertMask;
+                                if (options.ReconstructZChannel)
+                                {
+                                    Float2 xy(c.R, c.G);
+                                    c.B = Math::Sqrt(Math::Saturate(1.0f - Float2::Dot(xy, xy)));
+                                }
+                                sampler->Store(mip.Data.Get(), x, y, mip.RowPitch, c);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            LOG(Warning, "Cannot edit texture of format: {}.", ScriptingEnum::ToString(textureDataSrc->Format));
+        }
     }
 
     // Generate mip maps chain
@@ -710,6 +754,8 @@ bool TextureTool::ImportTextureStb(ImageType type, Span<byte> bytes, TextureData
     if (PixelFormatExtensions::HasAlpha(textureDataSrc->Format) && options.PreserveAlphaCoverage && useMipLevels)
     {
         // TODO: implement alpha coverage preserving
+        // Reference: https://the-witness.net/news/2010/09/computing-alpha-mipmaps/
+        // DirectXTex: https://github.com/microsoft/DirectXTex/blob/ec66b78b37389e8373a8e14ccc3cd29be94146b3/DirectXTex/DirectXTexMipmaps.cpp#L289
         errorMsg = TEXT("Importing textures with alpha coverage preserving is not supported on this platform.");
         return true;
     }
