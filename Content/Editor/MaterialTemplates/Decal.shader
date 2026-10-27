@@ -126,7 +126,7 @@ float3 TransformWorldVectorToLocal(MaterialInput input, float3 worldVector)
 	return mul(localToWorld, worldVector);
 }
 
-// Gets the current object position (supports instancing)
+// Gets the current object position
 float3 GetObjectPosition(MaterialInput input)
 {
 	return WorldMatrix[3].xyz;
@@ -135,22 +135,23 @@ float3 GetObjectPosition(MaterialInput input)
 // Gets the current object size
 float3 GetObjectSize(MaterialInput input)
 {
-	return float3(1, 1, 1);
+    // Decal bounds are baked into world matrix (decal draws unit cube)
+    return float3(length(WorldMatrix[0].xyz), length(WorldMatrix[1].xyz), length(WorldMatrix[2].xyz));
 }
 
-// Gets the current object scale (supports instancing)
+// Gets the current object scale
 float3 GetObjectScale(MaterialInput input)
 {
 	return float3(1, 1, 1);
 }
 
-// Get the current object random value supports instancing)
+// Get the current object random value
 float GetPerInstanceRandom(MaterialInput input)
 {
 	return 0;
 }
 
-// Get the current object LOD transition dither factor (supports instancing)
+// Get the current object LOD transition dither factor
 float GetLODDitherFactor(MaterialInput input)
 {
 	return 0;
