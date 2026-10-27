@@ -32,6 +32,7 @@ struct MaterialInput
 	float TwoSidedSign;
 	float2 TexCoord;
 	float4 TexCoord_DDX_DDY;
+	float3 TexCoord3D;
 	float3x3 TBN;
 	float4 SvPosition;
 	float3 PreSkinnedPosition;
@@ -231,12 +232,12 @@ void PS_Decal(
 	float3 positionWS = positionHS.xyz / positionHS.w;
 	float3 positionOS = PROJECT_POINT(float4(positionWS, 1), InvWorld).xyz;
 	clip(0.5 - abs(positionOS.xyz));
-	float2 decalUVs = positionOS.xz + 0.5f;
 
 	// Setup material input
 	MaterialInput materialInput = (MaterialInput)0;
 	materialInput.WorldPosition = positionWS;
-	materialInput.TexCoord = decalUVs;
+	materialInput.TexCoord3D = positionOS + 0.5f;
+	materialInput.TexCoord = materialInput.TexCoord3D.xz;
 	materialInput.TwoSidedSign = 1;
 	materialInput.SvPosition = input.SvPosition;
 	materialInput.PreSkinnedPosition = input.VertexPosition;
