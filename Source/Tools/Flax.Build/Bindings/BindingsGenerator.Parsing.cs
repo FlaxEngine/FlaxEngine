@@ -1318,7 +1318,11 @@ namespace Flax.Build.Bindings
                 token = context.Tokenizer.NextToken();
             }
             if (token.Value != "struct")
-                throw new ParseException(ref context, $"Invalid {ApiTokens.Struct} usage (expected 'struct' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
+            {
+                var message = $"Invalid {ApiTokens.Struct} usage (expected 'struct' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').";
+                Log.Fatal(context.File, message, (ulong)context.Tokenizer.CurrentLine);
+                throw new ParseException(ref context, message);
+            }
 
             // Read name
             desc.Name = desc.NativeName = ParseName(ref context);
