@@ -26,6 +26,7 @@
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Scripting/Enums.h"
@@ -939,6 +940,7 @@ void* GPUDevice::GetResourcesInternal()
 void GPUDevice::Draw()
 {
     PROFILE_MEM(Graphics);
+    Globals::RenderThreadID = Platform::GetCurrentThreadID();
     DrawBegin();
 
     auto context = GetMainContext();
