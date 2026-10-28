@@ -58,7 +58,7 @@ void ZedEditor::FindEditors(Array<CodeEditor*>* output)
         }
     }
     String path;
-    if (cmd.IsEmpty())
+    if (!cmd.IsEmpty())
     {
         path = cmd.Substring(1, cmd.Length() - String(TEXT("\" \"%1\"")).Length() - 1);
     }
