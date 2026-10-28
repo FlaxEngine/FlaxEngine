@@ -21,6 +21,7 @@ public class Tests : EngineModule
         base.Setup(options);
 
         options.PrivateDependencies.Add("ModelTool");
+        options.PrivateDependencies.Add("TextureTool");
         options.PrivateDependencies.Add("ShadersCompilation");
     }
 
