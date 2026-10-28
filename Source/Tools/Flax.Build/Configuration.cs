@@ -226,6 +226,24 @@ namespace Flax.Build
         public static bool ProjectFormatRider = false;
 
         /// <summary>
+        /// Generates Omnisharp configuration file. Valid only with -genproject option.
+        /// </summary>
+        [CommandLine("vscode", "Generates Omnisharp configuration file. Valid only with -genproject option.")]
+        public static bool ProjectFormatOmnisharp = false;
+
+        /// <summary>
+        /// Generates the clangd compilation database (compile_commands.json) for clangd-based editors. Valid only with -genproject option.
+        /// </summary>
+        [CommandLine("clangd", "Generates the clangd compilation database (compile_commands.json) for clangd-based editors. Valid only with -genproject option.")]
+        public static bool ProjectFormatClangd = false;
+
+        /// <summary>
+        /// Generates the clangd compilation database (compile_commands.json) for clangd-based editors. Valid only with -genproject option.
+        /// </summary>
+        [CommandLine("zed", "Generates the clangd compilation database (compile_commands.json) for Zed editor. Valid only with -genproject option.")]
+        public static bool ProjectFormatZed = false;
+
+        /// <summary>
         /// Generates code project files for a custom project format type. Valid only with -genproject option.
         /// </summary>
         [CommandLine("customProjectFormat", "<type>", "Generates code project files for a custom project format type. Valid only with -genproject option.")]
