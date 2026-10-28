@@ -421,10 +421,12 @@ void TextRender::Draw(RenderContextBatch& renderContextBatch)
     }
 
     // Setup draw call
+    BoundingSphere bounds = _sphere;
+    bounds.Center -= renderContext.View.Origin;
     DrawCall drawCall;
     drawCall.World = world;
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
-    drawCall.ObjectRadius = (float)_sphere.Radius;
+    drawCall.ObjectRadius = (float)bounds.Radius;
     drawCall.Surface.GeometrySize = _localBox.GetSize();
     drawCall.Surface.PrevWorld = drawState ? drawState->PrevWorld : world;
     drawCall.PerInstanceRandom = GetPerInstanceRandom();
@@ -442,7 +444,7 @@ void TextRender::Draw(RenderContextBatch& renderContextBatch)
         drawCall.Draw.IndicesCount = e.IndicesCount;
         drawCall.Draw.StartIndex = e.StartIndex;
         drawCall.Material = e.Material;
-        renderContext.List->AddDrawCall(renderContextBatch, chunkDrawModes, GetStaticFlags(), ShadowsMode, _sphere, drawCall, true, SortOrder);
+        renderContext.List->AddDrawCall(renderContextBatch, chunkDrawModes, GetStaticFlags(), ShadowsMode, bounds, drawCall, true, SortOrder);
     }
 
     GEOMETRY_DRAW_STATE_EVENT_END(drawState, world);

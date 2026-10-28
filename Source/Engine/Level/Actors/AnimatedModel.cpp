@@ -1484,7 +1484,7 @@ BoundingBox AnimatedModel::GetEditorBoundingBox() const
     BoundingBox box = _box;
     if (CustomBounds.GetSize().LengthSquared() <= 0.01f)
     {
-        if (!IsDuringPlay())
+        if (!IsDuringPlay() && SkinnedModel)
         {
             Matrix world;
             GetLocalToWorldMatrix(world);

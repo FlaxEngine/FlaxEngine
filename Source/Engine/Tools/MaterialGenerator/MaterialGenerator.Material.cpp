@@ -189,17 +189,16 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         _treeLayer->UsageFlags |= MaterialUsageFlags::UseVertexColor;
         break;
     // Pre-skinned Local Position
-    case 13:
-        value = Value(VariantType::Float3, TEXT("input.PreSkinnedPosition"));
-        if (_treeType != MaterialTreeType::VertexShader)
-            value = VsToPs(node, box).AsFloat3();
-        break;
     // Pre-skinned Local Normal
+    case 13:
     case 14:
-        value = Value(VariantType::Float3, TEXT("input.PreSkinnedNormal"));
-        if (_treeType != MaterialTreeType::VertexShader)
+    {
+        value = Value(VariantType::Float3, node->TypeID == 13 ? TEXT("input.PreSkinnedPosition") : TEXT("input.PreSkinnedNormal"));
+        MaterialLayer* baseLayer = GetRootLayer();
+        if (_treeType != MaterialTreeType::VertexShader && (!baseLayer || baseLayer->Domain != MaterialDomain::Decal))
             value = VsToPs(node, box).AsFloat3();
         break;
+    }
     // Depth
     case 15:
         value = writeLocal(VariantType::Float, TEXT("distance(ViewPos, input.WorldPosition)"), node);
