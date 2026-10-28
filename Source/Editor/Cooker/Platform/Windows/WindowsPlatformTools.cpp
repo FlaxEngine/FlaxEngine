@@ -13,7 +13,12 @@
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/JsonAsset.h"
+#include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
+#include "Engine/Serialization/MemoryWriteStream.h"
+#include "Editor/Editor.h"
+#include "Editor/ProjectInfo.h"
 #include <fstream>
+#include <winver.h>
 
 #define MSDOS_SIGNATURE 0x5A4D
 #define PE_SIGNATURE 0x00004550
@@ -464,6 +469,282 @@ bool UpdateExeIcon(const String& path, const TextureData& icon)
     return false;
 }
 
+namespace
+{
+    void Pad4(MemoryWriteStream& stream)
+    {
+        while ((stream.GetPosition() % 4) != 0)
+        {
+            const byte zero = 0;
+            stream.WriteBytes(&zero, 1);
+        }
+    }
+
+    void WriteVersionString(MemoryWriteStream& stream, const Char* key, const String& value)
+    {
+        const uint32 startPos = stream.GetPosition();
+        const uint16 dummyLength = 0;
+        stream.WriteBytes(&dummyLength, sizeof(dummyLength));
+
+        const uint16 valueLengthChars = value.IsEmpty() ? 0 : (uint16)(value.Length() + 1);
+        stream.WriteBytes(&valueLengthChars, sizeof(valueLengthChars));
+
+        const uint16 wType = 1; // Text
+        stream.WriteBytes(&wType, sizeof(wType));
+
+        const int32 keyLenBytes = (StringUtils::Length(key) + 1) * sizeof(Char);
+        stream.WriteBytes(key, keyLenBytes);
+        Pad4(stream);
+
+        if (!value.IsEmpty())
+        {
+            const int32 valLenBytes = (value.Length() + 1) * sizeof(Char);
+            stream.WriteBytes(value.GetText(), valLenBytes);
+            Pad4(stream);
+        }
+
+        const uint32 endPos = stream.GetPosition();
+        const uint16 totalLength = (uint16)(endPos - startPos);
+        stream.SetPosition(startPos);
+        stream.WriteBytes(&totalLength, sizeof(totalLength));
+        stream.SetPosition(endPos);
+    }
+
+    void BuildVersionResource(MemoryWriteStream& stream, int32 major, int32 minor, int32 build, int32 revision, bool isDebug, const Dictionary<String, String>& stringTable, uint16 langId = 0x0400, uint16 codePage = 1200)
+    {
+        // VS_VERSIONINFO
+        const uint32 rootStart = stream.GetPosition();
+        const uint16 dummy = 0;
+        stream.WriteBytes(&dummy, sizeof(dummy)); // wLength placeholder
+
+        const uint16 fixedInfoSize = sizeof(VS_FIXEDFILEINFO);
+        stream.WriteBytes(&fixedInfoSize, sizeof(fixedInfoSize));
+
+        const uint16 rootType = 0; // Binary
+        stream.WriteBytes(&rootType, sizeof(rootType));
+
+        const Char keyVsVersionInfo[] = TEXT("VS_VERSION_INFO");
+        stream.WriteBytes(keyVsVersionInfo, sizeof(keyVsVersionInfo));
+        Pad4(stream);
+
+        // VS_FIXEDFILEINFO
+        VS_FIXEDFILEINFO fixedInfo;
+        Platform::MemoryClear(&fixedInfo, sizeof(fixedInfo));
+        fixedInfo.dwSignature = 0xFEEF04BD;
+        fixedInfo.dwStrucVersion = 0x00010000;
+        fixedInfo.dwFileVersionMS = ((uint32)major << 16) | ((uint32)minor & 0xFFFF);
+        fixedInfo.dwFileVersionLS = ((uint32)Math::Max(build, 0) << 16) | ((uint32)Math::Max(revision, 0) & 0xFFFF);
+        fixedInfo.dwProductVersionMS = ((uint32)major << 16) | ((uint32)minor & 0xFFFF);
+        fixedInfo.dwProductVersionLS = ((uint32)Math::Max(build, 0) << 16) | ((uint32)Math::Max(revision, 0) & 0xFFFF);
+        fixedInfo.dwFileFlagsMask = 0x3F;
+        fixedInfo.dwFileFlags = isDebug ? 1 : 0;
+        fixedInfo.dwFileOS = 0x00040004; // VOS_NT_WINDOWS32
+        fixedInfo.dwFileType = 1; // VFT_APP
+        stream.WriteBytes(&fixedInfo, sizeof(fixedInfo));
+        Pad4(stream);
+
+        // StringFileInfo
+        const uint32 sfiStart = stream.GetPosition();
+        stream.WriteBytes(&dummy, sizeof(dummy));
+        stream.WriteBytes(&dummy, sizeof(dummy));
+        const uint16 textType = 1;
+        stream.WriteBytes(&textType, sizeof(textType));
+
+        const Char keyStringFileInfo[] = TEXT("StringFileInfo");
+        stream.WriteBytes(keyStringFileInfo, sizeof(keyStringFileInfo));
+        Pad4(stream);
+
+        // StringTable
+        const uint32 stStart = stream.GetPosition();
+        stream.WriteBytes(&dummy, sizeof(dummy));
+        stream.WriteBytes(&dummy, sizeof(dummy));
+        stream.WriteBytes(&textType, sizeof(textType));
+
+        const Char tableKey[] = TEXT("040004b0");
+        stream.WriteBytes(tableKey, sizeof(tableKey));
+        Pad4(stream);
+
+        // Strings
+        for (auto it = stringTable.Begin(); it != stringTable.End(); ++it)
+        {
+            WriteVersionString(stream, it->Key.GetText(), it->Value);
+        }
+
+        // Update StringTable length
+        const uint32 stEnd = stream.GetPosition();
+        const uint16 stLength = (uint16)(stEnd - stStart);
+        stream.SetPosition(stStart);
+        stream.WriteBytes(&stLength, sizeof(stLength));
+        stream.SetPosition(stEnd);
+        Pad4(stream);
+
+        // Update StringFileInfo length
+        const uint32 sfiEnd = stream.GetPosition();
+        const uint16 sfiLength = (uint16)(sfiEnd - sfiStart);
+        stream.SetPosition(sfiStart);
+        stream.WriteBytes(&sfiLength, sizeof(sfiLength));
+        stream.SetPosition(sfiEnd);
+        Pad4(stream);
+
+        // VarFileInfo
+        const uint32 vfiStart = stream.GetPosition();
+        stream.WriteBytes(&dummy, sizeof(dummy));
+        stream.WriteBytes(&dummy, sizeof(dummy));
+        stream.WriteBytes(&textType, sizeof(textType));
+
+        const Char keyVarFileInfo[] = TEXT("VarFileInfo");
+        stream.WriteBytes(keyVarFileInfo, sizeof(keyVarFileInfo));
+        Pad4(stream);
+
+        // Var (Translation)
+        const uint32 varStart = stream.GetPosition();
+        stream.WriteBytes(&dummy, sizeof(dummy));
+        const uint16 varValueLength = 4; // 4 bytes for DWORD translation
+        stream.WriteBytes(&varValueLength, sizeof(varValueLength));
+        const uint16 binType = 0;
+        stream.WriteBytes(&binType, sizeof(binType));
+
+        const Char keyTranslation[] = TEXT("Translation");
+        stream.WriteBytes(keyTranslation, sizeof(keyTranslation));
+        Pad4(stream);
+        stream.WriteBytes(&langId, sizeof(langId));
+        stream.WriteBytes(&codePage, sizeof(codePage));
+        Pad4(stream);
+
+        // Update Var length
+        const uint32 varEnd = stream.GetPosition();
+        const uint16 varLength = (uint16)(varEnd - varStart);
+        stream.SetPosition(varStart);
+        stream.WriteBytes(&varLength, sizeof(varLength));
+        stream.SetPosition(varEnd);
+        Pad4(stream);
+
+        // Update VarFileInfo length
+        const uint32 vfiEnd = stream.GetPosition();
+        const uint16 vfiLength = (uint16)(vfiEnd - vfiStart);
+        stream.SetPosition(vfiStart);
+        stream.WriteBytes(&vfiLength, sizeof(vfiLength));
+        stream.SetPosition(vfiEnd);
+        Pad4(stream);
+
+        // Update VS_VERSIONINFO length
+        const uint32 rootEnd = stream.GetPosition();
+        const uint16 rootLength = (uint16)(rootEnd - rootStart);
+        stream.SetPosition(rootStart);
+        stream.WriteBytes(&rootLength, sizeof(rootLength));
+        stream.SetPosition(rootEnd);
+    }
+
+    BOOL CALLBACK EnumResLangProc(HMODULE hModule, LPCWSTR lpszType, LPCWSTR lpszName, WORD wIDLanguage, LONG_PTR lParam)
+    {
+        auto* langList = (Array<WORD>*)lParam;
+        langList->Add(wIDLanguage);
+        return TRUE;
+    }
+
+    bool UpdateExeVersion(const String& path, CookingData& data, const WindowsPlatformSettings* platformSettings)
+    {
+        if (!FileSystem::FileExists(path))
+        {
+            LOG(Warning, "Missing file for executable version update.");
+            return true;
+        }
+
+        const auto gameSettings = GameSettings::Get();
+        const auto project = Editor::Project;
+
+        String productName = gameSettings->ProductName;
+        if (productName.IsEmpty() && project)
+            productName = project->Name;
+        if (productName.IsEmpty())
+            productName = TEXT("Flax Game");
+
+        String fileDescription = platformSettings ? platformSettings->Description : String::Empty;
+        if (fileDescription.IsEmpty())
+            fileDescription = productName;
+
+        String companyName = gameSettings->CompanyName;
+        if (companyName.IsEmpty() && project)
+            companyName = project->Company;
+
+        String copyright = gameSettings->CopyrightNotice;
+        if (copyright.IsEmpty() && project)
+            copyright = project->Copyright;
+
+        String versionText = gameSettings->Version;
+        Version version(1, 0, 0, 0);
+        if (versionText.IsEmpty() && project)
+        {
+            version = project->Version;
+            versionText = version.ToString();
+        }
+        else if (!versionText.IsEmpty())
+        {
+            if (Version::Parse(versionText, &version))
+            {
+                if (project)
+                    version = project->Version;
+            }
+        }
+
+        const String newName = EditorUtilities::GetOutputName();
+        const String internalName = newName;
+        const String originalFilename = newName + TEXT(".exe");
+
+        Dictionary<String, String> stringTable;
+        stringTable[TEXT("CompanyName")] = companyName;
+        stringTable[TEXT("FileDescription")] = fileDescription;
+        stringTable[TEXT("FileVersion")] = versionText;
+        stringTable[TEXT("InternalName")] = internalName;
+        stringTable[TEXT("LegalCopyright")] = copyright;
+        stringTable[TEXT("OriginalFilename")] = originalFilename;
+        stringTable[TEXT("ProductName")] = productName;
+        stringTable[TEXT("ProductVersion")] = versionText;
+
+        MemoryWriteStream resStream(2048);
+        BuildVersionResource(resStream, version.Major(), version.Minor(), version.Build(), version.Revision(), data.Configuration == BuildConfiguration::Debug, stringTable, 0x0400, 1200);
+
+        // Enumerate existing languages for RT_VERSION
+        Array<WORD> oldLanguages;
+        HMODULE hModule = LoadLibraryExW((LPCWSTR)path.GetText(), NULL, LOAD_LIBRARY_AS_DATAFILE);
+        if (hModule)
+        {
+            EnumResourceLanguagesW(hModule, RT_VERSION, MAKEINTRESOURCEW(VS_VERSION_INFO), EnumResLangProc, (LONG_PTR)&oldLanguages);
+            FreeLibrary(hModule);
+        }
+
+        HANDLE hUpdate = BeginUpdateResourceW((LPCWSTR)path.GetText(), FALSE);
+        if (hUpdate == NULL)
+        {
+            LOG(Warning, "BeginUpdateResource failed with error 0x{0:x}", (uint32)GetLastError());
+            return true;
+        }
+
+        // Delete existing version resources with different languages
+        for (WORD oldLang : oldLanguages)
+        {
+            if (oldLang != 0x0400)
+                UpdateResourceW(hUpdate, RT_VERSION, MAKEINTRESOURCEW(VS_VERSION_INFO), oldLang, NULL, 0);
+        }
+
+        // Add/update version resource (using 0x0400 - Process Default Language)
+        if (!UpdateResourceW(hUpdate, RT_VERSION, MAKEINTRESOURCEW(VS_VERSION_INFO), 0x0400, resStream.GetHandle(), resStream.GetPosition()))
+        {
+            LOG(Warning, "UpdateResource failed with error 0x{0:x}", (uint32)GetLastError());
+            EndUpdateResourceW(hUpdate, TRUE);
+            return true;
+        }
+
+        if (!EndUpdateResourceW(hUpdate, FALSE))
+        {
+            LOG(Warning, "EndUpdateResource failed with error 0x{0:x}", (uint32)GetLastError());
+            return true;
+        }
+
+        return false;
+    }
+}
+
 IMPLEMENT_ENGINE_SETTINGS_GETTER(WindowsPlatformSettings, WindowsPlatform);
 
 const Char* WindowsPlatformTools::GetDisplayName() const
@@ -508,6 +789,13 @@ bool WindowsPlatformTools::OnDeployBinaries(CookingData& data)
                 data.Error(TEXT("Failed to change output executable file icon."));
                 return true;
             }
+        }
+
+        // Apply executable version info
+        if (UpdateExeVersion(files[0], data, platformSettings))
+        {
+            data.Error(TEXT("Failed to change output executable metadata."));
+            return true;
         }
 
         // Rename app
