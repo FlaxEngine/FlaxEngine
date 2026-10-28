@@ -130,7 +130,7 @@ namespace FlaxEditor.Content
         }
 
         /// <summary>
-        /// Called when user dags this item into editor viewport or scene tree node.
+        /// Called when user drags this item into editor viewport or scene tree node.
         /// </summary>
         /// <param name="context">The editor context (eg. editor viewport or scene tree node).</param>
         /// <returns>True if item can be dropped in, otherwise false.</returns>
