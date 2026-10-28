@@ -76,6 +76,7 @@ bool DeployDataStep::Perform(CookingData& data)
                 canUseSystemDotnet = PLATFORM_TYPE == PlatformType::Windows;
                 break;
             case BuildPlatform::LinuxX64:
+            case BuildPlatform::LinuxARM64:
                 canUseSystemDotnet = PLATFORM_TYPE == PlatformType::Linux;
                 break;
             case BuildPlatform::MacOSx64:
@@ -167,7 +168,7 @@ bool DeployDataStep::Perform(CookingData& data)
                     data.GetBuildPlatformName(platformName, archName);
                     if (data.Platform == BuildPlatform::Windows64 || data.Platform == BuildPlatform::WindowsARM64 || data.Platform == BuildPlatform::Windows32)
                         failed |= FileSystem::CopyFile(dstHostfxr / TEXT("hostfxr.dll"), depsRoot / TEXT("ThirdParty") / archName / TEXT("hostfxr.dll"));
-                    else if (data.Platform == BuildPlatform::LinuxX64)
+                    else if (data.Platform == BuildPlatform::LinuxX64 || data.Platform == BuildPlatform::LinuxARM64)
                         failed |= FileSystem::CopyFile(dstHostfxr / TEXT("hostfxr.so"), depsRoot / TEXT("ThirdParty") / archName / TEXT("hostfxr.so"));
                     else if (data.Platform == BuildPlatform::MacOSx64 || data.Platform == BuildPlatform::MacOSARM64)
                         failed |= FileSystem::CopyFile(dstHostfxr / TEXT("hostfxr.dylib"), depsRoot / TEXT("ThirdParty") / archName / TEXT("hostfxr.dylib"));

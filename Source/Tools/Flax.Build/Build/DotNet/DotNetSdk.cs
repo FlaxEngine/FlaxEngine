@@ -592,6 +592,8 @@ namespace Flax.Build
                 return "/usr/share/dotnet";
             if (File.Exists("/usr/lib/dotnet/dotnet")) // Deprecated recommended dotnet location
                 return "/usr/lib/dotnet";
+            if (File.Exists("/usr/lib64/dotnet/dotnet")) // Deprecated recommended dotnet location
+                return "/usr/lib64/dotnet";
             if (Environment.GetEnvironmentVariable("PATH") is string globalBinPath) // Searching for dotnet binary
                 return globalBinPath.Split(':').FirstOrDefault(x => File.Exists(Path.Combine(x, "dotnet")));
             return null;

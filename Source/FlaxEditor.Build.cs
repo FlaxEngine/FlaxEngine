@@ -66,6 +66,7 @@ public class FlaxEditor : EngineTarget
             }
             break;
         case TargetPlatform.Linux:
+            // TODO: Different path for x64 and ARM64 output?
             options.OutputFolder = Path.Combine(options.WorkingDirectory, "Binaries", "Editor", "Linux", options.Configuration.ToString());
             options.DependencyFiles.Add(Path.Combine(Globals.EngineRoot, "Source", "Logo.png"));
             break;

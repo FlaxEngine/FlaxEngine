@@ -71,6 +71,7 @@ namespace Flax.Deps.Dependencies
                 "-DSDL_WASAPI=OFF",
                 "-DSDL_SNDIO=OFF",
                 "-DSDL_PULSEAUDIO=OFF",
+                "-DSDL_PIPEWIRE=OFF",
                 "-DSDL_ALSA=OFF",
                 "-DSDL_GPU=OFF",
             };

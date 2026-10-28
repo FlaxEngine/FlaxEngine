@@ -148,6 +148,12 @@ API_ENUM() enum class BuildPlatform
     /// Web
     /// </summary>
     Web = 16,
+    
+    /// <summary>
+    /// Linux (ARM64)
+    /// </summary>
+    API_ENUM(Attributes="EditorDisplay(null, \"Linux ARM64\")")
+    LinuxARM64 = 17,
 };
 
 /// <summary>
