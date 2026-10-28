@@ -283,6 +283,7 @@ void Asset::OnDeleteObject()
     const bool wasMarkedToDelete = _deleteFileOnUnload != 0;
 #if USE_EDITOR
     const String path = wasMarkedToDelete ? String(GetPath()) : String::Empty;
+    const bool isVirtual = IsVirtual(); // Read before the base call below deletes this object
 #endif
     const Guid id = GetID();
 
@@ -318,7 +319,7 @@ void Asset::OnDeleteObject()
         Content::GetRegistry()->DeleteAsset(id, nullptr);
 
         // Delete file
-        if (!IsVirtual())
+        if (!isVirtual)
             Content::deleteFileSafety(path, &id);
     }
 #endif
