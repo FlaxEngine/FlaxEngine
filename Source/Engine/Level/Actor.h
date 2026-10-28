@@ -1154,6 +1154,9 @@ private:
     void OnEnableInHierarchy();
     void OnDisableInHierarchy();
 
+    // Calls OnStart and OnEnable of the enabled scripts that did not get them yet.
+    void EnableScripts();
+
     // Helper methods used by templates GetChildren/GetScripts to prevent including MClass/Script here
     static bool IsSubClassOf(const Actor* object, const MClass* klass);
     static bool IsSubClassOf(const Script* object, const MClass* klass);

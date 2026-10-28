@@ -1035,6 +1035,9 @@ void Actor::BeginPlay(SceneBeginData* data)
         auto e = Scripts.Get()[i];
         if (!e->IsDuringPlay())
         {
+            // A script added after the scene objects were initialized (eg. by another script's OnAwake during scene loading) was not initialized yet: without OnAwake, its OnDestroy is never called either
+            if (!e->_wasAwakeCalled)
+                e->Initialize();
             e->BeginPlay(data);
             ACTOR_LOOP_CHECK_MODIFIED_HIERARCHY();
         }
@@ -1052,9 +1055,12 @@ void Actor::BeginPlay(SceneBeginData* data)
     }
 
     // Fire events for scripting
-    if (IsActiveInHierarchy() && GetScene() && !_isEnabled)
+    if (IsActiveInHierarchy() && GetScene())
     {
-        OnEnable();
+        if (!_isEnabled)
+            OnEnable();
+        else
+            EnableScripts(); // The actor was enabled before its play (eg. parented to a loading scene by another script's OnAwake): the scripts added since then still need OnStart and OnEnable
     }
 }
 
@@ -1319,7 +1325,11 @@ void Actor::OnEnable()
 {
     CHECK_DEBUG(!_isEnabled);
     _isEnabled = true;
+    EnableScripts();
+}
 
+void Actor::EnableScripts()
+{
     ACTOR_LOOP_START_MODIFIED_HIERARCHY();
     for (int32 i = 0; i < Scripts.Count(); i++)
     {
