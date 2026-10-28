@@ -189,6 +189,20 @@ bool EmitterUseSorting(RenderContextBatch& renderContextBatch, ParticleBuffer* b
     return buffer->Emitter->Graph.SortModules.HasItems() && EnumHasAnyFlags(drawModes, DrawPass::Forward) && (mainView.IsCullingDisabled || mainView.CullingFrustum.Intersects(bounds));
 }
 
+void Particles::WriteRibbonSegmentIndices(RibbonIndex* indices, uint32 firstVertex)
+{
+    const RibbonIndex i0 = (RibbonIndex)firstVertex;
+    const RibbonIndex i1 = (RibbonIndex)(firstVertex + 2);
+
+    *indices++ = i0;
+    *indices++ = i0 + 1;
+    *indices++ = i1;
+
+    *indices++ = i0 + 1;
+    *indices++ = i1 + 1;
+    *indices++ = i1;
+}
+
 void DrawEmitterCPU(RenderContextBatch& renderContextBatch, ParticleBuffer* buffer, DrawCall& drawCall, DrawPass drawModes, StaticFlags staticFlags, const BoundingSphere& bounds, uint32 renderModulesIndices, int8 sortOrder)
 {
     // Skip if CPU buffer is empty
@@ -356,7 +370,7 @@ void DrawEmitterCPU(RenderContextBatch& renderContextBatch, ParticleBuffer* buff
     {
         // Prepare ribbon data
         if (!buffer->GPU.RibbonIndexBufferDynamic)
-            buffer->GPU.RibbonIndexBufferDynamic = New<DynamicIndexBuffer>(0, (uint32)sizeof(uint16), TEXT("RibbonIndexBufferDynamic"));
+            buffer->GPU.RibbonIndexBufferDynamic = New<DynamicIndexBuffer>(0, (uint32)sizeof(Particles::RibbonIndex), TEXT("RibbonIndexBufferDynamic"));
         else
             buffer->GPU.RibbonIndexBufferDynamic->Clear();
         if (!buffer->GPU.RibbonVertexBufferDynamic)
@@ -432,20 +446,8 @@ void DrawEmitterCPU(RenderContextBatch& renderContextBatch, ParticleBuffer* buff
                     // 2 triangles
                     {
                         auto idx = indexBuffer.Count();
-                        indexBuffer.AddUninitialized(6 * sizeof(uint16));
-                        auto ptr = (uint16*)(indexBuffer.Get() + idx);
-
-                        uint32 i0 = vertexPrev;
-                        uint32 i1 = vertexPrev + 2;
-
-                        *ptr++ = i0;
-                        *ptr++ = i0 + 1;
-                        *ptr++ = i1;
-
-                        *ptr++ = i0 + 1;
-                        *ptr++ = i1 + 1;
-                        *ptr++ = i1;
-
+                        indexBuffer.AddUninitialized(6 * sizeof(Particles::RibbonIndex));
+                        Particles::WriteRibbonSegmentIndices((Particles::RibbonIndex*)(indexBuffer.Get() + idx), vertexPrev);
                         indices += 6;
                     }
 
