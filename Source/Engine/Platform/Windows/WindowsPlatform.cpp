@@ -787,7 +787,8 @@ bool WindowsPlatform::Init()
         UserLanguage = String(buffer);
     }
 
-    // Get computer name string
+    // Get computer name string (the size is read as the buffer length first and written as the name length after)
+    tmp = ARRAY_COUNT(buffer);
     if (GetComputerNameW(buffer, &tmp))
     {
         ComputerName = String(buffer);
@@ -795,6 +796,7 @@ bool WindowsPlatform::Init()
 
     // Get user name string
     String userName;
+    tmp = ARRAY_COUNT(buffer);
     if (GetUserNameW(buffer, &tmp))
     {
         userName = String(buffer);

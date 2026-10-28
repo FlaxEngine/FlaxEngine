@@ -236,6 +236,7 @@ const Char* TypeId2TypeName(const uint32 typeId)
 
 FlaxStorage::FlaxStorage(const StringView& path)
     : _path(path)
+    , _lastRefLostTime(Platform::GetTimeSeconds()) // a storage that never gets a reference counts its unused time from here
 {
 }
 
