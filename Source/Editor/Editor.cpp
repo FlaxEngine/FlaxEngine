@@ -93,6 +93,9 @@ public:
         if (CommandLine::Options.Headless.IsTrue())
             return false;
 
+        // Preload icons atlas
+        Content::LoadAsyncInternal(TEXT("Editor/IconsAtlas"));
+
         // Show splash screen
         PROFILE_CPU_NAMED("Splash");
         EditorImpl::Splash = New<SplashScreen>();
