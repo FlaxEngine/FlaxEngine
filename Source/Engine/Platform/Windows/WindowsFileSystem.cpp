@@ -143,8 +143,16 @@ bool WindowsFileSystem::AreFilePathsEqual(const StringView& path1, const StringV
     NormalizePath(filename1);
     NormalizePath(filename2);
 
-    HANDLE file1 = CreateFileW(*filename1, GENERIC_READ, (DWORD)FileShare::All, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-    HANDLE file2 = CreateFileW(*filename2, GENERIC_READ, (DWORD)FileShare::All, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    // Open only existing files or directories, for their attributes (OPEN_ALWAYS would create a missing file): a path that cannot be opened is not equal to another path
+    HANDLE file1 = CreateFileW(*filename1, FILE_READ_ATTRIBUTES, (DWORD)FileShare::All, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+    if (file1 == INVALID_HANDLE_VALUE)
+        return false;
+    HANDLE file2 = CreateFileW(*filename2, FILE_READ_ATTRIBUTES, (DWORD)FileShare::All, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+    if (file2 == INVALID_HANDLE_VALUE)
+    {
+        CloseHandle(file1);
+        return false;
+    }
 
     bool result = SameFile(file1, file2);
 
