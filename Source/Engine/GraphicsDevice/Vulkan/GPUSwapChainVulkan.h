@@ -75,6 +75,11 @@ private:
     bool _vsyncCurrent = false, _vsyncPending = false, _vsyncInit = true;
     Array<BackBufferVulkan, FixedAllocation<VULKAN_BACK_BUFFERS_COUNT_MAX>> _backBuffers;
     SemaphoreVulkan* _acquiredSemaphore;
+    bool _isFullscreen = false;
+#if PLATFORM_WINDOWS && !PLATFORM_SDL
+    bool _windowedHasBorder = true;
+    Rectangle _windowedBounds;
+#endif
 
 public:
     GPUSwapChainVulkan(GPUDeviceVulkan* device, Window* window);
