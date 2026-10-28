@@ -123,6 +123,11 @@ public:
     {
         return false;
     }
+
+    // Called when the scene gets unloaded so the action that works on it can stop.
+    virtual void OnSceneUnload(Scene* scene)
+    {
+    }
 };
 
 #if USE_EDITOR
@@ -543,6 +548,7 @@ public:
     Guid SceneId;
     AssetReference<JsonAsset> SceneAsset;
     SceneLoader Loader;
+    bool Canceled = false;
 
     LoadSceneAction(const Guid& sceneId, JsonAsset* sceneAsset, SceneLoader::Modes mode)
         : Loader(mode)
@@ -553,6 +559,9 @@ public:
 
     SceneResult Do(Context& context) override
     {
+        // The scene was unloaded (and its object deleted) before the loading ended
+        if (Canceled)
+            return SceneResult::Failed;
         if (SceneAsset == nullptr)
             return SceneResult::Failed;
         if (!SceneAsset->IsLoaded())
@@ -563,6 +572,12 @@ public:
     bool IsPreloading(const Guid* sceneId) override
     {
         return Loader.Preload && (!sceneId || *sceneId == SceneId);
+    }
+
+    void OnSceneUnload(Scene* scene) override
+    {
+        if (Loader.Scene == scene)
+            Canceled = true;
     }
 };
 
@@ -987,6 +1002,12 @@ bool LevelImpl::unloadScene(Scene* scene)
 
     // Fire event
     CallSceneEvent(SceneEventType::OnSceneUnloaded, scene, sceneId);
+
+    // Stop the loading of this scene if it is still in progress (the loader would send the loaded event for the deleted scene)
+    _sceneActionsLocker.Lock();
+    for (auto action : _sceneActions)
+        action->OnSceneUnload(scene);
+    _sceneActionsLocker.Unlock();
 
     // Simple enqueue scene root object to be deleted
     scene->DeleteObject();
