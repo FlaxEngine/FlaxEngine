@@ -357,17 +357,26 @@ void MaterialParameter::Bind(BindMeta& meta) const
         break;
     }
     case MaterialParameterType::GPUTextureArray:
+    {
+        const auto texture = _asObject.As<GPUTexture>();
+        // Like GET_TEXTURE_VIEW_SAFE: a texture that hasn't streamed in yet isn't allocated (its array size is 0), and
+        // ViewArray asserts on a texture with a single slice
+        const auto view = texture && texture->ResidentMipLevels() > 0 && texture->ArraySize() > 1 ? texture->ViewArray() : nullptr;
+        meta.Context->BindSR(_registerIndex, view);
+        break;
+    }
     case MaterialParameterType::GPUTextureCube:
     {
         const auto texture = _asObject.As<GPUTexture>();
-        const auto view = texture ? texture->ViewArray() : nullptr;
+        // A streamed (regular) cube texture has its cube view in View(), other cube textures in ViewArray()
+        const auto view = texture && texture->ResidentMipLevels() > 0 && texture->IsCubeMap() ? (texture->IsRegularTexture() ? texture->View() : texture->ViewArray()) : nullptr;
         meta.Context->BindSR(_registerIndex, view);
         break;
     }
     case MaterialParameterType::GPUTextureVolume:
     {
         const auto texture = _asObject.As<GPUTexture>();
-        const auto view = texture ? texture->ViewVolume() : nullptr;
+        const auto view = texture && texture->ResidentMipLevels() > 0 && texture->IsVolume() ? texture->ViewVolume() : nullptr;
         meta.Context->BindSR(_registerIndex, view);
         break;
     }
