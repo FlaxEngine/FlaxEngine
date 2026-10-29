@@ -198,6 +198,22 @@ API_ENUM(Attributes="Flags") enum class ActorsSources
 DECLARE_ENUM_OPERATORS(ActorsSources);
 
 /// <summary>
+/// Defines the place where the rendering happens. Exposed to material shaders so they can adapt (or skip) effects that make sense only in the actual game world (eg. custom lighting driven by scene data).
+/// </summary>
+API_ENUM() enum class RenderLocations
+{
+    /// <summary>
+    /// The scene is rendered in a game or in the editor viewport (the default for all render tasks).
+    /// </summary>
+    Scene = 0,
+
+    /// <summary>
+    /// The asset is rendered in a preview outside of any scene, eg. material editor window or asset thumbnail.
+    /// </summary>
+    AssetPreview = 1,
+};
+
+/// <summary>
 /// The Post Process effect rendering location within the rendering pipeline.
 /// </summary>
 API_ENUM() enum class RenderingUpscaleLocation
@@ -274,6 +290,11 @@ public:
     /// The actors source to use (configures what objects to render).
     /// </summary>
     API_FIELD() ActorsSources ActorsSource = ActorsSources::Scenes;
+
+    /// <summary>
+    /// The place that is rendered by this task. Passed to material shaders (RenderLocation constant) to let them distinguish the scene from asset previews. Set explicitly by the code that creates the task because actors source and view flags can't tell that reliably.
+    /// </summary>
+    API_FIELD() RenderLocations RenderLocation = RenderLocations::Scene;
 
     /// <summary>
     /// The scale of the rendering resolution relative to the output dimensions. If lower than 1 the scene and postprocessing will be rendered at a lower resolution and upscaled to the output backbuffer.

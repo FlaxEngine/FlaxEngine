@@ -6,6 +6,7 @@
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderContext.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
@@ -41,6 +42,8 @@ GPU_CB_STRUCT(MaterialShaderDataPerView {
     float ViewPadding0;
     float TestValue;
     float ScaledTimeParam;
+    uint32 RenderLocation;
+    Float3 ViewPadding1;
     });
 
 IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderContext& renderContext)
@@ -90,6 +93,10 @@ void IMaterial::BindParameters::BindViewData()
     cb.LargeWorldsChunkSize = LargeWorlds::ChunkSize;
     cb.MaterialTextureMipBias = RenderContext.List->Setup.MaterialTextureMipBias;
     cb.TestValue = Graphics::TestValue;
+
+    // Read the location from the task (not from the view) because sub-contexts (eg. shadow maps) share the task but use their own views
+    cb.RenderLocation = RenderContext.Task ? (uint32)RenderContext.Task->RenderLocation : (uint32)RenderLocations::Scene;
+    cb.ViewPadding1 = Float3::Zero;
 
     // Update constants
     GPUContext->UpdateCB(PerViewConstants, &cb);
