@@ -192,8 +192,8 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             },
             //
-            Op1(27, "Negate", "Returns opposite value", new[] { "Invert" }),
-            Op1(28, "One Minus", "Returns 1 - value"),
+            Op1(27, "Negate", "Returns opposite value", new[] { "Invert", "*-1" }),
+            Op1(28, "One Minus", "Returns 1 - value", new[] { "1-" }),
             //
             new NodeArchetype
             {
