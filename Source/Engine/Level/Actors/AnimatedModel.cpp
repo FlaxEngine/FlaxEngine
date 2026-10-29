@@ -68,7 +68,7 @@ public:
             }
         }
 
-        // Check if need to create/resize the global buffer
+        // Safely resize if required size exceeds current chunk limits
         if (CurrentOffset + size > CurrentSize)
         {
             DataLocker.WriteLock(); // Ensure none if writing to this buffer during resize
@@ -77,9 +77,11 @@ public:
             if (ReallocateSize == 0)
                 ReallocateSize = CurrentSize;
 
-            // Grow buffer
+            // Ensure we grow enough to fit the requested size completely to avoid OoB
             CurrentSize = CurrentSize == 0 ? 16 * 1024 : CurrentSize * 2;
-            ASSERT(CurrentOffset + size <= CurrentSize);
+            while (CurrentOffset + size > CurrentSize)
+                CurrentSize *= 2;
+        
             Data.Resize(CurrentSize, true);
 
             DataLocker.WriteUnlock();
