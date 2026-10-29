@@ -424,7 +424,7 @@ namespace Flax.Build
                 }
             }
 
-            return failed;
+            return failed || Log.HasFatalError;
         }
 
         private static void DeployFiles(TaskGraph graph, Target target, BuildOptions targetBuildOptions, string outputPath)

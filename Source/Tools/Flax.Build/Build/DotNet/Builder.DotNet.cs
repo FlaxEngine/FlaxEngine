@@ -148,6 +148,13 @@ namespace Flax.Build
 
         private static void BuildDotNet(TaskGraph graph, BuildData buildData, BuildOptions buildOptions, string name, List<string> sourceFiles, HashSet<string> fileReferences = null, IGrouping<string, Module> binaryModule = null, bool? optimizeAssembly = null)
         {
+            //don't try to compile stuff with FatalError
+            //FatalError it is saying the binding generation has failed on C++ has API miss use or
+            //compilation error / bad generation code
+            if (Log.HasFatalError)
+                return;
+
+
             // Setup build options
             var buildPlatform = Platform.BuildTargetPlatform;
             var outputPath = Path.GetDirectoryName(buildData.Target.GetOutputFilePath(buildOptions));
