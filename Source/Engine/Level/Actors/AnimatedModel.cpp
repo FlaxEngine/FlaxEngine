@@ -71,16 +71,16 @@ public:
         // Safely resize if required size exceeds current chunk limits
         if (CurrentOffset + size > CurrentSize)
         {
-            DataLocker.WriteLock();
+            DataLocker.WriteLock(); // Ensure none if writing to this buffer during resize
 
+            // First allocation sets it (in case multiple reallocs before draw)
             if (ReallocateSize == 0)
                 ReallocateSize = CurrentSize;
 
             // Ensure we grow enough to fit the requested size completely to avoid OoB
+            CurrentSize = CurrentSize == 0 ? 16 * 1024 : CurrentSize * 2;
             while (CurrentOffset + size > CurrentSize)
-            {
-                CurrentSize = CurrentSize == 0 ? 16 * 1024 : CurrentSize * 2;
-            }
+                CurrentSize *= 2;
         
             Data.Resize(CurrentSize, true);
 
@@ -264,9 +264,6 @@ void AnimatedModel::SkinnedBones::Update(const SkeletonData& skeleton, const Arr
     for (int32 boneIndex = 0; boneIndex < bonesCount; boneIndex++)
     {
         const SkeletonBone& bone = bones[boneIndex];
-        if (bone.NodeIndex < 0 || bone.NodeIndex >= nodesPose.Count())
-            continue; // Prevent out-of-bounds memory crash from messy Blender rigs
-
         Matrix matrix;
         Matrix::Multiply(bone.OffsetMatrix, nodes[bone.NodeIndex], matrix);
         output[boneIndex].SetMatrixTranspose(matrix);
