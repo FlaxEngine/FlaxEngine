@@ -60,6 +60,27 @@ API_ENUM() enum class ToneMappingMode
 };
 
 /// <summary>
+/// The look applied by the tonemapper after its curve. Only the AGX tonemapper has looks for now.
+/// </summary>
+API_ENUM() enum class ToneMappingLook
+{
+    /// <summary>
+    /// The tonemapper's own look, with no adjustment.
+    /// </summary>
+    None = 0,
+
+    /// <summary>
+    /// More contrast and saturation (AGX only: Blender's AgX Punchy, values from Benjamin Wrensch's minimal AgX).
+    /// </summary>
+    Punchy = 1,
+
+    /// <summary>
+    /// A warm, slightly desaturated look (AGX only: Blender's AgX Golden, values from Benjamin Wrensch's minimal AgX).
+    /// </summary>
+    Golden = 2,
+};
+
+/// <summary>
 /// Eye adaptation effect rendering modes.
 /// </summary>
 API_ENUM() enum class EyeAdaptationMode
@@ -603,9 +624,14 @@ API_ENUM(Attributes ="Flags") enum class ToneMappingSettingsOverride : int32
     Mode = 1 << 2,
 
     /// <summary>
+    /// Overrides <see cref="ToneMappingSettings.Look"/> property.
+    /// </summary>
+    Look = 1 << 3,
+
+    /// <summary>
     /// All properties.
     /// </summary>
-    All = WhiteTemperature | WhiteTint | Mode,
+    All = WhiteTemperature | WhiteTint | Mode | Look,
 };
 
 /// <summary>
@@ -640,6 +666,12 @@ API_STRUCT() struct FLAXENGINE_API ToneMappingSettings : ISerializable
     /// </summary>
     API_FIELD(Attributes="EditorOrder(2), PostProcessSetting((int)ToneMappingSettingsOverride.Mode)")
     ToneMappingMode Mode = ToneMappingMode::ACES;
+
+    /// <summary>
+    /// The look applied after the tonemapper's curve. Only the AGX mode has looks for now; other modes ignore it.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(3), PostProcessSetting((int)ToneMappingSettingsOverride.Look), VisibleIf(nameof(ShowLook))")
+    ToneMappingLook Look = ToneMappingLook::None;
 
 public:
     /// <summary>
