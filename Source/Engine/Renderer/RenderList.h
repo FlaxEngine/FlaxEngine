@@ -8,8 +8,8 @@
 #include "Engine/Graphics/PostProcessSettings.h"
 #include "Engine/Graphics/DynamicBuffer.h"
 #include "Engine/Scripting/ScriptingObject.h"
+#include "Engine/Threading/ConcurrentWriteBuffer.h"
 #include "DrawCall.h"
-#include "RenderListBuffer.h"
 #include "RenderSetup.h"
 
 enum class StaticFlags;
@@ -281,12 +281,12 @@ struct DrawCallsList
     /// <summary>
     /// The list of draw calls indices to render.
     /// </summary>
-    RenderListBuffer<int32> Indices;
+    ConcurrentWriteBuffer<int32> Indices;
 
     /// <summary>
     /// The list of external draw calls indices to render.
     /// </summary>
-    RenderListBuffer<int32> PreBatchedDrawCalls;
+    ConcurrentWriteBuffer<int32> PreBatchedDrawCalls;
 
     /// <summary>
     /// The draw calls batches (for instancing).
@@ -381,12 +381,12 @@ public:
     /// <summary>
     /// Draw calls list (for all draw passes).
     /// </summary>
-    RenderListBuffer<DrawCall> DrawCalls;
+    ConcurrentWriteBuffer<DrawCall> DrawCalls;
 
     /// <summary>
     /// Draw calls list with pre-batched instances (for all draw passes).
     /// </summary>
-    RenderListBuffer<BatchedDrawCall> BatchedDrawCalls;
+    ConcurrentWriteBuffer<BatchedDrawCall> BatchedDrawCalls;
 
     /// <summary>
     /// The draw calls lists. Each for the separate draw pass.
@@ -406,12 +406,12 @@ public:
     /// <summary>
     /// Light pass members - point lights
     /// </summary>
-    RenderListBuffer<RenderPointLightData> PointLights;
+    ConcurrentWriteBuffer<RenderPointLightData> PointLights;
 
     /// <summary>
     /// Light pass members - spot lights
     /// </summary>
-    RenderListBuffer<RenderSpotLightData> SpotLights;
+    ConcurrentWriteBuffer<RenderSpotLightData> SpotLights;
 
     /// <summary>
     /// Light pass members - sky lights
@@ -431,7 +431,7 @@ public:
     /// <summary>
     /// Local volumetric fog particles registered for the rendering.
     /// </summary>
-    RenderListBuffer<DrawCall> VolumetricFogParticles;
+    ConcurrentWriteBuffer<DrawCall> VolumetricFogParticles;
 
     /// <summary>
     /// Sky/skybox renderer proxy to use (only one per frame)
@@ -523,7 +523,7 @@ public:
 private:
     bool _objectsBufferDirty = true;
     DynamicVertexBuffer _instanceBuffer;
-    RenderListBuffer<DelayedDraw> _delayedDraws;
+    ConcurrentWriteBuffer<DelayedDraw> _delayedDraws;
 
 public:
     /// <summary>
@@ -652,7 +652,7 @@ public:
     /// <param name="drawCalls">The collected draw calls list.</param>
     /// <param name="listType">The hint about draw calls list type (optional).</param>
     /// <param name="pass">The draw pass (optional).</param>
-    void SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, DrawCallsListType listType = DrawCallsListType::GBuffer, DrawPass pass = DrawPass::All);
+    void SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const ConcurrentWriteBuffer<DrawCall>& drawCalls, DrawCallsListType listType = DrawCallsListType::GBuffer, DrawPass pass = DrawPass::All);
 
     /// <summary>
     /// Executes the collected draw calls.

@@ -13,9 +13,9 @@
 /// <typeparam name="T">The type of elements in the array.</typeparam>
 /// <typeparam name="AllocationType">The type of memory allocator.</typeparam>
 template<typename T, typename AllocationType = HeapAllocation>
-class RenderListBuffer
+class ConcurrentWriteBuffer
 {
-    friend RenderListBuffer;
+    friend ConcurrentWriteBuffer;
 public:
     using ItemType = T;
     using AllocationData = typename AllocationType::template Data<T>;
@@ -30,9 +30,9 @@ private:
 
 public:
     /// <summary>
-    /// Initializes an empty <see cref="RenderListBuffer"/> without reserving any space.
+    /// Initializes an empty <see cref="ConcurrentWriteBuffer"/> without reserving any space.
     /// </summary>
-    FORCE_INLINE RenderListBuffer()
+    FORCE_INLINE ConcurrentWriteBuffer()
         : _count(0)
         , _capacity(0)
     {
@@ -43,7 +43,7 @@ public:
     /// </summary>
     /// <param name="data">The initial data.</param>
     /// <param name="length">The amount of items.</param>
-    RenderListBuffer(const T* data, const int32 length)
+    ConcurrentWriteBuffer(const T* data, const int32 length)
     {
         ASSERT(length >= 0);
         _count = _capacity = length;
@@ -55,10 +55,10 @@ public:
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="RenderListBuffer"/> class.
+    /// Initializes a new instance of the <see cref="ConcurrentWriteBuffer"/> class.
     /// </summary>
     /// <param name="other">The other collection to copy.</param>
-    RenderListBuffer(const RenderListBuffer& other)
+    ConcurrentWriteBuffer(const ConcurrentWriteBuffer& other)
     {
         _count = _capacity = other._count;
         if (_capacity > 0)
@@ -69,10 +69,10 @@ public:
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="RenderListBuffer"/> class.
+    /// Initializes a new instance of the <see cref="ConcurrentWriteBuffer"/> class.
     /// </summary>
     /// <param name="other">The other collection to move.</param>
-    RenderListBuffer(RenderListBuffer&& other) noexcept
+    ConcurrentWriteBuffer(ConcurrentWriteBuffer&& other) noexcept
     {
         _count = other._count;
         _capacity = other._capacity;
@@ -86,7 +86,7 @@ public:
     /// </summary>
     /// <param name="other">The other collection to copy.</param>
     /// <returns>The reference to this.</returns>
-    RenderListBuffer& operator=(const RenderListBuffer& other) noexcept
+    ConcurrentWriteBuffer& operator=(const ConcurrentWriteBuffer& other) noexcept
     {
         if (this != &other)
         {
@@ -108,7 +108,7 @@ public:
     /// </summary>
     /// <param name="other">The other collection to move.</param>
     /// <returns>The reference to this.</returns>
-    RenderListBuffer& operator=(RenderListBuffer&& other) noexcept
+    ConcurrentWriteBuffer& operator=(ConcurrentWriteBuffer&& other) noexcept
     {
         if (this != &other)
         {
@@ -124,9 +124,9 @@ public:
     }
 
     /// <summary>
-    /// Finalizes an instance of the <see cref="RenderListBuffer"/> class.
+    /// Finalizes an instance of the <see cref="ConcurrentWriteBuffer"/> class.
     /// </summary>
-    ~RenderListBuffer()
+    ~ConcurrentWriteBuffer()
     {
         Memory::DestructItems(_allocation.Get(), static_cast<int32>(_count));
     }

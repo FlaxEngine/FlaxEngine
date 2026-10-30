@@ -826,7 +826,7 @@ void RenderList::BuildObjectsBuffer()
     ZoneValue(ObjectBuffer.Data.Count() / 1024); // Objects Buffer size in kB
 }
 
-void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, DrawCallsListType listType, DrawPass pass)
+void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const ConcurrentWriteBuffer<DrawCall>& drawCalls, DrawCallsListType listType, DrawPass pass)
 {
     PROFILE_CPU();
     PROFILE_MEM(GraphicsCommands);

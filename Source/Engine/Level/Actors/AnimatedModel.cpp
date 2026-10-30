@@ -41,7 +41,7 @@ public:
     };
 
     GPUBuffer* GlobalBuffer = nullptr;
-    RenderListBuffer<Allocation> Updates;
+    ConcurrentWriteBuffer<Allocation> Updates;
     Array<Allocation> FreeList;
     Array<byte> Data;
     uint32 CurrentOffset = 0;

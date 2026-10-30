@@ -121,8 +121,8 @@ static void FindWorkspaceFiles(const String& directory, Array<String>& files)
 #define CONTENT_PROCESS_BATCHED 1
 
 #if CONTENT_PROCESS_BATCHED
-#include "Engine/Renderer/RenderListBuffer.h"
-typedef RenderListBuffer<AssetInfo> WorkspaceResults;
+#include "Engine/Threading/ConcurrentWriteBuffer.h"
+typedef ConcurrentWriteBuffer<AssetInfo> WorkspaceResults;
 #else
 typedef void* WorkspaceResults;
 #endif

@@ -214,9 +214,9 @@ public:
 
     // Async objects drawing cache
     Array<int64, FixedAllocation<3>> AsyncDrawWaitLabels;
-    RenderListBuffer<Pair<GlobalSurfaceAtlasTile*, GlobalSurfaceAtlasObject*>> AsyncFreeTiles;
-    RenderListBuffer<GlobalSurfaceAtlasNewObject> AsyncNewObjects;
-    RenderListBuffer<GlobalSurfaceAtlasNewTile> AsyncNewTiles;
+    ConcurrentWriteBuffer<Pair<GlobalSurfaceAtlasTile*, GlobalSurfaceAtlasObject*>> AsyncFreeTiles;
+    ConcurrentWriteBuffer<GlobalSurfaceAtlasNewObject> AsyncNewObjects;
+    ConcurrentWriteBuffer<GlobalSurfaceAtlasNewTile> AsyncNewTiles;
     Array<void*> FailedObjects;
     Array<void*> PrevFrameFailedObjects;
     Array<int64> AsyncScenesDrawCounters[2];
