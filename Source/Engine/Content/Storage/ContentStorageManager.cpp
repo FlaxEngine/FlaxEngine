@@ -51,6 +51,9 @@ TimeSpan ContentStorageManager::UnusedDataChunksLifetime = TimeSpan::FromSeconds
 
 FlaxStorageReference ContentStorageManager::GetStorage(const StringView& path, bool loadIt)
 {
+    PROFILE_CPU();
+    PROFILE_MEM(Content);
+    ZoneText(*path, path.Length());
     Locker.Lock();
 
     // Try fast lookup
@@ -196,15 +199,15 @@ void ContentStorageManager::FormatPath(String& path)
     }
 }
 
-bool ContentStorageManager::IsFlaxStoragePath(const String& path)
+bool ContentStorageManager::IsFlaxStoragePath(const StringView& path)
 {
-    auto extension = FileSystem::GetExtension(path).ToLower();
-    return IsFlaxStorageExtension(extension);
+    return IsFlaxStorageExtension(FileSystem::GetExtension(path));
 }
 
-bool ContentStorageManager::IsFlaxStorageExtension(const String& extension)
+bool ContentStorageManager::IsFlaxStorageExtension(const StringView& extension)
 {
-    return extension == ASSET_FILES_EXTENSION || extension == PACKAGE_FILES_EXTENSION;
+    return extension.Compare(StringView(ASSET_FILES_EXTENSION, ARRAY_COUNT(ASSET_FILES_EXTENSION) - 1), StringSearchCase::IgnoreCase) == 0 ||
+           extension.Compare(StringView(PACKAGE_FILES_EXTENSION, ARRAY_COUNT(PACKAGE_FILES_EXTENSION) - 1), StringSearchCase::IgnoreCase) == 0;
 }
 
 void ContentStorageManager::GetPackages(Array<FlaxPackage*>& result)

@@ -805,15 +805,12 @@ bool FlaxStorage::LoadAssetChunk(FlaxChunk* chunk)
 
 #if USE_EDITOR
 
-bool FlaxStorage::ChangeAssetID(Entry& e, const Guid& newId)
+bool FlaxStorage::ChangeAssetID(Guid& oldId, const Guid& newId)
 {
     ASSERT(IsLoaded());
-
-    // TODO: validate entry
     ASSERT(newId.IsValid());
     ASSERT(!IsReadOnly());
-
-    LOG(Info, "Changing asset \'{0}\' id to \'{1}\' (storage: \'{2}\')", e.ID, newId, _path);
+    LOG(Info, "Changing asset \'{0}\' id to \'{1}\' (storage: \'{2}\')", oldId, newId, _path);
 
     // Ensure to be loaded
     if (!IsLoaded())
@@ -855,16 +852,15 @@ bool FlaxStorage::ChangeAssetID(Entry& e, const Guid& newId)
     }
 
     // Change ID
-    // TODO: here we could extend it and load assets from the storage and call asset ID change event to change references
     Array<Entry> entries;
     GetEntries(entries);
     for (int32 i = 0; i < entriesCount; i++)
     {
         Entry* myE = &entries[i];
-        if (myE->ID == e.ID)
+        if (myE->ID == oldId)
         {
             // Change ID
-            e.ID = newId;
+            oldId = newId;
             myE->ID = newId;
             data[i].Header.ID = newId;
             break;

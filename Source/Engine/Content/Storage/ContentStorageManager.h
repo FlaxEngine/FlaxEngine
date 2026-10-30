@@ -87,16 +87,16 @@ public:
     /// <summary>
     /// Determines whether the specified path can be a binary asset file (based on it's extension).
     /// </summary>
-    /// <param name="path">The path.</param>
+    /// <param name="path">The path (case-insensitive).</param>
     /// <returns>True if can be a storage path (has a proper extension), otherwise false.</returns>
-    static bool IsFlaxStoragePath(const String& path);
+    static bool IsFlaxStoragePath(const StringView& path);
 
     /// <summary>
     /// Determines whether the specified extension can be a binary asset file.
     /// </summary>
-    /// <param name="extension">The path.</param>
+    /// <param name="extension">The path (case-insensitive).</param>
     /// <returns>True if can be a storage extension, otherwise false.</returns>
-    static bool IsFlaxStorageExtension(const String& extension);
+    static bool IsFlaxStorageExtension(const StringView& extension);
 
 public:
     /// <summary>

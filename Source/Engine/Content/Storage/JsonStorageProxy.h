@@ -17,7 +17,7 @@ public:
     /// <summary>
     /// Determines whether the specified extension can be a json resource file.
     /// </summary>
-    /// <param name="extension">The path.</param>
+    /// <param name="extension">The path (case-insensitive).</param>
     /// <returns>True if can be a json resource extension, otherwise false.</returns>
     static bool IsValidExtension(const StringView& extension);
 

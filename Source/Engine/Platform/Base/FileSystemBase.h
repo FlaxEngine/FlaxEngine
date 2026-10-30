@@ -247,7 +247,7 @@ public:
     /// </summary>
     /// <param name="path">Input path to process</param>
     /// <returns>File extension</returns>
-    static String GetExtension(const StringView& path);
+    static StringView GetExtension(const StringView& path);
 
     /// <summary>
     /// Gets the file path to the temporary file that can be created and used.

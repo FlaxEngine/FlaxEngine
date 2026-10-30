@@ -148,7 +148,7 @@ PixelFormat iOSPlatformTools::GetTextureFormat(CookingData& data, TextureBase* t
 
 bool iOSPlatformTools::IsNativeCodeFile(CookingData& data, const String& file)
 {
-    String extension = FileSystem::GetExtension(file);
+    StringView extension = FileSystem::GetExtension(file);
     return extension.IsEmpty() || extension == TEXT("dylib");
 }
 

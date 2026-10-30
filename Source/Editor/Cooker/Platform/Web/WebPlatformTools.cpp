@@ -124,7 +124,7 @@ Array<byte> WebPlatformTools::SaveCache(CookingData& data, IBuildCache* cache)
 
 bool WebPlatformTools::IsNativeCodeFile(CookingData& data, const String& file)
 {
-    String extension = FileSystem::GetExtension(file);
+    StringView extension = FileSystem::GetExtension(file);
     return extension.IsEmpty() || extension == TEXT("html") || extension == TEXT("js") || extension == TEXT("wasm");
 }
 

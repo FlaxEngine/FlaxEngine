@@ -291,7 +291,7 @@ bool AssetsImportingManager::Import(const StringView& inputPath, const StringVie
     }
 
     // Get file extension and try to find import function for it
-    const String extension = FileSystem::GetExtension(inputPath).ToLower();
+    const String extension = String(FileSystem::GetExtension(inputPath)).ToLower();
 
     // Special case for raw assets
     if (StringView(ASSET_FILES_EXTENSION).Compare(StringView(extension), StringSearchCase::IgnoreCase) == 0)

@@ -400,10 +400,10 @@ public:
     /// <summary>
     /// Changes the asset identifier. Warning! Changes only ID in storage layer, not dependencies resolving at all!
     /// </summary>
-    /// <param name="e">The asset entry.</param>
+    /// <param name="oldId">The existing asset ID.</param>
     /// <param name="newId">The new identifier.</param>
     /// <returns>True if cannot change data, otherwise false</returns>
-    bool ChangeAssetID(Entry& e, const Guid& newId);
+    bool ChangeAssetID(Guid& oldId, const Guid& newId);
 
 #endif
 

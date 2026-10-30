@@ -110,7 +110,7 @@ bool FileSystemBase::IsRelative(const StringView& path)
     return !isRooted;
 }
 
-String FileSystemBase::GetExtension(const StringView& path)
+StringView FileSystemBase::GetExtension(const StringView& path)
 {
     Char chr;
     int32 length = path.Length();
@@ -129,13 +129,13 @@ String FileSystemBase::GetExtension(const StringView& path)
         }
         if (num == length - 1)
         {
-            return String::Empty;
+            return StringView::Empty;
         }
         num++;
         return path.Substring(num, length - num);
     } while (chr != TEXT('\\') && chr != TEXT('/') && chr != TEXT(':'));
 
-    return String::Empty;
+    return StringView::Empty;
 }
 
 void FileSystemBase::GetTempFilePath(String& tmpPath)

@@ -694,7 +694,7 @@ bool TextureTool::WriteTextureData(BytesContainer& result, const TextureData& te
 
 bool TextureTool::GetImageType(const StringView& path, ImageType& type)
 {
-    const auto extension = FileSystem::GetExtension(path).ToLower();
+    const auto extension = String(FileSystem::GetExtension(path)).ToLower();
     if (extension == TEXT("tga"))
     {
         type = ImageType::TGA;

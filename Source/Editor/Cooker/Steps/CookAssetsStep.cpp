@@ -1236,7 +1236,8 @@ bool CookAssetsStep::Perform(CookingData& data)
         }
 
         // Count stats of file extension
-        auto& assetStats = data.Stats.AssetStats[FileSystem::GetExtension(cookedPath)];
+        String extension = String(FileSystem::GetExtension(cookedPath)).ToLower();
+        auto& assetStats = data.Stats.AssetStats[extension];
         assetStats.Count++;
         assetStats.ContentSize += FileSystem::GetFileSize(cookedPath);
     }

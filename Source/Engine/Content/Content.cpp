@@ -35,6 +35,7 @@
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #include "Editor/ProjectInfo.h"
+#include "Engine/Threading/JobSystem.h"
 #endif
 #if ENABLE_ASSETS_DISCOVERY
 #include "Engine/Core/Collections/HashSet.h"
@@ -104,7 +105,125 @@ namespace
 }
 
 #if ENABLE_ASSETS_DISCOVERY
-bool findAsset(const Guid& id, const String& directory, Array<String>& tmpCache, AssetInfo& info);
+
+static void FindWorkspaceFiles(const String& directory, Array<String>& files)
+{
+    PROFILE_CPU();
+    ZoneText(directory.Get(), directory.Length());
+    if (FileSystem::DirectoryGetFiles(files, directory))
+    {
+        if (FileSystem::DirectoryExists(directory))
+            LOG(Error, "Cannot query files in folder '{0}'.", directory);
+    }
+}
+
+// Batched workspace scan collects all asset infos and then registers them at once
+#define CONTENT_PROCESS_BATCHED 1
+
+#if CONTENT_PROCESS_BATCHED
+#include "Engine/Renderer/RenderListBuffer.h"
+typedef RenderListBuffer<AssetInfo> WorkspaceResults;
+#else
+typedef void* WorkspaceResults;
+#endif
+
+static void ProcessWorkspaceFile(String&& path, WorkspaceResults& results)
+{
+    // Skip files already in registry
+    if (Cache.HasAsset(path))
+        return;
+    auto extension = FileSystem::GetExtension(path);
+    if (ContentStorageManager::IsFlaxStorageExtension(extension))
+    {
+#if USE_EDITOR
+        if (extension.Compare(StringView(PACKAGE_FILES_EXTENSION, ARRAY_COUNT(PACKAGE_FILES_EXTENSION) - 1), StringSearchCase::IgnoreCase) == 0)
+            return; // Skip packages in editor
+#endif
+
+        // Flax file
+        if (auto storage = ContentStorageManager::GetStorage(path))
+        {
+#if CONTENT_PROCESS_BATCHED
+            Array<FlaxStorage::Entry> entries;
+            storage->GetEntries(entries);
+            if (entries.Count() == 1)
+                results.Add(AssetInfo(entries.Get()->ID, MoveTemp(entries.Get()->TypeName), MoveTemp(path)));
+            else
+            {
+                for (auto& e : entries)
+                    results.Add(AssetInfo(e.ID, e.TypeName, path));
+            }
+#else
+            Cache.RegisterAssets(storage.Get());
+#endif
+        }
+    }
+    else if (JsonStorageProxy::IsValidExtension(extension))
+    {
+        // Json file
+        Guid jsonId;
+        String jsonTypeName;
+        if (JsonStorageProxy::GetAssetInfo(path, jsonId, jsonTypeName))
+        {
+#if CONTENT_PROCESS_BATCHED
+            results.Add(AssetInfo(jsonId, MoveTemp(jsonTypeName), MoveTemp(path)));
+#else
+            Cache.RegisterAsset(jsonId, jsonTypeName, path);
+#endif
+        }
+    }
+}
+
+static void ProcessWorkspaceFiles(Array<String>& files)
+{
+    PROFILE_CPU();
+#if USE_EDITOR
+    int32 threds = JobSystem::GetThreadsCount();
+    WorkspaceResults entries;
+    if (files.Count() > 40 && threds > 2)
+    {
+        // Async
+        JobSystem::Execute([&](int32 i)
+            {
+                PROFILE_CPU_NAMED("ProcessWorkspaceFiles.Job");
+                const int32 count = files.Count();
+                int32 step = threds;
+                String* data = files.Get();
+                for (int32 index = i; index < count; index += step)
+                    ProcessWorkspaceFile(MoveTemp(data[index]), entries);
+            }, threds);
+    }
+    else
+#endif
+    {
+        // Sync
+        for (String& file : files)
+            ProcessWorkspaceFile(MoveTemp(file), entries);
+    }
+#if CONTENT_PROCESS_BATCHED
+    Cache.RegisterAssets(entries.Get(), entries.Count());
+#endif
+}
+
+#endif
+
+#if USE_EDITOR
+
+static void FindWorkspaceFiles(const ProjectInfo* project, HashSet<const ProjectInfo*>& projects, Array<String>& files)
+{
+    if (projects.Contains(project))
+        return;
+    PROFILE_CPU();
+    ZoneText(*project->Name, project->Name.Length());
+    projects.Add(project);
+    for (const auto& reference : project->References)
+    {
+        if (reference.Project)
+            FindWorkspaceFiles(reference.Project, projects, files);
+    }
+    FindWorkspaceFiles(project->ProjectFolderPath / TEXT("Content"), files);
+}
+
 #endif
 
 class ContentService : public EngineService
@@ -450,26 +569,6 @@ AssetsCache* Content::GetRegistry()
     return &Cache;
 }
 
-#if USE_EDITOR
-
-bool FindAssets(const ProjectInfo* project, HashSet<const ProjectInfo*>& projects, const Guid& id, Array<String>& tmpCache, AssetInfo& info)
-{
-    if (projects.Contains(project))
-        return false;
-    PROFILE_CPU();
-    ZoneText(*project->Name, project->Name.Length());
-    projects.Add(project);
-    bool found = findAsset(id, project->ProjectFolderPath / TEXT("Content"), tmpCache, info);
-    for (const auto& reference : project->References)
-    {
-        if (reference.Project)
-            found |= FindAssets(reference.Project, projects, id, tmpCache, info);
-    }
-    return found;
-}
-
-#endif
-
 bool Content::GetAssetInfo(const Guid& id, AssetInfo& info)
 {
     if (!id.IsValid())
@@ -488,32 +587,35 @@ bool Content::GetAssetInfo(const Guid& id, AssetInfo& info)
     // Check if we can search workspace
     // Note: we want to limit searching frequency due to high I/O usage and thread stall
     // We also perform full workspace discovery so all new assets will be found
-    auto now = DateTime::NowUTC();
-    auto diff = now - LastWorkspaceDiscovery;
+    auto startTime = DateTime::NowUTC();
+    auto diff = startTime - LastWorkspaceDiscovery;
     if (diff <= TimeSpan::FromSeconds(5))
     {
         //LOG(Warning, "Cannot perform workspace scan for '{1}'. Too often call. Time diff: {0} ms", static_cast<int32>(diff.GetTotalMilliseconds()), id);
         return false;
     }
-    LastWorkspaceDiscovery = now;
 
     // Try to find an asset within the project, engine, plugins workspace folders
-    DateTime startTime = now;
     int32 startCount = Cache.Size();
-    Array<String> tmpCache(1024);
+    Array<String> files(1024);
 #if USE_EDITOR
     HashSet<const ProjectInfo*> projects;
-    bool found = FindAssets(Editor::Project, projects, id, tmpCache, info);
+    FindWorkspaceFiles(Editor::Project, projects, files);
 #else
-    bool found = findAsset(id, Globals::ProjectContentFolder, tmpCache, info);
+    FindWorkspaceFiles(Globals::ProjectContentFolder, files);
 #endif
-    if (found)
+    LOG(Info, "Start searching asset with ID: {} from {} potential files to check...", id, files.Count());
+    ProcessWorkspaceFiles(files);
+
+    // Check if asset was found
+    LastWorkspaceDiscovery = DateTime::NowUTC();
+    if (Cache.FindAsset(id, info))
     {
-        LOG(Info, "Workspace searching time: {0} ms, new assets found: {1}", static_cast<int32>((DateTime::NowUTC() - startTime).GetTotalMilliseconds()), Cache.Size() - startCount);
+        //LOG(Info, "Found {1} at '{0}'!", id, info.Path);
+        LOG(Info, "Workspace search found {} assets in {} ms", Cache.Size() - startCount, (LastWorkspaceDiscovery - startTime).GetTotalMilliseconds());
         return true;
     }
 
-    //LOG(Warning, "Cannot find {0}.", id);
     return false;
 #else
     // Find asset in registry
@@ -532,9 +634,8 @@ bool Content::GetAssetInfo(const StringView& path, AssetInfo& info)
     PROFILE_CPU();
     PROFILE_MEM(Content);
 
-    const auto extension = FileSystem::GetExtension(path).ToLower();
-
     // Check if it's a binary asset
+    const auto extension = FileSystem::GetExtension(path);
     if (ContentStorageManager::IsFlaxStorageExtension(extension))
     {
         // Skip packages in editor (results in conflicts with build game packages if deployed inside project folder)
@@ -548,6 +649,7 @@ bool Content::GetAssetInfo(const StringView& path, AssetInfo& info)
         if (storage)
         {
 #if BUILD_DEBUG || FLAX_TESTS
+            // Ensure file system reports paths in valid format
             ASSERT(storage->GetPath() == path);
 #endif
 
@@ -1023,7 +1125,7 @@ bool Content::CloneAssetFile(const StringView& dstPath, const StringView& srcPat
         }
 
         // Special case for json resources
-        if (JsonStorageProxy::IsValidExtension(FileSystem::GetExtension(srcPath).ToLower()))
+        if (JsonStorageProxy::IsValidExtension(FileSystem::GetExtension(srcPath)))
         {
             if (FileSystem::CopyFile(dstPath, srcPath))
             {
@@ -1052,7 +1154,7 @@ bool Content::CloneAssetFile(const StringView& dstPath, const StringView& srcPat
             auto storage = ContentStorageManager::GetStorage(dstPath);
             FlaxStorage::Entry e;
             storage->GetEntry(0, e);
-            if (storage == nullptr || storage->ChangeAssetID(e, dstId))
+            if (storage == nullptr || storage->ChangeAssetID(e.ID, dstId))
             {
                 LOG(Warning, "Cannot change asset ID.");
                 return true;
@@ -1078,7 +1180,7 @@ bool Content::CloneAssetFile(const StringView& dstPath, const StringView& srcPat
                 }
                 FlaxStorage::Entry e;
                 storage->GetEntry(0, e);
-                if (storage->ChangeAssetID(e, dstId))
+                if (storage->ChangeAssetID(e.ID, dstId))
                 {
                     LOG(Warning, "Cannot change asset ID.");
                     return true;
@@ -1538,90 +1640,3 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
 
     return result;
 }
-
-#if ENABLE_ASSETS_DISCOVERY
-
-bool findAsset(const Guid& id, const String& directory, Array<String>& tmpCache, AssetInfo& info)
-{
-    // Get all asset files
-    tmpCache.Clear();
-    {
-        PROFILE_CPU_NAMED("Get Files");
-        if (FileSystem::DirectoryGetFiles(tmpCache, directory))
-        {
-            if (FileSystem::DirectoryExists(directory))
-                LOG(Error, "Cannot query files in folder '{0}'.", directory);
-            return false;
-        }
-    }
-
-    // Start searching for asset with given ID
-    bool result = false;
-    LOG(Info, "Start searching asset with ID: {0} in '{1}'. {2} potential files to check...", id, directory, tmpCache.Count());
-    PROFILE_CPU_NAMED("Process Files");
-    for (int32 i = 0; i < tmpCache.Count(); i++)
-    {
-        String& path = tmpCache[i];
-
-        // Check if not already in registry
-        // Note: maybe we could disable this check? it would slow down searching but we will find more workspace problems
-        if (!Cache.HasAsset(path))
-        {
-            auto extension = FileSystem::GetExtension(path).ToLower();
-
-            // Check if it's a binary asset
-            if (ContentStorageManager::IsFlaxStorageExtension(extension))
-            {
-                // Skip packages in editor (results in conflicts with build game packages if deployed inside project folder)
-#if USE_EDITOR
-                if (extension == PACKAGE_FILES_EXTENSION)
-                    continue;
-#endif
-
-                // Open storage
-                auto storage = ContentStorageManager::GetStorage(path);
-                if (storage)
-                {
-                    // Register assets
-                    Cache.RegisterAssets(storage);
-
-                    // Check if that is a missing asset
-                    if (storage->HasAsset(id))
-                    {
-                        // Found
-                        result = Cache.FindAsset(id, info);
-                        LOG(Info, "Found {1} at '{0}'!", id, path);
-                    }
-                }
-                else
-                {
-                    LOG(Error, "Cannot open file '{0}' error code: {1}", path, 0);
-                }
-            }
-            // Check for json resource
-            else if (JsonStorageProxy::IsValidExtension(extension))
-            {
-                // Check Json storage layer
-                Guid jsonId;
-                String jsonTypeName;
-                if (JsonStorageProxy::GetAssetInfo(path, jsonId, jsonTypeName))
-                {
-                    // Register asset
-                    Cache.RegisterAsset(jsonId, jsonTypeName, path);
-
-                    // Check if that is a missing asset
-                    if (id == jsonId)
-                    {
-                        // Found
-                        result = Cache.FindAsset(id, info);
-                        LOG(Info, "Found {1} at '{0}'!", id, path);
-                    }
-                }
-            }
-        }
-    }
-
-    return result;
-}
-
-#endif

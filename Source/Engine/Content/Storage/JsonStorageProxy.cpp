@@ -18,7 +18,9 @@
 
 bool JsonStorageProxy::IsValidExtension(const StringView& extension)
 {
-    return extension == DEFAULT_SCENE_EXTENSION || extension == DEFAULT_PREFAB_EXTENSION || extension == DEFAULT_JSON_EXTENSION;
+    return extension.Compare(StringView(DEFAULT_SCENE_EXTENSION, ARRAY_COUNT(DEFAULT_SCENE_EXTENSION) - 1), StringSearchCase::IgnoreCase) == 0 ||
+           extension.Compare(StringView(DEFAULT_PREFAB_EXTENSION, ARRAY_COUNT(DEFAULT_PREFAB_EXTENSION) - 1), StringSearchCase::IgnoreCase) == 0 ||
+           extension.Compare(StringView(DEFAULT_JSON_EXTENSION, ARRAY_COUNT(DEFAULT_JSON_EXTENSION) - 1), StringSearchCase::IgnoreCase) == 0;
 }
 
 StringAnsiView ParseJsonString(const StringAnsiView& json, int32 start)

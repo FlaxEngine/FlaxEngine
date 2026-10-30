@@ -39,6 +39,41 @@ public:
     /// <summary>
     /// Initializes a new instance of the <see cref="AssetInfo"/> struct.
     /// </summary>
+    /// <param name="id">The other info.</param>
+    AssetInfo(const AssetInfo& other)
+        : ID(other.ID)
+        , TypeName(other.TypeName)
+        , Path(other.Path)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AssetInfo"/> struct.
+    /// </summary>
+    /// <param name="id">The other info.</param>
+    AssetInfo(AssetInfo&& other) noexcept
+        : ID(other.ID)
+        , TypeName(MoveTemp(other.TypeName))
+        , Path(MoveTemp(other.Path))
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AssetInfo"/> struct.
+    /// </summary>
+    /// <param name="id">The identifier.</param>
+    /// <param name="typeName">The typename identifier.</param>
+    /// <param name="path">The path.</param>
+    AssetInfo(const Guid& id, String&& typeName, String&& path)
+        : ID(id)
+        , TypeName(MoveTemp(typeName))
+        , Path(MoveTemp(path))
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AssetInfo"/> struct.
+    /// </summary>
     /// <param name="id">The identifier.</param>
     /// <param name="typeName">The typename identifier.</param>
     /// <param name="path">The path.</param>
@@ -47,6 +82,28 @@ public:
         , TypeName(typeName)
         , Path(path)
     {
+    }
+
+    AssetInfo& operator=(const AssetInfo& other) noexcept
+    {
+        if (this != &other)
+        {
+            ID = other.ID;
+            TypeName = other.TypeName;
+            Path = other.Path;
+        }
+        return *this;
+    }
+
+    AssetInfo& operator=(AssetInfo&& other) noexcept
+    {
+        if (this != &other)
+        {
+            ID = other.ID;
+            TypeName = MoveTemp(other.TypeName);
+            Path = MoveTemp(other.Path);
+        }
+        return *this;
     }
 
 public:

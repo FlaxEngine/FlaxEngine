@@ -69,8 +69,34 @@ public:
         {
         }
 
+        Entry(Entry&& other)
+            : Info(MoveTemp(other.Info))
+#if ENABLE_ASSETS_DISCOVERY
+            , FileModified(other.FileModified)
+            , WarnedInaccessible(other.WarnedInaccessible)
+#endif
+        {
+        }
+
+        Entry(const Entry& other) noexcept
+            : Info(other.Info)
+#if ENABLE_ASSETS_DISCOVERY
+            , FileModified(other.FileModified)
+            , WarnedInaccessible(other.WarnedInaccessible)
+#endif
+        {
+        }
+
         Entry(const Guid& id, const StringView& typeName, const StringView& path)
             : Info(id, typeName, path)
+#if ENABLE_ASSETS_DISCOVERY
+            , FileModified(DateTime::NowUTC())
+#endif
+        {
+        }
+
+        Entry(const Guid& id, String&& typeName, String&& path)
+            : Info(id, MoveTemp(typeName), MoveTemp(path))
 #if ENABLE_ASSETS_DISCOVERY
             , FileModified(DateTime::NowUTC())
 #endif
@@ -213,6 +239,13 @@ public:
     /// </summary>
     /// <param name="storage">Flax assets container</param>
     void RegisterAssets(FlaxStorage* storage);
+
+    /// <summary>
+    /// Register assets in the cache
+    /// </summary>
+    /// <param name="assets">List with asset infos to register.</param>
+    /// <param name="assetsCount">Amount of infos to register.</param>
+    void RegisterAssets(AssetInfo* assets, int32 assetsCount);
 
     /// <summary>
     /// Register asset in the cache

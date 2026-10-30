@@ -171,6 +171,7 @@ bool AssetsCache::Save()
 {
     // Registry can be saved only in editor
 #if USE_EDITOR
+    PROFILE_CPU();
 
     // Check if registry hasn't been edited
     if (!_isDirty && FileSystem::FileExists(_path))
@@ -386,8 +387,8 @@ void AssetsCache::RegisterAssets(FlaxStorage* storage)
     if (entries.IsEmpty())
         return;
 
+    const String& storagePath = storage->GetPath();
     ASSETS_CACHE_LOCK();
-    auto storagePath = storage->GetPath();
 
     // Remove all old entries from that location
     for (auto i = _registry.Begin(); i.IsNotEnd(); ++i)
@@ -444,7 +445,7 @@ void AssetsCache::RegisterAssets(FlaxStorage* storage)
         {
             auto& e = entries[duplicatedEntries[i]];
 #if USE_EDITOR
-            if (storage->ChangeAssetID(e, Guid::New()))
+            if (storage->ChangeAssetID(e.ID, Guid::New()))
 #endif
             {
                 LOG(Error, "Cannot modify duplicated asset ID {2} from \'{0}\'. Founded duplicated asset at \'{1}\'.", storagePath, info.Path, e.ID);
@@ -457,12 +458,126 @@ void AssetsCache::RegisterAssets(FlaxStorage* storage)
     for (int32 i = 0; i < entries.Count(); i++)
     {
         auto& e = entries[i];
-
-        // Send info
         LOG(Info, "Register asset {0}:{1} \'{2}\'", e.ID, e.TypeName, storagePath);
-
-        // Add new asset entry
         _registry.Add(e.ID, Entry(e.ID, e.TypeName, storagePath));
+    }
+
+    // Mark registry as draft
+    _isDirty = true;
+}
+
+void AssetsCache::RegisterAssets(AssetInfo* assets, int32 assetsCount)
+{
+    if (!assets || assetsCount <= 0)
+        return;
+    PROFILE_CPU();
+    ZoneValue(assetsCount);
+    ASSETS_CACHE_LOCK();
+
+    // Remove all old entries from that location
+    if (_registry.Count() < assetsCount)
+    {
+        // Use lookup of existing paths to reduce computation time
+        HashSet<String> registryPaths;
+        for (auto& e : _registry)
+            registryPaths.Add(e.Value.Info.Path);
+        for (int32 i = 0; i < assetsCount; i++)
+        {
+            const AssetInfo& e = assets[i];
+            if (registryPaths.Contains(e.Path))
+            {
+                for (auto i = _registry.Begin(); i.IsNotEnd(); ++i)
+                {
+                    if (i->Value.Info.Path == e.Path)
+                        _registry.Remove(i);
+                }
+            }
+        }
+    }
+    else
+    {
+        for (int32 i = 0; i < assetsCount; i++)
+        {
+            const AssetInfo& e = assets[i];
+            for (auto i = _registry.Begin(); i.IsNotEnd(); ++i)
+            {
+                if (i->Value.Info.Path == e.Path)
+                    _registry.Remove(i);
+            }
+        }
+    }
+
+    // Find asset IDs collisions
+    AssetInfo info;
+    Array<int32> duplicatedAssets;
+    for (int32 i = 0; i < assetsCount; i++)
+    {
+        const AssetInfo& e = assets[i];
+
+        // Check if storage contains ID which has been already registered
+        if (FindAsset(e.ID, info))
+        {
+#if PLATFORM_WINDOWS
+            // On Windows - if you start your project using a shortcut/VS commandline -project, and using a upper/lower drive letter, it could the cache (case doesn't matter on OS)
+            if (StringUtils::CompareIgnoreCase(e.Path.GetText(), info.Path.GetText()) != 0)
+            {
+                LOG(Warning, "Founded duplicated asset \'{0}\'. Locations: \'{1}\' and \'{2}\'", e.ID, e.Path, info.Path);
+                duplicatedAssets.Add(i);
+            }
+            else
+            {
+                // Remove from registry so we can add it again later with the original ID, so we don't loose relations
+                for (auto j = _registry.Begin(); j.IsNotEnd(); ++j)
+                {
+                    if (StringUtils::CompareIgnoreCase(j->Value.Info.Path.GetText(), e.Path.GetText()) == 0)
+                        _registry.Remove(j);
+                }
+            }
+#else
+            LOG(Warning, "Founded duplicated asset \'{0}\'. Locations: \'{1}\' and \'{2}\'", e.ID, e.Path, info.Path);
+            duplicatedAssets.Add(i);
+#endif
+        }
+    }
+
+    // Check if need to resolve any collisions
+    if (duplicatedAssets.HasItems())
+    {
+        for (int32 i : duplicatedAssets)
+        {
+            AssetInfo& e = assets[i];
+            const auto extension = FileSystem::GetExtension(e.Path);
+            if (ContentStorageManager::IsFlaxStorageExtension(extension))
+            {
+                if (auto storage = ContentStorageManager::GetStorage(e.Path))
+                {
+                    if (storage->IsReadOnly())
+                    {
+                        LOG(Error, "Cannot register \'{0}\'. Founded duplicated asset at \'{1}\' but storage container doesn't allow data modifications.", e.Path, info.Path);
+                        continue;
+                    }
+#if USE_EDITOR
+                    if (storage->ChangeAssetID(e.ID, Guid::New()))
+#endif
+                    {
+                        LOG(Error, "Cannot modify duplicated asset ID {2} from \'{0}\'. Founded duplicated asset at \'{1}\'.", e.Path, info.Path, e.ID);
+                        continue;
+                    }
+                }
+            }
+            else if (JsonStorageProxy::IsValidExtension(extension))
+            {
+                // TODO: changinf json asset IDs
+            }
+        }
+    }
+
+    // Register all entries
+    for (int32 i = 0; i < assetsCount; i++)
+    {
+        AssetInfo& e = assets[i];
+        LOG(Info, "Register asset {0}:{1} \'{2}\'", e.ID, e.TypeName, e.Path);
+        _registry.Add(e.ID, Entry(e.ID, MoveTemp(e.TypeName), MoveTemp(e.Path)));
     }
 
     // Mark registry as draft
@@ -560,6 +675,7 @@ bool AssetsCache::DeleteAsset(const Guid& id, AssetInfo* info)
         if (info)
             *info = e->Info;
         _registry.Remove(id);
+        _pathsMapping.Remove(e->Info.Path);
         _isDirty = true;
         result = true;
     }
@@ -600,7 +716,7 @@ AssetsCache::EntryValidation AssetsCache::IsEntryValid(Entry& e)
         return EntryValidation::Valid;
     }
 
-    const auto extension = FileSystem::GetExtension(e.Info.Path).ToLower();
+    const auto extension = FileSystem::GetExtension(e.Info.Path);
 
     // Check if it's a binary asset
     if (ContentStorageManager::IsFlaxStorageExtension(extension))

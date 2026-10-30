@@ -104,7 +104,7 @@ bool MacPlatformTools::UseSystemDotnet() const
 
 bool MacPlatformTools::IsNativeCodeFile(CookingData& data, const String& file)
 {
-    String extension = FileSystem::GetExtension(file);
+    StringView extension = FileSystem::GetExtension(file);
     return extension.IsEmpty() || extension == TEXT("dylib");
 }
 
