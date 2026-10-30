@@ -198,6 +198,26 @@ public:
     /// <param name="assetPath">The asset path.</param>
     /// <returns>True settings has been restored, otherwise false.</returns>
     API_FUNCTION() static bool TryRestoreImportOptions(API_PARAM(Ref) ModelTool::Options& options, String assetPath);
+
+    /// <summary>
+    /// Creates a model asset from mesh data held on the CPU: no source file is imported and no mesh is read back from
+    /// the GPU (a virtual model's save needs that read-back). The meshes are given level by level, each as a run of
+    /// vertices and indices in the flat arrays. On another thread than the main one the call waits for the main thread
+    /// to apply the created asset, so the main thread must not wait for the call.
+    /// </summary>
+    /// <param name="outputPath">The result asset file path.</param>
+    /// <param name="meshesPerLod">The meshes in each level of detail, finest first.</param>
+    /// <param name="vertexCounts">The vertices of each mesh, in level order.</param>
+    /// <param name="indexCounts">The indices of each mesh (three a triangle), in level order.</param>
+    /// <param name="positions">The positions of all meshes, one run per mesh.</param>
+    /// <param name="normals">The normals, as the positions.</param>
+    /// <param name="colors">The vertex colors, as the positions.</param>
+    /// <param name="indices">The indices of all meshes, one run per mesh, each relative to its mesh.</param>
+    /// <param name="options">The import settings; the position and texture coordinate formats are used.</param>
+    /// <param name="screenSizes">The screen size of each level of detail, finest first; empty for the sizes Flax computes (as an import does).</param>
+    /// <param name="minScreenSize">The screen size below which the model is not drawn; used only with screenSizes.</param>
+    /// <returns>True if the data is inconsistent or the asset could not be created, otherwise false.</returns>
+    API_FUNCTION() static bool CreateModel(const String& outputPath, const Span<int32>& meshesPerLod, const Span<int32>& vertexCounts, const Span<int32>& indexCounts, const Span<Float3>& positions, const Span<Float3>& normals, const Span<Color32>& colors, const Span<uint32>& indices, const ModelTool::Options& options, const Span<float>& screenSizes, float minScreenSize);
 #endif
 
 #if COMPILE_WITH_AUDIO_TOOL

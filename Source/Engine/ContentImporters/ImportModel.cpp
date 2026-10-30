@@ -610,15 +610,23 @@ CreateAssetResult ImportModel::Create(CreateAssetContext& context)
     ASSERT(context.CustomArg != nullptr);
     auto& modelData = *(ModelData*)context.CustomArg;
 
+    // Auto calculate LODs transition settings
+    modelData.CalculateLODsScreenSizes();
+
+    return CreateWithScreenSizes(context);
+}
+
+CreateAssetResult ImportModel::CreateWithScreenSizes(CreateAssetContext& context)
+{
+    ASSERT(context.CustomArg != nullptr);
+    const auto& modelData = *(const ModelData*)context.CustomArg;
+
     // Ensure model has any meshes
     if ((modelData.LODs.IsEmpty() || modelData.LODs[0].Meshes.IsEmpty()))
     {
         LOG(Warning, "Models has no valid meshes");
         return CreateAssetResult::Error;
     }
-
-    // Auto calculate LODs transition settings
-    modelData.CalculateLODsScreenSizes();
 
     return CreateModel(context, modelData);
 }

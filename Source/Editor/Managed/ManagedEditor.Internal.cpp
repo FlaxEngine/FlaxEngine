@@ -566,6 +566,87 @@ bool ManagedEditor::Import(const String& inputPath, const String& outputPath, co
     return Import(inputPath, outputPath, (void*)&options);
 }
 
+// The layout of CreateModel's flat arrays: every level has meshes, every mesh has vertices and whole triangles, and the meshes use up the arrays
+static bool IsValidModelLayout(const Span<int32>& meshesPerLod, const Span<int32>& vertexCounts, const Span<int32>& indexCounts, int32 vertices, int32 indices)
+{
+    int32 meshCount = 0;
+    for (int32 lod = 0; lod < meshesPerLod.Length(); lod++)
+    {
+        if (meshesPerLod[lod] <= 0)
+            return false;
+        meshCount += meshesPerLod[lod];
+    }
+    if (meshCount == 0 || meshCount != vertexCounts.Length() || meshCount != indexCounts.Length())
+        return false;
+    int64 vertexTotal = 0;
+    int64 indexTotal = 0;
+    for (int32 mesh = 0; mesh < meshCount; mesh++)
+    {
+        if (vertexCounts[mesh] <= 0 || indexCounts[mesh] <= 0 || indexCounts[mesh] % 3 != 0)
+            return false;
+        vertexTotal += vertexCounts[mesh];
+        indexTotal += indexCounts[mesh];
+    }
+    return vertexTotal == vertices && indexTotal == indices;
+}
+
+bool ManagedEditor::CreateModel(const String& outputPath, const Span<int32>& meshesPerLod, const Span<int32>& vertexCounts, const Span<int32>& indexCounts, const Span<Float3>& positions, const Span<Float3>& normals, const Span<Color32>& colors, const Span<uint32>& indices, const ModelTool::Options& options, const Span<float>& screenSizes, float minScreenSize)
+{
+    if (!IsValidModelLayout(meshesPerLod, vertexCounts, indexCounts, positions.Length(), indices.Length()) || normals.Length() != positions.Length() || colors.Length() != positions.Length())
+    {
+        LOG(Error, "CreateModel: the arrays do not fit ({0} levels, {1} vertex counts, {2} index counts, {3} positions, {4} normals, {5} colors, {6} indices)", meshesPerLod.Length(), vertexCounts.Length(), indexCounts.Length(), positions.Length(), normals.Length(), colors.Length(), indices.Length());
+        return true;
+    }
+    if (screenSizes.Length() != 0 && screenSizes.Length() != meshesPerLod.Length())
+    {
+        LOG(Error, "CreateModel: {0} screen sizes for {1} levels", screenSizes.Length(), meshesPerLod.Length());
+        return true;
+    }
+    ModelData data;
+    data.PositionFormat = (ModelData::PositionFormats)options.PositionFormat;
+    data.TexCoordFormat = (ModelData::TexCoordFormats)options.TexCoordFormat;
+    data.Materials.Resize(1);
+    data.LODs.Resize(meshesPerLod.Length());
+    int32 mesh = 0;
+    int32 vertexStart = 0;
+    int32 indexStart = 0;
+    for (int32 lod = 0; lod < meshesPerLod.Length(); lod++)
+    {
+        for (int32 i = 0; i < meshesPerLod[lod]; i++, mesh++)
+        {
+            const int32 vertexCount = vertexCounts[mesh];
+            const int32 indexCount = indexCounts[mesh];
+            auto meshData = New<MeshData>();
+            data.LODs[lod].Meshes.Add(meshData);
+            meshData->Positions.Set(positions.Get() + vertexStart, vertexCount);
+            meshData->Normals.Set(normals.Get() + vertexStart, vertexCount);
+            meshData->Colors.Resize(vertexCount);
+            for (int32 v = 0; v < vertexCount; v++)
+                meshData->Colors[v] = Color(colors[vertexStart + v]);
+            meshData->Indices.Set(indices.Get() + indexStart, indexCount);
+            for (int32 k = 0; k < indexCount; k++)
+            {
+                if (meshData->Indices[k] >= (uint32)vertexCount)
+                {
+                    LOG(Error, "CreateModel: mesh {0} index {1} is {2}, past its {3} vertices", mesh, k, meshData->Indices[k], vertexCount);
+                    return true;
+                }
+            }
+            vertexStart += vertexCount;
+            indexStart += indexCount;
+        }
+    }
+    // as Import: one spelling of the path, else the content database sees the same file twice (a duplicated asset)
+    String path = outputPath;
+    FileSystem::NormalizePath(path);
+    if (screenSizes.Length() == 0)
+        return AssetsImportingManager::Create(AssetsImportingManager::CreateModelTag, path, &data);
+    for (int32 lod = 0; lod < screenSizes.Length(); lod++)
+        data.LODs[lod].ScreenSize = screenSizes[lod];
+    data.MinScreenSize = minScreenSize;
+    return AssetsImportingManager::Create(ImportModel::CreateWithScreenSizes, path, &data);
+}
+
 bool ManagedEditor::TryRestoreImportOptions(ModelTool::Options& options, String assetPath)
 {
     // Initialize defaults
