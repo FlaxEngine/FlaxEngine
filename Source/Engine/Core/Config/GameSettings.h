@@ -77,6 +77,7 @@ public:
     Guid Localization;
     Guid GameCooking;
     Guid Streaming;
+    Guid XR;
 
     // Per-platform settings containers
     Guid WindowsPlatform;

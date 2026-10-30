@@ -271,6 +271,11 @@ public:
     API_FIELD() RenderView View;
 
     /// <summary>
+    /// The custom view to use for the view-dependent scene setup (models LOD, directional light shadow cascades and particles sorting) instead of the render view. Can be used to draw the same LODs with the same shadow maps in multiple views (eg. both eyes in XR). The view frustum should contain the render view frustum. Unused if null.
+    /// </summary>
+    API_FIELD() RenderView* ProxyView = nullptr;
+
+    /// <summary>
     /// The actors source to use (configures what objects to render).
     /// </summary>
     API_FIELD() ActorsSources ActorsSource = ActorsSources::Scenes;

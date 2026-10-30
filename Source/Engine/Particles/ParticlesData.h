@@ -18,6 +18,7 @@ class Particles;
 class GPUBuffer;
 class DynamicIndexBuffer;
 class DynamicVertexBuffer;
+struct RenderView;
 
 /// <summary>
 /// The particle attribute that defines a single particle layout component.
@@ -245,6 +246,16 @@ public:
         /// The maximum amount of particles that 'might' be in the buffer. During every simulation update we spawn a certain amount of particles and update existing ones. We can estimate limit for the current particles count to dispatch less threads for particles update.
         /// </summary>
         int32 ParticlesCountMax;
+
+        /// <summary>
+        /// The frame index when the particles were sorted for the SortedView. Used to skip sorting for other views that share the same proxy view (eg. both eyes in XR).
+        /// </summary>
+        uint64 SortedFrame = 0;
+
+        /// <summary>
+        /// The proxy view that the particles were sorted for (see SceneRenderTask::ProxyView).
+        /// </summary>
+        const RenderView* SortedView = nullptr;
     } GPU;
 
 public:

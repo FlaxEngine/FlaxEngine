@@ -82,6 +82,7 @@ private:
     GPUTextureViewVulkan _handleStencil;
     Array<GPUTextureViewVulkan> _handlesPerSlice; // [slice]
     Array<Array<GPUTextureViewVulkan>> _handlesPerMip; // [slice][mip]
+    bool _isNativeResource = false;
 
 public:
     /// <summary>
@@ -164,6 +165,7 @@ public:
 protected:
     // [GPUTexture]
     bool OnInit() override;
+    bool OnInitFromNative(void* nativeResource) override;
     void OnResidentMipsChanged() override;
     void OnReleaseGPU() override;
 #if GPU_ENABLE_RESOURCE_NAMING

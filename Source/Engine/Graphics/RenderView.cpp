@@ -44,11 +44,13 @@ void RenderView::Prepare(RenderContext& renderContext)
             Projection.Values[2][1] += taaJitter.Y;
         }
 
-        // Update matrices
+        // Update matrices (keep custom culling frustum)
+        const bool customCulling = CullingFrustum != Frustum;
         Matrix::Invert(Projection, IP);
         Frustum.SetMatrix(View, Projection);
         Frustum.GetInvMatrix(IVP);
-        CullingFrustum = Frustum;
+        if (!customCulling)
+            CullingFrustum = Frustum;
     }
     else
     {

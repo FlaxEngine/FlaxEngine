@@ -945,6 +945,8 @@ void GlobalSurfaceAtlasPass::OnCollectDrawCalls(RenderContextBatch& renderContex
         renderContext.View.Mode == ViewMode::MaterialComplexity)
         return;
     auto& surfaceAtlasData = *renderContext.Buffers->GetCustomBuffer<GlobalSurfaceAtlasCustomBuffer>(TEXT("GlobalSurfaceAtlas"));
+    if (surfaceAtlasData.LastFrameUsed == Engine::FrameCount)
+        return; // Already rendered in the current frame (eg. by the view with linked buffers)
     _surfaceAtlasData = &surfaceAtlasData;
     surfaceAtlasData.StartDrawing(renderContext, renderContextBatch.EnableAsync);
 }

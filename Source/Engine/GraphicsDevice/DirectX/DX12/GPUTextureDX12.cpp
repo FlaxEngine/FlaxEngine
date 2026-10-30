@@ -199,6 +199,48 @@ bool GPUTextureDX12::OnInit()
     return false;
 }
 
+bool GPUTextureDX12::OnInitFromNative(void* nativeResource)
+{
+    // Cache formats
+    const PixelFormat format = Format();
+    const DXGI_FORMAT dxgiFormatTypeless = RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::MakeTypeless(format));
+    _dxgiFormatDSV = RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::FindDepthStencilFormat(format));
+    _dxgiFormatSRV = RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::FindShaderResourceFormat(format, _sRGB));
+    _dxgiFormatRTV = _dxgiFormatSRV;
+    _dxgiFormatUAV = RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::FindUnorderedAccessFormat(format));
+
+    // Check if native texture matches the description (views can use a different format only if the texture is typeless)
+    auto resource = (ID3D12Resource*)nativeResource;
+    const D3D12_RESOURCE_DESC resourceDesc = resource->GetDesc();
+    if (resourceDesc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D || resourceDesc.Width != (UINT64)Width() || resourceDesc.Height != (UINT)Height() || resourceDesc.DepthOrArraySize != ArraySize() || resourceDesc.MipLevels != MipLevels() || resourceDesc.SampleDesc.Count != (UINT)MultiSampleLevel())
+    {
+        LOG(Warning, "Native texture size doesn't match the description");
+        return true;
+    }
+    if (resourceDesc.Format != dxgiFormatTypeless && resourceDesc.Format != RenderToolsDX::ToDxgiFormat(format))
+    {
+        LOG(Warning, "Native texture format {0} doesn't match the description", (int32)resourceDesc.Format);
+        return true;
+    }
+
+    // Use the native resource (owned by the external code, it starts in the render target or depth write state)
+    D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
+    if (IsRenderTarget())
+        initialState = D3D12_RESOURCE_STATE_RENDER_TARGET;
+    else if (IsDepthStencil())
+        initialState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+    resource->AddRef();
+    const bool isRead = IsShaderResource() || IsUnorderedAccess();
+    const bool isWrite = IsDepthStencil() || IsRenderTarget() || IsUnorderedAccess();
+    initResource(resource, initialState, resourceDesc, isRead && isWrite);
+    _memoryUsage = calculateMemoryUsage();
+
+    // Initialize handles to the resource
+    initHandles();
+
+    return false;
+}
+
 void GPUTextureDX12::OnResidentMipsChanged()
 {
     const int32 firstMipIndex = MipLevels() - ResidentMipLevels();

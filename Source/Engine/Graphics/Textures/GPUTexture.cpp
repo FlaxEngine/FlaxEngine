@@ -548,6 +548,52 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
     return false;
 }
 
+bool GPUTexture::InitFromNative(const GPUTextureDescription& desc, void* nativeResource)
+{
+    PROFILE_CPU();
+    PROFILE_MEM(GraphicsTextures);
+
+    // Validate description
+    if (nativeResource == nullptr)
+    {
+        LOG(Warning, "Cannot create texture. Missing native resource. Description: {0}", desc.ToString());
+        return true;
+    }
+    if (desc.Dimensions != TextureDimensions::Texture || desc.Usage != GPUResourceUsage::Default)
+    {
+        LOG(Warning, "Cannot create texture. Only 2D Texture with default usage can be created from native resource. Description: {0}", desc.ToString());
+        return true;
+    }
+
+    // Release previous data
+    ReleaseGPU();
+
+    // Initialize
+    _desc = desc;
+    _sRGB = PixelFormatExtensions::IsSRGB(desc.Format);
+    _isBlockCompressed = PixelFormatExtensions::IsCompressed(desc.Format);
+    if (OnInitFromNative(nativeResource))
+    {
+        ReleaseGPU();
+        _desc.Clear();
+        _residentMipLevels = 0;
+        LOG(Warning, "Cannot initialize texture from native resource. Description: {0}", desc.ToString());
+        return true;
+    }
+
+#if COMPILE_WITH_PROFILER
+    auto group = ProfilerMemory::Groups::GraphicsTextures;
+    if (_desc.IsRenderTarget())
+        group = ProfilerMemory::Groups::GraphicsRenderTargets;
+    ProfilerMemory::IncrementGroup(group, _memoryUsage);
+#endif
+
+    // Native resource is already allocated so it's considered to be always resident
+    _residentMipLevels = MipLevels();
+
+    return false;
+}
+
 GPUTexture* GPUTexture::ToStagingReadback() const
 {
     const auto desc = _desc.ToStagingReadback();
@@ -600,6 +646,12 @@ bool GPUTexture::Resize(int32 width, int32 height, int32 depth, PixelFormat form
 
     // Recreate
     return Init(desc);
+}
+
+bool GPUTexture::OnInitFromNative(void* nativeResource)
+{
+    // Not supported by the graphics backend
+    return true;
 }
 
 uint64 GPUTexture::calculateMemoryUsage() const

@@ -362,6 +362,31 @@ bool GPUTextureVulkan::OnInit()
     return false;
 }
 
+bool GPUTextureVulkan::OnInitFromNative(void* nativeResource)
+{
+    // Use the native image (owned by the external code, it starts in the color attachment or depth stencil attachment layout)
+    const PixelFormat format = Format();
+    _image = (VkImage)nativeResource;
+    _isNativeResource = true;
+    initResource(IsDepthStencil() ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, _desc.MipLevels, _desc.ArraySize, true);
+    _memoryUsage = calculateMemoryUsage();
+    if (PixelFormatExtensions::IsDepthStencil(format))
+    {
+        DefaultAspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        if (PixelFormatExtensions::HasStencil(format))
+            DefaultAspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+    }
+    else
+    {
+        DefaultAspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+
+    // Initialize handles to the resource
+    initHandles();
+
+    return false;
+}
+
 void GPUTextureVulkan::initHandles()
 {
     // Cache properties
@@ -524,7 +549,13 @@ void GPUTextureVulkan::OnReleaseGPU()
     }
     _handlesPerMip.Resize(0, false);
     _handlesPerSlice.Resize(0, false);
-    if (_image != VK_NULL_HANDLE)
+    if (_isNativeResource)
+    {
+        // Native image is owned by the external code
+        _isNativeResource = false;
+        _image = VK_NULL_HANDLE;
+    }
+    else if (_image != VK_NULL_HANDLE)
     {
         _device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::Image, _image, _allocation);
         _image = VK_NULL_HANDLE;

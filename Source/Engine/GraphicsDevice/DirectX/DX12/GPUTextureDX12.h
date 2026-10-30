@@ -194,6 +194,7 @@ public:
 protected:
     // [GPUTexture]
     bool OnInit() override;
+    bool OnInitFromNative(void* nativeResource) override;
     void OnResidentMipsChanged() override;
     void OnReleaseGPU() override;
 #if GPU_ENABLE_RESOURCE_NAMING
