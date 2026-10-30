@@ -9,6 +9,7 @@
 #include "Engine/Engine/Globals.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Threading/TaskGraph.h"
 #include "Engine/Threading/Threading.h"
 
