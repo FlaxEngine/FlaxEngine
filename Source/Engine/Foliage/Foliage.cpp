@@ -568,7 +568,8 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Me
             batch.DrawCall.Surface.SkinningBonesOffset = *(uint32*)&type.ScaleInLightmap; // See LightmapUVsDensityMaterialShader
 #endif
 
-        if (EnumHasAnyFlags(drawModes, DrawPass::Forward))
+        const bool forwardBatched = batch.DrawCall.Material->IsForwardOrderIndependent();
+        if (EnumHasAnyFlags(drawModes, DrawPass::Forward) && !forwardBatched)
         {
             // Transparency requires sorting by depth so convert back the batched draw call into normal draw calls (RenderList impl will handle this)
             DrawCall drawCall = batch.DrawCall;
@@ -599,6 +600,11 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Me
         if (EnumHasAnyFlags(drawModes, DrawPass::Distortion))
         {
             renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Distortion].PreBatchedDrawCalls.Add(batchIndex);
+        }
+        if (EnumHasAnyFlags(drawModes, DrawPass::Forward) && forwardBatched)
+        {
+            // Order-independent transparency (eg. multiply) needs no sorting so keep it batched (drawn instanced, before the sorted forward draws)
+            renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Forward].PreBatchedDrawCalls.Add(batchIndex);
         }
         if (EnumHasAnyFlags(drawModes, DrawPass::MotionVectors) && (_staticFlags & StaticFlags::Transform) == StaticFlags::None)
         {

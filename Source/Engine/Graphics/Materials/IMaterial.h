@@ -91,6 +91,17 @@ public:
     }
 
     /// <summary>
+    /// Determines whether material is a forward surface whose draws don't need sorting by depth among themselves: unlit with additive or multiply blend, which give the same result in any order. Foliage keeps its instances batched and they're drawn instanced before the depth-sorted transparency (which is then blended over them).
+    /// </summary>
+    FORCE_INLINE bool IsForwardOrderIndependent() const
+    {
+        const MaterialInfo& info = GetInfo();
+        return info.Domain == MaterialDomain::Surface &&
+               info.ShadingModel == MaterialShadingModel::Unlit &&
+               (info.BlendMode == MaterialBlendMode::Additive || info.BlendMode == MaterialBlendMode::Multiply);
+    }
+
+    /// <summary>
     /// Returns true if material is ready for rendering.
     /// </summary>
     /// <returns>True if can render that material</returns>
