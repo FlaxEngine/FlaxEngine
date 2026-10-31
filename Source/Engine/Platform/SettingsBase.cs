@@ -18,21 +18,21 @@ namespace FlaxEditor.Content.Settings
         /// Renamed UeeHDRProbes into UseHDRProbes
         /// [Deprecated on 12.10.2022, expires on 12.10.2024]
         /// </summary>
-        [Serialize, Obsolete, NoUndo]
+        [Serialize, Obsolete("[Deprecated on 12.10.2022, expires on 12.10.2024] Use DefaultProbeCubemapFormat instead."), NoUndo]
         private bool UeeHDRProbes
         {
-            get => UseHDRProbes;
-            set => UseHDRProbes = value;
+            get => DefaultProbeCubemapFormat == ProbeCubemapFormats.R11G11B10;
+            set => DefaultProbeCubemapFormat = value ? ProbeCubemapFormats.R11G11B10 : ProbeCubemapFormats.R8G8B8A8;
         }
 
         /// <summary>
         /// Use DefaultProbeCubemapFormat instead
         /// [Deprecated in v1.13]
         /// </summary>
-        [Serialize, Obsolete, NoUndo]
+        [Serialize, Obsolete("[Deprecated in v1.13] Use DefaultProbeCubemapFormat instead."), NoUndo]
         private bool UseHDRProbes
         {
-            get => UseHDRProbes;
+            get => DefaultProbeCubemapFormat == ProbeCubemapFormats.R11G11B10;
             set => DefaultProbeCubemapFormat = value ? ProbeCubemapFormats.R11G11B10 : ProbeCubemapFormats.R8G8B8A8;
         }
 
