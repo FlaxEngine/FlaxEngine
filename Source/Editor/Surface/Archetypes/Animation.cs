@@ -1151,7 +1151,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Orientation Warp",
                 Description = "Turns the lower body of the pose by the angle (in degrees) about the up axis, toward the actual movement direction, while the spine chain turns back so the upper body keeps facing where it did.",
                 Flags = NodeFlags.AnimGraph | NodeFlags.FixedSize,
-                Size = new Float2(270, 290),
+                Size = new Float2(270, 265),
                 DefaultValues = new object[]
                 {
                     string.Empty, // Body root node
@@ -1164,7 +1164,6 @@ namespace FlaxEditor.Surface.Archetypes
                     0.0f, // Speed
                     0.0f, // Min speed
                     0.75f, // Distribution
-                    1, // Up axis (Y)
                 },
                 Elements = new[]
                 {
@@ -1187,8 +1186,6 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.SkeletonNodeNameSelect(110, Surface.Constants.LayoutOffsetY * 9, 150, 4),
                     NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 10, "Distribution:", tooltip: "0: first spine node turns back fully. 1: even spread."),
                     NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 10, 9, -1, 0.0f, 1.0f),
-                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 11, "Up Axis:", tooltip: "Model space axis to turn about."),
-                    NodeElementArchetype.Factory.ComboBox(110, Surface.Constants.LayoutOffsetY * 11, 60, 10, new[] { "X", "Y", "Z" }),
                 }
             },
             new NodeArchetype

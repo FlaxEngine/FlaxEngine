@@ -2740,8 +2740,6 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         settings.SpineEnd = data.SpineEnd;
         settings.KeepNode = data.KeepNode;
         settings.Distribution = (float)node->Values[9];
-        const int32 upAxis = Math::Clamp((int32)node->Values[10], 0, 2);
-        settings.UpAxis = upAxis == 0 ? Float3::UnitX : upAxis == 1 ? Float3::UnitY : Float3::UnitZ;
         const auto& skeletonNodes = _graph.BaseModel->Skeleton.Nodes;
         const int32 nodesCount = Math::Min(skeletonNodes.Count(), nodes->Nodes.Count());
         OrientationWarp::Warp(skeletonNodes.Get(), nodesCount, settings, warpAngle, nodes->Nodes.Get());
