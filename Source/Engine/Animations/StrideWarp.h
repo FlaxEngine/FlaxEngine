@@ -9,7 +9,7 @@ struct SkeletonNode;
 /// <summary>
 /// Stride warping: lengthens or shortens the steps of a movement pose so a walk or run cycle can match the actual movement speed with little or no play rate change.
 /// Each IK foot moves along the travel direction, away from or toward the pelvis, by the stride scale. The pelvis lowers so the legs can still reach, and each leg (thigh, calf, foot) is solved onto its moved foot target with two bone IK.
-/// The up axis is the model Y axis.
+/// The up axis is the model Y axis. Legs too straight to show a knee bend use the knee hinge of the skeleton's reference pose, so reference legs should have a slight bend.
 /// </summary>
 class FLAXENGINE_API StrideWarp
 {

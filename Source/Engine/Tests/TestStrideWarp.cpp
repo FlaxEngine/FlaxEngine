@@ -386,6 +386,8 @@ TEST_CASE("StrideWarp")
         auto fkOnly = settings;
         fkOnly.Legs[0].IKFoot = -1;
         fkOnly.Legs[1].IKFoot = -1;
+        nodes[CalfR].LocalTransform.Translation = Vector3(0, -45, 2);
+        nodes[FootR].LocalTransform.Translation = Vector3(0, -45, -2);
         const Vector3 line(0, -43, 76);
         Vector3 lastKnee;
         bool first = true;
@@ -447,17 +449,41 @@ TEST_CASE("StrideWarp")
         auto fkOnly = settings;
         fkOnly.Legs[0].IKFoot = -1;
         fkOnly.Legs[1].IKFoot = -1;
+
+        // The reference leg bends toward its thigh's +Z. The knee goes that way whichever way the thigh faces in the model.
+        nodes[CalfR].LocalTransform.Translation = Vector3(0, -45, 2);
+        nodes[FootR].LocalTransform.Translation = Vector3(0, -45, -2);
+        for (const float facing : { 1.0f, -1.0f })
+        {
+            Transform pose[Count];
+            setupSwingPose(pose, Vector3(-10, 8, 0));
+            const Vector3 line(0, -80, -30);
+            const Quaternion thighRotation = facing > 0.0f ? Quaternion::Identity : Quaternion::Euler(0, 180, 0);
+            const Vector3 localLine = Vector3::Transform(line, Quaternion::Invert(thighRotation));
+            pose[ThighR].Orientation = thighRotation;
+            pose[CalfR].Translation = localLine * 0.5f;
+            pose[FootR].Translation = localLine * 0.5f;
+            StrideWarp::Warp(nodes.Get(), Count, fkOnly, forward, 0.5f, 0.0f, pose);
+            const Vector3 hip = ModelTransform(nodes, pose, ThighR).Translation;
+            const Vector3 knee = ModelTransform(nodes, pose, CalfR).Translation;
+            const Vector3 foot = ModelTransform(nodes, pose, FootR).Translation;
+            CHECK(SamePosition(foot, Vector3(-10, 10, -15)));
+            CHECK((knee.Z - (hip.Z + foot.Z) * 0.5f) * facing > 1.0f);
+        }
+    }
+
+    SECTION("Straight legs without a bent reference pose keep their knee side")
+    {
+        auto fkOnly = settings;
+        fkOnly.Legs[0].IKFoot = -1;
+        fkOnly.Legs[1].IKFoot = -1;
         Transform pose[Count];
         setupSwingPose(pose, Vector3(-10, 8, 0));
         const Vector3 line(0, -80, -30);
-        pose[CalfR].Translation = line * 0.5f;
-        pose[FootR].Translation = line * 0.5f;
+        pose[CalfR].Translation = line * 0.5f + Vector3(0, 0.1f, -0.2f); // Barely bent backward
+        pose[FootR].Translation = line - pose[CalfR].Translation;
         StrideWarp::Warp(nodes.Get(), Count, fkOnly, forward, 0.5f, 0.0f, pose);
-        const Vector3 hip = ModelTransform(nodes, pose, ThighR).Translation;
-        const Vector3 knee = ModelTransform(nodes, pose, CalfR).Translation;
-        const Vector3 foot = ModelTransform(nodes, pose, FootR).Translation;
-        CHECK(SamePosition(foot, Vector3(-10, 10, -15)));
-        CHECK(knee.Z > (hip.Z + foot.Z) * 0.5f + 1.0f);
+        CHECK(SamePosition(ModelTransform(nodes, pose, FootR).Translation, Vector3(-10, 10, -15)));
     }
 
     SECTION("With both feet raised the lower one still drives the pelvis drop")

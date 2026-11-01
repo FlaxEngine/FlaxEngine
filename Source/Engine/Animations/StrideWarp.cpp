@@ -11,9 +11,9 @@ namespace
     // Squared sine of the angle below which two directions are taken as parallel
     constexpr Real MinBendSineSq = 1e-6f;
 
-    // Sine of the angle between the thigh and the hip-to-foot line: at or below StraightLegSine the leg's bend plane is noise and the hinge across the hips takes over, at or above BentLegSine the input bend plane is used
+    // Sine of the angle between the thigh and the hip-to-foot line: at or below StraightLegSine the leg's bend plane is noise and the knee hinge of the thigh takes over, at or above BentLegSine the input bend plane is used
     constexpr float StraightLegSine = 0.05f;
-    constexpr float BentLegSine = 0.3f;
+    constexpr float BentLegSine = 0.15f;
 
     // The most the pelvis lowers per unit a foot is out of reach. It keeps the drop from jumping as a foot nears the edge of what lowering can reach, the foot stops short instead.
     constexpr Real MaxDropPerStretch = 2.0f;
@@ -80,6 +80,15 @@ namespace
             chain.Thigh = leg.Thigh;
         }
         return count;
+    }
+
+    // Gets the leg's knee hinge in thigh space from the reference pose (the knee bends about a fixed axis of the thigh, whichever way the model faces), zero when the reference leg is straight
+    Vector3 GetThighHinge(const SkeletonNode* nodes, const LegChain& leg)
+    {
+        const Transform& calf = nodes[leg.Calf].LocalTransform;
+        const Vector3 line = calf.LocalToWorld(nodes[leg.Foot].LocalTransform).Translation;
+        const Vector3 normal = Vector3::Cross(line, calf.Translation);
+        return normal.LengthSquared() > MinBendSineSq * line.LengthSquared() * calf.Translation.LengthSquared() ? normal.GetNormalized() : Vector3::Zero;
     }
 
     // Gets how far the hip has to lower so it is no further than the reach from the foot (only lowering helps, and only when the foot is below the hip)
@@ -186,7 +195,7 @@ void StrideWarp::Warp(const SkeletonNode* nodes, int32 nodesCount, const Setting
     // The input legs and the warped foot targets, fixed to the ground (they don't follow the pelvis down)
     const Transform pelvisModel = GetModelTransform(nodes, pose, settings.Pelvis);
     Transform ikTargets[2], footTargets[2];
-    Vector3 inputHips[2], inputKnees[2], inputFeet[2];
+    Vector3 inputHips[2], inputKnees[2], inputFeet[2], inputHinges[2];
     for (int32 i = 0; i < legsCount; i++)
     {
         const LegChain& leg = legs[i];
@@ -196,6 +205,7 @@ void StrideWarp::Warp(const SkeletonNode* nodes, int32 nodesCount, const Setting
         inputHips[i] = thigh.Translation;
         inputKnees[i] = calf.Translation;
         inputFeet[i] = foot.Translation;
+        inputHinges[i] = Vector3::Transform(GetThighHinge(nodes, leg), thigh.Orientation);
         Transform ikFoot = foot;
         if (leg.IKFoot != -1)
             ikFoot = GetModelTransform(nodes, pose, leg.IKFoot);
@@ -221,12 +231,6 @@ void StrideWarp::Warp(const SkeletonNode* nodes, int32 nodesCount, const Setting
             SetModelTransform(legs[i].IKFoot, GetParentModelTransform(nodes, pose, legs[i].IKFoot), ikTargets[i], pose);
     }
 
-    // The knee hinge for legs too straight to show their own: across the hips, with knees bending toward model forward
-    Vector3 hipsHinge = legsCount == 2 ? inputHips[1] - inputHips[0] : Vector3::UnitX;
-    hipsHinge.Y = 0;
-    hipsHinge = hipsHinge.LengthSquared() > ZeroTolerance ? hipsHinge.GetNormalized() : Vector3::UnitX;
-    if (hipsHinge.X > 0)
-        hipsHinge = -hipsHinge;
 
     // Solve each leg onto its foot target
     for (int32 i = 0; i < legsCount; i++)
@@ -254,9 +258,15 @@ void StrideWarp::Warp(const SkeletonNode* nodes, int32 nodesCount, const Setting
         const Real inputNormalLength = inputNormal.Length();
         const Real inputLengths = inputLine.Length() * inputKnee.Length();
         const float bent = inputLengths > ZeroTolerance ? Math::Saturate(((float)(inputNormalLength / inputLengths) - StraightLegSine) / (BentLegSine - StraightLegSine)) : 0.0f;
-        Vector3 bendNormal = hipsHinge * (Real)(1.0f - bent);
+        Vector3 bendNormal = inputHinges[i] * (Real)(1.0f - bent);
         if (bent > 0.0f)
-            bendNormal += inputNormal * ((Real)bent / inputNormalLength);
+        {
+            // A knee bending against the hinge cancels it out halfway, go with the input then
+            const Vector3 inputDirection = inputNormal / inputNormalLength;
+            bendNormal += inputDirection * (Real)bent;
+            if (bendNormal.LengthSquared() < 0.01f)
+                bendNormal = inputDirection;
+        }
         const Vector3 bend = Vector3::Cross(bendNormal, newLine);
         const Vector3 pole = thigh.Translation + (bend.LengthSquared() > MinBendSineSq * bendNormal.LengthSquared() * newLine.LengthSquared() ? bend : inputKnee);
 
