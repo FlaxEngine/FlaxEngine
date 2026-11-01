@@ -8,6 +8,7 @@
 #include "Engine/Animations/AlphaBlend.h"
 #include "Engine/Animations/AnimEvent.h"
 #include "Engine/Animations/InverseKinematics.h"
+#include "Engine/Animations/LayeredBlend.h"
 #include "Engine/Level/Actors/AnimatedModel.h"
 #include "Engine/Physics/Physics.h"
 
@@ -2734,6 +2735,70 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             value = transform.Scale;
             break;
         }
+        break;
+    }
+    // Layered Blend
+    case 38:
+    {
+        const float alpha = Math::Saturate((float)tryGetValue(node->GetBox(3), node->Values[2]));
+        auto mask = node->Assets[0].As<SkeletonMask>();
+
+        // Use the mask connected with this node instead of default mask asset
+        auto maskAssetBox = node->TryGetBox(4);
+        if (maskAssetBox && maskAssetBox->HasConnection())
+        {
+            const Value assetBoxValue = tryGetValue(maskAssetBox, Value::Null);
+            if (assetBoxValue != Value::Null)
+                mask = (SkeletonMask*)assetBoxValue.AsAsset;
+        }
+        const BitArray<>* nodesMask = nullptr;
+        bool maskInvalid = false;
+        if (mask)
+        {
+            if (mask->WaitForLoaded())
+                maskInvalid = true;
+            else
+            {
+                nodesMask = &mask->GetNodesMask();
+                maskInvalid = nodesMask->Count() < _skeletonNodesCount;
+            }
+        }
+
+        // Only base pose or invalid mask
+        if (Math::NearEqual(alpha, 0.0f, ANIM_GRAPH_BLEND_THRESHOLD) || maskInvalid)
+        {
+            value = tryGetValue(node->GetBox(1), Value::Null);
+            break;
+        }
+
+        auto valueA = tryGetValue(node->GetBox(1), Value::Null);
+        auto valueB = tryGetValue(node->GetBox(2), Value::Null);
+        if (!ANIM_GRAPH_IS_VALID_PTR(valueA))
+            valueA = GetEmptyNodes();
+        if (!ANIM_GRAPH_IS_VALID_PTR(valueB))
+        {
+            value = valueA;
+            break;
+        }
+        const auto nodes = node->GetNodes(this);
+        const auto nodesA = static_cast<AnimGraphImpulse*>(valueA.AsPointer);
+        const auto nodesB = static_cast<AnimGraphImpulse*>(valueB.AsPointer);
+        const auto& skeletonNodes = _graph.BaseModel->Skeleton.Nodes;
+        const int32 nodesCount = Math::Min(skeletonNodes.Count(), nodes->Nodes.Count());
+
+        // Blend the layer over the base with per-node weights (root motion comes from the base pose)
+        Array<float, InlinedAllocation<256>> weights;
+        weights.Resize(nodesCount);
+        const int32 rampLength = node->Values.Count() > 3 ? (int32)node->Values[3] : 0;
+        const bool meshSpaceRotation = node->Values.Count() > 4 ? (bool)node->Values[4] : true;
+        LayeredBlend::ComputeWeights(skeletonNodes.Get(), nodesCount, node->Data.TransformNode.NodeIndex, rampLength, nodesMask, weights.Get());
+        LayeredBlend::Blend(skeletonNodes.Get(), nodesCount, nodesA->Nodes.Get(), nodesB->Nodes.Get(), weights.Get(), alpha, meshSpaceRotation, nodes->Nodes.Get());
+        for (int32 i = nodesCount; i < nodes->Nodes.Count(); i++)
+            nodes->Nodes[i] = nodesA->Nodes[i];
+        nodes->RootMotion = nodesA->RootMotion;
+        nodes->Position = nodesA->Position;
+        nodes->Length = nodesA->Length;
+        value = nodes;
         break;
     }
     default:

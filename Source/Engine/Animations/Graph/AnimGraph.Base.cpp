@@ -339,6 +339,7 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
         // Get Node Transform (local/model space)
         // IK Aim, Two Bone IK
         // Spring Bone Physics
+        // Layered Blend
         case 25:
         case 26:
         case 28:
@@ -346,6 +347,7 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
         case 30:
         case 31:
         case 35:
+        case 38:
         {
             auto& data = n->Data.TransformNode;
             if (_graph->BaseModel && !_graph->BaseModel->WaitForLoaded())
@@ -355,6 +357,11 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
             if (n->TypeID == 35)
             {
                 ADD_BUCKET(SpringBonePhysicsBucketInit);
+            }
+            else if (n->TypeID == 38)
+            {
+                n->Assets.Resize(1);
+                n->Assets[0] = (Asset*)Content::LoadAsync<SkeletonMask>((Guid)n->Values[1]);
             }
             break;
         }

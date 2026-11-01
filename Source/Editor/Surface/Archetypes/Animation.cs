@@ -1160,6 +1160,38 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(3, "Scale", typeof(Float3), 3),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 38,
+                Title = "Layered Blend",
+                Description = "Blends a layer pose over a base pose, on a branch of the skeleton (from a root node, with a weight ramp) and/or a skeleton mask. Mesh Space Rotation keeps the layered nodes' model space rotation whatever the base pose does below them.",
+                Create = (id, context, arch, groupArch) => new SkeletonMaskSample(id, context, arch, groupArch),
+                Flags = NodeFlags.AnimGraph,
+                Size = new Float2(270, 230),
+                DefaultValues = new object[]
+                {
+                    string.Empty, // Branch root node
+                    Guid.Empty, // Skeleton mask
+                    1.0f, // Alpha
+                    0, // Ramp length
+                    true, // Mesh space rotation
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(void), 0),
+                    NodeElementArchetype.Factory.Input(0, "Base Pose", true, typeof(void), 1),
+                    NodeElementArchetype.Factory.Input(1, "Layer Pose", true, typeof(void), 2),
+                    NodeElementArchetype.Factory.Input(2, "Alpha", true, typeof(float), 3, 2),
+                    NodeElementArchetype.Factory.Input(3, "Skeleton Mask Asset", true, typeof(SkeletonMask), 4),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 4, "Branch Root:"),
+                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(100, Surface.Constants.LayoutOffsetY * 4, 160, 0),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 5, "Ramp Length:"),
+                    NodeElementArchetype.Factory.Integer(100, Surface.Constants.LayoutOffsetY * 5, 3, -1, 0, 1000),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 6, "Mesh Space Rotation:", 140.0f),
+                    NodeElementArchetype.Factory.Bool(140, Surface.Constants.LayoutOffsetY * 6, 4),
+                    NodeElementArchetype.Factory.Asset(0, Surface.Constants.LayoutOffsetY * 7, 1, typeof(SkeletonMask)),
+                }
+            },
         };
     }
 }
