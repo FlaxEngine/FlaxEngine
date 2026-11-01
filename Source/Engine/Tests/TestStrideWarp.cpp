@@ -428,6 +428,20 @@ TEST_CASE("StrideWarp")
         }
     }
 
+    SECTION("The pelvis drop is limited by how far the foot is out of reach")
+    {
+        // Feet near hip height, just out of reach: lowering all the way would be a big step for a small stretch
+        auto fkOnly = settings;
+        fkOnly.Legs[0].IKFoot = -1;
+        fkOnly.Legs[1].IKFoot = -1;
+        Transform pose[Count];
+        setupSwingPose(pose, Vector3(-10, 80, -25));
+        pose[CalfL].Translation = Vector3(0, -5, 2);
+        pose[FootL].Translation = Vector3(0, -5, -2);
+        const float drop = StrideWarp::GetPelvisDrop(nodes.Get(), Count, fkOnly, forward, 1.05f, pose);
+        CHECK(drop > 0.0f);
+        CHECK(drop < 2.5f);
+    }
     SECTION("Straight legs bend the knee forward")
     {
         auto fkOnly = settings;
