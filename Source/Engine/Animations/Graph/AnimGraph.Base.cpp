@@ -123,6 +123,13 @@ void SpringBonePhysicsBucketInit(AnimGraphInstanceData::Bucket& bucket)
     bucket.SpringBonePhysics.StateDataStart = -1;
 }
 
+void StrideWarpBucketInit(AnimGraphInstanceData::Bucket& bucket)
+{
+    bucket.StrideWarp.LastUpdateFrame = 0;
+    bucket.StrideWarp.StrideScale = 1.0f;
+    bucket.StrideWarp.PelvisDrop = 0.0f;
+}
+
 struct MultiBlendSortTag
 {
     Variant* Values;
@@ -386,6 +393,31 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
         case 34:
             LoadStateTransitions(n->Data.AnyState, n->Values[0]);
             break;
+        // Stride Warp
+        case 41:
+        {
+            auto& data = n->Data.StrideWarp;
+            data.Pelvis = -1;
+            for (int32 i = 0; i < 2; i++)
+                data.IKFoot[i] = data.Foot[i] = data.Thigh[i] = -1;
+            if (_graph->BaseModel && !_graph->BaseModel->WaitForLoaded() && n->Values.Count() >= 7)
+            {
+                const auto findNode = [this, n](int32 valueIndex)
+                {
+                    const int32 index = _graph->BaseModel->FindNode((StringView)n->Values[valueIndex]);
+                    return (int16)(index >= 0 && index <= MAX_int16 ? index : -1);
+                };
+                data.Pelvis = findNode(0);
+                for (int32 i = 0; i < 2; i++)
+                {
+                    data.IKFoot[i] = findNode(1 + i * 3);
+                    data.Foot[i] = findNode(2 + i * 3);
+                    data.Thigh[i] = findNode(3 + i * 3);
+                }
+            }
+            ADD_BUCKET(StrideWarpBucketInit);
+            break;
+        }
         }
         break;
     // Custom

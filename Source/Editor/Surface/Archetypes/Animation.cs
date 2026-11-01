@@ -1160,6 +1160,64 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(3, "Scale", typeof(Float3), 3),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 41,
+                Title = "Stride Warp",
+                Description = "Lengthens or shortens the stride along the travel direction (in model space) by the stride scale, so walk and run cycles can match the speed with less play rate change. The pelvis lowers so the legs can reach.",
+                Flags = NodeFlags.AnimGraph | NodeFlags.FixedSize,
+                Size = new Float2(270, 370),
+                DefaultValues = new object[]
+                {
+                    string.Empty, // Pelvis
+                    string.Empty, // IK foot left
+                    string.Empty, // Foot left
+                    string.Empty, // Thigh left
+                    string.Empty, // IK foot right
+                    string.Empty, // Foot right
+                    string.Empty, // Thigh right
+                    1.0f, // Stride scale
+                    new Float3(0, 0, 1), // Direction
+                    1.0f, // Alpha
+                    0.0f, // Min scale
+                    3.0f, // Max scale
+                    0.0f, // Scale interpolation speed
+                    50.0f, // Max pelvis drop
+                    0.0f, // Pelvis interpolation speed
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(void), 0),
+                    NodeElementArchetype.Factory.Input(0, string.Empty, true, typeof(void), 1),
+                    NodeElementArchetype.Factory.Input(1, "Stride Scale", true, typeof(float), 2, 7),
+                    NodeElementArchetype.Factory.Input(2, "Direction", true, typeof(Float3), 3, 8),
+                    NodeElementArchetype.Factory.Input(3, "Alpha", true, typeof(float), 4, 9),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 4, "Min Scale:", tooltip: "The lowest stride scale. Clamping is off when Min Scale is above Max Scale."),
+                    NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 4, 10),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 5, "Max Scale:", tooltip: "The highest stride scale."),
+                    NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 5, 11),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 6, "Scale Speed:", tooltip: "How fast the stride scale eases toward its input (per second). 0 to follow it at once."),
+                    NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 6, 12, -1, 0.0f),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 7, "Max Pelvis Drop:", tooltip: "The most the pelvis may lower so the legs can reach (in model units, eg. cm). 0 keeps the pelvis in place."),
+                    NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 7, 13, -1, 0.0f),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 8, "Pelvis Speed:", tooltip: "How fast the pelvis drop eases (per second). 0 to follow it at once."),
+                    NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 8, 14, -1, 0.0f),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 9, "Pelvis:", tooltip: "The pelvis node (eg. pelvis). The stride is measured from it and it lowers so the legs can reach."),
+                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(110, Surface.Constants.LayoutOffsetY * 9, 150, 0),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 10, "IK Foot L:", tooltip: "Optional left IK foot node (eg. ik_foot_l). It sets the stride and moves with the warped foot."),
+                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(110, Surface.Constants.LayoutOffsetY * 10, 150, 1),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 11, "Foot L:", tooltip: "The left foot node (eg. foot_l). Its parent is the calf."),
+                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(110, Surface.Constants.LayoutOffsetY * 11, 150, 2),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 12, "Thigh L:", tooltip: "The left thigh node (eg. thigh_l), the parent of the calf."),
+                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(110, Surface.Constants.LayoutOffsetY * 12, 150, 3),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 13, "IK Foot R:", tooltip: "Optional right IK foot node (eg. ik_foot_r)."),
+                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(110, Surface.Constants.LayoutOffsetY * 13, 150, 4),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 14, "Foot R:", tooltip: "The right foot node (eg. foot_r)."),
+                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(110, Surface.Constants.LayoutOffsetY * 14, 150, 5),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 15, "Thigh R:", tooltip: "The right thigh node (eg. thigh_r)."),
+                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(110, Surface.Constants.LayoutOffsetY * 15, 150, 6),
+                }
+            },
         };
     }
 }
