@@ -6,7 +6,7 @@
 
 /// <summary>
 /// Inertialization: a blend that switches straight to the new pose and hides the switch by adding the difference between the old and the new pose on top of it, decaying to zero over the blend time.
-/// Unlike a cross-fade, only the new pose is evaluated, and the old pose's motion toward the new pose carries on smoothly (no velocity jump) at the switch. A new request during a blend starts from the current output, so it doesn't pop.
+/// Unlike a cross-fade, only the new pose is evaluated, and the old pose's motion toward the new pose carries on smoothly at the switch (only motion too fast for the offset gets a small velocity jump). A new request during a blend starts from the current output, so it doesn't pop.
 /// Each bone's translation, rotation and scale offsets decay along their own quintic curve that starts with the offset's value and velocity and ends at zero with zero velocity and acceleration.
 /// The velocity kept is the old pose's motion along the offset (translation and scale) or about the offset's rotation axis; motion across it, or away from the new pose, isn't carried on, so a bone never moves further from the new pose than where the blend started. Fast motion is limited, so a limb's bones stay in step and its end stays near the path between the poses.
 /// The technique follows the public description in David Bollo's GDC 2018 talk "Inertialization: High-Performance Animation Transitions in Gears of War".
