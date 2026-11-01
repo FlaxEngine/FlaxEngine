@@ -1615,6 +1615,7 @@ namespace FlaxEditor.Surface.Archetypes
                     InterruptionInstant = 16,
                     InterruptionSourceState = 32,
                     InterruptionDestinationState = 64,
+                    Inertialization = 128,
                 }
 
                 /// <summary>
@@ -1770,6 +1771,20 @@ namespace FlaxEditor.Surface.Archetypes
                 set
                 {
                     _data.BlendMode = value;
+                    SourceState.SaveTransitions(true);
+                }
+            }
+
+            /// <summary>
+            /// If checked, the transition switches to the destination state at once and the nearest Inertialization node above the state machine smooths the change over the blend duration (only the destination state is evaluated). Blend mode isn't used then. Without an Inertialization node above, the transition cross-fades as usual.
+            /// </summary>
+            [EditorOrder(65), DefaultValue(false)]
+            public bool Inertialization
+            {
+                get => _data.HasFlag(Data.FlagTypes.Inertialization);
+                set
+                {
+                    _data.SetFlag(Data.FlagTypes.Inertialization, value);
                     SourceState.SaveTransitions(true);
                 }
             }

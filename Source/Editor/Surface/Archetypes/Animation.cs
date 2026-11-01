@@ -1160,6 +1160,26 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(3, "Scale", typeof(Float3), 3),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 40,
+                Title = "Inertialization",
+                Description = "Smooths sudden pose changes below it without cross-fading: on a request it switches straight to the new pose, carrying on the old pose's motion and decaying the difference to zero over the blend time. Only the new pose is evaluated. State machine transitions with Inertialization on and animation slots played with inertialize ask the nearest Inertialization node above them for the blend. Request starts a blend when it turns on (eg. after changing the animation played by the input).",
+                Flags = NodeFlags.AnimGraph,
+                Size = new Float2(200, 60),
+                DefaultValues = new object[]
+                {
+                    false, // Request
+                    0.2f, // Blend time
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(void), 0),
+                    NodeElementArchetype.Factory.Input(0, string.Empty, true, typeof(void), 1),
+                    NodeElementArchetype.Factory.Input(1, "Request", true, typeof(bool), 2, 0),
+                    NodeElementArchetype.Factory.Input(2, "Blend Time", true, typeof(float), 3, 1),
+                }
+            },
         };
     }
 }

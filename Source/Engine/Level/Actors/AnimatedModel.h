@@ -422,7 +422,8 @@ public:
     /// <param name="blendInTime">The animation blending in time (in seconds). Cam be used to smooth the slot animation playback with the input pose when starting the animation.</param>
     /// <param name="blendOutTime">The animation blending out time (in seconds). Cam be used to smooth the slot animation playback with the input pose when ending animation.</param>
     /// <param name="loopCount">The amount of loops to play the animation: 0 to play once, -1 to play infinite, 1 or higher to loop once or more.</param>
-    API_FUNCTION() void PlaySlotAnimation(const StringView& slotName, Animation* anim, float speed = 1.0f, float blendInTime = 0.2f, float blendOutTime = 0.2f, int32 loopCount = 0);
+    /// <param name="inertialize">True to blend in and out with inertialization instead of cross-fading, when the slot is inside an Inertialization node. The animation then cuts in at once (also over another one of the slot that is still blending) and the Inertialization node smooths the change over the blend time.</param>
+    API_FUNCTION() void PlaySlotAnimation(const StringView& slotName, Animation* anim, float speed = 1.0f, float blendInTime = 0.2f, float blendOutTime = 0.2f, int32 loopCount = 0, bool inertialize = false);
 
     /// <summary>
     /// Stops all the animations playback on the all slots in Anim Graph.

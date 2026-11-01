@@ -123,6 +123,18 @@ void SpringBonePhysicsBucketInit(AnimGraphInstanceData::Bucket& bucket)
     bucket.SpringBonePhysics.StateDataStart = -1;
 }
 
+void InertializationBucketInit(AnimGraphInstanceData::Bucket& bucket)
+{
+    // Note: DynamicStateStart stays, so the node reuses its data after a reset (the state is cleared to zeros when it gets allocated)
+    auto& data = bucket.Inertialization;
+    data.LastUpdateFrame = 0;
+    data.HistoryCount = 0;
+    data.PreviousDeltaTime = 0.0f;
+    data.BlendPosition = 0.0f;
+    data.BlendDuration = 0.0f;
+    data.LastRequest = false;
+}
+
 struct MultiBlendSortTag
 {
     Variant* Values;
@@ -377,6 +389,10 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
         // Animation Slot
         case 32:
             ADD_BUCKET(SlotBucketInit);
+            break;
+        // Inertialization
+        case 40:
+            ADD_BUCKET(InertializationBucketInit);
             break;
         // Animation Instance Data
         case 33:
