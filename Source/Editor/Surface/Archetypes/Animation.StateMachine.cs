@@ -840,7 +840,7 @@ namespace FlaxEditor.Surface.Archetypes
                             data.Unused2 = reader.ReadInt32();
                             if (version >= 2)
                             {
-                                data.BlendMask = reader.ReadGuid();
+                                data.BlendMask = FlaxEditor.Utilities.Utils.ReadGuid(reader);
                                 data.BlendScale = reader.ReadSingle();
                             }
                             else
@@ -924,7 +924,7 @@ namespace FlaxEditor.Surface.Archetypes
                                 writer.Write(data.Unused2);
                                 if (version >= 2)
                                 {
-                                    writer.WriteGuid(ref data.BlendMask);
+                                    FlaxEditor.Utilities.Utils.WriteGuid(writer, ref data.BlendMask);
                                     writer.Write(data.BlendScale);
                                 }
 
