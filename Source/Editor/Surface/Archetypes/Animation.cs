@@ -1198,7 +1198,7 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 5, 11),
                     NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 6, "Scale Speed:", tooltip: "Stride scale ease speed (per second). 0 follows at once."),
                     NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 6, 12, -1, 0.0f),
-                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 7, "Max Pelvis Drop:", tooltip: "Max pelvis lowering so the legs can reach. 0 keeps it in place."),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 7, "Max Pelvis Drop:", tooltip: "Max pelvis lowering (model units) so the legs can reach. 0 keeps it in place."),
                     NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 7, 13, -1, 0.0f),
                     NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 8, "Pelvis Speed:", tooltip: "Pelvis drop ease speed (per second). 0 follows at once."),
                     NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 8, 14, -1, 0.0f),
