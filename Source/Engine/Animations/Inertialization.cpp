@@ -9,6 +9,9 @@ namespace
     // Offsets smaller than this are treated as no offset (cm for translation, radians for rotation, scale units)
     constexpr float MinOffset = 1e-5f;
 
+    // The fastest a curve starts, as the part of its offset it would cover in the whole blend at that speed. Rotations of a limb's bones are decayed separately, so the further their progress apart, the further the limb's end leaves the path between the poses.
+    constexpr float MaxVelocityScale = 1.0f;
+
     float GetVelocity(float value, float valueBefore, float deltaTime)
     {
         return deltaTime > ZeroTolerance ? (value - valueBefore) / deltaTime : 0.0f;
@@ -54,25 +57,16 @@ void Inertialization::Curve::Setup(float value, float velocity, float duration)
         return;
     }
 
-    // Moving toward zero too fast would overshoot past it within the duration, so reach zero sooner
-    if (velocity < 0.0f)
-        duration = Math::Min(duration, -5.0f * value / velocity);
+    // Moving away from zero would swing past both poses before coming back, so never go further than where the blend started. Moving toward it keeps every bone on the same duration, in step with the others.
+    velocity = Math::Clamp(velocity, -MaxVelocityScale * value / duration, 0.0f);
 
-    // Moving away from zero would swing past both poses before coming back, so never go further than where the blend started
-    velocity = Math::Min(velocity, 0.0f);
-
-    // Start with the acceleration that keeps the jerk at the start low, never accelerating away from zero
+    // The quintic that starts at (value, velocity) with no acceleration and ends at zero with zero velocity and acceleration at the duration
     const float t = duration;
     const float t2 = t * t;
-    const float acceleration = Math::Max((-8.0f * velocity * t - 20.0f * value) / t2, 0.0f);
-
-    // The quintic that starts at (value, velocity, acceleration) and ends at zero with zero velocity and acceleration at the duration
-    const float at2 = acceleration * t2;
     const float vt = velocity * t;
-    C5 = -(at2 + 6.0f * vt + 12.0f * value) / (2.0f * t2 * t2 * t);
-    C4 = (3.0f * at2 + 16.0f * vt + 30.0f * value) / (2.0f * t2 * t2);
-    C3 = -(3.0f * at2 + 12.0f * vt + 20.0f * value) / (2.0f * t2 * t);
-    C2 = acceleration * 0.5f;
+    C5 = -(6.0f * vt + 12.0f * value) / (2.0f * t2 * t2 * t);
+    C4 = (16.0f * vt + 30.0f * value) / (2.0f * t2 * t2);
+    C3 = -(12.0f * vt + 20.0f * value) / (2.0f * t2 * t);
     C1 = velocity;
     C0 = value;
     Duration = duration;
@@ -84,7 +78,7 @@ float Inertialization::Curve::Evaluate(float time) const
         return 0.0f;
     if (time <= 0.0f)
         return C0;
-    return ((((C5 * time + C4) * time + C3) * time + C2) * time + C1) * time + C0;
+    return (((C5 * time + C4) * time + C3) * time * time + C1) * time + C0;
 }
 
 void Inertialization::Start(const Transform* previous, const Transform* beforePrevious, const Transform* target, int32 count, float previousDeltaTime, float duration, BoneOffset* offsets)

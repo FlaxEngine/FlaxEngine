@@ -76,11 +76,16 @@ TEST_CASE("Inertialization")
         CHECK(Math::Abs((curve.Evaluate(h) - curve.Evaluate(0.0f)) / h + 2.0f) < 0.01f);
         CHECK(Math::Abs((curve.Evaluate(BlendTime - h) - curve.Evaluate(BlendTime - 2 * h)) / h) < 0.01f);
 
-        // Fast motion toward zero reaches it sooner instead of overshooting past it
+        // Fast motion toward zero is limited: no overshoot, and it stays in step with a still bone
+        Inertialization::Curve still;
+        still.Setup(1.0f, 0.0f, BlendTime);
         curve.Setup(1.0f, -50.0f, BlendTime);
-        CHECK(curve.Duration < BlendTime);
+        CHECK(curve.Duration == BlendTime);
         for (float t = 0.0f; t <= BlendTime; t += 0.001f)
+        {
             CHECK(curve.Evaluate(t) > -0.01f);
+            CHECK(Math::Abs(curve.Evaluate(t) - still.Evaluate(t)) < 0.2f);
+        }
 
         // Motion away from zero isn't kept: never goes above the start, and heads straight to zero
         curve.Setup(1.0f, 50.0f, BlendTime);
