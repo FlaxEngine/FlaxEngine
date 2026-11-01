@@ -17,6 +17,7 @@ void LayeredBlend::ComputeWeights(const SkeletonNode* nodes, int32 nodesCount, i
     }
 
     // Count how far each node sits below the branch root (-1 for nodes outside the branch)
+    // Note: skeletons with more than 256 nodes fall back to a heap allocation here
     Array<int32, InlinedAllocation<256>> distance;
     distance.Resize(nodesCount);
     const float rampStep = rampLength > 1 ? 1.0f / (float)rampLength : 1.0f;
@@ -53,6 +54,7 @@ void LayeredBlend::Blend(const SkeletonNode* nodes, int32 nodesCount, const Tran
     }
 
     // Model space rotations of the base, layer and output poses (parents are always processed before their children)
+    // Note: skeletons with more than 256 nodes fall back to a heap allocation here
     Array<Quaternion, InlinedAllocation<768>> rotations;
     rotations.Resize(nodesCount * 3);
     Quaternion* baseRot = rotations.Get();

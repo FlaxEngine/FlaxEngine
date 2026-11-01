@@ -2787,6 +2787,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         const int32 nodesCount = Math::Min(skeletonNodes.Count(), nodes->Nodes.Count());
 
         // Blend the layer over the base with per-node weights (root motion comes from the base pose)
+        // Note: skeletons with more than 256 nodes fall back to a heap allocation here
         Array<float, InlinedAllocation<256>> weights;
         weights.Resize(nodesCount);
         const int32 rampLength = node->Values.Count() > 3 ? (int32)node->Values[3] : 0;

@@ -1164,7 +1164,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 38,
                 Title = "Layered Blend",
-                Description = "Blends a layer pose over a base pose, on a branch of the skeleton (from a root node, with a weight ramp) and/or a skeleton mask. Mesh Space Rotation keeps the layered nodes' model space rotation whatever the base pose does below them.",
+                Description = "Blends a layer pose over a base pose, on a branch of the skeleton (from a root node, with a weight ramp) and/or a skeleton mask. Mesh Space Rotation keeps the layered nodes' model space rotation whatever the base pose does below them. At zero alpha the layer pose isn't evaluated, so animations sampled into it pause until alpha rises again.",
                 Create = (id, context, arch, groupArch) => new SkeletonMaskSample(id, context, arch, groupArch),
                 Flags = NodeFlags.AnimGraph,
                 Size = new Float2(270, 230),

@@ -40,11 +40,12 @@ namespace
 
     Quaternion ModelRotation(const Array<SkeletonNode>& nodes, const Transform* pose, int32 index)
     {
-        Quaternion result = pose[index].Orientation;
+        // Built with the engine's own transform composition so a wrong multiplication order in the blend can't cancel out here
+        Transform result = pose[index];
         for (int32 i = nodes[index].ParentIndex; i != -1; i = nodes[i].ParentIndex)
-            result = pose[i].Orientation * result;
-        result.Normalize();
-        return result;
+            result = pose[i].LocalToWorld(result);
+        result.Orientation.Normalize();
+        return result.Orientation;
     }
 
     bool SameRotation(const Quaternion& a, const Quaternion& b)
@@ -141,7 +142,32 @@ TEST_CASE("LayeredBlend")
         expected.Normalize();
         CHECK(SameRotation(ModelRotation(nodes, result, Chest), expected));
 
+        // Weight ramp blends the model space rotation by each node's weight
+        LayeredBlend::ComputeWeights(nodes.Get(), Count, Spine, 4, nullptr, weights);
+        LayeredBlend::Blend(nodes.Get(), Count, basePose, layerPose, weights, 1.0f, true, result);
+        Quaternion::Slerp(ModelRotation(nodes, basePose, Chest), ModelRotation(nodes, layerPose, Chest), 0.5f, expected);
+        expected.Normalize();
+        CHECK(SameRotation(ModelRotation(nodes, result, Chest), expected));
+        Quaternion::Slerp(ModelRotation(nodes, basePose, Hand), ModelRotation(nodes, layerPose, Hand), 0.75f, expected);
+        expected.Normalize();
+        CHECK(SameRotation(ModelRotation(nodes, result, Hand), expected));
+        CHECK(result[Thigh] == basePose[Thigh]);
+
+        // A masked-out node under a layered parent keeps its base local transform and follows the parent
+        BitArray<> mask;
+        mask.Resize(Count);
+        mask.SetAll(true);
+        mask.Set(Hand, false);
+        LayeredBlend::ComputeWeights(nodes.Get(), Count, Spine, 0, &mask, weights);
+        LayeredBlend::Blend(nodes.Get(), Count, basePose, layerPose, weights, 1.0f, true, result);
+        CHECK(result[Hand] == basePose[Hand]);
+        CHECK(SameRotation(ModelRotation(nodes, result, Chest), ModelRotation(nodes, layerPose, Chest)));
+        expected = ModelRotation(nodes, result, Chest) * basePose[Hand].Orientation;
+        expected.Normalize();
+        CHECK(SameRotation(ModelRotation(nodes, result, Hand), expected));
+
         // Zero alpha gives the base pose
+        LayeredBlend::ComputeWeights(nodes.Get(), Count, Spine, 0, nullptr, weights);
         LayeredBlend::Blend(nodes.Get(), Count, basePose, layerPose, weights, 0.0f, true, result);
         for (int32 i = 0; i < Count; i++)
             CHECK(result[i] == basePose[i]);
