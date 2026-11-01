@@ -8,8 +8,6 @@
 
 namespace
 {
-    typedef Array<Transform, InlinedAllocation<96>> ModelPose;
-
     struct LegChain
     {
         int32 StrideNode; // The IK foot, or the foot when the leg has no IK foot
@@ -35,14 +33,22 @@ namespace
         return true;
     }
 
-    void ComputeModelPose(const SkeletonNode* nodes, int32 nodesCount, const Transform* pose, ModelPose& model)
+    // Gets a node's model space transformation by walking up its ancestors (only the few nodes the warp needs, not the whole skeleton)
+    Transform GetModelTransform(const SkeletonNode* nodes, const Transform* pose, int32 index)
     {
-        model.Resize(nodesCount, false);
-        for (int32 i = 0; i < nodesCount; i++)
+        Transform result = pose[index];
+        for (int32 parent = nodes[index].ParentIndex; parent >= 0 && parent < index; parent = nodes[parent].ParentIndex)
         {
-            const int32 parent = nodes[i].ParentIndex;
-            model[i] = parent >= 0 && parent < i ? model[parent].LocalToWorld(pose[i]) : pose[i];
+            result = pose[parent].LocalToWorld(result);
+            index = parent;
         }
+        return result;
+    }
+
+    Transform GetParentModelTransform(const SkeletonNode* nodes, const Transform* pose, int32 index)
+    {
+        const int32 parent = nodes[index].ParentIndex;
+        return parent >= 0 && parent < index ? GetModelTransform(nodes, pose, parent) : Transform::Identity;
     }
 
     // Gets the legs that can be solved (the foot's parent is the calf and the calf's parent is the thigh)
@@ -81,11 +87,10 @@ namespace
         return -up - Math::Sqrt(reach * reach - groundSq);
     }
 
-    void SetModelTransform(const SkeletonNode* nodes, int32 index, const Transform* model, const Transform& target, Transform* pose)
+    void SetModelTransform(int32 index, const Transform& parentModel, const Transform& target, Transform* pose)
     {
-        const int32 parent = nodes[index].ParentIndex;
         const Float3 scale = pose[index].Scale;
-        pose[index] = parent >= 0 && parent < index ? model[parent].WorldToLocal(target) : target;
+        pose[index] = parentModel.WorldToLocal(target);
         pose[index].Orientation.Normalize();
         pose[index].Scale = scale;
     }
@@ -97,6 +102,12 @@ Vector3 StrideWarp::GetFootOffset(const Vector3& footPosition, const Vector3& pe
     return direction * (along * (Real)(strideScale - 1.0f));
 }
 
+bool StrideWarp::CanWarp(const SkeletonNode* nodes, int32 nodesCount, const Settings& settings)
+{
+    LegChain legs[2];
+    return IsValid(settings.Pelvis, nodesCount) && GetLegs(nodes, nodesCount, settings, legs) != 0;
+}
+
 float StrideWarp::GetPelvisDrop(const SkeletonNode* nodes, int32 nodesCount, const Settings& settings, const Float3& direction, float strideScale, const Transform* pose)
 {
     Vector3 dir;
@@ -104,20 +115,19 @@ float StrideWarp::GetPelvisDrop(const SkeletonNode* nodes, int32 nodesCount, con
         return 0.0f;
     LegChain legs[2];
     const int32 legsCount = GetLegs(nodes, nodesCount, settings, legs);
-    if (legsCount == 0)
-        return 0.0f;
-    ModelPose model;
-    ComputeModelPose(nodes, nodesCount, pose, model);
 
     // Each leg keeps reaching no further from its thigh than in the input pose, so it keeps its knee bend
-    const Vector3 pelvis = model[settings.Pelvis].Translation;
+    const Vector3 pelvis = GetModelTransform(nodes, pose, settings.Pelvis).Translation;
     Real drop = 0;
     for (int32 i = 0; i < legsCount; i++)
     {
         const LegChain& leg = legs[i];
-        const Vector3 hip = model[leg.Thigh].Translation;
-        const Vector3 foot = model[leg.Foot].Translation;
-        const Vector3 offset = GetFootOffset(model[leg.StrideNode].Translation, pelvis, dir, strideScale);
+        const Transform thigh = GetModelTransform(nodes, pose, leg.Thigh);
+        const Transform calf = thigh.LocalToWorld(pose[leg.Calf]);
+        const Vector3 hip = thigh.Translation;
+        const Vector3 foot = calf.LocalToWorld(pose[leg.Foot]).Translation;
+        const Vector3 stridePosition = leg.IKFoot != -1 ? GetModelTransform(nodes, pose, leg.IKFoot).Translation : foot;
+        const Vector3 offset = GetFootOffset(stridePosition, pelvis, dir, strideScale);
         const Real reach = Vector3::Distance(foot, hip);
         drop = Math::Max(drop, GetRequiredDrop(foot + offset - hip, reach));
     }
@@ -142,55 +152,53 @@ void StrideWarp::Warp(const SkeletonNode* nodes, int32 nodesCount, const Setting
     const int32 legsCount = GetLegs(nodes, nodesCount, settings, legs);
     if (legsCount == 0)
         return;
-    ModelPose model;
-    ComputeModelPose(nodes, nodesCount, pose, model);
 
-    // Warped foot targets, fixed to the ground (they don't follow the pelvis down)
-    const Vector3 pelvis = model[settings.Pelvis].Translation;
-    Transform ikTargets[2];
-    Transform footTargets[2];
+    // The input legs and the warped foot targets, fixed to the ground (they don't follow the pelvis down)
+    const Transform pelvisModel = GetModelTransform(nodes, pose, settings.Pelvis);
+    Transform ikTargets[2], footTargets[2];
+    Vector3 inputHips[2], inputKnees[2], inputFeet[2];
     for (int32 i = 0; i < legsCount; i++)
     {
         const LegChain& leg = legs[i];
-        const Vector3 offset = GetFootOffset(model[leg.StrideNode].Translation, pelvis, dir, strideScale);
+        const Transform thigh = GetModelTransform(nodes, pose, leg.Thigh);
+        const Transform calf = thigh.LocalToWorld(pose[leg.Calf]);
+        const Transform foot = calf.LocalToWorld(pose[leg.Foot]);
+        inputHips[i] = thigh.Translation;
+        inputKnees[i] = calf.Translation;
+        inputFeet[i] = foot.Translation;
+        Transform ikFoot = foot;
         if (leg.IKFoot != -1)
-        {
-            ikTargets[i] = model[leg.IKFoot];
-            ikTargets[i].Translation += offset;
-        }
-        footTargets[i] = model[leg.Foot];
+            ikFoot = GetModelTransform(nodes, pose, leg.IKFoot);
+        const Vector3 offset = GetFootOffset(ikFoot.Translation, pelvisModel.Translation, dir, strideScale);
+        ikTargets[i] = ikFoot;
+        ikTargets[i].Translation += offset;
+        footTargets[i] = foot;
         footTargets[i].Translation += offset;
     }
 
     // Lower the pelvis
     if (pelvisDrop > 0.0f)
     {
-        Transform target = model[settings.Pelvis];
+        Transform target = pelvisModel;
         target.Translation.Y -= pelvisDrop;
-        SetModelTransform(nodes, settings.Pelvis, model.Get(), target, pose);
-        ComputeModelPose(nodes, nodesCount, pose, model);
+        SetModelTransform(settings.Pelvis, GetParentModelTransform(nodes, pose, settings.Pelvis), target, pose);
     }
 
     // Move the IK feet
-    bool movedIKFeet = false;
     for (int32 i = 0; i < legsCount; i++)
     {
         if (legs[i].IKFoot != -1)
-        {
-            SetModelTransform(nodes, legs[i].IKFoot, model.Get(), ikTargets[i], pose);
-            movedIKFeet = true;
-        }
+            SetModelTransform(legs[i].IKFoot, GetParentModelTransform(nodes, pose, legs[i].IKFoot), ikTargets[i], pose);
     }
-    if (movedIKFeet)
-        ComputeModelPose(nodes, nodesCount, pose, model);
 
-    // Solve each leg onto its foot target, keeping the knee bending the way it did
+    // Solve each leg onto its foot target
     for (int32 i = 0; i < legsCount; i++)
     {
         const LegChain& leg = legs[i];
-        Transform thigh = model[leg.Thigh];
-        Transform calf = model[leg.Calf];
-        Transform foot = model[leg.Foot];
+        const Transform thighParent = GetParentModelTransform(nodes, pose, leg.Thigh);
+        Transform thigh = thighParent.LocalToWorld(pose[leg.Thigh]);
+        Transform calf = thigh.LocalToWorld(pose[leg.Calf]);
+        Transform foot = calf.LocalToWorld(pose[leg.Foot]);
         Vector3 target = footTargets[i].Translation;
 
         // Stop short of targets out of reach, rather than stretching the leg
@@ -201,16 +209,23 @@ void StrideWarp::Warp(const SkeletonNode* nodes, int32 nodesCount, const Setting
         if (toTargetLength > maxReach)
             target = thigh.Translation + toTarget * (maxReach / toTargetLength);
 
-        InverseKinematics::SolveTwoBoneIK(thigh, calf, foot, target, calf.Translation);
+        // Keep the knee bending the way it did: turn the input knee offset by the same rotation that takes the input hip-to-foot line onto the new hip-to-target line
+        const Vector3 inputLine = inputFeet[i] - inputHips[i];
+        const Vector3 newLine = target - thigh.Translation;
+        Vector3 pole = thigh.Translation + (inputKnees[i] - inputHips[i]);
+        if (inputLine.LengthSquared() > ZeroTolerance && newLine.LengthSquared() > ZeroTolerance)
+        {
+            const Quaternion turn = Quaternion::FindBetween((Float3)inputLine.GetNormalized(), (Float3)newLine.GetNormalized());
+            pole = thigh.Translation + Vector3::Transform(inputKnees[i] - inputHips[i], turn);
+        }
+
+        InverseKinematics::SolveTwoBoneIK(thigh, calf, foot, target, pole);
         thigh.Orientation.Normalize();
         calf.Orientation.Normalize();
         foot.Orientation = footTargets[i].Orientation;
 
-        SetModelTransform(nodes, leg.Thigh, model.Get(), thigh, pose);
-        model[leg.Thigh] = thigh;
-        SetModelTransform(nodes, leg.Calf, model.Get(), calf, pose);
-        model[leg.Calf] = calf;
-        SetModelTransform(nodes, leg.Foot, model.Get(), foot, pose);
-        model[leg.Foot] = foot;
+        SetModelTransform(leg.Thigh, thighParent, thigh, pose);
+        SetModelTransform(leg.Calf, thigh, calf, pose);
+        SetModelTransform(leg.Foot, calf, foot, pose);
     }
 }

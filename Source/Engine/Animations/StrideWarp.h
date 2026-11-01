@@ -41,7 +41,7 @@ public:
     struct Settings
     {
         /// <summary>
-        /// The pelvis node. The stride is measured from it along the travel direction, and it lowers so the legs can reach. Required.
+        /// The pelvis node. The stride is measured from it along the travel direction, and it lowers so the legs can reach (only when it is an ancestor of the thighs). Required.
         /// </summary>
         int32 Pelvis = -1;
 
@@ -65,6 +65,15 @@ public:
     /// <param name="strideScale">The stride scale.</param>
     /// <returns>The foot translation (in model space).</returns>
     static Vector3 GetFootOffset(const Vector3& footPosition, const Vector3& pelvisPosition, const Vector3& direction, float strideScale);
+
+    /// <summary>
+    /// Checks if the setup can warp anything: the pelvis is set and at least one leg is a valid thigh, calf and foot chain.
+    /// </summary>
+    /// <param name="nodes">The skeleton nodes.</param>
+    /// <param name="nodesCount">The amount of skeleton nodes.</param>
+    /// <param name="settings">The warping setup.</param>
+    /// <returns>True if Warp can change the pose.</returns>
+    static bool CanWarp(const SkeletonNode* nodes, int32 nodesCount, const Settings& settings);
 
     /// <summary>
     /// Gets how much the pelvis lowers for a stride scale so no leg reaches further from its thigh than it does in the input pose, limited by the settings' maximum pelvis drop.

@@ -400,7 +400,7 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
             data.Pelvis = -1;
             for (int32 i = 0; i < 2; i++)
                 data.IKFoot[i] = data.Foot[i] = data.Thigh[i] = -1;
-            if (_graph->BaseModel && !_graph->BaseModel->WaitForLoaded() && n->Values.Count() >= 7)
+            if (_graph->BaseModel && !_graph->BaseModel->WaitForLoaded() && n->Values.Count() >= 15)
             {
                 const auto findNode = [this, n](int32 valueIndex)
                 {

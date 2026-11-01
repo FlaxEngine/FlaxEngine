@@ -1202,7 +1202,7 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 7, 13, -1, 0.0f),
                     NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 8, "Pelvis Speed:", tooltip: "How fast the pelvis drop eases (per second). 0 to follow it at once."),
                     NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 8, 14, -1, 0.0f),
-                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 9, "Pelvis:", tooltip: "The pelvis node (eg. pelvis). The stride is measured from it and it lowers so the legs can reach."),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 9, "Pelvis:", tooltip: "The pelvis node (eg. pelvis). The stride is measured from it, and it lowers so the legs can reach (only when it is an ancestor of the thighs)."),
                     NodeElementArchetype.Factory.SkeletonNodeNameSelect(110, Surface.Constants.LayoutOffsetY * 9, 150, 0),
                     NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 10, "IK Foot L:", tooltip: "Optional left IK foot node (eg. ik_foot_l). It sets the stride and moves with the warped foot."),
                     NodeElementArchetype.Factory.SkeletonNodeNameSelect(110, Surface.Constants.LayoutOffsetY * 10, 150, 1),

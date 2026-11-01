@@ -2741,20 +2741,10 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
     case 41:
     {
         auto input = tryGetValue(node->GetBox(1), Value::Null);
-        auto& bucket = context.Data->State[node->BucketIndex].StrideWarp;
-        if (!_graph.BaseModel)
-        {
-            value = input;
+        value = input;
+        if (!_graph.BaseModel || !ANIM_GRAPH_IS_VALID_PTR(input) || node->Values.Count() < 15)
             break;
-        }
         const auto& data = node->Data.StrideWarp;
-        float strideScale = (float)tryGetValue(node->GetBox(2), node->Values[7]);
-        const Float3 direction = (Float3)tryGetValue(node->GetBox(3), node->Values[8]);
-        const float alpha = Math::Saturate((float)tryGetValue(node->GetBox(4), node->Values[9]));
-        const float minScale = (float)node->Values[10];
-        const float maxScale = (float)node->Values[11];
-        if (minScale <= maxScale)
-            strideScale = Math::Clamp(strideScale, minScale, maxScale);
         StrideWarp::Settings settings;
         settings.Pelvis = data.Pelvis;
         for (int32 i = 0; i < 2; i++)
@@ -2764,24 +2754,38 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             settings.Legs[i].Thigh = data.Thigh[i];
         }
         settings.MaxPelvisDrop = (float)node->Values[13];
-        const auto nodes = node->GetNodes(this, input);
+        const auto inputPose = (AnimGraphImpulse*)input.AsPointer;
         const auto& skeletonNodes = _graph.BaseModel->Skeleton.Nodes;
-        const int32 nodesCount = Math::Min(skeletonNodes.Count(), nodes->Nodes.Count());
+        const int32 nodesCount = Math::Min(skeletonNodes.Count(), inputPose->Nodes.Count());
+        if (!StrideWarp::CanWarp(skeletonNodes.Get(), nodesCount, settings))
+            break;
+        float strideScale = (float)tryGetValue(node->GetBox(2), node->Values[7]);
+        const Float3 direction = (Float3)tryGetValue(node->GetBox(3), node->Values[8]);
+        float alpha = Math::Saturate((float)tryGetValue(node->GetBox(4), node->Values[9]));
+        if (alpha < ANIM_GRAPH_BLEND_THRESHOLD)
+            alpha = 0.0f;
+        const float minScale = (float)node->Values[10];
+        const float maxScale = (float)node->Values[11];
+        if (minScale <= maxScale)
+            strideScale = Math::Clamp(strideScale, minScale, maxScale);
 
         // Ease the stride scale and the pelvis drop (once per frame; they snap when the node becomes relevant again)
+        auto& bucket = context.Data->State[node->BucketIndex].StrideWarp;
         if (bucket.LastUpdateFrame != context.CurrentFrameIndex)
         {
             const bool reset = bucket.LastUpdateFrame == 0 || bucket.LastUpdateFrame < context.CurrentFrameIndex - 1;
-            const float scaleSpeed = reset ? 0.0f : (float)node->Values[12];
-            bucket.StrideScale = StrideWarp::Ease(bucket.StrideScale, strideScale, scaleSpeed, context.DeltaTime);
-            const float warpScale = Math::Lerp(1.0f, bucket.StrideScale, alpha);
-            const float pelvisDrop = StrideWarp::GetPelvisDrop(skeletonNodes.Get(), nodesCount, settings, direction, warpScale, nodes->Nodes.Get());
-            const float dropSpeed = reset ? 0.0f : (float)node->Values[14];
-            bucket.PelvisDrop = StrideWarp::Ease(bucket.PelvisDrop, pelvisDrop, dropSpeed, context.DeltaTime);
+            bucket.StrideScale = StrideWarp::Ease(bucket.StrideScale, strideScale, reset ? 0.0f : (float)node->Values[12], context.DeltaTime);
+            const float targetScale = Math::Lerp(1.0f, bucket.StrideScale, alpha);
+            const float pelvisDrop = StrideWarp::GetPelvisDrop(skeletonNodes.Get(), nodesCount, settings, direction, targetScale, inputPose->Nodes.Get());
+            bucket.PelvisDrop = StrideWarp::Ease(bucket.PelvisDrop, pelvisDrop, reset ? 0.0f : (float)node->Values[14], context.DeltaTime);
             bucket.LastUpdateFrame = context.CurrentFrameIndex;
         }
         const float warpScale = Math::Lerp(1.0f, bucket.StrideScale, alpha);
-        StrideWarp::Warp(skeletonNodes.Get(), nodesCount, settings, direction, warpScale, Math::Min(bucket.PelvisDrop, settings.MaxPelvisDrop), nodes->Nodes.Get());
+        const float pelvisDrop = Math::Min(bucket.PelvisDrop, settings.MaxPelvisDrop);
+        if (Math::Abs(warpScale - 1.0f) < ANIM_GRAPH_BLEND_THRESHOLD && pelvisDrop < ANIM_GRAPH_BLEND_THRESHOLD)
+            break;
+        const auto nodes = node->GetNodes(this, input);
+        StrideWarp::Warp(skeletonNodes.Get(), nodesCount, settings, direction, warpScale, pelvisDrop, nodes->Nodes.Get());
         value = nodes;
         break;
     }

@@ -254,6 +254,57 @@ TEST_CASE("StrideWarp")
             CHECK(pose[i].Translation == input[i].Translation);
     }
 
+    SECTION("Knees keep bending forward at long strides")
+    {
+        // Slightly bent legs (about 14 degrees at the knee) with identity rotations, so local translations are model space offsets
+        const Vector3 pelvisPos(0, 90, 0);
+        Transform pose[Count];
+        for (int32 i = 0; i < Count; i++)
+            pose[i] = Transform::Identity;
+        pose[Pelvis].Translation = pelvisPos;
+        Vector3 hips[2], knees[2], feet[2];
+        for (int32 side = 0; side < 2; side++)
+        {
+            hips[side] = Vector3(side == 0 ? 10 : -10, 90, 0);
+            feet[side] = Vector3(side == 0 ? 10 : -10, 5, side == 0 ? 20 : -20);
+            const Vector3 line = feet[side] - hips[side];
+            const Real half = line.Length() * 0.5f;
+            const Vector3 bend = Vector3::Cross(line, Vector3::UnitX).GetNormalized(); // Forward and up, away from the hip-to-foot line
+            knees[side] = hips[side] + line * 0.5f + bend * Math::Sqrt(45.0f * 45.0f - half * half);
+            const int32 thigh = side == 0 ? ThighL : ThighR;
+            pose[thigh].Translation = hips[side] - pelvisPos;
+            pose[thigh + 1].Translation = knees[side] - hips[side];
+            pose[thigh + 2].Translation = feet[side] - knees[side];
+        }
+        auto fkOnly = settings;
+        fkOnly.Legs[0].IKFoot = -1;
+        fkOnly.Legs[1].IKFoot = -1;
+        for (const float scale : { 1.5f, 2.0f, 2.25f, 2.5f })
+        {
+            Transform warped[Count];
+            Platform::MemoryCopy(warped, pose, sizeof(pose));
+            const float drop = StrideWarp::GetPelvisDrop(nodes.Get(), Count, fkOnly, forward, scale, warped);
+            CHECK(drop < fkOnly.MaxPelvisDrop);
+            StrideWarp::Warp(nodes.Get(), Count, fkOnly, forward, scale, drop, warped);
+            for (int32 side = 0; side < 2; side++)
+            {
+                const int32 thigh = side == 0 ? ThighL : ThighR;
+                const Vector3 hip = ModelTransform(nodes, warped, thigh).Translation;
+                const Vector3 knee = ModelTransform(nodes, warped, thigh + 1).Translation;
+                const Vector3 foot = ModelTransform(nodes, warped, thigh + 2).Translation;
+                const Vector3 target(feet[side].X, feet[side].Y, feet[side].Z * scale);
+                CHECK(SamePosition(foot, target));
+
+                // The knee stays on the same side of the hip-to-foot line (bent forward, not backward)
+                const Real sideBefore = Vector3::Dot(Vector3::Cross(feet[side] - hips[side], knees[side] - hips[side]), Vector3::UnitX);
+                const Real sideAfter = Vector3::Dot(Vector3::Cross(foot - hip, knee - hip), Vector3::UnitX);
+                CHECK(sideBefore < 0);
+                CHECK(sideAfter < 0);
+                CHECK(knee.Z > (hip.Z + foot.Z) * 0.5f);
+            }
+        }
+    }
+
     SECTION("Foot offset")
     {
         const Vector3 dir = Vector3::UnitZ;
