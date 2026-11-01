@@ -8,6 +8,9 @@
 
 namespace
 {
+    // Squared sine of the angle below which two directions are taken as parallel
+    constexpr Real MinBendSineSq = 1e-6f;
+
     struct LegChain
     {
         int32 StrideNode; // The IK foot, or the foot when the leg has no IK foot
@@ -230,9 +233,14 @@ void StrideWarp::Warp(const SkeletonNode* nodes, int32 nodesCount, const Setting
 
         // Keep the knee bending the way it did: stay in the input bend plane, on the same side of the hip-to-foot line. Turning the knee along with the line instead would snap it sideways when the line swings a long way (a raised foot near the hip).
         const Vector3 inputKnee = inputKnees[i] - inputHips[i];
-        const Vector3 bendNormal = Vector3::Cross(inputFeet[i] - inputHips[i], inputKnee);
-        const Vector3 bend = Vector3::Cross(bendNormal, target - thigh.Translation);
-        const Vector3 pole = thigh.Translation + (bend.LengthSquared() > ZeroTolerance ? bend : inputKnee);
+        const Vector3 inputLine = inputFeet[i] - inputHips[i];
+        const Vector3 newLine = target - thigh.Translation;
+        const Vector3 bendNormal = Vector3::Cross(inputLine, inputKnee);
+        const Vector3 bend = Vector3::Cross(bendNormal, newLine);
+        Vector3 poleOffset = Vector3::Forward; // A straight input leg has no bend plane
+        if (bendNormal.LengthSquared() > MinBendSineSq * inputLine.LengthSquared() * inputKnee.LengthSquared())
+            poleOffset = bend.LengthSquared() > MinBendSineSq * bendNormal.LengthSquared() * newLine.LengthSquared() ? bend : inputKnee;
+        const Vector3 pole = thigh.Translation + poleOffset;
 
         InverseKinematics::SolveTwoBoneIK(thigh, calf, foot, target, pole);
         thigh.Orientation.Normalize();

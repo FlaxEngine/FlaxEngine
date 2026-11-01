@@ -380,6 +380,36 @@ TEST_CASE("StrideWarp")
         }
     }
 
+    SECTION("Straight legs bend the knee forward")
+    {
+        auto fkOnly = settings;
+        fkOnly.Legs[0].IKFoot = -1;
+        fkOnly.Legs[1].IKFoot = -1;
+        Transform pose[Count];
+        setupSwingPose(pose, Vector3(-10, 8, 0));
+        const Vector3 line(0, -80, -30);
+        pose[CalfR].Translation = line * 0.5f;
+        pose[FootR].Translation = line * 0.5f;
+        StrideWarp::Warp(nodes.Get(), Count, fkOnly, forward, 0.5f, 0.0f, pose);
+        const Vector3 hip = ModelTransform(nodes, pose, ThighR).Translation;
+        const Vector3 knee = ModelTransform(nodes, pose, CalfR).Translation;
+        const Vector3 foot = ModelTransform(nodes, pose, FootR).Translation;
+        CHECK(SamePosition(foot, Vector3(-10, 10, -15)));
+        CHECK(knee.Z > (hip.Z + foot.Z) * 0.5f + 1.0f);
+    }
+
+    SECTION("With both feet raised the lower one still drives the pelvis drop")
+    {
+        auto fkOnly = settings;
+        fkOnly.Legs[0].IKFoot = -1;
+        fkOnly.Legs[1].IKFoot = -1;
+        Transform pose[Count];
+        setupSwingPose(pose, Vector3(-10, 50, -40));
+        pose[CalfL].Translation = Vector3(0, -20, 5);
+        pose[FootL].Translation = Vector3(0, -20, -5);
+        CHECK(StrideWarp::GetPelvisDrop(nodes.Get(), Count, fkOnly, forward, 1.5f, pose) > 1.0f);
+    }
+
     SECTION("Foot offset")
     {
         const Vector3 dir = Vector3::UnitZ;
