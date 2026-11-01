@@ -380,6 +380,54 @@ TEST_CASE("StrideWarp")
         }
     }
 
+    SECTION("A nearly straight leg reaching forward keeps its knee over the leg")
+    {
+        // The small knee offset of the input leg passes from one side to the other, as in a swing leg kicking out
+        auto fkOnly = settings;
+        fkOnly.Legs[0].IKFoot = -1;
+        fkOnly.Legs[1].IKFoot = -1;
+        const Vector3 line(0, -43, 76);
+        Vector3 lastKnee;
+        bool first = true;
+        for (float side = -2.0f; side <= 2.0f; side += 0.25f)
+        {
+            Transform pose[Count];
+            setupSwingPose(pose, Vector3(-10, 8, 0));
+            const Vector3 kneeOffset = line * 0.5f + Vector3(side, 0, 0);
+            pose[CalfR].Translation = kneeOffset;
+            pose[FootR].Translation = line - kneeOffset;
+            StrideWarp::Warp(nodes.Get(), Count, fkOnly, forward, 0.65f, 0.0f, pose);
+            const Vector3 hip = ModelTransform(nodes, pose, ThighR).Translation;
+            const Vector3 knee = ModelTransform(nodes, pose, CalfR).Translation;
+            const Vector3 foot = ModelTransform(nodes, pose, FootR).Translation;
+            CHECK(Math::Abs(knee.X - hip.X) < 6.0f);
+            CHECK(knee.Y > (hip.Y + foot.Y) * 0.5f);
+            if (!first)
+                CHECK(Vector3::Distance(knee, lastKnee) < 5.0f);
+            lastKnee = knee;
+            first = false;
+        }
+    }
+
+    SECTION("The pelvis drop has no jumps as a planted foot goes out of reach")
+    {
+        auto fkOnly = settings;
+        fkOnly.Legs[0].IKFoot = -1;
+        fkOnly.Legs[1].IKFoot = -1;
+        for (const float scale : { 1.5f, 2.5f })
+        {
+            float last = 0.0f;
+            for (float z = 0.0f; z > -37.0f; z -= 0.5f)
+            {
+                Transform pose[Count];
+                setupSwingPose(pose, Vector3(-10, 8, z));
+                const float drop = StrideWarp::GetPelvisDrop(nodes.Get(), Count, fkOnly, forward, scale, pose);
+                CHECK(Math::Abs(drop - last) < 3.0f);
+                last = drop;
+            }
+        }
+    }
+
     SECTION("Straight legs bend the knee forward")
     {
         auto fkOnly = settings;
