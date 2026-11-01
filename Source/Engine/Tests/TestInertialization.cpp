@@ -170,9 +170,9 @@ TEST_CASE("Inertialization")
         {
             const float t = 0.0f;
             const float tb = -FrameTime;
-            previous[i] = Transform(Vector3(i, 0, 0), Quaternion::Euler(20.0f + 60.0f * t, 30.0f + 90.0f * t + i * 5.0f, 10.0f - 40.0f * t));
-            before[i] = Transform(Vector3(i, 0, 0), Quaternion::Euler(20.0f + 60.0f * tb, 30.0f + 90.0f * tb + i * 5.0f, 10.0f - 40.0f * tb));
-            target[i] = Transform(Vector3(i, 0, 0), Quaternion::Euler(-30.0f, 70.0f, 45.0f + i * 10.0f));
+            previous[i] = Transform(Vector3((float)i, 0.0f, 0.0f), Quaternion::Euler(20.0f + 60.0f * t, 30.0f + 90.0f * t + i * 5.0f, 10.0f - 40.0f * t));
+            before[i] = Transform(Vector3((float)i, 0.0f, 0.0f), Quaternion::Euler(20.0f + 60.0f * tb, 30.0f + 90.0f * tb + i * 5.0f, 10.0f - 40.0f * tb));
+            target[i] = Transform(Vector3((float)i, 0.0f, 0.0f), Quaternion::Euler(-30.0f, 70.0f, 45.0f + i * 10.0f));
         }
         Inertialization::BoneOffset offsets[Count];
         Inertialization::Start(previous, before, target, Count, FrameTime, BlendTime, offsets);
