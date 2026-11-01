@@ -76,7 +76,7 @@ public:
     static bool CanWarp(const SkeletonNode* nodes, int32 nodesCount, const Settings& settings);
 
     /// <summary>
-    /// Gets how much the pelvis lowers for a stride scale so no leg reaches further from its thigh than it does in the input pose, limited by the settings' maximum pelvis drop.
+    /// Gets how much the pelvis lowers for a stride scale so no grounded leg reaches further from its thigh than it does in the input pose, limited by the settings' maximum pelvis drop. Feet raised well above the lowest foot don't count.
     /// </summary>
     /// <param name="nodes">The skeleton nodes (sorted so parents come before their children).</param>
     /// <param name="nodesCount">The amount of skeleton nodes.</param>

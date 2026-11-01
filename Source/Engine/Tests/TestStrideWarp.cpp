@@ -305,6 +305,81 @@ TEST_CASE("StrideWarp")
         }
     }
 
+    // A planted leg plus a swing leg with its foot raised behind the hip
+    const auto setupSwingPose = [](Transform* pose, const Vector3& swingFoot)
+    {
+        const Vector3 pelvisPos(0, 90, 0);
+        const Vector3 hip(-10, 90, 0);
+        for (int32 i = 0; i < Count; i++)
+            pose[i] = Transform::Identity;
+        pose[Pelvis].Translation = pelvisPos;
+        pose[ThighL].Translation = Vector3(10, 0, 0);
+        pose[CalfL].Translation = Vector3(0, -42, 5);
+        pose[FootL].Translation = Vector3(0, -42, -5);
+
+        // The swing knee is forward of the hip-to-foot line, with 45 long bones
+        const Vector3 line = swingFoot - hip;
+        const Real half = line.Length() * 0.5f;
+        const Vector3 knee = hip + line * 0.5f + Vector3::Cross(line, Vector3::UnitX).GetNormalized() * Math::Sqrt(45.0f * 45.0f - half * half);
+        pose[ThighR].Translation = hip - pelvisPos;
+        pose[CalfR].Translation = knee - hip;
+        pose[FootR].Translation = swingFoot - knee;
+    };
+
+    SECTION("Raised feet don't drive the pelvis drop")
+    {
+        auto fkOnly = settings;
+        fkOnly.Legs[0].IKFoot = -1;
+        fkOnly.Legs[1].IKFoot = -1;
+
+        // Near hip height behind the hip, the stride moves the foot further from the hip when the pelvis is ahead of it
+        Transform pose[Count];
+        setupSwingPose(pose, Vector3(-10, 70, -30));
+        CHECK(StrideWarp::GetPelvisDrop(nodes.Get(), Count, fkOnly, forward, 1.3f, pose) == 0.0f);
+
+        // A planted foot still does
+        setupSwingPose(pose, Vector3(-10, 8, -30));
+        CHECK(StrideWarp::GetPelvisDrop(nodes.Get(), Count, fkOnly, forward, 1.5f, pose) > 0.5f);
+
+        // Lifting the foot fades the drop out without a jump
+        float last = StrideWarp::GetPelvisDrop(nodes.Get(), Count, fkOnly, forward, 1.5f, pose);
+        for (float height = 8.0f; height < 50.0f; height += 0.5f)
+        {
+            setupSwingPose(pose, Vector3(-10, height, -30));
+            const float drop = StrideWarp::GetPelvisDrop(nodes.Get(), Count, fkOnly, forward, 1.5f, pose);
+            CHECK(Math::Abs(drop - last) < 2.0f);
+            last = drop;
+        }
+        CHECK(last == 0.0f);
+    }
+
+    SECTION("Knees don't snap sideways when the hip-to-foot line swings around")
+    {
+        // A foot raised next to the hip, whose target ends up on the other side of the hip: the line turns nearly all the way around, and which way it turns changes with the foot height
+        auto fkOnly = settings;
+        fkOnly.Legs[0].IKFoot = -1;
+        fkOnly.Legs[1].IKFoot = -1;
+        const Vector3 hip(-10, 90, -12);
+        const Vector3 kneeOffset(0, -20, 40);
+        Vector3 lastKnee;
+        bool first = true;
+        for (float height = -1.5f; height <= 0.5f; height += 0.05f)
+        {
+            Transform pose[Count];
+            setupSwingPose(pose, Vector3(-10, 8, 0));
+            pose[ThighR].Translation = hip - Vector3(0, 90, 0);
+            pose[CalfR].Translation = kneeOffset;
+            pose[FootR].Translation = Vector3(0.1f, height, -2.5f) - kneeOffset;
+            StrideWarp::Warp(nodes.Get(), Count, fkOnly, forward, 0.65f, 0.0f, pose);
+            const Vector3 knee = ModelTransform(nodes, pose, CalfR).Translation;
+            CHECK(Vector3::Distance(ModelTransform(nodes, pose, FootR).Translation, Vector3(-9.9f, 90 + height, -9.425f)) < 1e-2f);
+            if (!first)
+                CHECK(Vector3::Distance(knee, lastKnee) < 5.0f);
+            lastKnee = knee;
+            first = false;
+        }
+    }
+
     SECTION("Foot offset")
     {
         const Vector3 dir = Vector3::UnitZ;

@@ -87,6 +87,16 @@ namespace
         return -up - Math::Sqrt(reach * reach - groundSq);
     }
 
+    // Gets how much a foot counts toward the pelvis drop: fully when near the lowest foot, not at all once raised well above it (a swing foot lands wherever the leg can reach, so it must not pull the pelvis down)
+    float GetGroundedWeight(Real heightAboveLowest, Real legLength)
+    {
+        constexpr float GroundedHeight = 0.1f; // In leg lengths
+        constexpr float RaisedHeight = 0.3f; // In leg lengths
+        if (legLength < ZeroTolerance)
+            return 0.0f;
+        return 1.0f - Math::Saturate(((float)(heightAboveLowest / legLength) - GroundedHeight) / (RaisedHeight - GroundedHeight));
+    }
+
     void SetModelTransform(int32 index, const Transform& parentModel, const Transform& target, Transform* pose)
     {
         const Float3 scale = pose[index].Scale;
@@ -118,18 +128,27 @@ float StrideWarp::GetPelvisDrop(const SkeletonNode* nodes, int32 nodesCount, con
 
     // Each leg keeps reaching no further from its thigh than in the input pose, so it keeps its knee bend
     const Vector3 pelvis = GetModelTransform(nodes, pose, settings.Pelvis).Translation;
-    Real drop = 0;
+    Vector3 hips[2], feet[2], offsets[2];
+    Real legLengths[2];
+    Real lowest = MAX_Real;
     for (int32 i = 0; i < legsCount; i++)
     {
         const LegChain& leg = legs[i];
         const Transform thigh = GetModelTransform(nodes, pose, leg.Thigh);
         const Transform calf = thigh.LocalToWorld(pose[leg.Calf]);
-        const Vector3 hip = thigh.Translation;
-        const Vector3 foot = calf.LocalToWorld(pose[leg.Foot]).Translation;
-        const Vector3 stridePosition = leg.IKFoot != -1 ? GetModelTransform(nodes, pose, leg.IKFoot).Translation : foot;
-        const Vector3 offset = GetFootOffset(stridePosition, pelvis, dir, strideScale);
-        const Real reach = Vector3::Distance(foot, hip);
-        drop = Math::Max(drop, GetRequiredDrop(foot + offset - hip, reach));
+        hips[i] = thigh.Translation;
+        feet[i] = calf.LocalToWorld(pose[leg.Foot]).Translation;
+        legLengths[i] = Vector3::Distance(calf.Translation, hips[i]) + Vector3::Distance(feet[i], calf.Translation);
+        const Vector3 stridePosition = leg.IKFoot != -1 ? GetModelTransform(nodes, pose, leg.IKFoot).Translation : feet[i];
+        offsets[i] = GetFootOffset(stridePosition, pelvis, dir, strideScale);
+        lowest = Math::Min(lowest, feet[i].Y);
+    }
+    Real drop = 0;
+    for (int32 i = 0; i < legsCount; i++)
+    {
+        const Real reach = Vector3::Distance(feet[i], hips[i]);
+        const Real required = GetRequiredDrop(feet[i] + offsets[i] - hips[i], reach);
+        drop = Math::Max(drop, required * GetGroundedWeight(feet[i].Y - lowest, legLengths[i]));
     }
     return Math::Min((float)drop, settings.MaxPelvisDrop);
 }
@@ -209,15 +228,11 @@ void StrideWarp::Warp(const SkeletonNode* nodes, int32 nodesCount, const Setting
         if (toTargetLength > maxReach)
             target = thigh.Translation + toTarget * (maxReach / toTargetLength);
 
-        // Keep the knee bending the way it did: turn the input knee offset by the same rotation that takes the input hip-to-foot line onto the new hip-to-target line
-        const Vector3 inputLine = inputFeet[i] - inputHips[i];
-        const Vector3 newLine = target - thigh.Translation;
-        Vector3 pole = thigh.Translation + (inputKnees[i] - inputHips[i]);
-        if (inputLine.LengthSquared() > ZeroTolerance && newLine.LengthSquared() > ZeroTolerance)
-        {
-            const Quaternion turn = Quaternion::FindBetween((Float3)inputLine.GetNormalized(), (Float3)newLine.GetNormalized());
-            pole = thigh.Translation + Vector3::Transform(inputKnees[i] - inputHips[i], turn);
-        }
+        // Keep the knee bending the way it did: stay in the input bend plane, on the same side of the hip-to-foot line. Turning the knee along with the line instead would snap it sideways when the line swings a long way (a raised foot near the hip).
+        const Vector3 inputKnee = inputKnees[i] - inputHips[i];
+        const Vector3 bendNormal = Vector3::Cross(inputFeet[i] - inputHips[i], inputKnee);
+        const Vector3 bend = Vector3::Cross(bendNormal, target - thigh.Translation);
+        const Vector3 pole = thigh.Translation + (bend.LengthSquared() > ZeroTolerance ? bend : inputKnee);
 
         InverseKinematics::SolveTwoBoneIK(thigh, calf, foot, target, pole);
         thigh.Orientation.Normalize();
