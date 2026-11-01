@@ -1887,10 +1887,9 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             const auto blendMaskBox = node->TryGetBox(BlendMaskBoxId);
             if (blendMaskBox && blendMaskBox->HasConnection())
             {
-                // Use the mask connected to the node (eg. a parameter) instead of the picked one
+                // Use the mask connected to the node (eg. a parameter) instead of the picked one (none or another asset type turns the blend profile off)
                 const Value blendMaskValue = tryGetValue(blendMaskBox, Value::Null);
-                if (blendMaskValue.Type.Type == VariantType::Asset)
-                    blendMask = (SkeletonMask*)blendMaskValue.AsAsset;
+                blendMask = blendMaskValue.Type.Type == VariantType::Asset ? ScriptingObject::Cast<SkeletonMask>(blendMaskValue.AsAsset) : nullptr;
             }
             float blendScale = BlendProfile::DefaultScale;
             if (node->Values.Count() > 5)
