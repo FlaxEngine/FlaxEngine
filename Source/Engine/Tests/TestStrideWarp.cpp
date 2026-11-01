@@ -4,6 +4,7 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Math/Quaternion.h"
+#include "Engine/Core/Math/Vector2.h"
 #include "Engine/Graphics/Models/SkeletonData.h"
 #include <ThirdParty/catch2/catch.hpp>
 
