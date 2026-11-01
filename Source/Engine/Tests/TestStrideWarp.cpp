@@ -36,7 +36,7 @@ namespace
         }
     }
 
-    // A mid-stride pose: left foot ahead, right foot behind, both on the ground with bent knees and the IK feet on the feet
+    // A mid-stride pose: left foot about 49 ahead of the hip, right foot about 44 behind, both near the ground with bent knees, and the IK feet on the feet
     void SetupPose(Transform* pose)
     {
         pose[Root] = Transform(Vector3::Zero);
@@ -44,8 +44,8 @@ namespace
         pose[ThighL] = Transform(Vector3(10, -5, 0), Quaternion::Euler(-20, 0, 0));
         pose[CalfL] = Transform(Vector3(0, -45, 5), Quaternion::Euler(15, 0, 0));
         pose[FootL] = Transform(Vector3(0, -45, 25), Quaternion::Euler(10, 5, 0));
-        pose[ThighR] = Transform(Vector3(-10, -5, 0), Quaternion::Euler(25, 0, 0));
-        pose[CalfR] = Transform(Vector3(0, -45, -2), Quaternion::Euler(10, 0, 0));
+        pose[ThighR] = Transform(Vector3(-10, -5, 0), Quaternion::Euler(10, 0, 0));
+        pose[CalfR] = Transform(Vector3(0, -45, -2), Quaternion::Euler(5, 0, 0));
         pose[FootR] = Transform(Vector3(0, -45, -23), Quaternion::Euler(-15, -5, 0));
         pose[IKFootRoot] = Transform(Vector3::Zero);
         pose[IKFootL] = Transform::Identity;
