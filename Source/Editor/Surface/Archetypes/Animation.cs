@@ -229,8 +229,8 @@ namespace FlaxEditor.Surface.Archetypes
             public BlendPose(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
-                // Add buttons for adding/removing blend poses
-                _addButton = new Button(70, 94 + FlaxEditor.Surface.Constants.LayoutOffsetY, 20, 20)
+                // Add buttons for adding/removing blend poses (placed on the row below the last pose by UpdateBoxes)
+                _addButton = new Button(FlaxEditor.Surface.Constants.NodeMarginX, 0, 20, 20)
                 {
                     Text = "+",
                     Parent = this
@@ -274,14 +274,18 @@ namespace FlaxEditor.Surface.Archetypes
                     _blendPoses.Add(box);
                 }
 
+                // Keep the buttons on their own row below the last pose
+                var buttonsY = FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight + (FirstBlendPoseRow + posesCount) * FlaxEditor.Surface.Constants.LayoutOffsetY;
+                _addButton.Y = buttonsY;
+                _removeButton.Y = buttonsY;
                 _addButton.Enabled = posesCount < MaxBlendPoses;
                 _removeButton.Enabled = posesCount > 0;
             }
 
             private void UpdateHeight()
             {
-                // Fit the pose inputs and the blend mask picker (next to them)
-                float nodeHeight = 10 + (Mathf.Max(_blendPoses.Count, 5) + FirstBlendPoseRow) * FlaxEditor.Surface.Constants.LayoutOffsetY;
+                // Fit the pose inputs with the add/remove buttons row below them, and the blend mask picker (next to them)
+                float nodeHeight = 10 + (Mathf.Max(_blendPoses.Count + 1, 5) + FirstBlendPoseRow) * FlaxEditor.Surface.Constants.LayoutOffsetY;
                 Height = nodeHeight + FlaxEditor.Surface.Constants.NodeMarginY * 2 + FlaxEditor.Surface.Constants.NodeHeaderHeight + FlaxEditor.Surface.Constants.NodeFooterSize;
             }
 
