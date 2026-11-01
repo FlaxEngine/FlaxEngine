@@ -184,12 +184,13 @@ struct MultiBlendAnimData
 
 namespace
 {
-    // Asks the nearest Inertialization node above the evaluated one for an inertial blend. Returns false when there is none (the caller blends another way).
+    // Asks the nearest Inertialization node above the evaluated one for an inertial blend (the shortest one asked for in an update is used). Returns false when there is none (the caller blends another way).
     bool RequestInertialization(AnimGraphContext& context, float duration)
     {
         if (context.InertializationDepth <= 0)
             return false;
-        duration = Math::Max(duration, 0.0f);
+        if (duration <= ZeroTolerance)
+            return true; // No blend (a plain cut), a blend already running carries on
         if (context.InertializationRequest < 0.0f || duration < context.InertializationRequest)
             context.InertializationRequest = duration;
         return true;
@@ -2056,6 +2057,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         {
             RequestInertialization(context, bucket.ActiveTransition->BlendDuration);
             END_TRANSITION();
+            transitionsLeft = 0; // At most one inertial switch per update (two inertial transitions with rules both true would otherwise switch back and forth)
         }
 
         ASSERT(bucket.CurrentState && bucket.CurrentState->Type == GRAPH_NODE_MAKE_TYPE(9, 20));
@@ -2082,8 +2084,10 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             }
             else if (IsInertialTransition(context, bucket.ActiveTransition))
             {
+                // At most one inertial switch per update (two inertial transitions with rules both true would otherwise switch back and forth)
                 RequestInertialization(context, bucket.ActiveTransition->BlendDuration);
                 END_TRANSITION();
+                break;
             }
         }
 
@@ -2473,18 +2477,14 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                     bucket.BlendOutPosition = 0.0f;
                     bucket.LoopsDone = 0;
                     bucket.LoopsLeft = slot.LoopCount;
-                    if (slot.Inertialize && slot.Animation->IsLoaded() && RequestInertialization(context, slot.BlendInTime))
-                    {
-                        // Inertial start: cut in at once (eg. over another animation of the slot that is still blending), the Inertialization node above blends the change
-                        bucket.TimePosition = 0.0f;
-                        bucket.BlendInPosition = slot.BlendInTime;
-                        inertialStopTime = -1.0f;
-                    }
                     break;
                 }
             }
             if (inertialStopTime >= 0.0f)
+            {
+                // Blend from the stopped animation to the next one (the shorter of its blend out and the next one's blend in is used) or the input
                 RequestInertialization(context, inertialStopTime);
+            }
             if (bucket.Index == -1 || !slots[bucket.Index].Animation->IsLoaded())
             {
                 value = tryGetValue(node->GetBox(1), Value::Null);
@@ -2507,6 +2507,12 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         const float length = anim->GetLength();
         const bool loop = bucket.LoopsLeft != 0;
         const bool inertial = slot.Inertialize && context.InertializationDepth > 0;
+        if (inertial && bucket.LoopsDone == 0 && bucket.BlendInPosition <= 0.0f)
+        {
+            // Inertial start: cut in at once, the Inertialization node above blends the change (an animation already blended in by a cross-fade from the previous one keeps playing on)
+            RequestInertialization(context, slot.BlendInTime);
+            bucket.BlendInPosition = Math::Max(slot.BlendInTime, ZeroTolerance);
+        }
         float newTimePos = bucket.TimePosition + deltaTime;
         if (newTimePos >= length)
         {
@@ -2811,15 +2817,6 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         float requestTime = context.InertializationRequest;
         context.InertializationRequest = outerRequest;
 
-        // Game-driven request (eg. after changing the animation played by the input), when Request turns on
-        const bool request = (bool)tryGetValue(node->GetBox(2), node->Values[0]);
-        if (request && !bucket.LastRequest)
-        {
-            const float blendTime = Math::Max((float)tryGetValue(node->GetBox(3), node->Values[1]), 0.0f);
-            if (requestTime < 0.0f || blendTime < requestTime)
-                requestTime = blendTime;
-        }
-        bucket.LastRequest = request;
         const auto nodes = node->GetNodes(this, input);
         const int32 nodesCount = nodes->Nodes.Count();
 
@@ -2834,11 +2831,20 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             bucket.DynamicStateStart = start + 1;
             bucket.NodesCount = nodesCount;
             bucket.HistoryCount = 0;
+            bucket.BlendDuration = 0.0f;
         }
         byte* dynamic = &dynamicState[bucket.DynamicStateStart - 1];
         auto previous = (Transform*)dynamic;
         auto beforePrevious = (Transform*)(dynamic + historySize);
         auto offsets = (Inertialization::BoneOffset*)(dynamic + historySize * 2);
+        if (bucket.LastUpdateFrame == context.CurrentFrameIndex)
+        {
+            // Evaluated again in the same update (eg. the output is used twice): add the current offsets without moving the blend on
+            if (bucket.BlendDuration > 0.0f)
+                Inertialization::Apply(offsets, nodesCount, bucket.BlendPosition, nodes->Nodes.Get());
+            value = nodes;
+            break;
+        }
         if (bucket.LastUpdateFrame != context.CurrentFrameIndex - 1)
         {
             // Not used in the last update, so there is no previous pose to blend from
@@ -2847,19 +2853,22 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         }
         bucket.LastUpdateFrame = context.CurrentFrameIndex;
 
-        // Start the blend from the last output pose (it includes the current blend offsets, so a request during a blend doesn't pop)
-        if (requestTime >= 0.0f && bucket.HistoryCount > 0)
+        // Game-driven request (eg. after changing the animation played by the input), when Request turns on
+        const bool request = (bool)tryGetValue(node->GetBox(2), node->Values[0]);
+        if (request && !bucket.LastRequest)
         {
-            if (requestTime > ZeroTolerance)
-            {
-                Inertialization::Start(previous, bucket.HistoryCount > 1 ? beforePrevious : previous, nodes->Nodes.Get(), nodesCount, bucket.PreviousDeltaTime, requestTime, offsets);
-                bucket.BlendDuration = requestTime;
-            }
-            else
-            {
-                // Zero blend time just cuts to the new pose
-                bucket.BlendDuration = 0.0f;
-            }
+            const float blendTime = (float)tryGetValue(node->GetBox(3), node->Values[1]);
+            if (blendTime > ZeroTolerance && (requestTime < 0.0f || blendTime < requestTime))
+                requestTime = blendTime;
+        }
+        bucket.LastRequest = request;
+
+        // Start the blend from the last output pose (it includes the current blend offsets, so a request during a blend doesn't pop)
+        // Note: zero time requests are ignored (they are plain cuts) and root motion isn't blended (it changes at once)
+        if (requestTime > ZeroTolerance && bucket.HistoryCount > 0)
+        {
+            Inertialization::Start(previous, bucket.HistoryCount > 1 ? beforePrevious : previous, nodes->Nodes.Get(), nodesCount, bucket.PreviousDeltaTime, requestTime, offsets);
+            bucket.BlendDuration = requestTime;
             bucket.BlendPosition = 0.0f;
         }
 

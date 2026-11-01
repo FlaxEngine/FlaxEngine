@@ -109,8 +109,10 @@ void Inertialization::Start(const Transform* previous, const Transform* beforePr
         else
         {
             offset.RotationAxis = axisRaw / axisLength;
+            // Near a half turn the angle one frame before can wrap around to the other side, so take the shortest way between them
             const float angleBefore = GetTwistAngle(GetRotationOffset(b.Orientation, t.Orientation), offset.RotationAxis);
-            offset.Rotation.Setup(angle, GetVelocity(angle, angleBefore, previousDeltaTime), duration);
+            const float angleChange = Math::UnwindRadians(angle - angleBefore);
+            offset.Rotation.Setup(angle, GetVelocity(angleChange, 0.0f, previousDeltaTime), duration);
         }
     }
 }

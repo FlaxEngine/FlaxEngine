@@ -44,6 +44,12 @@ namespace
         return q.GetEuler().Y;
     }
 
+    // Signed angle (in radians) of the rotation about the axis
+    float GetTwist(const Quaternion& q, const Float3& axis)
+    {
+        return 2.0f * Math::Atan2(q.X * axis.X + q.Y * axis.Y + q.Z * axis.Z, q.W);
+    }
+
     void CheckSame(const Transform* a, const Transform* b, float tolerance)
     {
         for (int32 i = 0; i < Count; i++)
@@ -154,6 +160,55 @@ TEST_CASE("Inertialization")
         // Ends at the latest pose
         Blend(otherOffsets, other, BlendTime, result);
         CheckSame(result, other, 0.0001f);
+    }
+
+    SECTION("Multi Axis Rotation")
+    {
+        // The old pose turns about all axes at once and the offset axis is tilted
+        Transform before[Count], previous[Count], target[Count], start[Count], next[Count];
+        for (int32 i = 0; i < Count; i++)
+        {
+            const float t = 0.0f;
+            const float tb = -FrameTime;
+            previous[i] = Transform(Vector3(i, 0, 0), Quaternion::Euler(20.0f + 60.0f * t, 30.0f + 90.0f * t + i * 5.0f, 10.0f - 40.0f * t));
+            before[i] = Transform(Vector3(i, 0, 0), Quaternion::Euler(20.0f + 60.0f * tb, 30.0f + 90.0f * tb + i * 5.0f, 10.0f - 40.0f * tb));
+            target[i] = Transform(Vector3(i, 0, 0), Quaternion::Euler(-30.0f, 70.0f, 45.0f + i * 10.0f));
+        }
+        Inertialization::BoneOffset offsets[Count];
+        Inertialization::Start(previous, before, target, Count, FrameTime, BlendTime, offsets);
+        Blend(offsets, target, 0.0f, start);
+        CheckSame(start, previous, 0.001f);
+        Blend(offsets, target, BlendTime, next);
+        CheckSame(next, target, 0.0001f);
+
+        // Keeps the old turn speed about the offset axis
+        const float h = 1e-3f;
+        Blend(offsets, target, h, next);
+        for (int32 i = 0; i < Count; i++)
+        {
+            const Float3 axis = offsets[i].RotationAxis;
+            CHECK(Math::Abs(axis.LengthSquared() - 1.0f) < 0.001f);
+            const float oldTurn = GetTwist(previous[i].Orientation * Quaternion::Invert(before[i].Orientation), axis) / FrameTime;
+            const float turn = GetTwist(next[i].Orientation * Quaternion::Invert(start[i].Orientation), axis) / h;
+            CHECK(Math::Abs(turn - oldTurn) < Math::Abs(oldTurn) * 0.1f + 0.05f);
+        }
+    }
+
+    SECTION("Half Turn")
+    {
+        // The offset is just under a half turn while it was just over one a frame before: the velocity must stay the old turn speed, not wrap around
+        Transform before[Count], previous[Count], target[Count];
+        for (int32 i = 0; i < Count; i++)
+        {
+            before[i] = Transform(Vector3::Zero, Quaternion::Euler(0.0f, 181.0f, 0.0f));
+            previous[i] = Transform(Vector3::Zero, Quaternion::Euler(0.0f, 179.0f, 0.0f));
+            target[i] = Transform::Identity;
+        }
+        Inertialization::BoneOffset offsets[Count];
+        Inertialization::Start(previous, before, target, Count, FrameTime, BlendTime, offsets);
+        const float oldTurn = 2.0f * DegreesToRadians / FrameTime;
+        for (int32 i = 0; i < Count; i++)
+            CHECK(Math::Abs(Math::Abs(offsets[i].Rotation.C1) - oldTurn) < oldTurn * 0.05f);
     }
 
     SECTION("Same Pose")

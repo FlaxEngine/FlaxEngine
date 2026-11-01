@@ -778,6 +778,11 @@ void AnimatedModel::ClearBlendShapeWeights()
     _blendShapeMeshes.Clear();
 }
 
+void AnimatedModel::PlaySlotAnimation(const StringView& slotName, Animation* anim, float speed, float blendInTime, float blendOutTime, int32 loopCount)
+{
+    PlaySlotAnimation(slotName, anim, speed, blendInTime, blendOutTime, loopCount, false);
+}
+
 void AnimatedModel::PlaySlotAnimation(const StringView& slotName, Animation* anim, float speed, float blendInTime, float blendOutTime, int32 loopCount, bool inertialize)
 {
     PROFILE_MEM(Animations);

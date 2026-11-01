@@ -9,6 +9,7 @@
 /// Unlike a cross-fade, only the new pose is evaluated, and the old pose's motion carries on smoothly (no velocity jump) at the switch. A new request during a blend starts from the current output, so it doesn't pop.
 /// Each bone's translation, rotation and scale offsets decay along their own quintic curve that starts with the offset's value, velocity and acceleration and ends at zero with zero velocity and acceleration.
 /// The velocity kept is the old pose's motion along the offset (translation and scale) or about the offset's rotation axis; motion across it isn't carried on.
+/// The technique follows the public description in David Bollo's GDC 2018 talk "Inertialization: High-Performance Animation Transitions in Gears of War".
 /// </summary>
 class FLAXENGINE_API Inertialization
 {
