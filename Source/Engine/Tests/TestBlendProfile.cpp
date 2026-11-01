@@ -149,7 +149,7 @@ TEST_CASE("BlendProfile")
             float scale = 0.0f;
             BlendProfile::ReadTransitionData(reader, 1, id, scale);
             CHECK(!id.IsValid());
-            CHECK(scale == BlendProfile::DefaultScale);
+            CHECK(scale == (float)BlendProfile::DefaultScale);
             CHECK(reader.GetPosition() == 0);
         }
 
