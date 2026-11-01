@@ -27,6 +27,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
     {
         private Guid _linkedPrefabId;
         private UniformGridPanel _prefabButtonsGridPanel;
+        private PropertiesWindow _prefabButtonsWindow;
 
         /// <inheritdoc />
         protected override List<ItemInfo> GetItemsForType(ScriptType type)
@@ -87,8 +88,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
                             var headerPanel = propertiesWindow.HeaderPanel;
                             _prefabButtonsGridPanel.Parent = headerPanel;
                             _prefabButtonsGridPanel.SlotsHorizontally = 3;
-                            
-                            propertiesWindow.ResizeHeaderPanel(headerPanel.Offsets.Bottom + prefabButtonsHeight);
 
                             var selectPrefab = new Button
                             {
@@ -125,7 +124,11 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         };
                         viewChanges.Clicked += () => ViewChanges(viewChanges, new Float2(viewChanges.Width + Utilities.Constants.UIMargin, 20.0f));
 
+                        propertiesWindow.ResizeHeaderPanel(PropertiesWindow.DefaultHeaderPanelHeight + prefabButtonsHeight);
                         _prefabButtonsGridPanel.Bounds = new Rectangle(Utilities.Constants.UIMargin, Utilities.Constants.UIMargin, propertiesWindow.HeaderPanel.Width - 8, 20.0f);
+                        
+                        // Track which window owns these prefab buttons for conditional cleanup later
+                        _prefabButtonsWindow = propertiesWindow;
 
                         // Link event to update editor on prefab apply
                         _linkedPrefabId = prefab.ID;
@@ -214,14 +217,21 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             base.Deinitialize();
 
-            // Remove prefab buttons only if they are not needed anymore
-            var actor = Values.Count == 1 ? Values[0] as Actor : null;
-            if (actor != null && !actor.HasPrefabLink && _prefabButtonsGridPanel != null)
+            // Only clean up prefab buttons if this editor created them and they belong to the same window
+            if (_prefabButtonsGridPanel != null && _prefabButtonsWindow != null)
             {
-                _prefabButtonsGridPanel.Parent = null;
-                var propertiesPanel = Editor.Instance.Windows.PropertiesWin;
-                propertiesPanel.ResizeHeaderPanel(PropertiesWindow.DefaultHeaderPanelHeight);
+                // Verify the buttons still belong to this editor's window
+                var propertiesWindow = Editor.Instance.Windows.PropertiesWin;
+                if (_prefabButtonsWindow == propertiesWindow && _prefabButtonsGridPanel.Parent == propertiesWindow.HeaderPanel)
+                {
+                    _prefabButtonsGridPanel.DisposeChildren();
+                    _prefabButtonsGridPanel.Parent = null;
+                    propertiesWindow.ResizeHeaderPanel(PropertiesWindow.DefaultHeaderPanelHeight);
+                }
+                _prefabButtonsGridPanel = null;
             }
+            _prefabButtonsWindow = null;
+
 
             if (_linkedPrefabId != Guid.Empty)
             {
