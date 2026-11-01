@@ -259,9 +259,9 @@ void StrideWarp::Warp(const SkeletonNode* nodes, int32 nodesCount, const Setting
         const Real inputLengths = inputLine.Length() * inputKnee.Length();
         const float bent = inputLengths > ZeroTolerance ? Math::Saturate(((float)(inputNormalLength / inputLengths) - StraightLegSine) / (BentLegSine - StraightLegSine)) : 0.0f;
         Vector3 bendNormal = inputHinges[i] * (Real)(1.0f - bent);
-        if (bent > 0.0f)
+        if (inputNormalLength > ZeroTolerance)
         {
-            // A knee bending against the hinge cancels it out halfway, go with the input then
+            // Without a hinge, or with a knee bending against it so they cancel out, go with the input
             const Vector3 inputDirection = inputNormal / inputNormalLength;
             bendNormal += inputDirection * (Real)bent;
             if (bendNormal.LengthSquared() < 0.01f)

@@ -477,13 +477,28 @@ TEST_CASE("StrideWarp")
         auto fkOnly = settings;
         fkOnly.Legs[0].IKFoot = -1;
         fkOnly.Legs[1].IKFoot = -1;
-        Transform pose[Count];
-        setupSwingPose(pose, Vector3(-10, 8, 0));
+
+        // Barely bent either way, with the line swinging toward the knee (shorter stride) or away from it (longer stride, with the hip lowered so the foot can reach)
         const Vector3 line(0, -80, -30);
-        pose[CalfR].Translation = line * 0.5f + Vector3(0, 0.1f, -0.2f); // Barely bent backward
-        pose[FootR].Translation = line - pose[CalfR].Translation;
-        StrideWarp::Warp(nodes.Get(), Count, fkOnly, forward, 0.5f, 0.0f, pose);
-        CHECK(SamePosition(ModelTransform(nodes, pose, FootR).Translation, Vector3(-10, 10, -15)));
+        for (const float side : { 1.0f, -1.0f })
+        {
+            for (const Float2 warp : { Float2(0.5f, 0.0f), Float2(1.5f, 30.0f) })
+            {
+                Transform pose[Count];
+                setupSwingPose(pose, Vector3(-10, 8, 0));
+                const Vector3 kneeOffset = line * 0.5f + Vector3(0, 0.1f, -0.2f) * (Real)side;
+                pose[CalfR].Translation = kneeOffset;
+                pose[FootR].Translation = line - kneeOffset;
+                StrideWarp::Warp(nodes.Get(), Count, fkOnly, forward, warp.X, warp.Y, pose);
+                const Vector3 hip = ModelTransform(nodes, pose, ThighR).Translation;
+                const Vector3 knee = ModelTransform(nodes, pose, CalfR).Translation;
+                const Vector3 foot = ModelTransform(nodes, pose, FootR).Translation;
+                CHECK(SamePosition(foot, Vector3(-10, 10, -30 * warp.X)));
+                const Real sideBefore = Vector3::Dot(Vector3::Cross(line, kneeOffset), Vector3::UnitX);
+                const Real sideAfter = Vector3::Dot(Vector3::Cross(foot - hip, knee - hip), Vector3::UnitX);
+                CHECK(sideBefore * sideAfter > 0);
+            }
+        }
     }
 
     SECTION("With both feet raised the lower one still drives the pelvis drop")
