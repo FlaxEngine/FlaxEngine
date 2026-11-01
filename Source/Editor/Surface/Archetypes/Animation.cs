@@ -195,6 +195,21 @@ namespace FlaxEditor.Surface.Archetypes
             public const int FirstBlendPoseBoxIndex = 3;
 
             /// <summary>
+            /// The ID of the blend scale input box.
+            /// </summary>
+            public const int BlendScaleBoxId = FirstBlendPoseBoxIndex + MaxBlendPoses;
+
+            /// <summary>
+            /// The default blend time scale of the nodes in the blend mask.
+            /// </summary>
+            public const float DefaultBlendScale = 0.5f;
+
+            /// <summary>
+            /// The row of the first input blend pose box.
+            /// </summary>
+            private const int FirstBlendPoseRow = 4;
+
+            /// <summary>
             /// Gets or sets used blend poses count (visible to the user).
             /// </summary>
             public int BlendPosesCount
@@ -215,7 +230,7 @@ namespace FlaxEditor.Surface.Archetypes
             : base(id, context, nodeArch, groupArch)
             {
                 // Add buttons for adding/removing blend poses
-                _addButton = new Button(70, 94, 20, 20)
+                _addButton = new Button(70, 94 + FlaxEditor.Surface.Constants.LayoutOffsetY, 20, 20)
                 {
                     Text = "+",
                     Parent = this
@@ -241,7 +256,7 @@ namespace FlaxEditor.Surface.Archetypes
                 }
                 while (_blendPoses.Count < posesCount)
                 {
-                    var ylevel = 3 + _blendPoses.Count;
+                    var ylevel = FirstBlendPoseRow + _blendPoses.Count;
                     var arch = new NodeElementArchetype
                     {
                         Type = NodeElementType.Input,
@@ -265,8 +280,24 @@ namespace FlaxEditor.Surface.Archetypes
 
             private void UpdateHeight()
             {
-                float nodeHeight = 10 + (Mathf.Max(_blendPoses.Count, 1) + 3) * FlaxEditor.Surface.Constants.LayoutOffsetY;
+                // Fit the pose inputs and the blend mask picker (next to them)
+                float nodeHeight = 10 + (Mathf.Max(_blendPoses.Count, 5) + FirstBlendPoseRow) * FlaxEditor.Surface.Constants.LayoutOffsetY;
                 Height = nodeHeight + FlaxEditor.Surface.Constants.NodeMarginY * 2 + FlaxEditor.Surface.Constants.NodeHeaderHeight + FlaxEditor.Surface.Constants.NodeFooterSize;
+            }
+
+            /// <inheritdoc />
+            public override void OnLoading(SurfaceNodeActions action)
+            {
+                // Upgrade old nodes data (blend mask and blend scale added at [4] and [5])
+                if (Values.Length < 6)
+                {
+                    var oldLength = Values.Length;
+                    Array.Resize(ref Values, 6);
+                    for (int i = oldLength; i < Values.Length; i++)
+                        Values[i] = Archetype.DefaultValues[i];
+                }
+
+                base.OnLoading(action);
             }
 
             /// <inheritdoc />
@@ -278,7 +309,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _blendPoses.Clear();
                 for (int i = 0; i < Elements.Count; i++)
                 {
-                    if (Elements[i] is InputBox box && box.Archetype.BoxID >= FirstBlendPoseBoxIndex)
+                    if (Elements[i] is InputBox box && box.Archetype.BoxID >= FirstBlendPoseBoxIndex && box.Archetype.BoxID < FirstBlendPoseBoxIndex + MaxBlendPoses)
                     {
                         _blendPoses.Add(box);
                     }
@@ -708,15 +739,17 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 14,
                 Create = (id, context, arch, groupArch) => new BlendPose(id, context, arch, groupArch),
                 Title = "Blend Poses",
-                Description = "Select animation pose to pass by index (with blending)",
-                Flags = NodeFlags.AnimGraph,
-                Size = new Float2(200, 200),
+                Description = "Select animation pose to pass by index (with blending). The optional Blend Mask picks nodes (eg. legs and feet) that blend over Blend Scale times the blend duration, so they reach the new pose before the rest of the skeleton.",
+                Flags = NodeFlags.AnimGraph | NodeFlags.VariableValuesSize,
+                Size = new Float2(230, 200),
                 DefaultValues = new object[]
                 {
                     0,
                     0.2f,
                     8,
                     (int)AlphaBlendMode.HermiteCubic,
+                    Guid.Empty, // Blend mask
+                    BlendPose.DefaultBlendScale, // Blend scale
                 },
                 Elements = new[]
                 {
@@ -725,6 +758,9 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(1, "Blend Duration", true, typeof(float), 2, 1),
                     NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 2, "Mode:"),
                     NodeElementArchetype.Factory.ComboBox(40, Surface.Constants.LayoutOffsetY * 2, 100, 3, typeof(AlphaBlendMode)),
+                    NodeElementArchetype.Factory.Input(3, "Blend Scale", true, typeof(float), BlendPose.BlendScaleBoxId, 5),
+                    NodeElementArchetype.Factory.Text(125, Surface.Constants.LayoutOffsetY * 4, "Blend Mask:"),
+                    NodeElementArchetype.Factory.Asset(125, Surface.Constants.LayoutOffsetY * 5, 4, typeof(SkeletonMask)),
 
                     NodeElementArchetype.Factory.Input(3, "Pose 0", true, typeof(void), 3),
                     NodeElementArchetype.Factory.Input(4, "Pose 1", true, typeof(void), 4),

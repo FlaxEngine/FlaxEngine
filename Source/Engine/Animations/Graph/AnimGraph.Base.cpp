@@ -4,6 +4,7 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Content/Assets/SkeletonMask.h"
+#include "Engine/Animations/BlendProfile.h"
 #include "Engine/Content/Assets/AnimationGraphFunction.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Utilities/Delaunay2D.h"
@@ -262,6 +263,17 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
         case 14:
         {
             ADD_BUCKET(BlendPoseBucketInit);
+
+            // Load the blend profile mask (optional)
+            if (n->Values.Count() > 4 && n->Values[4].Type.Type == VariantType::Guid)
+            {
+                const Guid maskId = (Guid)n->Values[4];
+                if (maskId.IsValid())
+                {
+                    n->Assets.Resize(1);
+                    n->Assets[0] = (Asset*)Content::LoadAsync<SkeletonMask>(maskId);
+                }
+            }
             break;
         }
         // State Machine
@@ -416,9 +428,10 @@ void AnimGraphBase::LoadStateTransitions(AnimGraphNode::StateBaseData& data, Val
     {
         MemoryReadStream stream((byte*)transitionsData.AsBlob.Data, transitionsData.AsBlob.Length);
 
+        // Version 2 adds the blend profile (mask and scale) to each transition
         int32 version;
         stream.ReadInt32(&version);
-        if (version != 1)
+        if (version != 1 && version != 2)
         {
             LOG(Warning, "Invalid version of the Anim Graph state transitions data.");
             return;
@@ -455,6 +468,16 @@ void AnimGraphBase::LoadStateTransitions(AnimGraphNode::StateBaseData& data, Val
             transition.BlendMode = (AlphaBlendMode)transitionData.BlendMode;
             transition.Destination = GetNode(transitionData.Destination);
             transition.RuleGraph = nullptr;
+            transition.BlendMask = nullptr;
+            transition.BlendScale = BlendProfile::DefaultScale;
+            if (version >= 2)
+            {
+                Guid blendMaskId;
+                stream.Read(blendMaskId);
+                stream.ReadFloat(&transition.BlendScale);
+                if (blendMaskId.IsValid())
+                    transition.BlendMask = Content::LoadAsync<SkeletonMask>(blendMaskId);
+            }
 
             int32 ruleSize;
             stream.ReadInt32(&ruleSize);

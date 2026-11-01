@@ -566,6 +566,7 @@ namespace FlaxEditor.Surface.Archetypes
                         Order = 0,
                         BlendDuration = 0.1f,
                         BlendMode = AlphaBlendMode.HermiteCubic,
+                        BlendScale = StateMachineTransition.DefaultBlendScale,
                     };
                 }
 
@@ -816,8 +817,9 @@ namespace FlaxEditor.Surface.Archetypes
                     using (var stream = new MemoryStream(bytes))
                     using (var reader = new BinaryReader(stream))
                     {
+                        // Version 2 adds the blend profile (mask and scale) to each transition
                         int version = reader.ReadInt32();
-                        if (version != 1)
+                        if (version != 1 && version != 2)
                         {
                             Editor.LogError("Invalid state machine state data version.");
                             return;
@@ -836,6 +838,16 @@ namespace FlaxEditor.Surface.Archetypes
                             data.Unused0 = reader.ReadInt32();
                             data.Unused1 = reader.ReadInt32();
                             data.Unused2 = reader.ReadInt32();
+                            if (version >= 2)
+                            {
+                                data.BlendMask = reader.ReadGuid();
+                                data.BlendScale = reader.ReadSingle();
+                            }
+                            else
+                            {
+                                data.BlendMask = Guid.Empty;
+                                data.BlendScale = StateMachineTransition.DefaultBlendScale;
+                            }
 
                             int ruleSize = reader.ReadInt32();
                             byte[] rule = null;
@@ -883,7 +895,17 @@ namespace FlaxEditor.Surface.Archetypes
                         using (var stream = new MemoryStream(512))
                         using (var writer = new BinaryWriter(stream))
                         {
-                            writer.Write(1);
+                            // Use version 2 only when a transition has a blend profile, so graphs without one stay readable by older engine versions
+                            int version = 1;
+                            for (int i = 0; i < Transitions.Count; i++)
+                            {
+                                if (Transitions[i].HasBlendProfileData)
+                                {
+                                    version = 2;
+                                    break;
+                                }
+                            }
+                            writer.Write(version);
                             writer.Write(Transitions.Count);
 
                             for (int i = 0; i < Transitions.Count; i++)
@@ -900,6 +922,11 @@ namespace FlaxEditor.Surface.Archetypes
                                 writer.Write(data.Unused0);
                                 writer.Write(data.Unused1);
                                 writer.Write(data.Unused2);
+                                if (version >= 2)
+                                {
+                                    writer.WriteGuid(ref data.BlendMask);
+                                    writer.Write(data.BlendScale);
+                                }
 
                                 if (rule == null || rule.Length == 0)
                                 {
@@ -1599,8 +1626,9 @@ namespace FlaxEditor.Surface.Archetypes
             /// </summary>
             /// <remarks>
             /// It does not store GC objects references to make it more lightweight. Transition rule bytes data is stores in a separate way.
+            /// The blend profile fields (BlendMask and BlendScale) are stored only in the version 2 of the transitions data.
             /// </remarks>
-            [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 32)]
+            [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 52)]
             internal struct Data
             {
                 // Must match AnimGraphStateTransition::FlagTypes
@@ -1656,6 +1684,16 @@ namespace FlaxEditor.Surface.Archetypes
                 /// The unused data 2.
                 /// </summary>
                 public int Unused2;
+
+                /// <summary>
+                /// The blend profile skeleton mask asset ID (optional).
+                /// </summary>
+                public Guid BlendMask;
+
+                /// <summary>
+                /// The blend time scale of the nodes in the blend profile mask.
+                /// </summary>
+                public float BlendScale;
 
                 public bool HasFlag(FlagTypes flag)
                 {
@@ -1773,6 +1811,51 @@ namespace FlaxEditor.Surface.Archetypes
                     SourceState.SaveTransitions(true);
                 }
             }
+
+            /// <summary>
+            /// The default blend time scale of the nodes in the blend profile mask.
+            /// </summary>
+            internal const float DefaultBlendScale = 0.5f;
+
+            /// <summary>
+            /// The blend profile mask (optional). Nodes in the mask (eg. legs and feet) blend over Blend Scale times the blend duration, so they reach the destination pose before the rest of the skeleton.
+            /// </summary>
+            [EditorOrder(62), DefaultValue(null)]
+            public SkeletonMask BlendMask
+            {
+                get => FlaxEngine.Content.LoadAsync<SkeletonMask>(_data.BlendMask);
+                set
+                {
+                    _data.BlendMask = value?.ID ?? Guid.Empty;
+                    SourceState.SaveTransitions(true);
+                }
+            }
+
+            /// <summary>
+            /// The blend time scale of the nodes in the Blend Mask (in range 0-1). For example, 0.5 makes them finish blending in half of the blend duration.
+            /// </summary>
+            [EditorOrder(64), DefaultValue(DefaultBlendScale), Limit(0, 1.0f, 0.01f), VisibleIf(nameof(HasBlendMask))]
+            public float BlendScale
+            {
+                get => _data.BlendScale;
+                set
+                {
+                    _data.BlendScale = Mathf.Saturate(value);
+                    SourceState.SaveTransitions(true);
+                }
+            }
+
+            /// <summary>
+            /// Gets a value indicating whether the transition has a blend profile mask.
+            /// </summary>
+            [HideInEditor]
+            public bool HasBlendMask => _data.BlendMask != Guid.Empty;
+
+            /// <summary>
+            /// Gets a value indicating whether the transition has blend profile data to save (a mask or a non-default scale).
+            /// </summary>
+            [HideInEditor]
+            internal bool HasBlendProfileData => _data.BlendMask != Guid.Empty || !Mathf.NearEqual(_data.BlendScale, DefaultBlendScale);
 
             /// <summary>
             /// Transition interruption options (flags, can select multiple values).

@@ -6,6 +6,7 @@
 #include "Engine/Content/Assets/SkeletonMask.h"
 #include "Engine/Content/Assets/AnimationGraphFunction.h"
 #include "Engine/Animations/AlphaBlend.h"
+#include "Engine/Animations/BlendProfile.h"
 #include "Engine/Animations/AnimEvent.h"
 #include "Engine/Animations/InverseKinematics.h"
 #include "Engine/Level/Actors/AnimatedModel.h"
@@ -822,6 +823,53 @@ Variant AnimGraphExecutor::Blend(AnimGraphNode* node, const Value& poseA, const 
     Transform::Lerp(nodesA->RootMotion, nodesB->RootMotion, alpha, nodes->RootMotion);
     nodes->Position = Math::Lerp(nodesA->Position, nodesB->Position, alpha);
     nodes->Length = Math::Lerp(nodesA->Length, nodesB->Length, alpha);
+
+    return nodes;
+}
+
+Variant AnimGraphExecutor::Blend(AnimGraphNode* node, const Value& poseA, const Value& poseB, float alpha, AlphaBlendMode alphaMode, SkeletonMask* blendMask, float blendScale)
+{
+    // Use the blend profile only when its mask is ready and fits the skeleton
+    const BitArray<>* nodesMask = nullptr;
+    if (blendMask && !blendMask->WaitForLoaded())
+    {
+        nodesMask = &blendMask->GetNodesMask();
+        if (nodesMask->Count() < _skeletonNodesCount)
+            nodesMask = nullptr;
+    }
+    if (!nodesMask)
+        return Blend(node, poseA, poseB, alpha, alphaMode);
+    ANIM_GRAPH_PROFILE_EVENT("Blend Pose (Profile)");
+
+    if (isnan(alpha) || isinf(alpha))
+        alpha = 0;
+    alpha = Math::Saturate(alpha);
+
+    const auto nodes = node->GetNodes(this);
+    auto nodesA = static_cast<AnimGraphImpulse*>(poseA.AsPointer);
+    auto nodesB = static_cast<AnimGraphImpulse*>(poseB.AsPointer);
+    if (!ANIM_GRAPH_IS_VALID_PTR(poseA))
+        nodesA = GetEmptyNodes();
+    if (!ANIM_GRAPH_IS_VALID_PTR(poseB))
+        nodesB = GetEmptyNodes();
+
+    const int32 nodesCount = nodes->Nodes.Count();
+    Array<float, InlinedAllocation<256>> weights;
+    weights.Resize(nodesCount, false);
+    BlendProfile::ComputeWeights(alpha, alphaMode, nodesMask, blendScale, nodesCount, weights.Get());
+    const Transform* srcA = nodesA->Nodes.Get();
+    const Transform* srcB = nodesB->Nodes.Get();
+    Transform* dst = nodes->Nodes.Get();
+    for (int32 i = 0; i < nodesCount; i++)
+    {
+        Transform::Lerp(srcA[i], srcB[i], weights[i], dst[i]);
+    }
+
+    // Root motion and the playback position follow the whole blend
+    const float baseAlpha = AlphaBlend::Process(alpha, alphaMode);
+    Transform::Lerp(nodesA->RootMotion, nodesB->RootMotion, baseAlpha, nodes->RootMotion);
+    nodes->Position = Math::Lerp(nodesA->Position, nodesB->Position, baseAlpha);
+    nodes->Length = Math::Lerp(nodesA->Length, nodesB->Length, baseAlpha);
 
     return nodes;
 }
@@ -1804,6 +1852,8 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         // [1]: float Blend Duration
         // [2]: int Pose Count
         // [3]: AlphaBlendMode Mode
+        // [4]: Guid Blend Mask (optional, added later)
+        // [5]: float Blend Scale (optional, added later)
 
         auto& bucket = context.Data->State[node->BucketIndex].BlendPose;
         const int16 poseIndex = (int32)tryGetValue(node->GetBox(1), node->Values[0]);
@@ -1837,7 +1887,11 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             const float alpha = bucket.TransitionPosition / blendDuration;
             const auto valueA = tryGetValue(node->GetBox(FirstBlendPoseBoxIndex + bucket.PreviousBlendPoseIndex), Value::Null);
             const auto valueB = tryGetValue(node->GetBox(FirstBlendPoseBoxIndex + bucket.BlendPoseIndex), Value::Null);
-            value = Blend(node, valueA, valueB, alpha, mode);
+            SkeletonMask* blendMask = node->Assets.Count() != 0 ? (SkeletonMask*)node->Assets[0].Get() : nullptr;
+            float blendScale = BlendProfile::DefaultScale;
+            if (node->Values.Count() > 5)
+                blendScale = (float)tryGetValue(node->TryGetBox(11), node->Values[5]);
+            value = Blend(node, valueA, valueB, alpha, mode, blendMask, blendScale);
         }
 
         break;
@@ -2067,7 +2121,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 // Evaluate the base pose from the time when transition was interrupted
                 const auto destinationState = SampleState(context, bucket.BaseTransition->Destination);
                 const float alpha = bucket.BaseTransitionPosition / bucket.BaseTransition->BlendDuration;
-                value = Blend(node, value, destinationState, alpha, bucket.BaseTransition->BlendMode);
+                value = Blend(node, value, destinationState, alpha, bucket.BaseTransition->BlendMode, bucket.BaseTransition->BlendMask.Get(), bucket.BaseTransition->BlendScale);
             }
         }
         else
@@ -2084,7 +2138,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
 
             // Perform blending
             const float alpha = bucket.TransitionPosition / bucket.ActiveTransition->BlendDuration;
-            value = Blend(node, value, destinationState, alpha, bucket.ActiveTransition->BlendMode);
+            value = Blend(node, value, destinationState, alpha, bucket.ActiveTransition->BlendMode, bucket.ActiveTransition->BlendMask.Get(), bucket.ActiveTransition->BlendScale);
         }
 
         bucket.LastUpdateFrame = context.CurrentFrameIndex;
