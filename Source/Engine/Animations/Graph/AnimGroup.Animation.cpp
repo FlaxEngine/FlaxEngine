@@ -6,6 +6,7 @@
 #include "Engine/Content/Assets/SkeletonMask.h"
 #include "Engine/Content/Assets/AnimationGraphFunction.h"
 #include "Engine/Animations/AlphaBlend.h"
+#include "Engine/Animations/OrientationWarp.h"
 #include "Engine/Animations/AnimEvent.h"
 #include "Engine/Animations/InverseKinematics.h"
 #include "Engine/Level/Actors/AnimatedModel.h"
@@ -2712,6 +2713,39 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
     {
         auto* actor = ScriptingObject::Cast<Actor>(context.Data->Object);
         value = actor ? actor->GetPerInstanceRandom() : 0.0f;
+        break;
+    }
+    // Orientation Warp
+    case 39:
+    {
+        auto input = tryGetValue(node->GetBox(1), Value::Null);
+        const auto& data = node->Data.OrientationWarp;
+        const float angle = (float)tryGetValue(node->GetBox(2), node->Values[5]);
+        const float alpha = Math::Saturate((float)tryGetValue(node->GetBox(3), node->Values[6]));
+        const float speed = (float)tryGetValue(node->GetBox(4), node->Values[7]);
+        const float minSpeed = (float)node->Values[8];
+
+        // Off below the minimum speed (eg. when standing still), fading in above it
+        const float warpAngle = angle * alpha * OrientationWarp::GetSpeedWeight(speed, minSpeed);
+        if (Math::IsZero(warpAngle) || !_graph.BaseModel)
+        {
+            value = input;
+            break;
+        }
+        const auto nodes = node->GetNodes(this, input);
+        OrientationWarp::Settings settings;
+        settings.BodyRoot = data.BodyRoot;
+        settings.IKFootRoot = data.IKFootRoot;
+        settings.SpineStart = data.SpineStart;
+        settings.SpineEnd = data.SpineEnd;
+        settings.KeepNode = data.KeepNode;
+        settings.Distribution = (float)node->Values[9];
+        const int32 upAxis = Math::Clamp((int32)node->Values[10], 0, 2);
+        settings.UpAxis = upAxis == 0 ? Float3::UnitX : upAxis == 1 ? Float3::UnitY : Float3::UnitZ;
+        const auto& skeletonNodes = _graph.BaseModel->Skeleton.Nodes;
+        const int32 nodesCount = Math::Min(skeletonNodes.Count(), nodes->Nodes.Count());
+        OrientationWarp::Warp(skeletonNodes.Get(), nodesCount, settings, warpAngle, nodes->Nodes.Get());
+        value = nodes;
         break;
     }
     // Instance Transform

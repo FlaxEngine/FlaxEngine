@@ -1147,6 +1147,52 @@ namespace FlaxEditor.Surface.Archetypes
             },
             new NodeArchetype
             {
+                TypeID = 39,
+                Title = "Orientation Warp",
+                Description = "Turns the lower body of the pose by the angle (in degrees) about the up axis, toward the actual movement direction, while the spine chain turns back so the upper body keeps facing where it did. Lets a few directional movement animations cover any travel angle. Off when Speed is below Min Speed, fading in over the next quarter of Min Speed. Root motion isn't turned.",
+                Flags = NodeFlags.AnimGraph | NodeFlags.FixedSize,
+                Size = new Float2(270, 290),
+                DefaultValues = new object[]
+                {
+                    string.Empty, // Body root node
+                    string.Empty, // IK foot root node
+                    string.Empty, // Spine start node
+                    string.Empty, // Spine end node
+                    string.Empty, // Keep node
+                    0.0f, // Angle
+                    1.0f, // Alpha
+                    0.0f, // Speed
+                    0.0f, // Min speed
+                    0.75f, // Distribution
+                    1, // Up axis (Y)
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(void), 0),
+                    NodeElementArchetype.Factory.Input(0, string.Empty, true, typeof(void), 1),
+                    NodeElementArchetype.Factory.Input(1, "Angle", true, typeof(float), 2, 5),
+                    NodeElementArchetype.Factory.Input(2, "Alpha", true, typeof(float), 3, 6),
+                    NodeElementArchetype.Factory.Input(3, "Speed", true, typeof(float), 4, 7),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 4, "Min Speed:", tooltip: "The speed below which the node is off. It fades in up to full over the next quarter of this speed (eg. 80-100 for 80). 0 to always warp."),
+                    NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 4, 8, -1, 0.0f),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 5, "Body Root:", tooltip: "The lower body node (eg. pelvis or root). It turns about the up axis going through the model origin, with everything below it."),
+                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(110, Surface.Constants.LayoutOffsetY * 5, 150, 0),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 6, "IK Foot Root:", tooltip: "Optional IK feet parent node (eg. ik_foot_root). It turns the same way as the body root."),
+                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(110, Surface.Constants.LayoutOffsetY * 6, 150, 1),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 7, "Spine Start:", tooltip: "The first (lowest) node of the spine chain that turns back (eg. spine_01)."),
+                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(110, Surface.Constants.LayoutOffsetY * 7, 150, 2),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 8, "Spine End:", tooltip: "The last (highest) node of the spine chain (eg. the chest). It keeps the model space rotation it had in the input pose."),
+                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(110, Surface.Constants.LayoutOffsetY * 8, 150, 3),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 9, "Keep Node:", tooltip: "Optional node that keeps its whole model space transformation from the input pose (eg. ik_hand_root when the body root is the skeleton root)."),
+                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(110, Surface.Constants.LayoutOffsetY * 9, 150, 4),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 10, "Distribution:", tooltip: "How the spine chain shares the turn back (0-1). At 0 the first spine node takes it all back; at 1 every spine node takes an equal share."),
+                    NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 10, 9, -1, 0.0f, 1.0f),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 11, "Up Axis:", tooltip: "The model space axis the body turns about."),
+                    NodeElementArchetype.Factory.ComboBox(110, Surface.Constants.LayoutOffsetY * 11, 60, 10, new[] { "X", "Y", "Z" }),
+                }
+            },
+            new NodeArchetype
+            {
                 TypeID = 37,
                 Title = "Instance Transform",
                 Description = "Animated model transformation (in world space).",

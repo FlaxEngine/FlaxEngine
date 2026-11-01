@@ -578,6 +578,15 @@ public:
         int32 DstNodeIndex;
     };
 
+    struct OrientationWarpData
+    {
+        int32 BodyRoot;
+        int32 IKFootRoot;
+        int32 SpineStart;
+        int32 SpineEnd;
+        int32 KeepNode;
+    };
+
     /// <summary>
     /// Custom cached data per node type. Compact to use as small amount of memory as possible.
     /// </summary>
@@ -595,6 +604,7 @@ public:
             AnimationGraphFunctionData AnimationGraphFunction;
             TransformNodeData TransformNode;
             CopyNodeData CopyNode;
+            OrientationWarpData OrientationWarp;
         };
     };
 
