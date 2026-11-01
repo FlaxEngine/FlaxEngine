@@ -2,6 +2,9 @@
 
 #include "Engine/Animations/BlendProfile.h"
 #include "Engine/Core/Collections/BitArray.h"
+#include "Engine/Core/Math/Quaternion.h"
+#include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Serialization/MemoryWriteStream.h"
 #include <ThirdParty/catch2/catch.hpp>
 
 namespace
@@ -111,5 +114,56 @@ TEST_CASE("BlendProfile")
         Weights(0.2f, 0.1f, AlphaBlendMode::Linear, &smallMask, 0.5f, weights);
         for (int32 i = 0; i < Count; i++)
             CHECK(weights[i] == Approx(0.5f));
+    }
+
+    SECTION("Blend Poses")
+    {
+        // Masked nodes follow their own weight, the others the base weight
+        Transform poseA[Count], poseB[Count], result[Count];
+        for (int32 i = 0; i < Count; i++)
+        {
+            poseA[i] = Transform(Vector3(0, 10, 0));
+            poseB[i] = Transform(Vector3(10, 10, 0), Quaternion::Euler(0, 90, 0));
+        }
+        float weights[Count];
+        Weights(0.2f, 0.1f, AlphaBlendMode::Linear, &mask, 0.5f, weights);
+        BlendProfile::Blend(poseA, poseB, weights, Count, result);
+        CHECK(Vector3::NearEqual(result[Foot].Translation, poseB[Foot].Translation));
+        CHECK(Math::Abs(Quaternion::Dot(result[Foot].Orientation, poseB[Foot].Orientation)) > 1.0f - 1e-4f);
+        CHECK(Vector3::NearEqual(result[Spine].Translation, Vector3(5, 10, 0)));
+        CHECK(Math::Abs(Quaternion::Dot(result[Spine].Orientation, Quaternion::Euler(0, 45, 0))) > 1.0f - 1e-4f);
+    }
+
+    SECTION("Transition Data")
+    {
+        Guid maskId(1, 2, 3, 4);
+        MemoryWriteStream writer;
+        writer.Write(maskId);
+        writer.WriteFloat(0.25f);
+        writer.WriteInt32(1234); // Next data (eg. the transition rule size)
+
+        // Version 1 has no profile: nothing is read and the defaults are used
+        {
+            MemoryReadStream reader(writer.GetHandle(), writer.GetPosition());
+            Guid id;
+            float scale = 0.0f;
+            BlendProfile::ReadTransitionData(reader, 1, id, scale);
+            CHECK(!id.IsValid());
+            CHECK(scale == BlendProfile::DefaultScale);
+            CHECK(reader.GetPosition() == 0);
+        }
+
+        // Version 2 reads the mask ID and the scale
+        {
+            MemoryReadStream reader(writer.GetHandle(), writer.GetPosition());
+            Guid id;
+            float scale = 0.0f;
+            BlendProfile::ReadTransitionData(reader, 2, id, scale);
+            CHECK(id == maskId);
+            CHECK(scale == 0.25f);
+            int32 next = 0;
+            reader.ReadInt32(&next);
+            CHECK(next == 1234);
+        }
     }
 }

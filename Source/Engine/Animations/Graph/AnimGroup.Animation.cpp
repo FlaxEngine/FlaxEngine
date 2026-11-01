@@ -857,13 +857,7 @@ Variant AnimGraphExecutor::Blend(AnimGraphNode* node, const Value& poseA, const 
     Array<float, InlinedAllocation<256>> weights;
     weights.Resize(nodesCount, false);
     BlendProfile::ComputeWeights(alpha, alphaMode, nodesMask, blendScale, nodesCount, weights.Get());
-    const Transform* srcA = nodesA->Nodes.Get();
-    const Transform* srcB = nodesB->Nodes.Get();
-    Transform* dst = nodes->Nodes.Get();
-    for (int32 i = 0; i < nodesCount; i++)
-    {
-        Transform::Lerp(srcA[i], srcB[i], weights[i], dst[i]);
-    }
+    BlendProfile::Blend(nodesA->Nodes.Get(), nodesB->Nodes.Get(), weights.Get(), nodesCount, nodes->Nodes.Get());
 
     // Root motion and the playback position follow the whole blend
     const float baseAlpha = AlphaBlend::Process(alpha, alphaMode);
@@ -1845,6 +1839,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         ASSERT(box->ID == 0);
         const int32 FirstBlendPoseBoxIndex = 3;
         const int32 MaxBlendPoses = 8;
+        const int32 BlendScaleBoxId = FirstBlendPoseBoxIndex + MaxBlendPoses; // Must match BlendPose.BlendScaleBoxId in C#
         value = Value::Null;
 
         // Note data layout:
@@ -1890,7 +1885,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             SkeletonMask* blendMask = node->Assets.Count() != 0 ? (SkeletonMask*)node->Assets[0].Get() : nullptr;
             float blendScale = BlendProfile::DefaultScale;
             if (node->Values.Count() > 5)
-                blendScale = (float)tryGetValue(node->TryGetBox(11), node->Values[5]);
+                blendScale = (float)tryGetValue(node->TryGetBox(BlendScaleBoxId), node->Values[5]);
             value = Blend(node, valueA, valueB, alpha, mode, blendMask, blendScale);
         }
 

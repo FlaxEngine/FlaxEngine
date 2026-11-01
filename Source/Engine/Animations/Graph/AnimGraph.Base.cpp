@@ -71,6 +71,14 @@ void AnimGraphBase::GetReferences(Array<Guid>& output) const
 {
     VisjectGraph::GetReferences(output);
 
+    // Collect blend profile masks used by state machine transitions (stored in the transitions data, not as node values)
+    for (const AnimGraphStateTransition& transition : StateTransitions)
+    {
+        const Guid maskId = transition.BlendMask.GetID();
+        if (maskId.IsValid())
+            output.Add(maskId);
+    }
+
     // Collect references from nested graph (assets used in state machines)
     for (const auto* subGraph : SubGraphs)
     {
@@ -468,16 +476,9 @@ void AnimGraphBase::LoadStateTransitions(AnimGraphNode::StateBaseData& data, Val
             transition.BlendMode = (AlphaBlendMode)transitionData.BlendMode;
             transition.Destination = GetNode(transitionData.Destination);
             transition.RuleGraph = nullptr;
-            transition.BlendMask = nullptr;
-            transition.BlendScale = BlendProfile::DefaultScale;
-            if (version >= 2)
-            {
-                Guid blendMaskId;
-                stream.Read(blendMaskId);
-                stream.ReadFloat(&transition.BlendScale);
-                if (blendMaskId.IsValid())
-                    transition.BlendMask = Content::LoadAsync<SkeletonMask>(blendMaskId);
-            }
+            Guid blendMaskId;
+            BlendProfile::ReadTransitionData(stream, version, blendMaskId, transition.BlendScale);
+            transition.BlendMask = blendMaskId.IsValid() ? Content::LoadAsync<SkeletonMask>(blendMaskId) : nullptr;
 
             int32 ruleSize;
             stream.ReadInt32(&ruleSize);

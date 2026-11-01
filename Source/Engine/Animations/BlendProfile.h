@@ -4,6 +4,10 @@
 
 #include "Engine/Animations/AlphaBlend.h"
 #include "Engine/Core/Collections/BitArray.h"
+#include "Engine/Core/Math/Transform.h"
+#include "Engine/Core/Types/Guid.h"
+
+class ReadStream;
 
 /// <summary>
 /// Blend profile utilities: lets a set of skeleton nodes (picked by a skeleton mask) finish a pose blend faster than the rest of the skeleton.
@@ -36,4 +40,23 @@ public:
     /// <param name="nodesCount">The amount of skeleton nodes.</param>
     /// <param name="outWeights">The output weights (one per node, in range 0-1).</param>
     static void ComputeWeights(float alpha, AlphaBlendMode mode, const BitArray<>* mask, float scale, int32 nodesCount, float* outWeights);
+
+    /// <summary>
+    /// Blends two poses with a weight per node.
+    /// </summary>
+    /// <param name="poseA">The source pose node transformations.</param>
+    /// <param name="poseB">The destination pose node transformations.</param>
+    /// <param name="weights">The per-node weights (in range 0-1).</param>
+    /// <param name="nodesCount">The amount of skeleton nodes.</param>
+    /// <param name="outPose">The output pose node transformations.</param>
+    static void Blend(const Transform* poseA, const Transform* poseB, const float* weights, int32 nodesCount, Transform* outPose);
+
+    /// <summary>
+    /// Reads the blend profile of a state machine transition from the Anim Graph transitions data. Version 1 data has no profile (nothing is read and the defaults are returned). Version 2 stores the mask asset ID and the scale after the fixed transition data.
+    /// </summary>
+    /// <param name="stream">The transitions data stream.</param>
+    /// <param name="version">The transitions data version.</param>
+    /// <param name="maskId">The output blend mask asset ID (empty if none).</param>
+    /// <param name="scale">The output blend scale.</param>
+    static void ReadTransitionData(ReadStream& stream, int32 version, Guid& maskId, float& scale);
 };

@@ -762,14 +762,14 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Text(125, Surface.Constants.LayoutOffsetY * 4, "Blend Mask:"),
                     NodeElementArchetype.Factory.Asset(125, Surface.Constants.LayoutOffsetY * 5, 4, typeof(SkeletonMask)),
 
-                    NodeElementArchetype.Factory.Input(3, "Pose 0", true, typeof(void), 3),
-                    NodeElementArchetype.Factory.Input(4, "Pose 1", true, typeof(void), 4),
-                    NodeElementArchetype.Factory.Input(5, "Pose 2", true, typeof(void), 5),
-                    NodeElementArchetype.Factory.Input(6, "Pose 3", true, typeof(void), 6),
-                    NodeElementArchetype.Factory.Input(7, "Pose 4", true, typeof(void), 7),
-                    NodeElementArchetype.Factory.Input(8, "Pose 5", true, typeof(void), 8),
-                    NodeElementArchetype.Factory.Input(9, "Pose 6", true, typeof(void), 9),
-                    NodeElementArchetype.Factory.Input(10, "Pose 7", true, typeof(void), 10),
+                    NodeElementArchetype.Factory.Input(4, "Pose 0", true, typeof(void), 3),
+                    NodeElementArchetype.Factory.Input(5, "Pose 1", true, typeof(void), 4),
+                    NodeElementArchetype.Factory.Input(6, "Pose 2", true, typeof(void), 5),
+                    NodeElementArchetype.Factory.Input(7, "Pose 3", true, typeof(void), 6),
+                    NodeElementArchetype.Factory.Input(8, "Pose 4", true, typeof(void), 7),
+                    NodeElementArchetype.Factory.Input(9, "Pose 5", true, typeof(void), 8),
+                    NodeElementArchetype.Factory.Input(10, "Pose 6", true, typeof(void), 9),
+                    NodeElementArchetype.Factory.Input(11, "Pose 7", true, typeof(void), 10),
                 }
             },
             new NodeArchetype
