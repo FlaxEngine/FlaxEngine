@@ -58,6 +58,9 @@ void Inertialization::Curve::Setup(float value, float velocity, float duration)
     if (velocity < 0.0f)
         duration = Math::Min(duration, -5.0f * value / velocity);
 
+    // Moving away from zero would swing past both poses before coming back, so never go further than where the blend started
+    velocity = Math::Min(velocity, 0.0f);
+
     // Start with the acceleration that keeps the jerk at the start low, never accelerating away from zero
     const float t = duration;
     const float t2 = t * t;

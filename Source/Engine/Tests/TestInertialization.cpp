@@ -11,13 +11,13 @@ namespace
     constexpr float FrameTime = 1.0f / 60.0f;
     constexpr float BlendTime = 0.2f;
 
-    // Old pose: bones moving along +X and turning about Y (one frame apart). New pose: somewhere else.
+    // Old pose: bones moving along -X and turning about Y (one frame apart). New pose: somewhere else, ahead of that motion.
     void SetupOldPose(Transform* pose, float time)
     {
         for (int32 i = 0; i < Count; i++)
         {
-            pose[i].Translation = Vector3(10.0f * i + 50.0f * time, 5.0f, -3.0f * i);
-            pose[i].Orientation = Quaternion::Euler(0.0f, 30.0f + 90.0f * time + 10.0f * i, 0.0f);
+            pose[i].Translation = Vector3(10.0f * i - 50.0f * time, 5.0f, -3.0f * i);
+            pose[i].Orientation = Quaternion::Euler(0.0f, 30.0f - 90.0f * time + 10.0f * i, 0.0f);
             pose[i].Scale = Float3::One;
         }
     }
@@ -66,14 +66,14 @@ TEST_CASE("Inertialization")
     SECTION("Curve")
     {
         Inertialization::Curve curve;
-        curve.Setup(1.0f, 2.0f, BlendTime);
+        curve.Setup(1.0f, -2.0f, BlendTime);
         CHECK(Math::NearEqual(curve.Evaluate(0.0f), 1.0f));
         CHECK(Math::NearEqual(curve.Evaluate(BlendTime), 0.0f));
         CHECK(Math::NearEqual(curve.Evaluate(1.0f), 0.0f));
 
         // Starts with the given velocity and ends at rest
         const float h = 1e-4f;
-        CHECK(Math::Abs((curve.Evaluate(h) - curve.Evaluate(0.0f)) / h - 2.0f) < 0.01f);
+        CHECK(Math::Abs((curve.Evaluate(h) - curve.Evaluate(0.0f)) / h + 2.0f) < 0.01f);
         CHECK(Math::Abs((curve.Evaluate(BlendTime - h) - curve.Evaluate(BlendTime - 2 * h)) / h) < 0.01f);
 
         // Fast motion toward zero reaches it sooner instead of overshooting past it
@@ -81,6 +81,20 @@ TEST_CASE("Inertialization")
         CHECK(curve.Duration < BlendTime);
         for (float t = 0.0f; t <= BlendTime; t += 0.001f)
             CHECK(curve.Evaluate(t) > -0.01f);
+
+        // Motion away from zero isn't kept: never goes above the start, and heads straight to zero
+        curve.Setup(1.0f, 50.0f, BlendTime);
+        CHECK(curve.C1 == 0.0f);
+        CHECK(curve.Duration == BlendTime);
+        float last = curve.Evaluate(0.0f);
+        CHECK(Math::NearEqual(last, 1.0f));
+        for (float t = 0.0f; t <= BlendTime; t += 0.001f)
+        {
+            const float value = curve.Evaluate(t);
+            CHECK(value <= last + 1e-5f);
+            CHECK(value > -0.01f);
+            last = value;
+        }
 
         // No offset, no curve
         curve.Setup(0.0f, 5.0f, BlendTime);
@@ -117,10 +131,32 @@ TEST_CASE("Inertialization")
         {
             const float oldSpeed = (float)(previous[i].Translation.X - before[i].Translation.X) / FrameTime;
             const float speed = (float)(next[i].Translation.X - start[i].Translation.X) / h;
-            CHECK(Math::Abs(speed - oldSpeed) < oldSpeed * 0.05f);
+            CHECK(Math::Abs(speed - oldSpeed) < Math::Abs(oldSpeed) * 0.05f);
             const float oldTurn = (GetYaw(previous[i].Orientation) - GetYaw(before[i].Orientation)) / FrameTime;
             const float turn = (GetYaw(next[i].Orientation) - GetYaw(start[i].Orientation)) / h;
-            CHECK(Math::Abs(turn - oldTurn) < oldTurn * 0.05f);
+            CHECK(Math::Abs(turn - oldTurn) < Math::Abs(oldTurn) * 0.05f);
+        }
+    }
+
+    SECTION("Moving Away From The New Pose")
+    {
+        // Same as the switch, but the old pose heads away from the new pose
+        Transform before[Count], previous[Count], target[Count], result[Count];
+        SetupOldPose(before, FrameTime);
+        SetupOldPose(previous, 0.0f);
+        SetupNewPose(target);
+        Inertialization::BoneOffset offsets[Count];
+        Inertialization::Start(previous, before, target, Count, FrameTime, BlendTime, offsets);
+        Blend(offsets, target, 0.0f, result);
+        CheckSame(result, previous, 0.001f);
+        for (float t = 0.0f; t <= BlendTime; t += 0.005f)
+        {
+            Blend(offsets, target, t, result);
+            for (int32 i = 0; i < Count; i++)
+            {
+                CHECK(Vector3::Distance(result[i].Translation, target[i].Translation) <= Vector3::Distance(previous[i].Translation, target[i].Translation) + 0.001f);
+                CHECK(Quaternion::AngleBetween(result[i].Orientation, target[i].Orientation) <= Quaternion::AngleBetween(previous[i].Orientation, target[i].Orientation) + 0.01f);
+            }
         }
     }
 
@@ -169,7 +205,7 @@ TEST_CASE("Inertialization")
         for (int32 i = 0; i < Count; i++)
         {
             const float t = 0.0f;
-            const float tb = -FrameTime;
+            const float tb = FrameTime; // Heading toward the new pose
             previous[i] = Transform(Vector3((float)i, 0.0f, 0.0f), Quaternion::Euler(20.0f + 60.0f * t, 30.0f + 90.0f * t + i * 5.0f, 10.0f - 40.0f * t));
             before[i] = Transform(Vector3((float)i, 0.0f, 0.0f), Quaternion::Euler(20.0f + 60.0f * tb, 30.0f + 90.0f * tb + i * 5.0f, 10.0f - 40.0f * tb));
             target[i] = Transform(Vector3((float)i, 0.0f, 0.0f), Quaternion::Euler(-30.0f, 70.0f, 45.0f + i * 10.0f));
