@@ -1149,7 +1149,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 39,
                 Title = "Orientation Warp",
-                Description = "Turns the lower body of the pose by the angle (in degrees) about the up axis, toward the actual movement direction, while the spine chain turns back so the upper body keeps facing where it did.",
+                Description = "Turns the lower body toward the movement direction while the upper body keeps its facing",
                 Flags = NodeFlags.AnimGraph | NodeFlags.FixedSize,
                 Size = new Float2(270, 265),
                 DefaultValues = new object[]
