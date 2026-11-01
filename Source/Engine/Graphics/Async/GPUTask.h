@@ -7,6 +7,7 @@
 #include "GPUTasksContext.h"
 
 class GPUResource;
+class GPUTasksManager;
 
 /// <summary>
 /// Describes GPU work object.
@@ -14,6 +15,7 @@ class GPUResource;
 class GPUTask : public Task
 {
     friend GPUTasksContext;
+    friend GPUTasksManager;
 
 public:
     /// <summary>
@@ -43,6 +45,13 @@ private:
     /// The context that performed this task, it should synchronize it.
     /// </summary>
     GPUTasksContext* _context;
+
+    /// <summary>
+    /// 1 while the tasks manager lists the task (in its queue or its buffers), 2 once the task has ended while listed: the
+    /// manager ends it (and so deletes it) when it drops it. A task deleted while still listed would be read after its
+    /// deletion (its time to live runs out while the queue holds it, eg. a canceled texture streaming task).
+    /// </summary>
+    int64 volatile _listed = 0;
 
 protected:
     /// <summary>
@@ -149,4 +158,5 @@ protected:
     }
 
     void OnCancel() override;
+    void OnEnd() override;
 };

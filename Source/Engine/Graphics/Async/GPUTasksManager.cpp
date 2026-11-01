@@ -45,7 +45,16 @@ String GPUTask::ToString() const
 
 void GPUTask::Enqueue()
 {
+    Platform::AtomicStore(&_listed, 1);
     GPUDevice::Instance->GetTasksManager()->_tasks.Add(this);
+}
+
+void GPUTask::OnEnd()
+{
+    // While the tasks manager lists the task it ends the task when it drops it (see GPUTasksManager::Unlist)
+    if (Platform::InterlockedCompareExchange(&_listed, 2, 1) == 1)
+        return;
+    Task::OnEnd();
 }
 
 void GPUTask::OnCancel()
@@ -87,11 +96,31 @@ void GPUTasksManager::Dispose()
     // Cancel all performed tasks (that are waiting for sync)
     SAFE_DELETE(_executor);
 
-    // Cleanup
+    // Cleanup (the tasks are no longer listed: canceling them ends them now)
+    for (GPUTask* task : _buffers[0])
+        Platform::AtomicStore(&task->_listed, 0);
+    for (GPUTask* task : _buffers[1])
+        Platform::AtomicStore(&task->_listed, 0);
     Task::CancelAll(_buffers[0]);
     Task::CancelAll(_buffers[1]);
     _bufferIndex = 0;
-    _tasks.CancelAll();
+    GPUTask* tasks[16];
+    std::size_t count;
+    while ((count = _tasks.try_dequeue_bulk(tasks, ARRAY_COUNT(tasks))) != 0)
+    {
+        for (std::size_t i = 0; i != count; i++)
+        {
+            Platform::AtomicStore(&tasks[i]->_listed, 0);
+            tasks[i]->Cancel();
+        }
+    }
+}
+
+void GPUTasksManager::Unlist(GPUTask* task)
+{
+    // A task that ended while listed is ended (deleted) now that nothing lists it
+    if (Platform::InterlockedExchange(&task->_listed, 0) == 2)
+        task->Task::OnEnd();
 }
 
 void GPUTasksManager::FrameBegin()
@@ -131,9 +160,11 @@ int32 GPUTasksManager::RequestWork(GPUTask** buffer, int32 maxCount)
         case TaskState::Canceled:
         case TaskState::Finished:
             // Skip task
+            Unlist(task);
             break;
         case TaskState::Queued:
             // Run queued task
+            Unlist(task);
             buffer[count++] = task;
             break;
         case TaskState::Created:
