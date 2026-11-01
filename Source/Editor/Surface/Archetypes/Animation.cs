@@ -1164,7 +1164,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 40,
                 Title = "Inertialization",
-                Description = "Smooths sudden pose changes below it without cross-fading: on a request it switches straight to the new pose, carrying on the old pose's motion and decaying the difference to zero over the blend time. Only the new pose is evaluated. State machine transitions with Inertialization on and animation slots played with inertialize ask the nearest Inertialization node above them for the blend. Request starts a blend when it turns on (eg. after changing the animation played by the input). A zero blend time is a plain cut. Root motion isn't blended.",
+                Description = "Smooths pose changes requested below it (eg. by state machine transitions) without cross-fading",
                 Flags = NodeFlags.AnimGraph,
                 Size = new Float2(200, 60),
                 DefaultValues = new object[]

@@ -1776,7 +1776,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <summary>
-            /// If checked, the transition switches to the destination state at once and the nearest Inertialization node above the state machine smooths the change over the blend duration (only the destination state is evaluated). Blend mode isn't used then. Without an Inertialization node above, the transition cross-fades as usual.
+            /// If checked, switches at once and lets the Inertialization node above the state machine smooth the change (cross-fades without one).
             /// </summary>
             [EditorOrder(65), DefaultValue(false)]
             public bool Inertialization
