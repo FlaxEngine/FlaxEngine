@@ -1818,7 +1818,7 @@ namespace FlaxEditor.Surface.Archetypes
             internal const float DefaultBlendScale = 0.5f;
 
             /// <summary>
-            /// The blend profile mask (optional). Nodes in the mask (eg. legs and feet) blend over Blend Scale times the blend duration, so they reach the destination pose before the rest of the skeleton.
+            /// Optional skeleton mask of nodes (eg. legs) that blend faster, by Blend Scale.
             /// </summary>
             [EditorOrder(62), DefaultValue(null)]
             public SkeletonMask BlendMask
@@ -1832,7 +1832,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <summary>
-            /// The blend time scale of the nodes in the Blend Mask (in range 0-1). For example, 0.5 makes them finish blending in half of the blend duration.
+            /// Blend duration scale for the nodes in Blend Mask (0-1).
             /// </summary>
             [EditorOrder(64), DefaultValue(DefaultBlendScale), Limit(0, 1.0f, 0.01f), VisibleIf(nameof(HasBlendMask))]
             public float BlendScale

@@ -766,7 +766,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 14,
                 Create = (id, context, arch, groupArch) => new BlendPose(id, context, arch, groupArch),
                 Title = "Blend Poses",
-                Description = "Select animation pose to pass by index (with blending). The optional Blend Mask (picked, or connected eg. from a parameter) picks nodes (eg. legs and feet) that blend over Blend Scale times the blend duration, so they reach the new pose before the rest of the skeleton.",
+                Description = "Select animation pose to pass by index (with blending), with an optional blend profile mask",
                 Flags = NodeFlags.AnimGraph | NodeFlags.VariableValuesSize,
                 Size = new Float2(230, 200),
                 DefaultValues = new object[]
