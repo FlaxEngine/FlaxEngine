@@ -94,6 +94,7 @@ namespace FlaxEditor.Surface.Elements
             }
 
             // Restore the selected bone (the saved index, the current selection may come from an outdated list)
+            // Note: the bone is saved by index, so after a base model change the same index may point at a different bone
             if (Archetype.ValueIndex != -1)
             {
                 var selectedIndex = (int)ParentNode.Values[Archetype.ValueIndex];

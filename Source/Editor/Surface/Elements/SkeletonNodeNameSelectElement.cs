@@ -123,7 +123,17 @@ namespace FlaxEditor.Surface.Elements
             }
 
             // Restore the selected node
-            SelectedNodeName = selectedNode;
+            if (Archetype.ValueIndex != -1)
+            {
+                // Select the saved node without editing the node value, so opening the picker after a base model change doesn't erase a node the new model lacks
+                _selectedIndices.Clear();
+                if (!string.IsNullOrEmpty(selectedNode) && _nodeNameToIndex.TryGetValue(selectedNode, out var index))
+                    _selectedIndices.Add(index);
+            }
+            else
+            {
+                SelectedNodeName = selectedNode;
+            }
         }
 
         /// <inheritdoc />
