@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "GPUBuffer.h"
+#include "Engine/Graphics/Async/Tasks/GPUUploadBufferTask.h"
 #include "GPUDevice.h"
 #include "GPUResourceProperty.h"
 #include "GPUBufferDescription.h"
@@ -458,7 +459,9 @@ void GPUBuffer::SetData(const void* data, uint32 size)
         return;
     }
 
-    if (_desc.Usage == GPUResourceUsage::Default && GPUDevice::Instance->IsRendering())
+    // Default and Dynamic buffers can be in GPU memory that the CPU cannot map (eg. DirectX 12)
+    const bool gpuMemory = _desc.Usage == GPUResourceUsage::Default || _desc.Usage == GPUResourceUsage::Dynamic;
+    if (gpuMemory && GPUDevice::Instance->IsRendering())
     {
         // Upload using the context (will use internal staging buffer inside command buffer)
         RenderContext::GPULocker.Lock();
@@ -469,7 +472,15 @@ void GPUBuffer::SetData(const void* data, uint32 size)
 
     void* mapped = Map(GPUResourceMapMode::Write);
     if (!mapped)
+    {
+        if (gpuMemory)
+        {
+            // Upload with a GPU task (the data is copied)
+            auto task = ::New<GPUUploadBufferTask>(this, 0, Span<byte>((const byte*)data, size), true);
+            task->Start();
+        }
         return;
+    }
     Platform::MemoryCopy(mapped, data, size);
     Unmap();
 }

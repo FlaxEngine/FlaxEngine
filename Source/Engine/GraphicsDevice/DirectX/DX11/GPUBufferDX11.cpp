@@ -21,6 +21,8 @@ GPUBufferView* GPUBufferDX11::View() const
 void* GPUBufferDX11::Map(GPUResourceMapMode mode)
 {
     CHECK_RETURN(_resource, nullptr);
+    if (_desc.Usage == GPUResourceUsage::Default)
+        return nullptr; // Created without CPU access (D3D11_USAGE_DEFAULT): GPUBuffer::SetData uploads with the context or a GPU task
     const bool isMainThread = IsInRenderThread();
     if (!isMainThread)
         _device->Locker.Lock();
