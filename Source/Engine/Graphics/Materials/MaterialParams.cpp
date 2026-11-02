@@ -656,20 +656,27 @@ int32 MaterialParams::GetVersionHash() const
     return _versionHash;
 }
 
-volatile int64 MaterialParams::BindLayoutVersion = 0;
+volatile int64 MaterialParams::OverrideVersion = 0;
 
 void MaterialParameter::SetIsOverride(bool value)
 {
     if (_override != value)
     {
         _override = value;
-        MaterialParams::OnBindLayoutChanged();
+
+        // The parameter doesn't know its collection, so every collection's binding cache rebuilds (MaterialParams::SetOverride doesn't)
+        Platform::InterlockedIncrement(&MaterialParams::OverrideVersion);
     }
 }
 
-void MaterialParams::OnBindLayoutChanged()
+void MaterialParams::SetOverride(MaterialParameter& param, bool value)
 {
-    Platform::InterlockedIncrement(&BindLayoutVersion);
+    ASSERT_LOW_LAYER(&param >= &At(0) && &param <= &At(Count() - 1));
+    if (param._override != value)
+    {
+        param._override = value;
+        _layoutVersion++;
+    }
 }
 
 void MaterialParams::BuildBindOwners(const MaterialParams* const* levels, int32 levelCount)
@@ -688,6 +695,7 @@ void MaterialParams::BuildBindOwners(const MaterialParams* const* levels, int32 
     {
         _bindLevels[i] = levels[i];
         _bindLevelCounts[i] = levels[i]->Count();
+        _bindLevelVersions[i] = levels[i]->_layoutVersion;
     }
     _bindLevelCount = levelCount;
 }
@@ -717,20 +725,20 @@ void MaterialParams::Bind(MaterialParamsLink* link, MaterialParameter::BindMeta&
         return;
     }
 
-    // Rebuild the owners when overrides, collections or counts changed since they were worked out
-    const int64 layout = Platform::AtomicRead(&BindLayoutVersion);
-    bool valid = top->_bindLayout == layout && top->_bindLevelCount == levelCount && top->_bindOwners.Count() == count;
+    // Rebuild the owners when overrides, collections or counts changed since they were worked out (no lock: one binding thread only)
+    const int64 overrideVersion = Platform::AtomicRead(&OverrideVersion);
+    bool valid = top->_bindOverrideVersion == overrideVersion && top->_bindLevelCount == levelCount && top->_bindOwners.Count() == count;
     for (int32 i = 0; valid && i < levelCount; i++)
-        valid = top->_bindLevels[i] == levels[i] && top->_bindLevelCounts[i] == levels[i]->Count();
+        valid = top->_bindLevels[i] == levels[i] && top->_bindLevelCounts[i] == levels[i]->Count() && top->_bindLevelVersions[i] == levels[i]->_layoutVersion;
     if (!valid)
     {
         top->BuildBindOwners(levels, levelCount);
-        top->_bindLayout = layout;
+        top->_bindOverrideVersion = overrideVersion;
     }
 
     const byte* owners = top->_bindOwners.Get();
     for (int32 i = 0; i < count; i++)
-        ((MaterialParams*)levels[owners[i]])->At(i).Bind(meta);
+        levels[owners[i]]->At(i).Bind(meta);
 }
 
 void MaterialParams::Clone(MaterialParams& result)
@@ -745,14 +753,14 @@ void MaterialParams::Clone(MaterialParams& result)
     }
 
     result._versionHash = _versionHash;
-    OnBindLayoutChanged();
+    result._layoutVersion++;
 }
 
 void MaterialParams::Dispose()
 {
     Resize(0);
     _versionHash = 0;
-    OnBindLayoutChanged();
+    _layoutVersion++;
 }
 
 bool MaterialParams::Load(ReadStream* stream)
@@ -1007,7 +1015,7 @@ bool MaterialParams::Load(ReadStream* stream)
     }
 
     UpdateHash();
-    OnBindLayoutChanged();
+    _layoutVersion++;
 
     return result;
 }

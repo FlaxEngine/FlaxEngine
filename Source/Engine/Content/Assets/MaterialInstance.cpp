@@ -109,7 +109,7 @@ void MaterialInstance::OnBaseParamsChanged()
                 // Restore value
                 const Variant value = oldParam.GetValue();
                 param->SetValue(value);
-                param->SetIsOverride(oldParam.IsOverride());
+                Params.SetOverride(*param, oldParam.IsOverride());
             }
             else
             {
@@ -310,7 +310,7 @@ void MaterialInstance::ResetParameters()
 {
     for (auto& param : Params)
     {
-        param.SetIsOverride(false);
+        Params.SetOverride(param, false);
     }
 }
 
