@@ -17,6 +17,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 #endif
 #include "Engine/Utilities/AnsiPathTempFile.h"
+#include "Engine/Threading/Threading.h"
 
 // Import DirectXTex library
 // Source: https://github.com/Microsoft/DirectXTex
@@ -83,6 +84,31 @@ namespace
             return DXGI_FORMAT_R16G16B16A16_FLOAT;
         }
     }
+
+#if USE_EDITOR && PLATFORM_WINDOWS
+    // DirectXTex compresses BC6H and BC7 on the GPU with a D3D11 device only. When the editor renders with another API,
+    // a D3D11 device of its own does that work (created on first use; one immediate context, so one compression at a time).
+    CriticalSection CompressDeviceLocker;
+    ID3D11Device* CompressDevice = nullptr;
+    bool CompressDeviceCreated = false;
+
+    ID3D11Device* GetCompressDevice()
+    {
+        if (!CompressDeviceCreated)
+        {
+            CompressDeviceCreated = true;
+            const HMODULE library = ::LoadLibraryW(L"d3d11.dll");
+            const auto createDevice = library ? (PFN_D3D11_CREATE_DEVICE)::GetProcAddress(library, "D3D11CreateDevice") : nullptr;
+            const D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
+            if (!createDevice || FAILED(createDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, &featureLevel, 1, D3D11_SDK_VERSION, &CompressDevice, nullptr, nullptr)))
+            {
+                CompressDevice = nullptr;
+                LOG(Warning, "Cannot create a D3D11 device for the GPU texture compression. The CPU compresses BC6H and BC7.");
+            }
+        }
+        return CompressDevice;
+    }
+#endif
 
     HRESULT Compress(const DirectX::Image* srcImages, size_t nimages, const DirectX::TexMetadata& metadata, DXGI_FORMAT format, DirectX::TEX_COMPRESS_FLAGS compress, float threshold, DirectX::ScratchImage& cImages)
     {
@@ -158,6 +184,17 @@ namespace
             mutex.Unlock();
             return task->CompressResult;
         }
+#if PLATFORM_WINDOWS
+        if ((format == DXGI_FORMAT_BC7_UNORM || format == DXGI_FORMAT_BC7_UNORM_SRGB || format == DXGI_FORMAT_BC6H_UF16 || format == DXGI_FORMAT_BC6H_SF16) &&
+            GPUDevice::Instance &&
+            GPUDevice::Instance->GetRendererType() != RendererType::DirectX11)
+        {
+            ScopeLock lock(CompressDeviceLocker);
+            ID3D11Device* device = GetCompressDevice();
+            if (device)
+                return DirectX::Compress(device, srcImages, nimages, metadata, format, compress, 1.0f, cImages);
+        }
+#endif
 #endif
         return DirectX::Compress(srcImages, nimages, metadata, format, compress, threshold, cImages);
     }
