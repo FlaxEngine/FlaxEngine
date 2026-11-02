@@ -65,7 +65,7 @@ void GPUTasksContext::Run(GPUTask* task)
 
 void GPUTasksContext::OnCancelSync(GPUTask* task)
 {
-    _tasksSyncing.Remove(task);
+    // Called from the thread canceling the task, so it doesn't touch _tasksSyncing (owned by the rendering thread): OnFrameBegin drops canceled tasks
     if (!Engine::IsRequestingExit)
         LOG(Warning, "'{0}' has been canceled before a sync", task->ToString());
 }

@@ -36,8 +36,10 @@ bool GPUTask::Execute(GPUTasksContext* context)
     else
     {
         // Save task completion point (for synchronization)
-        _syncPoint = context->GetCurrentSyncPoint();
+        // Context goes first: another thread canceling the task reads it once IsSyncing() (which checks _syncPoint) is true
         _context = context;
+        Platform::MemoryBarrier();
+        _syncPoint = context->GetCurrentSyncPoint();
         if (_syncLatency == 0)
         {
             // No delay on sync
@@ -63,7 +65,9 @@ void GPUTask::OnCancel()
     if (IsSyncing())
     {
         // Task has been performed but is waiting for a CPU/GPU sync so we have to cancel that
-        _context->OnCancelSync(this);
+        GPUTasksContext* context = _context;
+        if (context)
+            context->OnCancelSync(this);
         _context = nullptr;
         SetState(TaskState::Canceled);
     }
