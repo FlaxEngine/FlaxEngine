@@ -195,6 +195,26 @@ namespace FlaxEditor.Surface.Archetypes
             public const int FirstBlendPoseBoxIndex = 3;
 
             /// <summary>
+            /// The ID of the blend scale input box.
+            /// </summary>
+            public const int BlendScaleBoxId = FirstBlendPoseBoxIndex + MaxBlendPoses;
+
+            /// <summary>
+            /// The ID of the blend mask input box (a skeleton mask that overrides the picked one when connected).
+            /// </summary>
+            public const int BlendMaskBoxId = BlendScaleBoxId + 1;
+
+            /// <summary>
+            /// The default blend time scale of the nodes in the blend mask.
+            /// </summary>
+            public const float DefaultBlendScale = 0.5f;
+
+            /// <summary>
+            /// The row of the first input blend pose box.
+            /// </summary>
+            private const int FirstBlendPoseRow = 5;
+
+            /// <summary>
             /// Gets or sets used blend poses count (visible to the user).
             /// </summary>
             public int BlendPosesCount
@@ -214,8 +234,8 @@ namespace FlaxEditor.Surface.Archetypes
             public BlendPose(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
-                // Add buttons for adding/removing blend poses
-                _addButton = new Button(70, 94, 20, 20)
+                // Add buttons for adding/removing blend poses (placed on the row below the last pose by UpdateBoxes)
+                _addButton = new Button(FlaxEditor.Surface.Constants.NodeMarginX, 0, 20, 20)
                 {
                     Text = "+",
                     Parent = this
@@ -241,7 +261,7 @@ namespace FlaxEditor.Surface.Archetypes
                 }
                 while (_blendPoses.Count < posesCount)
                 {
-                    var ylevel = 3 + _blendPoses.Count;
+                    var ylevel = FirstBlendPoseRow + _blendPoses.Count;
                     var arch = new NodeElementArchetype
                     {
                         Type = NodeElementType.Input,
@@ -259,14 +279,34 @@ namespace FlaxEditor.Surface.Archetypes
                     _blendPoses.Add(box);
                 }
 
+                // Keep the buttons on their own row below the last pose
+                var buttonsY = FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight + (FirstBlendPoseRow + posesCount) * FlaxEditor.Surface.Constants.LayoutOffsetY;
+                _addButton.Y = buttonsY;
+                _removeButton.Y = buttonsY;
                 _addButton.Enabled = posesCount < MaxBlendPoses;
                 _removeButton.Enabled = posesCount > 0;
             }
 
             private void UpdateHeight()
             {
-                float nodeHeight = 10 + (Mathf.Max(_blendPoses.Count, 1) + 3) * FlaxEditor.Surface.Constants.LayoutOffsetY;
+                // Fit the pose inputs with the add/remove buttons row below them, and the blend mask picker (next to them)
+                float nodeHeight = 10 + (Mathf.Max(_blendPoses.Count + 1, 5) + FirstBlendPoseRow) * FlaxEditor.Surface.Constants.LayoutOffsetY;
                 Height = nodeHeight + FlaxEditor.Surface.Constants.NodeMarginY * 2 + FlaxEditor.Surface.Constants.NodeHeaderHeight + FlaxEditor.Surface.Constants.NodeFooterSize;
+            }
+
+            /// <inheritdoc />
+            public override void OnLoading(SurfaceNodeActions action)
+            {
+                // Upgrade old nodes data (blend mask and blend scale added at [4] and [5])
+                if (Values.Length < 6)
+                {
+                    var oldLength = Values.Length;
+                    Array.Resize(ref Values, 6);
+                    for (int i = oldLength; i < Values.Length; i++)
+                        Values[i] = Archetype.DefaultValues[i];
+                }
+
+                base.OnLoading(action);
             }
 
             /// <inheritdoc />
@@ -278,7 +318,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _blendPoses.Clear();
                 for (int i = 0; i < Elements.Count; i++)
                 {
-                    if (Elements[i] is InputBox box && box.Archetype.BoxID >= FirstBlendPoseBoxIndex)
+                    if (Elements[i] is InputBox box && box.Archetype.BoxID >= FirstBlendPoseBoxIndex && box.Archetype.BoxID < FirstBlendPoseBoxIndex + MaxBlendPoses)
                     {
                         _blendPoses.Add(box);
                     }
@@ -286,6 +326,24 @@ namespace FlaxEditor.Surface.Archetypes
 
                 UpdateBoxes();
                 UpdateHeight();
+                UpdateBlendMaskPicker();
+            }
+
+            /// <inheritdoc />
+            public override void ConnectionTick(Box box)
+            {
+                base.ConnectionTick(box);
+
+                if (box.ID == BlendMaskBoxId)
+                    UpdateBlendMaskPicker();
+            }
+
+            private void UpdateBlendMaskPicker()
+            {
+                // The connected blend mask (eg. a parameter) replaces the picked one
+                var picker = GetChild<AssetSelect>();
+                if (picker != null && TryGetBox(BlendMaskBoxId, out var box))
+                    picker.Visible = !box.HasAnyConnection;
             }
 
             /// <inheritdoc />
@@ -708,15 +766,17 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 14,
                 Create = (id, context, arch, groupArch) => new BlendPose(id, context, arch, groupArch),
                 Title = "Blend Poses",
-                Description = "Select animation pose to pass by index (with blending)",
-                Flags = NodeFlags.AnimGraph,
-                Size = new Float2(200, 200),
+                Description = "Select animation pose to pass by index (with blending), with an optional blend profile mask",
+                Flags = NodeFlags.AnimGraph | NodeFlags.VariableValuesSize,
+                Size = new Float2(230, 200),
                 DefaultValues = new object[]
                 {
                     0,
                     0.2f,
                     8,
                     (int)AlphaBlendMode.HermiteCubic,
+                    Guid.Empty, // Blend mask
+                    BlendPose.DefaultBlendScale, // Blend scale
                 },
                 Elements = new[]
                 {
@@ -725,15 +785,18 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(1, "Blend Duration", true, typeof(float), 2, 1),
                     NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 2, "Mode:"),
                     NodeElementArchetype.Factory.ComboBox(40, Surface.Constants.LayoutOffsetY * 2, 100, 3, typeof(AlphaBlendMode)),
+                    NodeElementArchetype.Factory.Input(3, "Blend Scale", true, typeof(float), BlendPose.BlendScaleBoxId, 5),
+                    NodeElementArchetype.Factory.Input(4, "Blend Mask", true, typeof(SkeletonMask), BlendPose.BlendMaskBoxId),
+                    NodeElementArchetype.Factory.Asset(125, Surface.Constants.LayoutOffsetY * 5, 4, typeof(SkeletonMask)),
 
-                    NodeElementArchetype.Factory.Input(3, "Pose 0", true, typeof(void), 3),
-                    NodeElementArchetype.Factory.Input(4, "Pose 1", true, typeof(void), 4),
-                    NodeElementArchetype.Factory.Input(5, "Pose 2", true, typeof(void), 5),
-                    NodeElementArchetype.Factory.Input(6, "Pose 3", true, typeof(void), 6),
-                    NodeElementArchetype.Factory.Input(7, "Pose 4", true, typeof(void), 7),
-                    NodeElementArchetype.Factory.Input(8, "Pose 5", true, typeof(void), 8),
-                    NodeElementArchetype.Factory.Input(9, "Pose 6", true, typeof(void), 9),
-                    NodeElementArchetype.Factory.Input(10, "Pose 7", true, typeof(void), 10),
+                    NodeElementArchetype.Factory.Input(5, "Pose 0", true, typeof(void), 3),
+                    NodeElementArchetype.Factory.Input(6, "Pose 1", true, typeof(void), 4),
+                    NodeElementArchetype.Factory.Input(7, "Pose 2", true, typeof(void), 5),
+                    NodeElementArchetype.Factory.Input(8, "Pose 3", true, typeof(void), 6),
+                    NodeElementArchetype.Factory.Input(9, "Pose 4", true, typeof(void), 7),
+                    NodeElementArchetype.Factory.Input(10, "Pose 5", true, typeof(void), 8),
+                    NodeElementArchetype.Factory.Input(11, "Pose 6", true, typeof(void), 9),
+                    NodeElementArchetype.Factory.Input(12, "Pose 7", true, typeof(void), 10),
                 }
             },
             new NodeArchetype

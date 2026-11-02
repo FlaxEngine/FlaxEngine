@@ -4,6 +4,7 @@
 
 #include "Engine/Visject/VisjectGraph.h"
 #include "Engine/Content/Assets/Animation.h"
+#include "Engine/Content/Assets/SkeletonMask.h"
 #include "Engine/Core/Collections/ChunkedArray.h"
 #include "Engine/Core/Collections/BitArray.h"
 #include "Engine/Animations/AlphaBlend.h"
@@ -200,6 +201,16 @@ public:
     /// The blend duration (in seconds).
     /// </summary>
     float BlendDuration;
+
+    /// <summary>
+    /// The blend profile mask (optional). Nodes in the mask blend over BlendScale times the blend duration.
+    /// </summary>
+    AssetReference<SkeletonMask> BlendMask;
+
+    /// <summary>
+    /// The blend time scale of the nodes in BlendMask (in range 0-1).
+    /// </summary>
+    float BlendScale;
 };
 
 DECLARE_ENUM_OPERATORS(AnimGraphStateTransition::FlagTypes);
@@ -925,6 +936,7 @@ private:
     Variant SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float startTimePos, AnimSampleData& a, AnimSampleData& b, float alpha);
     Variant SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float startTimePos, AnimSampleData& a, AnimSampleData& b, AnimSampleData& c, float alphaA, float alphaB, float alphaC);
     Variant Blend(AnimGraphNode* node, const Value& poseA, const Value& poseB, float alpha, AlphaBlendMode alphaMode);
+    Variant Blend(AnimGraphNode* node, const Value& poseA, const Value& poseB, float alpha, AlphaBlendMode alphaMode, SkeletonMask* blendMask, float blendScale);
     Variant SampleState(AnimGraphContext& context, const AnimGraphNode* state);
     void InitStateTransition(AnimGraphContext& context, AnimGraphInstanceData::StateMachineBucket& stateMachineBucket, AnimGraphStateTransition* transition = nullptr);
     AnimGraphStateTransition* UpdateStateTransitions(AnimGraphContext& context, const AnimGraphNode::StateMachineData& stateMachineData, AnimGraphNode* state, AnimGraphNode* ignoreState = nullptr);
