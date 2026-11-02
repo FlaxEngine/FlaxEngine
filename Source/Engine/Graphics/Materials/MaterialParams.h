@@ -348,11 +348,11 @@ private:
     // The cache is rebuilt without a lock: Bind must only run on one thread at a time (today the rendering thread's ExecuteDrawCalls).
     static constexpr int32 MaxBindLevels = 8;
     static volatile int64 OverrideVersion;
-    uint32 _layoutVersion = 0;
+    volatile int64 _layoutVersion = 0;
     Array<byte> _bindOwners;
     const MaterialParams* _bindLevels[MaxBindLevels] = {};
     int32 _bindLevelCounts[MaxBindLevels] = {};
-    uint32 _bindLevelVersions[MaxBindLevels] = {};
+    int64 _bindLevelVersions[MaxBindLevels] = {};
     int32 _bindLevelCount = 0;
     int64 _bindOverrideVersion = -1;
 

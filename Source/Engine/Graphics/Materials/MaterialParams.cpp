@@ -671,11 +671,11 @@ void MaterialParameter::SetIsOverride(bool value)
 
 void MaterialParams::SetOverride(MaterialParameter& param, bool value)
 {
-    ASSERT_LOW_LAYER(&param >= &At(0) && &param <= &At(Count() - 1));
+    ASSERT_LOW_LAYER(&param >= Array::Get() && &param < Array::Get() + Count());
     if (param._override != value)
     {
         param._override = value;
-        _layoutVersion++;
+        Platform::InterlockedIncrement(&_layoutVersion);
     }
 }
 
@@ -695,7 +695,7 @@ void MaterialParams::BuildBindOwners(const MaterialParams* const* levels, int32 
     {
         _bindLevels[i] = levels[i];
         _bindLevelCounts[i] = levels[i]->Count();
-        _bindLevelVersions[i] = levels[i]->_layoutVersion;
+        _bindLevelVersions[i] = Platform::AtomicRead(&levels[i]->_layoutVersion);
     }
     _bindLevelCount = levelCount;
 }
@@ -729,7 +729,7 @@ void MaterialParams::Bind(MaterialParamsLink* link, MaterialParameter::BindMeta&
     const int64 overrideVersion = Platform::AtomicRead(&OverrideVersion);
     bool valid = top->_bindOverrideVersion == overrideVersion && top->_bindLevelCount == levelCount && top->_bindOwners.Count() == count;
     for (int32 i = 0; valid && i < levelCount; i++)
-        valid = top->_bindLevels[i] == levels[i] && top->_bindLevelCounts[i] == levels[i]->Count() && top->_bindLevelVersions[i] == levels[i]->_layoutVersion;
+        valid = top->_bindLevels[i] == levels[i] && top->_bindLevelCounts[i] == levels[i]->Count() && top->_bindLevelVersions[i] == Platform::AtomicRead(&levels[i]->_layoutVersion);
     if (!valid)
     {
         top->BuildBindOwners(levels, levelCount);
@@ -753,14 +753,14 @@ void MaterialParams::Clone(MaterialParams& result)
     }
 
     result._versionHash = _versionHash;
-    result._layoutVersion++;
+    Platform::InterlockedIncrement(&result._layoutVersion);
 }
 
 void MaterialParams::Dispose()
 {
     Resize(0);
     _versionHash = 0;
-    _layoutVersion++;
+    Platform::InterlockedIncrement(&_layoutVersion);
 }
 
 bool MaterialParams::Load(ReadStream* stream)
@@ -1015,7 +1015,7 @@ bool MaterialParams::Load(ReadStream* stream)
     }
 
     UpdateHash();
-    _layoutVersion++;
+    Platform::InterlockedIncrement(&_layoutVersion);
 
     return result;
 }
