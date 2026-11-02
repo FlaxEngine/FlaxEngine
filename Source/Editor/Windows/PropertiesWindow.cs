@@ -48,6 +48,16 @@ namespace FlaxEditor.Windows
         public bool UIPivotRelative = true;
 
         /// <summary>
+        /// The header panel that contains the search bar and prefab buttons.
+        /// </summary>
+        public ContainerControl HeaderPanel;
+
+        /// <summary>
+        /// The default height of the header panel.
+        /// </summary>
+        public const float DefaultHeaderPanelHeight = 24f + Utilities.Constants.UIMargin * 2;
+
+        /// <summary>
         /// Indication of if the properties window is locked on specific objects.
         /// </summary>
         public bool LockSelection
@@ -77,26 +87,27 @@ namespace FlaxEditor.Windows
             Icon = editor.Icons.Build64;
             AutoFocus = true;
 
-            var headerPanel = new ContainerControl
+            HeaderPanel = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 BackgroundColor = Style.Current.Background,
                 IsScrollable = false,
-                Offsets = new Margin(0, 0, 0, 18 + 6),
+                Offsets = new Margin(0, 0, 0, DefaultHeaderPanelHeight),
                 Parent = this,
             };
+
             _searchBox = new SearchBox
             {
-                AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
-                Parent = headerPanel,
-                Bounds = new Rectangle(4, 4, headerPanel.Width - 8, 18),
+                AnchorPreset = AnchorPresets.HorizontalStretchBottom,
+                Parent = HeaderPanel,
+                Bounds = new Rectangle(Utilities.Constants.UIMargin, 4, HeaderPanel.Width - 8, 18),
             };
             _searchBox.TextChanged += ApplySearchFilter;
 
             _scrollingPanel = new Panel(ScrollBars.Vertical)
             {
                 AnchorPreset = AnchorPresets.StretchAll,
-                Offsets = new Margin(0, 0, headerPanel.Bottom, 0),
+                Offsets = new Margin(0, 0, HeaderPanel.Bottom, 0),
                 Parent = this,
             };
 
@@ -108,6 +119,16 @@ namespace FlaxEditor.Windows
 
             _scrollingPanel.VScrollBar.ValueChanged += OnScrollValueChanged;
             Editor.SceneEditing.SelectionChanged += OnSelectionChanged;
+        }
+
+        /// <summary>
+        /// Resizes the header panel and adjusts main scroll panel position
+        /// </summary>
+        /// <param name="height"></param>
+        public void ResizeHeaderPanel(float height)
+        {
+            HeaderPanel.Height = height;
+            _scrollingPanel.Offsets = new Margin(0, 0, HeaderPanel.Bottom, 0);
         }
 
         /// <inheritdoc />
