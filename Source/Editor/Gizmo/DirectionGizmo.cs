@@ -149,10 +149,26 @@ internal class DirectionGizmo : ContainerControl
             StartMouseCapture(true);
             Cursor = CursorType.Hidden;
 
-            const float sensitivity = 0.125f;
             Float2 delta = Input.MousePositionDelta;
+
+            // Pan the camera
+            if (Input.GetKey(KeyboardKeys.Shift))
+            {
+                _viewport.ViewPosition += (_viewport.ViewTransform.Right * delta.X) + (_viewport.ViewTransform.Down * delta.Y);
+                return;
+            }
+
+            // Zoom the camera
+            if (Input.GetKey(KeyboardKeys.Control))
+            {
+                _viewport.ViewPosition += _viewport.ViewTransform.Backward * delta.Y;
+                return;
+            }
+
+            // Orbit the camera around a point in front of it
+            const float orbitSensitivity = 0.125f;
             delta *= Mathf.DegreesToRadians;
-            delta *= sensitivity;
+            delta *= orbitSensitivity;
 
             const float orbitRadius = 500f;
             Quaternion newOrientation = _viewport.ViewOrientation * Quaternion.RotationYawPitchRoll(delta.X , delta.Y, 0f);
