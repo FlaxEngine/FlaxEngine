@@ -247,10 +247,7 @@ public:
     /// <summary>
     /// Sets the value override mode.
     /// </summary>
-    API_PROPERTY() void SetIsOverride(bool value)
-    {
-        _override = value;
-    }
+    API_PROPERTY() void SetIsOverride(bool value);
 
     /// <summary>
     /// Gets the parameter resource graphics pipeline binding register index.
@@ -342,8 +339,22 @@ public:
 class FLAXENGINE_API MaterialParams : public Array<MaterialParameter>
 {
     friend MaterialInstance;
+    friend MaterialParameter;
 private:
     int32 _versionHash = 0;
+
+    // Cache of which link level owns each parameter's value, so binding doesn't walk the links per parameter.
+    // It's checked against the links' collections and counts and the global layout version on every bind.
+    static constexpr int32 MaxBindLevels = 8;
+    static volatile int64 BindLayoutVersion;
+    Array<byte> _bindOwners;
+    const MaterialParams* _bindLevels[MaxBindLevels] = {};
+    int32 _bindLevelCounts[MaxBindLevels] = {};
+    int32 _bindLevelCount = 0;
+    int64 _bindLayout = -1;
+
+    static void OnBindLayoutChanged();
+    void BuildBindOwners(const MaterialParams* const* levels, int32 levelCount);
 
 public:
     MaterialParameter* Get(const Guid& id);

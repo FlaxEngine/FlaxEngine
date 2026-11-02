@@ -656,20 +656,81 @@ int32 MaterialParams::GetVersionHash() const
     return _versionHash;
 }
 
+volatile int64 MaterialParams::BindLayoutVersion = 0;
+
+void MaterialParameter::SetIsOverride(bool value)
+{
+    if (_override != value)
+    {
+        _override = value;
+        MaterialParams::OnBindLayoutChanged();
+    }
+}
+
+void MaterialParams::OnBindLayoutChanged()
+{
+    Platform::InterlockedIncrement(&BindLayoutVersion);
+}
+
+void MaterialParams::BuildBindOwners(const MaterialParams* const* levels, int32 levelCount)
+{
+    const int32 count = Count();
+    _bindOwners.Resize(count, false);
+    for (int32 i = 0; i < count; i++)
+    {
+        // Same rule as the per-parameter walk: go down while this level doesn't override it and the next level matches
+        int32 level = 0;
+        while (level + 1 < levelCount && !levels[level]->Get()[i].IsOverride() && levels[level + 1]->Count() == count)
+            level++;
+        _bindOwners.Get()[i] = (byte)level;
+    }
+    for (int32 i = 0; i < levelCount; i++)
+    {
+        _bindLevels[i] = levels[i];
+        _bindLevelCounts[i] = levels[i]->Count();
+    }
+    _bindLevelCount = levelCount;
+}
+
 void MaterialParams::Bind(MaterialParamsLink* link, MaterialParameter::BindMeta& meta)
 {
     ASSERT(link && link->This);
-    const int32 count = link->This->Count();
-    for (int32 i = 0; i < count; i++)
-    {
-        MaterialParamsLink* l = link;
-        while (l->Down && !l->This->At(i).IsOverride() && l->Down->This->Count() == count)
-        {
-            l = l->Down;
-        }
+    MaterialParams* top = link->This;
+    const int32 count = top->Count();
 
-        l->This->At(i).Bind(meta);
+    // Gather the links' collections (instance, its base instances, the material)
+    const MaterialParams* levels[MaxBindLevels];
+    int32 levelCount = 0;
+    MaterialParamsLink* l = link;
+    for (; l && levelCount < MaxBindLevels; l = l->Down)
+        levels[levelCount++] = l->This;
+    if (l)
+    {
+        // Too deep to cache, walk the links per parameter
+        for (int32 i = 0; i < count; i++)
+        {
+            l = link;
+            while (l->Down && !l->This->At(i).IsOverride() && l->Down->This->Count() == count)
+                l = l->Down;
+            l->This->At(i).Bind(meta);
+        }
+        return;
     }
+
+    // Rebuild the owners when overrides, collections or counts changed since they were worked out
+    const int64 layout = Platform::AtomicRead(&BindLayoutVersion);
+    bool valid = top->_bindLayout == layout && top->_bindLevelCount == levelCount && top->_bindOwners.Count() == count;
+    for (int32 i = 0; valid && i < levelCount; i++)
+        valid = top->_bindLevels[i] == levels[i] && top->_bindLevelCounts[i] == levels[i]->Count();
+    if (!valid)
+    {
+        top->BuildBindOwners(levels, levelCount);
+        top->_bindLayout = layout;
+    }
+
+    const byte* owners = top->_bindOwners.Get();
+    for (int32 i = 0; i < count; i++)
+        ((MaterialParams*)levels[owners[i]])->Get()[i].Bind(meta);
 }
 
 void MaterialParams::Clone(MaterialParams& result)
@@ -684,12 +745,14 @@ void MaterialParams::Clone(MaterialParams& result)
     }
 
     result._versionHash = _versionHash;
+    OnBindLayoutChanged();
 }
 
 void MaterialParams::Dispose()
 {
     Resize(0);
     _versionHash = 0;
+    OnBindLayoutChanged();
 }
 
 bool MaterialParams::Load(ReadStream* stream)
@@ -944,6 +1007,7 @@ bool MaterialParams::Load(ReadStream* stream)
     }
 
     UpdateHash();
+    OnBindLayoutChanged();
 
     return result;
 }
