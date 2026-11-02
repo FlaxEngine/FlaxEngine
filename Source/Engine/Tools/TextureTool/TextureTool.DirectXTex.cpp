@@ -18,6 +18,7 @@
 #endif
 #include "Engine/Utilities/AnsiPathTempFile.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Engine/EngineService.h"
 
 // Import DirectXTex library
 // Source: https://github.com/Microsoft/DirectXTex
@@ -88,26 +89,69 @@ namespace
 #if USE_EDITOR && PLATFORM_WINDOWS
     // DirectXTex compresses BC6H and BC7 on the GPU with a D3D11 device only. When the editor renders with another API,
     // a D3D11 device of its own does that work (created on first use; one immediate context, so one compression at a time).
+    // The device is released after CompressDeviceIdleTime seconds without a compression, and at exit.
     CriticalSection CompressDeviceLocker;
     ID3D11Device* CompressDevice = nullptr;
-    bool CompressDeviceCreated = false;
+    PFN_D3D11_CREATE_DEVICE CompressCreateDevice = nullptr;
+    bool CompressDeviceFailed = false;
+    double CompressDeviceLastUse = 0.0;
+    constexpr double CompressDeviceIdleTime = 10.0;
 
     ID3D11Device* GetCompressDevice()
     {
-        if (!CompressDeviceCreated)
+        if (!CompressDevice && !CompressDeviceFailed)
         {
-            CompressDeviceCreated = true;
-            const HMODULE library = ::LoadLibraryW(L"d3d11.dll");
-            const auto createDevice = library ? (PFN_D3D11_CREATE_DEVICE)::GetProcAddress(library, "D3D11CreateDevice") : nullptr;
+            if (!CompressCreateDevice)
+            {
+                const HMODULE library = ::LoadLibraryW(L"d3d11.dll");
+                CompressCreateDevice = library ? (PFN_D3D11_CREATE_DEVICE)::GetProcAddress(library, "D3D11CreateDevice") : nullptr;
+            }
             const D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
-            if (!createDevice || FAILED(createDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, &featureLevel, 1, D3D11_SDK_VERSION, &CompressDevice, nullptr, nullptr)))
+            if (!CompressCreateDevice || FAILED(CompressCreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, &featureLevel, 1, D3D11_SDK_VERSION, &CompressDevice, nullptr, nullptr)))
             {
                 CompressDevice = nullptr;
+                CompressDeviceFailed = true;
                 LOG(Warning, "Cannot create a D3D11 device for the GPU texture compression. The CPU compresses BC6H and BC7.");
             }
         }
         return CompressDevice;
     }
+
+    void ReleaseCompressDevice()
+    {
+        if (CompressDevice)
+        {
+            CompressDevice->Release();
+            CompressDevice = nullptr;
+        }
+    }
+
+    class TextureToolCompressDeviceService : public EngineService
+    {
+    public:
+        TextureToolCompressDeviceService()
+            : EngineService(TEXT("Texture Tool Compress Device"))
+        {
+        }
+
+        void Update() override
+        {
+            // TryLock: a compression in progress holds the lock, and the main thread does not wait for it
+            if (!CompressDeviceLocker.TryLock())
+                return;
+            if (CompressDevice && Platform::GetTimeSeconds() - CompressDeviceLastUse > CompressDeviceIdleTime)
+                ReleaseCompressDevice();
+            CompressDeviceLocker.Unlock();
+        }
+
+        void Dispose() override
+        {
+            ScopeLock lock(CompressDeviceLocker);
+            ReleaseCompressDevice();
+        }
+    };
+
+    TextureToolCompressDeviceService TextureToolCompressDeviceServiceInstance;
 #endif
 
     HRESULT Compress(const DirectX::Image* srcImages, size_t nimages, const DirectX::TexMetadata& metadata, DXGI_FORMAT format, DirectX::TEX_COMPRESS_FLAGS compress, float threshold, DirectX::ScratchImage& cImages)
@@ -192,7 +236,11 @@ namespace
             ScopeLock lock(CompressDeviceLocker);
             ID3D11Device* device = GetCompressDevice();
             if (device)
-                return DirectX::Compress(device, srcImages, nimages, metadata, format, compress, 1.0f, cImages);
+            {
+                const HRESULT result = DirectX::Compress(device, srcImages, nimages, metadata, format, compress, 1.0f, cImages);
+                CompressDeviceLastUse = Platform::GetTimeSeconds();
+                return result;
+            }
         }
 #endif
 #endif
