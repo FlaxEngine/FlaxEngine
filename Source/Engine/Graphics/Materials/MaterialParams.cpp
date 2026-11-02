@@ -680,7 +680,7 @@ void MaterialParams::BuildBindOwners(const MaterialParams* const* levels, int32 
     {
         // Same rule as the per-parameter walk: go down while this level doesn't override it and the next level matches
         int32 level = 0;
-        while (level + 1 < levelCount && !levels[level]->Get()[i].IsOverride() && levels[level + 1]->Count() == count)
+        while (level + 1 < levelCount && !levels[level]->At(i).IsOverride() && levels[level + 1]->Count() == count)
             level++;
         _bindOwners.Get()[i] = (byte)level;
     }
@@ -730,7 +730,7 @@ void MaterialParams::Bind(MaterialParamsLink* link, MaterialParameter::BindMeta&
 
     const byte* owners = top->_bindOwners.Get();
     for (int32 i = 0; i < count; i++)
-        ((MaterialParams*)levels[owners[i]])->Get()[i].Bind(meta);
+        ((MaterialParams*)levels[owners[i]])->At(i).Bind(meta);
 }
 
 void MaterialParams::Clone(MaterialParams& result)
