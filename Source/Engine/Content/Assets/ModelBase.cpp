@@ -176,6 +176,25 @@ ModelBase::~ModelBase()
     ASSERT(_streamingTask == nullptr);
 }
 
+int32 ModelBase::GetFinestDrawnLOD(double currentTime, double keepTime)
+{
+    int32 finest = -1;
+    const int32 lodCount = Math::Min(GetLODsCount(), MODEL_MAX_LODS);
+    for (int32 lodIndex = lodCount - 1; lodIndex >= 0; lodIndex--)
+    {
+        const uint64 drawFrame = _lodDrawFrame[lodIndex];
+        if (drawFrame != _lodSeenFrame[lodIndex])
+        {
+            _lodSeenFrame[lodIndex] = drawFrame;
+            _lodDrawTime[lodIndex] = currentTime;
+        }
+        const bool drawn = _lodSeenFrame[lodIndex] != 0;
+        if (drawn && currentTime - _lodDrawTime[lodIndex] < keepTime)
+            finest = lodIndex;
+    }
+    return finest;
+}
+
 void ModelBase::SetupMaterialSlots(int32 slotsCount)
 {
     CHECK(slotsCount >= 0 && slotsCount < 4096);

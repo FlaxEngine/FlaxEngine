@@ -131,6 +131,7 @@ void Model::Draw(const RenderContext& renderContext, MaterialBase* material, con
     if (lodIndex == -1)
         return;
     lodIndex += renderContext.View.ModelLODBias;
+    OnLODDrawn(Math::Clamp(lodIndex, 0, LODs.Count() - 1), Engine::FrameCount);
     lodIndex = ClampLODIndex(lodIndex);
 
     // Draw
