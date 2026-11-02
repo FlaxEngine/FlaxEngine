@@ -50,7 +50,9 @@ void GPUTasksContext::Run(GPUTask* task)
 {
     ASSERT(task != nullptr);
 
-    task->Execute(this);
+    // A task canceled (or taken) after RequestWork picked it is skipped: the canceling thread ends it
+    if (!task->Execute(this))
+        return;
 
     // Keep only the task that waits for a sync. A task that already ended (finished, failed or canceled) is queued for deletion,
     // so the list would hold a pointer to the deleted object when the next frame comes after its time to live (eg. after a long
