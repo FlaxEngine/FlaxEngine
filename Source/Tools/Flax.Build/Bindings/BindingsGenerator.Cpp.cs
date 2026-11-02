@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.AccessControl;
 using System.Text;
 using BuildData = Flax.Build.Builder.BuildData;
 
@@ -720,7 +721,7 @@ namespace Flax.Build.Bindings
                         if (!CppUsedNonPodTypes.Contains(apiType))
                             CppUsedNonPodTypes.Add(apiType);
                         type = "MObject*";
-                        return "MConverter<" + apiType.Name + ">::Box({0})";
+                        return "MConverter<" + apiType.FullNameNative + ">::Box({0})";
                     }
 
                     // Nested type (namespace prefix is required)
@@ -934,7 +935,7 @@ namespace Flax.Build.Bindings
                         if (!CppUsedNonPodTypes.Contains(apiType))
                             CppUsedNonPodTypes.Add(apiType);
                         type = "MObject*";
-                        return "MConverter<" + apiType.Name + ">::Unbox({0})";
+                        return "MConverter<" + apiType.FullNameNative + ">::Unbox({0})";
                     }
 
                     // Scripting Object
@@ -1066,8 +1067,71 @@ namespace Flax.Build.Bindings
             return true;
         }
 
+        private static void ValidateScriptingObjectReferences(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller)
+        {
+            //validate if we are a ScriptingObject in case of
+            //ScriptingObjectReference<Class>
+            //and definition looks like this
+            //API_CLASS() class Class
+            //{
+            //   DECLARE_SCRIPTING_TYPE_MINIMAL(Class)
+            //}
+            //
+            //we cant be a ScriptingObjectReference so invalid usage of API on user side
+            //validate now instead of getting random ass error in glue code
+            //on C++ side and C#
+
+            if (typeInfo == null)
+                return;
+
+            if (typeInfo.Type == "ScriptingObjectReference" ||
+                typeInfo.Type == "ScriptingObjectInterfaceReference")
+            {
+
+                if (!(typeInfo.GenericArgs == null || typeInfo.GenericArgs.Count != 1)) {
+                    var isref = typeInfo.Type == "ScriptingObjectReference";
+                    var targetInfo = typeInfo.GenericArgs[0];
+                    var target = FindApiTypeInfo(buildData, targetInfo, caller);
+                    bool validTarget = isref
+                        ? target?.IsScriptingObject == true
+                        : target?.IsInterface == true;
+
+                    if (!validTarget)
+                    {
+                        var referenceType = isref
+                            ? "ScriptingObjectReference"
+                            : "ScriptingObjectInterfaceReference";
+
+                        var requirement = isref
+                            ? "a class derived from ScriptingObject"
+                            : "an API interface";
+
+                        //in case there is more then 1 wrong usage print all of them
+                        //bindings don't have access to file line col to do proper report
+                        //Log.Fatal will stop compilation
+                        Log.Fatal(caller.File, $"Invalid API usage: '{referenceType}<{targetInfo}>' requires {requirement}. Declared in {caller.FullNameNative}.");
+                    }
+                }
+            }
+
+            if (typeInfo.GenericArgs != null)
+            {
+                foreach (var argument in typeInfo.GenericArgs)
+                    ValidateScriptingObjectReferences(buildData, argument, caller);
+            }
+        }
         private static void GenerateCppWrapperFunction(BuildData buildData, StringBuilder contents, ApiTypeInfo caller, string callerName, FunctionInfo functionInfo, string callFormat = "{0}({1})")
         {
+
+            ValidateScriptingObjectReferences(buildData, functionInfo.ReturnType, caller);
+            foreach (var parameter in functionInfo.Parameters)
+                ValidateScriptingObjectReferences(buildData, parameter.Type, caller);
+
+            var callerStructure = caller as StructureInfo;
+            bool marshalCallerStructure = !functionInfo.IsStatic && callerStructure != null && !callerStructure.IsPod;
+            if (marshalCallerStructure && !CppUsedNonPodTypes.Contains(callerStructure))
+                CppUsedNonPodTypes.Add(callerStructure);
+
             // Setup function binding glue to ensure that wrapper method signature matches for C++ and C#
             functionInfo.Glue = new FunctionInfo.GlueInfo
             {
@@ -1143,11 +1207,11 @@ namespace Flax.Build.Bindings
             var signatureStart = contents.Length;
             if (!functionInfo.IsStatic)
             {
-                contents.Append(caller.Name).Append("* __obj");
+                contents.Append(marshalCallerStructure ? GenerateCppManagedWrapperName(callerStructure) : caller.Name).Append("* __obj");
                 separator = true;
             }
 
-            var useInlinedReturn = true;
+            var useInlinedReturn = !marshalCallerStructure;
             for (var i = 0; i < functionInfo.Parameters.Count; i++)
             {
                 var parameterInfo = functionInfo.Parameters[i];
@@ -1255,6 +1319,9 @@ namespace Flax.Build.Bindings
             if (!functionInfo.IsStatic)
                 contents.Append(indent).AppendLine("if (__obj == nullptr) DebugLog::ThrowNullReference();");
 
+            if (marshalCallerStructure)
+                contents.Append(indent).AppendLine("auto __objNative = ToNative(*__obj);");
+
             string callBegin = indent;
             if (functionInfo.Glue.UseReferenceForResult)
             {
@@ -1290,7 +1357,7 @@ namespace Flax.Build.Bindings
             else
             {
                 // Call native member method
-                call = $"__obj->{functionInfo.Name}";
+                call = marshalCallerStructure ? $"__objNative.{functionInfo.Name}" : $"__obj->{functionInfo.Name}";
             }
             string callParams = string.Empty;
             separator = false;
@@ -1405,6 +1472,9 @@ namespace Flax.Build.Bindings
 
             contents.Append(';');
             contents.AppendLine();
+
+            if (marshalCallerStructure)
+                contents.Append(indent).AppendLine("*__obj = ToManaged(__objNative);");
 
             // Convert special parameters back to managed world
             if (!useInlinedReturn)
@@ -2536,12 +2606,23 @@ namespace Flax.Build.Bindings
                     GenerateCppWrapperFunction(buildData, contents, structureInfo, internalTypeName, fieldInfo.Setter, "{0} = {1}");
             }
 
+            // Properties
+            foreach (var propertyInfo in structureInfo.Properties)
+            {
+                if (!useCSharp || propertyInfo.IsHidden)
+                    continue;
+                if (propertyInfo.Getter != null)
+                    GenerateCppWrapperFunction(buildData, contents, structureInfo, internalTypeName, propertyInfo.Getter);
+                if (propertyInfo.Setter != null)
+                    GenerateCppWrapperFunction(buildData, contents, structureInfo, internalTypeName, propertyInfo.Setter);
+            }
+
             // Functions
             foreach (var functionInfo in structureInfo.Functions)
             {
-                // TODO: add support for API functions in structures
-                throw new NotImplementedException($"TODO: add support for API functions in structures (function {functionInfo} in structure {structureInfo.Name})");
-                //GenerateCppWrapperFunction(buildData, contents, structureInfo, structureTypeNameInternal, functionInfo);
+                if (!useCSharp || functionInfo.IsHidden)
+                    continue;
+                GenerateCppWrapperFunction(buildData, contents, structureInfo, internalTypeName, functionInfo);
             }
 
             GenerateCppTypeInternals?.Invoke(buildData, structureInfo, contents);

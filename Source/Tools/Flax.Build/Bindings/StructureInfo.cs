@@ -12,6 +12,7 @@ namespace Flax.Build.Bindings
     public class StructureInfo : ClassStructInfo
     {
         public List<FieldInfo> Fields = new List<FieldInfo>();
+        public List<PropertyInfo> Properties = new List<PropertyInfo>();
         public bool IsAutoSerialization;
         public bool ForceNoPod;
         public bool NoDefault;
@@ -25,6 +26,70 @@ namespace Flax.Build.Bindings
         public override void Init(Builder.BuildData buildData)
         {
             base.Init(buildData);
+
+            // Give struct methods stable, unique binding names. These names are used by both
+            // the native wrapper and the generated LibraryImport entry point. Class methods
+            // get this in VirtualClassInfo.Init, but structures do not derive from that type.
+            var usedFunctionNames = new HashSet<string>(StringComparer.Ordinal);
+            for (var baseType = BaseType; baseType != null; baseType = baseType.BaseType)
+            {
+                foreach (var baseFunction in baseType.Functions)
+                    usedFunctionNames.Add(string.IsNullOrEmpty(baseFunction.UniqueName) ? baseFunction.Name : baseFunction.UniqueName);
+                if (baseType is ClassInfo baseClass)
+                {
+                    foreach (var baseProperty in baseClass.Properties)
+                    {
+                        if (baseProperty.Getter != null)
+                            usedFunctionNames.Add(string.IsNullOrEmpty(baseProperty.Getter.UniqueName) ? baseProperty.Getter.Name : baseProperty.Getter.UniqueName);
+                        if (baseProperty.Setter != null)
+                            usedFunctionNames.Add(string.IsNullOrEmpty(baseProperty.Setter.UniqueName) ? baseProperty.Setter.Name : baseProperty.Setter.UniqueName);
+                    }
+                }
+                else if (baseType is StructureInfo baseStructure)
+                {
+                    foreach (var baseProperty in baseStructure.Properties)
+                    {
+                        if (baseProperty.Getter != null)
+                            usedFunctionNames.Add(string.IsNullOrEmpty(baseProperty.Getter.UniqueName) ? baseProperty.Getter.Name : baseProperty.Getter.UniqueName);
+                        if (baseProperty.Setter != null)
+                            usedFunctionNames.Add(string.IsNullOrEmpty(baseProperty.Setter.UniqueName) ? baseProperty.Setter.Name : baseProperty.Setter.UniqueName);
+                    }
+                }
+            }
+            var structFunctions = new List<FunctionInfo>(Functions);
+            foreach (var propertyInfo in Properties)
+            {
+                if (propertyInfo.Getter != null)
+                    structFunctions.Add(propertyInfo.Getter);
+                if (propertyInfo.Setter != null)
+                    structFunctions.Add(propertyInfo.Setter);
+            }
+            foreach (var functionInfo in structFunctions)
+            {
+                var uniqueName = functionInfo.Name;
+                var suffix = 1;
+                while (!usedFunctionNames.Add(uniqueName))
+                    uniqueName = functionInfo.Name + suffix++;
+                functionInfo.UniqueName = uniqueName;
+            }
+
+            // Virtual methods add a native vtable pointer, which cannot be represented by a POD C# struct.
+            // Require an explicit NoPod annotation so the struct uses the non-POD binding path.
+            if (!ForceNoPod)
+            {
+                foreach (var functionInfo in Functions)
+                {
+                    if (functionInfo.IsVirtual)
+                        throw new NotSupportedException($"Structure '{FullNameNative}' declares virtual API function '{functionInfo.Name}' but is not marked API_STRUCT(NoPod). Virtual struct methods require the non-POD layout.");
+                }
+                foreach (var propertyInfo in Properties)
+                {
+                    if (propertyInfo.Getter?.IsVirtual == true)
+                        throw new NotSupportedException($"Structure '{FullNameNative}' declares virtual API property getter '{propertyInfo.Getter.Name}' but is not marked API_STRUCT(NoPod).");
+                    if (propertyInfo.Setter?.IsVirtual == true)
+                        throw new NotSupportedException($"Structure '{FullNameNative}' declares virtual API property setter '{propertyInfo.Setter.Name}' but is not marked API_STRUCT(NoPod).");
+                }
+            }
 
             if (ForceNoPod || (Interfaces != null && Interfaces.Count != 0) || IsTemplate)
             {
@@ -70,6 +135,7 @@ namespace Flax.Build.Bindings
         public override void Write(BinaryWriter writer)
         {
             BindingsGenerator.Write(writer, Fields);
+            BindingsGenerator.Write(writer, Properties);
             BindingsGenerator.Write(writer, Functions);
             writer.Write(IsAutoSerialization);
             writer.Write(ForceNoPod);
@@ -81,6 +147,7 @@ namespace Flax.Build.Bindings
         public override void Read(BinaryReader reader)
         {
             Fields = BindingsGenerator.Read(reader, Fields);
+            Properties = BindingsGenerator.Read(reader, Properties);
             Functions = BindingsGenerator.Read(reader, Functions);
             IsAutoSerialization = reader.ReadBoolean();
             ForceNoPod = reader.ReadBoolean();
