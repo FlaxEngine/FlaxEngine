@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ModelInstanceActor.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Content/Assets/MaterialInstance.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 
@@ -40,7 +41,22 @@ void ModelInstanceActor::SetMaterial(int32 entryIndex, MaterialBase* material)
     if (Entries.Count() == 0 && !material)
         return;
     const int32 slotsCount = GetMaterialSlots().Length();
-    if (Entries.Count() != slotsCount)
+    if (slotsCount == 0)
+    {
+        // Model has no slots (not loaded or unresolved, e.g. replaying
+        // material overrides during deserialization before a procedural model
+        // is rebuilt): stash the override so a later model load reconciles it
+        // via SetupIfInvalid instead of dropping it on a check failure.
+        if (entryIndex < 0)
+        {
+            CHECK_NO_RETURN(entryIndex >= 0);
+            return;
+        }
+        LOG(Warning, "SetMaterial: model slots unavailable on '{0}', stashing entry {1}.", GetNamePath(), entryIndex);
+        if (Entries.Count() <= entryIndex)
+            Entries.Setup(entryIndex + 1);
+    }
+    else if (Entries.Count() != slotsCount)
         Entries.Setup(slotsCount);
     CHECK(entryIndex >= 0 && entryIndex < Entries.Count());
     if (Entries[entryIndex].Material == material)
