@@ -98,7 +98,7 @@ float ModelsStreamingHandler::CalculateTargetQuality(StreamableResource* resourc
     ASSERT(resource);
     auto& model = *(Model*)resource;
     const int32 lodCount = model.GetLODsCount();
-    if (!model.StreamLODsByDraw || lodCount <= 1)
+    if (!model.GetStreamLODs() || lodCount <= 1)
         return 1.0f;
 
     // Keep the LODs from one finer than the finest drawn (it loads before the draws need it), to the last LOD

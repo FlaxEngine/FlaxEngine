@@ -512,6 +512,8 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
             {
                 // Copy general properties
                 data->MinScreenSize = model->MinScreenSize;
+                if (auto* staticModel = ScriptingObject::Cast<Model>(asset))
+                    data->StreamLODs = staticModel->GetStreamLODs();
             }
             if (restoreMaterials && model)
             {

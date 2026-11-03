@@ -131,7 +131,7 @@ void Model::Draw(const RenderContext& renderContext, MaterialBase* material, con
     if (lodIndex == -1)
         return;
     lodIndex += renderContext.View.ModelLODBias;
-    OnLODDrawn(Math::Clamp(lodIndex, 0, LODs.Count() - 1), Engine::FrameCount);
+    OnLODDrawn(Math::Clamp(lodIndex, 0, LODs.Count() - 1));
     lodIndex = ClampLODIndex(lodIndex);
 
     // Draw
@@ -230,6 +230,7 @@ bool Model::Init(const Span<int32>& meshesCountPerLod)
     // Setup
     MaterialSlots.Resize(1);
     MinScreenSize = 0.0f;
+    _streamLODs = false;
     SAFE_DELETE_GPU_RESOURCE(SDF.Texture);
 
     // Setup LODs
@@ -315,6 +316,11 @@ bool Model::LoadHeader(ReadStream& stream, byte& headerVersion)
         }
     }
 
+    // Streaming (version 3 and later; an older model keeps all LODs loaded)
+    _streamLODs = false;
+    if (headerVersion >= 3)
+        _streamLODs = stream.ReadBool();
+
     return stream.HasError();
 }
 
@@ -324,7 +330,7 @@ bool Model::SaveHeader(WriteStream& stream) const
 {
     if (ModelBase::SaveHeader(stream))
         return true;
-    static_assert(MODEL_HEADER_VERSION == 2, "Update code");
+    static_assert(MODEL_HEADER_VERSION == 3, "Update code");
     
     // LODs
     stream.Write((byte)LODs.Count());
@@ -344,6 +350,9 @@ bool Model::SaveHeader(WriteStream& stream) const
         }
     }
 
+    // Streaming
+    stream.WriteBool(_streamLODs);
+
     return false;
 }
 
@@ -351,7 +360,7 @@ bool Model::SaveHeader(WriteStream& stream, const ModelData& modelData)
 {
     if (ModelBase::SaveHeader(stream, modelData))
         return true;
-    static_assert(MODEL_HEADER_VERSION == 2, "Update code");
+    static_assert(MODEL_HEADER_VERSION == 3, "Update code");
     
     // LODs
     stream.Write((byte)modelData.LODs.Count());
@@ -373,6 +382,9 @@ bool Model::SaveHeader(WriteStream& stream, const ModelData& modelData)
             stream.Write((int8)mesh->LightmapUVsIndex);
         }
     }
+
+    // Streaming
+    stream.WriteBool(modelData.StreamLODs);
 
     return stream.HasError();
 }
@@ -579,10 +591,17 @@ Asset::LoadResult Model::load()
     }
 #endif
 
-    // Request resource streaming
-    StartStreaming(true);
+    // Request resource streaming (dynamic only for a model that streams its LODs by the draws, else all LODs stay loaded)
+    StartStreaming(_streamLODs);
 
     return LoadResult::Ok;
+}
+
+void Model::SetStreamLODs(bool value)
+{
+    _streamLODs = value;
+    if (IsLoaded())
+        StartStreaming(value);
 }
 
 void Model::unload(bool isReloading)

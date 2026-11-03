@@ -18,7 +18,7 @@
 // Chunk 15: SDF
 #define MODEL_LOD_TO_CHUNK_INDEX(lod) (lod + 1)
 
-#define MODEL_HEADER_VERSION (byte)2
+#define MODEL_HEADER_VERSION (byte)3
 #define MODEL_MESH_VERSION (byte)2
 
 class MeshBase;
@@ -128,21 +128,10 @@ protected:
 
 public:
     /// <summary>
-    /// If checked, the streaming keeps only the LODs that the draws need: from one LOD finer than the finest LOD drawn recently, to the last LOD. If unchecked, all LODs stay loaded.
-    /// </summary>
-    API_FIELD() bool StreamLODsByDraw = false;
-
-    /// <summary>
-    /// Records that a draw selected the LOD (before the clamp to the loaded LODs). Called from the draw threads.
+    /// Records that a draw selected the LOD in this frame (before the clamp to the loaded LODs). Called from the draw threads.
     /// </summary>
     /// <param name="lodIndex">The LOD index the draw selected, in the range of the LODs count.</param>
-    /// <param name="frame">The current frame number (Engine::FrameCount).</param>
-    FORCE_INLINE void OnLODDrawn(int32 lodIndex, uint64 frame) const
-    {
-        // Write only on a change: many draw threads read the same value in one frame
-        if (_lodDrawFrame[lodIndex] != frame)
-            _lodDrawFrame[lodIndex] = frame;
-    }
+    void OnLODDrawn(int32 lodIndex) const;
 
     /// <summary>
     /// Gets the finest LOD that a draw selected within the keep time. Called by the streaming.
