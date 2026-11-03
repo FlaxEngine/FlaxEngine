@@ -495,6 +495,9 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
         data = &dataThis;
     }
 
+    // The import option; a reimport restores the existing model's value below
+    data->StreamLODs = options.StreamLODs;
+
     // Check if restore local changes on asset reimport
     constexpr bool RestoreModelOptionsOnReimport = true;
     constexpr bool RestoreAnimEventsOnReimport = true;

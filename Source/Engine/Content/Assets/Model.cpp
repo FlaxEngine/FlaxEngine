@@ -600,8 +600,8 @@ Asset::LoadResult Model::load()
 void Model::SetStreamLODs(bool value)
 {
     _streamLODs = value;
-    if (IsLoaded())
-        StartStreaming(value);
+    _isDynamic = value;
+    RequestStreamingUpdate();
 }
 
 void Model::unload(bool isReloading)

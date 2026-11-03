@@ -292,6 +292,9 @@ public:
 
     public: // Level Of Detail
 
+        // If checked, the model streams its LODs by the draws: the streaming keeps the LODs from one LOD finer than the finest LOD drawn recently, to the last LOD. If unchecked, all LODs stay loaded. A reimport keeps the value of the existing model.
+        API_FIELD(Attributes="EditorOrder(1090), EditorDisplay(\"Level Of Detail\", \"Stream LODs\"), VisibleIf(nameof(ShowGeometry))")
+        bool StreamLODs = false;
         // If checked, the importer will generate a sequence of LODs based on the base LOD index.
         API_FIELD(Attributes="EditorOrder(1100), EditorDisplay(\"Level Of Detail\", \"Generate LODs\"), VisibleIf(nameof(ShowGeometry))")
         bool GenerateLODs = false;
