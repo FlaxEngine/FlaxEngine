@@ -187,15 +187,15 @@ cbuffer ViewData : register(b1)
     float ViewPadding0;
     float TestValue;
     float ScaledTimeParam;
-    float4 ForegroundInfo; // x: foreground layers mask (as uint), y: near plane, zw: clip-space depth squeeze (z = w * x + y)
+    float4 ForegroundInfo; // x: foreground layers mask (as uint), y: near plane, zw: clip-space depth squeeze (z = w * ForegroundInfo.z + ForegroundInfo.w)
 };
 #endif
 
 #if USE_PER_VIEW_CONSTANTS
-// Squeezes the depth of an object on one of the view's foreground layers (eg. a first-person weapon) in between the near plane and the view's foreground depth, so it draws over the rest of the scene. Its place on the screen is kept, and the squeeze is linear in 1/depth so triangles stay flat.
+// Squeezes the depth of an object on one of the view's foreground layers (eg. a first-person weapon) in between the near plane and the view's foreground depth, so it draws over the rest of the scene. Its place on the screen is kept, and the squeeze is affine in clip space (linear in 1/depth) so triangles stay flat. It's applied to every vertex, including those in front of the near plane: the squeezed depth is still 0 at the near plane, so edges crossing it are clipped in the same place.
 float4 ApplyForegroundDepth(float4 position, ObjectData object)
 {
-    if (((asuint(ForegroundInfo.x) >> object.Layer) & 1) != 0 && position.w > ForegroundInfo.y)
+    if (((asuint(ForegroundInfo.x) >> object.Layer) & 1) != 0)
         position.z = position.w * ForegroundInfo.z + ForegroundInfo.w;
     return position;
 }

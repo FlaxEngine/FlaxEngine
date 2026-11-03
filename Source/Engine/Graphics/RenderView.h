@@ -188,7 +188,7 @@ public:
     API_FIELD() LayersMask RenderLayersMask;
 
     /// <summary>
-    /// The layers drawn in the foreground (eg. first-person arms and weapon): their depth is squeezed in between the near plane and ForegroundDepth, so they draw over the rest of the scene. Only perspective views use it. None by default (shadow views never use it).
+    /// The layers drawn in the foreground (eg. first-person arms and weapon): their depth is squeezed in between the near plane and ForegroundDepth, so they draw over the rest of the scene. Only perspective views use it, and only Surface materials are squeezed. None by default (shadow views never use it).
     /// </summary>
     API_FIELD() LayersMask ForegroundLayersMask = LayersMask(0);
 
