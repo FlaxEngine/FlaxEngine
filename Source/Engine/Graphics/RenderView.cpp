@@ -210,6 +210,8 @@ void RenderView::CopyFrom(const Camera* camera, const Viewport* viewport)
     Frustum.GetInvMatrix(IVP);
     CullingFrustum = Frustum;
     RenderLayersMask = camera->RenderLayersMask;
+    ForegroundLayersMask = camera->ForegroundLayersMask;
+    ForegroundDepth = camera->ForegroundDepth;
     Flags = camera->RenderFlags;
     Mode = camera->RenderMode;
     ViewportRect = camera->ViewportRect;

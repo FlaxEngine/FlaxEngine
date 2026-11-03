@@ -86,6 +86,7 @@ struct ObjectData
     float PerInstanceRandom;
     uint SkinningOffset;
     int PrevBonesOffset;
+    uint Layer;
 };
 
 float2 UnpackHalf2(uint xy)
@@ -122,6 +123,7 @@ ObjectData LoadObject(Buffer<float4> objectsBuffer, uint objectIndex)
     object.LODDitherFactor = (packed7x & 127) / 127.0f * ((packed7x & 128) == 128 ? -1.0f : 1.0f);
     object.SkinningOffset = asuint(vector7.y);
     object.PrevBonesOffset = (int)(packed7x >> 16) - 32760;
+    object.Layer = (packed7x >> 9) & 31;
     object.LightmapArea.xy = UnpackHalf2(asuint(vector7.z));
     object.LightmapArea.zw = UnpackHalf2(asuint(vector7.w));
     return object;
@@ -185,7 +187,18 @@ cbuffer ViewData : register(b1)
     float ViewPadding0;
     float TestValue;
     float ScaledTimeParam;
+    float4 ForegroundInfo; // x: foreground layers mask (as uint), y: near plane, zw: clip-space depth squeeze (z = w * x + y)
 };
+#endif
+
+#if USE_PER_VIEW_CONSTANTS
+// Squeezes the depth of an object on one of the view's foreground layers (eg. a first-person weapon) in between the near plane and the view's foreground depth, so it draws over the rest of the scene. Its place on the screen is kept, and the squeeze is linear in 1/depth so triangles stay flat.
+float4 ApplyForegroundDepth(float4 position, ObjectData object)
+{
+    if (((asuint(ForegroundInfo.x) >> object.Layer) & 1) != 0 && position.w > ForegroundInfo.y)
+        position.z = position.w * ForegroundInfo.z + ForegroundInfo.w;
+    return position;
+}
 #endif
 
 // Draw pipeline constant buffer (with per-draw constants at slot 2)

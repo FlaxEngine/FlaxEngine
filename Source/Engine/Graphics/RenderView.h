@@ -187,6 +187,16 @@ public:
     /// </summary>
     API_FIELD() LayersMask RenderLayersMask;
 
+    /// <summary>
+    /// The layers drawn in the foreground (eg. first-person arms and weapon): their depth is squeezed in between the near plane and ForegroundDepth, so they draw over the rest of the scene. Only perspective views use it. None by default (shadow views never use it).
+    /// </summary>
+    API_FIELD() LayersMask ForegroundLayersMask = LayersMask(0);
+
+    /// <summary>
+    /// How far from the view the foreground layers' depth reaches at most (in world units). Ignored unless beyond the near plane.
+    /// </summary>
+    API_FIELD() float ForegroundDepth = 30.0f;
+
 public:
     /// <summary>
     /// The view information vector with packed components to reconstruct linear depth and view position from the hardware depth buffer. Cached before rendering.
