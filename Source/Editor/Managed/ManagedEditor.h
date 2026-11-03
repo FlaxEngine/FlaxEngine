@@ -218,6 +218,29 @@ public:
     /// <param name="minScreenSize">The screen size below which the model is not drawn; used only with screenSizes.</param>
     /// <returns>True if the data is inconsistent or the asset could not be created, otherwise false.</returns>
     API_FUNCTION() static bool CreateModel(const String& outputPath, const Span<int32>& meshesPerLod, const Span<int32>& vertexCounts, const Span<int32>& indexCounts, const Span<Float3>& positions, const Span<Float3>& normals, const Span<Color32>& colors, const Span<uint32>& indices, const ModelTool::Options& options, const Span<float>& screenSizes, float minScreenSize);
+
+    /// <summary>
+    /// Creates a textured model asset from mesh data held on the CPU, as the other CreateModel, with texture coordinates
+    /// and named material slots: each mesh draws with one slot. The tangents are generated from the texture coordinates
+    /// with the options' tangent smoothing angle, and the meshes are optimized when the options say so (as a model
+    /// import does after it reads its file).
+    /// </summary>
+    /// <param name="outputPath">The result asset file path.</param>
+    /// <param name="meshesPerLod">The meshes in each level of detail, finest first.</param>
+    /// <param name="vertexCounts">The vertices of each mesh, in level order.</param>
+    /// <param name="indexCounts">The indices of each mesh (three a triangle), in level order.</param>
+    /// <param name="meshSlots">The material slot of each mesh, an index into slotNames, in level order.</param>
+    /// <param name="slotNames">The material slots' names.</param>
+    /// <param name="positions">The positions of all meshes, one run per mesh.</param>
+    /// <param name="normals">The normals, as the positions.</param>
+    /// <param name="texCoords">The texture coordinates (one channel), as the positions.</param>
+    /// <param name="colors">The vertex colors, as the positions.</param>
+    /// <param name="indices">The indices of all meshes, one run per mesh, each relative to its mesh.</param>
+    /// <param name="options">The import settings; the position and texture coordinate formats, the tangent smoothing angle and the mesh optimization are used.</param>
+    /// <param name="screenSizes">The screen size of each level of detail, finest first; empty for the sizes Flax computes (as an import does).</param>
+    /// <param name="minScreenSize">The screen size below which the model is not drawn; used only with screenSizes.</param>
+    /// <returns>True if the data is inconsistent or the asset could not be created, otherwise false.</returns>
+    API_FUNCTION() static bool CreateModel(const String& outputPath, const Span<int32>& meshesPerLod, const Span<int32>& vertexCounts, const Span<int32>& indexCounts, const Span<int32>& meshSlots, const Array<String>& slotNames, const Span<Float3>& positions, const Span<Float3>& normals, const Span<Float2>& texCoords, const Span<Color32>& colors, const Span<uint32>& indices, const ModelTool::Options& options, const Span<float>& screenSizes, float minScreenSize);
 #endif
 
 #if COMPILE_WITH_AUDIO_TOOL

@@ -590,11 +590,20 @@ static bool IsValidModelLayout(const Span<int32>& meshesPerLod, const Span<int32
     return vertexTotal == vertices && indexTotal == indices;
 }
 
-bool ManagedEditor::CreateModel(const String& outputPath, const Span<int32>& meshesPerLod, const Span<int32>& vertexCounts, const Span<int32>& indexCounts, const Span<Float3>& positions, const Span<Float3>& normals, const Span<Color32>& colors, const Span<uint32>& indices, const ModelTool::Options& options, const Span<float>& screenSizes, float minScreenSize)
+// The meshes of CreateModel's flat arrays as model data. Without texture coordinates (texCoords empty) every mesh draws
+// with one unnamed slot; with them each mesh takes its slot from meshSlots, and its tangents are generated and the mesh
+// optimized as a model import does after reading its file (ModelTool.OpenFBX.cpp). True on inconsistent data.
+static bool BuildCreatedModel(ModelData& data, const Span<int32>& meshesPerLod, const Span<int32>& vertexCounts, const Span<int32>& indexCounts, const Span<int32>& meshSlots, const Array<String>& slotNames, const Span<Float3>& positions, const Span<Float3>& normals, const Span<Float2>& texCoords, const Span<Color32>& colors, const Span<uint32>& indices, const ModelTool::Options& options, const Span<float>& screenSizes)
 {
+    const bool textured = texCoords.Length() != 0;
     if (!IsValidModelLayout(meshesPerLod, vertexCounts, indexCounts, positions.Length(), indices.Length()) || normals.Length() != positions.Length() || colors.Length() != positions.Length())
     {
         LOG(Error, "CreateModel: the arrays do not fit ({0} levels, {1} vertex counts, {2} index counts, {3} positions, {4} normals, {5} colors, {6} indices)", meshesPerLod.Length(), vertexCounts.Length(), indexCounts.Length(), positions.Length(), normals.Length(), colors.Length(), indices.Length());
+        return true;
+    }
+    if (textured && (texCoords.Length() != positions.Length() || meshSlots.Length() != vertexCounts.Length() || slotNames.IsEmpty()))
+    {
+        LOG(Error, "CreateModel: {0} texture coordinates for {1} positions, {2} mesh slots for {3} meshes, {4} slot names", texCoords.Length(), positions.Length(), meshSlots.Length(), vertexCounts.Length(), slotNames.Count());
         return true;
     }
     if (screenSizes.Length() != 0 && screenSizes.Length() != meshesPerLod.Length())
@@ -602,10 +611,14 @@ bool ManagedEditor::CreateModel(const String& outputPath, const Span<int32>& mes
         LOG(Error, "CreateModel: {0} screen sizes for {1} levels", screenSizes.Length(), meshesPerLod.Length());
         return true;
     }
-    ModelData data;
     data.PositionFormat = (ModelData::PositionFormats)options.PositionFormat;
     data.TexCoordFormat = (ModelData::TexCoordFormats)options.TexCoordFormat;
-    data.Materials.Resize(1);
+    data.Materials.Resize(textured ? slotNames.Count() : 1);
+    if (textured)
+    {
+        for (int32 slot = 0; slot < slotNames.Count(); slot++)
+            data.Materials[slot].Name = slotNames[slot];
+    }
     data.LODs.Resize(meshesPerLod.Length());
     int32 mesh = 0;
     int32 vertexStart = 0;
@@ -632,10 +645,35 @@ bool ManagedEditor::CreateModel(const String& outputPath, const Span<int32>& mes
                     return true;
                 }
             }
+            if (textured)
+            {
+                const int32 slot = meshSlots[mesh];
+                if (slot < 0 || slot >= slotNames.Count())
+                {
+                    LOG(Error, "CreateModel: mesh {0} has the slot {1} of {2}", mesh, slot, slotNames.Count());
+                    return true;
+                }
+                meshData->MaterialSlotIndex = slot;
+                meshData->UVs.Resize(1);
+                meshData->UVs[0].Set(texCoords.Get() + vertexStart, vertexCount);
+                if (meshData->GenerateTangents(options.SmoothingTangentsAngle))
+                {
+                    LOG(Error, "CreateModel: mesh {0}: the tangents could not be generated", mesh);
+                    return true;
+                }
+                if (options.OptimizeMeshes)
+                    meshData->Optimize();
+            }
             vertexStart += vertexCount;
             indexStart += indexCount;
         }
     }
+    return false;
+}
+
+// The created model data as an asset at outputPath, with the given level screen sizes (empty: Flax's own)
+static bool CreateModelAsset(const String& outputPath, ModelData& data, const Span<float>& screenSizes, float minScreenSize)
+{
     // as Import: one spelling of the path, else the content database sees the same file twice (a duplicated asset)
     String path = outputPath;
     FileSystem::NormalizePath(path);
@@ -645,6 +683,28 @@ bool ManagedEditor::CreateModel(const String& outputPath, const Span<int32>& mes
         data.LODs[lod].ScreenSize = screenSizes[lod];
     data.MinScreenSize = minScreenSize;
     return AssetsImportingManager::Create(ImportModel::CreateWithScreenSizes, path, &data);
+}
+
+bool ManagedEditor::CreateModel(const String& outputPath, const Span<int32>& meshesPerLod, const Span<int32>& vertexCounts, const Span<int32>& indexCounts, const Span<Float3>& positions, const Span<Float3>& normals, const Span<Color32>& colors, const Span<uint32>& indices, const ModelTool::Options& options, const Span<float>& screenSizes, float minScreenSize)
+{
+    ModelData data;
+    const Array<String> noSlots;
+    if (BuildCreatedModel(data, meshesPerLod, vertexCounts, indexCounts, Span<int32>(), noSlots, positions, normals, Span<Float2>(), colors, indices, options, screenSizes))
+        return true;
+    return CreateModelAsset(outputPath, data, screenSizes, minScreenSize);
+}
+
+bool ManagedEditor::CreateModel(const String& outputPath, const Span<int32>& meshesPerLod, const Span<int32>& vertexCounts, const Span<int32>& indexCounts, const Span<int32>& meshSlots, const Array<String>& slotNames, const Span<Float3>& positions, const Span<Float3>& normals, const Span<Float2>& texCoords, const Span<Color32>& colors, const Span<uint32>& indices, const ModelTool::Options& options, const Span<float>& screenSizes, float minScreenSize)
+{
+    if (texCoords.Length() == 0)
+    {
+        LOG(Error, "CreateModel: a textured model needs texture coordinates");
+        return true;
+    }
+    ModelData data;
+    if (BuildCreatedModel(data, meshesPerLod, vertexCounts, indexCounts, meshSlots, slotNames, positions, normals, texCoords, colors, indices, options, screenSizes))
+        return true;
+    return CreateModelAsset(outputPath, data, screenSizes, minScreenSize);
 }
 
 bool ManagedEditor::TryRestoreImportOptions(ModelTool::Options& options, String assetPath)
