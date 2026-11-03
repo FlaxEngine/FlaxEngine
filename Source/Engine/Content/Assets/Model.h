@@ -159,11 +159,27 @@ public:
     /// </summary>
     API_FIELD(ReadOnly) SDFData SDF;
 
+private:
+    bool _streamLODs = false;
+
 public:
     /// <summary>
     /// Determines whether any LOD has been initialized.
     /// </summary>
     bool HasAnyLODInitialized() const;
+
+    /// <summary>
+    /// Gets whether the model streams its LODs by the draws: the streaming keeps the LODs from one LOD finer than the finest LOD drawn recently, to the last LOD. If disabled (the default), all LODs stay loaded. Saved with the asset.
+    /// </summary>
+    API_PROPERTY() FORCE_INLINE bool GetStreamLODs() const
+    {
+        return _streamLODs;
+    }
+
+    /// <summary>
+    /// Sets whether the model streams its LODs by the draws (see GetStreamLODs). Takes effect at once; save the asset to keep it.
+    /// </summary>
+    API_PROPERTY() void SetStreamLODs(bool value);
 
 public:
     /// <summary>

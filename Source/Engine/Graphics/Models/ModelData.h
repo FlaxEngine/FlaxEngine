@@ -420,6 +420,11 @@ public:
     float MinScreenSize = 0.0f;
 
     /// <summary>
+    /// If true, the model streams its LODs by the draws (Model only, see Model::GetStreamLODs).
+    /// </summary>
+    bool StreamLODs = false;
+
+    /// <summary>
     /// The texture slots.
     /// </summary>
     Array<TextureEntry> Textures;

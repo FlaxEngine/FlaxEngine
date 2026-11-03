@@ -258,6 +258,7 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCal
                     continue;
                 }
                 lodIndex += context.RenderContext.View.ModelLODBias;
+                model->OnLODDrawn(Math::Clamp(lodIndex, 0, model->GetLODsCount() - 1));
                 lodIndex = context.ClampLODIndex(lodIndex);
 
                 if (transitionLOD)

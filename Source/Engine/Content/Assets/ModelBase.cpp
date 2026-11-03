@@ -4,6 +4,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Transform.h"
 #include "Engine/Core/Config/BuildSettings.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Content/WeakAssetReference.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Profiler/ProfilerMemory.h"
@@ -176,6 +177,34 @@ ModelBase::~ModelBase()
     ASSERT(_streamingTask == nullptr);
 }
 
+void ModelBase::OnLODDrawn(int32 lodIndex) const
+{
+    ASSERT(lodIndex >= 0 && lodIndex < GetLODsCount() && lodIndex < MODEL_MAX_LODS);
+    const uint64 frame = Engine::FrameCount;
+    // Write only on a change: many draw threads read the same value in one frame
+    if (_lodDrawFrame[lodIndex] != frame)
+        _lodDrawFrame[lodIndex] = frame;
+}
+
+int32 ModelBase::GetFinestDrawnLOD(double currentTime, double keepTime)
+{
+    int32 finest = -1;
+    const int32 lodCount = Math::Min(GetLODsCount(), MODEL_MAX_LODS);
+    for (int32 lodIndex = lodCount - 1; lodIndex >= 0; lodIndex--)
+    {
+        const uint64 drawFrame = _lodDrawFrame[lodIndex];
+        if (drawFrame != _lodSeenFrame[lodIndex])
+        {
+            _lodSeenFrame[lodIndex] = drawFrame;
+            _lodDrawTime[lodIndex] = currentTime;
+        }
+        const bool drawn = _lodSeenFrame[lodIndex] != 0;
+        if (drawn && currentTime - _lodDrawTime[lodIndex] < keepTime)
+            finest = lodIndex;
+    }
+    return finest;
+}
+
 void ModelBase::SetupMaterialSlots(int32 slotsCount)
 {
     CHECK(slotsCount >= 0 && slotsCount < 4096);
@@ -316,7 +345,7 @@ bool ModelBase::LoadHeader(ReadStream& stream, byte& headerVersion)
         LOG(Warning, "Unsupported model asset header version {}", headerVersion);
         return true;
     }
-    static_assert(MODEL_HEADER_VERSION == 2, "Update code");
+    static_assert(MODEL_HEADER_VERSION == 3, "Update code");
     stream.Read(MinScreenSize);
 
     // Materials
@@ -400,7 +429,7 @@ bool ModelBase::LoadMesh(MemoryReadStream& stream, byte meshVersion, MeshBase* m
 bool ModelBase::SaveHeader(WriteStream& stream) const
 {
     // Basic info
-    static_assert(MODEL_HEADER_VERSION == 2, "Update code");
+    static_assert(MODEL_HEADER_VERSION == 3, "Update code");
     stream.Write(MODEL_HEADER_VERSION);
     stream.Write(MinScreenSize);
 
@@ -444,7 +473,7 @@ bool ModelBase::SaveHeader(WriteStream& stream, const ModelData& modelData)
     }
 
     // Basic info
-    static_assert(MODEL_HEADER_VERSION == 2, "Update code");
+    static_assert(MODEL_HEADER_VERSION == 3, "Update code");
     stream.Write(MODEL_HEADER_VERSION);
     stream.Write(modelData.MinScreenSize);
 

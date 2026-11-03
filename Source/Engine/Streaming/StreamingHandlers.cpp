@@ -95,8 +95,18 @@ int32 TexturesStreamingHandler::CalculateRequestedResidency(StreamableResource* 
 
 float ModelsStreamingHandler::CalculateTargetQuality(StreamableResource* resource, double currentTime)
 {
-    // TODO: calculate a proper quality levels for models based on render time and streaming enable/disable options
-    return 1.0f;
+    ASSERT(resource);
+    auto& model = *(Model*)resource;
+    const int32 lodCount = model.GetLODsCount();
+    if (!model.GetStreamLODs() || lodCount <= 1)
+        return 1.0f;
+
+    // Keep the LODs from one finer than the finest drawn (it loads before the draws need it), to the last LOD
+    const double keepTime = 20.0; // As TextureGroup::TimeToInvisible
+    const int32 finestDrawn = model.GetFinestDrawnLOD(currentTime, keepTime);
+    const int32 finestKept = finestDrawn == -1 ? lodCount - 1 : Math::Max(finestDrawn - 1, 0);
+    const float quality = (float)(lodCount - finestKept) / (float)lodCount;
+    return quality;
 }
 
 int32 ModelsStreamingHandler::CalculateResidency(StreamableResource* resource, float quality)
@@ -106,7 +116,8 @@ int32 ModelsStreamingHandler::CalculateResidency(StreamableResource* resource, f
     ASSERT(resource);
     const auto& model = *(Model*)resource;
     const int32 lodCount = model.GetLODsCount();
-    const int32 lods = Math::CeilToInt(quality * (float)lodCount);
+    // Round: the quality is a whole number of LODs over the LODs count
+    const int32 lods = Math::Max(Math::RoundToInt(quality * (float)lodCount), 1);
     return lods;
 }
 

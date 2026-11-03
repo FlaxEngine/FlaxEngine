@@ -18,7 +18,7 @@
 // Chunk 15: SDF
 #define MODEL_LOD_TO_CHUNK_INDEX(lod) (lod + 1)
 
-#define MODEL_HEADER_VERSION (byte)2
+#define MODEL_HEADER_VERSION (byte)3
 #define MODEL_MESH_VERSION (byte)2
 
 class MeshBase;
@@ -120,8 +120,27 @@ protected:
     bool _initialized = false;
     int32 _loadedLODs = 0;
     StreamModelLODTask* _streamingTask = nullptr;
+    // The last frame a draw selected each LOD (written by the draw threads, read by the streaming)
+    mutable uint64 _lodDrawFrame[MODEL_MAX_LODS] = {};
+    // The streaming's copy of _lodDrawFrame (0: never drawn) and the time it saw each value change
+    uint64 _lodSeenFrame[MODEL_MAX_LODS] = {};
+    double _lodDrawTime[MODEL_MAX_LODS] = {};
 
 public:
+    /// <summary>
+    /// Records that a draw selected the LOD in this frame (before the clamp to the loaded LODs). Called from the draw threads.
+    /// </summary>
+    /// <param name="lodIndex">The LOD index the draw selected, in the range of the LODs count.</param>
+    void OnLODDrawn(int32 lodIndex) const;
+
+    /// <summary>
+    /// Gets the finest LOD that a draw selected within the keep time. Called by the streaming.
+    /// </summary>
+    /// <param name="currentTime">The current time (in seconds).</param>
+    /// <param name="keepTime">The time (in seconds) a drawn LOD stays wanted after its last draw.</param>
+    /// <returns>The LOD index, or -1 if no LOD was drawn within the keep time.</returns>
+    int32 GetFinestDrawnLOD(double currentTime, double keepTime);
+
     /// <summary>
     /// The Sign Distant Field (SDF) data for the model.
     /// </summary>

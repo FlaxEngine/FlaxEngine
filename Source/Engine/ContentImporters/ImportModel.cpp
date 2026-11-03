@@ -495,6 +495,9 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
         data = &dataThis;
     }
 
+    // The import option; a reimport restores the existing model's value below
+    data->StreamLODs = options.StreamLODs;
+
     // Check if restore local changes on asset reimport
     constexpr bool RestoreModelOptionsOnReimport = true;
     constexpr bool RestoreAnimEventsOnReimport = true;
@@ -512,6 +515,8 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
             {
                 // Copy general properties
                 data->MinScreenSize = model->MinScreenSize;
+                if (auto* staticModel = ScriptingObject::Cast<Model>(asset))
+                    data->StreamLODs = staticModel->GetStreamLODs();
             }
             if (restoreMaterials && model)
             {

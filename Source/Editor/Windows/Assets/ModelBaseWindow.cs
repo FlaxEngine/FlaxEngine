@@ -250,6 +250,17 @@ namespace FlaxEditor.Windows.Assets
                             proxy.Asset.MinScreenSize = minScreenSize.ValueBox.Value;
                             proxy.Window.MarkAsEdited();
                         };
+
+                        if (proxy.Asset is Model model)
+                        {
+                            var streamLODs = group.Checkbox("Stream LODs", "If checked, the streaming keeps only the LODs that the draws need: from one LOD finer than the finest LOD drawn recently, to the last LOD. If unchecked, all LODs stay loaded.");
+                            streamLODs.CheckBox.Checked = model.StreamLODs;
+                            streamLODs.CheckBox.StateChanged += box =>
+                            {
+                                model.StreamLODs = box.Checked;
+                                proxy.Window.MarkAsEdited();
+                            };
+                        }
                     }
                     {
                         var group = layout.Group("Vertex Layout");

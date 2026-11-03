@@ -38,6 +38,7 @@ FORCE_INLINE void ModelDraw(ModelType* model, const RenderContext& renderContext
         if (lodIndex != -1)
         {
             lodIndex += info.LODBias + renderContext.View.ModelLODBias;
+            model->OnLODDrawn(Math::Clamp(lodIndex, 0, model->GetLODsCount() - 1));
             lodIndex = model->ClampLODIndex(lodIndex);
             model->LODs.Get()[lodIndex].Draw(context, info, 0.0f);
         }
@@ -85,6 +86,7 @@ FORCE_INLINE void ModelDraw(ModelType* model, const RenderContext& renderContext
         }
     }
     lodIndex += info.LODBias + renderContext.View.ModelLODBias;
+    model->OnLODDrawn(Math::Clamp(lodIndex, 0, model->GetLODsCount() - 1));
     lodIndex = model->ClampLODIndex(lodIndex);
 
     // Check if it's the new frame and could update the drawing state (note: model instance could be rendered many times per frame to different viewports)

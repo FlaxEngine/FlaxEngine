@@ -453,6 +453,7 @@ void SplineModel::Draw(RenderContextBatch& renderContextBatch)
                 continue;
         }
         lodIndex += _lodBias + renderContext.View.ModelLODBias;
+        model->OnLODDrawn(Math::Clamp(lodIndex, 0, model->GetLODsCount() - 1));
         lodIndex = model->ClampLODIndex(lodIndex);
 
         // Draw

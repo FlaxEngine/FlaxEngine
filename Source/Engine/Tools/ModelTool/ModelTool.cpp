@@ -583,6 +583,7 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(RootMotion);
     SERIALIZE(RootMotionFlags);
     SERIALIZE(RootNodeName);
+    SERIALIZE(StreamLODs);
     SERIALIZE(GenerateLODs);
     SERIALIZE(BaseLOD);
     SERIALIZE(LODCount);
@@ -644,6 +645,7 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(RootMotion);
     DESERIALIZE(RootMotionFlags);
     DESERIALIZE(RootNodeName);
+    DESERIALIZE(StreamLODs);
     DESERIALIZE(GenerateLODs);
     DESERIALIZE(BaseLOD);
     DESERIALIZE(LODCount);

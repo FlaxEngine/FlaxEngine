@@ -498,7 +498,7 @@ bool SkinnedModel::LoadHeader(ReadStream& stream, byte& headerVersion)
     PROFILE_MEM(GraphicsMeshes);
     if (ModelBase::LoadHeader(stream, headerVersion))
         return true;
-    static_assert(MODEL_HEADER_VERSION == 2, "Update code");
+    static_assert(MODEL_HEADER_VERSION == 3, "Update code");
 
     // LODs
     byte lods = stream.ReadByte();
@@ -601,7 +601,7 @@ bool SkinnedModel::SaveHeader(WriteStream& stream) const
 {
     if (ModelBase::SaveHeader(stream))
         return true;
-    static_assert(MODEL_HEADER_VERSION == 2, "Update code");
+    static_assert(MODEL_HEADER_VERSION == 3, "Update code");
 
     // LODs
     stream.Write((byte)LODs.Count());
@@ -663,7 +663,7 @@ bool SkinnedModel::SaveHeader(WriteStream& stream, const ModelData& modelData)
 {
     if (ModelBase::SaveHeader(stream, modelData))
         return true;
-    static_assert(MODEL_HEADER_VERSION == 2, "Update code");
+    static_assert(MODEL_HEADER_VERSION == 3, "Update code");
 
     // LODs
     stream.Write((byte)modelData.LODs.Count());
