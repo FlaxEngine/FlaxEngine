@@ -567,7 +567,24 @@ namespace FlaxEngine.GUI
             {
                 _mouseButtonLeftDown = false;
                 if (_mouseOverHeader && CanOpenClose)
+                {
+                    bool wasClosed = IsClosed;
+                    
                     Toggle();
+
+                    // Open/ close all drop panels inside a vertical panel at once
+                    if (Input.GetKey(KeyboardKeys.Alt) && Parent is VerticalPanel panel)
+                    {
+                        foreach (Control child in panel.Children)
+                        {
+                            if (child is DropPanel dropPanel)
+                            {
+                                if (dropPanel.CanOpenClose && dropPanel.IsClosed == wasClosed)
+                                    dropPanel.Toggle();
+                            }
+                        }
+                    }
+                }
                 return true;
             }
             if (button == MouseButton.Right && _mouseButtonRightDown)
