@@ -33,7 +33,8 @@ GPUTasksContext::~GPUTasksContext()
     for (int32 i = 0; i < tasks.Count(); i++)
     {
         auto task = tasks[i];
-        if (task->GetSyncPoint() <= _currentSyncPoint && task->GetState() != TaskState::Finished)
+        // Only tasks still waiting for a sync: canceled or failed ones can be in the list until the next OnFrameBegin
+        if (task->GetSyncPoint() <= _currentSyncPoint && task->IsSyncing())
         {
             if (!Engine::IsRequestingExit)
                 LOG(Warning, "'{0}' has been canceled before a sync", task->ToString());
@@ -50,14 +51,13 @@ void GPUTasksContext::Run(GPUTask* task)
 {
     ASSERT(task != nullptr);
 
-    task->Execute(this);
-    //if (task->GetSyncStart() != 0)
+    if (task->Execute(this))
         _tasksSyncing.Add(task);
 }
 
 void GPUTasksContext::OnCancelSync(GPUTask* task)
 {
-    _tasksSyncing.Remove(task);
+    // Called from the thread canceling the task, so it doesn't touch _tasksSyncing (owned by the rendering thread): OnFrameBegin drops canceled tasks
     if (!Engine::IsRequestingExit)
         LOG(Warning, "'{0}' has been canceled before a sync", task->ToString());
 }

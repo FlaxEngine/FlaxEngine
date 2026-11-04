@@ -97,7 +97,8 @@ public:
     /// Executes this task.
     /// </summary>
     /// <param name="context">The context.</param>
-    void Execute(GPUTasksContext* context);
+    /// <returns>False if the task was skipped because it was canceled (or already taken) after it was picked for execution, otherwise true.</returns>
+    bool Execute(GPUTasksContext* context);
 
     /// <summary>
     /// Action fired when asynchronous operation has been synchronized with a GPU
