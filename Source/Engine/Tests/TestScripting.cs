@@ -11,7 +11,7 @@ namespace FlaxEngine.Tests
     /// <summary>
     /// Tests for scripting.
     /// </summary>
-    public class TestScripting
+    public partial class TestScripting
     {
         /// <summary>
         /// Tests all <see cref="LibraryImportAttribute"/> usages in the engine to verify all bindings are correct to work with P/Invoke.
@@ -42,6 +42,58 @@ namespace FlaxEngine.Tests
             }
             NativeLibrary.Free(library);
             return result;
+        }
+
+        [LibraryImport("kernel32")]
+        private static partial uint GetTickCount();
+
+        [LibraryImport("user32")]
+        private static partial int GetSystemMetrics(int index);
+
+        // Linux: the versioned libm name (libm.so is a linker script where the C development files are installed); "libc" is
+        // mapped by .NET itself
+        [LibraryImport("libc", EntryPoint = "getpid")]
+        private static partial int LinuxGetPid();
+
+        [LibraryImport("libm.so.6", EntryPoint = "floor")]
+        private static partial double LinuxFloor(double value);
+
+        [LibraryImport("/usr/lib/libSystem.B.dylib", EntryPoint = "getpid")]
+        private static partial int MacGetPid();
+
+        [LibraryImport("/usr/lib/libobjc.A.dylib", EntryPoint = "objc_getClassList")]
+        private static partial int MacGetClassList(IntPtr buffer, int bufferCount);
+
+        /// <summary>
+        /// Tests that one assembly can import several native libraries: calls functions of two system libraries through
+        /// <see cref="LibraryImportAttribute"/> (with parameters that need no runtime marshalling).
+        /// </summary>
+        public static int TestNativeLibraryImports()
+        {
+            try
+            {
+                if (OperatingSystem.IsWindows())
+                {
+                    GetTickCount();
+                    GetSystemMetrics(0);
+                }
+                else if (OperatingSystem.IsMacOS())
+                {
+                    MacGetPid();
+                    MacGetClassList(IntPtr.Zero, 0);
+                }
+                else
+                {
+                    LinuxGetPid();
+                    LinuxFloor(0.5);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError("Native library import failed: " + ex.Message);
+                return 1;
+            }
+            return 0;
         }
 
         /// <summary>
