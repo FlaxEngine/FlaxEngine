@@ -15,7 +15,7 @@ public class fmt : ThirdPartyModule
         base.Init();
 
         LicenseType = LicenseTypes.Custom;
-        LicenseFilePath = "LICENSE.rst";
+        LicenseFilePath = "LICENSE";
 
         // Merge third-party modules into engine binary
         BinaryModuleName = "FlaxEngine";

@@ -1237,9 +1237,9 @@ namespace fmt
         }
 
         template<typename FormatContext>
-        auto format(const String& v, FormatContext& ctx) -> decltype(ctx.out())
+        auto format(const String& v, FormatContext& ctx) const -> decltype(ctx.out())
         {
-            return fmt::detail::copy_str<Char>(v.Get(), v.Get() + v.Length(), ctx.out());
+            return fmt::detail::copy<Char>(v.Get(), v.Get() + v.Length(), ctx.out());
         }
     };
 }
@@ -1808,9 +1808,12 @@ namespace fmt
         }
 
         template<typename FormatContext>
-        auto format(const StringAnsi& v, FormatContext& ctx) -> decltype(ctx.out())
+        auto format(const StringAnsi& v, FormatContext& ctx) const -> decltype(ctx.out())
         {
-            return fmt::detail::copy_str<char>(v.Get(), v.Get() + v.Length(), ctx.out());
+            return fmt::detail::copy<char>(v.Get(), v.Get() + v.Length(), ctx.out());
         }
     };
 }
+
+extern template void fmt_flax::format<Char, String>(fmt::basic_memory_buffer<Char, fmt::inline_buffer_size, std_flax::allocator<Char>>&, const Char*, const String&);
+extern template void fmt_flax::format<char, StringAnsi>(fmt::basic_memory_buffer<char, fmt::inline_buffer_size, std_flax::allocator<char>>&, const char*, const StringAnsi&);
