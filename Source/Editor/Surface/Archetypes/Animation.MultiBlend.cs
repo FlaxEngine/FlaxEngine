@@ -718,7 +718,16 @@ namespace FlaxEditor.Surface.Archetypes
             /// </summary>
             internal AnimationSources AnimationSource
             {
-                get => (AnimationSources)(int)Values[4];
+                get
+                {
+                    if (Values[4] is AnimationSources asEnum)
+                        return asEnum;
+                    if (Values[4] is int asInt)
+                        return (AnimationSources)asInt;
+                    if (Values[4] is long asLong)
+                        return (AnimationSources)asLong;
+                    return AnimationSources.Default;
+                }
             }
 
             /// <summary>
