@@ -54,6 +54,12 @@ public:
     API_FIELD(Attributes="EditorOrder(20), EditorDisplay(\"General\", \"Use V-Sync\")")
     bool UseVSync = false;
 
+    /// <summary>
+    /// Experimental asynchronous synchronized presentation for Windows DirectX 11. Requires an engine restart after saving. Other backends ignore this option.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(21), EditorDisplay(\"General\", \"Async Presentation (Experimental)\")")
+    bool UseAsyncPresentation = false;
+
 public:
     /// <summary>
     /// Anti Aliasing quality setting.

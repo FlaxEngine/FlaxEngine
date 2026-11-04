@@ -68,6 +68,9 @@ public:
         /// </summary>
         Nullable<bool> D3D11;
 
+        /// <summary>Experimental Windows DX11 asynchronous presentation.</summary>
+        Nullable<bool> AsyncPresent;
+
         /// <summary>
         /// -d3d10 (forces to use DirectX 10 rendering backend if available)
         /// </summary>

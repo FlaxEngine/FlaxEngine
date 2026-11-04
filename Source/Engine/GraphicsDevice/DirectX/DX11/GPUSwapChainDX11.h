@@ -24,6 +24,8 @@ private:
     HWND _windowHandle;
     IDXGISwapChain* _swapChain;
     bool _allowTearing, _isFullscreen;
+    struct AsyncPresenter;
+    AsyncPresenter* _asyncPresenter = nullptr;
 #else
 	IUnknown* _windowHandle;
 	IDXGISwapChain1* _swapChain;

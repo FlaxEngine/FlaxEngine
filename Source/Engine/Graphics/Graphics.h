@@ -19,6 +19,11 @@ public:
     API_FIELD() static bool UseVSync;
 
     /// <summary>
+    /// Gets whether asynchronous presentation was requested at startup. Windows DX11 only; changing the project setting requires restart.
+    /// </summary>
+    API_FIELD(ReadOnly) static bool UseAsyncPresentation;
+
+    /// <summary>
     /// Anti Aliasing quality setting. Available values are: Low, Medium, High, Ultra (or 0, 1, 2, 3).
     /// </summary>
     API_FIELD() static Quality AAQuality;

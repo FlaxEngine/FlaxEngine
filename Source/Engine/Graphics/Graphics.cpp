@@ -15,6 +15,7 @@
 #endif
 
 bool Graphics::UseVSync = false;
+bool Graphics::UseAsyncPresentation = false;
 Quality Graphics::AAQuality = Quality::Medium;
 Quality Graphics::SSRQuality = Quality::Medium;
 Quality Graphics::SSAOQuality = Quality::Medium;
@@ -106,6 +107,9 @@ void Graphics::DisposeDevice()
 bool GraphicsService::Init()
 {
     ASSERT(GPUDevice::Instance == nullptr);
+    // Startup-only: reapplying/reloading project settings cannot change existing
+    // or newly created swapchains midway through the engine session.
+    Graphics::UseAsyncPresentation = GraphicsSettings::Get()->UseAsyncPresentation || CommandLine::Options.AsyncPresent.IsTrue();
     PROFILE_MEM(Graphics);
 
     // Create and initialize graphics device
