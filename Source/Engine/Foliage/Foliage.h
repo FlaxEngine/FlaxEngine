@@ -171,6 +171,7 @@ private:
         float MinObjectPixelSizeSq;
         Float3 LodViewPosition;
         int32 MinLOD, MaxLOD;
+        bool DitheredLODTransition;
         BoundingFrustum CullingFrustum;
         SceneRendering* Scene;
 

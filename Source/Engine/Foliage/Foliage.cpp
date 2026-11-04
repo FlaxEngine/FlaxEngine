@@ -13,6 +13,7 @@
 #include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/Models/ModelDraw.h"
 #include "Engine/Content/Deprecated.h"
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE
 #include "Engine/Threading/JobSystem.h"
@@ -212,61 +213,28 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCal
             Platform::MemoryPrefetch(instances[i + 1]);
             BoundingSphere sphere = instance.Bounds;
             sphere.Center -= context.ViewOrigin;
-            if (Float3::Distance(context.LodViewPosition, sphere.Center) - (float)sphere.Radius < instance.CullDistance &&
-                context.CullingFrustum.Intersects(sphere) &&
-                RenderTools::ComputeBoundsScreenRadiusSquared(sphere.Center, (float)sphere.Radius, context.RenderContext.View) * context.ViewScreenSizeSq >= context.MinObjectPixelSizeSq)
+            if (!context.CullingFrustum.Intersects(sphere))
+                continue;
+
+            // When instance is culled due to distance/size it needs to fade out (not pop out)
+            bool culled = 
+                Float3::Distance(context.LodViewPosition, sphere.Center) - (float)sphere.Radius >= instance.CullDistance ||
+                RenderTools::ComputeBoundsScreenRadiusSquared(sphere.Center, (float)sphere.Radius, context.RenderContext.View) * context.ViewScreenSizeSq < context.MinObjectPixelSizeSq;
+
+            // Select a proper LOD index (model may be culled)
+            int32 lodIndex = RenderTools::ComputeModelLOD(model, sphere.Center, (float)sphere.Radius, context.RenderContext);
+            auto modelFrame = instance.DrawStatePrevFrame + 1;
+            if (!transitionLOD)
+                modelFrame = Math::Min(modelFrame + 1, frame); // Fix async shadows flickering when it's rendered before main view via other async job
+            if (lodIndex == -1 || culled)
             {
-                const auto modelFrame = instance.DrawStatePrevFrame + 1;
-
-                // Select a proper LOD index (model may be culled)
-                int32 lodIndex = RenderTools::ComputeModelLOD(model, sphere.Center, (float)sphere.Radius, context.RenderContext);
-                if (lodIndex == -1)
+                // Handling model fade-out transition
+                if (modelFrame == frame && instance.DrawStatePrevLOD != -1 && context.DitheredLODTransition)
                 {
-                    // Handling model fade-out transition
-                    if (modelFrame == frame && instance.DrawStatePrevLOD != -1)
-                    {
-                        if (transitionLOD)
-                        {
-                            // Check if start transition
-                            if (instance.DrawStateLODTransition == 255)
-                            {
-                                instance.DrawStateLODTransition = 0;
-                            }
-
-                            RenderTools::UpdateModelLODTransition(instance.DrawStateLODTransition);
-
-                            // Check if end transition
-                            if (instance.DrawStateLODTransition == 255)
-                            {
-                                instance.DrawStatePrevLOD = lodIndex;
-                            }
-                            else
-                            {
-                                const auto prevLOD = context.ClampLODIndex(instance.DrawStatePrevLOD);
-                                const float normalizedProgress = static_cast<float>(instance.DrawStateLODTransition) * (1.0f / 255.0f);
-                                DrawInstance(context, instance, prevLOD, normalizedProgress, drawCallsLists, result);
-                            }
-                        }
-                        else if (instance.DrawStateLODTransition < 255)
-                        {
-                            const auto prevLOD = context.ClampLODIndex(instance.DrawStatePrevLOD);
-                            const float normalizedProgress = static_cast<float>(instance.DrawStateLODTransition) * (1.0f / 255.0f);
-                            DrawInstance(context, instance, prevLOD, normalizedProgress, drawCallsLists, result);
-                        }
-                    }
-                    instance.DrawStatePrevFrame = frame;
-                    continue;
-                }
-                lodIndex += context.RenderContext.View.ModelLODBias;
-                lodIndex = context.ClampLODIndex(lodIndex);
-
-                if (transitionLOD)
-                {
-                    // Check if it's the new frame and could update the drawing state (note: model instance could be rendered many times per frame to different viewports)
-                    if (modelFrame == frame)
+                    if (transitionLOD)
                     {
                         // Check if start transition
-                        if (instance.DrawStatePrevLOD != lodIndex && instance.DrawStateLODTransition == 255)
+                        if (instance.DrawStateLODTransition == 255)
                         {
                             instance.DrawStateLODTransition = 0;
                         }
@@ -278,38 +246,98 @@ void Foliage::DrawCluster(DrawContext& context, FoliageCluster* cluster, DrawCal
                         {
                             instance.DrawStatePrevLOD = lodIndex;
                         }
+                        else
+                        {
+                            const auto prevLOD = context.ClampLODIndex(instance.DrawStatePrevLOD);
+                            const float normalizedProgress = static_cast<float>(instance.DrawStateLODTransition) * (1.0f / 255.0f);
+                            DrawInstance(context, instance, prevLOD, normalizedProgress, drawCallsLists, result);
+                            instance.DrawStatePrevFrame = frame;
+                        }
                     }
-                    // Check if there was a gap between frames in drawing this model instance
-                    else if (modelFrame < frame || instance.DrawStatePrevLOD == -1)
+                    else if (instance.DrawStateLODTransition < 255)
+                    {
+                        const auto prevLOD = context.ClampLODIndex(instance.DrawStatePrevLOD);
+                        const float normalizedProgress = static_cast<float>(instance.DrawStateLODTransition) * (1.0f / 255.0f);
+                        DrawInstance(context, instance, prevLOD, normalizedProgress, drawCallsLists, result);
+                        if (transitionLOD)
+                            instance.DrawStatePrevFrame = frame;
+                    }
+                }
+                if (transitionLOD)
+                    instance.CachedDrawCulled = culled;
+                continue;
+            }
+            lodIndex += context.RenderContext.View.ModelLODBias;
+            lodIndex = context.ClampLODIndex(lodIndex);
+
+            if (transitionLOD)
+            {
+                // Check if it's the new frame and could update the drawing state (note: model instance could be rendered many times per frame to different viewports)
+                if (modelFrame == frame)
+                {
+                    // Check if materials use transition
+                    if (!context.DitheredLODTransition)
+                    {
+                        instance.DrawStatePrevLOD = lodIndex;
+                        instance.DrawStateLODTransition = 255;
+                    }
+
+                    // Check if start transition
+                    if (instance.DrawStatePrevLOD != lodIndex && instance.DrawStateLODTransition == 255)
+                    {
+                        instance.DrawStateLODTransition = 0;
+                    }
+
+                    RenderTools::UpdateModelLODTransition(instance.DrawStateLODTransition);
+
+                    // Check if end transition
+                    if (instance.DrawStateLODTransition == 255)
+                    {
+                        instance.DrawStatePrevLOD = lodIndex;
+                    }
+                }
+                // Check if there was a gap between frames in drawing this model instance
+                else if (modelFrame < frame || instance.DrawStatePrevLOD == -1)
+                {
+                    if (instance.CachedDrawCulled)
+                    {
+                        // Start fade in transition
+                        instance.DrawStatePrevLOD = -1;
+                        instance.DrawStateLODTransition = 0;
+                    }
+                    else
                     {
                         // Reset state
                         instance.DrawStatePrevLOD = lodIndex;
-                        instance.DrawStateLODTransition = 0;
+                        instance.DrawStateLODTransition = 255;
                     }
                 }
+            }
 
-                // Draw
-                if (instance.DrawStatePrevLOD == lodIndex)
-                {
-                    DrawInstance(context, instance, lodIndex, 0.0f, drawCallsLists, result);
-                }
-                else if (instance.DrawStatePrevLOD == -1)
-                {
-                    const float normalizedProgress = static_cast<float>(instance.DrawStateLODTransition) * (1.0f / 255.0f);
-                    DrawInstance(context, instance, lodIndex, 1.0f - normalizedProgress, drawCallsLists, result);
-                }
-                else
-                {
-                    const auto prevLOD = context.ClampLODIndex(instance.DrawStatePrevLOD);
-                    const float normalizedProgress = static_cast<float>(instance.DrawStateLODTransition) * (1.0f / 255.0f);
-                    DrawInstance(context, instance, prevLOD, normalizedProgress, drawCallsLists, result);
-                    DrawInstance(context, instance, lodIndex, normalizedProgress - 1.0f, drawCallsLists, result);
-                }
+            // Draw
+            if (instance.DrawStatePrevLOD == lodIndex || instance.DrawStateLODTransition == 255)
+            {
+                DrawInstance(context, instance, lodIndex, 0.0f, drawCallsLists, result);
+            }
+            else if (instance.DrawStatePrevLOD == -1)
+            {
+                const float normalizedProgress = static_cast<float>(instance.DrawStateLODTransition) * (1.0f / 255.0f);
+                DrawInstance(context, instance, lodIndex, 1.0f - normalizedProgress, drawCallsLists, result);
+            }
+            else
+            {
+                const auto prevLOD = context.ClampLODIndex(instance.DrawStatePrevLOD);
+                const float normalizedProgress = static_cast<float>(instance.DrawStateLODTransition) * (1.0f / 255.0f);
+                DrawInstance(context, instance, prevLOD, normalizedProgress, drawCallsLists, result);
+                DrawInstance(context, instance, lodIndex, normalizedProgress - 1.0f, drawCallsLists, result);
+            }
 
-                //DebugDraw::DrawSphere(instance.Bounds, Color::YellowGreen);
+            //DebugDraw::DrawSphere(instance.Bounds, Color::YellowGreen);
 
-                if (transitionLOD)
-                    instance.DrawStatePrevFrame = frame;
+            if (transitionLOD)
+            {
+                instance.DrawStatePrevFrame = frame;
+                instance.CachedDrawCulled = culled;
             }
         }
     }
@@ -479,20 +507,22 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Me
 {
     if (!type.Root || !FOLIAGE_CAN_DRAW(renderContext, type))
         return;
+    Model* model = type.Model;
     const DrawPass typeDrawModes = FOLIAGE_GET_DRAW_MODES(renderContext, type);
-    PROFILE_CPU_ASSET(type.Model);
+    PROFILE_CPU_ASSET(model);
     auto& lodView = renderContext.LodProxyView ? *renderContext.LodProxyView : renderContext.View;
     DrawContext context
     {
         renderContext,
-        type.Model,
+        model,
         renderContext.View.Origin,
         renderContext.View.ScreenSize.X * renderContext.View.ScreenSize.Y,
         lodView.Origin,
         Math::Square(Graphics::Shadows::MinObjectPixelSize),
         lodView.Position,
-        type.Model->HighestResidentLODIndex(),
-        type.Model->GetLODsCount() - 1,
+        model->HighestResidentLODIndex(),
+        model->GetLODsCount() - 1,
+        ModelDrawTransition(model, type.Entries),
         renderContext.View.CullingFrustum,
         GetSceneRendering(),
     };
@@ -501,9 +531,9 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Me
         context.MinObjectPixelSizeSq = 0.0f; // Don't use it in main view
 #if FOLIAGE_USE_DRAW_CALLS_BATCHING
     // Initialize draw calls for foliage type all LODs meshes
-    for (int32 lod = 0; lod < type.Model->LODs.Count(); lod++)
+    for (int32 lod = 0; lod < model->LODs.Count(); lod++)
     {
-        auto& modelLod = type.Model->LODs[lod];
+        auto& modelLod = model->LODs[lod];
         DrawCallsList& drawCallsList = drawCallsLists[lod];
         const auto& meshes = modelLod.Meshes;
         drawCallsList.EnsureCapacity(meshes.Count());
@@ -515,7 +545,7 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Me
             const auto& entry = type.Entries[mesh.GetMaterialSlotIndex()];
             if (!entry.Visible || !mesh.IsInitialized())
                 continue;
-            const MaterialSlot& slot = type.Model->MaterialSlots[mesh.GetMaterialSlotIndex()];
+            const MaterialSlot& slot = model->MaterialSlots[mesh.GetMaterialSlotIndex()];
 
             // Select material
             MaterialBase* material;
@@ -554,7 +584,7 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Me
             continue;
         const auto& mesh = *e.Key.Geo;
         const auto& entry = type.Entries[mesh.GetMaterialSlotIndex()];
-        const MaterialSlot& slot = type.Model->MaterialSlots[mesh.GetMaterialSlotIndex()];
+        const MaterialSlot& slot = model->MaterialSlots[mesh.GetMaterialSlotIndex()];
         const auto shadowsMode = entry.ShadowsMode & slot.ShadowsMode;
         const auto drawModes = typeDrawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode) & batch.DrawCall.Material->GetDrawModes();
 
