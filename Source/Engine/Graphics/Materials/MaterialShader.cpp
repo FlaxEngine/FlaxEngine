@@ -41,6 +41,7 @@ GPU_CB_STRUCT(MaterialShaderDataPerView {
     float ViewPadding0;
     float TestValue;
     float ScaledTimeParam;
+    Float4 ForegroundInfo;
     });
 
 IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderContext& renderContext)
@@ -90,6 +91,16 @@ void IMaterial::BindParameters::BindViewData()
     cb.LargeWorldsChunkSize = LargeWorlds::ChunkSize;
     cb.MaterialTextureMipBias = RenderContext.List->Setup.MaterialTextureMipBias;
     cb.TestValue = Graphics::TestValue;
+
+    // Foreground layers: depth squeezed in between the near plane and the foreground depth (linear in 1/depth, so 1/z' = 1/F + (1 - N/F) / z), only for perspective views
+    cb.ForegroundInfo = Float4::Zero;
+    const Matrix& projection = view.Projection;
+    if (view.ForegroundLayersMask.Mask != 0 && view.IsPerspectiveProjection() && Math::NearEqual(projection.M34, 1.0f) && view.ForegroundDepth > view.Near)
+    {
+        const float invDepth = 1.0f / view.ForegroundDepth;
+        const uint32 mask = view.ForegroundLayersMask.Mask;
+        cb.ForegroundInfo = Float4(*(const float*)&mask, view.Near, projection.M33 + projection.M43 * invDepth, projection.M43 * (1.0f - view.Near * invDepth));
+    }
 
     // Update constants
     GPUContext->UpdateCB(PerViewConstants, &cb);

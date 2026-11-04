@@ -377,6 +377,9 @@ VertexOutput VS(ModelInput input)
 	output.Position = PROJECT_POINT(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 #endif
 
+	// Draw over the scene on the view's foreground layers
+	output.Position = ApplyForegroundDepth(output.Position, object);
+
 	// Get tessalation multiplier (per vertex)
 #if USE_TESSELLATION
     output.TessellationMultiplier = material.TessellationMultiplier;
@@ -409,7 +412,7 @@ float4 VS_Depth(ModelInput_PosOnly input) : SV_Position
 	// Transform vertex position into the screen
 	float3 worldPosition = mul(float4(input.Position.xyz, 1), object.WorldMatrix).xyz;
 	float4 position = PROJECT_POINT(float4(worldPosition, 1), ViewProjectionMatrix);
-	return position;
+	return ApplyForegroundDepth(position, object);
 }
 
 #if USE_SKINNING
@@ -532,6 +535,9 @@ VertexOutput VS_Skinned(ModelInput_Skinned input)
 	output.Geometry.PrevWorldPosition += material.PositionOffset;
 	output.Position = PROJECT_POINT(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 #endif
+
+	// Draw over the scene on the view's foreground layers
+	output.Position = ApplyForegroundDepth(output.Position, object);
 
 	// Get tessalation multiplier (per vertex)
 #if USE_TESSELLATION

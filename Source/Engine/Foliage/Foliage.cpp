@@ -165,7 +165,7 @@ void Foliage::DrawInstance(DrawContext& context, FoliageInstance& instance, int3
             Matrix::Transformation(transform.Scale, transform.Orientation, translation, instance.CachedDrawWorld);
             instance.CachedDrawWorldValid = true;
         }
-        instanceData.Store(instance.CachedDrawWorld, instance.CachedDrawWorld, instance.LightmapUVsArea, drawCall.Surface.GeometrySize, instance.Random, worldDeterminantSign, (int8)(lodDitherFactor * 127));
+        instanceData.Store(instance.CachedDrawWorld, instance.CachedDrawWorld, instance.LightmapUVsArea, drawCall.Surface.GeometrySize, instance.Random, worldDeterminantSign, (int8)(lodDitherFactor * 127), 0, 0, drawCall.StencilValue);
     }
 }
 
@@ -565,7 +565,10 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Me
                 continue;
 
             // Add mesh to drawing
+            // DrawCall is POD so AddOne doesn't clear it: set every field the instances read (eg. the stencil value with the actor layer)
             auto& drawCall = drawCallsList.AddOne();
+            Platform::MemoryClear(&drawCall, sizeof(DrawCall));
+            drawCall.SetStencilValue(_layer);
             drawCall.Material = material;
             drawCall.Geometry.IndexBuffer = (GPUBuffer*)(void*)&mesh; // Wrap pointer to mesh for DrawKey::Geo
             drawCall.Surface.GeometrySize = mesh.GetBox().GetSize();
