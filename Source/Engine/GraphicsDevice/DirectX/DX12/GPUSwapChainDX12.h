@@ -66,6 +66,11 @@ private:
     D3D12XBOX_FRAME_PIPELINE_TOKEN _framePipelineToken;
 #endif
     Array<BackBufferDX12, FixedAllocation<4>> _backBuffers;
+#if PLATFORM_WINDOWS
+    struct AsyncPresenter;
+    AsyncPresenter* _asyncPresenter = nullptr;
+    BackBufferDX12 _asyncRenderTarget;
+#endif
 
 public:
 
@@ -79,6 +84,10 @@ public:
     /// <returns>The backbuffer resource.</returns>
     ID3D12Resource* GetBackBuffer() const
     {
+#if PLATFORM_WINDOWS
+        if (_asyncPresenter)
+            return _asyncRenderTarget.GetResource();
+#endif
         return _backBuffers[_currentFrameIndex].GetResource();
     }
 
@@ -88,6 +97,10 @@ public:
     /// <returns>The render target handle.</returns>
     const GPUTextureViewDX12* GetBackBufferHandleDX12() const
     {
+#if PLATFORM_WINDOWS
+        if (_asyncPresenter)
+            return &_asyncRenderTarget.Handle;
+#endif
         return &_backBuffers[_currentFrameIndex].Handle;
     }
 

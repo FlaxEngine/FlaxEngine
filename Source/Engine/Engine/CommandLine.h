@@ -68,7 +68,7 @@ public:
         /// </summary>
         Nullable<bool> D3D11;
 
-        /// <summary>Experimental Windows DX11 asynchronous presentation.</summary>
+        /// <summary>Experimental Windows DX11/DX12 asynchronous presentation.</summary>
         Nullable<bool> AsyncPresent;
 
         /// <summary>

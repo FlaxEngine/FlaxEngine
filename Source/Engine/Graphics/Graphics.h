@@ -19,7 +19,7 @@ public:
     API_FIELD() static bool UseVSync;
 
     /// <summary>
-    /// Gets whether asynchronous presentation was requested at startup. Windows DX11 only; changing the project setting requires restart.
+    /// Gets whether asynchronous presentation was requested at startup. Windows DX11/DX12 only; changing the project setting requires restart.
     /// </summary>
     API_FIELD(ReadOnly) static bool UseAsyncPresentation;
 
