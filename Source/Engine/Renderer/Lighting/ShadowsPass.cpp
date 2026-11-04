@@ -25,7 +25,8 @@
 #define SHADOWS_ROTATION_ERROR 0.9999f
 #define SHADOWS_MAX_TILES 6
 #define SHADOWS_MIN_RESOLUTION 32
-#define SHADOWS_MAX_STATIC_ATLAS_CAPACITY_TO_DEFRAG 0.7f
+#define SHADOWS_STATIC_ATLAS_MAX_CAPACITY_TO_DEFRAG 0.7f
+#define SHADOWS_STATIC_ATLAS_SCALE 2
 #define SHADOWS_BASE_LIGHT_RESOLUTION(atlasResolution) (atlasResolution / MAX_CSM_CASCADES) // Allow to store 4 CSM cascades in a single row in all cases
 #define NormalOffsetScaleTweak METERS_TO_UNITS(1)
 #define LocalLightNearPlane METERS_TO_UNITS(0.1f)
@@ -57,11 +58,11 @@ struct ShadowsAtlasRectTile : RectPackNode<uint16>
 uint16 QuantizeResolution(float input)
 {
     uint16 output = Math::FloorToInt(input);
-    uint16 alignment = 32;
+    uint16 alignment = 16;
     if (output >= 512)
-        alignment = 128;
-    else if (output >= 256)
         alignment = 64;
+    else if (output >= 256)
+        alignment = 32;
     output = Math::AlignDown<uint16>(output, alignment);
     return output;
 }
@@ -368,9 +369,10 @@ public:
 
     void InitStaticAtlas()
     {
-        const int32 atlasResolution = Math::Min(Resolution * 2, GPUDevice::Instance->Limits.MaximumTexture2DSize);
+        const int32 atlasResolution = Math::Min(Resolution * SHADOWS_STATIC_ATLAS_SCALE, GPUDevice::Instance->Limits.MaximumTexture2DSize);
         if (StaticAtlas.Width == atlasResolution)
             return;
+        PROFILE_CPU();
         StaticAtlas.Init(atlasResolution, atlasResolution);
         if (!StaticShadowMapAtlas)
             StaticShadowMapAtlas = GPUDevice::Instance->CreateTexture(TEXT("Static Shadow Map Atlas"));
@@ -865,11 +867,15 @@ bool ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     {
         // Calculate static resolution for the light based on the world-bounds, not view-dependant
         shadows.InitStaticAtlas();
+#if 0
         const int32 baseLightResolution = SHADOWS_BASE_LIGHT_RESOLUTION(shadows.Resolution) / 2;
         int32 staticResolution = Math::RoundToInt(Math::Saturate(light.Radius / METERS_TO_UNITS(10)) * baseLightResolution);
-        staticResolution = Math::Clamp<int32>(staticResolution, atlasLight.Resolution, atlasLight.Resolution * 2); // Limit static shadow to be max x2 the current dynamic shadow res
+        staticResolution = Math::Clamp<int32>(staticResolution, atlasLight.Resolution, atlasLight.Resolution * SHADOWS_STATIC_ATLAS_SCALE); // Limit static shadow to be max x2 the current dynamic shadow res
         if (!Math::IsPowerOfTwo(staticResolution))
-            staticResolution = Math::RoundUpToPowerOf2(staticResolution); // Round up to power of two to reduce fragmentation of the static atlas and redraws
+            staticResolution = Math::RoundUpToPowerOf2(staticResolution); // Round up to power of two to reduce fragmentation of the static atlas and redraws;
+#else
+        int32 staticResolution = Math::AlignDown<uint16>(atlasLight.Resolution * SHADOWS_STATIC_ATLAS_SCALE, 128);
+#endif
         if (staticResolution != atlasLight.StaticResolution)
         {
             atlasLight.StaticResolution = staticResolution;
@@ -1434,7 +1440,7 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
         shadows.Reset();
         shadows.ViewOrigin = renderContext.View.Origin;
     }
-    if (shadows.StaticAtlas.Width != 0 && (float)shadows.StaticAtlasPixelsUsed / (shadows.StaticAtlas.Width * shadows.StaticAtlas.Height) < SHADOWS_MAX_STATIC_ATLAS_CAPACITY_TO_DEFRAG)
+    if (shadows.StaticAtlas.Width != 0 && (float)shadows.StaticAtlasPixelsUsed / (shadows.StaticAtlas.Width * shadows.StaticAtlas.Height) < SHADOWS_STATIC_ATLAS_MAX_CAPACITY_TO_DEFRAG)
     {
         // Defragment static shadow atlas if it failed to insert any light but it's still should have space
         bool anyStaticFailed = false;
@@ -1465,7 +1471,8 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
         if (atlasLight.Resolution == 0)
         {
             // ScreenSize-based automatic shadowmap resolution
-            atlasLight.Resolution = QuantizeResolution(baseLightResolution * light->ScreenSize);
+            float scale = Math::Min(light->ScreenSize, 1.0f);
+            atlasLight.Resolution = QuantizeResolution(baseLightResolution * scale);
         }
 
         // Cull too small lights
