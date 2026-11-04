@@ -73,8 +73,6 @@ public:
         DirectX12,
         /// <summary>Prefer Vulkan when available.</summary>
         Vulkan,
-        /// <summary>Prefer WebGPU when available.</summary>
-        WebGPU,
     };
 
     /// <summary>

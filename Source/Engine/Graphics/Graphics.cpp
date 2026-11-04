@@ -186,14 +186,6 @@ bool GraphicsService::Init()
             device = CreateGPUDeviceVulkan();
 #endif
             break;
-        case GraphicsSettings::EditorGraphicsBackends::WebGPU:
-#if GRAPHICS_API_WEBGPU
-            {
-                extern GPUDevice* CreateGPUDeviceWebGPU();
-                device = CreateGPUDeviceWebGPU();
-            }
-#endif
-            break;
         default:
             break;
         }
