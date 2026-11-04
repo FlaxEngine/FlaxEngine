@@ -215,7 +215,8 @@ namespace FlaxEditor.Surface.Archetypes
             : base(id, context, nodeArch, groupArch)
             {
                 // Add buttons for adding/removing blend poses
-                _addButton = new Button(70, 94, 20, 20)
+                var y = FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight + FlaxEditor.Surface.Constants.LayoutOffsetY * 3;
+                _addButton = new Button(70, y, 20, 20)
                 {
                     Text = "+",
                     Parent = this
@@ -724,7 +725,7 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(0, "Pose Index", true, typeof(int), 1, 0),
                     NodeElementArchetype.Factory.Input(1, "Blend Duration", true, typeof(float), 2, 1),
                     NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 2, "Mode:"),
-                    NodeElementArchetype.Factory.ComboBox(40, Surface.Constants.LayoutOffsetY * 2, 100, 3, typeof(AlphaBlendMode)),
+                    NodeElementArchetype.Factory.ComboBox(40, Surface.Constants.LayoutOffsetY * 2, 120, 3, typeof(AlphaBlendMode)),
 
                     NodeElementArchetype.Factory.Input(3, "Pose 0", true, typeof(void), 3),
                     NodeElementArchetype.Factory.Input(4, "Pose 1", true, typeof(void), 4),
