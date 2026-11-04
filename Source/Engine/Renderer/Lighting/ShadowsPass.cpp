@@ -1234,9 +1234,18 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     int32 contextIndex = 0;
     for (int32 faceIndex = 0; faceIndex < 6; faceIndex++)
     {
+        // Expand Field Of Field to prevent artifacts at the edges of the cube map faces
+        float filterPixelSize = atlasLight.TileBorder;
+        if ((Quality)shadows.MaxShadowsQuality == Quality::Ultra)
+            filterPixelSize = 32; // PCSS
+        float fovTexelSize = filterPixelSize * 2.0f / (float)atlasLight.Resolution;
+        float normalMarginSize = atlasLight.NormalOffsetScale * 0.002f;
+        float fov = 2.0f * Math::Atan(1.0f + fovTexelSize + normalMarginSize);
+        fov = Math::Min(fov, 110.0f * DegreesToRadians);
+
         auto& shadowContext = renderContextBatch.Contexts[atlasLight.ContextIndex + contextIndex++];
         SetupRenderContext(renderContext, shadowContext, &atlasLight);
-        shadowContext.View.SetUpCube(LocalLightNearPlane, light.Radius, light.Position);
+        shadowContext.View.SetUpCube(LocalLightNearPlane, light.Radius, light.Position, fov);
 
         // Apply border to the projection matrix
         shadowContext.View.Projection = shadowContext.View.Projection * borderScaleMatrix;

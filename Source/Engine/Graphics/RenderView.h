@@ -304,7 +304,8 @@ public:
     /// <param name="nearPlane">Near plane</param>
     /// <param name="farPlane">Far plane</param>
     /// <param name="position">Camera's position</param>
-    void SetUpCube(float nearPlane, float farPlane, const Float3& position);
+    /// <param name="fov">Camera's field of view in radians (90 degrees by default)</param>
+    void SetUpCube(float nearPlane, float farPlane, const Float3& position, float fov = PI_OVER_2);
 
     /// <summary>
     /// Setups view for given face of the cube rendering.
