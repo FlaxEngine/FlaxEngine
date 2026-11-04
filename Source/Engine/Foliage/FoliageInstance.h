@@ -49,10 +49,17 @@ API_STRUCT(NoPod, NoDefault) struct FLAXENGINE_API FoliageInstance
     /// </summary>
     byte DrawStateLODTransition = 255;
 
-    /// <summary>
-    /// Flag used to indicate whether CachedDrawWorld contains valid data.
-    /// </summary>
-    byte CachedDrawWorldValid = 0;
+    union
+    {
+        struct
+        {
+            // Flag used to indicate whether CachedDrawWorld contains valid data.
+            byte CachedDrawWorldValid : 1;
+            // Marks last model drawing as culled (due to screen size or view distance).
+            byte CachedDrawCulled : 1;
+        };
+        byte CachedFlags = 0;
+    };
 
     /// <summary>
     /// The per-instance random value from range [0;1].

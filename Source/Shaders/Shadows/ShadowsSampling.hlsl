@@ -525,7 +525,8 @@ ShadowSample SampleLocalLightShadow(LightData light, Buffer<float4> shadowsBuffe
     float3 samplePosition = gBuffer.WorldPos;
 #if !LIGHTING_NO_DIRECTIONAL
     // Apply normal offset bias
-    samplePosition += GetShadowPositionOffset(shadow.NormalOffsetScale, NoL, gBuffer.Normal);
+    //samplePosition += GetShadowPositionOffset(gBuffer.Normal, shadow.NormalOffsetScale, light.Direction);
+    samplePosition += gBuffer.Normal * (shadow.NormalOffsetScale * toLightLength * 0.001f);
 #endif
 
     // Project position into shadow atlas UV

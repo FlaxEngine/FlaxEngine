@@ -831,7 +831,7 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
                 atlasLight.NormalOffsetScale += 20;
                 break;
             case Quality::Medium:
-                atlasLight.NormalOffsetScale +=15;
+                atlasLight.NormalOffsetScale += 15;
                 break;
             case Quality::High:
                 atlasLight.NormalOffsetScale += 5;
@@ -846,6 +846,9 @@ bool ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
 {
     SetupLight(shadows, renderContext, renderContextBatch, (RenderLightData&)light, atlasLight);
     atlasLight.Bounds.Radius = light.Radius;
+
+    // Scale normal offset when using lights with very high radius
+    atlasLight.NormalOffsetScale *= Math::Lerp(1.0f, Math::Lerp(10.0f, 50.0f, Math::Saturate(light.Radius / METERS_TO_UNITS(500))), Math::Saturate(light.Radius / METERS_TO_UNITS(100)));
 
     // Fade shadow on distance
     const float fadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
@@ -1231,9 +1234,18 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     int32 contextIndex = 0;
     for (int32 faceIndex = 0; faceIndex < 6; faceIndex++)
     {
+        // Expand Field Of Field to prevent artifacts at the edges of the cube map faces
+        float filterPixelSize = atlasLight.TileBorder;
+        if ((Quality)shadows.MaxShadowsQuality == Quality::Ultra)
+            filterPixelSize = 32; // PCSS
+        float fovTexelSize = filterPixelSize * 2.0f / (float)atlasLight.Resolution;
+        float normalMarginSize = atlasLight.NormalOffsetScale * 0.002f;
+        float fov = 2.0f * Math::Atan(1.0f + fovTexelSize + normalMarginSize);
+        fov = Math::Min(fov, 110.0f * DegreesToRadians);
+
         auto& shadowContext = renderContextBatch.Contexts[atlasLight.ContextIndex + contextIndex++];
         SetupRenderContext(renderContext, shadowContext, &atlasLight);
-        shadowContext.View.SetUpCube(LocalLightNearPlane, light.Radius, light.Position);
+        shadowContext.View.SetUpCube(LocalLightNearPlane, light.Radius, light.Position, fov);
 
         // Apply border to the projection matrix
         shadowContext.View.Projection = shadowContext.View.Projection * borderScaleMatrix;

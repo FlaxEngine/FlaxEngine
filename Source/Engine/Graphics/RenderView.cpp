@@ -125,7 +125,7 @@ void RenderView::SetUp(const Matrix& view, const Matrix& projection)
     CullingFrustum = Frustum;
 }
 
-void RenderView::SetUpCube(float nearPlane, float farPlane, const Float3& position)
+void RenderView::SetUpCube(float nearPlane, float farPlane, const Float3& position, float fov)
 {
     // Copy data
     Near = nearPlane;
@@ -133,7 +133,7 @@ void RenderView::SetUpCube(float nearPlane, float farPlane, const Float3& positi
     Position = position;
 
     // Create projection matrix
-    Matrix::PerspectiveFov(PI_OVER_2, 1.0f, nearPlane, farPlane, Projection);
+    Matrix::PerspectiveFov(fov, 1.0f, nearPlane, farPlane, Projection);
     NonJitteredProjection = Projection;
     Matrix::Invert(Projection, IP);
 }

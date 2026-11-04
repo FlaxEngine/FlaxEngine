@@ -446,13 +446,15 @@ int32 RenderTools::ComputeModelLOD(const Model* model, const Float3& origin, flo
         return -1;
 
     // Skip if no need to calculate LOD
-    if (model->LODs.Count() <= 1)
+    int32 lodCount = model->LODs.Count();
+    if (lodCount <= 1)
         return 0;
 
     // Iterate backwards and return the first matching LOD
-    for (int32 lodIndex = model->LODs.Count() - 1; lodIndex >= 0; lodIndex--)
+    const auto* lodData = model->LODs.Get();
+    for (int32 lodIndex = lodCount - 1; lodIndex >= 0; lodIndex--)
     {
-        if (Math::Square(model->LODs[lodIndex].ScreenSize * 0.5f) >= screenRadiusSquared)
+        if (Math::Square(lodData[lodIndex].ScreenSize * 0.5f) >= screenRadiusSquared)
         {
             return lodIndex;
         }

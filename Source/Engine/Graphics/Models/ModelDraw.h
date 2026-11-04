@@ -7,10 +7,10 @@
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Materials/MaterialInfo.h"
 
-template<typename ModelType, typename DrawInfoType>
-FORCE_INLINE bool ModelDrawTransition(ModelType* model, const DrawInfoType& info)
+template<typename ModelType>
+FORCE_INLINE bool ModelDrawTransition(ModelType* model, const ModelInstanceEntries& entries)
 {
-    for (auto& e : *info.Buffer)
+    for (auto& e : entries)
     {
         if (e.Material && EnumHasAllFlags(e.Material->GetInfo().FeaturesFlags, MaterialFeaturesFlags::DitheredLODTransition))
             return true;
@@ -58,7 +58,7 @@ FORCE_INLINE void ModelDraw(ModelType* model, const RenderContext& renderContext
         if (lodIndex == -1)
         {
             // Handling model fade-out transition
-            if (modelFrame == frame && info.DrawState->PrevLOD != -1 && ModelDrawTransition(model, info))
+            if (modelFrame == frame && info.DrawState->PrevLOD != -1 && ModelDrawTransition(model, *info.Buffer))
             {
                 // Check if start transition
                 if (info.DrawState->LODTransition == 255)
@@ -91,7 +91,7 @@ FORCE_INLINE void ModelDraw(ModelType* model, const RenderContext& renderContext
     if (modelFrame == frame)
     {
         // Check if materials use transition
-        if (!ModelDrawTransition(model, info))
+        if (!ModelDrawTransition(model, *info.Buffer))
         {
             info.DrawState->PrevLOD = lodIndex;
             info.DrawState->LODTransition = 255;

@@ -377,6 +377,25 @@ VariantType VariantType::GetElementType() const
     return VariantType();
 }
 
+bool VariantType::IsScalar() const
+{
+    switch (Type)
+    {
+    case Bool:
+    case Int:
+    case Uint:
+    case Int64:
+    case Uint64:
+    case Float:
+    case Double:
+    case Int16:
+    case Uint16:
+        return true;
+    default:
+        return false;
+    }
+}
+
 void VariantType::Inline()
 {
     // Check if the typename comes from static assembly which can be used to inline name instead of dynamic memory allocation
