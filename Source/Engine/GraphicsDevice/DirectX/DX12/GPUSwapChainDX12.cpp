@@ -4,6 +4,8 @@
 
 #include "GPUSwapChainDX12.h"
 #include "GPUContextDX12.h"
+#include "Engine/Graphics/Graphics.h"
+#include <atomic>
 #include "../IncludeDirectXHeaders.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -48,6 +50,278 @@ void BackBufferDX12::Release()
     SAFE_RELEASE(_resource);
 }
 
+#if PLATFORM_WINDOWS
+struct GPUSwapChainDX12::AsyncPresenter
+{
+    struct Frame
+    {
+        ID3D12Resource* Texture = nullptr;
+        ID3D12CommandAllocator* CaptureAllocator = nullptr;
+        ID3D12GraphicsCommandList* CaptureList = nullptr;
+        ID3D12CommandAllocator* PresentAllocator = nullptr;
+        ID3D12GraphicsCommandList* PresentList = nullptr;
+        // 0: free; 1: published render copy; 2: presentation GPU copy in flight.
+        std::atomic<int> State{0};
+        uint64 Serial = 0, CopyComplete = 0;
+    };
+    GPUSwapChainDX12* Owner;
+    ID3D12CommandQueue* Queue = nullptr;
+    ID3D12Fence* RenderFence = nullptr;
+    ID3D12Fence* CopyFence = nullptr;
+    Frame Frames[2];
+    HANDLE Thread = nullptr, StopEvent = nullptr, WakeEvent = nullptr;
+    std::atomic<uint64> Presented{0};
+    std::atomic<HRESULT> Failure{S_OK};
+    uint64 RenderSerial = 0, CopySerial = 0;
+    bool FailureReported = false;
+
+    explicit AsyncPresenter(GPUSwapChainDX12* owner) : Owner(owner) {}
+    ~AsyncPresenter()
+    {
+        ReleaseFrames();
+        SAFE_RELEASE(RenderFence);
+        SAFE_RELEASE(CopyFence);
+        SAFE_RELEASE(Queue);
+    }
+    bool InitQueue()
+    {
+        auto device = Owner->_device->GetDevice();
+        D3D12_COMMAND_QUEUE_DESC desc = {};
+        desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+        return SUCCEEDED(device->CreateCommandQueue(&desc, IID_PPV_ARGS(&Queue))) &&
+            SUCCEEDED(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&RenderFence))) &&
+            SUCCEEDED(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&CopyFence)));
+    }
+    void Stop()
+    {
+        if (Thread)
+        {
+            SetEvent(StopEvent);
+            if (GetCurrentThreadId() == GetWindowThreadProcessId(Owner->_windowHandle, nullptr))
+            {
+                while (MsgWaitForMultipleObjects(1, &Thread, FALSE, INFINITE, QS_SENDMESSAGE) == WAIT_OBJECT_0 + 1)
+                {
+                    MSG message;
+                    PeekMessageW(&message, nullptr, 0, 0, PM_NOREMOVE);
+                }
+            }
+            else
+                WaitForSingleObject(Thread, INFINITE);
+            CloseHandle(Thread);
+            Thread = nullptr;
+        }
+        if (StopEvent) CloseHandle(StopEvent);
+        if (WakeEvent) CloseHandle(WakeEvent);
+        StopEvent = WakeEvent = nullptr;
+    }
+    void ReleaseFrames()
+    {
+        Stop();
+        // The engine queue fence does not cover the presentation queue.
+        if (Queue && CopyFence && SUCCEEDED(Queue->Signal(CopyFence, ++CopySerial)))
+        {
+            uint64 completed;
+            while ((completed = CopyFence->GetCompletedValue()) != MAX_uint64 && completed < CopySerial)
+                Platform::Sleep(1);
+        }
+        Owner->_asyncRenderTarget.Release();
+        for (auto& frame : Frames)
+        {
+            SAFE_RELEASE(frame.CaptureList);
+            SAFE_RELEASE(frame.PresentList);
+            SAFE_RELEASE(frame.CaptureAllocator);
+            SAFE_RELEASE(frame.PresentAllocator);
+            SAFE_RELEASE(frame.Texture);
+            frame.State.store(0);
+        }
+    }
+    static D3D12_RESOURCE_BARRIER Transition(ID3D12Resource* resource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after)
+    {
+        D3D12_RESOURCE_BARRIER barrier = {};
+        barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        barrier.Transition.pResource = resource;
+        barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        barrier.Transition.StateBefore = before;
+        barrier.Transition.StateAfter = after;
+        return barrier;
+    }
+    bool InitFrames()
+    {
+        auto device = Owner->_device->GetDevice();
+        auto desc = Owner->_backBuffers[0].GetResource()->GetDesc();
+        D3D12_HEAP_PROPERTIES heap = {};
+        heap.Type = D3D12_HEAP_TYPE_DEFAULT;
+        heap.CreationNodeMask = heap.VisibleNodeMask = 1;
+        ID3D12Resource* target = nullptr;
+        if (FAILED(device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &desc,
+            D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&target))))
+            return false;
+        Owner->_asyncRenderTarget.Setup(Owner, target);
+        desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+        for (auto& frame : Frames)
+        {
+            if (FAILED(device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &desc,
+                    D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&frame.Texture))) ||
+                FAILED(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&frame.CaptureAllocator))) ||
+                FAILED(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&frame.PresentAllocator))) ||
+                FAILED(device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, frame.CaptureAllocator, nullptr, IID_PPV_ARGS(&frame.CaptureList))) ||
+                FAILED(frame.CaptureList->Close()) ||
+                FAILED(device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, frame.PresentAllocator, nullptr, IID_PPV_ARGS(&frame.PresentList))) ||
+                FAILED(frame.PresentList->Close()))
+                return false;
+        }
+        Failure.store(S_OK);
+        FailureReported = false;
+        Presented.store(0);
+        StopEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+        WakeEvent = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+        if (!StopEvent || !WakeEvent)
+            return false;
+        Thread = CreateThread(nullptr, 0, Run, this, 0, nullptr);
+        if (Thread)
+            LOG(Info, "DX12 async presentation active: separate queue, two fenced frame slots, synchronized scanout.");
+        return Thread != nullptr;
+    }
+    void Capture()
+    {
+        const HRESULT failure = Failure.load();
+        if (FAILED(failure))
+        {
+            if (!FailureReported)
+            {
+                LOG_DIRECTX_RESULT(failure);
+                FailureReported = true;
+            }
+            return;
+        }
+        const uint64 count = Presented.exchange(0);
+        if (count)
+        {
+            Owner->GPUSwapChain::Present(true);
+            Owner->_presentCount += count - 1;
+        }
+        // Present is called after the engine's FrameEnd submitted its draw lists.
+        for (auto& frame : Frames)
+        {
+            if (frame.State.load(std::memory_order_acquire) != 0)
+                continue;
+            HRESULT result = frame.CaptureAllocator->Reset();
+            if (SUCCEEDED(result)) result = frame.CaptureList->Reset(frame.CaptureAllocator, nullptr);
+            if (FAILED(result)) { Failure.store(result); return; }
+            auto target = Owner->_asyncRenderTarget.GetResource();
+            D3D12_RESOURCE_BARRIER begin[] = {
+                Transition(target, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_SOURCE),
+                Transition(frame.Texture, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST)};
+            frame.CaptureList->ResourceBarrier(2, begin);
+            frame.CaptureList->CopyResource(frame.Texture, target);
+            D3D12_RESOURCE_BARRIER end[] = {
+                Transition(target, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON),
+                Transition(frame.Texture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON)};
+            frame.CaptureList->ResourceBarrier(2, end);
+            result = frame.CaptureList->Close();
+            if (FAILED(result)) { Failure.store(result); return; }
+            auto queue = Owner->_device->GetCommandQueueDX12();
+            ID3D12CommandList* list = frame.CaptureList;
+            queue->ExecuteCommandLists(1, &list);
+            frame.Serial = ++RenderSerial;
+            result = queue->Signal(RenderFence, frame.Serial);
+            if (FAILED(result)) { Failure.store(result); return; }
+            frame.State.store(1, std::memory_order_release);
+            SetEvent(WakeEvent);
+            return;
+        }
+        // No safe slot: drop this capture without stalling rendering.
+    }
+    static DWORD WINAPI Run(void* arg)
+    {
+        auto self = static_cast<AsyncPresenter*>(arg);
+        HANDLE events[] = {self->StopEvent, self->WakeEvent};
+        bool pending = false;
+        uint64 pendingSerial = 0, lastPresented = 0;
+        while (WaitForMultipleObjects(2, events, FALSE, 1) != WAIT_OBJECT_0)
+        {
+            const uint64 rendered = self->RenderFence->GetCompletedValue();
+            const uint64 copied = self->CopyFence->GetCompletedValue();
+            if (rendered == MAX_uint64 || copied == MAX_uint64)
+            {
+                self->Failure.store(DXGI_ERROR_DEVICE_REMOVED);
+                break;
+            }
+            Frame* newest = nullptr;
+            for (auto& frame : self->Frames)
+            {
+                int state = frame.State.load(std::memory_order_acquire);
+                if (state == 2 && copied >= frame.CopyComplete)
+                {
+                    frame.State.store(0, std::memory_order_release);
+                    continue;
+                }
+                if (state != 1 || rendered < frame.Serial)
+                    continue;
+                if (frame.Serial <= lastPresented || (pending && frame.Serial <= pendingSerial))
+                {
+                    frame.State.store(0, std::memory_order_release);
+                    continue;
+                }
+                if (!newest || frame.Serial > newest->Serial)
+                    newest = &frame;
+            }
+            if (newest)
+            {
+                for (auto& frame : self->Frames)
+                {
+                    if (&frame != newest && frame.State.load(std::memory_order_acquire) == 1 &&
+                        rendered >= frame.Serial && frame.Serial < newest->Serial)
+                        frame.State.store(0, std::memory_order_release);
+                }
+                HRESULT result = newest->PresentAllocator->Reset();
+                if (SUCCEEDED(result)) result = newest->PresentList->Reset(newest->PresentAllocator, nullptr);
+                if (FAILED(result)) { self->Failure.store(result); break; }
+                const UINT index = self->Owner->_swapChain->GetCurrentBackBufferIndex();
+                auto back = self->Owner->_backBuffers[index].GetResource();
+                D3D12_RESOURCE_BARRIER begin[] = {
+                    Transition(newest->Texture, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_SOURCE),
+                    Transition(back, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_COPY_DEST)};
+                newest->PresentList->ResourceBarrier(2, begin);
+                newest->PresentList->CopyResource(back, newest->Texture);
+                D3D12_RESOURCE_BARRIER end[] = {
+                    Transition(newest->Texture, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON),
+                    Transition(back, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PRESENT)};
+                newest->PresentList->ResourceBarrier(2, end);
+                result = newest->PresentList->Close();
+                if (FAILED(result)) { self->Failure.store(result); break; }
+                ID3D12CommandList* list = newest->PresentList;
+                self->Queue->ExecuteCommandLists(1, &list);
+                newest->CopyComplete = ++self->CopySerial;
+                result = self->Queue->Signal(self->CopyFence, newest->CopyComplete);
+                if (FAILED(result)) { self->Failure.store(result); break; }
+                pendingSerial = newest->Serial;
+                newest->State.store(2, std::memory_order_release);
+                pending = true;
+            }
+            if (pending)
+            {
+                const HRESULT result = self->Owner->_swapChain->Present(1, DXGI_PRESENT_DO_NOT_WAIT);
+                if (result == S_OK)
+                {
+                    lastPresented = pendingSerial;
+                    self->Presented.fetch_add(1);
+                    pending = false;
+                }
+                else if (result == DXGI_STATUS_OCCLUDED)
+                    WaitForSingleObject(self->StopEvent, 16);
+                else if (result != DXGI_ERROR_WAS_STILL_DRAWING)
+                {
+                    self->Failure.store(result);
+                    break;
+                }
+            }
+        }
+        return 0;
+    }
+};
+#endif
+
 GPUSwapChainDX12::GPUSwapChainDX12(GPUDeviceDX12* device, Window* window)
     : GPUResourceDX12(device, StringView::Empty)
     , _windowHandle(static_cast<HWND>(window->GetNativePtr()))
@@ -62,11 +336,14 @@ GPUSwapChainDX12::GPUSwapChainDX12(GPUDeviceDX12* device, Window* window)
 
 void GPUSwapChainDX12::OnReleaseGPU()
 {
+#if PLATFORM_WINDOWS
+    if (_asyncPresenter) _asyncPresenter->Stop();
+#endif
     _device->WaitForGPU();
 
 #if PLATFORM_WINDOWS
     // Disable fullscreen mode
-    if (_swapChain)
+    if (_swapChain && _isFullscreen)
     {
         VALIDATE_DIRECTX_CALL(_swapChain->SetFullscreenState(false, nullptr));
     }
@@ -76,6 +353,10 @@ void GPUSwapChainDX12::OnReleaseGPU()
     PROFILE_MEM_DEC(Graphics, _memoryUsage);
     releaseBackBuffer();
     _backBuffers.Resize(0);
+#if PLATFORM_WINDOWS
+    delete _asyncPresenter;
+    _asyncPresenter = nullptr;
+#endif
     if (_swapChain)
     {
         _device->AddResourceToLateRelease(_swapChain);
@@ -87,6 +368,9 @@ void GPUSwapChainDX12::OnReleaseGPU()
 
 void GPUSwapChainDX12::releaseBackBuffer()
 {
+#if PLATFORM_WINDOWS
+    if (_asyncPresenter) _asyncPresenter->ReleaseFrames();
+#endif
     for (int32 i = 0; i < _backBuffers.Count(); i++)
     {
         _backBuffers[i].Release();
@@ -112,6 +396,11 @@ bool GPUSwapChainDX12::IsFullscreen()
 void GPUSwapChainDX12::SetFullscreen(bool isFullscreen)
 {
 #if PLATFORM_WINDOWS
+    if (isFullscreen && _asyncPresenter)
+    {
+        LOG(Warning, "Async presentation is windowed/borderless only.");
+        return;
+    }
     if (_swapChain && isFullscreen != IsFullscreen())
     {
         _device->WaitForGPU();
@@ -165,6 +454,9 @@ bool GPUSwapChainDX12::Resize(int32 width, int32 height)
         return false;
     }
 
+#if PLATFORM_WINDOWS
+    if (_asyncPresenter) _asyncPresenter->Stop();
+#endif
     _device->WaitForGPU();
     GPUDeviceLock lock(_device);
     _allowTearing = _device->AllowTearing;
@@ -201,7 +493,29 @@ bool GPUSwapChainDX12::Resize(int32 width, int32 height)
 #if GPU_ENABLE_WINDOW_SRV
         swapChainDesc.BufferUsage |= DXGI_USAGE_SHADER_INPUT;
 #endif
-        if (_allowTearing)
+        ID3D12CommandQueue* presentationQueue = _device->GetCommandQueueDX12();
+#if PLATFORM_WINDOWS
+        if (Graphics::UseAsyncPresentation)
+        {
+            _asyncPresenter = new AsyncPresenter(this);
+            if (_asyncPresenter->InitQueue())
+            {
+                presentationQueue = _asyncPresenter->Queue;
+                swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+            }
+            else
+            {
+                delete _asyncPresenter;
+                _asyncPresenter = nullptr;
+                LOG(Warning, "Async presentation queue unavailable; using normal DX12 presentation.");
+            }
+        }
+#endif
+        if (_allowTearing
+#if PLATFORM_WINDOWS
+            && !_asyncPresenter
+#endif
+            )
             swapChainDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
         DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullscreenDesc;
         if (_device->Outputs.HasItems())
@@ -225,9 +539,13 @@ bool GPUSwapChainDX12::Resize(int32 width, int32 height)
         // Create swap chain (it needs the queue so that it can force a flush on it)
         IDXGISwapChain1* swapChain;
         auto dxgiFactory = _device->GetDXGIFactory();
-        VALIDATE_DIRECTX_CALL(dxgiFactory->CreateSwapChainForHwnd(_device->GetCommandQueueDX12(), _windowHandle, &swapChainDesc, &fullscreenDesc, nullptr, &swapChain));
+        VALIDATE_DIRECTX_CALL(dxgiFactory->CreateSwapChainForHwnd(presentationQueue, _windowHandle, &swapChainDesc, &fullscreenDesc, nullptr, &swapChain));
         _swapChain = static_cast<IDXGISwapChain3*>(swapChain);
         ASSERT(_swapChain);
+#if PLATFORM_WINDOWS
+        if (_asyncPresenter)
+            VALIDATE_DIRECTX_CALL(_swapChain->SetMaximumFrameLatency(1));
+#endif
         DX_SET_DEBUG_NAME_EX(_swapChain, TEXT("RenderOutput"), TEXT("SwapChain"), TEXT(""));
         _swapChain->SetBackgroundColor((const DXGI_RGBA*)Color::Black.Raw);
         _backBuffers.Resize(swapChainDesc.BufferCount);
@@ -251,6 +569,20 @@ bool GPUSwapChainDX12::Resize(int32 width, int32 height)
     PROFILE_MEM_INC(Graphics, _memoryUsage);
 
     getBackBuffer();
+#if PLATFORM_WINDOWS
+    if (_asyncPresenter)
+    {
+        if (!_asyncPresenter->InitFrames())
+        {
+            LOG(Error, "Async DX12 presentation frame setup failed.");
+            ReleaseGPU();
+            return true;
+        }
+        const uint64 extra = RenderTools::CalculateTextureMemoryUsage(_format, _width, _height, 1) * 3;
+        _memoryUsage += extra;
+        PROFILE_MEM_INC(Graphics, extra);
+    }
+#endif
 #endif
 
     return false;
@@ -262,6 +594,9 @@ void GPUSwapChainDX12::CopyBackbuffer(GPUContext* context, GPUTexture* dst)
 
     auto dstDX12 = (GPUTextureDX12*)dst;
     auto backbuffer = &_backBuffers[_currentFrameIndex];
+#if PLATFORM_WINDOWS
+    if (_asyncPresenter) backbuffer = &_asyncRenderTarget;
+#endif
 
     contextDX12->SetResourceState(dstDX12, D3D12_RESOURCE_STATE_COPY_DEST);
     contextDX12->SetResourceState(backbuffer, D3D12_RESOURCE_STATE_COPY_SOURCE);
@@ -354,6 +689,13 @@ void GPUSwapChainDX12::End(RenderTask* task)
     GPUSwapChain::End(task);
 
     auto context = _device->GetMainContextDX12();
+#if PLATFORM_WINDOWS
+    if (_asyncPresenter)
+    {
+        context->OnSwapChainFlush(&_asyncRenderTarget);
+        return;
+    }
+#endif
     context->OnSwapChainFlush(&_backBuffers[_currentFrameIndex]);
 }
 
@@ -361,6 +703,13 @@ void GPUSwapChainDX12::Present(bool vsync)
 {
     PROFILE_CPU();
     ZoneColor(TracyWaitZoneColor);
+#if PLATFORM_WINDOWS
+    if (_asyncPresenter)
+    {
+        _asyncPresenter->Capture();
+        return;
+    }
+#endif
 #if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
     ID3D12Resource* backBuffer = _backBuffers[_currentFrameIndex].GetResource();
     D3D12XBOX_PRESENT_PLANE_PARAMETERS planeParameters = {};
@@ -398,6 +747,9 @@ void GPUSwapChainDX12::Present(bool vsync)
 
 GPUTextureView* GPUSwapChainDX12::GetBackBufferView()
 {
+#if PLATFORM_WINDOWS
+    if (_asyncPresenter) return &_asyncRenderTarget.Handle;
+#endif
     return &_backBuffers[_currentFrameIndex].Handle;
 }
 
