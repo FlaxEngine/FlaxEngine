@@ -51,8 +51,14 @@ void GPUTasksContext::Run(GPUTask* task)
     ASSERT(task != nullptr);
 
     task->Execute(this);
-    //if (task->GetSyncStart() != 0)
+
+    // Keep only the task that waits for a sync. A task that already ended (finished, failed or canceled) is queued for deletion,
+    // so the list would hold a pointer to the deleted object when the next frame comes after its time to live (eg. after a long
+    // main thread stall).
+    if (task->IsSyncing())
         _tasksSyncing.Add(task);
+    else if (task->GetState() == TaskState::Finished)
+        _totalTasksDoneCount++;
 }
 
 void GPUTasksContext::OnCancelSync(GPUTask* task)
@@ -81,6 +87,9 @@ void GPUTasksContext::OnFrameBegin()
         if (task->GetSyncPoint() <= _currentSyncPoint && state != TaskState::Finished)
         {
             task->Sync();
+
+            // The sync ends the task and queues it for deletion, so remove it from the list now and not in the next frame
+            state = task->GetState();
         }
         if (state == TaskState::Failed || state == TaskState::Canceled)
         {
