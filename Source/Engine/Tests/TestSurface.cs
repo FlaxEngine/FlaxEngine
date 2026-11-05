@@ -1,8 +1,10 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #if FLAX_TESTS
+using System.IO;
 using System.Linq;
 using FlaxEditor.Surface;
+using FlaxEngine;
 using NUnit.Framework;
 
 namespace FlaxEditor.Tests
@@ -54,6 +56,42 @@ namespace FlaxEditor.Tests
                     }
                 }
             }
+        }
+
+        [Test]
+        public void TestGPUTextureType()
+        {
+            var meta = new SurfaceMeta();
+            Assert.AreEqual(MaterialParameterType.GPUTexture, meta.GetGPUTextureType());
+
+            // Stored as a single byte with the material parameter type (read by ShaderGraphUtilities::GetGPUTextureType)
+            meta.SetGPUTextureType(MaterialParameterType.GPUTextureArray);
+            Assert.AreEqual(MaterialParameterType.GPUTextureArray, meta.GetGPUTextureType());
+            Assert.AreEqual(new[] { (byte)MaterialParameterType.GPUTextureArray }, meta.GetEntry(SurfaceMeta.GPUTextureTypeMetaTypeID).Data);
+
+            // Survives save and load
+            var stream = new MemoryStream();
+            meta.Save(new BinaryWriter(stream));
+            stream.Position = 0;
+            var loaded = new SurfaceMeta();
+            loaded.Load(new BinaryReader(stream));
+            Assert.AreEqual(MaterialParameterType.GPUTextureArray, loaded.GetGPUTextureType());
+
+            meta.SetGPUTextureType(MaterialParameterType.GPUTextureVolume);
+            Assert.AreEqual(MaterialParameterType.GPUTextureVolume, meta.GetGPUTextureType());
+            meta.SetGPUTextureType(MaterialParameterType.GPUTextureCube);
+            Assert.AreEqual(MaterialParameterType.GPUTextureCube, meta.GetGPUTextureType());
+
+            // A 2D texture is the default so it removes the entry
+            meta.SetGPUTextureType(MaterialParameterType.GPUTexture);
+            Assert.AreEqual(MaterialParameterType.GPUTexture, meta.GetGPUTextureType());
+            Assert.IsFalse(meta.Entries.Any(x => x.TypeID == SurfaceMeta.GPUTextureTypeMetaTypeID));
+
+            // Other types aren't GPU texture types
+            meta.SetGPUTextureType(MaterialParameterType.Texture);
+            Assert.IsFalse(meta.Entries.Any(x => x.TypeID == SurfaceMeta.GPUTextureTypeMetaTypeID));
+            meta.AddEntry(SurfaceMeta.GPUTextureTypeMetaTypeID, new[] { (byte)MaterialParameterType.Texture });
+            Assert.AreEqual(MaterialParameterType.GPUTexture, meta.GetGPUTextureType());
         }
     }
 }

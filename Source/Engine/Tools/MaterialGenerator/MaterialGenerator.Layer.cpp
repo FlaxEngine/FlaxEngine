@@ -3,6 +3,7 @@
 #if COMPILE_WITH_MATERIAL_GRAPH
 
 #include "MaterialGenerator.h"
+#include "Engine/Visject/ShaderGraphUtilities.h"
 #include "Engine/Core/Math/Vector4.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Content/Assets/MaterialInstance.h"
@@ -279,7 +280,7 @@ void MaterialGenerator::prepareLayer(MaterialLayer* layer, bool allowVisiblePara
                 break;
             }
             if (StringUtils::Compare(param->Type.TypeName, "FlaxEngine.GPUTexture") == 0)
-                mp.Type = MaterialParameterType::GPUTexture;
+                mp.Type = ShaderGraphUtilities::GetGPUTextureType(param->Meta);
             else if (StringUtils::Compare(param->Type.TypeName, "FlaxEngine.GPUBuffer") == 0)
                 mp.Type = MaterialParameterType::GPUBuffer;
             else
