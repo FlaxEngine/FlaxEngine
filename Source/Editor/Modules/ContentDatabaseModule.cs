@@ -1079,12 +1079,20 @@ namespace FlaxEditor.Modules
                     {
                         var proxy = GetAssetProxy(assetInfo.TypeName, path);
                         item = proxy?.ConstructItem(path, assetInfo.TypeName, ref assetInfo.ID);
+                        if (item != null)
+                        {
+                            item._accentColor = proxy.AccentColor;
+                        }
                     }
                     if (item == null)
                     {
-                        var proxy = GetAssetVirtualProxy(path);
+                        AssetProxy proxy = GetAssetVirtualProxy(path);
                         item = proxy?.ConstructItem(path, assetInfo.TypeName, ref assetInfo.ID);
-                        if (item == null)
+                        if (item != null)
+                        {
+                            item._accentColor = proxy.AccentColor;
+                        }
+                        else
                         {
                             item = GetProxy(Path.GetExtension(path))?.ConstructItem(path);
                             if (item == null)

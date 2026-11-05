@@ -135,7 +135,7 @@ namespace FlaxEditor.Content
         /// <summary>
         /// Gets the unique accent color for that asset type.
         /// </summary>
-        public abstract Color AccentColor { get; }
+        public virtual Color AccentColor => Color.Transparent;
 
         /// <summary>
         /// Releases resources and unregisters the proxy utilities. Called during editor closing. For custom proxies from game/plugin modules it should be called before scripting reload.
