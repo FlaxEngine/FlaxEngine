@@ -457,17 +457,19 @@ Float2 Font::GetCharPosition(const StringView& text, int32 index, const TextLayo
     // Check if there is no need to do anything
     if (text.IsEmpty())
     {
-        Float2 location = layout.Bounds.Location;
+        const float scale = GetScale(layout.Scale);
+        float baseLinesDistance = static_cast<float>(_height) * layout.BaseLinesGapScale * scale;
+        float totalHeight = baseLinesDistance;
+        Float2 offset = Float2::Zero;
         if (layout.VerticalAlignment == TextAlignment::Center)
-            location.Y += layout.Bounds.Size.Y * 0.5f - static_cast<float>(_height) * 0.5f;
+            offset.Y += (layout.Bounds.GetHeight() - totalHeight) * 0.5f;
         else if (layout.VerticalAlignment == TextAlignment::Far)
-            location.Y += layout.Bounds.Size.Y - static_cast<float>(_height) * 0.5f;
-
+            offset.Y += layout.Bounds.GetHeight() - totalHeight;
         if (layout.HorizontalAlignment == TextAlignment::Center)
-            location.X += layout.Bounds.Size.X * 0.5f;
+            offset.X += layout.Bounds.GetWidth() * 0.5f;
         else if (layout.HorizontalAlignment == TextAlignment::Far)
-            location.X += layout.Bounds.Size.X;
-        return location;
+            offset.X += layout.Bounds.GetWidth();
+        return layout.Bounds.Location + offset;
     }
 
     // Process text
