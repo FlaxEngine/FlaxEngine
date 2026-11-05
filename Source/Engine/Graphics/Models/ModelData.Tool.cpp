@@ -576,11 +576,40 @@ namespace
         fvTexcOut[1] = e.Y;
     }
 
+    struct MikkTSpaceContext : SMikkTSpaceContext
+    {
+        Array<int32>* NextCopy; // Per vertex: It's next copy with another tangent frame (-1 if none)
+    };
+
     void SetTSpaceBasic(const SMikkTSpaceContext* pContext, const float fvTangent[], const float fSign, const int iFace, const int iVert)
     {
         const auto meshData = (MeshData*)pContext->m_pUserData;
-        const auto v = meshData->Indices[iFace * 3 + iVert];
-        meshData->Tangents[v] = Float3(fvTangent);
+        auto& nextCopy = *((const MikkTSpaceContext*)pContext)->NextCopy;
+        const Float3 tangent(fvTangent);
+        auto& v = meshData->Indices[iFace * 3 + iVert];
+        while (meshData->BitangentSigns[v] != 0.0f && (meshData->BitangentSigns[v] != fSign || Float3::Dot(meshData->Tangents[v], tangent) < 0.9995f))
+        {
+            // Corner across a UV mirror: move it to a copy of the vertex so no triangle blends the sign through 0
+
+            if (nextCopy[v] == -1)
+            {
+                nextCopy[v] = meshData->Positions.Count();
+                nextCopy.Add(-1);
+#define COPY_VERTEX(buffer) if (buffer.HasItems()) { const auto value = buffer[v]; buffer.Add(value); }
+                COPY_VERTEX(meshData->Positions);
+                COPY_VERTEX(meshData->Normals);
+                COPY_VERTEX(meshData->Tangents);
+                COPY_VERTEX(meshData->Colors);
+                COPY_VERTEX(meshData->BlendIndices);
+                COPY_VERTEX(meshData->BlendWeights);
+                for (auto& uvs : meshData->UVs)
+                    COPY_VERTEX(uvs);
+#undef COPY_VERTEX
+                meshData->BitangentSigns.Add(0.0f); // Not written yet
+            }
+            v = (uint32)nextCopy[v];
+        }
+        meshData->Tangents[v] = tangent;
         meshData->BitangentSigns[v] = fSign;
     }
 }
@@ -617,10 +646,35 @@ bool MeshData::GenerateTangents(float smoothingAngle)
         SetTSpaceBasic,
         nullptr
     };
-    const SMikkTSpaceContext context = { &callbacks, this };
+    Array<int32> nextCopy;
+    nextCopy.Resize(vertexCount, false);
+    nextCopy.SetAll(-1);
+    MikkTSpaceContext context;
+    context.m_pInterface = &callbacks;
+    context.m_pUserData = this;
+    context.NextCopy = &nextCopy;
     BitangentSigns.Resize(vertexCount, false);
+    BitangentSigns.SetAll(0.0f); //Not written yet
     genTangSpace(&context, 180.0f - smoothingAngle);
+
+    // Blend shapes move the vertex copies too
+    for (auto& blendShape : BlendShapes)
+    {
+        const int32 count = blendShape.Vertices.Count();
+        for (int32 i = 0; i < count; i++)
+        {
+            BlendShapeVertex v = blendShape.Vertices[i];
+            if (v.VertexIndex >= (uint32)vertexCount)
+                continue;
+            for (int32 copy = nextCopy[v.VertexIndex]; copy != -1; copy = nextCopy[copy]) 
+            {
+                v.VertexIndex = copy;
+                blendShape.Vertices.Add(v);
+            }
+        }
+    }
 #else
+    
     const float angleEpsilon = 0.9999f;
     BitArray<> vertexDone;
     vertexDone.Resize(vertexCount);
