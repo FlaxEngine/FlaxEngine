@@ -225,6 +225,19 @@ public:
     API_FUNCTION(Sealed) virtual bool Init(uint32 vertices, uint32 triangles, const Array<const void*, FixedAllocation<MODEL_MAX_VB>>& vbData, const void* ibData, bool use16BitIndexBuffer, Array<GPUVertexLayout*, FixedAllocation<MODEL_MAX_VB>> vbLayout);
 
     /// <summary>
+    /// Updates the contents of the existing mesh buffers, without creating new GPU buffers. Use it for a mesh that changes its vertex and index data often.
+    /// It works only during rendering on the main thread, when the counts, the index format and the vertex layouts are the same as in the current buffers. Otherwise use Init.
+    /// </summary>
+    /// <param name="vertices">Amount of vertices in the vertex buffer.</param>
+    /// <param name="triangles">Amount of triangles in the index buffer.</param>
+    /// <param name="vbData">Array with pointers to vertex buffers data (layout defined by <paramref name="vbLayout"/>).</param>
+    /// <param name="ibData">Pointer to index buffer data. Data is uint16 or uint32 depending on <paramref name="use16BitIndexBuffer"/> value.</param>
+    /// <param name="use16BitIndexBuffer">True to use 16-bit indices for the index buffer (true: uint16, false: uint32).</param>
+    /// <param name="vbLayout">Layout descriptors for the vertex buffers attributes (one for each vertex buffer).</param>
+    /// <returns>True if the existing buffers cannot take the data (the buffers are not changed), otherwise false.</returns>
+    bool UpdateBuffers(uint32 vertices, uint32 triangles, const Array<const void*, FixedAllocation<MODEL_MAX_VB>>& vbData, const void* ibData, bool use16BitIndexBuffer, const Array<GPUVertexLayout*, FixedAllocation<MODEL_MAX_VB>>& vbLayout);
+
+    /// <summary>
     /// Releases the mesh data (GPU buffers and local cache).
     /// </summary>
     virtual void Release();
