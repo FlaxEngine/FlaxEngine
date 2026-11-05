@@ -348,29 +348,28 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
             break;
         }
         case MaterialSceneTextures::DiffuseColor:
-        {
-            auto gBuffer0Param = findOrAddSceneTexture(MaterialSceneTextures::BaseColor);
-            auto gBuffer2Param = findOrAddSceneTexture(MaterialSceneTextures::Metalness);
-            auto gBuffer0Sample = sampleTextureRaw(node, value, box, &gBuffer0Param);
-            if (gBuffer0Sample == nullptr)
-                break;
-            auto gBuffer2Sample = sampleTextureRaw(node, value, box, &gBuffer2Param);
-            if (gBuffer2Sample == nullptr)
-                break;
-            value = writeLocal(VariantType::Float3, String::Format(TEXT("GetDiffuseColor({0}.rgb, {1}.g)"), gBuffer0Sample->Value, gBuffer2Sample->Value), node);
-            break;
-        }
         case MaterialSceneTextures::SpecularColor:
         {
+            // sampleTextureRaw caches a single sample per node, so clear it between the two textures and keep the combined color there for the other outputs
+            auto valueBox = box->GetParent<ShaderGraphNode<>>()->GetBox(1);
+            if (box->ID != 6 && valueBox->Cache.IsValid())
+            {
+                value = valueBox->Cache;
+                break;
+            }
             auto gBuffer0Param = findOrAddSceneTexture(MaterialSceneTextures::BaseColor);
             auto gBuffer2Param = findOrAddSceneTexture(MaterialSceneTextures::Metalness);
             auto gBuffer0Sample = sampleTextureRaw(node, value, box, &gBuffer0Param);
             if (gBuffer0Sample == nullptr)
                 break;
+            const Value gBuffer0 = *gBuffer0Sample;
+            valueBox->Cache.Clear();
             auto gBuffer2Sample = sampleTextureRaw(node, value, box, &gBuffer2Param);
             if (gBuffer2Sample == nullptr)
                 break;
-            value = writeLocal(VariantType::Float3, String::Format(TEXT("GetSpecularColor({0}.rgb, {1}.b, {1}.g)"), gBuffer0Sample->Value, gBuffer2Sample->Value), node);
+            const Char* format = type == MaterialSceneTextures::DiffuseColor ? TEXT("GetDiffuseColor({0}.rgb, {1}.g)") : TEXT("GetSpecularColor({0}.rgb, {1}.b, {1}.g)");
+            valueBox->Cache = writeLocal(VariantType::Float3, String::Format(format, gBuffer0.Value, gBuffer2Sample->Value), node);
+            value = valueBox->Cache;
             break;
         }
         case MaterialSceneTextures::WorldNormal:
