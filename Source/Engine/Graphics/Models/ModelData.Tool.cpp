@@ -576,10 +576,36 @@ namespace
         fvTexcOut[1] = e.Y;
     }
 
+    struct MikkTSpaceContext : SMikkTSpaceContext
+    {
+        int32* MirroredCopies; 
+    };
+
     void SetTSpaceBasic(const SMikkTSpaceContext* pContext, const float fvTangent[], const float fSign, const int iFace, const int iVert)
     {
         const auto meshData = (MeshData*)pContext->m_pUserData;
-        const auto v = meshData->Indices[iFace * 3 + iVert];
+        auto& v = meshData->Indices[iFace * 3 + iVert];
+        if (meshData->BitangentSigns[v] != 0.0f && meshData->BitangentSigns[v] != fSign)
+        {
+            // Corner across a UV mirror: move it to a copy of the vertex so no triangle blends the sign through 0
+            int32& copy = ((const MikkTSpaceContext*)pContext)->MirroredCopies[v];
+            if (copy == -1)
+            {
+                copy = meshData->Positions.Count();
+#define COPY_VERTEX(buffer) if (buffer.HasItems()) { const auto value = buffer[v]; buffer.Add(value); }
+                COPY_VERTEX(meshData->Positions);
+                COPY_VERTEX(meshData->Normals);
+                COPY_VERTEX(meshData->Tangents);
+                COPY_VERTEX(meshData->BitangentSigns);
+                COPY_VERTEX(meshData->Colors);
+                COPY_VERTEX(meshData->BlendIndices);
+                COPY_VERTEX(meshData->BlendWeights);
+                for (auto& uvs : meshData->UVs)
+                    COPY_VERTEX(uvs);
+#undef COPY_VERTEX
+            }
+            v = (uint32)copy;
+        }
         meshData->Tangents[v] = Float3(fvTangent);
         meshData->BitangentSigns[v] = fSign;
     }
@@ -617,10 +643,33 @@ bool MeshData::GenerateTangents(float smoothingAngle)
         SetTSpaceBasic,
         nullptr
     };
-    const SMikkTSpaceContext context = { &callbacks, this };
+    Array<int32> mirroredCopies;
+    mirroredCopies.Resize(vertexCount, false);
+    mirroredCopies.SetAll(-1);
+    MikkTSpaceContext context;
+    context.m_pInterface = &callbacks;
+    context.m_pUserData = this;
+    context.MirroredCopies = mirroredCopies.Get();
     BitangentSigns.Resize(vertexCount, false);
+    BitangentSigns.SetAll(0.0f); //Not written yet
     genTangSpace(&context, 180.0f - smoothingAngle);
+
+    // Blend shapes move the vertex copies too
+    for (auto& blendShape : BlendShapes)
+    {
+        const int32 count = blendShape.Vertices.Count();
+        for (int32 i = 0; i < count; i++)
+        {
+            BlendShapeVertex v = blendShape.Vertices[i];
+            if (v.VertexIndex < (uint32)vertexCount && mirroredCopies[v.VertexIndex] != -1)
+            {
+                v.VertexIndex = mirroredCopies[v.VertexIndex];
+                blendShape.Vertices.Add(v);
+            }
+        }
+    }
 #else
+    
     const float angleEpsilon = 0.9999f;
     BitArray<> vertexDone;
     vertexDone.Resize(vertexCount);
